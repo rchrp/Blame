@@ -1,0 +1,20 @@
+{
+  "referenceSource": "9d4bc089",
+  "candidateSource": "bfc1f511",
+  "changedFiles": [
+    "harness/check-observation.d.ts",
+    "harness/check-observation.d.ts.map",
+    "harness/check-observation.js",
+    "harness/light-finish-service.d.ts.map",
+    "harness/light-finish-service.js",
+    "harness/light-task-runner.d.ts.map",
+    "harness/light-task-runner.js",
+    "harness/light-validation-report.d.ts",
+    "harness/light-validation-report.d.ts.map",
+    "harness/light-validation-report.js"
+  ],
+  "note": "Only four production modules rebuilt before F45 differ; all other executable/prompt/schema/test bytes identical.",
+  "modelRequests": 0,
+  "snapshotFrozenBeforeLaterWork": true,
+  "mechanism": "F45 only: classify an empty Vitest selection as a command failure with no observed tests, expose cwd recovery, retain the exact required obligation as missing, avoid repeated automatic attempts of the same current unavailable selection. Real code failures remain blocking. No navigation, type-evidence or Z3 changes."
+}

@@ -1,0 +1,4 @@
+{
+  "activities": [],
+  "caveat": "Sequential model workers on a nonexclusive host. No other benchmark, build, compiler or test workload is scheduled during workers. Light inspection may overlap; external contention is unknown. Record deviations without discarding trials."
+}

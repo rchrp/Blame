@@ -1,0 +1,8 @@
+{
+  "artifacts": {
+    "frozen-reference.tar.gz": "4e2cb7619998b1b17c3e282f58acb48d2685734b04b48c914141e3bb15f6f7e1",
+    "frozen-candidate.tar.gz": "4e2d6bc03919c00cea8d223a1992ab4340bfa7f24f82050f80ab5e5c233dc2d6",
+    "workflow-kit.tar.gz": "6a8852b091c7f60b5ba479cca665aeb684b66092404bd57cae5807090777dd1d"
+  },
+  "note": "Constructed fixture and frozen executable snapshots; node_modules links excluded. Reconstruct task dependencies from dependency-package-lock.json, runtime dependencies from the bound workspace lock. Hidden oracle and positive controls are never copied into agent workspaces."
+}

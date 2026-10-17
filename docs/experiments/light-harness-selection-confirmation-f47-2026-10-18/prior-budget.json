@@ -1,0 +1,8 @@
+{
+  "observedUsd": 7.94894492,
+  "reservedUsd": 3.6399999999999997,
+  "accountedUsd": 11.58894492,
+  "parent": "docs/experiments/light-harness-validation-scope-f44-2026-10-17",
+  "parentSummarySha256": "e852b432e587fa1b490a3de1b44b6ccbf50a16dbd32a116d2925d754edfc84fd",
+  "caveat": "Historical campaigns stay separate. SDK estimates and uncertainty reserves are not invoices."
+}

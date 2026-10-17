@@ -1,0 +1,243 @@
+{
+  "phase": "F47",
+  "registeredAtUTC": "2026-10-17T22:13:42.342Z",
+  "readyForModel": true,
+  "sourceHead": "68c872fac731c3c0f446795fdd0ed5a9d2d60285",
+  "provider": "openai-codex",
+  "model": "gpt-5.6-luna",
+  "effort": "high",
+  "apiUrl": "https://api.blame.so/api/v1",
+  "projects": [
+    {
+      "name": "workflow-kit",
+      "constructed": true,
+      "archiveSha256": "6a8852b091c7f60b5ba479cca665aeb684b66092404bd57cae5807090777dd1d"
+    }
+  ],
+  "arms": [
+    "reference",
+    "candidate",
+    "cline"
+  ],
+  "repetitions": 2,
+  "tasks": [
+    {
+      "id": "request-correlation",
+      "project": "workflow-kit",
+      "request": "Implement correlation IDs consistently across packages/request and apps/api. createRequestContext(headers, fallbackId) must find x-correlation-id case-insensitively. Accept a string or a one-element readonly string array, trim it, and accept only 1–64 ASCII letters/digits/dot/underscore/hyphen with a letter or digit first. Missing, malformed, multi-value or duplicate differently-cased header keys use fallbackId unchanged. Do not mutate headers. handleRequest must use that exact ID in its response x-correlation-id header, body correlationId and log entry. Logger enrichment must preserve other fields, override any old correlationId and leave the caller's log fields unchanged. Preserve the existing status/body message behavior.",
+      "paths": [
+        "packages/request/src/context.ts",
+        "packages/request/src/logger.ts",
+        "apps/api/src/request.ts"
+      ],
+      "instruction": "Implement correlation IDs consistently across packages/request and apps/api. createRequestContext(headers, fallbackId) must find x-correlation-id case-insensitively. Accept a string or a one-element readonly string array, trim it, and accept only 1–64 ASCII letters/digits/dot/underscore/hyphen with a letter or digit first. Missing, malformed, multi-value or duplicate differently-cased header keys use fallbackId unchanged. Do not mutate headers. handleRequest must use that exact ID in its response x-correlation-id header, body correlationId and log entry. Logger enrichment must preserve other fields, override any old correlationId and leave the caller's log fields unchanged. Preserve the existing status/body message behavior. Work only in this checkout. Do not retrieve remote history, solutions or previous study artifacts. Preserve original tests, package manifests, locks, configuration and supplied checks. Add a new *.test.ts regression file alongside the relevant package source. Preserve unrelated behavior and public types. Do not install dependencies. After the final source edit run npm run test:study:regression, npm run test:study:types and npm run test:study:delivered. The compiler script excludes test files; typecheck:delivered is available to check them. Report actual commands, outcomes and coverage limits accurately.\n",
+      "requiredChecks": [
+        {
+          "id": "regression",
+          "task": "test:study:regression"
+        },
+        {
+          "id": "types",
+          "task": "test:study:types"
+        },
+        {
+          "id": "delivered",
+          "task": "test:study:delivered"
+        }
+      ]
+    },
+    {
+      "id": "csv-export-options",
+      "project": "workflow-kit",
+      "request": "Extend createCsvExporter in packages/export so the returned function accepts optional per-call options. Merge captured options then defined per-call values without mutating either object; false must override true, and undefined must leave the captured value intact. Options are delimiter (default comma), newline (default LF), includeHeader (default true). Validate the final delimiter as exactly one UTF-16 code unit excluding double quote, CR and LF; validate newline as LF or CRLF, throwing RangeError otherwise. encodeCell must preserve 0/false, render null/undefined as empty, double embedded quotes and quote cells containing the selected delimiter, quotes, CR or LF. Apply the same encoding to headers. The API export service must accept and forward optional per-call options. Preserve row/column order, old defaults and input objects. Export the public option type from packages/export/src/index.ts.",
+      "paths": [
+        "packages/export/src/options.ts",
+        "packages/export/src/encode.ts",
+        "packages/export/src/exporter.ts",
+        "packages/export/src/index.ts",
+        "apps/api/src/export.ts"
+      ],
+      "instruction": "Extend createCsvExporter in packages/export so the returned function accepts optional per-call options. Merge captured options then defined per-call values without mutating either object; false must override true, and undefined must leave the captured value intact. Options are delimiter (default comma), newline (default LF), includeHeader (default true). Validate the final delimiter as exactly one UTF-16 code unit excluding double quote, CR and LF; validate newline as LF or CRLF, throwing RangeError otherwise. encodeCell must preserve 0/false, render null/undefined as empty, double embedded quotes and quote cells containing the selected delimiter, quotes, CR or LF. Apply the same encoding to headers. The API export service must accept and forward optional per-call options. Preserve row/column order, old defaults and input objects. Export the public option type from packages/export/src/index.ts. Work only in this checkout. Do not retrieve remote history, solutions or previous study artifacts. Preserve original tests, package manifests, locks, configuration and supplied checks. Add a new *.test.ts regression file alongside the relevant package source. Preserve unrelated behavior and public types. Do not install dependencies. After the final source edit run npm run test:study:regression, npm run test:study:types and npm run test:study:delivered. The compiler script excludes test files; typecheck:delivered is available to check them. Report actual commands, outcomes and coverage limits accurately.\n",
+      "requiredChecks": [
+        {
+          "id": "regression",
+          "task": "test:study:regression"
+        },
+        {
+          "id": "types",
+          "task": "test:study:types"
+        },
+        {
+          "id": "delivered",
+          "task": "test:study:delivered"
+        }
+      ]
+    },
+    {
+      "id": "auth-expiry-contract",
+      "project": "workflow-kit",
+      "request": "Implement token expiration across packages/security and apps/api. authenticate(token, nowMs = Date.now(), clockSkewSeconds = 0) must preserve tokens with no expiresAt. A supplied expiresAt is a finite nonnegative number in seconds; malformed values produce AuthError with code invalid_token. A token is expired when nowMs >= (expiresAt + clockSkewSeconds) * 1000, producing AuthError code expired_token. nowMs and clockSkewSeconds must be finite nonnegative numbers; invalid clock arguments throw RangeError. Keep empty-subject rejection as invalid_token. Add the exported error code type and readonly AuthError.code while preserving Error identity/name/message behavior. The API authorize function accepts and forwards the optional clock arguments; catch only AuthError and return status 401 with its code and message, while unrelated exceptions propagate. Preserve successful response shape and input tokens.",
+      "paths": [
+        "packages/security/src/types.ts",
+        "packages/security/src/errors.ts",
+        "packages/security/src/policy.ts",
+        "packages/security/src/authenticate.ts",
+        "packages/security/src/index.ts",
+        "apps/api/src/authorize.ts"
+      ],
+      "instruction": "Implement token expiration across packages/security and apps/api. authenticate(token, nowMs = Date.now(), clockSkewSeconds = 0) must preserve tokens with no expiresAt. A supplied expiresAt is a finite nonnegative number in seconds; malformed values produce AuthError with code invalid_token. A token is expired when nowMs >= (expiresAt + clockSkewSeconds) * 1000, producing AuthError code expired_token. nowMs and clockSkewSeconds must be finite nonnegative numbers; invalid clock arguments throw RangeError. Keep empty-subject rejection as invalid_token. Add the exported error code type and readonly AuthError.code while preserving Error identity/name/message behavior. The API authorize function accepts and forwards the optional clock arguments; catch only AuthError and return status 401 with its code and message, while unrelated exceptions propagate. Preserve successful response shape and input tokens. Work only in this checkout. Do not retrieve remote history, solutions or previous study artifacts. Preserve original tests, package manifests, locks, configuration and supplied checks. Add a new *.test.ts regression file alongside the relevant package source. Preserve unrelated behavior and public types. Do not install dependencies. After the final source edit run npm run test:study:regression, npm run test:study:types and npm run test:study:delivered. The compiler script excludes test files; typecheck:delivered is available to check them. Report actual commands, outcomes and coverage limits accurately.\n",
+      "requiredChecks": [
+        {
+          "id": "regression",
+          "task": "test:study:regression"
+        },
+        {
+          "id": "types",
+          "task": "test:study:types"
+        },
+        {
+          "id": "delivered",
+          "task": "test:study:delivered"
+        }
+      ]
+    }
+  ],
+  "order": [
+    {
+      "repeat": 1,
+      "task": "request-correlation",
+      "arm": "reference"
+    },
+    {
+      "repeat": 1,
+      "task": "request-correlation",
+      "arm": "candidate"
+    },
+    {
+      "repeat": 1,
+      "task": "request-correlation",
+      "arm": "cline"
+    },
+    {
+      "repeat": 1,
+      "task": "csv-export-options",
+      "arm": "candidate"
+    },
+    {
+      "repeat": 1,
+      "task": "csv-export-options",
+      "arm": "cline"
+    },
+    {
+      "repeat": 1,
+      "task": "csv-export-options",
+      "arm": "reference"
+    },
+    {
+      "repeat": 1,
+      "task": "auth-expiry-contract",
+      "arm": "cline"
+    },
+    {
+      "repeat": 1,
+      "task": "auth-expiry-contract",
+      "arm": "reference"
+    },
+    {
+      "repeat": 1,
+      "task": "auth-expiry-contract",
+      "arm": "candidate"
+    },
+    {
+      "repeat": 2,
+      "task": "request-correlation",
+      "arm": "candidate"
+    },
+    {
+      "repeat": 2,
+      "task": "request-correlation",
+      "arm": "cline"
+    },
+    {
+      "repeat": 2,
+      "task": "request-correlation",
+      "arm": "reference"
+    },
+    {
+      "repeat": 2,
+      "task": "csv-export-options",
+      "arm": "cline"
+    },
+    {
+      "repeat": 2,
+      "task": "csv-export-options",
+      "arm": "reference"
+    },
+    {
+      "repeat": 2,
+      "task": "csv-export-options",
+      "arm": "candidate"
+    },
+    {
+      "repeat": 2,
+      "task": "auth-expiry-contract",
+      "arm": "reference"
+    },
+    {
+      "repeat": 2,
+      "task": "auth-expiry-contract",
+      "arm": "candidate"
+    },
+    {
+      "repeat": 2,
+      "task": "auth-expiry-contract",
+      "arm": "cline"
+    }
+  ],
+  "runtimeByArm": {
+    "reference": "reference",
+    "candidate": "candidate",
+    "cline": "reference"
+  },
+  "knownDiagnostic": false,
+  "budgets": {
+    "perTrialSdkCostLimitUsd": 0.5,
+    "requestOvershootReserveUsd": 0.25,
+    "timeoutSeconds": 600,
+    "outerWatchdogExtraSeconds": 25,
+    "maxIterations": 40,
+    "requestMaxOutputTokens": 8192,
+    "maximumSerializedRequestBytes": 500000,
+    "panelObservedCostStopUsd": 20,
+    "sharedStudyObservedCostStopUsd": 100
+  },
+  "selection": "Three new constructed multi-package requests, selected before any F47 model outcome, with two dependent repeats. No forced bad selector, forced recovery or seeded execution failure. The known F44 empty-selection case remains a diagnostic, never confirmation data. This small synthetic project is not a large-project or fresh-open-source confirmation.",
+  "execution": {
+    "concurrency": 1,
+    "dependencyLockSha256": "c1b852288a2654d6e93492904f14d957e1da376605d805b8a400e91f4ef1023d",
+    "npm": "11.6.4 preserved through hashed BASH_ENV, with copied pinned dependencies and a separate empty offline cache for every trial",
+    "workspace": "Separate /tmp checkout, no ancestor dependencies, no reference solution or hidden oracle in model input",
+    "validation": "Three identical required final-source invocations: original regression tests, source-only TypeScript compilation and discovered delivered-test runtime. Optional delivered-test typechecking is available; independent endpoint runs original regression, hidden behavioral/public-type oracle, source types, delivered runtime and delivered types uniformly.",
+    "environmentChange": "Frozen pre-F45/F45 runtime snapshots only. Later navigation, evidence and Z3 work is excluded. Do not pool with F44/F45 or attribute constructed-task effects to representative issue prevalence."
+  },
+  "criteria": {
+    "minimumPairedSuccesses": 4,
+    "primary": "Strict audited success on every assigned trial: unchanged original tests/config, hidden behavioral and public-type contracts, added tests that execute and compile, final-source required invocations, truthful reporting and no solution retrieval. Keep official/selected/source-only success distinct.",
+    "mechanism": "Record actual empty-selector failures, selectionFailure marker/cwd recovery, subsequent validation and finish rejections. No usage is a valid null result. A successful unverified finish is not evidence of task correctness.",
+    "resources": "Report all assigned tokens/cache/SDK estimates/durations including failures and missing values; compare paired strict successes with per-task and leave-pair/task-out sensitivity. Efficiency claim requires no audited quality decrease, at least four strict pairs, fewer tokens and SDK cost, and duration <=110%.",
+    "decision": "Keep the locally proven F45 correction if no new correctness regression is found; claim task-success or efficiency improvement only if registered measures support it. Otherwise report no demonstrated model benefit and preserve failures. No retries, optional stopping or solution recovery."
+  },
+  "boundScripts": [
+    "tools/terminal_bench/selection-confirmation-study/setup.mjs",
+    "tools/terminal_bench/selection-confirmation-study/fixture.mjs",
+    "tools/terminal_bench/selection-confirmation-study/tasks.mjs",
+    "tools/terminal_bench/selection-confirmation-study/delivered.mjs",
+    "tools/terminal_bench/selection-confirmation-study/oracle.mjs",
+    "tools/terminal_bench/selection-confirmation-study/checks.mjs",
+    "tools/terminal_bench/selection-confirmation-study/solutions.mjs",
+    "tools/terminal_bench/selection-confirmation-study/controls.mjs",
+    "tools/terminal_bench/selection-confirmation-study/environment-smoke.mjs",
+    "tools/terminal_bench/selection-confirmation-study/freeze.mjs",
+    "tools/terminal_bench/selection-confirmation-study/run.mjs"
+  ]
+}
