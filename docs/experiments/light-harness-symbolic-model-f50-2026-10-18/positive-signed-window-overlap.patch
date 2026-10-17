@@ -1,0 +1,42 @@
+diff --git a/apps/policy/src/windows.ts b/apps/policy/src/windows.ts
+index 3e2552c..838fabb 100644
+--- a/apps/policy/src/windows.ts
++++ b/apps/policy/src/windows.ts
+@@ -1,4 +1,4 @@
+ import {overlapLength,overlapsAtLeast} from '../../../packages/windows/src/index.ts';
+ export function inspectShiftedWindow(startA:number,endA:number,startB:number,endB:number,offset:number,minimum:number) {
+- return {overlap:overlapLength(startA,endA,startB+offset,endB),qualifies:overlapsAtLeast(startA,endA,startB+offset,endB,minimum)};
++ const shiftedStart=startB+offset,shiftedEnd=endB+offset;return {overlap:overlapLength(startA,endA,shiftedStart,shiftedEnd),qualifies:overlapsAtLeast(startA,endA,shiftedStart,shiftedEnd,minimum)};
+ }
+diff --git a/packages/windows/src/overlap.ts b/packages/windows/src/overlap.ts
+index 5403989..ce4141f 100644
+--- a/packages/windows/src/overlap.ts
++++ b/packages/windows/src/overlap.ts
+@@ -1,7 +1,3 @@
+ export function overlapLength(startA:number,endA:number,startB:number,endB:number):number {
+- if(startA<0||startB<0)return 0;
+- if(endA<=startA||endB<=startB)return 0;
+- const start=startA>startB?startA:startB;
+- const end=endA<endB?endA:endB;
+- return end>start?end-start:0;
++ if(endA<=startA||endB<=startB)return 0;const start=startA>startB?startA:startB;const end=endA<endB?endA:endB;return end>start?end-start:0;
+ }
+diff --git a/packages/windows/src/qualifies.ts b/packages/windows/src/qualifies.ts
+index 8444533..cc0e063 100644
+--- a/packages/windows/src/qualifies.ts
++++ b/packages/windows/src/qualifies.ts
+@@ -1,4 +1,4 @@
+ import {overlapLength} from './overlap.ts';
+ export function overlapsAtLeast(startA:number,endA:number,startB:number,endB:number,minimum:number):boolean {
+- return overlapLength(startA,endA,startB,endB)>minimum;
++ return minimum>0&&overlapLength(startA,endA,startB,endB)>=minimum;
+ }
+diff --git a/packages/windows/src/signed.test.ts b/packages/windows/src/signed.test.ts
+new file mode 100644
+index 0000000..c32c1b9
+--- /dev/null
++++ b/packages/windows/src/signed.test.ts
+@@ -0,0 +1,3 @@
++import {test,expect} from 'vitest';
++import {inspectShiftedWindow} from '../../../apps/policy/src/windows.ts';
++test('signed shifted overlap admits equality threshold',()=>{expect(inspectShiftedWindow(-5,1,-2,4,-2,5)).toEqual({overlap:5,qualifies:true});});
