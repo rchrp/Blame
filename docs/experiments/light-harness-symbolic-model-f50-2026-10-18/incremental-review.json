@@ -1,0 +1,246 @@
+{
+  "method": "Incremental unblinded manual review of immutable completed F50 trial patches, grades, complete tool ledgers and delivery. No new tests, solver calls, model calls or repairs during workers. Explicit booleans are conclusions from cited source/trace evidence; endpoint checks alone do not establish full request or truthful coverage. Analyzer statuses and actual test execution remain separate.",
+  "decisions": [
+    {
+      "name": "1-credit-remainder-reference",
+      "hashes": {
+        "events.jsonl": "a9b15017893eb74ddfb862b425f345a551554fbe7f7d046d9da593356b8aca5a",
+        "workspace.diff": "518cb82f414e34a0f6fa8765f4dd0272ee1e41554693c228622e6301ed592d25",
+        "score.json": "de3741b40809c7e00417b865adf96f8de9cca7beccb0a7b9df96cd67560bfa45",
+        "tool-ledger.json": "d6ef372e171ab2cca03ef06e2037dc5b97967acd8acb56c7fb859a5e55395be1"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "workspace.diff: availableCredit retains (balance:number,reserved:number,limit:number):number, normalizes each input independently, computes normalizedLimit-normalizedBalance-normalizedReserved and clamps the remainder; approveDebit retains four required number parameters in original order and :number, normalizes requested then caps through availableCredit. No any, coercion, mutation or signature edits.",
+        "workspace.diff apps/policy/src/debit.ts imports and calls shared availableCredit plus approveDebit; remaining=available-approved and denied=normalizedRequested-approved. The quote consumer uses the same package policy. Only the three requested source files plus apps/policy/src/regression.test.ts changed; no protected paths changed.",
+        "score.json checks: preserved regression, hidden behavioral/public-type oracle (8704 assertions), and source compilation all exit0. delivered and delivered-types both exit0 for the new three-test file. Independent endpoint outcomes corroborate source review, without claiming exhaustive requested-domain proof.",
+        "Complete tool-ledger.json: last source-writing operation is edit_code index17 (sourceRevisionId src_7de5fcc86216bf989e2c4f38e3e51b5a); indices18/19/20 execute all three required exact project commands successfully after this edit. Optional typecheck:delivered index21 also exits0. Later command index22 only git diff --check/status/diff; indices23-26 are reads. No later source changes or hidden shell writes.",
+        "finish_task index27 accurately distinguishes four original tests, three delivered tests, source compilation excluding tests and a separately executed delivered-test typecheck; no unsupported claim of whole-project/source admission or symbolic proof. Harness internally leaves delivered obligation unconfirmed because wrapper check execution is not_observed despite exit0 and visible Vitest three-pass output; this conservative admission gap does not negate the witnessed required invocation or independent endpoint success.",
+        "Complete ledger navigation stays within checkout packages/apps/root manifests and configs. The sole ordinary command is git diff --check && git status --short && git diff -- selected local source/test paths; no network/history/solution/study-artifact retrieval or dependency install appears.",
+        "score.json dependencyIntegrity.pinnedDependenciesUnchanged=true with changed/missing/added/generated all empty; protectedPaths=[]; original tests/manifests/locks/configuration remain unchanged. No analyze or direct solver command occurs, so symbolicEvidence is empty and no mechanism credit is attributed."
+      ]
+    },
+    {
+      "name": "1-credit-remainder-candidate",
+      "hashes": {
+        "events.jsonl": "e351668949fd259a42abc7e5305484bd7a3ede43abede39605a8542aa9ae0943",
+        "workspace.diff": "e84a2f839b7ca710b08e2f2fa4e1769ac93238d7f2954ef4fcd9568339ae9ce7",
+        "score.json": "25c1083408970517e74aaac048b725fdb21c701af6b8165cd2d6b0ddede363d2",
+        "tool-ledger.json": "a7755458be4c20093114e6da9cb242690fd477b93e93015f7038bba95f29e93c"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "workspace.diff: availableCredit keeps (balance:number,reserved:number,limit:number):number and normalizes all three with Math.max(0,...), then clamps the subtraction; approveDebit keeps the original four required number parameters and :number, normalizes requested and caps with Math.min against shared availableCredit. No any, signature/argument-order changes or input mutation.",
+        "apps/policy/src/debit.ts imports both package functions; approved comes from approveDebit, remaining=availableCredit(balance,reserved,limit)-approved, denied=Math.max(0,requested)-approved. The consumer reuses the package policy, and the new apps/policy/src/debit.regression.test.ts covers normalization, over-cap demand, normalized quote results and unchanged scalar inputs.",
+        "score.json independently records all five endpoint checks exit0: original regression4passes, hidden behavioral/public-type oracle8704assertions, source compilation, delivered2runtimepasses and separate delivered-type compilation. protectedPaths=[]; pinnedDependenciesUnchanged=true with changed/missing/added/generated empty.",
+        "Ledger last source edit index24 repairs the missing availableCredit import after initial multi-file edit index23, final revision src_f3573f0f5089ef45d41533d4a32bb7e2. Required exact commands at indices29,30,31 all exit0 after this final edit; optional delivered typecheck index32 also exit0. Index33 only git status/diff, index34 only signature read. No later mutation or shell writes.",
+        "finish_task index35 accurately reports original4tests excluding the new file, source compiler excluding tests, delivered2tests and separate delivered-test typechecking; no claim of broad verification or solver proof. The wrapper conservatively leaves delivered execution not_observed internally despite visible Vitest2passes, as in the reference; actual command/result evidence and independent endpoint checks establish the invocation separately.",
+        "Full ledger includes only checkout search/read/edit, the four project checks and git status/diff on local selected paths. No remote history, solutions, prior studies, dependency install or direct solver command appears. Analyze is exposed in the schema but invoked zero times; Math.min/max are valid requested-domain solutions even though calls lie outside the optional analyzer subset. No symbolic benefit is attributed.",
+        "Chronology retained without duration adjustment: final edit finishes2026-10-17T22:59:39.908Z; forwarded request6 is logged22:59:39.926Z; its usage event arrives23:02:32.022Z (172.096seconds between those observations), followed by the first read finishing23:02:32.062Z. No run_task, analyze or active tool is recorded during this interval. Cause cannot be assigned to provider, transport, model reasoning or Z3 from these receipts. Full observed219864ms remains in all assigned resource comparisons."
+      ]
+    },
+    {
+      "name": "1-credit-remainder-cline",
+      "hashes": {
+        "events.jsonl": "7f2eb725a3b0417d0b0d984956c201cea2f087f05fa662d6300fab6e448b30fb",
+        "workspace.diff": "ba861bc4d16fe5b43d79c23fa5de952ede1d920553105194f3f3cfa79150da70",
+        "score.json": "a07b0c5180342ab1953f44ef2dfcdf95680357b4597800201750b31f40f0ddf6",
+        "tool-ledger.json": "a089cfd29e4f365643704753ef7f85c7c62315cbed326995649a286873288c87"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "workspace.diff: availableCredit retains the original three required number parameters and :number, independently normalizes each negative input then clamps normalizedLimit-normalizedBalance-normalizedReserved. approveDebit preserves the original four-argument numeric signature and caps a normalized requested amount through shared availableCredit; no any or mutation.",
+        "quoteDebit retains argument order and computes approved through approveDebit; remaining uses availableCredit(normalizedBalance+approved,reserved,limit), which equals available-before-approved because approved is nonnegative and bounded by original available credit. Normalizing balance before adding approved preserves negative-balance behavior. denied=normalizedRequested-approved. The consumer reuses the package policy rather than reproducing its formula.",
+        "Only the three requested source files and apps/policy/src/debit-regression.test.ts changed. The new two-test file includes negative balance/reservation, overspending, negative requests, partial/full approvals and quotes. score.json all five independent endpoint checks exit0, including hidden behavioral/public-type8704assertions and delivered runtime/typechecks; protectedPaths=[] and dependency integrity unchanged with no generated/added/changed/missing dependencies.",
+        "Full command/edit chronology: interim edit11 replaced remaining with availableCredit(balance+approved,...) and delivered runtime index14 actually failed on quoteDebit(-5,-2,10,20), observing remaining5 rather than0. Final repair17 restores normalizedBalance before adding approved. Required exact commands18,19,20 and optional delivered-types21 all succeed after repair17. Later22/24 only git status/diff/check,23 only reads; no source writes follow.",
+        "Done delivery explicitly says all requested commands passed after the final source edit, reports4originaltests/2deliveredtests, source compiler excluding tests and separate delivered-test typechecking. These claims match final trace. The earlier genuine assertion failure is retained as evidence that the added regression caught an agent-introduced intermediate semantic error, without pretending it required a solver.",
+        "Complete ledger uses only local find/pwd/git status/diff, package-script inspection, checkout searches/reads, apply_patch and tests. Listing .git metadata names in initial directory discovery does not retrieve history or solutions; no git log/show/fetch, network request, prior-study lookup or dependency install occurs.",
+        "No analyze or direct solver command occurs and delivery asserts no symbolic proof. symbolicEvidence=[]; no formal-reasoning mechanism credit is attributed to this ordinary validation-and-repair sequence."
+      ]
+    },
+    {
+      "name": "1-inclusive-tier-allocation-candidate",
+      "hashes": {
+        "events.jsonl": "fc21d1d6919b57d23ff55e611a418e9815caec0b403a084466ee70b170c79eb3",
+        "workspace.diff": "245b319d59182e3096d67acd08a8a8fbacd8618b0350d46f8bb0023dbadc2e53",
+        "score.json": "3e0b879a1ede43638d41c732f86c07f49933f14bfab864c280fe83fb8c43e59d",
+        "tool-ledger.json": "c23b8d5c05c8349ed24d408aa0eae6125e04ebef977e1e1a01e3b2f4bb3ad328"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "workspace.diff lowerTierUnits preserves (first:number,last:number,boundary:number):number, returns0 on first>last, then max(0,min(last,boundary)-first+1). upperTierUnits retains the same ordered scalar signature, starts at max(first,boundary+1) and counts through last inclusively. These complementary closed-interval formulas produce nonnegative counts with the requested total, including signed IDs, boundary equality and empty intervals.",
+        "cost.ts keeps (lowerUnits:number,upperUnits:number,lowerRate:number,upperRate:number):number, independently normalizes both rates with Math.max(0,...), then sums both units*rate terms. quoteTierUsage retains its original five ordered required number parameters and adds an exact numeric-field object return annotation; it imports/calls shared tierCost with both tier counts/rates. No any, argument reorder, mutation, protected-source changes or unrelated policy edits.",
+        "New apps/policy/src/inclusive-tier.test.ts has2 tests covering inclusive endpoints, split/all-upper counts, signed full-count conservation, empty requests and negative-rate quotes. score.json independently records regression4passes, hidden behavioral/public-type4803assertions, source compilation, delivered2runtimepasses and delivered-type compilation all exit0.",
+        "Ledger final edit23 adds the missing tierCost import and new test after symbol replacements22, final revision src_46b0517407b3f4d634f0c2116c4c3b98. Required exact project commands24/25/26 and optional typecheck:delivered27 all exit0 after edit23; next operation28 finishes. There are no ordinary shell commands or later source writes.",
+        "finish_task28 accurately reports4originaltests,2deliveredtests, source compiler excluding tests and separately executed delivered-test compilation. Its limited claims do not turn unverified wrapper admission into full source verification; actual visible output and independent checks support its process/test statements.",
+        "Complete ledger confines searches/reads to checkout packages/apps/README/manifests/configs and supplied delivered script. A missing packages/tiers/tsconfig.json read does not recover external data. No network/history/prior-study/solution retrieval or installation occurs. score protectedPaths=[] and dependencyIntegrity unchanged with all difference arrays empty.",
+        "Analyze was available but not called, and no direct solver command occurs. Final Math.min/max implementation is valid requested-domain code although calls are outside the optional analyzer subset. No unsupported-tool refusal was actually observed and no symbolic benefit or reason for non-use is inferred. symbolicEvidence=[].",
+        "Posthoc uniform tier-scope sensitivity recorded after completedrow5: the quote consumer itself normalizes rates via shared tierCost; consumerOnlyInterpretationPassed=true as well as the primary broad public-helper contract. This does not change the registered result."
+      ],
+      "consumerOnlyInterpretationPassed": true,
+      "sourceBehaviorUnderNamedConsumer": true
+    },
+    {
+      "name": "1-inclusive-tier-allocation-cline",
+      "hashes": {
+        "events.jsonl": "bc18273fed95a18e5a46a91308f191d3d7b326055a5988b15791fb3b7bcf5c16",
+        "workspace.diff": "15a1cf2f7527607fb44f4ea67f6d0c2b48f12992ffaa3841a17ac5321cb90591",
+        "score.json": "85a8039af2ad0c4081538b3bf8f2308e6cdfeb4fabda713e86fcd23b314cdf0b",
+        "tool-ledger.json": "4a39792f6fbac9f0ba1b08bbecef21b1d0819bf043aec15398071fb568d7d4f9"
+      },
+      "sourceBehaviorPassed": false,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": false,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "consumerOnlyInterpretationPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Primary registered public-helper contract fails: score.json hidden feature exits1 on tierCost(1,0,-1,2), observing-1 instead of0. workspace.diff leaves packages/tiers/src/cost.ts unchanged, so this exported helper still multiplies negative rates directly. sourceBehaviorPassed/fullRequestPassed=false use this preregistered broad interpretation; this is not evidence that the named quote consumer mishandles negative rates.",
+        "Interpretation ambiguity is explicit: the request says \"Quote both counts and totalCost through quoteTierUsage(...)\" followed by \"Normalize negative rates to zero\" without naming tierCost. A consumer-only reading is plausible. Under that posthoc secondary reading consumerOnlyInterpretationPassed=true: quoteTierUsage independently clamps both rates and passes them with both correct counts to tierCost. The registered oracle and primary classification remain unchanged. See interpretation-notes.json; review the same secondary reading uniformly for all six tier trials.",
+        "Count implementations preserve first,last,boundary number parameters and :number. lower includes+1 after clamping to the boundary; upper starts at first when first>boundary, otherwise boundary+1, then counts inclusively. Empty requests remain0. quoteTierUsage preserves the original five required number parameters in order and inferred numeric result fields. No any, coercion, mutation or signature weakening appears.",
+        "New apps/policy/src/tiers.regression.test.ts has2 tests covering split counts, boundary-only/single-unit cases, conservation, empty requests and negative-rate quote results. Independent original regression/source compilation/delivered runtime/delivered-types all exit0; only the broad hidden public-helper feature fails. Original tests and configuration are unchanged.",
+        "Ledger final source-writing operation is apply_patch6. run_commands7 executes a literal five-command loop after that edit, retaining each nested command and <<< exit0: npm run test, all three exact required study commands, and typecheck:delivered. Subsequent8/10 are only git diff/status/check/test-file-exists,9 only reads. No later source mutation; finalSourceChecksPassed=true even though simple exact-command extraction may not recognize the shell loop.",
+        "Done delivery accurately reports6tests in5files for full npmtest,4originaltests,2deliveredtests and separate source/test compiler scopes. Its negative-rate claim is explicitly about quoteTierUsage and matches that consumer; it makes no solver or unbounded verification claim. The public-helper gap is a contract-scope issue, not a fabricated validation command.",
+        "Ledger5 git log --oneline -5 --all --decorate prints only the unique synthetic frozen-input commit3756771; no source solution, real upstream history, remote fetch or prior study content is recovered. Other navigation/commands remain inside checkout; no dependency install occurs. No analyze/directsolver command or symbolic claim appears. protectedPaths=[]; dependency difference arrays all empty."
+      ],
+      "sourceBehaviorUnderNamedConsumer": true
+    },
+    {
+      "name": "1-inclusive-tier-allocation-reference",
+      "hashes": {
+        "events.jsonl": "3a64dbcde1b752dfa5c1acd7580eb20404e25c3f4e2382e71b11489734f682f8",
+        "workspace.diff": "884a2c3d4b8e565dfbb55c5c5958fdfa6210fdabbfe5f7d5d0bb55896372f476",
+        "score.json": "61583ad1f959b551d7e09a88cc88694c1b0829d3e73f1d2dddf258a132f902ce",
+        "tool-ledger.json": "be4bdb93ffc7c39479b7260541a0bff51a96f5b2a5b365265150ce2a36169cb9"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "consumerOnlyInterpretationPassed": true,
+      "sourceBehaviorUnderNamedConsumer": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "workspace.diff: lowerTierUnits includes+1 for closed lower ranges and upperTierUnits starts strictly above boundary, preserving emptiness and the original three required number parameters and numeric return types. tierCost retains its four ordered number parameters/:number and independently clamps both rates before summing both terms, satisfying the registered broad public-helper contract.",
+        "quoteTierUsage retains its five ordered required number parameters, computes lower/upper via package functions and sums lower*normalizedLowerRate + upper*normalizedUpperRate. It duplicates simple rate normalization rather than calling tierCost, but this tier request does not require sharing that helper; both exported helper and named consumer implement the same numeric policy. No any, mutation, signature weakening or unrelated source edits.",
+        "Both consumer-only sensitivity fields are true: the named signed closed-interval functions and quote consumer satisfy their literal contracts; unlike Cline1 this endpoint also normalizes direct public tierCost calls. The posthoc secondary reading does not change this row or the registered primary classification.",
+        "New apps/policy/src/tier-accounting.test.ts has2 tests for split counts, boundary/single-unit cases, empty requests and independently negative lower/upper rates. All five score endpoint audits exit0, including original4tests, hidden4803behavior/public-typeassertions, source compiler, delivered2runtimepasses and separate delivered test compilation. protectedPaths=[] and dependency arrays all empty.",
+        "Final source edit index28 writes all4source files plus newtest at revision src_aa3a0b264d2fea1ccc25d989b082167b. Reads29-33 precede required exact command successes34/35/36; optional delivered-types37 also passes. Two identical tiers:typecheck invocations38/39 then pass without intervening source change. They are retained as redundant observed compiler work, not additional acceptance coverage or evidence of a cause.",
+        "Finish40 accurately reports4originaltests,2deliveredtests, separate delivered compilation and package typecheck; it notes root compiler exclusion of tests and makes no whole-project or symbolic-proof claim. No successful source-writing operation follows28.",
+        "Complete ledger stays within checkout searches/reads/project tasks. Missing local apps/policy/src/index.ts and packages/tiers/tsconfig.json reads do not retrieve external data. No ordinary shell command, network/history/solution/prior-study retrieval or dependency install occurs. Analyze/directsolver calls are absent and symbolicEvidence=[]; all observed validation is ordinary runtime/compiler execution."
+      ]
+    },
+    {
+      "name": "1-signed-window-overlap-cline",
+      "hashes": {
+        "events.jsonl": "688d51db3712ec0e1e21162f8acae1cdcc200c794226ac07a38443c5119daede",
+        "workspace.diff": "f1de591984ce8f2bc3a57a0743c42dcb50c2e747472d5fa6101b950129f456dc",
+        "score.json": "fcc1caa6a8148e259267f6480d2cd8f3966496776189e9278c305063c25735ae",
+        "tool-ledger.json": "36669b194934835ac868d7721d2b6d68720e7f3f183c44399e167fba9fdbbc09"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Source review: overlapLength preserves (startA:number,endA:number,startB:number,endB:number):number, removes the incorrect negative-coordinate rejection, keeps end<=start emptiness guards, and returns max(0,min(endA,endB)-max(startA,startB)). overlapsAtLeast preserves the five ordered required number parameters and :boolean while requiring minimum>0 and comparing overlap>=minimum.",
+        "inspectShiftedWindow retains the original six required number parameters in order and numeric/boolean result fields. Both B endpoints are shifted by offset once into local constants and reused in overlapLength and overlapsAtLeast. No any, signature weakening, mutation or unrelated policy edits.",
+        "New regression tests cover signed/empty/adjacent intervals, equality and nonpositive minimums, and shifted consumers. All five independent score endpoint checks exit0: original4tests, hidden behavioral/public-type32402assertions, source compiler, delivered3runtimepasses and separate delivered-test compiler. protectedPaths=[] and all dependency-integrity difference arrays empty.",
+        "Final source-writing operation is apply_patch7. run_commands8 executes all three literal required npm commands after it, separately captures each exit status and prints REQUIRED_STATUS regression=0 types=0 delivered=0. Optional delivered-typecheck9 and full npmtest10 also pass; later11/13 only local diff/status/check and12 only reads, with no further source mutation.",
+        "Done delivery accurately reports4originaltests,3deliveredtests and full npmtest7tests/5files plus separately executed typecheck:delivered. It does not claim that source compiler execution alone proves runtime behavior or that a symbolic/unbounded proof was obtained.",
+        "Complete ledger discovery/reads/searches remain in checkout. Ordinary shell commands inspect package scripts/manifests/files, run configured tests and inspect local git diff/status; no solution/history/prior-study/network retrieval or dependency install appears. No analyze or direct solver command occurs; symbolicEvidence=[]."
+      ]
+    },
+    {
+      "name": "1-signed-window-overlap-reference",
+      "hashes": {
+        "events.jsonl": "8568514a24b7905cfe6f600c8fade7d5afce2c1726757b390cba4d273053f568",
+        "workspace.diff": "bf635d30dc4422c3de2b7920a8370f7625e4c860afef9dddb2d333b7199d0769",
+        "score.json": "167c1625520d1186ae6397c906c9f404e7748b666f8ac70f244b6ff7ce58f3c4",
+        "tool-ledger.json": "3f9be3fbb5baa87deb705aaaaf2057fe6e9ce53359ccd4ec1b60be34c85c7f8f"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Source review: overlapLength preserves (startA:number,endA:number,startB:number,endB:number):number, removes the incorrect negative-coordinate rejection, keeps end<=start emptiness guards, and returns max(0,min(endA,endB)-max(startA,startB)). overlapsAtLeast preserves the five ordered required number parameters and :boolean while requiring minimum>0 and comparing overlap>=minimum.",
+        "inspectShiftedWindow retains the original six required number parameters in order and numeric/boolean result fields. Both B endpoints are shifted by offset once into local constants and reused in overlapLength and overlapsAtLeast. No any, signature weakening, mutation or unrelated policy edits.",
+        "New regression tests cover signed/empty/adjacent intervals, equality and nonpositive minimums, and shifted consumers. All five independent score endpoint checks exit0: original4tests, hidden behavioral/public-type32402assertions, source compiler, delivered3runtimepasses and separate delivered-test compiler. protectedPaths=[] and all dependency-integrity difference arrays empty.",
+        "The actual production-source edit is17 and final source-writing operation22 adds packages/windows/src/signed-window-overlap.test.ts at revision src_99c0f00a79bb9ac2acc9bc1681bb123c. Exact required project invocations23/24/25 all exit0 after edit22, optional delivered-typecheck26 also passes. Later27 is only local git status/diff and28 finishes, with no subsequent source mutation.",
+        "Finish28 accurately separates original4tests from delivered3tests, separately executed delivered typecheck and the fact that typecheck commands do not execute runtime behavior. Conservative missing delivered admission remains internal despite visible passing output; this does not erase actual process/test evidence.",
+        "Complete navigation stays in checkout; the only ordinary shell command27 is git status/diff. No remote/local history, solution/study-artifact retrieval, installation, analyze or direct solver command occurs. symbolicEvidence=[].",
+        "Unadjusted duration retained: edit22 finishes2026-10-17T23:08:36.069Z; forwarded request6 is recorded23:08:36.091Z; usage event arrives23:11:34.572Z (178.481seconds between these observations). The next test tool completes23:11:35.890Z; no tool/analyze/solver is recorded during the long request interval. Cause remains unknown, without provider/transport/reasoning attribution. All observed216176ms remain in comparisons."
+      ]
+    },
+    {
+      "name": "1-signed-window-overlap-candidate",
+      "hashes": {
+        "events.jsonl": "5050eaa9ac679226950418230dc98fbad1833ca2812d6a0e0dc35cef7f8100c0",
+        "workspace.diff": "035ba6c1112201aca4b8919fe2fae64d3c1b1b2fe238bc82d76b36d2865a7067",
+        "score.json": "e30907f1e86beb4721565b469ad6fec93ac2b326e9faffd786a00532bf48df1b",
+        "tool-ledger.json": "8911a3fedaed1c1c108997f40ff0ae150d65470a8e79492fe54009bc5958bcf3"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "workspace.diff overlapLength removes only the incorrect negative-start guard and preserves empty/reversed interval checks, min-end/max-start span and nonnegative result. overlapsAtLeast requires minimum>0 with overlap>=minimum. Original ordered required scalar number parameters and numeric/boolean return types remain intact, without any or mutation.",
+        "Consumer inspectShiftedWindow computes startB+offset and endB+offset into locals exactly once, passes these same shifted endpoints to both shared package functions and retains the original six-argument API and numeric/boolean result fields. No unrelated behavior or protected configuration changes appear.",
+        "New packages/windows/src/regression.test.ts has2 runtime tests for negative/reversed/empty/adjacent intervals and inclusive positive thresholds. It does not add a nonzero-offset consumer regression; this is a coverage limit, not a failed explicit test requirement. Independent hidden32402behavior/public-typeassertions cover the shifted consumer too and all five endpoint audits exit0, including separately compiled delivered tests.",
+        "Ledger source edits17/18 precede exact required project command successes19/20/21 and optional delivered-types22. Subsequent fullsuite23, windows package24 and app package25 pass on the same final source; these additional overlapping test selections are retained as resource work, without claiming new guarantees. Later26-28/30 only reads and29 only local git diff --check/status/diff, then finish31. No source write follows18.",
+        "Finish31 accurately distinguishes4originaltests excluding the new file,2deliveredtests, source compilation excluding tests, separate delivered-test compilation, full6tests and package windows3/app1tests. Its test coverage claim concerns the actual new scalar regressions and does not claim a new shifted-window test or symbolic proof.",
+        "Complete ledger stays within checkout searches/reads/project checks and local git diff/status. No network/history/solution/prior-study retrieval or installation occurs. protectedPaths=[] and dependencyIntegrity unchanged with all difference arrays empty. Analyze is exposed but never invoked and no direct solver command occurs; symbolicEvidence=[] and no symbolic benefit is attributed."
+      ]
+    }
+  ],
+  "reviewedRows": 9,
+  "complete": false
+}

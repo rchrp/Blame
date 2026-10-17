@@ -1,0 +1,26 @@
+{
+  "phase": "F50",
+  "recordedAtUTC": "2026-10-17T23:07:47.452428+00:00",
+  "observedAfterCompletedAssignments": 5,
+  "knownCase": "1-inclusive-tier-allocation-cline",
+  "protocolSha256": "102ec804dc7887787855e566a34720f3f9be73af1d413b4ce5ff789c1b8abb6c",
+  "primaryUnchanged": true,
+  "observation": "The preregistered oracle requires direct public tierCost negative-rate normalization. Cline tier trial1 normalizes rates at quoteTierUsage only: the named quote consumer behaves correctly, but tierCost(1,0,-1,2) returns-1 where the registered public-helper oracle expects0.",
+  "wordingAmbiguity": "The instruction says Quote both counts and totalCost through quoteTierUsage(...) then Normalize negative rates to zero. It does not explicitly name tierCost in that imperative, so a consumer-only interpretation is plausible. The broad public-policy interpretation remains the registered primary analysis.",
+  "secondarySensitivity": {
+    "preregistered": false,
+    "field": "consumerOnlyInterpretationPassed",
+    "population": "All six inclusive-tier-allocation trials: two repetitions and three arms, reviewed uniformly as their immutable endpoints become available.",
+    "definition": "The requested named lower/upper counting functions and quoteTierUsage satisfy the stated signed closed-interval behavior, nonnegative rate quotation and public types, with truthful final validation and no solution recovery; direct tierCost normalization is not additionally required in this secondary reading.",
+    "effect": "Supplementary interpretation only; never change official runtime, registered hidden oracle exits, independentFunctionalSuccess, primary audited success, patches, task instructions, oracle, assignment order or model budgets.",
+    "sourceField": "sourceBehaviorUnderNamedConsumer"
+  },
+  "caveat": "A single interpretation-sensitive failure cannot establish robust harness superiority. Keep primary and secondary conclusions separate.",
+  "exactInstructionExcerpt": "Quote both counts and totalCost through quoteTierUsage(first,last,boundary,lowerRate,upperRate). Normalize negative rates to zero, price each tier with its own rate and include the upper tier in the total.",
+  "tierCostExplicitlyNamedInRequest": false,
+  "independentTextualCorroboration": {
+    "reviewer": "confirmation_protocol independent text review, relayed by root",
+    "recordedAtUTC": "2026-10-17T23:12:51.243057+00:00",
+    "finding": "The normalization imperative immediately follows quoteTierUsage; tierCost is not named in the request. A consumer-only interpretation is plausible. The registered public-helper oracle failure is retained without presenting it as an indisputable user-visible defect."
+  }
+}
