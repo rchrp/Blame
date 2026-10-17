@@ -289,9 +289,17 @@ export class LightWorkspace {
   ): Promise<LightToolResult<unknown>> {
     try {
       await this.ready;
-      const result = await this.commits.exclusive(() =>
+      let result = await this.commits.exclusive(() =>
         this.readCurrentWorkspace(input, context),
       );
+      if (process.env.BLAME_AGENT_SYMBOLIC_ANALYSIS === "true" && result.status === "ok") {
+        const data = recordValue(result.data), path = stringValue(data.path);
+        if (path && data.view === "raw" && data.complete === true && typeof data.content === "string") {
+          const { symbolicReadHints } = await import("./light-symbolic-hint.js");
+          const hints = symbolicReadHints(path, data.content);
+          if (hints.length) result = { ...result, data: { ...data, symbolicAnalysis: hints } };
+        }
+      }
       await this.recordObservationAudit("read_code", input.view ?? "auto", result);
       return result;
     } catch (error) {
@@ -748,7 +756,7 @@ export class LightWorkspace {
       resolved,
       context,
     );
-    return symbolContentResult(
+    const result = symbolContentResult(
       resolved,
       signature,
       body,
@@ -756,6 +764,13 @@ export class LightWorkspace {
       [signature, body, ...coverage.uncovered],
       coverage.receipt,
     );
+    if (process.env.BLAME_AGENT_SYMBOLIC_ANALYSIS === "true" && result.status === "ok" &&
+        typeof recordValue(result.data).body === "string") {
+      const { symbolicReadHints } = await import("./light-symbolic-hint.js");
+      const hints = symbolicReadHints(resolved.path, resolved.content.toString("utf8"), resolved.symbol.qualified_name);
+      if (hints.length) return { ...result, data: { ...recordValue(result.data), symbolicAnalysis: hints } };
+    }
+    return result;
   }
 
   private async resolveReadSymbol(target: string, revision: string) {

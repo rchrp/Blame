@@ -22,7 +22,7 @@ function boolean(smt: string): Expression {
   return { type: "boolean", smt: boundedSmt(smt) };
 }
 
-function integer(smt: string, min: bigint, max: bigint): Expression {
+function integer(smt: string, min: bigint, max: bigint): Extract<Expression, {type:"integer"}> {
   if (min < -safe || max > safe) unsupported("unsafe_integer_intermediate");
   return { type: "integer", smt: boundedSmt(smt), min, max };
 }
@@ -37,6 +37,22 @@ export function compileExpression(
     const value = env.get(node.text);
     if (!value) unsupported(`unbound_identifier:${node.text}`);
     return value;
+  }
+  if (ts.isCallExpression(node)) {
+    const method = mathMethod(node, env.has("Math"));
+    const args = node.arguments.map(arg => compileExpression(arg, env));
+    if (args.some(arg => arg.type !== "integer")) unsupported("math_integer_arguments_required");
+    const integers = args as Extract<Expression, {type:"integer"}>[];
+    if (method === "abs") {
+      const a = integers[0]!;
+      return integer(`(ite (< ${a.smt} 0) (- ${a.smt}) ${a.smt})`,
+        a.min >= 0n ? a.min : a.max <= 0n ? -a.max : 0n,
+        -a.min > a.max ? -a.min : a.max);
+    }
+    return integers.slice(1).reduce((a, b) => integer(
+      `(ite (${method === "min" ? "<" : ">"} ${a.smt} ${b.smt}) ${a.smt} ${b.smt})`,
+      method === "min" ? (a.min < b.min ? a.min : b.min) : (a.min > b.min ? a.min : b.min),
+      method === "min" ? (a.max < b.max ? a.max : b.max) : (a.max > b.max ? a.max : b.max)), integers[0]!);
   }
   if (ts.isNumericLiteral(node)) {
     const value = Number(node.text);
@@ -135,6 +151,14 @@ export function evaluateExpression(node: ts.Expression, env: Bindings): Scalar {
     if (!env.has(node.text)) unsupported("concrete_unbound_identifier");
     return env.get(node.text)!;
   }
+  if (ts.isCallExpression(node)) {
+    const method = mathMethod(node, env.has("Math"));
+    const values = node.arguments.map(arg => evaluateExpression(arg, env));
+    if (!values.every(value => typeof value === "number" && Number.isSafeInteger(value)))
+      unsupported("concrete_math_integer_arguments_required");
+    const args = values as number[];
+    return method === "abs" ? Math.abs(args[0]!) : method === "min" ? Math.min(...args) : Math.max(...args);
+  }
   if (ts.isNumericLiteral(node)) return Number(node.text);
   if (node.kind === ts.SyntaxKind.TrueKeyword) return true;
   if (node.kind === ts.SyntaxKind.FalseKeyword) return false;
@@ -171,4 +195,16 @@ export function evaluateExpression(node: ts.Expression, env: Bindings): Scalar {
     if (op === ts.SyntaxKind.GreaterThanEqualsToken) return a >= b;
   }
   unsupported("concrete_unsupported_expression");
+}
+
+function mathMethod(node: ts.CallExpression, shadowed: boolean): "min" | "max" | "abs" {
+  const callee = node.expression;
+  if (!ts.isPropertyAccessExpression(callee) || !ts.isIdentifier(callee.expression) || callee.expression.text !== "Math")
+    unsupported("unsupported_expression:CallExpression");
+  if (shadowed || node.questionDotToken || node.typeArguments?.length || !ts.isPropertyAccessExpression(callee) ||
+      callee.questionDotToken || !ts.isIdentifier(callee.expression) || callee.expression.text !== "Math" ||
+      !["min", "max", "abs"].includes(callee.name.text) || node.arguments.some(ts.isSpreadElement) ||
+      node.arguments.length < 1 || node.arguments.length > 8 || callee.name.text === "abs" && node.arguments.length !== 1)
+    unsupported("unsupported_or_shadowed_math_call");
+  return callee.name.text as "min" | "max" | "abs";
 }

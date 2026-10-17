@@ -93,7 +93,7 @@ test(
 const unsupportedCases: [string, Partial<SymbolicRequest>, string][] = [
   [
     "calls",
-    { source: "function choose(x: number) { return Math.abs(x); }" },
+    { source: "function choose(x: number) { return custom(x); }" },
     "unsupported_expression",
   ],
   [

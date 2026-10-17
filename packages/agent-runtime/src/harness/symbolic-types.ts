@@ -20,6 +20,7 @@ export type SymbolicResult = {
   assertion: string;
   inputs: Record<string, SymbolicInput>;
   scope: string;
+  assumptions?: string[];
   validationAdmission: false;
   solver?: { executable: string; version: string; querySha256: string };
   witness?: {

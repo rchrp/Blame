@@ -1,4 +1,5 @@
 import ts from "typescript";
+import { symbolicMathAssumptions } from "./symbolic-math-assumptions.js";
 import {
   boundedSmt,
   compileExpression,
@@ -22,6 +23,7 @@ type FunctionNode =
   | ts.ArrowFunction
   | ts.FunctionExpression;
 export type SymbolicProgram = {
+  assumptions: string[];
   query: string;
   variables: { name: string; smt: string; type: "integer" | "boolean" }[];
   reproduce(inputs: Record<string, Scalar>): {
@@ -117,7 +119,9 @@ export function compileSymbolicProgram(
     unsupported("invalid_function_name");
   if (request.assertion.length > symbolicLimits.assertionCharacters)
     unsupported("assertion_size_limit");
-  const node = findFunction(parse(request.source), request.functionName);
+  const source = parse(request.source);
+  const node = findFunction(source, request.functionName);
+  const assumptions = symbolicMathAssumptions(source, node);
   if (
     !node.body ||
     node.typeParameters?.length ||
@@ -353,6 +357,7 @@ export function compileSymbolicProgram(
     unsupported("smt_size_limit");
   return {
     query,
+    assumptions,
     variables,
     reproduce: (inputs) => {
       const bindings: Bindings = new Map(Object.entries(inputs));

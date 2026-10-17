@@ -17,7 +17,7 @@ export type {
 const digest = (value: string) =>
   createHash("sha256").update(value).digest("hex");
 const scope =
-  "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.";
+  "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Only standard Math.min/max/abs calls are supported, under recorded assumptions. Other calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.";
 
 export async function analyzeSymbolicSource(
   request: SymbolicRequest,
@@ -30,6 +30,7 @@ export async function analyzeSymbolicSource(
     inputs: structuredClone(request.inputs),
     scope,
     validationAdmission: false as const,
+    assumptions: [] as string[],
   };
   const unknown = (
     reason: string,
@@ -58,6 +59,7 @@ export async function analyzeSymbolicSource(
         : "translation_failed",
     );
   }
+  base.assumptions = program.assumptions;
   const executable = request.solverPath ?? process.env.BLAME_Z3_PATH ?? "z3";
   const started = Date.now();
   const identity = await runSymbolicSolver(executable, {
