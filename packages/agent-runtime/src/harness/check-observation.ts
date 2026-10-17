@@ -23,7 +23,7 @@ export type CheckObservation = {
   scope: string;
   selection: "confirmed" | "unknown";
   freshness: "current" | "stale" | "unknown";
-  evidenceOrigin: "report" | "runner_output" | "node_events" | "none";
+  evidenceOrigin: "report" | "runner_output" | "node_events" | "vitest_report" | "none";
   /** Runner discovery failed; never a passing test or admitted selection. */
   selectionFailure?: "no_test_files";
   /** Typechecking diagnostics remain separate from runner case counts and admission. */

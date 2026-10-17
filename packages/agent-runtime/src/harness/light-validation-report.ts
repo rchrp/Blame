@@ -30,6 +30,7 @@ export function currentValidationReport(state: JournalCompletionSnapshot) {
     status: validation.status, terminal: validation.terminal,
     category: validation.category ?? null,
     reporting: validation.check ? checkReporting(validation.check, false) : null,
+    ...(validation.check?.evidence ? { evidence: validation.check.evidence } : {}),
     admission: validation.status === "passed" && validation.terminal === "passed" ? "admitted" : "unverified",
   }));
   return { sourceRevisionId: state.sourceRevisionId, scope: "current_source_only" as const,

@@ -1,3 +1,4 @@
+import { invocationTestReport } from "./invocation-test-report.js";
 import { relative } from "node:path";
 import { isTestInvocation, observeCheck, type CheckObservation } from "./check-observation.js";
 import { LightCommitService } from "./light-commit.js";
@@ -70,6 +71,8 @@ type ValidationMetadata = {
   taskId?: string;
   taskKind?: string;
   report?: ManagedTestReport;
+  invocationReport?: Awaited<ReturnType<typeof invocationTestReport>>;
+  invocationSnapshot?: WorkspaceSnapshot;
   invocationEnvironment?: Awaited<ReturnType<typeof environmentManifestEvidence>>;
 };
 
@@ -405,12 +408,15 @@ export class LightTaskRunner {
     const validation = metadata.taskId
       ? metadata
       : await this.commandValidation(command, directory, snapshot.files);
-    const invocationEnvironment = validation.report?.nodeEvents
+    const invocationReport = validation.taskKind === "test" && !validation.report
+      ? await invocationTestReport(this.files.root) : undefined;
+    const invocationEnvironment = validation.report?.nodeEvents || invocationReport
       ? await environmentManifestEvidence(this.files, snapshot.files) : undefined;
     const { result, after, changedPaths } = await observeCommand(this.files, this.journal,
       snapshot, () => {
         const handle = startWorkspaceCommand(executable, args, {
           cwd,
+          ...(invocationReport ? { environment: invocationReport.environment } : {}),
           signal: context.signal,
         });
         publishHandle(handle);
@@ -425,6 +431,7 @@ export class LightTaskRunner {
         cwd: directory,
         sourceRevisionId: snapshot.revision.source_revision_id,
         ...(invocationEnvironment ? { invocationEnvironment } : {}),
+        ...(invocationReport ? { invocationReport, invocationSnapshot: snapshot } : {}),
       },
       after,
       changedPaths,
@@ -479,6 +486,20 @@ export class LightTaskRunner {
           before: metadata.invocationEnvironment,
           after: await environmentManifestEvidence(this.files, snapshot.files),
         } } : {}) };
+      const observed = metadata.invocationSnapshot
+        ? await metadata.invocationReport?.read(metadata.invocationSnapshot, snapshot) : undefined;
+      if (observed) {
+        check.counts = observed.report.counts;
+        check.execution = check.counts.executed > 0 ? "observed" : "zero_tests";
+        check.outcome = result.interruption ? "unknown" : observed.report.setupFailed || check.counts.failed > 0
+          ? "failed" : result.exitCode === 0 && check.counts.executed > 0 ? "passed" : "unknown";
+        check.evidenceOrigin = "vitest_report";
+        check.evidence = { ...observed.evidence, command, cwd: metadata.cwd ?? ".",
+          invocationSourceRevisionId: metadata.sourceRevisionId,
+          completedSourceRevisionId: snapshot.revision.source_revision_id,
+          ...(metadata.invocationEnvironment ? { manifestEnvironment: { before: metadata.invocationEnvironment,
+            after: await environmentManifestEvidence(this.files, snapshot.files) } } : {}) };
+      }
       const failure = check.selectionFailure === "no_test_files"
         ? { category: "command" as const,
           recovery: `Vitest reported no selected test files from ${metadata.cwd ?? "."}. Resolve paths and filters from this working directory and inspect include/exclude settings, then rerun the intended selection. This failed invocation verifies no code; a different passing selection does not satisfy an explicitly required invocation.` }
