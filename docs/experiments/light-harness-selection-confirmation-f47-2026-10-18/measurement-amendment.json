@@ -18,7 +18,13 @@
       "field": "paired token sensitivity under missing usage",
       "defect": "Nullable input/output may otherwise coerce to zero when receipts exist but aggregates are unavailable. No such observed case at discovery.",
       "correction": "Publication requires finite input/output and reconciled tokens/cost for pair token deltas; unavailable values stay null."
+    },
+    {
+      "field": "selectedComparisons",
+      "defect": "The unbound publisher used independentFunctionalSuccess (hidden behavioral audit) under the selected comparison label.",
+      "correction": "Use selectedCheckSuccess for selectedComparisons and retain independentFunctionalSuccess as separately named functionalComparisons. Primary strict audited comparisons and gates unchanged."
     }
   ],
-  "scope": "Measurement repairs only. No model retry, source repair, changed runtime snapshot, altered task selection, omitted trial or changed acceptance gate."
+  "scope": "Measurement repairs only. No model retry, source repair, changed runtime snapshot, altered task selection, omitted trial or changed acceptance gate.",
+  "additionalRecordedAtUTC": "2026-10-17T22:25:34.298988+00:00"
 }
