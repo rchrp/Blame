@@ -19,6 +19,7 @@ for(const row of results.rows){
  assert.equal(row.officialRuntimeSuccess,raw.status==='succeeded');assert.deepEqual(row.exit,exit);assert.equal(row.durationMs,raw.durationMs??exit.durationMs);
  assert.equal(row.independentFunctionalSuccess,grade.protectedPaths.length===0&&grade.checks.every(c=>c.exitCode===0));
  assert.equal(row.selectedCheckSuccess,grade.protectedPaths.length===0&&grade.checks.filter(c=>c.name!=='feature').every(c=>c.exitCode===0)&&grade.deliveredChecks.find(c=>c.name==='delivered')?.exitCode===0);
+ const finishLedger=JSON.parse(read('tool-ledger.json'));assert.equal(row.observedFinishRejections,finishLedger.filter(t=>t.tool==='finish_task'&&t.output&&typeof t.output==='object'&&['blocked','failed'].includes(t.output.status)).length);assert.equal(row.successfulFinishStrings,finishLedger.filter(t=>t.tool==='finish_task'&&typeof t.output==='string').length);
  const events=read('events.jsonl').toString().trim().split('\n').filter(Boolean).map(JSON.parse).map(r=>r.event);
  let iteration=0;const ledger=[],starts=new Map();
  for(const [index,event]of events.entries()){

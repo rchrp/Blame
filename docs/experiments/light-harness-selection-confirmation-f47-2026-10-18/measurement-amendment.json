@@ -1,0 +1,24 @@
+{
+  "recordedAtUTC": "2026-10-17T22:23:19.491744+00:00",
+  "completedAtDiscovery": [
+    "1-request-correlation-reference",
+    "1-request-correlation-candidate",
+    "1-request-correlation-cline",
+    "1-csv-export-options-candidate"
+  ],
+  "frozenDriverChanged": false,
+  "acceptanceCriteriaChanged": false,
+  "issues": [
+    {
+      "field": "finishFailures",
+      "defect": "The frozen counter treats a successful string-valued finish_task response as non-ok. Raw values retained; they do not count actual rejections.",
+      "correction": "Unbound publisher/independent verifier derive observedFinishRejections only from explicit object status blocked/failed; successfulFinishStrings shown separately."
+    },
+    {
+      "field": "paired token sensitivity under missing usage",
+      "defect": "Nullable input/output may otherwise coerce to zero when receipts exist but aggregates are unavailable. No such observed case at discovery.",
+      "correction": "Publication requires finite input/output and reconciled tokens/cost for pair token deltas; unavailable values stay null."
+    }
+  ],
+  "scope": "Measurement repairs only. No model retry, source repair, changed runtime snapshot, altered task selection, omitted trial or changed acceptance gate."
+}
