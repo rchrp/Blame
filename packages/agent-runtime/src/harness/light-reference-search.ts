@@ -15,6 +15,7 @@ import {
   referenceFootprintIsCurrent,
 } from "./semantic-reference-client.js";
 import type { WorkspaceFiles } from "./workspace-files.js";
+import { referenceDeclarationCandidates } from "./light-reference-candidates.js";
 
 type Fallback = { fallback: string; lexicalQuery: string };
 
@@ -27,21 +28,23 @@ export class LightReferenceSearch {
     this.aliases = aliases;
   }
 
-  recovery(input: LightSearchCodeInput, data: Record<string, unknown>, reason: string) {
+  async recovery(input: LightSearchCodeInput, reason: string,
+    paths: string[], revision: string, signal?: AbortSignal) {
     const guidance = "Lexical candidates only. For configured JS/TS semantic references, query a symbol sN alias or path#qualifiedName with mode references. Read before editing.";
     if (reason !== "symbol_target_required") return { guidance };
-    const candidates = new Map<string, LightSearchCodeInput>();
-    for (const result of Array.isArray(data.results) ? data.results : []) {
-      const alias = result && typeof result === "object" && "alias" in result ? this.aliases.get(String(result.alias)) : undefined;
-      if (alias?.kind !== "symbol" ||
-          ![alias.qualifiedName, alias.qualifiedName.split(".").at(-1)].includes(input.query)) continue;
-      const query = `${alias.path}#${alias.qualifiedName}`;
-      candidates.set(query, { query, mode: "references", ...(input.scope ? { scope: input.scope } : {}) });
-    }
+    const found = await referenceDeclarationCandidates(this.files, input.query, paths, revision, signal);
+    const declarations = found.candidates.map(({ path, content, symbol, qualifiedUnique }) => {
+      const { alias, materialized } = this.aliases.registerSymbol(path, content, symbol, revision);
+      return { ...searchSymbolResult(alias, path, materialized, "exact_declaration_candidate"),
+        target: qualifiedUnique ? `${path}#${symbol.qualified_name}` : alias };
+    });
     return {
-      nextSearches: candidates.size ? [...candidates.values()].slice(0, 4)
+      declarationDiscovery: found.discovery,
+      declarationCandidates: declarations,
+      nextSearches: declarations.length ? declarations.map(({ target }) =>
+        ({ query: target, mode: "references", ...(input.scope ? { scope: input.scope } : {}) }))
         : [{ query: input.query, mode: "symbol", ...(input.scope ? { scope: input.scope } : {}) }],
-      guidance: guidance + " Choose the intended declaration before following nextSearches; discovery is bounded and not exhaustive. No identity was selected and no edit coverage was granted.",
+      guidance: guidance + " Declaration candidates are exact syntax matches, not compiler-resolved references. Choose the intended declaration before following nextSearches; discovery is bounded and not exhaustive. No identity was selected and no edit coverage was granted.",
     };
   }
 

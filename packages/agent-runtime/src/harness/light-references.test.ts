@@ -4,7 +4,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { LightWorkspace } from "./light-workspace.js";
+import { LightAliasRegistry } from "./light-aliases.js";
+import { LightReferenceSearch } from "./light-reference-search.js";
 import { sha256 } from "./light-identity.js";
+import { WorkspaceFiles } from "./workspace-files.js";
 import {
   querySemanticReferences,
   referenceFootprintIsCurrent,
@@ -396,5 +399,178 @@ test("reference worker has an outer timeout and cancellation releases it", async
     const pending = querySemanticReferences(request, controller.signal);
     controller.abort(new Error("cancelled during dispatch"));
     await assert.rejects(pending, /cancelled during/u);
+  });
+});
+
+type DeclarationCandidate = { alias: string; target: string; path: string; qualifiedName: string; signature: string };
+const declarations = (value: Record<string, unknown>) => value.declarationCandidates as DeclarationCandidate[];
+const discovery = (value: Record<string, unknown>) => value.declarationDiscovery as {
+  status: string; limited: boolean; visitedFiles: number; readBytes: number; skippedFiles: number;
+};
+
+test("bare references discover exact declarations beyond saturated lexical callers without choosing one", async () => {
+  await fixture(async (workspace, root) => {
+    await writeFile(join(root, "a.ts"), 'import { calculate } from "./original.js";\n' +
+      Array.from({ length: 10 }, (_, index) => `export function caller${index}() { return calculate(${index}); }`).join("\n"));
+    const result = data(await references(workspace, "calculate"));
+    assert.equal(result.engine, "lexical_fallback");
+    assert.equal(result.semanticFallback, "symbol_target_required");
+    assert.equal((result.results as Array<{ path: string }>).some(hit => hit.path === "original.ts"), false);
+    assert.deepEqual(declarations(result).map(hit => [hit.path, hit.qualifiedName]),
+      [["original.ts", "calculate"], ["unrelated.ts", "calculate"]]);
+    assert.equal(discovery(result).status, "current");
+    assert.equal(result.target, undefined);
+    assert.match(String(result.guidance), /not compiler-resolved references.*Choose the intended declaration/u);
+    const next = result.nextSearches as Array<{ query: string; mode: "references" }>;
+    assert.deepEqual(next.map(search => search.query), declarations(result).map(hit => hit.target));
+    assert.equal(data(await workspace.searchCode(next[0]!)).engine, "typescript_language_service");
+  });
+});
+
+test("declaration candidates match case-sensitive exact names, including qualified methods", async () => {
+  await fixture(async (workspace, root) => {
+    await writeFile(join(root, "a.ts"), "export function Calculate() {}\nexport function calculateLong() {}\n" +
+      "export class Box { calculate() {} calculateLong() {} }\n");
+    const result = data(await references(workspace, "calculate"));
+    assert.deepEqual(declarations(result).map(hit => hit.qualifiedName), ["Box.calculate", "calculate", "calculate"]);
+    const qualified = data(await references(workspace, "Box.calculate"));
+    assert.deepEqual(declarations(qualified).map(hit => hit.qualifiedName), ["Box.calculate"]);
+  });
+});
+
+test("declaration recovery obeys literal and array scopes and preserves them on explicit next searches", async () => {
+  await fixture(async (workspace) => {
+    const none = data(await references(workspace, "calculate", "consumer.ts"));
+    assert.deepEqual(declarations(none), []);
+    const scoped = data(await workspace.searchCode({ query: "calculate", mode: "references",
+      scope: ["original.ts", "unrelated.ts"] }));
+    assert.deepEqual(declarations(scoped).map(hit => hit.path), ["original.ts", "unrelated.ts"]);
+    for (const next of scoped.nextSearches as Array<{ scope: string[] }>)
+      assert.deepEqual(next.scope, ["original.ts", "unrelated.ts"]);
+  });
+});
+
+test("homonymous candidate headers are capped without collapsing declarations into one identity", async () => {
+  await fixture(async (workspace, root) => {
+    for (let index = 0; index < 6; index++)
+      await writeFile(join(root, `a-${index}.ts`), `export function calculate(n: number) { return n + ${index}; }\n`);
+    const result = data(await references(workspace, "calculate"));
+    assert.equal(declarations(result).length, 4);
+    assert.equal(new Set(declarations(result).map(hit => hit.alias)).size, 4);
+    assert.equal(discovery(result).limited, true);
+    assert.equal((result.nextSearches as unknown[]).length, 4);
+    assert.equal(declarations(result).some(hit => hit.path === "original.ts"), false);
+    assert.deepEqual(declarations(data(await references(workspace, "calculate", "original.ts"))).map(hit => hit.path), ["original.ts"]);
+  });
+});
+
+test("overload declarations use distinct aliases instead of ambiguous qualified next searches", async () => {
+  await fixture(async (workspace, root) => {
+    await writeFile(join(root, "overload.ts"), "export interface Reader {\n" +
+      "overloaded(n: number): number;\noverloaded(n: string): string;\n}\n");
+    const result = data(await references(workspace, "overloaded", "overload.ts"));
+    assert.equal(declarations(result).length, 2);
+    assert.equal(new Set(declarations(result).map(hit => hit.alias)).size, 2);
+    for (const candidate of declarations(result)) assert.equal(candidate.target, candidate.alias);
+    for (const next of result.nextSearches as Array<{ query: string }>) assert.match(next.query, /^s\d+$/u);
+    const first = declarations(result)[0]!, second = declarations(result)[1]!;
+    assert.match(JSON.stringify(data(await workspace.readCode({ target: first.alias, view: "symbol" }, {}))), /n: number/u);
+    assert.match(JSON.stringify(data(await workspace.readCode({ target: second.alias, view: "symbol" }, {}))), /n: string/u);
+    const repeated = declarations(data(await references(workspace, "overloaded", "overload.ts")));
+    assert.deepEqual(repeated.map(hit => hit.alias), [first.alias, second.alias]);
+    await writeFile(join(root, "overload.ts"), "// shifted\nexport interface Reader {\n" +
+      "overloaded(n: number): number;\noverloaded(n: string): string;\n}\n");
+    assert.equal((await workspace.readCode({ target: first.alias, view: "symbol" }, {})).status, "blocked");
+    const refreshed = declarations(data(await references(workspace, "overloaded", "overload.ts")));
+    assert.equal(new Set(refreshed.map(hit => hit.alias)).size, 2);
+    assert.ok(refreshed.every(hit => hit.alias !== first.alias && hit.alias !== second.alias));
+  });
+});
+
+test("a unique declaration retains its reusable alias across unrelated source shifts", async () => {
+  await fixture(async (workspace, root) => {
+    const original = declarations(data(await references(workspace, "calculate", "original.ts")))[0]!;
+    await writeFile(join(root, "original.ts"), "// shifted\n" + source);
+    const refreshed = declarations(data(await references(workspace, "calculate", "original.ts")))[0]!;
+    assert.equal(refreshed.alias, original.alias);
+    assert.match(JSON.stringify(data(await workspace.readCode({ target: original.alias, view: "symbol" }, {}))), /n \+ 1/u);
+  });
+});
+
+test("declaration file and byte budgets remain visible and explicit scopes recover later targets", async () => {
+  await fixture(async (workspace, root) => {
+    for (let index = 0; index < 64; index++)
+      await writeFile(join(root, `a-${String(index).padStart(2, "0")}.ts`), "export {};\n");
+    await writeFile(join(root, "z.ts"), "export function beyond() {}\n");
+    const bounded = data(await references(workspace, "beyond"));
+    assert.deepEqual(declarations(bounded), []);
+    assert.equal(discovery(bounded).visitedFiles, 64);
+    assert.equal(discovery(bounded).limited, true);
+    assert.equal(declarations(data(await references(workspace, "beyond", "z.ts")))[0]?.qualifiedName, "beyond");
+    for (let index = 0; index < 5; index++)
+      await writeFile(join(root, `a-${String(index).padStart(2, "0")}.ts`), "//" + " ".repeat(230 * 1024) + "\n");
+    const bytes = data(await references(workspace, "beyond"));
+    assert.deepEqual(declarations(bytes), []);
+    assert.equal(discovery(bytes).limited, true);
+    assert.ok(discovery(bytes).readBytes <= 1024 * 1024);
+    assert.equal(discovery(bytes).visitedFiles, 5);
+  });
+});
+
+test("oversized and malformed JS/TS declarations are omitted with incomplete discovery", async () => {
+  await fixture(async (workspace, root) => {
+    await writeFile(join(root, "a-large.ts"), source + "//" + " ".repeat(256 * 1024));
+    await writeFile(join(root, "b-invalid.ts"), "export function calculate(n: number { return n; }\n");
+    const result = data(await references(workspace, "calculate"));
+    assert.deepEqual(declarations(result).map(hit => hit.path), ["original.ts", "unrelated.ts"]);
+    assert.equal(discovery(result).skippedFiles, 2);
+    assert.equal(discovery(result).limited, true);
+  });
+});
+
+test("unsupported languages and non-identifier queries preserve lexical fallback without false compiler candidates", async () => {
+  await fixture(async (workspace, root) => {
+    await writeFile(join(root, "sample.py"), "def calculate(n):\n    return n + 1\n");
+    const unsupported = data(await references(workspace, "calculate", "sample.py"));
+    assert.equal(unsupported.engine, "lexical_fallback");
+    assert.deepEqual(declarations(unsupported), []);
+    assert.equal(discovery(unsupported).visitedFiles, 0);
+    const text = data(await references(workspace, "calculate n"));
+    assert.deepEqual(declarations(text), []);
+    assert.equal(discovery(text).status, "unsupported_query");
+  });
+});
+
+test("declaration discovery detects concurrent changes before registering candidate aliases", async () => {
+  await fixture(async (_workspace, root) => {
+    const workspaceFiles = new WorkspaceFiles(root);
+    const snapshot = await workspaceFiles.snapshot();
+    const originalSnapshot = workspaceFiles.snapshot.bind(workspaceFiles);
+    workspaceFiles.snapshot = async signal => {
+      await writeFile(join(root, "original.ts"), source.replace("calculate", "renamed"));
+      return originalSnapshot(signal);
+    };
+    const aliases = new LightAliasRegistry();
+    const result = await new LightReferenceSearch(workspaceFiles, aliases).recovery(
+      { query: "calculate", mode: "references" }, "symbol_target_required", snapshot.files,
+      snapshot.revision.source_revision_id);
+    assert.equal(result.declarationDiscovery?.status, "source_changed");
+    assert.deepEqual(result.declarationCandidates, []);
+    assert.equal(aliases.entries().length, 0);
+  });
+});
+
+test("bare candidate discovery never authorizes an unread edit or refreshes stale body coverage", async () => {
+  await fixture(async (workspace, root) => {
+    const candidate = declarations(data(await references(workspace, "calculate", "original.ts")))[0]!;
+    const edit = () => workspace.editCode({ operations: [{ kind: "symbol", target: candidate.alias,
+      action: "replace_body", content: "{ return n * 2; }" }] });
+    assert.equal((await edit()).status, "blocked");
+    await workspace.readCode({ target: candidate.alias, view: "symbol" }, {});
+    const changed = source.replace("n + 1", "n + 99");
+    await writeFile(join(root, "original.ts"), changed);
+    await references(workspace, "calculate", "original.ts");
+    assert.equal((await edit()).status, "blocked");
+    assert.equal(await readFile(join(root, "original.ts"), "utf8"), changed);
   });
 });

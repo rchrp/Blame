@@ -270,6 +270,11 @@ export class LightAliasRegistry {
   private reusableSymbol(path: string, content: Buffer, symbol: ParsedSymbol) {
     const exact = this.exactSymbol(path, content, symbol);
     if (exact) return exact;
+    // A same-name declaration is not a unique identity when overloads or other
+    // duplicate indexed declarations coexist in the current source.
+    const current = parseCode(path, content).symbols.filter(candidate =>
+      candidate.kind === symbol.kind && candidate.qualified_name === symbol.qualified_name);
+    if (current.length !== 1) return undefined;
     const matches = [...this.aliases.values()].filter(
       (entry): entry is SymbolAlias =>
         entry.kind === "symbol" &&

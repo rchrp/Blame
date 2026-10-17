@@ -249,7 +249,8 @@ export class LightWorkspace {
     );
     const labeled = semantic && result.status === "ok" ? { ...result, data: { ...recordValue(result.data),
       semanticFallback: semantic.fallback,
-      ...this.references.recovery(input, recordValue(result.data), semantic.fallback) } } : result;
+      ...await this.references.recovery(input, semantic.fallback,
+        candidates, snapshot.revision.source_revision_id, signal) } } : result;
     const expanded = await this.expandSearch(labeled, snapshot.revision.source_revision_id);
     return this.persistAliases(expanded);
   }
