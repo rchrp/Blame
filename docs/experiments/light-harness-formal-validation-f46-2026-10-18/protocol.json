@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "frozenBeforeRuntimeExecution": "2026-10-17T22:09:13.643720+00:00",
+  "question": "Can bounded independent constraints agree with actual Light admission states and detect dangerous concrete code mutations?",
+  "primary": "All 1536 prespecified baseline journal states match independent specification; every discrepancy retained and explained. Nine solver witnesses must discriminate baseline from actual scratch code mutants.",
+  "secondary": "18 journal latest-same-invocation controls and six non-mutating controls.",
+  "successMeaning": "Evidence about bounded admission invariants, not source correctness, end-to-end scheduling, agent task quality or efficiency.",
+  "dependency": "z3-solver==4.15.4.0",
+  "automaticScheduling": "Per-instance validateIfNeeded override returns fixed required invocations; actual before/after snapshots and admission predicates run.",
+  "mutationControls": [
+    "drop_revision",
+    "drop_file_hash",
+    "drop_task",
+    "drop_argv",
+    "drop_cwd",
+    "relax_test_evidence",
+    "no_files_as_pass",
+    "drop_required",
+    "drop_code_failure"
+  ],
+  "timing": "Separate scalar enumeration, solver check, runtime comparison and mutant fixture wall times; one execution, no solver speedup claim.",
+  "artifacts": {
+    "tools/terminal_bench/formal-validation-study/model.py": "e12554548dbd309d668ebf4211aa1fa33d40f667cbf6fe0de59792a4b51c8b6e",
+    "tools/terminal_bench/formal-validation-study/run.mjs": "2d208831732b47715d73e3c29bee50c480df76b50600718189682602682e200a",
+    "docs/experiments/light-harness-formal-validation-f46-2026-10-18/model.json": "da9cbb80f1cb4d4b305563d6f5eba176b3bb0c31ef85f8e357580b2c672ca443"
+  }
+}

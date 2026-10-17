@@ -1,0 +1,14 @@
+{
+  "artifacts": {
+    "protocol.json": "e083c1c777afacfb3abd196ab0b676c440642332e637c2c148ac72780ca59512",
+    "model.json": "da9cbb80f1cb4d4b305563d6f5eba176b3bb0c31ef85f8e357580b2c672ca443",
+    "runtime.json": "979a1690e4d1adf6c4c1a67eae584f2d9ba699ac2caa5e98f41261c9e6316e81"
+  },
+  "modelRequests": 0,
+  "boundedCases": 1536,
+  "boundedMismatches": 0,
+  "concreteMutationWitnesses": 9,
+  "deduplicationControls": 18,
+  "nonMutatingControls": 6,
+  "verification": "Artifact bindings and all stored baseline/mutation expectations match. Does not rerun Z3, reconstruct runtime fixtures or prove unbounded/source semantics."
+}
