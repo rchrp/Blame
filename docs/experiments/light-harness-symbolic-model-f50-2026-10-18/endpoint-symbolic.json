@@ -1,0 +1,2703 @@
+{
+  "schemaVersion": 1,
+  "phase": "F50-post-hoc-endpoint-symbolic",
+  "createdAtUTC": "2026-10-17T23:23:25.521Z",
+  "knownDiagnostic": true,
+  "selectedAfterCompletedTrials": 7,
+  "outcomesAvailableAtRegistration": 11,
+  "modelRequests": 0,
+  "agentSuccessesAdded": 0,
+  "protocolSha256": "3ec8e1711c4d7af77943c7204f8a319380502e167eeebdb0d062d8abc24e4f9c",
+  "resultsSha256": "8d93951bd3db6e617ab958b1fe70edd89e55b019c685772cadca5c20dcccf0e8",
+  "driverExit": {
+    "complete": true,
+    "sha256": "b9373bc186d00ab238209ecc2282bf735fd3b3e691688acb36df7fd82e42fbd4"
+  },
+  "scriptSha256": "91b33924a5b1757e417d071ca0fafb1d4dc722f463cebf8a2474f0f6214e7c88",
+  "runtimeSha256": "9c26dbc379a7296939ff56f3dbf2e846c7165e080ee6cdf5c3ca0ea104bc7b32",
+  "environment": {
+    "node": "v24.19.0",
+    "typescript": "5.9.3",
+    "tsx": "4.20.6",
+    "solver": {
+      "path": "/tmp/blame-z3-f46/bin/z3",
+      "resolvedPath": "/tmp/blame-z3-f46/bin/z3",
+      "sha256": "1bfaf5bbe81fd0b7800500ee08eef426aaabe18f8b9c4c4c32adffcd72f86cd5",
+      "version": "Z3 version 4.15.4 - 64 bit",
+      "package": "z3-solver==4.15.4.0",
+      "libraries": {
+        "/lib/x86_64-linux-gnu/libc.so.6": {
+          "realpath": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+          "sha256": "fa430b8f298f817a266046af84a77533185ad6fc4406c7d3787b5a0a0c207826"
+        },
+        "/lib/x86_64-linux-gnu/libgcc_s.so.1": {
+          "realpath": "/usr/lib/x86_64-linux-gnu/libgcc_s.so.1",
+          "sha256": "30c61ab012a4241bed033725a09b61f5fdd3bb7df95ee852d0b096520524c7af"
+        },
+        "/lib/x86_64-linux-gnu/libm.so.6": {
+          "realpath": "/usr/lib/x86_64-linux-gnu/libm.so.6",
+          "sha256": "6d567d53e895273ca14a1f9dc164fc6c8d39aed2f60aa46a733c2784228915f3"
+        },
+        "/lib/x86_64-linux-gnu/libpthread.so.0": {
+          "realpath": "/usr/lib/x86_64-linux-gnu/libpthread.so.0",
+          "sha256": "85e21f7dba0394411d00959176fd18b470e575b0b05f1f4f41e5636802ce0500"
+        },
+        "/lib/x86_64-linux-gnu/libstdc++.so.6": {
+          "realpath": "/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33",
+          "sha256": "972bb2a18b71140dab0240f8a1f68ab3fb1d56bcd4c4f824a91b70888faf5a00"
+        },
+        "/lib64/ld-linux-x86-64.so.2": {
+          "realpath": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+          "sha256": "438c546d8e8cc48496bf3a95f753051afd9db66a629a74e31a9ded71586b56e0"
+        }
+      },
+      "virtualDependencies": [
+        "linux-vdso.so.1 is kernel-provided and has no file hash; kernel release is recorded separately"
+      ]
+    },
+    "dependencyLockSha256": "c1b852288a2654d6e93492904f14d957e1da376605d805b8a400e91f4ef1023d"
+  },
+  "summary": {
+    "endpoints": 18,
+    "analyses": 24,
+    "counts": {
+      "bounded_no_counterexample": 18,
+      "unknown": 3,
+      "counterexample": 3
+    },
+    "isolatedJsWitnesses": 3,
+    "isolatedJsConfirmedViolations": 3
+  },
+  "partialSha256": "8f9764b7f07210ef727733ec1e6b7e2485b964d6323a84153f88439f52a08906",
+  "rows": [
+    {
+      "name": "1-credit-remainder-reference",
+      "repeat": 1,
+      "task": "credit-remainder",
+      "arm": "reference",
+      "patchSha256": "518cb82f414e34a0f6fa8765f4dd0272ee1e41554693c228622e6301ed592d25",
+      "traceSha256": "17cd16be9afeb96193cf732e1b6184a00d944b6cea3cfb35ffa13c2809e4df2d",
+      "sourceHashesBefore": {
+        ".gitignore": "404eb6ba5bedb0592262965fc1f4237514cb5aa6dbd1f153fe5b97298d94c229",
+        "README.md": "377566155e0691e179e4b04c60c4390326e567a4fe4d9885f0f5ad7ec9fe0cff",
+        "apps/policy/package.json": "387dd16ec2084452056f8540eb190bbf9c1cc008cd702fc4f567174b304d3544",
+        "apps/policy/src/debit.ts": "573bd7373e11c3716b893cd1d7ad9420aead300517c3d4c13ee5c1f0c9617fa2",
+        "apps/policy/src/original.test.ts": "797d8c7156157945c2c44d458e8407fe60f6524dcb9615b1a1b456b5de62dfaa",
+        "apps/policy/src/regression.test.ts": "78a1ae581a12ff6b2ebc4c1b3eccc4a7a333fe7c5b7e05b28a0801b64d7014bf",
+        "apps/policy/src/tiers.ts": "32decf7ed8ec0fea5f6b40d7105bbb79cc40875ce5447e497c814509453a57b8",
+        "apps/policy/src/windows.ts": "8eeffd740bcfc77e4f73bcf93c4feba1b61bb2251373051ec0a361801b1500d0",
+        "apps/policy/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "node_modules": "symlink:9e5e26540f81b6bc9b50b01e7abca03b765731697c07f83dcc7c224111c9145e",
+        "package.json": "5a67a5106b6fa3d8747d27cd829803c018288752502a9828448379c115cbe143",
+        "packages/credit/package.json": "47c064aade44b9a2f647154ffd8dbcf32e96b25ccb6fd180e9b7799216b15c87",
+        "packages/credit/src/allocation.ts": "31587c94b32eff1e48c6eee86c6c016a95d4b267295497b52ead584df708143b",
+        "packages/credit/src/index.ts": "a455aadf7edb5c8f9e14ef4c391fcfd6c6405760f559720bc2f91487ae32703e",
+        "packages/credit/src/original.test.ts": "e122a771bde40333c665251c352cc292c32d093384f839b9f9f6982e6f674725",
+        "packages/credit/src/remainder.ts": "24932b58c2e70a82a8e174e3dfeceb49a20867aad5f8345627bfdf099faee900",
+        "packages/credit/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/tiers/package.json": "0e5bbb62926a912fae22d49f33b206ba4e19cad21fcf5ddd991a5d6ebb3c8b82",
+        "packages/tiers/src/cost.ts": "17aeb3886823a8a790e9b1f7208d016b7ed0bdef5bb261d6d63d6008eb48b0c6",
+        "packages/tiers/src/index.ts": "3d0c83b245ceefd0875b273e7db1a3758d014e385a5eaa5969d4d19d59b83c7a",
+        "packages/tiers/src/lower.ts": "8e2d21de5dbf873bd9a711ac4bf75ca4966e5dfe9227da16ce00e16e7423488e",
+        "packages/tiers/src/original.test.ts": "355a0d34c81017e227dbe5c17e2571780587823b1076b14b3d4e2d81c45d588f",
+        "packages/tiers/src/upper.ts": "b3f7f02b83c8967f422f6cb269e0184383e0d6ccaa89f0a997e564bab64e93b7",
+        "packages/tiers/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/windows/package.json": "31d24d046de1ee2483c4782628eb4f2877d2e4da87ca33403b9f7430993683d4",
+        "packages/windows/src/index.ts": "7f7ce7e4fda95cddd52abc4b5b05a2700c7445dafee56a92cf05936887a44023",
+        "packages/windows/src/original.test.ts": "f726042c8a02f59d82f0c242b73b4b1edf26c9ae291b53a4db5d5908e2314aa1",
+        "packages/windows/src/overlap.ts": "7136f657e6e8749dcb5e3c056f86615fe06560267500b40c9415d8cd8a9a2aca",
+        "packages/windows/src/qualifies.ts": "29dfaa8c3b971052fd4cbd7a6304555ba1b1c98bddab9c0a3736b872733533ac",
+        "packages/windows/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "regression.vitest.mjs": "245ba5d1db06564aadad59dd885428af1ed2b7a65cdac0cd91cbbf2a70a2efc8",
+        "scripts/delivered.mjs": "0a7bdbcc7f4a031f59f6a68512614379f4d42bc41d1e61cdab79983ac4dccefb",
+        "tsconfig.json": "a98eb0b63ae75ffafea98b64f82792a8180e63e4adcfa61cf6f11a239957194e",
+        "vitest.config.mjs": "1a31ab6f3bf27762390df2b684feee79c7478d8407daacf7430160f2de246367"
+      },
+      "sourceHashesAfter": {
+        ".gitignore": "404eb6ba5bedb0592262965fc1f4237514cb5aa6dbd1f153fe5b97298d94c229",
+        "README.md": "377566155e0691e179e4b04c60c4390326e567a4fe4d9885f0f5ad7ec9fe0cff",
+        "apps/policy/package.json": "387dd16ec2084452056f8540eb190bbf9c1cc008cd702fc4f567174b304d3544",
+        "apps/policy/src/debit.ts": "573bd7373e11c3716b893cd1d7ad9420aead300517c3d4c13ee5c1f0c9617fa2",
+        "apps/policy/src/original.test.ts": "797d8c7156157945c2c44d458e8407fe60f6524dcb9615b1a1b456b5de62dfaa",
+        "apps/policy/src/regression.test.ts": "78a1ae581a12ff6b2ebc4c1b3eccc4a7a333fe7c5b7e05b28a0801b64d7014bf",
+        "apps/policy/src/tiers.ts": "32decf7ed8ec0fea5f6b40d7105bbb79cc40875ce5447e497c814509453a57b8",
+        "apps/policy/src/windows.ts": "8eeffd740bcfc77e4f73bcf93c4feba1b61bb2251373051ec0a361801b1500d0",
+        "apps/policy/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "node_modules": "symlink:9e5e26540f81b6bc9b50b01e7abca03b765731697c07f83dcc7c224111c9145e",
+        "package.json": "5a67a5106b6fa3d8747d27cd829803c018288752502a9828448379c115cbe143",
+        "packages/credit/package.json": "47c064aade44b9a2f647154ffd8dbcf32e96b25ccb6fd180e9b7799216b15c87",
+        "packages/credit/src/allocation.ts": "31587c94b32eff1e48c6eee86c6c016a95d4b267295497b52ead584df708143b",
+        "packages/credit/src/index.ts": "a455aadf7edb5c8f9e14ef4c391fcfd6c6405760f559720bc2f91487ae32703e",
+        "packages/credit/src/original.test.ts": "e122a771bde40333c665251c352cc292c32d093384f839b9f9f6982e6f674725",
+        "packages/credit/src/remainder.ts": "24932b58c2e70a82a8e174e3dfeceb49a20867aad5f8345627bfdf099faee900",
+        "packages/credit/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/tiers/package.json": "0e5bbb62926a912fae22d49f33b206ba4e19cad21fcf5ddd991a5d6ebb3c8b82",
+        "packages/tiers/src/cost.ts": "17aeb3886823a8a790e9b1f7208d016b7ed0bdef5bb261d6d63d6008eb48b0c6",
+        "packages/tiers/src/index.ts": "3d0c83b245ceefd0875b273e7db1a3758d014e385a5eaa5969d4d19d59b83c7a",
+        "packages/tiers/src/lower.ts": "8e2d21de5dbf873bd9a711ac4bf75ca4966e5dfe9227da16ce00e16e7423488e",
+        "packages/tiers/src/original.test.ts": "355a0d34c81017e227dbe5c17e2571780587823b1076b14b3d4e2d81c45d588f",
+        "packages/tiers/src/upper.ts": "b3f7f02b83c8967f422f6cb269e0184383e0d6ccaa89f0a997e564bab64e93b7",
+        "packages/tiers/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/windows/package.json": "31d24d046de1ee2483c4782628eb4f2877d2e4da87ca33403b9f7430993683d4",
+        "packages/windows/src/index.ts": "7f7ce7e4fda95cddd52abc4b5b05a2700c7445dafee56a92cf05936887a44023",
+        "packages/windows/src/original.test.ts": "f726042c8a02f59d82f0c242b73b4b1edf26c9ae291b53a4db5d5908e2314aa1",
+        "packages/windows/src/overlap.ts": "7136f657e6e8749dcb5e3c056f86615fe06560267500b40c9415d8cd8a9a2aca",
+        "packages/windows/src/qualifies.ts": "29dfaa8c3b971052fd4cbd7a6304555ba1b1c98bddab9c0a3736b872733533ac",
+        "packages/windows/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "regression.vitest.mjs": "245ba5d1db06564aadad59dd885428af1ed2b7a65cdac0cd91cbbf2a70a2efc8",
+        "scripts/delivered.mjs": "0a7bdbcc7f4a031f59f6a68512614379f4d42bc41d1e61cdab79983ac4dccefb",
+        "tsconfig.json": "a98eb0b63ae75ffafea98b64f82792a8180e63e4adcfa61cf6f11a239957194e",
+        "vitest.config.mjs": "1a31ab6f3bf27762390df2b684feee79c7478d8407daacf7430160f2de246367"
+      },
+      "sourceUnchanged": true,
+      "checksBeforeSha256": "06e49a3a419eb0628925d8222cb2c8a7e8260be25d1dc16a6a95530b341e01c8",
+      "checksAfterSha256": "06e49a3a419eb0628925d8222cb2c8a7e8260be25d1dc16a6a95530b341e01c8",
+      "checksUnchanged": true,
+      "observations": [
+        {
+          "id": "availableCredit",
+          "input": {
+            "kind": "analyze",
+            "target": "packages/credit/src/remainder.ts#availableCredit",
+            "inputs": {
+              "balance": {
+                "min": -3,
+                "max": 3
+              },
+              "reserved": {
+                "min": -3,
+                "max": 3
+              },
+              "limit": {
+                "min": -3,
+                "max": 3
+              }
+            },
+            "assertion": "result === (((limit > 0 ? limit : 0) - (balance > 0 ? balance : 0) - (reserved > 0 ? reserved : 0)) > 0 ? ((limit > 0 ? limit : 0) - (balance > 0 ? balance : 0) - (reserved > 0 ? reserved : 0)) : 0)",
+            "timeoutMs": 2500
+          },
+          "interpretation": "Direct isolated scalar contract: normalize every negative argument to zero and clamp the remainder to zero.",
+          "toolStatus": "ok",
+          "serializedResultSha256": "cd4084300e61f332939ab8d5c27aa62078654034f2117cf1a795623d3c75d151",
+          "serializedResultBytes": 1592,
+          "status": "bounded_no_counterexample",
+          "reason": "No violating input exists in the supplied finite safe integer/boolean domain under the supported isolated-function semantics.",
+          "sourceSha256": "24932b58c2e70a82a8e174e3dfeceb49a20867aad5f8345627bfdf099faee900",
+          "sourceRevisionId": "src_3a129aae9f9f74acfba5627fa7d263e3",
+          "target": "packages/credit/src/remainder.ts#availableCredit",
+          "validationAdmission": false,
+          "solver": {
+            "executable": "/tmp/blame-z3-f46/bin/z3",
+            "version": "Z3 version 4.15.4 - 64 bit",
+            "querySha256": "7e5b67074cb53418b07fe38cb9f7ed7d080514b21f7d17b26955969407522a40"
+          }
+        }
+      ]
+    },
+    {
+      "name": "1-credit-remainder-candidate",
+      "repeat": 1,
+      "task": "credit-remainder",
+      "arm": "candidate",
+      "patchSha256": "e84a2f839b7ca710b08e2f2fa4e1769ac93238d7f2954ef4fcd9568339ae9ce7",
+      "traceSha256": "accdec6a518b1d884654a7728a56a7682b387efadb570ded69b2b5556274efd6",
+      "sourceHashesBefore": {
+        ".gitignore": "404eb6ba5bedb0592262965fc1f4237514cb5aa6dbd1f153fe5b97298d94c229",
+        "README.md": "377566155e0691e179e4b04c60c4390326e567a4fe4d9885f0f5ad7ec9fe0cff",
+        "apps/policy/package.json": "387dd16ec2084452056f8540eb190bbf9c1cc008cd702fc4f567174b304d3544",
+        "apps/policy/src/debit.regression.test.ts": "f7d99e1823db356916f8ac14c628bfc86732c86a2835533d26573937c8ef8d19",
+        "apps/policy/src/debit.ts": "d45609ed773f0a9179096d73bac26f7758e64943f0af11c30726727d8da5a672",
+        "apps/policy/src/original.test.ts": "797d8c7156157945c2c44d458e8407fe60f6524dcb9615b1a1b456b5de62dfaa",
+        "apps/policy/src/tiers.ts": "32decf7ed8ec0fea5f6b40d7105bbb79cc40875ce5447e497c814509453a57b8",
+        "apps/policy/src/windows.ts": "8eeffd740bcfc77e4f73bcf93c4feba1b61bb2251373051ec0a361801b1500d0",
+        "apps/policy/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "node_modules": "symlink:9e5e26540f81b6bc9b50b01e7abca03b765731697c07f83dcc7c224111c9145e",
+        "package.json": "5a67a5106b6fa3d8747d27cd829803c018288752502a9828448379c115cbe143",
+        "packages/credit/package.json": "47c064aade44b9a2f647154ffd8dbcf32e96b25ccb6fd180e9b7799216b15c87",
+        "packages/credit/src/allocation.ts": "b038df0d51d29560ae13b43f3ab9b6485db64e1399c55e0dd6f6beea7c8cad7f",
+        "packages/credit/src/index.ts": "a455aadf7edb5c8f9e14ef4c391fcfd6c6405760f559720bc2f91487ae32703e",
+        "packages/credit/src/original.test.ts": "e122a771bde40333c665251c352cc292c32d093384f839b9f9f6982e6f674725",
+        "packages/credit/src/remainder.ts": "be7b7ec79348b7e1d7d697ad54cb58748e240d2e9f2ffd4664031faedc645cca",
+        "packages/credit/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/tiers/package.json": "0e5bbb62926a912fae22d49f33b206ba4e19cad21fcf5ddd991a5d6ebb3c8b82",
+        "packages/tiers/src/cost.ts": "17aeb3886823a8a790e9b1f7208d016b7ed0bdef5bb261d6d63d6008eb48b0c6",
+        "packages/tiers/src/index.ts": "3d0c83b245ceefd0875b273e7db1a3758d014e385a5eaa5969d4d19d59b83c7a",
+        "packages/tiers/src/lower.ts": "8e2d21de5dbf873bd9a711ac4bf75ca4966e5dfe9227da16ce00e16e7423488e",
+        "packages/tiers/src/original.test.ts": "355a0d34c81017e227dbe5c17e2571780587823b1076b14b3d4e2d81c45d588f",
+        "packages/tiers/src/upper.ts": "b3f7f02b83c8967f422f6cb269e0184383e0d6ccaa89f0a997e564bab64e93b7",
+        "packages/tiers/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/windows/package.json": "31d24d046de1ee2483c4782628eb4f2877d2e4da87ca33403b9f7430993683d4",
+        "packages/windows/src/index.ts": "7f7ce7e4fda95cddd52abc4b5b05a2700c7445dafee56a92cf05936887a44023",
+        "packages/windows/src/original.test.ts": "f726042c8a02f59d82f0c242b73b4b1edf26c9ae291b53a4db5d5908e2314aa1",
+        "packages/windows/src/overlap.ts": "7136f657e6e8749dcb5e3c056f86615fe06560267500b40c9415d8cd8a9a2aca",
+        "packages/windows/src/qualifies.ts": "29dfaa8c3b971052fd4cbd7a6304555ba1b1c98bddab9c0a3736b872733533ac",
+        "packages/windows/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "regression.vitest.mjs": "245ba5d1db06564aadad59dd885428af1ed2b7a65cdac0cd91cbbf2a70a2efc8",
+        "scripts/delivered.mjs": "0a7bdbcc7f4a031f59f6a68512614379f4d42bc41d1e61cdab79983ac4dccefb",
+        "tsconfig.json": "a98eb0b63ae75ffafea98b64f82792a8180e63e4adcfa61cf6f11a239957194e",
+        "vitest.config.mjs": "1a31ab6f3bf27762390df2b684feee79c7478d8407daacf7430160f2de246367"
+      },
+      "sourceHashesAfter": {
+        ".gitignore": "404eb6ba5bedb0592262965fc1f4237514cb5aa6dbd1f153fe5b97298d94c229",
+        "README.md": "377566155e0691e179e4b04c60c4390326e567a4fe4d9885f0f5ad7ec9fe0cff",
+        "apps/policy/package.json": "387dd16ec2084452056f8540eb190bbf9c1cc008cd702fc4f567174b304d3544",
+        "apps/policy/src/debit.regression.test.ts": "f7d99e1823db356916f8ac14c628bfc86732c86a2835533d26573937c8ef8d19",
+        "apps/policy/src/debit.ts": "d45609ed773f0a9179096d73bac26f7758e64943f0af11c30726727d8da5a672",
+        "apps/policy/src/original.test.ts": "797d8c7156157945c2c44d458e8407fe60f6524dcb9615b1a1b456b5de62dfaa",
+        "apps/policy/src/tiers.ts": "32decf7ed8ec0fea5f6b40d7105bbb79cc40875ce5447e497c814509453a57b8",
+        "apps/policy/src/windows.ts": "8eeffd740bcfc77e4f73bcf93c4feba1b61bb2251373051ec0a361801b1500d0",
+        "apps/policy/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "node_modules": "symlink:9e5e26540f81b6bc9b50b01e7abca03b765731697c07f83dcc7c224111c9145e",
+        "package.json": "5a67a5106b6fa3d8747d27cd829803c018288752502a9828448379c115cbe143",
+        "packages/credit/package.json": "47c064aade44b9a2f647154ffd8dbcf32e96b25ccb6fd180e9b7799216b15c87",
+        "packages/credit/src/allocation.ts": "b038df0d51d29560ae13b43f3ab9b6485db64e1399c55e0dd6f6beea7c8cad7f",
+        "packages/credit/src/index.ts": "a455aadf7edb5c8f9e14ef4c391fcfd6c6405760f559720bc2f91487ae32703e",
+        "packages/credit/src/original.test.ts": "e122a771bde40333c665251c352cc292c32d093384f839b9f9f6982e6f674725",
+        "packages/credit/src/remainder.ts": "be7b7ec79348b7e1d7d697ad54cb58748e240d2e9f2ffd4664031faedc645cca",
+        "packages/credit/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/tiers/package.json": "0e5bbb62926a912fae22d49f33b206ba4e19cad21fcf5ddd991a5d6ebb3c8b82",
+        "packages/tiers/src/cost.ts": "17aeb3886823a8a790e9b1f7208d016b7ed0bdef5bb261d6d63d6008eb48b0c6",
+        "packages/tiers/src/index.ts": "3d0c83b245ceefd0875b273e7db1a3758d014e385a5eaa5969d4d19d59b83c7a",
+        "packages/tiers/src/lower.ts": "8e2d21de5dbf873bd9a711ac4bf75ca4966e5dfe9227da16ce00e16e7423488e",
+        "packages/tiers/src/original.test.ts": "355a0d34c81017e227dbe5c17e2571780587823b1076b14b3d4e2d81c45d588f",
+        "packages/tiers/src/upper.ts": "b3f7f02b83c8967f422f6cb269e0184383e0d6ccaa89f0a997e564bab64e93b7",
+        "packages/tiers/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/windows/package.json": "31d24d046de1ee2483c4782628eb4f2877d2e4da87ca33403b9f7430993683d4",
+        "packages/windows/src/index.ts": "7f7ce7e4fda95cddd52abc4b5b05a2700c7445dafee56a92cf05936887a44023",
+        "packages/windows/src/original.test.ts": "f726042c8a02f59d82f0c242b73b4b1edf26c9ae291b53a4db5d5908e2314aa1",
+        "packages/windows/src/overlap.ts": "7136f657e6e8749dcb5e3c056f86615fe06560267500b40c9415d8cd8a9a2aca",
+        "packages/windows/src/qualifies.ts": "29dfaa8c3b971052fd4cbd7a6304555ba1b1c98bddab9c0a3736b872733533ac",
+        "packages/windows/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "regression.vitest.mjs": "245ba5d1db06564aadad59dd885428af1ed2b7a65cdac0cd91cbbf2a70a2efc8",
+        "scripts/delivered.mjs": "0a7bdbcc7f4a031f59f6a68512614379f4d42bc41d1e61cdab79983ac4dccefb",
+        "tsconfig.json": "a98eb0b63ae75ffafea98b64f82792a8180e63e4adcfa61cf6f11a239957194e",
+        "vitest.config.mjs": "1a31ab6f3bf27762390df2b684feee79c7478d8407daacf7430160f2de246367"
+      },
+      "sourceUnchanged": true,
+      "checksBeforeSha256": "9a2595539e3d7077f332a58d850aaf99864d95f003d9a37ad022756d4492993c",
+      "checksAfterSha256": "9a2595539e3d7077f332a58d850aaf99864d95f003d9a37ad022756d4492993c",
+      "checksUnchanged": true,
+      "observations": [
+        {
+          "id": "availableCredit",
+          "input": {
+            "kind": "analyze",
+            "target": "packages/credit/src/remainder.ts#availableCredit",
+            "inputs": {
+              "balance": {
+                "min": -3,
+                "max": 3
+              },
+              "reserved": {
+                "min": -3,
+                "max": 3
+              },
+              "limit": {
+                "min": -3,
+                "max": 3
+              }
+            },
+            "assertion": "result === (((limit > 0 ? limit : 0) - (balance > 0 ? balance : 0) - (reserved > 0 ? reserved : 0)) > 0 ? ((limit > 0 ? limit : 0) - (balance > 0 ? balance : 0) - (reserved > 0 ? reserved : 0)) : 0)",
+            "timeoutMs": 2500
+          },
+          "interpretation": "Direct isolated scalar contract: normalize every negative argument to zero and clamp the remainder to zero.",
+          "toolStatus": "ok",
+          "serializedResultSha256": "587a3f02110c73c6add8e875c2a5b04cd804f889249aed92f99d6ceb6defa3b4",
+          "serializedResultBytes": 1315,
+          "status": "unknown",
+          "reason": "unsupported_expression:CallExpression",
+          "sourceSha256": "be7b7ec79348b7e1d7d697ad54cb58748e240d2e9f2ffd4664031faedc645cca",
+          "sourceRevisionId": "src_900f6db66d1db91bbec73f12a46fa323",
+          "target": "packages/credit/src/remainder.ts#availableCredit",
+          "validationAdmission": false
+        }
+      ]
+    },
+    {
+      "name": "1-credit-remainder-cline",
+      "repeat": 1,
+      "task": "credit-remainder",
+      "arm": "cline",
+      "patchSha256": "ba861bc4d16fe5b43d79c23fa5de952ede1d920553105194f3f3cfa79150da70",
+      "traceSha256": "d25b999c74b5e18c266a46d0d591f81b835c41c53919db2c3f47fd2ec1cd3ce4",
+      "sourceHashesBefore": {
+        ".gitignore": "404eb6ba5bedb0592262965fc1f4237514cb5aa6dbd1f153fe5b97298d94c229",
+        "README.md": "377566155e0691e179e4b04c60c4390326e567a4fe4d9885f0f5ad7ec9fe0cff",
+        "apps/policy/package.json": "387dd16ec2084452056f8540eb190bbf9c1cc008cd702fc4f567174b304d3544",
+        "apps/policy/src/debit-regression.test.ts": "64733eaf6d007572e725a626cd05a72a8aaf3d05436b6f16341d6562d078129c",
+        "apps/policy/src/debit.ts": "acc30de1bc10aafe68db828cf32136bc18187153380a94a72609b1a1cea3c537",
+        "apps/policy/src/original.test.ts": "797d8c7156157945c2c44d458e8407fe60f6524dcb9615b1a1b456b5de62dfaa",
+        "apps/policy/src/tiers.ts": "32decf7ed8ec0fea5f6b40d7105bbb79cc40875ce5447e497c814509453a57b8",
+        "apps/policy/src/windows.ts": "8eeffd740bcfc77e4f73bcf93c4feba1b61bb2251373051ec0a361801b1500d0",
+        "apps/policy/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "node_modules": "symlink:9e5e26540f81b6bc9b50b01e7abca03b765731697c07f83dcc7c224111c9145e",
+        "package.json": "5a67a5106b6fa3d8747d27cd829803c018288752502a9828448379c115cbe143",
+        "packages/credit/package.json": "47c064aade44b9a2f647154ffd8dbcf32e96b25ccb6fd180e9b7799216b15c87",
+        "packages/credit/src/allocation.ts": "313165137a26911a4ae63b69ec20ed774bf6c24ecdd18908a4b19fd543c77be1",
+        "packages/credit/src/index.ts": "a455aadf7edb5c8f9e14ef4c391fcfd6c6405760f559720bc2f91487ae32703e",
+        "packages/credit/src/original.test.ts": "e122a771bde40333c665251c352cc292c32d093384f839b9f9f6982e6f674725",
+        "packages/credit/src/remainder.ts": "24932b58c2e70a82a8e174e3dfeceb49a20867aad5f8345627bfdf099faee900",
+        "packages/credit/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/tiers/package.json": "0e5bbb62926a912fae22d49f33b206ba4e19cad21fcf5ddd991a5d6ebb3c8b82",
+        "packages/tiers/src/cost.ts": "17aeb3886823a8a790e9b1f7208d016b7ed0bdef5bb261d6d63d6008eb48b0c6",
+        "packages/tiers/src/index.ts": "3d0c83b245ceefd0875b273e7db1a3758d014e385a5eaa5969d4d19d59b83c7a",
+        "packages/tiers/src/lower.ts": "8e2d21de5dbf873bd9a711ac4bf75ca4966e5dfe9227da16ce00e16e7423488e",
+        "packages/tiers/src/original.test.ts": "355a0d34c81017e227dbe5c17e2571780587823b1076b14b3d4e2d81c45d588f",
+        "packages/tiers/src/upper.ts": "b3f7f02b83c8967f422f6cb269e0184383e0d6ccaa89f0a997e564bab64e93b7",
+        "packages/tiers/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/windows/package.json": "31d24d046de1ee2483c4782628eb4f2877d2e4da87ca33403b9f7430993683d4",
+        "packages/windows/src/index.ts": "7f7ce7e4fda95cddd52abc4b5b05a2700c7445dafee56a92cf05936887a44023",
+        "packages/windows/src/original.test.ts": "f726042c8a02f59d82f0c242b73b4b1edf26c9ae291b53a4db5d5908e2314aa1",
+        "packages/windows/src/overlap.ts": "7136f657e6e8749dcb5e3c056f86615fe06560267500b40c9415d8cd8a9a2aca",
+        "packages/windows/src/qualifies.ts": "29dfaa8c3b971052fd4cbd7a6304555ba1b1c98bddab9c0a3736b872733533ac",
+        "packages/windows/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "regression.vitest.mjs": "245ba5d1db06564aadad59dd885428af1ed2b7a65cdac0cd91cbbf2a70a2efc8",
+        "scripts/delivered.mjs": "0a7bdbcc7f4a031f59f6a68512614379f4d42bc41d1e61cdab79983ac4dccefb",
+        "tsconfig.json": "a98eb0b63ae75ffafea98b64f82792a8180e63e4adcfa61cf6f11a239957194e",
+        "vitest.config.mjs": "1a31ab6f3bf27762390df2b684feee79c7478d8407daacf7430160f2de246367"
+      },
+      "sourceHashesAfter": {
+        ".gitignore": "404eb6ba5bedb0592262965fc1f4237514cb5aa6dbd1f153fe5b97298d94c229",
+        "README.md": "377566155e0691e179e4b04c60c4390326e567a4fe4d9885f0f5ad7ec9fe0cff",
+        "apps/policy/package.json": "387dd16ec2084452056f8540eb190bbf9c1cc008cd702fc4f567174b304d3544",
+        "apps/policy/src/debit-regression.test.ts": "64733eaf6d007572e725a626cd05a72a8aaf3d05436b6f16341d6562d078129c",
+        "apps/policy/src/debit.ts": "acc30de1bc10aafe68db828cf32136bc18187153380a94a72609b1a1cea3c537",
+        "apps/policy/src/original.test.ts": "797d8c7156157945c2c44d458e8407fe60f6524dcb9615b1a1b456b5de62dfaa",
+        "apps/policy/src/tiers.ts": "32decf7ed8ec0fea5f6b40d7105bbb79cc40875ce5447e497c814509453a57b8",
+        "apps/policy/src/windows.ts": "8eeffd740bcfc77e4f73bcf93c4feba1b61bb2251373051ec0a361801b1500d0",
+        "apps/policy/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "node_modules": "symlink:9e5e26540f81b6bc9b50b01e7abca03b765731697c07f83dcc7c224111c9145e",
+        "package.json": "5a67a5106b6fa3d8747d27cd829803c018288752502a9828448379c115cbe143",
+        "packages/credit/package.json": "47c064aade44b9a2f647154ffd8dbcf32e96b25ccb6fd180e9b7799216b15c87",
+        "packages/credit/src/allocation.ts": "313165137a26911a4ae63b69ec20ed774bf6c24ecdd18908a4b19fd543c77be1",
+        "packages/credit/src/index.ts": "a455aadf7edb5c8f9e14ef4c391fcfd6c6405760f559720bc2f91487ae32703e",
+        "packages/credit/src/original.test.ts": "e122a771bde40333c665251c352cc292c32d093384f839b9f9f6982e6f674725",
+        "packages/credit/src/remainder.ts": "24932b58c2e70a82a8e174e3dfeceb49a20867aad5f8345627bfdf099faee900",
+        "packages/credit/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/tiers/package.json": "0e5bbb62926a912fae22d49f33b206ba4e19cad21fcf5ddd991a5d6ebb3c8b82",
+        "packages/tiers/src/cost.ts": "17aeb3886823a8a790e9b1f7208d016b7ed0bdef5bb261d6d63d6008eb48b0c6",
+        "packages/tiers/src/index.ts": "3d0c83b245ceefd0875b273e7db1a3758d014e385a5eaa5969d4d19d59b83c7a",
+        "packages/tiers/src/lower.ts": "8e2d21de5dbf873bd9a711ac4bf75ca4966e5dfe9227da16ce00e16e7423488e",
+        "packages/tiers/src/original.test.ts": "355a0d34c81017e227dbe5c17e2571780587823b1076b14b3d4e2d81c45d588f",
+        "packages/tiers/src/upper.ts": "b3f7f02b83c8967f422f6cb269e0184383e0d6ccaa89f0a997e564bab64e93b7",
+        "packages/tiers/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/windows/package.json": "31d24d046de1ee2483c4782628eb4f2877d2e4da87ca33403b9f7430993683d4",
+        "packages/windows/src/index.ts": "7f7ce7e4fda95cddd52abc4b5b05a2700c7445dafee56a92cf05936887a44023",
+        "packages/windows/src/original.test.ts": "f726042c8a02f59d82f0c242b73b4b1edf26c9ae291b53a4db5d5908e2314aa1",
+        "packages/windows/src/overlap.ts": "7136f657e6e8749dcb5e3c056f86615fe06560267500b40c9415d8cd8a9a2aca",
+        "packages/windows/src/qualifies.ts": "29dfaa8c3b971052fd4cbd7a6304555ba1b1c98bddab9c0a3736b872733533ac",
+        "packages/windows/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "regression.vitest.mjs": "245ba5d1db06564aadad59dd885428af1ed2b7a65cdac0cd91cbbf2a70a2efc8",
+        "scripts/delivered.mjs": "0a7bdbcc7f4a031f59f6a68512614379f4d42bc41d1e61cdab79983ac4dccefb",
+        "tsconfig.json": "a98eb0b63ae75ffafea98b64f82792a8180e63e4adcfa61cf6f11a239957194e",
+        "vitest.config.mjs": "1a31ab6f3bf27762390df2b684feee79c7478d8407daacf7430160f2de246367"
+      },
+      "sourceUnchanged": true,
+      "checksBeforeSha256": "249612941ae6a88e6de24c34c0348f04de57681071f9b0ba287a9424c216c84c",
+      "checksAfterSha256": "249612941ae6a88e6de24c34c0348f04de57681071f9b0ba287a9424c216c84c",
+      "checksUnchanged": true,
+      "observations": [
+        {
+          "id": "availableCredit",
+          "input": {
+            "kind": "analyze",
+            "target": "packages/credit/src/remainder.ts#availableCredit",
+            "inputs": {
+              "balance": {
+                "min": -3,
+                "max": 3
+              },
+              "reserved": {
+                "min": -3,
+                "max": 3
+              },
+              "limit": {
+                "min": -3,
+                "max": 3
+              }
+            },
+            "assertion": "result === (((limit > 0 ? limit : 0) - (balance > 0 ? balance : 0) - (reserved > 0 ? reserved : 0)) > 0 ? ((limit > 0 ? limit : 0) - (balance > 0 ? balance : 0) - (reserved > 0 ? reserved : 0)) : 0)",
+            "timeoutMs": 2500
+          },
+          "interpretation": "Direct isolated scalar contract: normalize every negative argument to zero and clamp the remainder to zero.",
+          "toolStatus": "ok",
+          "serializedResultSha256": "7a9d199e0be0e56a78f052b44d433e06436465a145e814afa30086312bad63fb",
+          "serializedResultBytes": 1592,
+          "status": "bounded_no_counterexample",
+          "reason": "No violating input exists in the supplied finite safe integer/boolean domain under the supported isolated-function semantics.",
+          "sourceSha256": "24932b58c2e70a82a8e174e3dfeceb49a20867aad5f8345627bfdf099faee900",
+          "sourceRevisionId": "src_617230a38d80a34d5adbdcd9eee24995",
+          "target": "packages/credit/src/remainder.ts#availableCredit",
+          "validationAdmission": false,
+          "solver": {
+            "executable": "/tmp/blame-z3-f46/bin/z3",
+            "version": "Z3 version 4.15.4 - 64 bit",
+            "querySha256": "7e5b67074cb53418b07fe38cb9f7ed7d080514b21f7d17b26955969407522a40"
+          }
+        }
+      ]
+    },
+    {
+      "name": "1-inclusive-tier-allocation-candidate",
+      "repeat": 1,
+      "task": "inclusive-tier-allocation",
+      "arm": "candidate",
+      "patchSha256": "245b319d59182e3096d67acd08a8a8fbacd8618b0350d46f8bb0023dbadc2e53",
+      "traceSha256": "d418aa1a17aa145b2e2afec48c6d13a6812317dddf3d2728571c02ce71ff2300",
+      "sourceHashesBefore": {
+        ".gitignore": "404eb6ba5bedb0592262965fc1f4237514cb5aa6dbd1f153fe5b97298d94c229",
+        "README.md": "377566155e0691e179e4b04c60c4390326e567a4fe4d9885f0f5ad7ec9fe0cff",
+        "apps/policy/package.json": "387dd16ec2084452056f8540eb190bbf9c1cc008cd702fc4f567174b304d3544",
+        "apps/policy/src/debit.ts": "6016ca57a4ad305f86e7cf8c2f4ff70e1e86a6cbf6ffe24a6792f4a65ccf39a0",
+        "apps/policy/src/inclusive-tier.test.ts": "6a206310bd6482ea71a8d91e37a303d6e25429e7e20ad5487c743ec091985182",
+        "apps/policy/src/original.test.ts": "797d8c7156157945c2c44d458e8407fe60f6524dcb9615b1a1b456b5de62dfaa",
+        "apps/policy/src/tiers.ts": "fec7e81819fbce75c51701367207f3f930765787955ce4260cc757ad1d733d62",
+        "apps/policy/src/windows.ts": "8eeffd740bcfc77e4f73bcf93c4feba1b61bb2251373051ec0a361801b1500d0",
+        "apps/policy/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "node_modules": "symlink:9e5e26540f81b6bc9b50b01e7abca03b765731697c07f83dcc7c224111c9145e",
+        "package.json": "5a67a5106b6fa3d8747d27cd829803c018288752502a9828448379c115cbe143",
+        "packages/credit/package.json": "47c064aade44b9a2f647154ffd8dbcf32e96b25ccb6fd180e9b7799216b15c87",
+        "packages/credit/src/allocation.ts": "159269c5ccedeb221118946d4219fa483e39ba9b520a09b6f39b93364ac042b5",
+        "packages/credit/src/index.ts": "a455aadf7edb5c8f9e14ef4c391fcfd6c6405760f559720bc2f91487ae32703e",
+        "packages/credit/src/original.test.ts": "e122a771bde40333c665251c352cc292c32d093384f839b9f9f6982e6f674725",
+        "packages/credit/src/remainder.ts": "ff57e3bd5db747be7ce6e9dd25b37dc9bf40303beb89b98c601d305581385ccb",
+        "packages/credit/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/tiers/package.json": "0e5bbb62926a912fae22d49f33b206ba4e19cad21fcf5ddd991a5d6ebb3c8b82",
+        "packages/tiers/src/cost.ts": "0a08771cd740a0c59943659aeb7315a8fa1d83b28f285ff562c0ad85db63d490",
+        "packages/tiers/src/index.ts": "3d0c83b245ceefd0875b273e7db1a3758d014e385a5eaa5969d4d19d59b83c7a",
+        "packages/tiers/src/lower.ts": "7835fd03d8c8fcb68a8ae2f2fc6169fbb6a8ee493d07668258ea6920b95edec8",
+        "packages/tiers/src/original.test.ts": "355a0d34c81017e227dbe5c17e2571780587823b1076b14b3d4e2d81c45d588f",
+        "packages/tiers/src/upper.ts": "9965f6bcc5e7c65526b1dd463bacd623f79921c92dad6c682ddb21c056b9496b",
+        "packages/tiers/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/windows/package.json": "31d24d046de1ee2483c4782628eb4f2877d2e4da87ca33403b9f7430993683d4",
+        "packages/windows/src/index.ts": "7f7ce7e4fda95cddd52abc4b5b05a2700c7445dafee56a92cf05936887a44023",
+        "packages/windows/src/original.test.ts": "f726042c8a02f59d82f0c242b73b4b1edf26c9ae291b53a4db5d5908e2314aa1",
+        "packages/windows/src/overlap.ts": "7136f657e6e8749dcb5e3c056f86615fe06560267500b40c9415d8cd8a9a2aca",
+        "packages/windows/src/qualifies.ts": "29dfaa8c3b971052fd4cbd7a6304555ba1b1c98bddab9c0a3736b872733533ac",
+        "packages/windows/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "regression.vitest.mjs": "245ba5d1db06564aadad59dd885428af1ed2b7a65cdac0cd91cbbf2a70a2efc8",
+        "scripts/delivered.mjs": "0a7bdbcc7f4a031f59f6a68512614379f4d42bc41d1e61cdab79983ac4dccefb",
+        "tsconfig.json": "a98eb0b63ae75ffafea98b64f82792a8180e63e4adcfa61cf6f11a239957194e",
+        "vitest.config.mjs": "1a31ab6f3bf27762390df2b684feee79c7478d8407daacf7430160f2de246367"
+      },
+      "sourceHashesAfter": {
+        ".gitignore": "404eb6ba5bedb0592262965fc1f4237514cb5aa6dbd1f153fe5b97298d94c229",
+        "README.md": "377566155e0691e179e4b04c60c4390326e567a4fe4d9885f0f5ad7ec9fe0cff",
+        "apps/policy/package.json": "387dd16ec2084452056f8540eb190bbf9c1cc008cd702fc4f567174b304d3544",
+        "apps/policy/src/debit.ts": "6016ca57a4ad305f86e7cf8c2f4ff70e1e86a6cbf6ffe24a6792f4a65ccf39a0",
+        "apps/policy/src/inclusive-tier.test.ts": "6a206310bd6482ea71a8d91e37a303d6e25429e7e20ad5487c743ec091985182",
+        "apps/policy/src/original.test.ts": "797d8c7156157945c2c44d458e8407fe60f6524dcb9615b1a1b456b5de62dfaa",
+        "apps/policy/src/tiers.ts": "fec7e81819fbce75c51701367207f3f930765787955ce4260cc757ad1d733d62",
+        "apps/policy/src/windows.ts": "8eeffd740bcfc77e4f73bcf93c4feba1b61bb2251373051ec0a361801b1500d0",
+        "apps/policy/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "node_modules": "symlink:9e5e26540f81b6bc9b50b01e7abca03b765731697c07f83dcc7c224111c9145e",
+        "package.json": "5a67a5106b6fa3d8747d27cd829803c018288752502a9828448379c115cbe143",
+        "packages/credit/package.json": "47c064aade44b9a2f647154ffd8dbcf32e96b25ccb6fd180e9b7799216b15c87",
+        "packages/credit/src/allocation.ts": "159269c5ccedeb221118946d4219fa483e39ba9b520a09b6f39b93364ac042b5",
+        "packages/credit/src/index.ts": "a455aadf7edb5c8f9e14ef4c391fcfd6c6405760f559720bc2f91487ae32703e",
+        "packages/credit/src/original.test.ts": "e122a771bde40333c665251c352cc292c32d093384f839b9f9f6982e6f674725",
+        "packages/credit/src/remainder.ts": "ff57e3bd5db747be7ce6e9dd25b37dc9bf40303beb89b98c601d305581385ccb",
+        "packages/credit/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/tiers/package.json": "0e5bbb62926a912fae22d49f33b206ba4e19cad21fcf5ddd991a5d6ebb3c8b82",
+        "packages/tiers/src/cost.ts": "0a08771cd740a0c59943659aeb7315a8fa1d83b28f285ff562c0ad85db63d490",
+        "packages/tiers/src/index.ts": "3d0c83b245ceefd0875b273e7db1a3758d014e385a5eaa5969d4d19d59b83c7a",
+        "packages/tiers/src/lower.ts": "7835fd03d8c8fcb68a8ae2f2fc6169fbb6a8ee493d07668258ea6920b95edec8",
+        "packages/tiers/src/original.test.ts": "355a0d34c81017e227dbe5c17e2571780587823b1076b14b3d4e2d81c45d588f",
+        "packages/tiers/src/upper.ts": "9965f6bcc5e7c65526b1dd463bacd623f79921c92dad6c682ddb21c056b9496b",
+        "packages/tiers/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/windows/package.json": "31d24d046de1ee2483c4782628eb4f2877d2e4da87ca33403b9f7430993683d4",
+        "packages/windows/src/index.ts": "7f7ce7e4fda95cddd52abc4b5b05a2700c7445dafee56a92cf05936887a44023",
+        "packages/windows/src/original.test.ts": "f726042c8a02f59d82f0c242b73b4b1edf26c9ae291b53a4db5d5908e2314aa1",
+        "packages/windows/src/overlap.ts": "7136f657e6e8749dcb5e3c056f86615fe06560267500b40c9415d8cd8a9a2aca",
+        "packages/windows/src/qualifies.ts": "29dfaa8c3b971052fd4cbd7a6304555ba1b1c98bddab9c0a3736b872733533ac",
+        "packages/windows/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "regression.vitest.mjs": "245ba5d1db06564aadad59dd885428af1ed2b7a65cdac0cd91cbbf2a70a2efc8",
+        "scripts/delivered.mjs": "0a7bdbcc7f4a031f59f6a68512614379f4d42bc41d1e61cdab79983ac4dccefb",
+        "tsconfig.json": "a98eb0b63ae75ffafea98b64f82792a8180e63e4adcfa61cf6f11a239957194e",
+        "vitest.config.mjs": "1a31ab6f3bf27762390df2b684feee79c7478d8407daacf7430160f2de246367"
+      },
+      "sourceUnchanged": true,
+      "checksBeforeSha256": "cce38f6542e56839db21590cad5045e493b835214c7ac8cf64b357b7fd4470df",
+      "checksAfterSha256": "cce38f6542e56839db21590cad5045e493b835214c7ac8cf64b357b7fd4470df",
+      "checksUnchanged": true,
+      "observations": [
+        {
+          "id": "lowerTierUnits",
+          "input": {
+            "kind": "analyze",
+            "target": "packages/tiers/src/lower.ts#lowerTierUnits",
+            "inputs": {
+              "first": {
+                "min": -3,
+                "max": 3
+              },
+              "last": {
+                "min": -3,
+                "max": 3
+              },
+              "boundary": {
+                "min": -3,
+                "max": 3
+              }
+            },
+            "assertion": "result === (first > last ? 0 : ((last < boundary ? last : boundary) >= first ? (last < boundary ? last : boundary) - first + 1 : 0))",
+            "timeoutMs": 2500
+          },
+          "interpretation": "Direct isolated scalar contract for lower-tier closed-interval counts; upperTierUnits and consumer composition are outside this query.",
+          "toolStatus": "ok",
+          "serializedResultSha256": "ccac0f8f14e9dfd7aeb81ad8ec4edcd6cf038e93134b7521afc0fe553123905e",
+          "serializedResultBytes": 1239,
+          "status": "unknown",
+          "reason": "unsupported_expression:CallExpression",
+          "sourceSha256": "7835fd03d8c8fcb68a8ae2f2fc6169fbb6a8ee493d07668258ea6920b95edec8",
+          "sourceRevisionId": "src_32a192a872aa8c362883479c8f5cba57",
+          "target": "packages/tiers/src/lower.ts#lowerTierUnits",
+          "validationAdmission": false
+        },
+        {
+          "id": "tierCost",
+          "input": {
+            "kind": "analyze",
+            "target": "packages/tiers/src/cost.ts#tierCost",
+            "inputs": {
+              "lowerUnits": {
+                "min": 0,
+                "max": 3
+              },
+              "upperUnits": {
+                "min": 0,
+                "max": 3
+              },
+              "lowerRate": {
+                "min": -3,
+                "max": 3
+              },
+              "upperRate": {
+                "min": -3,
+                "max": 3
+              }
+            },
+            "assertion": "result === lowerUnits * (lowerRate > 0 ? lowerRate : 0) + upperUnits * (upperRate > 0 ? upperRate : 0)",
+            "timeoutMs": 2500
+          },
+          "interpretation": "Interpretation-sensitive broader scalar diagnostic: the user explicitly requires normalized rates in the quotation path, but does not unambiguously require tierCost itself to normalize if its caller already does so. A scalar counterexample here alone is not an original-task failure.",
+          "toolStatus": "ok",
+          "serializedResultSha256": "7a20eee7ad724361a45b344ae21bf5205f0fb9871f4890dfdadac9725734ac64",
+          "serializedResultBytes": 1237,
+          "status": "unknown",
+          "reason": "unsupported_expression:CallExpression",
+          "sourceSha256": "0a08771cd740a0c59943659aeb7315a8fa1d83b28f285ff562c0ad85db63d490",
+          "sourceRevisionId": "src_32a192a872aa8c362883479c8f5cba57",
+          "target": "packages/tiers/src/cost.ts#tierCost",
+          "validationAdmission": false
+        }
+      ]
+    },
+    {
+      "name": "1-inclusive-tier-allocation-cline",
+      "repeat": 1,
+      "task": "inclusive-tier-allocation",
+      "arm": "cline",
+      "patchSha256": "15a1cf2f7527607fb44f4ea67f6d0c2b48f12992ffaa3841a17ac5321cb90591",
+      "traceSha256": "2bf0f790eb4444db1739337b0dcc1998a6a5e35cfdabd03091686c8eddb79def",
+      "sourceHashesBefore": {
+        ".gitignore": "404eb6ba5bedb0592262965fc1f4237514cb5aa6dbd1f153fe5b97298d94c229",
+        "README.md": "377566155e0691e179e4b04c60c4390326e567a4fe4d9885f0f5ad7ec9fe0cff",
+        "apps/policy/package.json": "387dd16ec2084452056f8540eb190bbf9c1cc008cd702fc4f567174b304d3544",
+        "apps/policy/src/debit.ts": "6016ca57a4ad305f86e7cf8c2f4ff70e1e86a6cbf6ffe24a6792f4a65ccf39a0",
+        "apps/policy/src/original.test.ts": "797d8c7156157945c2c44d458e8407fe60f6524dcb9615b1a1b456b5de62dfaa",
+        "apps/policy/src/tiers.regression.test.ts": "e6607d55d4b4830408b9519f2655c1dbabaa217b138fdb9ca3ca612e95904837",
+        "apps/policy/src/tiers.ts": "7a4039e436f49aadcfddb792afff92051965aadc7be2903405478b2fbd1c1618",
+        "apps/policy/src/windows.ts": "8eeffd740bcfc77e4f73bcf93c4feba1b61bb2251373051ec0a361801b1500d0",
+        "apps/policy/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "node_modules": "symlink:9e5e26540f81b6bc9b50b01e7abca03b765731697c07f83dcc7c224111c9145e",
+        "package.json": "5a67a5106b6fa3d8747d27cd829803c018288752502a9828448379c115cbe143",
+        "packages/credit/package.json": "47c064aade44b9a2f647154ffd8dbcf32e96b25ccb6fd180e9b7799216b15c87",
+        "packages/credit/src/allocation.ts": "159269c5ccedeb221118946d4219fa483e39ba9b520a09b6f39b93364ac042b5",
+        "packages/credit/src/index.ts": "a455aadf7edb5c8f9e14ef4c391fcfd6c6405760f559720bc2f91487ae32703e",
+        "packages/credit/src/original.test.ts": "e122a771bde40333c665251c352cc292c32d093384f839b9f9f6982e6f674725",
+        "packages/credit/src/remainder.ts": "ff57e3bd5db747be7ce6e9dd25b37dc9bf40303beb89b98c601d305581385ccb",
+        "packages/credit/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/tiers/package.json": "0e5bbb62926a912fae22d49f33b206ba4e19cad21fcf5ddd991a5d6ebb3c8b82",
+        "packages/tiers/src/cost.ts": "17aeb3886823a8a790e9b1f7208d016b7ed0bdef5bb261d6d63d6008eb48b0c6",
+        "packages/tiers/src/index.ts": "3d0c83b245ceefd0875b273e7db1a3758d014e385a5eaa5969d4d19d59b83c7a",
+        "packages/tiers/src/lower.ts": "8f9bb7ec52fe86dc06ad57bd05fab7ac0ff4a772fad947340a3e08b9be0e3a10",
+        "packages/tiers/src/original.test.ts": "355a0d34c81017e227dbe5c17e2571780587823b1076b14b3d4e2d81c45d588f",
+        "packages/tiers/src/upper.ts": "d86316454204489d8c3533cfdb6dcdad6a623bd8c02bb3cb0fed07054d27dd4e",
+        "packages/tiers/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/windows/package.json": "31d24d046de1ee2483c4782628eb4f2877d2e4da87ca33403b9f7430993683d4",
+        "packages/windows/src/index.ts": "7f7ce7e4fda95cddd52abc4b5b05a2700c7445dafee56a92cf05936887a44023",
+        "packages/windows/src/original.test.ts": "f726042c8a02f59d82f0c242b73b4b1edf26c9ae291b53a4db5d5908e2314aa1",
+        "packages/windows/src/overlap.ts": "7136f657e6e8749dcb5e3c056f86615fe06560267500b40c9415d8cd8a9a2aca",
+        "packages/windows/src/qualifies.ts": "29dfaa8c3b971052fd4cbd7a6304555ba1b1c98bddab9c0a3736b872733533ac",
+        "packages/windows/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "regression.vitest.mjs": "245ba5d1db06564aadad59dd885428af1ed2b7a65cdac0cd91cbbf2a70a2efc8",
+        "scripts/delivered.mjs": "0a7bdbcc7f4a031f59f6a68512614379f4d42bc41d1e61cdab79983ac4dccefb",
+        "tsconfig.json": "a98eb0b63ae75ffafea98b64f82792a8180e63e4adcfa61cf6f11a239957194e",
+        "vitest.config.mjs": "1a31ab6f3bf27762390df2b684feee79c7478d8407daacf7430160f2de246367"
+      },
+      "sourceHashesAfter": {
+        ".gitignore": "404eb6ba5bedb0592262965fc1f4237514cb5aa6dbd1f153fe5b97298d94c229",
+        "README.md": "377566155e0691e179e4b04c60c4390326e567a4fe4d9885f0f5ad7ec9fe0cff",
+        "apps/policy/package.json": "387dd16ec2084452056f8540eb190bbf9c1cc008cd702fc4f567174b304d3544",
+        "apps/policy/src/debit.ts": "6016ca57a4ad305f86e7cf8c2f4ff70e1e86a6cbf6ffe24a6792f4a65ccf39a0",
+        "apps/policy/src/original.test.ts": "797d8c7156157945c2c44d458e8407fe60f6524dcb9615b1a1b456b5de62dfaa",
+        "apps/policy/src/tiers.regression.test.ts": "e6607d55d4b4830408b9519f2655c1dbabaa217b138fdb9ca3ca612e95904837",
+        "apps/policy/src/tiers.ts": "7a4039e436f49aadcfddb792afff92051965aadc7be2903405478b2fbd1c1618",
+        "apps/policy/src/windows.ts": "8eeffd740bcfc77e4f73bcf93c4feba1b61bb2251373051ec0a361801b1500d0",
+        "apps/policy/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "node_modules": "symlink:9e5e26540f81b6bc9b50b01e7abca03b765731697c07f83dcc7c224111c9145e",
+        "package.json": "5a67a5106b6fa3d8747d27cd829803c018288752502a9828448379c115cbe143",
+        "packages/credit/package.json": "47c064aade44b9a2f647154ffd8dbcf32e96b25ccb6fd180e9b7799216b15c87",
+        "packages/credit/src/allocation.ts": "159269c5ccedeb221118946d4219fa483e39ba9b520a09b6f39b93364ac042b5",
+        "packages/credit/src/index.ts": "a455aadf7edb5c8f9e14ef4c391fcfd6c6405760f559720bc2f91487ae32703e",
+        "packages/credit/src/original.test.ts": "e122a771bde40333c665251c352cc292c32d093384f839b9f9f6982e6f674725",
+        "packages/credit/src/remainder.ts": "ff57e3bd5db747be7ce6e9dd25b37dc9bf40303beb89b98c601d305581385ccb",
+        "packages/credit/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/tiers/package.json": "0e5bbb62926a912fae22d49f33b206ba4e19cad21fcf5ddd991a5d6ebb3c8b82",
+        "packages/tiers/src/cost.ts": "17aeb3886823a8a790e9b1f7208d016b7ed0bdef5bb261d6d63d6008eb48b0c6",
+        "packages/tiers/src/index.ts": "3d0c83b245ceefd0875b273e7db1a3758d014e385a5eaa5969d4d19d59b83c7a",
+        "packages/tiers/src/lower.ts": "8f9bb7ec52fe86dc06ad57bd05fab7ac0ff4a772fad947340a3e08b9be0e3a10",
+        "packages/tiers/src/original.test.ts": "355a0d34c81017e227dbe5c17e2571780587823b1076b14b3d4e2d81c45d588f",
+        "packages/tiers/src/upper.ts": "d86316454204489d8c3533cfdb6dcdad6a623bd8c02bb3cb0fed07054d27dd4e",
+        "packages/tiers/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/windows/package.json": "31d24d046de1ee2483c4782628eb4f2877d2e4da87ca33403b9f7430993683d4",
+        "packages/windows/src/index.ts": "7f7ce7e4fda95cddd52abc4b5b05a2700c7445dafee56a92cf05936887a44023",
+        "packages/windows/src/original.test.ts": "f726042c8a02f59d82f0c242b73b4b1edf26c9ae291b53a4db5d5908e2314aa1",
+        "packages/windows/src/overlap.ts": "7136f657e6e8749dcb5e3c056f86615fe06560267500b40c9415d8cd8a9a2aca",
+        "packages/windows/src/qualifies.ts": "29dfaa8c3b971052fd4cbd7a6304555ba1b1c98bddab9c0a3736b872733533ac",
+        "packages/windows/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "regression.vitest.mjs": "245ba5d1db06564aadad59dd885428af1ed2b7a65cdac0cd91cbbf2a70a2efc8",
+        "scripts/delivered.mjs": "0a7bdbcc7f4a031f59f6a68512614379f4d42bc41d1e61cdab79983ac4dccefb",
+        "tsconfig.json": "a98eb0b63ae75ffafea98b64f82792a8180e63e4adcfa61cf6f11a239957194e",
+        "vitest.config.mjs": "1a31ab6f3bf27762390df2b684feee79c7478d8407daacf7430160f2de246367"
+      },
+      "sourceUnchanged": true,
+      "checksBeforeSha256": "8ef10133044592576e30dad7eeebbde26535bf7b4cfc1d72b6049b6e14a74948",
+      "checksAfterSha256": "8ef10133044592576e30dad7eeebbde26535bf7b4cfc1d72b6049b6e14a74948",
+      "checksUnchanged": true,
+      "observations": [
+        {
+          "id": "lowerTierUnits",
+          "input": {
+            "kind": "analyze",
+            "target": "packages/tiers/src/lower.ts#lowerTierUnits",
+            "inputs": {
+              "first": {
+                "min": -3,
+                "max": 3
+              },
+              "last": {
+                "min": -3,
+                "max": 3
+              },
+              "boundary": {
+                "min": -3,
+                "max": 3
+              }
+            },
+            "assertion": "result === (first > last ? 0 : ((last < boundary ? last : boundary) >= first ? (last < boundary ? last : boundary) - first + 1 : 0))",
+            "timeoutMs": 2500
+          },
+          "interpretation": "Direct isolated scalar contract for lower-tier closed-interval counts; upperTierUnits and consumer composition are outside this query.",
+          "toolStatus": "ok",
+          "serializedResultSha256": "7b3ddfc127e6431e9f5080863627b523d3ddf28019d28c52932ee8df20b11737",
+          "serializedResultBytes": 1516,
+          "status": "bounded_no_counterexample",
+          "reason": "No violating input exists in the supplied finite safe integer/boolean domain under the supported isolated-function semantics.",
+          "sourceSha256": "8f9bb7ec52fe86dc06ad57bd05fab7ac0ff4a772fad947340a3e08b9be0e3a10",
+          "sourceRevisionId": "src_0544c957b24f06e5cd7aa61f2c382f6e",
+          "target": "packages/tiers/src/lower.ts#lowerTierUnits",
+          "validationAdmission": false,
+          "solver": {
+            "executable": "/tmp/blame-z3-f46/bin/z3",
+            "version": "Z3 version 4.15.4 - 64 bit",
+            "querySha256": "f609afa8c40c63c331cbacc566252904acea01eab887999388677c2a9419651e"
+          }
+        },
+        {
+          "id": "tierCost",
+          "input": {
+            "kind": "analyze",
+            "target": "packages/tiers/src/cost.ts#tierCost",
+            "inputs": {
+              "lowerUnits": {
+                "min": 0,
+                "max": 3
+              },
+              "upperUnits": {
+                "min": 0,
+                "max": 3
+              },
+              "lowerRate": {
+                "min": -3,
+                "max": 3
+              },
+              "upperRate": {
+                "min": -3,
+                "max": 3
+              }
+            },
+            "assertion": "result === lowerUnits * (lowerRate > 0 ? lowerRate : 0) + upperUnits * (upperRate > 0 ? upperRate : 0)",
+            "timeoutMs": 2500
+          },
+          "interpretation": "Interpretation-sensitive broader scalar diagnostic: the user explicitly requires normalized rates in the quotation path, but does not unambiguously require tierCost itself to normalize if its caller already does so. A scalar counterexample here alone is not an original-task failure.",
+          "toolStatus": "ok",
+          "serializedResultSha256": "8303e1c5a44317d9f2e5b57605a2c3909c88550552d6f4d5acaaf2a9702244c7",
+          "serializedResultBytes": 1641,
+          "status": "counterexample",
+          "reason": "A violating input was reproduced by interpreting the original supported TypeScript AST with JavaScript scalar operations.",
+          "sourceSha256": "17aeb3886823a8a790e9b1f7208d016b7ed0bdef5bb261d6d63d6008eb48b0c6",
+          "sourceRevisionId": "src_0544c957b24f06e5cd7aa61f2c382f6e",
+          "target": "packages/tiers/src/cost.ts#tierCost",
+          "validationAdmission": false,
+          "solver": {
+            "executable": "/tmp/blame-z3-f46/bin/z3",
+            "version": "Z3 version 4.15.4 - 64 bit",
+            "querySha256": "31caa1b21cbf46ee5c978c602c33982b061e52f76e32da444bac4ae69dca4fe1"
+          },
+          "witness": {
+            "inputs": {
+              "lowerUnits": 3,
+              "upperUnits": 1,
+              "lowerRate": -3,
+              "upperRate": -1
+            },
+            "result": -10,
+            "assertion": false,
+            "concretelyReproduced": true
+          },
+          "witnessReplay": {
+            "method": "isolated_actual_js",
+            "moduleIntegration": false,
+            "modelRepair": false,
+            "sourceSha256": "17aeb3886823a8a790e9b1f7208d016b7ed0bdef5bb261d6d63d6008eb48b0c6",
+            "declarationSha256": "382175f2da8ca8154d5ce8188d81d33d4c93a9667da66bf78dcda5bba72e85ab",
+            "childSourceSha256": "f6178d7f627b32ae093609b987d421ff90c6a87c8bca0f0921036a30ed156ec7",
+            "witnessSha256": "f2025f5c06750f8108bffbdb0d5f6844e9c8c85fe2a49971144750280b0d12ab",
+            "parameterOrder": [
+              "lowerUnits",
+              "upperUnits",
+              "lowerRate",
+              "upperRate"
+            ],
+            "rangeUtf8": [
+              0,
+              157
+            ],
+            "exitCode": 0,
+            "signal": null,
+            "error": null,
+            "stdoutSha256": "609d221c9d2114f9d5647e5a4712077b8e550d5f7cc122d2646b20c15cc03bae",
+            "stdoutBytes": 15,
+            "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderrBytes": 0,
+            "status": "executed",
+            "actual": -10,
+            "expected": 0,
+            "matchesSymbolicResult": true,
+            "propertyViolated": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "1-inclusive-tier-allocation-reference",
+      "repeat": 1,
+      "task": "inclusive-tier-allocation",
+      "arm": "reference",
+      "patchSha256": "884a2c3d4b8e565dfbb55c5c5958fdfa6210fdabbfe5f7d5d0bb55896372f476",
+      "traceSha256": "fa582e2e63d0564c29fe354612d5286512857802430bbff95c2134bcb18bee61",
+      "sourceHashesBefore": {
+        ".gitignore": "404eb6ba5bedb0592262965fc1f4237514cb5aa6dbd1f153fe5b97298d94c229",
+        "README.md": "377566155e0691e179e4b04c60c4390326e567a4fe4d9885f0f5ad7ec9fe0cff",
+        "apps/policy/package.json": "387dd16ec2084452056f8540eb190bbf9c1cc008cd702fc4f567174b304d3544",
+        "apps/policy/src/debit.ts": "6016ca57a4ad305f86e7cf8c2f4ff70e1e86a6cbf6ffe24a6792f4a65ccf39a0",
+        "apps/policy/src/original.test.ts": "797d8c7156157945c2c44d458e8407fe60f6524dcb9615b1a1b456b5de62dfaa",
+        "apps/policy/src/tier-accounting.test.ts": "c74a735a44933a95c64bc2107a80b5e875abe023b3396c38c40866b20dce8b92",
+        "apps/policy/src/tiers.ts": "295eca57cd9006e9df27e39ab288a0c1d1aeab110d1c6fa0e303a3d110f86ac1",
+        "apps/policy/src/windows.ts": "8eeffd740bcfc77e4f73bcf93c4feba1b61bb2251373051ec0a361801b1500d0",
+        "apps/policy/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "node_modules": "symlink:9e5e26540f81b6bc9b50b01e7abca03b765731697c07f83dcc7c224111c9145e",
+        "package.json": "5a67a5106b6fa3d8747d27cd829803c018288752502a9828448379c115cbe143",
+        "packages/credit/package.json": "47c064aade44b9a2f647154ffd8dbcf32e96b25ccb6fd180e9b7799216b15c87",
+        "packages/credit/src/allocation.ts": "159269c5ccedeb221118946d4219fa483e39ba9b520a09b6f39b93364ac042b5",
+        "packages/credit/src/index.ts": "a455aadf7edb5c8f9e14ef4c391fcfd6c6405760f559720bc2f91487ae32703e",
+        "packages/credit/src/original.test.ts": "e122a771bde40333c665251c352cc292c32d093384f839b9f9f6982e6f674725",
+        "packages/credit/src/remainder.ts": "ff57e3bd5db747be7ce6e9dd25b37dc9bf40303beb89b98c601d305581385ccb",
+        "packages/credit/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/tiers/package.json": "0e5bbb62926a912fae22d49f33b206ba4e19cad21fcf5ddd991a5d6ebb3c8b82",
+        "packages/tiers/src/cost.ts": "5de4450d9c585081356203709b1f8cedc45d49456b61edb3f38fcf8b753479fb",
+        "packages/tiers/src/index.ts": "3d0c83b245ceefd0875b273e7db1a3758d014e385a5eaa5969d4d19d59b83c7a",
+        "packages/tiers/src/lower.ts": "8f9bb7ec52fe86dc06ad57bd05fab7ac0ff4a772fad947340a3e08b9be0e3a10",
+        "packages/tiers/src/original.test.ts": "355a0d34c81017e227dbe5c17e2571780587823b1076b14b3d4e2d81c45d588f",
+        "packages/tiers/src/upper.ts": "d86316454204489d8c3533cfdb6dcdad6a623bd8c02bb3cb0fed07054d27dd4e",
+        "packages/tiers/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/windows/package.json": "31d24d046de1ee2483c4782628eb4f2877d2e4da87ca33403b9f7430993683d4",
+        "packages/windows/src/index.ts": "7f7ce7e4fda95cddd52abc4b5b05a2700c7445dafee56a92cf05936887a44023",
+        "packages/windows/src/original.test.ts": "f726042c8a02f59d82f0c242b73b4b1edf26c9ae291b53a4db5d5908e2314aa1",
+        "packages/windows/src/overlap.ts": "7136f657e6e8749dcb5e3c056f86615fe06560267500b40c9415d8cd8a9a2aca",
+        "packages/windows/src/qualifies.ts": "29dfaa8c3b971052fd4cbd7a6304555ba1b1c98bddab9c0a3736b872733533ac",
+        "packages/windows/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "regression.vitest.mjs": "245ba5d1db06564aadad59dd885428af1ed2b7a65cdac0cd91cbbf2a70a2efc8",
+        "scripts/delivered.mjs": "0a7bdbcc7f4a031f59f6a68512614379f4d42bc41d1e61cdab79983ac4dccefb",
+        "tsconfig.json": "a98eb0b63ae75ffafea98b64f82792a8180e63e4adcfa61cf6f11a239957194e",
+        "vitest.config.mjs": "1a31ab6f3bf27762390df2b684feee79c7478d8407daacf7430160f2de246367"
+      },
+      "sourceHashesAfter": {
+        ".gitignore": "404eb6ba5bedb0592262965fc1f4237514cb5aa6dbd1f153fe5b97298d94c229",
+        "README.md": "377566155e0691e179e4b04c60c4390326e567a4fe4d9885f0f5ad7ec9fe0cff",
+        "apps/policy/package.json": "387dd16ec2084452056f8540eb190bbf9c1cc008cd702fc4f567174b304d3544",
+        "apps/policy/src/debit.ts": "6016ca57a4ad305f86e7cf8c2f4ff70e1e86a6cbf6ffe24a6792f4a65ccf39a0",
+        "apps/policy/src/original.test.ts": "797d8c7156157945c2c44d458e8407fe60f6524dcb9615b1a1b456b5de62dfaa",
+        "apps/policy/src/tier-accounting.test.ts": "c74a735a44933a95c64bc2107a80b5e875abe023b3396c38c40866b20dce8b92",
+        "apps/policy/src/tiers.ts": "295eca57cd9006e9df27e39ab288a0c1d1aeab110d1c6fa0e303a3d110f86ac1",
+        "apps/policy/src/windows.ts": "8eeffd740bcfc77e4f73bcf93c4feba1b61bb2251373051ec0a361801b1500d0",
+        "apps/policy/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "node_modules": "symlink:9e5e26540f81b6bc9b50b01e7abca03b765731697c07f83dcc7c224111c9145e",
+        "package.json": "5a67a5106b6fa3d8747d27cd829803c018288752502a9828448379c115cbe143",
+        "packages/credit/package.json": "47c064aade44b9a2f647154ffd8dbcf32e96b25ccb6fd180e9b7799216b15c87",
+        "packages/credit/src/allocation.ts": "159269c5ccedeb221118946d4219fa483e39ba9b520a09b6f39b93364ac042b5",
+        "packages/credit/src/index.ts": "a455aadf7edb5c8f9e14ef4c391fcfd6c6405760f559720bc2f91487ae32703e",
+        "packages/credit/src/original.test.ts": "e122a771bde40333c665251c352cc292c32d093384f839b9f9f6982e6f674725",
+        "packages/credit/src/remainder.ts": "ff57e3bd5db747be7ce6e9dd25b37dc9bf40303beb89b98c601d305581385ccb",
+        "packages/credit/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/tiers/package.json": "0e5bbb62926a912fae22d49f33b206ba4e19cad21fcf5ddd991a5d6ebb3c8b82",
+        "packages/tiers/src/cost.ts": "5de4450d9c585081356203709b1f8cedc45d49456b61edb3f38fcf8b753479fb",
+        "packages/tiers/src/index.ts": "3d0c83b245ceefd0875b273e7db1a3758d014e385a5eaa5969d4d19d59b83c7a",
+        "packages/tiers/src/lower.ts": "8f9bb7ec52fe86dc06ad57bd05fab7ac0ff4a772fad947340a3e08b9be0e3a10",
+        "packages/tiers/src/original.test.ts": "355a0d34c81017e227dbe5c17e2571780587823b1076b14b3d4e2d81c45d588f",
+        "packages/tiers/src/upper.ts": "d86316454204489d8c3533cfdb6dcdad6a623bd8c02bb3cb0fed07054d27dd4e",
+        "packages/tiers/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/windows/package.json": "31d24d046de1ee2483c4782628eb4f2877d2e4da87ca33403b9f7430993683d4",
+        "packages/windows/src/index.ts": "7f7ce7e4fda95cddd52abc4b5b05a2700c7445dafee56a92cf05936887a44023",
+        "packages/windows/src/original.test.ts": "f726042c8a02f59d82f0c242b73b4b1edf26c9ae291b53a4db5d5908e2314aa1",
+        "packages/windows/src/overlap.ts": "7136f657e6e8749dcb5e3c056f86615fe06560267500b40c9415d8cd8a9a2aca",
+        "packages/windows/src/qualifies.ts": "29dfaa8c3b971052fd4cbd7a6304555ba1b1c98bddab9c0a3736b872733533ac",
+        "packages/windows/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "regression.vitest.mjs": "245ba5d1db06564aadad59dd885428af1ed2b7a65cdac0cd91cbbf2a70a2efc8",
+        "scripts/delivered.mjs": "0a7bdbcc7f4a031f59f6a68512614379f4d42bc41d1e61cdab79983ac4dccefb",
+        "tsconfig.json": "a98eb0b63ae75ffafea98b64f82792a8180e63e4adcfa61cf6f11a239957194e",
+        "vitest.config.mjs": "1a31ab6f3bf27762390df2b684feee79c7478d8407daacf7430160f2de246367"
+      },
+      "sourceUnchanged": true,
+      "checksBeforeSha256": "784c81676c18ccca9f82fb44a953e4029a1136021ab39e4f99777353a7d7fb62",
+      "checksAfterSha256": "784c81676c18ccca9f82fb44a953e4029a1136021ab39e4f99777353a7d7fb62",
+      "checksUnchanged": true,
+      "observations": [
+        {
+          "id": "lowerTierUnits",
+          "input": {
+            "kind": "analyze",
+            "target": "packages/tiers/src/lower.ts#lowerTierUnits",
+            "inputs": {
+              "first": {
+                "min": -3,
+                "max": 3
+              },
+              "last": {
+                "min": -3,
+                "max": 3
+              },
+              "boundary": {
+                "min": -3,
+                "max": 3
+              }
+            },
+            "assertion": "result === (first > last ? 0 : ((last < boundary ? last : boundary) >= first ? (last < boundary ? last : boundary) - first + 1 : 0))",
+            "timeoutMs": 2500
+          },
+          "interpretation": "Direct isolated scalar contract for lower-tier closed-interval counts; upperTierUnits and consumer composition are outside this query.",
+          "toolStatus": "ok",
+          "serializedResultSha256": "061470abe96dc0b84f8f7ce96e070d0c61ec85b486eef62ac44a2cc3ef53e207",
+          "serializedResultBytes": 1516,
+          "status": "bounded_no_counterexample",
+          "reason": "No violating input exists in the supplied finite safe integer/boolean domain under the supported isolated-function semantics.",
+          "sourceSha256": "8f9bb7ec52fe86dc06ad57bd05fab7ac0ff4a772fad947340a3e08b9be0e3a10",
+          "sourceRevisionId": "src_e7d394ff253185077e1e7bfa737b1d4c",
+          "target": "packages/tiers/src/lower.ts#lowerTierUnits",
+          "validationAdmission": false,
+          "solver": {
+            "executable": "/tmp/blame-z3-f46/bin/z3",
+            "version": "Z3 version 4.15.4 - 64 bit",
+            "querySha256": "f609afa8c40c63c331cbacc566252904acea01eab887999388677c2a9419651e"
+          }
+        },
+        {
+          "id": "tierCost",
+          "input": {
+            "kind": "analyze",
+            "target": "packages/tiers/src/cost.ts#tierCost",
+            "inputs": {
+              "lowerUnits": {
+                "min": 0,
+                "max": 3
+              },
+              "upperUnits": {
+                "min": 0,
+                "max": 3
+              },
+              "lowerRate": {
+                "min": -3,
+                "max": 3
+              },
+              "upperRate": {
+                "min": -3,
+                "max": 3
+              }
+            },
+            "assertion": "result === lowerUnits * (lowerRate > 0 ? lowerRate : 0) + upperUnits * (upperRate > 0 ? upperRate : 0)",
+            "timeoutMs": 2500
+          },
+          "interpretation": "Interpretation-sensitive broader scalar diagnostic: the user explicitly requires normalized rates in the quotation path, but does not unambiguously require tierCost itself to normalize if its caller already does so. A scalar counterexample here alone is not an original-task failure.",
+          "toolStatus": "ok",
+          "serializedResultSha256": "c3641ba376f6ef5e06089ba1774b0db2e0084a3dbe85929378d8f3095b256700",
+          "serializedResultBytes": 1514,
+          "status": "bounded_no_counterexample",
+          "reason": "No violating input exists in the supplied finite safe integer/boolean domain under the supported isolated-function semantics.",
+          "sourceSha256": "5de4450d9c585081356203709b1f8cedc45d49456b61edb3f38fcf8b753479fb",
+          "sourceRevisionId": "src_e7d394ff253185077e1e7bfa737b1d4c",
+          "target": "packages/tiers/src/cost.ts#tierCost",
+          "validationAdmission": false,
+          "solver": {
+            "executable": "/tmp/blame-z3-f46/bin/z3",
+            "version": "Z3 version 4.15.4 - 64 bit",
+            "querySha256": "70051f525b221dce8a3d53e5378ff555653f504274f89918e3b85cfb0d638ec8"
+          }
+        }
+      ]
+    },
+    {
+      "name": "1-signed-window-overlap-cline",
+      "repeat": 1,
+      "task": "signed-window-overlap",
+      "arm": "cline",
+      "patchSha256": "f1de591984ce8f2bc3a57a0743c42dcb50c2e747472d5fa6101b950129f456dc",
+      "traceSha256": "3bbdbf8e4db9cc082e82a6f65758203288b93e256724309c7cd16d1597b60baf",
+      "sourceHashesBefore": {
+        ".gitignore": "404eb6ba5bedb0592262965fc1f4237514cb5aa6dbd1f153fe5b97298d94c229",
+        "README.md": "377566155e0691e179e4b04c60c4390326e567a4fe4d9885f0f5ad7ec9fe0cff",
+        "apps/policy/package.json": "387dd16ec2084452056f8540eb190bbf9c1cc008cd702fc4f567174b304d3544",
+        "apps/policy/src/debit.ts": "6016ca57a4ad305f86e7cf8c2f4ff70e1e86a6cbf6ffe24a6792f4a65ccf39a0",
+        "apps/policy/src/original.test.ts": "797d8c7156157945c2c44d458e8407fe60f6524dcb9615b1a1b456b5de62dfaa",
+        "apps/policy/src/tiers.ts": "32decf7ed8ec0fea5f6b40d7105bbb79cc40875ce5447e497c814509453a57b8",
+        "apps/policy/src/windows.regression.test.ts": "ca1b1f407a0e72c61dd641739603b9576ec42f388cc5023270378f14b02ef686",
+        "apps/policy/src/windows.ts": "3e97e7d1c635540b03b049f7186ba454195a6fc605d67fbb1d3ab291b96a4b79",
+        "apps/policy/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "node_modules": "symlink:9e5e26540f81b6bc9b50b01e7abca03b765731697c07f83dcc7c224111c9145e",
+        "package.json": "5a67a5106b6fa3d8747d27cd829803c018288752502a9828448379c115cbe143",
+        "packages/credit/package.json": "47c064aade44b9a2f647154ffd8dbcf32e96b25ccb6fd180e9b7799216b15c87",
+        "packages/credit/src/allocation.ts": "159269c5ccedeb221118946d4219fa483e39ba9b520a09b6f39b93364ac042b5",
+        "packages/credit/src/index.ts": "a455aadf7edb5c8f9e14ef4c391fcfd6c6405760f559720bc2f91487ae32703e",
+        "packages/credit/src/original.test.ts": "e122a771bde40333c665251c352cc292c32d093384f839b9f9f6982e6f674725",
+        "packages/credit/src/remainder.ts": "ff57e3bd5db747be7ce6e9dd25b37dc9bf40303beb89b98c601d305581385ccb",
+        "packages/credit/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/tiers/package.json": "0e5bbb62926a912fae22d49f33b206ba4e19cad21fcf5ddd991a5d6ebb3c8b82",
+        "packages/tiers/src/cost.ts": "17aeb3886823a8a790e9b1f7208d016b7ed0bdef5bb261d6d63d6008eb48b0c6",
+        "packages/tiers/src/index.ts": "3d0c83b245ceefd0875b273e7db1a3758d014e385a5eaa5969d4d19d59b83c7a",
+        "packages/tiers/src/lower.ts": "8e2d21de5dbf873bd9a711ac4bf75ca4966e5dfe9227da16ce00e16e7423488e",
+        "packages/tiers/src/original.test.ts": "355a0d34c81017e227dbe5c17e2571780587823b1076b14b3d4e2d81c45d588f",
+        "packages/tiers/src/upper.ts": "b3f7f02b83c8967f422f6cb269e0184383e0d6ccaa89f0a997e564bab64e93b7",
+        "packages/tiers/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/windows/package.json": "31d24d046de1ee2483c4782628eb4f2877d2e4da87ca33403b9f7430993683d4",
+        "packages/windows/src/index.ts": "7f7ce7e4fda95cddd52abc4b5b05a2700c7445dafee56a92cf05936887a44023",
+        "packages/windows/src/original.test.ts": "f726042c8a02f59d82f0c242b73b4b1edf26c9ae291b53a4db5d5908e2314aa1",
+        "packages/windows/src/overlap.ts": "46971112718e6c70d0bfbf9f153ab801604f138c5095f349e8e1ca3fcea50470",
+        "packages/windows/src/qualifies.ts": "046195f292ca5dd2bc5d433c2933e967409d850e5b6a12b622fb474894c8d8a6",
+        "packages/windows/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "regression.vitest.mjs": "245ba5d1db06564aadad59dd885428af1ed2b7a65cdac0cd91cbbf2a70a2efc8",
+        "scripts/delivered.mjs": "0a7bdbcc7f4a031f59f6a68512614379f4d42bc41d1e61cdab79983ac4dccefb",
+        "tsconfig.json": "a98eb0b63ae75ffafea98b64f82792a8180e63e4adcfa61cf6f11a239957194e",
+        "vitest.config.mjs": "1a31ab6f3bf27762390df2b684feee79c7478d8407daacf7430160f2de246367"
+      },
+      "sourceHashesAfter": {
+        ".gitignore": "404eb6ba5bedb0592262965fc1f4237514cb5aa6dbd1f153fe5b97298d94c229",
+        "README.md": "377566155e0691e179e4b04c60c4390326e567a4fe4d9885f0f5ad7ec9fe0cff",
+        "apps/policy/package.json": "387dd16ec2084452056f8540eb190bbf9c1cc008cd702fc4f567174b304d3544",
+        "apps/policy/src/debit.ts": "6016ca57a4ad305f86e7cf8c2f4ff70e1e86a6cbf6ffe24a6792f4a65ccf39a0",
+        "apps/policy/src/original.test.ts": "797d8c7156157945c2c44d458e8407fe60f6524dcb9615b1a1b456b5de62dfaa",
+        "apps/policy/src/tiers.ts": "32decf7ed8ec0fea5f6b40d7105bbb79cc40875ce5447e497c814509453a57b8",
+        "apps/policy/src/windows.regression.test.ts": "ca1b1f407a0e72c61dd641739603b9576ec42f388cc5023270378f14b02ef686",
+        "apps/policy/src/windows.ts": "3e97e7d1c635540b03b049f7186ba454195a6fc605d67fbb1d3ab291b96a4b79",
+        "apps/policy/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "node_modules": "symlink:9e5e26540f81b6bc9b50b01e7abca03b765731697c07f83dcc7c224111c9145e",
+        "package.json": "5a67a5106b6fa3d8747d27cd829803c018288752502a9828448379c115cbe143",
+        "packages/credit/package.json": "47c064aade44b9a2f647154ffd8dbcf32e96b25ccb6fd180e9b7799216b15c87",
+        "packages/credit/src/allocation.ts": "159269c5ccedeb221118946d4219fa483e39ba9b520a09b6f39b93364ac042b5",
+        "packages/credit/src/index.ts": "a455aadf7edb5c8f9e14ef4c391fcfd6c6405760f559720bc2f91487ae32703e",
+        "packages/credit/src/original.test.ts": "e122a771bde40333c665251c352cc292c32d093384f839b9f9f6982e6f674725",
+        "packages/credit/src/remainder.ts": "ff57e3bd5db747be7ce6e9dd25b37dc9bf40303beb89b98c601d305581385ccb",
+        "packages/credit/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/tiers/package.json": "0e5bbb62926a912fae22d49f33b206ba4e19cad21fcf5ddd991a5d6ebb3c8b82",
+        "packages/tiers/src/cost.ts": "17aeb3886823a8a790e9b1f7208d016b7ed0bdef5bb261d6d63d6008eb48b0c6",
+        "packages/tiers/src/index.ts": "3d0c83b245ceefd0875b273e7db1a3758d014e385a5eaa5969d4d19d59b83c7a",
+        "packages/tiers/src/lower.ts": "8e2d21de5dbf873bd9a711ac4bf75ca4966e5dfe9227da16ce00e16e7423488e",
+        "packages/tiers/src/original.test.ts": "355a0d34c81017e227dbe5c17e2571780587823b1076b14b3d4e2d81c45d588f",
+        "packages/tiers/src/upper.ts": "b3f7f02b83c8967f422f6cb269e0184383e0d6ccaa89f0a997e564bab64e93b7",
+        "packages/tiers/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/windows/package.json": "31d24d046de1ee2483c4782628eb4f2877d2e4da87ca33403b9f7430993683d4",
+        "packages/windows/src/index.ts": "7f7ce7e4fda95cddd52abc4b5b05a2700c7445dafee56a92cf05936887a44023",
+        "packages/windows/src/original.test.ts": "f726042c8a02f59d82f0c242b73b4b1edf26c9ae291b53a4db5d5908e2314aa1",
+        "packages/windows/src/overlap.ts": "46971112718e6c70d0bfbf9f153ab801604f138c5095f349e8e1ca3fcea50470",
+        "packages/windows/src/qualifies.ts": "046195f292ca5dd2bc5d433c2933e967409d850e5b6a12b622fb474894c8d8a6",
+        "packages/windows/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "regression.vitest.mjs": "245ba5d1db06564aadad59dd885428af1ed2b7a65cdac0cd91cbbf2a70a2efc8",
+        "scripts/delivered.mjs": "0a7bdbcc7f4a031f59f6a68512614379f4d42bc41d1e61cdab79983ac4dccefb",
+        "tsconfig.json": "a98eb0b63ae75ffafea98b64f82792a8180e63e4adcfa61cf6f11a239957194e",
+        "vitest.config.mjs": "1a31ab6f3bf27762390df2b684feee79c7478d8407daacf7430160f2de246367"
+      },
+      "sourceUnchanged": true,
+      "checksBeforeSha256": "f35d2380cd12570fed64b5cf58ad2f46623be4e0a138e012579d97d1a012eb3e",
+      "checksAfterSha256": "f35d2380cd12570fed64b5cf58ad2f46623be4e0a138e012579d97d1a012eb3e",
+      "checksUnchanged": true,
+      "observations": [
+        {
+          "id": "overlapLength",
+          "input": {
+            "kind": "analyze",
+            "target": "packages/windows/src/overlap.ts#overlapLength",
+            "inputs": {
+              "startA": {
+                "min": -3,
+                "max": 3
+              },
+              "endA": {
+                "min": -3,
+                "max": 3
+              },
+              "startB": {
+                "min": -3,
+                "max": 3
+              },
+              "endB": {
+                "min": -3,
+                "max": 3
+              }
+            },
+            "assertion": "result === (endA <= startA || endB <= startB ? 0 : ((endA < endB ? endA : endB) > (startA > startB ? startA : startB) ? (endA < endB ? endA : endB) - (startA > startB ? startA : startB) : 0))",
+            "timeoutMs": 2500
+          },
+          "interpretation": "Direct isolated scalar contract for signed half-open intervals; shifted consumer and threshold composition are outside this query.",
+          "toolStatus": "ok",
+          "serializedResultSha256": "121173eb5b61eea38eaa85ca8476471f1439dcd782cfc4623a6b21688bc48a0a",
+          "serializedResultBytes": 1602,
+          "status": "bounded_no_counterexample",
+          "reason": "No violating input exists in the supplied finite safe integer/boolean domain under the supported isolated-function semantics.",
+          "sourceSha256": "46971112718e6c70d0bfbf9f153ab801604f138c5095f349e8e1ca3fcea50470",
+          "sourceRevisionId": "src_bbad3696251e89c644de87e9870a5899",
+          "target": "packages/windows/src/overlap.ts#overlapLength",
+          "validationAdmission": false,
+          "solver": {
+            "executable": "/tmp/blame-z3-f46/bin/z3",
+            "version": "Z3 version 4.15.4 - 64 bit",
+            "querySha256": "57704551e268ca0f4b680f0433bad387b510956ce7f8f932059699af77a36603"
+          }
+        }
+      ]
+    },
+    {
+      "name": "1-signed-window-overlap-reference",
+      "repeat": 1,
+      "task": "signed-window-overlap",
+      "arm": "reference",
+      "patchSha256": "bf635d30dc4422c3de2b7920a8370f7625e4c860afef9dddb2d333b7199d0769",
+      "traceSha256": "753408ec7cdefabe9721b0f1199d2414772319df9e293142d4fbdad5999bde53",
+      "sourceHashesBefore": {
+        ".gitignore": "404eb6ba5bedb0592262965fc1f4237514cb5aa6dbd1f153fe5b97298d94c229",
+        "README.md": "377566155e0691e179e4b04c60c4390326e567a4fe4d9885f0f5ad7ec9fe0cff",
+        "apps/policy/package.json": "387dd16ec2084452056f8540eb190bbf9c1cc008cd702fc4f567174b304d3544",
+        "apps/policy/src/debit.ts": "6016ca57a4ad305f86e7cf8c2f4ff70e1e86a6cbf6ffe24a6792f4a65ccf39a0",
+        "apps/policy/src/original.test.ts": "797d8c7156157945c2c44d458e8407fe60f6524dcb9615b1a1b456b5de62dfaa",
+        "apps/policy/src/tiers.ts": "32decf7ed8ec0fea5f6b40d7105bbb79cc40875ce5447e497c814509453a57b8",
+        "apps/policy/src/windows.ts": "33fc1fea43147482c0830f4054718773b15cd253f323828c53d277fab1874b48",
+        "apps/policy/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "node_modules": "symlink:9e5e26540f81b6bc9b50b01e7abca03b765731697c07f83dcc7c224111c9145e",
+        "package.json": "5a67a5106b6fa3d8747d27cd829803c018288752502a9828448379c115cbe143",
+        "packages/credit/package.json": "47c064aade44b9a2f647154ffd8dbcf32e96b25ccb6fd180e9b7799216b15c87",
+        "packages/credit/src/allocation.ts": "159269c5ccedeb221118946d4219fa483e39ba9b520a09b6f39b93364ac042b5",
+        "packages/credit/src/index.ts": "a455aadf7edb5c8f9e14ef4c391fcfd6c6405760f559720bc2f91487ae32703e",
+        "packages/credit/src/original.test.ts": "e122a771bde40333c665251c352cc292c32d093384f839b9f9f6982e6f674725",
+        "packages/credit/src/remainder.ts": "ff57e3bd5db747be7ce6e9dd25b37dc9bf40303beb89b98c601d305581385ccb",
+        "packages/credit/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/tiers/package.json": "0e5bbb62926a912fae22d49f33b206ba4e19cad21fcf5ddd991a5d6ebb3c8b82",
+        "packages/tiers/src/cost.ts": "17aeb3886823a8a790e9b1f7208d016b7ed0bdef5bb261d6d63d6008eb48b0c6",
+        "packages/tiers/src/index.ts": "3d0c83b245ceefd0875b273e7db1a3758d014e385a5eaa5969d4d19d59b83c7a",
+        "packages/tiers/src/lower.ts": "8e2d21de5dbf873bd9a711ac4bf75ca4966e5dfe9227da16ce00e16e7423488e",
+        "packages/tiers/src/original.test.ts": "355a0d34c81017e227dbe5c17e2571780587823b1076b14b3d4e2d81c45d588f",
+        "packages/tiers/src/upper.ts": "b3f7f02b83c8967f422f6cb269e0184383e0d6ccaa89f0a997e564bab64e93b7",
+        "packages/tiers/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/windows/package.json": "31d24d046de1ee2483c4782628eb4f2877d2e4da87ca33403b9f7430993683d4",
+        "packages/windows/src/index.ts": "7f7ce7e4fda95cddd52abc4b5b05a2700c7445dafee56a92cf05936887a44023",
+        "packages/windows/src/original.test.ts": "f726042c8a02f59d82f0c242b73b4b1edf26c9ae291b53a4db5d5908e2314aa1",
+        "packages/windows/src/overlap.ts": "46971112718e6c70d0bfbf9f153ab801604f138c5095f349e8e1ca3fcea50470",
+        "packages/windows/src/qualifies.ts": "de63067b90b867f096359f36fff2a34fa0952ae0065dd0770c8f5dce478c0aea",
+        "packages/windows/src/signed-window-overlap.test.ts": "63651d9883d03b86d6e19b5db407c8dc7ef650582d86f4a4d338a6005ade9148",
+        "packages/windows/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "regression.vitest.mjs": "245ba5d1db06564aadad59dd885428af1ed2b7a65cdac0cd91cbbf2a70a2efc8",
+        "scripts/delivered.mjs": "0a7bdbcc7f4a031f59f6a68512614379f4d42bc41d1e61cdab79983ac4dccefb",
+        "tsconfig.json": "a98eb0b63ae75ffafea98b64f82792a8180e63e4adcfa61cf6f11a239957194e",
+        "vitest.config.mjs": "1a31ab6f3bf27762390df2b684feee79c7478d8407daacf7430160f2de246367"
+      },
+      "sourceHashesAfter": {
+        ".gitignore": "404eb6ba5bedb0592262965fc1f4237514cb5aa6dbd1f153fe5b97298d94c229",
+        "README.md": "377566155e0691e179e4b04c60c4390326e567a4fe4d9885f0f5ad7ec9fe0cff",
+        "apps/policy/package.json": "387dd16ec2084452056f8540eb190bbf9c1cc008cd702fc4f567174b304d3544",
+        "apps/policy/src/debit.ts": "6016ca57a4ad305f86e7cf8c2f4ff70e1e86a6cbf6ffe24a6792f4a65ccf39a0",
+        "apps/policy/src/original.test.ts": "797d8c7156157945c2c44d458e8407fe60f6524dcb9615b1a1b456b5de62dfaa",
+        "apps/policy/src/tiers.ts": "32decf7ed8ec0fea5f6b40d7105bbb79cc40875ce5447e497c814509453a57b8",
+        "apps/policy/src/windows.ts": "33fc1fea43147482c0830f4054718773b15cd253f323828c53d277fab1874b48",
+        "apps/policy/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "node_modules": "symlink:9e5e26540f81b6bc9b50b01e7abca03b765731697c07f83dcc7c224111c9145e",
+        "package.json": "5a67a5106b6fa3d8747d27cd829803c018288752502a9828448379c115cbe143",
+        "packages/credit/package.json": "47c064aade44b9a2f647154ffd8dbcf32e96b25ccb6fd180e9b7799216b15c87",
+        "packages/credit/src/allocation.ts": "159269c5ccedeb221118946d4219fa483e39ba9b520a09b6f39b93364ac042b5",
+        "packages/credit/src/index.ts": "a455aadf7edb5c8f9e14ef4c391fcfd6c6405760f559720bc2f91487ae32703e",
+        "packages/credit/src/original.test.ts": "e122a771bde40333c665251c352cc292c32d093384f839b9f9f6982e6f674725",
+        "packages/credit/src/remainder.ts": "ff57e3bd5db747be7ce6e9dd25b37dc9bf40303beb89b98c601d305581385ccb",
+        "packages/credit/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/tiers/package.json": "0e5bbb62926a912fae22d49f33b206ba4e19cad21fcf5ddd991a5d6ebb3c8b82",
+        "packages/tiers/src/cost.ts": "17aeb3886823a8a790e9b1f7208d016b7ed0bdef5bb261d6d63d6008eb48b0c6",
+        "packages/tiers/src/index.ts": "3d0c83b245ceefd0875b273e7db1a3758d014e385a5eaa5969d4d19d59b83c7a",
+        "packages/tiers/src/lower.ts": "8e2d21de5dbf873bd9a711ac4bf75ca4966e5dfe9227da16ce00e16e7423488e",
+        "packages/tiers/src/original.test.ts": "355a0d34c81017e227dbe5c17e2571780587823b1076b14b3d4e2d81c45d588f",
+        "packages/tiers/src/upper.ts": "b3f7f02b83c8967f422f6cb269e0184383e0d6ccaa89f0a997e564bab64e93b7",
+        "packages/tiers/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/windows/package.json": "31d24d046de1ee2483c4782628eb4f2877d2e4da87ca33403b9f7430993683d4",
+        "packages/windows/src/index.ts": "7f7ce7e4fda95cddd52abc4b5b05a2700c7445dafee56a92cf05936887a44023",
+        "packages/windows/src/original.test.ts": "f726042c8a02f59d82f0c242b73b4b1edf26c9ae291b53a4db5d5908e2314aa1",
+        "packages/windows/src/overlap.ts": "46971112718e6c70d0bfbf9f153ab801604f138c5095f349e8e1ca3fcea50470",
+        "packages/windows/src/qualifies.ts": "de63067b90b867f096359f36fff2a34fa0952ae0065dd0770c8f5dce478c0aea",
+        "packages/windows/src/signed-window-overlap.test.ts": "63651d9883d03b86d6e19b5db407c8dc7ef650582d86f4a4d338a6005ade9148",
+        "packages/windows/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "regression.vitest.mjs": "245ba5d1db06564aadad59dd885428af1ed2b7a65cdac0cd91cbbf2a70a2efc8",
+        "scripts/delivered.mjs": "0a7bdbcc7f4a031f59f6a68512614379f4d42bc41d1e61cdab79983ac4dccefb",
+        "tsconfig.json": "a98eb0b63ae75ffafea98b64f82792a8180e63e4adcfa61cf6f11a239957194e",
+        "vitest.config.mjs": "1a31ab6f3bf27762390df2b684feee79c7478d8407daacf7430160f2de246367"
+      },
+      "sourceUnchanged": true,
+      "checksBeforeSha256": "a32ad1aea933def434701c7e4a3f981791495eacba5832e47237632f6b45e285",
+      "checksAfterSha256": "a32ad1aea933def434701c7e4a3f981791495eacba5832e47237632f6b45e285",
+      "checksUnchanged": true,
+      "observations": [
+        {
+          "id": "overlapLength",
+          "input": {
+            "kind": "analyze",
+            "target": "packages/windows/src/overlap.ts#overlapLength",
+            "inputs": {
+              "startA": {
+                "min": -3,
+                "max": 3
+              },
+              "endA": {
+                "min": -3,
+                "max": 3
+              },
+              "startB": {
+                "min": -3,
+                "max": 3
+              },
+              "endB": {
+                "min": -3,
+                "max": 3
+              }
+            },
+            "assertion": "result === (endA <= startA || endB <= startB ? 0 : ((endA < endB ? endA : endB) > (startA > startB ? startA : startB) ? (endA < endB ? endA : endB) - (startA > startB ? startA : startB) : 0))",
+            "timeoutMs": 2500
+          },
+          "interpretation": "Direct isolated scalar contract for signed half-open intervals; shifted consumer and threshold composition are outside this query.",
+          "toolStatus": "ok",
+          "serializedResultSha256": "544dc45a8ae690db0d16c8d8ebbeda2630640de1af4ce3efdcc2ed07b81bb458",
+          "serializedResultBytes": 1602,
+          "status": "bounded_no_counterexample",
+          "reason": "No violating input exists in the supplied finite safe integer/boolean domain under the supported isolated-function semantics.",
+          "sourceSha256": "46971112718e6c70d0bfbf9f153ab801604f138c5095f349e8e1ca3fcea50470",
+          "sourceRevisionId": "src_94264713e72fbc51e8fef27ca1c89d33",
+          "target": "packages/windows/src/overlap.ts#overlapLength",
+          "validationAdmission": false,
+          "solver": {
+            "executable": "/tmp/blame-z3-f46/bin/z3",
+            "version": "Z3 version 4.15.4 - 64 bit",
+            "querySha256": "57704551e268ca0f4b680f0433bad387b510956ce7f8f932059699af77a36603"
+          }
+        }
+      ]
+    },
+    {
+      "name": "1-signed-window-overlap-candidate",
+      "repeat": 1,
+      "task": "signed-window-overlap",
+      "arm": "candidate",
+      "patchSha256": "035ba6c1112201aca4b8919fe2fae64d3c1b1b2fe238bc82d76b36d2865a7067",
+      "traceSha256": "6ce1e9e2953c90d0ab1f3bd2c5c80de2698da3e24ebc98fbd17c369502b94d56",
+      "sourceHashesBefore": {
+        ".gitignore": "404eb6ba5bedb0592262965fc1f4237514cb5aa6dbd1f153fe5b97298d94c229",
+        "README.md": "377566155e0691e179e4b04c60c4390326e567a4fe4d9885f0f5ad7ec9fe0cff",
+        "apps/policy/package.json": "387dd16ec2084452056f8540eb190bbf9c1cc008cd702fc4f567174b304d3544",
+        "apps/policy/src/debit.ts": "6016ca57a4ad305f86e7cf8c2f4ff70e1e86a6cbf6ffe24a6792f4a65ccf39a0",
+        "apps/policy/src/original.test.ts": "797d8c7156157945c2c44d458e8407fe60f6524dcb9615b1a1b456b5de62dfaa",
+        "apps/policy/src/tiers.ts": "32decf7ed8ec0fea5f6b40d7105bbb79cc40875ce5447e497c814509453a57b8",
+        "apps/policy/src/windows.ts": "3e97e7d1c635540b03b049f7186ba454195a6fc605d67fbb1d3ab291b96a4b79",
+        "apps/policy/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "node_modules": "symlink:9e5e26540f81b6bc9b50b01e7abca03b765731697c07f83dcc7c224111c9145e",
+        "package.json": "5a67a5106b6fa3d8747d27cd829803c018288752502a9828448379c115cbe143",
+        "packages/credit/package.json": "47c064aade44b9a2f647154ffd8dbcf32e96b25ccb6fd180e9b7799216b15c87",
+        "packages/credit/src/allocation.ts": "159269c5ccedeb221118946d4219fa483e39ba9b520a09b6f39b93364ac042b5",
+        "packages/credit/src/index.ts": "a455aadf7edb5c8f9e14ef4c391fcfd6c6405760f559720bc2f91487ae32703e",
+        "packages/credit/src/original.test.ts": "e122a771bde40333c665251c352cc292c32d093384f839b9f9f6982e6f674725",
+        "packages/credit/src/remainder.ts": "ff57e3bd5db747be7ce6e9dd25b37dc9bf40303beb89b98c601d305581385ccb",
+        "packages/credit/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/tiers/package.json": "0e5bbb62926a912fae22d49f33b206ba4e19cad21fcf5ddd991a5d6ebb3c8b82",
+        "packages/tiers/src/cost.ts": "17aeb3886823a8a790e9b1f7208d016b7ed0bdef5bb261d6d63d6008eb48b0c6",
+        "packages/tiers/src/index.ts": "3d0c83b245ceefd0875b273e7db1a3758d014e385a5eaa5969d4d19d59b83c7a",
+        "packages/tiers/src/lower.ts": "8e2d21de5dbf873bd9a711ac4bf75ca4966e5dfe9227da16ce00e16e7423488e",
+        "packages/tiers/src/original.test.ts": "355a0d34c81017e227dbe5c17e2571780587823b1076b14b3d4e2d81c45d588f",
+        "packages/tiers/src/upper.ts": "b3f7f02b83c8967f422f6cb269e0184383e0d6ccaa89f0a997e564bab64e93b7",
+        "packages/tiers/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/windows/package.json": "31d24d046de1ee2483c4782628eb4f2877d2e4da87ca33403b9f7430993683d4",
+        "packages/windows/src/index.ts": "7f7ce7e4fda95cddd52abc4b5b05a2700c7445dafee56a92cf05936887a44023",
+        "packages/windows/src/original.test.ts": "f726042c8a02f59d82f0c242b73b4b1edf26c9ae291b53a4db5d5908e2314aa1",
+        "packages/windows/src/overlap.ts": "46971112718e6c70d0bfbf9f153ab801604f138c5095f349e8e1ca3fcea50470",
+        "packages/windows/src/qualifies.ts": "de63067b90b867f096359f36fff2a34fa0952ae0065dd0770c8f5dce478c0aea",
+        "packages/windows/src/regression.test.ts": "d1d5f76d193f6505ea104276e6d590bf92c0517940d7892cd2bd924287213ee0",
+        "packages/windows/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "regression.vitest.mjs": "245ba5d1db06564aadad59dd885428af1ed2b7a65cdac0cd91cbbf2a70a2efc8",
+        "scripts/delivered.mjs": "0a7bdbcc7f4a031f59f6a68512614379f4d42bc41d1e61cdab79983ac4dccefb",
+        "tsconfig.json": "a98eb0b63ae75ffafea98b64f82792a8180e63e4adcfa61cf6f11a239957194e",
+        "vitest.config.mjs": "1a31ab6f3bf27762390df2b684feee79c7478d8407daacf7430160f2de246367"
+      },
+      "sourceHashesAfter": {
+        ".gitignore": "404eb6ba5bedb0592262965fc1f4237514cb5aa6dbd1f153fe5b97298d94c229",
+        "README.md": "377566155e0691e179e4b04c60c4390326e567a4fe4d9885f0f5ad7ec9fe0cff",
+        "apps/policy/package.json": "387dd16ec2084452056f8540eb190bbf9c1cc008cd702fc4f567174b304d3544",
+        "apps/policy/src/debit.ts": "6016ca57a4ad305f86e7cf8c2f4ff70e1e86a6cbf6ffe24a6792f4a65ccf39a0",
+        "apps/policy/src/original.test.ts": "797d8c7156157945c2c44d458e8407fe60f6524dcb9615b1a1b456b5de62dfaa",
+        "apps/policy/src/tiers.ts": "32decf7ed8ec0fea5f6b40d7105bbb79cc40875ce5447e497c814509453a57b8",
+        "apps/policy/src/windows.ts": "3e97e7d1c635540b03b049f7186ba454195a6fc605d67fbb1d3ab291b96a4b79",
+        "apps/policy/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "node_modules": "symlink:9e5e26540f81b6bc9b50b01e7abca03b765731697c07f83dcc7c224111c9145e",
+        "package.json": "5a67a5106b6fa3d8747d27cd829803c018288752502a9828448379c115cbe143",
+        "packages/credit/package.json": "47c064aade44b9a2f647154ffd8dbcf32e96b25ccb6fd180e9b7799216b15c87",
+        "packages/credit/src/allocation.ts": "159269c5ccedeb221118946d4219fa483e39ba9b520a09b6f39b93364ac042b5",
+        "packages/credit/src/index.ts": "a455aadf7edb5c8f9e14ef4c391fcfd6c6405760f559720bc2f91487ae32703e",
+        "packages/credit/src/original.test.ts": "e122a771bde40333c665251c352cc292c32d093384f839b9f9f6982e6f674725",
+        "packages/credit/src/remainder.ts": "ff57e3bd5db747be7ce6e9dd25b37dc9bf40303beb89b98c601d305581385ccb",
+        "packages/credit/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/tiers/package.json": "0e5bbb62926a912fae22d49f33b206ba4e19cad21fcf5ddd991a5d6ebb3c8b82",
+        "packages/tiers/src/cost.ts": "17aeb3886823a8a790e9b1f7208d016b7ed0bdef5bb261d6d63d6008eb48b0c6",
+        "packages/tiers/src/index.ts": "3d0c83b245ceefd0875b273e7db1a3758d014e385a5eaa5969d4d19d59b83c7a",
+        "packages/tiers/src/lower.ts": "8e2d21de5dbf873bd9a711ac4bf75ca4966e5dfe9227da16ce00e16e7423488e",
+        "packages/tiers/src/original.test.ts": "355a0d34c81017e227dbe5c17e2571780587823b1076b14b3d4e2d81c45d588f",
+        "packages/tiers/src/upper.ts": "b3f7f02b83c8967f422f6cb269e0184383e0d6ccaa89f0a997e564bab64e93b7",
+        "packages/tiers/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/windows/package.json": "31d24d046de1ee2483c4782628eb4f2877d2e4da87ca33403b9f7430993683d4",
+        "packages/windows/src/index.ts": "7f7ce7e4fda95cddd52abc4b5b05a2700c7445dafee56a92cf05936887a44023",
+        "packages/windows/src/original.test.ts": "f726042c8a02f59d82f0c242b73b4b1edf26c9ae291b53a4db5d5908e2314aa1",
+        "packages/windows/src/overlap.ts": "46971112718e6c70d0bfbf9f153ab801604f138c5095f349e8e1ca3fcea50470",
+        "packages/windows/src/qualifies.ts": "de63067b90b867f096359f36fff2a34fa0952ae0065dd0770c8f5dce478c0aea",
+        "packages/windows/src/regression.test.ts": "d1d5f76d193f6505ea104276e6d590bf92c0517940d7892cd2bd924287213ee0",
+        "packages/windows/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "regression.vitest.mjs": "245ba5d1db06564aadad59dd885428af1ed2b7a65cdac0cd91cbbf2a70a2efc8",
+        "scripts/delivered.mjs": "0a7bdbcc7f4a031f59f6a68512614379f4d42bc41d1e61cdab79983ac4dccefb",
+        "tsconfig.json": "a98eb0b63ae75ffafea98b64f82792a8180e63e4adcfa61cf6f11a239957194e",
+        "vitest.config.mjs": "1a31ab6f3bf27762390df2b684feee79c7478d8407daacf7430160f2de246367"
+      },
+      "sourceUnchanged": true,
+      "checksBeforeSha256": "39da349e628318df39f06acb4ea1a9c7511075e2207863630670c24cc22465f2",
+      "checksAfterSha256": "39da349e628318df39f06acb4ea1a9c7511075e2207863630670c24cc22465f2",
+      "checksUnchanged": true,
+      "observations": [
+        {
+          "id": "overlapLength",
+          "input": {
+            "kind": "analyze",
+            "target": "packages/windows/src/overlap.ts#overlapLength",
+            "inputs": {
+              "startA": {
+                "min": -3,
+                "max": 3
+              },
+              "endA": {
+                "min": -3,
+                "max": 3
+              },
+              "startB": {
+                "min": -3,
+                "max": 3
+              },
+              "endB": {
+                "min": -3,
+                "max": 3
+              }
+            },
+            "assertion": "result === (endA <= startA || endB <= startB ? 0 : ((endA < endB ? endA : endB) > (startA > startB ? startA : startB) ? (endA < endB ? endA : endB) - (startA > startB ? startA : startB) : 0))",
+            "timeoutMs": 2500
+          },
+          "interpretation": "Direct isolated scalar contract for signed half-open intervals; shifted consumer and threshold composition are outside this query.",
+          "toolStatus": "ok",
+          "serializedResultSha256": "819fb70c36ea981266be8572a8d2d1c0e15537e96d3f075f0ad2ad2173bf9027",
+          "serializedResultBytes": 1602,
+          "status": "bounded_no_counterexample",
+          "reason": "No violating input exists in the supplied finite safe integer/boolean domain under the supported isolated-function semantics.",
+          "sourceSha256": "46971112718e6c70d0bfbf9f153ab801604f138c5095f349e8e1ca3fcea50470",
+          "sourceRevisionId": "src_15cd106958cf9ce0997fe8c1f79b410a",
+          "target": "packages/windows/src/overlap.ts#overlapLength",
+          "validationAdmission": false,
+          "solver": {
+            "executable": "/tmp/blame-z3-f46/bin/z3",
+            "version": "Z3 version 4.15.4 - 64 bit",
+            "querySha256": "57704551e268ca0f4b680f0433bad387b510956ce7f8f932059699af77a36603"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2-credit-remainder-candidate",
+      "repeat": 2,
+      "task": "credit-remainder",
+      "arm": "candidate",
+      "patchSha256": "52243435b74e3a5dc0f6b0bcf7d492ba268be38c9b077292749b622bdf910876",
+      "traceSha256": "e6bfa2f44a98d7250a251c3d54cdc56d6bbe7f26c4b5c5df7dbf685d71fd0c3d",
+      "sourceHashesBefore": {
+        ".gitignore": "404eb6ba5bedb0592262965fc1f4237514cb5aa6dbd1f153fe5b97298d94c229",
+        "README.md": "377566155e0691e179e4b04c60c4390326e567a4fe4d9885f0f5ad7ec9fe0cff",
+        "apps/policy/package.json": "387dd16ec2084452056f8540eb190bbf9c1cc008cd702fc4f567174b304d3544",
+        "apps/policy/src/credit-regression.test.ts": "7381e15db1a631eb98c88366975367faa5148afb7685dfd5c96c888d49e066b4",
+        "apps/policy/src/debit.ts": "4a9b3fc91b16b28c6d8f3baae3828ab98e7b1ef3d4562d72989e7a489cdad2e2",
+        "apps/policy/src/original.test.ts": "797d8c7156157945c2c44d458e8407fe60f6524dcb9615b1a1b456b5de62dfaa",
+        "apps/policy/src/tiers.ts": "32decf7ed8ec0fea5f6b40d7105bbb79cc40875ce5447e497c814509453a57b8",
+        "apps/policy/src/windows.ts": "8eeffd740bcfc77e4f73bcf93c4feba1b61bb2251373051ec0a361801b1500d0",
+        "apps/policy/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "node_modules": "symlink:9e5e26540f81b6bc9b50b01e7abca03b765731697c07f83dcc7c224111c9145e",
+        "package.json": "5a67a5106b6fa3d8747d27cd829803c018288752502a9828448379c115cbe143",
+        "packages/credit/package.json": "47c064aade44b9a2f647154ffd8dbcf32e96b25ccb6fd180e9b7799216b15c87",
+        "packages/credit/src/allocation.ts": "31587c94b32eff1e48c6eee86c6c016a95d4b267295497b52ead584df708143b",
+        "packages/credit/src/index.ts": "a455aadf7edb5c8f9e14ef4c391fcfd6c6405760f559720bc2f91487ae32703e",
+        "packages/credit/src/original.test.ts": "e122a771bde40333c665251c352cc292c32d093384f839b9f9f6982e6f674725",
+        "packages/credit/src/remainder.ts": "24932b58c2e70a82a8e174e3dfeceb49a20867aad5f8345627bfdf099faee900",
+        "packages/credit/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/tiers/package.json": "0e5bbb62926a912fae22d49f33b206ba4e19cad21fcf5ddd991a5d6ebb3c8b82",
+        "packages/tiers/src/cost.ts": "17aeb3886823a8a790e9b1f7208d016b7ed0bdef5bb261d6d63d6008eb48b0c6",
+        "packages/tiers/src/index.ts": "3d0c83b245ceefd0875b273e7db1a3758d014e385a5eaa5969d4d19d59b83c7a",
+        "packages/tiers/src/lower.ts": "8e2d21de5dbf873bd9a711ac4bf75ca4966e5dfe9227da16ce00e16e7423488e",
+        "packages/tiers/src/original.test.ts": "355a0d34c81017e227dbe5c17e2571780587823b1076b14b3d4e2d81c45d588f",
+        "packages/tiers/src/upper.ts": "b3f7f02b83c8967f422f6cb269e0184383e0d6ccaa89f0a997e564bab64e93b7",
+        "packages/tiers/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/windows/package.json": "31d24d046de1ee2483c4782628eb4f2877d2e4da87ca33403b9f7430993683d4",
+        "packages/windows/src/index.ts": "7f7ce7e4fda95cddd52abc4b5b05a2700c7445dafee56a92cf05936887a44023",
+        "packages/windows/src/original.test.ts": "f726042c8a02f59d82f0c242b73b4b1edf26c9ae291b53a4db5d5908e2314aa1",
+        "packages/windows/src/overlap.ts": "7136f657e6e8749dcb5e3c056f86615fe06560267500b40c9415d8cd8a9a2aca",
+        "packages/windows/src/qualifies.ts": "29dfaa8c3b971052fd4cbd7a6304555ba1b1c98bddab9c0a3736b872733533ac",
+        "packages/windows/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "regression.vitest.mjs": "245ba5d1db06564aadad59dd885428af1ed2b7a65cdac0cd91cbbf2a70a2efc8",
+        "scripts/delivered.mjs": "0a7bdbcc7f4a031f59f6a68512614379f4d42bc41d1e61cdab79983ac4dccefb",
+        "tsconfig.json": "a98eb0b63ae75ffafea98b64f82792a8180e63e4adcfa61cf6f11a239957194e",
+        "vitest.config.mjs": "1a31ab6f3bf27762390df2b684feee79c7478d8407daacf7430160f2de246367"
+      },
+      "sourceHashesAfter": {
+        ".gitignore": "404eb6ba5bedb0592262965fc1f4237514cb5aa6dbd1f153fe5b97298d94c229",
+        "README.md": "377566155e0691e179e4b04c60c4390326e567a4fe4d9885f0f5ad7ec9fe0cff",
+        "apps/policy/package.json": "387dd16ec2084452056f8540eb190bbf9c1cc008cd702fc4f567174b304d3544",
+        "apps/policy/src/credit-regression.test.ts": "7381e15db1a631eb98c88366975367faa5148afb7685dfd5c96c888d49e066b4",
+        "apps/policy/src/debit.ts": "4a9b3fc91b16b28c6d8f3baae3828ab98e7b1ef3d4562d72989e7a489cdad2e2",
+        "apps/policy/src/original.test.ts": "797d8c7156157945c2c44d458e8407fe60f6524dcb9615b1a1b456b5de62dfaa",
+        "apps/policy/src/tiers.ts": "32decf7ed8ec0fea5f6b40d7105bbb79cc40875ce5447e497c814509453a57b8",
+        "apps/policy/src/windows.ts": "8eeffd740bcfc77e4f73bcf93c4feba1b61bb2251373051ec0a361801b1500d0",
+        "apps/policy/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "node_modules": "symlink:9e5e26540f81b6bc9b50b01e7abca03b765731697c07f83dcc7c224111c9145e",
+        "package.json": "5a67a5106b6fa3d8747d27cd829803c018288752502a9828448379c115cbe143",
+        "packages/credit/package.json": "47c064aade44b9a2f647154ffd8dbcf32e96b25ccb6fd180e9b7799216b15c87",
+        "packages/credit/src/allocation.ts": "31587c94b32eff1e48c6eee86c6c016a95d4b267295497b52ead584df708143b",
+        "packages/credit/src/index.ts": "a455aadf7edb5c8f9e14ef4c391fcfd6c6405760f559720bc2f91487ae32703e",
+        "packages/credit/src/original.test.ts": "e122a771bde40333c665251c352cc292c32d093384f839b9f9f6982e6f674725",
+        "packages/credit/src/remainder.ts": "24932b58c2e70a82a8e174e3dfeceb49a20867aad5f8345627bfdf099faee900",
+        "packages/credit/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/tiers/package.json": "0e5bbb62926a912fae22d49f33b206ba4e19cad21fcf5ddd991a5d6ebb3c8b82",
+        "packages/tiers/src/cost.ts": "17aeb3886823a8a790e9b1f7208d016b7ed0bdef5bb261d6d63d6008eb48b0c6",
+        "packages/tiers/src/index.ts": "3d0c83b245ceefd0875b273e7db1a3758d014e385a5eaa5969d4d19d59b83c7a",
+        "packages/tiers/src/lower.ts": "8e2d21de5dbf873bd9a711ac4bf75ca4966e5dfe9227da16ce00e16e7423488e",
+        "packages/tiers/src/original.test.ts": "355a0d34c81017e227dbe5c17e2571780587823b1076b14b3d4e2d81c45d588f",
+        "packages/tiers/src/upper.ts": "b3f7f02b83c8967f422f6cb269e0184383e0d6ccaa89f0a997e564bab64e93b7",
+        "packages/tiers/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/windows/package.json": "31d24d046de1ee2483c4782628eb4f2877d2e4da87ca33403b9f7430993683d4",
+        "packages/windows/src/index.ts": "7f7ce7e4fda95cddd52abc4b5b05a2700c7445dafee56a92cf05936887a44023",
+        "packages/windows/src/original.test.ts": "f726042c8a02f59d82f0c242b73b4b1edf26c9ae291b53a4db5d5908e2314aa1",
+        "packages/windows/src/overlap.ts": "7136f657e6e8749dcb5e3c056f86615fe06560267500b40c9415d8cd8a9a2aca",
+        "packages/windows/src/qualifies.ts": "29dfaa8c3b971052fd4cbd7a6304555ba1b1c98bddab9c0a3736b872733533ac",
+        "packages/windows/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "regression.vitest.mjs": "245ba5d1db06564aadad59dd885428af1ed2b7a65cdac0cd91cbbf2a70a2efc8",
+        "scripts/delivered.mjs": "0a7bdbcc7f4a031f59f6a68512614379f4d42bc41d1e61cdab79983ac4dccefb",
+        "tsconfig.json": "a98eb0b63ae75ffafea98b64f82792a8180e63e4adcfa61cf6f11a239957194e",
+        "vitest.config.mjs": "1a31ab6f3bf27762390df2b684feee79c7478d8407daacf7430160f2de246367"
+      },
+      "sourceUnchanged": true,
+      "checksBeforeSha256": "25760e3c0020b7f22af2653e215dcec0544fc8e4e0ac52896cfa6f5526cdb900",
+      "checksAfterSha256": "25760e3c0020b7f22af2653e215dcec0544fc8e4e0ac52896cfa6f5526cdb900",
+      "checksUnchanged": true,
+      "observations": [
+        {
+          "id": "availableCredit",
+          "input": {
+            "kind": "analyze",
+            "target": "packages/credit/src/remainder.ts#availableCredit",
+            "inputs": {
+              "balance": {
+                "min": -3,
+                "max": 3
+              },
+              "reserved": {
+                "min": -3,
+                "max": 3
+              },
+              "limit": {
+                "min": -3,
+                "max": 3
+              }
+            },
+            "assertion": "result === (((limit > 0 ? limit : 0) - (balance > 0 ? balance : 0) - (reserved > 0 ? reserved : 0)) > 0 ? ((limit > 0 ? limit : 0) - (balance > 0 ? balance : 0) - (reserved > 0 ? reserved : 0)) : 0)",
+            "timeoutMs": 2500
+          },
+          "interpretation": "Direct isolated scalar contract: normalize every negative argument to zero and clamp the remainder to zero.",
+          "toolStatus": "ok",
+          "serializedResultSha256": "dafb5c2ed7a0e409c70e116c06d15b9d8e0ce6e864479baf2a91767038a842c0",
+          "serializedResultBytes": 1592,
+          "status": "bounded_no_counterexample",
+          "reason": "No violating input exists in the supplied finite safe integer/boolean domain under the supported isolated-function semantics.",
+          "sourceSha256": "24932b58c2e70a82a8e174e3dfeceb49a20867aad5f8345627bfdf099faee900",
+          "sourceRevisionId": "src_8b44bf6f3bbc9851e6afe6ff23d41b77",
+          "target": "packages/credit/src/remainder.ts#availableCredit",
+          "validationAdmission": false,
+          "solver": {
+            "executable": "/tmp/blame-z3-f46/bin/z3",
+            "version": "Z3 version 4.15.4 - 64 bit",
+            "querySha256": "7e5b67074cb53418b07fe38cb9f7ed7d080514b21f7d17b26955969407522a40"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2-credit-remainder-cline",
+      "repeat": 2,
+      "task": "credit-remainder",
+      "arm": "cline",
+      "patchSha256": "d028df519e2a56ec1d486e329653388a4ea621292e94f5e699eda3c2d0cff9cd",
+      "traceSha256": "bbc222d3ac6d5cc84c4d3cae4298074111646f8d53cec3a1367c23242a5120c9",
+      "sourceHashesBefore": {
+        ".gitignore": "404eb6ba5bedb0592262965fc1f4237514cb5aa6dbd1f153fe5b97298d94c229",
+        "README.md": "377566155e0691e179e4b04c60c4390326e567a4fe4d9885f0f5ad7ec9fe0cff",
+        "apps/policy/package.json": "387dd16ec2084452056f8540eb190bbf9c1cc008cd702fc4f567174b304d3544",
+        "apps/policy/src/debit.ts": "709f58191e40767ce405f4244aa69ffc64d33a5541944c85e46e61d8631d4f95",
+        "apps/policy/src/original.test.ts": "797d8c7156157945c2c44d458e8407fe60f6524dcb9615b1a1b456b5de62dfaa",
+        "apps/policy/src/tiers.ts": "32decf7ed8ec0fea5f6b40d7105bbb79cc40875ce5447e497c814509453a57b8",
+        "apps/policy/src/windows.ts": "8eeffd740bcfc77e4f73bcf93c4feba1b61bb2251373051ec0a361801b1500d0",
+        "apps/policy/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "node_modules": "symlink:9e5e26540f81b6bc9b50b01e7abca03b765731697c07f83dcc7c224111c9145e",
+        "package.json": "5a67a5106b6fa3d8747d27cd829803c018288752502a9828448379c115cbe143",
+        "packages/credit/package.json": "47c064aade44b9a2f647154ffd8dbcf32e96b25ccb6fd180e9b7799216b15c87",
+        "packages/credit/src/allocation.ts": "313165137a26911a4ae63b69ec20ed774bf6c24ecdd18908a4b19fd543c77be1",
+        "packages/credit/src/index.ts": "a455aadf7edb5c8f9e14ef4c391fcfd6c6405760f559720bc2f91487ae32703e",
+        "packages/credit/src/original.test.ts": "e122a771bde40333c665251c352cc292c32d093384f839b9f9f6982e6f674725",
+        "packages/credit/src/remainder.test.ts": "610b88ae601baf06bd26948d7f522a398a0b790e3ef89e5353103dab65479fdf",
+        "packages/credit/src/remainder.ts": "24932b58c2e70a82a8e174e3dfeceb49a20867aad5f8345627bfdf099faee900",
+        "packages/credit/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/tiers/package.json": "0e5bbb62926a912fae22d49f33b206ba4e19cad21fcf5ddd991a5d6ebb3c8b82",
+        "packages/tiers/src/cost.ts": "17aeb3886823a8a790e9b1f7208d016b7ed0bdef5bb261d6d63d6008eb48b0c6",
+        "packages/tiers/src/index.ts": "3d0c83b245ceefd0875b273e7db1a3758d014e385a5eaa5969d4d19d59b83c7a",
+        "packages/tiers/src/lower.ts": "8e2d21de5dbf873bd9a711ac4bf75ca4966e5dfe9227da16ce00e16e7423488e",
+        "packages/tiers/src/original.test.ts": "355a0d34c81017e227dbe5c17e2571780587823b1076b14b3d4e2d81c45d588f",
+        "packages/tiers/src/upper.ts": "b3f7f02b83c8967f422f6cb269e0184383e0d6ccaa89f0a997e564bab64e93b7",
+        "packages/tiers/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/windows/package.json": "31d24d046de1ee2483c4782628eb4f2877d2e4da87ca33403b9f7430993683d4",
+        "packages/windows/src/index.ts": "7f7ce7e4fda95cddd52abc4b5b05a2700c7445dafee56a92cf05936887a44023",
+        "packages/windows/src/original.test.ts": "f726042c8a02f59d82f0c242b73b4b1edf26c9ae291b53a4db5d5908e2314aa1",
+        "packages/windows/src/overlap.ts": "7136f657e6e8749dcb5e3c056f86615fe06560267500b40c9415d8cd8a9a2aca",
+        "packages/windows/src/qualifies.ts": "29dfaa8c3b971052fd4cbd7a6304555ba1b1c98bddab9c0a3736b872733533ac",
+        "packages/windows/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "regression.vitest.mjs": "245ba5d1db06564aadad59dd885428af1ed2b7a65cdac0cd91cbbf2a70a2efc8",
+        "scripts/delivered.mjs": "0a7bdbcc7f4a031f59f6a68512614379f4d42bc41d1e61cdab79983ac4dccefb",
+        "tsconfig.json": "a98eb0b63ae75ffafea98b64f82792a8180e63e4adcfa61cf6f11a239957194e",
+        "vitest.config.mjs": "1a31ab6f3bf27762390df2b684feee79c7478d8407daacf7430160f2de246367"
+      },
+      "sourceHashesAfter": {
+        ".gitignore": "404eb6ba5bedb0592262965fc1f4237514cb5aa6dbd1f153fe5b97298d94c229",
+        "README.md": "377566155e0691e179e4b04c60c4390326e567a4fe4d9885f0f5ad7ec9fe0cff",
+        "apps/policy/package.json": "387dd16ec2084452056f8540eb190bbf9c1cc008cd702fc4f567174b304d3544",
+        "apps/policy/src/debit.ts": "709f58191e40767ce405f4244aa69ffc64d33a5541944c85e46e61d8631d4f95",
+        "apps/policy/src/original.test.ts": "797d8c7156157945c2c44d458e8407fe60f6524dcb9615b1a1b456b5de62dfaa",
+        "apps/policy/src/tiers.ts": "32decf7ed8ec0fea5f6b40d7105bbb79cc40875ce5447e497c814509453a57b8",
+        "apps/policy/src/windows.ts": "8eeffd740bcfc77e4f73bcf93c4feba1b61bb2251373051ec0a361801b1500d0",
+        "apps/policy/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "node_modules": "symlink:9e5e26540f81b6bc9b50b01e7abca03b765731697c07f83dcc7c224111c9145e",
+        "package.json": "5a67a5106b6fa3d8747d27cd829803c018288752502a9828448379c115cbe143",
+        "packages/credit/package.json": "47c064aade44b9a2f647154ffd8dbcf32e96b25ccb6fd180e9b7799216b15c87",
+        "packages/credit/src/allocation.ts": "313165137a26911a4ae63b69ec20ed774bf6c24ecdd18908a4b19fd543c77be1",
+        "packages/credit/src/index.ts": "a455aadf7edb5c8f9e14ef4c391fcfd6c6405760f559720bc2f91487ae32703e",
+        "packages/credit/src/original.test.ts": "e122a771bde40333c665251c352cc292c32d093384f839b9f9f6982e6f674725",
+        "packages/credit/src/remainder.test.ts": "610b88ae601baf06bd26948d7f522a398a0b790e3ef89e5353103dab65479fdf",
+        "packages/credit/src/remainder.ts": "24932b58c2e70a82a8e174e3dfeceb49a20867aad5f8345627bfdf099faee900",
+        "packages/credit/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/tiers/package.json": "0e5bbb62926a912fae22d49f33b206ba4e19cad21fcf5ddd991a5d6ebb3c8b82",
+        "packages/tiers/src/cost.ts": "17aeb3886823a8a790e9b1f7208d016b7ed0bdef5bb261d6d63d6008eb48b0c6",
+        "packages/tiers/src/index.ts": "3d0c83b245ceefd0875b273e7db1a3758d014e385a5eaa5969d4d19d59b83c7a",
+        "packages/tiers/src/lower.ts": "8e2d21de5dbf873bd9a711ac4bf75ca4966e5dfe9227da16ce00e16e7423488e",
+        "packages/tiers/src/original.test.ts": "355a0d34c81017e227dbe5c17e2571780587823b1076b14b3d4e2d81c45d588f",
+        "packages/tiers/src/upper.ts": "b3f7f02b83c8967f422f6cb269e0184383e0d6ccaa89f0a997e564bab64e93b7",
+        "packages/tiers/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/windows/package.json": "31d24d046de1ee2483c4782628eb4f2877d2e4da87ca33403b9f7430993683d4",
+        "packages/windows/src/index.ts": "7f7ce7e4fda95cddd52abc4b5b05a2700c7445dafee56a92cf05936887a44023",
+        "packages/windows/src/original.test.ts": "f726042c8a02f59d82f0c242b73b4b1edf26c9ae291b53a4db5d5908e2314aa1",
+        "packages/windows/src/overlap.ts": "7136f657e6e8749dcb5e3c056f86615fe06560267500b40c9415d8cd8a9a2aca",
+        "packages/windows/src/qualifies.ts": "29dfaa8c3b971052fd4cbd7a6304555ba1b1c98bddab9c0a3736b872733533ac",
+        "packages/windows/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "regression.vitest.mjs": "245ba5d1db06564aadad59dd885428af1ed2b7a65cdac0cd91cbbf2a70a2efc8",
+        "scripts/delivered.mjs": "0a7bdbcc7f4a031f59f6a68512614379f4d42bc41d1e61cdab79983ac4dccefb",
+        "tsconfig.json": "a98eb0b63ae75ffafea98b64f82792a8180e63e4adcfa61cf6f11a239957194e",
+        "vitest.config.mjs": "1a31ab6f3bf27762390df2b684feee79c7478d8407daacf7430160f2de246367"
+      },
+      "sourceUnchanged": true,
+      "checksBeforeSha256": "2447d723f706968eb2aa1053ba3d1f458cb2c6d734a22a73ea445db444b28cd4",
+      "checksAfterSha256": "2447d723f706968eb2aa1053ba3d1f458cb2c6d734a22a73ea445db444b28cd4",
+      "checksUnchanged": true,
+      "observations": [
+        {
+          "id": "availableCredit",
+          "input": {
+            "kind": "analyze",
+            "target": "packages/credit/src/remainder.ts#availableCredit",
+            "inputs": {
+              "balance": {
+                "min": -3,
+                "max": 3
+              },
+              "reserved": {
+                "min": -3,
+                "max": 3
+              },
+              "limit": {
+                "min": -3,
+                "max": 3
+              }
+            },
+            "assertion": "result === (((limit > 0 ? limit : 0) - (balance > 0 ? balance : 0) - (reserved > 0 ? reserved : 0)) > 0 ? ((limit > 0 ? limit : 0) - (balance > 0 ? balance : 0) - (reserved > 0 ? reserved : 0)) : 0)",
+            "timeoutMs": 2500
+          },
+          "interpretation": "Direct isolated scalar contract: normalize every negative argument to zero and clamp the remainder to zero.",
+          "toolStatus": "ok",
+          "serializedResultSha256": "b313b8418eaee8456abc20be4740cac91c14a92780967805be8a8190adcc5384",
+          "serializedResultBytes": 1592,
+          "status": "bounded_no_counterexample",
+          "reason": "No violating input exists in the supplied finite safe integer/boolean domain under the supported isolated-function semantics.",
+          "sourceSha256": "24932b58c2e70a82a8e174e3dfeceb49a20867aad5f8345627bfdf099faee900",
+          "sourceRevisionId": "src_72eba0e02c8222958b8d33075abd860a",
+          "target": "packages/credit/src/remainder.ts#availableCredit",
+          "validationAdmission": false,
+          "solver": {
+            "executable": "/tmp/blame-z3-f46/bin/z3",
+            "version": "Z3 version 4.15.4 - 64 bit",
+            "querySha256": "7e5b67074cb53418b07fe38cb9f7ed7d080514b21f7d17b26955969407522a40"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2-credit-remainder-reference",
+      "repeat": 2,
+      "task": "credit-remainder",
+      "arm": "reference",
+      "patchSha256": "de2d1279aa3a771fa4c12aff8517628a7411d00edac851997ff0357ee341d390",
+      "traceSha256": "aede94b154ec5d9a0f4ff14662516be8995a7ced8511649b929a0149e9533df7",
+      "sourceHashesBefore": {
+        ".gitignore": "404eb6ba5bedb0592262965fc1f4237514cb5aa6dbd1f153fe5b97298d94c229",
+        "README.md": "377566155e0691e179e4b04c60c4390326e567a4fe4d9885f0f5ad7ec9fe0cff",
+        "apps/policy/package.json": "387dd16ec2084452056f8540eb190bbf9c1cc008cd702fc4f567174b304d3544",
+        "apps/policy/src/debit.test.ts": "470d0a12cfd018d5e79ed81b4c5e3472382101e0f249099ed7c687a9e7be8a0c",
+        "apps/policy/src/debit.ts": "de71461a899484ec30aef15a21703a139e7998f6a3e989ae9ea6eef9902b35e8",
+        "apps/policy/src/original.test.ts": "797d8c7156157945c2c44d458e8407fe60f6524dcb9615b1a1b456b5de62dfaa",
+        "apps/policy/src/tiers.ts": "32decf7ed8ec0fea5f6b40d7105bbb79cc40875ce5447e497c814509453a57b8",
+        "apps/policy/src/windows.ts": "8eeffd740bcfc77e4f73bcf93c4feba1b61bb2251373051ec0a361801b1500d0",
+        "apps/policy/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "node_modules": "symlink:9e5e26540f81b6bc9b50b01e7abca03b765731697c07f83dcc7c224111c9145e",
+        "package.json": "5a67a5106b6fa3d8747d27cd829803c018288752502a9828448379c115cbe143",
+        "packages/credit/package.json": "47c064aade44b9a2f647154ffd8dbcf32e96b25ccb6fd180e9b7799216b15c87",
+        "packages/credit/src/allocation.ts": "313165137a26911a4ae63b69ec20ed774bf6c24ecdd18908a4b19fd543c77be1",
+        "packages/credit/src/index.ts": "a455aadf7edb5c8f9e14ef4c391fcfd6c6405760f559720bc2f91487ae32703e",
+        "packages/credit/src/original.test.ts": "e122a771bde40333c665251c352cc292c32d093384f839b9f9f6982e6f674725",
+        "packages/credit/src/remainder.ts": "24932b58c2e70a82a8e174e3dfeceb49a20867aad5f8345627bfdf099faee900",
+        "packages/credit/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/tiers/package.json": "0e5bbb62926a912fae22d49f33b206ba4e19cad21fcf5ddd991a5d6ebb3c8b82",
+        "packages/tiers/src/cost.ts": "17aeb3886823a8a790e9b1f7208d016b7ed0bdef5bb261d6d63d6008eb48b0c6",
+        "packages/tiers/src/index.ts": "3d0c83b245ceefd0875b273e7db1a3758d014e385a5eaa5969d4d19d59b83c7a",
+        "packages/tiers/src/lower.ts": "8e2d21de5dbf873bd9a711ac4bf75ca4966e5dfe9227da16ce00e16e7423488e",
+        "packages/tiers/src/original.test.ts": "355a0d34c81017e227dbe5c17e2571780587823b1076b14b3d4e2d81c45d588f",
+        "packages/tiers/src/upper.ts": "b3f7f02b83c8967f422f6cb269e0184383e0d6ccaa89f0a997e564bab64e93b7",
+        "packages/tiers/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/windows/package.json": "31d24d046de1ee2483c4782628eb4f2877d2e4da87ca33403b9f7430993683d4",
+        "packages/windows/src/index.ts": "7f7ce7e4fda95cddd52abc4b5b05a2700c7445dafee56a92cf05936887a44023",
+        "packages/windows/src/original.test.ts": "f726042c8a02f59d82f0c242b73b4b1edf26c9ae291b53a4db5d5908e2314aa1",
+        "packages/windows/src/overlap.ts": "7136f657e6e8749dcb5e3c056f86615fe06560267500b40c9415d8cd8a9a2aca",
+        "packages/windows/src/qualifies.ts": "29dfaa8c3b971052fd4cbd7a6304555ba1b1c98bddab9c0a3736b872733533ac",
+        "packages/windows/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "regression.vitest.mjs": "245ba5d1db06564aadad59dd885428af1ed2b7a65cdac0cd91cbbf2a70a2efc8",
+        "scripts/delivered.mjs": "0a7bdbcc7f4a031f59f6a68512614379f4d42bc41d1e61cdab79983ac4dccefb",
+        "tsconfig.json": "a98eb0b63ae75ffafea98b64f82792a8180e63e4adcfa61cf6f11a239957194e",
+        "vitest.config.mjs": "1a31ab6f3bf27762390df2b684feee79c7478d8407daacf7430160f2de246367"
+      },
+      "sourceHashesAfter": {
+        ".gitignore": "404eb6ba5bedb0592262965fc1f4237514cb5aa6dbd1f153fe5b97298d94c229",
+        "README.md": "377566155e0691e179e4b04c60c4390326e567a4fe4d9885f0f5ad7ec9fe0cff",
+        "apps/policy/package.json": "387dd16ec2084452056f8540eb190bbf9c1cc008cd702fc4f567174b304d3544",
+        "apps/policy/src/debit.test.ts": "470d0a12cfd018d5e79ed81b4c5e3472382101e0f249099ed7c687a9e7be8a0c",
+        "apps/policy/src/debit.ts": "de71461a899484ec30aef15a21703a139e7998f6a3e989ae9ea6eef9902b35e8",
+        "apps/policy/src/original.test.ts": "797d8c7156157945c2c44d458e8407fe60f6524dcb9615b1a1b456b5de62dfaa",
+        "apps/policy/src/tiers.ts": "32decf7ed8ec0fea5f6b40d7105bbb79cc40875ce5447e497c814509453a57b8",
+        "apps/policy/src/windows.ts": "8eeffd740bcfc77e4f73bcf93c4feba1b61bb2251373051ec0a361801b1500d0",
+        "apps/policy/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "node_modules": "symlink:9e5e26540f81b6bc9b50b01e7abca03b765731697c07f83dcc7c224111c9145e",
+        "package.json": "5a67a5106b6fa3d8747d27cd829803c018288752502a9828448379c115cbe143",
+        "packages/credit/package.json": "47c064aade44b9a2f647154ffd8dbcf32e96b25ccb6fd180e9b7799216b15c87",
+        "packages/credit/src/allocation.ts": "313165137a26911a4ae63b69ec20ed774bf6c24ecdd18908a4b19fd543c77be1",
+        "packages/credit/src/index.ts": "a455aadf7edb5c8f9e14ef4c391fcfd6c6405760f559720bc2f91487ae32703e",
+        "packages/credit/src/original.test.ts": "e122a771bde40333c665251c352cc292c32d093384f839b9f9f6982e6f674725",
+        "packages/credit/src/remainder.ts": "24932b58c2e70a82a8e174e3dfeceb49a20867aad5f8345627bfdf099faee900",
+        "packages/credit/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/tiers/package.json": "0e5bbb62926a912fae22d49f33b206ba4e19cad21fcf5ddd991a5d6ebb3c8b82",
+        "packages/tiers/src/cost.ts": "17aeb3886823a8a790e9b1f7208d016b7ed0bdef5bb261d6d63d6008eb48b0c6",
+        "packages/tiers/src/index.ts": "3d0c83b245ceefd0875b273e7db1a3758d014e385a5eaa5969d4d19d59b83c7a",
+        "packages/tiers/src/lower.ts": "8e2d21de5dbf873bd9a711ac4bf75ca4966e5dfe9227da16ce00e16e7423488e",
+        "packages/tiers/src/original.test.ts": "355a0d34c81017e227dbe5c17e2571780587823b1076b14b3d4e2d81c45d588f",
+        "packages/tiers/src/upper.ts": "b3f7f02b83c8967f422f6cb269e0184383e0d6ccaa89f0a997e564bab64e93b7",
+        "packages/tiers/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/windows/package.json": "31d24d046de1ee2483c4782628eb4f2877d2e4da87ca33403b9f7430993683d4",
+        "packages/windows/src/index.ts": "7f7ce7e4fda95cddd52abc4b5b05a2700c7445dafee56a92cf05936887a44023",
+        "packages/windows/src/original.test.ts": "f726042c8a02f59d82f0c242b73b4b1edf26c9ae291b53a4db5d5908e2314aa1",
+        "packages/windows/src/overlap.ts": "7136f657e6e8749dcb5e3c056f86615fe06560267500b40c9415d8cd8a9a2aca",
+        "packages/windows/src/qualifies.ts": "29dfaa8c3b971052fd4cbd7a6304555ba1b1c98bddab9c0a3736b872733533ac",
+        "packages/windows/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "regression.vitest.mjs": "245ba5d1db06564aadad59dd885428af1ed2b7a65cdac0cd91cbbf2a70a2efc8",
+        "scripts/delivered.mjs": "0a7bdbcc7f4a031f59f6a68512614379f4d42bc41d1e61cdab79983ac4dccefb",
+        "tsconfig.json": "a98eb0b63ae75ffafea98b64f82792a8180e63e4adcfa61cf6f11a239957194e",
+        "vitest.config.mjs": "1a31ab6f3bf27762390df2b684feee79c7478d8407daacf7430160f2de246367"
+      },
+      "sourceUnchanged": true,
+      "checksBeforeSha256": "7147569e248bd3ce4c0319c507bd01301924fb91fb78187abf381052dd91a3ab",
+      "checksAfterSha256": "7147569e248bd3ce4c0319c507bd01301924fb91fb78187abf381052dd91a3ab",
+      "checksUnchanged": true,
+      "observations": [
+        {
+          "id": "availableCredit",
+          "input": {
+            "kind": "analyze",
+            "target": "packages/credit/src/remainder.ts#availableCredit",
+            "inputs": {
+              "balance": {
+                "min": -3,
+                "max": 3
+              },
+              "reserved": {
+                "min": -3,
+                "max": 3
+              },
+              "limit": {
+                "min": -3,
+                "max": 3
+              }
+            },
+            "assertion": "result === (((limit > 0 ? limit : 0) - (balance > 0 ? balance : 0) - (reserved > 0 ? reserved : 0)) > 0 ? ((limit > 0 ? limit : 0) - (balance > 0 ? balance : 0) - (reserved > 0 ? reserved : 0)) : 0)",
+            "timeoutMs": 2500
+          },
+          "interpretation": "Direct isolated scalar contract: normalize every negative argument to zero and clamp the remainder to zero.",
+          "toolStatus": "ok",
+          "serializedResultSha256": "ec0979b625f5c09f06958ff836206d1c53a500cff5cdcbdbf1e39bc0ec99d6a6",
+          "serializedResultBytes": 1592,
+          "status": "bounded_no_counterexample",
+          "reason": "No violating input exists in the supplied finite safe integer/boolean domain under the supported isolated-function semantics.",
+          "sourceSha256": "24932b58c2e70a82a8e174e3dfeceb49a20867aad5f8345627bfdf099faee900",
+          "sourceRevisionId": "src_9b08ea1b30d76ec603fd4a0dd14b5df8",
+          "target": "packages/credit/src/remainder.ts#availableCredit",
+          "validationAdmission": false,
+          "solver": {
+            "executable": "/tmp/blame-z3-f46/bin/z3",
+            "version": "Z3 version 4.15.4 - 64 bit",
+            "querySha256": "7e5b67074cb53418b07fe38cb9f7ed7d080514b21f7d17b26955969407522a40"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2-inclusive-tier-allocation-cline",
+      "repeat": 2,
+      "task": "inclusive-tier-allocation",
+      "arm": "cline",
+      "patchSha256": "72f91fa14cfa71dce3974d1b2ff742b7dfeced8da22085b3d1fd8cfe4f144f0c",
+      "traceSha256": "f1037b482516911649e7561f42e9222c28e2333530559a7752bd759cebf09eaa",
+      "sourceHashesBefore": {
+        ".gitignore": "404eb6ba5bedb0592262965fc1f4237514cb5aa6dbd1f153fe5b97298d94c229",
+        "README.md": "377566155e0691e179e4b04c60c4390326e567a4fe4d9885f0f5ad7ec9fe0cff",
+        "apps/policy/package.json": "387dd16ec2084452056f8540eb190bbf9c1cc008cd702fc4f567174b304d3544",
+        "apps/policy/src/debit.ts": "6016ca57a4ad305f86e7cf8c2f4ff70e1e86a6cbf6ffe24a6792f4a65ccf39a0",
+        "apps/policy/src/original.test.ts": "797d8c7156157945c2c44d458e8407fe60f6524dcb9615b1a1b456b5de62dfaa",
+        "apps/policy/src/tiers.ts": "a510a5afd71e55ba9a8f5e8029535ab22b8f1d0f756213d37e3be867c71dad93",
+        "apps/policy/src/windows.ts": "8eeffd740bcfc77e4f73bcf93c4feba1b61bb2251373051ec0a361801b1500d0",
+        "apps/policy/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "node_modules": "symlink:9e5e26540f81b6bc9b50b01e7abca03b765731697c07f83dcc7c224111c9145e",
+        "package.json": "5a67a5106b6fa3d8747d27cd829803c018288752502a9828448379c115cbe143",
+        "packages/credit/package.json": "47c064aade44b9a2f647154ffd8dbcf32e96b25ccb6fd180e9b7799216b15c87",
+        "packages/credit/src/allocation.ts": "159269c5ccedeb221118946d4219fa483e39ba9b520a09b6f39b93364ac042b5",
+        "packages/credit/src/index.ts": "a455aadf7edb5c8f9e14ef4c391fcfd6c6405760f559720bc2f91487ae32703e",
+        "packages/credit/src/original.test.ts": "e122a771bde40333c665251c352cc292c32d093384f839b9f9f6982e6f674725",
+        "packages/credit/src/remainder.ts": "ff57e3bd5db747be7ce6e9dd25b37dc9bf40303beb89b98c601d305581385ccb",
+        "packages/credit/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/tiers/package.json": "0e5bbb62926a912fae22d49f33b206ba4e19cad21fcf5ddd991a5d6ebb3c8b82",
+        "packages/tiers/src/cost.ts": "17aeb3886823a8a790e9b1f7208d016b7ed0bdef5bb261d6d63d6008eb48b0c6",
+        "packages/tiers/src/inclusive.test.ts": "30db695d3b957b5167dd4b9a90ac7e9abad07dff7c52d3fdbf1a19a6193348a2",
+        "packages/tiers/src/index.ts": "3d0c83b245ceefd0875b273e7db1a3758d014e385a5eaa5969d4d19d59b83c7a",
+        "packages/tiers/src/lower.ts": "442c2abe864c3a9d4985f07e30ffc4619d1236e1c864c2a96ef68581630c116b",
+        "packages/tiers/src/original.test.ts": "355a0d34c81017e227dbe5c17e2571780587823b1076b14b3d4e2d81c45d588f",
+        "packages/tiers/src/upper.ts": "1479df11c15144a01f422146ac5a88d606789fabd040b29332d1f4e1c8b5424e",
+        "packages/tiers/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/windows/package.json": "31d24d046de1ee2483c4782628eb4f2877d2e4da87ca33403b9f7430993683d4",
+        "packages/windows/src/index.ts": "7f7ce7e4fda95cddd52abc4b5b05a2700c7445dafee56a92cf05936887a44023",
+        "packages/windows/src/original.test.ts": "f726042c8a02f59d82f0c242b73b4b1edf26c9ae291b53a4db5d5908e2314aa1",
+        "packages/windows/src/overlap.ts": "7136f657e6e8749dcb5e3c056f86615fe06560267500b40c9415d8cd8a9a2aca",
+        "packages/windows/src/qualifies.ts": "29dfaa8c3b971052fd4cbd7a6304555ba1b1c98bddab9c0a3736b872733533ac",
+        "packages/windows/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "regression.vitest.mjs": "245ba5d1db06564aadad59dd885428af1ed2b7a65cdac0cd91cbbf2a70a2efc8",
+        "scripts/delivered.mjs": "0a7bdbcc7f4a031f59f6a68512614379f4d42bc41d1e61cdab79983ac4dccefb",
+        "tsconfig.json": "a98eb0b63ae75ffafea98b64f82792a8180e63e4adcfa61cf6f11a239957194e",
+        "vitest.config.mjs": "1a31ab6f3bf27762390df2b684feee79c7478d8407daacf7430160f2de246367"
+      },
+      "sourceHashesAfter": {
+        ".gitignore": "404eb6ba5bedb0592262965fc1f4237514cb5aa6dbd1f153fe5b97298d94c229",
+        "README.md": "377566155e0691e179e4b04c60c4390326e567a4fe4d9885f0f5ad7ec9fe0cff",
+        "apps/policy/package.json": "387dd16ec2084452056f8540eb190bbf9c1cc008cd702fc4f567174b304d3544",
+        "apps/policy/src/debit.ts": "6016ca57a4ad305f86e7cf8c2f4ff70e1e86a6cbf6ffe24a6792f4a65ccf39a0",
+        "apps/policy/src/original.test.ts": "797d8c7156157945c2c44d458e8407fe60f6524dcb9615b1a1b456b5de62dfaa",
+        "apps/policy/src/tiers.ts": "a510a5afd71e55ba9a8f5e8029535ab22b8f1d0f756213d37e3be867c71dad93",
+        "apps/policy/src/windows.ts": "8eeffd740bcfc77e4f73bcf93c4feba1b61bb2251373051ec0a361801b1500d0",
+        "apps/policy/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "node_modules": "symlink:9e5e26540f81b6bc9b50b01e7abca03b765731697c07f83dcc7c224111c9145e",
+        "package.json": "5a67a5106b6fa3d8747d27cd829803c018288752502a9828448379c115cbe143",
+        "packages/credit/package.json": "47c064aade44b9a2f647154ffd8dbcf32e96b25ccb6fd180e9b7799216b15c87",
+        "packages/credit/src/allocation.ts": "159269c5ccedeb221118946d4219fa483e39ba9b520a09b6f39b93364ac042b5",
+        "packages/credit/src/index.ts": "a455aadf7edb5c8f9e14ef4c391fcfd6c6405760f559720bc2f91487ae32703e",
+        "packages/credit/src/original.test.ts": "e122a771bde40333c665251c352cc292c32d093384f839b9f9f6982e6f674725",
+        "packages/credit/src/remainder.ts": "ff57e3bd5db747be7ce6e9dd25b37dc9bf40303beb89b98c601d305581385ccb",
+        "packages/credit/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/tiers/package.json": "0e5bbb62926a912fae22d49f33b206ba4e19cad21fcf5ddd991a5d6ebb3c8b82",
+        "packages/tiers/src/cost.ts": "17aeb3886823a8a790e9b1f7208d016b7ed0bdef5bb261d6d63d6008eb48b0c6",
+        "packages/tiers/src/inclusive.test.ts": "30db695d3b957b5167dd4b9a90ac7e9abad07dff7c52d3fdbf1a19a6193348a2",
+        "packages/tiers/src/index.ts": "3d0c83b245ceefd0875b273e7db1a3758d014e385a5eaa5969d4d19d59b83c7a",
+        "packages/tiers/src/lower.ts": "442c2abe864c3a9d4985f07e30ffc4619d1236e1c864c2a96ef68581630c116b",
+        "packages/tiers/src/original.test.ts": "355a0d34c81017e227dbe5c17e2571780587823b1076b14b3d4e2d81c45d588f",
+        "packages/tiers/src/upper.ts": "1479df11c15144a01f422146ac5a88d606789fabd040b29332d1f4e1c8b5424e",
+        "packages/tiers/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/windows/package.json": "31d24d046de1ee2483c4782628eb4f2877d2e4da87ca33403b9f7430993683d4",
+        "packages/windows/src/index.ts": "7f7ce7e4fda95cddd52abc4b5b05a2700c7445dafee56a92cf05936887a44023",
+        "packages/windows/src/original.test.ts": "f726042c8a02f59d82f0c242b73b4b1edf26c9ae291b53a4db5d5908e2314aa1",
+        "packages/windows/src/overlap.ts": "7136f657e6e8749dcb5e3c056f86615fe06560267500b40c9415d8cd8a9a2aca",
+        "packages/windows/src/qualifies.ts": "29dfaa8c3b971052fd4cbd7a6304555ba1b1c98bddab9c0a3736b872733533ac",
+        "packages/windows/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "regression.vitest.mjs": "245ba5d1db06564aadad59dd885428af1ed2b7a65cdac0cd91cbbf2a70a2efc8",
+        "scripts/delivered.mjs": "0a7bdbcc7f4a031f59f6a68512614379f4d42bc41d1e61cdab79983ac4dccefb",
+        "tsconfig.json": "a98eb0b63ae75ffafea98b64f82792a8180e63e4adcfa61cf6f11a239957194e",
+        "vitest.config.mjs": "1a31ab6f3bf27762390df2b684feee79c7478d8407daacf7430160f2de246367"
+      },
+      "sourceUnchanged": true,
+      "checksBeforeSha256": "5546c0370ac29555699194faac3f04806557e53ad50da015c6690356cf7fce59",
+      "checksAfterSha256": "5546c0370ac29555699194faac3f04806557e53ad50da015c6690356cf7fce59",
+      "checksUnchanged": true,
+      "observations": [
+        {
+          "id": "lowerTierUnits",
+          "input": {
+            "kind": "analyze",
+            "target": "packages/tiers/src/lower.ts#lowerTierUnits",
+            "inputs": {
+              "first": {
+                "min": -3,
+                "max": 3
+              },
+              "last": {
+                "min": -3,
+                "max": 3
+              },
+              "boundary": {
+                "min": -3,
+                "max": 3
+              }
+            },
+            "assertion": "result === (first > last ? 0 : ((last < boundary ? last : boundary) >= first ? (last < boundary ? last : boundary) - first + 1 : 0))",
+            "timeoutMs": 2500
+          },
+          "interpretation": "Direct isolated scalar contract for lower-tier closed-interval counts; upperTierUnits and consumer composition are outside this query.",
+          "toolStatus": "ok",
+          "serializedResultSha256": "73ab09f0e22faa36577f80b1e44fd5802b0c8665527feabec5fbeb78b43a727d",
+          "serializedResultBytes": 1516,
+          "status": "bounded_no_counterexample",
+          "reason": "No violating input exists in the supplied finite safe integer/boolean domain under the supported isolated-function semantics.",
+          "sourceSha256": "442c2abe864c3a9d4985f07e30ffc4619d1236e1c864c2a96ef68581630c116b",
+          "sourceRevisionId": "src_cdf932582576d5c62c1438aa758b5e4d",
+          "target": "packages/tiers/src/lower.ts#lowerTierUnits",
+          "validationAdmission": false,
+          "solver": {
+            "executable": "/tmp/blame-z3-f46/bin/z3",
+            "version": "Z3 version 4.15.4 - 64 bit",
+            "querySha256": "f609afa8c40c63c331cbacc566252904acea01eab887999388677c2a9419651e"
+          }
+        },
+        {
+          "id": "tierCost",
+          "input": {
+            "kind": "analyze",
+            "target": "packages/tiers/src/cost.ts#tierCost",
+            "inputs": {
+              "lowerUnits": {
+                "min": 0,
+                "max": 3
+              },
+              "upperUnits": {
+                "min": 0,
+                "max": 3
+              },
+              "lowerRate": {
+                "min": -3,
+                "max": 3
+              },
+              "upperRate": {
+                "min": -3,
+                "max": 3
+              }
+            },
+            "assertion": "result === lowerUnits * (lowerRate > 0 ? lowerRate : 0) + upperUnits * (upperRate > 0 ? upperRate : 0)",
+            "timeoutMs": 2500
+          },
+          "interpretation": "Interpretation-sensitive broader scalar diagnostic: the user explicitly requires normalized rates in the quotation path, but does not unambiguously require tierCost itself to normalize if its caller already does so. A scalar counterexample here alone is not an original-task failure.",
+          "toolStatus": "ok",
+          "serializedResultSha256": "7532f980b367cf94e43e8b215014f47aa79384382f1d3bc9850778f06e942032",
+          "serializedResultBytes": 1641,
+          "status": "counterexample",
+          "reason": "A violating input was reproduced by interpreting the original supported TypeScript AST with JavaScript scalar operations.",
+          "sourceSha256": "17aeb3886823a8a790e9b1f7208d016b7ed0bdef5bb261d6d63d6008eb48b0c6",
+          "sourceRevisionId": "src_cdf932582576d5c62c1438aa758b5e4d",
+          "target": "packages/tiers/src/cost.ts#tierCost",
+          "validationAdmission": false,
+          "solver": {
+            "executable": "/tmp/blame-z3-f46/bin/z3",
+            "version": "Z3 version 4.15.4 - 64 bit",
+            "querySha256": "31caa1b21cbf46ee5c978c602c33982b061e52f76e32da444bac4ae69dca4fe1"
+          },
+          "witness": {
+            "inputs": {
+              "lowerUnits": 3,
+              "upperUnits": 1,
+              "lowerRate": -3,
+              "upperRate": -1
+            },
+            "result": -10,
+            "assertion": false,
+            "concretelyReproduced": true
+          },
+          "witnessReplay": {
+            "method": "isolated_actual_js",
+            "moduleIntegration": false,
+            "modelRepair": false,
+            "sourceSha256": "17aeb3886823a8a790e9b1f7208d016b7ed0bdef5bb261d6d63d6008eb48b0c6",
+            "declarationSha256": "382175f2da8ca8154d5ce8188d81d33d4c93a9667da66bf78dcda5bba72e85ab",
+            "childSourceSha256": "f6178d7f627b32ae093609b987d421ff90c6a87c8bca0f0921036a30ed156ec7",
+            "witnessSha256": "f2025f5c06750f8108bffbdb0d5f6844e9c8c85fe2a49971144750280b0d12ab",
+            "parameterOrder": [
+              "lowerUnits",
+              "upperUnits",
+              "lowerRate",
+              "upperRate"
+            ],
+            "rangeUtf8": [
+              0,
+              157
+            ],
+            "exitCode": 0,
+            "signal": null,
+            "error": null,
+            "stdoutSha256": "609d221c9d2114f9d5647e5a4712077b8e550d5f7cc122d2646b20c15cc03bae",
+            "stdoutBytes": 15,
+            "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderrBytes": 0,
+            "status": "executed",
+            "actual": -10,
+            "expected": 0,
+            "matchesSymbolicResult": true,
+            "propertyViolated": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "2-inclusive-tier-allocation-reference",
+      "repeat": 2,
+      "task": "inclusive-tier-allocation",
+      "arm": "reference",
+      "patchSha256": "164889e7099df3a5ad2da9d5d9f821f4cf3865c324187aef1e5aea29159bc252",
+      "traceSha256": "501c86c47951a2ce52a865ba31c0f6850a8aecf7f4131bccfe3feec25ce7b151",
+      "sourceHashesBefore": {
+        ".gitignore": "404eb6ba5bedb0592262965fc1f4237514cb5aa6dbd1f153fe5b97298d94c229",
+        "README.md": "377566155e0691e179e4b04c60c4390326e567a4fe4d9885f0f5ad7ec9fe0cff",
+        "apps/policy/package.json": "387dd16ec2084452056f8540eb190bbf9c1cc008cd702fc4f567174b304d3544",
+        "apps/policy/src/debit.ts": "6016ca57a4ad305f86e7cf8c2f4ff70e1e86a6cbf6ffe24a6792f4a65ccf39a0",
+        "apps/policy/src/original.test.ts": "797d8c7156157945c2c44d458e8407fe60f6524dcb9615b1a1b456b5de62dfaa",
+        "apps/policy/src/tiers.test.ts": "c42fc230aecbbc50cdbc7ad1b9ed1c67939331cd69744949d5c5c31369e40ede",
+        "apps/policy/src/tiers.ts": "cd2cbb4901632d6af78eb313d6b643ebdf1d6024db87a98d4982c7a72bb1e67d",
+        "apps/policy/src/windows.ts": "8eeffd740bcfc77e4f73bcf93c4feba1b61bb2251373051ec0a361801b1500d0",
+        "apps/policy/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "node_modules": "symlink:9e5e26540f81b6bc9b50b01e7abca03b765731697c07f83dcc7c224111c9145e",
+        "package.json": "5a67a5106b6fa3d8747d27cd829803c018288752502a9828448379c115cbe143",
+        "packages/credit/package.json": "47c064aade44b9a2f647154ffd8dbcf32e96b25ccb6fd180e9b7799216b15c87",
+        "packages/credit/src/allocation.ts": "159269c5ccedeb221118946d4219fa483e39ba9b520a09b6f39b93364ac042b5",
+        "packages/credit/src/index.ts": "a455aadf7edb5c8f9e14ef4c391fcfd6c6405760f559720bc2f91487ae32703e",
+        "packages/credit/src/original.test.ts": "e122a771bde40333c665251c352cc292c32d093384f839b9f9f6982e6f674725",
+        "packages/credit/src/remainder.ts": "ff57e3bd5db747be7ce6e9dd25b37dc9bf40303beb89b98c601d305581385ccb",
+        "packages/credit/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/tiers/package.json": "0e5bbb62926a912fae22d49f33b206ba4e19cad21fcf5ddd991a5d6ebb3c8b82",
+        "packages/tiers/src/cost.ts": "17aeb3886823a8a790e9b1f7208d016b7ed0bdef5bb261d6d63d6008eb48b0c6",
+        "packages/tiers/src/index.ts": "3d0c83b245ceefd0875b273e7db1a3758d014e385a5eaa5969d4d19d59b83c7a",
+        "packages/tiers/src/lower.ts": "8f9bb7ec52fe86dc06ad57bd05fab7ac0ff4a772fad947340a3e08b9be0e3a10",
+        "packages/tiers/src/original.test.ts": "355a0d34c81017e227dbe5c17e2571780587823b1076b14b3d4e2d81c45d588f",
+        "packages/tiers/src/upper.ts": "d86316454204489d8c3533cfdb6dcdad6a623bd8c02bb3cb0fed07054d27dd4e",
+        "packages/tiers/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/windows/package.json": "31d24d046de1ee2483c4782628eb4f2877d2e4da87ca33403b9f7430993683d4",
+        "packages/windows/src/index.ts": "7f7ce7e4fda95cddd52abc4b5b05a2700c7445dafee56a92cf05936887a44023",
+        "packages/windows/src/original.test.ts": "f726042c8a02f59d82f0c242b73b4b1edf26c9ae291b53a4db5d5908e2314aa1",
+        "packages/windows/src/overlap.ts": "7136f657e6e8749dcb5e3c056f86615fe06560267500b40c9415d8cd8a9a2aca",
+        "packages/windows/src/qualifies.ts": "29dfaa8c3b971052fd4cbd7a6304555ba1b1c98bddab9c0a3736b872733533ac",
+        "packages/windows/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "regression.vitest.mjs": "245ba5d1db06564aadad59dd885428af1ed2b7a65cdac0cd91cbbf2a70a2efc8",
+        "scripts/delivered.mjs": "0a7bdbcc7f4a031f59f6a68512614379f4d42bc41d1e61cdab79983ac4dccefb",
+        "tsconfig.json": "a98eb0b63ae75ffafea98b64f82792a8180e63e4adcfa61cf6f11a239957194e",
+        "vitest.config.mjs": "1a31ab6f3bf27762390df2b684feee79c7478d8407daacf7430160f2de246367"
+      },
+      "sourceHashesAfter": {
+        ".gitignore": "404eb6ba5bedb0592262965fc1f4237514cb5aa6dbd1f153fe5b97298d94c229",
+        "README.md": "377566155e0691e179e4b04c60c4390326e567a4fe4d9885f0f5ad7ec9fe0cff",
+        "apps/policy/package.json": "387dd16ec2084452056f8540eb190bbf9c1cc008cd702fc4f567174b304d3544",
+        "apps/policy/src/debit.ts": "6016ca57a4ad305f86e7cf8c2f4ff70e1e86a6cbf6ffe24a6792f4a65ccf39a0",
+        "apps/policy/src/original.test.ts": "797d8c7156157945c2c44d458e8407fe60f6524dcb9615b1a1b456b5de62dfaa",
+        "apps/policy/src/tiers.test.ts": "c42fc230aecbbc50cdbc7ad1b9ed1c67939331cd69744949d5c5c31369e40ede",
+        "apps/policy/src/tiers.ts": "cd2cbb4901632d6af78eb313d6b643ebdf1d6024db87a98d4982c7a72bb1e67d",
+        "apps/policy/src/windows.ts": "8eeffd740bcfc77e4f73bcf93c4feba1b61bb2251373051ec0a361801b1500d0",
+        "apps/policy/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "node_modules": "symlink:9e5e26540f81b6bc9b50b01e7abca03b765731697c07f83dcc7c224111c9145e",
+        "package.json": "5a67a5106b6fa3d8747d27cd829803c018288752502a9828448379c115cbe143",
+        "packages/credit/package.json": "47c064aade44b9a2f647154ffd8dbcf32e96b25ccb6fd180e9b7799216b15c87",
+        "packages/credit/src/allocation.ts": "159269c5ccedeb221118946d4219fa483e39ba9b520a09b6f39b93364ac042b5",
+        "packages/credit/src/index.ts": "a455aadf7edb5c8f9e14ef4c391fcfd6c6405760f559720bc2f91487ae32703e",
+        "packages/credit/src/original.test.ts": "e122a771bde40333c665251c352cc292c32d093384f839b9f9f6982e6f674725",
+        "packages/credit/src/remainder.ts": "ff57e3bd5db747be7ce6e9dd25b37dc9bf40303beb89b98c601d305581385ccb",
+        "packages/credit/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/tiers/package.json": "0e5bbb62926a912fae22d49f33b206ba4e19cad21fcf5ddd991a5d6ebb3c8b82",
+        "packages/tiers/src/cost.ts": "17aeb3886823a8a790e9b1f7208d016b7ed0bdef5bb261d6d63d6008eb48b0c6",
+        "packages/tiers/src/index.ts": "3d0c83b245ceefd0875b273e7db1a3758d014e385a5eaa5969d4d19d59b83c7a",
+        "packages/tiers/src/lower.ts": "8f9bb7ec52fe86dc06ad57bd05fab7ac0ff4a772fad947340a3e08b9be0e3a10",
+        "packages/tiers/src/original.test.ts": "355a0d34c81017e227dbe5c17e2571780587823b1076b14b3d4e2d81c45d588f",
+        "packages/tiers/src/upper.ts": "d86316454204489d8c3533cfdb6dcdad6a623bd8c02bb3cb0fed07054d27dd4e",
+        "packages/tiers/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/windows/package.json": "31d24d046de1ee2483c4782628eb4f2877d2e4da87ca33403b9f7430993683d4",
+        "packages/windows/src/index.ts": "7f7ce7e4fda95cddd52abc4b5b05a2700c7445dafee56a92cf05936887a44023",
+        "packages/windows/src/original.test.ts": "f726042c8a02f59d82f0c242b73b4b1edf26c9ae291b53a4db5d5908e2314aa1",
+        "packages/windows/src/overlap.ts": "7136f657e6e8749dcb5e3c056f86615fe06560267500b40c9415d8cd8a9a2aca",
+        "packages/windows/src/qualifies.ts": "29dfaa8c3b971052fd4cbd7a6304555ba1b1c98bddab9c0a3736b872733533ac",
+        "packages/windows/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "regression.vitest.mjs": "245ba5d1db06564aadad59dd885428af1ed2b7a65cdac0cd91cbbf2a70a2efc8",
+        "scripts/delivered.mjs": "0a7bdbcc7f4a031f59f6a68512614379f4d42bc41d1e61cdab79983ac4dccefb",
+        "tsconfig.json": "a98eb0b63ae75ffafea98b64f82792a8180e63e4adcfa61cf6f11a239957194e",
+        "vitest.config.mjs": "1a31ab6f3bf27762390df2b684feee79c7478d8407daacf7430160f2de246367"
+      },
+      "sourceUnchanged": true,
+      "checksBeforeSha256": "2810e6f78e5433adecfed6714c59063b36229745147422ea887b3c7cd82a73bf",
+      "checksAfterSha256": "2810e6f78e5433adecfed6714c59063b36229745147422ea887b3c7cd82a73bf",
+      "checksUnchanged": true,
+      "observations": [
+        {
+          "id": "lowerTierUnits",
+          "input": {
+            "kind": "analyze",
+            "target": "packages/tiers/src/lower.ts#lowerTierUnits",
+            "inputs": {
+              "first": {
+                "min": -3,
+                "max": 3
+              },
+              "last": {
+                "min": -3,
+                "max": 3
+              },
+              "boundary": {
+                "min": -3,
+                "max": 3
+              }
+            },
+            "assertion": "result === (first > last ? 0 : ((last < boundary ? last : boundary) >= first ? (last < boundary ? last : boundary) - first + 1 : 0))",
+            "timeoutMs": 2500
+          },
+          "interpretation": "Direct isolated scalar contract for lower-tier closed-interval counts; upperTierUnits and consumer composition are outside this query.",
+          "toolStatus": "ok",
+          "serializedResultSha256": "be0417b053ca4a6f787862865be28d150b99be4cc35d76619043a3c6323a1a3e",
+          "serializedResultBytes": 1516,
+          "status": "bounded_no_counterexample",
+          "reason": "No violating input exists in the supplied finite safe integer/boolean domain under the supported isolated-function semantics.",
+          "sourceSha256": "8f9bb7ec52fe86dc06ad57bd05fab7ac0ff4a772fad947340a3e08b9be0e3a10",
+          "sourceRevisionId": "src_60fbb32f14dee10596e553b3164e596d",
+          "target": "packages/tiers/src/lower.ts#lowerTierUnits",
+          "validationAdmission": false,
+          "solver": {
+            "executable": "/tmp/blame-z3-f46/bin/z3",
+            "version": "Z3 version 4.15.4 - 64 bit",
+            "querySha256": "f609afa8c40c63c331cbacc566252904acea01eab887999388677c2a9419651e"
+          }
+        },
+        {
+          "id": "tierCost",
+          "input": {
+            "kind": "analyze",
+            "target": "packages/tiers/src/cost.ts#tierCost",
+            "inputs": {
+              "lowerUnits": {
+                "min": 0,
+                "max": 3
+              },
+              "upperUnits": {
+                "min": 0,
+                "max": 3
+              },
+              "lowerRate": {
+                "min": -3,
+                "max": 3
+              },
+              "upperRate": {
+                "min": -3,
+                "max": 3
+              }
+            },
+            "assertion": "result === lowerUnits * (lowerRate > 0 ? lowerRate : 0) + upperUnits * (upperRate > 0 ? upperRate : 0)",
+            "timeoutMs": 2500
+          },
+          "interpretation": "Interpretation-sensitive broader scalar diagnostic: the user explicitly requires normalized rates in the quotation path, but does not unambiguously require tierCost itself to normalize if its caller already does so. A scalar counterexample here alone is not an original-task failure.",
+          "toolStatus": "ok",
+          "serializedResultSha256": "22c91a71a2a6ca8fea125262f55a4102de7ab4cd91e605125a5d13700f7d2d88",
+          "serializedResultBytes": 1641,
+          "status": "counterexample",
+          "reason": "A violating input was reproduced by interpreting the original supported TypeScript AST with JavaScript scalar operations.",
+          "sourceSha256": "17aeb3886823a8a790e9b1f7208d016b7ed0bdef5bb261d6d63d6008eb48b0c6",
+          "sourceRevisionId": "src_60fbb32f14dee10596e553b3164e596d",
+          "target": "packages/tiers/src/cost.ts#tierCost",
+          "validationAdmission": false,
+          "solver": {
+            "executable": "/tmp/blame-z3-f46/bin/z3",
+            "version": "Z3 version 4.15.4 - 64 bit",
+            "querySha256": "31caa1b21cbf46ee5c978c602c33982b061e52f76e32da444bac4ae69dca4fe1"
+          },
+          "witness": {
+            "inputs": {
+              "lowerUnits": 3,
+              "upperUnits": 1,
+              "lowerRate": -3,
+              "upperRate": -1
+            },
+            "result": -10,
+            "assertion": false,
+            "concretelyReproduced": true
+          },
+          "witnessReplay": {
+            "method": "isolated_actual_js",
+            "moduleIntegration": false,
+            "modelRepair": false,
+            "sourceSha256": "17aeb3886823a8a790e9b1f7208d016b7ed0bdef5bb261d6d63d6008eb48b0c6",
+            "declarationSha256": "382175f2da8ca8154d5ce8188d81d33d4c93a9667da66bf78dcda5bba72e85ab",
+            "childSourceSha256": "f6178d7f627b32ae093609b987d421ff90c6a87c8bca0f0921036a30ed156ec7",
+            "witnessSha256": "f2025f5c06750f8108bffbdb0d5f6844e9c8c85fe2a49971144750280b0d12ab",
+            "parameterOrder": [
+              "lowerUnits",
+              "upperUnits",
+              "lowerRate",
+              "upperRate"
+            ],
+            "rangeUtf8": [
+              0,
+              157
+            ],
+            "exitCode": 0,
+            "signal": null,
+            "error": null,
+            "stdoutSha256": "609d221c9d2114f9d5647e5a4712077b8e550d5f7cc122d2646b20c15cc03bae",
+            "stdoutBytes": 15,
+            "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderrBytes": 0,
+            "status": "executed",
+            "actual": -10,
+            "expected": 0,
+            "matchesSymbolicResult": true,
+            "propertyViolated": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "2-inclusive-tier-allocation-candidate",
+      "repeat": 2,
+      "task": "inclusive-tier-allocation",
+      "arm": "candidate",
+      "patchSha256": "5e1f633ceb081b4a9f9aa470f9423764aa81a34a2c3a9a3866b29627a87adf4b",
+      "traceSha256": "e246ab654fc9824bd34842f5f95cea63394e71bc29afaafd5837d77e8842142a",
+      "sourceHashesBefore": {
+        ".gitignore": "404eb6ba5bedb0592262965fc1f4237514cb5aa6dbd1f153fe5b97298d94c229",
+        "README.md": "377566155e0691e179e4b04c60c4390326e567a4fe4d9885f0f5ad7ec9fe0cff",
+        "apps/policy/package.json": "387dd16ec2084452056f8540eb190bbf9c1cc008cd702fc4f567174b304d3544",
+        "apps/policy/src/debit.ts": "6016ca57a4ad305f86e7cf8c2f4ff70e1e86a6cbf6ffe24a6792f4a65ccf39a0",
+        "apps/policy/src/inclusive-tier-accounting.test.ts": "6ba19015811489a062d531d90ce498edecf53996473d12288787155bfbffd4a7",
+        "apps/policy/src/original.test.ts": "797d8c7156157945c2c44d458e8407fe60f6524dcb9615b1a1b456b5de62dfaa",
+        "apps/policy/src/tiers.ts": "2d5f85771af4eb5f8ece5840071963ced7d38ba7ebaf3807db120bfdfc05bd3d",
+        "apps/policy/src/windows.ts": "8eeffd740bcfc77e4f73bcf93c4feba1b61bb2251373051ec0a361801b1500d0",
+        "apps/policy/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "node_modules": "symlink:9e5e26540f81b6bc9b50b01e7abca03b765731697c07f83dcc7c224111c9145e",
+        "package.json": "5a67a5106b6fa3d8747d27cd829803c018288752502a9828448379c115cbe143",
+        "packages/credit/package.json": "47c064aade44b9a2f647154ffd8dbcf32e96b25ccb6fd180e9b7799216b15c87",
+        "packages/credit/src/allocation.ts": "159269c5ccedeb221118946d4219fa483e39ba9b520a09b6f39b93364ac042b5",
+        "packages/credit/src/index.ts": "a455aadf7edb5c8f9e14ef4c391fcfd6c6405760f559720bc2f91487ae32703e",
+        "packages/credit/src/original.test.ts": "e122a771bde40333c665251c352cc292c32d093384f839b9f9f6982e6f674725",
+        "packages/credit/src/remainder.ts": "ff57e3bd5db747be7ce6e9dd25b37dc9bf40303beb89b98c601d305581385ccb",
+        "packages/credit/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/tiers/package.json": "0e5bbb62926a912fae22d49f33b206ba4e19cad21fcf5ddd991a5d6ebb3c8b82",
+        "packages/tiers/src/cost.ts": "5de4450d9c585081356203709b1f8cedc45d49456b61edb3f38fcf8b753479fb",
+        "packages/tiers/src/index.ts": "3d0c83b245ceefd0875b273e7db1a3758d014e385a5eaa5969d4d19d59b83c7a",
+        "packages/tiers/src/lower.ts": "8f9bb7ec52fe86dc06ad57bd05fab7ac0ff4a772fad947340a3e08b9be0e3a10",
+        "packages/tiers/src/original.test.ts": "355a0d34c81017e227dbe5c17e2571780587823b1076b14b3d4e2d81c45d588f",
+        "packages/tiers/src/upper.ts": "d86316454204489d8c3533cfdb6dcdad6a623bd8c02bb3cb0fed07054d27dd4e",
+        "packages/tiers/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/windows/package.json": "31d24d046de1ee2483c4782628eb4f2877d2e4da87ca33403b9f7430993683d4",
+        "packages/windows/src/index.ts": "7f7ce7e4fda95cddd52abc4b5b05a2700c7445dafee56a92cf05936887a44023",
+        "packages/windows/src/original.test.ts": "f726042c8a02f59d82f0c242b73b4b1edf26c9ae291b53a4db5d5908e2314aa1",
+        "packages/windows/src/overlap.ts": "7136f657e6e8749dcb5e3c056f86615fe06560267500b40c9415d8cd8a9a2aca",
+        "packages/windows/src/qualifies.ts": "29dfaa8c3b971052fd4cbd7a6304555ba1b1c98bddab9c0a3736b872733533ac",
+        "packages/windows/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "regression.vitest.mjs": "245ba5d1db06564aadad59dd885428af1ed2b7a65cdac0cd91cbbf2a70a2efc8",
+        "scripts/delivered.mjs": "0a7bdbcc7f4a031f59f6a68512614379f4d42bc41d1e61cdab79983ac4dccefb",
+        "tsconfig.json": "a98eb0b63ae75ffafea98b64f82792a8180e63e4adcfa61cf6f11a239957194e",
+        "vitest.config.mjs": "1a31ab6f3bf27762390df2b684feee79c7478d8407daacf7430160f2de246367"
+      },
+      "sourceHashesAfter": {
+        ".gitignore": "404eb6ba5bedb0592262965fc1f4237514cb5aa6dbd1f153fe5b97298d94c229",
+        "README.md": "377566155e0691e179e4b04c60c4390326e567a4fe4d9885f0f5ad7ec9fe0cff",
+        "apps/policy/package.json": "387dd16ec2084452056f8540eb190bbf9c1cc008cd702fc4f567174b304d3544",
+        "apps/policy/src/debit.ts": "6016ca57a4ad305f86e7cf8c2f4ff70e1e86a6cbf6ffe24a6792f4a65ccf39a0",
+        "apps/policy/src/inclusive-tier-accounting.test.ts": "6ba19015811489a062d531d90ce498edecf53996473d12288787155bfbffd4a7",
+        "apps/policy/src/original.test.ts": "797d8c7156157945c2c44d458e8407fe60f6524dcb9615b1a1b456b5de62dfaa",
+        "apps/policy/src/tiers.ts": "2d5f85771af4eb5f8ece5840071963ced7d38ba7ebaf3807db120bfdfc05bd3d",
+        "apps/policy/src/windows.ts": "8eeffd740bcfc77e4f73bcf93c4feba1b61bb2251373051ec0a361801b1500d0",
+        "apps/policy/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "node_modules": "symlink:9e5e26540f81b6bc9b50b01e7abca03b765731697c07f83dcc7c224111c9145e",
+        "package.json": "5a67a5106b6fa3d8747d27cd829803c018288752502a9828448379c115cbe143",
+        "packages/credit/package.json": "47c064aade44b9a2f647154ffd8dbcf32e96b25ccb6fd180e9b7799216b15c87",
+        "packages/credit/src/allocation.ts": "159269c5ccedeb221118946d4219fa483e39ba9b520a09b6f39b93364ac042b5",
+        "packages/credit/src/index.ts": "a455aadf7edb5c8f9e14ef4c391fcfd6c6405760f559720bc2f91487ae32703e",
+        "packages/credit/src/original.test.ts": "e122a771bde40333c665251c352cc292c32d093384f839b9f9f6982e6f674725",
+        "packages/credit/src/remainder.ts": "ff57e3bd5db747be7ce6e9dd25b37dc9bf40303beb89b98c601d305581385ccb",
+        "packages/credit/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/tiers/package.json": "0e5bbb62926a912fae22d49f33b206ba4e19cad21fcf5ddd991a5d6ebb3c8b82",
+        "packages/tiers/src/cost.ts": "5de4450d9c585081356203709b1f8cedc45d49456b61edb3f38fcf8b753479fb",
+        "packages/tiers/src/index.ts": "3d0c83b245ceefd0875b273e7db1a3758d014e385a5eaa5969d4d19d59b83c7a",
+        "packages/tiers/src/lower.ts": "8f9bb7ec52fe86dc06ad57bd05fab7ac0ff4a772fad947340a3e08b9be0e3a10",
+        "packages/tiers/src/original.test.ts": "355a0d34c81017e227dbe5c17e2571780587823b1076b14b3d4e2d81c45d588f",
+        "packages/tiers/src/upper.ts": "d86316454204489d8c3533cfdb6dcdad6a623bd8c02bb3cb0fed07054d27dd4e",
+        "packages/tiers/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/windows/package.json": "31d24d046de1ee2483c4782628eb4f2877d2e4da87ca33403b9f7430993683d4",
+        "packages/windows/src/index.ts": "7f7ce7e4fda95cddd52abc4b5b05a2700c7445dafee56a92cf05936887a44023",
+        "packages/windows/src/original.test.ts": "f726042c8a02f59d82f0c242b73b4b1edf26c9ae291b53a4db5d5908e2314aa1",
+        "packages/windows/src/overlap.ts": "7136f657e6e8749dcb5e3c056f86615fe06560267500b40c9415d8cd8a9a2aca",
+        "packages/windows/src/qualifies.ts": "29dfaa8c3b971052fd4cbd7a6304555ba1b1c98bddab9c0a3736b872733533ac",
+        "packages/windows/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "regression.vitest.mjs": "245ba5d1db06564aadad59dd885428af1ed2b7a65cdac0cd91cbbf2a70a2efc8",
+        "scripts/delivered.mjs": "0a7bdbcc7f4a031f59f6a68512614379f4d42bc41d1e61cdab79983ac4dccefb",
+        "tsconfig.json": "a98eb0b63ae75ffafea98b64f82792a8180e63e4adcfa61cf6f11a239957194e",
+        "vitest.config.mjs": "1a31ab6f3bf27762390df2b684feee79c7478d8407daacf7430160f2de246367"
+      },
+      "sourceUnchanged": true,
+      "checksBeforeSha256": "ad843ca39fe0b876c619a1b59bf6b158ddf3da1d752b897377e0f3c8c7d3853a",
+      "checksAfterSha256": "ad843ca39fe0b876c619a1b59bf6b158ddf3da1d752b897377e0f3c8c7d3853a",
+      "checksUnchanged": true,
+      "observations": [
+        {
+          "id": "lowerTierUnits",
+          "input": {
+            "kind": "analyze",
+            "target": "packages/tiers/src/lower.ts#lowerTierUnits",
+            "inputs": {
+              "first": {
+                "min": -3,
+                "max": 3
+              },
+              "last": {
+                "min": -3,
+                "max": 3
+              },
+              "boundary": {
+                "min": -3,
+                "max": 3
+              }
+            },
+            "assertion": "result === (first > last ? 0 : ((last < boundary ? last : boundary) >= first ? (last < boundary ? last : boundary) - first + 1 : 0))",
+            "timeoutMs": 2500
+          },
+          "interpretation": "Direct isolated scalar contract for lower-tier closed-interval counts; upperTierUnits and consumer composition are outside this query.",
+          "toolStatus": "ok",
+          "serializedResultSha256": "5853526944d920d0a55490eb95b8142eb8c5f648c08f5a7fc27d6f53fb648426",
+          "serializedResultBytes": 1516,
+          "status": "bounded_no_counterexample",
+          "reason": "No violating input exists in the supplied finite safe integer/boolean domain under the supported isolated-function semantics.",
+          "sourceSha256": "8f9bb7ec52fe86dc06ad57bd05fab7ac0ff4a772fad947340a3e08b9be0e3a10",
+          "sourceRevisionId": "src_0ffdc18fcb83e754efa79985d4846953",
+          "target": "packages/tiers/src/lower.ts#lowerTierUnits",
+          "validationAdmission": false,
+          "solver": {
+            "executable": "/tmp/blame-z3-f46/bin/z3",
+            "version": "Z3 version 4.15.4 - 64 bit",
+            "querySha256": "f609afa8c40c63c331cbacc566252904acea01eab887999388677c2a9419651e"
+          }
+        },
+        {
+          "id": "tierCost",
+          "input": {
+            "kind": "analyze",
+            "target": "packages/tiers/src/cost.ts#tierCost",
+            "inputs": {
+              "lowerUnits": {
+                "min": 0,
+                "max": 3
+              },
+              "upperUnits": {
+                "min": 0,
+                "max": 3
+              },
+              "lowerRate": {
+                "min": -3,
+                "max": 3
+              },
+              "upperRate": {
+                "min": -3,
+                "max": 3
+              }
+            },
+            "assertion": "result === lowerUnits * (lowerRate > 0 ? lowerRate : 0) + upperUnits * (upperRate > 0 ? upperRate : 0)",
+            "timeoutMs": 2500
+          },
+          "interpretation": "Interpretation-sensitive broader scalar diagnostic: the user explicitly requires normalized rates in the quotation path, but does not unambiguously require tierCost itself to normalize if its caller already does so. A scalar counterexample here alone is not an original-task failure.",
+          "toolStatus": "ok",
+          "serializedResultSha256": "c8d0a131923df5f18d25647b49b63a16aada7438a23987f2f5e96842032c2832",
+          "serializedResultBytes": 1514,
+          "status": "bounded_no_counterexample",
+          "reason": "No violating input exists in the supplied finite safe integer/boolean domain under the supported isolated-function semantics.",
+          "sourceSha256": "5de4450d9c585081356203709b1f8cedc45d49456b61edb3f38fcf8b753479fb",
+          "sourceRevisionId": "src_0ffdc18fcb83e754efa79985d4846953",
+          "target": "packages/tiers/src/cost.ts#tierCost",
+          "validationAdmission": false,
+          "solver": {
+            "executable": "/tmp/blame-z3-f46/bin/z3",
+            "version": "Z3 version 4.15.4 - 64 bit",
+            "querySha256": "70051f525b221dce8a3d53e5378ff555653f504274f89918e3b85cfb0d638ec8"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2-signed-window-overlap-reference",
+      "repeat": 2,
+      "task": "signed-window-overlap",
+      "arm": "reference",
+      "patchSha256": "5d801d47f63ced1a9cfad05684ab1b3f9ea5ce9aeeda209ec59499cdf4300838",
+      "traceSha256": "92433f8532398f06885e726c79dd03ee94f1590edc1da6a64bdc3bd4fbeb25e2",
+      "sourceHashesBefore": {
+        ".gitignore": "404eb6ba5bedb0592262965fc1f4237514cb5aa6dbd1f153fe5b97298d94c229",
+        "README.md": "377566155e0691e179e4b04c60c4390326e567a4fe4d9885f0f5ad7ec9fe0cff",
+        "apps/policy/package.json": "387dd16ec2084452056f8540eb190bbf9c1cc008cd702fc4f567174b304d3544",
+        "apps/policy/src/debit.ts": "6016ca57a4ad305f86e7cf8c2f4ff70e1e86a6cbf6ffe24a6792f4a65ccf39a0",
+        "apps/policy/src/original.test.ts": "797d8c7156157945c2c44d458e8407fe60f6524dcb9615b1a1b456b5de62dfaa",
+        "apps/policy/src/regression.test.ts": "ea66398d4df259eec17197346dff9c0eef27177e7ab656eb9a63c6506ace8677",
+        "apps/policy/src/tiers.ts": "32decf7ed8ec0fea5f6b40d7105bbb79cc40875ce5447e497c814509453a57b8",
+        "apps/policy/src/windows.ts": "fdaf732c81562f15a05c52795fde38da74b44136e4995d04ba5e24f824181164",
+        "apps/policy/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "node_modules": "symlink:9e5e26540f81b6bc9b50b01e7abca03b765731697c07f83dcc7c224111c9145e",
+        "package.json": "5a67a5106b6fa3d8747d27cd829803c018288752502a9828448379c115cbe143",
+        "packages/credit/package.json": "47c064aade44b9a2f647154ffd8dbcf32e96b25ccb6fd180e9b7799216b15c87",
+        "packages/credit/src/allocation.ts": "159269c5ccedeb221118946d4219fa483e39ba9b520a09b6f39b93364ac042b5",
+        "packages/credit/src/index.ts": "a455aadf7edb5c8f9e14ef4c391fcfd6c6405760f559720bc2f91487ae32703e",
+        "packages/credit/src/original.test.ts": "e122a771bde40333c665251c352cc292c32d093384f839b9f9f6982e6f674725",
+        "packages/credit/src/remainder.ts": "ff57e3bd5db747be7ce6e9dd25b37dc9bf40303beb89b98c601d305581385ccb",
+        "packages/credit/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/tiers/package.json": "0e5bbb62926a912fae22d49f33b206ba4e19cad21fcf5ddd991a5d6ebb3c8b82",
+        "packages/tiers/src/cost.ts": "17aeb3886823a8a790e9b1f7208d016b7ed0bdef5bb261d6d63d6008eb48b0c6",
+        "packages/tiers/src/index.ts": "3d0c83b245ceefd0875b273e7db1a3758d014e385a5eaa5969d4d19d59b83c7a",
+        "packages/tiers/src/lower.ts": "8e2d21de5dbf873bd9a711ac4bf75ca4966e5dfe9227da16ce00e16e7423488e",
+        "packages/tiers/src/original.test.ts": "355a0d34c81017e227dbe5c17e2571780587823b1076b14b3d4e2d81c45d588f",
+        "packages/tiers/src/upper.ts": "b3f7f02b83c8967f422f6cb269e0184383e0d6ccaa89f0a997e564bab64e93b7",
+        "packages/tiers/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/windows/package.json": "31d24d046de1ee2483c4782628eb4f2877d2e4da87ca33403b9f7430993683d4",
+        "packages/windows/src/index.ts": "7f7ce7e4fda95cddd52abc4b5b05a2700c7445dafee56a92cf05936887a44023",
+        "packages/windows/src/original.test.ts": "f726042c8a02f59d82f0c242b73b4b1edf26c9ae291b53a4db5d5908e2314aa1",
+        "packages/windows/src/overlap.ts": "d299688d696c262c8f85906dff01752c366a3a83dab54a047f8e2cacc51f5654",
+        "packages/windows/src/qualifies.ts": "a56efce00bd1a8653d5176a862619a83f2cff09821474e1b515f5c5c38f0e909",
+        "packages/windows/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "regression.vitest.mjs": "245ba5d1db06564aadad59dd885428af1ed2b7a65cdac0cd91cbbf2a70a2efc8",
+        "scripts/delivered.mjs": "0a7bdbcc7f4a031f59f6a68512614379f4d42bc41d1e61cdab79983ac4dccefb",
+        "tsconfig.json": "a98eb0b63ae75ffafea98b64f82792a8180e63e4adcfa61cf6f11a239957194e",
+        "vitest.config.mjs": "1a31ab6f3bf27762390df2b684feee79c7478d8407daacf7430160f2de246367"
+      },
+      "sourceHashesAfter": {
+        ".gitignore": "404eb6ba5bedb0592262965fc1f4237514cb5aa6dbd1f153fe5b97298d94c229",
+        "README.md": "377566155e0691e179e4b04c60c4390326e567a4fe4d9885f0f5ad7ec9fe0cff",
+        "apps/policy/package.json": "387dd16ec2084452056f8540eb190bbf9c1cc008cd702fc4f567174b304d3544",
+        "apps/policy/src/debit.ts": "6016ca57a4ad305f86e7cf8c2f4ff70e1e86a6cbf6ffe24a6792f4a65ccf39a0",
+        "apps/policy/src/original.test.ts": "797d8c7156157945c2c44d458e8407fe60f6524dcb9615b1a1b456b5de62dfaa",
+        "apps/policy/src/regression.test.ts": "ea66398d4df259eec17197346dff9c0eef27177e7ab656eb9a63c6506ace8677",
+        "apps/policy/src/tiers.ts": "32decf7ed8ec0fea5f6b40d7105bbb79cc40875ce5447e497c814509453a57b8",
+        "apps/policy/src/windows.ts": "fdaf732c81562f15a05c52795fde38da74b44136e4995d04ba5e24f824181164",
+        "apps/policy/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "node_modules": "symlink:9e5e26540f81b6bc9b50b01e7abca03b765731697c07f83dcc7c224111c9145e",
+        "package.json": "5a67a5106b6fa3d8747d27cd829803c018288752502a9828448379c115cbe143",
+        "packages/credit/package.json": "47c064aade44b9a2f647154ffd8dbcf32e96b25ccb6fd180e9b7799216b15c87",
+        "packages/credit/src/allocation.ts": "159269c5ccedeb221118946d4219fa483e39ba9b520a09b6f39b93364ac042b5",
+        "packages/credit/src/index.ts": "a455aadf7edb5c8f9e14ef4c391fcfd6c6405760f559720bc2f91487ae32703e",
+        "packages/credit/src/original.test.ts": "e122a771bde40333c665251c352cc292c32d093384f839b9f9f6982e6f674725",
+        "packages/credit/src/remainder.ts": "ff57e3bd5db747be7ce6e9dd25b37dc9bf40303beb89b98c601d305581385ccb",
+        "packages/credit/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/tiers/package.json": "0e5bbb62926a912fae22d49f33b206ba4e19cad21fcf5ddd991a5d6ebb3c8b82",
+        "packages/tiers/src/cost.ts": "17aeb3886823a8a790e9b1f7208d016b7ed0bdef5bb261d6d63d6008eb48b0c6",
+        "packages/tiers/src/index.ts": "3d0c83b245ceefd0875b273e7db1a3758d014e385a5eaa5969d4d19d59b83c7a",
+        "packages/tiers/src/lower.ts": "8e2d21de5dbf873bd9a711ac4bf75ca4966e5dfe9227da16ce00e16e7423488e",
+        "packages/tiers/src/original.test.ts": "355a0d34c81017e227dbe5c17e2571780587823b1076b14b3d4e2d81c45d588f",
+        "packages/tiers/src/upper.ts": "b3f7f02b83c8967f422f6cb269e0184383e0d6ccaa89f0a997e564bab64e93b7",
+        "packages/tiers/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/windows/package.json": "31d24d046de1ee2483c4782628eb4f2877d2e4da87ca33403b9f7430993683d4",
+        "packages/windows/src/index.ts": "7f7ce7e4fda95cddd52abc4b5b05a2700c7445dafee56a92cf05936887a44023",
+        "packages/windows/src/original.test.ts": "f726042c8a02f59d82f0c242b73b4b1edf26c9ae291b53a4db5d5908e2314aa1",
+        "packages/windows/src/overlap.ts": "d299688d696c262c8f85906dff01752c366a3a83dab54a047f8e2cacc51f5654",
+        "packages/windows/src/qualifies.ts": "a56efce00bd1a8653d5176a862619a83f2cff09821474e1b515f5c5c38f0e909",
+        "packages/windows/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "regression.vitest.mjs": "245ba5d1db06564aadad59dd885428af1ed2b7a65cdac0cd91cbbf2a70a2efc8",
+        "scripts/delivered.mjs": "0a7bdbcc7f4a031f59f6a68512614379f4d42bc41d1e61cdab79983ac4dccefb",
+        "tsconfig.json": "a98eb0b63ae75ffafea98b64f82792a8180e63e4adcfa61cf6f11a239957194e",
+        "vitest.config.mjs": "1a31ab6f3bf27762390df2b684feee79c7478d8407daacf7430160f2de246367"
+      },
+      "sourceUnchanged": true,
+      "checksBeforeSha256": "869352d95f8e6f3f6fdf3c7216a4830b04a7662ab5c86d4fd5006ef8ae46ea35",
+      "checksAfterSha256": "869352d95f8e6f3f6fdf3c7216a4830b04a7662ab5c86d4fd5006ef8ae46ea35",
+      "checksUnchanged": true,
+      "observations": [
+        {
+          "id": "overlapLength",
+          "input": {
+            "kind": "analyze",
+            "target": "packages/windows/src/overlap.ts#overlapLength",
+            "inputs": {
+              "startA": {
+                "min": -3,
+                "max": 3
+              },
+              "endA": {
+                "min": -3,
+                "max": 3
+              },
+              "startB": {
+                "min": -3,
+                "max": 3
+              },
+              "endB": {
+                "min": -3,
+                "max": 3
+              }
+            },
+            "assertion": "result === (endA <= startA || endB <= startB ? 0 : ((endA < endB ? endA : endB) > (startA > startB ? startA : startB) ? (endA < endB ? endA : endB) - (startA > startB ? startA : startB) : 0))",
+            "timeoutMs": 2500
+          },
+          "interpretation": "Direct isolated scalar contract for signed half-open intervals; shifted consumer and threshold composition are outside this query.",
+          "toolStatus": "ok",
+          "serializedResultSha256": "12b6b391b0968964daca3720401f0c511910877152c7e7bdab2fb0bfa520c58b",
+          "serializedResultBytes": 1602,
+          "status": "bounded_no_counterexample",
+          "reason": "No violating input exists in the supplied finite safe integer/boolean domain under the supported isolated-function semantics.",
+          "sourceSha256": "d299688d696c262c8f85906dff01752c366a3a83dab54a047f8e2cacc51f5654",
+          "sourceRevisionId": "src_30926e8f399f3a07c9c1b12c1b25ab54",
+          "target": "packages/windows/src/overlap.ts#overlapLength",
+          "validationAdmission": false,
+          "solver": {
+            "executable": "/tmp/blame-z3-f46/bin/z3",
+            "version": "Z3 version 4.15.4 - 64 bit",
+            "querySha256": "8f65ec78dc77eeb215943d921488ddb8e4c81c92bd57a5292a799a1ba9747091"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2-signed-window-overlap-candidate",
+      "repeat": 2,
+      "task": "signed-window-overlap",
+      "arm": "candidate",
+      "patchSha256": "736d2c8659cced9728aa88bedda5c6c369c6ce990106d83f62e1b9cc60246212",
+      "traceSha256": "ce14902abe9ccfc7f4835313f8bade305d9a9b58ace161de11e52558bd2d8580",
+      "sourceHashesBefore": {
+        ".gitignore": "404eb6ba5bedb0592262965fc1f4237514cb5aa6dbd1f153fe5b97298d94c229",
+        "README.md": "377566155e0691e179e4b04c60c4390326e567a4fe4d9885f0f5ad7ec9fe0cff",
+        "apps/policy/package.json": "387dd16ec2084452056f8540eb190bbf9c1cc008cd702fc4f567174b304d3544",
+        "apps/policy/src/debit.ts": "6016ca57a4ad305f86e7cf8c2f4ff70e1e86a6cbf6ffe24a6792f4a65ccf39a0",
+        "apps/policy/src/original.test.ts": "797d8c7156157945c2c44d458e8407fe60f6524dcb9615b1a1b456b5de62dfaa",
+        "apps/policy/src/tiers.ts": "32decf7ed8ec0fea5f6b40d7105bbb79cc40875ce5447e497c814509453a57b8",
+        "apps/policy/src/windows.regression.test.ts": "a70fbeabb78ab4c8d0af2a2282c5c48352faed2c940438af6cf36fa0174cd1f6",
+        "apps/policy/src/windows.ts": "3e97e7d1c635540b03b049f7186ba454195a6fc605d67fbb1d3ab291b96a4b79",
+        "apps/policy/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "node_modules": "symlink:9e5e26540f81b6bc9b50b01e7abca03b765731697c07f83dcc7c224111c9145e",
+        "package.json": "5a67a5106b6fa3d8747d27cd829803c018288752502a9828448379c115cbe143",
+        "packages/credit/package.json": "47c064aade44b9a2f647154ffd8dbcf32e96b25ccb6fd180e9b7799216b15c87",
+        "packages/credit/src/allocation.ts": "159269c5ccedeb221118946d4219fa483e39ba9b520a09b6f39b93364ac042b5",
+        "packages/credit/src/index.ts": "a455aadf7edb5c8f9e14ef4c391fcfd6c6405760f559720bc2f91487ae32703e",
+        "packages/credit/src/original.test.ts": "e122a771bde40333c665251c352cc292c32d093384f839b9f9f6982e6f674725",
+        "packages/credit/src/remainder.ts": "ff57e3bd5db747be7ce6e9dd25b37dc9bf40303beb89b98c601d305581385ccb",
+        "packages/credit/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/tiers/package.json": "0e5bbb62926a912fae22d49f33b206ba4e19cad21fcf5ddd991a5d6ebb3c8b82",
+        "packages/tiers/src/cost.ts": "17aeb3886823a8a790e9b1f7208d016b7ed0bdef5bb261d6d63d6008eb48b0c6",
+        "packages/tiers/src/index.ts": "3d0c83b245ceefd0875b273e7db1a3758d014e385a5eaa5969d4d19d59b83c7a",
+        "packages/tiers/src/lower.ts": "8e2d21de5dbf873bd9a711ac4bf75ca4966e5dfe9227da16ce00e16e7423488e",
+        "packages/tiers/src/original.test.ts": "355a0d34c81017e227dbe5c17e2571780587823b1076b14b3d4e2d81c45d588f",
+        "packages/tiers/src/upper.ts": "b3f7f02b83c8967f422f6cb269e0184383e0d6ccaa89f0a997e564bab64e93b7",
+        "packages/tiers/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/windows/package.json": "31d24d046de1ee2483c4782628eb4f2877d2e4da87ca33403b9f7430993683d4",
+        "packages/windows/src/index.ts": "7f7ce7e4fda95cddd52abc4b5b05a2700c7445dafee56a92cf05936887a44023",
+        "packages/windows/src/original.test.ts": "f726042c8a02f59d82f0c242b73b4b1edf26c9ae291b53a4db5d5908e2314aa1",
+        "packages/windows/src/overlap.ts": "d299688d696c262c8f85906dff01752c366a3a83dab54a047f8e2cacc51f5654",
+        "packages/windows/src/qualifies.ts": "a56efce00bd1a8653d5176a862619a83f2cff09821474e1b515f5c5c38f0e909",
+        "packages/windows/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "regression.vitest.mjs": "245ba5d1db06564aadad59dd885428af1ed2b7a65cdac0cd91cbbf2a70a2efc8",
+        "scripts/delivered.mjs": "0a7bdbcc7f4a031f59f6a68512614379f4d42bc41d1e61cdab79983ac4dccefb",
+        "tsconfig.json": "a98eb0b63ae75ffafea98b64f82792a8180e63e4adcfa61cf6f11a239957194e",
+        "vitest.config.mjs": "1a31ab6f3bf27762390df2b684feee79c7478d8407daacf7430160f2de246367"
+      },
+      "sourceHashesAfter": {
+        ".gitignore": "404eb6ba5bedb0592262965fc1f4237514cb5aa6dbd1f153fe5b97298d94c229",
+        "README.md": "377566155e0691e179e4b04c60c4390326e567a4fe4d9885f0f5ad7ec9fe0cff",
+        "apps/policy/package.json": "387dd16ec2084452056f8540eb190bbf9c1cc008cd702fc4f567174b304d3544",
+        "apps/policy/src/debit.ts": "6016ca57a4ad305f86e7cf8c2f4ff70e1e86a6cbf6ffe24a6792f4a65ccf39a0",
+        "apps/policy/src/original.test.ts": "797d8c7156157945c2c44d458e8407fe60f6524dcb9615b1a1b456b5de62dfaa",
+        "apps/policy/src/tiers.ts": "32decf7ed8ec0fea5f6b40d7105bbb79cc40875ce5447e497c814509453a57b8",
+        "apps/policy/src/windows.regression.test.ts": "a70fbeabb78ab4c8d0af2a2282c5c48352faed2c940438af6cf36fa0174cd1f6",
+        "apps/policy/src/windows.ts": "3e97e7d1c635540b03b049f7186ba454195a6fc605d67fbb1d3ab291b96a4b79",
+        "apps/policy/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "node_modules": "symlink:9e5e26540f81b6bc9b50b01e7abca03b765731697c07f83dcc7c224111c9145e",
+        "package.json": "5a67a5106b6fa3d8747d27cd829803c018288752502a9828448379c115cbe143",
+        "packages/credit/package.json": "47c064aade44b9a2f647154ffd8dbcf32e96b25ccb6fd180e9b7799216b15c87",
+        "packages/credit/src/allocation.ts": "159269c5ccedeb221118946d4219fa483e39ba9b520a09b6f39b93364ac042b5",
+        "packages/credit/src/index.ts": "a455aadf7edb5c8f9e14ef4c391fcfd6c6405760f559720bc2f91487ae32703e",
+        "packages/credit/src/original.test.ts": "e122a771bde40333c665251c352cc292c32d093384f839b9f9f6982e6f674725",
+        "packages/credit/src/remainder.ts": "ff57e3bd5db747be7ce6e9dd25b37dc9bf40303beb89b98c601d305581385ccb",
+        "packages/credit/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/tiers/package.json": "0e5bbb62926a912fae22d49f33b206ba4e19cad21fcf5ddd991a5d6ebb3c8b82",
+        "packages/tiers/src/cost.ts": "17aeb3886823a8a790e9b1f7208d016b7ed0bdef5bb261d6d63d6008eb48b0c6",
+        "packages/tiers/src/index.ts": "3d0c83b245ceefd0875b273e7db1a3758d014e385a5eaa5969d4d19d59b83c7a",
+        "packages/tiers/src/lower.ts": "8e2d21de5dbf873bd9a711ac4bf75ca4966e5dfe9227da16ce00e16e7423488e",
+        "packages/tiers/src/original.test.ts": "355a0d34c81017e227dbe5c17e2571780587823b1076b14b3d4e2d81c45d588f",
+        "packages/tiers/src/upper.ts": "b3f7f02b83c8967f422f6cb269e0184383e0d6ccaa89f0a997e564bab64e93b7",
+        "packages/tiers/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/windows/package.json": "31d24d046de1ee2483c4782628eb4f2877d2e4da87ca33403b9f7430993683d4",
+        "packages/windows/src/index.ts": "7f7ce7e4fda95cddd52abc4b5b05a2700c7445dafee56a92cf05936887a44023",
+        "packages/windows/src/original.test.ts": "f726042c8a02f59d82f0c242b73b4b1edf26c9ae291b53a4db5d5908e2314aa1",
+        "packages/windows/src/overlap.ts": "d299688d696c262c8f85906dff01752c366a3a83dab54a047f8e2cacc51f5654",
+        "packages/windows/src/qualifies.ts": "a56efce00bd1a8653d5176a862619a83f2cff09821474e1b515f5c5c38f0e909",
+        "packages/windows/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "regression.vitest.mjs": "245ba5d1db06564aadad59dd885428af1ed2b7a65cdac0cd91cbbf2a70a2efc8",
+        "scripts/delivered.mjs": "0a7bdbcc7f4a031f59f6a68512614379f4d42bc41d1e61cdab79983ac4dccefb",
+        "tsconfig.json": "a98eb0b63ae75ffafea98b64f82792a8180e63e4adcfa61cf6f11a239957194e",
+        "vitest.config.mjs": "1a31ab6f3bf27762390df2b684feee79c7478d8407daacf7430160f2de246367"
+      },
+      "sourceUnchanged": true,
+      "checksBeforeSha256": "e0273ea260d19172f035c528150f1d577365de309a7c247198b006ed62621ac6",
+      "checksAfterSha256": "e0273ea260d19172f035c528150f1d577365de309a7c247198b006ed62621ac6",
+      "checksUnchanged": true,
+      "observations": [
+        {
+          "id": "overlapLength",
+          "input": {
+            "kind": "analyze",
+            "target": "packages/windows/src/overlap.ts#overlapLength",
+            "inputs": {
+              "startA": {
+                "min": -3,
+                "max": 3
+              },
+              "endA": {
+                "min": -3,
+                "max": 3
+              },
+              "startB": {
+                "min": -3,
+                "max": 3
+              },
+              "endB": {
+                "min": -3,
+                "max": 3
+              }
+            },
+            "assertion": "result === (endA <= startA || endB <= startB ? 0 : ((endA < endB ? endA : endB) > (startA > startB ? startA : startB) ? (endA < endB ? endA : endB) - (startA > startB ? startA : startB) : 0))",
+            "timeoutMs": 2500
+          },
+          "interpretation": "Direct isolated scalar contract for signed half-open intervals; shifted consumer and threshold composition are outside this query.",
+          "toolStatus": "ok",
+          "serializedResultSha256": "9f04dc0d6241d50270fe326a3321eeca22383bfca7429b6f3dc651bdbce09623",
+          "serializedResultBytes": 1602,
+          "status": "bounded_no_counterexample",
+          "reason": "No violating input exists in the supplied finite safe integer/boolean domain under the supported isolated-function semantics.",
+          "sourceSha256": "d299688d696c262c8f85906dff01752c366a3a83dab54a047f8e2cacc51f5654",
+          "sourceRevisionId": "src_5b0caa5023e871645c6b22aa9ed3fa90",
+          "target": "packages/windows/src/overlap.ts#overlapLength",
+          "validationAdmission": false,
+          "solver": {
+            "executable": "/tmp/blame-z3-f46/bin/z3",
+            "version": "Z3 version 4.15.4 - 64 bit",
+            "querySha256": "8f65ec78dc77eeb215943d921488ddb8e4c81c92bd57a5292a799a1ba9747091"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2-signed-window-overlap-cline",
+      "repeat": 2,
+      "task": "signed-window-overlap",
+      "arm": "cline",
+      "patchSha256": "d9869ca3d3e3d4ad27f4d90716e749e3a55f3a311547710722729146af59a7f1",
+      "traceSha256": "ce693eceb91672c94b4d0f441545158958c8e1273cbab287a3b292935a7e02fe",
+      "sourceHashesBefore": {
+        ".gitignore": "404eb6ba5bedb0592262965fc1f4237514cb5aa6dbd1f153fe5b97298d94c229",
+        "README.md": "377566155e0691e179e4b04c60c4390326e567a4fe4d9885f0f5ad7ec9fe0cff",
+        "apps/policy/package.json": "387dd16ec2084452056f8540eb190bbf9c1cc008cd702fc4f567174b304d3544",
+        "apps/policy/src/debit.ts": "6016ca57a4ad305f86e7cf8c2f4ff70e1e86a6cbf6ffe24a6792f4a65ccf39a0",
+        "apps/policy/src/original.test.ts": "797d8c7156157945c2c44d458e8407fe60f6524dcb9615b1a1b456b5de62dfaa",
+        "apps/policy/src/tiers.ts": "32decf7ed8ec0fea5f6b40d7105bbb79cc40875ce5447e497c814509453a57b8",
+        "apps/policy/src/windows.regression.test.ts": "0a65d7b834aab121a884c328d455253848c8bcee8b9768fb138020f1d18741f8",
+        "apps/policy/src/windows.ts": "3e97e7d1c635540b03b049f7186ba454195a6fc605d67fbb1d3ab291b96a4b79",
+        "apps/policy/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "node_modules": "symlink:9e5e26540f81b6bc9b50b01e7abca03b765731697c07f83dcc7c224111c9145e",
+        "package.json": "5a67a5106b6fa3d8747d27cd829803c018288752502a9828448379c115cbe143",
+        "packages/credit/package.json": "47c064aade44b9a2f647154ffd8dbcf32e96b25ccb6fd180e9b7799216b15c87",
+        "packages/credit/src/allocation.ts": "159269c5ccedeb221118946d4219fa483e39ba9b520a09b6f39b93364ac042b5",
+        "packages/credit/src/index.ts": "a455aadf7edb5c8f9e14ef4c391fcfd6c6405760f559720bc2f91487ae32703e",
+        "packages/credit/src/original.test.ts": "e122a771bde40333c665251c352cc292c32d093384f839b9f9f6982e6f674725",
+        "packages/credit/src/remainder.ts": "ff57e3bd5db747be7ce6e9dd25b37dc9bf40303beb89b98c601d305581385ccb",
+        "packages/credit/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/tiers/package.json": "0e5bbb62926a912fae22d49f33b206ba4e19cad21fcf5ddd991a5d6ebb3c8b82",
+        "packages/tiers/src/cost.ts": "17aeb3886823a8a790e9b1f7208d016b7ed0bdef5bb261d6d63d6008eb48b0c6",
+        "packages/tiers/src/index.ts": "3d0c83b245ceefd0875b273e7db1a3758d014e385a5eaa5969d4d19d59b83c7a",
+        "packages/tiers/src/lower.ts": "8e2d21de5dbf873bd9a711ac4bf75ca4966e5dfe9227da16ce00e16e7423488e",
+        "packages/tiers/src/original.test.ts": "355a0d34c81017e227dbe5c17e2571780587823b1076b14b3d4e2d81c45d588f",
+        "packages/tiers/src/upper.ts": "b3f7f02b83c8967f422f6cb269e0184383e0d6ccaa89f0a997e564bab64e93b7",
+        "packages/tiers/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/windows/package.json": "31d24d046de1ee2483c4782628eb4f2877d2e4da87ca33403b9f7430993683d4",
+        "packages/windows/src/index.ts": "7f7ce7e4fda95cddd52abc4b5b05a2700c7445dafee56a92cf05936887a44023",
+        "packages/windows/src/original.test.ts": "f726042c8a02f59d82f0c242b73b4b1edf26c9ae291b53a4db5d5908e2314aa1",
+        "packages/windows/src/overlap.ts": "46971112718e6c70d0bfbf9f153ab801604f138c5095f349e8e1ca3fcea50470",
+        "packages/windows/src/qualifies.ts": "de63067b90b867f096359f36fff2a34fa0952ae0065dd0770c8f5dce478c0aea",
+        "packages/windows/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "regression.vitest.mjs": "245ba5d1db06564aadad59dd885428af1ed2b7a65cdac0cd91cbbf2a70a2efc8",
+        "scripts/delivered.mjs": "0a7bdbcc7f4a031f59f6a68512614379f4d42bc41d1e61cdab79983ac4dccefb",
+        "tsconfig.json": "a98eb0b63ae75ffafea98b64f82792a8180e63e4adcfa61cf6f11a239957194e",
+        "vitest.config.mjs": "1a31ab6f3bf27762390df2b684feee79c7478d8407daacf7430160f2de246367"
+      },
+      "sourceHashesAfter": {
+        ".gitignore": "404eb6ba5bedb0592262965fc1f4237514cb5aa6dbd1f153fe5b97298d94c229",
+        "README.md": "377566155e0691e179e4b04c60c4390326e567a4fe4d9885f0f5ad7ec9fe0cff",
+        "apps/policy/package.json": "387dd16ec2084452056f8540eb190bbf9c1cc008cd702fc4f567174b304d3544",
+        "apps/policy/src/debit.ts": "6016ca57a4ad305f86e7cf8c2f4ff70e1e86a6cbf6ffe24a6792f4a65ccf39a0",
+        "apps/policy/src/original.test.ts": "797d8c7156157945c2c44d458e8407fe60f6524dcb9615b1a1b456b5de62dfaa",
+        "apps/policy/src/tiers.ts": "32decf7ed8ec0fea5f6b40d7105bbb79cc40875ce5447e497c814509453a57b8",
+        "apps/policy/src/windows.regression.test.ts": "0a65d7b834aab121a884c328d455253848c8bcee8b9768fb138020f1d18741f8",
+        "apps/policy/src/windows.ts": "3e97e7d1c635540b03b049f7186ba454195a6fc605d67fbb1d3ab291b96a4b79",
+        "apps/policy/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "node_modules": "symlink:9e5e26540f81b6bc9b50b01e7abca03b765731697c07f83dcc7c224111c9145e",
+        "package.json": "5a67a5106b6fa3d8747d27cd829803c018288752502a9828448379c115cbe143",
+        "packages/credit/package.json": "47c064aade44b9a2f647154ffd8dbcf32e96b25ccb6fd180e9b7799216b15c87",
+        "packages/credit/src/allocation.ts": "159269c5ccedeb221118946d4219fa483e39ba9b520a09b6f39b93364ac042b5",
+        "packages/credit/src/index.ts": "a455aadf7edb5c8f9e14ef4c391fcfd6c6405760f559720bc2f91487ae32703e",
+        "packages/credit/src/original.test.ts": "e122a771bde40333c665251c352cc292c32d093384f839b9f9f6982e6f674725",
+        "packages/credit/src/remainder.ts": "ff57e3bd5db747be7ce6e9dd25b37dc9bf40303beb89b98c601d305581385ccb",
+        "packages/credit/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/tiers/package.json": "0e5bbb62926a912fae22d49f33b206ba4e19cad21fcf5ddd991a5d6ebb3c8b82",
+        "packages/tiers/src/cost.ts": "17aeb3886823a8a790e9b1f7208d016b7ed0bdef5bb261d6d63d6008eb48b0c6",
+        "packages/tiers/src/index.ts": "3d0c83b245ceefd0875b273e7db1a3758d014e385a5eaa5969d4d19d59b83c7a",
+        "packages/tiers/src/lower.ts": "8e2d21de5dbf873bd9a711ac4bf75ca4966e5dfe9227da16ce00e16e7423488e",
+        "packages/tiers/src/original.test.ts": "355a0d34c81017e227dbe5c17e2571780587823b1076b14b3d4e2d81c45d588f",
+        "packages/tiers/src/upper.ts": "b3f7f02b83c8967f422f6cb269e0184383e0d6ccaa89f0a997e564bab64e93b7",
+        "packages/tiers/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "packages/windows/package.json": "31d24d046de1ee2483c4782628eb4f2877d2e4da87ca33403b9f7430993683d4",
+        "packages/windows/src/index.ts": "7f7ce7e4fda95cddd52abc4b5b05a2700c7445dafee56a92cf05936887a44023",
+        "packages/windows/src/original.test.ts": "f726042c8a02f59d82f0c242b73b4b1edf26c9ae291b53a4db5d5908e2314aa1",
+        "packages/windows/src/overlap.ts": "46971112718e6c70d0bfbf9f153ab801604f138c5095f349e8e1ca3fcea50470",
+        "packages/windows/src/qualifies.ts": "de63067b90b867f096359f36fff2a34fa0952ae0065dd0770c8f5dce478c0aea",
+        "packages/windows/vitest.config.mjs": "2b04a44fefc87c6a9aafd004b0cf926cd6049187d633887366d647d001ff5846",
+        "regression.vitest.mjs": "245ba5d1db06564aadad59dd885428af1ed2b7a65cdac0cd91cbbf2a70a2efc8",
+        "scripts/delivered.mjs": "0a7bdbcc7f4a031f59f6a68512614379f4d42bc41d1e61cdab79983ac4dccefb",
+        "tsconfig.json": "a98eb0b63ae75ffafea98b64f82792a8180e63e4adcfa61cf6f11a239957194e",
+        "vitest.config.mjs": "1a31ab6f3bf27762390df2b684feee79c7478d8407daacf7430160f2de246367"
+      },
+      "sourceUnchanged": true,
+      "checksBeforeSha256": "0c884fe32cbf796fd691549bddf35494610ab9b428cf8907ceca78cd2c4287d8",
+      "checksAfterSha256": "0c884fe32cbf796fd691549bddf35494610ab9b428cf8907ceca78cd2c4287d8",
+      "checksUnchanged": true,
+      "observations": [
+        {
+          "id": "overlapLength",
+          "input": {
+            "kind": "analyze",
+            "target": "packages/windows/src/overlap.ts#overlapLength",
+            "inputs": {
+              "startA": {
+                "min": -3,
+                "max": 3
+              },
+              "endA": {
+                "min": -3,
+                "max": 3
+              },
+              "startB": {
+                "min": -3,
+                "max": 3
+              },
+              "endB": {
+                "min": -3,
+                "max": 3
+              }
+            },
+            "assertion": "result === (endA <= startA || endB <= startB ? 0 : ((endA < endB ? endA : endB) > (startA > startB ? startA : startB) ? (endA < endB ? endA : endB) - (startA > startB ? startA : startB) : 0))",
+            "timeoutMs": 2500
+          },
+          "interpretation": "Direct isolated scalar contract for signed half-open intervals; shifted consumer and threshold composition are outside this query.",
+          "toolStatus": "ok",
+          "serializedResultSha256": "d6150737c6b19594ce12b648e7abc72efe6fad5b693deeb31e1ff8a9e2c2115e",
+          "serializedResultBytes": 1602,
+          "status": "bounded_no_counterexample",
+          "reason": "No violating input exists in the supplied finite safe integer/boolean domain under the supported isolated-function semantics.",
+          "sourceSha256": "46971112718e6c70d0bfbf9f153ab801604f138c5095f349e8e1ca3fcea50470",
+          "sourceRevisionId": "src_b6128d1c9f2cae1747a63332ad06c3a9",
+          "target": "packages/windows/src/overlap.ts#overlapLength",
+          "validationAdmission": false,
+          "solver": {
+            "executable": "/tmp/blame-z3-f46/bin/z3",
+            "version": "Z3 version 4.15.4 - 64 bit",
+            "querySha256": "57704551e268ca0f4b680f0433bad387b510956ce7f8f932059699af77a36603"
+          }
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Post-hoc known diagnostic selected after seven results, not new-task or new-project confirmation.",
+    "All 18 assignments are retained, including failures, timeouts and unsupported natural solutions.",
+    "Small finite integer domains cover only the selected isolated function, not imports, callers, project behavior, floating-point JavaScript or the full user request.",
+    "A bounded absence of a counterexample grants no tests, validation admission, source verification or user acceptance.",
+    "tierCost rate normalization is a broader interpretation-sensitive scalar contract; counterexamples cannot alone change original audited task success.",
+    "The researcher supplies properties and domains uniformly; these calls do not establish spontaneous agent reasoning or additional model successes.",
+    "Actual-JS witness replay isolates the selected original function body; it does not execute the original source module or prove cross-file integration.",
+    "No token, model cost or comparative performance claim follows from this local diagnostic."
+  ]
+}

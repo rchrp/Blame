@@ -1,0 +1,69 @@
+{
+  "phase": "F50 post-hoc interpretation replay",
+  "registeredAtUTC": "2026-10-17T23:24:22.899904+00:00",
+  "postHoc": true,
+  "modelRequests": 0,
+  "primaryResultsChanged": false,
+  "selectionStateAtRequest": {
+    "completedModelTrials": 16,
+    "auditedTrials": 15
+  },
+  "stateAtRegistration": {
+    "completedModelTrials": 18,
+    "auditedTrials": 18,
+    "analysisSha256": "fc9de6052c90cbeaaece4b9530210b2e83fdbd1b00713837a2646899829985ef",
+    "incrementalReviewSha256": "b1feb91e8b3f50692d674c8be844b0d5b30026688f185c6288c5dc7cdb387101"
+  },
+  "campaignProtocolSha256": "102ec804dc7887787855e566a34720f3f9be73af1d413b4ce5ff789c1b8abb6c",
+  "scriptSha256": "24e276c14b52284f27af3214752b5c82b22b80857acce31bb8dbf47b48304889",
+  "endpoints": [
+    "1-inclusive-tier-allocation-candidate",
+    "1-inclusive-tier-allocation-cline",
+    "1-inclusive-tier-allocation-reference",
+    "2-inclusive-tier-allocation-cline",
+    "2-inclusive-tier-allocation-reference",
+    "2-inclusive-tier-allocation-candidate"
+  ],
+  "selectedFunctions": [
+    "lowerTierUnits",
+    "upperTierUnits",
+    "quoteTierUsage"
+  ],
+  "domain": {
+    "first": [
+      -3,
+      3
+    ],
+    "last": [
+      -3,
+      3
+    ],
+    "boundary": [
+      -3,
+      3
+    ],
+    "lowerRate": [
+      -3,
+      3
+    ],
+    "upperRate": [
+      -3,
+      3
+    ],
+    "allIntegerAssignments": true
+  },
+  "assertions": [
+    "Closed signed interval tier counts, including empty intervals",
+    "Nonnegative integer counts and conservation of the full closed interval",
+    "Consumer quote counts and total price with negative rates normalized to zero"
+  ],
+  "directTierCostAssertions": false,
+  "interpretation": "Post-hoc diagnostic of the narrower reading in which written requirements name lowerTierUnits, upperTierUnits and quoteTierUsage; no direct assertion is made about standalone tierCost on negative rates. Original hidden oracle can stop at that helper before reaching consumer checks. Apply this diagnostic uniformly to all six unchanged original tier endpoints; preserve original primary outcomes. Diagnostic passes are not new model successes, source repairs, confirmation tasks or proof of the full numeric domain.",
+  "execution": {
+    "reconstruction": "Frozen input archive plus exact archived original patch; verify patch, grade, archive and changed-source hashes. No protected-file restoration, new tests, source edits or solution import.",
+    "child": "Actual Node+tsx imports, minimal environment without credentials, 30-second timeout and 64KiB output limit per endpoint. No compiler command, Z3 call or model request.",
+    "sourceIdentity": "Hash all package/application TypeScript source before and after every child; changed source invalidates the observation.",
+    "failures": "Continue every registered case after assertion failure; retain per-category counts and at most two examples per category. Timeouts, abnormal exits or malformed output remain unknown.",
+    "publication": "Short output and stdout/stderr hashes; refuse to overwrite protocol or results."
+  }
+}

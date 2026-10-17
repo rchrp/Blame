@@ -1,0 +1,62 @@
+{
+  "studySourceSha256": "7d19f132b0615d636da51f71ead7aa436198b056f4b192b57f89a5d7f6b6e372",
+  "modelAssignments": {
+    "F47": 18,
+    "F50": 18
+  },
+  "publicArtifactVerifiers": {
+    "F47": "passed",
+    "F50": "passed"
+  },
+  "unchangedEndpointReplays": {
+    "F47": 18,
+    "F50": 18
+  },
+  "symbolicEndpointDiagnostic": {
+    "endpoints": 18,
+    "analyses": 24,
+    "counts": {
+      "bounded_no_counterexample": 18,
+      "unknown": 3,
+      "counterexample": 3
+    },
+    "isolatedJsWitnesses": 3,
+    "isolatedJsConfirmedViolations": 3
+  },
+  "consumerOnlyDiagnostic": {
+    "endpoints": 6,
+    "passed": 6,
+    "assertionsPerEndpoint": 18179,
+    "primaryScoresChanged": false
+  },
+  "productionValidation": {
+    "fullRuntime": {
+      "pass": 1020,
+      "skipped": 2,
+      "fail": 0,
+      "source": "../light-harness-navigation-type-evidence-f48-2026-10-18/local-validation.json"
+    },
+    "runner": {
+      "pass": 37,
+      "fail": 0
+    },
+    "standaloneBasePayload": {
+      "pass": 3,
+      "fail": 0
+    },
+    "laterOptionalSdkAndPayloadControls": {
+      "pass": 2,
+      "fail": 0,
+      "source": "preparation-validation/validation.json"
+    },
+    "changedRuntimeLint": "passed",
+    "changedTestLint": "passed",
+    "lineBudgets": "passed with existing review notices"
+  },
+  "note": "Model panels, finite local diagnostics and post-hoc interpretations remain separate. Runtime production source unchanged since the recorded full-suite validation. No general task-quality/efficiency or solver speedup claim.",
+  "nativeLatex": {
+    "path": "/workspace/Blame/docs/semantic-harness-study.tex",
+    "kind": "success",
+    "message": "The current source compiled successfully with the desktop editor's compiler."
+  }
+}

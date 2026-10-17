@@ -239,8 +239,252 @@
         "Finish31 accurately distinguishes4originaltests excluding the new file,2deliveredtests, source compilation excluding tests, separate delivered-test compilation, full6tests and package windows3/app1tests. Its test coverage claim concerns the actual new scalar regressions and does not claim a new shifted-window test or symbolic proof.",
         "Complete ledger stays within checkout searches/reads/project checks and local git diff/status. No network/history/solution/prior-study retrieval or installation occurs. protectedPaths=[] and dependencyIntegrity unchanged with all difference arrays empty. Analyze is exposed but never invoked and no direct solver command occurs; symbolicEvidence=[] and no symbolic benefit is attributed."
       ]
+    },
+    {
+      "name": "2-credit-remainder-candidate",
+      "hashes": {
+        "events.jsonl": "13d3df6c5e0339ae64be218450b4756534f6cb867da8affeb41d4a36e0e6acac",
+        "workspace.diff": "52243435b74e3a5dc0f6b0bcf7d492ba268be38c9b077292749b622bdf910876",
+        "score.json": "e66c8cfef5b68ce61e2dc65d23fdee0aae4e4c33d09f5ac9e9da1f0667c9d551",
+        "tool-ledger.json": "44abdb975e9a32761ac47646e291dce3c1c86584f02284519860f5c54b576197"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Final workspace.diff independently normalizes balance/reserved/limit then clamps the credit remainder, normalizes requested and caps through shared availableCredit, and computes quote remaining=available-approved/denied=normalizedRequested-approved. Existing three-/four-argument scalar signatures and numeric return types stay exact; no any, mutation or argument reorder. Quote uses the same package policy.",
+        "New apps/policy/src/credit-regression.test.ts has3 tests covering normalization, over-cap allocation, negative requests and quote results. score.json all five endpoint checks exit0, including hidden behavioral/public-type8704assertions, original regression4tests, delivered3runtimepasses and separate delivered-type compilation. protectedPaths=[] and dependency arrays empty.",
+        "Interim symbol-body edit19 omits the new availableCredit import. Ordinary validation correctly exposes it: original regression20 fails with ReferenceError availableCredit is not defined; compiler21 reports TS2304; delivered runtime22 also fails. These genuine agent-introduced failures remain in the trace, not relabeled unavailable selections.",
+        "Repair attempt23 targets quoteDebit alias s4 but changes its preceding import, so edit_code conservatively blocks context_outside_symbol, cites affectedLine1 versus declarationLines2-7 and offers the exact file/range route. The agent reads that range at24 and successfully applies an explicit file patch25. No automatic widening occurs. This is observed use of existing shared scope-recovery guidance, not an isolated Z3 effect.",
+        "Final source edit25 produces revision src_96b4076867fa877c16aa002c9ec5a164; required exact project checks26/27/28 all succeed after it and optional delivered-typecheck29 passes. Reads30-33 then finish34, with no later source mutation or shell writes.",
+        "Finish34 accurately reports the final4originaltests/3deliveredtests and separate delivered-test typechecking, preserving coverage limits. Complete ledger stays in checkout searches/reads/edits/project validations; no ordinary shell retrieval, network/history/solution/study-artifact access or dependency installation occurs.",
+        "No analyze or direct solver command occurs despite optional exposure; symbolicEvidence=[]. The helpful observed sequence is ordinary validation plus bounded edit recovery. No counterexample/property claim or formal-reasoning benefit is inferred."
+      ]
+    },
+    {
+      "name": "2-credit-remainder-cline",
+      "hashes": {
+        "events.jsonl": "6797352d556b4009e7916661b25a74b87b796496608ef231dbcc671f35fe3bed",
+        "workspace.diff": "d028df519e2a56ec1d486e329653388a4ea621292e94f5e699eda3c2d0cff9cd",
+        "score.json": "8d9651a441df723fa65ebbeefd437936d0e53201862baaccaecd91439e4a4c1a",
+        "tool-ledger.json": "f256b15c2e569b3a25c2965566d6715542f71bca98b37d080b2f1a4048f60be1"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Final source independently normalizes balance/reserved/limit and clamps remainder; approveDebit normalizes requested and caps against shared availability. Quote uses availableCredit((balance<0?0:balance)+approved,reserved,limit) for remaining, correctly normalizing initial balance before adding approved; denied uses normalized request. Original required three-/four-argument number signatures and :number returns stay unchanged, with no any or input mutation.",
+        "New packages/credit/src/remainder.test.ts has3 tests covering normalization, cap/negative requests and quotes, including negative balance with positive approval. All five independent endpoint audits exit0, including8704hiddenbehavior/public-typeassertions and delivered runtime/type compilation. protectedPaths=[] and pinned dependencies unchanged, with all difference arrays empty.",
+        "Interim test import from ../../../../apps/policy/src/debit.ts is invalid. Shell loop8 deliberately exits0 regardless of nested failures, so its overall success is not accepted as allchecks passing: printed statuses show regression0/types0 but delivered1/delivered-types2, including actual missing-module diagnostics. The agent reads these failures and repairs the test import at edit9 to ../../../apps/policy/src/debit.ts.",
+        "Final source-writing operation is apply_patch9; repeated shell loop10 reports each required invocation and optional delivered-typecheck exit0 separately. Full output has no nested failure; later read11 and git diff/status/check12 only inspect source. FinalSourceChecksPassed=true rests on nested command evidence after edit9, not the forced outer exit0.",
+        "Delivery explicitly labels final command results, correctly reports4originaltests/3deliveredtests and root compiler test exclusion with separately executed delivered compiler. Earlier nested failure receipts remain retained; the final successful statement does not pretend every historical run passed.",
+        "Complete ledger uses local checkout discovery, package/source/config reads, apply_patch and scripted checks. No network/history/solution/prior-study lookup or dependency installation appears; listing installed node_modules metadata during discovery is not solution retrieval. No analyze or direct solver command occurs and symbolicEvidence=[]; this is ordinary test/type feedback and repair."
+      ]
+    },
+    {
+      "name": "2-credit-remainder-reference",
+      "hashes": {
+        "events.jsonl": "15a56e1e07c490cb6ed7a758907ab543dc85afd9c496750313ce83345540c7c3",
+        "workspace.diff": "de2d1279aa3a771fa4c12aff8517628a7411d00edac851997ff0357ee341d390",
+        "score.json": "99594b3d9ff51c430d88af07cbf30628bd6f7ff36196ff4cea2af2625d6ffefe",
+        "tool-ledger.json": "b5e0a87cc221d8de4af8d1991a12df4e887d9ed187efce959766615de4114da1"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Final diff independently clamps balance/reserved/limit before subtraction and clamps the remainder; approveDebit normalizes requested and caps through availableCredit. quoteDebit imports/calls that same policy for remaining=available-approved and normalized denied demand. Exact existing three-/four-argument number signatures and scalar numeric returns remain unchanged, without any, mutation or unrelated policy edits.",
+        "New apps/policy/src/debit.test.ts contains1 test with7 concrete assertions for normalization, cap, negative requests and quote results. All five independent endpoint checks exit0, including hidden8704behavior/public-typeassertions, original4tests, delivered1runtimepass and separate delivered-test compilation. protectedPaths=[] and all dependency-integrity arrays empty.",
+        "Symbol edits19 are followed by explicit file patch20 adding availableCredit import and the new test at final revision src_b1ee6c44e8a2a9cae7d932481f906f51. Exact required commands21/22/23 and optional delivered-typecheck24 pass afterward. Later25 is only git diff --check/status/diff,26-29 only reads,30 finishes; no later source writes.",
+        "Finish30 accurately reports4originaltests excluding the new delivered file,1deliveredtest, source compiler excluding tests and separately executed delivered test typechecking. Its command/coverage claims match the trace and independent endpoint; no symbolic or unbounded verification is claimed.",
+        "Complete navigation and the sole ordinary git diff/status command stay within checkout. No history/network/solution/prior-study retrieval or installation occurs. Analyze is hidden in this reference schema and no direct solver command occurs; symbolicEvidence=[]. The registered source/user criteria and truthful final validation are satisfied separately from conservative wrapper admission."
+      ]
+    },
+    {
+      "name": "2-inclusive-tier-allocation-cline",
+      "hashes": {
+        "events.jsonl": "5c24150340a166c036775653aba55fdc714f937256cf15b43a799a7dd5b3136d",
+        "workspace.diff": "72f91fa14cfa71dce3974d1b2ff742b7dfeced8da22085b3d1fd8cfe4f144f0c",
+        "score.json": "a5b36d81a998722fa84b9cf87bc121fac351f46a10c78e600031e9e19aaae2c6",
+        "tool-ledger.json": "26b8e75636849358eaacf0ec60877469186d14f0426d261bc99b942a7aa1b121"
+      },
+      "sourceBehaviorPassed": false,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": false,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "consumerOnlyInterpretationPassed": true,
+      "sourceBehaviorUnderNamedConsumer": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Primary registered broad contract fails again: packages/tiers/src/cost.ts remains unchanged, so exported tierCost(1,0,-1,2) returns -1 rather than the registered expected 0; score hidden feature exits 1 with this exact witness. Primary sourceBehaviorPassed/fullRequestPassed=false apply the same preregistered public-helper scope across arms, preserving the ambiguity described in interpretation-notes.json.",
+        "Under the separately recorded consumer-only reading both sensitivity fields are true: lower/upper count the signed closed interval correctly and quoteTierUsage independently clamps each rate then sums lower*safeLowerRate + upper*safeUpperRate. The wording names quoteTierUsage rather than tierCost, so this registered hidden failure is not presented as an indisputable failure of the named user-facing consumer.",
+        "All existing scalar signatures preserve exact ordered required number parameters and numeric returns; the quote API and numeric fields are preserved without any or mutation. Only three related source files and the new packages/tiers/src/inclusive.test.ts changed. The four delivered tests cover signed conservation, singleton endpoints, empty requests and consumer negative rates.",
+        "Ordinary validation reveals an invalid added-test import ../../../../apps/policy/src/tiers.ts: runtime14 fails collection and delivered compiler15 reports TS2307, despite source-only compiler13 passing. Final edit17 corrects the relative path to ../../../apps/policy/src/tiers.ts. Exact required commands18/19/20 and optional delivered types21 all pass afterward. Later22/24 only inspect git status/diff and file existence,23 reads; no source mutation follows17.",
+        "Independent original regression, source compiler, delivered runtime4passes and delivered test compilation all exit 0; only the registered broad public-helper oracle fails. Delivery accurately reports final command outcomes, source compiler test exclusion and separate delivered compilation; it claims rate normalization specifically within quoteTierUsage, not direct tierCost normalization or a solver proof.",
+        "Navigation calls3-6 produce16 ENOENT file reads for mistaken absolute source/config paths omitting the workspace component, then calls7-10 retry the correct checkout paths. No solution or prior-study content is recovered from that mistake; other commands are local discovery/package metadata/tests/git inspection. No history/network retrieval or dependency install appears. protectedPaths=[] and dependency difference arrays empty. Analyze/direct solver calls are absent; symbolicEvidence=[]."
+      ]
+    },
+    {
+      "name": "2-inclusive-tier-allocation-reference",
+      "hashes": {
+        "events.jsonl": "6692f2060eee164577e8f22b75eae369b13cab375ac008c2899e8ce6a12f28fd",
+        "workspace.diff": "164889e7099df3a5ad2da9d5d9f821f4cf3865c324187aef1e5aea29159bc252",
+        "score.json": "b5fee3d68cebfca1ade88bbcdb1c3cf8323dc324aaa3bc864c6bb5ae7d418844",
+        "tool-ledger.json": "bec68edd0fc9a1cd9c912bbe8d0839056252ac28d263638af2e697bc4d3e7b3f"
+      },
+      "sourceBehaviorPassed": false,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": false,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "consumerOnlyInterpretationPassed": true,
+      "sourceBehaviorUnderNamedConsumer": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Primary broad public-helper failure is verified, not inferred from arm: cost.ts remains unchanged and score hidden feature exits 1 on tierCost(1,0,-1,2), actual -1 versus registered 0. Apply the same sourceBehaviorPassed/fullRequestPassed=false public-contract convention used for both Cline tier trials. This interpretation-sensitive endpoint does not establish an indisputable named-consumer defect.",
+        "Both consumer-only fields are true after source review: lowerTierUnits adds the inclusive endpoint, upperTierUnits starts at first when above boundary or boundary+1 otherwise, with empty ranges preserved. quoteTierUsage clamps both rates then includes both tier charges. Ordered required numeric signatures and inferred numeric fields remain unchanged; no any, mutation or unrelated source edit.",
+        "New apps/policy/src/tiers.test.ts has two tests for split counts/conservation, negative-rate quotation and empty requests. All endpoint checks other than the registered direct public-helper feature pass: original regression, source compiler, delivered runtime 2 tests and separate delivered-type compiler. protectedPaths=[] and dependency difference arrays empty.",
+        "Final source-writing operation is edit20. Required exact invocations21/22/23 and optional delivered-typecheck24 all exit 0 after it. Subsequent25-28 only read changed source/tests and29 finishes; no source mutation or shell write follows20. Delivery accurately describes final command outcomes, preserved original selection and separate delivered runtime/type coverage.",
+        "Reference queries18 and19 request bare tierCost/quoteTierUsage with mode references. Outputs explicitly say engine lexical_fallback and semanticFallback symbol_target_required, provide exact syntax declaration candidates and qualified nextSearches. The agent does not follow those compiler-reference routes before editing. Record two actual discovery offers and absent qualified follow-up, without claiming semantic reference execution or any causal effect on the ambiguous helper choice.",
+        "Complete ledger searches/reads/project checks stay in checkout; no ordinary shell command, remote/history/solution/prior-study retrieval or installation occurs. No analyze/direct solver command appears and no symbolic proof is claimed; symbolicEvidence=[]."
+      ]
+    },
+    {
+      "name": "2-inclusive-tier-allocation-candidate",
+      "hashes": {
+        "events.jsonl": "98176abd5382a9308e0dcd302520d0f802fe350cda994e581fa945b39a38b7e7",
+        "workspace.diff": "5e1f633ceb081b4a9f9aa470f9423764aa81a34a2c3a9a3866b29627a87adf4b",
+        "score.json": "841e71f0a9520f432f6d1cd631a800162a1206b9bb3c6827126ea6b9a2ce3209",
+        "tool-ledger.json": "02431826b66068e413ed511de08101bebf40b67aae7cd4731ed1aae2442be55a"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "consumerOnlyInterpretationPassed": true,
+      "sourceBehaviorUnderNamedConsumer": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Final diff lower/upper functions count signed closed intervals with boundary exclusively lower, include endpoint +1 and preserve empty requests. tierCost independently normalizes both negative rates and sums both charges; quoteTierUsage imports/calls that shared helper with the computed counts and original rates. Both broad public-helper and named-consumer scopes pass; original ordered required numeric signatures/returns remain unchanged without any or mutation.",
+        "New apps/policy/src/inclusive-tier-accounting.test.ts has two tests covering split/singleton boundaries, nonnegative rate quotes and empty intervals. Independent endpoint audits all exit 0, including original 4 tests, hidden 4803 behavior/public-type assertions, source compilation, delivered 2 runtime passes and delivered test compilation. protectedPaths=[] and dependency difference arrays empty.",
+        "Final source-writing operation edit26 includes helper, count, consumer import and new-test changes. Exact required invocations27/28/29 and optional delivered-typecheck30 all succeed afterward. Reads31-35 and local git diff --check/status36 only inspect; finish37 follows with no source mutation.",
+        "Bare-name reference queries22/23 explicitly return lexical_fallback/symbol_target_required plus exact declarations and qualified nextSearches. The agent then successfully reads those two qualified path#symbol signatures at24/25 before editing. This is actual qualified signature navigation, not compiler-resolved reference execution; no causal gain is inferred from the common navigation feature.",
+        "Finish37 accurately reports original 4 tests, delivered 2 tests and separate delivered-test typechecking; its specific claim that tierCost normalizes rates matches the source. All source/coverage statements remain limited to observed checks and named behavior, with no symbolic or unbounded proof claim.",
+        "Complete searches/reads/project checks and sole ordinary local git inspection stay in checkout. No network/history/solution/prior-study retrieval or installation occurs. Analyze was exposed but never called; direct solver commands are absent and symbolicEvidence=[]. Both consumer-only sensitivity fields are true, using the same secondary definition as all other tier trials."
+      ]
+    },
+    {
+      "name": "2-signed-window-overlap-reference",
+      "hashes": {
+        "events.jsonl": "300f530fffbc3ee130dafc0739982455d03e0bc70128a4762c00c3c45dfaa76e",
+        "workspace.diff": "5d801d47f63ced1a9cfad05684ab1b3f9ea5ce9aeeda209ec59499cdf4300838",
+        "score.json": "d07a498610395dd0e4ef0db330a58ec092d4d6ae74664ce990ca09d9697670b8",
+        "tool-ledger.json": "d0b4b64c04036b1b4c1ab0f11b350d92c7b886ae09d92b44edb1e278cf11e2fa"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Source review: overlapLength uses max(0,min(endA,endB)-max(startA,startB)) on signed endpoints. Removing an explicit empty-interval guard in reference/candidate remains correct: if either end<=start, min(endA,endB)<=max(startA,startB), so the formula returns0. Cline retains that guard. All original ordered required number parameters and numeric/boolean returns remain exact, without any, mutation or unrelated policy edits.",
+        "overlapsAtLeast requires a positive minimum and includes equality. inspectShiftedWindow adds offset once to each B endpoint, then passes the same shifted endpoints to both shared package functions. Returned overlap/qualifies retain numeric/boolean types and the six-argument consumer order.",
+        "Each new delivered regression file has3 tests for signed/empty/adjacent spans, threshold behavior and nonzero-offset consumer behavior. All five immutable endpoint audits exit0, including original4tests, hidden32402behavior/public-typeassertions, source compiler and separate delivered runtime/type compilation. protectedPaths=[] and dependency difference arrays empty.",
+        "Initial new regression19 incorrectly expected overlap0/false for inspectShiftedWindow(-10,-2,0,4,-5,3); the actual intersection is[-5,-2), length3. Before executing tests, the agent corrects its own assertion to3/true. Attempt20 wrongly combines the consumer alias with a test-file patch and is blocked wrong_file_for_symbol with an explicit file route; patch21 omits target and succeeds. No original test was changed and no failing execution of the initial wrong assertion is claimed.",
+        "Final source-writing operation21 precedes exact required successes22/23/24 and optional delivered compiler29. Reads25-28 and git diff --check/status/diff30 only inspect source, then finish31. Delivery accurately reports original4tests and delivered3tests, separately executed delivered compilation, and explicitly distinguishes visible passing tests from unobserved runner reporting counters.",
+        "Complete ledger stays in checkout reads/searches/edits/project checks and local git inspection. No history/network/solution/prior-study retrieval or installation occurs. No analyze or direct solver command is recorded and symbolicEvidence=[]; test expectation correction and edit recovery are ordinary model/tool behavior, not formal solver use."
+      ]
+    },
+    {
+      "name": "2-signed-window-overlap-candidate",
+      "hashes": {
+        "events.jsonl": "bd3b4b794770ad67dc670fd82c9c2cddb8c9ee9b83cfe20b64a48014b578e60a",
+        "workspace.diff": "736d2c8659cced9728aa88bedda5c6c369c6ce990106d83f62e1b9cc60246212",
+        "score.json": "56906e753dbda4db05997e5565d1792aa37299ae8e42173f7afd1e07b422265a",
+        "tool-ledger.json": "637584cfaa4c6a9b6894964920f1d91cf28eae43b50f5a92b12578c4db996f3b"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Source review: overlapLength uses max(0,min(endA,endB)-max(startA,startB)) on signed endpoints. Removing an explicit empty-interval guard in reference/candidate remains correct: if either end<=start, min(endA,endB)<=max(startA,startB), so the formula returns0. Cline retains that guard. All original ordered required number parameters and numeric/boolean returns remain exact, without any, mutation or unrelated policy edits.",
+        "overlapsAtLeast requires a positive minimum and includes equality. inspectShiftedWindow adds offset once to each B endpoint, then passes the same shifted endpoints to both shared package functions. Returned overlap/qualifies retain numeric/boolean types and the six-argument consumer order.",
+        "Each new delivered regression file has3 tests for signed/empty/adjacent spans, threshold behavior and nonzero-offset consumer behavior. All five immutable endpoint audits exit0, including original4tests, hidden32402behavior/public-typeassertions, source compiler and separate delivered runtime/type compilation. protectedPaths=[] and dependency difference arrays empty.",
+        "Initial new test in edit18 wrongly expects overlap4/true for inspectShiftedWindow(-10,-1,-8,-3,5,4), whose shifted intersection[-3,-1) has length2. Delivered runtime21 genuinely fails with observed2/false. The production code is already correct; the agent changes only its own test input endA from-1 to1, yielding the intended overlap4/true. Record correction of a faulty researcher-agent-generated test input, not a source behavior repair or solver counterexample.",
+        "Patch23 tries a diagnostic range alias s19 and is blocked because it is not a symbol. Explicit file patch24 then changes that one new-test input. After final edit24, exact required invocations25/26/27 and delivered compiler28 all succeed; finish29 reports those final observed outcomes and3deliveredtests without a broad symbolic claim. Prior runtime failure remains retained.",
+        "Complete ledger uses only checkout searches/reads/edits/project checks; no ordinary shell command, history/network/solution/study-artifact retrieval or installation occurs. No analyze or direct solver command appears despite exposure; symbolicEvidence=[]."
+      ]
+    },
+    {
+      "name": "2-signed-window-overlap-cline",
+      "hashes": {
+        "events.jsonl": "e337365a6be3ccd88a92600eaaf96538a2eb1beedb9112bad6e4c0f623427e7e",
+        "workspace.diff": "d9869ca3d3e3d4ad27f4d90716e749e3a55f3a311547710722729146af59a7f1",
+        "score.json": "d0d20dbd0bbd08d4c28f2934955e8c8bacdc55ba5bfceec15b3ba67a6de5731b",
+        "tool-ledger.json": "b2f63ff5ba46585bcb5feffdba2235603606ab9618535a798970f2aee350d249"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Source review: overlapLength uses max(0,min(endA,endB)-max(startA,startB)) on signed endpoints. Removing an explicit empty-interval guard in reference/candidate remains correct: if either end<=start, min(endA,endB)<=max(startA,startB), so the formula returns0. Cline retains that guard. All original ordered required number parameters and numeric/boolean returns remain exact, without any, mutation or unrelated policy edits.",
+        "overlapsAtLeast requires a positive minimum and includes equality. inspectShiftedWindow adds offset once to each B endpoint, then passes the same shifted endpoints to both shared package functions. Returned overlap/qualifies retain numeric/boolean types and the six-argument consumer order.",
+        "Each new delivered regression file has3 tests for signed/empty/adjacent spans, threshold behavior and nonzero-offset consumer behavior. All five immutable endpoint audits exit0, including original4tests, hidden32402behavior/public-typeassertions, source compiler and separate delivered runtime/type compilation. protectedPaths=[] and dependency difference arrays empty.",
+        "Initial new test6 expects length3 for shifted windows with endA=-2, where actual overlap would be1. Before executing tests, edit7 changes endA to0 in both new consumer cases so their expected3 result is correct. This is a pre-execution correction to generated test inputs; no test-discovered source defect or solver witness is claimed.",
+        "Final source-writing operation7 precedes command loop8 containing all three exact required invocations. Although the loop forces outer exit0, each nested exit marker is independently0. Additional loop9 likewise records full npmtest and delivered compiler each0. Reads10 and git diff/status/check11 do not mutate source. Done delivery accurately reports final original4tests, delivered3tests, full7tests/5files and separate source/test compiler scopes.",
+        "Local git log5 returns only synthetic frozen-input commit3756771, with no upstream solution or historical source recovered. Other discovery/reads/tests/git commands stay in checkout and no network, prior-study lookup or install appears. No analyze or direct solver command occurs; symbolicEvidence=[]."
+      ]
     }
   ],
-  "reviewedRows": 9,
-  "complete": false
+  "reviewedRows": 18,
+  "complete": true,
+  "completedAtUTC": "2026-10-17T23:22:49.103539+00:00",
+  "verification": {
+    "boundArtifactHashesChecked": 72,
+    "explicitBooleanJudgments": 126,
+    "observedAnalyzeCalls": 0,
+    "directSolverCommandTrials": [],
+    "noNewTestsOrSolverRunsDuringReview": true,
+    "primaryAuditedByArm": {
+      "reference": 5,
+      "candidate": 6,
+      "cline": 4
+    }
+  }
 }

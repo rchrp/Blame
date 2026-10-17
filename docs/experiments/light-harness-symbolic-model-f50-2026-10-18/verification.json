@@ -1,0 +1,16 @@
+{
+  "phase": "F50",
+  "trials": 18,
+  "rawArchiveHashes": true,
+  "ledgerAndUsageRecomputed": true,
+  "sourceReviewHashBound": true,
+  "symbolicMechanismRecomputed": true,
+  "secondarySymbolicAggregatesRecomputed": true,
+  "manualSymbolicJudgmentsValidated": true,
+  "schemaOverheadRecomputed": true,
+  "optionalSchemaExposureVerified": true,
+  "solverBinaryAndLibrariesBound": true,
+  "executableAblationVerified": true,
+  "priorReservationsPreserved": true,
+  "modelRequests": 0
+}

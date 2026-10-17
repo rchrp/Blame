@@ -1,0 +1,500 @@
+{
+  "modelRequests": 0,
+  "primaryResultsChanged": false,
+  "protocolSha256": "26beed5945e4f82d5ac5744373b59f9b8e26e9ca25432c91bcbaba6950287516",
+  "method": "Post-hoc diagnostic of the narrower reading in which written requirements name lowerTierUnits, upperTierUnits and quoteTierUsage; no direct assertion is made about standalone tierCost on negative rates. Original hidden oracle can stop at that helper before reaching consumer checks. Apply this diagnostic uniformly to all six unchanged original tier endpoints; preserve original primary outcomes. Diagnostic passes are not new model successes, source repairs, confirmation tasks or proof of the full numeric domain.",
+  "rows": [
+    {
+      "name": "1-inclusive-tier-allocation-candidate",
+      "publicTraceSha256": "d418aa1a17aa145b2e2afec48c6d13a6812317dddf3d2728571c02ce71ff2300",
+      "patchSha256": "245b319d59182e3096d67acd08a8a8fbacd8618b0350d46f8bb0023dbadc2e53",
+      "gradeSha256": "3e0b879a1ede43638d41c732f86c07f49933f14bfab864c280fe83fb8c43e59d",
+      "protectedPaths": [],
+      "sourceHashesBefore": {
+        "apps/policy/src/debit.ts": "6016ca57a4ad305f86e7cf8c2f4ff70e1e86a6cbf6ffe24a6792f4a65ccf39a0",
+        "apps/policy/src/inclusive-tier.test.ts": "6a206310bd6482ea71a8d91e37a303d6e25429e7e20ad5487c743ec091985182",
+        "apps/policy/src/original.test.ts": "797d8c7156157945c2c44d458e8407fe60f6524dcb9615b1a1b456b5de62dfaa",
+        "apps/policy/src/tiers.ts": "fec7e81819fbce75c51701367207f3f930765787955ce4260cc757ad1d733d62",
+        "apps/policy/src/windows.ts": "8eeffd740bcfc77e4f73bcf93c4feba1b61bb2251373051ec0a361801b1500d0",
+        "packages/credit/src/allocation.ts": "159269c5ccedeb221118946d4219fa483e39ba9b520a09b6f39b93364ac042b5",
+        "packages/credit/src/index.ts": "a455aadf7edb5c8f9e14ef4c391fcfd6c6405760f559720bc2f91487ae32703e",
+        "packages/credit/src/original.test.ts": "e122a771bde40333c665251c352cc292c32d093384f839b9f9f6982e6f674725",
+        "packages/credit/src/remainder.ts": "ff57e3bd5db747be7ce6e9dd25b37dc9bf40303beb89b98c601d305581385ccb",
+        "packages/tiers/src/cost.ts": "0a08771cd740a0c59943659aeb7315a8fa1d83b28f285ff562c0ad85db63d490",
+        "packages/tiers/src/index.ts": "3d0c83b245ceefd0875b273e7db1a3758d014e385a5eaa5969d4d19d59b83c7a",
+        "packages/tiers/src/lower.ts": "7835fd03d8c8fcb68a8ae2f2fc6169fbb6a8ee493d07668258ea6920b95edec8",
+        "packages/tiers/src/original.test.ts": "355a0d34c81017e227dbe5c17e2571780587823b1076b14b3d4e2d81c45d588f",
+        "packages/tiers/src/upper.ts": "9965f6bcc5e7c65526b1dd463bacd623f79921c92dad6c682ddb21c056b9496b",
+        "packages/windows/src/index.ts": "7f7ce7e4fda95cddd52abc4b5b05a2700c7445dafee56a92cf05936887a44023",
+        "packages/windows/src/original.test.ts": "f726042c8a02f59d82f0c242b73b4b1edf26c9ae291b53a4db5d5908e2314aa1",
+        "packages/windows/src/overlap.ts": "7136f657e6e8749dcb5e3c056f86615fe06560267500b40c9415d8cd8a9a2aca",
+        "packages/windows/src/qualifies.ts": "29dfaa8c3b971052fd4cbd7a6304555ba1b1c98bddab9c0a3736b872733533ac"
+      },
+      "sourceHashesAfter": {
+        "apps/policy/src/debit.ts": "6016ca57a4ad305f86e7cf8c2f4ff70e1e86a6cbf6ffe24a6792f4a65ccf39a0",
+        "apps/policy/src/inclusive-tier.test.ts": "6a206310bd6482ea71a8d91e37a303d6e25429e7e20ad5487c743ec091985182",
+        "apps/policy/src/original.test.ts": "797d8c7156157945c2c44d458e8407fe60f6524dcb9615b1a1b456b5de62dfaa",
+        "apps/policy/src/tiers.ts": "fec7e81819fbce75c51701367207f3f930765787955ce4260cc757ad1d733d62",
+        "apps/policy/src/windows.ts": "8eeffd740bcfc77e4f73bcf93c4feba1b61bb2251373051ec0a361801b1500d0",
+        "packages/credit/src/allocation.ts": "159269c5ccedeb221118946d4219fa483e39ba9b520a09b6f39b93364ac042b5",
+        "packages/credit/src/index.ts": "a455aadf7edb5c8f9e14ef4c391fcfd6c6405760f559720bc2f91487ae32703e",
+        "packages/credit/src/original.test.ts": "e122a771bde40333c665251c352cc292c32d093384f839b9f9f6982e6f674725",
+        "packages/credit/src/remainder.ts": "ff57e3bd5db747be7ce6e9dd25b37dc9bf40303beb89b98c601d305581385ccb",
+        "packages/tiers/src/cost.ts": "0a08771cd740a0c59943659aeb7315a8fa1d83b28f285ff562c0ad85db63d490",
+        "packages/tiers/src/index.ts": "3d0c83b245ceefd0875b273e7db1a3758d014e385a5eaa5969d4d19d59b83c7a",
+        "packages/tiers/src/lower.ts": "7835fd03d8c8fcb68a8ae2f2fc6169fbb6a8ee493d07668258ea6920b95edec8",
+        "packages/tiers/src/original.test.ts": "355a0d34c81017e227dbe5c17e2571780587823b1076b14b3d4e2d81c45d588f",
+        "packages/tiers/src/upper.ts": "9965f6bcc5e7c65526b1dd463bacd623f79921c92dad6c682ddb21c056b9496b",
+        "packages/windows/src/index.ts": "7f7ce7e4fda95cddd52abc4b5b05a2700c7445dafee56a92cf05936887a44023",
+        "packages/windows/src/original.test.ts": "f726042c8a02f59d82f0c242b73b4b1edf26c9ae291b53a4db5d5908e2314aa1",
+        "packages/windows/src/overlap.ts": "7136f657e6e8749dcb5e3c056f86615fe06560267500b40c9415d8cd8a9a2aca",
+        "packages/windows/src/qualifies.ts": "29dfaa8c3b971052fd4cbd7a6304555ba1b1c98bddab9c0a3736b872733533ac"
+      },
+      "unchanged": true,
+      "durationMs": 337.492149,
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "stdoutSha256": "4b82796f6ec1b7655132949c15c93f701ecd59293f825cd630013593a842b0e3",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr": "",
+      "observation": {
+        "status": "passed",
+        "counts": {
+          "lower": {
+            "total": 343,
+            "failed": 0
+          },
+          "upper": {
+            "total": 343,
+            "failed": 0
+          },
+          "conservation": {
+            "total": 343,
+            "failed": 0
+          },
+          "nonnegativeIntegers": {
+            "total": 343,
+            "failed": 0
+          },
+          "quote": {
+            "total": 16807,
+            "failed": 0
+          }
+        },
+        "failures": {},
+        "directTierCostCalled": false
+      }
+    },
+    {
+      "name": "1-inclusive-tier-allocation-cline",
+      "publicTraceSha256": "2bf0f790eb4444db1739337b0dcc1998a6a5e35cfdabd03091686c8eddb79def",
+      "patchSha256": "15a1cf2f7527607fb44f4ea67f6d0c2b48f12992ffaa3841a17ac5321cb90591",
+      "gradeSha256": "85a8039af2ad0c4081538b3bf8f2308e6cdfeb4fabda713e86fcd23b314cdf0b",
+      "protectedPaths": [],
+      "sourceHashesBefore": {
+        "apps/policy/src/debit.ts": "6016ca57a4ad305f86e7cf8c2f4ff70e1e86a6cbf6ffe24a6792f4a65ccf39a0",
+        "apps/policy/src/original.test.ts": "797d8c7156157945c2c44d458e8407fe60f6524dcb9615b1a1b456b5de62dfaa",
+        "apps/policy/src/tiers.regression.test.ts": "e6607d55d4b4830408b9519f2655c1dbabaa217b138fdb9ca3ca612e95904837",
+        "apps/policy/src/tiers.ts": "7a4039e436f49aadcfddb792afff92051965aadc7be2903405478b2fbd1c1618",
+        "apps/policy/src/windows.ts": "8eeffd740bcfc77e4f73bcf93c4feba1b61bb2251373051ec0a361801b1500d0",
+        "packages/credit/src/allocation.ts": "159269c5ccedeb221118946d4219fa483e39ba9b520a09b6f39b93364ac042b5",
+        "packages/credit/src/index.ts": "a455aadf7edb5c8f9e14ef4c391fcfd6c6405760f559720bc2f91487ae32703e",
+        "packages/credit/src/original.test.ts": "e122a771bde40333c665251c352cc292c32d093384f839b9f9f6982e6f674725",
+        "packages/credit/src/remainder.ts": "ff57e3bd5db747be7ce6e9dd25b37dc9bf40303beb89b98c601d305581385ccb",
+        "packages/tiers/src/cost.ts": "17aeb3886823a8a790e9b1f7208d016b7ed0bdef5bb261d6d63d6008eb48b0c6",
+        "packages/tiers/src/index.ts": "3d0c83b245ceefd0875b273e7db1a3758d014e385a5eaa5969d4d19d59b83c7a",
+        "packages/tiers/src/lower.ts": "8f9bb7ec52fe86dc06ad57bd05fab7ac0ff4a772fad947340a3e08b9be0e3a10",
+        "packages/tiers/src/original.test.ts": "355a0d34c81017e227dbe5c17e2571780587823b1076b14b3d4e2d81c45d588f",
+        "packages/tiers/src/upper.ts": "d86316454204489d8c3533cfdb6dcdad6a623bd8c02bb3cb0fed07054d27dd4e",
+        "packages/windows/src/index.ts": "7f7ce7e4fda95cddd52abc4b5b05a2700c7445dafee56a92cf05936887a44023",
+        "packages/windows/src/original.test.ts": "f726042c8a02f59d82f0c242b73b4b1edf26c9ae291b53a4db5d5908e2314aa1",
+        "packages/windows/src/overlap.ts": "7136f657e6e8749dcb5e3c056f86615fe06560267500b40c9415d8cd8a9a2aca",
+        "packages/windows/src/qualifies.ts": "29dfaa8c3b971052fd4cbd7a6304555ba1b1c98bddab9c0a3736b872733533ac"
+      },
+      "sourceHashesAfter": {
+        "apps/policy/src/debit.ts": "6016ca57a4ad305f86e7cf8c2f4ff70e1e86a6cbf6ffe24a6792f4a65ccf39a0",
+        "apps/policy/src/original.test.ts": "797d8c7156157945c2c44d458e8407fe60f6524dcb9615b1a1b456b5de62dfaa",
+        "apps/policy/src/tiers.regression.test.ts": "e6607d55d4b4830408b9519f2655c1dbabaa217b138fdb9ca3ca612e95904837",
+        "apps/policy/src/tiers.ts": "7a4039e436f49aadcfddb792afff92051965aadc7be2903405478b2fbd1c1618",
+        "apps/policy/src/windows.ts": "8eeffd740bcfc77e4f73bcf93c4feba1b61bb2251373051ec0a361801b1500d0",
+        "packages/credit/src/allocation.ts": "159269c5ccedeb221118946d4219fa483e39ba9b520a09b6f39b93364ac042b5",
+        "packages/credit/src/index.ts": "a455aadf7edb5c8f9e14ef4c391fcfd6c6405760f559720bc2f91487ae32703e",
+        "packages/credit/src/original.test.ts": "e122a771bde40333c665251c352cc292c32d093384f839b9f9f6982e6f674725",
+        "packages/credit/src/remainder.ts": "ff57e3bd5db747be7ce6e9dd25b37dc9bf40303beb89b98c601d305581385ccb",
+        "packages/tiers/src/cost.ts": "17aeb3886823a8a790e9b1f7208d016b7ed0bdef5bb261d6d63d6008eb48b0c6",
+        "packages/tiers/src/index.ts": "3d0c83b245ceefd0875b273e7db1a3758d014e385a5eaa5969d4d19d59b83c7a",
+        "packages/tiers/src/lower.ts": "8f9bb7ec52fe86dc06ad57bd05fab7ac0ff4a772fad947340a3e08b9be0e3a10",
+        "packages/tiers/src/original.test.ts": "355a0d34c81017e227dbe5c17e2571780587823b1076b14b3d4e2d81c45d588f",
+        "packages/tiers/src/upper.ts": "d86316454204489d8c3533cfdb6dcdad6a623bd8c02bb3cb0fed07054d27dd4e",
+        "packages/windows/src/index.ts": "7f7ce7e4fda95cddd52abc4b5b05a2700c7445dafee56a92cf05936887a44023",
+        "packages/windows/src/original.test.ts": "f726042c8a02f59d82f0c242b73b4b1edf26c9ae291b53a4db5d5908e2314aa1",
+        "packages/windows/src/overlap.ts": "7136f657e6e8749dcb5e3c056f86615fe06560267500b40c9415d8cd8a9a2aca",
+        "packages/windows/src/qualifies.ts": "29dfaa8c3b971052fd4cbd7a6304555ba1b1c98bddab9c0a3736b872733533ac"
+      },
+      "unchanged": true,
+      "durationMs": 334.65202100000005,
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "stdoutSha256": "4b82796f6ec1b7655132949c15c93f701ecd59293f825cd630013593a842b0e3",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr": "",
+      "observation": {
+        "status": "passed",
+        "counts": {
+          "lower": {
+            "total": 343,
+            "failed": 0
+          },
+          "upper": {
+            "total": 343,
+            "failed": 0
+          },
+          "conservation": {
+            "total": 343,
+            "failed": 0
+          },
+          "nonnegativeIntegers": {
+            "total": 343,
+            "failed": 0
+          },
+          "quote": {
+            "total": 16807,
+            "failed": 0
+          }
+        },
+        "failures": {},
+        "directTierCostCalled": false
+      }
+    },
+    {
+      "name": "1-inclusive-tier-allocation-reference",
+      "publicTraceSha256": "fa582e2e63d0564c29fe354612d5286512857802430bbff95c2134bcb18bee61",
+      "patchSha256": "884a2c3d4b8e565dfbb55c5c5958fdfa6210fdabbfe5f7d5d0bb55896372f476",
+      "gradeSha256": "61583ad1f959b551d7e09a88cc88694c1b0829d3e73f1d2dddf258a132f902ce",
+      "protectedPaths": [],
+      "sourceHashesBefore": {
+        "apps/policy/src/debit.ts": "6016ca57a4ad305f86e7cf8c2f4ff70e1e86a6cbf6ffe24a6792f4a65ccf39a0",
+        "apps/policy/src/original.test.ts": "797d8c7156157945c2c44d458e8407fe60f6524dcb9615b1a1b456b5de62dfaa",
+        "apps/policy/src/tier-accounting.test.ts": "c74a735a44933a95c64bc2107a80b5e875abe023b3396c38c40866b20dce8b92",
+        "apps/policy/src/tiers.ts": "295eca57cd9006e9df27e39ab288a0c1d1aeab110d1c6fa0e303a3d110f86ac1",
+        "apps/policy/src/windows.ts": "8eeffd740bcfc77e4f73bcf93c4feba1b61bb2251373051ec0a361801b1500d0",
+        "packages/credit/src/allocation.ts": "159269c5ccedeb221118946d4219fa483e39ba9b520a09b6f39b93364ac042b5",
+        "packages/credit/src/index.ts": "a455aadf7edb5c8f9e14ef4c391fcfd6c6405760f559720bc2f91487ae32703e",
+        "packages/credit/src/original.test.ts": "e122a771bde40333c665251c352cc292c32d093384f839b9f9f6982e6f674725",
+        "packages/credit/src/remainder.ts": "ff57e3bd5db747be7ce6e9dd25b37dc9bf40303beb89b98c601d305581385ccb",
+        "packages/tiers/src/cost.ts": "5de4450d9c585081356203709b1f8cedc45d49456b61edb3f38fcf8b753479fb",
+        "packages/tiers/src/index.ts": "3d0c83b245ceefd0875b273e7db1a3758d014e385a5eaa5969d4d19d59b83c7a",
+        "packages/tiers/src/lower.ts": "8f9bb7ec52fe86dc06ad57bd05fab7ac0ff4a772fad947340a3e08b9be0e3a10",
+        "packages/tiers/src/original.test.ts": "355a0d34c81017e227dbe5c17e2571780587823b1076b14b3d4e2d81c45d588f",
+        "packages/tiers/src/upper.ts": "d86316454204489d8c3533cfdb6dcdad6a623bd8c02bb3cb0fed07054d27dd4e",
+        "packages/windows/src/index.ts": "7f7ce7e4fda95cddd52abc4b5b05a2700c7445dafee56a92cf05936887a44023",
+        "packages/windows/src/original.test.ts": "f726042c8a02f59d82f0c242b73b4b1edf26c9ae291b53a4db5d5908e2314aa1",
+        "packages/windows/src/overlap.ts": "7136f657e6e8749dcb5e3c056f86615fe06560267500b40c9415d8cd8a9a2aca",
+        "packages/windows/src/qualifies.ts": "29dfaa8c3b971052fd4cbd7a6304555ba1b1c98bddab9c0a3736b872733533ac"
+      },
+      "sourceHashesAfter": {
+        "apps/policy/src/debit.ts": "6016ca57a4ad305f86e7cf8c2f4ff70e1e86a6cbf6ffe24a6792f4a65ccf39a0",
+        "apps/policy/src/original.test.ts": "797d8c7156157945c2c44d458e8407fe60f6524dcb9615b1a1b456b5de62dfaa",
+        "apps/policy/src/tier-accounting.test.ts": "c74a735a44933a95c64bc2107a80b5e875abe023b3396c38c40866b20dce8b92",
+        "apps/policy/src/tiers.ts": "295eca57cd9006e9df27e39ab288a0c1d1aeab110d1c6fa0e303a3d110f86ac1",
+        "apps/policy/src/windows.ts": "8eeffd740bcfc77e4f73bcf93c4feba1b61bb2251373051ec0a361801b1500d0",
+        "packages/credit/src/allocation.ts": "159269c5ccedeb221118946d4219fa483e39ba9b520a09b6f39b93364ac042b5",
+        "packages/credit/src/index.ts": "a455aadf7edb5c8f9e14ef4c391fcfd6c6405760f559720bc2f91487ae32703e",
+        "packages/credit/src/original.test.ts": "e122a771bde40333c665251c352cc292c32d093384f839b9f9f6982e6f674725",
+        "packages/credit/src/remainder.ts": "ff57e3bd5db747be7ce6e9dd25b37dc9bf40303beb89b98c601d305581385ccb",
+        "packages/tiers/src/cost.ts": "5de4450d9c585081356203709b1f8cedc45d49456b61edb3f38fcf8b753479fb",
+        "packages/tiers/src/index.ts": "3d0c83b245ceefd0875b273e7db1a3758d014e385a5eaa5969d4d19d59b83c7a",
+        "packages/tiers/src/lower.ts": "8f9bb7ec52fe86dc06ad57bd05fab7ac0ff4a772fad947340a3e08b9be0e3a10",
+        "packages/tiers/src/original.test.ts": "355a0d34c81017e227dbe5c17e2571780587823b1076b14b3d4e2d81c45d588f",
+        "packages/tiers/src/upper.ts": "d86316454204489d8c3533cfdb6dcdad6a623bd8c02bb3cb0fed07054d27dd4e",
+        "packages/windows/src/index.ts": "7f7ce7e4fda95cddd52abc4b5b05a2700c7445dafee56a92cf05936887a44023",
+        "packages/windows/src/original.test.ts": "f726042c8a02f59d82f0c242b73b4b1edf26c9ae291b53a4db5d5908e2314aa1",
+        "packages/windows/src/overlap.ts": "7136f657e6e8749dcb5e3c056f86615fe06560267500b40c9415d8cd8a9a2aca",
+        "packages/windows/src/qualifies.ts": "29dfaa8c3b971052fd4cbd7a6304555ba1b1c98bddab9c0a3736b872733533ac"
+      },
+      "unchanged": true,
+      "durationMs": 318.9946439999999,
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "stdoutSha256": "4b82796f6ec1b7655132949c15c93f701ecd59293f825cd630013593a842b0e3",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr": "",
+      "observation": {
+        "status": "passed",
+        "counts": {
+          "lower": {
+            "total": 343,
+            "failed": 0
+          },
+          "upper": {
+            "total": 343,
+            "failed": 0
+          },
+          "conservation": {
+            "total": 343,
+            "failed": 0
+          },
+          "nonnegativeIntegers": {
+            "total": 343,
+            "failed": 0
+          },
+          "quote": {
+            "total": 16807,
+            "failed": 0
+          }
+        },
+        "failures": {},
+        "directTierCostCalled": false
+      }
+    },
+    {
+      "name": "2-inclusive-tier-allocation-cline",
+      "publicTraceSha256": "f1037b482516911649e7561f42e9222c28e2333530559a7752bd759cebf09eaa",
+      "patchSha256": "72f91fa14cfa71dce3974d1b2ff742b7dfeced8da22085b3d1fd8cfe4f144f0c",
+      "gradeSha256": "a5b36d81a998722fa84b9cf87bc121fac351f46a10c78e600031e9e19aaae2c6",
+      "protectedPaths": [],
+      "sourceHashesBefore": {
+        "apps/policy/src/debit.ts": "6016ca57a4ad305f86e7cf8c2f4ff70e1e86a6cbf6ffe24a6792f4a65ccf39a0",
+        "apps/policy/src/original.test.ts": "797d8c7156157945c2c44d458e8407fe60f6524dcb9615b1a1b456b5de62dfaa",
+        "apps/policy/src/tiers.ts": "a510a5afd71e55ba9a8f5e8029535ab22b8f1d0f756213d37e3be867c71dad93",
+        "apps/policy/src/windows.ts": "8eeffd740bcfc77e4f73bcf93c4feba1b61bb2251373051ec0a361801b1500d0",
+        "packages/credit/src/allocation.ts": "159269c5ccedeb221118946d4219fa483e39ba9b520a09b6f39b93364ac042b5",
+        "packages/credit/src/index.ts": "a455aadf7edb5c8f9e14ef4c391fcfd6c6405760f559720bc2f91487ae32703e",
+        "packages/credit/src/original.test.ts": "e122a771bde40333c665251c352cc292c32d093384f839b9f9f6982e6f674725",
+        "packages/credit/src/remainder.ts": "ff57e3bd5db747be7ce6e9dd25b37dc9bf40303beb89b98c601d305581385ccb",
+        "packages/tiers/src/cost.ts": "17aeb3886823a8a790e9b1f7208d016b7ed0bdef5bb261d6d63d6008eb48b0c6",
+        "packages/tiers/src/inclusive.test.ts": "30db695d3b957b5167dd4b9a90ac7e9abad07dff7c52d3fdbf1a19a6193348a2",
+        "packages/tiers/src/index.ts": "3d0c83b245ceefd0875b273e7db1a3758d014e385a5eaa5969d4d19d59b83c7a",
+        "packages/tiers/src/lower.ts": "442c2abe864c3a9d4985f07e30ffc4619d1236e1c864c2a96ef68581630c116b",
+        "packages/tiers/src/original.test.ts": "355a0d34c81017e227dbe5c17e2571780587823b1076b14b3d4e2d81c45d588f",
+        "packages/tiers/src/upper.ts": "1479df11c15144a01f422146ac5a88d606789fabd040b29332d1f4e1c8b5424e",
+        "packages/windows/src/index.ts": "7f7ce7e4fda95cddd52abc4b5b05a2700c7445dafee56a92cf05936887a44023",
+        "packages/windows/src/original.test.ts": "f726042c8a02f59d82f0c242b73b4b1edf26c9ae291b53a4db5d5908e2314aa1",
+        "packages/windows/src/overlap.ts": "7136f657e6e8749dcb5e3c056f86615fe06560267500b40c9415d8cd8a9a2aca",
+        "packages/windows/src/qualifies.ts": "29dfaa8c3b971052fd4cbd7a6304555ba1b1c98bddab9c0a3736b872733533ac"
+      },
+      "sourceHashesAfter": {
+        "apps/policy/src/debit.ts": "6016ca57a4ad305f86e7cf8c2f4ff70e1e86a6cbf6ffe24a6792f4a65ccf39a0",
+        "apps/policy/src/original.test.ts": "797d8c7156157945c2c44d458e8407fe60f6524dcb9615b1a1b456b5de62dfaa",
+        "apps/policy/src/tiers.ts": "a510a5afd71e55ba9a8f5e8029535ab22b8f1d0f756213d37e3be867c71dad93",
+        "apps/policy/src/windows.ts": "8eeffd740bcfc77e4f73bcf93c4feba1b61bb2251373051ec0a361801b1500d0",
+        "packages/credit/src/allocation.ts": "159269c5ccedeb221118946d4219fa483e39ba9b520a09b6f39b93364ac042b5",
+        "packages/credit/src/index.ts": "a455aadf7edb5c8f9e14ef4c391fcfd6c6405760f559720bc2f91487ae32703e",
+        "packages/credit/src/original.test.ts": "e122a771bde40333c665251c352cc292c32d093384f839b9f9f6982e6f674725",
+        "packages/credit/src/remainder.ts": "ff57e3bd5db747be7ce6e9dd25b37dc9bf40303beb89b98c601d305581385ccb",
+        "packages/tiers/src/cost.ts": "17aeb3886823a8a790e9b1f7208d016b7ed0bdef5bb261d6d63d6008eb48b0c6",
+        "packages/tiers/src/inclusive.test.ts": "30db695d3b957b5167dd4b9a90ac7e9abad07dff7c52d3fdbf1a19a6193348a2",
+        "packages/tiers/src/index.ts": "3d0c83b245ceefd0875b273e7db1a3758d014e385a5eaa5969d4d19d59b83c7a",
+        "packages/tiers/src/lower.ts": "442c2abe864c3a9d4985f07e30ffc4619d1236e1c864c2a96ef68581630c116b",
+        "packages/tiers/src/original.test.ts": "355a0d34c81017e227dbe5c17e2571780587823b1076b14b3d4e2d81c45d588f",
+        "packages/tiers/src/upper.ts": "1479df11c15144a01f422146ac5a88d606789fabd040b29332d1f4e1c8b5424e",
+        "packages/windows/src/index.ts": "7f7ce7e4fda95cddd52abc4b5b05a2700c7445dafee56a92cf05936887a44023",
+        "packages/windows/src/original.test.ts": "f726042c8a02f59d82f0c242b73b4b1edf26c9ae291b53a4db5d5908e2314aa1",
+        "packages/windows/src/overlap.ts": "7136f657e6e8749dcb5e3c056f86615fe06560267500b40c9415d8cd8a9a2aca",
+        "packages/windows/src/qualifies.ts": "29dfaa8c3b971052fd4cbd7a6304555ba1b1c98bddab9c0a3736b872733533ac"
+      },
+      "unchanged": true,
+      "durationMs": 330.7589149999999,
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "stdoutSha256": "4b82796f6ec1b7655132949c15c93f701ecd59293f825cd630013593a842b0e3",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr": "",
+      "observation": {
+        "status": "passed",
+        "counts": {
+          "lower": {
+            "total": 343,
+            "failed": 0
+          },
+          "upper": {
+            "total": 343,
+            "failed": 0
+          },
+          "conservation": {
+            "total": 343,
+            "failed": 0
+          },
+          "nonnegativeIntegers": {
+            "total": 343,
+            "failed": 0
+          },
+          "quote": {
+            "total": 16807,
+            "failed": 0
+          }
+        },
+        "failures": {},
+        "directTierCostCalled": false
+      }
+    },
+    {
+      "name": "2-inclusive-tier-allocation-reference",
+      "publicTraceSha256": "501c86c47951a2ce52a865ba31c0f6850a8aecf7f4131bccfe3feec25ce7b151",
+      "patchSha256": "164889e7099df3a5ad2da9d5d9f821f4cf3865c324187aef1e5aea29159bc252",
+      "gradeSha256": "b5fee3d68cebfca1ade88bbcdb1c3cf8323dc324aaa3bc864c6bb5ae7d418844",
+      "protectedPaths": [],
+      "sourceHashesBefore": {
+        "apps/policy/src/debit.ts": "6016ca57a4ad305f86e7cf8c2f4ff70e1e86a6cbf6ffe24a6792f4a65ccf39a0",
+        "apps/policy/src/original.test.ts": "797d8c7156157945c2c44d458e8407fe60f6524dcb9615b1a1b456b5de62dfaa",
+        "apps/policy/src/tiers.test.ts": "c42fc230aecbbc50cdbc7ad1b9ed1c67939331cd69744949d5c5c31369e40ede",
+        "apps/policy/src/tiers.ts": "cd2cbb4901632d6af78eb313d6b643ebdf1d6024db87a98d4982c7a72bb1e67d",
+        "apps/policy/src/windows.ts": "8eeffd740bcfc77e4f73bcf93c4feba1b61bb2251373051ec0a361801b1500d0",
+        "packages/credit/src/allocation.ts": "159269c5ccedeb221118946d4219fa483e39ba9b520a09b6f39b93364ac042b5",
+        "packages/credit/src/index.ts": "a455aadf7edb5c8f9e14ef4c391fcfd6c6405760f559720bc2f91487ae32703e",
+        "packages/credit/src/original.test.ts": "e122a771bde40333c665251c352cc292c32d093384f839b9f9f6982e6f674725",
+        "packages/credit/src/remainder.ts": "ff57e3bd5db747be7ce6e9dd25b37dc9bf40303beb89b98c601d305581385ccb",
+        "packages/tiers/src/cost.ts": "17aeb3886823a8a790e9b1f7208d016b7ed0bdef5bb261d6d63d6008eb48b0c6",
+        "packages/tiers/src/index.ts": "3d0c83b245ceefd0875b273e7db1a3758d014e385a5eaa5969d4d19d59b83c7a",
+        "packages/tiers/src/lower.ts": "8f9bb7ec52fe86dc06ad57bd05fab7ac0ff4a772fad947340a3e08b9be0e3a10",
+        "packages/tiers/src/original.test.ts": "355a0d34c81017e227dbe5c17e2571780587823b1076b14b3d4e2d81c45d588f",
+        "packages/tiers/src/upper.ts": "d86316454204489d8c3533cfdb6dcdad6a623bd8c02bb3cb0fed07054d27dd4e",
+        "packages/windows/src/index.ts": "7f7ce7e4fda95cddd52abc4b5b05a2700c7445dafee56a92cf05936887a44023",
+        "packages/windows/src/original.test.ts": "f726042c8a02f59d82f0c242b73b4b1edf26c9ae291b53a4db5d5908e2314aa1",
+        "packages/windows/src/overlap.ts": "7136f657e6e8749dcb5e3c056f86615fe06560267500b40c9415d8cd8a9a2aca",
+        "packages/windows/src/qualifies.ts": "29dfaa8c3b971052fd4cbd7a6304555ba1b1c98bddab9c0a3736b872733533ac"
+      },
+      "sourceHashesAfter": {
+        "apps/policy/src/debit.ts": "6016ca57a4ad305f86e7cf8c2f4ff70e1e86a6cbf6ffe24a6792f4a65ccf39a0",
+        "apps/policy/src/original.test.ts": "797d8c7156157945c2c44d458e8407fe60f6524dcb9615b1a1b456b5de62dfaa",
+        "apps/policy/src/tiers.test.ts": "c42fc230aecbbc50cdbc7ad1b9ed1c67939331cd69744949d5c5c31369e40ede",
+        "apps/policy/src/tiers.ts": "cd2cbb4901632d6af78eb313d6b643ebdf1d6024db87a98d4982c7a72bb1e67d",
+        "apps/policy/src/windows.ts": "8eeffd740bcfc77e4f73bcf93c4feba1b61bb2251373051ec0a361801b1500d0",
+        "packages/credit/src/allocation.ts": "159269c5ccedeb221118946d4219fa483e39ba9b520a09b6f39b93364ac042b5",
+        "packages/credit/src/index.ts": "a455aadf7edb5c8f9e14ef4c391fcfd6c6405760f559720bc2f91487ae32703e",
+        "packages/credit/src/original.test.ts": "e122a771bde40333c665251c352cc292c32d093384f839b9f9f6982e6f674725",
+        "packages/credit/src/remainder.ts": "ff57e3bd5db747be7ce6e9dd25b37dc9bf40303beb89b98c601d305581385ccb",
+        "packages/tiers/src/cost.ts": "17aeb3886823a8a790e9b1f7208d016b7ed0bdef5bb261d6d63d6008eb48b0c6",
+        "packages/tiers/src/index.ts": "3d0c83b245ceefd0875b273e7db1a3758d014e385a5eaa5969d4d19d59b83c7a",
+        "packages/tiers/src/lower.ts": "8f9bb7ec52fe86dc06ad57bd05fab7ac0ff4a772fad947340a3e08b9be0e3a10",
+        "packages/tiers/src/original.test.ts": "355a0d34c81017e227dbe5c17e2571780587823b1076b14b3d4e2d81c45d588f",
+        "packages/tiers/src/upper.ts": "d86316454204489d8c3533cfdb6dcdad6a623bd8c02bb3cb0fed07054d27dd4e",
+        "packages/windows/src/index.ts": "7f7ce7e4fda95cddd52abc4b5b05a2700c7445dafee56a92cf05936887a44023",
+        "packages/windows/src/original.test.ts": "f726042c8a02f59d82f0c242b73b4b1edf26c9ae291b53a4db5d5908e2314aa1",
+        "packages/windows/src/overlap.ts": "7136f657e6e8749dcb5e3c056f86615fe06560267500b40c9415d8cd8a9a2aca",
+        "packages/windows/src/qualifies.ts": "29dfaa8c3b971052fd4cbd7a6304555ba1b1c98bddab9c0a3736b872733533ac"
+      },
+      "unchanged": true,
+      "durationMs": 321.37424399999986,
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "stdoutSha256": "4b82796f6ec1b7655132949c15c93f701ecd59293f825cd630013593a842b0e3",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr": "",
+      "observation": {
+        "status": "passed",
+        "counts": {
+          "lower": {
+            "total": 343,
+            "failed": 0
+          },
+          "upper": {
+            "total": 343,
+            "failed": 0
+          },
+          "conservation": {
+            "total": 343,
+            "failed": 0
+          },
+          "nonnegativeIntegers": {
+            "total": 343,
+            "failed": 0
+          },
+          "quote": {
+            "total": 16807,
+            "failed": 0
+          }
+        },
+        "failures": {},
+        "directTierCostCalled": false
+      }
+    },
+    {
+      "name": "2-inclusive-tier-allocation-candidate",
+      "publicTraceSha256": "e246ab654fc9824bd34842f5f95cea63394e71bc29afaafd5837d77e8842142a",
+      "patchSha256": "5e1f633ceb081b4a9f9aa470f9423764aa81a34a2c3a9a3866b29627a87adf4b",
+      "gradeSha256": "841e71f0a9520f432f6d1cd631a800162a1206b9bb3c6827126ea6b9a2ce3209",
+      "protectedPaths": [],
+      "sourceHashesBefore": {
+        "apps/policy/src/debit.ts": "6016ca57a4ad305f86e7cf8c2f4ff70e1e86a6cbf6ffe24a6792f4a65ccf39a0",
+        "apps/policy/src/inclusive-tier-accounting.test.ts": "6ba19015811489a062d531d90ce498edecf53996473d12288787155bfbffd4a7",
+        "apps/policy/src/original.test.ts": "797d8c7156157945c2c44d458e8407fe60f6524dcb9615b1a1b456b5de62dfaa",
+        "apps/policy/src/tiers.ts": "2d5f85771af4eb5f8ece5840071963ced7d38ba7ebaf3807db120bfdfc05bd3d",
+        "apps/policy/src/windows.ts": "8eeffd740bcfc77e4f73bcf93c4feba1b61bb2251373051ec0a361801b1500d0",
+        "packages/credit/src/allocation.ts": "159269c5ccedeb221118946d4219fa483e39ba9b520a09b6f39b93364ac042b5",
+        "packages/credit/src/index.ts": "a455aadf7edb5c8f9e14ef4c391fcfd6c6405760f559720bc2f91487ae32703e",
+        "packages/credit/src/original.test.ts": "e122a771bde40333c665251c352cc292c32d093384f839b9f9f6982e6f674725",
+        "packages/credit/src/remainder.ts": "ff57e3bd5db747be7ce6e9dd25b37dc9bf40303beb89b98c601d305581385ccb",
+        "packages/tiers/src/cost.ts": "5de4450d9c585081356203709b1f8cedc45d49456b61edb3f38fcf8b753479fb",
+        "packages/tiers/src/index.ts": "3d0c83b245ceefd0875b273e7db1a3758d014e385a5eaa5969d4d19d59b83c7a",
+        "packages/tiers/src/lower.ts": "8f9bb7ec52fe86dc06ad57bd05fab7ac0ff4a772fad947340a3e08b9be0e3a10",
+        "packages/tiers/src/original.test.ts": "355a0d34c81017e227dbe5c17e2571780587823b1076b14b3d4e2d81c45d588f",
+        "packages/tiers/src/upper.ts": "d86316454204489d8c3533cfdb6dcdad6a623bd8c02bb3cb0fed07054d27dd4e",
+        "packages/windows/src/index.ts": "7f7ce7e4fda95cddd52abc4b5b05a2700c7445dafee56a92cf05936887a44023",
+        "packages/windows/src/original.test.ts": "f726042c8a02f59d82f0c242b73b4b1edf26c9ae291b53a4db5d5908e2314aa1",
+        "packages/windows/src/overlap.ts": "7136f657e6e8749dcb5e3c056f86615fe06560267500b40c9415d8cd8a9a2aca",
+        "packages/windows/src/qualifies.ts": "29dfaa8c3b971052fd4cbd7a6304555ba1b1c98bddab9c0a3736b872733533ac"
+      },
+      "sourceHashesAfter": {
+        "apps/policy/src/debit.ts": "6016ca57a4ad305f86e7cf8c2f4ff70e1e86a6cbf6ffe24a6792f4a65ccf39a0",
+        "apps/policy/src/inclusive-tier-accounting.test.ts": "6ba19015811489a062d531d90ce498edecf53996473d12288787155bfbffd4a7",
+        "apps/policy/src/original.test.ts": "797d8c7156157945c2c44d458e8407fe60f6524dcb9615b1a1b456b5de62dfaa",
+        "apps/policy/src/tiers.ts": "2d5f85771af4eb5f8ece5840071963ced7d38ba7ebaf3807db120bfdfc05bd3d",
+        "apps/policy/src/windows.ts": "8eeffd740bcfc77e4f73bcf93c4feba1b61bb2251373051ec0a361801b1500d0",
+        "packages/credit/src/allocation.ts": "159269c5ccedeb221118946d4219fa483e39ba9b520a09b6f39b93364ac042b5",
+        "packages/credit/src/index.ts": "a455aadf7edb5c8f9e14ef4c391fcfd6c6405760f559720bc2f91487ae32703e",
+        "packages/credit/src/original.test.ts": "e122a771bde40333c665251c352cc292c32d093384f839b9f9f6982e6f674725",
+        "packages/credit/src/remainder.ts": "ff57e3bd5db747be7ce6e9dd25b37dc9bf40303beb89b98c601d305581385ccb",
+        "packages/tiers/src/cost.ts": "5de4450d9c585081356203709b1f8cedc45d49456b61edb3f38fcf8b753479fb",
+        "packages/tiers/src/index.ts": "3d0c83b245ceefd0875b273e7db1a3758d014e385a5eaa5969d4d19d59b83c7a",
+        "packages/tiers/src/lower.ts": "8f9bb7ec52fe86dc06ad57bd05fab7ac0ff4a772fad947340a3e08b9be0e3a10",
+        "packages/tiers/src/original.test.ts": "355a0d34c81017e227dbe5c17e2571780587823b1076b14b3d4e2d81c45d588f",
+        "packages/tiers/src/upper.ts": "d86316454204489d8c3533cfdb6dcdad6a623bd8c02bb3cb0fed07054d27dd4e",
+        "packages/windows/src/index.ts": "7f7ce7e4fda95cddd52abc4b5b05a2700c7445dafee56a92cf05936887a44023",
+        "packages/windows/src/original.test.ts": "f726042c8a02f59d82f0c242b73b4b1edf26c9ae291b53a4db5d5908e2314aa1",
+        "packages/windows/src/overlap.ts": "7136f657e6e8749dcb5e3c056f86615fe06560267500b40c9415d8cd8a9a2aca",
+        "packages/windows/src/qualifies.ts": "29dfaa8c3b971052fd4cbd7a6304555ba1b1c98bddab9c0a3736b872733533ac"
+      },
+      "unchanged": true,
+      "durationMs": 325.76258499999994,
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "stdoutSha256": "4b82796f6ec1b7655132949c15c93f701ecd59293f825cd630013593a842b0e3",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr": "",
+      "observation": {
+        "status": "passed",
+        "counts": {
+          "lower": {
+            "total": 343,
+            "failed": 0
+          },
+          "upper": {
+            "total": 343,
+            "failed": 0
+          },
+          "conservation": {
+            "total": 343,
+            "failed": 0
+          },
+          "nonnegativeIntegers": {
+            "total": 343,
+            "failed": 0
+          },
+          "quote": {
+            "total": 16807,
+            "failed": 0
+          }
+        },
+        "failures": {},
+        "directTierCostCalled": false
+      }
+    }
+  ]
+}

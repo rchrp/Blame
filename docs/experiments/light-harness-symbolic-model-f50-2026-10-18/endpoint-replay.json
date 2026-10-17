@@ -1,0 +1,1825 @@
+{
+  "phase": "F50",
+  "modelRequests": 0,
+  "method": "Original unchanged patch on pristine constructed input, protected checks restored as in the original grader. Identical endpoint outcomes establish reproducibility, not new agent successes.",
+  "rows": [
+    {
+      "name": "1-credit-remainder-reference",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1183.649927,
+          "stdout": "\n> test:study:regression\n> node node_modules/vitest/vitest.mjs run --config regression.vitest.mjs\n\n\n RUN  v3.2.4 /tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/1-credit-remainder-reference\n\n ✓ apps/policy/src/original.test.ts (1 test) 3ms\n ✓ packages/tiers/src/original.test.ts (1 test) 2ms\n ✓ packages/windows/src/original.test.ts (1 test) 2ms\n ✓ packages/credit/src/original.test.ts (1 test) 2ms\n\n Test Files  4 passed (4)\n      Tests  4 passed (4)\n   Start at  23:23:10\n   Duration  753ms (transform 72ms, setup 0ms, collect 107ms, tests 8ms, environment 0ms, prepare 208ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/1-credit-remainder-reference/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/symbolic-reasoning-model-study/oracle.mjs",
+            "/tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/1-credit-remainder-reference",
+            "credit-remainder"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 827.5930310000001,
+          "stdout": "Hidden behavioral and public type contracts passed: credit-remainder assertions: 8704\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 637.2165030000001,
+          "stdout": "\n> test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 657.484297,
+          "stdout": "\n> test:study:delivered\n> node scripts/delivered.mjs runtime\n\nDelivered test files: [\"apps/policy/src/regression.test.ts\"]\n\n RUN  v3.2.4 /tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/1-credit-remainder-reference\n\n ✓ apps/policy/src/regression.test.ts (3 tests) 3ms\n\n Test Files  1 passed (1)\n      Tests  3 passed (3)\n   Start at  23:23:13\n   Duration  205ms (transform 43ms, setup 0ms, collect 43ms, tests 3ms, environment 0ms, prepare 55ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 840.8034860000002,
+          "stdout": "\n> typecheck:delivered\n> node scripts/delivered.mjs types\n\nDelivered test files: [\"apps/policy/src/regression.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "1-credit-remainder-candidate",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1183.3211010000005,
+          "stdout": "\n> test:study:regression\n> node node_modules/vitest/vitest.mjs run --config regression.vitest.mjs\n\n\n RUN  v3.2.4 /tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/1-credit-remainder-candidate\n\n ✓ apps/policy/src/original.test.ts (1 test) 3ms\n ✓ packages/tiers/src/original.test.ts (1 test) 2ms\n ✓ packages/windows/src/original.test.ts (1 test) 2ms\n ✓ packages/credit/src/original.test.ts (1 test) 2ms\n\n Test Files  4 passed (4)\n      Tests  4 passed (4)\n   Start at  23:23:14\n   Duration  746ms (transform 74ms, setup 0ms, collect 115ms, tests 8ms, environment 1ms, prepare 196ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/1-credit-remainder-candidate/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/symbolic-reasoning-model-study/oracle.mjs",
+            "/tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/1-credit-remainder-candidate",
+            "credit-remainder"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 920.084038,
+          "stdout": "Hidden behavioral and public type contracts passed: credit-remainder assertions: 8704\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 719.563384,
+          "stdout": "\n> test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 739.2941540000002,
+          "stdout": "\n> test:study:delivered\n> node scripts/delivered.mjs runtime\n\nDelivered test files: [\"apps/policy/src/debit.regression.test.ts\"]\n\n RUN  v3.2.4 /tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/1-credit-remainder-candidate\n\n ✓ apps/policy/src/debit.regression.test.ts (2 tests) 3ms\n\n Test Files  1 passed (1)\n      Tests  2 passed (2)\n   Start at  23:23:17\n   Duration  249ms (transform 42ms, setup 0ms, collect 49ms, tests 3ms, environment 0ms, prepare 68ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 841.2694510000001,
+          "stdout": "\n> typecheck:delivered\n> node scripts/delivered.mjs types\n\nDelivered test files: [\"apps/policy/src/debit.regression.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "1-credit-remainder-cline",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1259.6505610000004,
+          "stdout": "\n> test:study:regression\n> node node_modules/vitest/vitest.mjs run --config regression.vitest.mjs\n\n\n RUN  v3.2.4 /tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/1-credit-remainder-cline\n\n ✓ apps/policy/src/original.test.ts (1 test) 3ms\n ✓ packages/tiers/src/original.test.ts (1 test) 2ms\n ✓ packages/windows/src/original.test.ts (1 test) 2ms\n ✓ packages/credit/src/original.test.ts (1 test) 5ms\n\n Test Files  4 passed (4)\n      Tests  4 passed (4)\n   Start at  23:23:19\n   Duration  795ms (transform 86ms, setup 0ms, collect 139ms, tests 12ms, environment 1ms, prepare 196ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/1-credit-remainder-cline/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/symbolic-reasoning-model-study/oracle.mjs",
+            "/tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/1-credit-remainder-cline",
+            "credit-remainder"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 874.0885150000013,
+          "stdout": "Hidden behavioral and public type contracts passed: credit-remainder assertions: 8704\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 664.4599440000002,
+          "stdout": "\n> test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 719.4993189999986,
+          "stdout": "\n> test:study:delivered\n> node scripts/delivered.mjs runtime\n\nDelivered test files: [\"apps/policy/src/debit-regression.test.ts\"]\n\n RUN  v3.2.4 /tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/1-credit-remainder-cline\n\n ✓ apps/policy/src/debit-regression.test.ts (2 tests) 2ms\n\n Test Files  1 passed (1)\n      Tests  2 passed (2)\n   Start at  23:23:22\n   Duration  213ms (transform 48ms, setup 0ms, collect 46ms, tests 2ms, environment 0ms, prepare 58ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 819.1761619999997,
+          "stdout": "\n> typecheck:delivered\n> node scripts/delivered.mjs types\n\nDelivered test files: [\"apps/policy/src/debit-regression.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "1-inclusive-tier-allocation-candidate",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1237.2924779999994,
+          "stdout": "\n> test:study:regression\n> node node_modules/vitest/vitest.mjs run --config regression.vitest.mjs\n\n\n RUN  v3.2.4 /tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/1-inclusive-tier-allocation-candidate\n\n ✓ apps/policy/src/original.test.ts (1 test) 3ms\n ✓ packages/tiers/src/original.test.ts (1 test) 2ms\n ✓ packages/windows/src/original.test.ts (1 test) 2ms\n ✓ packages/credit/src/original.test.ts (1 test) 2ms\n\n Test Files  4 passed (4)\n      Tests  4 passed (4)\n   Start at  23:23:23\n   Duration  816ms (transform 82ms, setup 0ms, collect 129ms, tests 8ms, environment 1ms, prepare 234ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/1-inclusive-tier-allocation-candidate/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/symbolic-reasoning-model-study/oracle.mjs",
+            "/tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/1-inclusive-tier-allocation-candidate",
+            "inclusive-tier-allocation"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 885.8552380000001,
+          "stdout": "Hidden behavioral and public type contracts passed: inclusive-tier-allocation assertions: 4803\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 720.2140959999997,
+          "stdout": "\n> test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 703.9017789999998,
+          "stdout": "\n> test:study:delivered\n> node scripts/delivered.mjs runtime\n\nDelivered test files: [\"apps/policy/src/inclusive-tier.test.ts\"]\n\n RUN  v3.2.4 /tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/1-inclusive-tier-allocation-candidate\n\n ✓ apps/policy/src/inclusive-tier.test.ts (2 tests) 3ms\n\n Test Files  1 passed (1)\n      Tests  2 passed (2)\n   Start at  23:23:26\n   Duration  223ms (transform 41ms, setup 0ms, collect 40ms, tests 3ms, environment 0ms, prepare 56ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 851.4039809999995,
+          "stdout": "\n> typecheck:delivered\n> node scripts/delivered.mjs types\n\nDelivered test files: [\"apps/policy/src/inclusive-tier.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "1-inclusive-tier-allocation-cline",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 1,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1132.9598220000007,
+          "stdout": "\n> test:study:regression\n> node node_modules/vitest/vitest.mjs run --config regression.vitest.mjs\n\n\n RUN  v3.2.4 /tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/1-inclusive-tier-allocation-cline\n\n ✓ apps/policy/src/original.test.ts (1 test) 3ms\n ✓ packages/tiers/src/original.test.ts (1 test) 2ms\n ✓ packages/windows/src/original.test.ts (1 test) 2ms\n ✓ packages/credit/src/original.test.ts (1 test) 2ms\n\n Test Files  4 passed (4)\n      Tests  4 passed (4)\n   Start at  23:23:28\n   Duration  716ms (transform 73ms, setup 0ms, collect 106ms, tests 8ms, environment 0ms, prepare 185ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/1-inclusive-tier-allocation-cline/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/symbolic-reasoning-model-study/oracle.mjs",
+            "/tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/1-inclusive-tier-allocation-cline",
+            "inclusive-tier-allocation"
+          ],
+          "exitCode": 1,
+          "signal": null,
+          "error": null,
+          "durationMs": 258.8287070000006,
+          "stdout": "",
+          "stderr": "node:internal/modules/run_main:107\n    triggerUncaughtException(\n    ^\n\nAssertionError [ERR_ASSERTION]: {\"lower\":1,\"upper\":0,\"lowerRate\":-1,\"upperRate\":2}\n\n-1 !== 0\n\n    at equal (/workspace/Blame/tools/terminal_bench/symbolic-reasoning-model-study/oracle.mjs:10:46)\n    at <anonymous> (/workspace/Blame/tools/terminal_bench/symbolic-reasoning-model-study/oracle.mjs:34:4) {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: -1,\n  expected: 0,\n  operator: 'deepStrictEqual',\n  diff: 'simple'\n}\n\nNode.js v24.19.0\n"
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 635.2508379999999,
+          "stdout": "\n> test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 706.0398380000006,
+          "stdout": "\n> test:study:delivered\n> node scripts/delivered.mjs runtime\n\nDelivered test files: [\"apps/policy/src/tiers.regression.test.ts\"]\n\n RUN  v3.2.4 /tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/1-inclusive-tier-allocation-cline\n\n ✓ apps/policy/src/tiers.regression.test.ts (2 tests) 3ms\n\n Test Files  1 passed (1)\n      Tests  2 passed (2)\n   Start at  23:23:30\n   Duration  218ms (transform 47ms, setup 0ms, collect 51ms, tests 3ms, environment 0ms, prepare 57ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 848.866657999999,
+          "stdout": "\n> typecheck:delivered\n> node scripts/delivered.mjs types\n\nDelivered test files: [\"apps/policy/src/tiers.regression.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "1-inclusive-tier-allocation-reference",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1184.2551940000012,
+          "stdout": "\n> test:study:regression\n> node node_modules/vitest/vitest.mjs run --config regression.vitest.mjs\n\n\n RUN  v3.2.4 /tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/1-inclusive-tier-allocation-reference\n\n ✓ apps/policy/src/original.test.ts (1 test) 3ms\n ✓ packages/tiers/src/original.test.ts (1 test) 2ms\n ✓ packages/windows/src/original.test.ts (1 test) 2ms\n ✓ packages/credit/src/original.test.ts (1 test) 2ms\n\n Test Files  4 passed (4)\n      Tests  4 passed (4)\n   Start at  23:23:31\n   Duration  742ms (transform 76ms, setup 0ms, collect 109ms, tests 9ms, environment 0ms, prepare 196ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/1-inclusive-tier-allocation-reference/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/symbolic-reasoning-model-study/oracle.mjs",
+            "/tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/1-inclusive-tier-allocation-reference",
+            "inclusive-tier-allocation"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 916.3444369999997,
+          "stdout": "Hidden behavioral and public type contracts passed: inclusive-tier-allocation assertions: 4803\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 671.7694279999996,
+          "stdout": "\n> test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 683.0449509999999,
+          "stdout": "\n> test:study:delivered\n> node scripts/delivered.mjs runtime\n\nDelivered test files: [\"apps/policy/src/tier-accounting.test.ts\"]\n\n RUN  v3.2.4 /tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/1-inclusive-tier-allocation-reference\n\n ✓ apps/policy/src/tier-accounting.test.ts (2 tests) 3ms\n\n Test Files  1 passed (1)\n      Tests  2 passed (2)\n   Start at  23:23:34\n   Duration  209ms (transform 43ms, setup 0ms, collect 45ms, tests 3ms, environment 0ms, prepare 51ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 809.5039209999995,
+          "stdout": "\n> typecheck:delivered\n> node scripts/delivered.mjs types\n\nDelivered test files: [\"apps/policy/src/tier-accounting.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "1-signed-window-overlap-cline",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1249.16777,
+          "stdout": "\n> test:study:regression\n> node node_modules/vitest/vitest.mjs run --config regression.vitest.mjs\n\n\n RUN  v3.2.4 /tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/1-signed-window-overlap-cline\n\n ✓ apps/policy/src/original.test.ts (1 test) 3ms\n ✓ packages/tiers/src/original.test.ts (1 test) 2ms\n ✓ packages/windows/src/original.test.ts (1 test) 2ms\n ✓ packages/credit/src/original.test.ts (1 test) 2ms\n\n Test Files  4 passed (4)\n      Tests  4 passed (4)\n   Start at  23:23:35\n   Duration  793ms (transform 81ms, setup 0ms, collect 117ms, tests 10ms, environment 1ms, prepare 196ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/1-signed-window-overlap-cline/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/symbolic-reasoning-model-study/oracle.mjs",
+            "/tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/1-signed-window-overlap-cline",
+            "signed-window-overlap"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 880.0445709999985,
+          "stdout": "Hidden behavioral and public type contracts passed: signed-window-overlap assertions: 32402\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 679.7337269999989,
+          "stdout": "\n> test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 674.8331990000006,
+          "stdout": "\n> test:study:delivered\n> node scripts/delivered.mjs runtime\n\nDelivered test files: [\"apps/policy/src/windows.regression.test.ts\"]\n\n RUN  v3.2.4 /tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/1-signed-window-overlap-cline\n\n ✓ apps/policy/src/windows.regression.test.ts (3 tests) 3ms\n\n Test Files  1 passed (1)\n      Tests  3 passed (3)\n   Start at  23:23:38\n   Duration  216ms (transform 36ms, setup 0ms, collect 37ms, tests 3ms, environment 0ms, prepare 52ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 914.5611740000022,
+          "stdout": "\n> typecheck:delivered\n> node scripts/delivered.mjs types\n\nDelivered test files: [\"apps/policy/src/windows.regression.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "1-signed-window-overlap-reference",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1110.2401260000006,
+          "stdout": "\n> test:study:regression\n> node node_modules/vitest/vitest.mjs run --config regression.vitest.mjs\n\n\n RUN  v3.2.4 /tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/1-signed-window-overlap-reference\n\n ✓ apps/policy/src/original.test.ts (1 test) 3ms\n ✓ packages/tiers/src/original.test.ts (1 test) 2ms\n ✓ packages/windows/src/original.test.ts (1 test) 2ms\n ✓ packages/credit/src/original.test.ts (1 test) 2ms\n\n Test Files  4 passed (4)\n      Tests  4 passed (4)\n   Start at  23:23:40\n   Duration  714ms (transform 66ms, setup 0ms, collect 102ms, tests 9ms, environment 0ms, prepare 193ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/1-signed-window-overlap-reference/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/symbolic-reasoning-model-study/oracle.mjs",
+            "/tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/1-signed-window-overlap-reference",
+            "signed-window-overlap"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 905.6239430000023,
+          "stdout": "Hidden behavioral and public type contracts passed: signed-window-overlap assertions: 32402\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 661.7655369999993,
+          "stdout": "\n> test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 656.1070319999963,
+          "stdout": "\n> test:study:delivered\n> node scripts/delivered.mjs runtime\n\nDelivered test files: [\"packages/windows/src/signed-window-overlap.test.ts\"]\n\n RUN  v3.2.4 /tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/1-signed-window-overlap-reference\n\n ✓ packages/windows/src/signed-window-overlap.test.ts (3 tests) 3ms\n\n Test Files  1 passed (1)\n      Tests  3 passed (3)\n   Start at  23:23:43\n   Duration  209ms (transform 41ms, setup 0ms, collect 42ms, tests 3ms, environment 0ms, prepare 53ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 856.1101400000043,
+          "stdout": "\n> typecheck:delivered\n> node scripts/delivered.mjs types\n\nDelivered test files: [\"packages/windows/src/signed-window-overlap.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "1-signed-window-overlap-candidate",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1151.8316859999977,
+          "stdout": "\n> test:study:regression\n> node node_modules/vitest/vitest.mjs run --config regression.vitest.mjs\n\n\n RUN  v3.2.4 /tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/1-signed-window-overlap-candidate\n\n ✓ apps/policy/src/original.test.ts (1 test) 3ms\n ✓ packages/tiers/src/original.test.ts (1 test) 2ms\n ✓ packages/windows/src/original.test.ts (1 test) 2ms\n ✓ packages/credit/src/original.test.ts (1 test) 2ms\n\n Test Files  4 passed (4)\n      Tests  4 passed (4)\n   Start at  23:23:44\n   Duration  731ms (transform 72ms, setup 0ms, collect 105ms, tests 8ms, environment 1ms, prepare 199ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/1-signed-window-overlap-candidate/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/symbolic-reasoning-model-study/oracle.mjs",
+            "/tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/1-signed-window-overlap-candidate",
+            "signed-window-overlap"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 958.6228189999965,
+          "stdout": "Hidden behavioral and public type contracts passed: signed-window-overlap assertions: 32402\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 637.2887489999994,
+          "stdout": "\n> test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 638.7331279999999,
+          "stdout": "\n> test:study:delivered\n> node scripts/delivered.mjs runtime\n\nDelivered test files: [\"packages/windows/src/regression.test.ts\"]\n\n RUN  v3.2.4 /tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/1-signed-window-overlap-candidate\n\n ✓ packages/windows/src/regression.test.ts (2 tests) 2ms\n\n Test Files  1 passed (1)\n      Tests  2 passed (2)\n   Start at  23:23:47\n   Duration  190ms (transform 33ms, setup 0ms, collect 31ms, tests 2ms, environment 0ms, prepare 50ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 888.5587690000029,
+          "stdout": "\n> typecheck:delivered\n> node scripts/delivered.mjs types\n\nDelivered test files: [\"packages/windows/src/regression.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "2-credit-remainder-candidate",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1138.7953530000013,
+          "stdout": "\n> test:study:regression\n> node node_modules/vitest/vitest.mjs run --config regression.vitest.mjs\n\n\n RUN  v3.2.4 /tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/2-credit-remainder-candidate\n\n ✓ apps/policy/src/original.test.ts (1 test) 3ms\n ✓ packages/tiers/src/original.test.ts (1 test) 2ms\n ✓ packages/windows/src/original.test.ts (1 test) 2ms\n ✓ packages/credit/src/original.test.ts (1 test) 2ms\n\n Test Files  4 passed (4)\n      Tests  4 passed (4)\n   Start at  23:23:48\n   Duration  728ms (transform 73ms, setup 0ms, collect 107ms, tests 8ms, environment 0ms, prepare 199ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/2-credit-remainder-candidate/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/symbolic-reasoning-model-study/oracle.mjs",
+            "/tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/2-credit-remainder-candidate",
+            "credit-remainder"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 837.8314979999996,
+          "stdout": "Hidden behavioral and public type contracts passed: credit-remainder assertions: 8704\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 633.328763999998,
+          "stdout": "\n> test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 649.7970080000014,
+          "stdout": "\n> test:study:delivered\n> node scripts/delivered.mjs runtime\n\nDelivered test files: [\"apps/policy/src/credit-regression.test.ts\"]\n\n RUN  v3.2.4 /tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/2-credit-remainder-candidate\n\n ✓ apps/policy/src/credit-regression.test.ts (3 tests) 3ms\n\n Test Files  1 passed (1)\n      Tests  3 passed (3)\n   Start at  23:23:51\n   Duration  203ms (transform 36ms, setup 0ms, collect 38ms, tests 3ms, environment 0ms, prepare 54ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 841.8607600000032,
+          "stdout": "\n> typecheck:delivered\n> node scripts/delivered.mjs types\n\nDelivered test files: [\"apps/policy/src/credit-regression.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "2-credit-remainder-cline",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1179.2605639999965,
+          "stdout": "\n> test:study:regression\n> node node_modules/vitest/vitest.mjs run --config regression.vitest.mjs\n\n\n RUN  v3.2.4 /tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/2-credit-remainder-cline\n\n ✓ apps/policy/src/original.test.ts (1 test) 3ms\n ✓ packages/tiers/src/original.test.ts (1 test) 2ms\n ✓ packages/windows/src/original.test.ts (1 test) 2ms\n ✓ packages/credit/src/original.test.ts (1 test) 2ms\n\n Test Files  4 passed (4)\n      Tests  4 passed (4)\n   Start at  23:23:53\n   Duration  738ms (transform 81ms, setup 0ms, collect 113ms, tests 9ms, environment 1ms, prepare 192ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/2-credit-remainder-cline/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/symbolic-reasoning-model-study/oracle.mjs",
+            "/tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/2-credit-remainder-cline",
+            "credit-remainder"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 876.4150660000014,
+          "stdout": "Hidden behavioral and public type contracts passed: credit-remainder assertions: 8704\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 648.595229999999,
+          "stdout": "\n> test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 671.5031760000056,
+          "stdout": "\n> test:study:delivered\n> node scripts/delivered.mjs runtime\n\nDelivered test files: [\"packages/credit/src/remainder.test.ts\"]\n\n RUN  v3.2.4 /tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/2-credit-remainder-cline\n\n ✓ packages/credit/src/remainder.test.ts (3 tests) 3ms\n\n Test Files  1 passed (1)\n      Tests  3 passed (3)\n   Start at  23:23:55\n   Duration  216ms (transform 42ms, setup 0ms, collect 42ms, tests 3ms, environment 0ms, prepare 58ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 832.7861469999989,
+          "stdout": "\n> typecheck:delivered\n> node scripts/delivered.mjs types\n\nDelivered test files: [\"packages/credit/src/remainder.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "2-credit-remainder-reference",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1117.8133690000031,
+          "stdout": "\n> test:study:regression\n> node node_modules/vitest/vitest.mjs run --config regression.vitest.mjs\n\n\n RUN  v3.2.4 /tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/2-credit-remainder-reference\n\n ✓ apps/policy/src/original.test.ts (1 test) 3ms\n ✓ packages/tiers/src/original.test.ts (1 test) 2ms\n ✓ packages/windows/src/original.test.ts (1 test) 2ms\n ✓ packages/credit/src/original.test.ts (1 test) 2ms\n\n Test Files  4 passed (4)\n      Tests  4 passed (4)\n   Start at  23:23:57\n   Duration  699ms (transform 70ms, setup 0ms, collect 102ms, tests 8ms, environment 0ms, prepare 183ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/2-credit-remainder-reference/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/symbolic-reasoning-model-study/oracle.mjs",
+            "/tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/2-credit-remainder-reference",
+            "credit-remainder"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 868.6384470000048,
+          "stdout": "Hidden behavioral and public type contracts passed: credit-remainder assertions: 8704\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 664.2095659999977,
+          "stdout": "\n> test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 636.4705570000006,
+          "stdout": "\n> test:study:delivered\n> node scripts/delivered.mjs runtime\n\nDelivered test files: [\"apps/policy/src/debit.test.ts\"]\n\n RUN  v3.2.4 /tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/2-credit-remainder-reference\n\n ✓ apps/policy/src/debit.test.ts (1 test) 2ms\n\n Test Files  1 passed (1)\n      Tests  1 passed (1)\n   Start at  23:23:59\n   Duration  200ms (transform 36ms, setup 0ms, collect 36ms, tests 2ms, environment 0ms, prepare 52ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 928.6291429999983,
+          "stdout": "\n> typecheck:delivered\n> node scripts/delivered.mjs types\n\nDelivered test files: [\"apps/policy/src/debit.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "2-inclusive-tier-allocation-cline",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 1,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1227.996696000002,
+          "stdout": "\n> test:study:regression\n> node node_modules/vitest/vitest.mjs run --config regression.vitest.mjs\n\n\n RUN  v3.2.4 /tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/2-inclusive-tier-allocation-cline\n\n ✓ apps/policy/src/original.test.ts (1 test) 3ms\n ✓ packages/tiers/src/original.test.ts (1 test) 2ms\n ✓ packages/windows/src/original.test.ts (1 test) 2ms\n ✓ packages/credit/src/original.test.ts (1 test) 2ms\n\n Test Files  4 passed (4)\n      Tests  4 passed (4)\n   Start at  23:24:01\n   Duration  773ms (transform 91ms, setup 0ms, collect 130ms, tests 9ms, environment 1ms, prepare 208ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/2-inclusive-tier-allocation-cline/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/symbolic-reasoning-model-study/oracle.mjs",
+            "/tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/2-inclusive-tier-allocation-cline",
+            "inclusive-tier-allocation"
+          ],
+          "exitCode": 1,
+          "signal": null,
+          "error": null,
+          "durationMs": 364.26081700000213,
+          "stdout": "",
+          "stderr": "node:internal/modules/run_main:107\n    triggerUncaughtException(\n    ^\n\nAssertionError [ERR_ASSERTION]: {\"lower\":1,\"upper\":0,\"lowerRate\":-1,\"upperRate\":2}\n\n-1 !== 0\n\n    at equal (/workspace/Blame/tools/terminal_bench/symbolic-reasoning-model-study/oracle.mjs:10:46)\n    at <anonymous> (/workspace/Blame/tools/terminal_bench/symbolic-reasoning-model-study/oracle.mjs:34:4) {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: -1,\n  expected: 0,\n  operator: 'deepStrictEqual',\n  diff: 'simple'\n}\n\nNode.js v24.19.0\n"
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 749.6979290000017,
+          "stdout": "\n> test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 722.2189789999975,
+          "stdout": "\n> test:study:delivered\n> node scripts/delivered.mjs runtime\n\nDelivered test files: [\"packages/tiers/src/inclusive.test.ts\"]\n\n RUN  v3.2.4 /tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/2-inclusive-tier-allocation-cline\n\n ✓ packages/tiers/src/inclusive.test.ts (4 tests) 3ms\n\n Test Files  1 passed (1)\n      Tests  4 passed (4)\n   Start at  23:24:03\n   Duration  250ms (transform 62ms, setup 0ms, collect 66ms, tests 3ms, environment 0ms, prepare 56ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 817.0931349999955,
+          "stdout": "\n> typecheck:delivered\n> node scripts/delivered.mjs types\n\nDelivered test files: [\"packages/tiers/src/inclusive.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "2-inclusive-tier-allocation-reference",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 1,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1262.3331410000028,
+          "stdout": "\n> test:study:regression\n> node node_modules/vitest/vitest.mjs run --config regression.vitest.mjs\n\n\n RUN  v3.2.4 /tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/2-inclusive-tier-allocation-reference\n\n ✓ apps/policy/src/original.test.ts (1 test) 3ms\n ✓ packages/tiers/src/original.test.ts (1 test) 2ms\n ✓ packages/windows/src/original.test.ts (1 test) 2ms\n ✓ packages/credit/src/original.test.ts (1 test) 2ms\n\n Test Files  4 passed (4)\n      Tests  4 passed (4)\n   Start at  23:24:05\n   Duration  797ms (transform 79ms, setup 0ms, collect 112ms, tests 9ms, environment 0ms, prepare 207ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/2-inclusive-tier-allocation-reference/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/symbolic-reasoning-model-study/oracle.mjs",
+            "/tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/2-inclusive-tier-allocation-reference",
+            "inclusive-tier-allocation"
+          ],
+          "exitCode": 1,
+          "signal": null,
+          "error": null,
+          "durationMs": 295.8171399999992,
+          "stdout": "",
+          "stderr": "node:internal/modules/run_main:107\n    triggerUncaughtException(\n    ^\n\nAssertionError [ERR_ASSERTION]: {\"lower\":1,\"upper\":0,\"lowerRate\":-1,\"upperRate\":2}\n\n-1 !== 0\n\n    at equal (/workspace/Blame/tools/terminal_bench/symbolic-reasoning-model-study/oracle.mjs:10:46)\n    at <anonymous> (/workspace/Blame/tools/terminal_bench/symbolic-reasoning-model-study/oracle.mjs:34:4) {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: -1,\n  expected: 0,\n  operator: 'deepStrictEqual',\n  diff: 'simple'\n}\n\nNode.js v24.19.0\n"
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 672.6222639999978,
+          "stdout": "\n> test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 736.696143000001,
+          "stdout": "\n> test:study:delivered\n> node scripts/delivered.mjs runtime\n\nDelivered test files: [\"apps/policy/src/tiers.test.ts\"]\n\n RUN  v3.2.4 /tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/2-inclusive-tier-allocation-reference\n\n ✓ apps/policy/src/tiers.test.ts (2 tests) 3ms\n\n Test Files  1 passed (1)\n      Tests  2 passed (2)\n   Start at  23:24:07\n   Duration  245ms (transform 48ms, setup 0ms, collect 53ms, tests 3ms, environment 0ms, prepare 56ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 910.9779370000033,
+          "stdout": "\n> typecheck:delivered\n> node scripts/delivered.mjs types\n\nDelivered test files: [\"apps/policy/src/tiers.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "2-inclusive-tier-allocation-candidate",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1355.0220120000013,
+          "stdout": "\n> test:study:regression\n> node node_modules/vitest/vitest.mjs run --config regression.vitest.mjs\n\n\n RUN  v3.2.4 /tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/2-inclusive-tier-allocation-candidate\n\n ✓ apps/policy/src/original.test.ts (1 test) 3ms\n ✓ packages/tiers/src/original.test.ts (1 test) 3ms\n ✓ packages/windows/src/original.test.ts (1 test) 3ms\n ✓ packages/credit/src/original.test.ts (1 test) 2ms\n\n Test Files  4 passed (4)\n      Tests  4 passed (4)\n   Start at  23:24:09\n   Duration  884ms (transform 95ms, setup 0ms, collect 142ms, tests 12ms, environment 1ms, prepare 217ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/2-inclusive-tier-allocation-candidate/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/symbolic-reasoning-model-study/oracle.mjs",
+            "/tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/2-inclusive-tier-allocation-candidate",
+            "inclusive-tier-allocation"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 923.2504520000002,
+          "stdout": "Hidden behavioral and public type contracts passed: inclusive-tier-allocation assertions: 4803\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 677.7920100000047,
+          "stdout": "\n> test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 759.7511129999984,
+          "stdout": "\n> test:study:delivered\n> node scripts/delivered.mjs runtime\n\nDelivered test files: [\"apps/policy/src/inclusive-tier-accounting.test.ts\"]\n\n RUN  v3.2.4 /tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/2-inclusive-tier-allocation-candidate\n\n ✓ apps/policy/src/inclusive-tier-accounting.test.ts (2 tests) 2ms\n\n Test Files  1 passed (1)\n      Tests  2 passed (2)\n   Start at  23:24:12\n   Duration  259ms (transform 63ms, setup 0ms, collect 68ms, tests 2ms, environment 0ms, prepare 62ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 868.5871790000019,
+          "stdout": "\n> typecheck:delivered\n> node scripts/delivered.mjs types\n\nDelivered test files: [\"apps/policy/src/inclusive-tier-accounting.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "2-signed-window-overlap-reference",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1150.2988029999979,
+          "stdout": "\n> test:study:regression\n> node node_modules/vitest/vitest.mjs run --config regression.vitest.mjs\n\n\n RUN  v3.2.4 /tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/2-signed-window-overlap-reference\n\n ✓ apps/policy/src/original.test.ts (1 test) 3ms\n ✓ packages/tiers/src/original.test.ts (1 test) 2ms\n ✓ packages/windows/src/original.test.ts (1 test) 2ms\n ✓ packages/credit/src/original.test.ts (1 test) 2ms\n\n Test Files  4 passed (4)\n      Tests  4 passed (4)\n   Start at  23:24:13\n   Duration  738ms (transform 75ms, setup 0ms, collect 107ms, tests 9ms, environment 1ms, prepare 207ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/2-signed-window-overlap-reference/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/symbolic-reasoning-model-study/oracle.mjs",
+            "/tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/2-signed-window-overlap-reference",
+            "signed-window-overlap"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 893.1588340000017,
+          "stdout": "Hidden behavioral and public type contracts passed: signed-window-overlap assertions: 32402\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 708.6357840000055,
+          "stdout": "\n> test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 691.8272460000007,
+          "stdout": "\n> test:study:delivered\n> node scripts/delivered.mjs runtime\n\nDelivered test files: [\"apps/policy/src/regression.test.ts\"]\n\n RUN  v3.2.4 /tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/2-signed-window-overlap-reference\n\n ✓ apps/policy/src/regression.test.ts (3 tests) 3ms\n\n Test Files  1 passed (1)\n      Tests  3 passed (3)\n   Start at  23:24:16\n   Duration  236ms (transform 47ms, setup 0ms, collect 42ms, tests 3ms, environment 0ms, prepare 61ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 885.6009960000083,
+          "stdout": "\n> typecheck:delivered\n> node scripts/delivered.mjs types\n\nDelivered test files: [\"apps/policy/src/regression.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "2-signed-window-overlap-candidate",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1244.2021890000033,
+          "stdout": "\n> test:study:regression\n> node node_modules/vitest/vitest.mjs run --config regression.vitest.mjs\n\n\n RUN  v3.2.4 /tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/2-signed-window-overlap-candidate\n\n ✓ apps/policy/src/original.test.ts (1 test) 3ms\n ✓ packages/tiers/src/original.test.ts (1 test) 2ms\n ✓ packages/windows/src/original.test.ts (1 test) 2ms\n ✓ packages/credit/src/original.test.ts (1 test) 2ms\n\n Test Files  4 passed (4)\n      Tests  4 passed (4)\n   Start at  23:24:18\n   Duration  783ms (transform 89ms, setup 0ms, collect 120ms, tests 9ms, environment 0ms, prepare 201ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/2-signed-window-overlap-candidate/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/symbolic-reasoning-model-study/oracle.mjs",
+            "/tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/2-signed-window-overlap-candidate",
+            "signed-window-overlap"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 882.9363569999987,
+          "stdout": "Hidden behavioral and public type contracts passed: signed-window-overlap assertions: 32402\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 640.2311789999949,
+          "stdout": "\n> test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 685.6508210000029,
+          "stdout": "\n> test:study:delivered\n> node scripts/delivered.mjs runtime\n\nDelivered test files: [\"apps/policy/src/windows.regression.test.ts\"]\n\n RUN  v3.2.4 /tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/2-signed-window-overlap-candidate\n\n ✓ apps/policy/src/windows.regression.test.ts (3 tests) 3ms\n\n Test Files  1 passed (1)\n      Tests  3 passed (3)\n   Start at  23:24:21\n   Duration  208ms (transform 38ms, setup 0ms, collect 38ms, tests 3ms, environment 0ms, prepare 54ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 839.633983000007,
+          "stdout": "\n> typecheck:delivered\n> node scripts/delivered.mjs types\n\nDelivered test files: [\"apps/policy/src/windows.regression.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "2-signed-window-overlap-cline",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1184.8056219999999,
+          "stdout": "\n> test:study:regression\n> node node_modules/vitest/vitest.mjs run --config regression.vitest.mjs\n\n\n RUN  v3.2.4 /tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/2-signed-window-overlap-cline\n\n ✓ apps/policy/src/original.test.ts (1 test) 4ms\n ✓ packages/tiers/src/original.test.ts (1 test) 2ms\n ✓ packages/windows/src/original.test.ts (1 test) 2ms\n ✓ packages/credit/src/original.test.ts (1 test) 2ms\n\n Test Files  4 passed (4)\n      Tests  4 passed (4)\n   Start at  23:24:22\n   Duration  755ms (transform 78ms, setup 0ms, collect 118ms, tests 10ms, environment 1ms, prepare 205ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/2-signed-window-overlap-cline/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/symbolic-reasoning-model-study/oracle.mjs",
+            "/tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/2-signed-window-overlap-cline",
+            "signed-window-overlap"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 877.2195449999999,
+          "stdout": "Hidden behavioral and public type contracts passed: signed-window-overlap assertions: 32402\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 661.9796009999991,
+          "stdout": "\n> test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 668.4408300000068,
+          "stdout": "\n> test:study:delivered\n> node scripts/delivered.mjs runtime\n\nDelivered test files: [\"apps/policy/src/windows.regression.test.ts\"]\n\n RUN  v3.2.4 /tmp/blame-symbolic-model-f50/endpoint-replay-fQGKHr/2-signed-window-overlap-cline\n\n ✓ apps/policy/src/windows.regression.test.ts (3 tests) 3ms\n\n Test Files  1 passed (1)\n      Tests  3 passed (3)\n   Start at  23:24:25\n   Duration  204ms (transform 40ms, setup 0ms, collect 39ms, tests 3ms, environment 0ms, prepare 52ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 824.1760879999929,
+          "stdout": "\n> typecheck:delivered\n> node scripts/delivered.mjs types\n\nDelivered test files: [\"apps/policy/src/windows.regression.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    }
+  ]
+}

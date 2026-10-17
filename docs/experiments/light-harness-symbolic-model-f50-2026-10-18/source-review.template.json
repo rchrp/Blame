@@ -1,0 +1,329 @@
+{
+  "method": "Unblinded manual review of immutable patch, delivery and command chronology; all booleans require evidence. Inspect public function signatures manually: structural type assignments do not exclude any or enforce exact parameter arity/order. Symbolic results are bounded to their supplied property/domain; unsupported syntax and absent usage are valid negatives, and no-counterexample claims must not be reported as project verification. Copy to source-review.json and fill, never infer task success from official completion alone.",
+  "decisions": [
+    {
+      "name": "1-credit-remainder-reference",
+      "hashes": {
+        "events.jsonl": "a9b15017893eb74ddfb862b425f345a551554fbe7f7d046d9da593356b8aca5a",
+        "workspace.diff": "518cb82f414e34a0f6fa8765f4dd0272ee1e41554693c228622e6301ed592d25",
+        "score.json": "de3741b40809c7e00417b865adf96f8de9cca7beccb0a7b9df96cd67560bfa45",
+        "tool-ledger.json": "d6ef372e171ab2cca03ef06e2037dc5b97967acd8acb56c7fb859a5e55395be1"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "1-credit-remainder-candidate",
+      "hashes": {
+        "events.jsonl": "e351668949fd259a42abc7e5305484bd7a3ede43abede39605a8542aa9ae0943",
+        "workspace.diff": "e84a2f839b7ca710b08e2f2fa4e1769ac93238d7f2954ef4fcd9568339ae9ce7",
+        "score.json": "25c1083408970517e74aaac048b725fdb21c701af6b8165cd2d6b0ddede363d2",
+        "tool-ledger.json": "a7755458be4c20093114e6da9cb242690fd477b93e93015f7038bba95f29e93c"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "1-credit-remainder-cline",
+      "hashes": {
+        "events.jsonl": "7f2eb725a3b0417d0b0d984956c201cea2f087f05fa662d6300fab6e448b30fb",
+        "workspace.diff": "ba861bc4d16fe5b43d79c23fa5de952ede1d920553105194f3f3cfa79150da70",
+        "score.json": "a07b0c5180342ab1953f44ef2dfcdf95680357b4597800201750b31f40f0ddf6",
+        "tool-ledger.json": "a089cfd29e4f365643704753ef7f85c7c62315cbed326995649a286873288c87"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "1-inclusive-tier-allocation-candidate",
+      "hashes": {
+        "events.jsonl": "fc21d1d6919b57d23ff55e611a418e9815caec0b403a084466ee70b170c79eb3",
+        "workspace.diff": "245b319d59182e3096d67acd08a8a8fbacd8618b0350d46f8bb0023dbadc2e53",
+        "score.json": "3e0b879a1ede43638d41c732f86c07f49933f14bfab864c280fe83fb8c43e59d",
+        "tool-ledger.json": "c23b8d5c05c8349ed24d408aa0eae6125e04ebef977e1e1a01e3b2f4bb3ad328"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "1-inclusive-tier-allocation-cline",
+      "hashes": {
+        "events.jsonl": "bc18273fed95a18e5a46a91308f191d3d7b326055a5988b15791fb3b7bcf5c16",
+        "workspace.diff": "15a1cf2f7527607fb44f4ea67f6d0c2b48f12992ffaa3841a17ac5321cb90591",
+        "score.json": "85a8039af2ad0c4081538b3bf8f2308e6cdfeb4fabda713e86fcd23b314cdf0b",
+        "tool-ledger.json": "4a39792f6fbac9f0ba1b08bbecef21b1d0819bf043aec15398071fb568d7d4f9"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "1-inclusive-tier-allocation-reference",
+      "hashes": {
+        "events.jsonl": "3a64dbcde1b752dfa5c1acd7580eb20404e25c3f4e2382e71b11489734f682f8",
+        "workspace.diff": "884a2c3d4b8e565dfbb55c5c5958fdfa6210fdabbfe5f7d5d0bb55896372f476",
+        "score.json": "61583ad1f959b551d7e09a88cc88694c1b0829d3e73f1d2dddf258a132f902ce",
+        "tool-ledger.json": "be4bdb93ffc7c39479b7260541a0bff51a96f5b2a5b365265150ce2a36169cb9"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "1-signed-window-overlap-cline",
+      "hashes": {
+        "events.jsonl": "688d51db3712ec0e1e21162f8acae1cdcc200c794226ac07a38443c5119daede",
+        "workspace.diff": "f1de591984ce8f2bc3a57a0743c42dcb50c2e747472d5fa6101b950129f456dc",
+        "score.json": "fcc1caa6a8148e259267f6480d2cd8f3966496776189e9278c305063c25735ae",
+        "tool-ledger.json": "36669b194934835ac868d7721d2b6d68720e7f3f183c44399e167fba9fdbbc09"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "1-signed-window-overlap-reference",
+      "hashes": {
+        "events.jsonl": "8568514a24b7905cfe6f600c8fade7d5afce2c1726757b390cba4d273053f568",
+        "workspace.diff": "bf635d30dc4422c3de2b7920a8370f7625e4c860afef9dddb2d333b7199d0769",
+        "score.json": "167c1625520d1186ae6397c906c9f404e7748b666f8ac70f244b6ff7ce58f3c4",
+        "tool-ledger.json": "3f9be3fbb5baa87deb705aaaaf2057fe6e9ce53359ccd4ec1b60be34c85c7f8f"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "1-signed-window-overlap-candidate",
+      "hashes": {
+        "events.jsonl": "5050eaa9ac679226950418230dc98fbad1833ca2812d6a0e0dc35cef7f8100c0",
+        "workspace.diff": "035ba6c1112201aca4b8919fe2fae64d3c1b1b2fe238bc82d76b36d2865a7067",
+        "score.json": "e30907f1e86beb4721565b469ad6fec93ac2b326e9faffd786a00532bf48df1b",
+        "tool-ledger.json": "8911a3fedaed1c1c108997f40ff0ae150d65470a8e79492fe54009bc5958bcf3"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "2-credit-remainder-candidate",
+      "hashes": {
+        "events.jsonl": "13d3df6c5e0339ae64be218450b4756534f6cb867da8affeb41d4a36e0e6acac",
+        "workspace.diff": "52243435b74e3a5dc0f6b0bcf7d492ba268be38c9b077292749b622bdf910876",
+        "score.json": "e66c8cfef5b68ce61e2dc65d23fdee0aae4e4c33d09f5ac9e9da1f0667c9d551",
+        "tool-ledger.json": "44abdb975e9a32761ac47646e291dce3c1c86584f02284519860f5c54b576197"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "2-credit-remainder-cline",
+      "hashes": {
+        "events.jsonl": "6797352d556b4009e7916661b25a74b87b796496608ef231dbcc671f35fe3bed",
+        "workspace.diff": "d028df519e2a56ec1d486e329653388a4ea621292e94f5e699eda3c2d0cff9cd",
+        "score.json": "8d9651a441df723fa65ebbeefd437936d0e53201862baaccaecd91439e4a4c1a",
+        "tool-ledger.json": "f256b15c2e569b3a25c2965566d6715542f71bca98b37d080b2f1a4048f60be1"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "2-credit-remainder-reference",
+      "hashes": {
+        "events.jsonl": "15a56e1e07c490cb6ed7a758907ab543dc85afd9c496750313ce83345540c7c3",
+        "workspace.diff": "de2d1279aa3a771fa4c12aff8517628a7411d00edac851997ff0357ee341d390",
+        "score.json": "99594b3d9ff51c430d88af07cbf30628bd6f7ff36196ff4cea2af2625d6ffefe",
+        "tool-ledger.json": "b5e0a87cc221d8de4af8d1991a12df4e887d9ed187efce959766615de4114da1"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "2-inclusive-tier-allocation-cline",
+      "hashes": {
+        "events.jsonl": "5c24150340a166c036775653aba55fdc714f937256cf15b43a799a7dd5b3136d",
+        "workspace.diff": "72f91fa14cfa71dce3974d1b2ff742b7dfeced8da22085b3d1fd8cfe4f144f0c",
+        "score.json": "a5b36d81a998722fa84b9cf87bc121fac351f46a10c78e600031e9e19aaae2c6",
+        "tool-ledger.json": "26b8e75636849358eaacf0ec60877469186d14f0426d261bc99b942a7aa1b121"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "2-inclusive-tier-allocation-reference",
+      "hashes": {
+        "events.jsonl": "6692f2060eee164577e8f22b75eae369b13cab375ac008c2899e8ce6a12f28fd",
+        "workspace.diff": "164889e7099df3a5ad2da9d5d9f821f4cf3865c324187aef1e5aea29159bc252",
+        "score.json": "b5fee3d68cebfca1ade88bbcdb1c3cf8323dc324aaa3bc864c6bb5ae7d418844",
+        "tool-ledger.json": "bec68edd0fc9a1cd9c912bbe8d0839056252ac28d263638af2e697bc4d3e7b3f"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "2-inclusive-tier-allocation-candidate",
+      "hashes": {
+        "events.jsonl": "98176abd5382a9308e0dcd302520d0f802fe350cda994e581fa945b39a38b7e7",
+        "workspace.diff": "5e1f633ceb081b4a9f9aa470f9423764aa81a34a2c3a9a3866b29627a87adf4b",
+        "score.json": "841e71f0a9520f432f6d1cd631a800162a1206b9bb3c6827126ea6b9a2ce3209",
+        "tool-ledger.json": "02431826b66068e413ed511de08101bebf40b67aae7cd4731ed1aae2442be55a"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "2-signed-window-overlap-reference",
+      "hashes": {
+        "events.jsonl": "300f530fffbc3ee130dafc0739982455d03e0bc70128a4762c00c3c45dfaa76e",
+        "workspace.diff": "5d801d47f63ced1a9cfad05684ab1b3f9ea5ce9aeeda209ec59499cdf4300838",
+        "score.json": "d07a498610395dd0e4ef0db330a58ec092d4d6ae74664ce990ca09d9697670b8",
+        "tool-ledger.json": "d0b4b64c04036b1b4c1ab0f11b350d92c7b886ae09d92b44edb1e278cf11e2fa"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "2-signed-window-overlap-candidate",
+      "hashes": {
+        "events.jsonl": "bd3b4b794770ad67dc670fd82c9c2cddb8c9ee9b83cfe20b64a48014b578e60a",
+        "workspace.diff": "736d2c8659cced9728aa88bedda5c6c369c6ce990106d83f62e1b9cc60246212",
+        "score.json": "56906e753dbda4db05997e5565d1792aa37299ae8e42173f7afd1e07b422265a",
+        "tool-ledger.json": "637584cfaa4c6a9b6894964920f1d91cf28eae43b50f5a92b12578c4db996f3b"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "2-signed-window-overlap-cline",
+      "hashes": {
+        "events.jsonl": "e337365a6be3ccd88a92600eaaf96538a2eb1beedb9112bad6e4c0f623427e7e",
+        "workspace.diff": "d9869ca3d3e3d4ad27f4d90716e749e3a55f3a311547710722729146af59a7f1",
+        "score.json": "d0d20dbd0bbd08d4c28f2934955e8c8bacdc55ba5bfceec15b3ba67a6de5731b",
+        "tool-ledger.json": "b2f63ff5ba46585bcb5feffdba2235603606ab9618535a798970f2aee350d249"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    }
+  ]
+}

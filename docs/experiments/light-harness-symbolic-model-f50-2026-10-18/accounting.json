@@ -1,0 +1,206 @@
+{
+  "method": "Known SDK estimates plus explicit missing-aggregate/unreported-request reserves, not imputed consumption. Wire/report counts do not establish billing or hidden retries.",
+  "trials": [
+    {
+      "name": "1-credit-remainder-reference",
+      "observedUsd": 0.006753880000000001,
+      "forwardedAttempts": 6,
+      "usageReports": 6,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.006753880000000001,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "1-credit-remainder-candidate",
+      "observedUsd": 0.011677880000000002,
+      "forwardedAttempts": 9,
+      "usageReports": 9,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.011677880000000002,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "1-credit-remainder-cline",
+      "observedUsd": 0.013820559999999999,
+      "forwardedAttempts": 11,
+      "usageReports": 11,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.013820559999999999,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "1-inclusive-tier-allocation-candidate",
+      "observedUsd": 0.01059972,
+      "forwardedAttempts": 8,
+      "usageReports": 8,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.01059972,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "1-inclusive-tier-allocation-cline",
+      "observedUsd": 0.0111814,
+      "forwardedAttempts": 6,
+      "usageReports": 6,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.0111814,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "1-inclusive-tier-allocation-reference",
+      "observedUsd": 0.010546640000000001,
+      "forwardedAttempts": 10,
+      "usageReports": 10,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.010546640000000001,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "1-signed-window-overlap-cline",
+      "observedUsd": 0.009158719999999999,
+      "forwardedAttempts": 6,
+      "usageReports": 6,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.009158719999999999,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "1-signed-window-overlap-reference",
+      "observedUsd": 0.009300480000000002,
+      "forwardedAttempts": 8,
+      "usageReports": 8,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.009300480000000002,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "1-signed-window-overlap-candidate",
+      "observedUsd": 0.007980359999999999,
+      "forwardedAttempts": 8,
+      "usageReports": 8,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.007980359999999999,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "2-credit-remainder-candidate",
+      "observedUsd": 0.01054024,
+      "forwardedAttempts": 11,
+      "usageReports": 11,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.01054024,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "2-credit-remainder-cline",
+      "observedUsd": 0.01266672,
+      "forwardedAttempts": 9,
+      "usageReports": 9,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.01266672,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "2-credit-remainder-reference",
+      "observedUsd": 0.0091796,
+      "forwardedAttempts": 9,
+      "usageReports": 9,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.0091796,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "2-inclusive-tier-allocation-cline",
+      "observedUsd": 0.01369324,
+      "forwardedAttempts": 9,
+      "usageReports": 9,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.01369324,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "2-inclusive-tier-allocation-reference",
+      "observedUsd": 0.007470000000000001,
+      "forwardedAttempts": 7,
+      "usageReports": 7,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.007470000000000001,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "2-inclusive-tier-allocation-candidate",
+      "observedUsd": 0.008821640000000002,
+      "forwardedAttempts": 8,
+      "usageReports": 8,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.008821640000000002,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "2-signed-window-overlap-reference",
+      "observedUsd": 0.00860616,
+      "forwardedAttempts": 9,
+      "usageReports": 9,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.00860616,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "2-signed-window-overlap-candidate",
+      "observedUsd": 0.00933296,
+      "forwardedAttempts": 8,
+      "usageReports": 8,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.00933296,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "2-signed-window-overlap-cline",
+      "observedUsd": 0.00964084,
+      "forwardedAttempts": 7,
+      "usageReports": 7,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.00964084,
+      "basis": "wire/report counts; billing unknown"
+    }
+  ],
+  "observedUsd": 0.18097104,
+  "reservedUsd": 0,
+  "accountedUsd": 0.18097104
+}

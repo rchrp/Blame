@@ -22,5 +22,39 @@
     "reviewer": "confirmation_protocol independent text review, relayed by root",
     "recordedAtUTC": "2026-10-17T23:12:51.243057+00:00",
     "finding": "The normalization imperative immediately follows quoteTierUsage; tierCost is not named in the request. A consumer-only interpretation is plausible. The registered public-helper oracle failure is retained without presenting it as an indisputable user-visible defect."
+  },
+  "affectedTrials": [
+    "1-inclusive-tier-allocation-cline",
+    "2-inclusive-tier-allocation-cline",
+    "2-inclusive-tier-allocation-reference"
+  ],
+  "secondOccurrence": {
+    "observedAfterCompletedAssignments": 13,
+    "name": "2-inclusive-tier-allocation-cline",
+    "registeredFailure": "The same unchanged direct public tierCost negative-rate example returns -1 rather than 0; the named quote consumer normalizes rates and is correct under the secondary literal scope.",
+    "interpretationUnchanged": true
+  },
+  "crossArmOccurrence": {
+    "observedAfterCompletedAssignments": 14,
+    "name": "2-inclusive-tier-allocation-reference",
+    "registeredFailure": "Reference Light also leaves direct public tierCost unchanged while correctly normalizing the named quote consumer; the same registered witness fails.",
+    "interpretationUnchanged": true,
+    "caveat": "The scope sensitivity affects multiple arms; retain uniform primary and secondary analyses rather than attributing the difference to symbolic reasoning."
+  },
+  "uniformTierReview": {
+    "complete": true,
+    "trials": 6,
+    "artifact": "interpretation-sensitivity.json",
+    "registeredPrimaryCounts": {
+      "reference": 1,
+      "candidate": 2,
+      "cline": 0
+    },
+    "namedConsumerCounts": {
+      "reference": 2,
+      "candidate": 2,
+      "cline": 2
+    },
+    "newOfficialScore": false
   }
 }

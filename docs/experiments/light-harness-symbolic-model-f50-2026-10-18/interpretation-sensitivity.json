@@ -1,0 +1,149 @@
+{
+  "phase": "F50",
+  "registered": false,
+  "recordedAtUTC": "2026-10-17T23:20:37.615360+00:00",
+  "knownAfterCompletedAssignments": 5,
+  "completedAssignmentsAtUniformTierReview": 15,
+  "scope": "All six inclusive-tier-allocation trials, two repetitions and three arms. Primary registered oracle and review booleans are unchanged.",
+  "method": "Uniform immutable source review of named lower/upper functions and quote consumer, supported by original/delivered runtime and source/test compiler checks. In the three broad-helper failures the hidden oracle aborts before all consumer assertions; consumer-only success here is manual source/contract interpretation, not a secretly rerun or repaired oracle.",
+  "arms": {
+    "reference": {
+      "trials": 2,
+      "registeredIndependentSuccesses": 1,
+      "namedConsumerInterpretationPasses": 2
+    },
+    "candidate": {
+      "trials": 2,
+      "registeredIndependentSuccesses": 2,
+      "namedConsumerInterpretationPasses": 2
+    },
+    "cline": {
+      "trials": 2,
+      "registeredIndependentSuccesses": 0,
+      "namedConsumerInterpretationPasses": 2
+    }
+  },
+  "rows": [
+    {
+      "name": "1-inclusive-tier-allocation-candidate",
+      "arm": "candidate",
+      "repeat": 1,
+      "hashes": {
+        "events.jsonl": "fc21d1d6919b57d23ff55e611a418e9815caec0b403a084466ee70b170c79eb3",
+        "workspace.diff": "245b319d59182e3096d67acd08a8a8fbacd8618b0350d46f8bb0023dbadc2e53",
+        "score.json": "3e0b879a1ede43638d41c732f86c07f49933f14bfab864c280fe83fb8c43e59d",
+        "tool-ledger.json": "c23b8d5c05c8349ed24d408aa0eae6125e04ebef977e1e1a01e3b2f4bb3ad328"
+      },
+      "registeredIndependentFunctionalSuccess": true,
+      "registeredSourceBehaviorPassed": true,
+      "registeredFullRequestPassed": true,
+      "sourceBehaviorUnderNamedConsumer": true,
+      "consumerOnlyInterpretationPassed": true,
+      "evidence": [
+        "workspace.diff lowerTierUnits preserves (first:number,last:number,boundary:number):number, returns0 on first>last, then max(0,min(last,boundary)-first+1). upperTierUnits retains the same ordered scalar signature, starts at max(first,boundary+1) and counts through last inclusively. These complementary closed-interval formulas produce nonnegative counts with the requested total, including signed IDs, boundary equality and empty intervals.",
+        "cost.ts keeps (lowerUnits:number,upperUnits:number,lowerRate:number,upperRate:number):number, independently normalizes both rates with Math.max(0,...), then sums both units*rate terms. quoteTierUsage retains its original five ordered required number parameters and adds an exact numeric-field object return annotation; it imports/calls shared tierCost with both tier counts/rates. No any, argument reorder, mutation, protected-source changes or unrelated policy edits."
+      ]
+    },
+    {
+      "name": "1-inclusive-tier-allocation-cline",
+      "arm": "cline",
+      "repeat": 1,
+      "hashes": {
+        "events.jsonl": "bc18273fed95a18e5a46a91308f191d3d7b326055a5988b15791fb3b7bcf5c16",
+        "workspace.diff": "15a1cf2f7527607fb44f4ea67f6d0c2b48f12992ffaa3841a17ac5321cb90591",
+        "score.json": "85a8039af2ad0c4081538b3bf8f2308e6cdfeb4fabda713e86fcd23b314cdf0b",
+        "tool-ledger.json": "4a39792f6fbac9f0ba1b08bbecef21b1d0819bf043aec15398071fb568d7d4f9"
+      },
+      "registeredIndependentFunctionalSuccess": false,
+      "registeredSourceBehaviorPassed": false,
+      "registeredFullRequestPassed": false,
+      "sourceBehaviorUnderNamedConsumer": true,
+      "consumerOnlyInterpretationPassed": true,
+      "evidence": [
+        "Primary registered public-helper contract fails: score.json hidden feature exits1 on tierCost(1,0,-1,2), observing-1 instead of0. workspace.diff leaves packages/tiers/src/cost.ts unchanged, so this exported helper still multiplies negative rates directly. sourceBehaviorPassed/fullRequestPassed=false use this preregistered broad interpretation; this is not evidence that the named quote consumer mishandles negative rates.",
+        "Interpretation ambiguity is explicit: the request says \"Quote both counts and totalCost through quoteTierUsage(...)\" followed by \"Normalize negative rates to zero\" without naming tierCost. A consumer-only reading is plausible. Under that posthoc secondary reading consumerOnlyInterpretationPassed=true: quoteTierUsage independently clamps both rates and passes them with both correct counts to tierCost. The registered oracle and primary classification remain unchanged. See interpretation-notes.json; review the same secondary reading uniformly for all six tier trials."
+      ]
+    },
+    {
+      "name": "1-inclusive-tier-allocation-reference",
+      "arm": "reference",
+      "repeat": 1,
+      "hashes": {
+        "events.jsonl": "3a64dbcde1b752dfa5c1acd7580eb20404e25c3f4e2382e71b11489734f682f8",
+        "workspace.diff": "884a2c3d4b8e565dfbb55c5c5958fdfa6210fdabbfe5f7d5d0bb55896372f476",
+        "score.json": "61583ad1f959b551d7e09a88cc88694c1b0829d3e73f1d2dddf258a132f902ce",
+        "tool-ledger.json": "be4bdb93ffc7c39479b7260541a0bff51a96f5b2a5b365265150ce2a36169cb9"
+      },
+      "registeredIndependentFunctionalSuccess": true,
+      "registeredSourceBehaviorPassed": true,
+      "registeredFullRequestPassed": true,
+      "sourceBehaviorUnderNamedConsumer": true,
+      "consumerOnlyInterpretationPassed": true,
+      "evidence": [
+        "workspace.diff: lowerTierUnits includes+1 for closed lower ranges and upperTierUnits starts strictly above boundary, preserving emptiness and the original three required number parameters and numeric return types. tierCost retains its four ordered number parameters/:number and independently clamps both rates before summing both terms, satisfying the registered broad public-helper contract.",
+        "quoteTierUsage retains its five ordered required number parameters, computes lower/upper via package functions and sums lower*normalizedLowerRate + upper*normalizedUpperRate. It duplicates simple rate normalization rather than calling tierCost, but this tier request does not require sharing that helper; both exported helper and named consumer implement the same numeric policy. No any, mutation, signature weakening or unrelated source edits."
+      ]
+    },
+    {
+      "name": "2-inclusive-tier-allocation-cline",
+      "arm": "cline",
+      "repeat": 2,
+      "hashes": {
+        "events.jsonl": "5c24150340a166c036775653aba55fdc714f937256cf15b43a799a7dd5b3136d",
+        "workspace.diff": "72f91fa14cfa71dce3974d1b2ff742b7dfeced8da22085b3d1fd8cfe4f144f0c",
+        "score.json": "a5b36d81a998722fa84b9cf87bc121fac351f46a10c78e600031e9e19aaae2c6",
+        "tool-ledger.json": "26b8e75636849358eaacf0ec60877469186d14f0426d261bc99b942a7aa1b121"
+      },
+      "registeredIndependentFunctionalSuccess": false,
+      "registeredSourceBehaviorPassed": false,
+      "registeredFullRequestPassed": false,
+      "sourceBehaviorUnderNamedConsumer": true,
+      "consumerOnlyInterpretationPassed": true,
+      "evidence": [
+        "Primary registered broad contract fails again: packages/tiers/src/cost.ts remains unchanged, so exported tierCost(1,0,-1,2) returns -1 rather than the registered expected 0; score hidden feature exits 1 with this exact witness. Primary sourceBehaviorPassed/fullRequestPassed=false apply the same preregistered public-helper scope across arms, preserving the ambiguity described in interpretation-notes.json.",
+        "Under the separately recorded consumer-only reading both sensitivity fields are true: lower/upper count the signed closed interval correctly and quoteTierUsage independently clamps each rate then sums lower*safeLowerRate + upper*safeUpperRate. The wording names quoteTierUsage rather than tierCost, so this registered hidden failure is not presented as an indisputable failure of the named user-facing consumer."
+      ]
+    },
+    {
+      "name": "2-inclusive-tier-allocation-reference",
+      "arm": "reference",
+      "repeat": 2,
+      "hashes": {
+        "events.jsonl": "6692f2060eee164577e8f22b75eae369b13cab375ac008c2899e8ce6a12f28fd",
+        "workspace.diff": "164889e7099df3a5ad2da9d5d9f821f4cf3865c324187aef1e5aea29159bc252",
+        "score.json": "b5fee3d68cebfca1ade88bbcdb1c3cf8323dc324aaa3bc864c6bb5ae7d418844",
+        "tool-ledger.json": "bec68edd0fc9a1cd9c912bbe8d0839056252ac28d263638af2e697bc4d3e7b3f"
+      },
+      "registeredIndependentFunctionalSuccess": false,
+      "registeredSourceBehaviorPassed": false,
+      "registeredFullRequestPassed": false,
+      "sourceBehaviorUnderNamedConsumer": true,
+      "consumerOnlyInterpretationPassed": true,
+      "evidence": [
+        "Primary broad public-helper failure is verified, not inferred from arm: cost.ts remains unchanged and score hidden feature exits 1 on tierCost(1,0,-1,2), actual -1 versus registered 0. Apply the same sourceBehaviorPassed/fullRequestPassed=false public-contract convention used for both Cline tier trials. This interpretation-sensitive endpoint does not establish an indisputable named-consumer defect.",
+        "Both consumer-only fields are true after source review: lowerTierUnits adds the inclusive endpoint, upperTierUnits starts at first when above boundary or boundary+1 otherwise, with empty ranges preserved. quoteTierUsage clamps both rates then includes both tier charges. Ordered required numeric signatures and inferred numeric fields remain unchanged; no any, mutation or unrelated source edit."
+      ]
+    },
+    {
+      "name": "2-inclusive-tier-allocation-candidate",
+      "arm": "candidate",
+      "repeat": 2,
+      "hashes": {
+        "events.jsonl": "98176abd5382a9308e0dcd302520d0f802fe350cda994e581fa945b39a38b7e7",
+        "workspace.diff": "5e1f633ceb081b4a9f9aa470f9423764aa81a34a2c3a9a3866b29627a87adf4b",
+        "score.json": "841e71f0a9520f432f6d1cd631a800162a1206b9bb3c6827126ea6b9a2ce3209",
+        "tool-ledger.json": "02431826b66068e413ed511de08101bebf40b67aae7cd4731ed1aae2442be55a"
+      },
+      "registeredIndependentFunctionalSuccess": true,
+      "registeredSourceBehaviorPassed": true,
+      "registeredFullRequestPassed": true,
+      "sourceBehaviorUnderNamedConsumer": true,
+      "consumerOnlyInterpretationPassed": true,
+      "evidence": [
+        "Final diff lower/upper functions count signed closed intervals with boundary exclusively lower, include endpoint +1 and preserve empty requests. tierCost independently normalizes both negative rates and sums both charges; quoteTierUsage imports/calls that shared helper with the computed counts and original rates. Both broad public-helper and named-consumer scopes pass; original ordered required numeric signatures/returns remain unchanged without any or mutation.",
+        "New apps/policy/src/inclusive-tier-accounting.test.ts has two tests covering split/singleton boundaries, nonnegative rate quotes and empty intervals. Independent endpoint audits all exit 0, including original 4 tests, hidden 4803 behavior/public-type assertions, source compilation, delivered 2 runtime passes and delivered test compilation. protectedPaths=[] and dependency difference arrays empty."
+      ]
+    }
+  ],
+  "conclusion": "All six named consumers satisfy the plausible literal scope. All three primary tier failures depend on the additional direct public tierCost normalization contract, which the instruction does not explicitly name. This posthoc sensitivity cannot become a new official score or prove symbolic-reasoning superiority."
+}
