@@ -5,6 +5,7 @@ import {
   type TestReport,
 } from "./test-report.js";
 import { nodeEventEvidence, type NodeEventBinding } from "./node-event-evidence.js";
+import { testTypeEvidence, type TestTypeEvidence } from "./test-type-evidence.js";
 
 export type CheckObservation = {
   process: "running" | "exited" | "timed_out" | "cancelled";
@@ -25,6 +26,8 @@ export type CheckObservation = {
   evidenceOrigin: "report" | "runner_output" | "node_events" | "none";
   /** Runner discovery failed; never a passing test or admitted selection. */
   selectionFailure?: "no_test_files";
+  /** Typechecking diagnostics remain separate from runner case counts and admission. */
+  typechecking?: TestTypeEvidence;
   evidence?: Record<string, unknown>;
   note?: string;
   diagnostics?: TestReport["failures"];
@@ -65,6 +68,7 @@ export function observeCheck(
     : ambiguousNode ? undefined : report?.counts ?? runnerCounts(command, output);
   const reportedCounts = isMochaInvocation(command) ? mochaReportedCounts(output).reportedCounts : undefined;
   const interrupted = Boolean(result.interruption);
+  const typechecking = testTypeEvidence(command, output, interrupted);
   const noTestFiles = !interrupted && result.exitCode === 1 && !report && !counts && !reportedCounts &&
     vitestNoTestFiles(command, output);
   const execution = counts
@@ -98,6 +102,7 @@ export function observeCheck(
     freshness: sourceChanged ? "stale" : "unknown",
     evidenceOrigin: structured ? "node_events" : report ? "report" : counts || reportedCounts ? "runner_output" : "none",
     ...(noTestFiles ? { selectionFailure: "no_test_files" as const } : {}),
+    ...(typechecking ? { typechecking } : {}),
     ...(structured ? { evidence: structured.evidence } : {}),
     ...(nodeEvents && !structured ? { note: "Invocation-owned Node events are incomplete or unsupported; executed case count remains unconfirmed." }
       : ambiguousNode && !structured ? { note: "Node text summaries can count empty file workers. Source-path labels leave the executed case count unconfirmed." } : {}),

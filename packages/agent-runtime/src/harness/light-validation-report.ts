@@ -15,6 +15,7 @@ export function checkReporting(check: CheckObservation, includeGuidance = true) 
     },
     evidenceOrigin: check.evidenceOrigin, selection: check.selection,
     ...(check.selectionFailure ? { selectionFailure: check.selectionFailure } : {}),
+    ...(check.typechecking ? { typechecking: check.typechecking } : {}),
     freshness: check.freshness, admission: "unverified" as const,
     ...(includeGuidance ? { guidance: "Null means unreported, never zero. Pending is distinct from skipped. Counters follow the runner (some combine skipped/todo). Process success, passing tests, admitted source verification and user acceptance are separate claims." } : {}),
   };
