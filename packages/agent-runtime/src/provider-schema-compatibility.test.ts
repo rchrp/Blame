@@ -350,6 +350,38 @@ async function captureCompatiblePayload(
   return JSON.parse(body as string);
 }
 
+test("symbolic analysis exposure is optional at the actual Codex SDK schema boundary", async (context) => {
+  context.mock.method(globalThis, "fetch", async () => {
+    throw Error("Unexpected network fetch");
+  });
+  const previous = process.env.BLAME_AGENT_SYMBOLIC_ANALYSIS;
+  try {
+    process.env.BLAME_AGENT_SYMBOLIC_ANALYSIS = "false";
+    const ordinary = await captureSdkResponsesRequest();
+    process.env.BLAME_AGENT_SYMBOLIC_ANALYSIS = "true";
+    const experimental = await captureSdkResponsesRequest();
+    type Tool = { name: string; strict: boolean; description: string;
+      parameters: { oneOf: { properties: { kind: { const: string } }; required: string[] }[] } };
+    const off = ordinary.tools as Tool[], on = experimental.tools as Tool[];
+    assert.deepEqual(on.map(({ name }) => name), off.map(({ name }) => name));
+    for (const tool of on.filter(({ name }) => name !== "run_task"))
+      assert.deepEqual(tool, off.find(({ name }) => name === tool.name));
+    const runOff = off.find(({ name }) => name === "run_task")!;
+    const runOn = on.find(({ name }) => name === "run_task")!;
+    assert.equal(runOn.strict, false);
+    assert.equal(runOff.parameters.oneOf.some(({ properties }) => properties.kind.const === "analyze"), false);
+    const analyze = runOn.parameters.oneOf.find(({ properties }) => properties.kind.const === "analyze");
+    assert.ok(analyze);
+    assert.deepEqual(analyze.required, ["kind", "target", "inputs", "assertion"]);
+    assert.deepEqual(runOn.parameters.oneOf.filter(({ properties }) => properties.kind.const !== "analyze"), runOff.parameters.oneOf);
+    assert.match(runOn.description, /bounded|counterexamples/u);
+    assert.ok(!runOff.description.includes("Z3"));
+  } finally {
+    if (previous === undefined) delete process.env.BLAME_AGENT_SYMBOLIC_ANALYSIS;
+    else process.env.BLAME_AGENT_SYMBOLIC_ANALYSIS = previous;
+  }
+});
+
 async function captureSdkResponsesRequest() {
   const { bodies, request } = sdkFetchCapture();
   const handler = offlineCodexHandler(request);

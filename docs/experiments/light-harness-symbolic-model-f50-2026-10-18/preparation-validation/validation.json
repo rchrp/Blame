@@ -1,0 +1,38 @@
+{
+  "phase": "F50 preparation",
+  "modelRequests": 0,
+  "buildPassed": true,
+  "actualSdkOptionalSchemaBoundary": {
+    "tests": 1,
+    "pass": 1
+  },
+  "standaloneOptionalSolverWithoutAdmission": {
+    "tests": 1,
+    "pass": 1
+  },
+  "changedTestLintPassed": true,
+  "sources": {
+    "packages/agent-runtime/src/provider-schema-compatibility.test.ts": "ab2e460868f8c599ab7ba6bc49cb5ff6280e4b3908ee086ec1ba1a654a9d3323",
+    "scripts/semantic-harness-payload.test.mjs": "2874728f69eadcc40771eccec966ce91102eff3b368983c4eff29d150199169a",
+    "tools/terminal_bench/symbolic-reasoning-model-study/verify.mjs": "baf95dd9c74b665bdefad0cd107abd890ba8fde1544061ee39fb81d7a4f8b2c8"
+  },
+  "logs": {
+    "blame-f50-prebuild.log.gz": {
+      "sha256": "b8ba29348444ff8f273ce4a864367527d190fd87f3747cc73ea3eaf46f3560f7",
+      "uncompressedBytes": 242
+    },
+    "blame-f50-provider-schema.log.gz": {
+      "sha256": "20c332ca5ca3735108d87621111941461ef6fd2c3ff3e708890cf0ac0815ea0a",
+      "uncompressedBytes": 213
+    },
+    "blame-f50-symbolic-payload.log.gz": {
+      "sha256": "48f3032ea720b2d498b5fb8fc5c5dd2c9fd55815924f6d4ebb25976a544dd26e",
+      "uncompressedBytes": 219
+    },
+    "blame-f50-test-lint.log.gz": {
+      "sha256": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec",
+      "uncompressedBytes": 0
+    }
+  },
+  "note": "Additional targeted integration controls after the prior 1020-pass/2-skip full runtime run. Production code unchanged; these two new tests were not part of that earlier full-suite count. Host verification occurs after F47 workers and before F50 workers; no performance claim from overlapping local checks."
+}

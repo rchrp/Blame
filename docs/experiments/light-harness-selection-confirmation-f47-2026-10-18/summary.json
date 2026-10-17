@@ -1,0 +1,1103 @@
+{
+  "phase": "F47",
+  "complete": true,
+  "arms": {
+    "reference": {
+      "trials": 6,
+      "official": 6,
+      "selected": 6,
+      "independent": 6,
+      "audited": 6,
+      "sourceAudited": 6,
+      "input": 464879,
+      "output": 31994,
+      "tokens": 496873,
+      "cacheRead": 351360,
+      "cacheWrite": 0,
+      "sdkEstimatedUsd": 0.0681238,
+      "durationMs": 522341,
+      "forwardedRequests": 53,
+      "missingUsageReceipts": 0,
+      "cachePerRequestReconciled": false,
+      "emptySelectionTrials": 0,
+      "selectionFailureReports": 0,
+      "finishFailures": 6,
+      "observedFinishRejections": 0,
+      "successfulFinishStrings": 6
+    },
+    "candidate": {
+      "trials": 6,
+      "official": 6,
+      "selected": 6,
+      "independent": 6,
+      "audited": 6,
+      "sourceAudited": 6,
+      "input": 503590,
+      "output": 34330,
+      "tokens": 537920,
+      "cacheRead": 404224,
+      "cacheWrite": 0,
+      "sdkEstimatedUsd": 0.06915368000000001,
+      "durationMs": 366433,
+      "forwardedRequests": 54,
+      "missingUsageReceipts": 0,
+      "cachePerRequestReconciled": false,
+      "emptySelectionTrials": 0,
+      "selectionFailureReports": 0,
+      "finishFailures": 6,
+      "observedFinishRejections": 0,
+      "successfulFinishStrings": 6
+    },
+    "cline": {
+      "trials": 6,
+      "official": 6,
+      "selected": 6,
+      "independent": 6,
+      "audited": 6,
+      "sourceAudited": 6,
+      "input": 658841,
+      "output": 68279,
+      "tokens": 727120,
+      "cacheRead": 533248,
+      "cacheWrite": 0,
+      "sdkEstimatedUsd": 0.11771836000000001,
+      "durationMs": 1121986,
+      "forwardedRequests": 54,
+      "missingUsageReceipts": 0,
+      "cachePerRequestReconciled": false,
+      "emptySelectionTrials": 0,
+      "selectionFailureReports": 0,
+      "finishFailures": 0,
+      "observedFinishRejections": 0,
+      "successfulFinishStrings": 0
+    }
+  },
+  "comparisons": {
+    "candidate/reference": {
+      "pairs": 6,
+      "candidate": {
+        "trials": 6,
+        "tokens": 537920,
+        "cost": 0.06915368000000001,
+        "durationMs": 366433
+      },
+      "baseline": {
+        "trials": 6,
+        "tokens": 496873,
+        "cost": 0.0681238,
+        "durationMs": 522341
+      },
+      "tokenDelta": 0.08261064698625198,
+      "costDelta": 0.015117770881835968,
+      "durationDelta": -0.29847934586792924,
+      "pairDetails": [
+        {
+          "task": "request-correlation",
+          "repeat": 1,
+          "candidate": "1-request-correlation-candidate",
+          "baseline": "1-request-correlation-reference",
+          "tokenDelta": 0.8402027317240788,
+          "costDelta": 0.3194269330270003,
+          "durationDelta": 0.16971448200610229
+        },
+        {
+          "task": "csv-export-options",
+          "repeat": 1,
+          "candidate": "1-csv-export-options-candidate",
+          "baseline": "1-csv-export-options-reference",
+          "tokenDelta": 0.04964858113664228,
+          "costDelta": -0.2388536382468559,
+          "durationDelta": -0.19407949442873773
+        },
+        {
+          "task": "auth-expiry-contract",
+          "repeat": 1,
+          "candidate": "1-auth-expiry-contract-candidate",
+          "baseline": "1-auth-expiry-contract-reference",
+          "tokenDelta": -0.028485148389225112,
+          "costDelta": 0.13756885413124786,
+          "durationDelta": -0.6999892729184098
+        },
+        {
+          "task": "request-correlation",
+          "repeat": 2,
+          "candidate": "2-request-correlation-candidate",
+          "baseline": "2-request-correlation-reference",
+          "tokenDelta": 0.14545011572664146,
+          "costDelta": -0.011111340042325835,
+          "durationDelta": 0.10485684849012533
+        },
+        {
+          "task": "csv-export-options",
+          "repeat": 2,
+          "candidate": "2-csv-export-options-candidate",
+          "baseline": "2-csv-export-options-reference",
+          "tokenDelta": -0.11317724621756398,
+          "costDelta": -0.17996727008924807,
+          "durationDelta": -0.0029882450360929624
+        },
+        {
+          "task": "auth-expiry-contract",
+          "repeat": 2,
+          "candidate": "2-auth-expiry-contract-candidate",
+          "baseline": "2-auth-expiry-contract-reference",
+          "tokenDelta": -0.24835322814418537,
+          "costDelta": 0.18719618089974066,
+          "durationDelta": 0.06229733891274014
+        }
+      ],
+      "byTask": [
+        {
+          "task": "request-correlation",
+          "pairs": 2,
+          "tokenDelta": 0.34993274608359703
+        },
+        {
+          "task": "csv-export-options",
+          "pairs": 2,
+          "tokenDelta": -0.035691344442885686
+        },
+        {
+          "task": "auth-expiry-contract",
+          "pairs": 2,
+          "tokenDelta": -0.14248270974363986
+        }
+      ],
+      "leaveOnePairOut": [
+        {
+          "omitted": "1-request-correlation-candidate",
+          "tokenDelta": -0.0179110397840736
+        },
+        {
+          "omitted": "1-csv-export-options-candidate",
+          "tokenDelta": 0.08752370380648444
+        },
+        {
+          "omitted": "1-auth-expiry-contract-candidate",
+          "tokenDelta": 0.10355451370616664
+        },
+        {
+          "omitted": "2-request-correlation-candidate",
+          "tokenDelta": 0.058068398074555105
+        },
+        {
+          "omitted": "2-csv-export-options-candidate",
+          "tokenDelta": 0.11524418449025209
+        },
+        {
+          "omitted": "2-auth-expiry-contract-candidate",
+          "tokenDelta": 0.15078032086599835
+        }
+      ],
+      "leaveOneTaskOut": [
+        {
+          "omitted": "request-correlation",
+          "tokenDelta": -0.094127676646106
+        },
+        {
+          "omitted": "csv-export-options",
+          "tokenDelta": 0.12694157162856845
+        },
+        {
+          "omitted": "auth-expiry-contract",
+          "tokenDelta": 0.19318301185184739
+        }
+      ]
+    },
+    "candidate/cline": {
+      "pairs": 6,
+      "candidate": {
+        "trials": 6,
+        "tokens": 537920,
+        "cost": 0.06915368000000001,
+        "durationMs": 366433
+      },
+      "baseline": {
+        "trials": 6,
+        "tokens": 727120,
+        "cost": 0.11771836000000001,
+        "durationMs": 1121986
+      },
+      "tokenDelta": -0.26020464297502477,
+      "costDelta": -0.4125497500984553,
+      "durationDelta": -0.6734067983022961,
+      "pairDetails": [
+        {
+          "task": "request-correlation",
+          "repeat": 1,
+          "candidate": "1-request-correlation-candidate",
+          "baseline": "1-request-correlation-cline",
+          "tokenDelta": -0.06450119656925257,
+          "costDelta": -0.12322348414323803,
+          "durationDelta": -0.04936446940585282
+        },
+        {
+          "task": "csv-export-options",
+          "repeat": 1,
+          "candidate": "1-csv-export-options-candidate",
+          "baseline": "1-csv-export-options-cline",
+          "tokenDelta": -0.5764937869729883,
+          "costDelta": -0.5872245869910586,
+          "durationDelta": -0.8788890582787051
+        },
+        {
+          "task": "auth-expiry-contract",
+          "repeat": 1,
+          "candidate": "1-auth-expiry-contract-candidate",
+          "baseline": "1-auth-expiry-contract-cline",
+          "tokenDelta": -0.5874346678161539,
+          "costDelta": -0.5789867766015817,
+          "durationDelta": -0.7892044101287041
+        },
+        {
+          "task": "request-correlation",
+          "repeat": 2,
+          "candidate": "2-request-correlation-candidate",
+          "baseline": "2-request-correlation-cline",
+          "tokenDelta": 0.8420894937598673,
+          "costDelta": 0.09089728353692195,
+          "durationDelta": 0.2727591855838989
+        },
+        {
+          "task": "csv-export-options",
+          "repeat": 2,
+          "candidate": "2-csv-export-options-candidate",
+          "baseline": "2-csv-export-options-cline",
+          "tokenDelta": -0.39260731549646377,
+          "costDelta": -0.5339129000583018,
+          "durationDelta": -0.6137053182214472
+        },
+        {
+          "task": "auth-expiry-contract",
+          "repeat": 2,
+          "candidate": "2-auth-expiry-contract-candidate",
+          "baseline": "2-auth-expiry-contract-cline",
+          "tokenDelta": -0.1702072302949097,
+          "costDelta": -0.3059500657152061,
+          "durationDelta": -0.5348641681538766
+        }
+      ],
+      "byTask": [
+        {
+          "task": "request-correlation",
+          "pairs": 2,
+          "tokenDelta": 0.3263709128488457
+        },
+        {
+          "task": "csv-export-options",
+          "pairs": 2,
+          "tokenDelta": -0.5041345847191216
+        },
+        {
+          "task": "auth-expiry-contract",
+          "pairs": 2,
+          "tokenDelta": -0.46523483488975503
+        }
+      ],
+      "leaveOnePairOut": [
+        {
+          "omitted": "1-request-correlation-candidate",
+          "tokenDelta": -0.29677976448926424
+        },
+        {
+          "omitted": "1-csv-export-options-candidate",
+          "tokenDelta": -0.171153117426746
+        },
+        {
+          "omitted": "1-auth-expiry-contract-candidate",
+          "tokenDelta": -0.14805827931970528
+        },
+        {
+          "omitted": "2-request-correlation-candidate",
+          "tokenDelta": -0.4095836137819887
+        },
+        {
+          "omitted": "2-csv-export-options-candidate",
+          "tokenDelta": -0.23819483316946732
+        },
+        {
+          "omitted": "2-auth-expiry-contract-candidate",
+          "tokenDelta": -0.27084393824519526
+        }
+      ],
+      "leaveOneTaskOut": [
+        {
+          "omitted": "request-correlation",
+          "tokenDelta": -0.4847189972786865
+        },
+        {
+          "omitted": "csv-export-options",
+          "tokenDelta": -0.12165863041584368
+        },
+        {
+          "omitted": "auth-expiry-contract",
+          "tokenDelta": -0.14439406102109287
+        }
+      ]
+    }
+  },
+  "selectedComparisons": {
+    "candidate/reference": {
+      "pairs": 6,
+      "candidate": {
+        "trials": 6,
+        "tokens": 537920,
+        "cost": 0.06915368000000001,
+        "durationMs": 366433
+      },
+      "baseline": {
+        "trials": 6,
+        "tokens": 496873,
+        "cost": 0.0681238,
+        "durationMs": 522341
+      },
+      "tokenDelta": 0.08261064698625198,
+      "costDelta": 0.015117770881835968,
+      "durationDelta": -0.29847934586792924,
+      "pairDetails": [
+        {
+          "task": "request-correlation",
+          "repeat": 1,
+          "candidate": "1-request-correlation-candidate",
+          "baseline": "1-request-correlation-reference",
+          "tokenDelta": 0.8402027317240788,
+          "costDelta": 0.3194269330270003,
+          "durationDelta": 0.16971448200610229
+        },
+        {
+          "task": "csv-export-options",
+          "repeat": 1,
+          "candidate": "1-csv-export-options-candidate",
+          "baseline": "1-csv-export-options-reference",
+          "tokenDelta": 0.04964858113664228,
+          "costDelta": -0.2388536382468559,
+          "durationDelta": -0.19407949442873773
+        },
+        {
+          "task": "auth-expiry-contract",
+          "repeat": 1,
+          "candidate": "1-auth-expiry-contract-candidate",
+          "baseline": "1-auth-expiry-contract-reference",
+          "tokenDelta": -0.028485148389225112,
+          "costDelta": 0.13756885413124786,
+          "durationDelta": -0.6999892729184098
+        },
+        {
+          "task": "request-correlation",
+          "repeat": 2,
+          "candidate": "2-request-correlation-candidate",
+          "baseline": "2-request-correlation-reference",
+          "tokenDelta": 0.14545011572664146,
+          "costDelta": -0.011111340042325835,
+          "durationDelta": 0.10485684849012533
+        },
+        {
+          "task": "csv-export-options",
+          "repeat": 2,
+          "candidate": "2-csv-export-options-candidate",
+          "baseline": "2-csv-export-options-reference",
+          "tokenDelta": -0.11317724621756398,
+          "costDelta": -0.17996727008924807,
+          "durationDelta": -0.0029882450360929624
+        },
+        {
+          "task": "auth-expiry-contract",
+          "repeat": 2,
+          "candidate": "2-auth-expiry-contract-candidate",
+          "baseline": "2-auth-expiry-contract-reference",
+          "tokenDelta": -0.24835322814418537,
+          "costDelta": 0.18719618089974066,
+          "durationDelta": 0.06229733891274014
+        }
+      ],
+      "byTask": [
+        {
+          "task": "request-correlation",
+          "pairs": 2,
+          "tokenDelta": 0.34993274608359703
+        },
+        {
+          "task": "csv-export-options",
+          "pairs": 2,
+          "tokenDelta": -0.035691344442885686
+        },
+        {
+          "task": "auth-expiry-contract",
+          "pairs": 2,
+          "tokenDelta": -0.14248270974363986
+        }
+      ],
+      "leaveOnePairOut": [
+        {
+          "omitted": "1-request-correlation-candidate",
+          "tokenDelta": -0.0179110397840736
+        },
+        {
+          "omitted": "1-csv-export-options-candidate",
+          "tokenDelta": 0.08752370380648444
+        },
+        {
+          "omitted": "1-auth-expiry-contract-candidate",
+          "tokenDelta": 0.10355451370616664
+        },
+        {
+          "omitted": "2-request-correlation-candidate",
+          "tokenDelta": 0.058068398074555105
+        },
+        {
+          "omitted": "2-csv-export-options-candidate",
+          "tokenDelta": 0.11524418449025209
+        },
+        {
+          "omitted": "2-auth-expiry-contract-candidate",
+          "tokenDelta": 0.15078032086599835
+        }
+      ],
+      "leaveOneTaskOut": [
+        {
+          "omitted": "request-correlation",
+          "tokenDelta": -0.094127676646106
+        },
+        {
+          "omitted": "csv-export-options",
+          "tokenDelta": 0.12694157162856845
+        },
+        {
+          "omitted": "auth-expiry-contract",
+          "tokenDelta": 0.19318301185184739
+        }
+      ]
+    },
+    "candidate/cline": {
+      "pairs": 6,
+      "candidate": {
+        "trials": 6,
+        "tokens": 537920,
+        "cost": 0.06915368000000001,
+        "durationMs": 366433
+      },
+      "baseline": {
+        "trials": 6,
+        "tokens": 727120,
+        "cost": 0.11771836000000001,
+        "durationMs": 1121986
+      },
+      "tokenDelta": -0.26020464297502477,
+      "costDelta": -0.4125497500984553,
+      "durationDelta": -0.6734067983022961,
+      "pairDetails": [
+        {
+          "task": "request-correlation",
+          "repeat": 1,
+          "candidate": "1-request-correlation-candidate",
+          "baseline": "1-request-correlation-cline",
+          "tokenDelta": -0.06450119656925257,
+          "costDelta": -0.12322348414323803,
+          "durationDelta": -0.04936446940585282
+        },
+        {
+          "task": "csv-export-options",
+          "repeat": 1,
+          "candidate": "1-csv-export-options-candidate",
+          "baseline": "1-csv-export-options-cline",
+          "tokenDelta": -0.5764937869729883,
+          "costDelta": -0.5872245869910586,
+          "durationDelta": -0.8788890582787051
+        },
+        {
+          "task": "auth-expiry-contract",
+          "repeat": 1,
+          "candidate": "1-auth-expiry-contract-candidate",
+          "baseline": "1-auth-expiry-contract-cline",
+          "tokenDelta": -0.5874346678161539,
+          "costDelta": -0.5789867766015817,
+          "durationDelta": -0.7892044101287041
+        },
+        {
+          "task": "request-correlation",
+          "repeat": 2,
+          "candidate": "2-request-correlation-candidate",
+          "baseline": "2-request-correlation-cline",
+          "tokenDelta": 0.8420894937598673,
+          "costDelta": 0.09089728353692195,
+          "durationDelta": 0.2727591855838989
+        },
+        {
+          "task": "csv-export-options",
+          "repeat": 2,
+          "candidate": "2-csv-export-options-candidate",
+          "baseline": "2-csv-export-options-cline",
+          "tokenDelta": -0.39260731549646377,
+          "costDelta": -0.5339129000583018,
+          "durationDelta": -0.6137053182214472
+        },
+        {
+          "task": "auth-expiry-contract",
+          "repeat": 2,
+          "candidate": "2-auth-expiry-contract-candidate",
+          "baseline": "2-auth-expiry-contract-cline",
+          "tokenDelta": -0.1702072302949097,
+          "costDelta": -0.3059500657152061,
+          "durationDelta": -0.5348641681538766
+        }
+      ],
+      "byTask": [
+        {
+          "task": "request-correlation",
+          "pairs": 2,
+          "tokenDelta": 0.3263709128488457
+        },
+        {
+          "task": "csv-export-options",
+          "pairs": 2,
+          "tokenDelta": -0.5041345847191216
+        },
+        {
+          "task": "auth-expiry-contract",
+          "pairs": 2,
+          "tokenDelta": -0.46523483488975503
+        }
+      ],
+      "leaveOnePairOut": [
+        {
+          "omitted": "1-request-correlation-candidate",
+          "tokenDelta": -0.29677976448926424
+        },
+        {
+          "omitted": "1-csv-export-options-candidate",
+          "tokenDelta": -0.171153117426746
+        },
+        {
+          "omitted": "1-auth-expiry-contract-candidate",
+          "tokenDelta": -0.14805827931970528
+        },
+        {
+          "omitted": "2-request-correlation-candidate",
+          "tokenDelta": -0.4095836137819887
+        },
+        {
+          "omitted": "2-csv-export-options-candidate",
+          "tokenDelta": -0.23819483316946732
+        },
+        {
+          "omitted": "2-auth-expiry-contract-candidate",
+          "tokenDelta": -0.27084393824519526
+        }
+      ],
+      "leaveOneTaskOut": [
+        {
+          "omitted": "request-correlation",
+          "tokenDelta": -0.4847189972786865
+        },
+        {
+          "omitted": "csv-export-options",
+          "tokenDelta": -0.12165863041584368
+        },
+        {
+          "omitted": "auth-expiry-contract",
+          "tokenDelta": -0.14439406102109287
+        }
+      ]
+    }
+  },
+  "functionalComparisons": {
+    "candidate/reference": {
+      "pairs": 6,
+      "candidate": {
+        "trials": 6,
+        "tokens": 537920,
+        "cost": 0.06915368000000001,
+        "durationMs": 366433
+      },
+      "baseline": {
+        "trials": 6,
+        "tokens": 496873,
+        "cost": 0.0681238,
+        "durationMs": 522341
+      },
+      "tokenDelta": 0.08261064698625198,
+      "costDelta": 0.015117770881835968,
+      "durationDelta": -0.29847934586792924,
+      "pairDetails": [
+        {
+          "task": "request-correlation",
+          "repeat": 1,
+          "candidate": "1-request-correlation-candidate",
+          "baseline": "1-request-correlation-reference",
+          "tokenDelta": 0.8402027317240788,
+          "costDelta": 0.3194269330270003,
+          "durationDelta": 0.16971448200610229
+        },
+        {
+          "task": "csv-export-options",
+          "repeat": 1,
+          "candidate": "1-csv-export-options-candidate",
+          "baseline": "1-csv-export-options-reference",
+          "tokenDelta": 0.04964858113664228,
+          "costDelta": -0.2388536382468559,
+          "durationDelta": -0.19407949442873773
+        },
+        {
+          "task": "auth-expiry-contract",
+          "repeat": 1,
+          "candidate": "1-auth-expiry-contract-candidate",
+          "baseline": "1-auth-expiry-contract-reference",
+          "tokenDelta": -0.028485148389225112,
+          "costDelta": 0.13756885413124786,
+          "durationDelta": -0.6999892729184098
+        },
+        {
+          "task": "request-correlation",
+          "repeat": 2,
+          "candidate": "2-request-correlation-candidate",
+          "baseline": "2-request-correlation-reference",
+          "tokenDelta": 0.14545011572664146,
+          "costDelta": -0.011111340042325835,
+          "durationDelta": 0.10485684849012533
+        },
+        {
+          "task": "csv-export-options",
+          "repeat": 2,
+          "candidate": "2-csv-export-options-candidate",
+          "baseline": "2-csv-export-options-reference",
+          "tokenDelta": -0.11317724621756398,
+          "costDelta": -0.17996727008924807,
+          "durationDelta": -0.0029882450360929624
+        },
+        {
+          "task": "auth-expiry-contract",
+          "repeat": 2,
+          "candidate": "2-auth-expiry-contract-candidate",
+          "baseline": "2-auth-expiry-contract-reference",
+          "tokenDelta": -0.24835322814418537,
+          "costDelta": 0.18719618089974066,
+          "durationDelta": 0.06229733891274014
+        }
+      ],
+      "byTask": [
+        {
+          "task": "request-correlation",
+          "pairs": 2,
+          "tokenDelta": 0.34993274608359703
+        },
+        {
+          "task": "csv-export-options",
+          "pairs": 2,
+          "tokenDelta": -0.035691344442885686
+        },
+        {
+          "task": "auth-expiry-contract",
+          "pairs": 2,
+          "tokenDelta": -0.14248270974363986
+        }
+      ],
+      "leaveOnePairOut": [
+        {
+          "omitted": "1-request-correlation-candidate",
+          "tokenDelta": -0.0179110397840736
+        },
+        {
+          "omitted": "1-csv-export-options-candidate",
+          "tokenDelta": 0.08752370380648444
+        },
+        {
+          "omitted": "1-auth-expiry-contract-candidate",
+          "tokenDelta": 0.10355451370616664
+        },
+        {
+          "omitted": "2-request-correlation-candidate",
+          "tokenDelta": 0.058068398074555105
+        },
+        {
+          "omitted": "2-csv-export-options-candidate",
+          "tokenDelta": 0.11524418449025209
+        },
+        {
+          "omitted": "2-auth-expiry-contract-candidate",
+          "tokenDelta": 0.15078032086599835
+        }
+      ],
+      "leaveOneTaskOut": [
+        {
+          "omitted": "request-correlation",
+          "tokenDelta": -0.094127676646106
+        },
+        {
+          "omitted": "csv-export-options",
+          "tokenDelta": 0.12694157162856845
+        },
+        {
+          "omitted": "auth-expiry-contract",
+          "tokenDelta": 0.19318301185184739
+        }
+      ]
+    },
+    "candidate/cline": {
+      "pairs": 6,
+      "candidate": {
+        "trials": 6,
+        "tokens": 537920,
+        "cost": 0.06915368000000001,
+        "durationMs": 366433
+      },
+      "baseline": {
+        "trials": 6,
+        "tokens": 727120,
+        "cost": 0.11771836000000001,
+        "durationMs": 1121986
+      },
+      "tokenDelta": -0.26020464297502477,
+      "costDelta": -0.4125497500984553,
+      "durationDelta": -0.6734067983022961,
+      "pairDetails": [
+        {
+          "task": "request-correlation",
+          "repeat": 1,
+          "candidate": "1-request-correlation-candidate",
+          "baseline": "1-request-correlation-cline",
+          "tokenDelta": -0.06450119656925257,
+          "costDelta": -0.12322348414323803,
+          "durationDelta": -0.04936446940585282
+        },
+        {
+          "task": "csv-export-options",
+          "repeat": 1,
+          "candidate": "1-csv-export-options-candidate",
+          "baseline": "1-csv-export-options-cline",
+          "tokenDelta": -0.5764937869729883,
+          "costDelta": -0.5872245869910586,
+          "durationDelta": -0.8788890582787051
+        },
+        {
+          "task": "auth-expiry-contract",
+          "repeat": 1,
+          "candidate": "1-auth-expiry-contract-candidate",
+          "baseline": "1-auth-expiry-contract-cline",
+          "tokenDelta": -0.5874346678161539,
+          "costDelta": -0.5789867766015817,
+          "durationDelta": -0.7892044101287041
+        },
+        {
+          "task": "request-correlation",
+          "repeat": 2,
+          "candidate": "2-request-correlation-candidate",
+          "baseline": "2-request-correlation-cline",
+          "tokenDelta": 0.8420894937598673,
+          "costDelta": 0.09089728353692195,
+          "durationDelta": 0.2727591855838989
+        },
+        {
+          "task": "csv-export-options",
+          "repeat": 2,
+          "candidate": "2-csv-export-options-candidate",
+          "baseline": "2-csv-export-options-cline",
+          "tokenDelta": -0.39260731549646377,
+          "costDelta": -0.5339129000583018,
+          "durationDelta": -0.6137053182214472
+        },
+        {
+          "task": "auth-expiry-contract",
+          "repeat": 2,
+          "candidate": "2-auth-expiry-contract-candidate",
+          "baseline": "2-auth-expiry-contract-cline",
+          "tokenDelta": -0.1702072302949097,
+          "costDelta": -0.3059500657152061,
+          "durationDelta": -0.5348641681538766
+        }
+      ],
+      "byTask": [
+        {
+          "task": "request-correlation",
+          "pairs": 2,
+          "tokenDelta": 0.3263709128488457
+        },
+        {
+          "task": "csv-export-options",
+          "pairs": 2,
+          "tokenDelta": -0.5041345847191216
+        },
+        {
+          "task": "auth-expiry-contract",
+          "pairs": 2,
+          "tokenDelta": -0.46523483488975503
+        }
+      ],
+      "leaveOnePairOut": [
+        {
+          "omitted": "1-request-correlation-candidate",
+          "tokenDelta": -0.29677976448926424
+        },
+        {
+          "omitted": "1-csv-export-options-candidate",
+          "tokenDelta": -0.171153117426746
+        },
+        {
+          "omitted": "1-auth-expiry-contract-candidate",
+          "tokenDelta": -0.14805827931970528
+        },
+        {
+          "omitted": "2-request-correlation-candidate",
+          "tokenDelta": -0.4095836137819887
+        },
+        {
+          "omitted": "2-csv-export-options-candidate",
+          "tokenDelta": -0.23819483316946732
+        },
+        {
+          "omitted": "2-auth-expiry-contract-candidate",
+          "tokenDelta": -0.27084393824519526
+        }
+      ],
+      "leaveOneTaskOut": [
+        {
+          "omitted": "request-correlation",
+          "tokenDelta": -0.4847189972786865
+        },
+        {
+          "omitted": "csv-export-options",
+          "tokenDelta": -0.12165863041584368
+        },
+        {
+          "omitted": "auth-expiry-contract",
+          "tokenDelta": -0.14439406102109287
+        }
+      ]
+    }
+  },
+  "allAssignedComparisons": {
+    "candidate/reference": {
+      "assignmentsPerArm": 6,
+      "candidateAudited": 6,
+      "baselineAudited": 6,
+      "tokenDelta": 0.08261064698625198,
+      "costDelta": 0.015117770881835968,
+      "durationDelta": -0.29847934586792924,
+      "caveat": "Every assigned failure is retained. Unequal audited quality is not efficiency at quality parity."
+    },
+    "candidate/cline": {
+      "assignmentsPerArm": 6,
+      "candidateAudited": 6,
+      "baselineAudited": 6,
+      "tokenDelta": -0.26020464297502477,
+      "costDelta": -0.4125497500984553,
+      "durationDelta": -0.6734067983022961,
+      "caveat": "Every assigned failure is retained. Unequal audited quality is not efficiency at quality parity."
+    }
+  },
+  "qualityGate": true,
+  "mechanismGate": false,
+  "resourceGate": false,
+  "modelBenefitDemonstrated": false,
+  "accounting": {
+    "method": "Known SDK estimates plus explicit missing-aggregate/unreported-request reserves, not imputed consumption. Wire/report counts do not establish billing or hidden retries.",
+    "trials": [
+      {
+        "name": "1-request-correlation-reference",
+        "observedUsd": 0.00856584,
+        "forwardedAttempts": 7,
+        "usageReports": 7,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.00856584,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-request-correlation-candidate",
+        "observedUsd": 0.011302,
+        "forwardedAttempts": 10,
+        "usageReports": 10,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.011302,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-request-correlation-cline",
+        "observedUsd": 0.012890399999999995,
+        "forwardedAttempts": 10,
+        "usageReports": 10,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.012890399999999995,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-csv-export-options-candidate",
+        "observedUsd": 0.009332720000000001,
+        "forwardedAttempts": 8,
+        "usageReports": 8,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.009332720000000001,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-csv-export-options-cline",
+        "observedUsd": 0.02260968,
+        "forwardedAttempts": 10,
+        "usageReports": 10,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.02260968,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-csv-export-options-reference",
+        "observedUsd": 0.0122614,
+        "forwardedAttempts": 7,
+        "usageReports": 7,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.0122614,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-auth-expiry-contract-cline",
+        "observedUsd": 0.03178608000000001,
+        "forwardedAttempts": 13,
+        "usageReports": 13,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.03178608000000001,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-auth-expiry-contract-reference",
+        "observedUsd": 0.011764,
+        "forwardedAttempts": 8,
+        "usageReports": 8,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.011764,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-auth-expiry-contract-candidate",
+        "observedUsd": 0.01338236,
+        "forwardedAttempts": 8,
+        "usageReports": 8,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.01338236,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "2-request-correlation-candidate",
+        "observedUsd": 0.013438720000000001,
+        "forwardedAttempts": 14,
+        "usageReports": 14,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.013438720000000001,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "2-request-correlation-cline",
+        "observedUsd": 0.01231896,
+        "forwardedAttempts": 8,
+        "usageReports": 8,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.01231896,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "2-request-correlation-reference",
+        "observedUsd": 0.013589719999999998,
+        "forwardedAttempts": 14,
+        "usageReports": 14,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.013589719999999998,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "2-csv-export-options-cline",
+        "observedUsd": 0.020856959999999997,
+        "forwardedAttempts": 7,
+        "usageReports": 7,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.020856959999999997,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "2-csv-export-options-reference",
+        "observedUsd": 0.0118546,
+        "forwardedAttempts": 8,
+        "usageReports": 8,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.0118546,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "2-csv-export-options-candidate",
+        "observedUsd": 0.00972116,
+        "forwardedAttempts": 7,
+        "usageReports": 7,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.00972116,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "2-auth-expiry-contract-reference",
+        "observedUsd": 0.010088240000000002,
+        "forwardedAttempts": 9,
+        "usageReports": 9,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.010088240000000002,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "2-auth-expiry-contract-candidate",
+        "observedUsd": 0.011976720000000001,
+        "forwardedAttempts": 7,
+        "usageReports": 7,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.011976720000000001,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "2-auth-expiry-contract-cline",
+        "observedUsd": 0.01725628,
+        "forwardedAttempts": 6,
+        "usageReports": 6,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.01725628,
+        "basis": "wire/report counts; billing unknown"
+      }
+    ],
+    "observedUsd": 0.25499584,
+    "reservedUsd": 0,
+    "accountedUsd": 0.25499584
+  },
+  "priorObservedUsd": 7.94894492,
+  "priorReservedUsd": 3.6399999999999997,
+  "cumulativeObservedSdkUsd": 8.20394076,
+  "cumulativeReservedUsd": 3.6399999999999997,
+  "cumulativeAccountedUsd": 11.843940759999999,
+  "limitations": "Three new requests on a small constructed monorepo, two dependent repetitions, no injected empty selector. Unblinded source/delivery review. Frozen finishFailures wrongly counts successful string-valued finish results; preserve it and use observedFinishRejections derived from explicit blocked/failed ledger outputs. See measurement-amendment.json. Provider revision, seeds, hidden retries, host contention and invoices unknown. Tokens include cache reads; SDK estimates are not invoices, missing receipts remain missing. No observed mechanism use means no demonstrated recovery benefit; an unverified finish is not task correctness. Campaigns remain separate."
+}

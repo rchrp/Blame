@@ -1,0 +1,275 @@
+{
+  "method": "Unblinded manual review of immutable patch, delivery and command chronology; all booleans require evidence. Copy to source-review.json and fill, never infer task success from official completion alone.",
+  "decisions": [
+    {
+      "name": "1-request-correlation-reference",
+      "hashes": {
+        "events.jsonl": "d2da62efb85edd0d2fa54a87f89da7b1b1afe06c2d375f438ca754a06859e254",
+        "workspace.diff": "fceb9f9f4f586ede528f2191b367730199f4afe900d6e716bb649d2e628d5a15",
+        "score.json": "ad1d9eeece3528f0941d53911aadb7a315e340c6f3094a2559b74bb2e0f54d1a",
+        "tool-ledger.json": "60d0c3c5f2c481d6e65f5150f0b5f625ba561cb8013a69bc6145c26011c1aa9f"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "evidence": []
+    },
+    {
+      "name": "1-request-correlation-candidate",
+      "hashes": {
+        "events.jsonl": "e9c6a53a54dc16985811ae849a635a3d74a4a3a6b324c714ad4627aac8491074",
+        "workspace.diff": "fa24c9cda8e959e3d00f28f51950eff9de22bef2b910f975def94b2e3711c719",
+        "score.json": "b1864f4b5845afc1406a03439acf4a861fbab4f766bb0a1cff6a179a8191362a",
+        "tool-ledger.json": "650c183109491ad8d7883e76aa940ba8c99cd117427dabd8f25772667518248c"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "evidence": []
+    },
+    {
+      "name": "1-request-correlation-cline",
+      "hashes": {
+        "events.jsonl": "c98b461f98f904def98edfeb0eec67bf29a32156866392b7257787cda83f3269",
+        "workspace.diff": "3da20f6123771c8f3e729c016d6a8a11043896c0ef2b5116c4f9da431ba37898",
+        "score.json": "2f4784d39922408e4aeac48e0b2e9ac76dc00b204249d0a1076b19575e10ad5a",
+        "tool-ledger.json": "9d06b4d821407f8e8e23d9646c7b431eaab8e1b1d80f0e635bcbf6095d5e3fa3"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "evidence": []
+    },
+    {
+      "name": "1-csv-export-options-candidate",
+      "hashes": {
+        "events.jsonl": "596b93ed67e5d458fc467c8e147ec7d08f20122b2d43a740f2af48fdf80e02c5",
+        "workspace.diff": "b4a986f17d9b6b107adc66f186f1cf2885235c18a03250c9cb7e9df91732b485",
+        "score.json": "6a79c2f39e8c9f23d92589b17cfb364cb55369bb531c902d18e2da47eef885b2",
+        "tool-ledger.json": "2fdb6bb620ced3f5d42409daf18c38e11f45f5bed8a3d3c497e9b911331893d6"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "evidence": []
+    },
+    {
+      "name": "1-csv-export-options-cline",
+      "hashes": {
+        "events.jsonl": "8b5887a37af7e01d1a78b31569b63d7b8a63e56397c172c30abfb678fed77ee0",
+        "workspace.diff": "9e6eaf903a43d95e708447769091923607324bf102cabed53d89ccdfd117d2bf",
+        "score.json": "1ffb00a2f3e3004eda1e0269a7f93120a54f42594a09c5cb2ccd2501e431bce8",
+        "tool-ledger.json": "8ab92e428246fea685232d4fcbb6a4d0e386113c04c7703037e5eb8ccc3811ea"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "evidence": []
+    },
+    {
+      "name": "1-csv-export-options-reference",
+      "hashes": {
+        "events.jsonl": "5e12d2829c01ee9b83735ecfa5ff1db6c490cc1e60b8d0247ccc2976b28eb3fe",
+        "workspace.diff": "65a55559369690e9486218087119f45b60ca84135311b131ba7fd33e8e195e5f",
+        "score.json": "1cfc7819c383d916c6c6246f1a1732e39bc67d1a10da6085ace1942c6102cfa7",
+        "tool-ledger.json": "dbcbfb732eb0ac030a0c7fc782434a9359b4ad47b24fc6aa74e4134b09a85062"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "evidence": []
+    },
+    {
+      "name": "1-auth-expiry-contract-cline",
+      "hashes": {
+        "events.jsonl": "ed346454cb159fbf0fb77ef8789ef4c4e8b7e76ce3a5ddeadff715090a2b93aa",
+        "workspace.diff": "373ce0da2aa08394a9d78933608c9eba9bcc28faf949d48165bdc33739625052",
+        "score.json": "949b4f623b9f13d3a106279df4b139aa7bdbbc89b7aa0c00bb14b2f25626254c",
+        "tool-ledger.json": "0cfc5da0e23413b91eb8e3aa200c715aa2e8f5849abbd943a5fa9bad3bc2c97e"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "evidence": []
+    },
+    {
+      "name": "1-auth-expiry-contract-reference",
+      "hashes": {
+        "events.jsonl": "7e4f2d9a30fcef9c7c78e327b4d9e84a4a620a575c1db318094ceba21a4f9f34",
+        "workspace.diff": "80937a424c25a13bccd1b735204029c826f9b4367f17d933a15c67a923063cd5",
+        "score.json": "d3d60ee31f1b8205abd30935526896633e1df1b437f5adfe713aaf7766fa91db",
+        "tool-ledger.json": "a943cc1168054a0a31a72b19373630acf88172ae204ab34a2570da5a4d1c175e"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "evidence": []
+    },
+    {
+      "name": "1-auth-expiry-contract-candidate",
+      "hashes": {
+        "events.jsonl": "421654e3d21f4a39a658212b6955e7dc7f5e17a805c79499d5f2d1ce7afa18cc",
+        "workspace.diff": "fcbae35fa9f964bb621404acad37121c93dd58610fb1e68d8def9237e74fc392",
+        "score.json": "34007aa1402050ea0374702327b47b261aff7be5481d1fd9ac99db8a0017a66d",
+        "tool-ledger.json": "d7cd058fb1302ff5a2f6929de32ae8f4fd50284484cf59ed760808c2617e5b9b"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "evidence": []
+    },
+    {
+      "name": "2-request-correlation-candidate",
+      "hashes": {
+        "events.jsonl": "71373a8e76cc3f466c788e615757e49d19e518d496654f4c50ff0394449cdb66",
+        "workspace.diff": "7f498811d8a8590c4f07d8a12c8c9a0c18db29bdb70788f17260a2133ad93cbb",
+        "score.json": "a42b77793cc0134a762180d6bda0a059bb8de6bee3cbc592eada312985c0c0d2",
+        "tool-ledger.json": "19eaed595bc02c13d601444001db6ad142e3e9a591dc5ba9e204e601eaad337c"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "evidence": []
+    },
+    {
+      "name": "2-request-correlation-cline",
+      "hashes": {
+        "events.jsonl": "31137e2224928d976871b52eabb860c00fa9b533f97f0d72768a025e82c09fd6",
+        "workspace.diff": "a44d90573d89873e8de833c09c3ee5948a59535f33b72640cc68b7c9a8336210",
+        "score.json": "6b3581f936b3debacc3bf1cd02c72fd5361db124692f872fbe6713dba896bddb",
+        "tool-ledger.json": "82bd3724225bebb2b350c013bf7a125e4cb01822a2cc7c9bc5aa245edf6686ba"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "evidence": []
+    },
+    {
+      "name": "2-request-correlation-reference",
+      "hashes": {
+        "events.jsonl": "66608cd669a89cbe55c6c547a614427ec1f92a8cf87e69dbfa3e52014c51bee0",
+        "workspace.diff": "c7b9d71b5bdcc372e6e7bd5ea7c5158ab29b16b760e2ee365ca5c467b83edc04",
+        "score.json": "1b2f4f83be1cd97d172fd39434a9c276d3da2ae90648a8fd2aca96b4bdace749",
+        "tool-ledger.json": "47bffdf053b76d62e30a245ab0f34eaf12af02cdcdacfcdbd64e07e8ad4de67a"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "evidence": []
+    },
+    {
+      "name": "2-csv-export-options-cline",
+      "hashes": {
+        "events.jsonl": "ca6f57d2d364dedcbab1d4b636fe2794dd89decf4cc7771c2bbf76a2afe8f382",
+        "workspace.diff": "7e99f23f15764d593fd1ae8458dc01d312371ac8e117af8e41832b7185a31fb9",
+        "score.json": "0fef615a58e4e1642bb7159fa5a6ef44d116299d2d6bcf6411881638f4c9b386",
+        "tool-ledger.json": "00bd330dea2a1a7338843661ffa7eba696e2212d39e91e810e0cafd216f5883a"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "evidence": []
+    },
+    {
+      "name": "2-csv-export-options-reference",
+      "hashes": {
+        "events.jsonl": "c6b3749da04ee211abcbcc04fdb6ac1bd3a927bb0bfd6d2309d9519bcd45037e",
+        "workspace.diff": "08cfb0df423bed9002a1e07a117a271423a2d03715b780a0ab4f980d3d24dc9b",
+        "score.json": "6770b7ab1baca22d8b755e1a869e8201d1ffb9102f956bf07c4906cbae4af3ae",
+        "tool-ledger.json": "9a391da3e19868079cf23d1585716f0830830c49bcc7bc3b416672c7d297eb78"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "evidence": []
+    },
+    {
+      "name": "2-csv-export-options-candidate",
+      "hashes": {
+        "events.jsonl": "d04d5928c2d8db3dec1519e03fb146675e64ede67de439f419a7eff61d24c4ea",
+        "workspace.diff": "effcc7ec74682a5b3647f738e82e9de8b4db1cefd6c69263be2de6595466e062",
+        "score.json": "77612baa228f2000241bc050f16bca4a789e54493d6f28addc89385bc1ada401",
+        "tool-ledger.json": "73b3b2e61bb2e7a66dc96e69f98971183bed09aa0f0754e092630ca5fe353ae2"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "evidence": []
+    },
+    {
+      "name": "2-auth-expiry-contract-reference",
+      "hashes": {
+        "events.jsonl": "4abe183ec9f791d91a35364fff4ecc1481bbd8e10fdb699d6942f6d0c91334bb",
+        "workspace.diff": "4e0bbcc20ba940a5c73f2bed08e3d9a915865cd52ac11e5971dc06cc11d8ac82",
+        "score.json": "272336fbdb9e92caf44066e9d3088ace803ddf5af97e33ede9350a89d4a25cd1",
+        "tool-ledger.json": "477d53c776cccd535ecc01c15e4d7d9790c25f9344cf8d245ba5644408c685f7"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "evidence": []
+    },
+    {
+      "name": "2-auth-expiry-contract-candidate",
+      "hashes": {
+        "events.jsonl": "032654315760ed6274e041ac84813f445809f5863ea553c4db782a63c9aaf792",
+        "workspace.diff": "084b13f62b85f5111352945ab2f21e57f91437683838e2ecbf9f9231f98e5f08",
+        "score.json": "ed80ce4dace4b63681d65368fd6adab878de3ca188d9cecb5366c886853a4ccc",
+        "tool-ledger.json": "a9dfcdb1c1ab9f6393e41b14585160636834776cd052d3c8cdae06c5e0774bd6"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "evidence": []
+    },
+    {
+      "name": "2-auth-expiry-contract-cline",
+      "hashes": {
+        "events.jsonl": "bea337ba855030898d319e041c52bfa5af1e1542f28fc97a8364542ede22d8c3",
+        "workspace.diff": "ceaefb7724586047b07c1959d6c0e25259bceef83f455f4c873a56277f5ba822",
+        "score.json": "ace303fcb27cfd6c06e06a034d2fe63c30748006650e8e60f7f9fe8307b3e53f",
+        "tool-ledger.json": "f40f0d205f9ab3f413c07d2387dc864242c84c08f35e6f2ea320155e63c7102b"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "evidence": []
+    }
+  ]
+}

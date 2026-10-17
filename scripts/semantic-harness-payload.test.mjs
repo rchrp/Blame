@@ -75,6 +75,29 @@ test("standalone payload executes navigation and command dependencies", async ()
   });
 });
 
+test("standalone payload executes optional symbolic analysis without granting validation", {
+  skip: !process.env.BLAME_Z3_PATH && "Set BLAME_Z3_PATH to test the optional local solver",
+}, async () => {
+  await withPayload(async (packageRoot, workspaceRoot) => {
+    await writeFile(join(workspaceRoot, "budget.ts"),
+      "export function remaining(limit: number, used: number): number { return limit + used; }\n");
+    const result = await executeRunner(packageRoot, workspaceRoot, {
+      tool: "run_task", input: { kind: "analyze", target: "budget.ts#remaining",
+        inputs: { limit: { min: 0, max: 10 }, used: { min: 0, max: 10 } },
+        assertion: "result === limit - used" },
+    });
+    assert.equal(result.status, "ok", JSON.stringify(result));
+    assert.equal(result.data.status, "counterexample", JSON.stringify(result));
+    assert.equal(result.data.validationAdmission, false);
+    assert.equal(result.data.witness.concretelyReproduced, true);
+    const checks = await executeRunner(packageRoot, workspaceRoot, {
+      tool: "read_code", input: { target: "@checks" },
+    });
+    assert.equal(checks.status, "ok", JSON.stringify(checks));
+    assert.equal(checks.data.total, 0);
+  });
+});
+
 async function withPayload(action) {
   const temporary = await mkdtemp(join(tmpdir(), "semantic-payload-test-"));
   try {

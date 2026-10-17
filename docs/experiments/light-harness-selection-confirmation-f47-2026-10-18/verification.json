@@ -1,0 +1,15 @@
+{
+  "phase": "F47",
+  "trials": 18,
+  "rawArchiveHashes": true,
+  "ledgerAndUsageRecomputed": true,
+  "sourceReviewHashBound": true,
+  "selectionMechanismRecomputed": true,
+  "finishMeasurementAmendmentVerified": true,
+  "allSummaryComparisonsIndependentlyRecomputed": true,
+  "missingUsageSensitivityPreserved": true,
+  "initialLightPromptSchemaIdentical": true,
+  "executableAblationVerified": true,
+  "priorReservationsPreserved": true,
+  "modelRequests": 0
+}

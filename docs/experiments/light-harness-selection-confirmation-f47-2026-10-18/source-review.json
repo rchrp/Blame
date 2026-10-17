@@ -1,0 +1,529 @@
+{
+  "phase": "F47",
+  "complete": true,
+  "reviewedAtUTC": "2026-10-17T22:55:48.261644+00:00",
+  "method": "Unblinded manual source, newly added test, delivery and command-chronology review of all18 original endpoints. Decisions bind original events/diff/score/tool-ledger hashes. Tool indices are zero-based indices in the immutable per-trial ledger. Reviewer inspected source logic and original final grading outputs, checked local navigation/history scope and looked for source-writing commands after required validation; no models, tests, compilers, solvers or recovered solutions were executed during this review. Original tests/config/manifests must be preserved; intentional malformed-input casts in new tests are judged as runtime-test constructions, not weakened production contracts. Final source freshness is required for the three expressly required scripts. Optional validations are distinguished from those obligations.",
+  "limits": [
+    "Three constructed requests with two dependent repeats on one small monorepo; not representative prevalence, large-project confirmation or statistical proof of general superiority.",
+    "Review is unblinded and cannot prove absence of all defects, unobserved actions or hidden provider activity. Finite hidden-oracle success is evidence only; SDK official success and source verification admission remain distinct from audited acceptance.",
+    "Raw delivered-wrapper admission/counts remain unknown where its parser did not observe them; actual Vitest outputs and independent endpoint checks support runtime success without upgrading source admission.",
+    "One reference optional delivered typecheck precedes a subsequent literal-only new-test edit; its earlier invocation remains explicitly earlier, while all required final invocations and independent final delivered compilation pass.",
+    "One Cline trial lists filenames in its own trial parent after missing workspace in initial paths; no solution/other-trial/control content is retrieved. Its delivery also has minor path metadata omissions. These anomalies are retained in the per-row evidence.",
+    "No F45 empty-selector diagnostic is observed in any assigned trial. Saturated audited success therefore cannot establish a model recovery benefit from that unused mechanism.",
+    "Observed long gaps in streamed model-response events remain in duration measurements and are not causally attributed to the harness."
+  ],
+  "artifactHashesVerified": 72,
+  "incrementalReviewSha256": "c4442ff8a45149e2dbb1f5f7dbd5f7a8600e59877f17e6760f00925060de8799",
+  "decisions": [
+    {
+      "name": "1-request-correlation-reference",
+      "hashes": {
+        "events.jsonl": "d2da62efb85edd0d2fa54a87f89da7b1b1afe06c2d375f438ca754a06859e254",
+        "workspace.diff": "fceb9f9f4f586ede528f2191b367730199f4afe900d6e716bb649d2e628d5a15",
+        "score.json": "ad1d9eeece3528f0941d53911aadb7a315e340c6f3094a2559b74bb2e0f54d1a",
+        "tool-ledger.json": "60d0c3c5f2c481d6e65f5150f0b5f625ba561cb8013a69bc6145c26011c1aa9f"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "lastChangedEditIndex": 18,
+      "freshCheckIndices": {
+        "regression": 19,
+        "types": 20,
+        "delivered": 21,
+        "deliveredTypes": 22
+      },
+      "evidence": [
+        "Manual source review: case-insensitive own-key scan rejects zero/multiple matching keys; trimmed string or single-string-array value is constrained by the exact 1\u201364 ASCII regex; fallback is returned unchanged. API response/header/log all reuse the chosen ID. Existing spread-based logger enrichment already preserves fields and caller identity. No additional out-of-type malformed-header criterion is imposed.",
+        "Only context.ts, API request.ts and new regression-test files changed. No protected paths or original tests changed; pinned dependency manifest is unchanged. Independent pristine endpoint passes original regression, hidden behavioral/public-type contract, source compilation, new-test runtime and new-test compilation; these finite checks do not establish whole-program correctness.",
+        "Last successful changed edit is tool index 18. Exact required npm invocations succeed afterward at indices regression=19, types=20, delivered=21, deliveredTypes=22. No later source-writing command or edit occurs; only git diff/check/status and final delivery follow.",
+        "Delivered wrapper output explicitly reports Vitest passing cases, while journal execution/counts remain not_observed/unknown/null and completion is unverified with delivered obligation unconfirmed. Reporting actual raw runtime success is accepted; no admitted source-verification claim is made.",
+        "Delivery accurately reports regression count, delivered-test count and explicit delivered typecheck. All observed navigation is local checkout source/config; commands perform only project checks and git diff/status, with no solution/history retrieval or external artifact access.",
+        "One implementation edit; final raw counts are 6/6 original tests and 3/3 new delivered tests. Delivery explicitly says source-only compiler excludes test files, followed by the separately successful delivered typecheck."
+      ]
+    },
+    {
+      "name": "1-request-correlation-candidate",
+      "hashes": {
+        "events.jsonl": "e9c6a53a54dc16985811ae849a635a3d74a4a3a6b324c714ad4627aac8491074",
+        "workspace.diff": "fa24c9cda8e959e3d00f28f51950eff9de22bef2b910f975def94b2e3711c719",
+        "score.json": "b1864f4b5845afc1406a03439acf4a861fbab4f766bb0a1cff6a179a8191362a",
+        "tool-ledger.json": "650c183109491ad8d7883e76aa940ba8c99cd117427dabd8f25772667518248c"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "lastChangedEditIndex": 24,
+      "freshCheckIndices": {
+        "regression": 25,
+        "types": 26,
+        "delivered": 27,
+        "deliveredTypes": 28
+      },
+      "evidence": [
+        "Manual source review: case-insensitive own-key scan rejects zero/multiple matching keys; trimmed string or single-string-array value is constrained by the exact 1\u201364 ASCII regex; fallback is returned unchanged. API response/header/log all reuse the chosen ID. Existing spread-based logger enrichment already preserves fields and caller identity. No additional out-of-type malformed-header criterion is imposed.",
+        "Only context.ts, API request.ts and new regression-test files changed. No protected paths or original tests changed; pinned dependency manifest is unchanged. Independent pristine endpoint passes original regression, hidden behavioral/public-type contract, source compilation, new-test runtime and new-test compilation; these finite checks do not establish whole-program correctness.",
+        "Last successful changed edit is tool index 24. Exact required npm invocations succeed afterward at indices regression=25, types=26, delivered=27, deliveredTypes=28. No later source-writing command or edit occurs; only git diff/check/status and final delivery follow.",
+        "Delivered wrapper output explicitly reports Vitest passing cases, while journal execution/counts remain not_observed/unknown/null and completion is unverified with delivered obligation unconfirmed. Reporting actual raw runtime success is accepted; no admitted source-verification claim is made.",
+        "Delivery accurately reports regression count, delivered-test count and explicit delivered typecheck. All observed navigation is local checkout source/config; commands perform only project checks and git diff/status, with no solution/history retrieval or external artifact access.",
+        "Initial replacement-body edit used headers despite the unchanged _headers parameter. Regression/source compiler/new-test failures exposed the real code error; edit24 repairs references, followed by fresh successful checks25\u201328. These failures remain in the trace. Final raw counts are 6/6 original tests and 4/4 new tests; no F45 empty-selector diagnostic occurs."
+      ]
+    },
+    {
+      "name": "1-request-correlation-cline",
+      "hashes": {
+        "events.jsonl": "c98b461f98f904def98edfeb0eec67bf29a32156866392b7257787cda83f3269",
+        "workspace.diff": "3da20f6123771c8f3e729c016d6a8a11043896c0ef2b5116c4f9da431ba37898",
+        "score.json": "2f4784d39922408e4aeac48e0b2e9ac76dc00b204249d0a1076b19575e10ad5a",
+        "tool-ledger.json": "9d06b4d821407f8e8e23d9646c7b431eaab8e1b1d80f0e635bcbf6095d5e3fa3"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "lastChangedEditIndex": 10,
+      "freshCheckIndices": {
+        "regression": 11,
+        "types": 11,
+        "delivered": 11,
+        "deliveredTypes": 12
+      },
+      "evidence": [
+        "Manual source review: a case-insensitive own-key scan requires exactly one matching header key, accepts string or one-element string array, guards the extracted value as string, trims, applies the specified ASCII regex, and uses the unchanged fallback. API header/body/log all use context.correlationId. Existing logger spread correctly preserves other fields without mutation.",
+        "Only context.ts, API request.ts and one new API-side regression file changed. Protected paths/original tests and pinned dependencies remain unchanged. Original regression, hidden behavioral/public-type contract, source types, new-test runtime and new-test types all pass on the independent endpoint; finite oracle success is not a whole-program proof.",
+        "Cline apply_patch6 introduced an incorrect four-parent import in its own new test. run_commands7 reported the failed suite; apply_patch8 corrected it. run_commands9 then exposed an incorrect new-test expectation for the valid starts-with.dot ID. apply_patch10 changed only the new test to invalid .starts-with-dot. Original tests were preserved. The final required commands all succeed in run_commands11 (three separate result entries); typecheck:delivered succeeds at12. Only read-only diff/status13 and read_files14 follow. Last source/test edit10 therefore precedes every final required invocation.",
+        "Final delivery accurately reports 6 original tests, 3 new tests, source-only compiler exclusion of tests, separate delivered-test compilation and diff --check. It claims final command outcomes rather than falsely admitting source verification. Earlier test failures stay in the trace.",
+        "All read/search/find operations target the checkout; commands perform only local listing, validation and diff/status. The failed relative import was a test-path mistake corrected from its error output, with no retrieved solution or previous-study content."
+      ]
+    },
+    {
+      "name": "1-csv-export-options-candidate",
+      "hashes": {
+        "events.jsonl": "596b93ed67e5d458fc467c8e147ec7d08f20122b2d43a740f2af48fdf80e02c5",
+        "workspace.diff": "b4a986f17d9b6b107adc66f186f1cf2885235c18a03250c9cb7e9df91732b485",
+        "score.json": "6a79c2f39e8c9f23d92589b17cfb364cb55369bb531c902d18e2da47eef885b2",
+        "tool-ledger.json": "2fdb6bb620ced3f5d42409daf18c38e11f45f5bed8a3d3c497e9b911331893d6"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "lastChangedEditIndex": 19,
+      "freshCheckIndices": {
+        "regression": 20,
+        "types": 21,
+        "delivered": 22,
+        "deliveredTypes": 23
+      },
+      "evidence": [
+        "Manual source review: captured options are resolved into a separate object; defined per-call values override them and undefined preserves them, including false overriding true. Delimiter length is exactly one UTF-16 code unit with quote/CR/LF rejected; newline is LF or CRLF. Cell encoding preserves false/zero, empties null/undefined, doubles quotes and quotes delimiters/quote/CR/LF. Headers reuse cell encoding. API forwards optional CsvOptions and the public export exists; maps preserve rows/columns and do not mutate inputs.",
+        "Only the five relevant production files plus a new package regression test changed. No original tests, manifests/configuration or pinned dependency files changed. All five independent endpoint checks pass, including public type export and new-test compilation. Eager validation of captured options is accepted within the registered contract; no new requirement about repairing invalid captured options with a later override is invented after outcomes.",
+        "edit18 implemented the feature and test. edit19 corrected a literal expected CSV string in the newly added test before any validations. Final required project invocations succeed at20 regression,21 source types,22 delivered runtime; optional delivered compilation succeeds at23. No edit or writing command follows.",
+        "Delivery explicitly distinguishes the original configured suite (6/6, excludes the new file), source compiler (excludes test files), delivered runtime (exit0 and raw Vitest 3/3 in that file only), and delivered typecheck. The raw journal retains not_observed/unknown counters and unverified source admission for the wrapper. Accurate raw runtime reporting is accepted without upgrading admission.",
+        "All navigation reads local source, scripts and configuration. The only commands are project validations. No remote/history/reference-solution retrieval, dependency change or source recovery is observed. No empty-selector diagnostic is activated."
+      ]
+    },
+    {
+      "name": "1-csv-export-options-cline",
+      "hashes": {
+        "events.jsonl": "8b5887a37af7e01d1a78b31569b63d7b8a63e56397c172c30abfb678fed77ee0",
+        "workspace.diff": "9e6eaf903a43d95e708447769091923607324bf102cabed53d89ccdfd117d2bf",
+        "score.json": "1ffb00a2f3e3004eda1e0269a7f93120a54f42594a09c5cb2ccd2501e431bce8",
+        "tool-ledger.json": "8ab92e428246fea685232d4fcbb6a4d0e386113c04c7703037e5eb8ccc3811ea"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "lastChangedEditIndex": 16,
+      "freshCheckIndices": {
+        "regression": 17,
+        "types": 18,
+        "delivered": 19,
+        "deliveredTypes": 20,
+        "allTests": 23
+      },
+      "deliveryPathMetadataError": true,
+      "outsideCheckoutOwnTrialListing": true,
+      "evidence": [
+        "Manual source review: factory shallow-copies captured options; defined per-call fields override captured values while undefined preserves them and false remains false. Merged final options are validated before encoding. Exact one-code-unit delimiter excludes quote/CR/LF; newline restricts LF/CRLF. Cell encoding preserves false/zero, maps nullish to empty, doubles quotes and quotes delimiter/quote/CR/LF; headers reuse encoding. Public CsvOptions export and API forwarding exist. Mappings preserve order and input objects.",
+        "Five relevant production paths and one new package test changed; original tests/config/manifests and pinned dependencies are unchanged. All five independent endpoint checks pass, including hidden behavioral/public-type contracts and added-test compilation. Finite passing checks are not a general proof.",
+        "apply_patch10 added implementation and new tests. Delivered tests13 exposed two incorrect expected strings in the new test (row delimiter vs captured CRLF and an extra empty-cell comma). apply_patch16 corrected only those new expectations. Last edit16 precedes successful exact regression17, source types18, delivered runtime19 and delivered types20. Read-only source review21 and diff/status22 follow; broader npm test23 passes 10/10. No later edit occurs.",
+        "Delivery accurately reports final 6/6 original tests, 4/4 added tests, 10/10 full configured tests, separate delivered compiler and no coverage instrumentation. It explicitly says the standard compiler excludes tests. Minor metadata error: displayed absolute project/test paths omit the workspace segment; this is recorded and does not change the actual command/source evidence.",
+        "Navigation initially requested nonexistent source paths lacking the workspace segment (read_files3/4). find5 lists filenames under this same trial parent, including its own request/audit metadata, to locate the checkout. No content of another trial, hidden oracle, positive control or remote/history solution was retrieved. All successful source reads and writes target the current checkout. This scope-expanding filename listing is recorded, rather than hidden; primary no-solution-retrieval remains satisfied.",
+        "Raw duration is 400129ms. Recorded event gaps include 181.683s between reasoning events at 22:23:45.572Z and22:26:47.255Z and121.448s at22:27:04.505Z to22:29:05.953Z, during model-response iterations4/5. These observed gaps do not identify provider, network, SDK or harness causation. They remain in all-assigned duration; no causal efficiency credit or penalty is inferred from them."
+      ]
+    },
+    {
+      "name": "1-csv-export-options-reference",
+      "hashes": {
+        "events.jsonl": "5e12d2829c01ee9b83735ecfa5ff1db6c490cc1e60b8d0247ccc2976b28eb3fe",
+        "workspace.diff": "65a55559369690e9486218087119f45b60ca84135311b131ba7fd33e8e195e5f",
+        "score.json": "1cfc7819c383d916c6c6246f1a1732e39bc67d1a10da6085ace1942c6102cfa7",
+        "tool-ledger.json": "dbcbfb732eb0ac030a0c7fc782434a9359b4ad47b24fc6aa74e4134b09a85062"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "lastChangedEditIndex": 19,
+      "freshCheckIndices": {
+        "regression": 20,
+        "types": 21,
+        "delivered": 22,
+        "deliveredTypes": 23
+      },
+      "evidence": [
+        "Manual source review: captured resolved options are copied per invocation; only defined per-call fields replace them, including false. Final delimiter and newline validation matches the requested UTF-16/LF/CRLF contract. Cell escaping handles nullish/zero/false, delimiter/quote/CR/LF, doubles embedded quotes, and is reused for headers. API forwards optional options and CsvOptions is publicly exported. Maps preserve input order and objects.",
+        "Five relevant production files plus one added regression test changed; protected configuration/original tests and pinned dependency hashes are unchanged. All five independent endpoint checks pass, including hidden public types and newly delivered runtime/types. Eager capture validation is not scored against an invented post-outcome requirement to repair invalid captured options with an override.",
+        "Only changed edit19 occurs, then exact required invocations20 regression,21 source types,22 delivered runtime and optional delivered compiler23 all exit0. Subsequent tools24\u201329 only read source/test/check state; no later modification occurs. The source revision accompanying final checks is unchanged.",
+        "Delivery truthfully reports 6/6 original tests and the raw delivered output of one file/3 passing tests, explicitly preserving the journal distinction that delivered counts were marked unobserved. It names the separately successful delivered compiler and separates original versus new-test scope. No source verification is falsely admitted.",
+        "All source navigation and validations stay in the checkout; no command writes, package installs, external artifacts or remote/history/reference solution retrieval appear. No empty-selector diagnostic is used."
+      ]
+    },
+    {
+      "name": "1-auth-expiry-contract-cline",
+      "hashes": {
+        "events.jsonl": "ed346454cb159fbf0fb77ef8789ef4c4e8b7e76ce3a5ddeadff715090a2b93aa",
+        "workspace.diff": "373ce0da2aa08394a9d78933608c9eba9bcc28faf949d48165bdc33739625052",
+        "score.json": "949b4f623b9f13d3a106279df4b139aa7bdbbc89b7aa0c00bb14b2f25626254c",
+        "tool-ledger.json": "0cfc5da0e23413b91eb8e3aa200c715aa2e8f5849abbd943a5fa9bad3bc2c97e"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "lastChangedEditIndex": 22,
+      "freshCheckIndices": {
+        "regression": 23,
+        "types": 24,
+        "delivered": 25,
+        "deliveredTypes": 26
+      },
+      "evidence": [
+        "Manual source review: public AuthErrorCode union and readonly AuthError.code are exported; the constructor keeps its original message-first signature with an optional default invalid_token code, calls super(message) and preserves name=AuthError and Error identity. Hidden compiler contract confirms readonly/public-type use. No runtime freeze of a TypeScript readonly field was requested.",
+        "authenticate validates finite/nonnegative clock values before token checks, preserves no-expiry tokens and the successful subject result, rejects empty subjects and nonfinite/negative supplied expirations with invalid_token, and compares nowMs >= (expiresAt + skew)*1000 for expired_token. Number.isFinite strictly rejects non-number runtime values. authorize forwards both arguments, catches only AuthError with its code/message and otherwise rethrows. Token objects are read without mutation.",
+        "Only errors/authenticate/index/authorize and one new API test change. Original tests, manifests/config and pinned dependencies are unchanged. All five independent endpoint checks pass; runtime behavior/public compiler contract and added-test compilation are checked separately. No finite oracle result is promoted to a general proof.",
+        "Initial apply_patch11 introduced wrong boundary expectations only in the new regression file; delivered15 and20 failed. apply_patch17 fixes the skewed near-boundary expectation; apply_patch22 fixes the unskewed near-boundary expectation. No implementation or supplied test was weakened. Final required invocations23 regression,24 source types,25 delivered runtime and optional26 delivered types all succeed after last edit22. Read_files27 and diff/status28 are read-only, with no final edits.",
+        "Delivery accurately reports inclusive expiration semantics, code/name/message compatibility, correct exception propagation, 6 original tests and 4 new tests, and the source-only versus delivered compiler distinction. No dependency installation or unsupported full-project proof is claimed.",
+        "Local listing/read/search/check commands only; tool3 git log -1 reads the single synthetic input commit, not remote/upstream history or a solution commit. No previous trial/control/oracle content or recovered solution is read. Missing sibling types.ts reads are ordinary local navigation misses.",
+        "Raw duration331691ms is retained. Observed event gaps include57.821s from text22:31:16.893Z to usage22:32:14.714Z and180.946s between reasoning22:32:55.612Z and22:35:56.558Z, during model-response iterations1/6. These are observed response intervals, not demonstrated harness/tool execution delays; provider/network/SDK causation remains unknown."
+      ]
+    },
+    {
+      "name": "1-auth-expiry-contract-reference",
+      "hashes": {
+        "events.jsonl": "7e4f2d9a30fcef9c7c78e327b4d9e84a4a620a575c1db318094ceba21a4f9f34",
+        "workspace.diff": "80937a424c25a13bccd1b735204029c826f9b4367f17d933a15c67a923063cd5",
+        "score.json": "d3d60ee31f1b8205abd30935526896633e1df1b437f5adfe713aaf7766fa91db",
+        "tool-ledger.json": "a943cc1168054a0a31a72b19373630acf88172ae204ab34a2570da5a4d1c175e"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "lastChangedEditIndex": 26,
+      "freshCheckIndices": {
+        "regression": 27,
+        "types": 28,
+        "delivered": 29,
+        "deliveredTypes": 30
+      },
+      "evidence": [
+        "Manual source review: clock arguments are strictly Number.isFinite/nonnegative; no-expiry tokens retain subject behavior. Empty subjects and malformed finite/type/negative expiration cases produce invalid_token; inclusive now >= (expiresAt + skew)*1000 yields expired_token. API forwards both optional clocks and catches only AuthError with code/message while rethrowing other exceptions. No input mutation occurs.",
+        "Public AuthErrorCode is exported from index; readonly code is declared and assigned in a message-first constructor whose optional default preserves old one-argument calls. super(message) and AuthError name remain intact. The hidden public type contract checks readonly/code exports; all five independent endpoint checks and new-test compilation pass.",
+        "Only four production paths plus a new package regression test changed. Original tests, protected manifests/config and pinned dependencies remain unchanged. Changed edit26 is the sole edit; exact required validations27/28/29 and optional delivered compiler30 succeed afterward. Diff/status31 and source/test reads32\u201335 are read-only, with no later formatting or source changes.",
+        "Delivery truthfully reports original 6/6 tests and raw delivered 6/6 while explicitly recording that harness counts were not observed. Separate delivered typecheck is named; no source-admission claim is made. All commands are local validations and diff/status; navigation stays local with no solution/history retrieval.",
+        "Duration233055ms is retained. An181.364s gap lies between reasoning events22:37:19.401Z and22:40:20.765Z; its provider/network/SDK/harness cause is unknown, so no causal attribution is made. No empty-selector recovery occurs."
+      ]
+    },
+    {
+      "name": "1-auth-expiry-contract-candidate",
+      "hashes": {
+        "events.jsonl": "421654e3d21f4a39a658212b6955e7dc7f5e17a805c79499d5f2d1ce7afa18cc",
+        "workspace.diff": "fcbae35fa9f964bb621404acad37121c93dd58610fb1e68d8def9237e74fc392",
+        "score.json": "34007aa1402050ea0374702327b47b261aff7be5481d1fd9ac99db8a0017a66d",
+        "tool-ledger.json": "d7cd058fb1302ff5a2f6929de32ae8f4fd50284484cf59ed760808c2617e5b9b"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "lastChangedEditIndex": 25,
+      "freshCheckIndices": {
+        "regression": 31,
+        "types": 32,
+        "deliveredTypes": 33,
+        "delivered": 34
+      },
+      "evidence": [
+        "Manual source review: public readonly AuthError.code and exported union preserve message-first constructor, optional invalid_token default, Error inheritance/name/message. authenticate validates nonfinite/negative clocks, reads expiration once, rejects malformed expiration and empty subject with invalid_token, preserves absent expiration and applies the exact inclusive skewed boundary for expired_token. API forwards clocks, catches only AuthError and rethrows unrelated failures; successful response shape and token inputs are preserved.",
+        "Four relevant production files and a new API regression file change; original tests, protected paths and pinned dependencies are unchanged. All five independent endpoint checks pass, including public type/readonly checks and added-test runtime/compiler. No full-program conclusion is inferred from those finite checks.",
+        "Changed edit24 installs error type and a temporary function body, then changed edit25 supplies complete clock-parameter signatures, API forwarding, public export and test before any validation. Source/test reads26\u201330 are read-only. Required regression31, source types32 and delivered runtime34 all pass on the final revision; delivered compiler33 passes separately. Status35 and finish36 follow, with no later edit or formatting.",
+        "Delivery accurately distinguishes 6/6 original tests, source compiler excluding tests, separate delivered compiler and raw runtime4/4 with wrapper reporting incompletely observed. It does not claim admitted source verification. Only project validations/status execute; no remote/history/reference solution or other trial content is retrieved. No empty-selector diagnostic is activated."
+      ]
+    },
+    {
+      "name": "2-request-correlation-candidate",
+      "hashes": {
+        "events.jsonl": "71373a8e76cc3f466c788e615757e49d19e518d496654f4c50ff0394449cdb66",
+        "workspace.diff": "7f498811d8a8590c4f07d8a12c8c9a0c18db29bdb70788f17260a2133ad93cbb",
+        "score.json": "a42b77793cc0134a762180d6bda0a059bb8de6bee3cbc592eada312985c0c0d2",
+        "tool-ledger.json": "19eaed595bc02c13d601444001db6ad142e3e9a591dc5ba9e204e601eaad337c"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "lastChangedEditIndex": 37,
+      "freshCheckIndices": {
+        "regression": 38,
+        "types": 39,
+        "delivered": 40,
+        "deliveredTypes": 41
+      },
+      "evidence": [
+        "Manual source review: exactly one case-insensitive own key is required; string or one-element readonly string array is extracted with a type guard, trimmed, and checked against the exact 1\u201364 ASCII format. Fallback remains unchanged and API header/body/log consistently reuse the context ID. Existing logger spread preserves other fields and caller objects. No out-of-type robustness requirement is added to acceptance.",
+        "Only context/API request and a new package test change. Original tests/config/manifests and pinned dependencies remain unchanged. All five independent endpoint checks pass, including public types and delivered-test compilation. Intentional runtime robustness coverage casts a numeric header case through unknown; this is a valid test input construction, not a compiler bypass in production.",
+        "edit26 adds implementation/test. typecheck:delivered30 detects the deliberately out-of-type numeric header fixture; edit31 is safely blocked because invented alias s? was supplied to a scoped patch, then whole-file patch32 adds an explicit intentional Headers cast. Delivered runtime35 then catches a new-test expectation wrongly rejecting a trim-valid value. edit37 changes only that case to whitespace-only. Exact final required checks38/39/40 and optional compiler41 all pass afterward; search42 and finish43 do not mutate source. No formatting or implementation edit follows validation.",
+        "Delivery accurately reports original6/6, delivered1file/4tests and separate delivered typecheck, and bounds coverage to original plus new tests while stating broader package scripts were not run. Raw journal unknown counts/admission remain distinct from observed Vitest output. No solution/history/outside-artifact retrieval or dependency install appears. No F45 empty selector is used."
+      ]
+    },
+    {
+      "name": "2-request-correlation-cline",
+      "hashes": {
+        "events.jsonl": "31137e2224928d976871b52eabb860c00fa9b533f97f0d72768a025e82c09fd6",
+        "workspace.diff": "a44d90573d89873e8de833c09c3ee5948a59535f33b72640cc68b7c9a8336210",
+        "score.json": "6b3581f936b3debacc3bf1cd02c72fd5361db124692f872fbe6713dba896bddb",
+        "tool-ledger.json": "82bd3724225bebb2b350c013bf7a125e4cb01822a2cc7c9bc5aa245edf6686ba"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "lastChangedEditIndex": 12,
+      "freshCheckIndices": {
+        "regression": 13,
+        "types": 14,
+        "delivered": 15,
+        "allTests": 16,
+        "deliveredTypes": 17
+      },
+      "evidence": [
+        "Manual source review: own-key scan rejects missing/duplicate case variants; string or single readonly-string-array extraction has a type guard, trimming and exact ASCII/length validation. Fallback remains unchanged and API response/header/log consistently reuse the selected context. Existing logger enrichment already preserves unrelated fields without mutation.",
+        "Two relevant production files and a new API regression test change; protected paths/original tests/pinned dependencies remain unchanged. All five independent endpoint checks pass, including hidden behavior/public types and new-test compilation. No extra out-of-type input criterion is introduced.",
+        "apply_patch6 adds implementation and new tests. Delivered9 and broad npm test10 fail because a newly added expectation rejects a valid leading-whitespace value that must trim successfully. apply_patch12 changes that new-test case to a truly invalid internal-space value. Final required invocations13 regression,14 source types,15 delivered runtime plus broad test16 and delivered types17 succeed after edit12. Only source reads18 and diff/status19 follow; no later code or formatting edit occurs.",
+        "Delivery accurately reports original4files/6tests, delivered1file/3tests, broader5files/9tests, source compiler exclusion of tests and separate delivered typecheck. A final git command uses ||true on ignored-status display; this does not mask any required validation, whose own outputs independently succeed. No package changes or solution/history retrieval is observed. No empty-selector recovery is used."
+      ]
+    },
+    {
+      "name": "2-request-correlation-reference",
+      "hashes": {
+        "events.jsonl": "66608cd669a89cbe55c6c547a614427ec1f92a8cf87e69dbfa3e52014c51bee0",
+        "workspace.diff": "c7b9d71b5bdcc372e6e7bd5ea7c5158ab29b16b760e2ee365ca5c467b83edc04",
+        "score.json": "1b2f4f83be1cd97d172fd39434a9c276d3da2ae90648a8fd2aca96b4bdace749",
+        "tool-ledger.json": "47bffdf053b76d62e30a245ab0f34eaf12af02cdcdacfcdbd64e07e8ad4de67a"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "lastChangedEditIndex": 28,
+      "freshCheckIndices": {
+        "regression": 29,
+        "types": 30,
+        "delivered": 31
+      },
+      "earlierCheckIndices": {
+        "deliveredTypes": 27
+      },
+      "evidence": [
+        "Manual source review: Object.entries iteration identifies one case-insensitive own key, guards string/one-element-string-array extraction, trims and applies the exact ASCII regex. Missing/ambiguous/malformed values preserve fallback. API context is consistently propagated and logger spread preserves other fields/input objects. Two production paths plus one new test change; original tests/config and pinned dependencies remain unchanged. All five final independent endpoint checks pass.",
+        "Implementation edit15 initially references headers while declaration still names _headers. Scoped signature patch19 is blocked with context_outside_symbol. Identical replace_body20/21/22 report changed:false and do not rename the parameter. File patch23 explicitly renames it. This is recorded as navigation/editing friction and model retries, not discarded or credited to F45.",
+        "Delivered26 fails a new expectation that wrongly rejects a trim-valid value. Optional delivered compiler27 passes on that earlier revision. New-test edit28 replaces only the literal with a genuinely malformed slash value. Required exact invocations29/30/31 pass after last edit28; read-only @changes32 and finish33 follow. No later source edit occurs.",
+        "Temporal limitation: typecheck:delivered27 was not rerun after literal-only new-test edit28, so it is earlier evidence, not a fresh final-test compiler invocation. The three expressly required final invocations are fresh; the unchanged final endpoint is independently compiled by the grader. Delivery says that optional compiler was run/passed, which is true, without claiming that all optional invocations followed the final edit. This is retained as a limitation, not silently upgraded to final-source admission.",
+        "Delivery correctly reports6 original tests and4 new delivered tests, describes aggregate exercised regression scope and explicitly limits broader integration coverage. No retrieved solution/history or source/config change outside the requested paths occurs. No empty-selector diagnostic is activated."
+      ]
+    },
+    {
+      "name": "2-csv-export-options-cline",
+      "hashes": {
+        "events.jsonl": "ca6f57d2d364dedcbab1d4b636fe2794dd89decf4cc7771c2bbf76a2afe8f382",
+        "workspace.diff": "7e99f23f15764d593fd1ae8458dc01d312371ac8e117af8e41832b7185a31fb9",
+        "score.json": "0fef615a58e4e1642bb7159fa5a6ef44d116299d2d6bcf6411881638f4c9b386",
+        "tool-ledger.json": "00bd330dea2a1a7338843661ffa7eba696e2212d39e91e810e0cafd216f5883a"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "lastChangedEditIndex": 7,
+      "freshCheckIndices": {
+        "regression": 8,
+        "types": 9,
+        "delivered": 10,
+        "deliveredTypes": 11,
+        "allTests": 12
+      },
+      "evidence": [
+        "Manual source review: captured resolved values are merged with defined per-call values, preserving false and undefined semantics without mutating options. Validation is applied to the merged result; delimiter has the exact code-unit/exclusion rules and newline is LF/CRLF. Encoding handles nullish/zero/false, quote-doubling and delimiter/quote/CR/LF, including headers. Public CsvOptions and API forwarding exist; input row/column order is retained.",
+        "Five relevant production files plus one package and one API test change; original tests/config/manifests and pinned dependencies are unchanged. All five independent endpoint checks pass including hidden contracts/public types and added-test compilation.",
+        "apply_patch6 adds implementation/tests; apply_patch7 separates resolving defaults from validating final merged options and fixes an extra expected empty-cell delimiter in its own new test before any validation. Required commands8 regression,9 source types,10 delivered runtime and optional compiler11 all pass after last edit7; npm test -- --run12 passes6files/10tests. Source reads13 and diff/status/readback14/15 are read-only. No later source or formatting change occurs.",
+        "Delivery matches raw results: original4files/6tests, delivered2files/4tests and broader6files/10tests. It explicitly distinguishes the source compiler excluding tests from the separately successful delivered typecheck and states no coverage percentage was generated. No unsupported admission is claimed.",
+        "All successful reads/writes/checks stay in the current checkout. git log --all -5 at5 prints only the sole synthetic input commit, not remote/upstream solutions; no other trial/control/oracle artifacts are retrieved. No empty-selector recovery is used."
+      ]
+    },
+    {
+      "name": "2-csv-export-options-reference",
+      "hashes": {
+        "events.jsonl": "c6b3749da04ee211abcbcc04fdb6ac1bd3a927bb0bfd6d2309d9519bcd45037e",
+        "workspace.diff": "08cfb0df423bed9002a1e07a117a271423a2d03715b780a0ab4f980d3d24dc9b",
+        "score.json": "6770b7ab1baca22d8b755e1a869e8201d1ffb9102f956bf07c4906cbae4af3ae",
+        "tool-ledger.json": "9a391da3e19868079cf23d1585716f0830830c49bcc7bc3b416672c7d297eb78"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "lastChangedEditIndex": 21,
+      "freshCheckIndices": {
+        "regression": 22,
+        "types": 23,
+        "delivered": 24,
+        "deliveredTypes": 25
+      },
+      "evidence": [
+        "Manual source review: captured options are resolved once into a separate object, then per-call defined values override them without mutation. Nullish fallback preserves false/empty strings within the declared optional types; invalid empty strings still reach validation. Final delimiter/newline rules match the request. Encoding preserves nullish/zero/false, doubles quotes and quotes delimiter/quote/CR/LF, including headers. API forwarding and public CsvOptions are present; rows/columns remain ordered and input objects are preserved.",
+        "Five production paths and one new package test change; original tests/config/manifests and pinned dependencies are unchanged. All five independent endpoint checks pass, including hidden runtime/public-type contracts and newly delivered test compilation. No unsupported out-of-type option requirement or universal proof is inferred.",
+        "Initial edit17 reads captured options live on each call; first validations18\u201320 pass. Subsequent edit21 restores the original capture-at-factory behavior via resolved snapshot and simplifies a new-test expected string. This implementation change occurs before the final repeated required invocations22 regression,23 source types,24 delivered runtime and optional compiler25, all exit0. Finish26 follows without another edit.",
+        "Delivery precisely reports6/6 original tests excluding the new file, raw delivered1file/3tests despite unknown structured outcome, and separate delivered typecheck. No source verification beyond observed invocations is claimed. All navigation/commands are local; no solution/history retrieval or dependency installation occurs. No empty-selection diagnostic is used."
+      ]
+    },
+    {
+      "name": "2-csv-export-options-candidate",
+      "hashes": {
+        "events.jsonl": "d04d5928c2d8db3dec1519e03fb146675e64ede67de439f419a7eff61d24c4ea",
+        "workspace.diff": "effcc7ec74682a5b3647f738e82e9de8b4db1cefd6c69263be2de6595466e062",
+        "score.json": "77612baa228f2000241bc050f16bca4a789e54493d6f28addc89385bc1ada401",
+        "tool-ledger.json": "73b3b2e61bb2e7a66dc96e69f98971183bed09aa0f0754e092630ca5fe353ae2"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "lastChangedEditIndex": 16,
+      "freshCheckIndices": {
+        "regression": 17,
+        "types": 18,
+        "delivered": 19,
+        "deliveredTypes": 20,
+        "packageTests": 21
+      },
+      "evidence": [
+        "Manual source review: resolved captured snapshot is kept separate from per-call objects; explicit undefined preserves captured values and false overrides true. Delimiter/newline helpers apply exact code-unit/LF/CRLF validation; cell/header encoding handles delimiter/quote/CR/LF and nullish/zero/false while preserving row/column order and objects. Public CsvOptions and optional API forwarding are provided.",
+        "Only five relevant production paths plus a new package regression file change; original tests/protected paths and pinned dependencies are unchanged. All five independent endpoint checks pass, including public types and new-test compilation. No finite oracle pass is treated as full source admission.",
+        "edit15 implements the change; edit16 fixes an extra space in its own new-test expectation before validation. Final required invocations17 regression,18 source types,19 delivered runtime and optional compiler20 all exit0 after last edit16. Package project task export:test21 correctly executes npm run test from packages/export and passes4/4, with no root-relative selector misuse. Read-only diff/status22 and finish23 follow; no later code/formatting edit occurs.",
+        "Delivery accurately identifies original6/6 excluding the new file, delivered3/3, separate delivered compiler and package4/4 with its actual cwd. Broader application behavior is explicitly left unverified. Navigation/read commands stay in checkout, with no remote/history/reference artifacts retrieved and no dependency installation. No F45 empty-selector diagnostic is activated."
+      ]
+    },
+    {
+      "name": "2-auth-expiry-contract-reference",
+      "hashes": {
+        "events.jsonl": "4abe183ec9f791d91a35364fff4ecc1481bbd8e10fdb699d6942f6d0c91334bb",
+        "workspace.diff": "4e0bbcc20ba940a5c73f2bed08e3d9a915865cd52ac11e5971dc06cc11d8ac82",
+        "score.json": "272336fbdb9e92caf44066e9d3088ace803ddf5af97e33ede9350a89d4a25cd1",
+        "tool-ledger.json": "477d53c776cccd535ecc01c15e4d7d9790c25f9344cf8d245ba5644408c685f7"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "lastChangedEditIndex": 24,
+      "freshCheckIndices": {
+        "regression": 25,
+        "types": 26,
+        "delivered": 27,
+        "deliveredTypes": 28
+      },
+      "evidence": [
+        "Manual source review: finite/nonnegative clocks are checked first with Number.isFinite, whose strict numeric behavior rejects malformed runtime values. No-expiry tokens preserve subject behavior; invalid expiration and empty subject yield invalid_token, while the exact inclusive (expiry + skew)*1000 boundary yields expired_token. API forwards both optional clocks, catches only AuthError with code/message, and rethrows other exceptions without mutating tokens.",
+        "AuthError retains its message-first constructor and optional invalid_token default, super(message), Error inheritance and AuthError name. Public AuthErrorCode union and readonly code are exported correctly, as checked by the independent public-type oracle. Four relevant production files plus a new package test change; originals/protected configuration/pinned dependencies remain unchanged. All five independent endpoint checks pass; this is finite evidence rather than whole-program verification.",
+        "One changed file-patch batch24 implements the feature and test. Exact required invocations25 regression,26 source types,27 delivered runtime and optional compiler28 all pass after that edit. Diff/status29 and finish30 follow, with no later source or formatting changes. A prior local read of index.ts# with empty symbol23 was blocked and had no effect.",
+        "Delivery correctly reports6/6 original tests and raw4/4 delivered tests while explicitly retaining the wrapper reporting-not-observed distinction. Separate delivered compilation is reported; no source-admission or broader integration claim is made. All reads/commands stay local with no recovered solution, remote/history artifacts or package installation. No F45 empty selection occurs."
+      ]
+    },
+    {
+      "name": "2-auth-expiry-contract-candidate",
+      "hashes": {
+        "events.jsonl": "032654315760ed6274e041ac84813f445809f5863ea553c4db782a63c9aaf792",
+        "workspace.diff": "084b13f62b85f5111352945ab2f21e57f91437683838e2ecbf9f9231f98e5f08",
+        "score.json": "ed80ce4dace4b63681d65368fd6adab878de3ca188d9cecb5366c886853a4ccc",
+        "tool-ledger.json": "a9dfcdb1c1ab9f6393e41b14585160636834776cd052d3c8cdae06c5e0774bd6"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "lastChangedEditIndex": 21,
+      "freshCheckIndices": {
+        "regression": 22,
+        "types": 23,
+        "delivered": 24,
+        "deliveredTypes": 25
+      },
+      "evidence": [
+        "Manual source review: clocks are Number.isFinite/nonnegative or RangeError; empty subjects and malformed expirations yield invalid_token; absent expiration preserves success; exact inclusive nowMs >= (expiry + skew)*1000 yields expired_token. API forwards defaulted optional clocks, catches only AuthError with code/message and rethrows unrelated exceptions. Source uses reads only and preserves token objects/success shape.",
+        "AuthErrorCode is exported publicly; code is readonly and assigned in a message-first constructor with an optional invalid_token default, preserving one-argument calls, Error identity, name and message. Four production paths plus a new package regression file change; original tests/protected manifests/config and pinned dependencies are unchanged. All five independent endpoint checks pass, including public types/readonly and new-test compilation; no universal proof is inferred.",
+        "Only changed batch21 implements the feature/tests. Exact required validations22 regression,23 source types,24 delivered runtime and optional25 delivered compiler all exit0 after edit21. Diff/check/status26 and finish27 follow; no later source or formatting edits occur. Intentional casts in negative regression inputs are test constructions and do not weaken production types.",
+        "Delivery accurately reports6/6 original tests, one delivered file/6 passing tests, separate delivered compilation and limited original-versus-new scope. The raw runtime output supports the test counts even though wrapper admission remains unverified/unknown; no broader source-proof claim is made. All reads and commands are local, with no remote/history/reference solution or previous trial retrieved and no package installation. No empty-selector diagnostic is activated."
+      ]
+    },
+    {
+      "name": "2-auth-expiry-contract-cline",
+      "hashes": {
+        "events.jsonl": "bea337ba855030898d319e041c52bfa5af1e1542f28fc97a8364542ede22d8c3",
+        "workspace.diff": "ceaefb7724586047b07c1959d6c0e25259bceef83f455f4c873a56277f5ba822",
+        "score.json": "ace303fcb27cfd6c06e06a034d2fe63c30748006650e8e60f7f9fe8307b3e53f",
+        "tool-ledger.json": "f40f0d205f9ab3f413c07d2387dc864242c84c08f35e6f2ea320155e63c7102b"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "lastChangedEditIndex": 6,
+      "freshCheckIndices": {
+        "regression": 7,
+        "types": 8,
+        "delivered": 9,
+        "deliveredTypes": 10,
+        "allTests": 11
+      },
+      "evidence": [
+        "Manual source review: finite nonnegative number predicate strictly guards clocks and provided expiration values; no-expiry tokens preserve success, empty subjects/malformed expiration yield invalid_token, and inclusive skew-adjusted boundary yields expired_token. Gateway forwards optional values to authenticate defaults, catches only AuthError with code/message, and rethrows unrelated errors without mutating tokens or changing successful response shape.",
+        "AuthErrorCode public export and readonly code preserve the original message-first constructor with optional invalid_token default, super(message), name and Error inheritance. Four production files plus one API regression file change; original tests/protected configuration/manifests and pinned dependencies are unchanged. All five independent endpoint checks pass, including readonly/public types and added-test compilation; finite checks do not establish whole-program verification.",
+        "Sole changed apply_patch6 implements source/tests. Final exact required commands7 regression,8 source types,9 delivered runtime and optional10 delivered compiler all pass afterward, followed by broad npm test11. Diff/status12, source read13 and final diff/status14 are read-only; no later source or formatting edit occurs.",
+        "Delivery accurately reports original4files/6tests, delivered1file/5tests, broad5files/11tests, the source compiler exclusion of tests and separate delivered compiler; no coverage percentage is claimed. Intentional malformed runtime casts in tests do not weaken production types. All listing/read/search/check operations target this checkout; no external/history/control/oracle/previous-trial solution retrieval or installation occurs. No empty-selector diagnostic is used."
+      ]
+    }
+  ]
+}

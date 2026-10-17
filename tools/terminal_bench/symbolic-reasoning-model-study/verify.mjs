@@ -12,7 +12,7 @@ import {resourcesKnown,relativeDelta as delta} from './resource-values.mjs';
 const protocol=await json(join(study,'protocol.json')),results=await json(join(study,'results.json')),summary=await json(join(study,'summary.json')),review=await json(join(study,'source-review.json'));
 assert.equal(protocol.order.length,18);assert.equal(results.rows.length,18);assert.equal(review.decisions.length,18);
 assert.deepEqual(results.rows.map(r=>r.name),protocol.order.map(r=>`${r.repeat}-${r.task}-${r.arm}`));
-const wireByTrial={},first={};
+const wireByTrial={},first={},secondaryByTrial={};
 for(const row of results.rows){
  const bytes=await readFile(join(study,'traces',row.name+'.json.gz'));assert.equal(sha(bytes),row.traceSha256);const archive=JSON.parse(gunzipSync(bytes));assert.equal(archive.name,row.name);
  const read=name=>{const f=archive.files[name];assert.ok(f,name);const b=Buffer.from(f.base64,'base64');assert.equal(b.length,f.bytes);assert.equal(sha(b),f.sha256);return b;};
@@ -36,10 +36,25 @@ for(const row of results.rows){
  assert.deepEqual(row.symbolicObservations,symbolic);assert.equal(row.symbolicCalls,symbolic.length);assert.equal(row.symbolicCounterexamples,symbolic.filter(item=>item.output?.data?.status==='counterexample').length);assert.equal(row.symbolicUnknowns,symbolic.filter(item=>item.output?.data?.status==='unknown').length);assert.equal(row.symbolicBlockedCalls,symbolic.filter(item=>item.output?.status==='blocked').length);
  const usage=reconcileUsage(raw.usage,events.filter(e=>e.type==='usage').map(e=>e.payload?.usage),iteration);assert.deepEqual(row.usage,usage);
  const wire=archive.files['wire-contracts.jsonl']?read('wire-contracts.jsonl').toString().trim().split('\n').filter(Boolean).map(JSON.parse):[];wireByTrial[row.name]=wire;first[row.name]=wire.find(w=>!w.budgetRejected);
- const schemas=[];for(const hash of new Set(wire.filter(w=>!w.budgetRejected).map(w=>w.toolsSha256))){const bytes=read('schema-'+hash+'.json');schemas.push({sha256:hash,bytes:bytes.length,...schemaExposure(bytes)});}assert.deepEqual(row.schemas,schemas);assert.ok(schemas.every(schema=>schema.analyzeExposed===(row.arm==='candidate')&&schema.runTaskPresent===(row.arm!=='cline')));assert.equal(row.requestBodyBytes,wire.filter(w=>!w.budgetRejected).reduce((sum,w)=>sum+w.requestBytes,0));
+ const schemas=[];for(const hash of new Set(wire.filter(w=>!w.budgetRejected).map(w=>w.toolsSha256))){const bytes=read('schema-'+hash+'.json');schemas.push({sha256:hash,bytes:bytes.length,...schemaExposure(bytes)});}assert.deepEqual(row.schemas,schemas);const exposurePassed=schemas.every(schema=>schema.analyzeExposed===(row.arm==='candidate')&&schema.runTaskPresent===(row.arm!=='cline'));assert.ok(exposurePassed);assert.equal(row.schemaExposurePassed,exposurePassed);assert.equal(row.requestBodyBytes,wire.filter(w=>!w.budgetRejected).reduce((sum,w)=>sum+w.requestBytes,0));
  for(const w of wire){assert.equal(w.model,protocol.model);assert.equal(w.reasoning?.effort,protocol.effort);assert.equal(w.maximumOutputTokens,8192);assert.equal(w.byteLimit,500000);assert.equal(sha(read('schema-'+w.toolsSha256+'.json').toString().trimEnd()),w.toolsSha256);assert.equal(sha(read('prompt-'+w.promptSha256+'.json').toString().trimEnd()),w.promptSha256);}
- const d=review.decisions.find(d=>d.name===row.name);assert.deepEqual(d.hashes,row.hashes);assert.equal(d.addedTestsPassed,grade.addedTests.length>0&&grade.deliveredChecks.every(c=>c.exitCode===0));
- assert.equal(d.symbolicEvidence.length,row.symbolicObservations.length);const meaningful=row.symbolicObservations.filter(observation=>{const judgment=d.symbolicEvidence.find(item=>item.toolIndex===observation.index);assert.ok(judgment);const status=observation.output?.data?.status;return judgment.propertyRelevant&&(status==='bounded_no_counterexample'||status==='counterexample'&&judgment.witnessExercisedInRealTest);}).length;assert.equal(row.meaningfulSymbolicCalls,meaningful);
+ const d=review.decisions.find(decision=>decision.name===row.name);assert.ok(d,'Missing source review: '+row.name);assert.deepEqual(d.hashes,row.hashes);assert.equal(d.addedTestsPassed,grade.addedTests.length>0&&grade.deliveredChecks.every(c=>c.exitCode===0));
+ for(const key of ['sourceBehaviorPassed','addedTestsPassed','finalSourceChecksPassed','noSolutionRetrieval','fullRequestPassed','symbolicClaimsAccurate','dependencyIntegrityPassed'])assert.equal(typeof d[key],'boolean',row.name+': '+key);
+ assert.ok(Array.isArray(d.evidence)&&d.evidence.length>0);assert.ok(Array.isArray(d.symbolicEvidence));assert.equal(d.symbolicEvidence.length,symbolic.length);assert.equal(new Set(d.symbolicEvidence.map(judgment=>judgment.toolIndex)).size,symbolic.length,'Duplicate symbolic review index');
+ const meaningful=symbolic.filter(observation=>{const judgment=d.symbolicEvidence.find(item=>item.toolIndex===observation.index);assert.ok(judgment);for(const key of ['propertyRelevant','witnessExercisedInRealTest'])assert.equal(typeof judgment[key],'boolean',row.name+': symbolic '+key);assert.ok(Array.isArray(judgment.evidence)&&judgment.evidence.length>0);const status=observation.output?.data?.status;return judgment.propertyRelevant&&(status==='bounded_no_counterexample'||status==='counterexample'&&judgment.witnessExercisedInRealTest);}).length;assert.equal(row.meaningfulSymbolicCalls,meaningful);
+ const directSolverCommands=ledger.filter(tool=>/\bz3\b|BLAME_Z3_PATH/.test(JSON.stringify(tool.input??{}))).map(tool=>({tool:tool.tool,input:tool.input,output:tool.output}));assert.deepEqual(row.directSolverCommands,directSolverCommands);
+ // Derive secondary totals from reconstructed events/wire and reviewed judgments,
+ // independently of the publisher's aggregates and the stored row counters.
+ secondaryByTrial[row.name]={
+  symbolicCalls:symbolic.length,
+  symbolicCounterexamples:symbolic.filter(observation=>observation.output?.data?.status==='counterexample').length,
+  symbolicUnknowns:symbolic.filter(observation=>observation.output?.data?.status==='unknown').length,
+  symbolicBlockedCalls:symbolic.filter(observation=>observation.output?.status==='blocked').length,
+  boundedNoCounterexamples:symbolic.filter(observation=>observation.output?.data?.status==='bounded_no_counterexample').length,
+  meaningfulSymbolicCalls:meaningful,
+  requestBodyBytes:wire.filter(request=>!request.budgetRejected).reduce((total,request)=>total+request.requestBytes,0),
+  schemaBytes:schemas.map(schema=>schema.bytes),schemaExposurePassed:exposurePassed,
+ };
  const source=row.independentFunctionalSuccess&&d.sourceBehaviorPassed&&d.addedTestsPassed&&d.finalSourceChecksPassed&&d.noSolutionRetrieval&&d.dependencyIntegrityPassed;
  assert.equal(row.sourceAuditedCompletion,source);assert.equal(typeof d.symbolicClaimsAccurate,'boolean');assert.equal(typeof d.dependencyIntegrityPassed,'boolean');assert.equal(row.auditedCompletion,source&&d.fullRequestPassed&&d.symbolicClaimsAccurate);assert.ok(grade.dependencyIntegrity);
 }
@@ -50,6 +65,13 @@ assert.deepEqual(protocol.flagByArm,{reference:'false',candidate:'true',cline:'f
 const accounting=reserveTrialCosts(results.rows,wireByTrial,protocol.budgets);assert.deepEqual(accounting,await json(join(study,'accounting.json')));assert.deepEqual(summary.accounting,accounting);
 const prior=await json(join(study,'prior-budget.json'));assert.ok(Math.abs(summary.cumulativeAccountedUsd-prior.accountedUsd-accounting.accountedUsd)<1e-8);
 for(const arm of protocol.arms){const rows=results.rows.filter(r=>r.arm===arm),s=summary.arms[arm];assert.equal(rows.length,6);assert.equal(s.audited,rows.filter(r=>r.auditedCompletion).length);assert.equal(s.official,rows.filter(r=>r.officialRuntimeSuccess).length);assert.equal(s.selected,rows.filter(r=>r.selectedCheckSuccess).length);assert.equal(s.independent,rows.filter(r=>r.independentFunctionalSuccess).length);assert.equal(s.meaningfulSymbolicCalls,rows.reduce((sum,row)=>sum+row.meaningfulSymbolicCalls,0));for(const [key,target]of [['input','input'],['output','output'],['cost','sdkEstimatedUsd'],['cacheRead','cacheRead'],['cacheWrite','cacheWrite']])assert.equal(s[target],rows.every(r=>typeof r.usage[key]==='number'&&Number.isFinite(r.usage[key]))?rows.reduce((n,r)=>n+r.usage[key],0):null);}
+for(const arm of protocol.arms){
+ const observed=results.rows.filter(row=>row.arm===arm).map(row=>secondaryByTrial[row.name]);
+ for(const key of ['symbolicCalls','symbolicCounterexamples','symbolicUnknowns','symbolicBlockedCalls','boundedNoCounterexamples','meaningfulSymbolicCalls','requestBodyBytes'])assert.equal(summary.arms[arm][key],observed.reduce((total,row)=>total+row[key],0),arm+': '+key);
+ const sizes=[...new Set(observed.flatMap(row=>row.schemaBytes))].sort((left,right)=>left-right);
+ assert.deepEqual(summary.arms[arm].schemaBytes.slice().sort((left,right)=>left-right),sizes,arm+': distinct schema sizes');
+ assert.ok(observed.every(row=>row.schemaExposurePassed),arm+': unexpected schema exposure');
+}
 for(const [group,predicate]of [['comparisons',row=>row.auditedCompletion],['selectedComparisons',row=>row.selectedCheckSuccess],['functionalComparisons',row=>row.independentFunctionalSuccess]])for(const other of ['reference','cline']){
  const selected=results.rows.filter(row=>row.arm==='candidate'&&predicate(row)&&results.rows.some(base=>base.arm===other&&base.repeat===row.repeat&&base.task===row.task&&predicate(base)));
  const report=summary[group]['candidate/'+other];assert.equal(report.pairs,selected.length);
@@ -65,5 +87,5 @@ for(const [name,hash]of Object.entries((await json(join(study,'input-archives.js
 assert.equal(summary.qualityGate,summary.arms.candidate.audited>=summary.arms.reference.audited);assert.equal(summary.mechanismGate,summary.arms.candidate.meaningfulSymbolicCalls>0);
 const c=summary.comparisons['candidate/reference'];assert.equal(summary.resourceGate,summary.qualityGate&&c.pairs>=4&&c.tokenDelta!==null&&c.tokenDelta<0&&c.costDelta!==null&&c.costDelta<0&&c.durationDelta!==null&&c.durationDelta<=0.1);
 assert.equal(summary.modelBenefitDemonstrated,summary.mechanismGate&&summary.qualityGate&&(summary.arms.candidate.audited>summary.arms.reference.audited||summary.resourceGate));
-await save(join(study,'verification.json'),{phase:'F50',trials:18,rawArchiveHashes:true,ledgerAndUsageRecomputed:true,sourceReviewHashBound:true,symbolicMechanismRecomputed:true,optionalSchemaExposureVerified:true,solverBinaryAndLibrariesBound:true,executableAblationVerified:true,priorReservationsPreserved:true,modelRequests:0});
+await save(join(study,'verification.json'),{phase:'F50',trials:18,rawArchiveHashes:true,ledgerAndUsageRecomputed:true,sourceReviewHashBound:true,symbolicMechanismRecomputed:true,secondarySymbolicAggregatesRecomputed:true,manualSymbolicJudgmentsValidated:true,schemaOverheadRecomputed:true,optionalSchemaExposureVerified:true,solverBinaryAndLibrariesBound:true,executableAblationVerified:true,priorReservationsPreserved:true,modelRequests:0});
 console.log('F50: 18 immutable traces, receipts, acceptance and executable isolation verified');
