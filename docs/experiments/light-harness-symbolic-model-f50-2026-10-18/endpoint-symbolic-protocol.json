@@ -1,0 +1,228 @@
+{
+  "schemaVersion": 1,
+  "phase": "F50-post-hoc-endpoint-symbolic",
+  "preparedAtUTC": "2026-10-17T23:13:17.002999+00:00",
+  "executionAtPreparation": "not_run",
+  "knownDiagnostic": true,
+  "confirmation": false,
+  "selectedAfterCompletedTrials": 7,
+  "expectedEndpoints": 18,
+  "expectedAnalyses": 24,
+  "modelRequests": 0,
+  "agentSuccessesAdded": 0,
+  "selection": "Targets and properties were requested after seven completed F50 assignments; actual registration occurred with 11 completed outcomes available. This is a known post-hoc diagnostic, not confirmation. Uniform diagnostic of all 18 natural unchanged endpoints, all three arms and both repetitions; no forced model use, source recovery, patch repair, query adaptation, exclusions or new agent successes. Do not pool with original F50 experimental success/resource outcomes.",
+  "parentProtocolSha256": "102ec804dc7887787855e566a34720f3f9be73af1d413b4ce5ff789c1b8abb6c",
+  "parentSnapshotSha256": "4c91b6f792a18afcc51bf59d35899f80693ff5cdb58ee4a38c82c65fa0bdbcce",
+  "scriptSha256": "91b33924a5b1757e417d071ca0fafb1d4dc722f463cebf8a2474f0f6214e7c88",
+  "environment": {
+    "node": "v24.19.0",
+    "platform": "linux",
+    "architecture": "x64",
+    "typescript": "5.9.3",
+    "tsx": "4.20.6",
+    "solverPackage": "z3-solver==4.15.4.0",
+    "solver": {
+      "path": "/tmp/blame-z3-f46/bin/z3",
+      "resolvedPath": "/tmp/blame-z3-f46/bin/z3",
+      "sha256": "1bfaf5bbe81fd0b7800500ee08eef426aaabe18f8b9c4c4c32adffcd72f86cd5",
+      "version": "Z3 version 4.15.4 - 64 bit",
+      "package": "z3-solver==4.15.4.0",
+      "libraries": {
+        "/lib/x86_64-linux-gnu/libc.so.6": {
+          "realpath": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+          "sha256": "fa430b8f298f817a266046af84a77533185ad6fc4406c7d3787b5a0a0c207826"
+        },
+        "/lib/x86_64-linux-gnu/libgcc_s.so.1": {
+          "realpath": "/usr/lib/x86_64-linux-gnu/libgcc_s.so.1",
+          "sha256": "30c61ab012a4241bed033725a09b61f5fdd3bb7df95ee852d0b096520524c7af"
+        },
+        "/lib/x86_64-linux-gnu/libm.so.6": {
+          "realpath": "/usr/lib/x86_64-linux-gnu/libm.so.6",
+          "sha256": "6d567d53e895273ca14a1f9dc164fc6c8d39aed2f60aa46a733c2784228915f3"
+        },
+        "/lib/x86_64-linux-gnu/libpthread.so.0": {
+          "realpath": "/usr/lib/x86_64-linux-gnu/libpthread.so.0",
+          "sha256": "85e21f7dba0394411d00959176fd18b470e575b0b05f1f4f41e5636802ce0500"
+        },
+        "/lib/x86_64-linux-gnu/libstdc++.so.6": {
+          "realpath": "/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33",
+          "sha256": "972bb2a18b71140dab0240f8a1f68ab3fb1d56bcd4c4f824a91b70888faf5a00"
+        },
+        "/lib64/ld-linux-x86-64.so.2": {
+          "realpath": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+          "sha256": "438c546d8e8cc48496bf3a95f753051afd9db66a629a74e31a9ded71586b56e0"
+        }
+      },
+      "virtualDependencies": [
+        "linux-vdso.so.1 is kernel-provided and has no file hash; kernel release is recorded separately"
+      ]
+    },
+    "analysisTimeoutMs": 2500,
+    "witnessTimeoutMs": 3000,
+    "witnessOutputBytes": 16384,
+    "witnessEnvironment": {
+      "LANG": "C.UTF-8",
+      "TZ": "UTC",
+      "NODE_NO_WARNINGS": "1"
+    },
+    "childCredentialsInherited": false,
+    "networkOrDependencyInstallation": false,
+    "originalStudyScriptsVerified": true,
+    "copiedDependencyFilesVerified": true
+  },
+  "requests": [
+    {
+      "task": "credit-remainder",
+      "id": "availableCredit",
+      "parameters": [
+        "balance",
+        "reserved",
+        "limit"
+      ],
+      "interpretation": "Direct isolated scalar contract: normalize every negative argument to zero and clamp the remainder to zero.",
+      "input": {
+        "kind": "analyze",
+        "target": "packages/credit/src/remainder.ts#availableCredit",
+        "inputs": {
+          "balance": {
+            "min": -3,
+            "max": 3
+          },
+          "reserved": {
+            "min": -3,
+            "max": 3
+          },
+          "limit": {
+            "min": -3,
+            "max": 3
+          }
+        },
+        "assertion": "result === (((limit > 0 ? limit : 0) - (balance > 0 ? balance : 0) - (reserved > 0 ? reserved : 0)) > 0 ? ((limit > 0 ? limit : 0) - (balance > 0 ? balance : 0) - (reserved > 0 ? reserved : 0)) : 0)",
+        "timeoutMs": 2500
+      }
+    },
+    {
+      "task": "inclusive-tier-allocation",
+      "id": "lowerTierUnits",
+      "parameters": [
+        "first",
+        "last",
+        "boundary"
+      ],
+      "interpretation": "Direct isolated scalar contract for lower-tier closed-interval counts; upperTierUnits and consumer composition are outside this query.",
+      "input": {
+        "kind": "analyze",
+        "target": "packages/tiers/src/lower.ts#lowerTierUnits",
+        "inputs": {
+          "first": {
+            "min": -3,
+            "max": 3
+          },
+          "last": {
+            "min": -3,
+            "max": 3
+          },
+          "boundary": {
+            "min": -3,
+            "max": 3
+          }
+        },
+        "assertion": "result === (first > last ? 0 : ((last < boundary ? last : boundary) >= first ? (last < boundary ? last : boundary) - first + 1 : 0))",
+        "timeoutMs": 2500
+      }
+    },
+    {
+      "task": "inclusive-tier-allocation",
+      "id": "tierCost",
+      "parameters": [
+        "lowerUnits",
+        "upperUnits",
+        "lowerRate",
+        "upperRate"
+      ],
+      "interpretation": "Interpretation-sensitive broader scalar diagnostic: the user explicitly requires normalized rates in the quotation path, but does not unambiguously require tierCost itself to normalize if its caller already does so. A scalar counterexample here alone is not an original-task failure.",
+      "input": {
+        "kind": "analyze",
+        "target": "packages/tiers/src/cost.ts#tierCost",
+        "inputs": {
+          "lowerUnits": {
+            "min": 0,
+            "max": 3
+          },
+          "upperUnits": {
+            "min": 0,
+            "max": 3
+          },
+          "lowerRate": {
+            "min": -3,
+            "max": 3
+          },
+          "upperRate": {
+            "min": -3,
+            "max": 3
+          }
+        },
+        "assertion": "result === lowerUnits * (lowerRate > 0 ? lowerRate : 0) + upperUnits * (upperRate > 0 ? upperRate : 0)",
+        "timeoutMs": 2500
+      }
+    },
+    {
+      "task": "signed-window-overlap",
+      "id": "overlapLength",
+      "parameters": [
+        "startA",
+        "endA",
+        "startB",
+        "endB"
+      ],
+      "interpretation": "Direct isolated scalar contract for signed half-open intervals; shifted consumer and threshold composition are outside this query.",
+      "input": {
+        "kind": "analyze",
+        "target": "packages/windows/src/overlap.ts#overlapLength",
+        "inputs": {
+          "startA": {
+            "min": -3,
+            "max": 3
+          },
+          "endA": {
+            "min": -3,
+            "max": 3
+          },
+          "startB": {
+            "min": -3,
+            "max": 3
+          },
+          "endB": {
+            "min": -3,
+            "max": 3
+          }
+        },
+        "assertion": "result === (endA <= startA || endB <= startB ? 0 : ((endA < endB ? endA : endB) > (startA > startB ? startA : startB) ? (endA < endB ? endA : endB) - (startA > startB ? startA : startB) : 0))",
+        "timeoutMs": 2500
+      }
+    }
+  ],
+  "execution": "Require --workers-complete, driver-exit.complete=true and the 18 published hash-bound original endpoint records. Reconstruct unchanged original patches on pristine input and restore protected checks identically to the original grader, without changing model production source. Run LightWorkspace.runTask(kind=analyze) through the identical frozen F50 runtime on all arms. Keep unsupported Math calls/helpers, renamed parameters, unknown, missing targets and timeouts; never rewrite source to fit the translator. Verify @checks and every captured source/config hash are unchanged.",
+  "witnessReplay": "For each returned witness only, extract the exact typed function declaration or exact const function initializer from the captured source and execute it as an isolated TypeScript module using pinned tsx in a child Node process. Preserve its body; no import/module initialization, inlining, source repair or raw SMT/JavaScript eval. Fixed JavaScript expectations implement the same four properties. Record source/declaration/witness/child hashes, result, exit and bounded output sizes/hashes. Label isolated_actual_js, not original-module integration. A failed replay remains visible.",
+  "archiving": "Keep 24 bounded observations/reasons/result sizes/hashes, witness details when present, actual-JS replay receipts, before/after source and @checks hashes, runtime/solver/dependency bindings and complete counts. Do not archive raw SMT or treat diagnostic time as comparative model performance. Durable partial JSONL remains visible if an infrastructure assertion stops the diagnostic.",
+  "limitations": [
+    "Post-hoc known diagnostic selected after seven results, not new-task or new-project confirmation.",
+    "All 18 assignments are retained, including failures, timeouts and unsupported natural solutions.",
+    "Small finite integer domains cover only the selected isolated function, not imports, callers, project behavior, floating-point JavaScript or the full user request.",
+    "A bounded absence of a counterexample grants no tests, validation admission, source verification or user acceptance.",
+    "tierCost rate normalization is a broader interpretation-sensitive scalar contract; counterexamples cannot alone change original audited task success.",
+    "The researcher supplies properties and domains uniformly; these calls do not establish spontaneous agent reasoning or additional model successes.",
+    "Actual-JS witness replay isolates the selected original function body; it does not execute the original source module or prove cross-file integration.",
+    "No token, model cost or comparative performance claim follows from this local diagnostic."
+  ],
+  "selectionRequestedAfterCompletedTrials": 7,
+  "outcomesAvailableAtRegistration": 11,
+  "registrationCountSource": {
+    "path": "campaign/analysis.json",
+    "sha256": "0c9c7bd4bec84324fa459125cf37d809e3e76c046f63d0b23d7bec544e2e2b34",
+    "countOnlyInspected": true,
+    "recordedAtUTC": "2026-10-17T23:15:51.382405+00:00"
+  },
+  "registeredAtUTC": "2026-10-17T23:15:51.382405+00:00",
+  "sourceHashMethod": "Every captured tracked/untracked regular source/config file has a SHA-256 before and after. Tracked deleted paths remain explicit absent entries. Captured symbolic links, if any, bind their link-target string with a symlink: SHA-256 prefix rather than reading dependency directories or escaping the source tree."
+}
