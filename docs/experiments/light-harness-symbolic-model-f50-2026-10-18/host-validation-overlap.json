@@ -1,0 +1,14 @@
+{
+  "modelRequestsSoFar": 0,
+  "heavyVerificationCompletedBeforeWorkers": true,
+  "finalLogWritesUTC": {
+    "/tmp/blame-f46-runtime-final.log": "2026-10-17T22:18:28.905005+00:00",
+    "/tmp/blame-f50-prebuild.log": "2026-10-17T22:55:15.711981+00:00",
+    "/tmp/blame-f50-provider-schema.log": "2026-10-17T22:55:29.563745+00:00",
+    "/tmp/blame-f50-symbolic-payload.log": "2026-10-17T22:55:32.187700+00:00",
+    "/tmp/blame-f50-test-lint.log": "2026-10-17T22:55:27.603777+00:00",
+    "/tmp/blame-f47-replay-final.log": "2026-10-17T22:57:17.925910+00:00",
+    "/tmp/blame-f50-environment-smoke.log": "2026-10-17T22:57:52.749324+00:00"
+  },
+  "note": "All scheduled build/test/solver/endpoint replay work completed before F50 workers. Light inspection and manual reviews may overlap; no other benchmark or compiler workload is scheduled. Host is nonexclusive; external contention unknown."
+}

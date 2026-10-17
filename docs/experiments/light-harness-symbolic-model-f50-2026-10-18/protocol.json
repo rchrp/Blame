@@ -1,0 +1,292 @@
+{
+  "phase": "F50",
+  "registeredAtUTC": "2026-10-17T22:57:57.214Z",
+  "readyForModel": true,
+  "sourceHead": "12166e172e16c6addf194e25a3b2999a04257505",
+  "provider": "openai-codex",
+  "model": "gpt-5.6-luna",
+  "effort": "high",
+  "apiUrl": "https://api.blame.so/api/v1",
+  "projects": [
+    {
+      "name": "integer-policy-kit",
+      "constructed": true,
+      "archiveSha256": "1fc443f16007681989bb1dba137aa9ac5e451469e8a488bc8036ad9801f9189e"
+    }
+  ],
+  "arms": [
+    "reference",
+    "candidate",
+    "cline"
+  ],
+  "repetitions": 2,
+  "tasks": [
+    {
+      "id": "credit-remainder",
+      "project": "integer-policy-kit",
+      "request": "Correct credit reservation and debit quotation across packages/credit and apps/policy. availableCredit(balance, reserved, limit) must normalize each argument below zero to zero, subtract the normalized balance and reservation from the normalized limit, and return zero when that remainder is negative. approveDebit(balance, reserved, limit, requested) must normalize negative requested amounts to zero and approve at most the available credit, without changing any input. quoteDebit must return {approved, remaining, denied}: approved from that allocation; remaining is the available credit after this approved debit, including the existing balance and reservation; denied is the normalized requested amount minus approved. Keep the exact four-argument parameter order and numeric return types of the public scalar functions. Update the consumer to use the same policy rather than a separate formula.",
+      "paths": [
+        "packages/credit/src/remainder.ts",
+        "packages/credit/src/allocation.ts",
+        "apps/policy/src/debit.ts"
+      ],
+      "instruction": "Correct credit reservation and debit quotation across packages/credit and apps/policy. availableCredit(balance, reserved, limit) must normalize each argument below zero to zero, subtract the normalized balance and reservation from the normalized limit, and return zero when that remainder is negative. approveDebit(balance, reserved, limit, requested) must normalize negative requested amounts to zero and approve at most the available credit, without changing any input. quoteDebit must return {approved, remaining, denied}: approved from that allocation; remaining is the available credit after this approved debit, including the existing balance and reservation; denied is the normalized requested amount minus approved. Keep the exact four-argument parameter order and numeric return types of the public scalar functions. Update the consumer to use the same policy rather than a separate formula. Work only in this checkout. Do not retrieve remote history, solutions or previous study artifacts. Preserve original tests, package manifests, locks, configuration and supplied checks. Add a new *.test.ts regression file alongside the relevant package source. Preserve unrelated behavior and public types. Do not install dependencies. All numeric arguments in this request are integers in [-1000000,1000000]; behavior outside that domain is unspecified. After the final source edit run npm run test:study:regression, npm run test:study:types and npm run test:study:delivered. The compiler script excludes test files; typecheck:delivered is available to check them. Report actual commands, outcomes and coverage limits accurately.\n",
+      "requiredChecks": [
+        {
+          "id": "regression",
+          "task": "test:study:regression"
+        },
+        {
+          "id": "types",
+          "task": "test:study:types"
+        },
+        {
+          "id": "delivered",
+          "task": "test:study:delivered"
+        }
+      ]
+    },
+    {
+      "id": "inclusive-tier-allocation",
+      "project": "integer-policy-kit",
+      "request": "Correct inclusive tier accounting across packages/tiers and apps/policy. first and last identify a closed interval of signed integer unit IDs; first > last represents an empty request. IDs <= boundary belong to the lower tier and IDs > boundary to the upper tier. lowerTierUnits(first,last,boundary) and upperTierUnits(first,last,boundary) must return the respective nonnegative counts, including both interval endpoints, with their sum equal to the full requested count. Quote both counts and totalCost through quoteTierUsage(first,last,boundary,lowerRate,upperRate). Normalize negative rates to zero, price each tier with its own rate and include the upper tier in the total. Keep the exact parameter order and public numeric scalar return types. Preserve empty-interval behavior.",
+      "paths": [
+        "packages/tiers/src/lower.ts",
+        "packages/tiers/src/upper.ts",
+        "packages/tiers/src/cost.ts",
+        "apps/policy/src/tiers.ts"
+      ],
+      "instruction": "Correct inclusive tier accounting across packages/tiers and apps/policy. first and last identify a closed interval of signed integer unit IDs; first > last represents an empty request. IDs <= boundary belong to the lower tier and IDs > boundary to the upper tier. lowerTierUnits(first,last,boundary) and upperTierUnits(first,last,boundary) must return the respective nonnegative counts, including both interval endpoints, with their sum equal to the full requested count. Quote both counts and totalCost through quoteTierUsage(first,last,boundary,lowerRate,upperRate). Normalize negative rates to zero, price each tier with its own rate and include the upper tier in the total. Keep the exact parameter order and public numeric scalar return types. Preserve empty-interval behavior. Work only in this checkout. Do not retrieve remote history, solutions or previous study artifacts. Preserve original tests, package manifests, locks, configuration and supplied checks. Add a new *.test.ts regression file alongside the relevant package source. Preserve unrelated behavior and public types. Do not install dependencies. All numeric arguments in this request are integers in [-1000000,1000000]; behavior outside that domain is unspecified. After the final source edit run npm run test:study:regression, npm run test:study:types and npm run test:study:delivered. The compiler script excludes test files; typecheck:delivered is available to check them. Report actual commands, outcomes and coverage limits accurately.\n",
+      "requiredChecks": [
+        {
+          "id": "regression",
+          "task": "test:study:regression"
+        },
+        {
+          "id": "types",
+          "task": "test:study:types"
+        },
+        {
+          "id": "delivered",
+          "task": "test:study:delivered"
+        }
+      ]
+    },
+    {
+      "id": "signed-window-overlap",
+      "project": "integer-policy-kit",
+      "request": "Correct signed half-open interval overlap across packages/windows and apps/policy. overlapLength(startA,endA,startB,endB) must return the nonnegative integer length shared by [startA,endA) and [startB,endB), including when endpoints are negative. An interval with end <= start is empty and adjacency has zero overlap. overlapsAtLeast(startA,endA,startB,endB,minimum) is true only when minimum > 0 and the overlap length is at least minimum, including equality. inspectShiftedWindow(startA,endA,startB,endB,offset,minimum) must shift both B endpoints by offset exactly once and return {overlap, qualifies} using those same shifted intervals and the package policy. Keep the exact parameter order and numeric/boolean public scalar return types.",
+      "paths": [
+        "packages/windows/src/overlap.ts",
+        "packages/windows/src/qualifies.ts",
+        "apps/policy/src/windows.ts"
+      ],
+      "instruction": "Correct signed half-open interval overlap across packages/windows and apps/policy. overlapLength(startA,endA,startB,endB) must return the nonnegative integer length shared by [startA,endA) and [startB,endB), including when endpoints are negative. An interval with end <= start is empty and adjacency has zero overlap. overlapsAtLeast(startA,endA,startB,endB,minimum) is true only when minimum > 0 and the overlap length is at least minimum, including equality. inspectShiftedWindow(startA,endA,startB,endB,offset,minimum) must shift both B endpoints by offset exactly once and return {overlap, qualifies} using those same shifted intervals and the package policy. Keep the exact parameter order and numeric/boolean public scalar return types. Work only in this checkout. Do not retrieve remote history, solutions or previous study artifacts. Preserve original tests, package manifests, locks, configuration and supplied checks. Add a new *.test.ts regression file alongside the relevant package source. Preserve unrelated behavior and public types. Do not install dependencies. All numeric arguments in this request are integers in [-1000000,1000000]; behavior outside that domain is unspecified. After the final source edit run npm run test:study:regression, npm run test:study:types and npm run test:study:delivered. The compiler script excludes test files; typecheck:delivered is available to check them. Report actual commands, outcomes and coverage limits accurately.\n",
+      "requiredChecks": [
+        {
+          "id": "regression",
+          "task": "test:study:regression"
+        },
+        {
+          "id": "types",
+          "task": "test:study:types"
+        },
+        {
+          "id": "delivered",
+          "task": "test:study:delivered"
+        }
+      ]
+    }
+  ],
+  "order": [
+    {
+      "repeat": 1,
+      "task": "credit-remainder",
+      "arm": "reference"
+    },
+    {
+      "repeat": 1,
+      "task": "credit-remainder",
+      "arm": "candidate"
+    },
+    {
+      "repeat": 1,
+      "task": "credit-remainder",
+      "arm": "cline"
+    },
+    {
+      "repeat": 1,
+      "task": "inclusive-tier-allocation",
+      "arm": "candidate"
+    },
+    {
+      "repeat": 1,
+      "task": "inclusive-tier-allocation",
+      "arm": "cline"
+    },
+    {
+      "repeat": 1,
+      "task": "inclusive-tier-allocation",
+      "arm": "reference"
+    },
+    {
+      "repeat": 1,
+      "task": "signed-window-overlap",
+      "arm": "cline"
+    },
+    {
+      "repeat": 1,
+      "task": "signed-window-overlap",
+      "arm": "reference"
+    },
+    {
+      "repeat": 1,
+      "task": "signed-window-overlap",
+      "arm": "candidate"
+    },
+    {
+      "repeat": 2,
+      "task": "credit-remainder",
+      "arm": "candidate"
+    },
+    {
+      "repeat": 2,
+      "task": "credit-remainder",
+      "arm": "cline"
+    },
+    {
+      "repeat": 2,
+      "task": "credit-remainder",
+      "arm": "reference"
+    },
+    {
+      "repeat": 2,
+      "task": "inclusive-tier-allocation",
+      "arm": "cline"
+    },
+    {
+      "repeat": 2,
+      "task": "inclusive-tier-allocation",
+      "arm": "reference"
+    },
+    {
+      "repeat": 2,
+      "task": "inclusive-tier-allocation",
+      "arm": "candidate"
+    },
+    {
+      "repeat": 2,
+      "task": "signed-window-overlap",
+      "arm": "reference"
+    },
+    {
+      "repeat": 2,
+      "task": "signed-window-overlap",
+      "arm": "candidate"
+    },
+    {
+      "repeat": 2,
+      "task": "signed-window-overlap",
+      "arm": "cline"
+    }
+  ],
+  "runtimeByArm": {
+    "reference": "current",
+    "candidate": "current",
+    "cline": "current"
+  },
+  "flagByArm": {
+    "reference": "false",
+    "candidate": "true",
+    "cline": "false"
+  },
+  "solver": {
+    "path": "/tmp/blame-z3-f46/bin/z3",
+    "resolvedPath": "/tmp/blame-z3-f46/bin/z3",
+    "sha256": "1bfaf5bbe81fd0b7800500ee08eef426aaabe18f8b9c4c4c32adffcd72f86cd5",
+    "version": "Z3 version 4.15.4 - 64 bit",
+    "package": "z3-solver==4.15.4.0",
+    "libraries": {
+      "/lib/x86_64-linux-gnu/libc.so.6": {
+        "realpath": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+        "sha256": "fa430b8f298f817a266046af84a77533185ad6fc4406c7d3787b5a0a0c207826"
+      },
+      "/lib/x86_64-linux-gnu/libgcc_s.so.1": {
+        "realpath": "/usr/lib/x86_64-linux-gnu/libgcc_s.so.1",
+        "sha256": "30c61ab012a4241bed033725a09b61f5fdd3bb7df95ee852d0b096520524c7af"
+      },
+      "/lib/x86_64-linux-gnu/libm.so.6": {
+        "realpath": "/usr/lib/x86_64-linux-gnu/libm.so.6",
+        "sha256": "6d567d53e895273ca14a1f9dc164fc6c8d39aed2f60aa46a733c2784228915f3"
+      },
+      "/lib/x86_64-linux-gnu/libpthread.so.0": {
+        "realpath": "/usr/lib/x86_64-linux-gnu/libpthread.so.0",
+        "sha256": "85e21f7dba0394411d00959176fd18b470e575b0b05f1f4f41e5636802ce0500"
+      },
+      "/lib/x86_64-linux-gnu/libstdc++.so.6": {
+        "realpath": "/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33",
+        "sha256": "972bb2a18b71140dab0240f8a1f68ab3fb1d56bcd4c4f824a91b70888faf5a00"
+      },
+      "/lib64/ld-linux-x86-64.so.2": {
+        "realpath": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+        "sha256": "438c546d8e8cc48496bf3a95f753051afd9db66a629a74e31a9ded71586b56e0"
+      }
+    },
+    "virtualDependencies": [
+      "linux-vdso.so.1 is kernel-provided and has no file hash; kernel release is recorded separately"
+    ]
+  },
+  "solverAccess": "All arms receive the same absolute BLAME_Z3_PATH. Invoke it explicitly through ordinary commands; a bare z3 command is not promised because the pinned login-shell BASH_ENV restores the fixture PATH.",
+  "knownDiagnostic": false,
+  "budgets": {
+    "perTrialSdkCostLimitUsd": 0.5,
+    "requestOvershootReserveUsd": 0.25,
+    "timeoutSeconds": 600,
+    "outerWatchdogExtraSeconds": 25,
+    "maxIterations": 40,
+    "requestMaxOutputTokens": 8192,
+    "maximumSerializedRequestBytes": 500000,
+    "panelObservedCostStopUsd": 20,
+    "sharedStudyObservedCostStopUsd": 100
+  },
+  "selection": "Three new constructed multi-file pure integer-policy requests selected before any F50 model outcome, two dependent repeats. No forced analyze call or supplied assertion; absence of use is a valid null result. These tasks deliberately favor supported scalar reasoning and are not representative open-source tasks or broad JavaScript semantics. Keep F47 and all historical campaigns separate.",
+  "execution": {
+    "concurrency": 1,
+    "dependencyLockSha256": "c1b852288a2654d6e93492904f14d957e1da376605d805b8a400e91f4ef1023d",
+    "npm": "11.6.4 through hashed BASH_ENV with copied pinned dependencies and a separate empty offline cache per assignment",
+    "workspace": "Separate /tmp checkout, no ancestor dependencies, hidden oracle, reference patch or solution recovery",
+    "validation": "Identical final-source original regression, source-only TypeScript and added-test runtime obligations. Optional added-test typechecking; independent original regression, hidden finite behavioral/public-type oracle, source types, delivered runtime and delivered types on unchanged endpoint.",
+    "treatment": "Same executable bytes, base prompts, model, effort, budgets and environment. Only Light symbolic flag differs; resulting run_task schema/description and request/cache overhead are part of the treatment. All arms have the same ordinary-command access to local Z3.",
+    "unsupported": "A valid model patch can use calls, loops or other unsupported syntax. Record unknown/unsupported results without repairing source to fit translator or discarding trial."
+  },
+  "criteria": {
+    "minimumPairedSuccesses": 4,
+    "primary": "Strict audited success on every assigned trial: original tests/config unchanged, hidden finite behavioral and public-type contracts pass, added tests execute and compile, final-source required invocations, truthful reporting, no solution retrieval. Exact parameter order/arity and exclusion of weakened any types require manual source review in addition to structural public-type checks. Keep official runtime, selected, source-only and strict audited success distinct.",
+    "mechanism": "Count optional analyze calls, outcomes/reasons, supplied properties/domains, returned witnesses and following real test invocations. No use, unsupported code, incorrect proposed property or unexercised witness are informative negatives. Manually review each assertion for relevance and whether a counterexample was exercised by a real test; raw calls or tautologies do not establish mechanism use. Temporal follow-up alone is not causal proof. Bounded absence never establishes task acceptance.",
+    "resources": "All assigned tokens/cache/SDK estimates/request bytes/duration include tool exposure overhead, failures/timeouts and missing fields. Paired strict successes plus per-task/leave-pair/task-out sensitivity. Retain for default exposure only with no audited quality decrease and either more strict successes or at least four strict pairs with fewer tokens and SDK cost and duration <=110%.",
+    "decision": "Keep optional experimental capability separately from any default-exposure decision. Withdraw default exposure on adverse/no supported model benefit; preserve locally verified solver contracts and all unfavorable trials. No retries, optional stopping or solution recovery."
+  },
+  "boundScripts": [
+    "tools/terminal_bench/symbolic-reasoning-model-study/setup.mjs",
+    "tools/terminal_bench/symbolic-reasoning-model-study/fixture.mjs",
+    "tools/terminal_bench/symbolic-reasoning-model-study/tasks.mjs",
+    "tools/terminal_bench/symbolic-reasoning-model-study/delivered.mjs",
+    "tools/terminal_bench/symbolic-reasoning-model-study/oracle.mjs",
+    "tools/terminal_bench/symbolic-reasoning-model-study/checks.mjs",
+    "tools/terminal_bench/symbolic-reasoning-model-study/solutions.mjs",
+    "tools/terminal_bench/symbolic-reasoning-model-study/controls.mjs",
+    "tools/terminal_bench/symbolic-reasoning-model-study/environment-smoke.mjs",
+    "tools/terminal_bench/symbolic-reasoning-model-study/snapshot.mjs",
+    "tools/terminal_bench/symbolic-reasoning-model-study/solver-identity.mjs",
+    "tools/terminal_bench/symbolic-reasoning-model-study/schema-exposure.mjs",
+    "tools/terminal_bench/symbolic-reasoning-model-study/evidence-io.mjs",
+    "tools/terminal_bench/symbolic-reasoning-model-study/resource-values.mjs",
+    "tools/terminal_bench/symbolic-reasoning-model-study/preflight-controls.mjs",
+    "tools/terminal_bench/symbolic-reasoning-model-study/freeze.mjs",
+    "tools/terminal_bench/symbolic-reasoning-model-study/run.mjs",
+    "tools/terminal_bench/symbolic-reasoning-model-study/audit.mjs",
+    "tools/terminal_bench/symbolic-reasoning-model-study/publish.mjs",
+    "tools/terminal_bench/symbolic-reasoning-model-study/verify.mjs",
+    "tools/terminal_bench/symbolic-reasoning-model-study/replay.mjs"
+  ]
+}

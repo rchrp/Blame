@@ -1,0 +1,11 @@
+{
+  "modelRequests": 0,
+  "changedRuntimeFilesBetweenLightArms": [],
+  "flagByArm": {
+    "reference": "false",
+    "candidate": "true",
+    "cline": "false"
+  },
+  "solverIdenticalAcrossArms": true,
+  "mechanism": "Optional run_task kind analyze schema and description exposure only. One identical compiled runtime for all arms; reference/candidate differ only by BLAME_AGENT_SYMBOLIC_ANALYSIS. Local Z3 executable/path is available to all arms, including ordinary commands in integrated Cline. Solver results grant no validation admission."
+}

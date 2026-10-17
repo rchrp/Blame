@@ -1,0 +1,7 @@
+{
+  "artifacts": {
+    "frozen-current.tar.gz": "e60834848eacf9ae65497b427b9e7ec57030e6cb077f5e68fae5ab57f517f06e",
+    "integer-policy-kit.tar.gz": "1fc443f16007681989bb1dba137aa9ac5e451469e8a488bc8036ad9801f9189e"
+  },
+  "note": "Constructed source fixture and one identical frozen executable snapshot; node_modules links excluded. Reconstruct fixture dependencies from dependency-package-lock.json and runtime dependencies from workspace pnpm lock. Hidden oracle, research positive patches and analysis queries are never copied into model workspaces."
+}

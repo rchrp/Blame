@@ -1,0 +1,8 @@
+{
+  "observedUsd": 8.20394076,
+  "reservedUsd": 3.6399999999999997,
+  "accountedUsd": 11.843940759999999,
+  "parent": "docs/experiments/light-harness-selection-confirmation-f47-2026-10-18",
+  "parentSummarySha256": "47eb30de6d545a7404b06dafa2bbc5ff3fec08e81073cd908df5d2f2af2e14d5",
+  "caveat": "Verified public F47 cumulative SDK observations and unknown-request reserves, separate from invoices. F50 tasks were selected before any F50 model outcomes."
+}
