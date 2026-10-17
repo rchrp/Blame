@@ -1,0 +1,120 @@
+{
+  "runtimeCodeCommit": "7af5ae9012819cca1c33e550b9468e1080fdce04",
+  "modelRequests": 0,
+  "logs": {
+    "runtime-final": {
+      "sha256": "6eb08eec2829d6c83d2df45f47790dcfa969e53017860bed4a52d698eba3df70",
+      "compressedSha256": "8556dc2f09764ca206dd9442cee781c8411779a4f281f84f06635f81c30cc7a9",
+      "counts": {
+        "tests": 1022,
+        "pass": 1020,
+        "fail": 0,
+        "skipped": 2
+      }
+    },
+    "runtime-before-final-test-corrections": {
+      "sha256": "27563df447661cfd36f156a573ec9f6d4925eb923e3dbae30f1bc8fcae5a4bce",
+      "compressedSha256": "32da42106a17a35838939c48c2592e6f7a175c5939f1a3c3f76cc2851d59075d",
+      "counts": {
+        "tests": 1019,
+        "pass": 1015,
+        "fail": 2,
+        "skipped": 2
+      }
+    },
+    "runner": {
+      "sha256": "7a51bf34a7d9b48117455fdc2f0b4cf02eef8243b06eb69eaffa91611d96264f",
+      "compressedSha256": "4e90a4490addadc5b0cdbb9c00c2fde7e2e72aaf5530769f1a391278ba3c5a1e",
+      "counts": {
+        "tests": 37,
+        "pass": 37,
+        "fail": 0,
+        "skipped": 0
+      }
+    },
+    "payload": {
+      "sha256": "69236011c45f51fb1a0f59a62458fe3d8c2e773a7f7a7729f0033acb1e8f8d7e",
+      "compressedSha256": "3f5de9e9dafb33b0515c0e7090fec8f6b1174187b79cf74aa12157ef021185bb",
+      "counts": {
+        "tests": 3,
+        "pass": 3,
+        "fail": 0,
+        "skipped": 0
+      }
+    },
+    "mechanisms-initial": {
+      "sha256": "78af46c930db213af958b7195ccb5bd1a6444857442f0d96bb1abe674cbe8542",
+      "compressedSha256": "e2624b3e26fb351f7c570a335516fbe478463b1d74c597329e1578a4f4fd37a4",
+      "counts": {
+        "tests": 126,
+        "pass": 126,
+        "fail": 0,
+        "skipped": 0
+      }
+    },
+    "navigation-initial": {
+      "sha256": "9f7ed3785db2f374b545b0cc27acaf03d556f6b6f0a1f263a72b172e60e6c728",
+      "compressedSha256": "ce7323f059161c5e3b3516495631207f0cdfe1878c8a5b156ccfdffb4aaa7afe",
+      "counts": {
+        "tests": 82,
+        "pass": 81,
+        "fail": 1,
+        "skipped": 0
+      }
+    },
+    "build-schema-development": {
+      "sha256": "fd0c205aa7e5ba692579c2cceec11118de635389958acfee951c9768efea3c59",
+      "compressedSha256": "b68bbaca457067195b7cd290eb9eb8262340fcbdafbe4b374784c942a03cad44",
+      "counts": {}
+    },
+    "lint": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "compressedSha256": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec",
+      "counts": {}
+    },
+    "line-budgets": {
+      "sha256": "7a082bbe45c29712755f2fdc7e55f81079e9a2139a115eb7308548f2af5fecb6",
+      "compressedSha256": "185223709476387441e1b59ad08368abbe7afbc75ff58b5b605669f7d8a89faf",
+      "counts": {}
+    }
+  },
+  "sourceHashes": {
+    "packages/agent-runtime/src/harness/check-observation.ts": "5ba47dcc9d7bba44614aa2c4112d7b486a32668f4d1cd5b62262394c24e90905",
+    "packages/agent-runtime/src/harness/code-observation.ts": "fb180ae1219edecee59a97dc4cb12144df934042e121d66bea3339c7e227fc61",
+    "packages/agent-runtime/src/harness/light-aliases.ts": "a6d5bcaf6831e3d5da45b27c08ffbcdc578387c69cefb10a8a72d3e092d60dfc",
+    "packages/agent-runtime/src/harness/light-contracts.ts": "6d1a301c931923310ea09098366a228c6adb4ae5d794e6aae132d1618321df1d",
+    "packages/agent-runtime/src/harness/light-reference-search.ts": "54583433e8abdb99055b2b6bbdb74cd29f5314111b21b688bff44063f7a404f7",
+    "packages/agent-runtime/src/harness/light-references.test.ts": "46472f710229f0c695412f1f5342948cca0fe5d5b1a5daf1b0d4d4ec92224baf",
+    "packages/agent-runtime/src/harness/light-task-runner.ts": "ae543d31479f29a0da7c3d6a3b53c0ffb21d30393111143d6b4ea5cdf082a2d9",
+    "packages/agent-runtime/src/harness/light-tools.ts": "34ed4a95267c9704accf13b91904bdb3acd01d7e9f9ca1640032024607001cef",
+    "packages/agent-runtime/src/harness/light-validation-report.ts": "ef42b054b9a3eca99cb7ca52a8760aa0351501eeba5b4a155f601d1ac3c3abbf",
+    "packages/agent-runtime/src/harness/light-workspace.ts": "9c61074e890be8379ad9adc53a58bc96041d397f5557cdaa660c713f45a35fa4",
+    "packages/agent-runtime/src/harness/node-check-observation.test.ts": "d558fadc76024c7349689f816c19eb351fd95e653273c02a36b6eaac126f30ae",
+    "packages/agent-runtime/src/harness/npm-check-observation.test.ts": "7caeaa39da933cb6a1292570ed21af8f12fd6b7d5feaf56e65ecb511ae033344",
+    "packages/agent-runtime/src/harness/semantic-reference-client.ts": "1cd16c053b6413421f6286ee5fe31a42e24de945ccd8ce3a5253954263457598",
+    "packages/agent-runtime/src/harness/semantic-reference-types.ts": "166b8d863269bbfc6df50f7b28a2b4ac9f0110ec6b54f5b7da72fc9aa1ad51af",
+    "packages/agent-runtime/src/harness/semantic-reference-worker.ts": "167cc85b467f0b913293edfc53f6269521eb03b2bd8fb0e772f4e5b407eb7888",
+    "packages/agent-runtime/src/harness/symbolic-expression.ts": "316071effb3ea286b3ea5e27a14cf82565f11f4028691f9434845ba90c1c0f17",
+    "packages/agent-runtime/src/harness/symbolic-analysis.ts": "bce7dfce3c15f89087711cdab75fa67f775705e3b3409e8541f80176b33fd340",
+    "packages/agent-runtime/src/harness/test-type-evidence.test.ts": "eda3982eafdaa746cdca5cb3162995a84f89211a2cf90244629d2d4e7aafa8cf",
+    "packages/agent-runtime/src/harness/symbolic-solver.ts": "8137bb7a16ee50eaa3d7d3d0c9e7be148a059782b7a62630a3143051245569dc",
+    "packages/agent-runtime/src/harness/symbolic-types.ts": "a567fc24c6f6b57715386362845872fd80a6ef81dcf38a5f53203a235adde539",
+    "packages/agent-runtime/src/harness/symbolic-program.ts": "37884f1371e0dcbcfe7c9a97798011d88a39e9c736f7fd33651663e337d40b6c",
+    "packages/agent-runtime/src/harness/test-type-evidence.ts": "350925feb4f1113a392e67ebe166a296d3dec34e56862e5b220d0a19b8295425",
+    "packages/agent-runtime/src/harness/light-symbolic-analysis.ts": "109761905a6cf1549affc2c777cfc68018feeebe12d68094b3a9e9afd4d2ce9c",
+    "packages/agent-runtime/src/harness/symbolic-analysis.test.ts": "57b2c91876438b4c7cc16f1c95796c2b700c0b15ba725376d062584288b39dc1",
+    "packages/agent-runtime/src/harness/light-symbolic-analysis.test.ts": "4f32e585e2aeeb065b6bebf7235667fbaad247e16545b5ba1675bbd1836c5118",
+    "packages/agent-runtime/src/harness/light-reference-candidates.ts": "4bea333e8a4c9b70eb466d4e1f8792a14971c3ff2e0c6d7b95c10595dd97646f"
+  },
+  "finalRuntime": {
+    "tests": 1022,
+    "passed": 1020,
+    "skipped": 2,
+    "failed": 0
+  },
+  "runnerPassed": 37,
+  "standalonePayloadPassed": 3,
+  "lintPassed": true,
+  "lineBudgetsPassed": true,
+  "developmentFailures": "Preserved separately: TypeScript tuple inference during schema construction; new test assumptions about parser overload indexing and read fields; old alias identity reuse exposed by new navigation. All corrected before final suite/model comparisons. Independent symbolic prototype refusals were hardened before model use; see F49 review. No failed historical or assigned model result is replaced."
+}
