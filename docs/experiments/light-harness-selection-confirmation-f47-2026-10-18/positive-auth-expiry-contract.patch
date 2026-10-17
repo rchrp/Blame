@@ -1,0 +1,45 @@
+diff --git a/apps/api/src/authorize.ts b/apps/api/src/authorize.ts
+index f48201c..eebadc6 100644
+--- a/apps/api/src/authorize.ts
++++ b/apps/api/src/authorize.ts
+@@ -1,3 +1,3 @@
+ import {authenticate,AuthError} from '../../../packages/security/src/index.ts';
+ import type {Token} from '../../../packages/security/src/index.ts';
+-export function authorize(token: Token) { try{return {status:200,body:authenticate(token)};}catch(error){if(error instanceof AuthError)return {status:401,body:{message:error.message}};throw error;} }
++export function authorize(token:Token,nowMs?:number,clockSkewSeconds?:number){try{return {status:200,body:authenticate(token,nowMs,clockSkewSeconds)};}catch(error){if(error instanceof AuthError)return {status:401,body:{message:error.message,code:error.code}};throw error;}}
+diff --git a/packages/security/src/authenticate.ts b/packages/security/src/authenticate.ts
+index 30674aa..75898cf 100644
+--- a/packages/security/src/authenticate.ts
++++ b/packages/security/src/authenticate.ts
+@@ -1,4 +1,4 @@
+ import type {Token} from './types.ts';
+ import {AuthError} from './errors.ts';
+ import {validSubject} from './policy.ts';
+-export function authenticate(token: Token) { if(!validSubject(token)) throw new AuthError('Invalid token'); return {subject:token.subject}; }
++export function authenticate(token:Token,nowMs=Date.now(),clockSkewSeconds=0){if(!Number.isFinite(nowMs)||nowMs<0||!Number.isFinite(clockSkewSeconds)||clockSkewSeconds<0)throw new RangeError('Invalid clock');if(!validSubject(token))throw new AuthError('Invalid token');if(token.expiresAt!==undefined){if(typeof token.expiresAt!=='number'||!Number.isFinite(token.expiresAt)||token.expiresAt<0)throw new AuthError('Invalid token');if(nowMs>=(token.expiresAt+clockSkewSeconds)*1000)throw new AuthError('Expired token','expired_token');}return {subject:token.subject};}
+diff --git a/packages/security/src/errors.ts b/packages/security/src/errors.ts
+index 1cd05a0..a555344 100644
+--- a/packages/security/src/errors.ts
++++ b/packages/security/src/errors.ts
+@@ -1 +1,2 @@
+-export class AuthError extends Error { constructor(message: string) { super(message); this.name='AuthError'; } }
++export type AuthErrorCode='invalid_token'|'expired_token';
++export class AuthError extends Error {constructor(message:string,readonly code:AuthErrorCode='invalid_token'){super(message);this.name='AuthError';}}
+diff --git a/packages/security/src/index.ts b/packages/security/src/index.ts
+index d722c7a..71fdde2 100644
+--- a/packages/security/src/index.ts
++++ b/packages/security/src/index.ts
+@@ -1,3 +1,4 @@
+ export {authenticate} from './authenticate.ts';
+ export {AuthError} from './errors.ts';
++export type {AuthErrorCode} from './errors.ts';
+ export type {Token} from './types.ts';
+diff --git a/packages/security/src/expiry.test.ts b/packages/security/src/expiry.test.ts
+new file mode 100644
+index 0000000..1bea921
+--- /dev/null
++++ b/packages/security/src/expiry.test.ts
+@@ -0,0 +1,3 @@
++import {test,expect} from 'vitest';
++import {authorize} from '../../../apps/api/src/authorize.ts';
++test('expiration boundary and skew',()=>{expect(authorize({subject:'u',expiresAt:10},10000).body).toMatchObject({code:'expired_token'});expect(authorize({subject:'u',expiresAt:10},10000,1).status).toBe(200);});

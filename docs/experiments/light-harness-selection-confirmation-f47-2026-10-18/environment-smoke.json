@@ -1,0 +1,37 @@
+{
+  "startedAtUTC": "2026-10-17T22:12:55.898Z",
+  "endedAtUTC": "2026-10-17T22:13:01.070Z",
+  "modelRequests": 0,
+  "shellEnvironmentSha256": "0e642603495356c3e673f47e3814fc0b82270f133d6b3cf1482d23b99ca697ea",
+  "method": "Actual Light and integrated SDK shell executors plus direct/login-shell npm version checks using the future per-trial environment; the before control shows this host login profile resets PATH without BASH_ENV. No model is invoked.",
+  "before": {
+    "exitCode": 0,
+    "stdout": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/npm\n11.9.0\n",
+    "stderr": ""
+  },
+  "version": {
+    "exitCode": 0,
+    "stdout": "11.6.4\n"
+  },
+  "shell": {
+    "exitCode": 0,
+    "stdout": "/tmp/blame-selection-confirmation-f47/environment-smoke/workspace/node_modules/.bin/npm\n11.6.4\n"
+  },
+  "harness": {
+    "exitCode": 0,
+    "result": {
+      "status": "ok",
+      "data": {
+        "command": "npm --version",
+        "exitCode": 0,
+        "output": "11.6.4",
+        "environment": "linux-native"
+      }
+    }
+  },
+  "native": {
+    "exitCode": 0,
+    "stdout": "\"11.6.4\\n\"\n",
+    "stderr": ""
+  }
+}

@@ -1,0 +1,65 @@
+diff --git a/apps/api/src/export.ts b/apps/api/src/export.ts
+index fe5c68b..c92a1bf 100644
+--- a/apps/api/src/export.ts
++++ b/apps/api/src/export.ts
+@@ -1,3 +1,3 @@
+ import {createCsvExporter} from '../../../packages/export/src/index.ts';
+-import type {Cell} from '../../../packages/export/src/index.ts';
+-export function exportReport(columns: readonly string[], rows: readonly (readonly Cell[])[]) { return {status:200,contentType:'text/csv',body:createCsvExporter(columns)(rows)}; }
++import type {Cell,CsvOptions} from '../../../packages/export/src/index.ts';
++export function exportReport(columns:readonly string[],rows:readonly (readonly Cell[])[],options?:CsvOptions){return {status:200,contentType:'text/csv',body:createCsvExporter(columns)(rows,options)};}
+diff --git a/packages/export/src/encode.ts b/packages/export/src/encode.ts
+index 76dd080..12bb54d 100644
+--- a/packages/export/src/encode.ts
++++ b/packages/export/src/encode.ts
+@@ -1,2 +1,2 @@
+-export type Cell = string | number | boolean | null | undefined;
+-export function encodeCell(value: Cell, delimiter: string): string { const text = value == null ? '' : String(value); return text.includes(delimiter) ? '"' + text.replaceAll('"','""') + '"' : text; }
++export type Cell=string|number|boolean|null|undefined;
++export function encodeCell(value:Cell,delimiter:string):string {const text=value==null?'':String(value);return text.includes(delimiter)||/["\r\n]/.test(text)?'"'+text.replaceAll('"','""')+'"':text;}
+diff --git a/packages/export/src/exporter.ts b/packages/export/src/exporter.ts
+index 90e48b5..7399f97 100644
+--- a/packages/export/src/exporter.ts
++++ b/packages/export/src/exporter.ts
+@@ -2,11 +2,4 @@ import {resolveOptions} from './options.ts';
+ import type {CsvOptions} from './options.ts';
+ import {encodeCell} from './encode.ts';
+ import type {Cell} from './encode.ts';
+-export function createCsvExporter(columns: readonly string[], options: CsvOptions = {}) {
+- const resolved = resolveOptions(options);
+- return (rows: readonly (readonly Cell[])[]): string => {
+-  const lines = rows.map(row => row.map(cell => encodeCell(cell,resolved.delimiter)).join(resolved.delimiter));
+-  if(resolved.includeHeader) lines.unshift(columns.join(resolved.delimiter));
+-  return lines.join(resolved.newline);
+- };
+-}
++export function createCsvExporter(columns:readonly string[],options:CsvOptions={}) {const captured={...options};return (rows:readonly (readonly Cell[])[],overrides?:CsvOptions):string=>{const merged={...captured};if(overrides)for(const key of ['delimiter','newline','includeHeader'] as const){const value=overrides[key];if(value!==undefined)Object.assign(merged,{[key]:value});}const resolved=resolveOptions(merged);const lines=rows.map(row=>row.map(cell=>encodeCell(cell,resolved.delimiter)).join(resolved.delimiter));if(resolved.includeHeader)lines.unshift(columns.map(c=>encodeCell(c,resolved.delimiter)).join(resolved.delimiter));return lines.join(resolved.newline);};}
+diff --git a/packages/export/src/index.ts b/packages/export/src/index.ts
+index 350265e..fe64dd9 100644
+--- a/packages/export/src/index.ts
++++ b/packages/export/src/index.ts
+@@ -1,3 +1,4 @@
+ export {createCsvExporter} from './exporter.ts';
+ export {encodeCell} from './encode.ts';
+ export type {Cell} from './encode.ts';
++export type {CsvOptions} from './options.ts';
+diff --git a/packages/export/src/options.ts b/packages/export/src/options.ts
+index 7396cd1..8b01cb5 100644
+--- a/packages/export/src/options.ts
++++ b/packages/export/src/options.ts
+@@ -1,3 +1,3 @@
+-export interface CsvOptions { delimiter?: string | undefined; newline?: string | undefined; includeHeader?: boolean | undefined }
+-export interface ResolvedCsvOptions { delimiter: string; newline: string; includeHeader: boolean }
+-export function resolveOptions(options: CsvOptions = {}): ResolvedCsvOptions { return {delimiter:options.delimiter ?? ',',newline:options.newline ?? '\n',includeHeader:options.includeHeader ?? true}; }
++export interface CsvOptions {delimiter?:string|undefined;newline?:string|undefined;includeHeader?:boolean|undefined}
++export interface ResolvedCsvOptions {delimiter:string;newline:string;includeHeader:boolean}
++export function resolveOptions(options:CsvOptions={}):ResolvedCsvOptions {const result={delimiter:options.delimiter??',',newline:options.newline??'\n',includeHeader:options.includeHeader??true};if(result.delimiter.length!==1||/["\r\n]/.test(result.delimiter)||!['\n','\r\n'].includes(result.newline))throw new RangeError('Invalid CSV options');return result;}
+diff --git a/packages/export/src/options.test.ts b/packages/export/src/options.test.ts
+new file mode 100644
+index 0000000..b9bbfe9
+--- /dev/null
++++ b/packages/export/src/options.test.ts
+@@ -0,0 +1,3 @@
++import {test,expect} from 'vitest';
++import {createCsvExporter} from './index.ts';
++test('per-call options and escaping',()=>{expect(createCsvExporter(['a'],{delimiter:';'})([['x"y']],{includeHeader:false})).toBe('"x""y"');});

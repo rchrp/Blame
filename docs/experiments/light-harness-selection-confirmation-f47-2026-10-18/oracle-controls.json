@@ -1,0 +1,700 @@
+{
+  "complete": true,
+  "modelRequests": 0,
+  "method": "Pristine inputs preserve regression success but fail requested behavior; independent positive controls satisfy all checks; semantic mutations preserve original regression tests and are rejected by the hidden oracle. No control solution enters model workspaces.",
+  "scriptHashes": {
+    "setup.mjs": "e68ed5b1cb066a9a126420847120b03153b656efdc18944183e6740053221fbd",
+    "fixture.mjs": "3f44a801127b876b1c27d29254bea9ca2132817d00c33a33679d8d8db4413e9f",
+    "tasks.mjs": "4c43c93c1155c76a778c5212043a213a6c6e6b628115ed41d9a50768317ce554",
+    "delivered.mjs": "0a7bdbcc7f4a031f59f6a68512614379f4d42bc41d1e61cdab79983ac4dccefb",
+    "oracle.mjs": "67586863d02fce747e96118432a4f40c20e468461f1bc888eb895aadbf984a64",
+    "checks.mjs": "33843d746686dc8e47dabac7c25a0db238f2f84f7e7eea7f487773a199e58ed7",
+    "solutions.mjs": "5d9c783d0c477c8c8dba69f6c50fee117c0852150fda17114784120ea8833d02"
+  },
+  "rows": [
+    {
+      "task": "request-correlation",
+      "before": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1198.039005,
+          "stdout": "\n> test:study:regression\n> node node_modules/vitest/vitest.mjs run --config regression.vitest.mjs\n\n\n RUN  v3.2.4 /tmp/blame-selection-confirmation-f47/controls/request-correlation\n\n ✓ apps/api/src/original.test.ts (3 tests) 3ms\n ✓ packages/request/src/original.test.ts (1 test) 2ms\n ✓ packages/security/src/original.test.ts (1 test) 2ms\n ✓ packages/export/src/original.test.ts (1 test) 2ms\n\n Test Files  4 passed (4)\n      Tests  6 passed (6)\n   Start at  22:11:20\n   Duration  749ms (transform 80ms, setup 0ms, collect 122ms, tests 9ms, environment 1ms, prepare 197ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/tmp/blame-selection-confirmation-f47/controls/request-correlation/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/selection-confirmation-study/oracle.mjs",
+            "/tmp/blame-selection-confirmation-f47/controls/request-correlation",
+            "request-correlation"
+          ],
+          "exitCode": 1,
+          "signal": null,
+          "error": null,
+          "durationMs": 265.0671830000001,
+          "stdout": "",
+          "stderr": "node:internal/modules/run_main:107\n    triggerUncaughtException(\n    ^\n\nAssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n\n  {\n+   correlationId: 'fallback'\n-   correlationId: 'Abc._-09'\n  }\n\n    at <anonymous> (/workspace/Blame/tools/terminal_bench/selection-confirmation-study/oracle.mjs:12:81) {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: { correlationId: 'fallback' },\n  expected: { correlationId: 'Abc._-09' },\n  operator: 'deepStrictEqual',\n  diff: 'simple'\n}\n\nNode.js v24.19.0\n"
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 721.6353800000002,
+          "stdout": "\n> test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 1,
+          "signal": null,
+          "error": null,
+          "durationMs": 137.72499400000015,
+          "stdout": "\n> test:study:delivered\n> node scripts/delivered.mjs runtime\n\nDelivered test files: []\n",
+          "stderr": "A new regression test file is required\n"
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 1,
+          "signal": null,
+          "error": null,
+          "durationMs": 134.46000700000013,
+          "stdout": "\n> typecheck:delivered\n> node scripts/delivered.mjs types\n\nDelivered test files: []\n",
+          "stderr": "A new regression test file is required\n"
+        }
+      ],
+      "after": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1249.9342810000003,
+          "stdout": "\n> test:study:regression\n> node node_modules/vitest/vitest.mjs run --config regression.vitest.mjs\n\n\n RUN  v3.2.4 /tmp/blame-selection-confirmation-f47/controls/request-correlation\n\n ✓ apps/api/src/original.test.ts (3 tests) 4ms\n ✓ packages/request/src/original.test.ts (1 test) 2ms\n ✓ packages/security/src/original.test.ts (1 test) 2ms\n ✓ packages/export/src/original.test.ts (1 test) 2ms\n\n Test Files  4 passed (4)\n      Tests  6 passed (6)\n   Start at  22:11:23\n   Duration  806ms (transform 80ms, setup 0ms, collect 125ms, tests 10ms, environment 1ms, prepare 227ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/tmp/blame-selection-confirmation-f47/controls/request-correlation/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/selection-confirmation-study/oracle.mjs",
+            "/tmp/blame-selection-confirmation-f47/controls/request-correlation",
+            "request-correlation"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 894.380091,
+          "stdout": "Hidden behavioral and public type contracts passed: request-correlation\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 714.0088809999997,
+          "stdout": "\n> test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 696.3590450000002,
+          "stdout": "\n> test:study:delivered\n> node scripts/delivered.mjs runtime\n\nDelivered test files: [\"packages/request/src/correlation.test.ts\"]\n\n RUN  v3.2.4 /tmp/blame-selection-confirmation-f47/controls/request-correlation\n\n ✓ packages/request/src/correlation.test.ts (1 test) 2ms\n\n Test Files  1 passed (1)\n      Tests  1 passed (1)\n   Start at  22:11:26\n   Duration  213ms (transform 41ms, setup 0ms, collect 42ms, tests 2ms, environment 0ms, prepare 54ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 971.4418960000003,
+          "stdout": "\n> typecheck:delivered\n> node scripts/delivered.mjs types\n\nDelivered test files: [\"packages/request/src/correlation.test.ts\"]\n",
+          "stderr": ""
+        }
+      ],
+      "semanticNegative": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1207.1780550000003,
+          "stdout": "\n> test:study:regression\n> node node_modules/vitest/vitest.mjs run --config regression.vitest.mjs\n\n\n RUN  v3.2.4 /tmp/blame-selection-confirmation-f47/controls/request-correlation\n\n ✓ apps/api/src/original.test.ts (3 tests) 3ms\n ✓ packages/request/src/original.test.ts (1 test) 2ms\n ✓ packages/security/src/original.test.ts (1 test) 2ms\n ✓ packages/export/src/original.test.ts (1 test) 2ms\n\n Test Files  4 passed (4)\n      Tests  6 passed (6)\n   Start at  22:11:27\n   Duration  768ms (transform 82ms, setup 0ms, collect 107ms, tests 9ms, environment 1ms, prepare 203ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/tmp/blame-selection-confirmation-f47/controls/request-correlation/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/selection-confirmation-study/oracle.mjs",
+            "/tmp/blame-selection-confirmation-f47/controls/request-correlation",
+            "request-correlation"
+          ],
+          "exitCode": 1,
+          "signal": null,
+          "error": null,
+          "durationMs": 251.62856399999873,
+          "stdout": "",
+          "stderr": "node:internal/modules/run_main:107\n    triggerUncaughtException(\n    ^\n\nAssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n\n  {\n+   correlationId: 'fallback'\n-   correlationId: 'Abc._-09'\n  }\n\n    at <anonymous> (/workspace/Blame/tools/terminal_bench/selection-confirmation-study/oracle.mjs:12:81) {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: { correlationId: 'fallback' },\n  expected: { correlationId: 'Abc._-09' },\n  operator: 'deepStrictEqual',\n  diff: 'simple'\n}\n\nNode.js v24.19.0\n"
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 697.3966729999993,
+          "stdout": "\n> test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 1,
+          "signal": null,
+          "error": null,
+          "durationMs": 664.1185150000001,
+          "stdout": "\n> test:study:delivered\n> node scripts/delivered.mjs runtime\n\nDelivered test files: [\"packages/request/src/correlation.test.ts\"]\n\n RUN  v3.2.4 /tmp/blame-selection-confirmation-f47/controls/request-correlation\n\n ❯ packages/request/src/correlation.test.ts (1 test | 1 failed) 8ms\n   × correlation reaches response and logger 8ms\n     → expected 'fallback' to be 'chosen' // Object.is equality\n\n Test Files  1 failed (1)\n      Tests  1 failed (1)\n   Start at  22:11:29\n   Duration  215ms (transform 39ms, setup 0ms, collect 37ms, tests 8ms, environment 0ms, prepare 56ms)\n\n",
+          "stderr": "\n⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯\n\n FAIL  packages/request/src/correlation.test.ts > correlation reaches response and logger\nAssertionError: expected 'fallback' to be 'chosen' // Object.is equality\n\nExpected: \"chosen\"\nReceived: \"fallback\"\n\n ❯ packages/request/src/correlation.test.ts:3:193\n\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯\n\n"
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 867.6977860000006,
+          "stdout": "\n> typecheck:delivered\n> node scripts/delivered.mjs types\n\nDelivered test files: [\"packages/request/src/correlation.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "task": "csv-export-options",
+      "before": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1129.6037739999992,
+          "stdout": "\n> test:study:regression\n> node node_modules/vitest/vitest.mjs run --config regression.vitest.mjs\n\n\n RUN  v3.2.4 /tmp/blame-selection-confirmation-f47/controls/csv-export-options\n\n ✓ apps/api/src/original.test.ts (3 tests) 3ms\n ✓ packages/request/src/original.test.ts (1 test) 2ms\n ✓ packages/security/src/original.test.ts (1 test) 2ms\n ✓ packages/export/src/original.test.ts (1 test) 2ms\n\n Test Files  4 passed (4)\n      Tests  6 passed (6)\n   Start at  22:11:31\n   Duration  714ms (transform 76ms, setup 0ms, collect 108ms, tests 9ms, environment 0ms, prepare 192ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/tmp/blame-selection-confirmation-f47/controls/csv-export-options/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/selection-confirmation-study/oracle.mjs",
+            "/tmp/blame-selection-confirmation-f47/controls/csv-export-options",
+            "csv-export-options"
+          ],
+          "exitCode": 1,
+          "signal": null,
+          "error": null,
+          "durationMs": 263.1342110000005,
+          "stdout": "",
+          "stderr": "node:internal/modules/run_main:107\n    triggerUncaughtException(\n    ^\n\nAssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ 'h;1;quote\"\\r\\n0;false\\r\\n\"a;b\";x\"y\\r\\n\\n;'\n- '\"h;1\";\"quote\"\"\"\\r\\n0;false\\r\\n\"a;b\";\"x\"\"y\"\\r\\n\"\\n\";'\n\n    at <anonymous> (/workspace/Blame/tools/terminal_bench/selection-confirmation-study/oracle.mjs:17:55) {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: 'h;1;quote\"\\r\\n0;false\\r\\n\"a;b\";x\"y\\r\\n\\n;',\n  expected: '\"h;1\";\"quote\"\"\"\\r\\n0;false\\r\\n\"a;b\";\"x\"\"y\"\\r\\n\"\\n\";',\n  operator: 'strictEqual',\n  diff: 'simple'\n}\n\nNode.js v24.19.0\n"
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 716.2170420000002,
+          "stdout": "\n> test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 1,
+          "signal": null,
+          "error": null,
+          "durationMs": 157.69062000000122,
+          "stdout": "\n> test:study:delivered\n> node scripts/delivered.mjs runtime\n\nDelivered test files: []\n",
+          "stderr": "A new regression test file is required\n"
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 1,
+          "signal": null,
+          "error": null,
+          "durationMs": 187.8465639999995,
+          "stdout": "\n> typecheck:delivered\n> node scripts/delivered.mjs types\n\nDelivered test files: []\n",
+          "stderr": "A new regression test file is required\n"
+        }
+      ],
+      "after": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1402.6257179999993,
+          "stdout": "\n> test:study:regression\n> node node_modules/vitest/vitest.mjs run --config regression.vitest.mjs\n\n\n RUN  v3.2.4 /tmp/blame-selection-confirmation-f47/controls/csv-export-options\n\n ✓ apps/api/src/original.test.ts (3 tests) 6ms\n ✓ packages/request/src/original.test.ts (1 test) 2ms\n ✓ packages/security/src/original.test.ts (1 test) 3ms\n ✓ packages/export/src/original.test.ts (1 test) 2ms\n\n Test Files  4 passed (4)\n      Tests  6 passed (6)\n   Start at  22:11:33\n   Duration  938ms (transform 127ms, setup 0ms, collect 196ms, tests 13ms, environment 1ms, prepare 213ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/tmp/blame-selection-confirmation-f47/controls/csv-export-options/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/selection-confirmation-study/oracle.mjs",
+            "/tmp/blame-selection-confirmation-f47/controls/csv-export-options",
+            "csv-export-options"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 992.5796759999994,
+          "stdout": "Hidden behavioral and public type contracts passed: csv-export-options\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 850.8227629999983,
+          "stdout": "\n> test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 775.0712889999995,
+          "stdout": "\n> test:study:delivered\n> node scripts/delivered.mjs runtime\n\nDelivered test files: [\"packages/export/src/options.test.ts\"]\n\n RUN  v3.2.4 /tmp/blame-selection-confirmation-f47/controls/csv-export-options\n\n ✓ packages/export/src/options.test.ts (1 test) 2ms\n\n Test Files  1 passed (1)\n      Tests  1 passed (1)\n   Start at  22:11:37\n   Duration  246ms (transform 57ms, setup 0ms, collect 62ms, tests 2ms, environment 0ms, prepare 60ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 975.8848089999992,
+          "stdout": "\n> typecheck:delivered\n> node scripts/delivered.mjs types\n\nDelivered test files: [\"packages/export/src/options.test.ts\"]\n",
+          "stderr": ""
+        }
+      ],
+      "semanticNegative": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1261.2717110000012,
+          "stdout": "\n> test:study:regression\n> node node_modules/vitest/vitest.mjs run --config regression.vitest.mjs\n\n\n RUN  v3.2.4 /tmp/blame-selection-confirmation-f47/controls/csv-export-options\n\n ✓ apps/api/src/original.test.ts (3 tests) 3ms\n ✓ packages/request/src/original.test.ts (1 test) 2ms\n ✓ packages/security/src/original.test.ts (1 test) 2ms\n ✓ packages/export/src/original.test.ts (1 test) 2ms\n\n Test Files  4 passed (4)\n      Tests  6 passed (6)\n   Start at  22:11:39\n   Duration  771ms (transform 82ms, setup 0ms, collect 122ms, tests 9ms, environment 1ms, prepare 195ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/tmp/blame-selection-confirmation-f47/controls/csv-export-options/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/selection-confirmation-study/oracle.mjs",
+            "/tmp/blame-selection-confirmation-f47/controls/csv-export-options",
+            "csv-export-options"
+          ],
+          "exitCode": 1,
+          "signal": null,
+          "error": null,
+          "durationMs": 268.9285990000026,
+          "stdout": "",
+          "stderr": "node:internal/modules/run_main:107\n    triggerUncaughtException(\n    ^\n\nAssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ '\"h;1\";quote\"\\r\\n0;false\\r\\n\"a;b\";x\"y\\r\\n\\n;'\n- '\"h;1\";\"quote\"\"\"\\r\\n0;false\\r\\n\"a;b\";\"x\"\"y\"\\r\\n\"\\n\";'\n\n    at <anonymous> (/workspace/Blame/tools/terminal_bench/selection-confirmation-study/oracle.mjs:17:55) {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: '\"h;1\";quote\"\\r\\n0;false\\r\\n\"a;b\";x\"y\\r\\n\\n;',\n  expected: '\"h;1\";\"quote\"\"\"\\r\\n0;false\\r\\n\"a;b\";\"x\"\"y\"\\r\\n\"\\n\";',\n  operator: 'strictEqual',\n  diff: 'simple'\n}\n\nNode.js v24.19.0\n"
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 726.1773009999997,
+          "stdout": "\n> test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 1,
+          "signal": null,
+          "error": null,
+          "durationMs": 693.1054660000009,
+          "stdout": "\n> test:study:delivered\n> node scripts/delivered.mjs runtime\n\nDelivered test files: [\"packages/export/src/options.test.ts\"]\n\n RUN  v3.2.4 /tmp/blame-selection-confirmation-f47/controls/csv-export-options\n\n ❯ packages/export/src/options.test.ts (1 test | 1 failed) 7ms\n   × per-call options and escaping 7ms\n     → expected 'x\"y' to be '\"x\"\"y\"' // Object.is equality\n\n Test Files  1 failed (1)\n      Tests  1 failed (1)\n   Start at  22:11:41\n   Duration  220ms (transform 42ms, setup 0ms, collect 41ms, tests 7ms, environment 0ms, prepare 57ms)\n\n",
+          "stderr": "\n⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯\n\n FAIL  packages/export/src/options.test.ts > per-call options and escaping\nAssertionError: expected 'x\"y' to be '\"x\"\"y\"' // Object.is equality\n\nExpected: \"\"x\"\"y\"\"\nReceived: \"x\"y\"\n\n ❯ packages/export/src/options.test.ts:3:125\n      1| import {test,expect} from 'vitest';\n      2| import {createCsvExporter} from './index.ts';\n      3| test('per-call options and escaping',()=>{expect(createCsvExporter(['a…\n       |                                                                                                                             ^\n      4| \n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯\n\n"
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 847.4465060000002,
+          "stdout": "\n> typecheck:delivered\n> node scripts/delivered.mjs types\n\nDelivered test files: [\"packages/export/src/options.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "task": "auth-expiry-contract",
+      "before": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1150.4484770000017,
+          "stdout": "\n> test:study:regression\n> node node_modules/vitest/vitest.mjs run --config regression.vitest.mjs\n\n\n RUN  v3.2.4 /tmp/blame-selection-confirmation-f47/controls/auth-expiry-contract\n\n ✓ apps/api/src/original.test.ts (3 tests) 3ms\n ✓ packages/request/src/original.test.ts (1 test) 2ms\n ✓ packages/security/src/original.test.ts (1 test) 2ms\n ✓ packages/export/src/original.test.ts (1 test) 2ms\n\n Test Files  4 passed (4)\n      Tests  6 passed (6)\n   Start at  22:11:42\n   Duration  724ms (transform 79ms, setup 0ms, collect 112ms, tests 9ms, environment 0ms, prepare 186ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/tmp/blame-selection-confirmation-f47/controls/auth-expiry-contract/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/selection-confirmation-study/oracle.mjs",
+            "/tmp/blame-selection-confirmation-f47/controls/auth-expiry-contract",
+            "auth-expiry-contract"
+          ],
+          "exitCode": 1,
+          "signal": null,
+          "error": null,
+          "durationMs": 245.61773999999787,
+          "stdout": "",
+          "stderr": "node:internal/modules/run_main:107\n    triggerUncaughtException(\n    ^\n\nAssertionError [ERR_ASSERTION]: Missing expected exception.\n    at check (/workspace/Blame/tools/terminal_bench/selection-confirmation-study/oracle.mjs:23:45)\n    at <anonymous> (/workspace/Blame/tools/terminal_bench/selection-confirmation-study/oracle.mjs:24:166) {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: undefined,\n  expected: [Function (anonymous)],\n  operator: 'throws',\n  diff: 'simple'\n}\n\nNode.js v24.19.0\n"
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 660.5433509999966,
+          "stdout": "\n> test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 1,
+          "signal": null,
+          "error": null,
+          "durationMs": 123.81958699999814,
+          "stdout": "\n> test:study:delivered\n> node scripts/delivered.mjs runtime\n\nDelivered test files: []\n",
+          "stderr": "A new regression test file is required\n"
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 1,
+          "signal": null,
+          "error": null,
+          "durationMs": 118.40384400000039,
+          "stdout": "\n> typecheck:delivered\n> node scripts/delivered.mjs types\n\nDelivered test files: []\n",
+          "stderr": "A new regression test file is required\n"
+        }
+      ],
+      "after": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1113.3875200000002,
+          "stdout": "\n> test:study:regression\n> node node_modules/vitest/vitest.mjs run --config regression.vitest.mjs\n\n\n RUN  v3.2.4 /tmp/blame-selection-confirmation-f47/controls/auth-expiry-contract\n\n ✓ apps/api/src/original.test.ts (3 tests) 3ms\n ✓ packages/request/src/original.test.ts (1 test) 2ms\n ✓ packages/security/src/original.test.ts (1 test) 3ms\n ✓ packages/export/src/original.test.ts (1 test) 2ms\n\n Test Files  4 passed (4)\n      Tests  6 passed (6)\n   Start at  22:11:45\n   Duration  711ms (transform 72ms, setup 0ms, collect 99ms, tests 10ms, environment 1ms, prepare 196ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/tmp/blame-selection-confirmation-f47/controls/auth-expiry-contract/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/selection-confirmation-study/oracle.mjs",
+            "/tmp/blame-selection-confirmation-f47/controls/auth-expiry-contract",
+            "auth-expiry-contract"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 793.75677,
+          "stdout": "Hidden behavioral and public type contracts passed: auth-expiry-contract\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 642.4548799999975,
+          "stdout": "\n> test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 640.7263019999991,
+          "stdout": "\n> test:study:delivered\n> node scripts/delivered.mjs runtime\n\nDelivered test files: [\"packages/security/src/expiry.test.ts\"]\n\n RUN  v3.2.4 /tmp/blame-selection-confirmation-f47/controls/auth-expiry-contract\n\n ✓ packages/security/src/expiry.test.ts (1 test) 3ms\n\n Test Files  1 passed (1)\n      Tests  1 passed (1)\n   Start at  22:11:47\n   Duration  197ms (transform 42ms, setup 0ms, collect 43ms, tests 3ms, environment 0ms, prepare 51ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 872.7005720000016,
+          "stdout": "\n> typecheck:delivered\n> node scripts/delivered.mjs types\n\nDelivered test files: [\"packages/security/src/expiry.test.ts\"]\n",
+          "stderr": ""
+        }
+      ],
+      "semanticNegative": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1146.4950039999967,
+          "stdout": "\n> test:study:regression\n> node node_modules/vitest/vitest.mjs run --config regression.vitest.mjs\n\n\n RUN  v3.2.4 /tmp/blame-selection-confirmation-f47/controls/auth-expiry-contract\n\n ✓ apps/api/src/original.test.ts (3 tests) 3ms\n ✓ packages/request/src/original.test.ts (1 test) 2ms\n ✓ packages/security/src/original.test.ts (1 test) 3ms\n ✓ packages/export/src/original.test.ts (1 test) 2ms\n\n Test Files  4 passed (4)\n      Tests  6 passed (6)\n   Start at  22:11:49\n   Duration  711ms (transform 71ms, setup 0ms, collect 105ms, tests 10ms, environment 1ms, prepare 192ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/tmp/blame-selection-confirmation-f47/controls/auth-expiry-contract/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/selection-confirmation-study/oracle.mjs",
+            "/tmp/blame-selection-confirmation-f47/controls/auth-expiry-contract",
+            "auth-expiry-contract"
+          ],
+          "exitCode": 1,
+          "signal": null,
+          "error": null,
+          "durationMs": 256.4478909999998,
+          "stdout": "",
+          "stderr": "node:internal/modules/run_main:107\n    triggerUncaughtException(\n    ^\n\nAssertionError [ERR_ASSERTION]: Missing expected exception.\n    at check (/workspace/Blame/tools/terminal_bench/selection-confirmation-study/oracle.mjs:23:45)\n    at <anonymous> (/workspace/Blame/tools/terminal_bench/selection-confirmation-study/oracle.mjs:24:166) {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: undefined,\n  expected: [Function (anonymous)],\n  operator: 'throws',\n  diff: 'simple'\n}\n\nNode.js v24.19.0\n"
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 622.9578760000004,
+          "stdout": "\n> test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 1,
+          "signal": null,
+          "error": null,
+          "durationMs": 656.2695239999994,
+          "stdout": "\n> test:study:delivered\n> node scripts/delivered.mjs runtime\n\nDelivered test files: [\"packages/security/src/expiry.test.ts\"]\n\n RUN  v3.2.4 /tmp/blame-selection-confirmation-f47/controls/auth-expiry-contract\n\n ❯ packages/security/src/expiry.test.ts (1 test | 1 failed) 9ms\n   × expiration boundary and skew 8ms\n     → expected { subject: 'u' } to match object { code: 'expired_token' }\n(1 matching property omitted from actual)\n\n Test Files  1 failed (1)\n      Tests  1 failed (1)\n   Start at  22:11:51\n   Duration  216ms (transform 46ms, setup 0ms, collect 51ms, tests 9ms, environment 0ms, prepare 55ms)\n\n",
+          "stderr": "\n⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯\n\n FAIL  packages/security/src/expiry.test.ts > expiration boundary and skew\nAssertionError: expected { subject: 'u' } to match object { code: 'expired_token' }\n(1 matching property omitted from actual)\n\n- Expected\n+ Received\n\n  {\n-   \"code\": \"expired_token\",\n+   \"subject\": \"u\",\n  }\n\n ❯ packages/security/src/expiry.test.ts:3:99\n\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯\n\n"
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 841.5674959999997,
+          "stdout": "\n> typecheck:delivered\n> node scripts/delivered.mjs types\n\nDelivered test files: [\"packages/security/src/expiry.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    }
+  ]
+}
