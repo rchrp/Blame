@@ -75,6 +75,21 @@ export const lightEditCodeInputSchema = z
 export const lightRunTaskInputSchema = z.discriminatedUnion("kind", [
   z
     .object({
+      kind: z.literal("analyze"),
+      target: z.string().trim().min(1).max(4_096)
+        .describe("Typed TypeScript function sN alias or path#functionName. Analysis reads source but grants no edit or validation coverage."),
+      inputs: z.record(z.string().regex(/^[A-Za-z_$][A-Za-z0-9_$]*$/u), z.union([
+        z.object({ min: z.number().int().safe(), max: z.number().int().safe() }).strict()
+          .refine(({ min, max }) => min <= max, "min must not exceed max"),
+        z.object({ type: z.literal("boolean") }).strict(),
+      ])).refine((inputs) => Object.keys(inputs).length <= 8, "At most eight inputs"),
+      assertion: z.string().trim().min(1).max(2_000)
+        .describe("Boolean expression over input names and result. Supported pure scalar subset only. A bounded no-counterexample result is not project verification."),
+      timeoutMs: z.number().int().min(100).max(10_000).optional(),
+    })
+    .strict(),
+  z
+    .object({
       kind: z.literal("inspect"),
       run: z.string().regex(/^r[1-9]\d*$/u),
       cursor: z.string().regex(/^\d+$/u).optional(),
@@ -110,6 +125,11 @@ export const lightRunTaskInputSchema = z.discriminatedUnion("kind", [
     })
     .strict(),
 ]);
+
+/** Keep experimental reasoning out of ordinary model schemas until enabled. */
+const [, inspectTask, projectTask, commandTask, dependencyTask] = lightRunTaskInputSchema.options;
+export const lightDefaultRunTaskInputSchema = z.discriminatedUnion("kind",
+  [inspectTask, projectTask, commandTask, dependencyTask]);
 
 export const finishTaskInputSchema = z
   .object({ summary: z.string().trim().min(1).max(8_000) })

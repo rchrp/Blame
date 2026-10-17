@@ -1,0 +1,72 @@
+{
+  "phase": "F49-local",
+  "corpusSha256": "62068f26d463273192afed87af54fb807b3313313fcb3e43acb0450fdba244a8",
+  "resultsSha256": "1a5e1ddbfe72d9f31305d9a448556d0d821281fcfc843dafa5eca10356b79d37",
+  "verifierSha256": "599a5f91e9e7c1925e726119ebf63874ad175377ac6688279e98b016728b7ac1",
+  "exhaustiveInputsReplayed": 910,
+  "supportedCases": 18,
+  "unsupportedRefusals": 8,
+  "witnessesReplayed": 8,
+  "replayedWitnesses": [
+    {
+      "id": "generated-affine-bug",
+      "result": -13,
+      "property": false,
+      "matchesReportedResult": true,
+      "admitted": true
+    },
+    {
+      "id": "clamp-low-branch-bug",
+      "result": -1,
+      "property": false,
+      "matchesReportedResult": true,
+      "admitted": true
+    },
+    {
+      "id": "absolute-negative-bug",
+      "result": -4,
+      "property": false,
+      "matchesReportedResult": true,
+      "admitted": true
+    },
+    {
+      "id": "conditional-arrow-bug",
+      "result": -1,
+      "property": false,
+      "matchesReportedResult": true,
+      "admitted": true
+    },
+    {
+      "id": "nonlinear-local-bug",
+      "result": -1,
+      "property": false,
+      "matchesReportedResult": true,
+      "admitted": true
+    },
+    {
+      "id": "boolean-equivalence-bug",
+      "result": false,
+      "property": false,
+      "matchesReportedResult": true,
+      "admitted": true
+    },
+    {
+      "id": "two-return-block-bug",
+      "result": 4,
+      "property": false,
+      "matchesReportedResult": true,
+      "admitted": true
+    },
+    {
+      "id": "boolean-short-circuit-bug",
+      "result": true,
+      "property": false,
+      "matchesReportedResult": true,
+      "admitted": true
+    }
+  ],
+  "discrepancies": [],
+  "verification": "all_recorded_semantic_classifications_reproduced",
+  "modelCalls": 0,
+  "scope": "Replays only recorded generated isolated scalar functions in actual transpiled JavaScript; does not rerun Z3, prove translator completeness, audit arbitrary project behavior or establish task success."
+}

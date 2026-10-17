@@ -5,6 +5,7 @@ import type { PreviewDependencyRefreshResult } from "../preview-harness-tools.js
 import {
   lightEditCodeInputSchema,
   lightReadCodeInputSchema,
+  lightDefaultRunTaskInputSchema,
   lightRunTaskInputSchema,
   lightSearchCodeInputSchema,
   type LightToolResult,
@@ -130,6 +131,7 @@ function editCodeTool(workspace: LightWorkspacePort) {
 }
 
 function runTaskTool(workspace: LightWorkspacePort, environment?: LightTaskContract["environment"]) {
+  const reasoningEnabled = process.env.BLAME_AGENT_SYMBOLIC_ANALYSIS === "true";
   return harnessTool({
     name: "run_task",
     description:
@@ -137,8 +139,9 @@ function runTaskTool(workspace: LightWorkspacePort, environment?: LightTaskContr
       (environment?.managedPreview === false
         ? "For requested services, detach the process and redirect its input/output so the command can finish. "
         : "Use the managed preview for services. ") +
-      "Prettier on explicit files uses atomic edits. Test results include reporting counters; null is unknown and pending is distinct from skipped. Returns bounded output and code/environment diagnostics.",
-    schema: lightRunTaskInputSchema,
+      "Prettier on explicit files uses atomic edits. Test results include reporting counters; null is unknown and pending is distinct from skipped. Returns bounded output and code/environment diagnostics." +
+      (reasoningEnabled ? ' Optional kind analyze uses a local Z3 executable (BLAME_Z3_PATH or z3) to search for counterexamples in a pure typed TypeScript scalar function: target is sN or path#functionName, inputs maps each parameter to {min,max} safe-integer bounds or {type:"boolean"}, assertion is a boolean expression over inputs and result. Unsupported constructs or unavailable solver return unknown. Example: {"kind":"analyze","target":"src/math.ts#difference","inputs":{"a":{"min":0,"max":100},"b":{"min":0,"max":100}},"assertion":"result === a - b"}. Bounded absence of counterexamples is not project verification; reproduce witnesses with real tests.' : ""),
+    schema: reasoningEnabled ? lightRunTaskInputSchema : lightDefaultRunTaskInputSchema,
     execute: (input, context) => workspace.runTask(input, context),
   });
 }

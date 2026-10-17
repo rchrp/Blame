@@ -105,6 +105,8 @@ export class LightTaskRunner {
   }
 
   run(input: LightRunTaskInput, context: RunnerContext = {}) {
+    if (input.kind === "analyze")
+      return Promise.resolve(blocked("input", "Symbolic analysis requires workspace symbol resolution."));
     if (input.kind === "inspect") return this.inspect(input);
     if (input.kind === "dependency") return this.dependency(input, context);
     if (input.kind === "project") return this.project(input, context);

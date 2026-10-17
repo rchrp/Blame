@@ -1,0 +1,434 @@
+{
+  "phase": "F49-local",
+  "preparedAt": "2026-10-17T22:12:28.700Z",
+  "sourceCommit": "4480fc719730d8edf33c636ebfee373407672f04",
+  "purpose": "Mechanism diagnostic only: compare selected isolated scalar body semantics against actual JS exhaustive bounded enumeration. No model calls, task success or repository-wide proof.",
+  "comparison": "For every supported finite-domain fixture, enumerate all supplied inputs before reading solver results; compare existence of property violation to Z3 status. Re-execute every solver witness in actual transpiled JS. Preserve unknown results and discrepancies.",
+  "timing": "Single sequential researcher-host measurements, no randomized performance trial. Enumeration includes one transpilation, VM context and property script creation per case, then bounded execution of every input. Solver duration includes production translation, version process and solve process. VM timing is not native unit-test performance.",
+  "retention": "Every supported case must agree and every witness must execute in real JS; unsupported controls must be unknown with the expected refusal. Local success permits opt-in integration study, establishes no model quality or token gain.",
+  "scriptSha256": "7669fc3f3e6075fb52b58d493eb17c161f473d407062d2535e1f3a020fc862ab",
+  "seed": 1236379363,
+  "generator": "xorshift32; generated affine coefficients, offsets, nonlinear threshold; fixed structural families",
+  "coefficient": 3,
+  "offset": 3,
+  "threshold": 2,
+  "cases": [
+    {
+      "id": "generated-affine-valid",
+      "source": "function choose(x: number) { return x * 3 + 3; }",
+      "inputs": {
+        "x": {
+          "min": -4,
+          "max": 4
+        }
+      },
+      "assertion": "result === x * 3 + 3",
+      "functionName": "choose",
+      "sourceSha256": "c514426938ee9509060f6a3e53101349ef85535b26dbad7c7100d28ff294d00b",
+      "expectedMode": "supported"
+    },
+    {
+      "id": "generated-affine-bug",
+      "source": "function choose(x: number) { return x * 4 + 3; }",
+      "inputs": {
+        "x": {
+          "min": -4,
+          "max": 4
+        }
+      },
+      "assertion": "result === x * 3 + 3",
+      "functionName": "choose",
+      "sourceSha256": "8ad2c9eebf927626d6fa2ded0fb932042e5cf944df718aea6f74058b1b7d92c0",
+      "expectedMode": "supported"
+    },
+    {
+      "id": "clamp-valid",
+      "source": "function choose(x: number, lo: number, hi: number) { if (x < lo) return lo; if (x > hi) return hi; return x; }",
+      "inputs": {
+        "x": {
+          "min": -4,
+          "max": 4
+        },
+        "lo": {
+          "min": -2,
+          "max": 2
+        },
+        "hi": {
+          "min": -2,
+          "max": 2
+        }
+      },
+      "assertion": "lo > hi || (result >= lo && result <= hi)",
+      "functionName": "choose",
+      "sourceSha256": "8614ae32bfacf12d5f7679fa49bf6cdfe2fe44614b3a7de705a185b961c20745",
+      "expectedMode": "supported"
+    },
+    {
+      "id": "clamp-low-branch-bug",
+      "source": "function choose(x: number, lo: number, hi: number) { if (x < lo) return x; if (x > hi) return hi; return x; }",
+      "inputs": {
+        "x": {
+          "min": -4,
+          "max": 4
+        },
+        "lo": {
+          "min": -2,
+          "max": 2
+        },
+        "hi": {
+          "min": -2,
+          "max": 2
+        }
+      },
+      "assertion": "lo > hi || (result >= lo && result <= hi)",
+      "functionName": "choose",
+      "sourceSha256": "972aff252c7658093d7a596d1e0e0a1dc999fc0b121dd23b1e6391d09a78b409",
+      "expectedMode": "supported"
+    },
+    {
+      "id": "absolute-valid",
+      "source": "function choose(x: number) { if (x < 0) return -x; return x; }",
+      "inputs": {
+        "x": {
+          "min": -4,
+          "max": 4
+        }
+      },
+      "assertion": "result >= 0 && result * result === x * x",
+      "functionName": "choose",
+      "sourceSha256": "c33804c1d27fba46947e208a2d0b49c778af2c6e1668ea74a88fcafc37b9094b",
+      "expectedMode": "supported"
+    },
+    {
+      "id": "absolute-negative-bug",
+      "source": "function choose(x: number) { if (x < 0) return x; return x; }",
+      "inputs": {
+        "x": {
+          "min": -4,
+          "max": 4
+        }
+      },
+      "assertion": "result >= 0 && result * result === x * x",
+      "functionName": "choose",
+      "sourceSha256": "cf8f7c2b37191663e91c2aeca2117aba5288096c40e83aa28e646afda6812637",
+      "expectedMode": "supported"
+    },
+    {
+      "id": "conditional-arrow-valid",
+      "source": "const choose = (x: number, enabled: boolean): number => enabled ? x + 3 : x - 3;",
+      "inputs": {
+        "x": {
+          "min": -4,
+          "max": 4
+        },
+        "enabled": {
+          "type": "boolean"
+        }
+      },
+      "assertion": "result === (enabled ? x + 3 : x - 3)",
+      "functionName": "choose",
+      "sourceSha256": "2144bc39a146c4586273f7ce56835b540fbdf609218eb5d795e5ae7b926544cc",
+      "expectedMode": "supported"
+    },
+    {
+      "id": "conditional-arrow-bug",
+      "source": "const choose = (x: number, enabled: boolean): number => enabled ? x + 3 : x + 3;",
+      "inputs": {
+        "x": {
+          "min": -4,
+          "max": 4
+        },
+        "enabled": {
+          "type": "boolean"
+        }
+      },
+      "assertion": "result === (enabled ? x + 3 : x - 3)",
+      "functionName": "choose",
+      "sourceSha256": "7f70f1e0257b5753adb2fe6a88ebf7190f48e79b6611d14ac0cd57d3b238dd1d",
+      "expectedMode": "supported"
+    },
+    {
+      "id": "nonlinear-local-valid",
+      "source": "function choose(x: number) { const square = x * x; if (square > 2) { const negative = -square; return negative; } return square + 1; }",
+      "inputs": {
+        "x": {
+          "min": -4,
+          "max": 4
+        }
+      },
+      "assertion": "result === (x * x > 2 ? -(x * x) : x * x + 1)",
+      "functionName": "choose",
+      "sourceSha256": "a6625a6a5482249f37bb0ac125193ff4df76676fff3d08e746d257f06cf019f8",
+      "expectedMode": "supported"
+    },
+    {
+      "id": "nonlinear-local-bug",
+      "source": "function choose(x: number) { const square = x * x; if (square > 2) { const negative = -square; return negative; } return square - 1; }",
+      "inputs": {
+        "x": {
+          "min": -4,
+          "max": 4
+        }
+      },
+      "assertion": "result === (x * x > 2 ? -(x * x) : x * x + 1)",
+      "functionName": "choose",
+      "sourceSha256": "6958debd65dd4eab51f837caaed0c127d08e2ea5e365361be2dcd7bd498804d4",
+      "expectedMode": "supported"
+    },
+    {
+      "id": "boolean-equivalence-valid",
+      "source": "function choose(x: number, y: number): boolean { return !(x !== y); }",
+      "inputs": {
+        "x": {
+          "min": -4,
+          "max": 4
+        },
+        "y": {
+          "min": -4,
+          "max": 4
+        }
+      },
+      "assertion": "result === (x === y)",
+      "functionName": "choose",
+      "sourceSha256": "b114012d2de03825b7543d81f9e924fb9f1c92dbf24ac9927a7d6d890153a30c",
+      "expectedMode": "supported"
+    },
+    {
+      "id": "boolean-equivalence-bug",
+      "source": "function choose(x: number, y: number): boolean { return x !== y; }",
+      "inputs": {
+        "x": {
+          "min": -4,
+          "max": 4
+        },
+        "y": {
+          "min": -4,
+          "max": 4
+        }
+      },
+      "assertion": "result === (x === y)",
+      "functionName": "choose",
+      "sourceSha256": "792603fd004188b46e9eba2b3275c7cc80cee9624acb80bfac461bb2ea6decef",
+      "expectedMode": "supported"
+    },
+    {
+      "id": "two-return-block-valid",
+      "source": "function choose(x: number, y: number) { if (x <= y) { return x; } else { return y; } }",
+      "inputs": {
+        "x": {
+          "min": -4,
+          "max": 4
+        },
+        "y": {
+          "min": -4,
+          "max": 4
+        }
+      },
+      "assertion": "result <= x && result <= y && (result === x || result === y)",
+      "functionName": "choose",
+      "sourceSha256": "ff2041ddb656797b75961a1f41d818bb1fd3510c27cfeb8d580819a7fdde4f57",
+      "expectedMode": "supported"
+    },
+    {
+      "id": "two-return-block-bug",
+      "source": "function choose(x: number, y: number) { if (x <= y) { return y; } else { return x; } }",
+      "inputs": {
+        "x": {
+          "min": -4,
+          "max": 4
+        },
+        "y": {
+          "min": -4,
+          "max": 4
+        }
+      },
+      "assertion": "result <= x && result <= y && (result === x || result === y)",
+      "functionName": "choose",
+      "sourceSha256": "9cb6afe585f46f3f5895f0000ee0a2c07d4342023b17100cd1920f67c5725a5f",
+      "expectedMode": "supported"
+    },
+    {
+      "id": "safe-upper-boundary",
+      "source": "function choose(x: number) { return x - 1; }",
+      "inputs": {
+        "x": {
+          "min": 9007199254740987,
+          "max": 9007199254740991
+        }
+      },
+      "assertion": "result < x",
+      "functionName": "choose",
+      "sourceSha256": "03b08824c98a9c738cd668cfa56152ee7f13a3e2be8157c72ff600e07477012d",
+      "expectedMode": "supported"
+    },
+    {
+      "id": "safe-lower-boundary",
+      "source": "function choose(x: number) { return x + 1; }",
+      "inputs": {
+        "x": {
+          "min": -9007199254740991,
+          "max": -9007199254740987
+        }
+      },
+      "assertion": "result > x",
+      "functionName": "choose",
+      "sourceSha256": "7fb05589197cab8adb5bedec1e1b0a17fe4c7347e35220fdeb28944792d1ddb4",
+      "expectedMode": "supported"
+    },
+    {
+      "id": "boolean-short-circuit-valid",
+      "source": "const choose = (x: number, enabled: boolean): boolean => enabled && x < 0;",
+      "inputs": {
+        "x": {
+          "min": -4,
+          "max": 4
+        },
+        "enabled": {
+          "type": "boolean"
+        }
+      },
+      "assertion": "result === (enabled && x < 0)",
+      "functionName": "choose",
+      "sourceSha256": "4e775690d5dbef239545da626531686386630eba4b46aa0102602345aa2ce822",
+      "expectedMode": "supported"
+    },
+    {
+      "id": "boolean-short-circuit-bug",
+      "source": "const choose = (x: number, enabled: boolean): boolean => enabled || x < 0;",
+      "inputs": {
+        "x": {
+          "min": -4,
+          "max": 4
+        },
+        "enabled": {
+          "type": "boolean"
+        }
+      },
+      "assertion": "result === (enabled && x < 0)",
+      "functionName": "choose",
+      "sourceSha256": "501bc5db85a67728dcd9635113a88992d77170ef81885c15e69dfb9131f03175",
+      "expectedMode": "supported"
+    },
+    {
+      "id": "unsupported-call",
+      "source": "function choose(x: number) { return Math.abs(x); }",
+      "inputs": {
+        "x": {
+          "min": -4,
+          "max": 4
+        }
+      },
+      "assertion": "result >= 0",
+      "expectedReason": "unsupported_expression",
+      "functionName": "choose",
+      "sourceSha256": "87a1554c35d98a779c60aedecef4b132bcf9dbacfe025924b2d2c3dc65446eba",
+      "expectedMode": "unsupported"
+    },
+    {
+      "id": "unsupported-loop",
+      "source": "function choose(x: number) { while (x < 0) { x++; } return x; }",
+      "inputs": {
+        "x": {
+          "min": -4,
+          "max": 4
+        }
+      },
+      "assertion": "result >= 0",
+      "expectedReason": "unsupported_statement",
+      "functionName": "choose",
+      "sourceSha256": "46ad9c36f3e55767e307cd4dd62539a1a9ccd167286412068de0c5f5b7c64de9",
+      "expectedMode": "unsupported"
+    },
+    {
+      "id": "unsupported-fraction",
+      "source": "function choose(x: number) { return x + 0.5; }",
+      "inputs": {
+        "x": {
+          "min": -4,
+          "max": 4
+        }
+      },
+      "assertion": "result > x",
+      "expectedReason": "non_safe_integer_literal",
+      "functionName": "choose",
+      "sourceSha256": "9a9af4549e82842d75786b68d7e1889b69b17f6ef222d8d20a46c4d18bb97dce",
+      "expectedMode": "unsupported"
+    },
+    {
+      "id": "unsupported-overflow",
+      "source": "function choose(x: number) { return x + 1; }",
+      "inputs": {
+        "x": {
+          "min": 9007199254740990,
+          "max": 9007199254740991
+        }
+      },
+      "assertion": "result > x",
+      "expectedReason": "unsafe_integer_intermediate",
+      "functionName": "choose",
+      "sourceSha256": "7fb05589197cab8adb5bedec1e1b0a17fe4c7347e35220fdeb28944792d1ddb4",
+      "expectedMode": "unsupported"
+    },
+    {
+      "id": "unsupported-infinite-contract",
+      "source": "function choose(x: number) { return x; }",
+      "inputs": {
+        "x": {
+          "min": 0,
+          "max": "Infinity"
+        }
+      },
+      "assertion": "result >= 0",
+      "expectedReason": "finite_safe_integer_bounds_required",
+      "decodeInfinity": true,
+      "functionName": "choose",
+      "sourceSha256": "60c0458cd6a3cba3033ac3b8a15ae3341be37d440192f066a53d4122633a07fa",
+      "expectedMode": "unsupported"
+    },
+    {
+      "id": "unsupported-global",
+      "source": "function choose(x: number) { return x + offset; }",
+      "inputs": {
+        "x": {
+          "min": -4,
+          "max": 4
+        }
+      },
+      "assertion": "result > x",
+      "expectedReason": "unbound_identifier",
+      "functionName": "choose",
+      "sourceSha256": "a59204bb628edf6ef4ecdb39a645ec4058a07a1da27b9a37e8eb0b8afc34c6bd",
+      "expectedMode": "unsupported"
+    },
+    {
+      "id": "unsupported-source-syntax",
+      "source": "function choose(x: number) { return ; ; broken @@@ }",
+      "inputs": {
+        "x": {
+          "min": -4,
+          "max": 4
+        }
+      },
+      "assertion": "result >= 0",
+      "expectedReason": "source_parse_error",
+      "functionName": "choose",
+      "sourceSha256": "2baa3784e14cfa5e4e591b45dd4d050294d8b4a62e544d06b5006f78736588e4",
+      "expectedMode": "unsupported"
+    },
+    {
+      "id": "unsupported-property-injection",
+      "source": "function choose(x: number) { return x; }",
+      "inputs": {
+        "x": {
+          "min": -4,
+          "max": 4
+        }
+      },
+      "assertion": "true), rogue = (false",
+      "expectedReason": "assertion_expression_required",
+      "functionName": "choose",
+      "sourceSha256": "60c0458cd6a3cba3033ac3b8a15ae3341be37d440192f066a53d4122633a07fa",
+      "expectedMode": "unsupported"
+    }
+  ]
+}

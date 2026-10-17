@@ -1,0 +1,1036 @@
+{
+  "phase": "F49-local",
+  "completedAt": "2026-10-17T22:18:40.695Z",
+  "corpusSha256": "62068f26d463273192afed87af54fb807b3313313fcb3e43acb0450fdba244a8",
+  "scriptSha256": "7669fc3f3e6075fb52b58d493eb17c161f473d407062d2535e1f3a020fc862ab",
+  "runtime": "/workspace/Blame/packages/agent-runtime/dist/harness",
+  "hashes": {
+    "symbolic-analysis": {
+      "compiled": "3e547bd012703988b184805608827ec2d966be7e8d93baaad4430ff66e36902b",
+      "source": "bce7dfce3c15f89087711cdab75fa67f775705e3b3409e8541f80176b33fd340"
+    },
+    "symbolic-expression": {
+      "compiled": "7e403ec5571f3013f616ddd6ad53b496d7bbf5ef13c2f98848ee36afe9e1f967",
+      "source": "316071effb3ea286b3ea5e27a14cf82565f11f4028691f9434845ba90c1c0f17"
+    },
+    "symbolic-program": {
+      "compiled": "823f6197393decdf6888d78171576ae08f3380f4cbcee70d7fb92d96507c03d1",
+      "source": "37884f1371e0dcbcfe7c9a97798011d88a39e9c736f7fd33651663e337d40b6c"
+    },
+    "symbolic-solver": {
+      "compiled": "f004b1098f1036af08ff80d02301799f3dec0412560413a1f6fa10ca522cfb4b",
+      "source": "8137bb7a16ee50eaa3d7d3d0c9e7be148a059782b7a62630a3143051245569dc"
+    },
+    "symbolic-types": {
+      "compiled": "85515d1e813dcfcfd8b2243394eba0c108111a13a47b2470cf744261472b7e13",
+      "source": "a567fc24c6f6b57715386362845872fd80a6ef81dcf38a5f53203a235adde539"
+    }
+  },
+  "solver": {
+    "executable": "/tmp/blame-z3-f46/bin/z3",
+    "binarySha256": "1bfaf5bbe81fd0b7800500ee08eef426aaabe18f8b9c4c4c32adffcd72f86cd5",
+    "version": "Z3 version 4.15.4 - 64 bit"
+  },
+  "environment": {
+    "platform": "linux",
+    "arch": "x64",
+    "node": "v24.19.0",
+    "typescript": "5.9.3"
+  },
+  "summary": {
+    "cases": 26,
+    "supported": 18,
+    "unsupported": 8,
+    "exhaustiveInputs": 910,
+    "counterexamples": 8,
+    "boundedNoCounterexample": 10,
+    "unknownSupported": 0,
+    "unsupportedRefusals": 8,
+    "enumerationDurationMs": 178.83311400000002,
+    "solverDurationMs": 386.83096099999983,
+    "failures": [],
+    "modelCalls": 0,
+    "validationAdmission": false,
+    "conclusion": "Local bounded mechanism agrees on this selected diagnostic corpus; no model quality, efficiency or broad semantic completeness claim."
+  },
+  "observations": [
+    {
+      "id": "generated-affine-valid",
+      "expectedMode": "supported",
+      "enumeration": {
+        "executedInputs": 9,
+        "violations": 0,
+        "firstCounterexample": null,
+        "durationMs": 32.605525
+      },
+      "result": {
+        "sourceSha256": "c514426938ee9509060f6a3e53101349ef85535b26dbad7c7100d28ff294d00b",
+        "functionName": "choose",
+        "assertion": "result === x * 3 + 3",
+        "inputs": {
+          "x": {
+            "min": -4,
+            "max": 4
+          }
+        },
+        "scope": "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.",
+        "validationAdmission": false,
+        "solver": {
+          "executable": "/tmp/blame-z3-f46/bin/z3",
+          "version": "Z3 version 4.15.4 - 64 bit",
+          "querySha256": "5aeae21b57edc226769f2922103a3c156873a57a6c5f52dee72b3ed3bfe1f63b"
+        },
+        "status": "bounded_no_counterexample",
+        "reason": "No violating input exists in the supplied finite safe integer/boolean domain under the supported isolated-function semantics."
+      },
+      "solverDurationMs": 24.542223999999976,
+      "realJsWitness": null,
+      "agrees": true
+    },
+    {
+      "id": "generated-affine-bug",
+      "expectedMode": "supported",
+      "enumeration": {
+        "executedInputs": 9,
+        "violations": 8,
+        "firstCounterexample": {
+          "inputs": {
+            "x": -4
+          },
+          "result": -13
+        },
+        "durationMs": 4.450475999999981
+      },
+      "result": {
+        "sourceSha256": "8ad2c9eebf927626d6fa2ded0fb932042e5cf944df718aea6f74058b1b7d92c0",
+        "functionName": "choose",
+        "assertion": "result === x * 3 + 3",
+        "inputs": {
+          "x": {
+            "min": -4,
+            "max": 4
+          }
+        },
+        "scope": "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.",
+        "validationAdmission": false,
+        "solver": {
+          "executable": "/tmp/blame-z3-f46/bin/z3",
+          "version": "Z3 version 4.15.4 - 64 bit",
+          "querySha256": "2504aec4e842d7ab341dbacfdb659726a66730a530ed0a2a345113726c9bcbf5"
+        },
+        "status": "counterexample",
+        "reason": "A violating input was reproduced by interpreting the original supported TypeScript AST with JavaScript scalar operations.",
+        "witness": {
+          "inputs": {
+            "x": -4
+          },
+          "result": -13,
+          "assertion": false,
+          "concretelyReproduced": true
+        }
+      },
+      "solverDurationMs": 23.370934999999974,
+      "realJsWitness": {
+        "result": -13,
+        "property": false,
+        "matchesReportedResult": true,
+        "violatesProperty": true
+      },
+      "agrees": true
+    },
+    {
+      "id": "clamp-valid",
+      "expectedMode": "supported",
+      "enumeration": {
+        "executedInputs": 225,
+        "violations": 0,
+        "firstCounterexample": null,
+        "durationMs": 28.50427400000001
+      },
+      "result": {
+        "sourceSha256": "8614ae32bfacf12d5f7679fa49bf6cdfe2fe44614b3a7de705a185b961c20745",
+        "functionName": "choose",
+        "assertion": "lo > hi || (result >= lo && result <= hi)",
+        "inputs": {
+          "x": {
+            "min": -4,
+            "max": 4
+          },
+          "lo": {
+            "min": -2,
+            "max": 2
+          },
+          "hi": {
+            "min": -2,
+            "max": 2
+          }
+        },
+        "scope": "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.",
+        "validationAdmission": false,
+        "solver": {
+          "executable": "/tmp/blame-z3-f46/bin/z3",
+          "version": "Z3 version 4.15.4 - 64 bit",
+          "querySha256": "6c5417226614f37602550ad111391ae0a76001062846581812a01b23899602db"
+        },
+        "status": "bounded_no_counterexample",
+        "reason": "No violating input exists in the supplied finite safe integer/boolean domain under the supported isolated-function semantics."
+      },
+      "solverDurationMs": 19.07240200000001,
+      "realJsWitness": null,
+      "agrees": true
+    },
+    {
+      "id": "clamp-low-branch-bug",
+      "expectedMode": "supported",
+      "enumeration": {
+        "executedInputs": 225,
+        "violations": 50,
+        "firstCounterexample": {
+          "inputs": {
+            "x": -4,
+            "lo": -2,
+            "hi": -2
+          },
+          "result": -4
+        },
+        "durationMs": 20.811626000000047
+      },
+      "result": {
+        "sourceSha256": "972aff252c7658093d7a596d1e0e0a1dc999fc0b121dd23b1e6391d09a78b409",
+        "functionName": "choose",
+        "assertion": "lo > hi || (result >= lo && result <= hi)",
+        "inputs": {
+          "x": {
+            "min": -4,
+            "max": 4
+          },
+          "lo": {
+            "min": -2,
+            "max": 2
+          },
+          "hi": {
+            "min": -2,
+            "max": 2
+          }
+        },
+        "scope": "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.",
+        "validationAdmission": false,
+        "solver": {
+          "executable": "/tmp/blame-z3-f46/bin/z3",
+          "version": "Z3 version 4.15.4 - 64 bit",
+          "querySha256": "e8501583c4723750c59926f55f68507b402a3cf90f166877a14d2646b16349ef"
+        },
+        "status": "counterexample",
+        "reason": "A violating input was reproduced by interpreting the original supported TypeScript AST with JavaScript scalar operations.",
+        "witness": {
+          "inputs": {
+            "x": -1,
+            "lo": 0,
+            "hi": 2
+          },
+          "result": -1,
+          "assertion": false,
+          "concretelyReproduced": true
+        }
+      },
+      "solverDurationMs": 22.00863400000003,
+      "realJsWitness": {
+        "result": -1,
+        "property": false,
+        "matchesReportedResult": true,
+        "violatesProperty": true
+      },
+      "agrees": true
+    },
+    {
+      "id": "absolute-valid",
+      "expectedMode": "supported",
+      "enumeration": {
+        "executedInputs": 9,
+        "violations": 0,
+        "firstCounterexample": null,
+        "durationMs": 5.718158000000017
+      },
+      "result": {
+        "sourceSha256": "c33804c1d27fba46947e208a2d0b49c778af2c6e1668ea74a88fcafc37b9094b",
+        "functionName": "choose",
+        "assertion": "result >= 0 && result * result === x * x",
+        "inputs": {
+          "x": {
+            "min": -4,
+            "max": 4
+          }
+        },
+        "scope": "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.",
+        "validationAdmission": false,
+        "solver": {
+          "executable": "/tmp/blame-z3-f46/bin/z3",
+          "version": "Z3 version 4.15.4 - 64 bit",
+          "querySha256": "5c11c0372100b062b4524a23655bba85aa8362fd0af467067f8dfeb63c8f1cfd"
+        },
+        "status": "bounded_no_counterexample",
+        "reason": "No violating input exists in the supplied finite safe integer/boolean domain under the supported isolated-function semantics."
+      },
+      "solverDurationMs": 26.19255800000002,
+      "realJsWitness": null,
+      "agrees": true
+    },
+    {
+      "id": "absolute-negative-bug",
+      "expectedMode": "supported",
+      "enumeration": {
+        "executedInputs": 9,
+        "violations": 4,
+        "firstCounterexample": {
+          "inputs": {
+            "x": -4
+          },
+          "result": -4
+        },
+        "durationMs": 3.851337000000001
+      },
+      "result": {
+        "sourceSha256": "cf8f7c2b37191663e91c2aeca2117aba5288096c40e83aa28e646afda6812637",
+        "functionName": "choose",
+        "assertion": "result >= 0 && result * result === x * x",
+        "inputs": {
+          "x": {
+            "min": -4,
+            "max": 4
+          }
+        },
+        "scope": "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.",
+        "validationAdmission": false,
+        "solver": {
+          "executable": "/tmp/blame-z3-f46/bin/z3",
+          "version": "Z3 version 4.15.4 - 64 bit",
+          "querySha256": "4244ce12dd83a9fea9c3f839d3a4ce43b2111ad0552776d617f70190adf8bdd3"
+        },
+        "status": "counterexample",
+        "reason": "A violating input was reproduced by interpreting the original supported TypeScript AST with JavaScript scalar operations.",
+        "witness": {
+          "inputs": {
+            "x": -4
+          },
+          "result": -4,
+          "assertion": false,
+          "concretelyReproduced": true
+        }
+      },
+      "solverDurationMs": 20.847788999999977,
+      "realJsWitness": {
+        "result": -4,
+        "property": false,
+        "matchesReportedResult": true,
+        "violatesProperty": true
+      },
+      "agrees": true
+    },
+    {
+      "id": "conditional-arrow-valid",
+      "expectedMode": "supported",
+      "enumeration": {
+        "executedInputs": 18,
+        "violations": 0,
+        "firstCounterexample": null,
+        "durationMs": 6.404465999999957
+      },
+      "result": {
+        "sourceSha256": "2144bc39a146c4586273f7ce56835b540fbdf609218eb5d795e5ae7b926544cc",
+        "functionName": "choose",
+        "assertion": "result === (enabled ? x + 3 : x - 3)",
+        "inputs": {
+          "x": {
+            "min": -4,
+            "max": 4
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "scope": "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.",
+        "validationAdmission": false,
+        "solver": {
+          "executable": "/tmp/blame-z3-f46/bin/z3",
+          "version": "Z3 version 4.15.4 - 64 bit",
+          "querySha256": "6ef695f4e07245c1967b95a18c4a8bc3657fc426054bb4b9a06961bd50f07113"
+        },
+        "status": "bounded_no_counterexample",
+        "reason": "No violating input exists in the supplied finite safe integer/boolean domain under the supported isolated-function semantics."
+      },
+      "solverDurationMs": 20.37916100000001,
+      "realJsWitness": null,
+      "agrees": true
+    },
+    {
+      "id": "conditional-arrow-bug",
+      "expectedMode": "supported",
+      "enumeration": {
+        "executedInputs": 18,
+        "violations": 9,
+        "firstCounterexample": {
+          "inputs": {
+            "x": -4,
+            "enabled": false
+          },
+          "result": -1
+        },
+        "durationMs": 4.905515000000037
+      },
+      "result": {
+        "sourceSha256": "7f70f1e0257b5753adb2fe6a88ebf7190f48e79b6611d14ac0cd57d3b238dd1d",
+        "functionName": "choose",
+        "assertion": "result === (enabled ? x + 3 : x - 3)",
+        "inputs": {
+          "x": {
+            "min": -4,
+            "max": 4
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "scope": "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.",
+        "validationAdmission": false,
+        "solver": {
+          "executable": "/tmp/blame-z3-f46/bin/z3",
+          "version": "Z3 version 4.15.4 - 64 bit",
+          "querySha256": "78655bfbe8c741917f8048ab8e6fe0070fb4f45f02d75569eb061aac48638078"
+        },
+        "status": "counterexample",
+        "reason": "A violating input was reproduced by interpreting the original supported TypeScript AST with JavaScript scalar operations.",
+        "witness": {
+          "inputs": {
+            "x": -4,
+            "enabled": false
+          },
+          "result": -1,
+          "assertion": false,
+          "concretelyReproduced": true
+        }
+      },
+      "solverDurationMs": 24.04773899999998,
+      "realJsWitness": {
+        "result": -1,
+        "property": false,
+        "matchesReportedResult": true,
+        "violatesProperty": true
+      },
+      "agrees": true
+    },
+    {
+      "id": "nonlinear-local-valid",
+      "expectedMode": "supported",
+      "enumeration": {
+        "executedInputs": 9,
+        "violations": 0,
+        "firstCounterexample": null,
+        "durationMs": 4.5856449999999995
+      },
+      "result": {
+        "sourceSha256": "a6625a6a5482249f37bb0ac125193ff4df76676fff3d08e746d257f06cf019f8",
+        "functionName": "choose",
+        "assertion": "result === (x * x > 2 ? -(x * x) : x * x + 1)",
+        "inputs": {
+          "x": {
+            "min": -4,
+            "max": 4
+          }
+        },
+        "scope": "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.",
+        "validationAdmission": false,
+        "solver": {
+          "executable": "/tmp/blame-z3-f46/bin/z3",
+          "version": "Z3 version 4.15.4 - 64 bit",
+          "querySha256": "c0f2167ac4e552c030bf99e3a3a4379402294100ac7164ebab111fb8e85eade5"
+        },
+        "status": "bounded_no_counterexample",
+        "reason": "No violating input exists in the supplied finite safe integer/boolean domain under the supported isolated-function semantics."
+      },
+      "solverDurationMs": 18.416938999999957,
+      "realJsWitness": null,
+      "agrees": true
+    },
+    {
+      "id": "nonlinear-local-bug",
+      "expectedMode": "supported",
+      "enumeration": {
+        "executedInputs": 9,
+        "violations": 3,
+        "firstCounterexample": {
+          "inputs": {
+            "x": -1
+          },
+          "result": 0
+        },
+        "durationMs": 4.991199999999935
+      },
+      "result": {
+        "sourceSha256": "6958debd65dd4eab51f837caaed0c127d08e2ea5e365361be2dcd7bd498804d4",
+        "functionName": "choose",
+        "assertion": "result === (x * x > 2 ? -(x * x) : x * x + 1)",
+        "inputs": {
+          "x": {
+            "min": -4,
+            "max": 4
+          }
+        },
+        "scope": "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.",
+        "validationAdmission": false,
+        "solver": {
+          "executable": "/tmp/blame-z3-f46/bin/z3",
+          "version": "Z3 version 4.15.4 - 64 bit",
+          "querySha256": "6587ec25ed66d32193bc04aeb38d020ce627389520af5f7378ff73c85fc55a9f"
+        },
+        "status": "counterexample",
+        "reason": "A violating input was reproduced by interpreting the original supported TypeScript AST with JavaScript scalar operations.",
+        "witness": {
+          "inputs": {
+            "x": 0
+          },
+          "result": -1,
+          "assertion": false,
+          "concretelyReproduced": true
+        }
+      },
+      "solverDurationMs": 23.565781000000015,
+      "realJsWitness": {
+        "result": -1,
+        "property": false,
+        "matchesReportedResult": true,
+        "violatesProperty": true
+      },
+      "agrees": true
+    },
+    {
+      "id": "boolean-equivalence-valid",
+      "expectedMode": "supported",
+      "enumeration": {
+        "executedInputs": 81,
+        "violations": 0,
+        "firstCounterexample": null,
+        "durationMs": 9.668170000000032
+      },
+      "result": {
+        "sourceSha256": "b114012d2de03825b7543d81f9e924fb9f1c92dbf24ac9927a7d6d890153a30c",
+        "functionName": "choose",
+        "assertion": "result === (x === y)",
+        "inputs": {
+          "x": {
+            "min": -4,
+            "max": 4
+          },
+          "y": {
+            "min": -4,
+            "max": 4
+          }
+        },
+        "scope": "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.",
+        "validationAdmission": false,
+        "solver": {
+          "executable": "/tmp/blame-z3-f46/bin/z3",
+          "version": "Z3 version 4.15.4 - 64 bit",
+          "querySha256": "3d4b0c319d763dbc4650056bcf14b010ac9a2b70c7f69b707795f7210171d632"
+        },
+        "status": "bounded_no_counterexample",
+        "reason": "No violating input exists in the supplied finite safe integer/boolean domain under the supported isolated-function semantics."
+      },
+      "solverDurationMs": 19.874964999999975,
+      "realJsWitness": null,
+      "agrees": true
+    },
+    {
+      "id": "boolean-equivalence-bug",
+      "expectedMode": "supported",
+      "enumeration": {
+        "executedInputs": 81,
+        "violations": 81,
+        "firstCounterexample": {
+          "inputs": {
+            "x": -4,
+            "y": -4
+          },
+          "result": false
+        },
+        "durationMs": 11.77663599999994
+      },
+      "result": {
+        "sourceSha256": "792603fd004188b46e9eba2b3275c7cc80cee9624acb80bfac461bb2ea6decef",
+        "functionName": "choose",
+        "assertion": "result === (x === y)",
+        "inputs": {
+          "x": {
+            "min": -4,
+            "max": 4
+          },
+          "y": {
+            "min": -4,
+            "max": 4
+          }
+        },
+        "scope": "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.",
+        "validationAdmission": false,
+        "solver": {
+          "executable": "/tmp/blame-z3-f46/bin/z3",
+          "version": "Z3 version 4.15.4 - 64 bit",
+          "querySha256": "8f795d64908ac2212ddfbaeb3b5ed67d1bda6f68f67564b0a332e2e1b2ad3a28"
+        },
+        "status": "counterexample",
+        "reason": "A violating input was reproduced by interpreting the original supported TypeScript AST with JavaScript scalar operations.",
+        "witness": {
+          "inputs": {
+            "x": -4,
+            "y": -4
+          },
+          "result": false,
+          "assertion": false,
+          "concretelyReproduced": true
+        }
+      },
+      "solverDurationMs": 23.136281000000054,
+      "realJsWitness": {
+        "result": false,
+        "property": false,
+        "matchesReportedResult": true,
+        "violatesProperty": true
+      },
+      "agrees": true
+    },
+    {
+      "id": "two-return-block-valid",
+      "expectedMode": "supported",
+      "enumeration": {
+        "executedInputs": 81,
+        "violations": 0,
+        "firstCounterexample": null,
+        "durationMs": 13.245723999999996
+      },
+      "result": {
+        "sourceSha256": "ff2041ddb656797b75961a1f41d818bb1fd3510c27cfeb8d580819a7fdde4f57",
+        "functionName": "choose",
+        "assertion": "result <= x && result <= y && (result === x || result === y)",
+        "inputs": {
+          "x": {
+            "min": -4,
+            "max": 4
+          },
+          "y": {
+            "min": -4,
+            "max": 4
+          }
+        },
+        "scope": "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.",
+        "validationAdmission": false,
+        "solver": {
+          "executable": "/tmp/blame-z3-f46/bin/z3",
+          "version": "Z3 version 4.15.4 - 64 bit",
+          "querySha256": "65e40f4e858b72497961daab34e5aad03f21fc183428d7b99bfeb069930b1ad1"
+        },
+        "status": "bounded_no_counterexample",
+        "reason": "No violating input exists in the supplied finite safe integer/boolean domain under the supported isolated-function semantics."
+      },
+      "solverDurationMs": 21.977689000000055,
+      "realJsWitness": null,
+      "agrees": true
+    },
+    {
+      "id": "two-return-block-bug",
+      "expectedMode": "supported",
+      "enumeration": {
+        "executedInputs": 81,
+        "violations": 72,
+        "firstCounterexample": {
+          "inputs": {
+            "x": -4,
+            "y": -3
+          },
+          "result": -3
+        },
+        "durationMs": 8.931969000000095
+      },
+      "result": {
+        "sourceSha256": "9cb6afe585f46f3f5895f0000ee0a2c07d4342023b17100cd1920f67c5725a5f",
+        "functionName": "choose",
+        "assertion": "result <= x && result <= y && (result === x || result === y)",
+        "inputs": {
+          "x": {
+            "min": -4,
+            "max": 4
+          },
+          "y": {
+            "min": -4,
+            "max": 4
+          }
+        },
+        "scope": "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.",
+        "validationAdmission": false,
+        "solver": {
+          "executable": "/tmp/blame-z3-f46/bin/z3",
+          "version": "Z3 version 4.15.4 - 64 bit",
+          "querySha256": "445728b9e37854ff270fc589f88d822670d95e2865a0afee87a46f3a43410613"
+        },
+        "status": "counterexample",
+        "reason": "A violating input was reproduced by interpreting the original supported TypeScript AST with JavaScript scalar operations.",
+        "witness": {
+          "inputs": {
+            "x": -3,
+            "y": 4
+          },
+          "result": 4,
+          "assertion": false,
+          "concretelyReproduced": true
+        }
+      },
+      "solverDurationMs": 22.127238000000034,
+      "realJsWitness": {
+        "result": 4,
+        "property": false,
+        "matchesReportedResult": true,
+        "violatesProperty": true
+      },
+      "agrees": true
+    },
+    {
+      "id": "safe-upper-boundary",
+      "expectedMode": "supported",
+      "enumeration": {
+        "executedInputs": 5,
+        "violations": 0,
+        "firstCounterexample": null,
+        "durationMs": 4.508141000000023
+      },
+      "result": {
+        "sourceSha256": "03b08824c98a9c738cd668cfa56152ee7f13a3e2be8157c72ff600e07477012d",
+        "functionName": "choose",
+        "assertion": "result < x",
+        "inputs": {
+          "x": {
+            "min": 9007199254740987,
+            "max": 9007199254740991
+          }
+        },
+        "scope": "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.",
+        "validationAdmission": false,
+        "solver": {
+          "executable": "/tmp/blame-z3-f46/bin/z3",
+          "version": "Z3 version 4.15.4 - 64 bit",
+          "querySha256": "951a81eebcb269879c1c27ed557b42ac20e8b6c10f7fc4c3dd7e5ecbe646fc04"
+        },
+        "status": "bounded_no_counterexample",
+        "reason": "No violating input exists in the supplied finite safe integer/boolean domain under the supported isolated-function semantics."
+      },
+      "solverDurationMs": 17.82233599999995,
+      "realJsWitness": null,
+      "agrees": true
+    },
+    {
+      "id": "safe-lower-boundary",
+      "expectedMode": "supported",
+      "enumeration": {
+        "executedInputs": 5,
+        "violations": 0,
+        "firstCounterexample": null,
+        "durationMs": 3.512428
+      },
+      "result": {
+        "sourceSha256": "7fb05589197cab8adb5bedec1e1b0a17fe4c7347e35220fdeb28944792d1ddb4",
+        "functionName": "choose",
+        "assertion": "result > x",
+        "inputs": {
+          "x": {
+            "min": -9007199254740991,
+            "max": -9007199254740987
+          }
+        },
+        "scope": "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.",
+        "validationAdmission": false,
+        "solver": {
+          "executable": "/tmp/blame-z3-f46/bin/z3",
+          "version": "Z3 version 4.15.4 - 64 bit",
+          "querySha256": "600db09f7b355316508f136ade1066d2cd750163715abb37c85acf5a8ca9facd"
+        },
+        "status": "bounded_no_counterexample",
+        "reason": "No violating input exists in the supplied finite safe integer/boolean domain under the supported isolated-function semantics."
+      },
+      "solverDurationMs": 17.268872999999985,
+      "realJsWitness": null,
+      "agrees": true
+    },
+    {
+      "id": "boolean-short-circuit-valid",
+      "expectedMode": "supported",
+      "enumeration": {
+        "executedInputs": 18,
+        "violations": 0,
+        "firstCounterexample": null,
+        "durationMs": 4.991850999999997
+      },
+      "result": {
+        "sourceSha256": "4e775690d5dbef239545da626531686386630eba4b46aa0102602345aa2ce822",
+        "functionName": "choose",
+        "assertion": "result === (enabled && x < 0)",
+        "inputs": {
+          "x": {
+            "min": -4,
+            "max": 4
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "scope": "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.",
+        "validationAdmission": false,
+        "solver": {
+          "executable": "/tmp/blame-z3-f46/bin/z3",
+          "version": "Z3 version 4.15.4 - 64 bit",
+          "querySha256": "d83d5660b0183f9dc9fa540b9dd2c6c9c445a03cbab532de5c609c0028f9fd8b"
+        },
+        "status": "bounded_no_counterexample",
+        "reason": "No violating input exists in the supplied finite safe integer/boolean domain under the supported isolated-function semantics."
+      },
+      "solverDurationMs": 20.456943999999908,
+      "realJsWitness": null,
+      "agrees": true
+    },
+    {
+      "id": "boolean-short-circuit-bug",
+      "expectedMode": "supported",
+      "enumeration": {
+        "executedInputs": 18,
+        "violations": 9,
+        "firstCounterexample": {
+          "inputs": {
+            "x": -4,
+            "enabled": false
+          },
+          "result": true
+        },
+        "durationMs": 5.369972999999959
+      },
+      "result": {
+        "sourceSha256": "501bc5db85a67728dcd9635113a88992d77170ef81885c15e69dfb9131f03175",
+        "functionName": "choose",
+        "assertion": "result === (enabled && x < 0)",
+        "inputs": {
+          "x": {
+            "min": -4,
+            "max": 4
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "scope": "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.",
+        "validationAdmission": false,
+        "solver": {
+          "executable": "/tmp/blame-z3-f46/bin/z3",
+          "version": "Z3 version 4.15.4 - 64 bit",
+          "querySha256": "154e5142d8bc3634022e9a4340ec8096dc9f2494acc1c2e48fc087f5a52455fc"
+        },
+        "status": "counterexample",
+        "reason": "A violating input was reproduced by interpreting the original supported TypeScript AST with JavaScript scalar operations.",
+        "witness": {
+          "inputs": {
+            "x": -4,
+            "enabled": false
+          },
+          "result": true,
+          "assertion": false,
+          "concretelyReproduced": true
+        }
+      },
+      "solverDurationMs": 21.722472999999923,
+      "realJsWitness": {
+        "result": true,
+        "property": false,
+        "matchesReportedResult": true,
+        "violatesProperty": true
+      },
+      "agrees": true
+    },
+    {
+      "id": "unsupported-call",
+      "expectedMode": "unsupported",
+      "enumeration": null,
+      "result": {
+        "sourceSha256": "87a1554c35d98a779c60aedecef4b132bcf9dbacfe025924b2d2c3dc65446eba",
+        "functionName": "choose",
+        "assertion": "result >= 0",
+        "inputs": {
+          "x": {
+            "min": -4,
+            "max": 4
+          }
+        },
+        "scope": "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.",
+        "validationAdmission": false,
+        "status": "unknown",
+        "reason": "unsupported_expression:CallExpression"
+      },
+      "solverDurationMs": 0.7998250000000553,
+      "realJsWitness": null,
+      "agrees": true
+    },
+    {
+      "id": "unsupported-loop",
+      "expectedMode": "unsupported",
+      "enumeration": null,
+      "result": {
+        "sourceSha256": "46ad9c36f3e55767e307cd4dd62539a1a9ccd167286412068de0c5f5b7c64de9",
+        "functionName": "choose",
+        "assertion": "result >= 0",
+        "inputs": {
+          "x": {
+            "min": -4,
+            "max": 4
+          }
+        },
+        "scope": "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.",
+        "validationAdmission": false,
+        "status": "unknown",
+        "reason": "unsupported_statement:WhileStatement"
+      },
+      "solverDurationMs": 0.4222700000000259,
+      "realJsWitness": null,
+      "agrees": true
+    },
+    {
+      "id": "unsupported-fraction",
+      "expectedMode": "unsupported",
+      "enumeration": null,
+      "result": {
+        "sourceSha256": "9a9af4549e82842d75786b68d7e1889b69b17f6ef222d8d20a46c4d18bb97dce",
+        "functionName": "choose",
+        "assertion": "result > x",
+        "inputs": {
+          "x": {
+            "min": -4,
+            "max": 4
+          }
+        },
+        "scope": "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.",
+        "validationAdmission": false,
+        "status": "unknown",
+        "reason": "non_safe_integer_literal"
+      },
+      "solverDurationMs": 0.22954700000002504,
+      "realJsWitness": null,
+      "agrees": true
+    },
+    {
+      "id": "unsupported-overflow",
+      "expectedMode": "unsupported",
+      "enumeration": null,
+      "result": {
+        "sourceSha256": "7fb05589197cab8adb5bedec1e1b0a17fe4c7347e35220fdeb28944792d1ddb4",
+        "functionName": "choose",
+        "assertion": "result > x",
+        "inputs": {
+          "x": {
+            "min": 9007199254740990,
+            "max": 9007199254740991
+          }
+        },
+        "scope": "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.",
+        "validationAdmission": false,
+        "status": "unknown",
+        "reason": "unsafe_integer_intermediate"
+      },
+      "solverDurationMs": 0.16057599999999184,
+      "realJsWitness": null,
+      "agrees": true
+    },
+    {
+      "id": "unsupported-infinite-contract",
+      "expectedMode": "unsupported",
+      "enumeration": null,
+      "result": {
+        "sourceSha256": "60c0458cd6a3cba3033ac3b8a15ae3341be37d440192f066a53d4122633a07fa",
+        "functionName": "choose",
+        "assertion": "result >= 0",
+        "inputs": {
+          "x": {
+            "min": 0,
+            "max": null
+          }
+        },
+        "scope": "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.",
+        "validationAdmission": false,
+        "status": "unknown",
+        "reason": "finite_safe_integer_bounds_required"
+      },
+      "solverDurationMs": 0.09778400000004694,
+      "realJsWitness": null,
+      "agrees": true
+    },
+    {
+      "id": "unsupported-global",
+      "expectedMode": "unsupported",
+      "enumeration": null,
+      "result": {
+        "sourceSha256": "a59204bb628edf6ef4ecdb39a645ec4058a07a1da27b9a37e8eb0b8afc34c6bd",
+        "functionName": "choose",
+        "assertion": "result > x",
+        "inputs": {
+          "x": {
+            "min": -4,
+            "max": 4
+          }
+        },
+        "scope": "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.",
+        "validationAdmission": false,
+        "status": "unknown",
+        "reason": "unbound_identifier:offset"
+      },
+      "solverDurationMs": 0.09297700000001896,
+      "realJsWitness": null,
+      "agrees": true
+    },
+    {
+      "id": "unsupported-source-syntax",
+      "expectedMode": "unsupported",
+      "enumeration": null,
+      "result": {
+        "sourceSha256": "2baa3784e14cfa5e4e591b45dd4d050294d8b4a62e544d06b5006f78736588e4",
+        "functionName": "choose",
+        "assertion": "result >= 0",
+        "inputs": {
+          "x": {
+            "min": -4,
+            "max": 4
+          }
+        },
+        "scope": "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.",
+        "validationAdmission": false,
+        "status": "unknown",
+        "reason": "source_parse_error"
+      },
+      "solverDurationMs": 4.1950709999999845,
+      "realJsWitness": null,
+      "agrees": true
+    },
+    {
+      "id": "unsupported-property-injection",
+      "expectedMode": "unsupported",
+      "enumeration": null,
+      "result": {
+        "sourceSha256": "60c0458cd6a3cba3033ac3b8a15ae3341be37d440192f066a53d4122633a07fa",
+        "functionName": "choose",
+        "assertion": "true), rogue = (false",
+        "inputs": {
+          "x": {
+            "min": -4,
+            "max": 4
+          }
+        },
+        "scope": "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.",
+        "validationAdmission": false,
+        "status": "unknown",
+        "reason": "assertion_expression_required"
+      },
+      "solverDurationMs": 0.328171999999995,
+      "realJsWitness": null,
+      "agrees": true
+    }
+  ]
+}

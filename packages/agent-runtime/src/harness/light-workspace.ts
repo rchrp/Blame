@@ -157,6 +157,10 @@ export class LightWorkspace {
 
   async runTask(input: LightRunTaskInput, context: AgentToolContext) {
     await this.ready;
+    if (input.kind === "analyze") {
+      const { analyzeWorkspaceSymbol } = await import("./light-symbolic-analysis.js");
+      return analyzeWorkspaceSymbol(this.files, this.aliases, input, context.signal);
+    }
     const result = await this.tasks.run(input, context);
     if (result.status !== "ok") return result;
     const paths = arrayValue(recordValue(result.data).paths).flatMap(

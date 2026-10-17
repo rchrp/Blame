@@ -1,0 +1,625 @@
+{
+  "modelRequests": 0,
+  "method": "Post-hoc independent local review of the new prototype, before any model campaign. Twelve constructed supported fixtures compare the source AST interpreter and real Z3 against transpiled JavaScript on every finite input. Four adversarial shape/assertion cases must remain unknown. Initial adverse observations preceded hardening and were not byte-bound replays; post-hardening controls bind the exact source contents below. This is no global success/efficiency claim.",
+  "sources": {
+    "/workspace/Blame/packages/agent-runtime/src/harness/symbolic-analysis.ts": {
+      "sha256": "bce7dfce3c15f89087711cdab75fa67f775705e3b3409e8541f80176b33fd340",
+      "content": "import { createHash } from \"node:crypto\";\nimport { compileSymbolicProgram } from \"./symbolic-program.js\";\nimport { parseSymbolicValues, runSymbolicSolver } from \"./symbolic-solver.js\";\nimport {\n  type Scalar,\n  type SymbolicRequest,\n  type SymbolicResult,\n  SymbolicUnsupported,\n  symbolicLimits,\n} from \"./symbolic-types.js\";\nexport type {\n  SymbolicInput,\n  SymbolicRequest,\n  SymbolicResult,\n} from \"./symbolic-types.js\";\n\nconst digest = (value: string) =>\n  createHash(\"sha256\").update(value).digest(\"hex\");\nconst scope =\n  \"Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.\";\n\nexport async function analyzeSymbolicSource(\n  request: SymbolicRequest,\n): Promise<SymbolicResult> {\n  request = { ...request, inputs: structuredClone(request.inputs) };\n  const base = {\n    sourceSha256: digest(request.source),\n    functionName: request.functionName,\n    assertion: request.assertion,\n    inputs: structuredClone(request.inputs),\n    scope,\n    validationAdmission: false as const,\n  };\n  const unknown = (\n    reason: string,\n    solver?: SymbolicResult[\"solver\"],\n  ): SymbolicResult => ({\n    ...base,\n    status: \"unknown\",\n    reason,\n    ...(solver ? { solver } : {}),\n  });\n  if (request.signal?.aborted) return unknown(\"cancelled\");\n  const timeoutMs = request.timeoutMs ?? symbolicLimits.defaultTimeoutMs;\n  if (\n    !Number.isInteger(timeoutMs) ||\n    timeoutMs < 1 ||\n    timeoutMs > symbolicLimits.maximumTimeoutMs\n  )\n    return unknown(\"invalid_timeout\");\n  let program: ReturnType<typeof compileSymbolicProgram>;\n  try {\n    program = compileSymbolicProgram(request);\n  } catch (error) {\n    return unknown(\n      error instanceof SymbolicUnsupported\n        ? error.message\n        : \"translation_failed\",\n    );\n  }\n  const executable = request.solverPath ?? process.env.BLAME_Z3_PATH ?? \"z3\";\n  const started = Date.now();\n  const identity = await runSymbolicSolver(executable, {\n    timeoutMs,\n    signal: request.signal,\n  });\n  if (identity.error) return unknown(identity.error);\n  const version = identity.output.trim();\n  if (!/^Z3 version \\d+\\.\\d+\\.\\d+(?:[.\\w -]*)$/.test(version))\n    return unknown(\"unrecognized_solver_identity\");\n  const solver = { executable, version, querySha256: digest(program.query) };\n  const remaining = timeoutMs - (Date.now() - started);\n  if (remaining < 1) return unknown(\"timed_out\", solver);\n  const result = await runSymbolicSolver(executable, {\n    query: program.query,\n    values: program.variables.map((entry) => entry.smt),\n    timeoutMs: remaining,\n    signal: request.signal,\n  });\n  if (result.error) return unknown(result.error, solver);\n  if (result.status === \"unknown\") return unknown(\"solver_unknown\", solver);\n  if (result.status === \"unsat\") {\n    if (result.output.trim() !== \"unsat\")\n      return unknown(\"invalid_solver_response\", solver);\n    return {\n      ...base,\n      solver,\n      status: \"bounded_no_counterexample\",\n      reason:\n        \"No violating input exists in the supplied finite safe integer/boolean domain under the supported isolated-function semantics.\",\n    };\n  }\n  if (result.status !== \"sat\")\n    return unknown(\"invalid_solver_response\", solver);\n  try {\n    const model = parseSymbolicValues(\n      result.output,\n      program.variables.map((entry) => entry.smt),\n    );\n    const inputs: Record<string, Scalar> = Object.fromEntries(\n      program.variables.map((entry) => {\n        const value = model.get(entry.smt)!;\n        const contract = request.inputs[entry.name];\n        if (\n          entry.type === \"boolean\"\n            ? typeof value !== \"boolean\"\n            : typeof value !== \"number\" ||\n              contract.type === \"boolean\" ||\n              value < contract.min ||\n              value > contract.max\n        )\n          throw new Error(\"model_outside_contract\");\n        return [entry.name, value];\n      }),\n    );\n    const concrete = program.reproduce(inputs);\n    if (concrete.assertion !== false)\n      return unknown(\"counterexample_not_reproduced\", solver);\n    if (\n      typeof concrete.result === \"number\" &&\n      !Number.isSafeInteger(concrete.result)\n    )\n      return unknown(\"counterexample_outside_safe_integer_semantics\", solver);\n    return {\n      ...base,\n      solver,\n      status: \"counterexample\",\n      reason:\n        \"A violating input was reproduced by interpreting the original supported TypeScript AST with JavaScript scalar operations.\",\n      witness: {\n        inputs,\n        result: concrete.result,\n        assertion: false,\n        concretelyReproduced: true,\n      },\n    };\n  } catch {\n    return unknown(\"invalid_or_unreproduced_solver_model\", solver);\n  }\n}\n"
+    },
+    "/workspace/Blame/packages/agent-runtime/src/harness/symbolic-program.ts": {
+      "sha256": "332e925e18f53cc95a33357dfb0c1179d5a6eca918723a27caf10b18997d3d66",
+      "content": "import ts from \"typescript\";\nimport {\n  boundedSmt,\n  compileExpression,\n  evaluateExpression,\n  smtInteger,\n} from \"./symbolic-expression.js\";\nimport {\n  type Bindings,\n  type Environment,\n  type Expression,\n  type Scalar,\n  type SymbolicRequest,\n  symbolicLimits,\n  unsupported,\n} from \"./symbolic-types.js\";\n\ntype State = { env: Environment; path: string };\ntype Outcome = { path: string; value: Expression };\ntype FunctionNode =\n  | ts.FunctionDeclaration\n  | ts.ArrowFunction\n  | ts.FunctionExpression;\nexport type SymbolicProgram = {\n  query: string;\n  variables: { name: string; smt: string; type: \"integer\" | \"boolean\" }[];\n  reproduce(inputs: Record<string, Scalar>): {\n    result: Scalar;\n    assertion: Scalar;\n  };\n};\n\nfunction parse(text: string) {\n  const source = ts.createSourceFile(\n    \"symbolic.ts\",\n    text,\n    ts.ScriptTarget.Latest,\n    true,\n    ts.ScriptKind.TS,\n  );\n  if (\n    (source as ts.SourceFile & { parseDiagnostics: readonly ts.Diagnostic[] })\n      .parseDiagnostics.length\n  )\n    unsupported(\"source_parse_error\");\n  return source;\n}\n\nfunction scalarType(type: ts.TypeNode | undefined) {\n  if (type?.kind === ts.SyntaxKind.NumberKeyword) return \"integer\";\n  if (type?.kind === ts.SyntaxKind.BooleanKeyword) return \"boolean\";\n  unsupported(\"explicit_scalar_parameter_type_required\");\n}\n\nfunction findFunction(source: ts.SourceFile, name: string): FunctionNode {\n  const found: (FunctionNode | undefined)[] = [];\n  const bindingContains = (binding: ts.BindingName): boolean =>\n    ts.isIdentifier(binding)\n      ? binding.text === name\n      : binding.elements.some(\n          (element) =>\n            !ts.isOmittedExpression(element) && bindingContains(element.name),\n        );\n  for (const statement of source.statements) {\n    if (\n      (ts.isClassDeclaration(statement) ||\n        ts.isEnumDeclaration(statement) ||\n        ts.isModuleDeclaration(statement)) &&\n      statement.name?.getText(source) === name\n    )\n      found.push(undefined);\n    if (ts.isImportDeclaration(statement) && statement.importClause) {\n      const clause = statement.importClause,\n        bindings = clause.namedBindings;\n      if (\n        clause.name?.text === name ||\n        (bindings &&\n          (ts.isNamespaceImport(bindings)\n            ? bindings.name.text === name\n            : bindings.elements.some((element) => element.name.text === name)))\n      )\n        found.push(undefined);\n    }\n    if (ts.isFunctionDeclaration(statement) && statement.name?.text === name)\n      found.push(statement);\n    if (ts.isVariableStatement(statement))\n      for (const declaration of statement.declarationList.declarations)\n        if (bindingContains(declaration.name))\n          found.push(\n            !statement.modifiers?.some(\n              (modifier) =>\n                modifier.kind === ts.SyntaxKind.DeclareKeyword ||\n                modifier.kind === ts.SyntaxKind.AbstractKeyword,\n            ) &&\n              ts.isIdentifier(declaration.name) &&\n              statement.declarationList.flags & ts.NodeFlags.Const &&\n              declaration.initializer &&\n              (ts.isArrowFunction(declaration.initializer) ||\n                ts.isFunctionExpression(declaration.initializer))\n              ? declaration.initializer\n              : undefined,\n          );\n  }\n  if (found.length !== 1 || !found[0])\n    unsupported(\"function_missing_ambiguous_or_unsupported\");\n  return found[0];\n}\n\nexport function compileSymbolicProgram(\n  request: SymbolicRequest,\n): SymbolicProgram {\n  if (Buffer.byteLength(request.source) > symbolicLimits.sourceBytes)\n    unsupported(\"source_size_limit\");\n  if (!/^[A-Za-z_$][\\w$]{0,127}$/.test(request.functionName))\n    unsupported(\"invalid_function_name\");\n  if (request.assertion.length > symbolicLimits.assertionCharacters)\n    unsupported(\"assertion_size_limit\");\n  const node = findFunction(parse(request.source), request.functionName);\n  if (\n    !node.body ||\n    node.typeParameters?.length ||\n    (\"asteriskToken\" in node && node.asteriskToken) ||\n    node.modifiers?.some((modifier) =>\n      [\n        ts.SyntaxKind.AsyncKeyword,\n        ts.SyntaxKind.DeclareKeyword,\n        ts.SyntaxKind.AbstractKeyword,\n      ].includes(modifier.kind),\n    )\n  )\n    unsupported(\"unsupported_function_shape\");\n  if (node.getWidth() > symbolicLimits.targetCharacters)\n    unsupported(\"target_size_limit\");\n  if (\n    node.type &&\n    ![ts.SyntaxKind.NumberKeyword, ts.SyntaxKind.BooleanKeyword].includes(\n      node.type.kind,\n    )\n  )\n    unsupported(\"unsupported_return_type\");\n  let nodes = 0;\n  const count = (item: ts.Node) => {\n    nodes++;\n    ts.forEachChild(item, count);\n  };\n  count(node);\n  if (nodes > symbolicLimits.nodes) unsupported(\"syntax_node_limit\");\n  const env: Environment = new Map();\n  const variables: SymbolicProgram[\"variables\"] = [];\n  const constraints: string[] = [];\n  const names = new Set<string>([\"result\"]);\n  if (\n    !node.parameters.length ||\n    node.parameters.length > symbolicLimits.inputs ||\n    Object.keys(request.inputs).length !== node.parameters.length\n  )\n    unsupported(\"input_contract_mismatch\");\n  for (const [index, parameter] of node.parameters.entries()) {\n    if (\n      !ts.isIdentifier(parameter.name) ||\n      parameter.questionToken ||\n      parameter.dotDotDotToken ||\n      parameter.initializer ||\n      parameter.modifiers?.length\n    )\n      unsupported(\"unsupported_parameter\");\n    const name = parameter.name.text;\n    if (\n      name === \"this\" ||\n      names.has(name) ||\n      !Object.hasOwn(request.inputs, name)\n    )\n      unsupported(\"input_contract_mismatch\");\n    names.add(name);\n    const type = scalarType(parameter.type),\n      contract = request.inputs[name],\n      smt = `p${index}`;\n    if (type === \"boolean\") {\n      if (contract.type !== \"boolean\")\n        unsupported(\"input_contract_type_mismatch\");\n      env.set(name, { type, smt });\n    } else {\n      if (\n        contract.type === \"boolean\" ||\n        !Number.isSafeInteger(contract.min) ||\n        !Number.isSafeInteger(contract.max) ||\n        contract.min > contract.max\n      )\n        unsupported(\"finite_safe_integer_bounds_required\");\n      env.set(name, {\n        type,\n        smt,\n        min: BigInt(contract.min),\n        max: BigInt(contract.max),\n      });\n      constraints.push(\n        `(assert (and (<= ${smtInteger(BigInt(contract.min))} ${smt}) (<= ${smt} ${smtInteger(BigInt(contract.max))})))`,\n      );\n    }\n    variables.push({ name, smt, type });\n  }\n  const outcomes: Outcome[] = [];\n  let expansions = 0;\n  const execute = (statement: ts.Statement, state: State): State[] => {\n    if (++expansions > symbolicLimits.nodes)\n      unsupported(\"symbolic_expansion_limit\");\n    if (ts.isReturnStatement(statement)) {\n      if (!statement.expression) unsupported(\"return_expression_required\");\n      outcomes.push({\n        path: state.path,\n        value: compileExpression(statement.expression, state.env),\n      });\n      if (outcomes.length > symbolicLimits.paths)\n        unsupported(\"symbolic_path_limit\");\n      return [];\n    }\n    if (ts.isBlock(statement)) {\n      const remaining = statements(statement.statements, {\n        ...state,\n        env: new Map(state.env),\n      });\n      return remaining.map((entry) => ({ ...entry, env: new Map(state.env) }));\n    }\n    if (ts.isIfStatement(statement)) {\n      const condition = compileExpression(statement.expression, state.env);\n      if (condition.type !== \"boolean\")\n        unsupported(\"boolean_condition_required\");\n      const branch = (path: string) => ({\n        env: new Map(state.env),\n        path: boundedSmt(`(and ${state.path} ${path})`),\n      });\n      const yes = execute(statement.thenStatement, branch(condition.smt));\n      const noState = branch(`(not ${condition.smt})`);\n      return [\n        ...yes,\n        ...(statement.elseStatement\n          ? execute(statement.elseStatement, noState)\n          : [noState]),\n      ];\n    }\n    if (\n      ts.isVariableStatement(statement) &&\n      statement.declarationList.flags & ts.NodeFlags.Const\n    ) {\n      for (const declaration of statement.declarationList.declarations) {\n        if (!ts.isIdentifier(declaration.name) || !declaration.initializer)\n          unsupported(\"unsupported_local_declaration\");\n        const name = declaration.name.text;\n        // A declaration may be visited in several paths, but scope shadowing is rejected below.\n        const value = compileExpression(declaration.initializer, state.env);\n        if (declaration.type && scalarType(declaration.type) !== value.type)\n          unsupported(\"local_type_mismatch\");\n        state.env.set(name, value);\n      }\n      return [state];\n    }\n    unsupported(`unsupported_statement:${ts.SyntaxKind[statement.kind]}`);\n  };\n  const statements = (\n    items: readonly ts.Statement[],\n    initial: State,\n  ): State[] => {\n    let active = [initial];\n    for (const item of items) {\n      if (!active.length) unsupported(\"unreachable_statement\");\n      active = active.flatMap((state) => execute(item, state));\n      if (active.length > symbolicLimits.paths)\n        unsupported(\"symbolic_path_limit\");\n    }\n    return active;\n  };\n  const checkNames = (item: ts.Node) => {\n    if (ts.isVariableDeclaration(item)) {\n      if (!ts.isIdentifier(item.name) || names.has(item.name.text))\n        unsupported(\"shadowed_or_duplicate_local\");\n      names.add(item.name.text);\n    }\n    ts.forEachChild(item, checkNames);\n  };\n  checkNames(node.body);\n  if (ts.isBlock(node.body)) {\n    if (\n      statements(node.body.statements, { env: new Map(env), path: \"true\" })\n        .length\n    )\n      unsupported(\"all_paths_must_return\");\n  } else\n    outcomes.push({ path: \"true\", value: compileExpression(node.body, env) });\n  if (!outcomes.length) unsupported(\"all_paths_must_return\");\n  if (\n    node.type &&\n    outcomes.some((outcome) => outcome.value.type !== scalarType(node.type))\n  )\n    unsupported(\"return_type_mismatch\");\n  let result = outcomes.at(-1)!.value;\n  for (const outcome of outcomes.slice(0, -1).reverse()) {\n    if (outcome.value.type !== result.type) unsupported(\"mixed_return_types\");\n    result = {\n      ...result,\n      smt: boundedSmt(\n        `(ite ${outcome.path} ${outcome.value.smt} ${result.smt})`,\n      ),\n    };\n  }\n  const assertionSource = parse(`const __assertion = (${request.assertion});`);\n  if (\n    assertionSource.statements.length !== 1 ||\n    !ts.isVariableStatement(assertionSource.statements[0]) ||\n    assertionSource.statements[0].declarationList.declarations.length !== 1\n  )\n    unsupported(\"assertion_expression_required\");\n  const assertion =\n    assertionSource.statements[0].declarationList.declarations[0].initializer;\n  if (\n    !assertion ||\n    !ts.isParenthesizedExpression(assertion) ||\n    assertion.getStart(assertionSource) !== \"const __assertion = \".length ||\n    assertion.getText(assertionSource) !== `(${request.assertion})`\n  )\n    unsupported(\"assertion_expression_required\");\n  const assertionEnv = new Map(env);\n  if (result.type === \"integer\") {\n    const integers = outcomes\n      .map((entry) => entry.value)\n      .filter((value) => value.type === \"integer\");\n    result = {\n      ...result,\n      min: integers.reduce(\n        (min, value) => (value.min < min ? value.min : min),\n        result.min,\n      ),\n      max: integers.reduce(\n        (max, value) => (value.max > max ? value.max : max),\n        result.max,\n      ),\n    };\n  }\n  assertionEnv.set(\"result\", result);\n  const property = compileExpression(assertion, assertionEnv);\n  if (property.type !== \"boolean\") unsupported(\"boolean_assertion_required\");\n  const query = [\n    \"(set-logic QF_NIA)\",\n    ...variables.map(\n      (entry) =>\n        `(declare-const ${entry.smt} ${entry.type === \"integer\" ? \"Int\" : \"Bool\"})`,\n    ),\n    ...constraints,\n    `(assert (not ${property.smt}))`,\n  ].join(\"\\n\");\n  if (Buffer.byteLength(query) > symbolicLimits.maximumSmtBytes)\n    unsupported(\"smt_size_limit\");\n  return {\n    query,\n    variables,\n    reproduce: (inputs) => {\n      const bindings: Bindings = new Map(Object.entries(inputs));\n      const value = evaluateFunction(node, bindings);\n      bindings.set(\"result\", value);\n      return {\n        result: value,\n        assertion: evaluateExpression(assertion, bindings),\n      };\n    },\n  };\n}\n\nfunction evaluateFunction(node: FunctionNode, env: Bindings): Scalar {\n  const run = (\n    statement: ts.Statement,\n    bindings: Bindings,\n  ): { value: Scalar } | undefined => {\n    if (ts.isReturnStatement(statement) && statement.expression)\n      return { value: evaluateExpression(statement.expression, bindings) };\n    if (ts.isBlock(statement)) {\n      const nested = new Map(bindings);\n      for (const item of statement.statements) {\n        const result = run(item, nested);\n        if (result) return result;\n      }\n      return;\n    }\n    if (ts.isIfStatement(statement)) {\n      if (evaluateExpression(statement.expression, bindings))\n        return run(statement.thenStatement, bindings);\n      if (statement.elseStatement)\n        return run(statement.elseStatement, bindings);\n      return;\n    }\n    if (ts.isVariableStatement(statement)) {\n      for (const declaration of statement.declarationList.declarations)\n        if (ts.isIdentifier(declaration.name) && declaration.initializer)\n          bindings.set(\n            declaration.name.text,\n            evaluateExpression(declaration.initializer, bindings),\n          );\n      return;\n    }\n    unsupported(\"concrete_unsupported_statement\");\n  };\n  if (!node.body) unsupported(\"concrete_missing_body\");\n  if (!ts.isBlock(node.body)) return evaluateExpression(node.body, env);\n  const value = run(node.body, env);\n  if (!value) unsupported(\"concrete_missing_return\");\n  return value.value;\n}\n"
+    },
+    "/workspace/Blame/packages/agent-runtime/src/harness/symbolic-expression.ts": {
+      "sha256": "316071effb3ea286b3ea5e27a14cf82565f11f4028691f9434845ba90c1c0f17",
+      "content": "import ts from \"typescript\";\nimport {\n  type Bindings,\n  type Environment,\n  type Expression,\n  type Scalar,\n  symbolicLimits,\n  unsupported,\n} from \"./symbolic-types.js\";\n\nconst safe = BigInt(Number.MAX_SAFE_INTEGER);\nexport const smtInteger = (value: bigint) =>\n  value < 0n ? `(- ${-value})` : String(value);\n\nexport function boundedSmt(smt: string): string {\n  if (smt.length > symbolicLimits.maximumSmtBytes)\n    unsupported(\"smt_size_limit\");\n  return smt;\n}\n\nfunction boolean(smt: string): Expression {\n  return { type: \"boolean\", smt: boundedSmt(smt) };\n}\n\nfunction integer(smt: string, min: bigint, max: bigint): Expression {\n  if (min < -safe || max > safe) unsupported(\"unsafe_integer_intermediate\");\n  return { type: \"integer\", smt: boundedSmt(smt), min, max };\n}\n\nexport function compileExpression(\n  node: ts.Expression,\n  env: Environment,\n): Expression {\n  if (ts.isParenthesizedExpression(node))\n    return compileExpression(node.expression, env);\n  if (ts.isIdentifier(node)) {\n    const value = env.get(node.text);\n    if (!value) unsupported(`unbound_identifier:${node.text}`);\n    return value;\n  }\n  if (ts.isNumericLiteral(node)) {\n    const value = Number(node.text);\n    if (!Number.isSafeInteger(value)) unsupported(\"non_safe_integer_literal\");\n    return integer(smtInteger(BigInt(value)), BigInt(value), BigInt(value));\n  }\n  if (\n    node.kind === ts.SyntaxKind.TrueKeyword ||\n    node.kind === ts.SyntaxKind.FalseKeyword\n  )\n    return boolean(node.kind === ts.SyntaxKind.TrueKeyword ? \"true\" : \"false\");\n  if (ts.isPrefixUnaryExpression(node)) {\n    const value = compileExpression(node.operand, env);\n    if (\n      node.operator === ts.SyntaxKind.ExclamationToken &&\n      value.type === \"boolean\"\n    )\n      return boolean(`(not ${value.smt})`);\n    if (value.type !== \"integer\") unsupported(\"unary_operand_type\");\n    if (node.operator === ts.SyntaxKind.PlusToken) return value;\n    if (node.operator === ts.SyntaxKind.MinusToken)\n      return integer(`(- ${value.smt})`, -value.max, -value.min);\n    unsupported(\"unsupported_unary_operator\");\n  }\n  if (ts.isConditionalExpression(node)) {\n    const condition = compileExpression(node.condition, env);\n    const yes = compileExpression(node.whenTrue, env);\n    const no = compileExpression(node.whenFalse, env);\n    if (condition.type !== \"boolean\" || yes.type !== no.type)\n      unsupported(\"conditional_operand_type\");\n    const smt = `(ite ${condition.smt} ${yes.smt} ${no.smt})`;\n    return yes.type === \"integer\" && no.type === \"integer\"\n      ? integer(\n          smt,\n          yes.min < no.min ? yes.min : no.min,\n          yes.max > no.max ? yes.max : no.max,\n        )\n      : boolean(smt);\n  }\n  if (!ts.isBinaryExpression(node))\n    unsupported(`unsupported_expression:${ts.SyntaxKind[node.kind]}`);\n  const a = compileExpression(node.left, env);\n  const b = compileExpression(node.right, env);\n  const operator = node.operatorToken.kind;\n  const equality =\n    operator === ts.SyntaxKind.EqualsEqualsEqualsToken ||\n    operator === ts.SyntaxKind.ExclamationEqualsEqualsToken;\n  if (equality) {\n    if (a.type !== b.type) unsupported(\"equality_operand_type\");\n    const smt = `(= ${a.smt} ${b.smt})`;\n    return boolean(\n      operator === ts.SyntaxKind.EqualsEqualsEqualsToken ? smt : `(not ${smt})`,\n    );\n  }\n  if (\n    operator === ts.SyntaxKind.AmpersandAmpersandToken ||\n    operator === ts.SyntaxKind.BarBarToken\n  ) {\n    if (a.type !== \"boolean\" || b.type !== \"boolean\")\n      unsupported(\"logical_operand_type\");\n    return boolean(\n      `(${operator === ts.SyntaxKind.AmpersandAmpersandToken ? \"and\" : \"or\"} ${a.smt} ${b.smt})`,\n    );\n  }\n  if (a.type !== \"integer\" || b.type !== \"integer\")\n    unsupported(\"integer_operand_type\");\n  const comparisons = new Map([\n    [ts.SyntaxKind.LessThanToken, \"<\"],\n    [ts.SyntaxKind.LessThanEqualsToken, \"<=\"],\n    [ts.SyntaxKind.GreaterThanToken, \">\"],\n    [ts.SyntaxKind.GreaterThanEqualsToken, \">=\"],\n  ]);\n  const comparison = comparisons.get(operator);\n  if (comparison) return boolean(`(${comparison} ${a.smt} ${b.smt})`);\n  if (operator === ts.SyntaxKind.PlusToken)\n    return integer(`(+ ${a.smt} ${b.smt})`, a.min + b.min, a.max + b.max);\n  if (operator === ts.SyntaxKind.MinusToken)\n    return integer(`(- ${a.smt} ${b.smt})`, a.min - b.max, a.max - b.min);\n  if (operator === ts.SyntaxKind.AsteriskToken) {\n    const bounds = [a.min * b.min, a.min * b.max, a.max * b.min, a.max * b.max];\n    return integer(\n      `(* ${a.smt} ${b.smt})`,\n      bounds.reduce((x, y) => (x < y ? x : y)),\n      bounds.reduce((x, y) => (x > y ? x : y)),\n    );\n  }\n  unsupported(\"unsupported_binary_operator\");\n}\n\n// This interpreter evaluates the original supported AST using JavaScript scalar\n// operations. It does not evaluate SMT or dynamically execute repository code.\nexport function evaluateExpression(node: ts.Expression, env: Bindings): Scalar {\n  if (ts.isParenthesizedExpression(node))\n    return evaluateExpression(node.expression, env);\n  if (ts.isIdentifier(node)) {\n    if (!env.has(node.text)) unsupported(\"concrete_unbound_identifier\");\n    return env.get(node.text)!;\n  }\n  if (ts.isNumericLiteral(node)) return Number(node.text);\n  if (node.kind === ts.SyntaxKind.TrueKeyword) return true;\n  if (node.kind === ts.SyntaxKind.FalseKeyword) return false;\n  if (ts.isPrefixUnaryExpression(node)) {\n    const value = evaluateExpression(node.operand, env);\n    if (node.operator === ts.SyntaxKind.ExclamationToken) return !value;\n    if (typeof value !== \"number\") unsupported(\"concrete_unary_type\");\n    if (node.operator === ts.SyntaxKind.MinusToken) return -value;\n    if (node.operator === ts.SyntaxKind.PlusToken) return +value;\n  }\n  if (ts.isConditionalExpression(node))\n    return evaluateExpression(\n      evaluateExpression(node.condition, env) ? node.whenTrue : node.whenFalse,\n      env,\n    );\n  if (ts.isBinaryExpression(node)) {\n    const a = evaluateExpression(node.left, env);\n    const op = node.operatorToken.kind;\n    if (op === ts.SyntaxKind.AmpersandAmpersandToken)\n      return a && evaluateExpression(node.right, env);\n    if (op === ts.SyntaxKind.BarBarToken)\n      return a || evaluateExpression(node.right, env);\n    const b = evaluateExpression(node.right, env);\n    if (op === ts.SyntaxKind.EqualsEqualsEqualsToken) return a === b;\n    if (op === ts.SyntaxKind.ExclamationEqualsEqualsToken) return a !== b;\n    if (typeof a !== \"number\" || typeof b !== \"number\")\n      unsupported(\"concrete_integer_type\");\n    if (op === ts.SyntaxKind.PlusToken) return a + b;\n    if (op === ts.SyntaxKind.MinusToken) return a - b;\n    if (op === ts.SyntaxKind.AsteriskToken) return a * b;\n    if (op === ts.SyntaxKind.LessThanToken) return a < b;\n    if (op === ts.SyntaxKind.LessThanEqualsToken) return a <= b;\n    if (op === ts.SyntaxKind.GreaterThanToken) return a > b;\n    if (op === ts.SyntaxKind.GreaterThanEqualsToken) return a >= b;\n  }\n  unsupported(\"concrete_unsupported_expression\");\n}\n"
+    },
+    "/workspace/Blame/packages/agent-runtime/src/harness/symbolic-solver.ts": {
+      "sha256": "8137bb7a16ee50eaa3d7d3d0c9e7be148a059782b7a62630a3143051245569dc",
+      "content": "import { spawn } from \"node:child_process\";\nimport { symbolicLimits } from \"./symbolic-types.js\";\n\ntype ProcessResult = {\n  output: string;\n  error?: string;\n  status?: \"sat\" | \"unsat\" | \"unknown\";\n};\nexport function runSymbolicSolver(\n  executable: string,\n  options: {\n    query?: string;\n    values?: string[];\n    timeoutMs: number;\n    signal?: AbortSignal;\n  },\n): Promise<ProcessResult> {\n  if (options.signal?.aborted)\n    return Promise.resolve({ output: \"\", error: \"cancelled\" });\n  return new Promise((resolve) => {\n    const child = spawn(\n      executable,\n      options.query ? [\"-in\", \"-smt2\"] : [\"-version\"],\n      {\n        shell: false,\n        detached: process.platform !== \"win32\",\n        stdio: [\"pipe\", \"pipe\", \"pipe\"],\n        windowsHide: true,\n      },\n    );\n    let output = \"\",\n      stderr = \"\",\n      bytes = 0,\n      error: string | undefined;\n    let status: ProcessResult[\"status\"],\n      finished = false,\n      drain: NodeJS.Timeout | undefined;\n    const stop = (reason: string) => {\n      error ??= reason;\n      if (process.platform !== \"win32\" && child.pid) {\n        try {\n          process.kill(-child.pid, \"SIGKILL\");\n        } catch {\n          child.kill(\"SIGKILL\");\n        }\n      } else child.kill(\"SIGKILL\");\n      drain ??= setTimeout(() => finish(), 100);\n    };\n    const abort = () => stop(\"cancelled\");\n    const timer = setTimeout(() => stop(\"timed_out\"), options.timeoutMs);\n    const finish = (code?: number | null) => {\n      if (finished) return;\n      finished = true;\n      clearTimeout(timer);\n      clearTimeout(drain);\n      options.signal?.removeEventListener(\"abort\", abort);\n      child.stdin.destroy();\n      child.stdout.destroy();\n      child.stderr.destroy();\n      child.unref();\n      if (!error && code !== 0) error = \"solver_process_failed\";\n      if (!error && stderr.trim()) error = \"solver_stderr\";\n      resolve({\n        output,\n        ...(status ? { status } : {}),\n        ...(error ? { error } : {}),\n      });\n    };\n    const capture = (chunk: Buffer, isError: boolean) => {\n      if (finished) return;\n      bytes += chunk.length;\n      if (bytes > symbolicLimits.outputBytes) {\n        stop(\"output_limit\");\n        return;\n      }\n      if (isError) {\n        stderr += chunk.toString(\"utf8\");\n        return;\n      }\n      output += chunk.toString(\"utf8\");\n      if (!options.query || status) return;\n      const first = /^(sat|unsat|unknown)\\r?\\n/.exec(output);\n      if (!first) {\n        if (output.includes(\"\\n\")) stop(\"invalid_solver_status\");\n        return;\n      }\n      status = first[1] as NonNullable<ProcessResult[\"status\"]>;\n      child.stdin.end(\n        status === \"sat\"\n          ? `(get-value (${options.values!.join(\" \")}))\\n(exit)\\n`\n          : \"(exit)\\n\",\n      );\n    };\n    child.stdout.on(\"error\", () => {\n      if (!finished) stop(\"solver_output_failed\");\n    });\n    child.stderr.on(\"error\", () => {\n      if (!finished) stop(\"solver_output_failed\");\n    });\n    child.stdout.on(\"data\", (chunk: Buffer) => capture(chunk, false));\n    child.stderr.on(\"data\", (chunk: Buffer) => capture(chunk, true));\n    child.on(\"error\", (cause: NodeJS.ErrnoException) => {\n      error =\n        cause.code === \"ENOENT\" ? \"solver_unavailable\" : \"solver_spawn_failed\";\n      finish();\n    });\n    child.stdin.on(\"error\", () => {\n      if (!finished) stop(\"solver_input_failed\");\n    });\n    child.once(\"close\", finish);\n    options.signal?.addEventListener(\"abort\", abort, { once: true });\n    if (options.signal?.aborted) abort();\n    else if (options.query)\n      child.stdin.write(\n        `(set-option :timeout ${options.timeoutMs})\\n${options.query}\\n(check-sat)\\n`,\n      );\n    else child.stdin.end();\n  });\n}\n\nexport function parseSymbolicValues(\n  output: string,\n  names: string[],\n): Map<string, number | boolean> {\n  const text = output.replace(/^sat\\r?\\n/, \"\").trim();\n  if (text.length > symbolicLimits.outputBytes || !/^\\([\\s\\S]*\\)$/.test(text))\n    throw new Error(\"invalid_solver_model\");\n  const values = new Map<string, number | boolean>();\n  const remaining = text\n    .slice(1, -1)\n    .replace(\n      /\\(\\s*(p\\d+)\\s+(true|false|-?\\d+|\\(\\s*-\\s+\\d+\\s*\\))\\s*\\)/g,\n      (_all, name: string, literal: string) => {\n        if (!names.includes(name) || values.has(name))\n          throw new Error(\"invalid_solver_model\");\n        const value =\n          literal === \"true\"\n            ? true\n            : literal === \"false\"\n              ? false\n              : literal.startsWith(\"(\")\n                ? -Number(literal.replace(/[()\\s-]/g, \"\"))\n                : Number(literal);\n        if (typeof value === \"number\" && !Number.isSafeInteger(value))\n          throw new Error(\"invalid_solver_model\");\n        values.set(name, value);\n        return \"\";\n      },\n    );\n  if (remaining.trim() || values.size !== names.length)\n    throw new Error(\"invalid_solver_model\");\n  return values;\n}\n"
+    },
+    "/workspace/Blame/packages/agent-runtime/src/harness/symbolic-types.ts": {
+      "sha256": "a567fc24c6f6b57715386362845872fd80a6ef81dcf38a5f53203a235adde539",
+      "content": "export type SymbolicInput =\n  | { min: number; max: number; type?: \"integer\" }\n  | { type: \"boolean\" };\n\nexport type SymbolicRequest = {\n  source: string;\n  functionName: string;\n  inputs: Record<string, SymbolicInput>;\n  assertion: string;\n  timeoutMs?: number;\n  signal?: AbortSignal;\n  solverPath?: string;\n};\n\nexport type SymbolicResult = {\n  status: \"counterexample\" | \"bounded_no_counterexample\" | \"unknown\";\n  reason: string;\n  sourceSha256: string;\n  functionName: string;\n  assertion: string;\n  inputs: Record<string, SymbolicInput>;\n  scope: string;\n  validationAdmission: false;\n  solver?: { executable: string; version: string; querySha256: string };\n  witness?: {\n    inputs: Record<string, number | boolean>;\n    result: number | boolean;\n    assertion: false;\n    concretelyReproduced: true;\n  };\n};\n\nexport type Scalar = number | boolean;\nexport type Bindings = Map<string, Scalar>;\nexport type IntegerExpression = {\n  type: \"integer\";\n  smt: string;\n  min: bigint;\n  max: bigint;\n};\nexport type BooleanExpression = { type: \"boolean\"; smt: string };\nexport type Expression = IntegerExpression | BooleanExpression;\nexport type Environment = Map<string, Expression>;\nexport const symbolicLimits = {\n  sourceBytes: 256 * 1024,\n  targetCharacters: 16 * 1024,\n  assertionCharacters: 4096,\n  nodes: 512,\n  paths: 32,\n  inputs: 8,\n  maximumSmtBytes: 128 * 1024,\n  outputBytes: 64 * 1024,\n  defaultTimeoutMs: 2500,\n  maximumTimeoutMs: 10_000,\n};\n\nexport class SymbolicUnsupported extends Error {}\nexport function unsupported(reason: string): never {\n  throw new SymbolicUnsupported(reason);\n}\n"
+    }
+  },
+  "typescriptVersion": "5.9.2",
+  "rows": [
+    {
+      "name": "identity",
+      "request": {
+        "source": "function choose(x:number){return x;}",
+        "functionName": "choose",
+        "inputs": {
+          "x": {
+            "min": -2,
+            "max": 2
+          }
+        },
+        "assertion": "result === x"
+      },
+      "concreteInputsChecked": 5,
+      "concreteViolations": 0,
+      "analysis": {
+        "sourceSha256": "15f6fd77da96fce20e8698976cab666395bdba13c87da585efd8c2ccbe7d2bd1",
+        "functionName": "choose",
+        "assertion": "result === x",
+        "inputs": {
+          "x": {
+            "min": -2,
+            "max": 2
+          }
+        },
+        "scope": "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.",
+        "validationAdmission": false,
+        "solver": {
+          "executable": "/tmp/blame-z3-f46/bin/z3",
+          "version": "Z3 version 4.15.4 - 64 bit",
+          "querySha256": "be08388f80d0fb0ae46d119453cb89c69d214817b8c3c68fb8c7af81822feff9"
+        },
+        "status": "bounded_no_counterexample",
+        "reason": "No violating input exists in the supplied finite safe integer/boolean domain under the supported isolated-function semantics."
+      }
+    },
+    {
+      "name": "square",
+      "request": {
+        "source": "function choose(x:number){return x*x;}",
+        "functionName": "choose",
+        "inputs": {
+          "x": {
+            "min": -2,
+            "max": 2
+          }
+        },
+        "assertion": "result >= 0"
+      },
+      "concreteInputsChecked": 5,
+      "concreteViolations": 0,
+      "analysis": {
+        "sourceSha256": "283dc40d96f42aa9c62dfe418f88ea5a338d550075454f8c5061adf47c113119",
+        "functionName": "choose",
+        "assertion": "result >= 0",
+        "inputs": {
+          "x": {
+            "min": -2,
+            "max": 2
+          }
+        },
+        "scope": "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.",
+        "validationAdmission": false,
+        "solver": {
+          "executable": "/tmp/blame-z3-f46/bin/z3",
+          "version": "Z3 version 4.15.4 - 64 bit",
+          "querySha256": "31f236cf3d3e6f26d845db234fd24300a4eebdabd4d52666da048c924b60011d"
+        },
+        "status": "bounded_no_counterexample",
+        "reason": "No violating input exists in the supplied finite safe integer/boolean domain under the supported isolated-function semantics."
+      }
+    },
+    {
+      "name": "bad branch",
+      "request": {
+        "source": "function choose(x:number){if(x<0)return x-1;return x+1;}",
+        "functionName": "choose",
+        "inputs": {
+          "x": {
+            "min": -2,
+            "max": 2
+          }
+        },
+        "assertion": "result > x"
+      },
+      "concreteInputsChecked": 5,
+      "concreteViolations": 2,
+      "analysis": {
+        "sourceSha256": "cd9bfb5991c7c57055b9882ed32ce14657fb00dd428f1e24be2d81525c993878",
+        "functionName": "choose",
+        "assertion": "result > x",
+        "inputs": {
+          "x": {
+            "min": -2,
+            "max": 2
+          }
+        },
+        "scope": "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.",
+        "validationAdmission": false,
+        "solver": {
+          "executable": "/tmp/blame-z3-f46/bin/z3",
+          "version": "Z3 version 4.15.4 - 64 bit",
+          "querySha256": "4b20f5fb3c15831e92c07319a4f8a00590354632c36dbf581d23e684cd2c5245"
+        },
+        "status": "counterexample",
+        "reason": "A violating input was reproduced by interpreting the original supported TypeScript AST with JavaScript scalar operations.",
+        "witness": {
+          "inputs": {
+            "x": -2
+          },
+          "result": -3,
+          "assertion": false,
+          "concretelyReproduced": true
+        }
+      }
+    },
+    {
+      "name": "branch locals",
+      "request": {
+        "source": "function choose(x:number,enabled:boolean){const delta=2;if(enabled){const y=x+delta;return y;}return x-delta;}",
+        "functionName": "choose",
+        "inputs": {
+          "x": {
+            "min": -2,
+            "max": 2
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "assertion": "enabled ? result === x+2 : result === x-2"
+      },
+      "concreteInputsChecked": 10,
+      "concreteViolations": 0,
+      "analysis": {
+        "sourceSha256": "80f4adbb8ce1b779684b417d2396e5debde359c68ccb43006cec1101b391a7cf",
+        "functionName": "choose",
+        "assertion": "enabled ? result === x+2 : result === x-2",
+        "inputs": {
+          "x": {
+            "min": -2,
+            "max": 2
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "scope": "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.",
+        "validationAdmission": false,
+        "solver": {
+          "executable": "/tmp/blame-z3-f46/bin/z3",
+          "version": "Z3 version 4.15.4 - 64 bit",
+          "querySha256": "aef50debefae25d2b69fde7f3d3237599b2daa771bb516b42b90e85594225ce6"
+        },
+        "status": "bounded_no_counterexample",
+        "reason": "No violating input exists in the supplied finite safe integer/boolean domain under the supported isolated-function semantics."
+      }
+    },
+    {
+      "name": "nonreturning nested block",
+      "request": {
+        "source": "function choose(x:number,enabled:boolean){const y=x+1;{const z=y*2;if(enabled)return z;}return y;}",
+        "functionName": "choose",
+        "inputs": {
+          "x": {
+            "min": -2,
+            "max": 2
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "assertion": "enabled ? result === 2*(x+1) : result === x+1"
+      },
+      "concreteInputsChecked": 10,
+      "concreteViolations": 0,
+      "analysis": {
+        "sourceSha256": "88226be8cf059ebd2898551772d24d4552c72bcd3c6d6893e62ce2b878dfbd80",
+        "functionName": "choose",
+        "assertion": "enabled ? result === 2*(x+1) : result === x+1",
+        "inputs": {
+          "x": {
+            "min": -2,
+            "max": 2
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "scope": "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.",
+        "validationAdmission": false,
+        "solver": {
+          "executable": "/tmp/blame-z3-f46/bin/z3",
+          "version": "Z3 version 4.15.4 - 64 bit",
+          "querySha256": "bbc83aa5e5519f62eb62edefa9f61014c75d2ea1f2dd2742697c04d53f46cd54"
+        },
+        "status": "bounded_no_counterexample",
+        "reason": "No violating input exists in the supplied finite safe integer/boolean domain under the supported isolated-function semantics."
+      }
+    },
+    {
+      "name": "nested conditions",
+      "request": {
+        "source": "function choose(x:number,enabled:boolean){if(enabled){if(x>0)return x;return -x;}return x+1;}",
+        "functionName": "choose",
+        "inputs": {
+          "x": {
+            "min": -2,
+            "max": 2
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "assertion": "enabled ? result >= 0 : result > x"
+      },
+      "concreteInputsChecked": 10,
+      "concreteViolations": 0,
+      "analysis": {
+        "sourceSha256": "1f31707e445fd874f6ef5bc24eacd77bc92899c9252525594f3848b9ed4d74fe",
+        "functionName": "choose",
+        "assertion": "enabled ? result >= 0 : result > x",
+        "inputs": {
+          "x": {
+            "min": -2,
+            "max": 2
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "scope": "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.",
+        "validationAdmission": false,
+        "solver": {
+          "executable": "/tmp/blame-z3-f46/bin/z3",
+          "version": "Z3 version 4.15.4 - 64 bit",
+          "querySha256": "9346ff32586604b60395b52ef604a5b1db4852194413a49074d5bb2e112de14d"
+        },
+        "status": "bounded_no_counterexample",
+        "reason": "No violating input exists in the supplied finite safe integer/boolean domain under the supported isolated-function semantics."
+      }
+    },
+    {
+      "name": "boolean arrow",
+      "request": {
+        "source": "const choose=(x:number,enabled:boolean)=>!(enabled && x>0);",
+        "functionName": "choose",
+        "inputs": {
+          "x": {
+            "min": -2,
+            "max": 2
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "assertion": "result === (!enabled || x<=0)"
+      },
+      "concreteInputsChecked": 10,
+      "concreteViolations": 0,
+      "analysis": {
+        "sourceSha256": "513046ec6a493326e9202554690d6fc4e58a21dfb5fde50c28d28ed81797eb8b",
+        "functionName": "choose",
+        "assertion": "result === (!enabled || x<=0)",
+        "inputs": {
+          "x": {
+            "min": -2,
+            "max": 2
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "scope": "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.",
+        "validationAdmission": false,
+        "solver": {
+          "executable": "/tmp/blame-z3-f46/bin/z3",
+          "version": "Z3 version 4.15.4 - 64 bit",
+          "querySha256": "ba625b42ba279c58896f3efefbac3dbca20d29fd5aaad47db154af0d13b25e22"
+        },
+        "status": "bounded_no_counterexample",
+        "reason": "No violating input exists in the supplied finite safe integer/boolean domain under the supported isolated-function semantics."
+      }
+    },
+    {
+      "name": "nonlinear identity",
+      "request": {
+        "source": "function choose(x:number){return (x-1)*(x+1);}",
+        "functionName": "choose",
+        "inputs": {
+          "x": {
+            "min": -2,
+            "max": 2
+          }
+        },
+        "assertion": "result === x*x-1"
+      },
+      "concreteInputsChecked": 5,
+      "concreteViolations": 0,
+      "analysis": {
+        "sourceSha256": "903a35565ea7ef58d6f378fc302e0a5b6716d4360e8d3802d81432d9b5d6bf86",
+        "functionName": "choose",
+        "assertion": "result === x*x-1",
+        "inputs": {
+          "x": {
+            "min": -2,
+            "max": 2
+          }
+        },
+        "scope": "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.",
+        "validationAdmission": false,
+        "solver": {
+          "executable": "/tmp/blame-z3-f46/bin/z3",
+          "version": "Z3 version 4.15.4 - 64 bit",
+          "querySha256": "e1a371cae14b1a999b4e777373325fcdd22998478c8509509fd89b80f423f7c3"
+        },
+        "status": "bounded_no_counterexample",
+        "reason": "No violating input exists in the supplied finite safe integer/boolean domain under the supported isolated-function semantics."
+      }
+    },
+    {
+      "name": "unary integers",
+      "request": {
+        "source": "function choose(x:number){return -(-x) + +x;}",
+        "functionName": "choose",
+        "inputs": {
+          "x": {
+            "min": -2,
+            "max": 2
+          }
+        },
+        "assertion": "result === 2*x"
+      },
+      "concreteInputsChecked": 5,
+      "concreteViolations": 0,
+      "analysis": {
+        "sourceSha256": "13c5a86148c7c087a729811b148a6ec562fe2766a7c34374ca2cd6685c584f54",
+        "functionName": "choose",
+        "assertion": "result === 2*x",
+        "inputs": {
+          "x": {
+            "min": -2,
+            "max": 2
+          }
+        },
+        "scope": "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.",
+        "validationAdmission": false,
+        "solver": {
+          "executable": "/tmp/blame-z3-f46/bin/z3",
+          "version": "Z3 version 4.15.4 - 64 bit",
+          "querySha256": "27dcd6d0ad5dd6bab67e77fd49ffc66353a925ac3e964523afc28f286a5b16e6"
+        },
+        "status": "bounded_no_counterexample",
+        "reason": "No violating input exists in the supplied finite safe integer/boolean domain under the supported isolated-function semantics."
+      }
+    },
+    {
+      "name": "declaration order",
+      "request": {
+        "source": "function choose(x:number){const y=x+1,z=y*x;return z;}",
+        "functionName": "choose",
+        "inputs": {
+          "x": {
+            "min": -2,
+            "max": 2
+          }
+        },
+        "assertion": "result === x*x+x"
+      },
+      "concreteInputsChecked": 5,
+      "concreteViolations": 0,
+      "analysis": {
+        "sourceSha256": "dee28fa92a6dd04d7105b10901bb1eed0117d6f768fec313734bd7a7640317b9",
+        "functionName": "choose",
+        "assertion": "result === x*x+x",
+        "inputs": {
+          "x": {
+            "min": -2,
+            "max": 2
+          }
+        },
+        "scope": "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.",
+        "validationAdmission": false,
+        "solver": {
+          "executable": "/tmp/blame-z3-f46/bin/z3",
+          "version": "Z3 version 4.15.4 - 64 bit",
+          "querySha256": "022e3c222f9c6af00e4dddf4a541475856d8af7ec0cc8c0848656c408f575924"
+        },
+        "status": "bounded_no_counterexample",
+        "reason": "No violating input exists in the supplied finite safe integer/boolean domain under the supported isolated-function semantics."
+      }
+    },
+    {
+      "name": "boolean ternary",
+      "request": {
+        "source": "const choose=(x:number,enabled:boolean)=>enabled ? x>0 : x<=0;",
+        "functionName": "choose",
+        "inputs": {
+          "x": {
+            "min": -2,
+            "max": 2
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "assertion": "result === (enabled ? x>0 : x<=0)"
+      },
+      "concreteInputsChecked": 10,
+      "concreteViolations": 0,
+      "analysis": {
+        "sourceSha256": "c09970f0b8ea57a9ff0d297bb5b553729dca51addf484f81449fdae9e61d32ee",
+        "functionName": "choose",
+        "assertion": "result === (enabled ? x>0 : x<=0)",
+        "inputs": {
+          "x": {
+            "min": -2,
+            "max": 2
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "scope": "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.",
+        "validationAdmission": false,
+        "solver": {
+          "executable": "/tmp/blame-z3-f46/bin/z3",
+          "version": "Z3 version 4.15.4 - 64 bit",
+          "querySha256": "a7318a4d53e697ddbe0f4841ca83cebc8bbd54dd1ae3282b1acb37090cb49c32"
+        },
+        "status": "bounded_no_counterexample",
+        "reason": "No violating input exists in the supplied finite safe integer/boolean domain under the supported isolated-function semantics."
+      }
+    },
+    {
+      "name": "constant violation",
+      "request": {
+        "source": "function choose(x:number){const y=0;return y;}",
+        "functionName": "choose",
+        "inputs": {
+          "x": {
+            "min": -2,
+            "max": 2
+          }
+        },
+        "assertion": "result > x"
+      },
+      "concreteInputsChecked": 5,
+      "concreteViolations": 3,
+      "analysis": {
+        "sourceSha256": "38fddcf907f3fde34a2971b3f910374f7e8fe2714a6bacebaea74d4a84caf800",
+        "functionName": "choose",
+        "assertion": "result > x",
+        "inputs": {
+          "x": {
+            "min": -2,
+            "max": 2
+          }
+        },
+        "scope": "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.",
+        "validationAdmission": false,
+        "solver": {
+          "executable": "/tmp/blame-z3-f46/bin/z3",
+          "version": "Z3 version 4.15.4 - 64 bit",
+          "querySha256": "f5560c827f1b4631d74bb57f391cd33cbab02d00f3e8c84dbbd341cb91bde39d"
+        },
+        "status": "counterexample",
+        "reason": "A violating input was reproduced by interpreting the original supported TypeScript AST with JavaScript scalar operations.",
+        "witness": {
+          "inputs": {
+            "x": 0
+          },
+          "result": 0,
+          "assertion": false,
+          "concretelyReproduced": true
+        }
+      }
+    }
+  ],
+  "adverse": [
+    {
+      "name": "ambient function body erased",
+      "source": "declare function choose(x:number){return x;}",
+      "inputs": {
+        "x": {
+          "min": -2,
+          "max": 2
+        }
+      },
+      "assertion": "result === x",
+      "before": "Prototype returned bounded_no_counterexample; TypeScript erases the declaration and real JavaScript has no choose binding.",
+      "after": {
+        "sourceSha256": "d6edc1a40d92160a46204c1b79f7449f57bfe3ebe82c01595fefe7cf60e450b7",
+        "functionName": "choose",
+        "assertion": "result === x",
+        "inputs": {
+          "x": {
+            "min": -2,
+            "max": 2
+          }
+        },
+        "scope": "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.",
+        "validationAdmission": false,
+        "status": "unknown",
+        "reason": "unsupported_function_shape"
+      }
+    },
+    {
+      "name": "ambient arrow erased",
+      "source": "declare const choose=(x:number)=>x;",
+      "inputs": {
+        "x": {
+          "min": -2,
+          "max": 2
+        }
+      },
+      "assertion": "result === x",
+      "before": "Same ambient-erasure mechanism; shape must remain unsupported.",
+      "after": {
+        "sourceSha256": "db9e662cf601a9f315ab6000f2a87ce63f8a9e65ca75ee6dd3cf0362522d9ba5",
+        "functionName": "choose",
+        "assertion": "result === x",
+        "inputs": {
+          "x": {
+            "min": -2,
+            "max": 2
+          }
+        },
+        "scope": "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.",
+        "validationAdmission": false,
+        "status": "unknown",
+        "reason": "function_missing_ambiguous_or_unsupported"
+      }
+    },
+    {
+      "name": "this pseudo parameter",
+      "source": "function choose(this:number,x:number){return x;}",
+      "inputs": {
+        "this": {
+          "min": 0,
+          "max": 1
+        },
+        "x": {
+          "min": 0,
+          "max": 1
+        }
+      },
+      "assertion": "result === x",
+      "before": "Prototype counted the erased TypeScript this pseudo-parameter as an ordinary scalar input.",
+      "after": {
+        "sourceSha256": "1f0127c782f536b2f5bd95bff504db10710039ce28c0f77d8d0ba14175060be1",
+        "functionName": "choose",
+        "assertion": "result === x",
+        "inputs": {
+          "this": {
+            "min": 0,
+            "max": 1
+          },
+          "x": {
+            "min": 0,
+            "max": 1
+          }
+        },
+        "scope": "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.",
+        "validationAdmission": false,
+        "status": "unknown",
+        "reason": "input_contract_mismatch"
+      }
+    },
+    {
+      "name": "assertion wrapper escape",
+      "source": "function choose(x:number){return x;}",
+      "inputs": {
+        "x": {
+          "min": -2,
+          "max": 2
+        }
+      },
+      "assertion": "true); //",
+      "before": "Prototype accepted an assertion that terminated the wrapper declaration; it was not an expression-only contract.",
+      "after": {
+        "sourceSha256": "15f6fd77da96fce20e8698976cab666395bdba13c87da585efd8c2ccbe7d2bd1",
+        "functionName": "choose",
+        "assertion": "true); //",
+        "inputs": {
+          "x": {
+            "min": -2,
+            "max": 2
+          }
+        },
+        "scope": "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.",
+        "validationAdmission": false,
+        "status": "unknown",
+        "reason": "assertion_expression_required"
+      }
+    }
+  ]
+}
