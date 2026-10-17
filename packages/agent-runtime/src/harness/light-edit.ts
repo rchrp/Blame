@@ -28,6 +28,7 @@ import type { ReferenceFootprint } from "./semantic-reference-types.js";
 import { type Replacement, symbolReplacement } from "./light-symbol-replacement.js";
 
 type PlannedFile = {
+  bodyTargets?: string[];
   footprint?: ReferenceFootprint;
   semanticRename?: Awaited<ReturnType<typeof planSemanticRename>>["receipt"];
   fileMode?: number;
@@ -335,6 +336,7 @@ export class LightEditService {
     const file = await this.filePlan(plans, resolved.path, resolved.content);
     file.symbols.push(resolved.symbol.qualified_name);
     file.replacements.push(symbolReplacement(resolved, operation));
+    if (operation.action === "replace_body") (file.bodyTargets ??= []).push(resolved.alias ?? operation.target);
   }
 
   private async filePlan(
@@ -397,7 +399,12 @@ export class LightEditService {
     if (!result.changedPaths.length)
       return {
         status: "ok",
-        data: { changed: false, parse: parseSummary(files) },
+        data: { changed: false, parse: parseSummary(files),
+          ...(files.some(file => file.bodyTargets?.length) ? {
+            guidance: "The observed body already matches. replace_body preserves parameters, return type and imports. To change them, read the complete declaration/file and use replace or a file patch; do not repeat this body edit.",
+            nextReads: [...new Set(files.flatMap(file => file.bodyTargets ?? []))].map(target => ({ target, view: "symbol" })),
+          } : {}),
+        },
       };
     return this.appliedResult(files, snapshot, result);
   }

@@ -30,12 +30,14 @@ export class LightReferenceSearch {
 
   async recovery(input: LightSearchCodeInput, reason: string,
     paths: string[], revision: string, signal?: AbortSignal) {
-    const guidance = "Lexical candidates only. For configured JS/TS semantic references, query a symbol sN alias or path#qualifiedName with mode references. Read before editing.";
+    const guidance = "Lexical fallback. For compiler references, choose an sN or path#name target; read before editing.";
     if (reason !== "symbol_target_required") return { guidance };
     const found = await referenceDeclarationCandidates(this.files, input.query, paths, revision, signal);
     const declarations = found.candidates.map(({ path, content, symbol, qualifiedUnique }) => {
       const { alias, materialized } = this.aliases.registerSymbol(path, content, symbol, revision);
-      return { ...searchSymbolResult(alias, path, materialized, "exact_declaration_candidate"),
+      const entry = searchSymbolResult(alias, path, materialized, "exact_declaration_candidate");
+      const signature = Array.from(entry.signature).slice(0, 160).join("");
+      return { ...entry, signature, ...(signature !== entry.signature ? { signatureTruncated: true } : {}),
         target: qualifiedUnique ? `${path}#${symbol.qualified_name}` : alias };
     });
     return {
@@ -44,7 +46,7 @@ export class LightReferenceSearch {
       nextSearches: declarations.length ? declarations.map(({ target }) =>
         ({ query: target, mode: "references", ...(input.scope ? { scope: input.scope } : {}) }))
         : [{ query: input.query, mode: "symbol", ...(input.scope ? { scope: input.scope } : {}) }],
-      guidance: guidance + " Declaration candidates are exact syntax matches, not compiler-resolved references. Choose the intended declaration before following nextSearches; discovery is bounded and not exhaustive. No identity was selected and no edit coverage was granted.",
+      guidance: "Bounded syntax candidates, not compiler-resolved references. Choose the intended declaration, then follow nextSearches. No edit coverage; read truncated signatures explicitly.",
     };
   }
 
