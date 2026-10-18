@@ -1,0 +1,15 @@
+{
+  "commit": "1a5852feec8619cc55be049baddf925a370580a3",
+  "sha256": "1c33333346ff71ee765015df2d3b60b003ad80f69e063ce970e891c37739d8ff",
+  "paths": [
+    "tools/terminal_bench/feedback-ablation-study",
+    "tools/terminal_bench/durable-campaign.mjs",
+    "tools/terminal_bench/isolated-node-environment.mjs",
+    "tools/terminal_bench/navigation-evidence/wire-audit.mjs",
+    "tools/terminal_bench/navigation-evidence/native-search-repair.mjs",
+    "tools/terminal_bench/request-limit-model-study/prompt-date.mjs",
+    "tools/terminal_bench/navigation-evidence/budget-accounting.mjs",
+    "tools/terminal_bench/corpus/light-study-accounting.mjs"
+  ],
+  "note": "Final F61 model-bound source after static optional-failure oracle clarification; no F61 calls existed before this version."
+}

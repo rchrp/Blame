@@ -1,0 +1,7 @@
+{
+  "artifacts": {
+    "ts-pattern.tar.gz": "97eb88ff4d4db4946034da435ea08ef69c372bc41d32467965f71673cbde80f1",
+    "frozen-runtimes.tar.gz": "43d21a6c60fa495f4a77424d129fbdc6c3996e1bed57609cba7a8518ab8ef98a"
+  },
+  "note": "Pinned upstream source and executable variants. Research controls/oracles never enter worker inputs."
+}
