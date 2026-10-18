@@ -1,6 +1,6 @@
 {
   "protocolHash": "32c5b7eceb4d31944b09d7518ca30fd5cf9645a20fc9427eef7934238b40933a",
-  "completed": 16,
+  "completed": 18,
   "planned": 18,
   "receipts": [
     {
@@ -66,6 +66,14 @@
     {
       "name": "2-signed-window-overlap-reference",
       "sha256": "7e2abecd2ff086848c4ac2fd5df8e81c8388517189ef778147383820caa0bcda"
+    },
+    {
+      "name": "2-signed-window-overlap-candidate",
+      "sha256": "310cba60661786e1812d16e3bea7dfdda72b0208a87aae626e18fa4c098cb1e5"
+    },
+    {
+      "name": "2-signed-window-overlap-cline",
+      "sha256": "e0513a5b56d1deb0bc5a38e561bbdaf17b693e5062d2fadc56d771ab482a51e3"
     }
   ],
   "note": "Derived index. Each immutable archive is independently verified; no model call is replayed."

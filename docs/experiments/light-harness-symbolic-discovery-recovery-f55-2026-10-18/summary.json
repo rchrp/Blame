@@ -1,0 +1,1133 @@
+{
+  "phase": "F55",
+  "complete": true,
+  "arms": {
+    "reference": {
+      "trials": 6,
+      "official": 6,
+      "selected": 6,
+      "independent": 6,
+      "audited": 6,
+      "sourceAudited": 6,
+      "input": 576793,
+      "output": 22504,
+      "tokens": 599297,
+      "cacheRead": 472704,
+      "cacheWrite": 0,
+      "sdkEstimatedUsd": 0.057276679999999996,
+      "durationMs": 278052,
+      "forwardedRequests": 59,
+      "missingUsageReceipts": 0,
+      "cachePerRequestReconciled": false,
+      "hintOffers": 0,
+      "hintOffersFollowed": 0,
+      "meaningfulSymbolicCalls": 0,
+      "symbolicCalls": 0,
+      "symbolicCounterexamples": 0,
+      "symbolicUnknowns": 0,
+      "symbolicBlockedCalls": 0,
+      "boundedNoCounterexamples": 0,
+      "requestBodyBytes": 2713410,
+      "schemaBytes": [
+        12278
+      ],
+      "emptySelectionTrials": 0,
+      "selectionFailureReports": 0,
+      "finishFailures": 0
+    },
+    "candidate": {
+      "trials": 6,
+      "official": 6,
+      "selected": 6,
+      "independent": 6,
+      "audited": 6,
+      "sourceAudited": 6,
+      "input": 559901,
+      "output": 22932,
+      "tokens": 582833,
+      "cacheRead": 416000,
+      "cacheWrite": 0,
+      "sdkEstimatedUsd": 0.0646186,
+      "durationMs": 295353,
+      "forwardedRequests": 56,
+      "missingUsageReceipts": 0,
+      "cachePerRequestReconciled": false,
+      "hintOffers": 16,
+      "hintOffersFollowed": 0,
+      "meaningfulSymbolicCalls": 0,
+      "symbolicCalls": 0,
+      "symbolicCounterexamples": 0,
+      "symbolicUnknowns": 0,
+      "symbolicBlockedCalls": 0,
+      "boundedNoCounterexamples": 0,
+      "requestBodyBytes": 2623804,
+      "schemaBytes": [
+        12278
+      ],
+      "emptySelectionTrials": 0,
+      "selectionFailureReports": 0,
+      "finishFailures": 0
+    },
+    "cline": {
+      "trials": 6,
+      "official": 6,
+      "selected": 6,
+      "independent": 6,
+      "audited": 6,
+      "sourceAudited": 6,
+      "input": 455528,
+      "output": 32691,
+      "tokens": 488219,
+      "cacheRead": 318976,
+      "cacheWrite": 0,
+      "sdkEstimatedUsd": 0.07291912,
+      "durationMs": 296052,
+      "forwardedRequests": 42,
+      "missingUsageReceipts": 0,
+      "cachePerRequestReconciled": false,
+      "hintOffers": 0,
+      "hintOffersFollowed": 0,
+      "meaningfulSymbolicCalls": 0,
+      "symbolicCalls": 0,
+      "symbolicCounterexamples": 0,
+      "symbolicUnknowns": 0,
+      "symbolicBlockedCalls": 0,
+      "boundedNoCounterexamples": 0,
+      "requestBodyBytes": 1863577,
+      "schemaBytes": [
+        7117
+      ],
+      "emptySelectionTrials": 0,
+      "selectionFailureReports": 0,
+      "finishFailures": 0
+    }
+  },
+  "comparisons": {
+    "candidate/reference": {
+      "pairs": 6,
+      "candidate": {
+        "trials": 6,
+        "tokens": 582833,
+        "cost": 0.0646186,
+        "durationMs": 295353
+      },
+      "baseline": {
+        "trials": 6,
+        "tokens": 599297,
+        "cost": 0.057276679999999996,
+        "durationMs": 278052
+      },
+      "tokenDelta": -0.027472188247229634,
+      "costDelta": 0.12818340727849464,
+      "durationDelta": 0.062222174269561004,
+      "pairDetails": [
+        {
+          "task": "credit-remainder",
+          "repeat": 1,
+          "candidate": "1-credit-remainder-candidate",
+          "baseline": "1-credit-remainder-reference",
+          "tokenDelta": -0.554554420688387,
+          "costDelta": -0.3875434055824425,
+          "durationDelta": -0.2542590688794243
+        },
+        {
+          "task": "inclusive-tier-allocation",
+          "repeat": 1,
+          "candidate": "1-inclusive-tier-allocation-candidate",
+          "baseline": "1-inclusive-tier-allocation-reference",
+          "tokenDelta": -0.2916105105191218,
+          "costDelta": -0.1455242427736929,
+          "durationDelta": -0.26412370761985526
+        },
+        {
+          "task": "signed-window-overlap",
+          "repeat": 1,
+          "candidate": "1-signed-window-overlap-candidate",
+          "baseline": "1-signed-window-overlap-reference",
+          "tokenDelta": 0.20105741965973545,
+          "costDelta": 0.4884523688982574,
+          "durationDelta": 0.2574767005146752
+        },
+        {
+          "task": "credit-remainder",
+          "repeat": 2,
+          "candidate": "2-credit-remainder-candidate",
+          "baseline": "2-credit-remainder-reference",
+          "tokenDelta": 0.5960715474018747,
+          "costDelta": 0.44293340706552975,
+          "durationDelta": 0.4850820432410945
+        },
+        {
+          "task": "inclusive-tier-allocation",
+          "repeat": 2,
+          "candidate": "2-inclusive-tier-allocation-candidate",
+          "baseline": "2-inclusive-tier-allocation-reference",
+          "tokenDelta": -0.4188060257909274,
+          "costDelta": 0.03198053607572926,
+          "durationDelta": -0.14683109919571047
+        },
+        {
+          "task": "signed-window-overlap",
+          "repeat": 2,
+          "candidate": "2-signed-window-overlap-candidate",
+          "baseline": "2-signed-window-overlap-reference",
+          "tokenDelta": 0.8413221446040742,
+          "costDelta": 0.6122366053288446,
+          "durationDelta": 0.5907183187898186
+        }
+      ],
+      "byTask": [
+        {
+          "task": "credit-remainder",
+          "pairs": 2,
+          "tokenDelta": -0.06960798061904927
+        },
+        {
+          "task": "inclusive-tier-allocation",
+          "pairs": 2,
+          "tokenDelta": -0.35903793033753284
+        },
+        {
+          "task": "signed-window-overlap",
+          "pairs": 2,
+          "tokenDelta": 0.4584547632925329
+        }
+      ],
+      "leaveOnePairOut": [
+        {
+          "omitted": "1-credit-remainder-candidate",
+          "tokenDelta": 0.10399974982018323
+        },
+        {
+          "omitted": "1-inclusive-tier-allocation-candidate",
+          "tokenDelta": 0.028390185130529266
+        },
+        {
+          "omitted": "1-signed-window-overlap-candidate",
+          "tokenDelta": -0.07410659214150672
+        },
+        {
+          "omitted": "2-credit-remainder-candidate",
+          "tokenDelta": -0.13359094619028467
+        },
+        {
+          "omitted": "2-inclusive-tier-allocation-candidate",
+          "tokenDelta": 0.06849779022629665
+        },
+        {
+          "omitted": "2-signed-window-overlap-candidate",
+          "tokenDelta": -0.13919030383379727
+        }
+      ],
+      "leaveOneTaskOut": [
+        {
+          "omitted": "credit-remainder",
+          "tokenDelta": -0.005271391300803119
+        },
+        {
+          "omitted": "inclusive-tier-allocation",
+          "tokenDelta": 0.16852160615103595
+        },
+        {
+          "omitted": "signed-window-overlap",
+          "tokenDelta": -0.21966207625638612
+        }
+      ]
+    },
+    "candidate/cline": {
+      "pairs": 6,
+      "candidate": {
+        "trials": 6,
+        "tokens": 582833,
+        "cost": 0.0646186,
+        "durationMs": 295353
+      },
+      "baseline": {
+        "trials": 6,
+        "tokens": 488219,
+        "cost": 0.07291912,
+        "durationMs": 296052
+      },
+      "tokenDelta": 0.1937941784322199,
+      "costDelta": -0.11383187290247065,
+      "durationDelta": -0.002361071703619655,
+      "pairDetails": [
+        {
+          "task": "credit-remainder",
+          "repeat": 1,
+          "candidate": "1-credit-remainder-candidate",
+          "baseline": "1-credit-remainder-cline",
+          "tokenDelta": -0.4197713663581927,
+          "costDelta": -0.3869554412470595,
+          "durationDelta": -0.13755546591367485
+        },
+        {
+          "task": "inclusive-tier-allocation",
+          "repeat": 1,
+          "candidate": "1-inclusive-tier-allocation-candidate",
+          "baseline": "1-inclusive-tier-allocation-cline",
+          "tokenDelta": 0.002936638969334382,
+          "costDelta": -0.3720124848761157,
+          "durationDelta": -0.062459770114942526
+        },
+        {
+          "task": "signed-window-overlap",
+          "repeat": 1,
+          "candidate": "1-signed-window-overlap-candidate",
+          "baseline": "1-signed-window-overlap-cline",
+          "tokenDelta": 0.21098922916563256,
+          "costDelta": 0.11436083152718846,
+          "durationDelta": -0.013836112070689577
+        },
+        {
+          "task": "credit-remainder",
+          "repeat": 2,
+          "candidate": "2-credit-remainder-candidate",
+          "baseline": "2-credit-remainder-cline",
+          "tokenDelta": 1.5565479472194657,
+          "costDelta": 0.29530544757482513,
+          "durationDelta": 0.49468770837963993
+        },
+        {
+          "task": "inclusive-tier-allocation",
+          "repeat": 2,
+          "candidate": "2-inclusive-tier-allocation-candidate",
+          "baseline": "2-inclusive-tier-allocation-cline",
+          "tokenDelta": -0.003674708419875383,
+          "costDelta": -0.05033978792417049,
+          "durationDelta": -0.15302559298215734
+        },
+        {
+          "task": "signed-window-overlap",
+          "repeat": 2,
+          "candidate": "2-signed-window-overlap-candidate",
+          "baseline": "2-signed-window-overlap-cline",
+          "tokenDelta": 0.27675497831981066,
+          "costDelta": -0.17252418664615454,
+          "durationDelta": -0.09934352241255517
+        }
+      ],
+      "byTask": [
+        {
+          "task": "credit-remainder",
+          "pairs": 2,
+          "tokenDelta": 0.3154706558004703
+        },
+        {
+          "task": "inclusive-tier-allocation",
+          "pairs": 2,
+          "tokenDelta": -0.0002522015090057339
+        },
+        {
+          "task": "signed-window-overlap",
+          "pairs": 2,
+          "tokenDelta": 0.24349938758709322
+        }
+      ],
+      "leaveOnePairOut": [
+        {
+          "omitted": "1-credit-remainder-candidate",
+          "tokenDelta": 0.3359748113500298
+        },
+        {
+          "omitted": "1-inclusive-tier-allocation-candidate",
+          "tokenDelta": 0.2278332227116393
+        },
+        {
+          "omitted": "1-signed-window-overlap-candidate",
+          "tokenDelta": 0.18932394627907212
+        },
+        {
+          "omitted": "2-credit-remainder-candidate",
+          "tokenDelta": 0.022858196655179075
+        },
+        {
+          "omitted": "2-inclusive-tier-allocation-candidate",
+          "tokenDelta": 0.22621312921763592
+        },
+        {
+          "omitted": "2-signed-window-overlap-candidate",
+          "tokenDelta": 0.17283228392115801
+        }
+      ],
+      "leaveOneTaskOut": [
+        {
+          "omitted": "credit-remainder",
+          "tokenDelta": 0.14174964542118107
+        },
+        {
+          "omitted": "inclusive-tier-allocation",
+          "tokenDelta": 0.2739698271370514
+        },
+        {
+          "omitted": "signed-window-overlap",
+          "tokenDelta": 0.15953246807170762
+        }
+      ]
+    }
+  },
+  "selectedComparisons": {
+    "candidate/reference": {
+      "pairs": 6,
+      "candidate": {
+        "trials": 6,
+        "tokens": 582833,
+        "cost": 0.0646186,
+        "durationMs": 295353
+      },
+      "baseline": {
+        "trials": 6,
+        "tokens": 599297,
+        "cost": 0.057276679999999996,
+        "durationMs": 278052
+      },
+      "tokenDelta": -0.027472188247229634,
+      "costDelta": 0.12818340727849464,
+      "durationDelta": 0.062222174269561004,
+      "pairDetails": [
+        {
+          "task": "credit-remainder",
+          "repeat": 1,
+          "candidate": "1-credit-remainder-candidate",
+          "baseline": "1-credit-remainder-reference",
+          "tokenDelta": -0.554554420688387,
+          "costDelta": -0.3875434055824425,
+          "durationDelta": -0.2542590688794243
+        },
+        {
+          "task": "inclusive-tier-allocation",
+          "repeat": 1,
+          "candidate": "1-inclusive-tier-allocation-candidate",
+          "baseline": "1-inclusive-tier-allocation-reference",
+          "tokenDelta": -0.2916105105191218,
+          "costDelta": -0.1455242427736929,
+          "durationDelta": -0.26412370761985526
+        },
+        {
+          "task": "signed-window-overlap",
+          "repeat": 1,
+          "candidate": "1-signed-window-overlap-candidate",
+          "baseline": "1-signed-window-overlap-reference",
+          "tokenDelta": 0.20105741965973545,
+          "costDelta": 0.4884523688982574,
+          "durationDelta": 0.2574767005146752
+        },
+        {
+          "task": "credit-remainder",
+          "repeat": 2,
+          "candidate": "2-credit-remainder-candidate",
+          "baseline": "2-credit-remainder-reference",
+          "tokenDelta": 0.5960715474018747,
+          "costDelta": 0.44293340706552975,
+          "durationDelta": 0.4850820432410945
+        },
+        {
+          "task": "inclusive-tier-allocation",
+          "repeat": 2,
+          "candidate": "2-inclusive-tier-allocation-candidate",
+          "baseline": "2-inclusive-tier-allocation-reference",
+          "tokenDelta": -0.4188060257909274,
+          "costDelta": 0.03198053607572926,
+          "durationDelta": -0.14683109919571047
+        },
+        {
+          "task": "signed-window-overlap",
+          "repeat": 2,
+          "candidate": "2-signed-window-overlap-candidate",
+          "baseline": "2-signed-window-overlap-reference",
+          "tokenDelta": 0.8413221446040742,
+          "costDelta": 0.6122366053288446,
+          "durationDelta": 0.5907183187898186
+        }
+      ],
+      "byTask": [
+        {
+          "task": "credit-remainder",
+          "pairs": 2,
+          "tokenDelta": -0.06960798061904927
+        },
+        {
+          "task": "inclusive-tier-allocation",
+          "pairs": 2,
+          "tokenDelta": -0.35903793033753284
+        },
+        {
+          "task": "signed-window-overlap",
+          "pairs": 2,
+          "tokenDelta": 0.4584547632925329
+        }
+      ],
+      "leaveOnePairOut": [
+        {
+          "omitted": "1-credit-remainder-candidate",
+          "tokenDelta": 0.10399974982018323
+        },
+        {
+          "omitted": "1-inclusive-tier-allocation-candidate",
+          "tokenDelta": 0.028390185130529266
+        },
+        {
+          "omitted": "1-signed-window-overlap-candidate",
+          "tokenDelta": -0.07410659214150672
+        },
+        {
+          "omitted": "2-credit-remainder-candidate",
+          "tokenDelta": -0.13359094619028467
+        },
+        {
+          "omitted": "2-inclusive-tier-allocation-candidate",
+          "tokenDelta": 0.06849779022629665
+        },
+        {
+          "omitted": "2-signed-window-overlap-candidate",
+          "tokenDelta": -0.13919030383379727
+        }
+      ],
+      "leaveOneTaskOut": [
+        {
+          "omitted": "credit-remainder",
+          "tokenDelta": -0.005271391300803119
+        },
+        {
+          "omitted": "inclusive-tier-allocation",
+          "tokenDelta": 0.16852160615103595
+        },
+        {
+          "omitted": "signed-window-overlap",
+          "tokenDelta": -0.21966207625638612
+        }
+      ]
+    },
+    "candidate/cline": {
+      "pairs": 6,
+      "candidate": {
+        "trials": 6,
+        "tokens": 582833,
+        "cost": 0.0646186,
+        "durationMs": 295353
+      },
+      "baseline": {
+        "trials": 6,
+        "tokens": 488219,
+        "cost": 0.07291912,
+        "durationMs": 296052
+      },
+      "tokenDelta": 0.1937941784322199,
+      "costDelta": -0.11383187290247065,
+      "durationDelta": -0.002361071703619655,
+      "pairDetails": [
+        {
+          "task": "credit-remainder",
+          "repeat": 1,
+          "candidate": "1-credit-remainder-candidate",
+          "baseline": "1-credit-remainder-cline",
+          "tokenDelta": -0.4197713663581927,
+          "costDelta": -0.3869554412470595,
+          "durationDelta": -0.13755546591367485
+        },
+        {
+          "task": "inclusive-tier-allocation",
+          "repeat": 1,
+          "candidate": "1-inclusive-tier-allocation-candidate",
+          "baseline": "1-inclusive-tier-allocation-cline",
+          "tokenDelta": 0.002936638969334382,
+          "costDelta": -0.3720124848761157,
+          "durationDelta": -0.062459770114942526
+        },
+        {
+          "task": "signed-window-overlap",
+          "repeat": 1,
+          "candidate": "1-signed-window-overlap-candidate",
+          "baseline": "1-signed-window-overlap-cline",
+          "tokenDelta": 0.21098922916563256,
+          "costDelta": 0.11436083152718846,
+          "durationDelta": -0.013836112070689577
+        },
+        {
+          "task": "credit-remainder",
+          "repeat": 2,
+          "candidate": "2-credit-remainder-candidate",
+          "baseline": "2-credit-remainder-cline",
+          "tokenDelta": 1.5565479472194657,
+          "costDelta": 0.29530544757482513,
+          "durationDelta": 0.49468770837963993
+        },
+        {
+          "task": "inclusive-tier-allocation",
+          "repeat": 2,
+          "candidate": "2-inclusive-tier-allocation-candidate",
+          "baseline": "2-inclusive-tier-allocation-cline",
+          "tokenDelta": -0.003674708419875383,
+          "costDelta": -0.05033978792417049,
+          "durationDelta": -0.15302559298215734
+        },
+        {
+          "task": "signed-window-overlap",
+          "repeat": 2,
+          "candidate": "2-signed-window-overlap-candidate",
+          "baseline": "2-signed-window-overlap-cline",
+          "tokenDelta": 0.27675497831981066,
+          "costDelta": -0.17252418664615454,
+          "durationDelta": -0.09934352241255517
+        }
+      ],
+      "byTask": [
+        {
+          "task": "credit-remainder",
+          "pairs": 2,
+          "tokenDelta": 0.3154706558004703
+        },
+        {
+          "task": "inclusive-tier-allocation",
+          "pairs": 2,
+          "tokenDelta": -0.0002522015090057339
+        },
+        {
+          "task": "signed-window-overlap",
+          "pairs": 2,
+          "tokenDelta": 0.24349938758709322
+        }
+      ],
+      "leaveOnePairOut": [
+        {
+          "omitted": "1-credit-remainder-candidate",
+          "tokenDelta": 0.3359748113500298
+        },
+        {
+          "omitted": "1-inclusive-tier-allocation-candidate",
+          "tokenDelta": 0.2278332227116393
+        },
+        {
+          "omitted": "1-signed-window-overlap-candidate",
+          "tokenDelta": 0.18932394627907212
+        },
+        {
+          "omitted": "2-credit-remainder-candidate",
+          "tokenDelta": 0.022858196655179075
+        },
+        {
+          "omitted": "2-inclusive-tier-allocation-candidate",
+          "tokenDelta": 0.22621312921763592
+        },
+        {
+          "omitted": "2-signed-window-overlap-candidate",
+          "tokenDelta": 0.17283228392115801
+        }
+      ],
+      "leaveOneTaskOut": [
+        {
+          "omitted": "credit-remainder",
+          "tokenDelta": 0.14174964542118107
+        },
+        {
+          "omitted": "inclusive-tier-allocation",
+          "tokenDelta": 0.2739698271370514
+        },
+        {
+          "omitted": "signed-window-overlap",
+          "tokenDelta": 0.15953246807170762
+        }
+      ]
+    }
+  },
+  "functionalComparisons": {
+    "candidate/reference": {
+      "pairs": 6,
+      "candidate": {
+        "trials": 6,
+        "tokens": 582833,
+        "cost": 0.0646186,
+        "durationMs": 295353
+      },
+      "baseline": {
+        "trials": 6,
+        "tokens": 599297,
+        "cost": 0.057276679999999996,
+        "durationMs": 278052
+      },
+      "tokenDelta": -0.027472188247229634,
+      "costDelta": 0.12818340727849464,
+      "durationDelta": 0.062222174269561004,
+      "pairDetails": [
+        {
+          "task": "credit-remainder",
+          "repeat": 1,
+          "candidate": "1-credit-remainder-candidate",
+          "baseline": "1-credit-remainder-reference",
+          "tokenDelta": -0.554554420688387,
+          "costDelta": -0.3875434055824425,
+          "durationDelta": -0.2542590688794243
+        },
+        {
+          "task": "inclusive-tier-allocation",
+          "repeat": 1,
+          "candidate": "1-inclusive-tier-allocation-candidate",
+          "baseline": "1-inclusive-tier-allocation-reference",
+          "tokenDelta": -0.2916105105191218,
+          "costDelta": -0.1455242427736929,
+          "durationDelta": -0.26412370761985526
+        },
+        {
+          "task": "signed-window-overlap",
+          "repeat": 1,
+          "candidate": "1-signed-window-overlap-candidate",
+          "baseline": "1-signed-window-overlap-reference",
+          "tokenDelta": 0.20105741965973545,
+          "costDelta": 0.4884523688982574,
+          "durationDelta": 0.2574767005146752
+        },
+        {
+          "task": "credit-remainder",
+          "repeat": 2,
+          "candidate": "2-credit-remainder-candidate",
+          "baseline": "2-credit-remainder-reference",
+          "tokenDelta": 0.5960715474018747,
+          "costDelta": 0.44293340706552975,
+          "durationDelta": 0.4850820432410945
+        },
+        {
+          "task": "inclusive-tier-allocation",
+          "repeat": 2,
+          "candidate": "2-inclusive-tier-allocation-candidate",
+          "baseline": "2-inclusive-tier-allocation-reference",
+          "tokenDelta": -0.4188060257909274,
+          "costDelta": 0.03198053607572926,
+          "durationDelta": -0.14683109919571047
+        },
+        {
+          "task": "signed-window-overlap",
+          "repeat": 2,
+          "candidate": "2-signed-window-overlap-candidate",
+          "baseline": "2-signed-window-overlap-reference",
+          "tokenDelta": 0.8413221446040742,
+          "costDelta": 0.6122366053288446,
+          "durationDelta": 0.5907183187898186
+        }
+      ],
+      "byTask": [
+        {
+          "task": "credit-remainder",
+          "pairs": 2,
+          "tokenDelta": -0.06960798061904927
+        },
+        {
+          "task": "inclusive-tier-allocation",
+          "pairs": 2,
+          "tokenDelta": -0.35903793033753284
+        },
+        {
+          "task": "signed-window-overlap",
+          "pairs": 2,
+          "tokenDelta": 0.4584547632925329
+        }
+      ],
+      "leaveOnePairOut": [
+        {
+          "omitted": "1-credit-remainder-candidate",
+          "tokenDelta": 0.10399974982018323
+        },
+        {
+          "omitted": "1-inclusive-tier-allocation-candidate",
+          "tokenDelta": 0.028390185130529266
+        },
+        {
+          "omitted": "1-signed-window-overlap-candidate",
+          "tokenDelta": -0.07410659214150672
+        },
+        {
+          "omitted": "2-credit-remainder-candidate",
+          "tokenDelta": -0.13359094619028467
+        },
+        {
+          "omitted": "2-inclusive-tier-allocation-candidate",
+          "tokenDelta": 0.06849779022629665
+        },
+        {
+          "omitted": "2-signed-window-overlap-candidate",
+          "tokenDelta": -0.13919030383379727
+        }
+      ],
+      "leaveOneTaskOut": [
+        {
+          "omitted": "credit-remainder",
+          "tokenDelta": -0.005271391300803119
+        },
+        {
+          "omitted": "inclusive-tier-allocation",
+          "tokenDelta": 0.16852160615103595
+        },
+        {
+          "omitted": "signed-window-overlap",
+          "tokenDelta": -0.21966207625638612
+        }
+      ]
+    },
+    "candidate/cline": {
+      "pairs": 6,
+      "candidate": {
+        "trials": 6,
+        "tokens": 582833,
+        "cost": 0.0646186,
+        "durationMs": 295353
+      },
+      "baseline": {
+        "trials": 6,
+        "tokens": 488219,
+        "cost": 0.07291912,
+        "durationMs": 296052
+      },
+      "tokenDelta": 0.1937941784322199,
+      "costDelta": -0.11383187290247065,
+      "durationDelta": -0.002361071703619655,
+      "pairDetails": [
+        {
+          "task": "credit-remainder",
+          "repeat": 1,
+          "candidate": "1-credit-remainder-candidate",
+          "baseline": "1-credit-remainder-cline",
+          "tokenDelta": -0.4197713663581927,
+          "costDelta": -0.3869554412470595,
+          "durationDelta": -0.13755546591367485
+        },
+        {
+          "task": "inclusive-tier-allocation",
+          "repeat": 1,
+          "candidate": "1-inclusive-tier-allocation-candidate",
+          "baseline": "1-inclusive-tier-allocation-cline",
+          "tokenDelta": 0.002936638969334382,
+          "costDelta": -0.3720124848761157,
+          "durationDelta": -0.062459770114942526
+        },
+        {
+          "task": "signed-window-overlap",
+          "repeat": 1,
+          "candidate": "1-signed-window-overlap-candidate",
+          "baseline": "1-signed-window-overlap-cline",
+          "tokenDelta": 0.21098922916563256,
+          "costDelta": 0.11436083152718846,
+          "durationDelta": -0.013836112070689577
+        },
+        {
+          "task": "credit-remainder",
+          "repeat": 2,
+          "candidate": "2-credit-remainder-candidate",
+          "baseline": "2-credit-remainder-cline",
+          "tokenDelta": 1.5565479472194657,
+          "costDelta": 0.29530544757482513,
+          "durationDelta": 0.49468770837963993
+        },
+        {
+          "task": "inclusive-tier-allocation",
+          "repeat": 2,
+          "candidate": "2-inclusive-tier-allocation-candidate",
+          "baseline": "2-inclusive-tier-allocation-cline",
+          "tokenDelta": -0.003674708419875383,
+          "costDelta": -0.05033978792417049,
+          "durationDelta": -0.15302559298215734
+        },
+        {
+          "task": "signed-window-overlap",
+          "repeat": 2,
+          "candidate": "2-signed-window-overlap-candidate",
+          "baseline": "2-signed-window-overlap-cline",
+          "tokenDelta": 0.27675497831981066,
+          "costDelta": -0.17252418664615454,
+          "durationDelta": -0.09934352241255517
+        }
+      ],
+      "byTask": [
+        {
+          "task": "credit-remainder",
+          "pairs": 2,
+          "tokenDelta": 0.3154706558004703
+        },
+        {
+          "task": "inclusive-tier-allocation",
+          "pairs": 2,
+          "tokenDelta": -0.0002522015090057339
+        },
+        {
+          "task": "signed-window-overlap",
+          "pairs": 2,
+          "tokenDelta": 0.24349938758709322
+        }
+      ],
+      "leaveOnePairOut": [
+        {
+          "omitted": "1-credit-remainder-candidate",
+          "tokenDelta": 0.3359748113500298
+        },
+        {
+          "omitted": "1-inclusive-tier-allocation-candidate",
+          "tokenDelta": 0.2278332227116393
+        },
+        {
+          "omitted": "1-signed-window-overlap-candidate",
+          "tokenDelta": 0.18932394627907212
+        },
+        {
+          "omitted": "2-credit-remainder-candidate",
+          "tokenDelta": 0.022858196655179075
+        },
+        {
+          "omitted": "2-inclusive-tier-allocation-candidate",
+          "tokenDelta": 0.22621312921763592
+        },
+        {
+          "omitted": "2-signed-window-overlap-candidate",
+          "tokenDelta": 0.17283228392115801
+        }
+      ],
+      "leaveOneTaskOut": [
+        {
+          "omitted": "credit-remainder",
+          "tokenDelta": 0.14174964542118107
+        },
+        {
+          "omitted": "inclusive-tier-allocation",
+          "tokenDelta": 0.2739698271370514
+        },
+        {
+          "omitted": "signed-window-overlap",
+          "tokenDelta": 0.15953246807170762
+        }
+      ]
+    }
+  },
+  "allAssignedComparisons": {
+    "candidate/reference": {
+      "assignmentsPerArm": 6,
+      "candidateAudited": 6,
+      "baselineAudited": 6,
+      "tokenDelta": -0.027472188247229634,
+      "costDelta": 0.12818340727849464,
+      "durationDelta": 0.062222174269561004,
+      "caveat": "Every assigned failure is retained. Unequal audited quality is not efficiency at quality parity."
+    },
+    "candidate/cline": {
+      "assignmentsPerArm": 6,
+      "candidateAudited": 6,
+      "baselineAudited": 6,
+      "tokenDelta": 0.1937941784322199,
+      "costDelta": -0.11383187290247065,
+      "durationDelta": -0.002361071703619655,
+      "caveat": "Every assigned failure is retained. Unequal audited quality is not efficiency at quality parity."
+    }
+  },
+  "qualityGate": true,
+  "mechanismGate": false,
+  "resourceGate": false,
+  "modelBenefitDemonstrated": false,
+  "accounting": {
+    "method": "Known SDK estimates plus explicit missing-aggregate/unreported-request reserves, not imputed consumption. Wire/report counts do not establish billing or hidden retries.",
+    "trials": [
+      {
+        "name": "1-credit-remainder-reference",
+        "observedUsd": 0.01176116,
+        "forwardedAttempts": 11,
+        "usageReports": 11,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.01176116,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-credit-remainder-candidate",
+        "observedUsd": 0.0072032,
+        "forwardedAttempts": 6,
+        "usageReports": 6,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.0072032,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-credit-remainder-cline",
+        "observedUsd": 0.011749879999999999,
+        "forwardedAttempts": 7,
+        "usageReports": 7,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.011749879999999999,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-inclusive-tier-allocation-candidate",
+        "observedUsd": 0.00859524,
+        "forwardedAttempts": 7,
+        "usageReports": 7,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.00859524,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-inclusive-tier-allocation-cline",
+        "observedUsd": 0.013686960000000001,
+        "forwardedAttempts": 6,
+        "usageReports": 6,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.013686960000000001,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-inclusive-tier-allocation-reference",
+        "observedUsd": 0.01005908,
+        "forwardedAttempts": 11,
+        "usageReports": 11,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.01005908,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-signed-window-overlap-cline",
+        "observedUsd": 0.01160852,
+        "forwardedAttempts": 9,
+        "usageReports": 9,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.01160852,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-signed-window-overlap-reference",
+        "observedUsd": 0.00869096,
+        "forwardedAttempts": 10,
+        "usageReports": 10,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.00869096,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-signed-window-overlap-candidate",
+        "observedUsd": 0.012936079999999997,
+        "forwardedAttempts": 11,
+        "usageReports": 11,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.012936079999999997,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "2-credit-remainder-candidate",
+        "observedUsd": 0.01356848,
+        "forwardedAttempts": 13,
+        "usageReports": 13,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.01356848,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "2-credit-remainder-cline",
+        "observedUsd": 0.01047512,
+        "forwardedAttempts": 6,
+        "usageReports": 6,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.01047512,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "2-credit-remainder-reference",
+        "observedUsd": 0.0094034,
+        "forwardedAttempts": 9,
+        "usageReports": 9,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.0094034,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "2-inclusive-tier-allocation-cline",
+        "observedUsd": 0.01063016,
+        "forwardedAttempts": 6,
+        "usageReports": 6,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.01063016,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "2-inclusive-tier-allocation-reference",
+        "observedUsd": 0.009782200000000001,
+        "forwardedAttempts": 10,
+        "usageReports": 10,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.009782200000000001,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "2-inclusive-tier-allocation-candidate",
+        "observedUsd": 0.01009504,
+        "forwardedAttempts": 7,
+        "usageReports": 7,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.01009504,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "2-signed-window-overlap-reference",
+        "observedUsd": 0.00757988,
+        "forwardedAttempts": 8,
+        "usageReports": 8,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.00757988,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "2-signed-window-overlap-candidate",
+        "observedUsd": 0.012220560000000002,
+        "forwardedAttempts": 12,
+        "usageReports": 12,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.012220560000000002,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "2-signed-window-overlap-cline",
+        "observedUsd": 0.014768480000000002,
+        "forwardedAttempts": 8,
+        "usageReports": 8,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.014768480000000002,
+        "basis": "wire/report counts; billing unknown"
+      }
+    ],
+    "observedUsd": 0.1948144,
+    "reservedUsd": 0,
+    "accountedUsd": 0.1948144
+  },
+  "priorObservedUsd": 8.3849118,
+  "priorReservedUsd": 17.14,
+  "cumulativeObservedSdkUsd": 8.5797262,
+  "cumulativeReservedUsd": 17.14,
+  "cumulativeAccountedUsd": 25.719726199999997,
+  "limitations": "Known constructed requests repeated in a separate post-interruption campaign on a small monorepo restricted to integer policies, two dependent repetitions, no forced analyze call/assertion. Fixtures deliberately favor the supported pure scalar domain; no general code semantics or representative issue prevalence is established. Unblinded source/delivery review. Provider revision, seeds, hidden retries, host contention and invoices unknown. Tokens include cache reads; SDK estimates are not invoices, missing receipts remain missing. No meaningful observed symbolic use means no demonstrated symbolic reasoning benefit; an unverified finish is not task correctness. Campaigns remain separate."
+}

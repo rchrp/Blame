@@ -300,6 +300,66 @@
       "evidence": [
         "All four production source hashes match the already reviewed correct tier endpoints, preserving exact signatures. Inspected all three new tests, command chronology and delivery. Required commands 24-26 and delivered types 27 pass after final edits; all five independent endpoint checks and dependency integrity pass. No shell writes, retrieval or symbolic claim. Delivery accurately distinguishes the source compiler from delivered test typechecking."
       ]
+    },
+    {
+      "name": "2-signed-window-overlap-reference",
+      "hashes": {
+        "events.jsonl": "a69dc9a9416f662a4758637b05148843aeb0325d8eb0fc4ed6f0537b067902e2",
+        "workspace.diff": "179d5f383575874989eb27a75ca33e4226b520b0e9341a520a1cd4a7a54f29fd",
+        "score.json": "bc25f68759fdb805ff29c11653fb4c8fb9e6510f5ce8f9755154262c26bd9dc0",
+        "tool-ledger.json": "369f06fc265ab926d3d1746e59b58c1934f4b5c661cfbd8c5c4c257de150dbc4"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "All three production source hashes match earlier reviewed correct signed-window endpoints with exact APIs. Inspected three new tests, complete command chronology and delivery. Required commands 19-21 plus delivered types 22 pass after final edits; all five independent endpoint checks and dependency integrity pass. No shell retrieval/writes or symbolic claims. Delivery accurately distinguishes original tests, source-only compiler and delivered runtime/types."
+      ]
+    },
+    {
+      "name": "2-signed-window-overlap-candidate",
+      "hashes": {
+        "events.jsonl": "2c40fc7a045e279d3e0b9524134b3c7b741baf14bd72a778a8c06011425312ec",
+        "workspace.diff": "fd4267f58fcfdbf0f0e5bb571efab0b8dadd46d5fa32f9b8e0425d7a30437816",
+        "score.json": "84936019d5e8b25c11cf345353bab6dd5f3d1498cad8b01e9ffeba5eb6c64a83",
+        "tool-ledger.json": "1e986e0739a629b8b01e951a4787e4a2cf07346b4515047551dc52b43a885867"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "All production source hashes match previously reviewed correct signed-window implementations with exact signatures. Inspected three added tests, all command chronology and delivery. Initial delivered run 22 fails and remains in the trace; final required commands 26-28 and delivered types 29 follow the repair and all pass. Five independent endpoint checks and dependency integrity pass. No retrieval/shell writes or symbolic claims. Summary accurately limits configured original/delivered selections and does not infer admitted scope."
+      ]
+    },
+    {
+      "name": "2-signed-window-overlap-cline",
+      "hashes": {
+        "events.jsonl": "b8124bdaced8b06974865fa54b08c8db0cd7a1765cff904728bd1a66a1890e0e",
+        "workspace.diff": "938bb09528eb1005a791d97e0e6b793537cc9362ff2622ef0f16e25a6f154627",
+        "score.json": "a2b5dd49724aa0330fb60faa456fc9f10d5f8a76d7a16a43d39e5b7a5502548b",
+        "tool-ledger.json": "b1adaa57eb13bc599ce672df21289dfab33e82fecf95fb39e5e5d6b0e2fcbf4a"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Reviewed exact numeric APIs, complete three-source patch and three new tests. Signed/empty/adjacent overlap, positive inclusive threshold and both-endpoint shift are correct. Delivered run 10 initially fails; model repairs its new test before final required commands 13-15, delivered types 16 and npm test 17 all pass. Five independent endpoint checks and dependency integrity pass. Remaining local status/diff/find commands retrieve no external solution and write no source. Final delivery accurately separates original/source/delivered scopes and makes no solver claim."
+      ]
     }
   ]
 }
