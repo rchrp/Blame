@@ -1,0 +1,11 @@
+{
+  "observedUsd": 8.3849118,
+  "reservedUsd": 17.14,
+  "accountedUsd": 25.524911799999998,
+  "parent": "docs/experiments/light-harness-symbolic-model-f50-2026-10-18",
+  "interruptedPhase": "F52",
+  "interruptionSha256": "74669947dc7a981787a651e5465cb83024fd9ce05a2859c96325eb89d1012a95",
+  "caveat": "F50 known SDK observations and historical reserves plus F52 scheduling allowance for unrecoverable consumption. F52 observed spending remains null, never zero. This is not an invoice bound.",
+  "parentArtifact": "/workspace/Blame/docs/experiments/light-harness-symbolic-discovery-f52-2026-10-18/interrupted-budget-carry.json",
+  "parentArtifactSha256": "bc7041f12b011b48098ab12212e6e958ff63f0eae8065c002fe93d1f54b7cc06"
+}

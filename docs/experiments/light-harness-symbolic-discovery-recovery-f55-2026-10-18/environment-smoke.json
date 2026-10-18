@@ -1,0 +1,136 @@
+{
+  "startedAtUTC": "2026-10-18T10:48:30.155Z",
+  "endedAtUTC": "2026-10-18T10:48:38.984Z",
+  "modelRequests": 0,
+  "solver": {
+    "path": "/workspace/blame-study-runs/tooling/z3/bin/z3",
+    "resolvedPath": "/workspace/blame-study-runs/tooling/z3/bin/z3",
+    "sha256": "1bfaf5bbe81fd0b7800500ee08eef426aaabe18f8b9c4c4c32adffcd72f86cd5",
+    "version": "Z3 version 4.15.4 - 64 bit",
+    "package": "z3-solver==4.15.4.0",
+    "libraries": {
+      "/lib/x86_64-linux-gnu/libc.so.6": {
+        "realpath": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+        "sha256": "fa430b8f298f817a266046af84a77533185ad6fc4406c7d3787b5a0a0c207826"
+      },
+      "/lib/x86_64-linux-gnu/libgcc_s.so.1": {
+        "realpath": "/usr/lib/x86_64-linux-gnu/libgcc_s.so.1",
+        "sha256": "30c61ab012a4241bed033725a09b61f5fdd3bb7df95ee852d0b096520524c7af"
+      },
+      "/lib/x86_64-linux-gnu/libm.so.6": {
+        "realpath": "/usr/lib/x86_64-linux-gnu/libm.so.6",
+        "sha256": "6d567d53e895273ca14a1f9dc164fc6c8d39aed2f60aa46a733c2784228915f3"
+      },
+      "/lib/x86_64-linux-gnu/libpthread.so.0": {
+        "realpath": "/usr/lib/x86_64-linux-gnu/libpthread.so.0",
+        "sha256": "85e21f7dba0394411d00959176fd18b470e575b0b05f1f4f41e5636802ce0500"
+      },
+      "/lib/x86_64-linux-gnu/libstdc++.so.6": {
+        "realpath": "/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33",
+        "sha256": "972bb2a18b71140dab0240f8a1f68ab3fb1d56bcd4c4f824a91b70888faf5a00"
+      },
+      "/lib64/ld-linux-x86-64.so.2": {
+        "realpath": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+        "sha256": "438c546d8e8cc48496bf3a95f753051afd9db66a629a74e31a9ded71586b56e0"
+      }
+    },
+    "virtualDependencies": [
+      "linux-vdso.so.1 is kernel-provided and has no file hash; kernel release is recorded separately"
+    ]
+  },
+  "reasoning": {
+    "exitCode": 0,
+    "result": {
+      "result": {
+        "status": "ok",
+        "data": {
+          "sourceSha256": "ff57e3bd5db747be7ce6e9dd25b37dc9bf40303beb89b98c601d305581385ccb",
+          "functionName": "availableCredit",
+          "assertion": "result >= 0",
+          "inputs": {
+            "balance": {
+              "min": 0,
+              "max": 10
+            },
+            "reserved": {
+              "min": 0,
+              "max": 10
+            },
+            "limit": {
+              "min": 0,
+              "max": 10
+            }
+          },
+          "scope": "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Only standard Math.min/max/abs calls are supported, under recorded assumptions. Other calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.",
+          "validationAdmission": false,
+          "assumptions": [],
+          "solver": {
+            "executable": "/workspace/blame-study-runs/tooling/z3/bin/z3",
+            "version": "Z3 version 4.15.4 - 64 bit",
+            "querySha256": "5ca83262d4524324677f212e44e29647b74410c59e320eafe2f645e73505ed4c"
+          },
+          "status": "counterexample",
+          "reason": "A violating input was reproduced by interpreting the original supported TypeScript AST with JavaScript scalar operations.",
+          "witness": {
+            "inputs": {
+              "balance": 2,
+              "reserved": 0,
+              "limit": 1
+            },
+            "result": -1,
+            "assertion": false,
+            "concretelyReproduced": true
+          },
+          "sourceRevisionId": "src_00b6137e34aff1f93196a3ee7ebfb52d",
+          "target": "packages/credit/src/remainder.ts#availableCredit",
+          "guidance": "Analysis applies only to this function, input domain and supplied assertion. A witness is reproduced by the supported source interpreter. Run a real regression test before treating it as a project defect. No edit coverage or source verification is granted."
+        }
+      },
+      "journal": {
+        "changedPaths": [],
+        "changes": [],
+        "files": [],
+        "sourceRevisionId": "src_00b6137e34aff1f93196a3ee7ebfb52d",
+        "symbols": [],
+        "validations": []
+      }
+    }
+  },
+  "nativeSolver": {
+    "exitCode": 0,
+    "stdout": "\"Z3 version 4.15.4 - 64 bit\\n\"\n",
+    "stderr": ""
+  },
+  "shellEnvironmentSha256": "baa77bc9aa7904503eb71e58ab83d4add2851182b8a96848c48f1e7af7ce0ee7",
+  "method": "Actual Light and integrated SDK shell executors plus direct/login-shell npm version checks using the future per-trial environment; the before control shows this host login profile resets PATH without BASH_ENV. The optional analyzer and integrated SDK ordinary command both reach the same pinned solver; analysis adds no validation. No model is invoked.",
+  "before": {
+    "exitCode": 0,
+    "stdout": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/npm\n11.9.0\n",
+    "stderr": ""
+  },
+  "version": {
+    "exitCode": 0,
+    "stdout": "11.6.4\n"
+  },
+  "shell": {
+    "exitCode": 0,
+    "stdout": "/workspace/blame-study-runs/symbolic-discovery-f55/environment-smoke/workspace/node_modules/.bin/npm\n11.6.4\n"
+  },
+  "harness": {
+    "exitCode": 0,
+    "result": {
+      "status": "ok",
+      "data": {
+        "command": "npm --version",
+        "exitCode": 0,
+        "output": "11.6.4",
+        "environment": "linux-native"
+      }
+    }
+  },
+  "native": {
+    "exitCode": 0,
+    "stdout": "\"11.6.4\\n\"\n",
+    "stderr": ""
+  }
+}
