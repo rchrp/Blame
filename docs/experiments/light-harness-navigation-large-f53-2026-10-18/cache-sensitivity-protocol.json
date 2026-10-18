@@ -1,0 +1,7 @@
+{
+  "registeredAtUTC": "2026-10-18T11:16:52.632Z",
+  "knownObservations": "After the first three recorded outcomes and the fourth completed outcome, inspection of first Cline trial reveals exactly one changed preexisting Vitest results cache path. No source or grader is changed during registered workers.",
+  "primary": "Retain frozen dependency integrity outcomes and strict scores unchanged.",
+  "secondary": "Uniformly for all 18 assigned trials, report a conditional sensitivity treating only changed existing .vite/vitest/<40 lowercase hex>/results.json as generated output when no other changed, missing or added dependency entry exists; keep every source/delivery/type/retrieval criterion. Do not remove code failures or release unknown-cost reserves.",
+  "limitation": "Classification uses recorded changed paths and actual command chronology. Changed cache bytes were not retained; this does not attest their contents or complete environment integrity. This is post-hoc measurement diagnosis, not new task confirmation or proof of a harness quality advantage."
+}
