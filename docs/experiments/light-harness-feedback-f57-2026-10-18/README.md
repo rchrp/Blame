@@ -2,6 +2,8 @@
 
 Production changes address F53 observations. Ordinary searches now offer up to four exact syntax declaration routes (64 files/1 MiB, eligible JS/TS only); literal declaration prefixes are recognized conservatively. Original results and scope stay intact. Homonyms remain separate; incomplete scans remain explicit. No compiler identity or edit coverage is implied.
 
+The first large-project control exposes a coverage limit: four known Remeda API names produce zero ordinary routes at baseline and two with the initial change. Visiting exact filename matches first finds four, still within 64 parsed files and still explicitly incomplete. Filenames order discovery; they never establish identity. `real-navigation.json` retains all observations; 40 targeted refinement controls pass. This is not model uptake or a new-project confirmation.
+
 Body-edit receipts, including unchanged/rejected bodies, show up to four observed headers of 512 Unicode code points. They describe input headers, since another explicit batch operation could change them. Parameters/return types/imports are not widened. Syntax admission still does not establish binding/type validity. A real compiler negative control confirms that distinction. Feedback adds bytes.
 
 Repair guidance identifies exact failed project invocations by cwd/task/argv, including earlier-source leads, without replaying raw commands. It appears after edits, commands and in `@checks`; discovery failure cannot hide an applied edit receipt. Automatic finish prioritizes known failed selections and stops on a refreshed code failure. Passing another filter cannot clear a failed selection. Every required final-source invocation remains necessary; observed tests, source admission and user acceptance remain separate.

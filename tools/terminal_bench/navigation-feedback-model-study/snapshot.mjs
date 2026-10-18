@@ -14,10 +14,13 @@ for(const arm of ['reference','current'])for(const name of ['agent-runtime','ben
   else{await mkdir(join(target,'node_modules/@blame'),{recursive:true});await symlink(join(frozen,arm,'agent-runtime'),join(target,'node_modules/@blame/agent-runtime'));}
 }
 for(const name of ['light-reference-candidates','light-reference-search','light-workspace'])await cp(join(stages,'navigation/dist/harness',name+'.js'),join(frozen,'current/agent-runtime/dist/harness',name+'.js'));
+// The post-control filename ordering refinement changes only this standalone
+// discovery module; later body/repair changes stay excluded from this panel.
+await cp(join(repo,'packages/agent-runtime/dist/harness/light-reference-candidates.js'),join(frozen,'current/agent-runtime/dist/harness/light-reference-candidates.js'));
 const files={};for(const entry of await readdir(frozen,{recursive:true,withFileTypes:true}))if(entry.isFile()){const path=join(entry.parentPath,entry.name);files[relative(frozen,path)]=sha(await readFile(path));}
 const differences=Object.keys(files).filter(path=>path.startsWith('current/')&&files['reference/'+path.slice(8)]!==files[path]).map(path=>path.slice(8)).sort();
 assert.deepEqual(differences,['light-reference-candidates','light-reference-search','light-workspace'].map(name=>'agent-runtime/dist/harness/'+name+'.js').sort());
 const resolved={};for(const arm of ['current','reference']){resolved[arm]=createRequire(join(frozen,arm,'benchmark-runner/dist/cli.js')).resolve('@blame/agent-runtime');assert.equal(resolved[arm],join(frozen,arm,'agent-runtime/dist/index.js'));}
 await save(join(study,'snapshot.json'),{sourceHead:execFileSync('git',['rev-parse','HEAD'],{cwd:repo,encoding:'utf8'}).trim(),createdUTC:new Date().toISOString(),files,differences,resolved,
-  mechanism:'Baseline b70c21fa executable bytes plus only ordinary-search declaration routes from 53e75b43. Both exclude later body-header and failed-check scheduling changes. Nonexecuted declaration/maps stay common.'});
+  mechanism:'Baseline b70c21fa executable bytes plus ordinary-search declaration routes from 53e75b43 and the filename-ordering refinement in the registered sourceHead. Both exclude body-header and failed-check scheduling changes. Nonexecuted declaration/maps stay common.'});
 console.log(JSON.stringify({differences,resolved}));

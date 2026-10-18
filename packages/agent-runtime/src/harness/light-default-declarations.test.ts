@@ -55,3 +55,13 @@ test("declaration discovery respects scope and bounds and labels an incomplete s
     assert.equal(scoped.declarationDiscovery.eligibleFiles, 1);
   });
 });
+
+test("a matching filename is visited before exhausting the parser budget on caller files", async () => {
+  const callers = Object.fromEntries(Array.from({ length: 70 }, (_, i) => [`a${String(i).padStart(2, "0")}.ts`, "// needle\n"]));
+  await fixture({ ...callers, "needle.ts": source }, async workspace => {
+    const search = data(await workspace.searchCode({ query: "needle", mode: "text" }));
+    assert.equal(search.declarationCandidates[0].target, "needle.ts#needle");
+    assert.equal(search.declarationDiscovery.limited, true);
+    assert.equal(search.declarationDiscovery.visitedFiles, 64);
+  });
+});

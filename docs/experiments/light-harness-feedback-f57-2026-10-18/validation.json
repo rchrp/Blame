@@ -44,7 +44,8 @@
   "developmentFailures": [
     "Navigation refactoring changed inferred union return type; fixed explicit optional return annotation.",
     "Three new body tests initially assumed export belongs to the AST header, duplicate names are syntax errors, and existing files accept raw replacement patches. Corrected these test assumptions; actual compiler binding errors remain a required check.",
-    "New repair tests initially used the wrong completion field and incomplete public journal fixtures; corrected tests. Advisory recovery preserves the literal harness-failure recovery contract."
+    "New repair tests initially used the wrong completion field and incomplete public journal fixtures; corrected tests. Advisory recovery preserves the literal harness-failure recovery contract.",
+    "Real-project control initially assumed zero routes in the unprioritized stage; actual result was two of four. Kept all four names and corrected the assumption; filename ordering yields four of four."
   ],
   "logs": {
     "logs/f57-baseline-build.log.gz": "b8ba29348444ff8f273ce4a864367527d190fd87f3747cc73ea3eaf46f3560f7",
@@ -64,6 +65,19 @@
     "logs/f57-solver-tests.log.gz": "5c23afcc82625442657f738e42c120be96f7d2105a7cace107ff47e9071f63ee",
     "logs/f57-runner-tests.log.gz": "cfcc2454fe9ba728d888c2716624964b66e3ef4a94dad71228c10245aeb6fb16",
     "logs/f57-coordinator-tests.log.gz": "d8d044fcf2f0f4ee2b55f94e436a5eaef94a58673a660bbfdaf7db781c7e2587",
-    "logs/f57-local.log.gz": "7c6cbefe6ffa0e6a6d3fb4dce54ace195cad3d9818d02195d90c4ea97a4d16da"
+    "logs/f57-local.log.gz": "7c6cbefe6ffa0e6a6d3fb4dce54ace195cad3d9818d02195d90c4ea97a4d16da",
+    "logs/f57-priority-build.log.gz": "b8ba29348444ff8f273ce4a864367527d190fd87f3747cc73ea3eaf46f3560f7",
+    "logs/f57-priority-tests.log.gz": "c1658766b89d5c333f9056e70f70694733855c54da483de95b97b860df81a460",
+    "logs/f57-real-navigation.log.gz": "ea2d5ac14e6d63960430c8bf2ad1a64f8639c74250a951e85d2ff641fd7522ea",
+    "logs/f57-real-navigation-final.log.gz": "d742bfe545ade2a65188b59c1e364a6fe3c9b14234a8aa3fa1c374c8c6e4406f",
+    "logs/f57-lint-final.log.gz": "c1fcfb743b08bdcdcd480a6374ab3c2c15c6872147b72e543c083d0a2f7a2a47"
+  },
+  "filenameRefinement": {
+    "targetedPassed": 40,
+    "failed": 0,
+    "knownProjectLocalQueries": 4,
+    "routesBefore": 2,
+    "routesAfter": 4,
+    "adoption": "not measured locally"
   }
 }

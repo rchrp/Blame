@@ -23,7 +23,12 @@ export async function referenceDeclarationCandidates(
   signal?: AbortSignal,
 ) {
   signal?.throwIfAborted();
-  const eligible = paths.filter((path) => /\.[cm]?[jt]sx?$/iu.test(path));
+  // A filename is only an ordering hint, never declaration identity. Visit
+  // likely definition files before spending the fixed parser budget on callers.
+  const filename = query.split(".")[0];
+  const eligible = paths.filter((path) => /\.[cm]?[jt]sx?$/iu.test(path))
+    .sort((left, right) => Number(right.split("/").at(-1)?.replace(/\.[cm]?[jt]sx?$/iu, "") === filename) -
+      Number(left.split("/").at(-1)?.replace(/\.[cm]?[jt]sx?$/iu, "") === filename));
   const selected: Candidate[] = [];
   const reads = new Map<string, string>();
   let visitedFiles = 0, readBytes = 0, skippedFiles = 0;

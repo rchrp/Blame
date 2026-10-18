@@ -1,0 +1,1401 @@
+{
+  "phase": "F57",
+  "modelRequests": 0,
+  "note": "Four preselected API names on the pinned known Remeda archive. Filename-first ordering finds all four while retaining incomplete-scan labels; unprioritized bounded scans may miss later declarations. This is local navigation capability, not agent adoption or task success.",
+  "counts": [
+    0,
+    2,
+    4
+  ],
+  "moduleHashes": {
+    "baseline/light-workspace": "08c30ffb5cf4c8ea8bf8d5db4113443b885c5d59b4dc6ca9b9b7e2b3b515dd85",
+    "baseline/light-reference-candidates": "1ff458e39bc8fb949284e712098936f8f02a49d17a17166344d346cb1f6b0923",
+    "baseline/light-reference-search": "02dd424ecabebd0ff3daf582774c7910f5d1bf79e185c8f5e855926b353397a1",
+    "navigation/light-workspace": "a3f5e46e9fb2c34b06b7986bc576983f4576648e383b80099e9be5dd2d4fa0cb",
+    "navigation/light-reference-candidates": "9525e874629e608d164401bc35b312a29220b54bb4544a9bf871db23e5dbefe2",
+    "navigation/light-reference-search": "05b3a6e98c6b9a5ef4606b1a50a1ceb338f9b9ad1322bfd87ff6a73b977647fa",
+    "current/light-workspace": "ba50655570483fa1b03b8a5977b068048ae566c5ff0fcacbf47f8aec08f670a7",
+    "current/light-reference-candidates": "6d67b3ab91b8cedb2e0bfd6adf267982da14218e10fea391f19175099dd22ac9",
+    "current/light-reference-search": "05b3a6e98c6b9a5ef4606b1a50a1ceb338f9b9ad1322bfd87ff6a73b977647fa"
+  },
+  "rows": [
+    {
+      "stage": "baseline",
+      "query": "takeLast",
+      "result": {
+        "status": "ok",
+        "data": {
+          "mode": "text",
+          "engine": "ripgrep",
+          "results": [
+            {
+              "alias": "s1",
+              "kind": "path",
+              "path": "packages/remeda/src/takeLast.test-d.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/takeLast.test-d.ts"
+            },
+            {
+              "alias": "s2",
+              "kind": "path",
+              "path": "packages/remeda/src/takeLast.test.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/takeLast.test.ts"
+            },
+            {
+              "alias": "s3",
+              "kind": "path",
+              "path": "packages/remeda/src/takeLast.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/takeLast.ts"
+            },
+            {
+              "alias": "s4",
+              "kind": "path",
+              "path": "packages/remeda/src/takeLastWhile.test-d.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/takeLastWhile.test-d.ts"
+            },
+            {
+              "alias": "s5",
+              "kind": "path",
+              "path": "packages/remeda/src/takeLastWhile.test.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/takeLastWhile.test.ts"
+            },
+            {
+              "alias": "s6",
+              "kind": "path",
+              "path": "packages/remeda/src/takeLastWhile.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/takeLastWhile.ts"
+            },
+            {
+              "alias": "s7",
+              "kind": "text",
+              "path": "packages/remeda/src/takeLast.test-d.ts",
+              "lines": [
+                3,
+                3
+              ],
+              "snippet": "import { takeLast } from \"./takeLast\";",
+              "reason": "lexical_exact"
+            },
+            {
+              "alias": "s8",
+              "kind": "text",
+              "path": "packages/remeda/src/takeLast.test-d.ts",
+              "lines": [
+                7,
+                7
+              ],
+              "snippet": "    const result = takeLast([] as [], 2);",
+              "reason": "lexical_exact"
+            }
+          ],
+          "candidateCount": 508,
+          "limited": true,
+          "guidance": "Result limit reached; narrow the query or scope, or use run_task for an exhaustive scan."
+        }
+      },
+      "exactRoute": false
+    },
+    {
+      "stage": "baseline",
+      "query": "dropLast",
+      "result": {
+        "status": "ok",
+        "data": {
+          "mode": "text",
+          "engine": "ripgrep",
+          "results": [
+            {
+              "alias": "s15",
+              "kind": "path",
+              "path": "packages/remeda/src/dropLast.test-d.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/dropLast.test-d.ts"
+            },
+            {
+              "alias": "s16",
+              "kind": "path",
+              "path": "packages/remeda/src/dropLast.test.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/dropLast.test.ts"
+            },
+            {
+              "alias": "s17",
+              "kind": "path",
+              "path": "packages/remeda/src/dropLast.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/dropLast.ts"
+            },
+            {
+              "alias": "s18",
+              "kind": "path",
+              "path": "packages/remeda/src/dropLastWhile.test-d.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/dropLastWhile.test-d.ts"
+            },
+            {
+              "alias": "s19",
+              "kind": "path",
+              "path": "packages/remeda/src/dropLastWhile.test.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/dropLastWhile.test.ts"
+            },
+            {
+              "alias": "s20",
+              "kind": "path",
+              "path": "packages/remeda/src/dropLastWhile.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/dropLastWhile.ts"
+            },
+            {
+              "alias": "s21",
+              "kind": "text",
+              "path": "packages/remeda/src/dropLast.test-d.ts",
+              "lines": [
+                2,
+                2
+              ],
+              "snippet": "import { dropLast } from \"./dropLast\";",
+              "reason": "lexical_exact"
+            },
+            {
+              "alias": "s22",
+              "kind": "text",
+              "path": "packages/remeda/src/dropLast.test-d.ts",
+              "lines": [
+                7,
+                7
+              ],
+              "snippet": "    const result = dropLast([] as [], 2);",
+              "reason": "lexical_exact"
+            }
+          ],
+          "candidateCount": 508,
+          "limited": true,
+          "guidance": "Result limit reached; narrow the query or scope, or use run_task for an exhaustive scan."
+        }
+      },
+      "exactRoute": false
+    },
+    {
+      "stage": "baseline",
+      "query": "clamp",
+      "result": {
+        "status": "ok",
+        "data": {
+          "mode": "text",
+          "engine": "ripgrep",
+          "results": [
+            {
+              "alias": "s29",
+              "kind": "path",
+              "path": "packages/remeda/src/clamp.test.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/clamp.test.ts"
+            },
+            {
+              "alias": "s30",
+              "kind": "path",
+              "path": "packages/remeda/src/clamp.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/clamp.ts"
+            },
+            {
+              "alias": "s31",
+              "kind": "path",
+              "path": "packages/remeda/src/internal/types/ClampedIntegerSubtract.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/internal/types/ClampedIntegerSubtract.ts"
+            },
+            {
+              "alias": "s32",
+              "kind": "text",
+              "path": "packages/remeda/src/clamp.test.ts",
+              "lines": [
+                2,
+                2
+              ],
+              "snippet": "import { clamp } from \"./clamp\";",
+              "reason": "lexical_exact"
+            },
+            {
+              "alias": "s33",
+              "kind": "text",
+              "path": "packages/remeda/src/clamp.test.ts",
+              "lines": [
+                5,
+                5
+              ],
+              "snippet": "  expect(clamp(10, { min: 20 })).toBe(20);",
+              "reason": "lexical_exact"
+            },
+            {
+              "alias": "s34",
+              "kind": "text",
+              "path": "packages/remeda/src/clamp.test.ts",
+              "lines": [
+                9,
+                9
+              ],
+              "snippet": "  expect(clamp(10, { max: 5 })).toBe(5);",
+              "reason": "lexical_exact"
+            },
+            {
+              "alias": "s35",
+              "kind": "text",
+              "path": "packages/remeda/src/clamp.test.ts",
+              "lines": [
+                13,
+                13
+              ],
+              "snippet": "  expect(clamp(10, { max: 20, min: 5 })).toBe(10);",
+              "reason": "lexical_exact"
+            },
+            {
+              "alias": "s36",
+              "kind": "text",
+              "path": "packages/remeda/src/clamp.ts",
+              "lines": [
+                9,
+                9
+              ],
+              "snippet": " * Clamp the given value within the inclusive min and max bounds.",
+              "reason": "lexical_exact"
+            }
+          ],
+          "candidateCount": 508,
+          "limited": true,
+          "guidance": "Result limit reached; narrow the query or scope, or use run_task for an exhaustive scan."
+        }
+      },
+      "exactRoute": false
+    },
+    {
+      "stage": "baseline",
+      "query": "splitAt",
+      "result": {
+        "status": "ok",
+        "data": {
+          "mode": "text",
+          "engine": "ripgrep",
+          "results": [
+            {
+              "alias": "s40",
+              "kind": "path",
+              "path": "packages/remeda/src/splitAt.test.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/splitAt.test.ts"
+            },
+            {
+              "alias": "s41",
+              "kind": "path",
+              "path": "packages/remeda/src/splitAt.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/splitAt.ts"
+            },
+            {
+              "alias": "s42",
+              "kind": "text",
+              "path": "packages/remeda/src/splitAt.test.ts",
+              "lines": [
+                2,
+                2
+              ],
+              "snippet": "import { splitAt } from \"./splitAt\";",
+              "reason": "lexical_exact"
+            },
+            {
+              "alias": "s43",
+              "kind": "text",
+              "path": "packages/remeda/src/splitAt.test.ts",
+              "lines": [
+                6,
+                6
+              ],
+              "snippet": "    expect(splitAt([1, 2, 3] as const, 1)).toStrictEqual([[1], [2, 3]]);",
+              "reason": "lexical_exact"
+            },
+            {
+              "alias": "s44",
+              "kind": "text",
+              "path": "packages/remeda/src/splitAt.test.ts",
+              "lines": [
+                10,
+                10
+              ],
+              "snippet": "    expect(splitAt([1, 2, 3, 4, 5] as const, -1)).toStrictEqual([",
+              "reason": "lexical_exact"
+            },
+            {
+              "alias": "s45",
+              "kind": "text",
+              "path": "packages/remeda/src/splitAt.test.ts",
+              "lines": [
+                19,
+                19
+              ],
+              "snippet": "    expect(splitAt(1)([1, 2, 3] as const)).toStrictEqual([[1], [2, 3]]);",
+              "reason": "lexical_exact"
+            },
+            {
+              "alias": "s46",
+              "kind": "text",
+              "path": "packages/remeda/src/splitAt.test.ts",
+              "lines": [
+                23,
+                23
+              ],
+              "snippet": "    expect(splitAt(-1)([1, 2, 3, 4, 5] as const)).toStrictEqual([",
+              "reason": "lexical_exact"
+            },
+            {
+              "alias": "s47",
+              "kind": "text",
+              "path": "packages/remeda/src/splitAt.ts",
+              "lines": [
+                9,
+                9
+              ],
+              "snippet": " *    R.splitAt(array, index)",
+              "reason": "lexical_exact"
+            }
+          ],
+          "candidateCount": 508,
+          "limited": true,
+          "guidance": "Result limit reached; narrow the query or scope, or use run_task for an exhaustive scan."
+        }
+      },
+      "exactRoute": false
+    },
+    {
+      "stage": "navigation",
+      "query": "takeLast",
+      "result": {
+        "status": "ok",
+        "data": {
+          "mode": "text",
+          "engine": "ripgrep",
+          "results": [
+            {
+              "alias": "s1",
+              "kind": "path",
+              "path": "packages/remeda/src/takeLast.test-d.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/takeLast.test-d.ts"
+            },
+            {
+              "alias": "s2",
+              "kind": "path",
+              "path": "packages/remeda/src/takeLast.test.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/takeLast.test.ts"
+            },
+            {
+              "alias": "s3",
+              "kind": "path",
+              "path": "packages/remeda/src/takeLast.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/takeLast.ts"
+            },
+            {
+              "alias": "s4",
+              "kind": "path",
+              "path": "packages/remeda/src/takeLastWhile.test-d.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/takeLastWhile.test-d.ts"
+            },
+            {
+              "alias": "s5",
+              "kind": "path",
+              "path": "packages/remeda/src/takeLastWhile.test.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/takeLastWhile.test.ts"
+            },
+            {
+              "alias": "s6",
+              "kind": "path",
+              "path": "packages/remeda/src/takeLastWhile.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/takeLastWhile.ts"
+            },
+            {
+              "alias": "s7",
+              "kind": "text",
+              "path": "packages/remeda/src/takeLast.test-d.ts",
+              "lines": [
+                3,
+                3
+              ],
+              "snippet": "import { takeLast } from \"./takeLast\";",
+              "reason": "lexical_exact"
+            },
+            {
+              "alias": "s8",
+              "kind": "text",
+              "path": "packages/remeda/src/takeLast.test-d.ts",
+              "lines": [
+                7,
+                7
+              ],
+              "snippet": "    const result = takeLast([] as [], 2);",
+              "reason": "lexical_exact"
+            }
+          ],
+          "candidateCount": 508,
+          "limited": true,
+          "guidance": "Bounded syntax candidates, not exhaustive and not compiler-resolved references. Choose the intended declaration, then follow nextSearches. No edit coverage; read truncated signatures explicitly.",
+          "declarationDiscovery": {
+            "engine": "syntax",
+            "status": "current",
+            "navigationOnly": true,
+            "sourceRevision": "src_97451596942f210ca75af71445b141fd",
+            "eligibleFiles": 508,
+            "visitedFiles": 64,
+            "readBytes": 209727,
+            "skippedFiles": 0,
+            "limited": true,
+            "limits": {
+              "files": 64,
+              "bytes": 1048576,
+              "fileBytes": 262144,
+              "declarations": 4
+            }
+          },
+          "declarationCandidates": [],
+          "nextReads": [],
+          "nextSearches": [
+            {
+              "query": "takeLast",
+              "mode": "symbol",
+              "scope": "packages/remeda/src"
+            }
+          ]
+        }
+      },
+      "exactRoute": false
+    },
+    {
+      "stage": "navigation",
+      "query": "dropLast",
+      "result": {
+        "status": "ok",
+        "data": {
+          "mode": "text",
+          "engine": "ripgrep",
+          "results": [
+            {
+              "alias": "s15",
+              "kind": "path",
+              "path": "packages/remeda/src/dropLast.test-d.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/dropLast.test-d.ts"
+            },
+            {
+              "alias": "s16",
+              "kind": "path",
+              "path": "packages/remeda/src/dropLast.test.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/dropLast.test.ts"
+            },
+            {
+              "alias": "s17",
+              "kind": "path",
+              "path": "packages/remeda/src/dropLast.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/dropLast.ts"
+            },
+            {
+              "alias": "s18",
+              "kind": "path",
+              "path": "packages/remeda/src/dropLastWhile.test-d.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/dropLastWhile.test-d.ts"
+            },
+            {
+              "alias": "s19",
+              "kind": "path",
+              "path": "packages/remeda/src/dropLastWhile.test.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/dropLastWhile.test.ts"
+            },
+            {
+              "alias": "s20",
+              "kind": "path",
+              "path": "packages/remeda/src/dropLastWhile.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/dropLastWhile.ts"
+            },
+            {
+              "alias": "s21",
+              "kind": "text",
+              "path": "packages/remeda/src/dropLast.test-d.ts",
+              "lines": [
+                2,
+                2
+              ],
+              "snippet": "import { dropLast } from \"./dropLast\";",
+              "reason": "lexical_exact"
+            },
+            {
+              "alias": "s22",
+              "kind": "text",
+              "path": "packages/remeda/src/dropLast.test-d.ts",
+              "lines": [
+                7,
+                7
+              ],
+              "snippet": "    const result = dropLast([] as [], 2);",
+              "reason": "lexical_exact"
+            }
+          ],
+          "candidateCount": 508,
+          "limited": true,
+          "guidance": "Bounded syntax candidates, not exhaustive and not compiler-resolved references. Choose the intended declaration, then follow nextSearches. No edit coverage; read truncated signatures explicitly.",
+          "declarationDiscovery": {
+            "engine": "syntax",
+            "status": "current",
+            "navigationOnly": true,
+            "sourceRevision": "src_97451596942f210ca75af71445b141fd",
+            "eligibleFiles": 508,
+            "visitedFiles": 64,
+            "readBytes": 209727,
+            "skippedFiles": 0,
+            "limited": true,
+            "limits": {
+              "files": 64,
+              "bytes": 1048576,
+              "fileBytes": 262144,
+              "declarations": 4
+            }
+          },
+          "declarationCandidates": [
+            {
+              "alias": "s29",
+              "path": "packages/remeda/src/dropLast.ts",
+              "lines": [
+                36,
+                38
+              ],
+              "kind": "function",
+              "qualifiedName": "dropLast",
+              "signature": "function dropLast(...args: ReadonlyArray<unknown>): unknown",
+              "reason": "exact_declaration_candidate",
+              "target": "packages/remeda/src/dropLast.ts#dropLast"
+            }
+          ],
+          "nextReads": [
+            {
+              "target": "packages/remeda/src/dropLast.ts#dropLast",
+              "view": "symbol"
+            }
+          ],
+          "nextSearches": [
+            {
+              "query": "packages/remeda/src/dropLast.ts#dropLast",
+              "mode": "references",
+              "scope": "packages/remeda/src"
+            }
+          ]
+        }
+      },
+      "exactRoute": true
+    },
+    {
+      "stage": "navigation",
+      "query": "clamp",
+      "result": {
+        "status": "ok",
+        "data": {
+          "mode": "text",
+          "engine": "ripgrep",
+          "results": [
+            {
+              "alias": "s30",
+              "kind": "path",
+              "path": "packages/remeda/src/clamp.test.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/clamp.test.ts"
+            },
+            {
+              "alias": "s31",
+              "kind": "path",
+              "path": "packages/remeda/src/clamp.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/clamp.ts"
+            },
+            {
+              "alias": "s32",
+              "kind": "path",
+              "path": "packages/remeda/src/internal/types/ClampedIntegerSubtract.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/internal/types/ClampedIntegerSubtract.ts"
+            },
+            {
+              "alias": "s33",
+              "kind": "text",
+              "path": "packages/remeda/src/clamp.test.ts",
+              "lines": [
+                2,
+                2
+              ],
+              "snippet": "import { clamp } from \"./clamp\";",
+              "reason": "lexical_exact"
+            },
+            {
+              "alias": "s34",
+              "kind": "text",
+              "path": "packages/remeda/src/clamp.test.ts",
+              "lines": [
+                5,
+                5
+              ],
+              "snippet": "  expect(clamp(10, { min: 20 })).toBe(20);",
+              "reason": "lexical_exact"
+            },
+            {
+              "alias": "s35",
+              "kind": "text",
+              "path": "packages/remeda/src/clamp.test.ts",
+              "lines": [
+                9,
+                9
+              ],
+              "snippet": "  expect(clamp(10, { max: 5 })).toBe(5);",
+              "reason": "lexical_exact"
+            },
+            {
+              "alias": "s36",
+              "kind": "text",
+              "path": "packages/remeda/src/clamp.test.ts",
+              "lines": [
+                13,
+                13
+              ],
+              "snippet": "  expect(clamp(10, { max: 20, min: 5 })).toBe(10);",
+              "reason": "lexical_exact"
+            },
+            {
+              "alias": "s37",
+              "kind": "text",
+              "path": "packages/remeda/src/clamp.ts",
+              "lines": [
+                9,
+                9
+              ],
+              "snippet": " * Clamp the given value within the inclusive min and max bounds.",
+              "reason": "lexical_exact"
+            }
+          ],
+          "candidateCount": 508,
+          "limited": true,
+          "guidance": "Bounded syntax candidates, not exhaustive and not compiler-resolved references. Choose the intended declaration, then follow nextSearches. No edit coverage; read truncated signatures explicitly.",
+          "declarationDiscovery": {
+            "engine": "syntax",
+            "status": "current",
+            "navigationOnly": true,
+            "sourceRevision": "src_97451596942f210ca75af71445b141fd",
+            "eligibleFiles": 508,
+            "visitedFiles": 64,
+            "readBytes": 209727,
+            "skippedFiles": 0,
+            "limited": true,
+            "limits": {
+              "files": 64,
+              "bytes": 1048576,
+              "fileBytes": 262144,
+              "declarations": 4
+            }
+          },
+          "declarationCandidates": [
+            {
+              "alias": "s41",
+              "path": "packages/remeda/src/clamp.ts",
+              "lines": [
+                39,
+                41
+              ],
+              "kind": "function",
+              "qualifiedName": "clamp",
+              "signature": "function clamp(...args: ReadonlyArray<unknown>): unknown",
+              "reason": "exact_declaration_candidate",
+              "target": "packages/remeda/src/clamp.ts#clamp"
+            }
+          ],
+          "nextReads": [
+            {
+              "target": "packages/remeda/src/clamp.ts#clamp",
+              "view": "symbol"
+            }
+          ],
+          "nextSearches": [
+            {
+              "query": "packages/remeda/src/clamp.ts#clamp",
+              "mode": "references",
+              "scope": "packages/remeda/src"
+            }
+          ]
+        }
+      },
+      "exactRoute": true
+    },
+    {
+      "stage": "navigation",
+      "query": "splitAt",
+      "result": {
+        "status": "ok",
+        "data": {
+          "mode": "text",
+          "engine": "ripgrep",
+          "results": [
+            {
+              "alias": "s42",
+              "kind": "path",
+              "path": "packages/remeda/src/splitAt.test.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/splitAt.test.ts"
+            },
+            {
+              "alias": "s43",
+              "kind": "path",
+              "path": "packages/remeda/src/splitAt.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/splitAt.ts"
+            },
+            {
+              "alias": "s44",
+              "kind": "text",
+              "path": "packages/remeda/src/splitAt.test.ts",
+              "lines": [
+                2,
+                2
+              ],
+              "snippet": "import { splitAt } from \"./splitAt\";",
+              "reason": "lexical_exact"
+            },
+            {
+              "alias": "s45",
+              "kind": "text",
+              "path": "packages/remeda/src/splitAt.test.ts",
+              "lines": [
+                6,
+                6
+              ],
+              "snippet": "    expect(splitAt([1, 2, 3] as const, 1)).toStrictEqual([[1], [2, 3]]);",
+              "reason": "lexical_exact"
+            },
+            {
+              "alias": "s46",
+              "kind": "text",
+              "path": "packages/remeda/src/splitAt.test.ts",
+              "lines": [
+                10,
+                10
+              ],
+              "snippet": "    expect(splitAt([1, 2, 3, 4, 5] as const, -1)).toStrictEqual([",
+              "reason": "lexical_exact"
+            },
+            {
+              "alias": "s47",
+              "kind": "text",
+              "path": "packages/remeda/src/splitAt.test.ts",
+              "lines": [
+                19,
+                19
+              ],
+              "snippet": "    expect(splitAt(1)([1, 2, 3] as const)).toStrictEqual([[1], [2, 3]]);",
+              "reason": "lexical_exact"
+            },
+            {
+              "alias": "s48",
+              "kind": "text",
+              "path": "packages/remeda/src/splitAt.test.ts",
+              "lines": [
+                23,
+                23
+              ],
+              "snippet": "    expect(splitAt(-1)([1, 2, 3, 4, 5] as const)).toStrictEqual([",
+              "reason": "lexical_exact"
+            },
+            {
+              "alias": "s49",
+              "kind": "text",
+              "path": "packages/remeda/src/splitAt.ts",
+              "lines": [
+                9,
+                9
+              ],
+              "snippet": " *    R.splitAt(array, index)",
+              "reason": "lexical_exact"
+            }
+          ],
+          "candidateCount": 508,
+          "limited": true,
+          "guidance": "Bounded syntax candidates, not exhaustive and not compiler-resolved references. Choose the intended declaration, then follow nextSearches. No edit coverage; read truncated signatures explicitly.",
+          "declarationDiscovery": {
+            "engine": "syntax",
+            "status": "current",
+            "navigationOnly": true,
+            "sourceRevision": "src_97451596942f210ca75af71445b141fd",
+            "eligibleFiles": 508,
+            "visitedFiles": 64,
+            "readBytes": 209727,
+            "skippedFiles": 0,
+            "limited": true,
+            "limits": {
+              "files": 64,
+              "bytes": 1048576,
+              "fileBytes": 262144,
+              "declarations": 4
+            }
+          },
+          "declarationCandidates": [],
+          "nextReads": [],
+          "nextSearches": [
+            {
+              "query": "splitAt",
+              "mode": "symbol",
+              "scope": "packages/remeda/src"
+            }
+          ]
+        }
+      },
+      "exactRoute": false
+    },
+    {
+      "stage": "current",
+      "query": "takeLast",
+      "result": {
+        "status": "ok",
+        "data": {
+          "mode": "text",
+          "engine": "ripgrep",
+          "results": [
+            {
+              "alias": "s1",
+              "kind": "path",
+              "path": "packages/remeda/src/takeLast.test-d.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/takeLast.test-d.ts"
+            },
+            {
+              "alias": "s2",
+              "kind": "path",
+              "path": "packages/remeda/src/takeLast.test.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/takeLast.test.ts"
+            },
+            {
+              "alias": "s3",
+              "kind": "path",
+              "path": "packages/remeda/src/takeLast.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/takeLast.ts"
+            },
+            {
+              "alias": "s4",
+              "kind": "path",
+              "path": "packages/remeda/src/takeLastWhile.test-d.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/takeLastWhile.test-d.ts"
+            },
+            {
+              "alias": "s5",
+              "kind": "path",
+              "path": "packages/remeda/src/takeLastWhile.test.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/takeLastWhile.test.ts"
+            },
+            {
+              "alias": "s6",
+              "kind": "path",
+              "path": "packages/remeda/src/takeLastWhile.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/takeLastWhile.ts"
+            },
+            {
+              "alias": "s7",
+              "kind": "text",
+              "path": "packages/remeda/src/takeLast.test-d.ts",
+              "lines": [
+                3,
+                3
+              ],
+              "snippet": "import { takeLast } from \"./takeLast\";",
+              "reason": "lexical_exact"
+            },
+            {
+              "alias": "s8",
+              "kind": "text",
+              "path": "packages/remeda/src/takeLast.test-d.ts",
+              "lines": [
+                7,
+                7
+              ],
+              "snippet": "    const result = takeLast([] as [], 2);",
+              "reason": "lexical_exact"
+            }
+          ],
+          "candidateCount": 508,
+          "limited": true,
+          "guidance": "Bounded syntax candidates, not exhaustive and not compiler-resolved references. Choose the intended declaration, then follow nextSearches. No edit coverage; read truncated signatures explicitly.",
+          "declarationDiscovery": {
+            "engine": "syntax",
+            "status": "current",
+            "navigationOnly": true,
+            "sourceRevision": "src_97451596942f210ca75af71445b141fd",
+            "eligibleFiles": 508,
+            "visitedFiles": 64,
+            "readBytes": 209090,
+            "skippedFiles": 0,
+            "limited": true,
+            "limits": {
+              "files": 64,
+              "bytes": 1048576,
+              "fileBytes": 262144,
+              "declarations": 4
+            }
+          },
+          "declarationCandidates": [
+            {
+              "alias": "s15",
+              "path": "packages/remeda/src/takeLast.ts",
+              "lines": [
+                36,
+                38
+              ],
+              "kind": "function",
+              "qualifiedName": "takeLast",
+              "signature": "function takeLast(...args: ReadonlyArray<unknown>): unknown",
+              "reason": "exact_declaration_candidate",
+              "target": "packages/remeda/src/takeLast.ts#takeLast"
+            }
+          ],
+          "nextReads": [
+            {
+              "target": "packages/remeda/src/takeLast.ts#takeLast",
+              "view": "symbol"
+            }
+          ],
+          "nextSearches": [
+            {
+              "query": "packages/remeda/src/takeLast.ts#takeLast",
+              "mode": "references",
+              "scope": "packages/remeda/src"
+            }
+          ]
+        }
+      },
+      "exactRoute": true
+    },
+    {
+      "stage": "current",
+      "query": "dropLast",
+      "result": {
+        "status": "ok",
+        "data": {
+          "mode": "text",
+          "engine": "ripgrep",
+          "results": [
+            {
+              "alias": "s16",
+              "kind": "path",
+              "path": "packages/remeda/src/dropLast.test-d.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/dropLast.test-d.ts"
+            },
+            {
+              "alias": "s17",
+              "kind": "path",
+              "path": "packages/remeda/src/dropLast.test.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/dropLast.test.ts"
+            },
+            {
+              "alias": "s18",
+              "kind": "path",
+              "path": "packages/remeda/src/dropLast.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/dropLast.ts"
+            },
+            {
+              "alias": "s19",
+              "kind": "path",
+              "path": "packages/remeda/src/dropLastWhile.test-d.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/dropLastWhile.test-d.ts"
+            },
+            {
+              "alias": "s20",
+              "kind": "path",
+              "path": "packages/remeda/src/dropLastWhile.test.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/dropLastWhile.test.ts"
+            },
+            {
+              "alias": "s21",
+              "kind": "path",
+              "path": "packages/remeda/src/dropLastWhile.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/dropLastWhile.ts"
+            },
+            {
+              "alias": "s22",
+              "kind": "text",
+              "path": "packages/remeda/src/dropLast.test-d.ts",
+              "lines": [
+                2,
+                2
+              ],
+              "snippet": "import { dropLast } from \"./dropLast\";",
+              "reason": "lexical_exact"
+            },
+            {
+              "alias": "s23",
+              "kind": "text",
+              "path": "packages/remeda/src/dropLast.test-d.ts",
+              "lines": [
+                7,
+                7
+              ],
+              "snippet": "    const result = dropLast([] as [], 2);",
+              "reason": "lexical_exact"
+            }
+          ],
+          "candidateCount": 508,
+          "limited": true,
+          "guidance": "Bounded syntax candidates, not exhaustive and not compiler-resolved references. Choose the intended declaration, then follow nextSearches. No edit coverage; read truncated signatures explicitly.",
+          "declarationDiscovery": {
+            "engine": "syntax",
+            "status": "current",
+            "navigationOnly": true,
+            "sourceRevision": "src_97451596942f210ca75af71445b141fd",
+            "eligibleFiles": 508,
+            "visitedFiles": 64,
+            "readBytes": 209727,
+            "skippedFiles": 0,
+            "limited": true,
+            "limits": {
+              "files": 64,
+              "bytes": 1048576,
+              "fileBytes": 262144,
+              "declarations": 4
+            }
+          },
+          "declarationCandidates": [
+            {
+              "alias": "s30",
+              "path": "packages/remeda/src/dropLast.ts",
+              "lines": [
+                36,
+                38
+              ],
+              "kind": "function",
+              "qualifiedName": "dropLast",
+              "signature": "function dropLast(...args: ReadonlyArray<unknown>): unknown",
+              "reason": "exact_declaration_candidate",
+              "target": "packages/remeda/src/dropLast.ts#dropLast"
+            }
+          ],
+          "nextReads": [
+            {
+              "target": "packages/remeda/src/dropLast.ts#dropLast",
+              "view": "symbol"
+            }
+          ],
+          "nextSearches": [
+            {
+              "query": "packages/remeda/src/dropLast.ts#dropLast",
+              "mode": "references",
+              "scope": "packages/remeda/src"
+            }
+          ]
+        }
+      },
+      "exactRoute": true
+    },
+    {
+      "stage": "current",
+      "query": "clamp",
+      "result": {
+        "status": "ok",
+        "data": {
+          "mode": "text",
+          "engine": "ripgrep",
+          "results": [
+            {
+              "alias": "s31",
+              "kind": "path",
+              "path": "packages/remeda/src/clamp.test.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/clamp.test.ts"
+            },
+            {
+              "alias": "s32",
+              "kind": "path",
+              "path": "packages/remeda/src/clamp.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/clamp.ts"
+            },
+            {
+              "alias": "s33",
+              "kind": "path",
+              "path": "packages/remeda/src/internal/types/ClampedIntegerSubtract.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/internal/types/ClampedIntegerSubtract.ts"
+            },
+            {
+              "alias": "s34",
+              "kind": "text",
+              "path": "packages/remeda/src/clamp.test.ts",
+              "lines": [
+                2,
+                2
+              ],
+              "snippet": "import { clamp } from \"./clamp\";",
+              "reason": "lexical_exact"
+            },
+            {
+              "alias": "s35",
+              "kind": "text",
+              "path": "packages/remeda/src/clamp.test.ts",
+              "lines": [
+                5,
+                5
+              ],
+              "snippet": "  expect(clamp(10, { min: 20 })).toBe(20);",
+              "reason": "lexical_exact"
+            },
+            {
+              "alias": "s36",
+              "kind": "text",
+              "path": "packages/remeda/src/clamp.test.ts",
+              "lines": [
+                9,
+                9
+              ],
+              "snippet": "  expect(clamp(10, { max: 5 })).toBe(5);",
+              "reason": "lexical_exact"
+            },
+            {
+              "alias": "s37",
+              "kind": "text",
+              "path": "packages/remeda/src/clamp.test.ts",
+              "lines": [
+                13,
+                13
+              ],
+              "snippet": "  expect(clamp(10, { max: 20, min: 5 })).toBe(10);",
+              "reason": "lexical_exact"
+            },
+            {
+              "alias": "s38",
+              "kind": "text",
+              "path": "packages/remeda/src/clamp.ts",
+              "lines": [
+                9,
+                9
+              ],
+              "snippet": " * Clamp the given value within the inclusive min and max bounds.",
+              "reason": "lexical_exact"
+            }
+          ],
+          "candidateCount": 508,
+          "limited": true,
+          "guidance": "Bounded syntax candidates, not exhaustive and not compiler-resolved references. Choose the intended declaration, then follow nextSearches. No edit coverage; read truncated signatures explicitly.",
+          "declarationDiscovery": {
+            "engine": "syntax",
+            "status": "current",
+            "navigationOnly": true,
+            "sourceRevision": "src_97451596942f210ca75af71445b141fd",
+            "eligibleFiles": 508,
+            "visitedFiles": 64,
+            "readBytes": 209727,
+            "skippedFiles": 0,
+            "limited": true,
+            "limits": {
+              "files": 64,
+              "bytes": 1048576,
+              "fileBytes": 262144,
+              "declarations": 4
+            }
+          },
+          "declarationCandidates": [
+            {
+              "alias": "s42",
+              "path": "packages/remeda/src/clamp.ts",
+              "lines": [
+                39,
+                41
+              ],
+              "kind": "function",
+              "qualifiedName": "clamp",
+              "signature": "function clamp(...args: ReadonlyArray<unknown>): unknown",
+              "reason": "exact_declaration_candidate",
+              "target": "packages/remeda/src/clamp.ts#clamp"
+            }
+          ],
+          "nextReads": [
+            {
+              "target": "packages/remeda/src/clamp.ts#clamp",
+              "view": "symbol"
+            }
+          ],
+          "nextSearches": [
+            {
+              "query": "packages/remeda/src/clamp.ts#clamp",
+              "mode": "references",
+              "scope": "packages/remeda/src"
+            }
+          ]
+        }
+      },
+      "exactRoute": true
+    },
+    {
+      "stage": "current",
+      "query": "splitAt",
+      "result": {
+        "status": "ok",
+        "data": {
+          "mode": "text",
+          "engine": "ripgrep",
+          "results": [
+            {
+              "alias": "s43",
+              "kind": "path",
+              "path": "packages/remeda/src/splitAt.test.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/splitAt.test.ts"
+            },
+            {
+              "alias": "s44",
+              "kind": "path",
+              "path": "packages/remeda/src/splitAt.ts",
+              "reason": "path_name",
+              "target": "packages/remeda/src/splitAt.ts"
+            },
+            {
+              "alias": "s45",
+              "kind": "text",
+              "path": "packages/remeda/src/splitAt.test.ts",
+              "lines": [
+                2,
+                2
+              ],
+              "snippet": "import { splitAt } from \"./splitAt\";",
+              "reason": "lexical_exact"
+            },
+            {
+              "alias": "s46",
+              "kind": "text",
+              "path": "packages/remeda/src/splitAt.test.ts",
+              "lines": [
+                6,
+                6
+              ],
+              "snippet": "    expect(splitAt([1, 2, 3] as const, 1)).toStrictEqual([[1], [2, 3]]);",
+              "reason": "lexical_exact"
+            },
+            {
+              "alias": "s47",
+              "kind": "text",
+              "path": "packages/remeda/src/splitAt.test.ts",
+              "lines": [
+                10,
+                10
+              ],
+              "snippet": "    expect(splitAt([1, 2, 3, 4, 5] as const, -1)).toStrictEqual([",
+              "reason": "lexical_exact"
+            },
+            {
+              "alias": "s48",
+              "kind": "text",
+              "path": "packages/remeda/src/splitAt.test.ts",
+              "lines": [
+                19,
+                19
+              ],
+              "snippet": "    expect(splitAt(1)([1, 2, 3] as const)).toStrictEqual([[1], [2, 3]]);",
+              "reason": "lexical_exact"
+            },
+            {
+              "alias": "s49",
+              "kind": "text",
+              "path": "packages/remeda/src/splitAt.test.ts",
+              "lines": [
+                23,
+                23
+              ],
+              "snippet": "    expect(splitAt(-1)([1, 2, 3, 4, 5] as const)).toStrictEqual([",
+              "reason": "lexical_exact"
+            },
+            {
+              "alias": "s50",
+              "kind": "text",
+              "path": "packages/remeda/src/splitAt.ts",
+              "lines": [
+                9,
+                9
+              ],
+              "snippet": " *    R.splitAt(array, index)",
+              "reason": "lexical_exact"
+            }
+          ],
+          "candidateCount": 508,
+          "limited": true,
+          "guidance": "Bounded syntax candidates, not exhaustive and not compiler-resolved references. Choose the intended declaration, then follow nextSearches. No edit coverage; read truncated signatures explicitly.",
+          "declarationDiscovery": {
+            "engine": "syntax",
+            "status": "current",
+            "navigationOnly": true,
+            "sourceRevision": "src_97451596942f210ca75af71445b141fd",
+            "eligibleFiles": 508,
+            "visitedFiles": 64,
+            "readBytes": 209241,
+            "skippedFiles": 0,
+            "limited": true,
+            "limits": {
+              "files": 64,
+              "bytes": 1048576,
+              "fileBytes": 262144,
+              "declarations": 4
+            }
+          },
+          "declarationCandidates": [
+            {
+              "alias": "s53",
+              "path": "packages/remeda/src/splitAt.ts",
+              "lines": [
+                37,
+                39
+              ],
+              "kind": "function",
+              "qualifiedName": "splitAt",
+              "signature": "function splitAt(...args: ReadonlyArray<unknown>): unknown",
+              "reason": "exact_declaration_candidate",
+              "target": "packages/remeda/src/splitAt.ts#splitAt"
+            }
+          ],
+          "nextReads": [
+            {
+              "target": "packages/remeda/src/splitAt.ts#splitAt",
+              "view": "symbol"
+            }
+          ],
+          "nextSearches": [
+            {
+              "query": "packages/remeda/src/splitAt.ts#splitAt",
+              "mode": "references",
+              "scope": "packages/remeda/src"
+            }
+          ]
+        }
+      },
+      "exactRoute": true
+    }
+  ]
+}
