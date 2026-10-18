@@ -1,0 +1,7 @@
+{
+  "registeredAtUTC": "2026-10-18T10:57:08.321Z",
+  "completedBeforePauseRequest": 8,
+  "selection": "Pause at the next safe coordinator boundary, regardless of current trial outcome. No active worker is interrupted. Resume with exactly the original order, inputs, budgets and model; do not replay any completed request.",
+  "purpose": "Verify real coordinator checkpoint restoration, not a new model-success experiment.",
+  "measurementBoundary": "One administrative pause changes campaign wall time and may affect unobserved provider cache residency. Per-trial recorded durations remain original. Preserve this limitation."
+}

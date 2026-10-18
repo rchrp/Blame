@@ -1,6 +1,6 @@
 {
   "protocolHash": "32c5b7eceb4d31944b09d7518ca30fd5cf9645a20fc9427eef7934238b40933a",
-  "completed": 7,
+  "completed": 11,
   "planned": 18,
   "receipts": [
     {
@@ -30,6 +30,22 @@
     {
       "name": "1-signed-window-overlap-cline",
       "sha256": "5fd8684466456318a92da156a140ea8e56aa133a626817f8ac24bb3f37de558f"
+    },
+    {
+      "name": "1-signed-window-overlap-reference",
+      "sha256": "97961be577ee52766a6b9a54182fb1a99d3b331e4d254098dc70ce3b9be4a9d3"
+    },
+    {
+      "name": "1-signed-window-overlap-candidate",
+      "sha256": "8a4799fbcb1aac9aa9a05d35fe1aaa0448f525cfc825de9e5ea9bfc0ce22cd20"
+    },
+    {
+      "name": "2-credit-remainder-candidate",
+      "sha256": "0cab166efe96674ea98ad8f3868dd745e1bd63c6d948d111db644b03afdc0d04"
+    },
+    {
+      "name": "2-credit-remainder-cline",
+      "sha256": "162034e728237e4a06efdc5dee58d9256872bdb29c7ba13f5fecf9dc47d073b3"
     }
   ],
   "note": "Derived index. Each immutable archive is independently verified; no model call is replayed."

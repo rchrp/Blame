@@ -1,0 +1,14 @@
+{
+  "observedAtUTC": "2026-10-18T10:59:07.341Z",
+  "restoredCompleted": 9,
+  "prefixFileHashesUnchanged": true,
+  "prefixWireLedgersUnchanged": true,
+  "nextObservedSlot": {
+    "repeat": 2,
+    "task": "credit-remainder",
+    "arm": "candidate"
+  },
+  "replayedCompletedModelCalls": 0,
+  "modelRetried": false,
+  "method": "Compare all recorded start/event/wire/patch/grade/ledger/result SHA-256 values for the completed prefix, then verify the first resumed model-start slot equals the next registered assignment. Does not establish provider hidden retry/cache behavior."
+}
