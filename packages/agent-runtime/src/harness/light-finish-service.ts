@@ -19,6 +19,7 @@ import { readTaskCatalog } from "./task-catalog.js";
 import { WorkspaceFiles } from "./workspace-files.js";
 import { validationScopePaths } from "./validation-scope.js";
 import { currentValidationReport } from "./light-validation-report.js";
+import { checkInvocationKey, latestFailedInvocations } from "./light-check-repair.js";
 
 export type LocalFinishOptions = {
   conversationId: string;
@@ -151,6 +152,11 @@ export class LightFinishService {
     for (const selection of required)
       if (!inputs.some(({ input, cwd }) => sameInvocation({ taskId: input.task, args: input.args, cwd }, selection.input, selection.cwd)))
         inputs.push({ ...selection, paths: state.changedPaths });
+    const failedKeys = new Set(latestFailedInvocations(this.journal.currentValidations()).map(checkInvocationKey));
+    // Stable order within each group; a different test filter never clears a
+    // failure just because it uses the same catalog task ID.
+    inputs.sort((left, right) => Number(failedKeys.has(checkInvocationKey({ taskId: right.input.task, args: right.input.args, cwd: right.cwd }))) -
+      Number(failedKeys.has(checkInvocationKey({ taskId: left.input.task, args: left.input.args, cwd: left.cwd }))));
     const pendingTests = inputs.filter(({ input, cwd }) =>
       input.args !== undefined && !state.validations.some((item) => sameInvocation(item, input, cwd)),
     );
@@ -184,6 +190,9 @@ export class LightFinishService {
         throw new Error(
           "Source changed during final validation. Review the changes and validate again.",
         );
+      // Do not spend another round on green checks while a refreshed code
+      // failure still blocks completion. Required obligations remain pending.
+      assertNoFailedValidation(await this.completionSnapshot());
     }
     return {
       outcome: "checked" as const,
@@ -488,11 +497,8 @@ function assertNoFailedValidation(
 function latestFailedTasks(
   validations: ReturnType<SessionJournal["currentValidations"]>,
 ) {
-  const latest = new Map(
-    validations.map((validation) => [validation.taskId, validation]),
-  );
   return new Set(
-    [...latest.values()]
+    latestFailedInvocations(validations)
       .filter(
         (validation) =>
           validation.taskId &&

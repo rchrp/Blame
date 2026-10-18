@@ -19,6 +19,7 @@ import type {
   LightToolResult,
 } from "./light-contracts.js";
 import { LightEditService } from "./light-edit.js";
+import { checkRepairPlan } from "./light-check-repair.js";
 import { LightCommitService } from "./light-commit.js";
 import {
   autoSearchResult,
@@ -153,10 +154,27 @@ export class LightWorkspace {
         if (path) this.coverage.invalidatePath(path);
       }
     await this.journal.recordCoverage(this.coverage.snapshot());
-    return result;
+    return result.status === "ok" && recordValue(result.data).changed === true
+      ? this.withCheckRepair(result) : result;
   }
 
   async runTask(input: LightRunTaskInput, context: AgentToolContext) {
+    return this.withCheckRepair(await this.runTaskWithDiagnostics(input, context));
+  }
+
+  private async withCheckRepair(result: LightToolResult<unknown>): Promise<LightToolResult<unknown>> {
+    if (result.status === "ok" && typeof recordValue(result.data).run === "string" &&
+        !recordValue(result.data).completed) return result;
+    // Advisory discovery must not turn a committed edit or completed command
+    // into a missing receipt when a manifest is temporarily incomplete.
+    const repair = await checkRepairPlan(this.files, this.journal, this.options.taskContract).catch(() => undefined);
+    if (!repair) return result;
+    return result.status === "ok" ? { ...result, data: { ...recordValue(result.data), validationRepair: repair } }
+      : result.status === "blocked" ? { ...result, recovery: `${result.recovery ?? ""}\n${JSON.stringify({ validationRepair: repair })}`.trim() }
+      : result;
+  }
+
+  private async runTaskWithDiagnostics(input: LightRunTaskInput, context: AgentToolContext) {
     await this.ready;
     if (input.kind === "analyze") {
       const { analyzeWorkspaceSymbol } = await import("./light-symbolic-analysis.js");
@@ -413,7 +431,7 @@ export class LightWorkspace {
 
   private async specialReadResult(target: string) {
     if (target === "@checks")
-      return { status: "ok" as const, data: currentValidationReport(await this.journal.completionSnapshot()) };
+      return this.withCheckRepair({ status: "ok" as const, data: currentValidationReport(await this.journal.completionSnapshot()) });
     if (target === "@capabilities") return capabilitiesResult();
     if (target === "@changes")
       return {
