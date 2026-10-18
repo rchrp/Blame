@@ -1,0 +1,43 @@
+{
+  "postHoc": true,
+  "modelRequests": 0,
+  "name": "2-slice-index-candidate",
+  "traceSha256": "bf76a3e121b96de336bddd190bf1846d7c164f6ee398bbc7dc3abe3d1b4a9067",
+  "patchSha256": "88aa1539f5be0951c911b680cd390066b9c596547eba83e5b9a9283c1aeeb6ec",
+  "scriptSha256": "5192841a5870a067d3be2334b0bcc61209e24aebb492e530a2ec5dbbeff3d097",
+  "meaning": "The identical unchanged authored test fails with the same TS2322 on pristine and endpoint production. The test assumes contextual generic inference that the unchanged public curried overload does not provide. This is a delivered-test defect against the preserved API, not a new production-body type regression. Both cases use the pinned compiler and unmodified delivered-test wrapper. No endpoint repair, score change or solution recovery.",
+  "rows": [
+    {
+      "mode": "pristine_production_authored_test",
+      "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+      "argv": [
+        ".study/delivered.mjs",
+        "types"
+      ],
+      "exitCode": 2,
+      "diagnostics": [
+        "packages/remeda/src/splitAt.slice-index.test.ts(40,11): error TS2322: Type '[unknown[], unknown[]]' is not assignable to type '[number[], number[]]'."
+      ],
+      "stdout": "Delivered test files: [\"packages/remeda/src/splitAt.slice-index.test.ts\"]\npackages/remeda/src/splitAt.slice-index.test.ts(40,11): error TS2322: Type '[unknown[], unknown[]]' is not assignable to type '[number[], number[]]'.\n  Type at position 0 in source is not compatible with type at position 0 in target.\n    Type 'unknown[]' is not assignable to type 'number[]'.\n      Type 'unknown' is not assignable to type 'number'.\n",
+      "stderr": "",
+      "productionSha256": "bcc9d95b2ff7c79f618abcce9c964fb6485dc1c1842c52cd2b2a7e807b7d9893",
+      "authoredTestSha256": "1b282405454cc1c1a5ada98ecfa5fe958ade30b5680d3ccd3c28141c4dbceb71"
+    },
+    {
+      "mode": "unchanged_endpoint_patch",
+      "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+      "argv": [
+        ".study/delivered.mjs",
+        "types"
+      ],
+      "exitCode": 2,
+      "diagnostics": [
+        "packages/remeda/src/splitAt.slice-index.test.ts(40,11): error TS2322: Type '[unknown[], unknown[]]' is not assignable to type '[number[], number[]]'."
+      ],
+      "stdout": "Delivered test files: [\"packages/remeda/src/splitAt.slice-index.test.ts\"]\npackages/remeda/src/splitAt.slice-index.test.ts(40,11): error TS2322: Type '[unknown[], unknown[]]' is not assignable to type '[number[], number[]]'.\n  Type at position 0 in source is not compatible with type at position 0 in target.\n    Type 'unknown[]' is not assignable to type 'number[]'.\n      Type 'unknown' is not assignable to type 'number'.\n",
+      "stderr": "",
+      "productionSha256": "f460c6fc59fc6dc096a98aa9abe4bd23b96dc93c56c5f579ed2339e85e4ed8dc",
+      "authoredTestSha256": "1b282405454cc1c1a5ada98ecfa5fe958ade30b5680d3ccd3c28141c4dbceb71"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "source": "docs/semantic-harness-study.tex",
+  "sourceSha256": "224b0fbddd14192a6a3963e5479828abf8aad3e9a9ef2574662677a11a100b37",
+  "tool": "codex_app.compile_latex_document",
+  "status": "success",
+  "message": "The current source compiled successfully with the desktop editor's compiler.",
+  "scope": "Native desktop editor compiler after final F62 prose/table changes; opening the editor alone is not compilation proof."
+}

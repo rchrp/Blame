@@ -1,0 +1,1609 @@
+{
+  "method": "Recorded tool start/end intervals clipped to SDK worker bounds, merged before summing. Historical absent fetch spans are unknown, not zero requests. New fetch spans end on consumer-driven EOF/cancellation/error; they include gateway, transport, generation and client processing/backpressure, not pure network or provider inference. Tool/HTTP overlaps are explicit. Record timestamps and passive observer overhead do not establish exclusive-host causality. Historical diagnosis is post-hoc; original outcomes/costs unchanged.",
+  "rows": [
+    {
+      "name": "1-suffix-counts-reference",
+      "arm": "reference",
+      "sdkDurationMs": 72156,
+      "sourceHashes": {
+        "events": "0ab69295528a2c8d290ce5fbf92ff2073c98869412663007e40ef909c0906f40",
+        "result": "b7900c93bc6d995a8a2059e54b689c2b7997f21a4d548cc680661b95e03a224c",
+        "requestTiming": "d3462ae76814f0ffcc046240d7098bdf27e22bcd9dd34a6b5991b2d7a21580f4"
+      },
+      "windowMs": 72156,
+      "toolMs": 11784,
+      "requestMs": 57802.87060546875,
+      "overlapMs": 0,
+      "toolOnlyMs": 11784,
+      "requestOnlyMs": 57802.87060546875,
+      "outsideObservedSpansMs": 2569.12939453125,
+      "toolSpanCount": 48,
+      "toolUnionCount": 33,
+      "toolAnomalies": [],
+      "requestAnomalies": [],
+      "measuredRequests": [
+        {
+          "attempt": 1,
+          "requestBodySha256": "59be8f286dabda4d8b7a1ae8dc73ea3ff52cd4a4503bbb7eba3b63d019bf8e33",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 2,
+          "requestBodySha256": "329cfd4051cca04efece9c98a06ffc5c2f77de7ac2921491a523ac4cdd1aba93",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 3,
+          "requestBodySha256": "6fbf7fa1015141f7093c6835394ec19a6f8150660a4bbd21a875deb5528e6c06",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 4,
+          "requestBodySha256": "62d231f5ef583e58470d4d38d57fd7b308d377a8c5309588f617d4ad0ef5e565",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 5,
+          "requestBodySha256": "6e4068ef07583ffadcfe35f8a4f688d0126345bb411e9e1ff1172d17e2b35717",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 6,
+          "requestBodySha256": "362a1eca60853cdda86669ae3d4926aab32fd82b63492db5b118a4a184080ba5",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 7,
+          "requestBodySha256": "72bed63045a9afc52b52279af26abf29e0531f7be5eb8ced823d7ab8122d84f1",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 8,
+          "requestBodySha256": "a9a8b58b5e87b0b4a3828ccee7b231c7b30fdb1f7f993e14ca2e11656229c110",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 9,
+          "requestBodySha256": "f05485975bdc6cbc1b2c10e259d8615914ed2a80dc702788e51d846685e455a4",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 10,
+          "requestBodySha256": "b85a1b199618285ecebe0d5548e52ba1f6f0a7f7e02fdd05f99dc282b7e9b924",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 11,
+          "requestBodySha256": "359f78464c1fe2245cbe15c6a55a6fbaa84be252c0d768a880e2dcebb4ef0b29",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 12,
+          "requestBodySha256": "1f20a245fc1516aaf02b73ab20f421e0040911bb08fb239923da0d925908d516",
+          "complete": true,
+          "terminal": "body_end"
+        }
+      ],
+      "requestPhaseUnionMs": {
+        "headers": 12054.394775390625,
+        "firstRead": 20.928466796875,
+        "bodyTail": 45727.54736328125
+      }
+    },
+    {
+      "name": "1-suffix-counts-candidate",
+      "arm": "candidate",
+      "sdkDurationMs": 78077,
+      "sourceHashes": {
+        "events": "f5b15f530330e6b1e19118591f3cb5823a19482f1d55d7c7f34ced42e46ad1e7",
+        "result": "1d6837718e48b6c48c9b2dbc744a1f2305122cddeeb2c96bb70e7b2a6cdaca4d",
+        "requestTiming": "ded27c37cba89b0b9564e4bd31a43b460432cc50979bbec388c8bcb0a21e28b5"
+      },
+      "windowMs": 78077,
+      "toolMs": 9395,
+      "requestMs": 66587.484375,
+      "overlapMs": 0,
+      "toolOnlyMs": 9395,
+      "requestOnlyMs": 66587.484375,
+      "outsideObservedSpansMs": 2094.515625,
+      "toolSpanCount": 41,
+      "toolUnionCount": 30,
+      "toolAnomalies": [],
+      "requestAnomalies": [],
+      "measuredRequests": [
+        {
+          "attempt": 1,
+          "requestBodySha256": "4c48860723f25b3d68b38b7b1b75cf3df897aa7e4b1a7d475efcccb559dd1c27",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 2,
+          "requestBodySha256": "a1a0c40228733c31490ea69eaa75e1264d4b55cd6d19cc2104706c861ede2539",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 3,
+          "requestBodySha256": "9e422c315d833137b23795614daacf9d0ae8747d4342be8c024896edf554c23a",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 4,
+          "requestBodySha256": "b9aa9667bcda4f1d2d4335eb5400c0273ceeace8ac81a2b99f4cedd1fb8aa0f8",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 5,
+          "requestBodySha256": "719e59bd2b87419ce349d24b739568fafddadc08764b1647c9da03f15725cdb3",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 6,
+          "requestBodySha256": "a1ad169861ba71b75e19eb0ae68a42fe88449d33dc398fa2ac68b59015029d49",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 7,
+          "requestBodySha256": "cfd204a2c83870b5dabb5ffa3997391c34337660b99aca9c4b345b8bbab5308d",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 8,
+          "requestBodySha256": "5ef3fadd7bc264f9abf18eb8e02cd7799965d5f31edc98cd144bf81975fed134",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 9,
+          "requestBodySha256": "785a77bb65f2ef0c7bda8e5c632bc353802f90edae3b10a7fd47013a2304281c",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 10,
+          "requestBodySha256": "e5e513dd4d5920e1288459c2ad7adb4130418194145c6e34033ac7adc0a7bd23",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 11,
+          "requestBodySha256": "c49f8f771e468ef630bac6b5d527f161860f608a8a58d3d957380cf7e2caa2bf",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 12,
+          "requestBodySha256": "32c8fa7b3d6a39004232ed4390873fded799dff2912dfd0d2484c2ee2af09290",
+          "complete": true,
+          "terminal": "body_end"
+        }
+      ],
+      "requestPhaseUnionMs": {
+        "headers": 11415.708740234375,
+        "firstRead": 43.66357421875,
+        "bodyTail": 55128.112060546875
+      }
+    },
+    {
+      "name": "1-suffix-counts-cline",
+      "arm": "cline",
+      "sdkDurationMs": 74448,
+      "sourceHashes": {
+        "events": "c2b19cbd68cc424f8245cbb60ef7c1d18788516d69ae277176fd29c1056d23dd",
+        "result": "d69d3f210eb6d5ccaf54d46ee17a4879ab6e368f1f71d6102f6668e9abce6f89",
+        "requestTiming": "72689eccb504b98ee5164d679a40ba0da807232208544d255c73b58b3bb08025"
+      },
+      "windowMs": 74448,
+      "toolMs": 3048,
+      "requestMs": 68948.654296875,
+      "overlapMs": 0,
+      "toolOnlyMs": 3048,
+      "requestOnlyMs": 68948.654296875,
+      "outsideObservedSpansMs": 2451.345703125,
+      "toolSpanCount": 14,
+      "toolUnionCount": 10,
+      "toolAnomalies": [],
+      "requestAnomalies": [],
+      "measuredRequests": [
+        {
+          "attempt": 1,
+          "requestBodySha256": "0af25794b8220701fed722c91fd6a064c08e1a447b16b5c88b17386fff2497af",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 2,
+          "requestBodySha256": "bb3a139dc2927d5d3446851eb678d253483f620976febb781092294255ee20d6",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 3,
+          "requestBodySha256": "f9bd3d3ea70514036cf576ac2ff2a5ad708568d5f057938485f84aac30d6d6fe",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 4,
+          "requestBodySha256": "63780f5f63664f146b609dfd798f7934b92c88fac2154bfd946fe89feed70ff6",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 5,
+          "requestBodySha256": "c45e1c261c509ec9a2374c10c87a19544c4d6f62634ee5fd82cd9bbaa4222d2e",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 6,
+          "requestBodySha256": "ee9403383e782304af35688fb01c59b6f367c1344d5eff2a2e61e70ffb36db02",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 7,
+          "requestBodySha256": "fb9ffb57fd0f3516103250434e5aefbf1e5c34ad2006756f7db651a2933a0569",
+          "complete": true,
+          "terminal": "body_end"
+        }
+      ],
+      "requestPhaseUnionMs": {
+        "headers": 7119.785400390625,
+        "firstRead": 81.67236328125,
+        "bodyTail": 61747.196533203125
+      }
+    },
+    {
+      "name": "1-reversed-clamp-candidate",
+      "arm": "candidate",
+      "sdkDurationMs": 70553,
+      "sourceHashes": {
+        "events": "55110c2e8c65d27588968827de9998f347deee419b97895f4ca78efb57bce39e",
+        "result": "87b92fbe323c72f61175f139658ee9be33699cd8a612edc5fb92d202931ebea1",
+        "requestTiming": "499c778c5070110556d23c5d49acbc15228cb8d12d2368cf5df21de1b74e92fe"
+      },
+      "windowMs": 70553,
+      "toolMs": 13132,
+      "requestMs": 55406.716796875,
+      "overlapMs": 0,
+      "toolOnlyMs": 13132,
+      "requestOnlyMs": 55406.716796875,
+      "outsideObservedSpansMs": 2014.283203125,
+      "toolSpanCount": 32,
+      "toolUnionCount": 25,
+      "toolAnomalies": [],
+      "requestAnomalies": [],
+      "measuredRequests": [
+        {
+          "attempt": 1,
+          "requestBodySha256": "2b4a4c87d32b92569b90807c69ee1c5c72c58e5b42fedb12af3864c6ebf75b6f",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 2,
+          "requestBodySha256": "d7975e112cedca62ff285681f23fd82d425aa00b7df9fbe010fc6497e85b9b01",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 3,
+          "requestBodySha256": "202ef80cc39b8fa8bc6be5d5379c21c60beda43e7c8240d5e8e86402cff49904",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 4,
+          "requestBodySha256": "c08e4530236e559dbf24379d18c253fbb9cdc8507fee07687208990fc3a63696",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 5,
+          "requestBodySha256": "947b739c4505867e0bfd1e0370fcff4548f22724a69b1f92f93036504630d635",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 6,
+          "requestBodySha256": "109e169cc11eb8f961eafaa54766d56a82d541f72c1fab1c6933b365730b7784",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 7,
+          "requestBodySha256": "f6d285c80b3ea2a1292d1dcefe60777bd3aa06cdb3d440b15e228696ceef3968",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 8,
+          "requestBodySha256": "0b9b85d49b2283e74c3d1020cebb00fb83dcf0a5a23be9aa82177f65d64d70d4",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 9,
+          "requestBodySha256": "700dedafc6bfbba0a2c9591967de68c24380e9905f99aff9d6f95101acb5fbe6",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 10,
+          "requestBodySha256": "cfe3a062ea1d25d393ba98c40eedb0cae32fea31ca77062fe6d932ec50f1ae18",
+          "complete": true,
+          "terminal": "body_end"
+        }
+      ],
+      "requestPhaseUnionMs": {
+        "headers": 12798.064453125,
+        "firstRead": 47.55224609375,
+        "bodyTail": 42561.10009765625
+      }
+    },
+    {
+      "name": "1-reversed-clamp-cline",
+      "arm": "cline",
+      "sdkDurationMs": 50039,
+      "sourceHashes": {
+        "events": "7dc3225ef73bc7421241004cb0bc33b247e0bd8fbdb1a79f799e2ed095be5321",
+        "result": "f6b63bea2a5d95053d175e3da3d0bc4176ce565e7f7dc7cb2e9490c3c7e95719",
+        "requestTiming": "134a32d58672c4b16a27cf0273d1bab0b8fe1a2090804ad1e675962a2fcf9595"
+      },
+      "windowMs": 50039,
+      "toolMs": 5757,
+      "requestMs": 41757.43505859375,
+      "overlapMs": 0,
+      "toolOnlyMs": 5757,
+      "requestOnlyMs": 41757.43505859375,
+      "outsideObservedSpansMs": 2524.56494140625,
+      "toolSpanCount": 12,
+      "toolUnionCount": 10,
+      "toolAnomalies": [],
+      "requestAnomalies": [],
+      "measuredRequests": [
+        {
+          "attempt": 1,
+          "requestBodySha256": "8abf5a85798ed35092576eab7e5166df8cfe2b40aa908c2a888b74638c615a6b",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 2,
+          "requestBodySha256": "bbaf9dc8785d87d5acbe7398bb70fdc99bdd447c6bf95185bea46301742093df",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 3,
+          "requestBodySha256": "2241ab41ab3993d99e19035afc8b9c3e3cc3de66c9ea03f11acc57dc448204c8",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 4,
+          "requestBodySha256": "a4066b10ccaf2aca01884b540e9d4ddc967959fc22f0e54f0ea3ad46873b39f3",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 5,
+          "requestBodySha256": "7e6b886ceac38b398ca774ea3451e796ef4916c9fa0e6a11b274ff5fbd08ac17",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 6,
+          "requestBodySha256": "f82f04b7f8a723db88bb1c7b1dbbcc66f309d021dcc34714ef03afdaad2dff8c",
+          "complete": true,
+          "terminal": "body_end"
+        }
+      ],
+      "requestPhaseUnionMs": {
+        "headers": 6503.32763671875,
+        "firstRead": 6.7939453125,
+        "bodyTail": 35247.3134765625
+      }
+    },
+    {
+      "name": "1-reversed-clamp-reference",
+      "arm": "reference",
+      "sdkDurationMs": 70045,
+      "sourceHashes": {
+        "events": "0ca32c5a1769b9997684ea4fe762cd4bcdf6b5c50c16e7e3c6189629f3661169",
+        "result": "48d088b6a7f88a12f37063b46e628ab3f07d074ea287f7b9473a3692a21595ce",
+        "requestTiming": "b93d22c6364a2ee64233f29fba47ddc8c5b9ac08c55b3ed98b17b5ad3ae8b8d1"
+      },
+      "windowMs": 70045,
+      "toolMs": 20255,
+      "requestMs": 47830.91259765625,
+      "overlapMs": 0,
+      "toolOnlyMs": 20255,
+      "requestOnlyMs": 47830.91259765625,
+      "outsideObservedSpansMs": 1959.08740234375,
+      "toolSpanCount": 38,
+      "toolUnionCount": 29,
+      "toolAnomalies": [],
+      "requestAnomalies": [],
+      "measuredRequests": [
+        {
+          "attempt": 1,
+          "requestBodySha256": "4ead35dbf242967722a85ce884e9395e1e86c8063171ceea04c3803cac17193a",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 2,
+          "requestBodySha256": "af0aff62a6b29b934d29283a5bf4234b2f5b8bab43122c2aeb60dde87d454d4a",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 3,
+          "requestBodySha256": "6d51c095e140b355448e84ad540187cd326136b447ce64c96a3117b2fe520224",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 4,
+          "requestBodySha256": "4dd6ab75af1fabd10f2a30a4d0620af186f7f5b981dce5aa10b3d59ee1674652",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 5,
+          "requestBodySha256": "09e248549f792a7dc823f2f5f610141c4b10b979e54b02dfd79f86e9b39e5420",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 6,
+          "requestBodySha256": "ee381ff531cf0fefad21aa94ea5bfdd6745375058f74817f67d01f81795113f3",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 7,
+          "requestBodySha256": "0745b4605810a4e403e710d92d1a73435b787036e2614b5833dcfa6ba59ba849",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 8,
+          "requestBodySha256": "2e13297ba07192641f686094b95ad97b88685eceef3baa1eb3755d58feb159d9",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 9,
+          "requestBodySha256": "932db7ba2bee76579977648640ee6204bc16bb8b8789601b1ca71133090bad99",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 10,
+          "requestBodySha256": "3710d8fcb6d0ba0355beec9aad40eaa8d1f39a91ab74ea5131258563cfcd11f4",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 11,
+          "requestBodySha256": "390629ed681062c5578a1f8396c936b099bd764143943259cc4e024f14c2bf0e",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 12,
+          "requestBodySha256": "903c69f0cc9c71eddcf64830dbaa983f69f79bbf81cd994af251cec7b8a49908",
+          "complete": true,
+          "terminal": "body_end"
+        }
+      ],
+      "requestPhaseUnionMs": {
+        "headers": 10359.713134765625,
+        "firstRead": 19.310546875,
+        "bodyTail": 37451.888916015625
+      }
+    },
+    {
+      "name": "1-slice-index-cline",
+      "arm": "cline",
+      "sdkDurationMs": 49523,
+      "sourceHashes": {
+        "events": "4811bcff07168bb5d8b59fbc3cd5d96a5d385a39a8e63648cac59e7a759b472f",
+        "result": "f7b1a4320eb35d648bfe6f27e7dec2ac02b230ced461b1b5e19cbde2432f5674",
+        "requestTiming": "fca9a6488438328051683c25ece3de6fee5ed5e22469bac88a1f4a85cfa92814"
+      },
+      "windowMs": 49523,
+      "toolMs": 5081,
+      "requestMs": 42758.305419921875,
+      "overlapMs": 0,
+      "toolOnlyMs": 5081,
+      "requestOnlyMs": 42758.305419921875,
+      "outsideObservedSpansMs": 1683.694580078125,
+      "toolSpanCount": 12,
+      "toolUnionCount": 11,
+      "toolAnomalies": [],
+      "requestAnomalies": [],
+      "measuredRequests": [
+        {
+          "attempt": 1,
+          "requestBodySha256": "7c9988d349015a9acb8ec9917a9dc4163693b9810e9e0f9aee91d3de28bf0364",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 2,
+          "requestBodySha256": "81878d9774ea6025c45e172befa31ad5052d2a3e82c7b1ccc389132fa4ad233a",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 3,
+          "requestBodySha256": "b06da32ac36bfebb4d24452fdb53e0809785ca16dfedf7917f00569c74e4031d",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 4,
+          "requestBodySha256": "f3bfbb529fbdcf2b3dac80ddfbf3e1974170db8c40a5af1a1f19c1f08ffa2c11",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 5,
+          "requestBodySha256": "f3c5a488e4ba253f1e8a5cea0c5186f1f4fe0e38eebf68a80e0e4afbc3171b7f",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 6,
+          "requestBodySha256": "8c754d1c60fdc57a887c89c182d7b7137dd324bb2fd8cd463a0218659414f0a9",
+          "complete": true,
+          "terminal": "body_end"
+        }
+      ],
+      "requestPhaseUnionMs": {
+        "headers": 5461.347900390625,
+        "firstRead": 10.330810546875,
+        "bodyTail": 37286.626708984375
+      }
+    },
+    {
+      "name": "1-slice-index-reference",
+      "arm": "reference",
+      "sdkDurationMs": 62113,
+      "sourceHashes": {
+        "events": "20fb0d0ebf035ce5b1c889f094ff1a0b93728f7e063eb86cd14ff574d3b5a410",
+        "result": "667749701c76fb66002090302da36a69cf1ddb487c102d8d44467e1085ee7ecb",
+        "requestTiming": "2c7a6f407757df3f4ce794f6945cbccf4e4ffe111e69d7cceaca06936ae0427f"
+      },
+      "windowMs": 62113,
+      "toolMs": 9757,
+      "requestMs": 50200.119873046875,
+      "overlapMs": 0,
+      "toolOnlyMs": 9757,
+      "requestOnlyMs": 50200.119873046875,
+      "outsideObservedSpansMs": 2155.880126953125,
+      "toolSpanCount": 36,
+      "toolUnionCount": 29,
+      "toolAnomalies": [],
+      "requestAnomalies": [],
+      "measuredRequests": [
+        {
+          "attempt": 1,
+          "requestBodySha256": "fcf86241c67b9d3dc02b36c496c2feb3ec98c9ecc89f6c6b5e83ed96d89b708d",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 2,
+          "requestBodySha256": "5b2bf533c332e08cf7588d2e9f4cd6d2889c80b17da8b96d2b0c5d1257bc729e",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 3,
+          "requestBodySha256": "71eede4481a7a377fbeb7e10e8731f9f8de15ccd5a8d34b30d9cf5d29808f92f",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 4,
+          "requestBodySha256": "11af95f08874f50b196bb2de56e8bab37a6968d0a554f0bd7b6197dcfc2fde08",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 5,
+          "requestBodySha256": "20e5e9eaaf057354b73639104f9de3e39fb83a8e1ae399f09a52211093cfd1d8",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 6,
+          "requestBodySha256": "2db7d4f40733c4dff42ffcde8bdee2ed1d339a0dd4561365a7baac4234edf383",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 7,
+          "requestBodySha256": "35a7b1b681af9907d0409c476cf83683c66341ed9990fdf528c9a2cf40ab2f97",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 8,
+          "requestBodySha256": "15b3ad78f0c7401e8f9aa6fc463a817f531acdceed7c932cce77c09c1fbaaf13",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 9,
+          "requestBodySha256": "9e2d6ece6202d39b5c2489b25dea51ff64877aa89b0c042baecf4b53b3cf1bd2",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 10,
+          "requestBodySha256": "e13f9811d7466055442efeb6ce1b84398a54dfd241bc25236ebfc4474abdb2c6",
+          "complete": true,
+          "terminal": "body_end"
+        }
+      ],
+      "requestPhaseUnionMs": {
+        "headers": 10776.43603515625,
+        "firstRead": 67.46142578125,
+        "bodyTail": 39356.222412109375
+      }
+    },
+    {
+      "name": "1-slice-index-candidate",
+      "arm": "candidate",
+      "sdkDurationMs": 66805,
+      "sourceHashes": {
+        "events": "e4eba4b133650c43848063de2ee7e79dbc088f2705ebeda8c80e45f78150ffa8",
+        "result": "3357b8f7fde228e9f7ce6e9ea57abd1cf2b71b77b3bd77fc8d394790a68089f5",
+        "requestTiming": "e2bf620344346fd6822e07f4653fa0ae404438a628a1f2b70501002b0e090f60"
+      },
+      "windowMs": 66805,
+      "toolMs": 8280,
+      "requestMs": 56145.451416015625,
+      "overlapMs": 0,
+      "toolOnlyMs": 8280,
+      "requestOnlyMs": 56145.451416015625,
+      "outsideObservedSpansMs": 2379.548583984375,
+      "toolSpanCount": 30,
+      "toolUnionCount": 21,
+      "toolAnomalies": [],
+      "requestAnomalies": [],
+      "measuredRequests": [
+        {
+          "attempt": 1,
+          "requestBodySha256": "47e12955872c9fd304711690b65c68fb6fde2dbe6c99301b80f017f740c7aa85",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 2,
+          "requestBodySha256": "2f5c2d3986976993c43268ec7a811952b017912456edcaf4e4917cc6ba10b0d1",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 3,
+          "requestBodySha256": "42bf398b83128daaf3f9e7a3a29055ad9b11f3483f3190cd203a9e00c317788b",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 4,
+          "requestBodySha256": "92e1fe1721ec9d652c9cd4448decc79da2290e960c91924aed3548ee404154a9",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 5,
+          "requestBodySha256": "0b268c3c41c2c1caa6cf7fdc30c539d6c45801b558aee3ea8ade40df9c52d66f",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 6,
+          "requestBodySha256": "3e1eb1e3efb80cc6104b97bae1fc506c5059216887b4acafbf74acfe5f4572ad",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 7,
+          "requestBodySha256": "919b0d6963fe4f287f7a794c36aad55b31b53a42eabac9c21a4d776b693ead1b",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 8,
+          "requestBodySha256": "20eddff67147f2cdf03a4301ec4545a5de7c7faa7e1e9174bdce3e7e2c150955",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 9,
+          "requestBodySha256": "4468a9a12848bc439f87cf4bf8547d91c00f475eb855aff3e7a4cd65e695945a",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 10,
+          "requestBodySha256": "125b0cf4885ca31289bd605c30f1d5a64e1d1cc133546fd57b510d5d9f16d215",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 11,
+          "requestBodySha256": "0aa1f82bf40684adf65fa27878e06b30f3b557612825504190c279dcd5fa6b3a",
+          "complete": true,
+          "terminal": "body_end"
+        }
+      ],
+      "requestPhaseUnionMs": {
+        "headers": 14147.321044921875,
+        "firstRead": 58.693115234375,
+        "bodyTail": 41939.437255859375
+      }
+    },
+    {
+      "name": "2-suffix-counts-candidate",
+      "arm": "candidate",
+      "sdkDurationMs": 94107,
+      "sourceHashes": {
+        "events": "23dfbd4adf1b7c61e9ab2d4da17f19d14013d174f329f1060f0409017b8a40e5",
+        "result": "fc36859f4a5e0556764d1db67c96c3a35fa4dbe2f06d4fa8e313b08220c4ea10",
+        "requestTiming": "38d43a34b3112d434561bb4e3fd02b8c3c99b766e16b2f39b5e11015e04193ec"
+      },
+      "windowMs": 94107,
+      "toolMs": 11307,
+      "requestMs": 80863.6953125,
+      "overlapMs": 0,
+      "toolOnlyMs": 11307,
+      "requestOnlyMs": 80863.6953125,
+      "outsideObservedSpansMs": 1936.3046875,
+      "toolSpanCount": 40,
+      "toolUnionCount": 26,
+      "toolAnomalies": [],
+      "requestAnomalies": [],
+      "measuredRequests": [
+        {
+          "attempt": 1,
+          "requestBodySha256": "0f5dfc8cd633160e7ba25576c0cb730be46dc5b7796594c5c8302cd098e3cc98",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 2,
+          "requestBodySha256": "59fe99bb40b8ba1c177fbb8df7422553520a6f3547e946ceed13bbccc6c9150d",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 3,
+          "requestBodySha256": "8453e14e8b284e20d9044e200c5072ef7f1fecf6843107a49a9319cb166157b5",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 4,
+          "requestBodySha256": "1a020ef2ba172040d608cac1cd638cc66a411b3461ad03b4d391547e4d19f15b",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 5,
+          "requestBodySha256": "a8ee8174e88ab83785d89fd99e3e9cff6dd0ed400ab49fe3af6c91f417a29194",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 6,
+          "requestBodySha256": "cacfbc3425a337bef01f6358ad47daadbcc4dbfe969eb0cd202b4d638c697c6f",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 7,
+          "requestBodySha256": "f5c02aa974cd342583a952d55ae68e7a19db15df703a8cc53df7d70614e65a13",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 8,
+          "requestBodySha256": "45e3424a5bf315b02ddf82ee9eea0884cabefd00604ee00226b426664aaec981",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 9,
+          "requestBodySha256": "f92c82f0fe2b0e914645453957640023a3ce5aef74b4a17a6d2ebcbe2a428994",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 10,
+          "requestBodySha256": "8d62081e5cbeb169d0230594e0deba8d5ab4160e44fa210cf120a008ea86c723",
+          "complete": true,
+          "terminal": "body_end"
+        }
+      ],
+      "requestPhaseUnionMs": {
+        "headers": 13477.810546875,
+        "firstRead": 57.7880859375,
+        "bodyTail": 67328.0966796875
+      }
+    },
+    {
+      "name": "2-suffix-counts-cline",
+      "arm": "cline",
+      "sdkDurationMs": 80189,
+      "sourceHashes": {
+        "events": "dcb532adaa15711db5f44a725c87a3a8f536d8fa1cd8da903466f71ea882cb48",
+        "result": "258e814caf011040769b7e3e342ca7b189299272edfe921b8a1487d961045e06",
+        "requestTiming": "847eacc6ca78e4a0ce65571d1115171af485eea1ee3c8e775192d978a6e03699"
+      },
+      "windowMs": 80189,
+      "toolMs": 10377,
+      "requestMs": 67451.55883789062,
+      "overlapMs": 0,
+      "toolOnlyMs": 10377,
+      "requestOnlyMs": 67451.55883789062,
+      "outsideObservedSpansMs": 2360.441162109375,
+      "toolSpanCount": 23,
+      "toolUnionCount": 18,
+      "toolAnomalies": [],
+      "requestAnomalies": [],
+      "measuredRequests": [
+        {
+          "attempt": 1,
+          "requestBodySha256": "7b5bd8f3461713e90dcc9884512b7a0bb9540d1bb697974b351f15f44293a8a5",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 2,
+          "requestBodySha256": "5e2c3e83e88727ec5c928b736239474ba31db109aff79a17543334d673f5b7fa",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 3,
+          "requestBodySha256": "c48a88ff35e3f9027777b0a916e98916f6e11ac019a191cc4f51ae3b2f6589d9",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 4,
+          "requestBodySha256": "1b9f1386c35b5bb51000ae340586a69e514df11ab987d65f6b786c3cc0e10526",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 5,
+          "requestBodySha256": "eae0f158ff13eb8534db8e9390c5e6c73ca4814de9f228866f6bf290ec97e7b2",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 6,
+          "requestBodySha256": "bed9d8e5b4c6707d783e6a9f86b675d8e30fde0514cdb58eb857629bc9a1485d",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 7,
+          "requestBodySha256": "5b30d8c0d7633b57e549fccedcd4c2c84fcf5063b830b1b9fe683bb45d270f48",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 8,
+          "requestBodySha256": "3d4f0a1b824e6bd09da709849cd3dabc67f6e66f6f7ca8b94e37bba55a0bf1c4",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 9,
+          "requestBodySha256": "e7047fac3cc8c51affcfe1d6368345809ad0eb6e416838bb6065662bf17d9d6d",
+          "complete": true,
+          "terminal": "body_end"
+        }
+      ],
+      "requestPhaseUnionMs": {
+        "headers": 8370.3662109375,
+        "firstRead": 27.707763671875,
+        "bodyTail": 59053.48486328125
+      }
+    },
+    {
+      "name": "2-suffix-counts-reference",
+      "arm": "reference",
+      "sdkDurationMs": 83269,
+      "sourceHashes": {
+        "events": "41c53b6945d580b15bbd3d221200dca0c10803edc5963ba616fe3696dec51508",
+        "result": "ac365587d8e485a59bf2d34679381a2d7dbb28a594a23ae9a442e313fbaf84a2",
+        "requestTiming": "5cff17db8aa606cb9d80d784fc602c44cfc66eeeccfa7f1b327a42fa04740f72"
+      },
+      "windowMs": 83269,
+      "toolMs": 12287,
+      "requestMs": 68370.1806640625,
+      "overlapMs": 0,
+      "toolOnlyMs": 12287,
+      "requestOnlyMs": 68370.1806640625,
+      "outsideObservedSpansMs": 2611.8193359375,
+      "toolSpanCount": 49,
+      "toolUnionCount": 35,
+      "toolAnomalies": [],
+      "requestAnomalies": [],
+      "measuredRequests": [
+        {
+          "attempt": 1,
+          "requestBodySha256": "b0c42296bc48834ec72cf5471700ebcb13041fbd94528236ae3eb6d61085b79f",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 2,
+          "requestBodySha256": "ac181c8bfe1503c59e02d2a2512626e94aad394d6e712355963fe9fcb154b897",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 3,
+          "requestBodySha256": "e17428b20af2dcbd884ade8f8a2b85d61d8a0006bc33ea6201d82a8b977c6898",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 4,
+          "requestBodySha256": "3b2b0abafd430502ff327c39f776c55748e0b25692d857108beb90a00d044013",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 5,
+          "requestBodySha256": "11c561aadcf7a7c3d1adcd4d29cd4fc80250817abebc9fd4da1967ff24013507",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 6,
+          "requestBodySha256": "ceeb743c582464d28490f98483ad2e44f10946552c8252806a7693cbfa85c85f",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 7,
+          "requestBodySha256": "eec2b3a514afd51da052372892272fc4d8f568f8bbca0f4b28dedb42483ba2de",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 8,
+          "requestBodySha256": "02387c8ca56d9410db9dda05a1f4b4933351497e6701d1fe876e88a467498c4b",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 9,
+          "requestBodySha256": "1f88e5dc66cf66be9fd1f0503dd48b61896f34cb0ee9968aa56e6170470a3bc2",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 10,
+          "requestBodySha256": "2f70607b4bb2270ce2dc3012b8c2ef5fcd560f991a0570e7a71b48cdc257d2fe",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 11,
+          "requestBodySha256": "614b77f1e95921576c02f8c87493f6c8beadb98ef7867e09c8588e19d5e72993",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 12,
+          "requestBodySha256": "0176fb488f3a52bc92affa3ce32a676deef10187db9b2e4884e33ec4734a3bca",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 13,
+          "requestBodySha256": "84f2ae1b93a2c387f0a0c0b17a357d9e98eecfbd2ad679e7e80a7f098cac2859",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 14,
+          "requestBodySha256": "d98391a3cb0778313c40ed1d439f609147c360fc5b8636b3b4beb3fe8aa4cda2",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 15,
+          "requestBodySha256": "266350ec4e04ac0fdd97aeb84bdd706f911f4b3c8317819c94580d7ab01c9b88",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 16,
+          "requestBodySha256": "c2d4cdaccd6916e651ab601ea80812fd8921c55e29248302698130f47cc0fe73",
+          "complete": true,
+          "terminal": "body_end"
+        }
+      ],
+      "requestPhaseUnionMs": {
+        "headers": 14649.8515625,
+        "firstRead": 57.66796875,
+        "bodyTail": 53662.6611328125
+      }
+    },
+    {
+      "name": "2-reversed-clamp-cline",
+      "arm": "cline",
+      "sdkDurationMs": 87379,
+      "sourceHashes": {
+        "events": "8f443806e23bc7549d345890072271aead25a016dc9bb12da46325be7204a70b",
+        "result": "53f12aff65a9cdd403228560b1a16605ecaeae5676617c416fafa3a76891ce88",
+        "requestTiming": "6a5333fb1bbf357f3aa3d07e0a4b04bc536569a9d5a4c64c32ed55b72e86ba52"
+      },
+      "windowMs": 87379,
+      "toolMs": 17358,
+      "requestMs": 67507.80029296875,
+      "overlapMs": 0,
+      "toolOnlyMs": 17358,
+      "requestOnlyMs": 67507.80029296875,
+      "outsideObservedSpansMs": 2513.19970703125,
+      "toolSpanCount": 25,
+      "toolUnionCount": 17,
+      "toolAnomalies": [],
+      "requestAnomalies": [],
+      "measuredRequests": [
+        {
+          "attempt": 1,
+          "requestBodySha256": "8c96a6c8d0f4c8be8ba926f0551460e6a1fbb0df347f31363d50f04087964cf8",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 2,
+          "requestBodySha256": "12be8598cabcb022c3416e93f3a2cade57669907c746834b56646d2441231d1c",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 3,
+          "requestBodySha256": "7f1967b90f96317e069f94eca3ae7d86e123adc80dadb7262a2b76ad34099d14",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 4,
+          "requestBodySha256": "a8cccb35cbde758e2ecaecf663d336bd4cd3467eb0e1cad0da7dfa06b56648ed",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 5,
+          "requestBodySha256": "005af5706b74cb46bcdb8f653546e9ecb62bd5933fed86a93f39c195047143f0",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 6,
+          "requestBodySha256": "122c32359ee4aacb4c390cc6f7f3e2644c32c8afcf3d7cb4eb582f3ce5cc89fc",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 7,
+          "requestBodySha256": "412f2792cbec3fb6adee5519da974634e80cfc737d0b949ae044ea27582ca72b",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 8,
+          "requestBodySha256": "aef5d226bfdb52d85bdc720f03000fc152be13cdbb6eb6669ac1c78c7a638b50",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 9,
+          "requestBodySha256": "28724eb4252a2e884f3b44aff0557cffa5c0d63a517c8e0cd2eb9ef93d4a573b",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 10,
+          "requestBodySha256": "1cbd64e7c3133d0e4a7bf1720da4189315e4a0e0c3c5ec0483720dce1ee95ee2",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 11,
+          "requestBodySha256": "12d5e8e2c2a61843bd74e4cf642b2d83442b5315a2243e47b36bd9f4ce4eb0cc",
+          "complete": true,
+          "terminal": "body_end"
+        }
+      ],
+      "requestPhaseUnionMs": {
+        "headers": 11161.251953125,
+        "firstRead": 10.60888671875,
+        "bodyTail": 56335.939453125
+      }
+    },
+    {
+      "name": "2-reversed-clamp-reference",
+      "arm": "reference",
+      "sdkDurationMs": 78144,
+      "sourceHashes": {
+        "events": "7330df107d858269dca57e2876d3e2419909b5ee9364b849f05fa3cb740d5962",
+        "result": "62cb68c336b334dea562797d26814dccbaad987420611cf73e4ded5690c40182",
+        "requestTiming": "875ede1a5b3470ac8df0e4e6e351b5058342127459d34b093368da3f51bf44ae"
+      },
+      "windowMs": 78144,
+      "toolMs": 21070,
+      "requestMs": 54226.11474609375,
+      "overlapMs": 0,
+      "toolOnlyMs": 21070,
+      "requestOnlyMs": 54226.11474609375,
+      "outsideObservedSpansMs": 2847.88525390625,
+      "toolSpanCount": 40,
+      "toolUnionCount": 29,
+      "toolAnomalies": [],
+      "requestAnomalies": [],
+      "measuredRequests": [
+        {
+          "attempt": 1,
+          "requestBodySha256": "9a35a7a271b6803ae01ef1f2e8b42f70420c7188c8122a1bc8f174e93ed28d85",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 2,
+          "requestBodySha256": "c5b0b93909543c9c992fbe0c044b7865828600eb83b74226e6a59bc0a4611ce8",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 3,
+          "requestBodySha256": "6cf94754cf755bff5342cd92c7d73ceba0b24d17abea422b2828c96a6e93ae17",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 4,
+          "requestBodySha256": "2ac81d7ca80bc52e96aecbf82e2be8f5c4eaf8875eb0bbf75915d70f078d48fd",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 5,
+          "requestBodySha256": "6953040d83c7bcab7441dcf5a4cd32dcf1646f80ef2310cad2f108c4473de2ed",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 6,
+          "requestBodySha256": "ae4718e82e263bea5eba3f8d67fa46725d46b0c3b2d7c0fc6642f34e0fd71ca8",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 7,
+          "requestBodySha256": "a817e27fa94c960afbf10ab68f08c3afba3761608c61dd8814459d03215a0bbd",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 8,
+          "requestBodySha256": "dfd5cabac233fa31a37676356d6055487046a4003147760385487d02b8509e32",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 9,
+          "requestBodySha256": "4c93e9cbfa18b0e45581496bd9ed9b50ace7f288fe7b694821a0db61c5aaf365",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 10,
+          "requestBodySha256": "3435c9766a91a7ac5823838980cba15a784750aa70e56635a62aeadcf1b9bc4b",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 11,
+          "requestBodySha256": "421dc7c4f8149f6a109c8c11fe66cdc2775afd86b96d3cba60abeae57d417d00",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 12,
+          "requestBodySha256": "f1720915d1e68372c2c1757bc8c841cc5dc6c8f6def55eb0944a5c97949fd249",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 13,
+          "requestBodySha256": "c90066f625b3826b8845a5315a7c5da5bcc3d77ffa165999389c5527ed01c1df",
+          "complete": true,
+          "terminal": "body_end"
+        }
+      ],
+      "requestPhaseUnionMs": {
+        "headers": 11804.30859375,
+        "firstRead": 21.112060546875,
+        "bodyTail": 42400.694091796875
+      }
+    },
+    {
+      "name": "2-reversed-clamp-candidate",
+      "arm": "candidate",
+      "sdkDurationMs": 63581,
+      "sourceHashes": {
+        "events": "165bf8e117f5619aa84ba317716e83ee2b02ff1a2f87637b31989ae59ab7482b",
+        "result": "cc2952ab42da435dc99d3e557f18b8bdf3c24a4ac707a94a7ef50b27f5f6d41f",
+        "requestTiming": "6087ea28335b37d8dd10be022bab5d8a553515276c78ddb6ff8c95b254bd8128"
+      },
+      "windowMs": 63581,
+      "toolMs": 18158,
+      "requestMs": 43054.756591796875,
+      "overlapMs": 0,
+      "toolOnlyMs": 18158,
+      "requestOnlyMs": 43054.756591796875,
+      "outsideObservedSpansMs": 2368.243408203125,
+      "toolSpanCount": 30,
+      "toolUnionCount": 25,
+      "toolAnomalies": [],
+      "requestAnomalies": [],
+      "measuredRequests": [
+        {
+          "attempt": 1,
+          "requestBodySha256": "8260171ea4c73fedeeeda028e096c52ad0c40f8f7f5e9ac89308adf44ac39dfc",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 2,
+          "requestBodySha256": "8103ee3fd65291df658a6e894cbfdca8a2a548a3a020d52c7e29c27ac2242ac7",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 3,
+          "requestBodySha256": "5c41fd5d096f59cfcae15d06e4677931dbd5fd72e573fdafb52b70a84cd4866a",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 4,
+          "requestBodySha256": "378860af92bcf46055456ea74270a6473a6d719d3d6d5caf53a2d88c3c8b0ae6",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 5,
+          "requestBodySha256": "e37c6116dc66636ef6a23b26d14a7e6fde74bb9898fb2291f6e21565623cd8f9",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 6,
+          "requestBodySha256": "8c013890237ba2ea54836042145cccbbec20cd52e3c850ea39ad04f4041d93f7",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 7,
+          "requestBodySha256": "badd0d5f245a9c97b059d6b44252de099e707a6ceb65804397c9e97c5ec57b58",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 8,
+          "requestBodySha256": "ca23fab15e4530334b901664942f2ec355855604a8892af77ce52343187c649a",
+          "complete": true,
+          "terminal": "body_end"
+        }
+      ],
+      "requestPhaseUnionMs": {
+        "headers": 8141.554443359375,
+        "firstRead": 20.5869140625,
+        "bodyTail": 34892.615234375
+      }
+    },
+    {
+      "name": "2-slice-index-reference",
+      "arm": "reference",
+      "sdkDurationMs": 70542,
+      "sourceHashes": {
+        "events": "68d0377f35c9d3d8c048900c40a0152dd3beb472f478e7e932d660e8dad1bd9d",
+        "result": "28651de25b9c74b357284db3ec534b85463e4e7b7b80b8937f18949a238084c0",
+        "requestTiming": "d255dc361e407bf4fe9fe66888779a611d767b522b704cb185e0ceab0ed0d25e"
+      },
+      "windowMs": 70542,
+      "toolMs": 13342,
+      "requestMs": 55177.658935546875,
+      "overlapMs": 0,
+      "toolOnlyMs": 13342,
+      "requestOnlyMs": 55177.658935546875,
+      "outsideObservedSpansMs": 2022.341064453125,
+      "toolSpanCount": 30,
+      "toolUnionCount": 23,
+      "toolAnomalies": [],
+      "requestAnomalies": [],
+      "measuredRequests": [
+        {
+          "attempt": 1,
+          "requestBodySha256": "c9eb2a84a3f25252b1b4af0c01e4afa2c16f2de3d9b66e66b53b944e988d976d",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 2,
+          "requestBodySha256": "d64fb7dc95b60d24aa99019336d0de3b0514f72fd8534cebf6e1a1dff8de02fc",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 3,
+          "requestBodySha256": "c279351754778159162fdf5cef642917abcc2acf3bc24d686f331e3852876f8a",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 4,
+          "requestBodySha256": "eb3fb3f243e4c874596108ea4be8c873c1f9d40172cb98a2469c61ec9e3b9a38",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 5,
+          "requestBodySha256": "2037eec6d6ef33b255d73e1a6539614bb8239d40697b3a33871e55cac79533a6",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 6,
+          "requestBodySha256": "6abd6215af3a2e9461974724b7894708374763376ef005df71a29c7f949d241e",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 7,
+          "requestBodySha256": "7124103c821ef64c4c6fe0373f8ee805274a93b6a7acd501790a990b608fae64",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 8,
+          "requestBodySha256": "025850b013815bc21ad3316ed063d6762cc6e0f2bfe17e0e40d83a57f4cca6f9",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 9,
+          "requestBodySha256": "4ac9485e401cf9150d54d4a5380b4fc4047332191ba8ac0cc72808088f04ef5c",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 10,
+          "requestBodySha256": "754543e1888a68d836c6072c588ea7d6ae7c76b563e55178615fb01dbd45324c",
+          "complete": true,
+          "terminal": "body_end"
+        }
+      ],
+      "requestPhaseUnionMs": {
+        "headers": 10642.31103515625,
+        "firstRead": 33.38525390625,
+        "bodyTail": 44501.962646484375
+      }
+    },
+    {
+      "name": "2-slice-index-candidate",
+      "arm": "candidate",
+      "sdkDurationMs": 50439,
+      "sourceHashes": {
+        "events": "9d43419ccb5313556a31c5b13f3cf2de17ee0f4052db1fe06e352fc1e4549893",
+        "result": "9a786990d5fcbd6d48f6e351de49c7ed4d9f4eeed3830f8704caaeb6079a2bed",
+        "requestTiming": "4caff1425a093401468a53f33e57445515d5ee5c7b22895eba9e8a4ea953c432"
+      },
+      "windowMs": 50439,
+      "toolMs": 11402,
+      "requestMs": 37326.654296875,
+      "overlapMs": 0,
+      "toolOnlyMs": 11402,
+      "requestOnlyMs": 37326.654296875,
+      "outsideObservedSpansMs": 1710.345703125,
+      "toolSpanCount": 29,
+      "toolUnionCount": 20,
+      "toolAnomalies": [],
+      "requestAnomalies": [],
+      "measuredRequests": [
+        {
+          "attempt": 1,
+          "requestBodySha256": "02ee39426332c701402027666cdd7c20b8ffe3e294e9519c1700c0d003466228",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 2,
+          "requestBodySha256": "2fea50be97876d27aec57df681d6328da56a894484d001733432cec8a1c7d8bc",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 3,
+          "requestBodySha256": "8d6a248a405bf479e2cfb4e6de48e2de56368f7546ed3e60032865357fa8d5b2",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 4,
+          "requestBodySha256": "e5be39728e6d70f4888bf5262e1a9ee036785af0d8af10bbe158fd827e9ea02d",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 5,
+          "requestBodySha256": "2b250fa914c7798c4998fec9d3f2894f24ec5dbf6a2ba9641cf34b08d3d65bdf",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 6,
+          "requestBodySha256": "0efcdf2a84ca475d75066ce3f428a093f25f32aaa9aa48fa72afc8796ae91f89",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 7,
+          "requestBodySha256": "f42c63e0355b2731dff2ec7ef757159c8e771f88fdfc559e94dba999562f2781",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 8,
+          "requestBodySha256": "382a78f183b3eea026503b9000fc90ed6f6cb9d2a0a3368c7ded5fed1cc37c60",
+          "complete": true,
+          "terminal": "body_end"
+        }
+      ],
+      "requestPhaseUnionMs": {
+        "headers": 7128.275634765625,
+        "firstRead": 20.947998046875,
+        "bodyTail": 30177.4306640625
+      }
+    },
+    {
+      "name": "2-slice-index-cline",
+      "arm": "cline",
+      "sdkDurationMs": 47341,
+      "sourceHashes": {
+        "events": "84447674d917382a1d7d9836a8d2dfd288c67ef3282a3cd6b93b49e8a006a813",
+        "result": "ba639c5a60d4fff63ed5ce0aad70f896b4be4172ba1923fa238ecfafe49f1221",
+        "requestTiming": "a6ba791f032c2ffb3427b2f3ab994381e513390720e6c59161664c7a8bfc544e"
+      },
+      "windowMs": 47341,
+      "toolMs": 5783,
+      "requestMs": 39892.91796875,
+      "overlapMs": 0,
+      "toolOnlyMs": 5783,
+      "requestOnlyMs": 39892.91796875,
+      "outsideObservedSpansMs": 1665.08203125,
+      "toolSpanCount": 15,
+      "toolUnionCount": 13,
+      "toolAnomalies": [],
+      "requestAnomalies": [],
+      "measuredRequests": [
+        {
+          "attempt": 1,
+          "requestBodySha256": "3b1dac50bdde7dbc2f938b6acc3f051692f90decdb2d019705518098d039f7bf",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 2,
+          "requestBodySha256": "054669d73030118f453b3632a2027f560e0c30b59cb7c1dc31a6d38dff264e09",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 3,
+          "requestBodySha256": "486d8b6721344e724de5dbb1e9b1716814b25141fbcfb82163e8b48c213608a4",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 4,
+          "requestBodySha256": "313c5a9a59a758f4a3fdea6b5851068bc9089e0b614f7ad3da1a81b0d759d282",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 5,
+          "requestBodySha256": "b9526ad5919d9376152c874b1e98c0420654505f9d8b30f91db59cdc8afb93c3",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 6,
+          "requestBodySha256": "59278555cc9eea1738e0ae0813d202e388826820543b6e575b5188bd09f7f2ca",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 7,
+          "requestBodySha256": "46bdfeacf287848e3ea69b8e10d9476d6f50a20e8f5b556bdfe5b1c9b33216e9",
+          "complete": true,
+          "terminal": "body_end"
+        }
+      ],
+      "requestPhaseUnionMs": {
+        "headers": 6236.988525390625,
+        "firstRead": 32.08642578125,
+        "bodyTail": 33623.843017578125
+      }
+    }
+  ],
+  "arms": {
+    "reference": {
+      "sdkDurationMs": 436269,
+      "windowMs": 436269,
+      "toolMs": 88495,
+      "requestMs": 333607.857421875,
+      "overlapMs": 0,
+      "toolOnlyMs": 88495,
+      "requestOnlyMs": 333607.857421875,
+      "outsideObservedSpansMs": 14166.142578125
+    },
+    "candidate": {
+      "sdkDurationMs": 423562,
+      "windowMs": 423562,
+      "toolMs": 71674,
+      "requestMs": 339384.7587890625,
+      "overlapMs": 0,
+      "toolOnlyMs": 71674,
+      "requestOnlyMs": 339384.7587890625,
+      "outsideObservedSpansMs": 12503.2412109375
+    },
+    "cline": {
+      "sdkDurationMs": 388919,
+      "windowMs": 388919,
+      "toolMs": 47404,
+      "requestMs": 328316.671875,
+      "overlapMs": 0,
+      "toolOnlyMs": 47404,
+      "requestOnlyMs": 328316.671875,
+      "outsideObservedSpansMs": 13198.328125
+    }
+  }
+}

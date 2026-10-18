@@ -1,0 +1,150 @@
+{
+  "phase": "F62",
+  "rows": [
+    {
+      "name": "1-suffix-counts-reference",
+      "arm": "reference",
+      "offers": 0,
+      "actualModelReceipts": 0,
+      "contextJsonBytes": 0,
+      "confirmedSameSourceReruns": []
+    },
+    {
+      "name": "1-suffix-counts-candidate",
+      "arm": "candidate",
+      "offers": 0,
+      "actualModelReceipts": 0,
+      "contextJsonBytes": 0,
+      "confirmedSameSourceReruns": []
+    },
+    {
+      "name": "1-suffix-counts-cline",
+      "arm": "cline",
+      "offers": 0,
+      "actualModelReceipts": 0,
+      "contextJsonBytes": 0,
+      "confirmedSameSourceReruns": []
+    },
+    {
+      "name": "1-reversed-clamp-candidate",
+      "arm": "candidate",
+      "offers": 0,
+      "actualModelReceipts": 0,
+      "contextJsonBytes": 0,
+      "confirmedSameSourceReruns": []
+    },
+    {
+      "name": "1-reversed-clamp-cline",
+      "arm": "cline",
+      "offers": 0,
+      "actualModelReceipts": 0,
+      "contextJsonBytes": 0,
+      "confirmedSameSourceReruns": []
+    },
+    {
+      "name": "1-reversed-clamp-reference",
+      "arm": "reference",
+      "offers": 0,
+      "actualModelReceipts": 0,
+      "contextJsonBytes": 0,
+      "confirmedSameSourceReruns": []
+    },
+    {
+      "name": "1-slice-index-cline",
+      "arm": "cline",
+      "offers": 0,
+      "actualModelReceipts": 0,
+      "contextJsonBytes": 0,
+      "confirmedSameSourceReruns": []
+    },
+    {
+      "name": "1-slice-index-reference",
+      "arm": "reference",
+      "offers": 0,
+      "actualModelReceipts": 0,
+      "contextJsonBytes": 0,
+      "confirmedSameSourceReruns": []
+    },
+    {
+      "name": "1-slice-index-candidate",
+      "arm": "candidate",
+      "offers": 0,
+      "actualModelReceipts": 0,
+      "contextJsonBytes": 0,
+      "confirmedSameSourceReruns": []
+    },
+    {
+      "name": "2-suffix-counts-candidate",
+      "arm": "candidate",
+      "offers": 0,
+      "actualModelReceipts": 0,
+      "contextJsonBytes": 0,
+      "confirmedSameSourceReruns": []
+    },
+    {
+      "name": "2-suffix-counts-cline",
+      "arm": "cline",
+      "offers": 0,
+      "actualModelReceipts": 0,
+      "contextJsonBytes": 0,
+      "confirmedSameSourceReruns": []
+    },
+    {
+      "name": "2-suffix-counts-reference",
+      "arm": "reference",
+      "offers": 0,
+      "actualModelReceipts": 0,
+      "contextJsonBytes": 0,
+      "confirmedSameSourceReruns": []
+    },
+    {
+      "name": "2-reversed-clamp-cline",
+      "arm": "cline",
+      "offers": 0,
+      "actualModelReceipts": 0,
+      "contextJsonBytes": 0,
+      "confirmedSameSourceReruns": []
+    },
+    {
+      "name": "2-reversed-clamp-reference",
+      "arm": "reference",
+      "offers": 0,
+      "actualModelReceipts": 0,
+      "contextJsonBytes": 0,
+      "confirmedSameSourceReruns": []
+    },
+    {
+      "name": "2-reversed-clamp-candidate",
+      "arm": "candidate",
+      "offers": 0,
+      "actualModelReceipts": 0,
+      "contextJsonBytes": 0,
+      "confirmedSameSourceReruns": []
+    },
+    {
+      "name": "2-slice-index-reference",
+      "arm": "reference",
+      "offers": 0,
+      "actualModelReceipts": 0,
+      "contextJsonBytes": 0,
+      "confirmedSameSourceReruns": []
+    },
+    {
+      "name": "2-slice-index-candidate",
+      "arm": "candidate",
+      "offers": 0,
+      "actualModelReceipts": 0,
+      "contextJsonBytes": 0,
+      "confirmedSameSourceReruns": []
+    },
+    {
+      "name": "2-slice-index-cline",
+      "arm": "cline",
+      "offers": 0,
+      "actualModelReceipts": 0,
+      "contextJsonBytes": 0,
+      "confirmedSameSourceReruns": []
+    }
+  ],
+  "meaning": "Observed receipt metadata and literal same-source reruns only. Not unique prevented errors, comprehension, causal mediation or a truthful-prose guarantee."
+}

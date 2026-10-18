@@ -1,0 +1,365 @@
+{
+  "method": "Unblinded manual review of immutable patch, delivery and command chronology; all booleans require evidence. Inspect public function signatures manually: structural type assignments do not exclude any or enforce exact parameter arity/order. Symbolic results are bounded to their supplied property/domain; unsupported syntax and absent usage are valid negatives, and no-counterexample claims must not be reported as project verification. Copy to source-review.json and fill, never infer task success from official completion alone.",
+  "decisions": [
+    {
+      "name": "1-suffix-counts-reference",
+      "hashes": {
+        "events.jsonl": "0ab69295528a2c8d290ce5fbf92ff2073c98869412663007e40ef909c0906f40",
+        "workspace.diff": "3775ccc3db6374db09c17ea911a09378620c1e65a0063d62c84318bea4f4a60a",
+        "score.json": "016b0bd33e8318eac52057be0eea10295c6d1c866f45ab5b211a876e721b2c10",
+        "tool-ledger.json": "a7b20ec17d830f26078557e52ddd93aacf83fde1c415022ba8f77e2f1128457b",
+        "feedback-wire.jsonl": "2acc5b6934fecb5454b110d8538ef152c33a59f07e61e098d53f91bf44f2f893",
+        "request-timing.jsonl": "d3462ae76814f0ffcc046240d7098bdf27e22bcd9dd34a6b5991b2d7a21580f4"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "1-suffix-counts-candidate",
+      "hashes": {
+        "events.jsonl": "f5b15f530330e6b1e19118591f3cb5823a19482f1d55d7c7f34ced42e46ad1e7",
+        "workspace.diff": "fd88ebd39a9e3b814401baa491679d2a030520ff51652160f384700e23faace7",
+        "score.json": "93a0e81a95d576185e8c231c0d9e0d015e3120ab2aad2180f4d0604ab45f22dd",
+        "tool-ledger.json": "0e8c034e7bd15aacd0cf6330cd9fd4fcad4fbd4db43b30d632a9b5742a243a92",
+        "feedback-wire.jsonl": "4fdbb1695658953aadc2f9d47342b34ff9a7838136080c8c0a92603414631fbe",
+        "request-timing.jsonl": "ded27c37cba89b0b9564e4bd31a43b460432cc50979bbec388c8bcb0a21e28b5"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "1-suffix-counts-cline",
+      "hashes": {
+        "events.jsonl": "c2b19cbd68cc424f8245cbb60ef7c1d18788516d69ae277176fd29c1056d23dd",
+        "workspace.diff": "a9267ef695799e1de746e58e84bc7a6a42ceef638540aa2abf08a53581092738",
+        "score.json": "37508e0b296d2388dc497d42423061a13953fa86bf64539ea286f5db68118471",
+        "tool-ledger.json": "dd307f0c35ec73bf84a3995a3ef5ab9bb33839301a9edba4ead0217445447072",
+        "feedback-wire.jsonl": "22b22ed5218792ccc289ecf0bab274a800356037b65dafd73124ce734214afa6",
+        "request-timing.jsonl": "72689eccb504b98ee5164d679a40ba0da807232208544d255c73b58b3bb08025"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "1-reversed-clamp-candidate",
+      "hashes": {
+        "events.jsonl": "55110c2e8c65d27588968827de9998f347deee419b97895f4ca78efb57bce39e",
+        "workspace.diff": "731a2a610809978b3a5ffb9797af047be95d78d66aa6a72359fa9f0ec0b2e767",
+        "score.json": "4dcee622904b4dc62ccccd4dc96066484f76d6b58fa741a76ee7301a58c0742b",
+        "tool-ledger.json": "b7a1b807d4dc8fd2303679d3717210315a5a5c865fc7b721d43f972c6f21f665",
+        "feedback-wire.jsonl": "bc6282999115179a5721f8cc0298c368aadb219fb33337ce427b9fc566c3941e",
+        "request-timing.jsonl": "499c778c5070110556d23c5d49acbc15228cb8d12d2368cf5df21de1b74e92fe"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "1-reversed-clamp-cline",
+      "hashes": {
+        "events.jsonl": "7dc3225ef73bc7421241004cb0bc33b247e0bd8fbdb1a79f799e2ed095be5321",
+        "workspace.diff": "80d0f13c8e79182714d90ce523d32978888368409499424220cea336ce81c15a",
+        "score.json": "cf63c7e384684926bc6a5a2060ac6df7c16d439bbe92fb98bd7305e49fade6d7",
+        "tool-ledger.json": "b8db8324690bd9edf85bf7a6596459da101f9e2bfc08136165fe6267fee48398",
+        "feedback-wire.jsonl": "9b68cd260af96c4947b7dd634511605c71e6f8092a51b75125dcfaf8ec150a23",
+        "request-timing.jsonl": "134a32d58672c4b16a27cf0273d1bab0b8fe1a2090804ad1e675962a2fcf9595"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "1-reversed-clamp-reference",
+      "hashes": {
+        "events.jsonl": "0ca32c5a1769b9997684ea4fe762cd4bcdf6b5c50c16e7e3c6189629f3661169",
+        "workspace.diff": "d2b24fd9bfb6033fb22350d25ef3feb758e72677a16d91ac12de548af30d4f50",
+        "score.json": "1990148e3b16d9b5f3cf3d06a09b161ac7a08d76a3a5bd4928e837b5a206d0a8",
+        "tool-ledger.json": "3aa5ec9ee2cdc887fe0cc2149ab988ca2ff2d1da053439b317fe11c0b38f1b75",
+        "feedback-wire.jsonl": "99356b38c39c3e777182c200e635ab981dd73b7ac5e9dd480a9659a3df060fe7",
+        "request-timing.jsonl": "b93d22c6364a2ee64233f29fba47ddc8c5b9ac08c55b3ed98b17b5ad3ae8b8d1"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "1-slice-index-cline",
+      "hashes": {
+        "events.jsonl": "4811bcff07168bb5d8b59fbc3cd5d96a5d385a39a8e63648cac59e7a759b472f",
+        "workspace.diff": "6107f3013e49696b5ae5eec3e440b9b592aee266c2ac8fbef74b80f936dd8744",
+        "score.json": "2c92d3f8d706c8c14668dc1b3a6ae619ea11e81b678e5df72181412c6b3f6d1e",
+        "tool-ledger.json": "aa8a50392143fdd77352d6b65a06d1d98907ba64dfe45f8e789b4b53df330b5b",
+        "feedback-wire.jsonl": "6f884c02aadb1fa569e8a91612a9bd935a3cd48287b12276af3b8807560a74cf",
+        "request-timing.jsonl": "fca9a6488438328051683c25ece3de6fee5ed5e22469bac88a1f4a85cfa92814"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "1-slice-index-reference",
+      "hashes": {
+        "events.jsonl": "20fb0d0ebf035ce5b1c889f094ff1a0b93728f7e063eb86cd14ff574d3b5a410",
+        "workspace.diff": "2667da48974b6c7d4dd3daaadf2d593503d7d510f9288c31fb483666d135dc32",
+        "score.json": "858472ebae36c99a0d592f1a8fe57d918f69c49a83c0791569b012d81c3c55cd",
+        "tool-ledger.json": "86c017b762afea8736fdf765ce0330d3345b7e58ea8f8b23f8eceb34fb88d40d",
+        "feedback-wire.jsonl": "9ffb41ce8f1c491a21dbfa8792a1090c562e6e51ea8c78f1f698155f85e18b3a",
+        "request-timing.jsonl": "2c7a6f407757df3f4ce794f6945cbccf4e4ffe111e69d7cceaca06936ae0427f"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "1-slice-index-candidate",
+      "hashes": {
+        "events.jsonl": "e4eba4b133650c43848063de2ee7e79dbc088f2705ebeda8c80e45f78150ffa8",
+        "workspace.diff": "5961f94260caebc280b55f86d9dcc63a9e74741c3e170a805fc10faacaf24ab0",
+        "score.json": "0e15de49e347d14654e0697907482b062ef28f1ff09978c14ffbfb1a95e4de4b",
+        "tool-ledger.json": "95729786882dee354aeb7f686134e5e3cd6eda7897144c8fa16c2c2c35170249",
+        "feedback-wire.jsonl": "d40f03bd084782782c009e872bad16d8f8eccba84a3937be2d03733b3bc46345",
+        "request-timing.jsonl": "e2bf620344346fd6822e07f4653fa0ae404438a628a1f2b70501002b0e090f60"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "2-suffix-counts-candidate",
+      "hashes": {
+        "events.jsonl": "23dfbd4adf1b7c61e9ab2d4da17f19d14013d174f329f1060f0409017b8a40e5",
+        "workspace.diff": "4f67e6b489de9b1714fed9b7264cc5f691ab835f005c432437835f6f942ccc15",
+        "score.json": "2329abe69240a99b72013a192852c7342668022707d2d3601796c784c161b969",
+        "tool-ledger.json": "76133b7ad8d0e31009cbfd348e56d9773de359f9eb022c1c7599bc5cab717460",
+        "feedback-wire.jsonl": "8e8a71eaaa7f619f6f04726eba95d0f0b848de8d5822ab6ee4ab08d1a0032092",
+        "request-timing.jsonl": "38d43a34b3112d434561bb4e3fd02b8c3c99b766e16b2f39b5e11015e04193ec"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "2-suffix-counts-cline",
+      "hashes": {
+        "events.jsonl": "dcb532adaa15711db5f44a725c87a3a8f536d8fa1cd8da903466f71ea882cb48",
+        "workspace.diff": "4b4962bcab456fd7d7f71cb5f43a2e5267b02c32ee0425a9e11ea3eefc2aa0de",
+        "score.json": "f1d22e9277b2fb155df4c0bea5772cc4484be0352548ee30bb2f18755851b487",
+        "tool-ledger.json": "89b373cc4c1e8e1c383a6b71a8ded02e485f71806d3ca0d4523a1c64e1498c02",
+        "feedback-wire.jsonl": "3fc8a719536bf6e84dac19b706ace266545a9db84ea252701b2e8362f02e9a20",
+        "request-timing.jsonl": "847eacc6ca78e4a0ce65571d1115171af485eea1ee3c8e775192d978a6e03699"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "2-suffix-counts-reference",
+      "hashes": {
+        "events.jsonl": "41c53b6945d580b15bbd3d221200dca0c10803edc5963ba616fe3696dec51508",
+        "workspace.diff": "7821828ef8b6997e54837aa07e44ef64198b04193814a3f4c3af35d2183a0133",
+        "score.json": "c3cc1a74480bb809097d669f7f54c81cc3e611ca8ff50bd15da52d465eb57f7d",
+        "tool-ledger.json": "05500fd790002350c5d456e816c9d1f4dc1b1d957e87b7cb809862603c30441b",
+        "feedback-wire.jsonl": "6c9183c8eb3a8247b8655d1552425080e010d39d3ef4c97b04ea7232f30cd067",
+        "request-timing.jsonl": "5cff17db8aa606cb9d80d784fc602c44cfc66eeeccfa7f1b327a42fa04740f72"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "2-reversed-clamp-cline",
+      "hashes": {
+        "events.jsonl": "8f443806e23bc7549d345890072271aead25a016dc9bb12da46325be7204a70b",
+        "workspace.diff": "ac6b086f2175ea2e467c61bd082bc3ce994d1e0b795c59c70452ac6753b1089a",
+        "score.json": "00bac72436cc2b331a702963e950d2073d5a007adc8288e3fecdad453e4e8798",
+        "tool-ledger.json": "0fb7a6752c71b4805b5bab5612d10052d8f7dae912c45d1521a34c221bfb067a",
+        "feedback-wire.jsonl": "c5f1672cbed89b993665cffdd227b9f5e0a0d1e81c361474e43d475cc7f25b02",
+        "request-timing.jsonl": "6a5333fb1bbf357f3aa3d07e0a4b04bc536569a9d5a4c64c32ed55b72e86ba52"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "2-reversed-clamp-reference",
+      "hashes": {
+        "events.jsonl": "7330df107d858269dca57e2876d3e2419909b5ee9364b849f05fa3cb740d5962",
+        "workspace.diff": "179c4c21aca6712b6bbd3efc7baed21c441428d56b34e0cf59d68557381f7c78",
+        "score.json": "1edfbe36ff27c32293ab5a9a53425448a00e258780be4147808f0771f37eb853",
+        "tool-ledger.json": "420e6e115c9fd49c267292b41e23732489610a6a085258a25bc0f0275e1c18a2",
+        "feedback-wire.jsonl": "474a49719ad2ad8f827633da41a6c4afc18c334c680bacfd3b52891401665b78",
+        "request-timing.jsonl": "875ede1a5b3470ac8df0e4e6e351b5058342127459d34b093368da3f51bf44ae"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "2-reversed-clamp-candidate",
+      "hashes": {
+        "events.jsonl": "165bf8e117f5619aa84ba317716e83ee2b02ff1a2f87637b31989ae59ab7482b",
+        "workspace.diff": "d99519ea263a2aa4be2b7aa1d238506e295255f24d0fc2592ec701e4db33c068",
+        "score.json": "ee8396b34f8a95ad2de2d81976aa4531e4145187e7fa7e427bdf57e00387cdd1",
+        "tool-ledger.json": "fa93aac8ba3f55a117369f88459279edd96f74d0e72de4a1350107419c61b0f5",
+        "feedback-wire.jsonl": "e3e7101b7587d216876eb3bedd79da91e0f6d733499275408cf9f66eb51503bf",
+        "request-timing.jsonl": "6087ea28335b37d8dd10be022bab5d8a553515276c78ddb6ff8c95b254bd8128"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "2-slice-index-reference",
+      "hashes": {
+        "events.jsonl": "68d0377f35c9d3d8c048900c40a0152dd3beb472f478e7e932d660e8dad1bd9d",
+        "workspace.diff": "5964b7f775b951cbbfa2eca771e39f2293869d56f714366484e9f36834932fe4",
+        "score.json": "65d199b90029d970c6371d425361294b0797c73f4e5af5b8bbddb81c90ef8527",
+        "tool-ledger.json": "f7d7eca67a79e16b2242d0306ed4e858893347d84f585890d401700d504cf785",
+        "feedback-wire.jsonl": "bc40164b009f084fa170b8942ddc0c9b64357b39ae59011b7b5922fb215414e2",
+        "request-timing.jsonl": "d255dc361e407bf4fe9fe66888779a611d767b522b704cb185e0ceab0ed0d25e"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "2-slice-index-candidate",
+      "hashes": {
+        "events.jsonl": "9d43419ccb5313556a31c5b13f3cf2de17ee0f4052db1fe06e352fc1e4549893",
+        "workspace.diff": "88aa1539f5be0951c911b680cd390066b9c596547eba83e5b9a9283c1aeeb6ec",
+        "score.json": "faba2f53857d7186964f6d42d989bd8532c367b24e5fd1436abeabeb91339dbb",
+        "tool-ledger.json": "8e359366dc70a20f77604ef4a308ebbbef69d28cf6bbdefe4ee520f72ed7e038",
+        "feedback-wire.jsonl": "f63cb1c3819b036b72d41dde5f7302ec13ba5b88343a4e43298dafc635d681ff",
+        "request-timing.jsonl": "4caff1425a093401468a53f33e57445515d5ee5c7b22895eba9e8a4ea953c432"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": false,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "2-slice-index-cline",
+      "hashes": {
+        "events.jsonl": "84447674d917382a1d7d9836a8d2dfd288c67ef3282a3cd6b93b49e8a006a813",
+        "workspace.diff": "84dcf5c564cb939c596374723b7f51aa8b153e8549fd6ebcc034505c21c7bf45",
+        "score.json": "9d3d97410598d3f2df2a58b85702430bbd4c1d2ca29cf6283b77f41b631420d3",
+        "tool-ledger.json": "000c429bec41fc305a635d34f3180e7e3478ca126ff91d0039cf31e3e7754c3c",
+        "feedback-wire.jsonl": "8034d289b3d049d79f57c2abecb497b1b2cb15c223674dd0c6b86081da3860fd",
+        "request-timing.jsonl": "a6ba791f032c2ffb3427b2f3ab994381e513390720e6c59161664c7a8bfc544e"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    }
+  ]
+}
