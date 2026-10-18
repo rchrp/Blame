@@ -1283,6 +1283,41 @@ controls include a real SIGKILL, restoration, null preservation, corruption,
 protocol mismatch, credentials and concurrency. Evidence:
 \filepath{docs/experiments/light-harness-durability-f54-2026-10-18}.
 
+\section{Separate known-task discovery comparison: F55}
+F55 repeats the three known constructed requests in a distinct campaign after
+F52 evidence loss; missing F52 outcomes are never replaced or pooled. Two
+rotated repeats and eighteen frozen assignments compare identical Light bytes
+with body-read hints off/on and integrated Cline. Both Light schemas expose
+analysis and share the Math-capable engine. No property or forced use is supplied.
+All official, selected, independent and strict outcomes pass:
+\begin{center}\begin{tabular}{lrrrr}
+\toprule Arm & Strict & Tokens & SDK USD & Seconds \\\midrule
+Light, hints off & 6/6 & 599,297 & .057277 & 278.1 \\
+Light, hints on & 6/6 & 582,833 & .064619 & 295.4 \\
+Integrated Cline & 6/6 & 488,219 & .072919 & 296.1 \\\bottomrule
+\end{tabular}\end{center}
+Sixteen hints produce no analysis calls; ordinary solver calls are also absent.
+Candidate/reference tokens decrease 2.7\%, but SDK cost increases 12.8\% and
+duration 6.2\%. Leave-pair-out token changes span -13.9\% to +10.4\%, and
+leave-task-out -22.0\% to +16.9\%. Candidate/Cline tokens increase 19.4\%,
+while SDK estimates decrease 11.4\% and durations differ by -0.2\%.
+Lower tokens and lower cost are distinct; neither adoption nor efficiency gate
+passes. Keep reasoning globally opt-in and retain the locally verified subset
+without a model-benefit claim.
+
+All 157 forwarded attempts have receipts. Per-request cache attribution does
+not reconcile with SDK aggregates; reported zero writes remains a reporting
+limit. New estimates total USD0.1948144. Cumulative accounting retains
+USD8.5797262 observed and USD17.14 reserved, including unknown F52 consumption;
+this is not an invoice. One registered administrative pause after nine trials
+verifies actual recovery: their start/event/wire/patch/check/result hashes stay
+unchanged, and resume starts the next assignment with no repeated completed
+call. This changes overall wall time and may affect unobserved cache residency.
+Intermediate source, test-expectation and delivered-type errors remain in each
+trial's original cost/duration. All eighteen unchanged patches reproduce their
+five endpoint-check outcomes. Evidence:
+\filepath{docs/experiments/light-harness-symbolic-discovery-recovery-f55-2026-10-18}.
+
 \section{Next hypotheses: proposals, not measurements}
 \begin{enumerate}
 \item Isolate F48 declaration candidates on new multi-file tasks in a larger
