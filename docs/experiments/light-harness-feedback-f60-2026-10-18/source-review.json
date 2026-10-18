@@ -126,6 +126,90 @@
       "evidence": [
         "Finite-only conditional swap via local lower/upper variables preserves original public overloads and nonfinite lower-first semantics; reads input limits anew per call without mutation. Tests change actual interval10/0 to20/30, cover frozen/all-form and exceptional cases; independent oracle supplies remaining combinations. After successful initial21/22/23, actual edit27 changes source/test bytes and final required28/29/30 all pass; these are required fresh reruns, not duplicate same-source successes. All five endpoints and protected/dependency integrity pass. Optional delivered-type command not claimed. No retrieval; zero header arrays in reference forwarded bodies as expected."
       ]
+    },
+    {
+      "name": "1-slice-index-cline",
+      "hashes": {
+        "events.jsonl": "e242d253146b0934467775aeef9f817979b9246849b38bc54134cf12b6d2c131",
+        "workspace.diff": "7a1a64162185264949ff48c0d6dd0421be9b5585842d75fa0d2869d75721e8ec",
+        "score.json": "276fb6329053251a9ff2ec2db825dab5a03825dd22254e7feccc8d116948c1ae",
+        "tool-ledger.json": "8523d59211ba40dc469c53df61872e04af728d3d6d7a89951313e591586f45c6",
+        "feedback-wire.jsonl": "47cf73209f388340126efc34ebaa22788f24b50bdcf1022c42baad30429161e5"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Native-slice implementation preserves original readonly/public overloads. Initial new-test annotation assumes number[] inference for an index-only curried factory whose existing outer generic resolves unknown[]; compiler11 correctly rejects it. Edit14 removes only that new stronger annotation, retains direct/pipe number tuple assignments and curried runtime checks; public code/types never weakened. Final exact required15/16/17 and delivered types18 all pass, five independent endpoints pass. These fresh final checks are necessary after the test edit, not avoidable failed-repair greens. Only frozen-input metadata read via git log; no solutions retrieved, dependency/protected paths unchanged and truthful delivery."
+      ]
+    },
+    {
+      "name": "1-slice-index-reference",
+      "hashes": {
+        "events.jsonl": "0a35f0dd768d5e4d63db35ab3492bdf47942eb7efee6721ff2fab98d8dbfde27",
+        "workspace.diff": "8f6dbe6111ee7555f57a52fa8bbfd39e18bead337d60822a09cdcb8086b8075c",
+        "score.json": "099b67515a59f5e0b95617050588c0f9087c10fd2104571ef15917dc056e4d19",
+        "tool-ledger.json": "bfc3874085f1bf6b52b2237668cff6c28dac0c209996de890621f12ec4505f8c",
+        "feedback-wire.jsonl": "237283eac741c380bb1d61339f5d798c9aeff54d989c87c185e2c3b27c785024"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Single source batch21 replaces private implementation with exact native slices, preserving original public overloads and readonly support. New21 parameterized form/index cases plus readonly immutability/direct tuple typing pass all five endpoints. Final required22/23/24 succeed, no subsequent source/test edit; optional delivered compilation is not claimed. Fresh arrays follow native slice and external oracle checks more lengths/indexes. No protected/dependency changes or retrieval, accurate selected runtime/source-only typecheck distinction."
+      ]
+    },
+    {
+      "name": "1-slice-index-candidate",
+      "hashes": {
+        "events.jsonl": "02da4e24af7446305beb60bd352d7804e60a6511d4567284052891f5f7fbdf33",
+        "workspace.diff": "d83641852318d2718aa9c5f94ff29e32d526e14b277b5f87f50ef35a5c4f56d6",
+        "score.json": "b1930f05a815caa732a73ab52dc06bab8fed0e30e7e30c781c327cb753d163e5",
+        "tool-ledger.json": "589a72b910dd6338f82724cb002c75cc0708fb8fbc5e0e914645c05e62e14238",
+        "feedback-wire.jsonl": "476c4e8d5c3ed6f9c649ca20ff36b26063df07e383085c7e448e09b06adbde83"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Private implementation exactly matches reviewed native slices; original overloads/readonly/generic contracts unchanged. New27 form/index cases plus output independence test exercise native behavior and fresh arrays; all five endpoints pass. Single final batch precedes required17/18/19, all pass with no later edits. Delivery does not claim optional delivered-type compilation and distinguishes compiler results from runtime evidence. Original checks/dependencies intact and no retrieval. No body-edit header opportunity is inferred from this success without the forwarded metadata counts."
+      ]
+    },
+    {
+      "name": "2-suffix-counts-candidate",
+      "hashes": {
+        "events.jsonl": "8dff337d2b8f5aff0b6c44fbf85b71625e9e196e11e42d8f3ac13b33598a6514",
+        "workspace.diff": "f555ba861568ab8944091e0f4373f5ac0bfd7f355acbfeda782cdb801a942a90",
+        "score.json": "e6cad90811118dce7402aee704ab10aad9d3d86ab7a80d97634ad90e69644983",
+        "tool-ledger.json": "0628ea3c03ad6140936db246384079eb61cf670fe794ca5c5568fdb98dc22d67",
+        "feedback-wire.jsonl": "97391a9dc178387d37eb5bca2475623760fc10b44bfbeb1f1e65f5b0a8c1b98f"
+      },
+      "sourceBehaviorPassed": false,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": false,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Again the shared helper does not cap positive finite floors atlength while both consumers remove original index clamps. Although consumer bytes match the correct reference consumers, that reference uses a capped helper; current composition is wrong for oversized counts (length2/count3 gives only last suffix item and retains a prefix). All authored counts omit oversized finite inputs, so runtime/type/new tests pass and external feature oracle fails. Final required34/35/36 and delivered types42 really pass; original signatures/checks/dependencies unchanged and no solution retrieval. Formatter43 unavailable honestly reported. No body replacement or forwarded header receipt occurs; retain this known model-reasoning failure without attributing it to unexposed body feedback."
+      ]
     }
   ]
 }
