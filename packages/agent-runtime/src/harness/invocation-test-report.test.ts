@@ -40,25 +40,27 @@ for (const variant of ["passed", "missing_end", "mismatch", "malformed", "wrong_
   }));
 
 const dependencies = process.env.BLAME_TEST_VITEST_DEPENDENCIES;
-for (const maskedFailure of [false, true]) test(`real Vitest behind Node wrapper, maskedFailure=${maskedFailure}`,
+for (const maskedFailure of [false, true, "empty", "bin", "setup"]) test(`real Vitest behind Node wrapper, maskedFailure=${maskedFailure}`,
   { skip: !dependencies && "Set BLAME_TEST_VITEST_DEPENDENCIES to pinned Vitest 3.2.4 dependencies" },
   async () => fixture(async root => {
     await symlink(join(dependencies!, "node_modules"), join(root, "node_modules"));
-    await writeFile(join(root, "package.json"), JSON.stringify({ type: "module", scripts: { "test:wrapped": "node wrapper.mjs" } }));
-    await writeFile(join(root, "case.test.ts"), `import {test,expect} from 'vitest'; test('actual',()=>expect(1).toBe(${maskedFailure ? 2 : 1}));\n`);
-    await writeFile(join(root, "wrapper.mjs"), "import {spawnSync} from 'node:child_process'; spawnSync(process.execPath,['node_modules/vitest/vitest.mjs','run','case.test.ts','--maxWorkers=1','--fileParallelism=false'],{stdio:'inherit'}); process.exitCode=0;\n");
+    await writeFile(join(root, "package.json"), JSON.stringify({ type: "module", scripts: { "test:wrapped": maskedFailure === "bin" ? "vitest run case.test.ts --maxWorkers=1 --fileParallelism=false" : "node wrapper.mjs" } }));
+    await writeFile(join(root, "case.test.ts"), `${maskedFailure === 'setup' ? "import './missing.ts';" : ''}import {test,expect} from 'vitest'; test('actual',()=>expect(1).toBe(${maskedFailure === true ? 2 : 1}));\n`);
+    await writeFile(join(root, "wrapper.mjs"), `import {spawnSync} from 'node:child_process'; spawnSync(process.execPath,['node_modules/vitest/vitest.mjs','run',${JSON.stringify(maskedFailure === 'empty' ? 'absent.test.ts' : 'case.test.ts')},'--maxWorkers=1','--fileParallelism=false'],{stdio:'inherit'}); process.exitCode=0;\n`);
     const files = new WorkspaceFiles(root), journal = new SessionJournal(root, "owned-vitest");
     const tasks = new LightTaskRunner({ files, journal });
     const result = await tasks.run({ kind: "project", task: "test:wrapped" }, {});
     assert.equal(result.status, "ok", JSON.stringify(result));
     const check = (await journal.completionSnapshot()).validations.at(-1)!;
     assert.equal(check.check?.exitCode, 0);
-    assert.equal(check.check?.outcome, maskedFailure ? "failed" : "passed", JSON.stringify(result));
+    assert.equal(check.check?.outcome, maskedFailure === "empty" ? "unknown" : maskedFailure === true || maskedFailure === "setup" ? "failed" : "passed", JSON.stringify(result));
     assert.equal(check.check?.evidenceOrigin, "vitest_report");
-    assert.equal(check.check?.counts?.executed, 1);
-    assert.equal(check.status, maskedFailure ? "failed" : "unknown");
+    assert.equal(check.check?.counts?.executed, maskedFailure === "empty" || maskedFailure === "setup" ? 0 : 1);
+    assert.equal(check.status, maskedFailure === true || maskedFailure === "setup" ? "failed" : "unknown");
     const evidence = check.check!.evidence as { invocations: { files: { path: string; unchanged: boolean }[] }[] };
+    if (maskedFailure !== "empty") {
     assert.equal(evidence.invocations[0]?.files[0]?.path, "case.test.ts");
     assert.equal(evidence.invocations[0]?.files[0]?.unchanged, true);
+    }
     assert.equal(await readFile(join(root, "wrapper.mjs"), "utf8").then(text => text.includes("--reporter")), false);
   }));

@@ -493,8 +493,9 @@ export class LightTaskRunner {
           ? await environmentManifestEvidence(this.files, snapshot.files) : undefined;
         check.counts = observed.report.counts;
         check.execution = check.counts.executed > 0 ? "observed" : "zero_tests";
-        check.outcome = result.interruption ? "unknown" : observed.report.setupFailed || check.counts.failed > 0
-          ? "failed" : result.exitCode === 0 && check.counts.executed > 0 ? "passed" : "unknown";
+        check.outcome = result.interruption ? "unknown" : check.counts.failed > 0 || observed.report.setupFailed && observed.evidence.reportedFileCount > 0 ? "failed"
+          : check.counts.executed === 0 ? "unknown" : observed.report.setupFailed ? "failed"
+          : result.exitCode === 0 ? "passed" : "unknown";
         check.evidenceOrigin = "vitest_report";
         check.evidence = { ...observed.evidence, command, cwd: metadata.cwd ?? ".",
           invocationSourceRevisionId: metadata.sourceRevisionId,

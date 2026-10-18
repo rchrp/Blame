@@ -1,5 +1,5 @@
 import { lstat, mkdir, mkdtemp, readFile, readdir, realpath } from "node:fs/promises";
-import { join, relative, sep } from "node:path";
+import { join, relative, sep, isAbsolute } from "node:path";
 import { fileURLToPath } from "node:url";
 import { sha256 } from "./light-identity.js";
 import { parseTestReport, parseTestReports } from "./test-report.js";
@@ -20,7 +20,7 @@ export async function invocationTestReport(root: string) {
         const starts = (await readdir(directory)).filter(name => /^[a-f0-9-]+\.start\.json$/u.test(name)).sort();
         if (!starts.length || starts.length > 32) return undefined;
         const reports: string[] = [], invocations: unknown[] = [];
-        let bytes = 0;
+        let bytes = 0, reportedFileCount = 0;
         const owned = async (name: string) => {
           const path = join(directory, name), stat = await lstat(path);
           if (!stat.isFile() || stat.isSymbolicLink() || (bytes += stat.size) > 2 * 1024 * 1024 ||
@@ -38,12 +38,13 @@ export async function invocationTestReport(root: string) {
           if (!report || !Array.isArray(parsed.testResults) || parsed.testResults.length > 128) return undefined;
           const files = parsed.testResults.map((file: { name: string; assertionResults?: unknown[] }) => {
             const path = relative(root, file.name).replaceAll("\\", "/");
-            if (path.startsWith("../") || !path || path.startsWith("/")) throw Error("outside_workspace");
+            if (path === ".." || path.startsWith("../") || !path || isAbsolute(path)) throw Error("outside_workspace");
             const oldHash = before.fileStates.find(item => item.path === path)?.hash ?? null;
             const newHash = after.fileStates.find(item => item.path === path)?.hash ?? null;
             return { path, cases: file.assertionResults?.length ?? null, sourceSha256Before: oldHash,
               sourceSha256After: newHash, unchanged: oldHash !== null && oldHash === newHash };
           });
+          reportedFileCount += files.length;
           // A child exit failure cannot disappear behind a successful wrapper.
           if (end.exitCode !== 0 && !report.setupFailed && report.counts.failed === 0) return undefined;
           reports.push(text); invocations.push({ ...end, args: start.args.slice(0, 32).map((arg: string) => arg.slice(0, 256)),
@@ -52,7 +53,7 @@ export async function invocationTestReport(root: string) {
         }
         const combined = parseTestReports(reports);
         return combined ? { report: combined, evidence: { invocationId: relative(root, directory),
-          hookSha256: hookHash, invocations: invocations.slice(0, 8), invocationCount: invocations.length, invocationsTruncated: invocations.length > 8, typeFileSelection: "unknown",
+          hookSha256: hookHash, reportedFileCount, invocations: invocations.slice(0, 8), invocationCount: invocations.length, invocationsTruncated: invocations.length > 8, typeFileSelection: "unknown",
           boundary: "Invocation-owned Vitest 3.2.4 reported cases; runtime versus configured typecheck mode is not established. Counts may include repeated invocations. File hashes bind observed tests, not dependencies or typecheck selection. No source admission or user acceptance." } } : undefined;
       } catch { return undefined; }
     },
