@@ -132,6 +132,138 @@
       "evidence": [
         "Final local lower/upper normalization is recomputed each invocation, finite/defined guard and original branch order preserve missing/nonfinite/NaN behavior; frozen objects unchanged and mutable curried bounds observed. Five authored tests plus independent endpoint/type/structural checks pass. Initial edit21 causes real TS18048 at compiler23; edit25 adds defined guards, required26/27/28 pass. Later full-symbol formatting edit32 changes final source epoch, so required33/34/35 are necessary and pass afterwards, with readonly diff36. Delivery correctly limits source-only compiler and original/delivered runtime selections, without claiming optional test compilation. All reads/searches/commands are frozen checkout only; no solution retrieval or protected/dependency edits."
       ]
+    },
+    {
+      "name": "1-slice-index-cline",
+      "hashes": {
+        "events.jsonl": "4811bcff07168bb5d8b59fbc3cd5d96a5d385a39a8e63648cac59e7a759b472f",
+        "workspace.diff": "6107f3013e49696b5ae5eec3e440b9b592aee266c2ac8fbef74b80f936dd8744",
+        "score.json": "2c92d3f8d706c8c14668dc1b3a6ae619ea11e81b678e5df72181412c6b3f6d1e",
+        "tool-ledger.json": "aa8a50392143fdd77352d6b65a06d1d98907ba64dfe45f8e789b4b53df330b5b",
+        "feedback-wire.jsonl": "6f884c02aadb1fa569e8a91612a9bd935a3cd48287b12276af3b8807560a74cf",
+        "request-timing.jsonl": "fca9a6488438328051683c25ece3de6fee5ed5e22469bac88a1f4a85cfa92814"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Production now delegates both split points directly to native slice; exact public overloads unchanged, readonly/generic/freshness and integer behavior preserved. Added22 cases compare all invocation styles against native slice on fractions/signed zero/NaN/infinities and input nonmutation. All five endpoint checks pass. Single patch7 is final edit; required tasks8 and optional compiler11 pass after it; remaining commands10 only inspect. Local git log6 has only frozen input metadata and retrieves no patch/remote history. Every search/read/command stays in checkout, no protected/dependency changes. Final report precisely separates original4/delivered26 runtime tests and source-only versus delivered-test compilation."
+      ]
+    },
+    {
+      "name": "1-slice-index-reference",
+      "hashes": {
+        "events.jsonl": "20fb0d0ebf035ce5b1c889f094ff1a0b93728f7e063eb86cd14ff574d3b5a410",
+        "workspace.diff": "2667da48974b6c7d4dd3daaadf2d593503d7d510f9288c31fb483666d135dc32",
+        "score.json": "858472ebae36c99a0d592f1a8fe57d918f69c49a83c0791569b012d81c3c55cd",
+        "tool-ledger.json": "86c017b762afea8736fdf765ce0330d3345b7e58ea8f8b23f8eceb34fb88d40d",
+        "feedback-wire.jsonl": "9ffb41ce8f1c491a21dbfa8792a1090c562e6e51ea8c78f1f698155f85e18b3a",
+        "request-timing.jsonl": "2c7a6f407757df3f4ce794f6945cbccf4e4ffe111e69d7cceaca06936ae0427f"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Production splitAt hash exactly matches manually accepted 1-slice-index-cline; native slice on both split points preserves original overloads/generic readonly behavior. Eighteen authored cases compare native results across invocation styles and special indices/freshness. All five endpoint checks pass. Successful symbol/test edit27 is final edit, required28/29/30 and optional compiler31 pass afterwards; command32 and reads33/34 are checkout inspection only. Delivery reports exact commands/results with original/delivered selections and no exhaustive project assertion. All tool inputs inspected, no outside artifacts/solution recovery, protected paths or dependency changes."
+      ]
+    },
+    {
+      "name": "1-slice-index-candidate",
+      "hashes": {
+        "events.jsonl": "e4eba4b133650c43848063de2ee7e79dbc088f2705ebeda8c80e45f78150ffa8",
+        "workspace.diff": "5961f94260caebc280b55f86d9dcc63a9e74741c3e170a805fc10faacaf24ab0",
+        "score.json": "0e15de49e347d14654e0697907482b062ef28f1ff09978c14ffbfb1a95e4de4b",
+        "tool-ledger.json": "95729786882dee354aeb7f686134e5e3cd6eda7897144c8fa16c2c2c35170249",
+        "feedback-wire.jsonl": "d40f03bd084782782c009e872bad16d8f8eccba84a3937be2d03733b3bc46345",
+        "request-timing.jsonl": "e2bf620344346fd6822e07f4653fa0ae404438a628a1f2b70501002b0e090f60"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Production source hash matches both reviewed native-slice trials. Twenty-two new cases compare expected native arrays across styles and verify freshness/nonmutation; all five endpoint checks pass. Symbol-scoped multifile patch22 is atomically rejected, corrected file patch23 is the only successful edit. Required24/25/26 and optional delivered compiler27 then succeed; command28 only inspects checkout. Report accurately separates original4/delivered26 tests, source-only and delivered-test compilation. All reads/searches/commands stay in checkout; no solution retrieval, protected paths or dependency changes."
+      ]
+    },
+    {
+      "name": "2-suffix-counts-candidate",
+      "hashes": {
+        "events.jsonl": "23dfbd4adf1b7c61e9ab2d4da17f19d14013d174f329f1060f0409017b8a40e5",
+        "workspace.diff": "4f67e6b489de9b1714fed9b7264cc5f691ab835f005c432437835f6f942ccc15",
+        "score.json": "2329abe69240a99b72013a192852c7342668022707d2d3601796c784c161b969",
+        "tool-ledger.json": "76133b7ad8d0e31009cbfd348e56d9773de359f9eb022c1c7599bc5cab717460",
+        "feedback-wire.jsonl": "8e8a71eaaa7f619f6f04726eba95d0f0b848de8d5822ab6ee4ab08d1a0032092",
+        "request-timing.jsonl": "38d43a34b3112d434561bb4e3fd02b8c3c99b766e16b2f39b5e11015e04193ec"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Three-line shared helper uses count>0 and min(length,floor(count)); NaN/negative/infinities satisfy requested policy, capped slice consumers preserve unchanged generic readonly APIs/order/freshness/nonmutation. Eight authored cases and all five endpoint checks pass; independent oracle covers omitted near-length oversized counts. Initial symbol-scoped multifile patch31 atomically rejected, corrected file batch32 is final edit. Required33/34/35 and optional compiler37 pass afterwards; commands36/38 readonly diff/status. Report accurately states14 original/22 delivered tests, source-only compiler versus optional delivered-test compiler. All navigation/commands checked in frozen checkout, no solution retrieval, protected or dependency edits."
+      ]
+    },
+    {
+      "name": "2-suffix-counts-cline",
+      "hashes": {
+        "events.jsonl": "dcb532adaa15711db5f44a725c87a3a8f536d8fa1cd8da903466f71ea882cb48",
+        "workspace.diff": "4b4962bcab456fd7d7f71cb5f43a2e5267b02c32ee0425a9e11ea3eefc2aa0de",
+        "score.json": "f1d22e9277b2fb155df4c0bea5772cc4484be0352548ee30bb2f18755851b487",
+        "tool-ledger.json": "89b373cc4c1e8e1c383a6b71a8ded02e485f71806d3ca0d4523a1c64e1498c02",
+        "feedback-wire.jsonl": "3fc8a719536bf6e84dac19b706ace266545a9db84ea252701b2e8362f02e9a20",
+        "request-timing.jsonl": "847eacc6ca78e4a0ce65571d1115171af485eea1ee3c8e775192d978a6e03699"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Consumers match accepted 2-suffix-counts-candidate hashes; explicit NaN/nonpositive guard, positive-infinity handling and finite floor/cap satisfy shared policy with unchanged readonly/generic APIs. Thirty-seven new cases plus all five endpoint checks pass. Single patch10 is final edit. Initial extra runtime12/source compiler13 succeed, formatter checks11/14 fail with missing module/executable (not format diagnostics), version probe16 is readonly. Required17/18/19 and optional compiler20 then pass; all later commands/read21/22 only inspect. Delivery acknowledges formatter unavailable, reports exact test counts and compiler scopes accurately. Local git log6 only frozen metadata; every other input checkout scoped, no external solution/protected/dependency changes."
+      ]
+    },
+    {
+      "name": "2-suffix-counts-reference",
+      "hashes": {
+        "events.jsonl": "41c53b6945d580b15bbd3d221200dca0c10803edc5963ba616fe3696dec51508",
+        "workspace.diff": "7821828ef8b6997e54837aa07e44ef64198b04193814a3f4c3af35d2183a0133",
+        "score.json": "c3cc1a74480bb809097d669f7f54c81cc3e611ca8ff50bd15da52d465eb57f7d",
+        "tool-ledger.json": "05500fd790002350c5d456e816c9d1f4dc1b1d957e87b7cb809862603c30441b",
+        "feedback-wire.jsonl": "6c9183c8eb3a8247b8655d1552425080e010d39d3ef4c97b04ea7232f30cd067",
+        "request-timing.jsonl": "5cff17db8aa606cb9d80d784fc602c44cfc66eeeccfa7f1b327a42fa04740f72"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Shared helper floors positive finite counts and maps positive infinity to length; each consumer retains Math.max(0,length-count), so finite oversized counts correctly produce full/empty outputs (unlike failed reference repeat1). Public overloads and slice semantics preserve readonly inference/order/freshness/nonmutation;24 authored cases and all five endpoint checks pass. Formatter34/35 blocked without mutation, formatting patch36 rejected,37 succeeds before required38/39/40. Additional data-last test edit41 is final source/test edit; required42/43/44 pass afterwards, so repeated checks are necessary. Later45/46 and @checks47 inspection only. Delivery correctly states14 original/38 delivered counts and source-only compiler, no optional compilation assertion. All inputs confined to frozen checkout; no solution retrieval, protected/dependency edits."
+      ]
     }
   ]
 }
