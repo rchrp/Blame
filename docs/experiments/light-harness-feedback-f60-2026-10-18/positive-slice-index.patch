@@ -1,0 +1,22 @@
+diff --git a/packages/remeda/src/splitAt.ts b/packages/remeda/src/splitAt.ts
+index cd3590f..5ee7f7d 100644
+--- a/packages/remeda/src/splitAt.ts
++++ b/packages/remeda/src/splitAt.ts
+@@ -42,9 +42,6 @@ function splitAtImplementation<T>(
+   array: ReadonlyArray<T>,
+   index: number,
+ ): [Array<T>, Array<T>] {
+-  const effectiveIndex = Math.max(
+-    Math.min(index < 0 ? array.length + index : index, array.length),
+-    0,
+-  );
++  const effectiveIndex = index;
+   return [array.slice(0, effectiveIndex), array.slice(effectiveIndex)];
+ }
+diff --git a/packages/remeda/src/split.followup.test.ts b/packages/remeda/src/split.followup.test.ts
+new file mode 100644
+index 0000000..469d209
+--- /dev/null
++++ b/packages/remeda/src/split.followup.test.ts
+@@ -0,0 +1 @@
++import {test,expect} from 'vitest';import {splitAt} from './index';test('negative fractional indexes',()=>{expect(splitAt([1,2,3],-.5)).toEqual([[],[1,2,3]]);});

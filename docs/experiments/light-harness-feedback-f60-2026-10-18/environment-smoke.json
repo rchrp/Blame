@@ -1,0 +1,73 @@
+{
+  "startedAtUTC": "2026-10-18T14:46:03.663Z",
+  "endedAtUTC": "2026-10-18T14:46:10.781Z",
+  "modelRequests": 0,
+  "solver": {
+    "path": "/workspace/blame-study-runs/tooling/z3/bin/z3",
+    "resolvedPath": "/workspace/blame-study-runs/tooling/z3/bin/z3",
+    "sha256": "1bfaf5bbe81fd0b7800500ee08eef426aaabe18f8b9c4c4c32adffcd72f86cd5",
+    "version": "Z3 version 4.15.4 - 64 bit",
+    "package": "z3-solver==4.15.4.0",
+    "libraries": {
+      "/lib/x86_64-linux-gnu/libc.so.6": {
+        "realpath": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+        "sha256": "fa430b8f298f817a266046af84a77533185ad6fc4406c7d3787b5a0a0c207826"
+      },
+      "/lib/x86_64-linux-gnu/libgcc_s.so.1": {
+        "realpath": "/usr/lib/x86_64-linux-gnu/libgcc_s.so.1",
+        "sha256": "30c61ab012a4241bed033725a09b61f5fdd3bb7df95ee852d0b096520524c7af"
+      },
+      "/lib/x86_64-linux-gnu/libm.so.6": {
+        "realpath": "/usr/lib/x86_64-linux-gnu/libm.so.6",
+        "sha256": "6d567d53e895273ca14a1f9dc164fc6c8d39aed2f60aa46a733c2784228915f3"
+      },
+      "/lib/x86_64-linux-gnu/libpthread.so.0": {
+        "realpath": "/usr/lib/x86_64-linux-gnu/libpthread.so.0",
+        "sha256": "85e21f7dba0394411d00959176fd18b470e575b0b05f1f4f41e5636802ce0500"
+      },
+      "/lib/x86_64-linux-gnu/libstdc++.so.6": {
+        "realpath": "/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33",
+        "sha256": "972bb2a18b71140dab0240f8a1f68ab3fb1d56bcd4c4f824a91b70888faf5a00"
+      },
+      "/lib64/ld-linux-x86-64.so.2": {
+        "realpath": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+        "sha256": "438c546d8e8cc48496bf3a95f753051afd9db66a629a74e31a9ded71586b56e0"
+      }
+    },
+    "virtualDependencies": [
+      "linux-vdso.so.1 is kernel-provided and has no file hash; kernel release is recorded separately"
+    ]
+  },
+  "shellEnvironmentSha256": "6f0888b7c90950c4b9a318602f88511cee6613302f692b83672298f778169ceb",
+  "method": "Actual Light and integrated SDK executors plus direct/login npm11.6.4 checks in copied isolated dependencies. No solver query or model call in this navigation smoke.",
+  "before": {
+    "exitCode": 0,
+    "stdout": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/npm\n11.9.0\n",
+    "stderr": ""
+  },
+  "version": {
+    "exitCode": 0,
+    "stdout": "11.6.4\n"
+  },
+  "shell": {
+    "exitCode": 0,
+    "stdout": "/workspace/blame-study-runs/feedback-f60/environment-smoke/workspace/node_modules/.bin/npm\n11.6.4\n"
+  },
+  "harness": {
+    "exitCode": 0,
+    "result": {
+      "status": "ok",
+      "data": {
+        "command": "npm --version",
+        "exitCode": 0,
+        "output": "11.6.4",
+        "environment": "linux-native"
+      }
+    }
+  },
+  "native": {
+    "exitCode": 0,
+    "stdout": "\"11.6.4\\n\"\n",
+    "stderr": ""
+  }
+}

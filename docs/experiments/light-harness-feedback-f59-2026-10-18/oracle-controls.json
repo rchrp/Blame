@@ -1,0 +1,462 @@
+{
+  "complete": false,
+  "modelRequests": 0,
+  "rows": [
+    {
+      "task": "suffix-counts",
+      "before": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 740.3482499999999,
+          "stdout": "\n> remeda@2.0.0 test:study:regression\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f59/controls/suffix-counts\n\n ✓ packages/remeda/src/takeLast.test.ts (7 tests) 3ms\n ✓ packages/remeda/src/dropLast.test.ts (7 tests) 4ms\n\n Test Files  2 passed (2)\n      Tests  14 passed (14)\n   Start at  14:47:17\n   Duration  338ms (transform 41ms, setup 0ms, collect 51ms, tests 7ms, environment 0ms, prepare 94ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/workspace/blame-study-runs/feedback-f59/controls/suffix-counts/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/feedback-ablation-study/oracle.mjs",
+            "/workspace/blame-study-runs/feedback-f59/controls/suffix-counts",
+            "suffix-counts"
+          ],
+          "exitCode": 1,
+          "signal": null,
+          "error": null,
+          "durationMs": 276.5434499999999,
+          "stdout": "",
+          "stderr": "node:internal/modules/run_main:107\n    triggerUncaughtException(\n    ^\n\nAssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n\n+ [\n+   0\n+ ]\n- []\n\n    at equal (/workspace/Blame/tools/terminal_bench/feedback-ablation-study/oracle.mjs:4:28)\n    at <anonymous> (/workspace/Blame/tools/terminal_bench/feedback-ablation-study/oracle.mjs:9:94) {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: [ 0 ],\n  expected: [],\n  operator: 'deepStrictEqual',\n  diff: 'simple'\n}\n\nNode.js v24.19.0\n"
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1699.2562329999998,
+          "stdout": "\n> remeda@2.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 1,
+          "signal": null,
+          "error": null,
+          "durationMs": 129.1545430000001,
+          "stdout": "\n> remeda@2.0.0 test:study:delivered\n> node .study/delivered.mjs runtime\n\n",
+          "stderr": "A new test file is required\n"
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 1,
+          "signal": null,
+          "error": null,
+          "durationMs": 153.3467840000003,
+          "stdout": "\n> remeda@2.0.0 typecheck:delivered\n> node .study/delivered.mjs types\n\n",
+          "stderr": "A new test file is required\n"
+        }
+      ],
+      "after": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 960.9885570000001,
+          "stdout": "\n> remeda@2.0.0 test:study:regression\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f59/controls/suffix-counts\n\n ✓ packages/remeda/src/takeLast.test.ts (7 tests) 3ms\n ✓ packages/remeda/src/dropLast.test.ts (7 tests) 3ms\n\n Test Files  2 passed (2)\n      Tests  14 passed (14)\n   Start at  14:47:20\n   Duration  455ms (transform 58ms, setup 0ms, collect 69ms, tests 6ms, environment 0ms, prepare 111ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/workspace/blame-study-runs/feedback-f59/controls/suffix-counts/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/feedback-ablation-study/oracle.mjs",
+            "/workspace/blame-study-runs/feedback-f59/controls/suffix-counts",
+            "suffix-counts"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1967.74626,
+          "stdout": "Finite behavioral/public types passed suffix-counts 714\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1692.4758149999998,
+          "stdout": "\n> remeda@2.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1805.7054990000006,
+          "stdout": "\n> remeda@2.0.0 test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"packages/remeda/src/suffix.followup.test.ts\"]\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f59/controls/suffix-counts\n\n ✓ packages/remeda/src/takeLast.test.ts (7 tests) 6ms\n ✓ packages/remeda/src/dropLast.test.ts (7 tests) 3ms\n ✓ packages/remeda/src/suffix.followup.test.ts (1 test) 2ms\n\n Test Files  3 passed (3)\n      Tests  15 passed (15)\n   Start at  14:47:24\n   Duration  1.33s (transform 530ms, setup 0ms, collect 782ms, tests 11ms, environment 0ms, prepare 165ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1873.115437999999,
+          "stdout": "\n> remeda@2.0.0 typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"packages/remeda/src/suffix.followup.test.ts\"]\n",
+          "stderr": ""
+        }
+      ],
+      "semanticNegative": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 912.8965720000015,
+          "stdout": "\n> remeda@2.0.0 test:study:regression\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f59/controls/suffix-counts\n\n ✓ packages/remeda/src/takeLast.test.ts (7 tests) 3ms\n ✓ packages/remeda/src/dropLast.test.ts (7 tests) 4ms\n\n Test Files  2 passed (2)\n      Tests  14 passed (14)\n   Start at  14:47:28\n   Duration  440ms (transform 56ms, setup 0ms, collect 83ms, tests 7ms, environment 0ms, prepare 99ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/workspace/blame-study-runs/feedback-f59/controls/suffix-counts/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/feedback-ablation-study/oracle.mjs",
+            "/workspace/blame-study-runs/feedback-f59/controls/suffix-counts",
+            "suffix-counts"
+          ],
+          "exitCode": 1,
+          "signal": null,
+          "error": null,
+          "durationMs": 368.14465799999925,
+          "stdout": "",
+          "stderr": "node:internal/modules/run_main:107\n    triggerUncaughtException(\n    ^\n\nAssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n\n+ [\n+   0\n+ ]\n- []\n\n    at equal (/workspace/Blame/tools/terminal_bench/feedback-ablation-study/oracle.mjs:4:28)\n    at <anonymous> (/workspace/Blame/tools/terminal_bench/feedback-ablation-study/oracle.mjs:9:94) {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: [ 0 ],\n  expected: [],\n  operator: 'deepStrictEqual',\n  diff: 'simple'\n}\n\nNode.js v24.19.0\n"
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1717.0967120000005,
+          "stdout": "\n> remeda@2.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 1,
+          "signal": null,
+          "error": null,
+          "durationMs": 2070.296006999999,
+          "stdout": "\n> remeda@2.0.0 test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"packages/remeda/src/suffix.followup.test.ts\"]\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f59/controls/suffix-counts\n\n ✓ packages/remeda/src/takeLast.test.ts (7 tests) 4ms\n ✓ packages/remeda/src/dropLast.test.ts (7 tests) 4ms\n ❯ packages/remeda/src/suffix.followup.test.ts (1 test | 1 failed) 8ms\n   × floor counts 7ms\n     → expected [ 2, 3 ] to deeply equal [ 3 ]\n\n Test Files  1 failed | 2 passed (3)\n      Tests  1 failed | 14 passed (15)\n   Start at  14:47:31\n   Duration  1.53s (transform 631ms, setup 0ms, collect 961ms, tests 15ms, environment 0ms, prepare 159ms)\n\n",
+          "stderr": "\n⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯\n\n FAIL  packages/remeda/src/suffix.followup.test.ts > floor counts\nAssertionError: expected [ 2, 3 ] to deeply equal [ 3 ]\n\n- Expected\n+ Received\n\n  [\n+   2,\n    3,\n  ]\n\n ❯ packages/remeda/src/suffix.followup.test.ts:1:133\n      1| import {test,expect} from 'vitest';import {takeLast,dropLast} from './…\n       |                                                                                                                                     ^\n      2| \n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯\n\n"
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1932.54896,
+          "stdout": "\n> remeda@2.0.0 typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"packages/remeda/src/suffix.followup.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "task": "reversed-clamp",
+      "before": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 709.5325200000007,
+          "stdout": "\n> remeda@2.0.0 test:study:regression\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f59/controls/reversed-clamp\n\n ✓ packages/remeda/src/clamp.test.ts (3 tests) 2ms\n\n Test Files  1 passed (1)\n      Tests  3 passed (3)\n   Start at  14:47:35\n   Duration  232ms (transform 49ms, setup 0ms, collect 49ms, tests 2ms, environment 0ms, prepare 52ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/workspace/blame-study-runs/feedback-f59/controls/reversed-clamp/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/feedback-ablation-study/oracle.mjs",
+            "/workspace/blame-study-runs/feedback-f59/controls/reversed-clamp",
+            "reversed-clamp"
+          ],
+          "exitCode": 1,
+          "signal": null,
+          "error": null,
+          "durationMs": 387.41730400000233,
+          "stdout": "",
+          "stderr": "node:internal/modules/run_main:107\n    triggerUncaughtException(\n    ^\n\nAssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n\n-1 !== -5\n\n    at equal (/workspace/Blame/tools/terminal_bench/feedback-ablation-study/oracle.mjs:4:28)\n    at <anonymous> (/workspace/Blame/tools/terminal_bench/feedback-ablation-study/oracle.mjs:16:87) {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: -1,\n  expected: -5,\n  operator: 'deepStrictEqual',\n  diff: 'simple'\n}\n\nNode.js v24.19.0\n"
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1656.722698999998,
+          "stdout": "\n> remeda@2.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 1,
+          "signal": null,
+          "error": null,
+          "durationMs": 157.34925699999803,
+          "stdout": "\n> remeda@2.0.0 test:study:delivered\n> node .study/delivered.mjs runtime\n\n",
+          "stderr": "A new test file is required\n"
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 1,
+          "signal": null,
+          "error": null,
+          "durationMs": 128.3487810000006,
+          "stdout": "\n> remeda@2.0.0 typecheck:delivered\n> node .study/delivered.mjs types\n\n",
+          "stderr": "A new test file is required\n"
+        }
+      ],
+      "after": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 718.8034499999994,
+          "stdout": "\n> remeda@2.0.0 test:study:regression\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f59/controls/reversed-clamp\n\n ✓ packages/remeda/src/clamp.test.ts (3 tests) 2ms\n\n Test Files  1 passed (1)\n      Tests  3 passed (3)\n   Start at  14:47:38\n   Duration  242ms (transform 46ms, setup 0ms, collect 49ms, tests 2ms, environment 0ms, prepare 56ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/workspace/blame-study-runs/feedback-f59/controls/reversed-clamp/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/feedback-ablation-study/oracle.mjs",
+            "/workspace/blame-study-runs/feedback-f59/controls/reversed-clamp",
+            "reversed-clamp"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2153.4011680000003,
+          "stdout": "Finite behavioral/public types passed reversed-clamp 1947\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1891.1161279999978,
+          "stdout": "\n> remeda@2.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2012.057915999998,
+          "stdout": "\n> remeda@2.0.0 test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"packages/remeda/src/clamp.followup.test.ts\"]\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f59/controls/reversed-clamp\n\n ✓ packages/remeda/src/clamp.test.ts (3 tests) 2ms\n ✓ packages/remeda/src/clamp.followup.test.ts (1 test) 2ms\n\n Test Files  2 passed (2)\n      Tests  4 passed (4)\n   Start at  14:47:43\n   Duration  1.48s (transform 713ms, setup 0ms, collect 1.10s, tests 4ms, environment 0ms, prepare 119ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2106.7463919999973,
+          "stdout": "\n> remeda@2.0.0 typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"packages/remeda/src/clamp.followup.test.ts\"]\n",
+          "stderr": ""
+        }
+      ],
+      "semanticNegative": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 721.1048350000019,
+          "stdout": "\n> remeda@2.0.0 test:study:regression\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f59/controls/reversed-clamp\n\n ✓ packages/remeda/src/clamp.test.ts (3 tests) 2ms\n\n Test Files  1 passed (1)\n      Tests  3 passed (3)\n   Start at  14:47:47\n   Duration  240ms (transform 49ms, setup 0ms, collect 53ms, tests 2ms, environment 0ms, prepare 60ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/workspace/blame-study-runs/feedback-f59/controls/reversed-clamp/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/feedback-ablation-study/oracle.mjs",
+            "/workspace/blame-study-runs/feedback-f59/controls/reversed-clamp",
+            "reversed-clamp"
+          ],
+          "exitCode": 1,
+          "signal": null,
+          "error": null,
+          "durationMs": 340.26946099999986,
+          "stdout": "",
+          "stderr": "node:internal/modules/run_main:107\n    triggerUncaughtException(\n    ^\n\nAssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n\n-1 !== -5\n\n    at equal (/workspace/Blame/tools/terminal_bench/feedback-ablation-study/oracle.mjs:4:28)\n    at <anonymous> (/workspace/Blame/tools/terminal_bench/feedback-ablation-study/oracle.mjs:16:87) {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: -1,\n  expected: -5,\n  operator: 'deepStrictEqual',\n  diff: 'simple'\n}\n\nNode.js v24.19.0\n"
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1875.3895499999999,
+          "stdout": "\n> remeda@2.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 1,
+          "signal": null,
+          "error": null,
+          "durationMs": 1949.252827999997,
+          "stdout": "\n> remeda@2.0.0 test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"packages/remeda/src/clamp.followup.test.ts\"]\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f59/controls/reversed-clamp\n\n ✓ packages/remeda/src/clamp.test.ts (3 tests) 4ms\n ❯ packages/remeda/src/clamp.followup.test.ts (1 test | 1 failed) 8ms\n   × reverse finite bounds 7ms\n     → expected 4 to be 2 // Object.is equality\n\n Test Files  1 failed | 1 passed (2)\n      Tests  1 failed | 3 passed (4)\n   Start at  14:47:50\n   Duration  1.41s (transform 652ms, setup 0ms, collect 1.03s, tests 11ms, environment 0ms, prepare 113ms)\n\n",
+          "stderr": "\n⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯\n\n FAIL  packages/remeda/src/clamp.followup.test.ts > reverse finite bounds\nAssertionError: expected 4 to be 2 // Object.is equality\n\n- Expected\n+ Received\n\n- 2\n+ 4\n\n ❯ packages/remeda/src/clamp.followup.test.ts:1:146\n      1| import {test,expect} from 'vitest';import {clamp} from './index';test(…\n       |                                                                                                                                                  ^\n      2| \n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯\n\n"
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1908.478802000005,
+          "stdout": "\n> remeda@2.0.0 typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"packages/remeda/src/clamp.followup.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    }
+  ]
+}

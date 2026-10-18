@@ -1,0 +1,54 @@
+diff --git a/src/internals/helpers.ts b/src/internals/helpers.ts
+index 7915958..3467dec 100644
+--- a/src/internals/helpers.ts
++++ b/src/internals/helpers.ts
+@@ -133,3 +133,5 @@ export const flatMap = <a, b>(
+   xs: readonly a[],
+   f: (v: a) => readonly b[]
+ ): b[] => xs.reduce<b[]>((acc, x) => acc.concat(f(x)), []);
++
++export const emptySelections = (...patterns: any[]): Record<string, unknown[]> => { const selections: Record<string, unknown[]>={};for(const pattern of patterns)for(const key of getSelectionKeys(pattern))selections[key]=[];return selections; };
+diff --git a/src/patterns.ts b/src/patterns.ts
+index 0daa17d..cd8f36a 100644
+--- a/src/patterns.ts
++++ b/src/patterns.ts
+@@ -1,4 +1,4 @@
+-import { matchPattern, getSelectionKeys, flatMap } from './internals/helpers';
++import { emptySelections, matchPattern, getSelectionKeys, flatMap } from './internals/helpers';
+ import * as symbols from './internals/symbols';
+ import { matcher } from './internals/symbols';
+ import { isMatching } from './is-matching';
+@@ -231,9 +231,7 @@ export function array(
+           let selections: Record<string, unknown[]> = {};
+ 
+           if (value.length === 0) {
+-            getSelectionKeys(pattern).forEach((key) => {
+-              selections[key] = [];
+-            });
++            selections = emptySelections(pattern);
+             return { matched: true, selections };
+           }
+ 
+@@ -282,6 +280,7 @@ export function set<
+           let selections: Record<string, unknown[]> = {};
+ 
+           if (value.size === 0) {
++            selections=emptySelections(...args);
+             return { matched: true, selections };
+           }
+ 
+@@ -348,6 +347,7 @@ export function map<
+           let selections: Record<string, unknown[]> = {};
+ 
+           if (value.size === 0) {
++            selections=emptySelections(...args);
+             return { matched: true, selections };
+           }
+ 
+diff --git a/src/confirmation.test.ts b/src/confirmation.test.ts
+new file mode 100644
+index 0000000..75f386b
+--- /dev/null
++++ b/src/confirmation.test.ts
+@@ -0,0 +1 @@
++import {test,expect} from 'vitest';import {P,match} from './index';test('requested behavior',()=>{expect(match(new Set<number>()).with(P.set(P.select('x')),x=>x).run()).toEqual({x:[]});});

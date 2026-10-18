@@ -1,0 +1,215 @@
+{
+  "selectionBeforeAnyNewModelCall": true,
+  "panels": {
+    "F59": [
+      {
+        "id": "suffix-counts",
+        "project": "remeda",
+        "selected": [
+          "takeLast",
+          "dropLast"
+        ],
+        "request": "Make takeLast and dropLast use a shared count policy in data-first, data-last and pipe use. Positive finite counts are floored. Zero, negative values, negative infinity and NaN normalize to zero; positive infinity normalizes to the input length. takeLast returns the final normalized number of elements; dropLast removes that many final elements. Preserve integer behavior and element order. Results must be new arrays, inputs must not change, and readonly arrays and existing generic inference must remain supported.",
+        "instruction": "Make takeLast and dropLast use a shared count policy in data-first, data-last and pipe use. Positive finite counts are floored. Zero, negative values, negative infinity and NaN normalize to zero; positive infinity normalizes to the input length. takeLast returns the final normalized number of elements; dropLast removes that many final elements. Preserve integer behavior and element order. Results must be new arrays, inputs must not change, and readonly arrays and existing generic inference must remain supported. Work only in this checkout. Do not retrieve remote history, solutions or prior study artifacts. Preserve original tests, manifests, locks, configuration and supplied checks. Add a new *.test.ts file alongside the relevant public API source; do not edit original tests. Do not install dependencies. Preserve public types, readonly input support and unrelated behavior. After the final source edit run npm run test:study:regression, npm run test:study:types and npm run test:study:delivered. Source compilation excludes tests; typecheck:delivered checks delivered tests. Report exact commands, outcomes and coverage limits honestly.\n",
+        "requiredChecks": [
+          {
+            "id": "regression",
+            "task": "test:study:regression"
+          },
+          {
+            "id": "types",
+            "task": "test:study:types"
+          },
+          {
+            "id": "delivered",
+            "task": "test:study:delivered"
+          }
+        ]
+      },
+      {
+        "id": "reversed-clamp",
+        "project": "remeda",
+        "selected": [
+          "clamp"
+        ],
+        "request": "Extend clamp to accept a reversed pair of finite bounds: when min and max are both finite and min > max, treat their lower and upper values as the normalized bounds. Apply this in data-first, data-last and pipe use. Do not mutate the limits object, including frozen objects. Preserve existing missing-bound, NaN-bound, infinite-bound and NaN-value behavior. Curried calls must continue observing the supplied limits object at each invocation, rather than snapshotting it at factory creation. Preserve the public numeric signature.",
+        "instruction": "Extend clamp to accept a reversed pair of finite bounds: when min and max are both finite and min > max, treat their lower and upper values as the normalized bounds. Apply this in data-first, data-last and pipe use. Do not mutate the limits object, including frozen objects. Preserve existing missing-bound, NaN-bound, infinite-bound and NaN-value behavior. Curried calls must continue observing the supplied limits object at each invocation, rather than snapshotting it at factory creation. Preserve the public numeric signature. Work only in this checkout. Do not retrieve remote history, solutions or prior study artifacts. Preserve original tests, manifests, locks, configuration and supplied checks. Add a new *.test.ts file alongside the relevant public API source; do not edit original tests. Do not install dependencies. Preserve public types, readonly input support and unrelated behavior. After the final source edit run npm run test:study:regression, npm run test:study:types and npm run test:study:delivered. Source compilation excludes tests; typecheck:delivered checks delivered tests. Report exact commands, outcomes and coverage limits honestly.\n",
+        "requiredChecks": [
+          {
+            "id": "regression",
+            "task": "test:study:regression"
+          },
+          {
+            "id": "types",
+            "task": "test:study:types"
+          },
+          {
+            "id": "delivered",
+            "task": "test:study:delivered"
+          }
+        ]
+      },
+      {
+        "id": "slice-index",
+        "project": "remeda",
+        "selected": [
+          "splitAt"
+        ],
+        "request": "Make splitAt use native Array.prototype.slice index normalization in data-first, data-last and pipe use. Its pair must equal [array.slice(0,index),array.slice(index)], including negative fractional indexes, signed zero, NaN and infinities. In particular truncate a fractional index toward zero before interpreting a negative offset from the end. Preserve integer behavior, readonly inputs, element order, generic return inference and new-array outputs; never mutate the input.",
+        "instruction": "Make splitAt use native Array.prototype.slice index normalization in data-first, data-last and pipe use. Its pair must equal [array.slice(0,index),array.slice(index)], including negative fractional indexes, signed zero, NaN and infinities. In particular truncate a fractional index toward zero before interpreting a negative offset from the end. Preserve integer behavior, readonly inputs, element order, generic return inference and new-array outputs; never mutate the input. Work only in this checkout. Do not retrieve remote history, solutions or prior study artifacts. Preserve original tests, manifests, locks, configuration and supplied checks. Add a new *.test.ts file alongside the relevant public API source; do not edit original tests. Do not install dependencies. Preserve public types, readonly input support and unrelated behavior. After the final source edit run npm run test:study:regression, npm run test:study:types and npm run test:study:delivered. Source compilation excludes tests; typecheck:delivered checks delivered tests. Report exact commands, outcomes and coverage limits honestly.\n",
+        "requiredChecks": [
+          {
+            "id": "regression",
+            "task": "test:study:regression"
+          },
+          {
+            "id": "types",
+            "task": "test:study:types"
+          },
+          {
+            "id": "delivered",
+            "task": "test:study:delivered"
+          }
+        ]
+      }
+    ],
+    "F60": [
+      {
+        "id": "suffix-counts",
+        "project": "remeda",
+        "selected": [
+          "takeLast",
+          "dropLast"
+        ],
+        "request": "Make takeLast and dropLast use a shared count policy in data-first, data-last and pipe use. Positive finite counts are floored. Zero, negative values, negative infinity and NaN normalize to zero; positive infinity normalizes to the input length. takeLast returns the final normalized number of elements; dropLast removes that many final elements. Preserve integer behavior and element order. Results must be new arrays, inputs must not change, and readonly arrays and existing generic inference must remain supported.",
+        "instruction": "Make takeLast and dropLast use a shared count policy in data-first, data-last and pipe use. Positive finite counts are floored. Zero, negative values, negative infinity and NaN normalize to zero; positive infinity normalizes to the input length. takeLast returns the final normalized number of elements; dropLast removes that many final elements. Preserve integer behavior and element order. Results must be new arrays, inputs must not change, and readonly arrays and existing generic inference must remain supported. Work only in this checkout. Do not retrieve remote history, solutions or prior study artifacts. Preserve original tests, manifests, locks, configuration and supplied checks. Add a new *.test.ts file alongside the relevant public API source; do not edit original tests. Do not install dependencies. Preserve public types, readonly input support and unrelated behavior. After the final source edit run npm run test:study:regression, npm run test:study:types and npm run test:study:delivered. Source compilation excludes tests; typecheck:delivered checks delivered tests. Report exact commands, outcomes and coverage limits honestly.\n",
+        "requiredChecks": [
+          {
+            "id": "regression",
+            "task": "test:study:regression"
+          },
+          {
+            "id": "types",
+            "task": "test:study:types"
+          },
+          {
+            "id": "delivered",
+            "task": "test:study:delivered"
+          }
+        ]
+      },
+      {
+        "id": "reversed-clamp",
+        "project": "remeda",
+        "selected": [
+          "clamp"
+        ],
+        "request": "Extend clamp to accept a reversed pair of finite bounds: when min and max are both finite and min > max, treat their lower and upper values as the normalized bounds. Apply this in data-first, data-last and pipe use. Do not mutate the limits object, including frozen objects. Preserve existing missing-bound, NaN-bound, infinite-bound and NaN-value behavior. Curried calls must continue observing the supplied limits object at each invocation, rather than snapshotting it at factory creation. Preserve the public numeric signature.",
+        "instruction": "Extend clamp to accept a reversed pair of finite bounds: when min and max are both finite and min > max, treat their lower and upper values as the normalized bounds. Apply this in data-first, data-last and pipe use. Do not mutate the limits object, including frozen objects. Preserve existing missing-bound, NaN-bound, infinite-bound and NaN-value behavior. Curried calls must continue observing the supplied limits object at each invocation, rather than snapshotting it at factory creation. Preserve the public numeric signature. Work only in this checkout. Do not retrieve remote history, solutions or prior study artifacts. Preserve original tests, manifests, locks, configuration and supplied checks. Add a new *.test.ts file alongside the relevant public API source; do not edit original tests. Do not install dependencies. Preserve public types, readonly input support and unrelated behavior. After the final source edit run npm run test:study:regression, npm run test:study:types and npm run test:study:delivered. Source compilation excludes tests; typecheck:delivered checks delivered tests. Report exact commands, outcomes and coverage limits honestly.\n",
+        "requiredChecks": [
+          {
+            "id": "regression",
+            "task": "test:study:regression"
+          },
+          {
+            "id": "types",
+            "task": "test:study:types"
+          },
+          {
+            "id": "delivered",
+            "task": "test:study:delivered"
+          }
+        ]
+      },
+      {
+        "id": "slice-index",
+        "project": "remeda",
+        "selected": [
+          "splitAt"
+        ],
+        "request": "Make splitAt use native Array.prototype.slice index normalization in data-first, data-last and pipe use. Its pair must equal [array.slice(0,index),array.slice(index)], including negative fractional indexes, signed zero, NaN and infinities. In particular truncate a fractional index toward zero before interpreting a negative offset from the end. Preserve integer behavior, readonly inputs, element order, generic return inference and new-array outputs; never mutate the input.",
+        "instruction": "Make splitAt use native Array.prototype.slice index normalization in data-first, data-last and pipe use. Its pair must equal [array.slice(0,index),array.slice(index)], including negative fractional indexes, signed zero, NaN and infinities. In particular truncate a fractional index toward zero before interpreting a negative offset from the end. Preserve integer behavior, readonly inputs, element order, generic return inference and new-array outputs; never mutate the input. Work only in this checkout. Do not retrieve remote history, solutions or prior study artifacts. Preserve original tests, manifests, locks, configuration and supplied checks. Add a new *.test.ts file alongside the relevant public API source; do not edit original tests. Do not install dependencies. Preserve public types, readonly input support and unrelated behavior. After the final source edit run npm run test:study:regression, npm run test:study:types and npm run test:study:delivered. Source compilation excludes tests; typecheck:delivered checks delivered tests. Report exact commands, outcomes and coverage limits honestly.\n",
+        "requiredChecks": [
+          {
+            "id": "regression",
+            "task": "test:study:regression"
+          },
+          {
+            "id": "types",
+            "task": "test:study:types"
+          },
+          {
+            "id": "delivered",
+            "task": "test:study:delivered"
+          }
+        ]
+      }
+    ],
+    "F61": [
+      {
+        "id": "alternative-selections",
+        "request": "Fix selection leakage from failed alternatives in multi-pattern match(...).with(...) and P.union. Only the first successful alternative may contribute selected values. P.union must still initialize keys belonging only to other alternatives to undefined, and a total mismatch must not leak a partial selection. Add one shared internal transactional matching helper and use it in both the match-expression and union paths. Preserve first-match short-circuiting, named and anonymous selection, and guard behavior.",
+        "project": "ts-pattern",
+        "selected": [],
+        "instruction": "Fix selection leakage from failed alternatives in multi-pattern match(...).with(...) and P.union. Only the first successful alternative may contribute selected values. P.union must still initialize keys belonging only to other alternatives to undefined, and a total mismatch must not leak a partial selection. Add one shared internal transactional matching helper and use it in both the match-expression and union paths. Preserve first-match short-circuiting, named and anonymous selection, and guard behavior. Work only in this checkout; do not retrieve remote history, solutions or previous study artifacts. Do not install dependencies. Preserve original tests, manifests, locks, configuration and supplied checks. Preserve public types and unrelated behavior. Add new src/*.test.ts tests for the request. After the final source or test edit run npm run test:study:regression, npm run test:study:types and npm run test:study:delivered. Source compilation excludes tests; typecheck:delivered checks new tests. Report exact commands, results and limits honestly.",
+        "requiredChecks": [
+          {
+            "id": "regression",
+            "task": "test:study:regression"
+          },
+          {
+            "id": "types",
+            "task": "test:study:types"
+          },
+          {
+            "id": "delivered",
+            "task": "test:study:delivered"
+          }
+        ]
+      },
+      {
+        "id": "symbol-pattern-keys",
+        "request": "Make selection-key discovery traverse all own keys of an ordinary object pattern, including symbols and non-enumerable properties, consistently with object matching. Ignore inherited pattern keys, retain current inherited value-property matching behavior, and preserve matcher and tuple special cases. Centralize object-pattern own-key enumeration in a new internal module used by both ordinary object matching and selection-key discovery. This must make absent optional object patterns and empty arrays initialize selections nested under symbol/non-enumerable keys correctly.",
+        "project": "ts-pattern",
+        "selected": [],
+        "instruction": "Make selection-key discovery traverse all own keys of an ordinary object pattern, including symbols and non-enumerable properties, consistently with object matching. Ignore inherited pattern keys, retain current inherited value-property matching behavior, and preserve matcher and tuple special cases. Centralize object-pattern own-key enumeration in a new internal module used by both ordinary object matching and selection-key discovery. This must make absent optional object patterns and empty arrays initialize selections nested under symbol/non-enumerable keys correctly. Work only in this checkout; do not retrieve remote history, solutions or previous study artifacts. Do not install dependencies. Preserve original tests, manifests, locks, configuration and supplied checks. Preserve public types and unrelated behavior. Add new src/*.test.ts tests for the request. After the final source or test edit run npm run test:study:regression, npm run test:study:types and npm run test:study:delivered. Source compilation excludes tests; typecheck:delivered checks new tests. Report exact commands, results and limits honestly.",
+        "requiredChecks": [
+          {
+            "id": "regression",
+            "task": "test:study:regression"
+          },
+          {
+            "id": "types",
+            "task": "test:study:types"
+          },
+          {
+            "id": "delivered",
+            "task": "test:study:delivered"
+          }
+        ]
+      },
+      {
+        "id": "empty-collection-selections",
+        "request": "Make empty P.set(subpattern) and P.map(keyPattern,valuePattern) initialize every declared selection to a fresh empty array, consistently with P.array(subpattern). Include nested named and anonymous selections, duplicate key names and both map key/value patterns. Keep no-argument collection matching and non-empty collection ordering unchanged. Centralize empty-selection initialization in a shared internal helper used by array, set and map. Do not snapshot mutable selection arrays across invocations.",
+        "project": "ts-pattern",
+        "selected": [],
+        "instruction": "Make empty P.set(subpattern) and P.map(keyPattern,valuePattern) initialize every declared selection to a fresh empty array, consistently with P.array(subpattern). Include nested named and anonymous selections, duplicate key names and both map key/value patterns. Keep no-argument collection matching and non-empty collection ordering unchanged. Centralize empty-selection initialization in a shared internal helper used by array, set and map. Do not snapshot mutable selection arrays across invocations. Work only in this checkout; do not retrieve remote history, solutions or previous study artifacts. Do not install dependencies. Preserve original tests, manifests, locks, configuration and supplied checks. Preserve public types and unrelated behavior. Add new src/*.test.ts tests for the request. After the final source or test edit run npm run test:study:regression, npm run test:study:types and npm run test:study:delivered. Source compilation excludes tests; typecheck:delivered checks new tests. Report exact commands, results and limits honestly.",
+        "requiredChecks": [
+          {
+            "id": "regression",
+            "task": "test:study:regression"
+          },
+          {
+            "id": "types",
+            "task": "test:study:types"
+          },
+          {
+            "id": "delivered",
+            "task": "test:study:delivered"
+          }
+        ]
+      }
+    ]
+  },
+  "protocol": "Each panel has 3 tasks, 2 rotated repeats, 3 arms, 18 assignments. F59 repair-only; F60 body-only; F61 full feedback on fresh TS-Pattern. No replacement of null opportunities. Protocols/bindings are committed before each panel dispatch."
+}

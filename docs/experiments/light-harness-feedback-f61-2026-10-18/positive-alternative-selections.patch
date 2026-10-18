@@ -1,0 +1,63 @@
+diff --git a/src/internals/helpers.ts b/src/internals/helpers.ts
+index 7915958..766b966 100644
+--- a/src/internals/helpers.ts
++++ b/src/internals/helpers.ts
+@@ -133,3 +133,10 @@ export const flatMap = <a, b>(
+   xs: readonly a[],
+   f: (v: a) => readonly b[]
+ ): b[] => xs.reduce<b[]>((acc, x) => acc.concat(f(x)), []);
++
++export const transactionalMatch = (pattern: any, value: any, select: (key: string, value: unknown) => void): boolean => {
++ const staged: [string, unknown][]=[];
++ const matched=matchPattern(pattern,value,(key,value)=>staged.push([key,value]));
++ if(matched)for(const [key,value] of staged)select(key,value);
++ return matched;
++};
+diff --git a/src/match.ts b/src/match.ts
+index 6c801aa..7ab2e9d 100644
+--- a/src/match.ts
++++ b/src/match.ts
+@@ -1,7 +1,7 @@
+ import { Pattern } from './types/Pattern';
+ import { Match } from './types/Match';
+ import * as symbols from './internals/symbols';
+-import { matchPattern } from './internals/helpers';
++import { transactionalMatch } from './internals/helpers';
+ import { NonExhaustiveError } from './errors';
+ 
+ type MatchState<output> =
+@@ -72,7 +72,7 @@ class MatchExpression<input, output> {
+     };
+ 
+     const matched =
+-      patterns.some((pattern) => matchPattern(pattern, this.input, select)) &&
++      patterns.some((pattern) => transactionalMatch(pattern, this.input, select)) &&
+       (predicate ? Boolean(predicate(this.input)) : true);
+ 
+     const selections = hasSelections
+diff --git a/src/patterns.ts b/src/patterns.ts
+index 0daa17d..3040eba 100644
+--- a/src/patterns.ts
++++ b/src/patterns.ts
+@@ -1,4 +1,4 @@
+-import { matchPattern, getSelectionKeys, flatMap } from './internals/helpers';
++import { transactionalMatch, matchPattern, getSelectionKeys, flatMap } from './internals/helpers';
+ import * as symbols from './internals/symbols';
+ import { matcher } from './internals/symbols';
+ import { isMatching } from './is-matching';
+@@ -462,7 +462,7 @@ export function union<
+           getSelectionKeys
+         ).forEach((key) => selector(key, undefined));
+         const matched = (patterns as readonly UnknownPattern[]).some((p) =>
+-          matchPattern(p, value, selector)
++          transactionalMatch(p, value, selector)
+         );
+         return { matched, selections };
+       },
+diff --git a/src/confirmation.test.ts b/src/confirmation.test.ts
+new file mode 100644
+index 0000000..9380131
+--- /dev/null
++++ b/src/confirmation.test.ts
+@@ -0,0 +1 @@
++import {test,expect} from 'vitest';import {P,match} from './index';test('requested behavior',()=>{expect(match<{a:number;b:number}>({a:1,b:2}).with(P.union({a:P.select('discard'),b:0},{a:1,b:P.select('keep')}),x=>x).run()).toEqual({discard:undefined,keep:2});});

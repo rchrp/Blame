@@ -1,0 +1,26 @@
+diff --git a/packages/remeda/src/clamp.ts b/packages/remeda/src/clamp.ts
+index 8e0d149..25e2ca8 100644
+--- a/packages/remeda/src/clamp.ts
++++ b/packages/remeda/src/clamp.ts
+@@ -40,9 +40,8 @@ export function clamp(...args: ReadonlyArray<unknown>): unknown {
+   return purry(clampImplementation, args);
+ }
+ 
+-const clampImplementation = (value: number, { min, max }: Limits): number =>
+-  min !== undefined && value < min
+-    ? min
+-    : max !== undefined && value > max
+-      ? max
+-      : value;
++const clampImplementation=(value:number,{min,max}:Limits):number=>{
++ let lower=min,upper=max;
++ if(Number.isFinite(lower)&&Number.isFinite(upper)&&lower!>upper!){lower=max;upper=min;}
++ return lower!==undefined&&value<lower?lower:upper!==undefined&&value>upper?upper:value;
++};
+diff --git a/packages/remeda/src/clamp.followup.test.ts b/packages/remeda/src/clamp.followup.test.ts
+new file mode 100644
+index 0000000..e8ecaba
+--- /dev/null
++++ b/packages/remeda/src/clamp.followup.test.ts
+@@ -0,0 +1 @@
++import {test,expect} from 'vitest';import {clamp} from './index';test('reverse finite bounds',()=>{expect(clamp(2,Object.freeze({min:4,max:1}))).toBe(2);});

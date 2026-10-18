@@ -1,0 +1,26 @@
+{
+  "modelRequestsDuringPreparation": 0,
+  "incidents": [
+    {
+      "kind": "cloud-terminal-restart",
+      "outcome": "Reconnected before model starts; clean git state retained."
+    },
+    {
+      "kind": "github-api-host-denied",
+      "outcome": "No API response consumed. Used allowed github git ref and codeload source archive through configured proxy; no policy bypass."
+    },
+    {
+      "kind": "javascript-setup-typo",
+      "outcome": "Corrected lower() to toLowerCase before snapshots were created."
+    },
+    {
+      "kind": "control-test-literal-inference",
+      "outcome": "Control input explicitly widened to its intended public input domain. No production/public signature weakening; initial controls preserved."
+    },
+    {
+      "kind": "control-test-undefined-inference",
+      "outcome": "Control uses match<unknown>(undefined), the intended unknown-input API. Initial compiler error preserved."
+    }
+  ],
+  "historicalOrIntroducedProductFailures": false
+}

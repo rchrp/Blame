@@ -1,0 +1,41 @@
+diff --git a/src/internals/helpers.ts b/src/internals/helpers.ts
+index 7915958..5db4998 100644
+--- a/src/internals/helpers.ts
++++ b/src/internals/helpers.ts
+@@ -1,3 +1,4 @@
++import {patternKeys} from './pattern-keys';
+ /**
+  * @module
+  * @private
+@@ -103,7 +104,7 @@ export const matchPattern = (
+         : false;
+     }
+ 
+-    return Reflect.ownKeys(pattern).every((k): boolean => {
++    return patternKeys(pattern).every((k): boolean => {
+       const subPattern = pattern[k];
+ 
+       return (
+@@ -123,7 +124,7 @@ export const getSelectionKeys = (pattern: any): string[] => {
+       return pattern[symbols.matcher]().getSelectionKeys?.() ?? [];
+     }
+     if (Array.isArray(pattern)) return flatMap(pattern, getSelectionKeys);
+-    return flatMap(Object.values(pattern), getSelectionKeys);
++    return flatMap(patternKeys(pattern).map(key => pattern[key]), getSelectionKeys);
+   }
+   return [];
+ };
+diff --git a/src/confirmation.test.ts b/src/confirmation.test.ts
+new file mode 100644
+index 0000000..e1a7347
+--- /dev/null
++++ b/src/confirmation.test.ts
+@@ -0,0 +1 @@
++import {test,expect} from 'vitest';import {P,match} from './index';test('requested behavior',()=>{const k=Symbol();expect(match<unknown>(undefined).with(P.optional({[k]:P.select('x')}),x=>x).run()).toEqual({x:undefined});});
+diff --git a/src/internals/pattern-keys.ts b/src/internals/pattern-keys.ts
+new file mode 100644
+index 0000000..9d9f01a
+--- /dev/null
++++ b/src/internals/pattern-keys.ts
+@@ -0,0 +1 @@
++export const patternKeys = (pattern: object): (string | symbol)[] => Reflect.ownKeys(pattern);

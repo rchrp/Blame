@@ -1,0 +1,14 @@
+{
+  "complete": true,
+  "modelRequests": 0,
+  "missingResourceCases": 15,
+  "descriptionExampleIsNotSchemaExposure": true,
+  "truncatedTailPreserved": true,
+  "successfulStringFinishNotRejected": true,
+  "scriptHashes": {
+    "resource-values.mjs": "6ec919ba6d0cf7647843397bf8f6c83906f2a600eee68f57bf37c6b132af7fcf",
+    "schema-exposure.mjs": "efeef10872a07590ee54efdf4576e60464910ba2a8cdc24cfa74fb084d8f21d2",
+    "evidence-io.mjs": "bec4e89f0336d0ac330b11eed6cbb1de7572559e7d252f0fe1e4fb82c86393a9",
+    "preflight-controls.mjs": "55b465b88d082ab0e3970985aa39fc93ea66513330a05597964be646d2672ce2"
+  }
+}
