@@ -1,0 +1,4 @@
+{
+  "activities": [],
+  "caveat": "No scheduled build/test/compiler/solver/model work overlaps sequential workers. Light reviews may overlap; nonexclusive host and external contention unknown."
+}

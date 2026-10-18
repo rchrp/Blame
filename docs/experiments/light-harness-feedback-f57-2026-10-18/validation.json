@@ -23,14 +23,14 @@
     "passed": 1056,
     "failed": 0,
     "skipped": 13,
-    "skipReason": "11 optional solver tests without configured path plus pytest/platform controls"
+    "skipReason": "6 optional solver cases, 5 optional real-Vitest cases, pytest availability and Windows-only behavior"
   },
   "solverRerun": {
     "passed": 69,
     "failed": 0,
     "skipped": 0,
     "path": "/workspace/blame-study-runs/tooling/z3/bin/z3",
-    "note": "Includes the 11 skipped solver cases; overlaps full-suite cases, do not add totals."
+    "note": "Covers the six skipped solver cases; overlaps full-suite cases, do not add totals."
   },
   "runner": {
     "passed": 37,
@@ -70,7 +70,9 @@
     "logs/f57-priority-tests.log.gz": "c1658766b89d5c333f9056e70f70694733855c54da483de95b97b860df81a460",
     "logs/f57-real-navigation.log.gz": "ea2d5ac14e6d63960430c8bf2ad1a64f8639c74250a951e85d2ff641fd7522ea",
     "logs/f57-real-navigation-final.log.gz": "d742bfe545ade2a65188b59c1e364a6fe3c9b14234a8aa3fa1c374c8c6e4406f",
-    "logs/f57-lint-final.log.gz": "c1fcfb743b08bdcdcd480a6374ab3c2c15c6872147b72e543c083d0a2f7a2a47"
+    "logs/f57-lint-final.log.gz": "c1fcfb743b08bdcdcd480a6374ab3c2c15c6872147b72e543c083d0a2f7a2a47",
+    "logs/f57-runtime-final.log.gz": "ab2b74905cc0e74ff925f9989c0d30b62c9f85f658a056b39d1c267c53539e24",
+    "logs/f57-vitest-tests.log.gz": "fe129f72e75127a04fec6eb42defaefadd5490346386c6cb44858f7aa7d781b7"
   },
   "filenameRefinement": {
     "targetedPassed": 40,
@@ -79,5 +81,26 @@
     "routesBefore": 2,
     "routesAfter": 4,
     "adoption": "not measured locally"
+  },
+  "runtimeFinal": {
+    "tests": 1070,
+    "passed": 1063,
+    "failed": 0,
+    "skipped": 7,
+    "skipReason": "5 real-Vitest controls require pinned dependency environment; pytest availability and Windows-only behavior",
+    "solverConfigured": true
+  },
+  "vitestRerun": {
+    "passed": 13,
+    "failed": 0,
+    "skipped": 0,
+    "coversFiveOptionalVitestSkips": true,
+    "note": "Overlaps eight full-suite cases; do not add totals."
+  },
+  "deduplicatedFinalCoverage": {
+    "passed": 1068,
+    "failed": 0,
+    "skipped": 2,
+    "note": "1063 full-run passes plus the five previously skipped real-Vitest cases; remaining skips are pytest availability and Windows-only behavior."
   }
 }

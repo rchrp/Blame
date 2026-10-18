@@ -1,0 +1,7 @@
+{
+  "modules": {
+    "index.js": "886a031891a1c2b7aa2c607bdb8a3b5cba80818b7a8bae18315bec892058d0d3",
+    "hub/index.js": "2098d3d89a0f44f4ad3319ea2a90a3bbeff78408c9f7b896584a44f14033d962",
+    "hub/daemon/entry.js": "a9110550ad1f5e084756c1f912688e6870053589640d8635194fb1e485bb1ca0"
+  }
+}

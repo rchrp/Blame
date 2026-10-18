@@ -1,0 +1,13 @@
+{
+  "modelRequests": 0,
+  "changedRuntimeFilesBetweenLightArms": [
+    "agent-runtime/dist/harness/light-reference-candidates.js",
+    "agent-runtime/dist/harness/light-reference-search.js",
+    "agent-runtime/dist/harness/light-workspace.js"
+  ],
+  "flags": {
+    "analysis": false,
+    "hints": false
+  },
+  "treatment": "Only three executable navigation modules differ; body-header and repair scheduling changes are absent in both arms. Current baseline identity and validation are common."
+}
