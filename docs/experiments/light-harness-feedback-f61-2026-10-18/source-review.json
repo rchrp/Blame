@@ -21,6 +21,27 @@
       "evidence": [
         "Shared internal matchPatternTransactional evaluates each alternative once, stages callback values locally and publishes only the first successful pattern; both MatchExpression.with and P.union import/use it, preserving short-circuit and guard evaluation. Union retains its own declared-key undefined initialization; total mismatch cannot commit partial values. Public match/union/type interfaces unchanged. New5 tests cover named isolation, union defaults, anonymous, mismatch fallback and guard transition. Initial new tests used a b-only literal input while testing an a/b alternative; delivered compiler33 rejects it, edit36 widens only test input to the intended original public union (no API weakening). Further actual test additions41/47 strengthen coverage and each invalidates previous final-source checks; final required48/49/50 and delivered types51 pass. All five independent endpoints and protected/dependency integrity pass, no retrieval and scoped truthful delivery. Repeated full checks after incremental test additions remain measured costs, not same-source duplicates."
       ]
+    },
+    {
+      "name": "1-alternative-selections-candidate",
+      "hashes": {
+        "events.jsonl": "eb6edb4ee2ba1622e8f09537b5783d1549e7e6bab7f576df9cc222c52c3382f6",
+        "workspace.diff": "2d0849faf452e7cc62c44445e32ec5450ac466e1347f42993d8848e715b94bf0",
+        "score.json": "87dba9409201c09023b146ff11ac26b595eee7950ebd7ec89c29f4e78d548d7a",
+        "tool-ledger.json": "95b718341247490b6849a50b5be776675fb8ebc87b12cf5435b07be500ed3f4a",
+        "feedback-wire.jsonl": "34b362005d6bbf0b38b1c45b35e083dec3cebc006266e6a1f9a27179ebef2f56"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Shared internal matchPatterns stages callback values per alternative, publishes only on the first successful match and short-circuits without re-evaluating predicates. Both .with and P.union use the same helper; union preserves its own undefined-key initialization and failed callbacks never publish, including anonymous selection. Public signatures/type modules unchanged; finite oracle additionally checks anonymous/guards beyond the3 authored cases. Source already correct in first batch23; initial delivered26 fails because new tests copy upstream Jest globals while the pinned delivered adapter expects Vitest imports. Patch28 adds imports after an invalid s? target27 is rejected, without editing configuration. Final required29/30/31 and delivered types37 pass, no later edit; protected/dependencies intact, no retrieval and scope/export warnings accurately reported. Candidate follows one ordinary-search union declaration route to a symbol read; lower tokens are observed alongside slower agent time, with no inferred causal mediation or header benefit (no body edit)."
+      ]
     }
   ]
 }

@@ -1,11 +1,19 @@
 {
   "protocolHash": "b26d2497e218efed90697430deea4b2ee2801e36a7ad59c830fe1d4010ecb036",
-  "completed": 1,
+  "completed": 3,
   "planned": 18,
   "receipts": [
     {
       "name": "1-alternative-selections-reference",
       "sha256": "ce75cfc4adf426afd194fa14b261b5470847b39a27b2f1e83c81e641a68ae771"
+    },
+    {
+      "name": "1-alternative-selections-candidate",
+      "sha256": "c2d8e676eefb85a527f42a831f389e7bbda5c50a7fbe163e6695c44a65ac8296"
+    },
+    {
+      "name": "1-alternative-selections-cline",
+      "sha256": "5d16a6fe02e9d71aaf21cb97cf0b09727da6c1143e76e74523ba0d4eb2c4b3c1"
     }
   ],
   "note": "Derived index. Each immutable archive is independently verified; no model call is replayed."
