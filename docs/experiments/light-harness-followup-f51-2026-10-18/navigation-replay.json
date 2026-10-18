@@ -1,0 +1,3688 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2026-10-18T00:04:22.882Z",
+  "kind": "local_navigation_mechanism_replay",
+  "modelCalls": 0,
+  "researcherSelection": true,
+  "representativeBenchmark": false,
+  "runtimeHashes": {
+    "baseline": {
+      "light-reference-search.js": "5e8d469fd6ceaa0eca5d840281248084fc07ae0ad6d74e9419a079c4fa864606",
+      "light-reference-candidates.js": "1ff458e39bc8fb949284e712098936f8f02a49d17a17166344d346cb1f6b0923",
+      "light-workspace.js": "709a814555935eddff6503bccfb6896fa5bb32df177ee956407de505b2a67467",
+      "light-aliases.js": "cb34c693ef18120079281ebf5dca3fe3f57192bdae0923a26dc8230b8c82bbb6",
+      "light-navigation.js": "8c72e248d7f11988ba02eb52a91e563265a6d7770b5031ef4fe19c378c9d0993",
+      "code-intelligence.js": "8ea8fb11b667ecb13f0acab15e3c982e2c5894177e1e8fa03ca514269291951c",
+      "semantic-reference-client.js": "1e113c8ca70ed31389592f7d958ce2ae8c48f43e27fa177a7dbf1b6f36c505cf"
+    },
+    "candidate": {
+      "light-reference-search.js": "02dd424ecabebd0ff3daf582774c7910f5d1bf79e185c8f5e855926b353397a1",
+      "light-reference-candidates.js": "1ff458e39bc8fb949284e712098936f8f02a49d17a17166344d346cb1f6b0923",
+      "light-workspace.js": "08c30ffb5cf4c8ea8bf8d5db4113443b885c5d59b4dc6ca9b9b7e2b3b515dd85",
+      "light-aliases.js": "cb34c693ef18120079281ebf5dca3fe3f57192bdae0923a26dc8230b8c82bbb6",
+      "light-navigation.js": "8c72e248d7f11988ba02eb52a91e563265a6d7770b5031ef4fe19c378c9d0993",
+      "code-intelligence.js": "8ea8fb11b667ecb13f0acab15e3c982e2c5894177e1e8fa03ca514269291951c",
+      "semantic-reference-client.js": "1e113c8ca70ed31389592f7d958ce2ae8c48f43e27fa177a7dbf1b6f36c505cf"
+    }
+  },
+  "scriptSha256": "1257bcfa2a70aa1f7b5d087ed250386f515dc8156ffbb0f734ffa3e1ef18ac82",
+  "summary": {
+    "baseline": {
+      "executions": 6,
+      "totalCalls": 12,
+      "totalMilliseconds": 4264.056282,
+      "totalSerializedResultBytes": 25302
+    },
+    "candidate": {
+      "executions": 6,
+      "totalCalls": 12,
+      "totalMilliseconds": 4301.597699999996,
+      "totalSerializedResultBytes": 24060
+    }
+  },
+  "records": [
+    {
+      "repeat": 1,
+      "fixture": "saturation",
+      "arm": "baseline",
+      "fixtureHashes": {
+        "package.json": "1239d4d885dcad42201a27ed9324f8f0f760b78700d8db9ced39a511cffe7eae",
+        "tsconfig.json": "5043e4c8d5ce7da7e8c6e08908cafd77eef1cf9dba0caa9971fdcb3f9c1de985",
+        "a.ts": "648178394ca4b90e4c922d7dba90194f6702297c626df5f7c33d327c0d25c39c",
+        "unrelated.ts": "800b0dbb04a04456a4fe15d4c55f07dbd42f9fa8cf2d8fd254f9f19bb3b18d3d",
+        "z.ts": "177c3edd074ff95551b8dd3d3898971dca23477a0d4f21a4526cc572e579f148"
+      },
+      "sourceUnchanged": true,
+      "choice": {
+        "actor": "researcher",
+        "intended": "z.ts#target",
+        "automaticHarnessSelection": false
+      },
+      "calls": [
+        {
+          "input": {
+            "query": "target",
+            "mode": "references"
+          },
+          "milliseconds": 87.85077999999999,
+          "serializedResultBytes": 2560,
+          "result": {
+            "status": "ok",
+            "data": {
+              "mode": "references",
+              "engine": "lexical_fallback",
+              "results": [
+                {
+                  "alias": "s1",
+                  "kind": "text",
+                  "path": "a.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "snippet": "import { target } from \"./z.js\";",
+                  "reason": "lexical_exact"
+                },
+                {
+                  "alias": "s2",
+                  "path": "a.ts",
+                  "lines": [
+                    2,
+                    2
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller0",
+                  "signature": "function caller0()",
+                  "reason": "lexical_symbol"
+                },
+                {
+                  "alias": "s3",
+                  "path": "a.ts",
+                  "lines": [
+                    3,
+                    3
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller1",
+                  "signature": "function caller1()",
+                  "reason": "lexical_symbol"
+                },
+                {
+                  "alias": "s4",
+                  "path": "a.ts",
+                  "lines": [
+                    4,
+                    4
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller2",
+                  "signature": "function caller2()",
+                  "reason": "lexical_symbol"
+                },
+                {
+                  "alias": "s5",
+                  "path": "a.ts",
+                  "lines": [
+                    5,
+                    5
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller3",
+                  "signature": "function caller3()",
+                  "reason": "lexical_symbol"
+                },
+                {
+                  "alias": "s6",
+                  "path": "a.ts",
+                  "lines": [
+                    6,
+                    6
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller4",
+                  "signature": "function caller4()",
+                  "reason": "lexical_symbol"
+                },
+                {
+                  "alias": "s7",
+                  "path": "a.ts",
+                  "lines": [
+                    7,
+                    7
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller5",
+                  "signature": "function caller5()",
+                  "reason": "lexical_symbol"
+                },
+                {
+                  "alias": "s8",
+                  "path": "a.ts",
+                  "lines": [
+                    8,
+                    8
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller6",
+                  "signature": "function caller6()",
+                  "reason": "lexical_symbol"
+                }
+              ],
+              "candidateCount": 5,
+              "limited": true,
+              "guidance": "Lexical candidates only. For configured JS/TS semantic references, query a symbol sN alias or path#qualifiedName with mode references. Read before editing. Declaration candidates are exact syntax matches, not compiler-resolved references. Choose the intended declaration before following nextSearches; discovery is bounded and not exhaustive. No identity was selected and no edit coverage was granted.",
+              "semanticFallback": "symbol_target_required",
+              "declarationDiscovery": {
+                "engine": "syntax",
+                "status": "current",
+                "navigationOnly": true,
+                "sourceRevision": "src_19565e850aba1f99d47914211dde8fcb",
+                "eligibleFiles": 3,
+                "visitedFiles": 3,
+                "readBytes": 617,
+                "skippedFiles": 0,
+                "limited": false,
+                "limits": {
+                  "files": 64,
+                  "bytes": 1048576,
+                  "fileBytes": 262144,
+                  "declarations": 4
+                }
+              },
+              "declarationCandidates": [
+                {
+                  "alias": "s9",
+                  "path": "unrelated.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "target",
+                  "signature": "function target(n: number)",
+                  "reason": "exact_declaration_candidate",
+                  "target": "unrelated.ts#target"
+                },
+                {
+                  "alias": "s10",
+                  "path": "z.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "target",
+                  "signature": "function target(n: number)",
+                  "reason": "exact_declaration_candidate",
+                  "target": "z.ts#target"
+                }
+              ],
+              "nextSearches": [
+                {
+                  "query": "unrelated.ts#target",
+                  "mode": "references"
+                },
+                {
+                  "query": "z.ts#target",
+                  "mode": "references"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "input": {
+            "query": "z.ts#target",
+            "mode": "references"
+          },
+          "milliseconds": 649.760896,
+          "serializedResultBytes": 2642,
+          "result": {
+            "status": "ok",
+            "data": {
+              "mode": "references",
+              "engine": "typescript_language_service",
+              "target": "z.ts#target",
+              "sourceRevision": "src_19565e850aba1f99d47914211dde8fcb",
+              "navigationOnly": true,
+              "targetDefinitionExcluded": true,
+              "project": {
+                "config": "tsconfig.json",
+                "rootFiles": 3,
+                "loadedFiles": 66,
+                "compilerVersion": "5.9.3",
+                "scope": "configured_project",
+                "warnings": []
+              },
+              "completeness": "configured_project",
+              "resultScope": "Eligible source files in the requested scope; dependency internals and ignored files excluded.",
+              "candidateCount": 5,
+              "referenceCount": 11,
+              "locationCount": 11,
+              "results": [
+                {
+                  "alias": "s1",
+                  "kind": "text",
+                  "path": "a.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      1,
+                      1
+                    ],
+                    "snippet": "import { target } from \"./z.js\";",
+                    "isWrite": true
+                  }
+                },
+                {
+                  "alias": "s2",
+                  "path": "a.ts",
+                  "lines": [
+                    2,
+                    2
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller0",
+                  "signature": "function caller0()",
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      2,
+                      2
+                    ],
+                    "snippet": "export function caller0() { return target(0); }",
+                    "isWrite": false
+                  }
+                },
+                {
+                  "alias": "s3",
+                  "path": "a.ts",
+                  "lines": [
+                    3,
+                    3
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller1",
+                  "signature": "function caller1()",
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      3,
+                      3
+                    ],
+                    "snippet": "export function caller1() { return target(1); }",
+                    "isWrite": false
+                  }
+                },
+                {
+                  "alias": "s4",
+                  "path": "a.ts",
+                  "lines": [
+                    4,
+                    4
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller2",
+                  "signature": "function caller2()",
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      4,
+                      4
+                    ],
+                    "snippet": "export function caller2() { return target(2); }",
+                    "isWrite": false
+                  }
+                },
+                {
+                  "alias": "s5",
+                  "path": "a.ts",
+                  "lines": [
+                    5,
+                    5
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller3",
+                  "signature": "function caller3()",
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      5,
+                      5
+                    ],
+                    "snippet": "export function caller3() { return target(3); }",
+                    "isWrite": false
+                  }
+                },
+                {
+                  "alias": "s6",
+                  "path": "a.ts",
+                  "lines": [
+                    6,
+                    6
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller4",
+                  "signature": "function caller4()",
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      6,
+                      6
+                    ],
+                    "snippet": "export function caller4() { return target(4); }",
+                    "isWrite": false
+                  }
+                },
+                {
+                  "alias": "s7",
+                  "path": "a.ts",
+                  "lines": [
+                    7,
+                    7
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller5",
+                  "signature": "function caller5()",
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      7,
+                      7
+                    ],
+                    "snippet": "export function caller5() { return target(5); }",
+                    "isWrite": false
+                  }
+                },
+                {
+                  "alias": "s8",
+                  "path": "a.ts",
+                  "lines": [
+                    8,
+                    8
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller6",
+                  "signature": "function caller6()",
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      8,
+                      8
+                    ],
+                    "snippet": "export function caller6() { return target(6); }",
+                    "isWrite": false
+                  }
+                }
+              ],
+              "limited": true,
+              "guidance": "Result limit reached; narrow scope to see other references. No edit coverage is granted."
+            }
+          }
+        }
+      ],
+      "totalCalls": 2,
+      "totalMilliseconds": 737.611676,
+      "totalSerializedResultBytes": 5202
+    },
+    {
+      "repeat": 1,
+      "fixture": "saturation",
+      "arm": "candidate",
+      "fixtureHashes": {
+        "package.json": "1239d4d885dcad42201a27ed9324f8f0f760b78700d8db9ced39a511cffe7eae",
+        "tsconfig.json": "5043e4c8d5ce7da7e8c6e08908cafd77eef1cf9dba0caa9971fdcb3f9c1de985",
+        "a.ts": "648178394ca4b90e4c922d7dba90194f6702297c626df5f7c33d327c0d25c39c",
+        "unrelated.ts": "800b0dbb04a04456a4fe15d4c55f07dbd42f9fa8cf2d8fd254f9f19bb3b18d3d",
+        "z.ts": "177c3edd074ff95551b8dd3d3898971dca23477a0d4f21a4526cc572e579f148"
+      },
+      "sourceUnchanged": true,
+      "choice": {
+        "actor": "researcher",
+        "intended": "z.ts#target",
+        "automaticHarnessSelection": false
+      },
+      "calls": [
+        {
+          "input": {
+            "query": "target",
+            "mode": "references"
+          },
+          "milliseconds": 56.47020900000007,
+          "serializedResultBytes": 2353,
+          "result": {
+            "status": "ok",
+            "data": {
+              "mode": "references",
+              "engine": "lexical_fallback",
+              "results": [
+                {
+                  "alias": "s1",
+                  "kind": "text",
+                  "path": "a.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "snippet": "import { target } from \"./z.js\";",
+                  "reason": "lexical_exact"
+                },
+                {
+                  "alias": "s2",
+                  "path": "a.ts",
+                  "lines": [
+                    2,
+                    2
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller0",
+                  "signature": "function caller0()",
+                  "reason": "lexical_symbol"
+                },
+                {
+                  "alias": "s3",
+                  "path": "a.ts",
+                  "lines": [
+                    3,
+                    3
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller1",
+                  "signature": "function caller1()",
+                  "reason": "lexical_symbol"
+                },
+                {
+                  "alias": "s4",
+                  "path": "a.ts",
+                  "lines": [
+                    4,
+                    4
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller2",
+                  "signature": "function caller2()",
+                  "reason": "lexical_symbol"
+                },
+                {
+                  "alias": "s5",
+                  "path": "a.ts",
+                  "lines": [
+                    5,
+                    5
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller3",
+                  "signature": "function caller3()",
+                  "reason": "lexical_symbol"
+                },
+                {
+                  "alias": "s6",
+                  "path": "a.ts",
+                  "lines": [
+                    6,
+                    6
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller4",
+                  "signature": "function caller4()",
+                  "reason": "lexical_symbol"
+                },
+                {
+                  "alias": "s7",
+                  "path": "a.ts",
+                  "lines": [
+                    7,
+                    7
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller5",
+                  "signature": "function caller5()",
+                  "reason": "lexical_symbol"
+                },
+                {
+                  "alias": "s8",
+                  "path": "a.ts",
+                  "lines": [
+                    8,
+                    8
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller6",
+                  "signature": "function caller6()",
+                  "reason": "lexical_symbol"
+                }
+              ],
+              "candidateCount": 5,
+              "limited": true,
+              "guidance": "Bounded syntax candidates, not exhaustive and not compiler-resolved references. Choose the intended declaration, then follow nextSearches. No edit coverage; read truncated signatures explicitly.",
+              "semanticFallback": "symbol_target_required",
+              "declarationDiscovery": {
+                "engine": "syntax",
+                "status": "current",
+                "navigationOnly": true,
+                "sourceRevision": "src_19565e850aba1f99d47914211dde8fcb",
+                "eligibleFiles": 3,
+                "visitedFiles": 3,
+                "readBytes": 617,
+                "skippedFiles": 0,
+                "limited": false,
+                "limits": {
+                  "files": 64,
+                  "bytes": 1048576,
+                  "fileBytes": 262144,
+                  "declarations": 4
+                }
+              },
+              "declarationCandidates": [
+                {
+                  "alias": "s9",
+                  "path": "unrelated.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "target",
+                  "signature": "function target(n: number)",
+                  "reason": "exact_declaration_candidate",
+                  "target": "unrelated.ts#target"
+                },
+                {
+                  "alias": "s10",
+                  "path": "z.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "target",
+                  "signature": "function target(n: number)",
+                  "reason": "exact_declaration_candidate",
+                  "target": "z.ts#target"
+                }
+              ],
+              "nextSearches": [
+                {
+                  "query": "unrelated.ts#target",
+                  "mode": "references"
+                },
+                {
+                  "query": "z.ts#target",
+                  "mode": "references"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "input": {
+            "query": "z.ts#target",
+            "mode": "references"
+          },
+          "milliseconds": 596.72831,
+          "serializedResultBytes": 2642,
+          "result": {
+            "status": "ok",
+            "data": {
+              "mode": "references",
+              "engine": "typescript_language_service",
+              "target": "z.ts#target",
+              "sourceRevision": "src_19565e850aba1f99d47914211dde8fcb",
+              "navigationOnly": true,
+              "targetDefinitionExcluded": true,
+              "project": {
+                "config": "tsconfig.json",
+                "rootFiles": 3,
+                "loadedFiles": 66,
+                "compilerVersion": "5.9.3",
+                "scope": "configured_project",
+                "warnings": []
+              },
+              "completeness": "configured_project",
+              "resultScope": "Eligible source files in the requested scope; dependency internals and ignored files excluded.",
+              "candidateCount": 5,
+              "referenceCount": 11,
+              "locationCount": 11,
+              "results": [
+                {
+                  "alias": "s1",
+                  "kind": "text",
+                  "path": "a.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      1,
+                      1
+                    ],
+                    "snippet": "import { target } from \"./z.js\";",
+                    "isWrite": true
+                  }
+                },
+                {
+                  "alias": "s2",
+                  "path": "a.ts",
+                  "lines": [
+                    2,
+                    2
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller0",
+                  "signature": "function caller0()",
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      2,
+                      2
+                    ],
+                    "snippet": "export function caller0() { return target(0); }",
+                    "isWrite": false
+                  }
+                },
+                {
+                  "alias": "s3",
+                  "path": "a.ts",
+                  "lines": [
+                    3,
+                    3
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller1",
+                  "signature": "function caller1()",
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      3,
+                      3
+                    ],
+                    "snippet": "export function caller1() { return target(1); }",
+                    "isWrite": false
+                  }
+                },
+                {
+                  "alias": "s4",
+                  "path": "a.ts",
+                  "lines": [
+                    4,
+                    4
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller2",
+                  "signature": "function caller2()",
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      4,
+                      4
+                    ],
+                    "snippet": "export function caller2() { return target(2); }",
+                    "isWrite": false
+                  }
+                },
+                {
+                  "alias": "s5",
+                  "path": "a.ts",
+                  "lines": [
+                    5,
+                    5
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller3",
+                  "signature": "function caller3()",
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      5,
+                      5
+                    ],
+                    "snippet": "export function caller3() { return target(3); }",
+                    "isWrite": false
+                  }
+                },
+                {
+                  "alias": "s6",
+                  "path": "a.ts",
+                  "lines": [
+                    6,
+                    6
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller4",
+                  "signature": "function caller4()",
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      6,
+                      6
+                    ],
+                    "snippet": "export function caller4() { return target(4); }",
+                    "isWrite": false
+                  }
+                },
+                {
+                  "alias": "s7",
+                  "path": "a.ts",
+                  "lines": [
+                    7,
+                    7
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller5",
+                  "signature": "function caller5()",
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      7,
+                      7
+                    ],
+                    "snippet": "export function caller5() { return target(5); }",
+                    "isWrite": false
+                  }
+                },
+                {
+                  "alias": "s8",
+                  "path": "a.ts",
+                  "lines": [
+                    8,
+                    8
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller6",
+                  "signature": "function caller6()",
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      8,
+                      8
+                    ],
+                    "snippet": "export function caller6() { return target(6); }",
+                    "isWrite": false
+                  }
+                }
+              ],
+              "limited": true,
+              "guidance": "Result limit reached; narrow scope to see other references. No edit coverage is granted."
+            }
+          }
+        }
+      ],
+      "totalCalls": 2,
+      "totalMilliseconds": 653.198519,
+      "totalSerializedResultBytes": 4995
+    },
+    {
+      "repeat": 1,
+      "fixture": "ambiguity",
+      "arm": "baseline",
+      "fixtureHashes": {
+        "package.json": "1239d4d885dcad42201a27ed9324f8f0f760b78700d8db9ced39a511cffe7eae",
+        "tsconfig.json": "5043e4c8d5ce7da7e8c6e08908cafd77eef1cf9dba0caa9971fdcb3f9c1de985",
+        "a.ts": "800b0dbb04a04456a4fe15d4c55f07dbd42f9fa8cf2d8fd254f9f19bb3b18d3d",
+        "consumer.ts": "065ffed628cae510fffa2b00ea7a7a3f7b965432aa615c5fb05144a9ac32eb5e",
+        "z.ts": "177c3edd074ff95551b8dd3d3898971dca23477a0d4f21a4526cc572e579f148"
+      },
+      "sourceUnchanged": true,
+      "choice": {
+        "actor": "researcher",
+        "intended": "z.ts#target",
+        "automaticHarnessSelection": false
+      },
+      "calls": [
+        {
+          "input": {
+            "query": "target",
+            "mode": "references"
+          },
+          "milliseconds": 34.64654200000041,
+          "serializedResultBytes": 2097,
+          "result": {
+            "status": "ok",
+            "data": {
+              "mode": "references",
+              "engine": "lexical_fallback",
+              "results": [
+                {
+                  "alias": "s1",
+                  "path": "a.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "target",
+                  "signature": "function target(n: number)",
+                  "reason": "lexical_symbol"
+                },
+                {
+                  "alias": "s2",
+                  "kind": "text",
+                  "path": "consumer.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "snippet": "import { target as compute } from \"./z.js\";",
+                  "reason": "lexical_exact"
+                },
+                {
+                  "alias": "s3",
+                  "kind": "text",
+                  "path": "tsconfig.json",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "snippet": "{\"compilerOptions\":{\"strict\":true,\"noEmit\":true,\"target\":\"ES2022\",\"module\":\"NodeNext\",\"moduleResolution\":\"NodeNext\",\"types\":[]},\"include\":[\"*.ts\"]}",
+                  "reason": "lexical_exact"
+                },
+                {
+                  "alias": "s4",
+                  "path": "z.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "target",
+                  "signature": "function target(n: number)",
+                  "reason": "lexical_symbol"
+                }
+              ],
+              "candidateCount": 5,
+              "semanticFallback": "symbol_target_required",
+              "declarationDiscovery": {
+                "engine": "syntax",
+                "status": "current",
+                "navigationOnly": true,
+                "sourceRevision": "src_1f6b0a939e23c2623bd12e143a713462",
+                "eligibleFiles": 3,
+                "visitedFiles": 3,
+                "readBytes": 181,
+                "skippedFiles": 0,
+                "limited": false,
+                "limits": {
+                  "files": 64,
+                  "bytes": 1048576,
+                  "fileBytes": 262144,
+                  "declarations": 4
+                }
+              },
+              "declarationCandidates": [
+                {
+                  "alias": "s1",
+                  "path": "a.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "target",
+                  "signature": "function target(n: number)",
+                  "reason": "exact_declaration_candidate",
+                  "target": "a.ts#target"
+                },
+                {
+                  "alias": "s4",
+                  "path": "z.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "target",
+                  "signature": "function target(n: number)",
+                  "reason": "exact_declaration_candidate",
+                  "target": "z.ts#target"
+                }
+              ],
+              "nextSearches": [
+                {
+                  "query": "a.ts#target",
+                  "mode": "references"
+                },
+                {
+                  "query": "z.ts#target",
+                  "mode": "references"
+                }
+              ],
+              "guidance": "Lexical candidates only. For configured JS/TS semantic references, query a symbol sN alias or path#qualifiedName with mode references. Read before editing. Declaration candidates are exact syntax matches, not compiler-resolved references. Choose the intended declaration before following nextSearches; discovery is bounded and not exhaustive. No identity was selected and no edit coverage was granted."
+            }
+          }
+        },
+        {
+          "input": {
+            "query": "z.ts#target",
+            "mode": "references"
+          },
+          "milliseconds": 669.8951439999996,
+          "serializedResultBytes": 1135,
+          "result": {
+            "status": "ok",
+            "data": {
+              "mode": "references",
+              "engine": "typescript_language_service",
+              "target": "z.ts#target",
+              "sourceRevision": "src_1f6b0a939e23c2623bd12e143a713462",
+              "navigationOnly": true,
+              "targetDefinitionExcluded": true,
+              "project": {
+                "config": "tsconfig.json",
+                "rootFiles": 3,
+                "loadedFiles": 66,
+                "compilerVersion": "5.9.3",
+                "scope": "configured_project",
+                "warnings": []
+              },
+              "completeness": "configured_project",
+              "resultScope": "Eligible source files in the requested scope; dependency internals and ignored files excluded.",
+              "candidateCount": 5,
+              "referenceCount": 2,
+              "locationCount": 3,
+              "results": [
+                {
+                  "alias": "s5",
+                  "kind": "text",
+                  "path": "consumer.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      1,
+                      1
+                    ],
+                    "snippet": "import { target as compute } from \"./z.js\";",
+                    "isWrite": true
+                  }
+                },
+                {
+                  "alias": "s6",
+                  "path": "consumer.ts",
+                  "lines": [
+                    2,
+                    2
+                  ],
+                  "kind": "variable",
+                  "qualifiedName": "value",
+                  "signature": "value =",
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      2,
+                      2
+                    ],
+                    "snippet": "export const value = compute(2);",
+                    "isWrite": false
+                  }
+                }
+              ],
+              "limited": false,
+              "guidance": "References are limited to this configured compiler project, not runtime/dynamic callers. Read before editing."
+            }
+          }
+        }
+      ],
+      "totalCalls": 2,
+      "totalMilliseconds": 704.541686,
+      "totalSerializedResultBytes": 3232
+    },
+    {
+      "repeat": 1,
+      "fixture": "ambiguity",
+      "arm": "candidate",
+      "fixtureHashes": {
+        "package.json": "1239d4d885dcad42201a27ed9324f8f0f760b78700d8db9ced39a511cffe7eae",
+        "tsconfig.json": "5043e4c8d5ce7da7e8c6e08908cafd77eef1cf9dba0caa9971fdcb3f9c1de985",
+        "a.ts": "800b0dbb04a04456a4fe15d4c55f07dbd42f9fa8cf2d8fd254f9f19bb3b18d3d",
+        "consumer.ts": "065ffed628cae510fffa2b00ea7a7a3f7b965432aa615c5fb05144a9ac32eb5e",
+        "z.ts": "177c3edd074ff95551b8dd3d3898971dca23477a0d4f21a4526cc572e579f148"
+      },
+      "sourceUnchanged": true,
+      "choice": {
+        "actor": "researcher",
+        "intended": "z.ts#target",
+        "automaticHarnessSelection": false
+      },
+      "calls": [
+        {
+          "input": {
+            "query": "target",
+            "mode": "references"
+          },
+          "milliseconds": 34.64887899999985,
+          "serializedResultBytes": 1890,
+          "result": {
+            "status": "ok",
+            "data": {
+              "mode": "references",
+              "engine": "lexical_fallback",
+              "results": [
+                {
+                  "alias": "s1",
+                  "path": "a.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "target",
+                  "signature": "function target(n: number)",
+                  "reason": "lexical_symbol"
+                },
+                {
+                  "alias": "s2",
+                  "kind": "text",
+                  "path": "consumer.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "snippet": "import { target as compute } from \"./z.js\";",
+                  "reason": "lexical_exact"
+                },
+                {
+                  "alias": "s3",
+                  "kind": "text",
+                  "path": "tsconfig.json",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "snippet": "{\"compilerOptions\":{\"strict\":true,\"noEmit\":true,\"target\":\"ES2022\",\"module\":\"NodeNext\",\"moduleResolution\":\"NodeNext\",\"types\":[]},\"include\":[\"*.ts\"]}",
+                  "reason": "lexical_exact"
+                },
+                {
+                  "alias": "s4",
+                  "path": "z.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "target",
+                  "signature": "function target(n: number)",
+                  "reason": "lexical_symbol"
+                }
+              ],
+              "candidateCount": 5,
+              "semanticFallback": "symbol_target_required",
+              "declarationDiscovery": {
+                "engine": "syntax",
+                "status": "current",
+                "navigationOnly": true,
+                "sourceRevision": "src_1f6b0a939e23c2623bd12e143a713462",
+                "eligibleFiles": 3,
+                "visitedFiles": 3,
+                "readBytes": 181,
+                "skippedFiles": 0,
+                "limited": false,
+                "limits": {
+                  "files": 64,
+                  "bytes": 1048576,
+                  "fileBytes": 262144,
+                  "declarations": 4
+                }
+              },
+              "declarationCandidates": [
+                {
+                  "alias": "s1",
+                  "path": "a.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "target",
+                  "signature": "function target(n: number)",
+                  "reason": "exact_declaration_candidate",
+                  "target": "a.ts#target"
+                },
+                {
+                  "alias": "s4",
+                  "path": "z.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "target",
+                  "signature": "function target(n: number)",
+                  "reason": "exact_declaration_candidate",
+                  "target": "z.ts#target"
+                }
+              ],
+              "nextSearches": [
+                {
+                  "query": "a.ts#target",
+                  "mode": "references"
+                },
+                {
+                  "query": "z.ts#target",
+                  "mode": "references"
+                }
+              ],
+              "guidance": "Bounded syntax candidates, not exhaustive and not compiler-resolved references. Choose the intended declaration, then follow nextSearches. No edit coverage; read truncated signatures explicitly."
+            }
+          }
+        },
+        {
+          "input": {
+            "query": "z.ts#target",
+            "mode": "references"
+          },
+          "milliseconds": 661.8413129999999,
+          "serializedResultBytes": 1135,
+          "result": {
+            "status": "ok",
+            "data": {
+              "mode": "references",
+              "engine": "typescript_language_service",
+              "target": "z.ts#target",
+              "sourceRevision": "src_1f6b0a939e23c2623bd12e143a713462",
+              "navigationOnly": true,
+              "targetDefinitionExcluded": true,
+              "project": {
+                "config": "tsconfig.json",
+                "rootFiles": 3,
+                "loadedFiles": 66,
+                "compilerVersion": "5.9.3",
+                "scope": "configured_project",
+                "warnings": []
+              },
+              "completeness": "configured_project",
+              "resultScope": "Eligible source files in the requested scope; dependency internals and ignored files excluded.",
+              "candidateCount": 5,
+              "referenceCount": 2,
+              "locationCount": 3,
+              "results": [
+                {
+                  "alias": "s5",
+                  "kind": "text",
+                  "path": "consumer.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      1,
+                      1
+                    ],
+                    "snippet": "import { target as compute } from \"./z.js\";",
+                    "isWrite": true
+                  }
+                },
+                {
+                  "alias": "s6",
+                  "path": "consumer.ts",
+                  "lines": [
+                    2,
+                    2
+                  ],
+                  "kind": "variable",
+                  "qualifiedName": "value",
+                  "signature": "value =",
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      2,
+                      2
+                    ],
+                    "snippet": "export const value = compute(2);",
+                    "isWrite": false
+                  }
+                }
+              ],
+              "limited": false,
+              "guidance": "References are limited to this configured compiler project, not runtime/dynamic callers. Read before editing."
+            }
+          }
+        }
+      ],
+      "totalCalls": 2,
+      "totalMilliseconds": 696.4901919999998,
+      "totalSerializedResultBytes": 3025
+    },
+    {
+      "repeat": 2,
+      "fixture": "saturation",
+      "arm": "candidate",
+      "fixtureHashes": {
+        "package.json": "1239d4d885dcad42201a27ed9324f8f0f760b78700d8db9ced39a511cffe7eae",
+        "tsconfig.json": "5043e4c8d5ce7da7e8c6e08908cafd77eef1cf9dba0caa9971fdcb3f9c1de985",
+        "a.ts": "648178394ca4b90e4c922d7dba90194f6702297c626df5f7c33d327c0d25c39c",
+        "unrelated.ts": "800b0dbb04a04456a4fe15d4c55f07dbd42f9fa8cf2d8fd254f9f19bb3b18d3d",
+        "z.ts": "177c3edd074ff95551b8dd3d3898971dca23477a0d4f21a4526cc572e579f148"
+      },
+      "sourceUnchanged": true,
+      "choice": {
+        "actor": "researcher",
+        "intended": "z.ts#target",
+        "automaticHarnessSelection": false
+      },
+      "calls": [
+        {
+          "input": {
+            "query": "target",
+            "mode": "references"
+          },
+          "milliseconds": 32.11756999999943,
+          "serializedResultBytes": 2353,
+          "result": {
+            "status": "ok",
+            "data": {
+              "mode": "references",
+              "engine": "lexical_fallback",
+              "results": [
+                {
+                  "alias": "s1",
+                  "kind": "text",
+                  "path": "a.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "snippet": "import { target } from \"./z.js\";",
+                  "reason": "lexical_exact"
+                },
+                {
+                  "alias": "s2",
+                  "path": "a.ts",
+                  "lines": [
+                    2,
+                    2
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller0",
+                  "signature": "function caller0()",
+                  "reason": "lexical_symbol"
+                },
+                {
+                  "alias": "s3",
+                  "path": "a.ts",
+                  "lines": [
+                    3,
+                    3
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller1",
+                  "signature": "function caller1()",
+                  "reason": "lexical_symbol"
+                },
+                {
+                  "alias": "s4",
+                  "path": "a.ts",
+                  "lines": [
+                    4,
+                    4
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller2",
+                  "signature": "function caller2()",
+                  "reason": "lexical_symbol"
+                },
+                {
+                  "alias": "s5",
+                  "path": "a.ts",
+                  "lines": [
+                    5,
+                    5
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller3",
+                  "signature": "function caller3()",
+                  "reason": "lexical_symbol"
+                },
+                {
+                  "alias": "s6",
+                  "path": "a.ts",
+                  "lines": [
+                    6,
+                    6
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller4",
+                  "signature": "function caller4()",
+                  "reason": "lexical_symbol"
+                },
+                {
+                  "alias": "s7",
+                  "path": "a.ts",
+                  "lines": [
+                    7,
+                    7
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller5",
+                  "signature": "function caller5()",
+                  "reason": "lexical_symbol"
+                },
+                {
+                  "alias": "s8",
+                  "path": "a.ts",
+                  "lines": [
+                    8,
+                    8
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller6",
+                  "signature": "function caller6()",
+                  "reason": "lexical_symbol"
+                }
+              ],
+              "candidateCount": 5,
+              "limited": true,
+              "guidance": "Bounded syntax candidates, not exhaustive and not compiler-resolved references. Choose the intended declaration, then follow nextSearches. No edit coverage; read truncated signatures explicitly.",
+              "semanticFallback": "symbol_target_required",
+              "declarationDiscovery": {
+                "engine": "syntax",
+                "status": "current",
+                "navigationOnly": true,
+                "sourceRevision": "src_19565e850aba1f99d47914211dde8fcb",
+                "eligibleFiles": 3,
+                "visitedFiles": 3,
+                "readBytes": 617,
+                "skippedFiles": 0,
+                "limited": false,
+                "limits": {
+                  "files": 64,
+                  "bytes": 1048576,
+                  "fileBytes": 262144,
+                  "declarations": 4
+                }
+              },
+              "declarationCandidates": [
+                {
+                  "alias": "s9",
+                  "path": "unrelated.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "target",
+                  "signature": "function target(n: number)",
+                  "reason": "exact_declaration_candidate",
+                  "target": "unrelated.ts#target"
+                },
+                {
+                  "alias": "s10",
+                  "path": "z.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "target",
+                  "signature": "function target(n: number)",
+                  "reason": "exact_declaration_candidate",
+                  "target": "z.ts#target"
+                }
+              ],
+              "nextSearches": [
+                {
+                  "query": "unrelated.ts#target",
+                  "mode": "references"
+                },
+                {
+                  "query": "z.ts#target",
+                  "mode": "references"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "input": {
+            "query": "z.ts#target",
+            "mode": "references"
+          },
+          "milliseconds": 708.8170899999996,
+          "serializedResultBytes": 2642,
+          "result": {
+            "status": "ok",
+            "data": {
+              "mode": "references",
+              "engine": "typescript_language_service",
+              "target": "z.ts#target",
+              "sourceRevision": "src_19565e850aba1f99d47914211dde8fcb",
+              "navigationOnly": true,
+              "targetDefinitionExcluded": true,
+              "project": {
+                "config": "tsconfig.json",
+                "rootFiles": 3,
+                "loadedFiles": 66,
+                "compilerVersion": "5.9.3",
+                "scope": "configured_project",
+                "warnings": []
+              },
+              "completeness": "configured_project",
+              "resultScope": "Eligible source files in the requested scope; dependency internals and ignored files excluded.",
+              "candidateCount": 5,
+              "referenceCount": 11,
+              "locationCount": 11,
+              "results": [
+                {
+                  "alias": "s1",
+                  "kind": "text",
+                  "path": "a.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      1,
+                      1
+                    ],
+                    "snippet": "import { target } from \"./z.js\";",
+                    "isWrite": true
+                  }
+                },
+                {
+                  "alias": "s2",
+                  "path": "a.ts",
+                  "lines": [
+                    2,
+                    2
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller0",
+                  "signature": "function caller0()",
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      2,
+                      2
+                    ],
+                    "snippet": "export function caller0() { return target(0); }",
+                    "isWrite": false
+                  }
+                },
+                {
+                  "alias": "s3",
+                  "path": "a.ts",
+                  "lines": [
+                    3,
+                    3
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller1",
+                  "signature": "function caller1()",
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      3,
+                      3
+                    ],
+                    "snippet": "export function caller1() { return target(1); }",
+                    "isWrite": false
+                  }
+                },
+                {
+                  "alias": "s4",
+                  "path": "a.ts",
+                  "lines": [
+                    4,
+                    4
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller2",
+                  "signature": "function caller2()",
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      4,
+                      4
+                    ],
+                    "snippet": "export function caller2() { return target(2); }",
+                    "isWrite": false
+                  }
+                },
+                {
+                  "alias": "s5",
+                  "path": "a.ts",
+                  "lines": [
+                    5,
+                    5
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller3",
+                  "signature": "function caller3()",
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      5,
+                      5
+                    ],
+                    "snippet": "export function caller3() { return target(3); }",
+                    "isWrite": false
+                  }
+                },
+                {
+                  "alias": "s6",
+                  "path": "a.ts",
+                  "lines": [
+                    6,
+                    6
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller4",
+                  "signature": "function caller4()",
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      6,
+                      6
+                    ],
+                    "snippet": "export function caller4() { return target(4); }",
+                    "isWrite": false
+                  }
+                },
+                {
+                  "alias": "s7",
+                  "path": "a.ts",
+                  "lines": [
+                    7,
+                    7
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller5",
+                  "signature": "function caller5()",
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      7,
+                      7
+                    ],
+                    "snippet": "export function caller5() { return target(5); }",
+                    "isWrite": false
+                  }
+                },
+                {
+                  "alias": "s8",
+                  "path": "a.ts",
+                  "lines": [
+                    8,
+                    8
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller6",
+                  "signature": "function caller6()",
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      8,
+                      8
+                    ],
+                    "snippet": "export function caller6() { return target(6); }",
+                    "isWrite": false
+                  }
+                }
+              ],
+              "limited": true,
+              "guidance": "Result limit reached; narrow scope to see other references. No edit coverage is granted."
+            }
+          }
+        }
+      ],
+      "totalCalls": 2,
+      "totalMilliseconds": 740.934659999999,
+      "totalSerializedResultBytes": 4995
+    },
+    {
+      "repeat": 2,
+      "fixture": "saturation",
+      "arm": "baseline",
+      "fixtureHashes": {
+        "package.json": "1239d4d885dcad42201a27ed9324f8f0f760b78700d8db9ced39a511cffe7eae",
+        "tsconfig.json": "5043e4c8d5ce7da7e8c6e08908cafd77eef1cf9dba0caa9971fdcb3f9c1de985",
+        "a.ts": "648178394ca4b90e4c922d7dba90194f6702297c626df5f7c33d327c0d25c39c",
+        "unrelated.ts": "800b0dbb04a04456a4fe15d4c55f07dbd42f9fa8cf2d8fd254f9f19bb3b18d3d",
+        "z.ts": "177c3edd074ff95551b8dd3d3898971dca23477a0d4f21a4526cc572e579f148"
+      },
+      "sourceUnchanged": true,
+      "choice": {
+        "actor": "researcher",
+        "intended": "z.ts#target",
+        "automaticHarnessSelection": false
+      },
+      "calls": [
+        {
+          "input": {
+            "query": "target",
+            "mode": "references"
+          },
+          "milliseconds": 80.9045130000004,
+          "serializedResultBytes": 2560,
+          "result": {
+            "status": "ok",
+            "data": {
+              "mode": "references",
+              "engine": "lexical_fallback",
+              "results": [
+                {
+                  "alias": "s1",
+                  "kind": "text",
+                  "path": "a.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "snippet": "import { target } from \"./z.js\";",
+                  "reason": "lexical_exact"
+                },
+                {
+                  "alias": "s2",
+                  "path": "a.ts",
+                  "lines": [
+                    2,
+                    2
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller0",
+                  "signature": "function caller0()",
+                  "reason": "lexical_symbol"
+                },
+                {
+                  "alias": "s3",
+                  "path": "a.ts",
+                  "lines": [
+                    3,
+                    3
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller1",
+                  "signature": "function caller1()",
+                  "reason": "lexical_symbol"
+                },
+                {
+                  "alias": "s4",
+                  "path": "a.ts",
+                  "lines": [
+                    4,
+                    4
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller2",
+                  "signature": "function caller2()",
+                  "reason": "lexical_symbol"
+                },
+                {
+                  "alias": "s5",
+                  "path": "a.ts",
+                  "lines": [
+                    5,
+                    5
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller3",
+                  "signature": "function caller3()",
+                  "reason": "lexical_symbol"
+                },
+                {
+                  "alias": "s6",
+                  "path": "a.ts",
+                  "lines": [
+                    6,
+                    6
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller4",
+                  "signature": "function caller4()",
+                  "reason": "lexical_symbol"
+                },
+                {
+                  "alias": "s7",
+                  "path": "a.ts",
+                  "lines": [
+                    7,
+                    7
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller5",
+                  "signature": "function caller5()",
+                  "reason": "lexical_symbol"
+                },
+                {
+                  "alias": "s8",
+                  "path": "a.ts",
+                  "lines": [
+                    8,
+                    8
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller6",
+                  "signature": "function caller6()",
+                  "reason": "lexical_symbol"
+                }
+              ],
+              "candidateCount": 5,
+              "limited": true,
+              "guidance": "Lexical candidates only. For configured JS/TS semantic references, query a symbol sN alias or path#qualifiedName with mode references. Read before editing. Declaration candidates are exact syntax matches, not compiler-resolved references. Choose the intended declaration before following nextSearches; discovery is bounded and not exhaustive. No identity was selected and no edit coverage was granted.",
+              "semanticFallback": "symbol_target_required",
+              "declarationDiscovery": {
+                "engine": "syntax",
+                "status": "current",
+                "navigationOnly": true,
+                "sourceRevision": "src_19565e850aba1f99d47914211dde8fcb",
+                "eligibleFiles": 3,
+                "visitedFiles": 3,
+                "readBytes": 617,
+                "skippedFiles": 0,
+                "limited": false,
+                "limits": {
+                  "files": 64,
+                  "bytes": 1048576,
+                  "fileBytes": 262144,
+                  "declarations": 4
+                }
+              },
+              "declarationCandidates": [
+                {
+                  "alias": "s9",
+                  "path": "unrelated.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "target",
+                  "signature": "function target(n: number)",
+                  "reason": "exact_declaration_candidate",
+                  "target": "unrelated.ts#target"
+                },
+                {
+                  "alias": "s10",
+                  "path": "z.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "target",
+                  "signature": "function target(n: number)",
+                  "reason": "exact_declaration_candidate",
+                  "target": "z.ts#target"
+                }
+              ],
+              "nextSearches": [
+                {
+                  "query": "unrelated.ts#target",
+                  "mode": "references"
+                },
+                {
+                  "query": "z.ts#target",
+                  "mode": "references"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "input": {
+            "query": "z.ts#target",
+            "mode": "references"
+          },
+          "milliseconds": 636.2039789999999,
+          "serializedResultBytes": 2642,
+          "result": {
+            "status": "ok",
+            "data": {
+              "mode": "references",
+              "engine": "typescript_language_service",
+              "target": "z.ts#target",
+              "sourceRevision": "src_19565e850aba1f99d47914211dde8fcb",
+              "navigationOnly": true,
+              "targetDefinitionExcluded": true,
+              "project": {
+                "config": "tsconfig.json",
+                "rootFiles": 3,
+                "loadedFiles": 66,
+                "compilerVersion": "5.9.3",
+                "scope": "configured_project",
+                "warnings": []
+              },
+              "completeness": "configured_project",
+              "resultScope": "Eligible source files in the requested scope; dependency internals and ignored files excluded.",
+              "candidateCount": 5,
+              "referenceCount": 11,
+              "locationCount": 11,
+              "results": [
+                {
+                  "alias": "s1",
+                  "kind": "text",
+                  "path": "a.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      1,
+                      1
+                    ],
+                    "snippet": "import { target } from \"./z.js\";",
+                    "isWrite": true
+                  }
+                },
+                {
+                  "alias": "s2",
+                  "path": "a.ts",
+                  "lines": [
+                    2,
+                    2
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller0",
+                  "signature": "function caller0()",
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      2,
+                      2
+                    ],
+                    "snippet": "export function caller0() { return target(0); }",
+                    "isWrite": false
+                  }
+                },
+                {
+                  "alias": "s3",
+                  "path": "a.ts",
+                  "lines": [
+                    3,
+                    3
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller1",
+                  "signature": "function caller1()",
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      3,
+                      3
+                    ],
+                    "snippet": "export function caller1() { return target(1); }",
+                    "isWrite": false
+                  }
+                },
+                {
+                  "alias": "s4",
+                  "path": "a.ts",
+                  "lines": [
+                    4,
+                    4
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller2",
+                  "signature": "function caller2()",
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      4,
+                      4
+                    ],
+                    "snippet": "export function caller2() { return target(2); }",
+                    "isWrite": false
+                  }
+                },
+                {
+                  "alias": "s5",
+                  "path": "a.ts",
+                  "lines": [
+                    5,
+                    5
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller3",
+                  "signature": "function caller3()",
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      5,
+                      5
+                    ],
+                    "snippet": "export function caller3() { return target(3); }",
+                    "isWrite": false
+                  }
+                },
+                {
+                  "alias": "s6",
+                  "path": "a.ts",
+                  "lines": [
+                    6,
+                    6
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller4",
+                  "signature": "function caller4()",
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      6,
+                      6
+                    ],
+                    "snippet": "export function caller4() { return target(4); }",
+                    "isWrite": false
+                  }
+                },
+                {
+                  "alias": "s7",
+                  "path": "a.ts",
+                  "lines": [
+                    7,
+                    7
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller5",
+                  "signature": "function caller5()",
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      7,
+                      7
+                    ],
+                    "snippet": "export function caller5() { return target(5); }",
+                    "isWrite": false
+                  }
+                },
+                {
+                  "alias": "s8",
+                  "path": "a.ts",
+                  "lines": [
+                    8,
+                    8
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller6",
+                  "signature": "function caller6()",
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      8,
+                      8
+                    ],
+                    "snippet": "export function caller6() { return target(6); }",
+                    "isWrite": false
+                  }
+                }
+              ],
+              "limited": true,
+              "guidance": "Result limit reached; narrow scope to see other references. No edit coverage is granted."
+            }
+          }
+        }
+      ],
+      "totalCalls": 2,
+      "totalMilliseconds": 717.1084920000003,
+      "totalSerializedResultBytes": 5202
+    },
+    {
+      "repeat": 2,
+      "fixture": "ambiguity",
+      "arm": "candidate",
+      "fixtureHashes": {
+        "package.json": "1239d4d885dcad42201a27ed9324f8f0f760b78700d8db9ced39a511cffe7eae",
+        "tsconfig.json": "5043e4c8d5ce7da7e8c6e08908cafd77eef1cf9dba0caa9971fdcb3f9c1de985",
+        "a.ts": "800b0dbb04a04456a4fe15d4c55f07dbd42f9fa8cf2d8fd254f9f19bb3b18d3d",
+        "consumer.ts": "065ffed628cae510fffa2b00ea7a7a3f7b965432aa615c5fb05144a9ac32eb5e",
+        "z.ts": "177c3edd074ff95551b8dd3d3898971dca23477a0d4f21a4526cc572e579f148"
+      },
+      "sourceUnchanged": true,
+      "choice": {
+        "actor": "researcher",
+        "intended": "z.ts#target",
+        "automaticHarnessSelection": false
+      },
+      "calls": [
+        {
+          "input": {
+            "query": "target",
+            "mode": "references"
+          },
+          "milliseconds": 33.34921800000029,
+          "serializedResultBytes": 1890,
+          "result": {
+            "status": "ok",
+            "data": {
+              "mode": "references",
+              "engine": "lexical_fallback",
+              "results": [
+                {
+                  "alias": "s1",
+                  "path": "a.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "target",
+                  "signature": "function target(n: number)",
+                  "reason": "lexical_symbol"
+                },
+                {
+                  "alias": "s2",
+                  "kind": "text",
+                  "path": "consumer.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "snippet": "import { target as compute } from \"./z.js\";",
+                  "reason": "lexical_exact"
+                },
+                {
+                  "alias": "s3",
+                  "kind": "text",
+                  "path": "tsconfig.json",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "snippet": "{\"compilerOptions\":{\"strict\":true,\"noEmit\":true,\"target\":\"ES2022\",\"module\":\"NodeNext\",\"moduleResolution\":\"NodeNext\",\"types\":[]},\"include\":[\"*.ts\"]}",
+                  "reason": "lexical_exact"
+                },
+                {
+                  "alias": "s4",
+                  "path": "z.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "target",
+                  "signature": "function target(n: number)",
+                  "reason": "lexical_symbol"
+                }
+              ],
+              "candidateCount": 5,
+              "semanticFallback": "symbol_target_required",
+              "declarationDiscovery": {
+                "engine": "syntax",
+                "status": "current",
+                "navigationOnly": true,
+                "sourceRevision": "src_1f6b0a939e23c2623bd12e143a713462",
+                "eligibleFiles": 3,
+                "visitedFiles": 3,
+                "readBytes": 181,
+                "skippedFiles": 0,
+                "limited": false,
+                "limits": {
+                  "files": 64,
+                  "bytes": 1048576,
+                  "fileBytes": 262144,
+                  "declarations": 4
+                }
+              },
+              "declarationCandidates": [
+                {
+                  "alias": "s1",
+                  "path": "a.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "target",
+                  "signature": "function target(n: number)",
+                  "reason": "exact_declaration_candidate",
+                  "target": "a.ts#target"
+                },
+                {
+                  "alias": "s4",
+                  "path": "z.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "target",
+                  "signature": "function target(n: number)",
+                  "reason": "exact_declaration_candidate",
+                  "target": "z.ts#target"
+                }
+              ],
+              "nextSearches": [
+                {
+                  "query": "a.ts#target",
+                  "mode": "references"
+                },
+                {
+                  "query": "z.ts#target",
+                  "mode": "references"
+                }
+              ],
+              "guidance": "Bounded syntax candidates, not exhaustive and not compiler-resolved references. Choose the intended declaration, then follow nextSearches. No edit coverage; read truncated signatures explicitly."
+            }
+          }
+        },
+        {
+          "input": {
+            "query": "z.ts#target",
+            "mode": "references"
+          },
+          "milliseconds": 676.6450589999995,
+          "serializedResultBytes": 1135,
+          "result": {
+            "status": "ok",
+            "data": {
+              "mode": "references",
+              "engine": "typescript_language_service",
+              "target": "z.ts#target",
+              "sourceRevision": "src_1f6b0a939e23c2623bd12e143a713462",
+              "navigationOnly": true,
+              "targetDefinitionExcluded": true,
+              "project": {
+                "config": "tsconfig.json",
+                "rootFiles": 3,
+                "loadedFiles": 66,
+                "compilerVersion": "5.9.3",
+                "scope": "configured_project",
+                "warnings": []
+              },
+              "completeness": "configured_project",
+              "resultScope": "Eligible source files in the requested scope; dependency internals and ignored files excluded.",
+              "candidateCount": 5,
+              "referenceCount": 2,
+              "locationCount": 3,
+              "results": [
+                {
+                  "alias": "s5",
+                  "kind": "text",
+                  "path": "consumer.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      1,
+                      1
+                    ],
+                    "snippet": "import { target as compute } from \"./z.js\";",
+                    "isWrite": true
+                  }
+                },
+                {
+                  "alias": "s6",
+                  "path": "consumer.ts",
+                  "lines": [
+                    2,
+                    2
+                  ],
+                  "kind": "variable",
+                  "qualifiedName": "value",
+                  "signature": "value =",
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      2,
+                      2
+                    ],
+                    "snippet": "export const value = compute(2);",
+                    "isWrite": false
+                  }
+                }
+              ],
+              "limited": false,
+              "guidance": "References are limited to this configured compiler project, not runtime/dynamic callers. Read before editing."
+            }
+          }
+        }
+      ],
+      "totalCalls": 2,
+      "totalMilliseconds": 709.9942769999998,
+      "totalSerializedResultBytes": 3025
+    },
+    {
+      "repeat": 2,
+      "fixture": "ambiguity",
+      "arm": "baseline",
+      "fixtureHashes": {
+        "package.json": "1239d4d885dcad42201a27ed9324f8f0f760b78700d8db9ced39a511cffe7eae",
+        "tsconfig.json": "5043e4c8d5ce7da7e8c6e08908cafd77eef1cf9dba0caa9971fdcb3f9c1de985",
+        "a.ts": "800b0dbb04a04456a4fe15d4c55f07dbd42f9fa8cf2d8fd254f9f19bb3b18d3d",
+        "consumer.ts": "065ffed628cae510fffa2b00ea7a7a3f7b965432aa615c5fb05144a9ac32eb5e",
+        "z.ts": "177c3edd074ff95551b8dd3d3898971dca23477a0d4f21a4526cc572e579f148"
+      },
+      "sourceUnchanged": true,
+      "choice": {
+        "actor": "researcher",
+        "intended": "z.ts#target",
+        "automaticHarnessSelection": false
+      },
+      "calls": [
+        {
+          "input": {
+            "query": "target",
+            "mode": "references"
+          },
+          "milliseconds": 29.40164100000038,
+          "serializedResultBytes": 2097,
+          "result": {
+            "status": "ok",
+            "data": {
+              "mode": "references",
+              "engine": "lexical_fallback",
+              "results": [
+                {
+                  "alias": "s1",
+                  "path": "a.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "target",
+                  "signature": "function target(n: number)",
+                  "reason": "lexical_symbol"
+                },
+                {
+                  "alias": "s2",
+                  "kind": "text",
+                  "path": "consumer.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "snippet": "import { target as compute } from \"./z.js\";",
+                  "reason": "lexical_exact"
+                },
+                {
+                  "alias": "s3",
+                  "kind": "text",
+                  "path": "tsconfig.json",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "snippet": "{\"compilerOptions\":{\"strict\":true,\"noEmit\":true,\"target\":\"ES2022\",\"module\":\"NodeNext\",\"moduleResolution\":\"NodeNext\",\"types\":[]},\"include\":[\"*.ts\"]}",
+                  "reason": "lexical_exact"
+                },
+                {
+                  "alias": "s4",
+                  "path": "z.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "target",
+                  "signature": "function target(n: number)",
+                  "reason": "lexical_symbol"
+                }
+              ],
+              "candidateCount": 5,
+              "semanticFallback": "symbol_target_required",
+              "declarationDiscovery": {
+                "engine": "syntax",
+                "status": "current",
+                "navigationOnly": true,
+                "sourceRevision": "src_1f6b0a939e23c2623bd12e143a713462",
+                "eligibleFiles": 3,
+                "visitedFiles": 3,
+                "readBytes": 181,
+                "skippedFiles": 0,
+                "limited": false,
+                "limits": {
+                  "files": 64,
+                  "bytes": 1048576,
+                  "fileBytes": 262144,
+                  "declarations": 4
+                }
+              },
+              "declarationCandidates": [
+                {
+                  "alias": "s1",
+                  "path": "a.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "target",
+                  "signature": "function target(n: number)",
+                  "reason": "exact_declaration_candidate",
+                  "target": "a.ts#target"
+                },
+                {
+                  "alias": "s4",
+                  "path": "z.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "target",
+                  "signature": "function target(n: number)",
+                  "reason": "exact_declaration_candidate",
+                  "target": "z.ts#target"
+                }
+              ],
+              "nextSearches": [
+                {
+                  "query": "a.ts#target",
+                  "mode": "references"
+                },
+                {
+                  "query": "z.ts#target",
+                  "mode": "references"
+                }
+              ],
+              "guidance": "Lexical candidates only. For configured JS/TS semantic references, query a symbol sN alias or path#qualifiedName with mode references. Read before editing. Declaration candidates are exact syntax matches, not compiler-resolved references. Choose the intended declaration before following nextSearches; discovery is bounded and not exhaustive. No identity was selected and no edit coverage was granted."
+            }
+          }
+        },
+        {
+          "input": {
+            "query": "z.ts#target",
+            "mode": "references"
+          },
+          "milliseconds": 604.1424260000003,
+          "serializedResultBytes": 1135,
+          "result": {
+            "status": "ok",
+            "data": {
+              "mode": "references",
+              "engine": "typescript_language_service",
+              "target": "z.ts#target",
+              "sourceRevision": "src_1f6b0a939e23c2623bd12e143a713462",
+              "navigationOnly": true,
+              "targetDefinitionExcluded": true,
+              "project": {
+                "config": "tsconfig.json",
+                "rootFiles": 3,
+                "loadedFiles": 66,
+                "compilerVersion": "5.9.3",
+                "scope": "configured_project",
+                "warnings": []
+              },
+              "completeness": "configured_project",
+              "resultScope": "Eligible source files in the requested scope; dependency internals and ignored files excluded.",
+              "candidateCount": 5,
+              "referenceCount": 2,
+              "locationCount": 3,
+              "results": [
+                {
+                  "alias": "s5",
+                  "kind": "text",
+                  "path": "consumer.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      1,
+                      1
+                    ],
+                    "snippet": "import { target as compute } from \"./z.js\";",
+                    "isWrite": true
+                  }
+                },
+                {
+                  "alias": "s6",
+                  "path": "consumer.ts",
+                  "lines": [
+                    2,
+                    2
+                  ],
+                  "kind": "variable",
+                  "qualifiedName": "value",
+                  "signature": "value =",
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      2,
+                      2
+                    ],
+                    "snippet": "export const value = compute(2);",
+                    "isWrite": false
+                  }
+                }
+              ],
+              "limited": false,
+              "guidance": "References are limited to this configured compiler project, not runtime/dynamic callers. Read before editing."
+            }
+          }
+        }
+      ],
+      "totalCalls": 2,
+      "totalMilliseconds": 633.5440670000007,
+      "totalSerializedResultBytes": 3232
+    },
+    {
+      "repeat": 3,
+      "fixture": "saturation",
+      "arm": "baseline",
+      "fixtureHashes": {
+        "package.json": "1239d4d885dcad42201a27ed9324f8f0f760b78700d8db9ced39a511cffe7eae",
+        "tsconfig.json": "5043e4c8d5ce7da7e8c6e08908cafd77eef1cf9dba0caa9971fdcb3f9c1de985",
+        "a.ts": "648178394ca4b90e4c922d7dba90194f6702297c626df5f7c33d327c0d25c39c",
+        "unrelated.ts": "800b0dbb04a04456a4fe15d4c55f07dbd42f9fa8cf2d8fd254f9f19bb3b18d3d",
+        "z.ts": "177c3edd074ff95551b8dd3d3898971dca23477a0d4f21a4526cc572e579f148"
+      },
+      "sourceUnchanged": true,
+      "choice": {
+        "actor": "researcher",
+        "intended": "z.ts#target",
+        "automaticHarnessSelection": false
+      },
+      "calls": [
+        {
+          "input": {
+            "query": "target",
+            "mode": "references"
+          },
+          "milliseconds": 30.225682999999663,
+          "serializedResultBytes": 2560,
+          "result": {
+            "status": "ok",
+            "data": {
+              "mode": "references",
+              "engine": "lexical_fallback",
+              "results": [
+                {
+                  "alias": "s1",
+                  "kind": "text",
+                  "path": "a.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "snippet": "import { target } from \"./z.js\";",
+                  "reason": "lexical_exact"
+                },
+                {
+                  "alias": "s2",
+                  "path": "a.ts",
+                  "lines": [
+                    2,
+                    2
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller0",
+                  "signature": "function caller0()",
+                  "reason": "lexical_symbol"
+                },
+                {
+                  "alias": "s3",
+                  "path": "a.ts",
+                  "lines": [
+                    3,
+                    3
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller1",
+                  "signature": "function caller1()",
+                  "reason": "lexical_symbol"
+                },
+                {
+                  "alias": "s4",
+                  "path": "a.ts",
+                  "lines": [
+                    4,
+                    4
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller2",
+                  "signature": "function caller2()",
+                  "reason": "lexical_symbol"
+                },
+                {
+                  "alias": "s5",
+                  "path": "a.ts",
+                  "lines": [
+                    5,
+                    5
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller3",
+                  "signature": "function caller3()",
+                  "reason": "lexical_symbol"
+                },
+                {
+                  "alias": "s6",
+                  "path": "a.ts",
+                  "lines": [
+                    6,
+                    6
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller4",
+                  "signature": "function caller4()",
+                  "reason": "lexical_symbol"
+                },
+                {
+                  "alias": "s7",
+                  "path": "a.ts",
+                  "lines": [
+                    7,
+                    7
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller5",
+                  "signature": "function caller5()",
+                  "reason": "lexical_symbol"
+                },
+                {
+                  "alias": "s8",
+                  "path": "a.ts",
+                  "lines": [
+                    8,
+                    8
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller6",
+                  "signature": "function caller6()",
+                  "reason": "lexical_symbol"
+                }
+              ],
+              "candidateCount": 5,
+              "limited": true,
+              "guidance": "Lexical candidates only. For configured JS/TS semantic references, query a symbol sN alias or path#qualifiedName with mode references. Read before editing. Declaration candidates are exact syntax matches, not compiler-resolved references. Choose the intended declaration before following nextSearches; discovery is bounded and not exhaustive. No identity was selected and no edit coverage was granted.",
+              "semanticFallback": "symbol_target_required",
+              "declarationDiscovery": {
+                "engine": "syntax",
+                "status": "current",
+                "navigationOnly": true,
+                "sourceRevision": "src_19565e850aba1f99d47914211dde8fcb",
+                "eligibleFiles": 3,
+                "visitedFiles": 3,
+                "readBytes": 617,
+                "skippedFiles": 0,
+                "limited": false,
+                "limits": {
+                  "files": 64,
+                  "bytes": 1048576,
+                  "fileBytes": 262144,
+                  "declarations": 4
+                }
+              },
+              "declarationCandidates": [
+                {
+                  "alias": "s9",
+                  "path": "unrelated.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "target",
+                  "signature": "function target(n: number)",
+                  "reason": "exact_declaration_candidate",
+                  "target": "unrelated.ts#target"
+                },
+                {
+                  "alias": "s10",
+                  "path": "z.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "target",
+                  "signature": "function target(n: number)",
+                  "reason": "exact_declaration_candidate",
+                  "target": "z.ts#target"
+                }
+              ],
+              "nextSearches": [
+                {
+                  "query": "unrelated.ts#target",
+                  "mode": "references"
+                },
+                {
+                  "query": "z.ts#target",
+                  "mode": "references"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "input": {
+            "query": "z.ts#target",
+            "mode": "references"
+          },
+          "milliseconds": 709.2585879999997,
+          "serializedResultBytes": 2642,
+          "result": {
+            "status": "ok",
+            "data": {
+              "mode": "references",
+              "engine": "typescript_language_service",
+              "target": "z.ts#target",
+              "sourceRevision": "src_19565e850aba1f99d47914211dde8fcb",
+              "navigationOnly": true,
+              "targetDefinitionExcluded": true,
+              "project": {
+                "config": "tsconfig.json",
+                "rootFiles": 3,
+                "loadedFiles": 66,
+                "compilerVersion": "5.9.3",
+                "scope": "configured_project",
+                "warnings": []
+              },
+              "completeness": "configured_project",
+              "resultScope": "Eligible source files in the requested scope; dependency internals and ignored files excluded.",
+              "candidateCount": 5,
+              "referenceCount": 11,
+              "locationCount": 11,
+              "results": [
+                {
+                  "alias": "s1",
+                  "kind": "text",
+                  "path": "a.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      1,
+                      1
+                    ],
+                    "snippet": "import { target } from \"./z.js\";",
+                    "isWrite": true
+                  }
+                },
+                {
+                  "alias": "s2",
+                  "path": "a.ts",
+                  "lines": [
+                    2,
+                    2
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller0",
+                  "signature": "function caller0()",
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      2,
+                      2
+                    ],
+                    "snippet": "export function caller0() { return target(0); }",
+                    "isWrite": false
+                  }
+                },
+                {
+                  "alias": "s3",
+                  "path": "a.ts",
+                  "lines": [
+                    3,
+                    3
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller1",
+                  "signature": "function caller1()",
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      3,
+                      3
+                    ],
+                    "snippet": "export function caller1() { return target(1); }",
+                    "isWrite": false
+                  }
+                },
+                {
+                  "alias": "s4",
+                  "path": "a.ts",
+                  "lines": [
+                    4,
+                    4
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller2",
+                  "signature": "function caller2()",
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      4,
+                      4
+                    ],
+                    "snippet": "export function caller2() { return target(2); }",
+                    "isWrite": false
+                  }
+                },
+                {
+                  "alias": "s5",
+                  "path": "a.ts",
+                  "lines": [
+                    5,
+                    5
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller3",
+                  "signature": "function caller3()",
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      5,
+                      5
+                    ],
+                    "snippet": "export function caller3() { return target(3); }",
+                    "isWrite": false
+                  }
+                },
+                {
+                  "alias": "s6",
+                  "path": "a.ts",
+                  "lines": [
+                    6,
+                    6
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller4",
+                  "signature": "function caller4()",
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      6,
+                      6
+                    ],
+                    "snippet": "export function caller4() { return target(4); }",
+                    "isWrite": false
+                  }
+                },
+                {
+                  "alias": "s7",
+                  "path": "a.ts",
+                  "lines": [
+                    7,
+                    7
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller5",
+                  "signature": "function caller5()",
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      7,
+                      7
+                    ],
+                    "snippet": "export function caller5() { return target(5); }",
+                    "isWrite": false
+                  }
+                },
+                {
+                  "alias": "s8",
+                  "path": "a.ts",
+                  "lines": [
+                    8,
+                    8
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller6",
+                  "signature": "function caller6()",
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      8,
+                      8
+                    ],
+                    "snippet": "export function caller6() { return target(6); }",
+                    "isWrite": false
+                  }
+                }
+              ],
+              "limited": true,
+              "guidance": "Result limit reached; narrow scope to see other references. No edit coverage is granted."
+            }
+          }
+        }
+      ],
+      "totalCalls": 2,
+      "totalMilliseconds": 739.4842709999994,
+      "totalSerializedResultBytes": 5202
+    },
+    {
+      "repeat": 3,
+      "fixture": "saturation",
+      "arm": "candidate",
+      "fixtureHashes": {
+        "package.json": "1239d4d885dcad42201a27ed9324f8f0f760b78700d8db9ced39a511cffe7eae",
+        "tsconfig.json": "5043e4c8d5ce7da7e8c6e08908cafd77eef1cf9dba0caa9971fdcb3f9c1de985",
+        "a.ts": "648178394ca4b90e4c922d7dba90194f6702297c626df5f7c33d327c0d25c39c",
+        "unrelated.ts": "800b0dbb04a04456a4fe15d4c55f07dbd42f9fa8cf2d8fd254f9f19bb3b18d3d",
+        "z.ts": "177c3edd074ff95551b8dd3d3898971dca23477a0d4f21a4526cc572e579f148"
+      },
+      "sourceUnchanged": true,
+      "choice": {
+        "actor": "researcher",
+        "intended": "z.ts#target",
+        "automaticHarnessSelection": false
+      },
+      "calls": [
+        {
+          "input": {
+            "query": "target",
+            "mode": "references"
+          },
+          "milliseconds": 125.5212849999998,
+          "serializedResultBytes": 2353,
+          "result": {
+            "status": "ok",
+            "data": {
+              "mode": "references",
+              "engine": "lexical_fallback",
+              "results": [
+                {
+                  "alias": "s1",
+                  "kind": "text",
+                  "path": "a.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "snippet": "import { target } from \"./z.js\";",
+                  "reason": "lexical_exact"
+                },
+                {
+                  "alias": "s2",
+                  "path": "a.ts",
+                  "lines": [
+                    2,
+                    2
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller0",
+                  "signature": "function caller0()",
+                  "reason": "lexical_symbol"
+                },
+                {
+                  "alias": "s3",
+                  "path": "a.ts",
+                  "lines": [
+                    3,
+                    3
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller1",
+                  "signature": "function caller1()",
+                  "reason": "lexical_symbol"
+                },
+                {
+                  "alias": "s4",
+                  "path": "a.ts",
+                  "lines": [
+                    4,
+                    4
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller2",
+                  "signature": "function caller2()",
+                  "reason": "lexical_symbol"
+                },
+                {
+                  "alias": "s5",
+                  "path": "a.ts",
+                  "lines": [
+                    5,
+                    5
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller3",
+                  "signature": "function caller3()",
+                  "reason": "lexical_symbol"
+                },
+                {
+                  "alias": "s6",
+                  "path": "a.ts",
+                  "lines": [
+                    6,
+                    6
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller4",
+                  "signature": "function caller4()",
+                  "reason": "lexical_symbol"
+                },
+                {
+                  "alias": "s7",
+                  "path": "a.ts",
+                  "lines": [
+                    7,
+                    7
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller5",
+                  "signature": "function caller5()",
+                  "reason": "lexical_symbol"
+                },
+                {
+                  "alias": "s8",
+                  "path": "a.ts",
+                  "lines": [
+                    8,
+                    8
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller6",
+                  "signature": "function caller6()",
+                  "reason": "lexical_symbol"
+                }
+              ],
+              "candidateCount": 5,
+              "limited": true,
+              "guidance": "Bounded syntax candidates, not exhaustive and not compiler-resolved references. Choose the intended declaration, then follow nextSearches. No edit coverage; read truncated signatures explicitly.",
+              "semanticFallback": "symbol_target_required",
+              "declarationDiscovery": {
+                "engine": "syntax",
+                "status": "current",
+                "navigationOnly": true,
+                "sourceRevision": "src_19565e850aba1f99d47914211dde8fcb",
+                "eligibleFiles": 3,
+                "visitedFiles": 3,
+                "readBytes": 617,
+                "skippedFiles": 0,
+                "limited": false,
+                "limits": {
+                  "files": 64,
+                  "bytes": 1048576,
+                  "fileBytes": 262144,
+                  "declarations": 4
+                }
+              },
+              "declarationCandidates": [
+                {
+                  "alias": "s9",
+                  "path": "unrelated.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "target",
+                  "signature": "function target(n: number)",
+                  "reason": "exact_declaration_candidate",
+                  "target": "unrelated.ts#target"
+                },
+                {
+                  "alias": "s10",
+                  "path": "z.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "target",
+                  "signature": "function target(n: number)",
+                  "reason": "exact_declaration_candidate",
+                  "target": "z.ts#target"
+                }
+              ],
+              "nextSearches": [
+                {
+                  "query": "unrelated.ts#target",
+                  "mode": "references"
+                },
+                {
+                  "query": "z.ts#target",
+                  "mode": "references"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "input": {
+            "query": "z.ts#target",
+            "mode": "references"
+          },
+          "milliseconds": 661.3013029999993,
+          "serializedResultBytes": 2642,
+          "result": {
+            "status": "ok",
+            "data": {
+              "mode": "references",
+              "engine": "typescript_language_service",
+              "target": "z.ts#target",
+              "sourceRevision": "src_19565e850aba1f99d47914211dde8fcb",
+              "navigationOnly": true,
+              "targetDefinitionExcluded": true,
+              "project": {
+                "config": "tsconfig.json",
+                "rootFiles": 3,
+                "loadedFiles": 66,
+                "compilerVersion": "5.9.3",
+                "scope": "configured_project",
+                "warnings": []
+              },
+              "completeness": "configured_project",
+              "resultScope": "Eligible source files in the requested scope; dependency internals and ignored files excluded.",
+              "candidateCount": 5,
+              "referenceCount": 11,
+              "locationCount": 11,
+              "results": [
+                {
+                  "alias": "s1",
+                  "kind": "text",
+                  "path": "a.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      1,
+                      1
+                    ],
+                    "snippet": "import { target } from \"./z.js\";",
+                    "isWrite": true
+                  }
+                },
+                {
+                  "alias": "s2",
+                  "path": "a.ts",
+                  "lines": [
+                    2,
+                    2
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller0",
+                  "signature": "function caller0()",
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      2,
+                      2
+                    ],
+                    "snippet": "export function caller0() { return target(0); }",
+                    "isWrite": false
+                  }
+                },
+                {
+                  "alias": "s3",
+                  "path": "a.ts",
+                  "lines": [
+                    3,
+                    3
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller1",
+                  "signature": "function caller1()",
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      3,
+                      3
+                    ],
+                    "snippet": "export function caller1() { return target(1); }",
+                    "isWrite": false
+                  }
+                },
+                {
+                  "alias": "s4",
+                  "path": "a.ts",
+                  "lines": [
+                    4,
+                    4
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller2",
+                  "signature": "function caller2()",
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      4,
+                      4
+                    ],
+                    "snippet": "export function caller2() { return target(2); }",
+                    "isWrite": false
+                  }
+                },
+                {
+                  "alias": "s5",
+                  "path": "a.ts",
+                  "lines": [
+                    5,
+                    5
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller3",
+                  "signature": "function caller3()",
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      5,
+                      5
+                    ],
+                    "snippet": "export function caller3() { return target(3); }",
+                    "isWrite": false
+                  }
+                },
+                {
+                  "alias": "s6",
+                  "path": "a.ts",
+                  "lines": [
+                    6,
+                    6
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller4",
+                  "signature": "function caller4()",
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      6,
+                      6
+                    ],
+                    "snippet": "export function caller4() { return target(4); }",
+                    "isWrite": false
+                  }
+                },
+                {
+                  "alias": "s7",
+                  "path": "a.ts",
+                  "lines": [
+                    7,
+                    7
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller5",
+                  "signature": "function caller5()",
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      7,
+                      7
+                    ],
+                    "snippet": "export function caller5() { return target(5); }",
+                    "isWrite": false
+                  }
+                },
+                {
+                  "alias": "s8",
+                  "path": "a.ts",
+                  "lines": [
+                    8,
+                    8
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "caller6",
+                  "signature": "function caller6()",
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      8,
+                      8
+                    ],
+                    "snippet": "export function caller6() { return target(6); }",
+                    "isWrite": false
+                  }
+                }
+              ],
+              "limited": true,
+              "guidance": "Result limit reached; narrow scope to see other references. No edit coverage is granted."
+            }
+          }
+        }
+      ],
+      "totalCalls": 2,
+      "totalMilliseconds": 786.8225879999991,
+      "totalSerializedResultBytes": 4995
+    },
+    {
+      "repeat": 3,
+      "fixture": "ambiguity",
+      "arm": "baseline",
+      "fixtureHashes": {
+        "package.json": "1239d4d885dcad42201a27ed9324f8f0f760b78700d8db9ced39a511cffe7eae",
+        "tsconfig.json": "5043e4c8d5ce7da7e8c6e08908cafd77eef1cf9dba0caa9971fdcb3f9c1de985",
+        "a.ts": "800b0dbb04a04456a4fe15d4c55f07dbd42f9fa8cf2d8fd254f9f19bb3b18d3d",
+        "consumer.ts": "065ffed628cae510fffa2b00ea7a7a3f7b965432aa615c5fb05144a9ac32eb5e",
+        "z.ts": "177c3edd074ff95551b8dd3d3898971dca23477a0d4f21a4526cc572e579f148"
+      },
+      "sourceUnchanged": true,
+      "choice": {
+        "actor": "researcher",
+        "intended": "z.ts#target",
+        "automaticHarnessSelection": false
+      },
+      "calls": [
+        {
+          "input": {
+            "query": "target",
+            "mode": "references"
+          },
+          "milliseconds": 28.903307999999015,
+          "serializedResultBytes": 2097,
+          "result": {
+            "status": "ok",
+            "data": {
+              "mode": "references",
+              "engine": "lexical_fallback",
+              "results": [
+                {
+                  "alias": "s1",
+                  "path": "a.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "target",
+                  "signature": "function target(n: number)",
+                  "reason": "lexical_symbol"
+                },
+                {
+                  "alias": "s2",
+                  "kind": "text",
+                  "path": "consumer.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "snippet": "import { target as compute } from \"./z.js\";",
+                  "reason": "lexical_exact"
+                },
+                {
+                  "alias": "s3",
+                  "kind": "text",
+                  "path": "tsconfig.json",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "snippet": "{\"compilerOptions\":{\"strict\":true,\"noEmit\":true,\"target\":\"ES2022\",\"module\":\"NodeNext\",\"moduleResolution\":\"NodeNext\",\"types\":[]},\"include\":[\"*.ts\"]}",
+                  "reason": "lexical_exact"
+                },
+                {
+                  "alias": "s4",
+                  "path": "z.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "target",
+                  "signature": "function target(n: number)",
+                  "reason": "lexical_symbol"
+                }
+              ],
+              "candidateCount": 5,
+              "semanticFallback": "symbol_target_required",
+              "declarationDiscovery": {
+                "engine": "syntax",
+                "status": "current",
+                "navigationOnly": true,
+                "sourceRevision": "src_1f6b0a939e23c2623bd12e143a713462",
+                "eligibleFiles": 3,
+                "visitedFiles": 3,
+                "readBytes": 181,
+                "skippedFiles": 0,
+                "limited": false,
+                "limits": {
+                  "files": 64,
+                  "bytes": 1048576,
+                  "fileBytes": 262144,
+                  "declarations": 4
+                }
+              },
+              "declarationCandidates": [
+                {
+                  "alias": "s1",
+                  "path": "a.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "target",
+                  "signature": "function target(n: number)",
+                  "reason": "exact_declaration_candidate",
+                  "target": "a.ts#target"
+                },
+                {
+                  "alias": "s4",
+                  "path": "z.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "target",
+                  "signature": "function target(n: number)",
+                  "reason": "exact_declaration_candidate",
+                  "target": "z.ts#target"
+                }
+              ],
+              "nextSearches": [
+                {
+                  "query": "a.ts#target",
+                  "mode": "references"
+                },
+                {
+                  "query": "z.ts#target",
+                  "mode": "references"
+                }
+              ],
+              "guidance": "Lexical candidates only. For configured JS/TS semantic references, query a symbol sN alias or path#qualifiedName with mode references. Read before editing. Declaration candidates are exact syntax matches, not compiler-resolved references. Choose the intended declaration before following nextSearches; discovery is bounded and not exhaustive. No identity was selected and no edit coverage was granted."
+            }
+          }
+        },
+        {
+          "input": {
+            "query": "z.ts#target",
+            "mode": "references"
+          },
+          "milliseconds": 702.8627820000002,
+          "serializedResultBytes": 1135,
+          "result": {
+            "status": "ok",
+            "data": {
+              "mode": "references",
+              "engine": "typescript_language_service",
+              "target": "z.ts#target",
+              "sourceRevision": "src_1f6b0a939e23c2623bd12e143a713462",
+              "navigationOnly": true,
+              "targetDefinitionExcluded": true,
+              "project": {
+                "config": "tsconfig.json",
+                "rootFiles": 3,
+                "loadedFiles": 66,
+                "compilerVersion": "5.9.3",
+                "scope": "configured_project",
+                "warnings": []
+              },
+              "completeness": "configured_project",
+              "resultScope": "Eligible source files in the requested scope; dependency internals and ignored files excluded.",
+              "candidateCount": 5,
+              "referenceCount": 2,
+              "locationCount": 3,
+              "results": [
+                {
+                  "alias": "s5",
+                  "kind": "text",
+                  "path": "consumer.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      1,
+                      1
+                    ],
+                    "snippet": "import { target as compute } from \"./z.js\";",
+                    "isWrite": true
+                  }
+                },
+                {
+                  "alias": "s6",
+                  "path": "consumer.ts",
+                  "lines": [
+                    2,
+                    2
+                  ],
+                  "kind": "variable",
+                  "qualifiedName": "value",
+                  "signature": "value =",
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      2,
+                      2
+                    ],
+                    "snippet": "export const value = compute(2);",
+                    "isWrite": false
+                  }
+                }
+              ],
+              "limited": false,
+              "guidance": "References are limited to this configured compiler project, not runtime/dynamic callers. Read before editing."
+            }
+          }
+        }
+      ],
+      "totalCalls": 2,
+      "totalMilliseconds": 731.7660899999992,
+      "totalSerializedResultBytes": 3232
+    },
+    {
+      "repeat": 3,
+      "fixture": "ambiguity",
+      "arm": "candidate",
+      "fixtureHashes": {
+        "package.json": "1239d4d885dcad42201a27ed9324f8f0f760b78700d8db9ced39a511cffe7eae",
+        "tsconfig.json": "5043e4c8d5ce7da7e8c6e08908cafd77eef1cf9dba0caa9971fdcb3f9c1de985",
+        "a.ts": "800b0dbb04a04456a4fe15d4c55f07dbd42f9fa8cf2d8fd254f9f19bb3b18d3d",
+        "consumer.ts": "065ffed628cae510fffa2b00ea7a7a3f7b965432aa615c5fb05144a9ac32eb5e",
+        "z.ts": "177c3edd074ff95551b8dd3d3898971dca23477a0d4f21a4526cc572e579f148"
+      },
+      "sourceUnchanged": true,
+      "choice": {
+        "actor": "researcher",
+        "intended": "z.ts#target",
+        "automaticHarnessSelection": false
+      },
+      "calls": [
+        {
+          "input": {
+            "query": "target",
+            "mode": "references"
+          },
+          "milliseconds": 58.62334899999951,
+          "serializedResultBytes": 1890,
+          "result": {
+            "status": "ok",
+            "data": {
+              "mode": "references",
+              "engine": "lexical_fallback",
+              "results": [
+                {
+                  "alias": "s1",
+                  "path": "a.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "target",
+                  "signature": "function target(n: number)",
+                  "reason": "lexical_symbol"
+                },
+                {
+                  "alias": "s2",
+                  "kind": "text",
+                  "path": "consumer.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "snippet": "import { target as compute } from \"./z.js\";",
+                  "reason": "lexical_exact"
+                },
+                {
+                  "alias": "s3",
+                  "kind": "text",
+                  "path": "tsconfig.json",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "snippet": "{\"compilerOptions\":{\"strict\":true,\"noEmit\":true,\"target\":\"ES2022\",\"module\":\"NodeNext\",\"moduleResolution\":\"NodeNext\",\"types\":[]},\"include\":[\"*.ts\"]}",
+                  "reason": "lexical_exact"
+                },
+                {
+                  "alias": "s4",
+                  "path": "z.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "target",
+                  "signature": "function target(n: number)",
+                  "reason": "lexical_symbol"
+                }
+              ],
+              "candidateCount": 5,
+              "semanticFallback": "symbol_target_required",
+              "declarationDiscovery": {
+                "engine": "syntax",
+                "status": "current",
+                "navigationOnly": true,
+                "sourceRevision": "src_1f6b0a939e23c2623bd12e143a713462",
+                "eligibleFiles": 3,
+                "visitedFiles": 3,
+                "readBytes": 181,
+                "skippedFiles": 0,
+                "limited": false,
+                "limits": {
+                  "files": 64,
+                  "bytes": 1048576,
+                  "fileBytes": 262144,
+                  "declarations": 4
+                }
+              },
+              "declarationCandidates": [
+                {
+                  "alias": "s1",
+                  "path": "a.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "target",
+                  "signature": "function target(n: number)",
+                  "reason": "exact_declaration_candidate",
+                  "target": "a.ts#target"
+                },
+                {
+                  "alias": "s4",
+                  "path": "z.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "kind": "function",
+                  "qualifiedName": "target",
+                  "signature": "function target(n: number)",
+                  "reason": "exact_declaration_candidate",
+                  "target": "z.ts#target"
+                }
+              ],
+              "nextSearches": [
+                {
+                  "query": "a.ts#target",
+                  "mode": "references"
+                },
+                {
+                  "query": "z.ts#target",
+                  "mode": "references"
+                }
+              ],
+              "guidance": "Bounded syntax candidates, not exhaustive and not compiler-resolved references. Choose the intended declaration, then follow nextSearches. No edit coverage; read truncated signatures explicitly."
+            }
+          }
+        },
+        {
+          "input": {
+            "query": "z.ts#target",
+            "mode": "references"
+          },
+          "milliseconds": 655.5341149999986,
+          "serializedResultBytes": 1135,
+          "result": {
+            "status": "ok",
+            "data": {
+              "mode": "references",
+              "engine": "typescript_language_service",
+              "target": "z.ts#target",
+              "sourceRevision": "src_1f6b0a939e23c2623bd12e143a713462",
+              "navigationOnly": true,
+              "targetDefinitionExcluded": true,
+              "project": {
+                "config": "tsconfig.json",
+                "rootFiles": 3,
+                "loadedFiles": 66,
+                "compilerVersion": "5.9.3",
+                "scope": "configured_project",
+                "warnings": []
+              },
+              "completeness": "configured_project",
+              "resultScope": "Eligible source files in the requested scope; dependency internals and ignored files excluded.",
+              "candidateCount": 5,
+              "referenceCount": 2,
+              "locationCount": 3,
+              "results": [
+                {
+                  "alias": "s5",
+                  "kind": "text",
+                  "path": "consumer.ts",
+                  "lines": [
+                    1,
+                    1
+                  ],
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      1,
+                      1
+                    ],
+                    "snippet": "import { target as compute } from \"./z.js\";",
+                    "isWrite": true
+                  }
+                },
+                {
+                  "alias": "s6",
+                  "path": "consumer.ts",
+                  "lines": [
+                    2,
+                    2
+                  ],
+                  "kind": "variable",
+                  "qualifiedName": "value",
+                  "signature": "value =",
+                  "reason": "semantic_reference",
+                  "reference": {
+                    "lines": [
+                      2,
+                      2
+                    ],
+                    "snippet": "export const value = compute(2);",
+                    "isWrite": false
+                  }
+                }
+              ],
+              "limited": false,
+              "guidance": "References are limited to this configured compiler project, not runtime/dynamic callers. Read before editing."
+            }
+          }
+        }
+      ],
+      "totalCalls": 2,
+      "totalMilliseconds": 714.1574639999981,
+      "totalSerializedResultBytes": 3025
+    }
+  ],
+  "limitations": [
+    "Constructed known diagnostic, not new model confirmation.",
+    "Three local repeats measure process/cache effects; they are not independent tasks.",
+    "Serialized bytes are tool feedback sizes, not provider tokens.",
+    "Wall time includes initial workspace setup and compiler worker startup; host scheduling is uncontrolled.",
+    "Candidate discovery adds bounded work and larger initial feedback; fewer scripted calls do not prove agent efficiency."
+  ]
+}

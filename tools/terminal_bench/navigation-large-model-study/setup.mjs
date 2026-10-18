@@ -1,0 +1,31 @@
+import {createHash} from 'node:crypto';
+import {cp,mkdir,readFile,writeFile,symlink,readdir} from 'node:fs/promises';
+import {join,resolve} from 'node:path';
+import {execFileSync} from 'node:child_process';
+import {prepareIsolatedNodeEnvironment} from '../isolated-node-environment.mjs';
+import {tasks} from './tasks.mjs';
+export const repo=resolve(import.meta.dirname,'../../..'),work='/tmp/blame-navigation-large-f53';
+export const study=join(repo,'docs/experiments/light-harness-navigation-large-f53-2026-10-18');
+export const dependencyRoot=join(repo,'.blame/research/validation-scope-f44/dependencies');
+export const sourceArchive=join(repo,'docs/experiments/light-harness-confirmation-f42-2026-10-17/inputs/remeda.tar.gz');
+export const sha=x=>createHash('sha256').update(x).digest('hex');
+export const json=p=>readFile(p,'utf8').then(JSON.parse),save=(p,v)=>writeFile(p,JSON.stringify(v,null,2)+'\n');
+export const sourceRoot=()=> 'packages/remeda/src';
+export async function prepare(root,id,isolated=false){
+ const task=tasks.find(t=>t.id===id);if(!task)throw Error('Unknown task '+id);
+ await mkdir(root,{recursive:true});execFileSync('tar',['-xzf',sourceArchive,'--strip-components=1','-C',root]);
+ if(isolated){const environment=await prepareIsolatedNodeEnvironment({baselineModules:join(dependencyRoot,'node_modules'),workspace:root,cacheRoot:resolve(root,'../npm-cache')});environment.env.PATH=join(root,'node_modules/.bin')+':'+process.env.PATH;
+ const shellPath=resolve(root,'../shell-environment.sh'),quote=x=>"'"+x.replaceAll("'","'\\''")+"'";const shell=Object.entries(environment.env).map(([k,v])=>'export '+k+'='+quote(v)).join('\n')+'\n';await writeFile(shellPath,shell);environment.env.BASH_ENV=shellPath;environment.shellEnvironmentSha256=sha(shell);await save(resolve(root,'../environment.json'),environment);
+ }else await symlink(join(dependencyRoot,'node_modules'),join(root,'node_modules'));
+ await mkdir(join(root,'.study'));
+ const src=sourceRoot(),paths=(await readdir(join(root,src),{recursive:true,withFileTypes:true})).filter(e=>e.isFile()).map(e=>join(e.parentPath,e.name).slice(root.length+1).replaceAll('\\','/'));
+ const originalTests=paths.filter(p=>/\.(?:test|spec)(?:-d)?\.ts$/.test(p));await save(join(root,'.study/task.json'),{...task,sourceRoot:src,originalTests});
+ await cp(join(import.meta.dirname,'delivered.mjs'),join(root,'.study/delivered.mjs'));
+ const pkg=await json(join(root,'package.json'));pkg.packageManager='npm@11.6.4';pkg.scripts??={};
+ pkg.scripts['test:study:regression']='node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs';pkg.scripts['test:study:types']='node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json';pkg.scripts['test:study:delivered']='node .study/delivered.mjs runtime';pkg.scripts['typecheck:delivered']='node .study/delivered.mjs types';await save(join(root,'package.json'),pkg);
+ const compilerOptions={strict:true,noEmit:true,target:'ES2022',lib:['ESNext','DOM'],module:'ESNext',moduleResolution:'Bundler',allowImportingTsExtensions:true,skipLibCheck:true,exactOptionalPropertyTypes:true,noUncheckedIndexedAccess:true,types:['node']};
+ await save(join(root,'.study/tsconfig.json'),{compilerOptions,include:[`../${src}/**/*.ts`,'types.ts'],exclude:['../**/*.test.ts','../**/*.test-d.ts','../**/*.spec.ts','../**/*.bench.ts']});
+ await writeFile(join(root,'.study/types.ts'),"import * as R from '../packages/remeda/src/index.ts'; const a:readonly number[]=[1,2,3]; const t:number[]=R.takeLast(a,1);const d:number[]=R.dropLast(1)(a);const s:[number[],number[]]=R.splitAt(a,-1);const c:number=R.clamp(1,{min:0,max:2});void t;void d;void s;void c;\n");
+ await writeFile(join(root,'.study/vitest.config.mjs'),'export default '+JSON.stringify({test:{include:task.selected.map(p=>src+'/'+p+'.test.ts'),maxWorkers:1,fileParallelism:false,cache:false}})+';\n');
+ execFileSync('git',['init','--quiet'],{cwd:root});await writeFile(join(root,'.git/info/exclude'),'.blame/\nnode_modules/\n');execFileSync('git',['add','.'],{cwd:root});execFileSync('git',['add','-f','.study'],{cwd:root});execFileSync('git',['-c','user.name=Study','-c','user.email=study@example.invalid','commit','--quiet','-m','Frozen Remeda followup input'],{cwd:root,env:{...process.env,GIT_AUTHOR_DATE:'2026-10-18T00:00:00Z',GIT_COMMITTER_DATE:'2026-10-18T00:00:00Z'}});
+}

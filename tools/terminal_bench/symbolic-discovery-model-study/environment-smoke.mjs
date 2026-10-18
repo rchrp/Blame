@@ -1,0 +1,30 @@
+import assert from 'node:assert/strict';
+import {mkdir,rm,realpath} from 'node:fs/promises';
+import {join,dirname} from 'node:path';
+import {spawnSync} from 'node:child_process';
+import {repo,work,study,prepare,json,save} from './setup.mjs';
+import {solverIdentity} from './solver-identity.mjs';
+const startedAtUTC=new Date().toISOString(),root=join(work,'environment-smoke/workspace');
+await mkdir(join(root,'..'),{recursive:true});await prepare(root,'credit-remainder',true);
+const environment=await json(join(root,'../environment.json'));
+const solver=await solverIdentity(process.env.BLAME_Z3_PATH??'/tmp/blame-z3-f46/bin/z3');
+const env={...process.env,...environment.env,NODE_PATH:'',BLAME_Z3_PATH:solver.path};
+const version=spawnSync('npm',['--version'],{cwd:root,env,encoding:'utf8'});
+const shell=spawnSync('/bin/bash',['-lc','command -v npm && npm --version'],{cwd:root,env,encoding:'utf8'});
+const before=spawnSync('/bin/bash',['-lc','command -v npm && npm --version'],{cwd:root,env:{...env,BASH_ENV:''},encoding:'utf8'});
+const source=`import{LightWorkspace}from${JSON.stringify(join(work,'frozen/current/agent-runtime/dist/harness/light-workspace.js'))};const w=new LightWorkspace(${JSON.stringify(root)},{sessionId:'environment-smoke'});console.log(JSON.stringify(await w.runTask({kind:'command',command:'npm --version'},{})));`;
+const harness=spawnSync(process.execPath,['--input-type=module','-e',source],{cwd:root,env,encoding:'utf8',timeout:30000});
+const result=JSON.parse(harness.stdout);assert.equal(version.status,0);assert.equal(version.stdout.trim(),'11.6.4');
+assert.equal(shell.status,0);assert.ok(shell.stdout.includes('11.6.4'));assert.equal(harness.status,0);assert.equal(result.status,'ok');assert.equal(result.data.output.trim(),'11.6.4');
+const core=join(dirname(await realpath(join(repo,'packages/agent-runtime/node_modules/@cline/sdk'))),'core/dist/index.js');
+const nativeSource=`import{createShellExecutor}from${JSON.stringify(core)};const run=createShellExecutor({timeoutMs:10000});console.log(JSON.stringify(await run('npm --version',${JSON.stringify(root)},{signal:new AbortController().signal})));`;
+const native=spawnSync(process.execPath,['--input-type=module','-e',nativeSource],{cwd:root,env,encoding:'utf8',timeout:30000});
+assert.equal(native.status,0,native.stderr);assert.match(native.stdout,/11\.6\.4/);
+const reasoningSource=`import{LightWorkspace}from${JSON.stringify(join(work,'frozen/current/agent-runtime/dist/harness/light-workspace.js'))};import{SessionJournal}from${JSON.stringify(join(work,'frozen/current/agent-runtime/dist/harness/session-journal.js'))};const w=new LightWorkspace(${JSON.stringify(root)},{sessionId:'reasoning-smoke'});console.log(JSON.stringify({result:await w.runTask({kind:'analyze',target:'packages/credit/src/remainder.ts#availableCredit',inputs:{balance:{min:0,max:10},reserved:{min:0,max:10},limit:{min:0,max:10}},assertion:'result >= 0'},{}),journal:await new SessionJournal(${JSON.stringify(root)},'reasoning-smoke').completionSnapshot()}));`;
+const reasoning=spawnSync(process.execPath,['--input-type=module','-e',reasoningSource],{cwd:root,env,encoding:'utf8',timeout:30000});assert.equal(reasoning.status,0,reasoning.stderr);const reasoningResult=JSON.parse(reasoning.stdout);assert.equal(reasoningResult.result.data.status,'counterexample');assert.equal(reasoningResult.result.data.validationAdmission,false);assert.equal(reasoningResult.journal.validations.length,0);
+const solverSource=`import{createShellExecutor}from${JSON.stringify(core)};const run=createShellExecutor({timeoutMs:10000});console.log(JSON.stringify(await run('\"$BLAME_Z3_PATH\" -version',${JSON.stringify(root)},{signal:new AbortController().signal})));`;
+const nativeSolver=spawnSync(process.execPath,['--input-type=module','-e',solverSource],{cwd:root,env,encoding:'utf8',timeout:30000});assert.equal(nativeSolver.status,0,nativeSolver.stderr);assert.match(nativeSolver.stdout,/Z3 version 4\.15\.4/);
+await save(join(study,'environment-smoke.json'),{startedAtUTC,endedAtUTC:new Date().toISOString(),modelRequests:0,solver,reasoning:{exitCode:reasoning.status,result:reasoningResult},nativeSolver:{exitCode:nativeSolver.status,stdout:nativeSolver.stdout,stderr:nativeSolver.stderr},shellEnvironmentSha256:environment.shellEnvironmentSha256,
+ method:'Actual Light and integrated SDK shell executors plus direct/login-shell npm version checks using the future per-trial environment; the before control shows this host login profile resets PATH without BASH_ENV. The optional analyzer and integrated SDK ordinary command both reach the same pinned solver; analysis adds no validation. No model is invoked.',
+ before:{exitCode:before.status,stdout:before.stdout,stderr:before.stderr},version:{exitCode:version.status,stdout:version.stdout},shell:{exitCode:shell.status,stdout:shell.stdout},harness:{exitCode:harness.status,result},native:{exitCode:native.status,stdout:native.stdout,stderr:native.stderr}});
+await rm(join(root,'..'),{recursive:true});console.log('Pinned npm11.6.4 preserved through direct, login-shell, Light and integrated SDK command execution');

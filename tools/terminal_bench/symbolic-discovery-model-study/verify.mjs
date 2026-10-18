@@ -1,0 +1,93 @@
+// Recompute original receipts, acceptance, isolation and summaries from public artifacts.
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import {gunzipSync} from 'node:zlib';
+import {join} from 'node:path';
+import {study,json,sha,save} from './setup.mjs';
+import {reconcileUsage} from '../corpus/light-study-accounting.mjs';
+import {reserveTrialCosts} from '../navigation-evidence/budget-accounting.mjs';
+import {schemaExposure} from './schema-exposure.mjs';
+import {parseJsonLines,finishObservation} from './evidence-io.mjs';
+import {resourcesKnown,relativeDelta as delta} from './resource-values.mjs';
+const protocol=await json(join(study,'protocol.json')),results=await json(join(study,'results.json')),summary=await json(join(study,'summary.json')),review=await json(join(study,'source-review.json'));
+assert.equal(protocol.order.length,18);assert.equal(results.rows.length,18);assert.equal(review.decisions.length,18);
+assert.deepEqual(results.rows.map(r=>r.name),protocol.order.map(r=>`${r.repeat}-${r.task}-${r.arm}`));
+const wireByTrial={},first={},secondaryByTrial={};
+for(const row of results.rows){
+ const bytes=await readFile(join(study,'traces',row.name+'.json.gz'));assert.equal(sha(bytes),row.traceSha256);const archive=JSON.parse(gunzipSync(bytes));assert.equal(archive.name,row.name);
+ const read=name=>{const f=archive.files[name];assert.ok(f,name);const b=Buffer.from(f.base64,'base64');assert.equal(b.length,f.bytes);assert.equal(sha(b),f.sha256);return b;};
+ for(const name of Object.keys(archive.files))read(name);for(const [name,hash]of Object.entries(row.hashes))assert.equal(sha(read(name)),hash);
+ assert.equal(read('instruction.txt').toString(),protocol.tasks.find(t=>t.id===row.task).instruction);assert.deepEqual(JSON.parse(read('required-checks.json')),protocol.tasks.find(t=>t.id===row.task).requiredChecks);
+ const grade=JSON.parse(read('score.json')),raw=archive.files['result.json']?JSON.parse(read('result.json')):{},exit=JSON.parse(read('model-exit.json'));
+ assert.equal(row.officialRuntimeSuccess,raw.status==='succeeded');assert.deepEqual(row.exit,exit);assert.equal(row.durationMs,raw.durationMs??exit.durationMs);
+ assert.equal(row.independentFunctionalSuccess,grade.protectedPaths.length===0&&grade.checks.every(c=>c.exitCode===0));
+ assert.equal(row.selectedCheckSuccess,grade.protectedPaths.length===0&&grade.checks.filter(c=>c.name!=='feature').every(c=>c.exitCode===0)&&grade.deliveredChecks.find(c=>c.name==='delivered')?.exitCode===0);
+ const eventEvidence=parseJsonLines(read('events.jsonl'));assert.deepEqual(eventEvidence.anomalies,row.evidenceAnomalies.events);const events=eventEvidence.rows.map(record=>record.event);
+ let iteration=0;const ledger=[],starts=new Map();
+ for(const [index,event]of events.entries()){
+  if(event.type==='notice'&&event.payload?.message==='Agent iteration started.')iteration++;
+  if(event.type==='tool'&&event.payload?.phase==='started')starts.set(event.payload.toolCallId??event.payload.toolCall?.id,index);
+  if(event.type==='tool'&&event.payload?.phase==='finished')ledger.push({...event.payload,observedIteration:iteration,observedStartIndex:starts.get(event.payload.toolCallId??event.payload.toolCall?.id)??null,tool:event.payload.toolCall?.name??event.payload.tool,input:event.payload.toolCall?.input??event.payload.input});
+ }
+ assert.deepEqual(JSON.parse(read('tool-ledger.json')),ledger);
+ const selections=ledger.flatMap((tool,index)=>{const data=tool.output?.data?.completed?.data??tool.output?.data;return tool.tool==='run_task'&&data?.check?.selectionFailure==='no_test_files'?[{index,observedIteration:tool.observedIteration,command:data.command,check:data.check,recovery:tool.output.recovery??null}]:[];});
+ assert.deepEqual(row.selectionFailures,selections);assert.equal(row.noTestFileOutputs,ledger.filter(t=>/No test files found, exiting with code 1/.test(JSON.stringify(t.output))).length);const finish=ledger.flatMap((tool,index)=>tool.tool==='finish_task'?[finishObservation(tool,index)]:[]);assert.deepEqual(row.finishObservations,finish);assert.equal(row.finishFailures,finish.filter(item=>item.classification==='rejected').length);
+ const symbolic=ledger.flatMap((tool,index)=>tool.tool==='run_task'&&tool.input?.kind==='analyze'?[{index,observedIteration:tool.observedIteration,input:tool.input,output:tool.output,followingTaskIndices:ledger.flatMap((next,j)=>j>index&&next.observedIteration>tool.observedIteration&&next.tool==='run_task'&&next.input?.kind!=='analyze'?[j]:[])}]:[]);
+ assert.deepEqual(row.symbolicObservations,symbolic);assert.equal(row.symbolicCalls,symbolic.length);assert.equal(row.symbolicCounterexamples,symbolic.filter(item=>item.output?.data?.status==='counterexample').length);assert.equal(row.symbolicUnknowns,symbolic.filter(item=>item.output?.data?.status==='unknown').length);assert.equal(row.symbolicBlockedCalls,symbolic.filter(item=>item.output?.status==='blocked').length);
+ const usage=reconcileUsage(raw.usage,events.filter(e=>e.type==='usage').map(e=>e.payload?.usage),iteration);assert.deepEqual(row.usage,usage);
+ const wire=archive.files['wire-contracts.jsonl']?read('wire-contracts.jsonl').toString().trim().split('\n').filter(Boolean).map(JSON.parse):[];wireByTrial[row.name]=wire;first[row.name]=wire.find(w=>!w.budgetRejected);
+ const schemas=[];for(const hash of new Set(wire.filter(w=>!w.budgetRejected).map(w=>w.toolsSha256))){const bytes=read('schema-'+hash+'.json');schemas.push({sha256:hash,bytes:bytes.length,...schemaExposure(bytes)});}assert.deepEqual(row.schemas,schemas);const exposurePassed=schemas.every(schema=>schema.analyzeExposed===(row.arm!=='cline')&&schema.runTaskPresent===(row.arm!=='cline'));assert.ok(exposurePassed);assert.equal(row.schemaExposurePassed,exposurePassed);assert.equal(row.requestBodyBytes,wire.filter(w=>!w.budgetRejected).reduce((sum,w)=>sum+w.requestBytes,0));
+ for(const w of wire){assert.equal(w.model,protocol.model);assert.equal(w.reasoning?.effort,protocol.effort);assert.equal(w.maximumOutputTokens,8192);assert.equal(w.byteLimit,500000);assert.equal(sha(read('schema-'+w.toolsSha256+'.json').toString().trimEnd()),w.toolsSha256);assert.equal(sha(read('prompt-'+w.promptSha256+'.json').toString().trimEnd()),w.promptSha256);}
+ const d=review.decisions.find(decision=>decision.name===row.name);assert.ok(d,'Missing source review: '+row.name);assert.deepEqual(d.hashes,row.hashes);assert.equal(d.addedTestsPassed,grade.addedTests.length>0&&grade.deliveredChecks.every(c=>c.exitCode===0));
+ for(const key of ['sourceBehaviorPassed','addedTestsPassed','finalSourceChecksPassed','noSolutionRetrieval','fullRequestPassed','symbolicClaimsAccurate','dependencyIntegrityPassed'])assert.equal(typeof d[key],'boolean',row.name+': '+key);
+ assert.ok(Array.isArray(d.evidence)&&d.evidence.length>0);assert.ok(Array.isArray(d.symbolicEvidence));assert.equal(d.symbolicEvidence.length,symbolic.length);assert.equal(new Set(d.symbolicEvidence.map(judgment=>judgment.toolIndex)).size,symbolic.length,'Duplicate symbolic review index');
+ const meaningful=symbolic.filter(observation=>{const judgment=d.symbolicEvidence.find(item=>item.toolIndex===observation.index);assert.ok(judgment);for(const key of ['propertyRelevant','witnessExercisedInRealTest'])assert.equal(typeof judgment[key],'boolean',row.name+': symbolic '+key);assert.ok(Array.isArray(judgment.evidence)&&judgment.evidence.length>0);const status=observation.output?.data?.status;return judgment.propertyRelevant&&(status==='bounded_no_counterexample'||status==='counterexample'&&judgment.witnessExercisedInRealTest);}).length;assert.equal(row.meaningfulSymbolicCalls,meaningful);
+ const hintOffers=ledger.flatMap((tool,index)=>tool.tool==='read_code'&&Array.isArray(tool.output?.data?.symbolicAnalysis)?tool.output.data.symbolicAnalysis.map(hint=>({index,observedIteration:tool.observedIteration,target:hint.target,parameters:hint.parameters,followedAnalysisIndices:ledger.flatMap((next,j)=>j>index&&next.observedIteration>tool.observedIteration&&next.tool==='run_task'&&next.input?.kind==='analyze'&&[hint.target,tool.output.data.alias].filter(Boolean).includes(next.input.target)?[j]:[])})):[]);assert.deepEqual(row.symbolicHintOffers,hintOffers);
+ const directSolverCommands=ledger.filter(tool=>/\bz3\b|BLAME_Z3_PATH/.test(JSON.stringify(tool.input??{}))).map(tool=>({tool:tool.tool,input:tool.input,output:tool.output}));assert.deepEqual(row.directSolverCommands,directSolverCommands);
+ // Derive secondary totals from reconstructed events/wire and reviewed judgments,
+ // independently of the publisher's aggregates and the stored row counters.
+ secondaryByTrial[row.name]={
+  symbolicCalls:symbolic.length,
+  symbolicCounterexamples:symbolic.filter(observation=>observation.output?.data?.status==='counterexample').length,
+  symbolicUnknowns:symbolic.filter(observation=>observation.output?.data?.status==='unknown').length,
+  symbolicBlockedCalls:symbolic.filter(observation=>observation.output?.status==='blocked').length,
+  boundedNoCounterexamples:symbolic.filter(observation=>observation.output?.data?.status==='bounded_no_counterexample').length,
+  meaningfulSymbolicCalls:meaningful,
+  requestBodyBytes:wire.filter(request=>!request.budgetRejected).reduce((total,request)=>total+request.requestBytes,0),
+  schemaBytes:schemas.map(schema=>schema.bytes),schemaExposurePassed:exposurePassed,
+ };
+ const source=row.independentFunctionalSuccess&&d.sourceBehaviorPassed&&d.addedTestsPassed&&d.finalSourceChecksPassed&&d.noSolutionRetrieval&&d.dependencyIntegrityPassed;
+ assert.equal(row.sourceAuditedCompletion,source);assert.equal(typeof d.symbolicClaimsAccurate,'boolean');assert.equal(typeof d.dependencyIntegrityPassed,'boolean');assert.equal(row.auditedCompletion,source&&d.fullRequestPassed&&d.symbolicClaimsAccurate);assert.ok(grade.dependencyIntegrity);
+}
+for(const slot of protocol.order.filter(row=>row.arm==='candidate')){const a=first[`${slot.repeat}-${slot.task}-candidate`],b=first[`${slot.repeat}-${slot.task}-reference`];if(a&&b){assert.equal(a.toolsSha256,b.toolsSha256,'Both Light arms expose identical analyze tools');assert.equal(a.normalizedContractSha256,b.normalizedContractSha256);}}
+const bindings=await json(join(study,'execution-bindings.json')),trees=Object.entries(bindings.files).find(([key])=>key.endsWith('/frozen'))?.[1];assert.ok(trees);
+assert.ok(Object.keys(trees).every(path=>path.startsWith('current/')),'All arms use one executable snapshot');assert.deepEqual(protocol.runtimeByArm,{reference:'current',candidate:'current',cline:'current'});
+assert.deepEqual(protocol.flagByArm,{reference:'true',candidate:'true',cline:'false'});assert.deepEqual(protocol.hintsByArm,{reference:'false',candidate:'true',cline:'false'});assert.deepEqual(bindings.solver,protocol.solver);assert.ok(Object.keys(protocol.solver.libraries).length>=1);assert.deepEqual((await json(join(study,'isolation-controls.json'))).changedRuntimeFilesBetweenLightArms,[]);
+const accounting=reserveTrialCosts(results.rows,wireByTrial,protocol.budgets);assert.deepEqual(accounting,await json(join(study,'accounting.json')));assert.deepEqual(summary.accounting,accounting);
+const prior=await json(join(study,'prior-budget.json'));assert.ok(Math.abs(summary.cumulativeAccountedUsd-prior.accountedUsd-accounting.accountedUsd)<1e-8);
+for(const arm of protocol.arms){const rows=results.rows.filter(r=>r.arm===arm),s=summary.arms[arm];assert.equal(rows.length,6);assert.equal(s.audited,rows.filter(r=>r.auditedCompletion).length);assert.equal(s.official,rows.filter(r=>r.officialRuntimeSuccess).length);assert.equal(s.selected,rows.filter(r=>r.selectedCheckSuccess).length);assert.equal(s.independent,rows.filter(r=>r.independentFunctionalSuccess).length);assert.equal(s.meaningfulSymbolicCalls,rows.reduce((sum,row)=>sum+row.meaningfulSymbolicCalls,0));for(const [key,target]of [['input','input'],['output','output'],['cost','sdkEstimatedUsd'],['cacheRead','cacheRead'],['cacheWrite','cacheWrite']])assert.equal(s[target],rows.every(r=>typeof r.usage[key]==='number'&&Number.isFinite(r.usage[key]))?rows.reduce((n,r)=>n+r.usage[key],0):null);}
+for(const arm of protocol.arms){
+ const armRows=results.rows.filter(row=>row.arm===arm);assert.equal(summary.arms[arm].hintOffers,armRows.reduce((sum,row)=>sum+row.symbolicHintOffers.length,0));assert.equal(summary.arms[arm].hintOffersFollowed,armRows.reduce((sum,row)=>sum+row.symbolicHintOffers.filter(hint=>hint.followedAnalysisIndices.length>0).length,0));
+ const observed=armRows.map(row=>secondaryByTrial[row.name]);
+ for(const key of ['symbolicCalls','symbolicCounterexamples','symbolicUnknowns','symbolicBlockedCalls','boundedNoCounterexamples','meaningfulSymbolicCalls','requestBodyBytes'])assert.equal(summary.arms[arm][key],observed.reduce((total,row)=>total+row[key],0),arm+': '+key);
+ const sizes=[...new Set(observed.flatMap(row=>row.schemaBytes))].sort((left,right)=>left-right);
+ assert.deepEqual(summary.arms[arm].schemaBytes.slice().sort((left,right)=>left-right),sizes,arm+': distinct schema sizes');
+ assert.ok(observed.every(row=>row.schemaExposurePassed),arm+': unexpected schema exposure');
+}
+for(const [group,predicate]of [['comparisons',row=>row.auditedCompletion],['selectedComparisons',row=>row.selectedCheckSuccess],['functionalComparisons',row=>row.independentFunctionalSuccess]])for(const other of ['reference','cline']){
+ const selected=results.rows.filter(row=>row.arm==='candidate'&&predicate(row)&&results.rows.some(base=>base.arm===other&&base.repeat===row.repeat&&base.task===row.task&&predicate(base)));
+ const report=summary[group]['candidate/'+other];assert.equal(report.pairs,selected.length);
+ const totals={};for(const arm of ['candidate',other]){const paired=selected.map(row=>results.rows.find(base=>base.arm===arm&&base.repeat===row.repeat&&base.task===row.task));const known=paired.every(resourcesKnown);totals[arm]={trials:paired.length,tokens:known?paired.reduce((sum,row)=>sum+row.usage.input+row.usage.output,0):null,cost:known?paired.reduce((sum,row)=>sum+row.usage.cost,0):null,durationMs:paired.every(row=>Number.isFinite(row.durationMs))?paired.reduce((sum,row)=>sum+row.durationMs,0):null};}
+ const pairDetails=selected.map(row=>{const baseline=results.rows.find(otherRow=>otherRow.arm===other&&otherRow.repeat===row.repeat&&otherRow.task===row.task);return{task:row.task,repeat:row.repeat,candidate:row.name,baseline:baseline.name,tokenDelta:resourcesKnown(row)&&resourcesKnown(baseline)?delta(row.usage.input+row.usage.output,baseline.usage.input+baseline.usage.output):null,costDelta:resourcesKnown(row)&&resourcesKnown(baseline)?delta(row.usage.cost,baseline.usage.cost):null,durationDelta:delta(row.durationMs,baseline.durationMs)};});assert.deepEqual(report.pairDetails,pairDetails);
+ const sensitivity=kept=>{if(!kept.every(pair=>pair.tokenDelta!==null))return null;const total=arm=>kept.reduce((sum,pair)=>{const row=results.rows.find(item=>item.arm===arm&&item.repeat===pair.repeat&&item.task===pair.task);assert.ok(resourcesKnown(row));return sum+row.usage.input+row.usage.output;},0);return delta(total('candidate'),total(other));};
+ assert.deepEqual(report.byTask,protocol.tasks.map(task=>({task:task.id,pairs:pairDetails.filter(pair=>pair.task===task.id).length,tokenDelta:sensitivity(pairDetails.filter(pair=>pair.task===task.id))})));
+ assert.deepEqual(report.leaveOnePairOut,pairDetails.map(pair=>({omitted:pair.candidate,tokenDelta:sensitivity(pairDetails.filter(otherPair=>otherPair!==pair))})));
+ assert.deepEqual(report.leaveOneTaskOut,protocol.tasks.map(task=>({omitted:task.id,tokenDelta:sensitivity(pairDetails.filter(pair=>pair.task!==task.id))})));
+ assert.deepEqual(report.candidate,totals.candidate);assert.deepEqual(report.baseline,totals[other]);assert.equal(report.tokenDelta,delta(totals.candidate.tokens,totals[other].tokens));assert.equal(report.costDelta,delta(totals.candidate.cost,totals[other].cost));assert.equal(report.durationDelta,delta(totals.candidate.durationMs,totals[other].durationMs));
+}
+for(const [name,hash]of Object.entries((await json(join(study,'input-archives.json'))).artifacts))assert.equal(sha(await readFile(join(study,'inputs',name))),hash);
+assert.equal(summary.qualityGate,summary.arms.candidate.audited>=summary.arms.reference.audited);assert.equal(summary.mechanismGate,summary.arms.candidate.meaningfulSymbolicCalls>0);
+const c=summary.comparisons['candidate/reference'];assert.equal(summary.resourceGate,summary.qualityGate&&c.pairs>=4&&c.tokenDelta!==null&&c.tokenDelta<0&&c.costDelta!==null&&c.costDelta<0&&c.durationDelta!==null&&c.durationDelta<=0.1);
+assert.equal(summary.modelBenefitDemonstrated,summary.mechanismGate&&summary.qualityGate&&(summary.arms.candidate.audited>summary.arms.reference.audited||summary.resourceGate));
+await save(join(study,'verification.json'),{phase:'F52',trials:18,rawArchiveHashes:true,ledgerAndUsageRecomputed:true,sourceReviewHashBound:true,symbolicMechanismRecomputed:true,secondarySymbolicAggregatesRecomputed:true,manualSymbolicJudgmentsValidated:true,schemaOverheadRecomputed:true,optionalSchemaExposureVerified:true,solverBinaryAndLibrariesBound:true,executableAblationVerified:true,priorReservationsPreserved:true,modelRequests:0});
+console.log('F52: 18 immutable traces, receipts, acceptance and executable isolation verified');

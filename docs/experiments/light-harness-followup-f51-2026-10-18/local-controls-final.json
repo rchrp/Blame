@@ -1,0 +1,1770 @@
+{
+  "kind": "known_local_controls",
+  "modelCalls": 0,
+  "bindings": {
+    "reference": {
+      "light-workspace": "709a814555935eddff6503bccfb6896fa5bb32df177ee956407de505b2a67467",
+      "light-task-runner": "05546d578563a60b67e599746684cace8826aba3526e4837c586f3e70ae4d465",
+      "check-observation": "33644a395f94effa3568531ff146cb7ce8d57103e8a0ef113ac2225870d76ff1",
+      "symbolic-expression": "7e403ec5571f3013f616ddd6ad53b496d7bbf5ef13c2f98848ee36afe9e1f967",
+      "symbolic-program": "823f6197393decdf6888d78171576ae08f3380f4cbcee70d7fb92d96507c03d1",
+      "symbolic-analysis": "3e547bd012703988b184805608827ec2d966be7e8d93baaad4430ff66e36902b"
+    },
+    "candidate": {
+      "light-workspace": "08c30ffb5cf4c8ea8bf8d5db4113443b885c5d59b4dc6ca9b9b7e2b3b515dd85",
+      "light-task-runner": "757dcf249a0aea83b62b9a88c75469436d734575dacefc506971c058cae34f3a",
+      "check-observation": "33644a395f94effa3568531ff146cb7ce8d57103e8a0ef113ac2225870d76ff1",
+      "symbolic-expression": "9f5c49fcddb6c88d2568ace5d659effaeacff2b348ed3e0f234fe9e8bd3231aa",
+      "symbolic-program": "2120a37c740133335fbe466ab171a00a64ed656cf44ed1215acf91d22f2a07f5",
+      "symbolic-analysis": "7210d98dcfb7d08c15697befbfea1da5bf5c45554cada5dc88f9bb6ce66fbf3f"
+    }
+  },
+  "rows": [
+    {
+      "mode": "passing",
+      "arm": "reference",
+      "result": {
+        "status": "ok",
+        "data": {
+          "command": "npm run test:wrapped",
+          "exitCode": 0,
+          "output": "> test:wrapped\n> node wrapper.mjs\n\n\n RUN  v3.2.4 /tmp/blame-f51-local-HgXmIB/passing-reference\n\n ✓ case.test.ts (1 test) 2ms\n\n Test Files  1 passed (1)\n      Tests  1 passed (1)\n   Start at  00:15:25\n   Duration  365ms (transform 45ms, setup 0ms, collect 25ms, tests 2ms, environment 0ms, prepare 110ms)",
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "not_observed",
+            "outcome": "unknown",
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "none"
+          },
+          "reporting": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "not_observed",
+            "outcome": "unknown",
+            "counts": {
+              "executed": null,
+              "passed": null,
+              "failed": null,
+              "skipped": null,
+              "pending": null
+            },
+            "evidenceOrigin": "none",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "admission": "unverified",
+            "guidance": "Null means unreported, never zero. Pending is distinct from skipped. Counters follow the runner (some combine skipped/todo). Process success, passing tests, admitted source verification and user acceptance are separate claims.",
+            "invocationSourceRevisionId": "src_670a4d3bc6d4a7b51ad832fc179804f3",
+            "completedSourceRevisionId": "src_670a4d3bc6d4a7b51ad832fc179804f3",
+            "cwd": "."
+          },
+          "changed": false,
+          "paths": [],
+          "validation": {
+            "status": "unknown"
+          }
+        }
+      },
+      "checks": {
+        "status": "ok",
+        "data": {
+          "sourceRevisionId": "src_670a4d3bc6d4a7b51ad832fc179804f3",
+          "scope": "current_source_only",
+          "checks": [
+            {
+              "id": "validation://fdaf2f1d31a365a429a101b60d0c2fdfd9a6ba331d60bf2509cfa424b90e5302",
+              "task": "test:wrapped",
+              "command": "npm run test:wrapped",
+              "args": [],
+              "cwd": ".",
+              "sourceRevisionId": "src_670a4d3bc6d4a7b51ad832fc179804f3",
+              "status": "unknown",
+              "terminal": "unknown",
+              "category": null,
+              "reporting": {
+                "process": "exited",
+                "exitCode": 0,
+                "execution": "not_observed",
+                "outcome": "unknown",
+                "counts": {
+                  "executed": null,
+                  "passed": null,
+                  "failed": null,
+                  "skipped": null,
+                  "pending": null
+                },
+                "evidenceOrigin": "none",
+                "selection": "unknown",
+                "freshness": "unknown",
+                "admission": "unverified"
+              },
+              "admission": "unverified"
+            }
+          ],
+          "total": 1,
+          "truncated": false,
+          "failed": 0,
+          "guidance": "Only current-source journal entries are listed; absent entries may have run on an earlier source. This view launches no commands and does not admit validation. Null counters are unreported, never zero. Pending is distinct from skipped; some runners combine skipped/todo. User criteria require a separate assessment."
+        }
+      },
+      "sourceSha256Before": "30af7e06652de776de4a251cb57c2362f934e2cb922d8f332666ce9fd4bc1bde",
+      "sourceSha256After": "30af7e06652de776de4a251cb57c2362f934e2cb922d8f332666ce9fd4bc1bde"
+    },
+    {
+      "mode": "passing",
+      "arm": "candidate",
+      "result": {
+        "status": "ok",
+        "data": {
+          "command": "npm run test:wrapped",
+          "exitCode": 0,
+          "output": "> test:wrapped\n> node wrapper.mjs\n\n\n RUN  v3.2.4 /tmp/blame-f51-local-HgXmIB/passing-candidate\n\n ✓ case.test.ts (1 test) 2ms\n\n Test Files  1 passed (1)\n      Tests  1 passed (1)\n   Start at  00:15:26\n   Duration  237ms (transform 39ms, setup 0ms, collect 27ms, tests 2ms, environment 0ms, prepare 68ms)\n\nJSON report written to /tmp/blame-f51-local-HgXmIB/passing-candidate/.blame/harness/test-results/vitest-invocation-YcJHYD/4c5fb0b0-49d4-4280-a850-3cf4e3e57038.report.json",
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "vitest_report",
+            "counts": {
+              "executed": 1,
+              "passed": 1,
+              "failed": 0,
+              "skipped": 0
+            },
+            "evidence": {
+              "invocationId": ".blame/harness/test-results/vitest-invocation-YcJHYD",
+              "hookSha256": "16e85ec0b961106b014526ef7479ff85f0ae48266b264f1953e1a00968b1e53f",
+              "invocations": [
+                {
+                  "format": "blame-vitest-invocation-v1",
+                  "id": "4c5fb0b0-49d4-4280-a850-3cf4e3e57038",
+                  "runner": {
+                    "name": "vitest",
+                    "version": "3.2.4"
+                  },
+                  "executable": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+                  "entry": "/workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/vitest/vitest.mjs",
+                  "cwd": "/tmp/blame-f51-local-HgXmIB/passing-candidate",
+                  "args": [
+                    "run",
+                    "case.test.ts",
+                    "--maxWorkers=1",
+                    "--fileParallelism=false"
+                  ],
+                  "exitCode": 0,
+                  "argsSha256": "d0bba0b75f507c412fd3ebeb366bc3375375c1c8d6c629aa920237e692b21276",
+                  "argsTruncated": false,
+                  "reportSha256": "99709fedd6a25e808f6a593e27323027e404659224e8dc2ad38bea4d8bb2fc4d",
+                  "files": [
+                    {
+                      "path": "case.test.ts",
+                      "cases": 1,
+                      "sourceSha256Before": "30af7e06652de776de4a251cb57c2362f934e2cb922d8f332666ce9fd4bc1bde",
+                      "sourceSha256After": "30af7e06652de776de4a251cb57c2362f934e2cb922d8f332666ce9fd4bc1bde",
+                      "unchanged": true
+                    }
+                  ],
+                  "fileCount": 1,
+                  "filesTruncated": false
+                }
+              ],
+              "invocationCount": 1,
+              "invocationsTruncated": false,
+              "typeFileSelection": "unknown",
+              "boundary": "Invocation-owned Vitest 3.2.4 reported cases; runtime versus configured typecheck mode is not established. Counts may include repeated invocations. File hashes bind observed tests, not dependencies or typecheck selection. No source admission or user acceptance.",
+              "command": "npm run test:wrapped",
+              "cwd": ".",
+              "invocationSourceRevisionId": "src_670a4d3bc6d4a7b51ad832fc179804f3",
+              "completedSourceRevisionId": "src_670a4d3bc6d4a7b51ad832fc179804f3",
+              "manifestEnvironment": {
+                "beforeRevisionId": "env_765d43ccaddab03a3971f4a40d192a23",
+                "afterRevisionId": "env_765d43ccaddab03a3971f4a40d192a23",
+                "boundary": "Manifest/lock hashes only; installed dependencies and full environment are unknown."
+              }
+            }
+          },
+          "reporting": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 1,
+              "passed": 1,
+              "failed": 0,
+              "skipped": 0,
+              "pending": null
+            },
+            "evidenceOrigin": "vitest_report",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "admission": "unverified",
+            "guidance": "Null means unreported, never zero. Pending is distinct from skipped. Counters follow the runner (some combine skipped/todo). Process success, passing tests, admitted source verification and user acceptance are separate claims.",
+            "invocationSourceRevisionId": "src_670a4d3bc6d4a7b51ad832fc179804f3",
+            "completedSourceRevisionId": "src_670a4d3bc6d4a7b51ad832fc179804f3",
+            "cwd": "."
+          },
+          "changed": false,
+          "paths": [],
+          "validation": {
+            "status": "unknown"
+          }
+        }
+      },
+      "checks": {
+        "status": "ok",
+        "data": {
+          "sourceRevisionId": "src_670a4d3bc6d4a7b51ad832fc179804f3",
+          "scope": "current_source_only",
+          "checks": [
+            {
+              "id": "validation://f71a68b07906fd141b4aae34fa6a63548ecb88b7dad9e40391d0a8605e044538",
+              "task": "test:wrapped",
+              "command": "npm run test:wrapped",
+              "args": [],
+              "cwd": ".",
+              "sourceRevisionId": "src_670a4d3bc6d4a7b51ad832fc179804f3",
+              "status": "unknown",
+              "terminal": "unknown",
+              "category": null,
+              "reporting": {
+                "process": "exited",
+                "exitCode": 0,
+                "execution": "observed",
+                "outcome": "passed",
+                "counts": {
+                  "executed": 1,
+                  "passed": 1,
+                  "failed": 0,
+                  "skipped": 0,
+                  "pending": null
+                },
+                "evidenceOrigin": "vitest_report",
+                "selection": "unknown",
+                "freshness": "unknown",
+                "admission": "unverified"
+              },
+              "evidence": {
+                "invocationId": ".blame/harness/test-results/vitest-invocation-YcJHYD",
+                "hookSha256": "16e85ec0b961106b014526ef7479ff85f0ae48266b264f1953e1a00968b1e53f",
+                "invocations": [
+                  {
+                    "format": "blame-vitest-invocation-v1",
+                    "id": "4c5fb0b0-49d4-4280-a850-3cf4e3e57038",
+                    "runner": {
+                      "name": "vitest",
+                      "version": "3.2.4"
+                    },
+                    "executable": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+                    "entry": "/workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/vitest/vitest.mjs",
+                    "cwd": "/tmp/blame-f51-local-HgXmIB/passing-candidate",
+                    "args": [
+                      "run",
+                      "case.test.ts",
+                      "--maxWorkers=1",
+                      "--fileParallelism=false"
+                    ],
+                    "exitCode": 0,
+                    "argsSha256": "d0bba0b75f507c412fd3ebeb366bc3375375c1c8d6c629aa920237e692b21276",
+                    "argsTruncated": false,
+                    "reportSha256": "99709fedd6a25e808f6a593e27323027e404659224e8dc2ad38bea4d8bb2fc4d",
+                    "files": [
+                      {
+                        "path": "case.test.ts",
+                        "cases": 1,
+                        "sourceSha256Before": "30af7e06652de776de4a251cb57c2362f934e2cb922d8f332666ce9fd4bc1bde",
+                        "sourceSha256After": "30af7e06652de776de4a251cb57c2362f934e2cb922d8f332666ce9fd4bc1bde",
+                        "unchanged": true
+                      }
+                    ],
+                    "fileCount": 1,
+                    "filesTruncated": false
+                  }
+                ],
+                "invocationCount": 1,
+                "invocationsTruncated": false,
+                "typeFileSelection": "unknown",
+                "boundary": "Invocation-owned Vitest 3.2.4 reported cases; runtime versus configured typecheck mode is not established. Counts may include repeated invocations. File hashes bind observed tests, not dependencies or typecheck selection. No source admission or user acceptance.",
+                "command": "npm run test:wrapped",
+                "cwd": ".",
+                "invocationSourceRevisionId": "src_670a4d3bc6d4a7b51ad832fc179804f3",
+                "completedSourceRevisionId": "src_670a4d3bc6d4a7b51ad832fc179804f3",
+                "manifestEnvironment": {
+                  "beforeRevisionId": "env_765d43ccaddab03a3971f4a40d192a23",
+                  "afterRevisionId": "env_765d43ccaddab03a3971f4a40d192a23",
+                  "boundary": "Manifest/lock hashes only; installed dependencies and full environment are unknown."
+                }
+              },
+              "admission": "unverified"
+            }
+          ],
+          "total": 1,
+          "truncated": false,
+          "failed": 0,
+          "guidance": "Only current-source journal entries are listed; absent entries may have run on an earlier source. This view launches no commands and does not admit validation. Null counters are unreported, never zero. Pending is distinct from skipped; some runners combine skipped/todo. User criteria require a separate assessment."
+        }
+      },
+      "sourceSha256Before": "30af7e06652de776de4a251cb57c2362f934e2cb922d8f332666ce9fd4bc1bde",
+      "sourceSha256After": "30af7e06652de776de4a251cb57c2362f934e2cb922d8f332666ce9fd4bc1bde"
+    },
+    {
+      "mode": "masked_failure",
+      "arm": "reference",
+      "result": {
+        "status": "ok",
+        "data": {
+          "command": "npm run test:wrapped",
+          "exitCode": 0,
+          "output": "> test:wrapped\n> node wrapper.mjs\n\n\n RUN  v3.2.4 /tmp/blame-f51-local-HgXmIB/masked_failure-reference\n\n ❯ case.test.ts (1 test | 1 failed) 7ms\n   × actual 6ms\n     → expected 1 to be 2 // Object.is equality\n\n⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯\n\n FAIL  case.test.ts > actual\nAssertionError: expected 1 to be 2 // Object.is equality\n\n- Expected\n+ Received\n\n- 2\n+ 1\n\n ❯ case.test.ts:1:65\n      1| import {test,expect} from 'vitest'; test('actual',()=>expect(1).toBe(2…\n       |                                                                 ^\n      2| \n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯\n\n\n Test Files  1 failed (1)\n      Tests  1 failed (1)\n   Start at  00:15:27\n   Duration  242ms (transform 43ms, setup 0ms, collect 29ms, tests 7ms, environment 0ms, prepare 69ms)",
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "not_observed",
+            "outcome": "unknown",
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "none"
+          },
+          "reporting": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "not_observed",
+            "outcome": "unknown",
+            "counts": {
+              "executed": null,
+              "passed": null,
+              "failed": null,
+              "skipped": null,
+              "pending": null
+            },
+            "evidenceOrigin": "none",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "admission": "unverified",
+            "guidance": "Null means unreported, never zero. Pending is distinct from skipped. Counters follow the runner (some combine skipped/todo). Process success, passing tests, admitted source verification and user acceptance are separate claims.",
+            "invocationSourceRevisionId": "src_60fe2884e93477cf0d17328c00b26b69",
+            "completedSourceRevisionId": "src_60fe2884e93477cf0d17328c00b26b69",
+            "cwd": "."
+          },
+          "changed": false,
+          "paths": [],
+          "validation": {
+            "status": "unknown"
+          }
+        }
+      },
+      "checks": {
+        "status": "ok",
+        "data": {
+          "sourceRevisionId": "src_60fe2884e93477cf0d17328c00b26b69",
+          "scope": "current_source_only",
+          "checks": [
+            {
+              "id": "validation://ddbfc6a329e802817233fd01c703a890588b21f215c7dbe20414bc17f8685030",
+              "task": "test:wrapped",
+              "command": "npm run test:wrapped",
+              "args": [],
+              "cwd": ".",
+              "sourceRevisionId": "src_60fe2884e93477cf0d17328c00b26b69",
+              "status": "unknown",
+              "terminal": "unknown",
+              "category": null,
+              "reporting": {
+                "process": "exited",
+                "exitCode": 0,
+                "execution": "not_observed",
+                "outcome": "unknown",
+                "counts": {
+                  "executed": null,
+                  "passed": null,
+                  "failed": null,
+                  "skipped": null,
+                  "pending": null
+                },
+                "evidenceOrigin": "none",
+                "selection": "unknown",
+                "freshness": "unknown",
+                "admission": "unverified"
+              },
+              "admission": "unverified"
+            }
+          ],
+          "total": 1,
+          "truncated": false,
+          "failed": 0,
+          "guidance": "Only current-source journal entries are listed; absent entries may have run on an earlier source. This view launches no commands and does not admit validation. Null counters are unreported, never zero. Pending is distinct from skipped; some runners combine skipped/todo. User criteria require a separate assessment."
+        }
+      },
+      "sourceSha256Before": "2c28b59ab9632c639494d19063cf3b2fc1dc5ea5934c75793d047bd9f2a262c4",
+      "sourceSha256After": "2c28b59ab9632c639494d19063cf3b2fc1dc5ea5934c75793d047bd9f2a262c4"
+    },
+    {
+      "mode": "masked_failure",
+      "arm": "candidate",
+      "result": {
+        "status": "ok",
+        "data": {
+          "command": "npm run test:wrapped",
+          "exitCode": 0,
+          "output": "> test:wrapped\n> node wrapper.mjs\n\n\n RUN  v3.2.4 /tmp/blame-f51-local-HgXmIB/masked_failure-candidate\n\n ❯ case.test.ts (1 test | 1 failed) 8ms\n   × actual 7ms\n     → expected 1 to be 2 // Object.is equality\n\n⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯\n\n FAIL  case.test.ts > actual\nAssertionError: expected 1 to be 2 // Object.is equality\n\n- Expected\n+ Received\n\n- 2\n+ 1\n\n ❯ case.test.ts:1:65\n      1| import {test,expect} from 'vitest'; test('actual',()=>expect(1).toBe(2…\n       |                                                                 ^\n      2| \n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯\n\n\n Test Files  1 failed (1)\n      Tests  1 failed (1)\n   Start at  00:15:27\n   Duration  279ms (transform 39ms, setup 0ms, collect 25ms, tests 8ms, environment 0ms, prepare 81ms)\n\nJSON report written to /tmp/blame-f51-local-HgXmIB/masked_failure-candidate/.blame/harness/test-results/vitest-invocation-eKBeyx/36662dd3-72a5-406c-bf40-c39836396dcc.report.json",
+          "failure": {
+            "category": "code",
+            "recovery": "Fix the reported project error before running the relevant validation again."
+          },
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "failed",
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "vitest_report",
+            "counts": {
+              "executed": 1,
+              "passed": 0,
+              "failed": 1,
+              "skipped": 0
+            },
+            "evidence": {
+              "invocationId": ".blame/harness/test-results/vitest-invocation-eKBeyx",
+              "hookSha256": "16e85ec0b961106b014526ef7479ff85f0ae48266b264f1953e1a00968b1e53f",
+              "invocations": [
+                {
+                  "format": "blame-vitest-invocation-v1",
+                  "id": "36662dd3-72a5-406c-bf40-c39836396dcc",
+                  "runner": {
+                    "name": "vitest",
+                    "version": "3.2.4"
+                  },
+                  "executable": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+                  "entry": "/workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/vitest/vitest.mjs",
+                  "cwd": "/tmp/blame-f51-local-HgXmIB/masked_failure-candidate",
+                  "args": [
+                    "run",
+                    "case.test.ts",
+                    "--maxWorkers=1",
+                    "--fileParallelism=false"
+                  ],
+                  "exitCode": 1,
+                  "argsSha256": "d0bba0b75f507c412fd3ebeb366bc3375375c1c8d6c629aa920237e692b21276",
+                  "argsTruncated": false,
+                  "reportSha256": "b4f8bf6df944f13a97b5ab0120c09e465f875846675d379a0500e87a4a07f065",
+                  "files": [
+                    {
+                      "path": "case.test.ts",
+                      "cases": 1,
+                      "sourceSha256Before": "2c28b59ab9632c639494d19063cf3b2fc1dc5ea5934c75793d047bd9f2a262c4",
+                      "sourceSha256After": "2c28b59ab9632c639494d19063cf3b2fc1dc5ea5934c75793d047bd9f2a262c4",
+                      "unchanged": true
+                    }
+                  ],
+                  "fileCount": 1,
+                  "filesTruncated": false
+                }
+              ],
+              "invocationCount": 1,
+              "invocationsTruncated": false,
+              "typeFileSelection": "unknown",
+              "boundary": "Invocation-owned Vitest 3.2.4 reported cases; runtime versus configured typecheck mode is not established. Counts may include repeated invocations. File hashes bind observed tests, not dependencies or typecheck selection. No source admission or user acceptance.",
+              "command": "npm run test:wrapped",
+              "cwd": ".",
+              "invocationSourceRevisionId": "src_60fe2884e93477cf0d17328c00b26b69",
+              "completedSourceRevisionId": "src_60fe2884e93477cf0d17328c00b26b69",
+              "manifestEnvironment": {
+                "beforeRevisionId": "env_765d43ccaddab03a3971f4a40d192a23",
+                "afterRevisionId": "env_765d43ccaddab03a3971f4a40d192a23",
+                "boundary": "Manifest/lock hashes only; installed dependencies and full environment are unknown."
+              }
+            }
+          },
+          "reporting": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "failed",
+            "counts": {
+              "executed": 1,
+              "passed": 0,
+              "failed": 1,
+              "skipped": 0,
+              "pending": null
+            },
+            "evidenceOrigin": "vitest_report",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "admission": "unverified",
+            "guidance": "Null means unreported, never zero. Pending is distinct from skipped. Counters follow the runner (some combine skipped/todo). Process success, passing tests, admitted source verification and user acceptance are separate claims.",
+            "invocationSourceRevisionId": "src_60fe2884e93477cf0d17328c00b26b69",
+            "completedSourceRevisionId": "src_60fe2884e93477cf0d17328c00b26b69",
+            "cwd": "."
+          },
+          "changed": false,
+          "paths": [],
+          "validation": {
+            "status": "failed"
+          },
+          "diagnostics": [
+            {
+              "path": "case.test.ts",
+              "view": "range",
+              "complete": true,
+              "content": "import {test,expect} from 'vitest'; test('actual',()=>expect(1).toBe(2));\n",
+              "truncated": false,
+              "source": "current workspace; diagnostic revision not certified"
+            }
+          ]
+        }
+      },
+      "checks": {
+        "status": "ok",
+        "data": {
+          "sourceRevisionId": "src_60fe2884e93477cf0d17328c00b26b69",
+          "scope": "current_source_only",
+          "checks": [
+            {
+              "id": "validation://8110891aff5b111198ce553d7586775c228a5df90754943440bc5a24bd45cf68",
+              "task": "test:wrapped",
+              "command": "npm run test:wrapped",
+              "args": [],
+              "cwd": ".",
+              "sourceRevisionId": "src_60fe2884e93477cf0d17328c00b26b69",
+              "status": "failed",
+              "terminal": "failed",
+              "category": "code",
+              "reporting": {
+                "process": "exited",
+                "exitCode": 0,
+                "execution": "observed",
+                "outcome": "failed",
+                "counts": {
+                  "executed": 1,
+                  "passed": 0,
+                  "failed": 1,
+                  "skipped": 0,
+                  "pending": null
+                },
+                "evidenceOrigin": "vitest_report",
+                "selection": "unknown",
+                "freshness": "unknown",
+                "admission": "unverified"
+              },
+              "evidence": {
+                "invocationId": ".blame/harness/test-results/vitest-invocation-eKBeyx",
+                "hookSha256": "16e85ec0b961106b014526ef7479ff85f0ae48266b264f1953e1a00968b1e53f",
+                "invocations": [
+                  {
+                    "format": "blame-vitest-invocation-v1",
+                    "id": "36662dd3-72a5-406c-bf40-c39836396dcc",
+                    "runner": {
+                      "name": "vitest",
+                      "version": "3.2.4"
+                    },
+                    "executable": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+                    "entry": "/workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/vitest/vitest.mjs",
+                    "cwd": "/tmp/blame-f51-local-HgXmIB/masked_failure-candidate",
+                    "args": [
+                      "run",
+                      "case.test.ts",
+                      "--maxWorkers=1",
+                      "--fileParallelism=false"
+                    ],
+                    "exitCode": 1,
+                    "argsSha256": "d0bba0b75f507c412fd3ebeb366bc3375375c1c8d6c629aa920237e692b21276",
+                    "argsTruncated": false,
+                    "reportSha256": "b4f8bf6df944f13a97b5ab0120c09e465f875846675d379a0500e87a4a07f065",
+                    "files": [
+                      {
+                        "path": "case.test.ts",
+                        "cases": 1,
+                        "sourceSha256Before": "2c28b59ab9632c639494d19063cf3b2fc1dc5ea5934c75793d047bd9f2a262c4",
+                        "sourceSha256After": "2c28b59ab9632c639494d19063cf3b2fc1dc5ea5934c75793d047bd9f2a262c4",
+                        "unchanged": true
+                      }
+                    ],
+                    "fileCount": 1,
+                    "filesTruncated": false
+                  }
+                ],
+                "invocationCount": 1,
+                "invocationsTruncated": false,
+                "typeFileSelection": "unknown",
+                "boundary": "Invocation-owned Vitest 3.2.4 reported cases; runtime versus configured typecheck mode is not established. Counts may include repeated invocations. File hashes bind observed tests, not dependencies or typecheck selection. No source admission or user acceptance.",
+                "command": "npm run test:wrapped",
+                "cwd": ".",
+                "invocationSourceRevisionId": "src_60fe2884e93477cf0d17328c00b26b69",
+                "completedSourceRevisionId": "src_60fe2884e93477cf0d17328c00b26b69",
+                "manifestEnvironment": {
+                  "beforeRevisionId": "env_765d43ccaddab03a3971f4a40d192a23",
+                  "afterRevisionId": "env_765d43ccaddab03a3971f4a40d192a23",
+                  "boundary": "Manifest/lock hashes only; installed dependencies and full environment are unknown."
+                }
+              },
+              "admission": "unverified"
+            }
+          ],
+          "total": 1,
+          "truncated": false,
+          "failed": 1,
+          "guidance": "Only current-source journal entries are listed; absent entries may have run on an earlier source. This view launches no commands and does not admit validation. Null counters are unreported, never zero. Pending is distinct from skipped; some runners combine skipped/todo. User criteria require a separate assessment."
+        }
+      },
+      "sourceSha256Before": "2c28b59ab9632c639494d19063cf3b2fc1dc5ea5934c75793d047bd9f2a262c4",
+      "sourceSha256After": "2c28b59ab9632c639494d19063cf3b2fc1dc5ea5934c75793d047bd9f2a262c4"
+    },
+    {
+      "mode": "stale",
+      "arm": "reference",
+      "result": {
+        "status": "ok",
+        "data": {
+          "command": "npm run test:wrapped",
+          "exitCode": 0,
+          "output": "> test:wrapped\n> node wrapper.mjs\n\n\n RUN  v3.2.4 /tmp/blame-f51-local-HgXmIB/stale-reference\n\n ✓ case.test.ts (1 test) 2ms\n\n Test Files  1 passed (1)\n      Tests  1 passed (1)\n   Start at  00:15:28\n   Duration  230ms (transform 34ms, setup 0ms, collect 22ms, tests 2ms, environment 0ms, prepare 68ms)",
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "not_observed",
+            "outcome": "unknown",
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "stale",
+            "evidenceOrigin": "none"
+          },
+          "reporting": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "not_observed",
+            "outcome": "unknown",
+            "counts": {
+              "executed": null,
+              "passed": null,
+              "failed": null,
+              "skipped": null,
+              "pending": null
+            },
+            "evidenceOrigin": "none",
+            "selection": "unknown",
+            "freshness": "stale",
+            "admission": "unverified",
+            "guidance": "Null means unreported, never zero. Pending is distinct from skipped. Counters follow the runner (some combine skipped/todo). Process success, passing tests, admitted source verification and user acceptance are separate claims.",
+            "invocationSourceRevisionId": "src_dd4e4b602097491910b9f59c9f5aeb0c",
+            "completedSourceRevisionId": "src_2ad7d8ca13cd4b4882f19da4c8a01cbc",
+            "cwd": "."
+          },
+          "changed": true,
+          "paths": [
+            "case.test.ts"
+          ],
+          "validation": {
+            "status": "stale"
+          }
+        }
+      },
+      "checks": {
+        "status": "ok",
+        "data": {
+          "sourceRevisionId": "src_2ad7d8ca13cd4b4882f19da4c8a01cbc",
+          "scope": "current_source_only",
+          "checks": [],
+          "total": 0,
+          "truncated": false,
+          "failed": 0,
+          "guidance": "Only current-source journal entries are listed; absent entries may have run on an earlier source. This view launches no commands and does not admit validation. Null counters are unreported, never zero. Pending is distinct from skipped; some runners combine skipped/todo. User criteria require a separate assessment."
+        }
+      },
+      "sourceSha256Before": "30af7e06652de776de4a251cb57c2362f934e2cb922d8f332666ce9fd4bc1bde",
+      "sourceSha256After": "c4aee7ab4a0cb6fbfd3d635c5ce4f9d7916b5e00138078a1ecd4fd54d0bf900d"
+    },
+    {
+      "mode": "stale",
+      "arm": "candidate",
+      "result": {
+        "status": "ok",
+        "data": {
+          "command": "npm run test:wrapped",
+          "exitCode": 0,
+          "output": "> test:wrapped\n> node wrapper.mjs\n\n\n RUN  v3.2.4 /tmp/blame-f51-local-HgXmIB/stale-candidate\n\n ✓ case.test.ts (1 test) 2ms\n\n Test Files  1 passed (1)\n      Tests  1 passed (1)\n   Start at  00:15:29\n   Duration  223ms (transform 31ms, setup 0ms, collect 23ms, tests 2ms, environment 0ms, prepare 58ms)\n\nJSON report written to /tmp/blame-f51-local-HgXmIB/stale-candidate/.blame/harness/test-results/vitest-invocation-h9cYU5/fcb30935-9162-482c-9907-81c9da1c0ba4.report.json",
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "stale",
+            "evidenceOrigin": "vitest_report",
+            "counts": {
+              "executed": 1,
+              "passed": 1,
+              "failed": 0,
+              "skipped": 0
+            },
+            "evidence": {
+              "invocationId": ".blame/harness/test-results/vitest-invocation-h9cYU5",
+              "hookSha256": "16e85ec0b961106b014526ef7479ff85f0ae48266b264f1953e1a00968b1e53f",
+              "invocations": [
+                {
+                  "format": "blame-vitest-invocation-v1",
+                  "id": "fcb30935-9162-482c-9907-81c9da1c0ba4",
+                  "runner": {
+                    "name": "vitest",
+                    "version": "3.2.4"
+                  },
+                  "executable": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+                  "entry": "/workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/vitest/vitest.mjs",
+                  "cwd": "/tmp/blame-f51-local-HgXmIB/stale-candidate",
+                  "args": [
+                    "run",
+                    "case.test.ts",
+                    "--maxWorkers=1",
+                    "--fileParallelism=false"
+                  ],
+                  "exitCode": 0,
+                  "argsSha256": "d0bba0b75f507c412fd3ebeb366bc3375375c1c8d6c629aa920237e692b21276",
+                  "argsTruncated": false,
+                  "reportSha256": "35882c48fb47d368c11ac96ca98e9652948a5f1438cede9b518aaa0dde4dc412",
+                  "files": [
+                    {
+                      "path": "case.test.ts",
+                      "cases": 1,
+                      "sourceSha256Before": "30af7e06652de776de4a251cb57c2362f934e2cb922d8f332666ce9fd4bc1bde",
+                      "sourceSha256After": "c4aee7ab4a0cb6fbfd3d635c5ce4f9d7916b5e00138078a1ecd4fd54d0bf900d",
+                      "unchanged": false
+                    }
+                  ],
+                  "fileCount": 1,
+                  "filesTruncated": false
+                }
+              ],
+              "invocationCount": 1,
+              "invocationsTruncated": false,
+              "typeFileSelection": "unknown",
+              "boundary": "Invocation-owned Vitest 3.2.4 reported cases; runtime versus configured typecheck mode is not established. Counts may include repeated invocations. File hashes bind observed tests, not dependencies or typecheck selection. No source admission or user acceptance.",
+              "command": "npm run test:wrapped",
+              "cwd": ".",
+              "invocationSourceRevisionId": "src_dd4e4b602097491910b9f59c9f5aeb0c",
+              "completedSourceRevisionId": "src_2ad7d8ca13cd4b4882f19da4c8a01cbc",
+              "manifestEnvironment": {
+                "beforeRevisionId": "env_765d43ccaddab03a3971f4a40d192a23",
+                "afterRevisionId": "env_765d43ccaddab03a3971f4a40d192a23",
+                "boundary": "Manifest/lock hashes only; installed dependencies and full environment are unknown."
+              }
+            }
+          },
+          "reporting": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 1,
+              "passed": 1,
+              "failed": 0,
+              "skipped": 0,
+              "pending": null
+            },
+            "evidenceOrigin": "vitest_report",
+            "selection": "unknown",
+            "freshness": "stale",
+            "admission": "unverified",
+            "guidance": "Null means unreported, never zero. Pending is distinct from skipped. Counters follow the runner (some combine skipped/todo). Process success, passing tests, admitted source verification and user acceptance are separate claims.",
+            "invocationSourceRevisionId": "src_dd4e4b602097491910b9f59c9f5aeb0c",
+            "completedSourceRevisionId": "src_2ad7d8ca13cd4b4882f19da4c8a01cbc",
+            "cwd": "."
+          },
+          "changed": true,
+          "paths": [
+            "case.test.ts"
+          ],
+          "validation": {
+            "status": "stale"
+          }
+        }
+      },
+      "checks": {
+        "status": "ok",
+        "data": {
+          "sourceRevisionId": "src_2ad7d8ca13cd4b4882f19da4c8a01cbc",
+          "scope": "current_source_only",
+          "checks": [],
+          "total": 0,
+          "truncated": false,
+          "failed": 0,
+          "guidance": "Only current-source journal entries are listed; absent entries may have run on an earlier source. This view launches no commands and does not admit validation. Null counters are unreported, never zero. Pending is distinct from skipped; some runners combine skipped/todo. User criteria require a separate assessment."
+        }
+      },
+      "sourceSha256Before": "30af7e06652de776de4a251cb57c2362f934e2cb922d8f332666ce9fd4bc1bde",
+      "sourceSha256After": "c4aee7ab4a0cb6fbfd3d635c5ce4f9d7916b5e00138078a1ecd4fd54d0bf900d"
+    },
+    {
+      "mode": "type_error",
+      "arm": "reference",
+      "result": {
+        "status": "ok",
+        "data": {
+          "command": "npm run test:wrapped",
+          "exitCode": 0,
+          "output": "> test:wrapped\n> node wrapper.mjs\n\n\n RUN  v3.2.4 /tmp/blame-f51-local-HgXmIB/type_error-reference\n\n ✓ case.test.ts (1 test) 2ms\n\n Test Files  1 passed (1)\n      Tests  1 passed (1)\n   Start at  00:15:30\n   Duration  274ms (transform 30ms, setup 0ms, collect 22ms, tests 2ms, environment 0ms, prepare 71ms)",
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "not_observed",
+            "outcome": "unknown",
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "none"
+          },
+          "reporting": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "not_observed",
+            "outcome": "unknown",
+            "counts": {
+              "executed": null,
+              "passed": null,
+              "failed": null,
+              "skipped": null,
+              "pending": null
+            },
+            "evidenceOrigin": "none",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "admission": "unverified",
+            "guidance": "Null means unreported, never zero. Pending is distinct from skipped. Counters follow the runner (some combine skipped/todo). Process success, passing tests, admitted source verification and user acceptance are separate claims.",
+            "invocationSourceRevisionId": "src_16ee332e3028231ae4998883c0df8dc4",
+            "completedSourceRevisionId": "src_16ee332e3028231ae4998883c0df8dc4",
+            "cwd": "."
+          },
+          "changed": false,
+          "paths": [],
+          "validation": {
+            "status": "unknown"
+          }
+        }
+      },
+      "checks": {
+        "status": "ok",
+        "data": {
+          "sourceRevisionId": "src_16ee332e3028231ae4998883c0df8dc4",
+          "scope": "current_source_only",
+          "checks": [
+            {
+              "id": "validation://24e74af8ef30e603a14135cbcc8e80f7d4f192d8749c8fa20216b3d4e9d6f662",
+              "task": "test:wrapped",
+              "command": "npm run test:wrapped",
+              "args": [],
+              "cwd": ".",
+              "sourceRevisionId": "src_16ee332e3028231ae4998883c0df8dc4",
+              "status": "unknown",
+              "terminal": "unknown",
+              "category": null,
+              "reporting": {
+                "process": "exited",
+                "exitCode": 0,
+                "execution": "not_observed",
+                "outcome": "unknown",
+                "counts": {
+                  "executed": null,
+                  "passed": null,
+                  "failed": null,
+                  "skipped": null,
+                  "pending": null
+                },
+                "evidenceOrigin": "none",
+                "selection": "unknown",
+                "freshness": "unknown",
+                "admission": "unverified"
+              },
+              "admission": "unverified"
+            }
+          ],
+          "total": 1,
+          "truncated": false,
+          "failed": 0,
+          "guidance": "Only current-source journal entries are listed; absent entries may have run on an earlier source. This view launches no commands and does not admit validation. Null counters are unreported, never zero. Pending is distinct from skipped; some runners combine skipped/todo. User criteria require a separate assessment."
+        }
+      },
+      "sourceSha256Before": "22dc46dbf73c87b344d6bc4fe066d5fe2db47ba3419f0e4dd1315984e171aebf",
+      "sourceSha256After": "22dc46dbf73c87b344d6bc4fe066d5fe2db47ba3419f0e4dd1315984e171aebf",
+      "independentTypes": {
+        "exitCode": 2,
+        "output": "case.test.ts(1,43): error TS2322: Type 'string' is not assignable to type 'number'.\n"
+      }
+    },
+    {
+      "mode": "type_error",
+      "arm": "candidate",
+      "result": {
+        "status": "ok",
+        "data": {
+          "command": "npm run test:wrapped",
+          "exitCode": 0,
+          "output": "> test:wrapped\n> node wrapper.mjs\n\n\n RUN  v3.2.4 /tmp/blame-f51-local-HgXmIB/type_error-candidate\n\n ✓ case.test.ts (1 test) 2ms\n\n Test Files  1 passed (1)\n      Tests  1 passed (1)\n   Start at  00:15:32\n   Duration  215ms (transform 31ms, setup 0ms, collect 20ms, tests 2ms, environment 0ms, prepare 64ms)\n\nJSON report written to /tmp/blame-f51-local-HgXmIB/type_error-candidate/.blame/harness/test-results/vitest-invocation-p2t6yr/471eaea5-c725-4947-b99e-e3f05ed34d19.report.json",
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "vitest_report",
+            "counts": {
+              "executed": 1,
+              "passed": 1,
+              "failed": 0,
+              "skipped": 0
+            },
+            "evidence": {
+              "invocationId": ".blame/harness/test-results/vitest-invocation-p2t6yr",
+              "hookSha256": "16e85ec0b961106b014526ef7479ff85f0ae48266b264f1953e1a00968b1e53f",
+              "invocations": [
+                {
+                  "format": "blame-vitest-invocation-v1",
+                  "id": "471eaea5-c725-4947-b99e-e3f05ed34d19",
+                  "runner": {
+                    "name": "vitest",
+                    "version": "3.2.4"
+                  },
+                  "executable": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+                  "entry": "/workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/vitest/vitest.mjs",
+                  "cwd": "/tmp/blame-f51-local-HgXmIB/type_error-candidate",
+                  "args": [
+                    "run",
+                    "case.test.ts",
+                    "--maxWorkers=1",
+                    "--fileParallelism=false"
+                  ],
+                  "exitCode": 0,
+                  "argsSha256": "d0bba0b75f507c412fd3ebeb366bc3375375c1c8d6c629aa920237e692b21276",
+                  "argsTruncated": false,
+                  "reportSha256": "1b3bceb3d4ff5c0f27489340f589a97bddbad920c379d151a542a129c00b3597",
+                  "files": [
+                    {
+                      "path": "case.test.ts",
+                      "cases": 1,
+                      "sourceSha256Before": "22dc46dbf73c87b344d6bc4fe066d5fe2db47ba3419f0e4dd1315984e171aebf",
+                      "sourceSha256After": "22dc46dbf73c87b344d6bc4fe066d5fe2db47ba3419f0e4dd1315984e171aebf",
+                      "unchanged": true
+                    }
+                  ],
+                  "fileCount": 1,
+                  "filesTruncated": false
+                }
+              ],
+              "invocationCount": 1,
+              "invocationsTruncated": false,
+              "typeFileSelection": "unknown",
+              "boundary": "Invocation-owned Vitest 3.2.4 reported cases; runtime versus configured typecheck mode is not established. Counts may include repeated invocations. File hashes bind observed tests, not dependencies or typecheck selection. No source admission or user acceptance.",
+              "command": "npm run test:wrapped",
+              "cwd": ".",
+              "invocationSourceRevisionId": "src_16ee332e3028231ae4998883c0df8dc4",
+              "completedSourceRevisionId": "src_16ee332e3028231ae4998883c0df8dc4",
+              "manifestEnvironment": {
+                "beforeRevisionId": "env_765d43ccaddab03a3971f4a40d192a23",
+                "afterRevisionId": "env_765d43ccaddab03a3971f4a40d192a23",
+                "boundary": "Manifest/lock hashes only; installed dependencies and full environment are unknown."
+              }
+            }
+          },
+          "reporting": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 1,
+              "passed": 1,
+              "failed": 0,
+              "skipped": 0,
+              "pending": null
+            },
+            "evidenceOrigin": "vitest_report",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "admission": "unverified",
+            "guidance": "Null means unreported, never zero. Pending is distinct from skipped. Counters follow the runner (some combine skipped/todo). Process success, passing tests, admitted source verification and user acceptance are separate claims.",
+            "invocationSourceRevisionId": "src_16ee332e3028231ae4998883c0df8dc4",
+            "completedSourceRevisionId": "src_16ee332e3028231ae4998883c0df8dc4",
+            "cwd": "."
+          },
+          "changed": false,
+          "paths": [],
+          "validation": {
+            "status": "unknown"
+          }
+        }
+      },
+      "checks": {
+        "status": "ok",
+        "data": {
+          "sourceRevisionId": "src_16ee332e3028231ae4998883c0df8dc4",
+          "scope": "current_source_only",
+          "checks": [
+            {
+              "id": "validation://f3dc2ba4adfd13990073c4696f8105e7098488136f26b358b2720f9a12dc8120",
+              "task": "test:wrapped",
+              "command": "npm run test:wrapped",
+              "args": [],
+              "cwd": ".",
+              "sourceRevisionId": "src_16ee332e3028231ae4998883c0df8dc4",
+              "status": "unknown",
+              "terminal": "unknown",
+              "category": null,
+              "reporting": {
+                "process": "exited",
+                "exitCode": 0,
+                "execution": "observed",
+                "outcome": "passed",
+                "counts": {
+                  "executed": 1,
+                  "passed": 1,
+                  "failed": 0,
+                  "skipped": 0,
+                  "pending": null
+                },
+                "evidenceOrigin": "vitest_report",
+                "selection": "unknown",
+                "freshness": "unknown",
+                "admission": "unverified"
+              },
+              "evidence": {
+                "invocationId": ".blame/harness/test-results/vitest-invocation-p2t6yr",
+                "hookSha256": "16e85ec0b961106b014526ef7479ff85f0ae48266b264f1953e1a00968b1e53f",
+                "invocations": [
+                  {
+                    "format": "blame-vitest-invocation-v1",
+                    "id": "471eaea5-c725-4947-b99e-e3f05ed34d19",
+                    "runner": {
+                      "name": "vitest",
+                      "version": "3.2.4"
+                    },
+                    "executable": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+                    "entry": "/workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/vitest/vitest.mjs",
+                    "cwd": "/tmp/blame-f51-local-HgXmIB/type_error-candidate",
+                    "args": [
+                      "run",
+                      "case.test.ts",
+                      "--maxWorkers=1",
+                      "--fileParallelism=false"
+                    ],
+                    "exitCode": 0,
+                    "argsSha256": "d0bba0b75f507c412fd3ebeb366bc3375375c1c8d6c629aa920237e692b21276",
+                    "argsTruncated": false,
+                    "reportSha256": "1b3bceb3d4ff5c0f27489340f589a97bddbad920c379d151a542a129c00b3597",
+                    "files": [
+                      {
+                        "path": "case.test.ts",
+                        "cases": 1,
+                        "sourceSha256Before": "22dc46dbf73c87b344d6bc4fe066d5fe2db47ba3419f0e4dd1315984e171aebf",
+                        "sourceSha256After": "22dc46dbf73c87b344d6bc4fe066d5fe2db47ba3419f0e4dd1315984e171aebf",
+                        "unchanged": true
+                      }
+                    ],
+                    "fileCount": 1,
+                    "filesTruncated": false
+                  }
+                ],
+                "invocationCount": 1,
+                "invocationsTruncated": false,
+                "typeFileSelection": "unknown",
+                "boundary": "Invocation-owned Vitest 3.2.4 reported cases; runtime versus configured typecheck mode is not established. Counts may include repeated invocations. File hashes bind observed tests, not dependencies or typecheck selection. No source admission or user acceptance.",
+                "command": "npm run test:wrapped",
+                "cwd": ".",
+                "invocationSourceRevisionId": "src_16ee332e3028231ae4998883c0df8dc4",
+                "completedSourceRevisionId": "src_16ee332e3028231ae4998883c0df8dc4",
+                "manifestEnvironment": {
+                  "beforeRevisionId": "env_765d43ccaddab03a3971f4a40d192a23",
+                  "afterRevisionId": "env_765d43ccaddab03a3971f4a40d192a23",
+                  "boundary": "Manifest/lock hashes only; installed dependencies and full environment are unknown."
+                }
+              },
+              "admission": "unverified"
+            }
+          ],
+          "total": 1,
+          "truncated": false,
+          "failed": 0,
+          "guidance": "Only current-source journal entries are listed; absent entries may have run on an earlier source. This view launches no commands and does not admit validation. Null counters are unreported, never zero. Pending is distinct from skipped; some runners combine skipped/todo. User criteria require a separate assessment."
+        }
+      },
+      "sourceSha256Before": "22dc46dbf73c87b344d6bc4fe066d5fe2db47ba3419f0e4dd1315984e171aebf",
+      "sourceSha256After": "22dc46dbf73c87b344d6bc4fe066d5fe2db47ba3419f0e4dd1315984e171aebf",
+      "independentTypes": {
+        "exitCode": 2,
+        "output": "case.test.ts(1,43): error TS2322: Type 'string' is not assignable to type 'number'.\n"
+      }
+    },
+    {
+      "mode": "empty",
+      "arm": "reference",
+      "result": {
+        "status": "ok",
+        "data": {
+          "command": "npm run test:wrapped",
+          "exitCode": 0,
+          "output": "> test:wrapped\n> node wrapper.mjs\n\n\n RUN  v3.2.4 /tmp/blame-f51-local-HgXmIB/empty-reference\n\nNo test files found, exiting with code 1\n\nfilter: absent.test.ts\ninclude: **/*.{test,spec}.?(c|m)[jt]s?(x)\nexclude:  **/node_modules/**, **/dist/**, **/cypress/**, **/.{idea,git,cache,output,temp}/**, **/{karma,rollup,webpack,vite,vitest,jest,ava,babel,nyc,cypress,tsup,build,eslint,prettier}.config.*",
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "not_observed",
+            "outcome": "unknown",
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "none"
+          },
+          "reporting": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "not_observed",
+            "outcome": "unknown",
+            "counts": {
+              "executed": null,
+              "passed": null,
+              "failed": null,
+              "skipped": null,
+              "pending": null
+            },
+            "evidenceOrigin": "none",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "admission": "unverified",
+            "guidance": "Null means unreported, never zero. Pending is distinct from skipped. Counters follow the runner (some combine skipped/todo). Process success, passing tests, admitted source verification and user acceptance are separate claims.",
+            "invocationSourceRevisionId": "src_f0abe32496528bc2edf1df427a01247f",
+            "completedSourceRevisionId": "src_f0abe32496528bc2edf1df427a01247f",
+            "cwd": "."
+          },
+          "changed": false,
+          "paths": [],
+          "validation": {
+            "status": "unknown"
+          }
+        }
+      },
+      "checks": {
+        "status": "ok",
+        "data": {
+          "sourceRevisionId": "src_f0abe32496528bc2edf1df427a01247f",
+          "scope": "current_source_only",
+          "checks": [
+            {
+              "id": "validation://1a00c123f1a57475486a41c6d7079ebc3d8f1633f6cffd4b3e763ff5bcd7dc10",
+              "task": "test:wrapped",
+              "command": "npm run test:wrapped",
+              "args": [],
+              "cwd": ".",
+              "sourceRevisionId": "src_f0abe32496528bc2edf1df427a01247f",
+              "status": "unknown",
+              "terminal": "unknown",
+              "category": null,
+              "reporting": {
+                "process": "exited",
+                "exitCode": 0,
+                "execution": "not_observed",
+                "outcome": "unknown",
+                "counts": {
+                  "executed": null,
+                  "passed": null,
+                  "failed": null,
+                  "skipped": null,
+                  "pending": null
+                },
+                "evidenceOrigin": "none",
+                "selection": "unknown",
+                "freshness": "unknown",
+                "admission": "unverified"
+              },
+              "admission": "unverified"
+            }
+          ],
+          "total": 1,
+          "truncated": false,
+          "failed": 0,
+          "guidance": "Only current-source journal entries are listed; absent entries may have run on an earlier source. This view launches no commands and does not admit validation. Null counters are unreported, never zero. Pending is distinct from skipped; some runners combine skipped/todo. User criteria require a separate assessment."
+        }
+      },
+      "sourceSha256Before": "30af7e06652de776de4a251cb57c2362f934e2cb922d8f332666ce9fd4bc1bde",
+      "sourceSha256After": "30af7e06652de776de4a251cb57c2362f934e2cb922d8f332666ce9fd4bc1bde"
+    },
+    {
+      "mode": "empty",
+      "arm": "candidate",
+      "result": {
+        "status": "ok",
+        "data": {
+          "command": "npm run test:wrapped",
+          "exitCode": 0,
+          "output": "> test:wrapped\n> node wrapper.mjs\n\n\n RUN  v3.2.4 /tmp/blame-f51-local-HgXmIB/empty-candidate\n\nNo test files found, exiting with code 1\n\nfilter: absent.test.ts\ninclude: **/*.{test,spec}.?(c|m)[jt]s?(x)\nexclude:  **/node_modules/**, **/dist/**, **/cypress/**, **/.{idea,git,cache,output,temp}/**, **/{karma,rollup,webpack,vite,vitest,jest,ava,babel,nyc,cypress,tsup,build,eslint,prettier}.config.*\n\nJSON report written to /tmp/blame-f51-local-HgXmIB/empty-candidate/.blame/harness/test-results/vitest-invocation-SCD0kW/add8e582-305b-4c87-bf2f-2bf759d845f2.report.json",
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "zero_tests",
+            "outcome": "unknown",
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "vitest_report",
+            "counts": {
+              "executed": 0,
+              "passed": 0,
+              "failed": 0,
+              "skipped": 0
+            },
+            "evidence": {
+              "invocationId": ".blame/harness/test-results/vitest-invocation-SCD0kW",
+              "hookSha256": "16e85ec0b961106b014526ef7479ff85f0ae48266b264f1953e1a00968b1e53f",
+              "invocations": [
+                {
+                  "format": "blame-vitest-invocation-v1",
+                  "id": "add8e582-305b-4c87-bf2f-2bf759d845f2",
+                  "runner": {
+                    "name": "vitest",
+                    "version": "3.2.4"
+                  },
+                  "executable": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+                  "entry": "/workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/vitest/vitest.mjs",
+                  "cwd": "/tmp/blame-f51-local-HgXmIB/empty-candidate",
+                  "args": [
+                    "run",
+                    "absent.test.ts",
+                    "--maxWorkers=1",
+                    "--fileParallelism=false"
+                  ],
+                  "exitCode": 1,
+                  "argsSha256": "5f64446591063b1c50e8a486b1c69c9d598e8b42327a6c41f6a64cdcffa4e1de",
+                  "argsTruncated": false,
+                  "reportSha256": "fa1ce4f9889ec53a64a8985576115e2c677754ddbe8390051bc1478e942578f1",
+                  "files": [],
+                  "fileCount": 0,
+                  "filesTruncated": false
+                }
+              ],
+              "invocationCount": 1,
+              "invocationsTruncated": false,
+              "typeFileSelection": "unknown",
+              "boundary": "Invocation-owned Vitest 3.2.4 reported cases; runtime versus configured typecheck mode is not established. Counts may include repeated invocations. File hashes bind observed tests, not dependencies or typecheck selection. No source admission or user acceptance.",
+              "command": "npm run test:wrapped",
+              "cwd": ".",
+              "invocationSourceRevisionId": "src_f0abe32496528bc2edf1df427a01247f",
+              "completedSourceRevisionId": "src_f0abe32496528bc2edf1df427a01247f",
+              "manifestEnvironment": {
+                "beforeRevisionId": "env_765d43ccaddab03a3971f4a40d192a23",
+                "afterRevisionId": "env_765d43ccaddab03a3971f4a40d192a23",
+                "boundary": "Manifest/lock hashes only; installed dependencies and full environment are unknown."
+              }
+            }
+          },
+          "reporting": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "zero_tests",
+            "outcome": "unknown",
+            "counts": {
+              "executed": 0,
+              "passed": 0,
+              "failed": 0,
+              "skipped": 0,
+              "pending": null
+            },
+            "evidenceOrigin": "vitest_report",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "admission": "unverified",
+            "guidance": "Null means unreported, never zero. Pending is distinct from skipped. Counters follow the runner (some combine skipped/todo). Process success, passing tests, admitted source verification and user acceptance are separate claims.",
+            "invocationSourceRevisionId": "src_f0abe32496528bc2edf1df427a01247f",
+            "completedSourceRevisionId": "src_f0abe32496528bc2edf1df427a01247f",
+            "cwd": "."
+          },
+          "changed": false,
+          "paths": [],
+          "validation": {
+            "status": "unknown"
+          }
+        }
+      },
+      "checks": {
+        "status": "ok",
+        "data": {
+          "sourceRevisionId": "src_f0abe32496528bc2edf1df427a01247f",
+          "scope": "current_source_only",
+          "checks": [
+            {
+              "id": "validation://41fa6f72b98b3b18f207e5273eb12889feeba5afc16a07ec10736f760256a3dd",
+              "task": "test:wrapped",
+              "command": "npm run test:wrapped",
+              "args": [],
+              "cwd": ".",
+              "sourceRevisionId": "src_f0abe32496528bc2edf1df427a01247f",
+              "status": "unknown",
+              "terminal": "unknown",
+              "category": null,
+              "reporting": {
+                "process": "exited",
+                "exitCode": 0,
+                "execution": "zero_tests",
+                "outcome": "unknown",
+                "counts": {
+                  "executed": 0,
+                  "passed": 0,
+                  "failed": 0,
+                  "skipped": 0,
+                  "pending": null
+                },
+                "evidenceOrigin": "vitest_report",
+                "selection": "unknown",
+                "freshness": "unknown",
+                "admission": "unverified"
+              },
+              "evidence": {
+                "invocationId": ".blame/harness/test-results/vitest-invocation-SCD0kW",
+                "hookSha256": "16e85ec0b961106b014526ef7479ff85f0ae48266b264f1953e1a00968b1e53f",
+                "invocations": [
+                  {
+                    "format": "blame-vitest-invocation-v1",
+                    "id": "add8e582-305b-4c87-bf2f-2bf759d845f2",
+                    "runner": {
+                      "name": "vitest",
+                      "version": "3.2.4"
+                    },
+                    "executable": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+                    "entry": "/workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/vitest/vitest.mjs",
+                    "cwd": "/tmp/blame-f51-local-HgXmIB/empty-candidate",
+                    "args": [
+                      "run",
+                      "absent.test.ts",
+                      "--maxWorkers=1",
+                      "--fileParallelism=false"
+                    ],
+                    "exitCode": 1,
+                    "argsSha256": "5f64446591063b1c50e8a486b1c69c9d598e8b42327a6c41f6a64cdcffa4e1de",
+                    "argsTruncated": false,
+                    "reportSha256": "fa1ce4f9889ec53a64a8985576115e2c677754ddbe8390051bc1478e942578f1",
+                    "files": [],
+                    "fileCount": 0,
+                    "filesTruncated": false
+                  }
+                ],
+                "invocationCount": 1,
+                "invocationsTruncated": false,
+                "typeFileSelection": "unknown",
+                "boundary": "Invocation-owned Vitest 3.2.4 reported cases; runtime versus configured typecheck mode is not established. Counts may include repeated invocations. File hashes bind observed tests, not dependencies or typecheck selection. No source admission or user acceptance.",
+                "command": "npm run test:wrapped",
+                "cwd": ".",
+                "invocationSourceRevisionId": "src_f0abe32496528bc2edf1df427a01247f",
+                "completedSourceRevisionId": "src_f0abe32496528bc2edf1df427a01247f",
+                "manifestEnvironment": {
+                  "beforeRevisionId": "env_765d43ccaddab03a3971f4a40d192a23",
+                  "afterRevisionId": "env_765d43ccaddab03a3971f4a40d192a23",
+                  "boundary": "Manifest/lock hashes only; installed dependencies and full environment are unknown."
+                }
+              },
+              "admission": "unverified"
+            }
+          ],
+          "total": 1,
+          "truncated": false,
+          "failed": 0,
+          "guidance": "Only current-source journal entries are listed; absent entries may have run on an earlier source. This view launches no commands and does not admit validation. Null counters are unreported, never zero. Pending is distinct from skipped; some runners combine skipped/todo. User criteria require a separate assessment."
+        }
+      },
+      "sourceSha256Before": "30af7e06652de776de4a251cb57c2362f934e2cb922d8f332666ce9fd4bc1bde",
+      "sourceSha256After": "30af7e06652de776de4a251cb57c2362f934e2cb922d8f332666ce9fd4bc1bde"
+    },
+    {
+      "mode": "unsupported_reporter",
+      "arm": "reference",
+      "result": {
+        "status": "ok",
+        "data": {
+          "command": "npm run test:wrapped",
+          "exitCode": 0,
+          "output": "> test:wrapped\n> node wrapper.mjs\n\n\n RUN  v3.2.4 /tmp/blame-f51-local-HgXmIB/unsupported_reporter-reference\n\n·\n\n Test Files  1 passed (1)\n      Tests  1 passed (1)\n   Start at  00:15:34\n   Duration  228ms (transform 32ms, setup 0ms, collect 25ms, tests 3ms, environment 0ms, prepare 55ms)",
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "not_observed",
+            "outcome": "unknown",
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "none"
+          },
+          "reporting": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "not_observed",
+            "outcome": "unknown",
+            "counts": {
+              "executed": null,
+              "passed": null,
+              "failed": null,
+              "skipped": null,
+              "pending": null
+            },
+            "evidenceOrigin": "none",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "admission": "unverified",
+            "guidance": "Null means unreported, never zero. Pending is distinct from skipped. Counters follow the runner (some combine skipped/todo). Process success, passing tests, admitted source verification and user acceptance are separate claims.",
+            "invocationSourceRevisionId": "src_6d54b3e3131fbbf834e4957ee0b7e762",
+            "completedSourceRevisionId": "src_6d54b3e3131fbbf834e4957ee0b7e762",
+            "cwd": "."
+          },
+          "changed": false,
+          "paths": [],
+          "validation": {
+            "status": "unknown"
+          }
+        }
+      },
+      "checks": {
+        "status": "ok",
+        "data": {
+          "sourceRevisionId": "src_6d54b3e3131fbbf834e4957ee0b7e762",
+          "scope": "current_source_only",
+          "checks": [
+            {
+              "id": "validation://f687877e654896a22bc6a1aeabfbe02049887304df1d3df1c26846313808fa2e",
+              "task": "test:wrapped",
+              "command": "npm run test:wrapped",
+              "args": [],
+              "cwd": ".",
+              "sourceRevisionId": "src_6d54b3e3131fbbf834e4957ee0b7e762",
+              "status": "unknown",
+              "terminal": "unknown",
+              "category": null,
+              "reporting": {
+                "process": "exited",
+                "exitCode": 0,
+                "execution": "not_observed",
+                "outcome": "unknown",
+                "counts": {
+                  "executed": null,
+                  "passed": null,
+                  "failed": null,
+                  "skipped": null,
+                  "pending": null
+                },
+                "evidenceOrigin": "none",
+                "selection": "unknown",
+                "freshness": "unknown",
+                "admission": "unverified"
+              },
+              "admission": "unverified"
+            }
+          ],
+          "total": 1,
+          "truncated": false,
+          "failed": 0,
+          "guidance": "Only current-source journal entries are listed; absent entries may have run on an earlier source. This view launches no commands and does not admit validation. Null counters are unreported, never zero. Pending is distinct from skipped; some runners combine skipped/todo. User criteria require a separate assessment."
+        }
+      },
+      "sourceSha256Before": "30af7e06652de776de4a251cb57c2362f934e2cb922d8f332666ce9fd4bc1bde",
+      "sourceSha256After": "30af7e06652de776de4a251cb57c2362f934e2cb922d8f332666ce9fd4bc1bde"
+    },
+    {
+      "mode": "unsupported_reporter",
+      "arm": "candidate",
+      "result": {
+        "status": "ok",
+        "data": {
+          "command": "npm run test:wrapped",
+          "exitCode": 0,
+          "output": "> test:wrapped\n> node wrapper.mjs\n\n\n RUN  v3.2.4 /tmp/blame-f51-local-HgXmIB/unsupported_reporter-candidate\n\n·\n\n Test Files  1 passed (1)\n      Tests  1 passed (1)\n   Start at  00:15:35\n   Duration  210ms (transform 32ms, setup 0ms, collect 20ms, tests 2ms, environment 0ms, prepare 64ms)",
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "not_observed",
+            "outcome": "unknown",
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "none"
+          },
+          "reporting": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "not_observed",
+            "outcome": "unknown",
+            "counts": {
+              "executed": null,
+              "passed": null,
+              "failed": null,
+              "skipped": null,
+              "pending": null
+            },
+            "evidenceOrigin": "none",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "admission": "unverified",
+            "guidance": "Null means unreported, never zero. Pending is distinct from skipped. Counters follow the runner (some combine skipped/todo). Process success, passing tests, admitted source verification and user acceptance are separate claims.",
+            "invocationSourceRevisionId": "src_6d54b3e3131fbbf834e4957ee0b7e762",
+            "completedSourceRevisionId": "src_6d54b3e3131fbbf834e4957ee0b7e762",
+            "cwd": "."
+          },
+          "changed": false,
+          "paths": [],
+          "validation": {
+            "status": "unknown"
+          }
+        }
+      },
+      "checks": {
+        "status": "ok",
+        "data": {
+          "sourceRevisionId": "src_6d54b3e3131fbbf834e4957ee0b7e762",
+          "scope": "current_source_only",
+          "checks": [
+            {
+              "id": "validation://98565b1159050270f72535d0d4c5f668a0ab91db0b727230420eee270a8ee97c",
+              "task": "test:wrapped",
+              "command": "npm run test:wrapped",
+              "args": [],
+              "cwd": ".",
+              "sourceRevisionId": "src_6d54b3e3131fbbf834e4957ee0b7e762",
+              "status": "unknown",
+              "terminal": "unknown",
+              "category": null,
+              "reporting": {
+                "process": "exited",
+                "exitCode": 0,
+                "execution": "not_observed",
+                "outcome": "unknown",
+                "counts": {
+                  "executed": null,
+                  "passed": null,
+                  "failed": null,
+                  "skipped": null,
+                  "pending": null
+                },
+                "evidenceOrigin": "none",
+                "selection": "unknown",
+                "freshness": "unknown",
+                "admission": "unverified"
+              },
+              "admission": "unverified"
+            }
+          ],
+          "total": 1,
+          "truncated": false,
+          "failed": 0,
+          "guidance": "Only current-source journal entries are listed; absent entries may have run on an earlier source. This view launches no commands and does not admit validation. Null counters are unreported, never zero. Pending is distinct from skipped; some runners combine skipped/todo. User criteria require a separate assessment."
+        }
+      },
+      "sourceSha256Before": "30af7e06652de776de4a251cb57c2362f934e2cb922d8f332666ce9fd4bc1bde",
+      "sourceSha256After": "30af7e06652de776de4a251cb57c2362f934e2cb922d8f332666ce9fd4bc1bde"
+    }
+  ],
+  "coverage": [
+    {
+      "arm": "reference",
+      "id": "availableCredit",
+      "source": "function availableCredit(balance:number,reserved:number,limit:number){return Math.max(0,Math.max(0,limit)-Math.max(0,balance)-Math.max(0,reserved));}",
+      "result": {
+        "sourceSha256": "5bb92543df96fb1d249e5568b09127558f9da130c62a415eb172aac297284740",
+        "functionName": "availableCredit",
+        "assertion": "result === (((limit > 0 ? limit : 0) - (balance > 0 ? balance : 0) - (reserved > 0 ? reserved : 0)) > 0 ? ((limit > 0 ? limit : 0) - (balance > 0 ? balance : 0) - (reserved > 0 ? reserved : 0)) : 0)",
+        "inputs": {
+          "balance": {
+            "min": -3,
+            "max": 3
+          },
+          "reserved": {
+            "min": -3,
+            "max": 3
+          },
+          "limit": {
+            "min": -3,
+            "max": 3
+          }
+        },
+        "scope": "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.",
+        "validationAdmission": false,
+        "status": "unknown",
+        "reason": "unsupported_expression:CallExpression"
+      }
+    },
+    {
+      "arm": "reference",
+      "id": "lowerTierUnits",
+      "source": "function lowerTierUnits(first:number,last:number,boundary:number){return first>last?0:Math.max(0,Math.min(last,boundary)-first+1);}",
+      "result": {
+        "sourceSha256": "912e5d210b5bbec2c1959e3580583fa290dc101ad53e451e0a1a801baff9bba4",
+        "functionName": "lowerTierUnits",
+        "assertion": "result === (first > last ? 0 : ((last < boundary ? last : boundary) >= first ? (last < boundary ? last : boundary) - first + 1 : 0))",
+        "inputs": {
+          "first": {
+            "min": -3,
+            "max": 3
+          },
+          "last": {
+            "min": -3,
+            "max": 3
+          },
+          "boundary": {
+            "min": -3,
+            "max": 3
+          }
+        },
+        "scope": "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.",
+        "validationAdmission": false,
+        "status": "unknown",
+        "reason": "unsupported_expression:CallExpression"
+      }
+    },
+    {
+      "arm": "reference",
+      "id": "tierCost",
+      "source": "function tierCost(lowerUnits:number,upperUnits:number,lowerRate:number,upperRate:number){return lowerUnits*Math.max(0,lowerRate)+upperUnits*Math.max(0,upperRate);}",
+      "result": {
+        "sourceSha256": "e307a54540e35607815a6357a520394d078e9bfe90e439a4c6156303ef33e0a6",
+        "functionName": "tierCost",
+        "assertion": "result === lowerUnits * (lowerRate > 0 ? lowerRate : 0) + upperUnits * (upperRate > 0 ? upperRate : 0)",
+        "inputs": {
+          "lowerUnits": {
+            "min": 0,
+            "max": 3
+          },
+          "upperUnits": {
+            "min": 0,
+            "max": 3
+          },
+          "lowerRate": {
+            "min": -3,
+            "max": 3
+          },
+          "upperRate": {
+            "min": -3,
+            "max": 3
+          }
+        },
+        "scope": "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.",
+        "validationAdmission": false,
+        "status": "unknown",
+        "reason": "unsupported_expression:CallExpression"
+      }
+    },
+    {
+      "arm": "candidate",
+      "id": "availableCredit",
+      "source": "function availableCredit(balance:number,reserved:number,limit:number){return Math.max(0,Math.max(0,limit)-Math.max(0,balance)-Math.max(0,reserved));}",
+      "result": {
+        "sourceSha256": "5bb92543df96fb1d249e5568b09127558f9da130c62a415eb172aac297284740",
+        "functionName": "availableCredit",
+        "assertion": "result === (((limit > 0 ? limit : 0) - (balance > 0 ? balance : 0) - (reserved > 0 ? reserved : 0)) > 0 ? ((limit > 0 ? limit : 0) - (balance > 0 ? balance : 0) - (reserved > 0 ? reserved : 0)) : 0)",
+        "inputs": {
+          "balance": {
+            "min": -3,
+            "max": 3
+          },
+          "reserved": {
+            "min": -3,
+            "max": 3
+          },
+          "limit": {
+            "min": -3,
+            "max": 3
+          }
+        },
+        "scope": "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Only standard Math.min/max/abs calls are supported, under recorded assumptions. Other calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.",
+        "validationAdmission": false,
+        "assumptions": [
+          "Math.min/max/abs denote standard ECMAScript intrinsics. External rebinding and module/import side effects are not modeled."
+        ],
+        "solver": {
+          "executable": "/tmp/blame-z3-f46/bin/z3",
+          "version": "Z3 version 4.15.4 - 64 bit",
+          "querySha256": "939d652e91ad6be2a908c09f44f5a34e67a1029109964b82e2a459c300fcd886"
+        },
+        "status": "bounded_no_counterexample",
+        "reason": "No violating input exists in the supplied finite safe integer/boolean domain under the supported isolated-function semantics."
+      }
+    },
+    {
+      "arm": "candidate",
+      "id": "lowerTierUnits",
+      "source": "function lowerTierUnits(first:number,last:number,boundary:number){return first>last?0:Math.max(0,Math.min(last,boundary)-first+1);}",
+      "result": {
+        "sourceSha256": "912e5d210b5bbec2c1959e3580583fa290dc101ad53e451e0a1a801baff9bba4",
+        "functionName": "lowerTierUnits",
+        "assertion": "result === (first > last ? 0 : ((last < boundary ? last : boundary) >= first ? (last < boundary ? last : boundary) - first + 1 : 0))",
+        "inputs": {
+          "first": {
+            "min": -3,
+            "max": 3
+          },
+          "last": {
+            "min": -3,
+            "max": 3
+          },
+          "boundary": {
+            "min": -3,
+            "max": 3
+          }
+        },
+        "scope": "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Only standard Math.min/max/abs calls are supported, under recorded assumptions. Other calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.",
+        "validationAdmission": false,
+        "assumptions": [
+          "Math.min/max/abs denote standard ECMAScript intrinsics. External rebinding and module/import side effects are not modeled."
+        ],
+        "solver": {
+          "executable": "/tmp/blame-z3-f46/bin/z3",
+          "version": "Z3 version 4.15.4 - 64 bit",
+          "querySha256": "7497d01d4e3facd436dd6fec98f686ad92130504b69ead55a4885db76db9bb37"
+        },
+        "status": "bounded_no_counterexample",
+        "reason": "No violating input exists in the supplied finite safe integer/boolean domain under the supported isolated-function semantics."
+      }
+    },
+    {
+      "arm": "candidate",
+      "id": "tierCost",
+      "source": "function tierCost(lowerUnits:number,upperUnits:number,lowerRate:number,upperRate:number){return lowerUnits*Math.max(0,lowerRate)+upperUnits*Math.max(0,upperRate);}",
+      "result": {
+        "sourceSha256": "e307a54540e35607815a6357a520394d078e9bfe90e439a4c6156303ef33e0a6",
+        "functionName": "tierCost",
+        "assertion": "result === lowerUnits * (lowerRate > 0 ? lowerRate : 0) + upperUnits * (upperRate > 0 ? upperRate : 0)",
+        "inputs": {
+          "lowerUnits": {
+            "min": 0,
+            "max": 3
+          },
+          "upperUnits": {
+            "min": 0,
+            "max": 3
+          },
+          "lowerRate": {
+            "min": -3,
+            "max": 3
+          },
+          "upperRate": {
+            "min": -3,
+            "max": 3
+          }
+        },
+        "scope": "Only the selected scalar function body and supplied bounded integer/boolean inputs are modeled. Integers and every arithmetic intermediate stay within JavaScript's safe integer range. Only standard Math.min/max/abs calls are supported, under recorded assumptions. Other calls, loops, mutation, globals, floats, NaN and Infinity are unsupported. A bounded result does not establish repository correctness, executed tests, source admission or user acceptance.",
+        "validationAdmission": false,
+        "assumptions": [
+          "Math.min/max/abs denote standard ECMAScript intrinsics. External rebinding and module/import side effects are not modeled."
+        ],
+        "solver": {
+          "executable": "/tmp/blame-z3-f46/bin/z3",
+          "version": "Z3 version 4.15.4 - 64 bit",
+          "querySha256": "8e0341948974923afca0c8623b0762f4acc703207aa4bfe079827255ac74f4e2"
+        },
+        "status": "bounded_no_counterexample",
+        "reason": "No violating input exists in the supplied finite safe integer/boolean domain under the supported isolated-function semantics."
+      }
+    }
+  ],
+  "limitations": "Constructed known controls. No broad scope/type admission or model benefit. Local runs may overlap unit verification; no timing comparison."
+}

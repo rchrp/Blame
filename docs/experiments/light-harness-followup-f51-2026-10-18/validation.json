@@ -1,0 +1,81 @@
+{
+  "runtime": {
+    "tests": 1056,
+    "passed": 1054,
+    "failed": 0,
+    "skipped": 2,
+    "command": "BLAME_Z3_PATH=/tmp/blame-z3-f46/bin/z3 BLAME_TEST_VITEST_DEPENDENCIES=/workspace/Blame/.blame/research/validation-scope-f44/dependencies PATH=/tmp/blame-f44-bin:$PATH corepack pnpm --filter @blame/agent-runtime test"
+  },
+  "runner": {
+    "passed": 37,
+    "failed": 0
+  },
+  "payload": {
+    "passed": 4,
+    "failed": 0
+  },
+  "logs": [
+    {
+      "name": "runtime-final",
+      "sha256": "cf52b6fec5d5509b8857f44780e8886fa80ce1be2240f3381da7aee8fede1bbc",
+      "compressedSha256": "22ac7785e9c125b09f34bdec24943d948eff6e36180db57a0f03b8598d128a7b",
+      "bytes": 90644
+    },
+    {
+      "name": "wrapper-final2",
+      "sha256": "f77488f2c32519f6ad9249dadff01bca00a09b84179e83c7609eb79a690640fd",
+      "compressedSha256": "80ba0ec97a6fa51f45a0203784e1ee2b2c8069e4b8018e19abbef85cd1c54e1f",
+      "bytes": 960
+    },
+    {
+      "name": "runner",
+      "sha256": "ac29cf953d9f58a6c2c4c8341a5628c71e95ad70d2bd6ef5ec7a6f175480d579",
+      "compressedSha256": "9fe224f3005926bae86b43dd1b6e5d24a47286efb3cc1ccb38b77b294f80b909",
+      "bytes": 3210
+    },
+    {
+      "name": "payload",
+      "sha256": "f6b1fbfa3badee4d5ecddc69ea1199fd86a9227f2d51930aad278d7f3db94bbd",
+      "compressedSha256": "b77233b0192630d97d59d637a791021650f79ee5177843bf062eb71fb731b217",
+      "bytes": 484
+    },
+    {
+      "name": "lint-release",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "compressedSha256": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec",
+      "bytes": 0
+    },
+    {
+      "name": "local-release",
+      "sha256": "28cf31b3bba648eac44037767249c8ae1d6e183ebe545da488ad31abe88b4580",
+      "compressedSha256": "db0e31dada8b5e8c27710bea34929f1d5e98d5eb9664da766ab1222904ea502b",
+      "bytes": 12313
+    },
+    {
+      "name": "targeted",
+      "sha256": "daacea6dd01c99b6ac5ff6675107e66359a5a30ee0ac919d034f89695398ca8c",
+      "compressedSha256": "b9166f949548cbd98f56ff5629fa9c6336e6a3787037eb4175ed8e5397d625f3",
+      "bytes": 10832
+    },
+    {
+      "name": "full",
+      "sha256": "fa197f7753686853fc0581b8c9067759d794e78396326846ffad56e8d35d2c99",
+      "compressedSha256": "bf6a652168f619c92ab3da60b4cbbd865ca0740e55f942400947839a3f97a627",
+      "bytes": 96127
+    },
+    {
+      "name": "local2",
+      "sha256": "1e569e67bfd2591042e9f5c79c7cdcb375a665f4e2ea6d80145eef1d7c915c81",
+      "compressedSha256": "77b304ce5c56a11cc2b4259cd683f19e2431620d8f7d428540e25ded27524465",
+      "bytes": 11894
+    },
+    {
+      "name": "lines-final",
+      "sha256": "d5c2cc0fee11d7deb70b88ac81a466109e2dc40649c6a5ef027f13d783b84a4d",
+      "compressedSha256": "5eb4ffd5696afee24fff2b235eaed32105b5fa70b45f996b33d438dd4751d112",
+      "bytes": 5474
+    }
+  ],
+  "developmentLogs": "targeted, full and local2 are retained adverse development checks, superseded by release checks; not additional independent observations",
+  "timingClaim": false
+}

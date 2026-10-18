@@ -1,0 +1,13 @@
+# F51: three local mechanisms
+
+No model calls. Comparison is against the preserved F50 executable, not historical 21/36 results. `local-controls-release.json` is the final rerun; earlier local outputs are development evidence, not extra independent observations.
+
+* Invocation-owned Vitest 3.2.4 JSON reports expose actual case failures even when a Node wrapper exits zero. They bind the fresh invocation, selected files, before/after hashes, Node identity and manifest/lock identities. Unsupported reporters, missing/incomplete reports and empty selections stay unknown. Runtime passing is independent of type checking, source admission and user acceptance. This is local evidence, not a trusted dependency/environment attestation.
+* Declaration candidates retain identity/ambiguity warnings with compact signatures. A repeated unchanged body edit explains the preserved signature/import scope; a first no-op stays silent. The known navigation replay has 12 calls per arm, 25,302 → 24,060 feedback bytes (−4.9%). Both are post-F48: the new result is still +11.6% above the older pre-F48 21,552-byte control. No model-token or speed claim.
+* Bounded scalar reasoning supports standard integer Math.min/max/abs. Shadowed/mutated/escaping Math remains unsupported. Visible opt-in body-read hints require agent-supplied domains and properties and never invoke the solver automatically. Three constructed former unsupported shapes now return bounded absence of counterexamples; this is not a replay of every archived model patch or task acceptance.
+
+The final local controls retain masked failures, stale source, empty selection, unsupported reporters and a runtime-passing/type-failing case. Development regressions (first-no-op verbosity, missing non-exhaustiveness warning, empty selection misclassification and npm-bin symlink discovery) were corrected before model freeze; they are not pre-existing product failures.
+
+Runtime validation: 1,054 passed, zero failed, two skipped; runner 37/37; standalone payload 4/4. The runtime run enables the real Vitest controls and the pinned solver. The 13 report tests include actual wrapper, masked failure, npm-bin, empty-selection and setup-error executions. Compressed logs and SHA-256 inventory are in `validation.json`. No timing comparison because local work overlapped.
+
+Decision: retain the bounded mechanisms and fail-unknown behavior; leave symbolic analysis globally opt-in. F52 tests discovery on known diagnostics; F53 tests navigation on new requests in the previously studied larger Remeda repository. Neither campaign is a representative sample of issue prevalence.
