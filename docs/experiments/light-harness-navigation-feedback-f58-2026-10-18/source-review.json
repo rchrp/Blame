@@ -240,6 +240,46 @@
       "evidence": [
         "Manual source inspection finds an actual regression: finite oversized counts are floored but not capped, and both consumers remove their original Math.max index clamp. For length2/count3 the negative index returns only one suffix element and retains one prefix element instead of all/empty, violating preserved integer behavior. New passing tests omit finite oversized counts; hidden feature check fails. Original signatures/tests/dependencies and final required commands are preserved; accurate passing-check reports do not establish user correctness. Known F53 failure family; no solution recovery."
       ]
+    },
+    {
+      "name": "2-reversed-clamp-cline",
+      "hashes": {
+        "events.jsonl": "5884806dc428efc2de37e9ed4a08ba0d2f68b2d77d9480152666d319ed846134",
+        "workspace.diff": "517ddaae0299f3dc81d4b9d21ba31a569323bfba14f7918d28b13707e9b39924",
+        "score.json": "8a59b0fb82c1d04dc258c9f62758b7ba7468fd2f60f2ff1d031166676c0b2208",
+        "tool-ledger.json": "5bf9d64831b32db5985c4e9ac157050789b54d6a92f7097f93ac143d91b35e55"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Manually inspected finite-only swap and unchanged ternary fallback, overloads and per-invocation destructuring: frozen and live mutable curried limits remain valid. New tests additionally typecheck readonly limits and numeric return, with all five endpoint checks passing. Exact required commands and delivered typecheck run on final source; scopes are accurately reported, no solution retrieval or protected-file change."
+      ]
+    },
+    {
+      "name": "2-reversed-clamp-reference",
+      "hashes": {
+        "events.jsonl": "6f4c93d1abd48816b5fcdb2dcf38d6ca6c8a0282f366ade61d12f65384ab10a2",
+        "workspace.diff": "2a793fa4d85ab42d1a4157fbc98cea2218c37b34aa17121c91206d2f13f1045f",
+        "score.json": "69842a9a8332e580d10f7e9a8baa37740f8ca8098937fbacc1d1328b591a94da",
+        "tool-ledger.json": "62d4b956986345c8c30a5609950f1575992ab74e32c19d2520770f5c2f01dcc8"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Manual new implementation review: mutable local lower/upper variables swap only finite reversed bounds, preserving original ternary behavior, numeric signatures and per-call object reads. New typed readonly/frozen/curried-mutation tests and all five endpoint checks pass. Exact final-source required commands plus delivered-test typecheck pass. Formatter policy/offline-cache failures remain in chronology with no installed package or successful-format claim. No solution retrieval."
+      ]
     }
   ]
 }
