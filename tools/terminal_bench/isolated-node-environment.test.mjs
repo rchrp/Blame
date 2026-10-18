@@ -13,8 +13,28 @@ test('trial package edits and generated caches cannot modify the baseline or ano
 }));
 test('new packages and removed pinned files are deviations while caches remain explicit',()=>fixture(async(root,baseline)=>{
  const before=await dependencyManifest(baseline),after={...before};delete after['compiler/cli.js'];after['surprise/package.json']={kind:'file',sha256:'new'};after['.vitest-cache/result']={kind:'file',sha256:'cache'};
- assert.deepEqual(compareDependencyManifests(before,after),{pinnedDependenciesUnchanged:false,changed:[],missing:['compiler/cli.js'],added:['surprise/package.json'],generated:['.vitest-cache/result']});
+ assert.deepEqual(compareDependencyManifests(before,after),{pinnedDependenciesUnchanged:false,changed:[],missing:['compiler/cli.js'],added:['surprise/package.json'],generated:['.vitest-cache/result'],generatedModified:[]});
 }));
+
+test('existing Vitest result data can change without hiding pinned package changes',()=>fixture(async(root,baseline)=>{
+ const path='.vite/vitest/'+ 'a'.repeat(40)+'/results.json';
+ await mkdir(join(baseline,path,'..'),{recursive:true});await writeFile(join(baseline,path),'{"version":"3.2.4","results":[]}');
+ const before=await dependencyManifest(baseline);await writeFile(join(baseline,path),'{"version":"3.2.4","results":[["case.test.ts",{"failed":false}]]}');
+ const cacheOnly=compareDependencyManifests(before,await dependencyManifest(baseline));
+ assert.equal(cacheOnly.pinnedDependenciesUnchanged,true);assert.deepEqual(cacheOnly.generatedModified,[path]);assert.deepEqual(cacheOnly.changed,[]);
+ await writeFile(join(baseline,'compiler/cli.js'),'console.log("changed package")');
+ const packageEdit=compareDependencyManifests(before,await dependencyManifest(baseline));assert.equal(packageEdit.pinnedDependenciesUnchanged,false);assert.deepEqual(packageEdit.changed,['compiler/cli.js']);assert.deepEqual(packageEdit.generatedModified,[path]);
+}));
+test('executable cache files and similarly named paths remain pinned',()=>{
+ for(const path of ['.vite/vitest/'+ 'a'.repeat(40)+'/runner.js','.vite/vitest/project/results.json','.vite/vitest/'+ 'a'.repeat(40)+'/result.json']){
+  const result=compareDependencyManifests({[path]:{kind:'file',sha256:'before'}},{[path]:{kind:'file',sha256:'after'}});
+  assert.equal(result.pinnedDependenciesUnchanged,false);assert.deepEqual(result.changed,[path]);assert.deepEqual(result.generatedModified,[]);
+ }
+});
+test('Vitest result data cannot change into or out of a symbolic link',()=>{
+ const path='.vite/vitest/'+ 'a'.repeat(40)+'/results.json',file={kind:'file',sha256:'data'},symlink={kind:'symlink',target:'../../compiler/cli.js'};
+ for(const [before,after]of [[file,symlink],[symlink,file]])assert.equal(compareDependencyManifests({[path]:before},{[path]:after}).pinnedDependenciesUnchanged,false);
+});
 test('external symlinks are rejected instead of retaining shared package bytes',()=>fixture(async(root,baseline)=>{
  await symlink('../../outside.js',join(baseline,'compiler/external.js'));
  await assert.rejects(()=>prepareIsolatedNodeEnvironment({baselineModules:baseline,workspace:join(root,'trial'),cacheRoot:join(root,'cache')}),/External dependency link/);

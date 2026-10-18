@@ -1,0 +1,9 @@
+# F56: cache accounting correction after sealed model campaigns
+
+No model calls. F53 reveals a preexisting study-helper inconsistency: newly generated cache files are listed separately, but changing an already copied Vitest results cache is called a pinned dependency modification. Four functionally correct Cline outcomes are penalized by that frozen filter. Primary results remain unchanged; a uniform, conditional post-hoc sensitivity is in F53, with unavailable cache bytes explicitly noted.
+
+For future registrations, `compareDependencyManifests` now reports updates to existing regular `.vite/vitest/<40 lowercase hex>/results.json` as `generatedModified`. Package mutations, removals, additions, executable cache changes and file/symlink transitions remain deviations. This narrow data-file classification does not grant source validation or complete environment attestation. Updated coordinators archive the post-run dependency manifest as well, so future reviewers can inspect both file kinds and hashes. New source bytes intentionally fail old binding checks; use each sealed registration's original source revision for run/resume.
+
+Twenty local controls pass: ten durable coordinator and ten dependency-isolation/cache controls. A real isolated Vitest 3.2.4 run updates the seeded result cache and remains a generated-data change; a subsequent Vitest package mutation is rejected. The shared dependency baseline stays byte-identical. Negative controls retain executable/similarly named cache paths and symlink changes. Logs/hashes are in `validation.json` and the actual payload in `local-controls.json`.
+
+This fixes future measurements, not task code or historical primary success. Scripts: `tools/terminal_bench/cache-integrity-study/local.mjs` and `sensitivity.mjs`. Model cohort outcomes remain separate from local controls, replays and post-hoc sensitivities.

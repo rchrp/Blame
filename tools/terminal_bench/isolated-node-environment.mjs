@@ -38,13 +38,19 @@ export async function prepareIsolatedNodeEnvironment({baselineModules,workspace,
   policy:'Per-trial copied dependencies and isolated empty npm cache; offline execution refuses undeclared tool downloads. Apply identically to every arm before registration.'};
 }
 export function compareDependencyManifests(before,after){
- const changed=[],missing=[],added=[],generated=[];
+ const changed=[],missing=[],added=[],generated=[],generatedModified=[];
  for(const [path,value]of Object.entries(before)){
   if(!(path in after))missing.push(path);
-  else if(JSON.stringify(value)!==JSON.stringify(after[path]))changed.push(path);
+  else if(JSON.stringify(value)!==JSON.stringify(after[path])){
+   // Vitest updates this non-executable result data even when the copied
+   // dependency tree already has a cache. Keep modifications visible without
+   // calling them package changes. Kind changes/symlinks remain deviations.
+   if(/^\.vite\/vitest\/[a-f0-9]{40}\/results\.json$/.test(path)&&value.kind==='file'&&after[path].kind==='file')generatedModified.push(path);
+   else changed.push(path);
+  }
  }
  for(const path of Object.keys(after))if(!(path in before)){
   if(/^(?:\.vite|\.vitest-cache|\.cache)\//.test(path))generated.push(path);else added.push(path);
  }
- return {pinnedDependenciesUnchanged:changed.length===0&&missing.length===0&&added.length===0,changed,missing,added,generated};
+ return {pinnedDependenciesUnchanged:changed.length===0&&missing.length===0&&added.length===0,changed,missing,added,generated,generatedModified};
 }

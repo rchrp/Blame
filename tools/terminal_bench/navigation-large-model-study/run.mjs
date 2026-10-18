@@ -219,7 +219,9 @@ async function run() {
     assert.deepEqual(await endpointIdentity(directory),await json(join(directory,'endpoint-manifest.json')),'Source changed after recorded model exit');
     const grade = await score(directory, task.id);
     const environment = await json(join(directory,'environment.json'));
-    grade.dependencyIntegrity = compareDependencyManifests(environment.manifest,await dependencyManifest(join(directory,'workspace/node_modules')));
+    const afterDependencies=await dependencyManifest(join(directory,'workspace/node_modules'));
+    await save(join(directory,'dependency-after-manifest.json'),afterDependencies);
+    grade.dependencyIntegrity = compareDependencyManifests(environment.manifest,afterDependencies);
     await save(join(directory, 'score.json'), grade);
     const { row, wire } = await analyse(slot, directory, exit, grade); rows.push(row); wireByTrial[name] = wire;
     await save(join(campaign, 'analysis.json'), { planned: protocol.order.length, rows });

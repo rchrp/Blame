@@ -1,0 +1,56 @@
+{
+  "localTests": {
+    "durable": 10,
+    "isolationIncludingCache": 10,
+    "failed": 0
+  },
+  "actualVitestControl": {
+    "runnerPassed": true,
+    "cacheClassifiedGenerated": true,
+    "packageMutationRejected": true,
+    "baselineUnchanged": true
+  },
+  "replays": {
+    "F55": 18,
+    "F53": 18,
+    "mismatches": 0
+  },
+  "modelCalls": 0,
+  "logs": [
+    {
+      "name": "cache-integrity-checks",
+      "rawSha256": "aa70c56eeeb3ac3c0e2610d8f5b39b1289c0d7fa977b6a8f1c036ef357d06747",
+      "compressedSha256": "2a8718456f585a54a99844dccb2904a54379283837b7bf80acabaedd08542efe"
+    },
+    {
+      "name": "f56-local",
+      "rawSha256": "9c5f607d20df6eb0d0fb32646ce743d4c270eab694d818657ba245ebe0f14aeb",
+      "compressedSha256": "5b4f2743463168ef473e97b58f0ad3a46cdf48f27fe167989f4e5d63dda30f83"
+    },
+    {
+      "name": "f53-cache-sensitivity",
+      "rawSha256": "ca837b2eae25d72b30d01bb68e9153f868677f51d3656e7cfb4008f99759b58b",
+      "compressedSha256": "ecde1e7da53784bd508c9c5637724fa6c8da91a9a86303dbe4e4fcad871e2643"
+    },
+    {
+      "name": "f53-verify",
+      "rawSha256": "d182eaa9c6262a5c62c29b702bc14a097a3b100fa994c5128390fcb7f1c45674",
+      "compressedSha256": "232ff5567a1771139d1aaefba720350260bbfb658d933a65df70a92f250d3573"
+    },
+    {
+      "name": "f53-replay",
+      "rawSha256": "55750646dfa2a62975ab40c69b9f525c1c8a21b7eb2d53cc5d8b60c52f5bf87f",
+      "compressedSha256": "b3fad2b99a12661c052e04d3c6519bf5b3289905c884f4e106fa17d0fa0c7536"
+    },
+    {
+      "name": "f55-verify",
+      "rawSha256": "78f754602ab264c6177a1af887b3797c5e5e017be9df99229ed440cde0b10f66",
+      "compressedSha256": "6972947c468f254b311d6bb7a010e45a496f099b91ead356d1ef7a0b7cbcb446"
+    },
+    {
+      "name": "f55-replay",
+      "rawSha256": "f58cadd6c59c910a8bc379e5a4474a607bbb0b37ba92aac136c56e25ebb01f4f",
+      "compressedSha256": "5270cfaae63e7971835be651ae2e85b7e48a4f5c12e15e6cba787445dea17f24"
+    }
+  ]
+}
