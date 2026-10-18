@@ -37,6 +37,7 @@ import { validationOutput, type ValidationOutput } from "./validation-output.js"
 import { checkReporting } from "./light-validation-report.js";
 import type { WorkspaceFiles, WorkspaceSnapshot } from "./workspace-files.js";
 import { managedTestReport, type ManagedTestReport } from "./managed-test-report.js";
+import { runtimeTestScope, typecheckSelections, type TypecheckSelection } from "./runtime-test-scope.js";
 
 type RunnerContext = {
   sessionId?: string;
@@ -74,6 +75,7 @@ type ValidationMetadata = {
   invocationReport?: Awaited<ReturnType<typeof invocationTestReport>>;
   invocationSnapshot?: WorkspaceSnapshot;
   invocationEnvironment?: Awaited<ReturnType<typeof environmentManifestEvidence>>;
+  typecheckSelections?: TypecheckSelection[];
 };
 
 type FailureAssessment = {
@@ -159,7 +161,7 @@ export class LightTaskRunner {
   }
 
   private async executeProjectTask(
-    task: TaskCatalogItem,
+    task: TaskCatalogItem & { typecheckSelections?: TypecheckSelection[] },
     context: RunnerContext,
     args: string[] = [],
   ) {
@@ -185,6 +187,7 @@ export class LightTaskRunner {
         taskKind: task.kind,
         ...(task.validationScope ? { validationScope: task.validationScope } : {}),
         taskCommand: task.command,
+        ...(task.typecheckSelections ? { typecheckSelections: task.typecheckSelections } : {}),
         ...(args.length ? { args } : {}),
         ...(report ? { report } : {}),
       },
@@ -457,7 +460,8 @@ export class LightTaskRunner {
       : projectTestCommand(command, cwd, tasks);
     if (!identity) return {};
     const matches = tasks.filter((item) => item.task_id === identity.taskId && item.cwd === cwd);
-    return { ...identity, ...(matches.length === 1 ? { taskCommand: matches[0]!.command } : {}) };
+    return { ...identity, typecheckSelections: typecheckSelections(tasks, cwd),
+      ...(matches.length === 1 ? { taskCommand: matches[0]!.command } : {}) };
   }
 
   private async recordedResult(
@@ -515,6 +519,12 @@ export class LightTaskRunner {
       if (failure || changedPaths.length) presented.output = boundedDiagnostic(output, "", 4_000);
       if (check.evidenceOrigin === "node_events" && check.counts)
         presented.output += `\nActive Node case results: ${check.counts.passed} passed, ${check.counts.failed} failed, ${check.counts.skipped} skipped/todo. File workers and suites are excluded. Command outcome: ${check.outcome}. Test scope, selection and freshness are not admitted by these counts.`;
+      const scope = runtimeTestScope({ check,
+        ...(metadata.taskCommand ? { script: redactedOutput(metadata.taskCommand) } : {}),
+        ...(metadata.args ? { args: metadata.args.map(redactedOutput) } : {}),
+        changedPaths: await this.journal.currentChangedPaths(),
+        ...(metadata.typecheckSelections ? { typecheckSelections: metadata.typecheckSelections } : {}),
+      });
       return { status: "ok", data: { command, exitCode: result.exitCode,
         ...presented,
         ...(failure ? { failure } : {}), check, reporting: { ...checkReporting(check),
@@ -522,6 +532,7 @@ export class LightTaskRunner {
           completedSourceRevisionId: snapshot.revision.source_revision_id, cwd: metadata.cwd ?? "." },
         changed: changedPaths.length > 0, paths: changedPaths,
         validation: { status: check.freshness === "stale" ? "stale" : check.outcome === "failed" ? "failed" : "unknown" },
+        ...(scope ? { testValidationScope: scope } : {}),
       } };
     }
     const status = result.failed ? "failed" : "passed";
@@ -613,7 +624,9 @@ export class LightTaskRunner {
       throw new TaskSelectionError(taskSelectionError(input.task, candidates));
     if (input.args?.length && candidates[0]!.kind !== "test")
       throw new TaskSelectionError("Extra arguments are supported only for project test tasks.");
-    return candidates[0]!;
+    const selected = candidates[0]!;
+    return { ...selected, ...(selected.kind === "test"
+      ? { typecheckSelections: typecheckSelections(tasks, selected.cwd) } : {}) };
   }
 }
 
