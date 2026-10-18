@@ -1,0 +1,16 @@
+{
+  "modelRequests": 0,
+  "changedRuntimeFilesBetweenLightArms": [],
+  "flagByArm": {
+    "reference": "true",
+    "candidate": "true",
+    "cline": "false"
+  },
+  "hintsByArm": {
+    "reference": "false",
+    "candidate": "true",
+    "cline": "false"
+  },
+  "solverIdenticalAcrossArms": true,
+  "mechanism": "Optional body-read discovery hints only. One identical compiled runtime for all arms; both Light schemas expose analyze; reference/candidate differ only by BLAME_AGENT_SYMBOLIC_HINTS. Local Z3 executable/path is available to all arms, including ordinary commands in integrated Cline. Solver results grant no validation admission."
+}

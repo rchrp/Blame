@@ -1,0 +1,8 @@
+{
+  "observedUsd": 8.3849118,
+  "reservedUsd": 3.6399999999999997,
+  "accountedUsd": 12.024911799999998,
+  "parent": "docs/experiments/light-harness-symbolic-model-f50-2026-10-18",
+  "parentSummarySha256": "89bf56f67113c100d00c1fa289efc5997351439f7a2424162c0a42d86d25dec2",
+  "caveat": "Verified public F50 cumulative SDK observations and unknown-request reserves, separate from invoices. F52 tasks were selected before any F52 model outcomes."
+}
