@@ -1,0 +1,5 @@
+# F64: complete RxJS confirmation
+
+Selection registered at `66528075` before implementation/model outcomes. Local controls complete; model results pending. Full upstream commit `e5351d02e225e275ac0e497c7b66eaa5f0c88791`: 1,288 files and 251 TS library files under src (405 across all source directories including docs). The three new feature requests require a new operator, both public barrels and tests. This is larger than F61, but not a representative historical-issue benchmark. Only light-task-runner.js differs from sealed F62 current; the extra helper is present but unused in the reference.
+
+Runtime 1,071 pass/7 declared skips; runner 37/37; scope 3/3; timing 12/12. Supplemental 13 wrapper tests execute five real-Vitest skips (eight overlap). Independent local positive controls pass all five endpoints for each task; subscription-state or test-type mutants are rejected. Upstream RxJS Mocha callback cases use a pinned common bridge with ES2015 class-field semantics; source/compiler adapter limits are explicit. See local-validation.json, oracle-controls.json and observer controls.

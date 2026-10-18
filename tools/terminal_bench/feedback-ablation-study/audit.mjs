@@ -3,7 +3,7 @@ import {readFile} from 'node:fs/promises';import {readJsonLines} from './evidenc
 const work=defaultWork,study=defaultStudy;
 const protocol=await json(join(study,'protocol.json'));
 const checkNames=protocol.tasks[0].requiredChecks.map(c=>c.id);
-const commandFor=name=>'npm run test:study:'+name;
+const commandFor=name=>'npm run '+protocol.tasks[0].requiredChecks.find(c=>c.id===name).task;
 const requiredCommands=new Set(checkNames.map(commandFor));
 const analysis=await json(join(work,'campaign/analysis.json'));const packets=[];
 for(const row of analysis.rows){
@@ -15,7 +15,7 @@ for(const row of analysis.rows){
   else if(t.tool==='run_task'&&t.output?.status==='blocked')commands.push({index,input:t.input,command:t.input?.command??`[project task ${t.input?.task??'unknown'}]`,exitCode:null,processSuccess:false,reportedExitCode:t.output.message?.match(/^Command exited with code (\d+)\./)?.[1]??null,output:t.output.message});
   if(t.tool==='run_commands')for(const o of Array.isArray(t.output)?t.output:[])commands.push({index,input:t.input,command:o.query,exitCode:null,processSuccess:o.success===true,output:o.output??o.result??o});
  }
- const required=Object.fromEntries(checkNames.map(name=>[name,commands.filter(c=>(c.command===`npm run test:study:${name}` || c.command.split(' && ').every(s=>requiredCommands.has(s)) && c.command.split(' && ').includes(`npm run test:study:${name}`))&&c.index>lastEdit&&c.processSuccess)]));
+ const required=Object.fromEntries(checkNames.map(name=>[name,commands.filter(c=>(c.command===commandFor(name) || c.command.split(' && ').every(s=>requiredCommands.has(s)) && c.command.split(' && ').includes(commandFor(name)))&&c.index>lastEdit&&c.processSuccess)]));
  const shellWriteCandidates=commands.filter(c=>/writeFile|write_text|write_bytes|writeSync|--write|\btee\b|\bsed\s+-i|\bperl\s+-i|\bgit\s+(?:apply|checkout|restore)|\bcat\s*>/.test(JSON.stringify(c.input)));
  const events=(await readJsonLines(join(dir,'events.jsonl'))).rows.map(row=>row.event).filter(Boolean);
  const delivery=events.findLast(e=>e.type==='done')?.payload?.text??tools.findLast(t=>t.tool==='finish_task')?.input?.summary??null;

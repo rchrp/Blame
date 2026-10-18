@@ -1,0 +1,7 @@
+diff --git a/src/independent.test.ts b/src/independent.test.ts
+new file mode 100644
+index 0000000..67fa117
+--- /dev/null
++++ b/src/independent.test.ts
+@@ -0,0 +1 @@
++import {test,expect} from 'vitest';import {value} from './value';test('numeric stable API',()=>expect(value+1).toBe(2));

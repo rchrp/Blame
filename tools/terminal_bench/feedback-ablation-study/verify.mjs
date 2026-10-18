@@ -13,6 +13,8 @@ import {reserveTrialCosts} from '../navigation-evidence/budget-accounting.mjs';
 import {schemaExposure} from './schema-exposure.mjs';
 import {parseJsonLines,finishObservation} from './evidence-io.mjs';
 import {resourcesKnown,relativeDelta as delta} from './resource-values.mjs';
+import {instruction as handoffInstruction} from './recovery-fixtures.mjs';
+import {scopeObservations,scopeWireObservation,handoffText} from './scope-observations.mjs';
 const protocol=await json(join(study,'protocol.json')),results=await json(join(study,'results.json')),summary=await json(join(study,'summary.json')),review=await json(join(study,'source-review.json'));
 assert.equal(protocol.order.length,18);assert.equal(results.rows.length,18);assert.equal(review.decisions.length,18);
 assert.deepEqual(results.rows.map(r=>r.name),protocol.order.map(r=>`${r.repeat}-${r.task}-${r.arm}`));
@@ -21,7 +23,8 @@ for(const row of results.rows){
  const bytes=await readFile(join(study,'traces',row.name+'.json.gz'));assert.equal(sha(bytes),row.traceSha256);const archive=JSON.parse(gunzipSync(bytes));assert.equal(archive.name,row.name);
  const read=name=>{const f=archive.files[name];assert.ok(f,name);const b=Buffer.from(f.base64,'base64');assert.equal(b.length,f.bytes);assert.equal(sha(b),f.sha256);return b;};
  for(const name of Object.keys(archive.files))read(name);for(const [name,hash]of Object.entries(row.hashes))assert.equal(sha(read(name)),hash);
- assert.equal(read('instruction.txt').toString(),protocol.tasks.find(t=>t.id===row.task).instruction);assert.deepEqual(JSON.parse(read('required-checks.json')),protocol.tasks.find(t=>t.id===row.task).requiredChecks);
+ const task=protocol.tasks.find(t=>t.id===row.task);
+ assert.equal(read('instruction.txt').toString(),protocol.controlledHandoff?await handoffInstruction(task,row.arm):task.instruction);assert.deepEqual(JSON.parse(read('required-checks.json')),task.requiredChecks);
  const grade=JSON.parse(read('score.json')),raw=archive.files['result.json']?JSON.parse(read('result.json')):{},exit=JSON.parse(read('model-exit.json'));
  assert.equal(row.officialRuntimeSuccess,raw.status==='succeeded');assert.deepEqual(row.exit,exit);assert.equal(row.durationMs,raw.durationMs??exit.durationMs);
  assert.equal(row.independentFunctionalSuccess,grade.protectedPaths.length===0&&grade.checks.every(c=>c.exitCode===0));
@@ -42,6 +45,8 @@ for(const row of results.rows){
  const wire=archive.files['wire-contracts.jsonl']?read('wire-contracts.jsonl').toString().trim().split('\n').filter(Boolean).map(JSON.parse):[];wireByTrial[row.name]=wire;if(protocol.feedbackWireAudit){const m=parseJsonLines(read('feedback-wire.jsonl'));assert.deepEqual(m.anomalies,row.evidenceAnomalies.feedback);assert.deepEqual(row.feedbackWire,feedbackWireObservation(m.rows,wire));assert.equal(row.feedbackWire.matched,true);}first[row.name]=wire.find(w=>!w.budgetRejected);
  if(protocol.requestTimingAudit){const m=parseJsonLines(read('request-timing.jsonl'));assert.deepEqual(m.anomalies,row.evidenceAnomalies.timing);assert.deepEqual(row.timing,requestTimingObservation(m.rows,wire));assert.equal(row.timing.matched,true);}
  if(protocol.provenanceAudit){const m=parseJsonLines(read('feedback-wire.jsonl'));assert.deepEqual(row.provenanceWire,provenanceWireObservation(m.rows,wire));assert.deepEqual(row.provenance,provenanceObservations(ledger));assert.equal(row.provenanceWire.matched,true);}
+ if(protocol.scopeAudit){const m=parseJsonLines(read('feedback-wire.jsonl'));assert.deepEqual(row.scopeWire,scopeWireObservation(m.rows,wire));assert.deepEqual(row.scopeObservations,scopeObservations(ledger));assert.equal(row.scopeWire.matched,true);}
+ if(protocol.controlledHandoff){const m=parseJsonLines(read('feedback-wire.jsonl'));const text=handoffText(read('instruction.txt').toString());assert.ok(text);for(const v of m.rows){assert.equal(v.controlledHandoff.sha256,sha(text));assert.equal(v.controlledHandoff.utf8Bytes,Buffer.byteLength(text));}assert.deepEqual(row.handoff,{origin:'explicit_user_handoff',withInvalidationField:row.arm==='candidate',observedForwardedRequests:m.rows.filter((v,i)=>!wire[i]?.budgetRejected&&v.controlledHandoff?.userContextContainsExactHandoff).length});}
  const schemas=[];for(const hash of new Set(wire.filter(w=>!w.budgetRejected).map(w=>w.toolsSha256))){const bytes=read('schema-'+hash+'.json');schemas.push({sha256:hash,bytes:bytes.length,...schemaExposure(bytes)});}assert.deepEqual(row.schemas,schemas);const exposurePassed=schemas.every(schema=>schema.analyzeExposed===false&&schema.runTaskPresent===(row.arm!=='cline'));assert.ok(exposurePassed);assert.equal(row.schemaExposurePassed,exposurePassed);assert.equal(row.requestBodyBytes,wire.filter(w=>!w.budgetRejected).reduce((sum,w)=>sum+w.requestBytes,0));
  for(const w of wire){assert.equal(w.model,protocol.model);assert.equal(w.reasoning?.effort,protocol.effort);assert.equal(w.maximumOutputTokens,8192);assert.equal(w.byteLimit,500000);assert.equal(sha(read('schema-'+w.toolsSha256+'.json').toString().trimEnd()),w.toolsSha256);assert.equal(sha(read('prompt-'+w.promptSha256+'.json').toString().trimEnd()),w.promptSha256);}
  const d=review.decisions.find(decision=>decision.name===row.name);assert.ok(d,'Missing source review: '+row.name);assert.deepEqual(d.hashes,row.hashes);assert.equal(d.addedTestsPassed,grade.addedTests.length>0&&grade.deliveredChecks.every(c=>c.exitCode===0));

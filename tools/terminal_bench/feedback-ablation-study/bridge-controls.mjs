@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import {mkdir,writeFile,readFile,cp,rm,symlink} from 'node:fs/promises';
+import {join} from 'node:path';
+import {spawnSync} from 'node:child_process';
+import {repo,deps} from './recovery-common.mjs';
+import {work,study,save,sha} from './setup.mjs';
+const root=join(work,'bridge-controls');await rm(root,{recursive:true,force:true});await mkdir(root,{recursive:true});
+await symlink(join(deps,'node_modules'),join(root,'node_modules'));await writeFile(join(root,'package.json'),'{"type":"module"}\n');
+await cp(join(import.meta.dirname,'mocha-vitest-bridge.mjs'),join(root,'bridge.mjs'));
+await writeFile(join(root,'control.test.ts'),"it('callback pass',(done:any)=>queueMicrotask(()=>done()));it('callback failure',(done:any)=>done(new Error('controlled callback failure')));it('callback timeout',(_done:any)=>{},30);\n");
+await writeFile(join(root,'vitest.config.mjs'),"export default {test:{globals:true,setupFiles:['./bridge.mjs'],include:['control.test.ts'],maxWorkers:1,fileParallelism:false,cache:false}};\n");
+const argv=['node_modules/vitest/vitest.mjs','run','--reporter=json','--reporter=default','--outputFile=report.json'];const r=spawnSync(process.execPath,argv,{cwd:root,encoding:'utf8',timeout:30000});assert.equal(r.status,1,r.stdout+r.stderr);
+const report=JSON.parse(await readFile(join(root,'report.json'),'utf8')),cases=report.testResults.flatMap(f=>f.assertionResults);
+assert.deepEqual(cases.map(c=>c.status),['passed','failed','failed']);assert.match(JSON.stringify(cases[1]),/controlled callback failure/);assert.match(r.stdout+r.stderr,/Test timed out in 30ms/);
+await save(join(study,'adapter-controls.json'),{complete:true,modelRequests:0,scriptSha256:sha(await readFile(new URL(import.meta.url))),bridgeSha256:sha(await readFile(join(root,'bridge.mjs'))),command:process.execPath,argv,exitCode:r.status,report,stdout:r.stdout,stderr:r.stderr,meaning:'Unchanged Mocha-style callbacks execute; done(error) and a missing done fail, not pass/skip. Common bridge is for upstream global it; new imported Vitest tests use their own API. Selected upstream regressions are separately checked against pristine/positive inputs.'});
+await rm(root,{recursive:true});console.log('Callback success, error propagation and timeout controls passed; zero model calls.');

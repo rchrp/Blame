@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import {join} from 'node:path';
+import {pathToFileURL} from 'node:url';
+const root=process.argv[2],m=await import(pathToFileURL(join(root,'src/value.ts')));
+assert.equal(m.value,1);assert.match(await readFile(join(root,'src/value.ts'),'utf8'),/export const value\s*:\s*number\s*=\s*1\s*;/);
+const test=await readFile(join(root,'src/late.test.ts'),'utf8');
+assert.match(test,/expect\(value\)\.toBe\(Number\(expected\)\)/);
+assert.match(test,/const expected: number = 1;/);
+console.log('Pinned value/API and retained test assertion passed. Compilation is a separate endpoint.');

@@ -1,0 +1,35 @@
+diff --git a/src/index.ts b/src/index.ts
+index 1805341..a233586 100644
+--- a/src/index.ts
++++ b/src/index.ts
+@@ -207,3 +207,5 @@ export { windowWhen } from './internal/operators/windowWhen';
+ export { withLatestFrom } from './internal/operators/withLatestFrom';
+ export { zipAll } from './internal/operators/zipAll';
+ export { zipWith } from './internal/operators/zipWith';
++
++export { mapWithPrevious } from './internal/operators/mapWithPrevious';
+diff --git a/src/operators/index.ts b/src/operators/index.ts
+index 5b19019..43d9700 100644
+--- a/src/operators/index.ts
++++ b/src/operators/index.ts
+@@ -112,3 +112,5 @@ export { withLatestFrom } from '../internal/operators/withLatestFrom';
+ export { zip } from '../internal/operators/zip';
+ export { zipAll } from '../internal/operators/zipAll';
+ export { zipWith } from '../internal/operators/zipWith';
++
++export { mapWithPrevious } from '../internal/operators/mapWithPrevious';
+diff --git a/src/feature.test.ts b/src/feature.test.ts
+new file mode 100644
+index 0000000..2710245
+--- /dev/null
++++ b/src/feature.test.ts
+@@ -0,0 +1 @@
++import {test,expect} from 'vitest';import {of,mapWithPrevious} from './index';test('new operator export',()=>{expect(typeof mapWithPrevious).toBe('function');});
+diff --git a/src/internal/operators/mapWithPrevious.ts b/src/internal/operators/mapWithPrevious.ts
+new file mode 100644
+index 0000000..15bb58c
+--- /dev/null
++++ b/src/internal/operators/mapWithPrevious.ts
+@@ -0,0 +1,2 @@
++import {OperatorFunction,MonoTypeOperatorFunction} from '../types';import {operate} from '../util/lift';import {createOperatorSubscriber} from './OperatorSubscriber';
++export function mapWithPrevious<T,R>(project:(value:T,previous:T|undefined,index:number)=>R):OperatorFunction<T,R>{return operate((source,subscriber)=>{let index=0;let previous:T|undefined;source.subscribe(createOperatorSubscriber(subscriber,value=>{const prev=previous;previous=value;const result=project(value,prev,index++);subscriber.next(result);}));});}

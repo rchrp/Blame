@@ -1,0 +1,89 @@
+{
+  "complete": true,
+  "modelRequests": 0,
+  "scriptSha256": "be45aa81c7fe7a324fef666ffa096eb86e3ba5b97d6d6627feec1a975d1542a5",
+  "bridgeSha256": "d3f642c6ca98e46ebfdca8ffa8869e699824966576197945812f12459eab2ae8",
+  "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+  "argv": [
+    "node_modules/vitest/vitest.mjs",
+    "run",
+    "--reporter=json",
+    "--reporter=default",
+    "--outputFile=report.json"
+  ],
+  "exitCode": 1,
+  "report": {
+    "numTotalTestSuites": 1,
+    "numPassedTestSuites": 0,
+    "numFailedTestSuites": 1,
+    "numPendingTestSuites": 0,
+    "numTotalTests": 3,
+    "numPassedTests": 1,
+    "numFailedTests": 2,
+    "numPendingTests": 0,
+    "numTodoTests": 0,
+    "snapshot": {
+      "added": 0,
+      "failure": false,
+      "filesAdded": 0,
+      "filesRemoved": 0,
+      "filesRemovedList": [],
+      "filesUnmatched": 0,
+      "filesUpdated": 0,
+      "matched": 0,
+      "total": 0,
+      "unchecked": 0,
+      "uncheckedKeysByFile": [],
+      "unmatched": 0,
+      "updated": 0,
+      "didUpdate": false
+    },
+    "startTime": 1792361699867,
+    "success": false,
+    "testResults": [
+      {
+        "assertionResults": [
+          {
+            "ancestorTitles": [],
+            "fullName": "callback pass",
+            "status": "passed",
+            "title": "callback pass",
+            "duration": 0.7039199999999823,
+            "failureMessages": [],
+            "meta": {}
+          },
+          {
+            "ancestorTitles": [],
+            "fullName": "callback failure",
+            "status": "failed",
+            "title": "callback failure",
+            "duration": 2.933334000000002,
+            "failureMessages": [
+              "Error: controlled callback failure\n    at Object.<anonymous> (/workspace/blame-study-runs/feedback-f64/bridge-controls/control.test.ts:1:99)\n    at /workspace/blame-study-runs/feedback-f64/bridge-controls/bridge.mjs:7:6\n    at new Promise (<anonymous>)\n    at /workspace/blame-study-runs/feedback-f64/bridge-controls/bridge.mjs:4:77\n    at file:///workspace/Blame/.blame/research/validation-recovery-f63/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11\n    at file:///workspace/Blame/.blame/research/validation-recovery-f63/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26\n    at file:///workspace/Blame/.blame/research/validation-recovery-f63/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:1897:20\n    at new Promise (<anonymous>)\n    at runWithTimeout (file:///workspace/Blame/.blame/research/validation-recovery-f63/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:1863:10)\n    at runTest (file:///workspace/Blame/.blame/research/validation-recovery-f63/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:1574:12)"
+            ],
+            "meta": {}
+          },
+          {
+            "ancestorTitles": [],
+            "fullName": "callback timeout",
+            "status": "failed",
+            "title": "callback timeout",
+            "duration": 31.971768999999995,
+            "failureMessages": [
+              "Error: STACK_TRACE_ERROR\n    at task (file:///workspace/Blame/.blame/research/validation-recovery-f63/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:638:27)\n    at Object.<anonymous> (file:///workspace/Blame/.blame/research/validation-recovery-f63/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:662:16)\n    at Object.<anonymous> (file:///workspace/Blame/.blame/research/validation-recovery-f63/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:458:28)\n    at chain (file:///workspace/Blame/.blame/research/validation-recovery-f63/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:369:14)\n    at /workspace/blame-study-runs/feedback-f64/bridge-controls/bridge.mjs:4:28\n    at /workspace/blame-study-runs/feedback-f64/bridge-controls/control.test.ts:1:142\n    at VitestExecutor.runModule (file:///workspace/Blame/.blame/research/validation-recovery-f63/dependencies/node_modules/vite-node/dist/client.mjs:397:10)\n    at VitestExecutor.runModule (file:///workspace/Blame/.blame/research/validation-recovery-f63/dependencies/node_modules/vitest/dist/chunks/execute.B7h3T_Hc.js:667:57)\n    at VitestExecutor.directRequest (file:///workspace/Blame/.blame/research/validation-recovery-f63/dependencies/node_modules/vite-node/dist/client.mjs:375:14)\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at VitestExecutor.cachedRequest (file:///workspace/Blame/.blame/research/validation-recovery-f63/dependencies/node_modules/vite-node/dist/client.mjs:189:11)\n    at VitestExecutor.executeId (file:///workspace/Blame/.blame/research/validation-recovery-f63/dependencies/node_modules/vite-node/dist/client.mjs:166:10)\n    at collectTests (file:///workspace/Blame/.blame/research/validation-recovery-f63/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:1174:4)\n    at startTests (file:///workspace/Blame/.blame/research/validation-recovery-f63/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:1817:17)\n    at file:///workspace/Blame/.blame/research/validation-recovery-f63/dependencies/node_modules/vitest/dist/chunks/runBaseTests.9Ij9_de-.js:117:26"
+            ],
+            "meta": {}
+          }
+        ],
+        "startTime": 1792361700080,
+        "endTime": 1792361700114.9717,
+        "status": "failed",
+        "message": "",
+        "name": "/workspace/blame-study-runs/feedback-f64/bridge-controls/control.test.ts"
+      }
+    ]
+  },
+  "stdout": "\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f64/bridge-controls\n\n ❯ control.test.ts (3 tests | 2 failed) 37ms\n   ✓ callback pass 1ms\n   × callback failure 3ms\n     → controlled callback failure\n   × callback timeout 32ms\n     → Test timed out in 30ms.\nIf this is a long-running test, pass a timeout value as the last argument or configure it globally with \"testTimeout\".\n\n Test Files  1 failed (1)\n      Tests  2 failed | 1 passed (3)\n   Start at  22:14:59\n   Duration  261ms (transform 34ms, setup 14ms, collect 16ms, tests 37ms, environment 0ms, prepare 69ms)\n\nJSON report written to /workspace/blame-study-runs/feedback-f64/bridge-controls/report.json\n",
+  "stderr": "\n⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯\n\n FAIL  control.test.ts > callback failure\nError: controlled callback failure\n ❯ Object.<anonymous> control.test.ts:1:99\n      1| it('callback pass',(done:any)=>queueMicrotask(()=>done()));it('callbac…\n       |                                                                                                   ^\n      2| \n ❯ bridge.mjs:7:6\n ❯ bridge.mjs:4:77\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯\n\n FAIL  control.test.ts > callback timeout\nError: Test timed out in 30ms.\nIf this is a long-running test, pass a timeout value as the last argument or configure it globally with \"testTimeout\".\n ❯ bridge.mjs:4:28\n      2| import {it} from 'vitest';\n      3| function adapt(run){\n      4|  return (name,fn,timeout)=>run(name,typeof fn==='function'&&fn.length>…\n       |                            ^\n      5|   let called=false;\n      6|   const done=error=>{if(called)throw Error('done called more than once…\n ❯ control.test.ts:1:142\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯\n\n",
+  "meaning": "Unchanged Mocha-style callbacks execute; done(error) and a missing done fail, not pass/skip. Common bridge is for upstream global it; new imported Vitest tests use their own API. Selected upstream regressions are separately checked against pristine/positive inputs."
+}

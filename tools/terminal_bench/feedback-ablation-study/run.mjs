@@ -19,6 +19,8 @@ import { reconcileUsage } from '../corpus/light-study-accounting.mjs';
 import { reserveTrialCosts } from '../navigation-evidence/budget-accounting.mjs';
 import { repo, work, study, sha, json, save, prepare, sourceRoot } from './setup.mjs';
 import {check,checkNames} from './checks.mjs';
+import {instruction as handoffInstruction} from './recovery-fixtures.mjs';
+import {scopeObservations,scopeWireObservation} from './scope-observations.mjs';
 
 const protocol = await json(join(study, 'protocol.json'));
 const campaign = join(work, 'campaign');
@@ -35,7 +37,7 @@ async function bindings() {
   files['isolated-node-environment.mjs'] = sha(await readFile(join(import.meta.dirname,'../isolated-node-environment.mjs')));
   for (const root of [join(work, 'frozen'), join(work, 'dependencies/node_modules')])
     files[relative(repo, root)] = await fileTree(root);
-  for (const path of ['protocol.json', 'prior-budget.json', 'prompt-date-binding.json', 'native-search-bindings.json', 'isolation-controls.json', 'oracle-controls.json', 'input-archives.json', 'environment-smoke.json', 'snapshot.json', 'preflight-controls.json',...(protocol.feedbackWireAudit?['feedback-boundary-controls.json','measurement-amendment.json']:[]),...(protocol.requestTimingAudit?['timing-controls.json','contract-test-sensitivity.json','selection-registration.json']:[])])
+  for (const path of ['protocol.json', 'prior-budget.json', 'prompt-date-binding.json', 'native-search-bindings.json', 'isolation-controls.json', 'oracle-controls.json', 'input-archives.json', 'environment-smoke.json', 'snapshot.json', 'preflight-controls.json',...(protocol.feedbackWireAudit?['feedback-boundary-controls.json','measurement-amendment.json']:[]),...(protocol.requestTimingAudit?['timing-controls.json',...(protocol.phase==='F62'?['contract-test-sensitivity.json']:[]),'selection-registration.json']:[]),...(protocol.boundInputFiles??[])])
     files[path] = sha(await readFile(join(study, path)));
   for (const path of ['tools/terminal_bench/navigation-evidence/wire-audit.mjs', 'tools/terminal_bench/navigation-evidence/native-search-repair.mjs',
     'tools/terminal_bench/request-limit-model-study/prompt-date.mjs', 'tools/terminal_bench/navigation-evidence/budget-accounting.mjs',
@@ -62,7 +64,8 @@ export async function score(directory, task) {
   const workspace = join(directory, 'workspace');
   const inputCommit=(await readFile(join(directory,'input-commit.txt'),'utf8')).trim();assert.match(inputCommit,/^[a-f0-9]{40}$/);
   const paths=[...new Set([...git(['diff','--no-renames','--name-only','-z',inputCommit,'--'],workspace).split('\0'),...git(['ls-files','--others','--exclude-standard','-z'],workspace).split('\0')].filter(Boolean))];
-  const originalTests=new Set(git(['ls-tree','-r','--name-only','-z',inputCommit],workspace).split('\0').filter(path=>/\.(?:test|spec)(?:-d)?\.ts$/.test(path)));
+  const allowed=protocol.tasks.find(t=>t.id===task)?.allowedTestEdits??[];
+  const originalTests=new Set(git(['ls-tree','-r','--name-only','-z',inputCommit],workspace).split('\0').filter(path=>/\.(?:test|spec)(?:-d)?\.ts$/.test(path)&&!allowed.includes(path)));
   const protectedPaths = paths.filter(path => !(path.startsWith(sourceRoot()+'/')&&path.endsWith('.ts')) || originalTests.has(path));
   // Reconstruct endpoint against original checks in a fresh tree. Never repair
   // model source or copy an oracle solution back into the agent workspace.
@@ -109,6 +112,8 @@ async function execute(directory, slot, task) {
     BLAME_STUDY_WIRE_AUDIT: join(directory, 'wire-contracts.jsonl'), BLAME_STUDY_FEEDBACK_WIRE_AUDIT: join(directory,'feedback-wire.jsonl'), BLAME_STUDY_WORKSPACE: join(directory, 'workspace'),
     ...(protocol.requestTimingAudit?{BLAME_STUDY_TIMING_AUDIT:join(directory,'request-timing.jsonl')}:{}),
     ...(protocol.provenanceAudit?{BLAME_STUDY_PROVENANCE_AUDIT:'true'}:{}),
+    ...(protocol.scopeAudit?{BLAME_STUDY_SCOPE_AUDIT:'true'}:{}),
+    ...(protocol.controlledHandoff?{BLAME_STUDY_HANDOFF_INSTRUCTION:join(directory,'instruction.txt')}:{}),
     BLAME_AGENT_SYMBOLIC_ANALYSIS: protocol.flagByArm[slot.arm], BLAME_AGENT_SYMBOLIC_HINTS: protocol.hintsByArm[slot.arm], BLAME_Z3_PATH: protocol.solver.path,
     BLAME_STUDY_REQUEST_MAX_BYTES: String(protocol.budgets.maximumSerializedRequestBytes), BLAME_AGENT_REQUEST_MAX_OUTPUT_TOKENS: '8192', BLAME_AGENT_MAX_SESSION_COST_USD: String(protocol.budgets.perTrialSdkCostLimitUsd) };
   return new Promise((done) => {
@@ -176,12 +181,14 @@ export async function analyse(slot, directory, exit, grade) {
   const timingEvidence=protocol.requestTimingAudit?await readJsonLines(join(directory,'request-timing.jsonl')):null;
   const timing=timingEvidence?requestTimingObservation(timingEvidence.rows,wire):null;
   const provenanceWire=protocol.provenanceAudit?provenanceWireObservation(feedbackEvidence?.rows??[],wire):null;
+  const scopeWire=protocol.scopeAudit?scopeWireObservation(feedbackEvidence?.rows??[],wire):null;
+  const handoff=protocol.controlledHandoff?{origin:'explicit_user_handoff',withInvalidationField:slot.arm==='candidate',observedForwardedRequests:(feedbackEvidence?.rows??[]).filter((m,i)=>!wire[i]?.budgetRejected&&m.controlledHandoff?.userContextContainsExactHandoff).length}:null;
   if(timingEvidence)evidenceAnomalies.timing=timingEvidence.anomalies;
   if(feedbackEvidence)evidenceAnomalies.feedback=feedbackEvidence.anomalies;
-  const contractPassed = (!feedbackWire||feedbackWire.matched) && (!timing||timing.matched) && (!provenanceWire||provenanceWire.matched) && Object.values(evidenceAnomalies).every(items=>items.length===0) && !exit.spawnError && schemaExposurePassed && forwarded.every(request => request.maximumOutputTokens === 8192 && request.model === protocol.model && request.reasoning?.effort === protocol.effort)
+  const contractPassed = (!scopeWire||scopeWire.matched) && (!feedbackWire||feedbackWire.matched) && (!timing||timing.matched) && (!provenanceWire||provenanceWire.matched) && Object.values(evidenceAnomalies).every(items=>items.length===0) && !exit.spawnError && schemaExposurePassed && forwarded.every(request => request.maximumOutputTokens === 8192 && request.model === protocol.model && request.reasoning?.effort === protocol.effort)
     && usage.perRequest.every(report => report.output === null || report.output <= 8192) && !(usage.reports > 0 && forwarded.length === 0);
   await save(join(directory, 'tool-ledger.json'), tools);
-  const row = { ...(feedbackWire?{feedbackWire}:{}), ...(timing?{timing}:{}), ...(provenanceWire?{provenanceWire,provenance:provenanceObservations(tools)}:{}), feedback:feedbackObservations(tools), ...slot, name: `${slot.repeat}-${slot.task}-${slot.arm}`, officialRuntimeSuccess: result.status === 'succeeded', status: result.status ?? 'missing',
+  const row = { ...(scopeWire?{scopeWire,scopeObservations:scopeObservations(tools)}:{}),...(handoff?{handoff}:{}),...(feedbackWire?{feedbackWire}:{}), ...(timing?{timing}:{}), ...(provenanceWire?{provenanceWire,provenance:provenanceObservations(tools)}:{}), feedback:feedbackObservations(tools), ...slot, name: `${slot.repeat}-${slot.task}-${slot.arm}`, officialRuntimeSuccess: result.status === 'succeeded', status: result.status ?? 'missing',
     selectedCheckSuccess: grade.protectedPaths.length===0&&grade.checks.filter(c=>c.name!=='feature').every(c=>c.exitCode===0)&&grade.deliveredChecks.find(c=>c.name==='delivered')?.exitCode===0,
     independentFunctionalSuccess: grade.independentFunctionalSuccess, auditedCompletion: null, durationMs: result.durationMs ?? exit.durationMs,
     evidenceAnomalies,finishObservations,usage, metrics: result.metrics ?? null, completion: result.completion ?? null, error: result.error ?? null, exit,
@@ -226,8 +233,8 @@ async function run() {
       // No model-start record exists: incomplete preparation can safely be recreated.
       await rm(directory,{recursive:true,force:true}); await mkdir(directory);
       await prepare(join(directory,'workspace'),task.id,true);
-      await atomicWrite(join(directory,'input-commit.txt'),git(['rev-parse','HEAD'],join(directory,'workspace')));
-      await atomicWrite(join(directory,'instruction.txt'),task.instruction); await save(join(directory,'required-checks.json'),task.requiredChecks);
+      await atomicWrite(join(directory,'input-commit.txt'),git(['rev-parse',protocol.controlledHandoff?'refs/study/input':'HEAD'],join(directory,'workspace')));
+      await atomicWrite(join(directory,'instruction.txt'),protocol.controlledHandoff?await handoffInstruction(task,slot.arm):task.instruction); await save(join(directory,'required-checks.json'),task.requiredChecks);
       await storage.begin(slot); console.log('START',name);
       exit=await execute(directory,slot,task); await save(join(directory,'endpoint-manifest.json'),await endpointIdentity(directory)); await save(join(directory,'model-exit.json'),exit);
     }

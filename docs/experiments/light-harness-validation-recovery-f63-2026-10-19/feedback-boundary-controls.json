@@ -1,0 +1,52 @@
+{
+  "modelRequests": 0,
+  "complete": true,
+  "actualModelToolHeaderArrayRetained": true,
+  "benchmarkRecorderArrayMasked": true,
+  "modelContextMetadata": {
+    "callIdSha256": "0fcd568a5cb9bdb4677b69354b11ee415af8f784519cff3da49a26f84eaee7f2",
+    "receipt": "c1",
+    "contextSha256": "e2b08925ff5be2cf738767f4149f28878a67c777766c3b27abb4ff012edda886",
+    "contextJsonBytes": 582,
+    "headerArrayObserved": true,
+    "headerDeclarations": 1,
+    "headerJsonBytes": 170
+  },
+  "actualProvenanceReceiptMetadata": {
+    "callIdSha256": "96d815328a42cb4ef89d5e0b7a1df6be43b484832c83a7b4596d8402c7c0b12b",
+    "contextSha256": "c84d82eafbed0819e56bffc148d3ab57f73d955f2d0bf8720cb7fc85674bb974",
+    "contextJsonBytes": 856,
+    "invalidatedChecks": 1,
+    "omitted": 0
+  },
+  "timingPreloadPreservesRequest": true,
+  "actualScopeMetadata": {
+    "callIdSha256": "5f161c9149882e0e10124bc5dd5c11f0fbe8ec452edd52bcec76b01e9252cb33",
+    "contextSha256": "f71a80a2fae0efd1e021dc65f9a88b4165ff471dfabd5e55f00e41302b6e085f",
+    "contextJsonBytes": 850,
+    "changedTestCount": 1,
+    "forwardedArgumentCount": 1
+  },
+  "explicitUserHandoffDistinctFromToolReceipt": true,
+  "knownRepresentations": [
+    "Responses function_call_output",
+    "chat tool",
+    "SDK text wrapper"
+  ],
+  "ignored": [
+    "user JSON",
+    "source file JSON in data.content",
+    "transport headers",
+    "malformed tool text"
+  ],
+  "credentialFieldMaskingPreserved": true,
+  "actualPreloadsPreserveRequestAndJoinHashes": true,
+  "sourceHashes": {
+    "feedback-wire-audit.mjs": "394b9c94844af7da7bb29594f5a212f0df7ff1e2b290ee75c4398c51a616ea05",
+    "feedback-wire-metadata.mjs": "68fc1afcd7e3c65acfc0676af533161392160a49417d5e68799dfefee15dc6db",
+    "feedback-boundary-controls.mjs": "97cf3d38671f8fd9b142ef259966b91aa178a50a8a6e10f07712074be6f32159",
+    "provenance-observations.mjs": "1c1176ae5fc676f46ee5ca7097e7137cb44ed3c2039dc0e153202cb427cd39be",
+    "scope-observations.mjs": "6156dda169120a2ef765675cb541acc28253f9accfab25b83c5e2093bf867523"
+  },
+  "boundary": "Actual Light SDK tool execute() response retains declarations. Typed scope metadata ignores user/source JSON; explicit handoff presence is separately measured. Exposure is not comprehension/use. Context JSON bytes are not extra billed tokens."
+}

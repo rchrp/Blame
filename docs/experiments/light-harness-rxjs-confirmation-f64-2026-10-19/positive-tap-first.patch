@@ -1,0 +1,35 @@
+diff --git a/src/index.ts b/src/index.ts
+index 1805341..4ea335b 100644
+--- a/src/index.ts
++++ b/src/index.ts
+@@ -207,3 +207,5 @@ export { windowWhen } from './internal/operators/windowWhen';
+ export { withLatestFrom } from './internal/operators/withLatestFrom';
+ export { zipAll } from './internal/operators/zipAll';
+ export { zipWith } from './internal/operators/zipWith';
++
++export { tapFirst } from './internal/operators/tapFirst';
+diff --git a/src/operators/index.ts b/src/operators/index.ts
+index 5b19019..2f0a33c 100644
+--- a/src/operators/index.ts
++++ b/src/operators/index.ts
+@@ -112,3 +112,5 @@ export { withLatestFrom } from '../internal/operators/withLatestFrom';
+ export { zip } from '../internal/operators/zip';
+ export { zipAll } from '../internal/operators/zipAll';
+ export { zipWith } from '../internal/operators/zipWith';
++
++export { tapFirst } from '../internal/operators/tapFirst';
+diff --git a/src/feature.test.ts b/src/feature.test.ts
+new file mode 100644
+index 0000000..285b319
+--- /dev/null
++++ b/src/feature.test.ts
+@@ -0,0 +1 @@
++import {test,expect} from 'vitest';import {of,tapFirst} from './index';test('new operator export',()=>{expect(typeof tapFirst).toBe('function');});
+diff --git a/src/internal/operators/tapFirst.ts b/src/internal/operators/tapFirst.ts
+new file mode 100644
+index 0000000..68a886a
+--- /dev/null
++++ b/src/internal/operators/tapFirst.ts
+@@ -0,0 +1,2 @@
++import {OperatorFunction,MonoTypeOperatorFunction} from '../types';import {operate} from '../util/lift';import {createOperatorSubscriber} from './OperatorSubscriber';
++export function tapFirst<T>(next:(value:T)=>void):MonoTypeOperatorFunction<T>{return operate((source,subscriber)=>{let first=true;source.subscribe(createOperatorSubscriber(subscriber,value=>{if(first){first=false;next(value);}subscriber.next(value);}));});}

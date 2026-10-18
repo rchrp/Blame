@@ -1,0 +1,248 @@
+{
+  "task": "source-format",
+  "earlierInvocations": [
+    {
+      "input": {
+        "kind": "project",
+        "task": "test:unit"
+      },
+      "output": {
+        "status": "ok",
+        "data": {
+          "command": "npm run test:unit",
+          "exitCode": 0,
+          "output": "> test:unit\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f63/seed-inputs/source-format\n\n ✓ src/late.test.ts (1 test) 2ms\n ✓ src/base.test.ts (1 test) 2ms\n\n Test Files  2 passed (2)\n      Tests  2 passed (2)\n   Start at  22:08:10\n   Duration  403ms (transform 37ms, setup 0ms, collect 41ms, tests 4ms, environment 0ms, prepare 110ms)\n\nJSON report written to /workspace/blame-study-runs/feedback-f63/seed-inputs/source-format/.blame/harness/test-results/vitest-invocation-I8ZGs7/081d9253-f6d8-4c3d-9914-98d1e240263a.report.json",
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 2,
+              "passed": 2,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "vitest_report",
+            "evidence": {
+              "invocationId": ".blame/harness/test-results/vitest-invocation-I8ZGs7",
+              "hookSha256": "3db2ebeb6225b43ae231debabae60c0ff5b54f7571bca23f92e95420cdb46541",
+              "reportedFileCount": 2,
+              "invocations": [
+                {
+                  "format": "blame-vitest-invocation-v1",
+                  "id": "081d9253-f6d8-4c3d-9914-98d1e240263a",
+                  "runner": {
+                    "name": "vitest",
+                    "version": "3.2.4"
+                  },
+                  "executable": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+                  "nodeVersion": "v24.19.0",
+                  "entry": "/workspace/Blame/.blame/research/validation-recovery-f63/dependencies/node_modules/vitest/vitest.mjs",
+                  "cwd": "/workspace/blame-study-runs/feedback-f63/seed-inputs/source-format",
+                  "args": [
+                    "run",
+                    "--config",
+                    ".study/vitest.config.mjs"
+                  ],
+                  "exitCode": 0,
+                  "argsSha256": "6ca0250b368a61917c22f7efc85bf59f918ec266f144d583830889e5dfa9a67f",
+                  "argsTruncated": false,
+                  "reportSha256": "d97751a0dd088a8add8cdf5008113532354cb2ff4884a974e8cfa7da55da31a5",
+                  "files": [
+                    {
+                      "path": "src/base.test.ts",
+                      "cases": 1,
+                      "sourceSha256Before": null,
+                      "sourceSha256After": null,
+                      "unchanged": false
+                    },
+                    {
+                      "path": "src/late.test.ts",
+                      "cases": 1,
+                      "sourceSha256Before": null,
+                      "sourceSha256After": null,
+                      "unchanged": false
+                    }
+                  ],
+                  "fileCount": 2,
+                  "filesTruncated": false
+                }
+              ],
+              "invocationCount": 1,
+              "invocationsTruncated": false,
+              "typeFileSelection": "unknown",
+              "boundary": "Invocation-owned Vitest 3.2.4 reported cases; runtime versus configured typecheck mode is not established. Counts may include repeated invocations. File hashes bind observed tests, not dependencies or typecheck selection. No source admission or user acceptance.",
+              "command": "npm run test:unit",
+              "cwd": ".",
+              "invocationSourceRevisionId": "src_a19e0fcedf4b1b1e186ce7f011a936f8",
+              "completedSourceRevisionId": "src_a19e0fcedf4b1b1e186ce7f011a936f8",
+              "manifestEnvironment": {
+                "beforeRevisionId": "env_c975fa925d959d2fdb8b56157809a9e4",
+                "afterRevisionId": "env_c975fa925d959d2fdb8b56157809a9e4",
+                "boundary": "Manifest/lock hashes only; installed dependencies and full environment are unknown."
+              }
+            }
+          },
+          "reporting": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 2,
+              "passed": 2,
+              "failed": 0,
+              "skipped": 0,
+              "pending": null
+            },
+            "evidenceOrigin": "vitest_report",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "admission": "unverified",
+            "guidance": "Null means unreported, never zero. Pending is distinct from skipped. Counters follow the runner (some combine skipped/todo). Process success, passing tests, admitted source verification and user acceptance are separate claims.",
+            "invocationSourceRevisionId": "src_a19e0fcedf4b1b1e186ce7f011a936f8",
+            "completedSourceRevisionId": "src_a19e0fcedf4b1b1e186ce7f011a936f8",
+            "cwd": "."
+          },
+          "changed": false,
+          "paths": [],
+          "validation": {
+            "status": "unknown"
+          }
+        }
+      }
+    },
+    {
+      "input": {
+        "kind": "project",
+        "task": "check:source"
+      },
+      "output": {
+        "status": "ok",
+        "data": {
+          "command": "npm run check:source",
+          "exitCode": 0,
+          "output": "> check:source\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json",
+          "environment": "linux-native",
+          "validation": {
+            "paths": [],
+            "sourceRevisionId": "src_a19e0fcedf4b1b1e186ce7f011a936f8",
+            "status": "passed",
+            "taskId": "check:source",
+            "taskKind": "typecheck",
+            "scope": "invocation_only"
+          }
+        }
+      }
+    },
+    {
+      "input": {
+        "kind": "project",
+        "task": "typecheck:delivered"
+      },
+      "output": {
+        "status": "ok",
+        "data": {
+          "command": "npm run typecheck:delivered",
+          "exitCode": 0,
+          "output": "> typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"src/late.test.ts\"]",
+          "environment": "linux-native",
+          "validation": {
+            "paths": [],
+            "sourceRevisionId": "src_a19e0fcedf4b1b1e186ce7f011a936f8",
+            "status": "passed",
+            "taskId": "typecheck:delivered",
+            "taskKind": "typecheck",
+            "scope": "invocation_only"
+          }
+        }
+      }
+    }
+  ],
+  "edit": {
+    "status": "ok",
+    "receipt": "c1",
+    "data": {
+      "changed": true,
+      "changes": [
+        {
+          "path": "src/value.ts",
+          "additions": 1,
+          "deletions": 1,
+          "symbols": [
+            "value"
+          ]
+        }
+      ],
+      "aliases": [
+        {
+          "alias": "s1",
+          "path": "src/value.ts",
+          "qualifiedName": "value"
+        }
+      ],
+      "parse": {
+        "status": "passed",
+        "files": [
+          {
+            "path": "src/value.ts",
+            "status": "passed"
+          }
+        ]
+      },
+      "basedOn": "worktree",
+      "sourceRevisionId": "src_0f643c24d2c24da8d4fc060cb10dcd49",
+      "validationState": {
+        "sourceRevisionId": "src_0f643c24d2c24da8d4fc060cb10dcd49",
+        "observation": "current_source_snapshot_after_operation",
+        "invalidatedChecks": [
+          {
+            "id": "validation://b332b26de0d86d88d46d09981719a43034743bd2b929ad1ab5cb8240e678259c",
+            "task": "typecheck:delivered",
+            "cwd": ".",
+            "args": [],
+            "sourceRevisionId": "src_a19e0fcedf4b1b1e186ce7f011a936f8",
+            "recordedAt": "2026-10-18T22:08:12.195Z",
+            "sourceState": "earlier_source",
+            "previousOutcome": "passed",
+            "eligibleForCurrentSource": false,
+            "admission": "unverified"
+          },
+          {
+            "id": "validation://a8672310c8cf8422e1744db2d46e7f90d9a2387fd04a5769a25d79114340299a",
+            "task": "check:source",
+            "cwd": ".",
+            "args": [],
+            "sourceRevisionId": "src_a19e0fcedf4b1b1e186ce7f011a936f8",
+            "recordedAt": "2026-10-18T22:08:11.278Z",
+            "sourceState": "earlier_source",
+            "previousOutcome": "passed",
+            "eligibleForCurrentSource": false,
+            "admission": "unverified"
+          },
+          {
+            "id": "validation://0e9ba6427203706c2e1aa8acc5eb55612e28ffbb4e339c59391aa4842fda032b",
+            "task": "test:unit",
+            "cwd": ".",
+            "args": [],
+            "sourceRevisionId": "src_a19e0fcedf4b1b1e186ce7f011a936f8",
+            "recordedAt": "2026-10-18T22:08:10.564Z",
+            "sourceState": "earlier_source",
+            "previousOutcome": "passed",
+            "eligibleForCurrentSource": false,
+            "admission": "unverified"
+          }
+        ],
+        "omitted": 0,
+        "nextRead": {
+          "target": "@checks"
+        },
+        "guidance": "These invocation results do not apply to this source snapshot. After the final source/test edit, rerun every required invocation and any optional check you claim as final. Historical success, current passing tests, admitted verification and user acceptance are distinct. This receipt runs no check and rechecks no environment."
+      }
+    }
+  }
+}

@@ -2,7 +2,11 @@ import {spawnSync} from 'node:child_process';
 import {join} from 'node:path';
 import {panel} from './panels.mjs';
 import * as confirmation from './ts-pattern.mjs';
+import * as recovery from './recovery-fixtures.mjs';
+import * as large from './rxjs-fixtures.mjs';
 export function check(root,name,task){
+ if(panel.kind==='handoff')return recovery.check(root,name,task);
+ if(panel.kind==='large')return large.check(root,name,task);
  if(panel.kind==='confirmation')return confirmation.check(root,name,task);
  const external=name==='feature';const command=external?process.execPath:'npm';
  const argv=external?['--import',join(root,'node_modules/tsx/dist/loader.mjs'),join(import.meta.dirname,panel.id==='F62'?'boundary-oracle.mjs':'oracle.mjs'),root,task]:['run',name==='delivered-types'?'typecheck:delivered':'test:study:'+name];

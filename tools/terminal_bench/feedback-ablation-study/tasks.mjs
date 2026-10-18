@@ -1,5 +1,7 @@
 import {panel} from './panels.mjs';
 import {confirmationTasks} from './ts-pattern.mjs';
+import {recoveryTasks} from './recovery-fixtures.mjs';
+import {largeTasks} from './rxjs-fixtures.mjs';
 const common=' Work only in this checkout. Do not retrieve remote history, solutions or prior study artifacts. Preserve original tests, manifests, locks, configuration and supplied checks. Add a new *.test.ts file alongside the relevant public API source; do not edit original tests. Do not install dependencies. Preserve public types, readonly input support and unrelated behavior. After the final source edit run npm run test:study:regression, npm run test:study:types and npm run test:study:delivered. Source compilation excludes tests; typecheck:delivered checks delivered tests. Report exact commands, outcomes and coverage limits honestly.\n';
 const knownTasks=[
 {id:'suffix-counts',project:'remeda',selected:['takeLast','dropLast'],request:'Make takeLast and dropLast use a shared count policy in data-first, data-last and pipe use. Positive finite counts are floored. Zero, negative values, negative infinity and NaN normalize to zero; positive infinity normalizes to the input length. takeLast returns the final normalized number of elements; dropLast removes that many final elements. Preserve integer behavior and element order. Results must be new arrays, inputs must not change, and readonly arrays and existing generic inference must remain supported.'},
@@ -7,4 +9,4 @@ const knownTasks=[
 {id:'slice-index',project:'remeda',selected:['splitAt'],request:'Make splitAt use native Array.prototype.slice index normalization in data-first, data-last and pipe use. Its pair must equal [array.slice(0,index),array.slice(index)], including negative fractional indexes, signed zero, NaN and infinities. In particular truncate a fractional index toward zero before interpreting a negative offset from the end. Preserve integer behavior, readonly inputs, element order, generic return inference and new-array outputs; never mutate the input.'}
 ].map(t=>({...t,instruction:t.request+common,requiredChecks:['regression','types','delivered'].map(id=>({id,task:'test:study:'+id}))}));
 
-export const tasks=panel.kind==='confirmation'?confirmationTasks:knownTasks;
+export const tasks=panel.kind==='handoff'?recoveryTasks:panel.kind==='large'?largeTasks:panel.kind==='confirmation'?confirmationTasks:knownTasks;

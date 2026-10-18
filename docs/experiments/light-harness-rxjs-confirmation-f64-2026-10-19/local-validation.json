@@ -1,0 +1,37 @@
+{
+  "modelRequests": 0,
+  "runtime": {
+    "tests": 1078,
+    "passed": 1071,
+    "failed": 0,
+    "skipped": 7,
+    "log": "f63-runtime-suite.log"
+  },
+  "scopeIntegration": {
+    "tests": 3,
+    "passed": 3,
+    "failed": 0
+  },
+  "benchmarkRunner": {
+    "tests": 37,
+    "passed": 37,
+    "failed": 0
+  },
+  "timing": {
+    "tests": 12,
+    "passed": 12,
+    "failed": 0
+  },
+  "supplementalWrappers": "13/13 execute5 declared real-Vitest skips;8 cases overlap the full suite, leaving2 optional/platform skips.",
+  "targetedLint": "passed",
+  "baselineGap": "One integration assertion requires the new scope diagnostic and fails against the sealed F62 current executable; two other controls pass. This is a presentation gap, not a newly introduced regression.",
+  "snapshotExecutableDifferences": [
+    "agent-runtime/dist/harness/light-task-runner.js"
+  ],
+  "preModelPreparationErrors": [
+    "Integration fixture initially omitted node_modules directory; corrected before full suite.",
+    "Initial RxJS adapter rejected Mocha done callbacks and used class-field definition semantics that shadowed upstream mixins. Callback adapter and useDefineForClassFields=false preserve upstream ES2015 runtime semantics. Positive and mutation controls rerun before calls.",
+    "First unbound controlled-input archive omitted its generated Git HEAD, although source identity includes HEAD. Archive was discarded and regenerated preserving HEAD plus a separate input-tree ref; all three replayed source identities now match and worker journals remain empty."
+  ],
+  "boundaries": "Local controls are not model successes. No compiled source/test changes occur during model workers."
+}
