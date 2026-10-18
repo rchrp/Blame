@@ -60,6 +60,66 @@
       "evidence": [
         "Manual source review: shared finite/infinite count policy, consumers clamp oversized counts and allocate arrays, original readonly/generic overloads preserved. New parameterized tests exercise policies/call styles; five endpoint checks pass. Required final-source commands plus delivered-test compilation pass. Missing formatter is honestly reported; no history/solution retrieval. An extraneous malformed-looking SDK argument field is retained in the ledger and did not change executed command or outcomes."
       ]
+    },
+    {
+      "name": "1-reversed-clamp-candidate",
+      "hashes": {
+        "events.jsonl": "d69d86cd9260d62faeaed224a01dec48b2b32660a2d5ef41c1637d2f06562efc",
+        "workspace.diff": "b1bc51986b3e823f64003a7a95be4ed56bc8a6bf5c6c265029ca2793d416cf84",
+        "score.json": "e486db033b73a8366e037862994394f4769c6117be0e87be0ff3e9cc935d591b",
+        "tool-ledger.json": "0a6233db49754251376347dfed9e32ffd63aabd64c9918c0e2d88c787131e66a"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Manual patch review: only finite reversed bounds swap, ordinary ternary semantics for missing/NaN/infinite bounds and NaN values remain. Destructured signature preserved; normalization stays inside each invocation, so frozen objects and mutable curried objects work. New tests cover all requirements and compile; five endpoint checks and every final required command pass. Honest selected-only scope and no solution retrieval."
+      ]
+    },
+    {
+      "name": "1-reversed-clamp-cline",
+      "hashes": {
+        "events.jsonl": "008ba004a9b5922cd18bf2148eaacb0e21818a96bbce13f019634fc62486a326",
+        "workspace.diff": "7297ad32766bb9fd5a0565d84a8193d04725288eb08f9519caee8638d92f7527",
+        "score.json": "de930b503090fcf01971113d67595bdb29d07e460be599285bece824ee393276",
+        "tool-ledger.json": "3883b50c53930243f9272fb51b0dc77fe4f7698fbed3ef08fdb8a31342ae86c1"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Manual review: finite-only normalization inside invocation, original numeric overloads, nonmutation and curried live limits preserved. New tests and all five endpoint checks pass; the three required final-source commands pass with scope reported honestly. Local git-log commands show only frozen input metadata, with no remote/source solution retrieval. Optional formatter failure and source-only typecheck limits are disclosed; no delivered-typecheck claim is invented."
+      ]
+    },
+    {
+      "name": "1-reversed-clamp-reference",
+      "hashes": {
+        "events.jsonl": "3d820707d1a580a500416298b725a9e592ca54646d4b059b4340a1ec9686a468",
+        "workspace.diff": "6489224fdf57429fbd2486c99c097e8277df7fd011df229e4c05a4c425df1faf",
+        "score.json": "79d058f4aca328b232e3102a495131000204709e8174d0146bed9b5e6a5315a2",
+        "tool-ledger.json": "9a9ccdc7d3bf67a513a2406316dec2076dc231973caa00cfa1037aa43b3ed8ae"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Endpoint source hash equals the already manually reviewed 1-reversed-clamp-candidate implementation. Independently inspected new tests include updated reversed bounds on a retained curried closure, finite-only and missing/nonfinite cases. All five endpoint checks pass and all required final-source commands plus delivered test types run successfully. Public overloads, original checks and dependencies preserved; truthful limited coverage, no solution retrieval."
+      ]
     }
   ]
 }
