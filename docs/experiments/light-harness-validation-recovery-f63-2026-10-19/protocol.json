@@ -1,0 +1,339 @@
+{
+  "phase": "F63",
+  "registeredAtUTC": "2026-10-18T22:16:09.872Z",
+  "readyForModel": true,
+  "sourceHead": "12044d4b2fdd2ba18a161fdd4d44cf401707dda1",
+  "snapshotSourceHead": "79cc33994fa1c201a418b88ec86f0ba595342824",
+  "provider": "openai-codex",
+  "model": "gpt-5.6-luna",
+  "effort": "high",
+  "apiUrl": "https://api.blame.so/api/v1",
+  "projects": [
+    {
+      "name": "controlled-validation",
+      "upstreamCommit": null,
+      "sourceArchiveSha256": "1dc1b8b914e23f7995e28e511c930bbf3afcad9439700702612875d423396a20",
+      "archivedFiles": 153,
+      "sourceTsFiles": 9,
+      "productionRootTsFiles": 9
+    }
+  ],
+  "arms": [
+    "reference",
+    "candidate",
+    "cline"
+  ],
+  "repetitions": 2,
+  "tasks": [
+    {
+      "id": "source-format",
+      "project": "controlled-validation",
+      "selected": [
+        "base",
+        "late"
+      ],
+      "allowedTestEdits": [
+        "src/late.test.ts"
+      ],
+      "request": "Complete a validation handoff after a whitespace-only production edit. Preserve behavior and assess which earlier results still apply.",
+      "instruction": "Complete the provided post-format validation handoff. Work only in this checkout. Do not retrieve remote history, solutions or prior artifacts. Do not install dependencies or edit manifests, configuration, supplied checks or src/base.test.ts. You may correct the introduced numeric literal in src/late.test.ts while retaining its assertion. Add one independent new src/*.test.ts test. After the final source/test edit run npm run test:unit and npm run check:source. Preserve the production value and public numeric API. Ensure delivered tests compile; inspect actual script/configuration to choose checks. Report exact commands, outcomes and limits honestly. A previous check is not current evidence; do not claim an optional check ran on the final source unless it actually did. The supplied history belongs to another session and restores no admitted validation.",
+      "requiredChecks": [
+        {
+          "id": "regression",
+          "task": "test:unit"
+        },
+        {
+          "id": "types",
+          "task": "check:source"
+        }
+      ]
+    },
+    {
+      "id": "test-only-type-error",
+      "project": "controlled-validation",
+      "selected": [
+        "base",
+        "late"
+      ],
+      "allowedTestEdits": [
+        "src/late.test.ts"
+      ],
+      "request": "Complete a validation handoff after an introduced test-only edit. Correct the introduced numeric expected literal while retaining the assertion and production behavior.",
+      "instruction": "Complete the provided test-edit validation handoff; restore the numeric expected literal to 1 without removing the assertion. Work only in this checkout. Do not retrieve remote history, solutions or prior artifacts. Do not install dependencies or edit manifests, configuration, supplied checks or src/base.test.ts. You may correct the introduced numeric literal in src/late.test.ts while retaining its assertion. Add one independent new src/*.test.ts test. After the final source/test edit run npm run test:unit and npm run check:source. Preserve the production value and public numeric API. Ensure delivered tests compile; inspect actual script/configuration to choose checks. Report exact commands, outcomes and limits honestly. A previous check is not current evidence; do not claim an optional check ran on the final source unless it actually did. The supplied history belongs to another session and restores no admitted validation.",
+      "requiredChecks": [
+        {
+          "id": "regression",
+          "task": "test:unit"
+        },
+        {
+          "id": "types",
+          "task": "check:source"
+        }
+      ]
+    },
+    {
+      "id": "wrapper-mode-argument",
+      "project": "controlled-validation",
+      "selected": [
+        "base",
+        "late"
+      ],
+      "allowedTestEdits": [
+        "src/late.test.ts"
+      ],
+      "request": "Complete a validation handoff after an introduced test-only edit and a runtime wrapper invocation with a types argument. Correct the introduced numeric expected literal and establish what the reported commands actually checked.",
+      "instruction": "Complete the provided test-edit validation handoff; restore the numeric expected literal to 1 without removing the assertion. Work only in this checkout. Do not retrieve remote history, solutions or prior artifacts. Do not install dependencies or edit manifests, configuration, supplied checks or src/base.test.ts. You may correct the introduced numeric literal in src/late.test.ts while retaining its assertion. Add one independent new src/*.test.ts test. After the final source/test edit run npm run test:unit and npm run check:source. Preserve the production value and public numeric API. Ensure delivered tests compile; inspect actual script/configuration to choose checks. Report exact commands, outcomes and limits honestly. A previous check is not current evidence; do not claim an optional check ran on the final source unless it actually did. The supplied history belongs to another session and restores no admitted validation.",
+      "requiredChecks": [
+        {
+          "id": "regression",
+          "task": "test:unit"
+        },
+        {
+          "id": "types",
+          "task": "check:source"
+        }
+      ]
+    }
+  ],
+  "order": [
+    {
+      "repeat": 1,
+      "task": "source-format",
+      "arm": "reference"
+    },
+    {
+      "repeat": 1,
+      "task": "source-format",
+      "arm": "candidate"
+    },
+    {
+      "repeat": 1,
+      "task": "source-format",
+      "arm": "cline"
+    },
+    {
+      "repeat": 1,
+      "task": "test-only-type-error",
+      "arm": "candidate"
+    },
+    {
+      "repeat": 1,
+      "task": "test-only-type-error",
+      "arm": "cline"
+    },
+    {
+      "repeat": 1,
+      "task": "test-only-type-error",
+      "arm": "reference"
+    },
+    {
+      "repeat": 1,
+      "task": "wrapper-mode-argument",
+      "arm": "cline"
+    },
+    {
+      "repeat": 1,
+      "task": "wrapper-mode-argument",
+      "arm": "reference"
+    },
+    {
+      "repeat": 1,
+      "task": "wrapper-mode-argument",
+      "arm": "candidate"
+    },
+    {
+      "repeat": 2,
+      "task": "source-format",
+      "arm": "candidate"
+    },
+    {
+      "repeat": 2,
+      "task": "source-format",
+      "arm": "cline"
+    },
+    {
+      "repeat": 2,
+      "task": "source-format",
+      "arm": "reference"
+    },
+    {
+      "repeat": 2,
+      "task": "test-only-type-error",
+      "arm": "cline"
+    },
+    {
+      "repeat": 2,
+      "task": "test-only-type-error",
+      "arm": "reference"
+    },
+    {
+      "repeat": 2,
+      "task": "test-only-type-error",
+      "arm": "candidate"
+    },
+    {
+      "repeat": 2,
+      "task": "wrapper-mode-argument",
+      "arm": "reference"
+    },
+    {
+      "repeat": 2,
+      "task": "wrapper-mode-argument",
+      "arm": "candidate"
+    },
+    {
+      "repeat": 2,
+      "task": "wrapper-mode-argument",
+      "arm": "cline"
+    }
+  ],
+  "runtimeByArm": {
+    "reference": "reference",
+    "candidate": "current",
+    "cline": "current"
+  },
+  "flagByArm": {
+    "reference": "false",
+    "candidate": "false",
+    "cline": "false"
+  },
+  "hintsByArm": {
+    "reference": "false",
+    "candidate": "false",
+    "cline": "false"
+  },
+  "solver": {
+    "path": "/workspace/blame-study-runs/tooling/z3/bin/z3",
+    "resolvedPath": "/workspace/blame-study-runs/tooling/z3/bin/z3",
+    "sha256": "1bfaf5bbe81fd0b7800500ee08eef426aaabe18f8b9c4c4c32adffcd72f86cd5",
+    "version": "Z3 version 4.15.4 - 64 bit",
+    "package": "z3-solver==4.15.4.0",
+    "libraries": {
+      "/lib/x86_64-linux-gnu/libc.so.6": {
+        "realpath": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+        "sha256": "fa430b8f298f817a266046af84a77533185ad6fc4406c7d3787b5a0a0c207826"
+      },
+      "/lib/x86_64-linux-gnu/libgcc_s.so.1": {
+        "realpath": "/usr/lib/x86_64-linux-gnu/libgcc_s.so.1",
+        "sha256": "30c61ab012a4241bed033725a09b61f5fdd3bb7df95ee852d0b096520524c7af"
+      },
+      "/lib/x86_64-linux-gnu/libm.so.6": {
+        "realpath": "/usr/lib/x86_64-linux-gnu/libm.so.6",
+        "sha256": "6d567d53e895273ca14a1f9dc164fc6c8d39aed2f60aa46a733c2784228915f3"
+      },
+      "/lib/x86_64-linux-gnu/libpthread.so.0": {
+        "realpath": "/usr/lib/x86_64-linux-gnu/libpthread.so.0",
+        "sha256": "85e21f7dba0394411d00959176fd18b470e575b0b05f1f4f41e5636802ce0500"
+      },
+      "/lib/x86_64-linux-gnu/libstdc++.so.6": {
+        "realpath": "/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33",
+        "sha256": "972bb2a18b71140dab0240f8a1f68ab3fb1d56bcd4c4f824a91b70888faf5a00"
+      },
+      "/lib64/ld-linux-x86-64.so.2": {
+        "realpath": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+        "sha256": "438c546d8e8cc48496bf3a95f753051afd9db66a629a74e31a9ded71586b56e0"
+      }
+    },
+    "virtualDependencies": [
+      "linux-vdso.so.1 is kernel-provided and has no file hash; kernel release is recorded separately"
+    ]
+  },
+  "mechanismKind": "handoff",
+  "feedbackWireAudit": true,
+  "requestTimingAudit": true,
+  "provenanceAudit": true,
+  "scopeAudit": true,
+  "controlledHandoff": true,
+  "expectedDifferences": [],
+  "knownDiagnostic": true,
+  "boundInputFiles": [
+    "handoffs/source-format.json",
+    "handoffs/test-only-type-error.json",
+    "handoffs/wrapper-mode-argument.json"
+  ],
+  "selection": "Controlled serialized actual post-validation edit handoff, with versus without validationState only. Common current runtime and scope feedback; handoff is user input, not a live tool-result receipt or restored journal. Three tasks selected in66528075 before model outcomes; two rotated repeats; no replacements, retries or endpoint repair.",
+  "budgets": {
+    "perTrialSdkCostLimitUsd": 0.5,
+    "requestOvershootReserveUsd": 0.25,
+    "timeoutSeconds": 600,
+    "outerWatchdogExtraSeconds": 25,
+    "maxIterations": 40,
+    "requestMaxOutputTokens": 8192,
+    "maximumSerializedRequestBytes": 500000,
+    "panelObservedCostStopUsd": 20,
+    "sharedStudyObservedCostStopUsd": 100
+  },
+  "execution": {
+    "concurrency": 1,
+    "dependencyLockSha256": "6203338f69a01a5bb57eb4bd010d82ad5cdfe6d053ddf31012018818fdfcf82e",
+    "validation": "Selected unchanged upstream or fixture runtime cases via pinned adapter, full source compiler excluding tests, delivered runtime/test compiler, independent external finite behavior and public-type probes. Executed/passed/admitted/accepted remain separate.",
+    "treatment": "Controlled serialized actual post-validation edit handoff, with versus without validationState only. Common current runtime and scope feedback; handoff is user input, not a live tool-result receipt or restored journal."
+  },
+  "durability": {
+    "privateRoot": "/workspace/blame-study-runs/feedback-f63",
+    "checkpoints": "checkpoints/<assignment>.json.gz",
+    "commit": "Atomic exclusive archive and fsync before cleanup",
+    "resume": "Restore immutable known exits only; unknown model exits fail closed without retry"
+  },
+  "criteria": {
+    "minimumPairedSuccesses": 4,
+    "primary": "Strict audited: five endpoints, exact public contracts, final required invocations, truthful optional-check freshness and no solution retrieval.",
+    "mechanism": "Exact serialized actual post-edit invalidation field exposed in forwarded user handoff. This is not a live receipt or restored admission.",
+    "resources": "All assignments retained; strict jointly successful pairs, task/pair omission, lower tokens/cost with duration<=110% and no quality loss.",
+    "decision": "Small constructed-panel signal only; no general gain, large-project savings or exhausted-margin claim."
+  },
+  "limitations": "Controlled handoff is artificial with an explicitly supplied editing history, not natural opportunity prevalence. RxJS tasks are new constructed features on a full larger checkout, not representative historical issues or a complete native upstream suite. Two dependent repetitions, unblinded audit, unknown seeds/provider revision/host contention/invoices; per-request cache attribution can remain incomplete; retain old F52 reserves.",
+  "boundScripts": [
+    "tools/terminal_bench/feedback-ablation-study/audit.mjs",
+    "tools/terminal_bench/feedback-ablation-study/boundary-oracle.mjs",
+    "tools/terminal_bench/feedback-ablation-study/bridge-controls.mjs",
+    "tools/terminal_bench/feedback-ablation-study/checks.mjs",
+    "tools/terminal_bench/feedback-ablation-study/contract-controls.mjs",
+    "tools/terminal_bench/feedback-ablation-study/controls.mjs",
+    "tools/terminal_bench/feedback-ablation-study/delivered.mjs",
+    "tools/terminal_bench/feedback-ablation-study/entry.mjs",
+    "tools/terminal_bench/feedback-ablation-study/environment-smoke.mjs",
+    "tools/terminal_bench/feedback-ablation-study/evidence-io.mjs",
+    "tools/terminal_bench/feedback-ablation-study/feedback-boundary-controls.mjs",
+    "tools/terminal_bench/feedback-ablation-study/feedback-observations.mjs",
+    "tools/terminal_bench/feedback-ablation-study/feedback-wire-audit.mjs",
+    "tools/terminal_bench/feedback-ablation-study/feedback-wire-metadata.mjs",
+    "tools/terminal_bench/feedback-ablation-study/freeze.mjs",
+    "tools/terminal_bench/feedback-ablation-study/handoff-inputs.mjs",
+    "tools/terminal_bench/feedback-ablation-study/mocha-vitest-bridge.mjs",
+    "tools/terminal_bench/feedback-ablation-study/new-controls.mjs",
+    "tools/terminal_bench/feedback-ablation-study/new-freeze.mjs",
+    "tools/terminal_bench/feedback-ablation-study/oracle.mjs",
+    "tools/terminal_bench/feedback-ablation-study/panels.mjs",
+    "tools/terminal_bench/feedback-ablation-study/preflight-controls.mjs",
+    "tools/terminal_bench/feedback-ablation-study/provenance-observations.mjs",
+    "tools/terminal_bench/feedback-ablation-study/publish.mjs",
+    "tools/terminal_bench/feedback-ablation-study/readout.mjs",
+    "tools/terminal_bench/feedback-ablation-study/recovery-common.mjs",
+    "tools/terminal_bench/feedback-ablation-study/recovery-fixtures.mjs",
+    "tools/terminal_bench/feedback-ablation-study/recovery-oracle.mjs",
+    "tools/terminal_bench/feedback-ablation-study/replay.mjs",
+    "tools/terminal_bench/feedback-ablation-study/resource-values.mjs",
+    "tools/terminal_bench/feedback-ablation-study/run.mjs",
+    "tools/terminal_bench/feedback-ablation-study/rxjs-delivered.mjs",
+    "tools/terminal_bench/feedback-ablation-study/rxjs-fixtures.mjs",
+    "tools/terminal_bench/feedback-ablation-study/rxjs-oracle.mjs",
+    "tools/terminal_bench/feedback-ablation-study/schema-exposure.mjs",
+    "tools/terminal_bench/feedback-ablation-study/scope-observations.mjs",
+    "tools/terminal_bench/feedback-ablation-study/setup.mjs",
+    "tools/terminal_bench/feedback-ablation-study/snapshot.mjs",
+    "tools/terminal_bench/feedback-ablation-study/solutions.mjs",
+    "tools/terminal_bench/feedback-ablation-study/solver-identity.mjs",
+    "tools/terminal_bench/feedback-ablation-study/tasks.mjs",
+    "tools/terminal_bench/feedback-ablation-study/timing-controls.mjs",
+    "tools/terminal_bench/feedback-ablation-study/ts-pattern-delivered.mjs",
+    "tools/terminal_bench/feedback-ablation-study/ts-pattern-oracle.mjs",
+    "tools/terminal_bench/feedback-ablation-study/ts-pattern.mjs",
+    "tools/terminal_bench/feedback-ablation-study/verify.mjs",
+    "tools/terminal_bench/request-timing.mjs",
+    "tools/terminal_bench/request-timing-preload.mjs",
+    "tools/terminal_bench/request-timing.test.mjs",
+    "tools/terminal_bench/latency-intervals.mjs",
+    "tools/terminal_bench/latency-profile.mjs"
+  ]
+}

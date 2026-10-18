@@ -1,0 +1,7 @@
+{
+  "artifacts": {
+    "controlled-validation.tar.gz": "1dc1b8b914e23f7995e28e511c930bbf3afcad9439700702612875d423396a20",
+    "frozen-runtimes.tar.gz": "b838e523621f4950ffb9e2e3fb98b40cf602ea814c3b13363ff6e0b4a5faf8a9"
+  },
+  "note": "Whole pinned source/executables; no researcher solution or oracle in model inputs. Controlled fixture includes its generated Git HEAD to preserve source identity, with an explicit input snapshot ref for endpoint diffs."
+}

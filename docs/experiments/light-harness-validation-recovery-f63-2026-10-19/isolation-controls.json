@@ -1,0 +1,9 @@
+{
+  "modelRequests": 0,
+  "changedRuntimeFilesBetweenLightArms": [],
+  "flags": {
+    "analysis": false,
+    "hints": false
+  },
+  "treatment": "Controlled serialized actual post-validation edit handoff, with versus without validationState only. Common current runtime and scope feedback; handoff is user input, not a live tool-result receipt or restored journal."
+}

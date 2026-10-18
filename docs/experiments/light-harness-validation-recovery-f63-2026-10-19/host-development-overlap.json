@@ -1,0 +1,4 @@
+{
+  "activities": [],
+  "caveat": "No scheduled research builds/tests/compiler/solver overlap sequential workers. Grading runs after exits; light inspections/reviews/commits may overlap. Host/provider exclusivity unknown."
+}

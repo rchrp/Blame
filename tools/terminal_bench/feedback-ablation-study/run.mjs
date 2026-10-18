@@ -35,6 +35,7 @@ async function bindings() {
   const files = {};
   for (const path of [...protocol.boundScripts,'tools/terminal_bench/durable-campaign.mjs']) files[path] = sha(await readFile(join(repo,path)));
   files['isolated-node-environment.mjs'] = sha(await readFile(join(import.meta.dirname,'../isolated-node-environment.mjs')));
+  if(protocol.scopeAudit){const p='docs/experiments/light-harness-validation-recovery-f63-2026-10-19/selection-registration.json';files[p]=sha(await readFile(join(repo,p)));}
   for (const root of [join(work, 'frozen'), join(work, 'dependencies/node_modules')])
     files[relative(repo, root)] = await fileTree(root);
   for (const path of ['protocol.json', 'prior-budget.json', 'prompt-date-binding.json', 'native-search-bindings.json', 'isolation-controls.json', 'oracle-controls.json', 'input-archives.json', 'environment-smoke.json', 'snapshot.json', 'preflight-controls.json',...(protocol.feedbackWireAudit?['feedback-boundary-controls.json','measurement-amendment.json']:[]),...(protocol.requestTimingAudit?['timing-controls.json',...(protocol.phase==='F62'?['contract-test-sensitivity.json']:[]),'selection-registration.json']:[]),...(protocol.boundInputFiles??[])])
