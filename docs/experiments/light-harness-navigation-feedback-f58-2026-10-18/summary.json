@@ -1,0 +1,1113 @@
+{
+  "phase": "F58",
+  "complete": true,
+  "arms": {
+    "reference": {
+      "trials": 6,
+      "official": 6,
+      "selected": 6,
+      "independent": 5,
+      "audited": 5,
+      "sourceAudited": 5,
+      "input": 1010740,
+      "output": 32407,
+      "tokens": 1043147,
+      "cacheRead": 833792,
+      "cacheWrite": 0,
+      "sdkEstimatedUsd": 0.09095384000000001,
+      "durationMs": 412975,
+      "forwardedRequests": 67,
+      "missingUsageReceipts": 0,
+      "cachePerRequestReconciled": false,
+      "navigationOffers": 2,
+      "navigationOffersFollowed": 1,
+      "hintOffers": 0,
+      "hintOffersFollowed": 0,
+      "meaningfulSymbolicCalls": 0,
+      "symbolicCalls": 0,
+      "symbolicCounterexamples": 0,
+      "symbolicUnknowns": 0,
+      "symbolicBlockedCalls": 0,
+      "boundedNoCounterexamples": 0,
+      "requestBodyBytes": 4470817,
+      "schemaBytes": [
+        10473
+      ],
+      "emptySelectionTrials": 0,
+      "selectionFailureReports": 0,
+      "finishFailures": 0
+    },
+    "candidate": {
+      "trials": 6,
+      "official": 6,
+      "selected": 6,
+      "independent": 6,
+      "audited": 6,
+      "sourceAudited": 6,
+      "input": 892336,
+      "output": 28682,
+      "tokens": 921018,
+      "cacheRead": 700800,
+      "cacheWrite": 0,
+      "sdkEstimatedUsd": 0.0867416,
+      "durationMs": 370503,
+      "forwardedRequests": 58,
+      "missingUsageReceipts": 0,
+      "cachePerRequestReconciled": false,
+      "navigationOffers": 9,
+      "navigationOffersFollowed": 0,
+      "hintOffers": 0,
+      "hintOffersFollowed": 0,
+      "meaningfulSymbolicCalls": 0,
+      "symbolicCalls": 0,
+      "symbolicCounterexamples": 0,
+      "symbolicUnknowns": 0,
+      "symbolicBlockedCalls": 0,
+      "boundedNoCounterexamples": 0,
+      "requestBodyBytes": 3891786,
+      "schemaBytes": [
+        10473
+      ],
+      "emptySelectionTrials": 0,
+      "selectionFailureReports": 0,
+      "finishFailures": 0
+    },
+    "cline": {
+      "trials": 6,
+      "official": 6,
+      "selected": 6,
+      "independent": 6,
+      "audited": 6,
+      "sourceAudited": 6,
+      "input": 1938145,
+      "output": 41918,
+      "tokens": 1980063,
+      "cacheRead": 1675136,
+      "cacheWrite": 0,
+      "sdkEstimatedUsd": 0.13640612000000002,
+      "durationMs": 512899,
+      "forwardedRequests": 61,
+      "missingUsageReceipts": 0,
+      "cachePerRequestReconciled": false,
+      "navigationOffers": 0,
+      "navigationOffersFollowed": 0,
+      "hintOffers": 0,
+      "hintOffersFollowed": 0,
+      "meaningfulSymbolicCalls": 0,
+      "symbolicCalls": 0,
+      "symbolicCounterexamples": 0,
+      "symbolicUnknowns": 0,
+      "symbolicBlockedCalls": 0,
+      "boundedNoCounterexamples": 0,
+      "requestBodyBytes": 6622703,
+      "schemaBytes": [
+        7117
+      ],
+      "emptySelectionTrials": 0,
+      "selectionFailureReports": 0,
+      "finishFailures": 0
+    }
+  },
+  "comparisons": {
+    "candidate/reference": {
+      "pairs": 5,
+      "candidate": {
+        "trials": 5,
+        "tokens": 710874,
+        "cost": 0.06543971999999999,
+        "durationMs": 299224
+      },
+      "baseline": {
+        "trials": 5,
+        "tokens": 882060,
+        "cost": 0.07546896,
+        "durationMs": 346888
+      },
+      "tokenDelta": -0.19407523297734852,
+      "costDelta": -0.13289225133087834,
+      "durationDelta": -0.13740458015267176,
+      "pairDetails": [
+        {
+          "task": "suffix-counts",
+          "repeat": 1,
+          "candidate": "1-suffix-counts-candidate",
+          "baseline": "1-suffix-counts-reference",
+          "tokenDelta": 0.27164388795090155,
+          "costDelta": 0.14443572356823942,
+          "durationDelta": 0.08605806957886486
+        },
+        {
+          "task": "reversed-clamp",
+          "repeat": 1,
+          "candidate": "1-reversed-clamp-candidate",
+          "baseline": "1-reversed-clamp-reference",
+          "tokenDelta": -0.42630748167160026,
+          "costDelta": -0.32506414653354665,
+          "durationDelta": -0.24160931958569176
+        },
+        {
+          "task": "slice-index",
+          "repeat": 1,
+          "candidate": "1-slice-index-candidate",
+          "baseline": "1-slice-index-reference",
+          "tokenDelta": -0.09769698111430325,
+          "costDelta": -0.12007169005956853,
+          "durationDelta": -0.11209269361989682
+        },
+        {
+          "task": "reversed-clamp",
+          "repeat": 2,
+          "candidate": "2-reversed-clamp-candidate",
+          "baseline": "2-reversed-clamp-reference",
+          "tokenDelta": -0.4756735472526876,
+          "costDelta": -0.24454476342008202,
+          "durationDelta": -0.37189756626743664
+        },
+        {
+          "task": "slice-index",
+          "repeat": 2,
+          "candidate": "2-slice-index-candidate",
+          "baseline": "2-slice-index-reference",
+          "tokenDelta": 0.4621390707826629,
+          "costDelta": -0.03689668416335967,
+          "durationDelta": 0.18854298819166582
+        }
+      ],
+      "byTask": [
+        {
+          "task": "suffix-counts",
+          "pairs": 1,
+          "tokenDelta": 0.27164388795090155
+        },
+        {
+          "task": "reversed-clamp",
+          "pairs": 2,
+          "tokenDelta": -0.4535706385419752
+        },
+        {
+          "task": "slice-index",
+          "pairs": 2,
+          "tokenDelta": 0.14317913491467205
+        }
+      ],
+      "leaveOnePairOut": [
+        {
+          "omitted": "1-suffix-counts-candidate",
+          "tokenDelta": -0.2990799889965461
+        },
+        {
+          "omitted": "1-reversed-clamp-candidate",
+          "tokenDelta": -0.10784440233014059
+        },
+        {
+          "omitted": "1-slice-index-candidate",
+          "tokenDelta": -0.20726258063268865
+        },
+        {
+          "omitted": "2-reversed-clamp-candidate",
+          "tokenDelta": -0.05286120147141182
+        },
+        {
+          "omitted": "2-slice-index-candidate",
+          "tokenDelta": -0.259685615767847
+        }
+      ],
+      "leaveOneTaskOut": [
+        {
+          "omitted": "suffix-counts",
+          "tokenDelta": -0.2990799889965461
+        },
+        {
+          "omitted": "reversed-clamp",
+          "tokenDelta": 0.20297969744081046
+        },
+        {
+          "omitted": "slice-index",
+          "tokenDelta": -0.28440464554705913
+        }
+      ]
+    },
+    "candidate/cline": {
+      "pairs": 6,
+      "candidate": {
+        "trials": 6,
+        "tokens": 921018,
+        "cost": 0.0867416,
+        "durationMs": 370503
+      },
+      "baseline": {
+        "trials": 6,
+        "tokens": 1980063,
+        "cost": 0.13640612000000002,
+        "durationMs": 512899
+      },
+      "tokenDelta": -0.5348541940332201,
+      "costDelta": -0.3640930480245316,
+      "durationDelta": -0.27762970877307225,
+      "pairDetails": [
+        {
+          "task": "suffix-counts",
+          "repeat": 1,
+          "candidate": "1-suffix-counts-candidate",
+          "baseline": "1-suffix-counts-cline",
+          "tokenDelta": -0.25704987201687723,
+          "costDelta": -0.15716159257686957,
+          "durationDelta": -0.011533171093006
+        },
+        {
+          "task": "reversed-clamp",
+          "repeat": 1,
+          "candidate": "1-reversed-clamp-candidate",
+          "baseline": "1-reversed-clamp-cline",
+          "tokenDelta": -0.27235601816202437,
+          "costDelta": -0.25873309648258025,
+          "durationDelta": 0.11674073561707798
+        },
+        {
+          "task": "slice-index",
+          "repeat": 1,
+          "candidate": "1-slice-index-candidate",
+          "baseline": "1-slice-index-cline",
+          "tokenDelta": -0.533888037369535,
+          "costDelta": -0.31739211789756916,
+          "durationDelta": -0.04826514027277229
+        },
+        {
+          "task": "suffix-counts",
+          "repeat": 2,
+          "candidate": "2-suffix-counts-candidate",
+          "baseline": "2-suffix-counts-cline",
+          "tokenDelta": -0.2395399836432195,
+          "costDelta": -0.007558660685832996,
+          "durationDelta": 0.2395701093855973
+        },
+        {
+          "task": "reversed-clamp",
+          "repeat": 2,
+          "candidate": "2-reversed-clamp-candidate",
+          "baseline": "2-reversed-clamp-cline",
+          "tokenDelta": -0.23812788541214536,
+          "costDelta": -0.3474018514489734,
+          "durationDelta": -0.5488532435027627
+        },
+        {
+          "task": "slice-index",
+          "repeat": 2,
+          "candidate": "2-slice-index-candidate",
+          "baseline": "2-slice-index-cline",
+          "tokenDelta": -0.8586587733153281,
+          "costDelta": -0.7371714118584209,
+          "durationDelta": -0.6477538123368595
+        }
+      ],
+      "byTask": [
+        {
+          "task": "suffix-counts",
+          "pairs": 2,
+          "tokenDelta": -0.2483175692869093
+        },
+        {
+          "task": "reversed-clamp",
+          "pairs": 2,
+          "tokenDelta": -0.2546100360824347
+        },
+        {
+          "task": "slice-index",
+          "pairs": 2,
+          "tokenDelta": -0.7941646817823859
+        }
+      ],
+      "leaveOnePairOut": [
+        {
+          "omitted": "1-suffix-counts-candidate",
+          "tokenDelta": -0.5801848331543589
+        },
+        {
+          "omitted": "1-reversed-clamp-candidate",
+          "tokenDelta": -0.5624414681000447
+        },
+        {
+          "omitted": "1-slice-index-candidate",
+          "tokenDelta": -0.5349660871388094
+        },
+        {
+          "omitted": "2-suffix-counts-candidate",
+          "tokenDelta": -0.5827530851516529
+        },
+        {
+          "omitted": "2-reversed-clamp-candidate",
+          "tokenDelta": -0.5687026358239573
+        },
+        {
+          "omitted": "2-slice-index-candidate",
+          "tokenDelta": -0.3014601020446296
+        }
+      ],
+      "leaveOneTaskOut": [
+        {
+          "omitted": "suffix-counts",
+          "tokenDelta": -0.646198965745038
+        },
+        {
+          "omitted": "reversed-clamp",
+          "tokenDelta": -0.6038209858440517
+        },
+        {
+          "omitted": "slice-index",
+          "tokenDelta": -0.25092101003218514
+        }
+      ]
+    }
+  },
+  "selectedComparisons": {
+    "candidate/reference": {
+      "pairs": 6,
+      "candidate": {
+        "trials": 6,
+        "tokens": 921018,
+        "cost": 0.0867416,
+        "durationMs": 370503
+      },
+      "baseline": {
+        "trials": 6,
+        "tokens": 1043147,
+        "cost": 0.09095384000000001,
+        "durationMs": 412975
+      },
+      "tokenDelta": -0.11707745888163412,
+      "costDelta": -0.04631184345817618,
+      "durationDelta": -0.10284399782069131,
+      "pairDetails": [
+        {
+          "task": "suffix-counts",
+          "repeat": 1,
+          "candidate": "1-suffix-counts-candidate",
+          "baseline": "1-suffix-counts-reference",
+          "tokenDelta": 0.27164388795090155,
+          "costDelta": 0.14443572356823942,
+          "durationDelta": 0.08605806957886486
+        },
+        {
+          "task": "reversed-clamp",
+          "repeat": 1,
+          "candidate": "1-reversed-clamp-candidate",
+          "baseline": "1-reversed-clamp-reference",
+          "tokenDelta": -0.42630748167160026,
+          "costDelta": -0.32506414653354665,
+          "durationDelta": -0.24160931958569176
+        },
+        {
+          "task": "slice-index",
+          "repeat": 1,
+          "candidate": "1-slice-index-candidate",
+          "baseline": "1-slice-index-reference",
+          "tokenDelta": -0.09769698111430325,
+          "costDelta": -0.12007169005956853,
+          "durationDelta": -0.11209269361989682
+        },
+        {
+          "task": "suffix-counts",
+          "repeat": 2,
+          "candidate": "2-suffix-counts-candidate",
+          "baseline": "2-suffix-counts-reference",
+          "tokenDelta": 0.3045372997200271,
+          "costDelta": 0.37565676970050776,
+          "durationDelta": 0.07856310620848284
+        },
+        {
+          "task": "reversed-clamp",
+          "repeat": 2,
+          "candidate": "2-reversed-clamp-candidate",
+          "baseline": "2-reversed-clamp-reference",
+          "tokenDelta": -0.4756735472526876,
+          "costDelta": -0.24454476342008202,
+          "durationDelta": -0.37189756626743664
+        },
+        {
+          "task": "slice-index",
+          "repeat": 2,
+          "candidate": "2-slice-index-candidate",
+          "baseline": "2-slice-index-reference",
+          "tokenDelta": 0.4621390707826629,
+          "costDelta": -0.03689668416335967,
+          "durationDelta": 0.18854298819166582
+        }
+      ],
+      "byTask": [
+        {
+          "task": "suffix-counts",
+          "pairs": 2,
+          "tokenDelta": 0.2880296128619273
+        },
+        {
+          "task": "reversed-clamp",
+          "pairs": 2,
+          "tokenDelta": -0.4535706385419752
+        },
+        {
+          "task": "slice-index",
+          "pairs": 2,
+          "tokenDelta": 0.14317913491467205
+        }
+      ],
+      "leaveOnePairOut": [
+        {
+          "omitted": "1-suffix-counts-candidate",
+          "tokenDelta": -0.18869378937198944
+        },
+        {
+          "omitted": "1-reversed-clamp-candidate",
+          "tokenDelta": -0.025252701072969397
+        },
+        {
+          "omitted": "1-slice-index-candidate",
+          "tokenDelta": -0.11927336917891695
+        },
+        {
+          "omitted": "2-suffix-counts-candidate",
+          "tokenDelta": -0.19407523297734852
+        },
+        {
+          "omitted": "2-reversed-clamp-candidate",
+          "tokenDelta": 0.024050497628749
+        },
+        {
+          "omitted": "2-slice-index-candidate",
+          "tokenDelta": -0.165301794860079
+        }
+      ],
+      "leaveOneTaskOut": [
+        {
+          "omitted": "suffix-counts",
+          "tokenDelta": -0.2990799889965461
+        },
+        {
+          "omitted": "reversed-clamp",
+          "tokenDelta": 0.23507542479787635
+        },
+        {
+          "omitted": "slice-index",
+          "tokenDelta": -0.1736785530463687
+        }
+      ]
+    },
+    "candidate/cline": {
+      "pairs": 6,
+      "candidate": {
+        "trials": 6,
+        "tokens": 921018,
+        "cost": 0.0867416,
+        "durationMs": 370503
+      },
+      "baseline": {
+        "trials": 6,
+        "tokens": 1980063,
+        "cost": 0.13640612000000002,
+        "durationMs": 512899
+      },
+      "tokenDelta": -0.5348541940332201,
+      "costDelta": -0.3640930480245316,
+      "durationDelta": -0.27762970877307225,
+      "pairDetails": [
+        {
+          "task": "suffix-counts",
+          "repeat": 1,
+          "candidate": "1-suffix-counts-candidate",
+          "baseline": "1-suffix-counts-cline",
+          "tokenDelta": -0.25704987201687723,
+          "costDelta": -0.15716159257686957,
+          "durationDelta": -0.011533171093006
+        },
+        {
+          "task": "reversed-clamp",
+          "repeat": 1,
+          "candidate": "1-reversed-clamp-candidate",
+          "baseline": "1-reversed-clamp-cline",
+          "tokenDelta": -0.27235601816202437,
+          "costDelta": -0.25873309648258025,
+          "durationDelta": 0.11674073561707798
+        },
+        {
+          "task": "slice-index",
+          "repeat": 1,
+          "candidate": "1-slice-index-candidate",
+          "baseline": "1-slice-index-cline",
+          "tokenDelta": -0.533888037369535,
+          "costDelta": -0.31739211789756916,
+          "durationDelta": -0.04826514027277229
+        },
+        {
+          "task": "suffix-counts",
+          "repeat": 2,
+          "candidate": "2-suffix-counts-candidate",
+          "baseline": "2-suffix-counts-cline",
+          "tokenDelta": -0.2395399836432195,
+          "costDelta": -0.007558660685832996,
+          "durationDelta": 0.2395701093855973
+        },
+        {
+          "task": "reversed-clamp",
+          "repeat": 2,
+          "candidate": "2-reversed-clamp-candidate",
+          "baseline": "2-reversed-clamp-cline",
+          "tokenDelta": -0.23812788541214536,
+          "costDelta": -0.3474018514489734,
+          "durationDelta": -0.5488532435027627
+        },
+        {
+          "task": "slice-index",
+          "repeat": 2,
+          "candidate": "2-slice-index-candidate",
+          "baseline": "2-slice-index-cline",
+          "tokenDelta": -0.8586587733153281,
+          "costDelta": -0.7371714118584209,
+          "durationDelta": -0.6477538123368595
+        }
+      ],
+      "byTask": [
+        {
+          "task": "suffix-counts",
+          "pairs": 2,
+          "tokenDelta": -0.2483175692869093
+        },
+        {
+          "task": "reversed-clamp",
+          "pairs": 2,
+          "tokenDelta": -0.2546100360824347
+        },
+        {
+          "task": "slice-index",
+          "pairs": 2,
+          "tokenDelta": -0.7941646817823859
+        }
+      ],
+      "leaveOnePairOut": [
+        {
+          "omitted": "1-suffix-counts-candidate",
+          "tokenDelta": -0.5801848331543589
+        },
+        {
+          "omitted": "1-reversed-clamp-candidate",
+          "tokenDelta": -0.5624414681000447
+        },
+        {
+          "omitted": "1-slice-index-candidate",
+          "tokenDelta": -0.5349660871388094
+        },
+        {
+          "omitted": "2-suffix-counts-candidate",
+          "tokenDelta": -0.5827530851516529
+        },
+        {
+          "omitted": "2-reversed-clamp-candidate",
+          "tokenDelta": -0.5687026358239573
+        },
+        {
+          "omitted": "2-slice-index-candidate",
+          "tokenDelta": -0.3014601020446296
+        }
+      ],
+      "leaveOneTaskOut": [
+        {
+          "omitted": "suffix-counts",
+          "tokenDelta": -0.646198965745038
+        },
+        {
+          "omitted": "reversed-clamp",
+          "tokenDelta": -0.6038209858440517
+        },
+        {
+          "omitted": "slice-index",
+          "tokenDelta": -0.25092101003218514
+        }
+      ]
+    }
+  },
+  "functionalComparisons": {
+    "candidate/reference": {
+      "pairs": 5,
+      "candidate": {
+        "trials": 5,
+        "tokens": 710874,
+        "cost": 0.06543971999999999,
+        "durationMs": 299224
+      },
+      "baseline": {
+        "trials": 5,
+        "tokens": 882060,
+        "cost": 0.07546896,
+        "durationMs": 346888
+      },
+      "tokenDelta": -0.19407523297734852,
+      "costDelta": -0.13289225133087834,
+      "durationDelta": -0.13740458015267176,
+      "pairDetails": [
+        {
+          "task": "suffix-counts",
+          "repeat": 1,
+          "candidate": "1-suffix-counts-candidate",
+          "baseline": "1-suffix-counts-reference",
+          "tokenDelta": 0.27164388795090155,
+          "costDelta": 0.14443572356823942,
+          "durationDelta": 0.08605806957886486
+        },
+        {
+          "task": "reversed-clamp",
+          "repeat": 1,
+          "candidate": "1-reversed-clamp-candidate",
+          "baseline": "1-reversed-clamp-reference",
+          "tokenDelta": -0.42630748167160026,
+          "costDelta": -0.32506414653354665,
+          "durationDelta": -0.24160931958569176
+        },
+        {
+          "task": "slice-index",
+          "repeat": 1,
+          "candidate": "1-slice-index-candidate",
+          "baseline": "1-slice-index-reference",
+          "tokenDelta": -0.09769698111430325,
+          "costDelta": -0.12007169005956853,
+          "durationDelta": -0.11209269361989682
+        },
+        {
+          "task": "reversed-clamp",
+          "repeat": 2,
+          "candidate": "2-reversed-clamp-candidate",
+          "baseline": "2-reversed-clamp-reference",
+          "tokenDelta": -0.4756735472526876,
+          "costDelta": -0.24454476342008202,
+          "durationDelta": -0.37189756626743664
+        },
+        {
+          "task": "slice-index",
+          "repeat": 2,
+          "candidate": "2-slice-index-candidate",
+          "baseline": "2-slice-index-reference",
+          "tokenDelta": 0.4621390707826629,
+          "costDelta": -0.03689668416335967,
+          "durationDelta": 0.18854298819166582
+        }
+      ],
+      "byTask": [
+        {
+          "task": "suffix-counts",
+          "pairs": 1,
+          "tokenDelta": 0.27164388795090155
+        },
+        {
+          "task": "reversed-clamp",
+          "pairs": 2,
+          "tokenDelta": -0.4535706385419752
+        },
+        {
+          "task": "slice-index",
+          "pairs": 2,
+          "tokenDelta": 0.14317913491467205
+        }
+      ],
+      "leaveOnePairOut": [
+        {
+          "omitted": "1-suffix-counts-candidate",
+          "tokenDelta": -0.2990799889965461
+        },
+        {
+          "omitted": "1-reversed-clamp-candidate",
+          "tokenDelta": -0.10784440233014059
+        },
+        {
+          "omitted": "1-slice-index-candidate",
+          "tokenDelta": -0.20726258063268865
+        },
+        {
+          "omitted": "2-reversed-clamp-candidate",
+          "tokenDelta": -0.05286120147141182
+        },
+        {
+          "omitted": "2-slice-index-candidate",
+          "tokenDelta": -0.259685615767847
+        }
+      ],
+      "leaveOneTaskOut": [
+        {
+          "omitted": "suffix-counts",
+          "tokenDelta": -0.2990799889965461
+        },
+        {
+          "omitted": "reversed-clamp",
+          "tokenDelta": 0.20297969744081046
+        },
+        {
+          "omitted": "slice-index",
+          "tokenDelta": -0.28440464554705913
+        }
+      ]
+    },
+    "candidate/cline": {
+      "pairs": 6,
+      "candidate": {
+        "trials": 6,
+        "tokens": 921018,
+        "cost": 0.0867416,
+        "durationMs": 370503
+      },
+      "baseline": {
+        "trials": 6,
+        "tokens": 1980063,
+        "cost": 0.13640612000000002,
+        "durationMs": 512899
+      },
+      "tokenDelta": -0.5348541940332201,
+      "costDelta": -0.3640930480245316,
+      "durationDelta": -0.27762970877307225,
+      "pairDetails": [
+        {
+          "task": "suffix-counts",
+          "repeat": 1,
+          "candidate": "1-suffix-counts-candidate",
+          "baseline": "1-suffix-counts-cline",
+          "tokenDelta": -0.25704987201687723,
+          "costDelta": -0.15716159257686957,
+          "durationDelta": -0.011533171093006
+        },
+        {
+          "task": "reversed-clamp",
+          "repeat": 1,
+          "candidate": "1-reversed-clamp-candidate",
+          "baseline": "1-reversed-clamp-cline",
+          "tokenDelta": -0.27235601816202437,
+          "costDelta": -0.25873309648258025,
+          "durationDelta": 0.11674073561707798
+        },
+        {
+          "task": "slice-index",
+          "repeat": 1,
+          "candidate": "1-slice-index-candidate",
+          "baseline": "1-slice-index-cline",
+          "tokenDelta": -0.533888037369535,
+          "costDelta": -0.31739211789756916,
+          "durationDelta": -0.04826514027277229
+        },
+        {
+          "task": "suffix-counts",
+          "repeat": 2,
+          "candidate": "2-suffix-counts-candidate",
+          "baseline": "2-suffix-counts-cline",
+          "tokenDelta": -0.2395399836432195,
+          "costDelta": -0.007558660685832996,
+          "durationDelta": 0.2395701093855973
+        },
+        {
+          "task": "reversed-clamp",
+          "repeat": 2,
+          "candidate": "2-reversed-clamp-candidate",
+          "baseline": "2-reversed-clamp-cline",
+          "tokenDelta": -0.23812788541214536,
+          "costDelta": -0.3474018514489734,
+          "durationDelta": -0.5488532435027627
+        },
+        {
+          "task": "slice-index",
+          "repeat": 2,
+          "candidate": "2-slice-index-candidate",
+          "baseline": "2-slice-index-cline",
+          "tokenDelta": -0.8586587733153281,
+          "costDelta": -0.7371714118584209,
+          "durationDelta": -0.6477538123368595
+        }
+      ],
+      "byTask": [
+        {
+          "task": "suffix-counts",
+          "pairs": 2,
+          "tokenDelta": -0.2483175692869093
+        },
+        {
+          "task": "reversed-clamp",
+          "pairs": 2,
+          "tokenDelta": -0.2546100360824347
+        },
+        {
+          "task": "slice-index",
+          "pairs": 2,
+          "tokenDelta": -0.7941646817823859
+        }
+      ],
+      "leaveOnePairOut": [
+        {
+          "omitted": "1-suffix-counts-candidate",
+          "tokenDelta": -0.5801848331543589
+        },
+        {
+          "omitted": "1-reversed-clamp-candidate",
+          "tokenDelta": -0.5624414681000447
+        },
+        {
+          "omitted": "1-slice-index-candidate",
+          "tokenDelta": -0.5349660871388094
+        },
+        {
+          "omitted": "2-suffix-counts-candidate",
+          "tokenDelta": -0.5827530851516529
+        },
+        {
+          "omitted": "2-reversed-clamp-candidate",
+          "tokenDelta": -0.5687026358239573
+        },
+        {
+          "omitted": "2-slice-index-candidate",
+          "tokenDelta": -0.3014601020446296
+        }
+      ],
+      "leaveOneTaskOut": [
+        {
+          "omitted": "suffix-counts",
+          "tokenDelta": -0.646198965745038
+        },
+        {
+          "omitted": "reversed-clamp",
+          "tokenDelta": -0.6038209858440517
+        },
+        {
+          "omitted": "slice-index",
+          "tokenDelta": -0.25092101003218514
+        }
+      ]
+    }
+  },
+  "allAssignedComparisons": {
+    "candidate/reference": {
+      "assignmentsPerArm": 6,
+      "candidateAudited": 6,
+      "baselineAudited": 5,
+      "tokenDelta": -0.11707745888163412,
+      "costDelta": -0.04631184345817618,
+      "durationDelta": -0.10284399782069131,
+      "caveat": "Every assigned failure is retained. Unequal audited quality is not efficiency at quality parity."
+    },
+    "candidate/cline": {
+      "assignmentsPerArm": 6,
+      "candidateAudited": 6,
+      "baselineAudited": 6,
+      "tokenDelta": -0.5348541940332201,
+      "costDelta": -0.3640930480245316,
+      "durationDelta": -0.27762970877307225,
+      "caveat": "Every assigned failure is retained. Unequal audited quality is not efficiency at quality parity."
+    }
+  },
+  "qualityGate": true,
+  "mechanismGate": false,
+  "resourceGate": true,
+  "modelBenefitDemonstrated": false,
+  "accounting": {
+    "method": "Known SDK estimates plus explicit missing-aggregate/unreported-request reserves, not imputed consumption. Wire/report counts do not establish billing or hidden retries.",
+    "trials": [
+      {
+        "name": "1-suffix-counts-reference",
+        "observedUsd": 0.0155438,
+        "forwardedAttempts": 10,
+        "usageReports": 10,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.0155438,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-suffix-counts-candidate",
+        "observedUsd": 0.01778888,
+        "forwardedAttempts": 12,
+        "usageReports": 12,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.01778888,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-suffix-counts-cline",
+        "observedUsd": 0.021105920000000004,
+        "forwardedAttempts": 10,
+        "usageReports": 10,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.021105920000000004,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-reversed-clamp-candidate",
+        "observedUsd": 0.0127524,
+        "forwardedAttempts": 10,
+        "usageReports": 10,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.0127524,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-reversed-clamp-cline",
+        "observedUsd": 0.01720352,
+        "forwardedAttempts": 8,
+        "usageReports": 8,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.01720352,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-reversed-clamp-reference",
+        "observedUsd": 0.01889424,
+        "forwardedAttempts": 13,
+        "usageReports": 13,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.01889424,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-slice-index-cline",
+        "observedUsd": 0.01688788,
+        "forwardedAttempts": 8,
+        "usageReports": 8,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.01688788,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-slice-index-reference",
+        "observedUsd": 0.013100839999999999,
+        "forwardedAttempts": 9,
+        "usageReports": 9,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.013100839999999999,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-slice-index-candidate",
+        "observedUsd": 0.011527800000000001,
+        "forwardedAttempts": 7,
+        "usageReports": 7,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.011527800000000001,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "2-suffix-counts-candidate",
+        "observedUsd": 0.02130188,
+        "forwardedAttempts": 11,
+        "usageReports": 11,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.02130188,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "2-suffix-counts-cline",
+        "observedUsd": 0.02146412,
+        "forwardedAttempts": 8,
+        "usageReports": 8,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.02146412,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "2-suffix-counts-reference",
+        "observedUsd": 0.01548488,
+        "forwardedAttempts": 9,
+        "usageReports": 9,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.01548488,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "2-reversed-clamp-cline",
+        "observedUsd": 0.01967324,
+        "forwardedAttempts": 8,
+        "usageReports": 8,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.01967324,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "2-reversed-clamp-reference",
+        "observedUsd": 0.016994679999999998,
+        "forwardedAttempts": 19,
+        "usageReports": 19,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.016994679999999998,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "2-reversed-clamp-candidate",
+        "observedUsd": 0.01283872,
+        "forwardedAttempts": 10,
+        "usageReports": 10,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.01283872,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "2-slice-index-reference",
+        "observedUsd": 0.010935400000000001,
+        "forwardedAttempts": 7,
+        "usageReports": 7,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.010935400000000001,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "2-slice-index-candidate",
+        "observedUsd": 0.010531919999999998,
+        "forwardedAttempts": 8,
+        "usageReports": 8,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.010531919999999998,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "2-slice-index-cline",
+        "observedUsd": 0.04007144,
+        "forwardedAttempts": 19,
+        "usageReports": 19,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.04007144,
+        "basis": "wire/report counts; billing unknown"
+      }
+    ],
+    "observedUsd": 0.31410156,
+    "reservedUsd": 0,
+    "accountedUsd": 0.31410156
+  },
+  "priorObservedUsd": 8.89989176,
+  "priorReservedUsd": 17.14,
+  "cumulativeObservedSdkUsd": 9.213993319999998,
+  "cumulativeReservedUsd": 17.14,
+  "cumulativeAccountedUsd": 26.353993319999997,
+  "limitations": "Known F53 requests repeated on a known project, two repetitions; no fresh confirmation. Only navigation changes between Light arms. Body-header and repair-order mechanisms have local controls separately. Cache per-request attribution and provider contention remain uncertain. SDK cost is not an invoice; F52 consumption remains unknown with retained reserves."
+}
