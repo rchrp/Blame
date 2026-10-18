@@ -1,0 +1,10 @@
+{
+  "modelRequests": 0,
+  "beforeAnyAgentInControl": true,
+  "trackedInput": "120000 blob 353356094ae575ba02e06921285cf5dd1b0d255e\tnode_modules",
+  "preparedWorktreeChange": "D\tnode_modules",
+  "preparedNodeModules": "directory",
+  "sourceIdentityMatches": true,
+  "workerJournalChecks": 0,
+  "reason": "Prepared isolated dependencies replace a tracked input symlink. This pre-agent directory transition is not an agent source edit. Full before/after dependency manifests remain mandatory."
+}

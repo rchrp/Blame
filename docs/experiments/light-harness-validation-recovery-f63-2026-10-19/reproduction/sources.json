@@ -1,6 +1,6 @@
 {
-  "sourceParentCommit": "12044d4b2fdd2ba18a161fdd4d44cf401707dda1",
-  "sha256": "5b6e6c80fa167e2950a3f0543b62e113b8cc28a0693e1843be7a579756f949a0",
+  "sourceParentCommit": "f761fff481ea94c9f748b4b108a9adef463f58a1",
+  "sha256": "931ca37deb6d6569612c42b26d802ba5615022da59163eaae98e06b9c396b6ea",
   "paths": [
     "tools/terminal_bench/feedback-ablation-study",
     "tools/terminal_bench/durable-campaign.mjs",
@@ -51,7 +51,7 @@
     "tools/terminal_bench/feedback-ablation-study/recovery-oracle.mjs": "8af35004bf7cabe69a81352babf4d6f20189f64a4a9af86f25a24d95194da8b2",
     "tools/terminal_bench/feedback-ablation-study/replay.mjs": "7d440a2a721383bb46c777e19d522bacd02aa6c60aacc9fe11908b19c7d42bc3",
     "tools/terminal_bench/feedback-ablation-study/resource-values.mjs": "6ec919ba6d0cf7647843397bf8f6c83906f2a600eee68f57bf37c6b132af7fcf",
-    "tools/terminal_bench/feedback-ablation-study/run.mjs": "b4fd6ee600acbe94cbf4d3dbfd15be5510d69c8ece1e11b4c07a04311b2121b8",
+    "tools/terminal_bench/feedback-ablation-study/run.mjs": "8bc28b0b2b982498c283f5a4bae89bb2a14668ebebf42780052080cd9ac6cff5",
     "tools/terminal_bench/feedback-ablation-study/rxjs-delivered.mjs": "d49fcfb5cae5a0e3576c7de24c3e2bbcd772d9bb6055022d8b1021bf69e03ce3",
     "tools/terminal_bench/feedback-ablation-study/rxjs-fixtures.mjs": "b33621afc8207a3f8ba12bd4f0f1e410da79b85922d217cf395b703f58891a65",
     "tools/terminal_bench/feedback-ablation-study/rxjs-oracle.mjs": "de9373c6a7d777335ec500ac080fb2e87957b17bd9db01e3ee173748adeb372e",
@@ -78,5 +78,5 @@
     "tools/terminal_bench/request-timing.mjs": "073d46f6e4cee48314eee1092df36b9f5b96c99aa9320be9330ab5af5c2b2a72",
     "tools/terminal_bench/request-timing.test.mjs": "9cbc48d18be55daabc9a7ced65c4379a96145f7850e38bfb5603a0a0ae4ea154"
   },
-  "note": "Exact pre-model coordinator sources and imported selection data; no worker solution or model outcomes."
+  "note": "Administrative collector amendment after one known completed model result; original sources/bindings retained, no source/treatment change or model retry."
 }

@@ -1,4 +1,32 @@
 {
-  "beforeModelRequests": true,
-  "description": "Common F62 passive timing, typed scope metadata and explicit-user-handoff exposure. No response/request rewrite; context bytes are not billed tokens. New controls and observer hashes precede dispatch."
+  "beforeModelRequests": false,
+  "registeredBeforeFurtherModelRequests": true,
+  "workersRunBeforeAmendment": 1,
+  "sourceInputsUnchanged": true,
+  "treatmentUnchanged": true,
+  "modelRetried": false,
+  "collectorFailure": "EISDIR while reading a tracked dependency symlink replaced by an isolated directory before the model",
+  "correction": "Keep full raw diff, exclude only root dependency anchor from source patch/identity, retain mandatory before/after dependency manifests. Save model-exit before source collection in future workers.",
+  "firstTrial": {
+    "action": "Manual administrative finalization after collector EISDIR; no new model invocation or source edit",
+    "modelResult": "succeeded with terminal done event",
+    "osExitStatus": "unknown_not_inferred",
+    "outerDuration": "unknown_not_replaced_by_sdk_duration",
+    "endpointSnapshot": "Captured during administrative recovery, not proven atomically at process exit",
+    "originalArtifactsSha256": {
+      "result.json": "c6fa2626904424e2d92ba1e6daa97ea82eb4ce14140bbef51dffa52791d3cc56",
+      "events.jsonl": "42d90c1315f0acbb910af9841be03e55c4577388d918096db85221ec1cfaf82e",
+      "wire-contracts.jsonl": "72b3a451f2f3cadad3813505ccaa66926dc6ea687d4cd8e6e7894317158d8690",
+      "request-timing.jsonl": "fe4010c67285041e60f37b9b7b54b4869beed285ff22569c0838f9745e4279b8",
+      "feedback-wire.jsonl": "a943d866172a9f7a56ff4d92314d5c0cc11440c0836f72711c9210907d451b4e",
+      "model-start.json": "c79ecedf22aeb39316cb195a43bbce60ffaf1647b10526ea7741ff08881db64a",
+      "input-commit.txt": "2c1ddac16f3de7126d7550fde386173c8bfd1fd9e508a84566d0b13a7addaa04",
+      "instruction.txt": "474f03d2e9d27cba57dc707831a395bded8982c0c90e3bb8b45092d802f07a9c"
+    },
+    "sourceManifestSha256": "45184b384e7c07d2d70b21aba91764520b946e9afed0f66ccf4c60c5954a06b9",
+    "sourceRepair": false,
+    "modelRetried": false
+  },
+  "controlSha256": "d119ddde99550411d9b55eb0528ec99ea28e506b4872be2fe0905915ce100ca1",
+  "boundaries": "OS exit status and outer duration unknown for the first trial; SDK result/done/usage and source preserved. No code solution or measurement-driven task replacement. Uniform corrected grader for every assignment."
 }

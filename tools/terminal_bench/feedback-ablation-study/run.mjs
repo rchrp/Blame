@@ -64,19 +64,25 @@ async function verifyBindings() {
 export async function score(directory, task) {
   const workspace = join(directory, 'workspace');
   const inputCommit=(await readFile(join(directory,'input-commit.txt'),'utf8')).trim();assert.match(inputCommit,/^[a-f0-9]{40}$/);
-  const paths=[...new Set([...git(['diff','--no-renames','--name-only','-z',inputCommit,'--'],workspace).split('\0'),...git(['ls-files','--others','--exclude-standard','-z'],workspace).split('\0')].filter(Boolean))];
+  const rawPaths=[...new Set([...git(['diff','--no-renames','--name-only','-z',inputCommit,'--'],workspace).split('\0'),...git(['ls-files','--others','--exclude-standard','-z'],workspace).split('\0')].filter(Boolean))];
+  // The controlled template tracks a dependency symlink, replaced by the
+  // isolated copier before any agent call. Keep this namespace under the
+  // independent dependency manifest, not the source patch/identity.
+  const paths=rawPaths.filter(p=>!(protocol.controlledHandoff&&p==='node_modules'));
   const allowed=protocol.tasks.find(t=>t.id===task)?.allowedTestEdits??[];
   const originalTests=new Set(git(['ls-tree','-r','--name-only','-z',inputCommit],workspace).split('\0').filter(path=>/\.(?:test|spec)(?:-d)?\.ts$/.test(path)&&!allowed.includes(path)));
   const protectedPaths = paths.filter(path => !(path.startsWith(sourceRoot()+'/')&&path.endsWith('.ts')) || originalTests.has(path));
   // Reconstruct endpoint against original checks in a fresh tree. Never repair
   // model source or copy an oracle solution back into the agent workspace.
   const audit = join(directory, 'independent-endpoint'); await rm(audit,{recursive:true,force:true}); await prepare(audit, task);
-  let diff = git(['diff', '--binary', inputCommit], workspace);
+  let rawDiff = git(['diff', '--binary', inputCommit], workspace);
+  let diff = protocol.controlledHandoff?git(['diff','--binary',inputCommit,'--','.',':(exclude)node_modules'],workspace):rawDiff;
   for (const path of git(['ls-files', '--others', '--exclude-standard', '-z'], workspace).split('\0').filter(Boolean)) {
     const extra = spawnSync('git', ['diff', '--no-index', '--binary', '--', '/dev/null', path], { cwd: workspace, encoding: 'utf8' });
-    assert.ok(extra.status === 1 || extra.status === 0, 'Untracked source capture failed'); diff += extra.stdout;
+    assert.ok(extra.status === 1 || extra.status === 0, 'Untracked source capture failed'); diff += extra.stdout;rawDiff+=extra.stdout;
   }
   await writeFile(join(directory, 'workspace.diff'), diff);
+  if(protocol.controlledHandoff)await writeFile(join(directory,'workspace.raw.diff'),rawDiff);
   for (const path of paths) {
     if (protectedPaths.includes(path)) continue;
     try { await mkdir(join(audit, path, '..'), { recursive: true }); await cp(join(workspace, path), join(audit, path)); }
@@ -85,13 +91,13 @@ export async function score(directory, task) {
   const checks = ['regression', 'feature', 'types'].map(name => check(audit,name,task));
   const deliveredChecks = ['delivered','delivered-types'].map(name => check(audit,name,task));
   const addedTests=paths.filter(p=>p.startsWith(sourceRoot()+'/')&&/\.(?:test|spec)\.ts$/.test(p)&&spawnSync('git',['cat-file','-e',inputCommit+':'+p],{cwd:workspace,stdio:'ignore'}).status!==0);
-  return { changedPaths: paths, protectedPaths, checks, deliveredChecks, addedTests, independentFunctionalSuccess: protectedPaths.length === 0 && checks.every(result => result.exitCode === 0),
+  return { ...(protocol.controlledHandoff?{infrastructureAnchor:{path:'node_modules',rawChanged:rawPaths.includes('node_modules'),excludedFromSource:true,dependencyIntegrityRequired:true}}:{}),changedPaths: paths, protectedPaths, checks, deliveredChecks, addedTests, independentFunctionalSuccess: protectedPaths.length === 0 && checks.every(result => result.exitCode === 0),
     sourceHashes: Object.fromEntries(await Promise.all(paths.map(async path => [path, await readFile(join(workspace, path)).then(sha, () => null)]))) };
 }
-async function endpointIdentity(directory) {
+export async function endpointIdentity(directory) {
   const workspace=join(directory,'workspace'),inputCommit=(await readFile(join(directory,'input-commit.txt'),'utf8')).trim();
   const paths=[...new Set([...git(['ls-tree','-r','--name-only','-z',inputCommit],workspace).split('\0'),...git(['ls-files','-z'],workspace).split('\0'),...git(['ls-files','--others','--exclude-standard','-z'],workspace).split('\0')].filter(Boolean))].sort();
-  return {inputCommit,files:Object.fromEntries(await Promise.all(paths.map(async path=>[path,await readFile(join(workspace,path)).then(sha,e=>{if(e.code==='ENOENT')return null;throw e;})])))};
+  return {inputCommit,...(protocol.controlledHandoff?{dependencyAnchor:'node_modules: separately bound before/after dependency manifests'}:{}),files:Object.fromEntries(await Promise.all(paths.filter(p=>!(protocol.controlledHandoff&&p==='node_modules')).map(async path=>[path,await readFile(join(workspace,path)).then(sha,e=>{if(e.code==='ENOENT')return null;throw e;})])))};
 }
 async function execute(directory, slot, task) {
   const runtime = protocol.runtimeByArm[slot.arm];
@@ -237,7 +243,7 @@ async function run() {
       await atomicWrite(join(directory,'input-commit.txt'),git(['rev-parse',protocol.controlledHandoff?'refs/study/input':'HEAD'],join(directory,'workspace')));
       await atomicWrite(join(directory,'instruction.txt'),protocol.controlledHandoff?await handoffInstruction(task,slot.arm):task.instruction); await save(join(directory,'required-checks.json'),task.requiredChecks);
       await storage.begin(slot); console.log('START',name);
-      exit=await execute(directory,slot,task); await save(join(directory,'endpoint-manifest.json'),await endpointIdentity(directory)); await save(join(directory,'model-exit.json'),exit);
+      exit=await execute(directory,slot,task); await save(join(directory,'model-exit.json'),exit); await save(join(directory,'endpoint-manifest.json'),await endpointIdentity(directory));
     }
     assert.deepEqual(await endpointIdentity(directory),await json(join(directory,'endpoint-manifest.json')),'Source changed after recorded model exit');
     const grade = await score(directory, task.id);

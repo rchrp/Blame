@@ -1,0 +1,7 @@
+{
+  "protocolHash": "e229048b2c949fa39b3c7d2adc9c9fc6677cede10005c2e81f44749249ff8c9e",
+  "completed": 0,
+  "planned": 18,
+  "receipts": [],
+  "note": "Derived index. Each immutable archive is independently verified; no model call is replayed."
+}
