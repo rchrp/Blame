@@ -20,6 +20,126 @@
       "evidence": [
         "Reviewed the complete scalar signatures, source patch, two new debit tests, all commands and delivery. Independent negative-input normalization, clamp/cap and shared quote satisfy the specified integer domain without mutation. Early regression/types commands 19/20 fail; model repairs its source before final required commands 24-26 and delivered types 31, which all pass. All five endpoint checks and dependency integrity pass. No shell retrieval or later writes. Summary honestly distinguishes original/source/delivered scopes and makes no solver claim."
       ]
+    },
+    {
+      "name": "1-credit-remainder-candidate",
+      "hashes": {
+        "events.jsonl": "d139be37c45e493023f4ce9cd2b901077f50c062e737d2ab396de61f46edb652",
+        "workspace.diff": "f94c441922b8870d7a0b6cd12f88c1c76ea572ec976827d83bd56156bff7ecce",
+        "score.json": "2c9c4b7998172fc768b26a3654a2227e738b4d3ee935aad0894359039079fc13",
+        "tool-ledger.json": "4697b5930e40e9eb0d823be881cd04b4a1ca4cc97df1c16a1350ba91fe356139"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Reviewed exact scalar APIs, complete Math.max normalization/cap/shared quote patch and new debit regression file. All requested integer-domain behavior is correct with no mutation or weakened types. Final required commands 16-18 and delivered types 19 pass after final edits, five endpoint checks and dependency integrity pass. No shell writes/retrieval or analyze call. Delivery accurately limits original/runtime/source/delivered coverage and unspecified outside-domain behavior."
+      ]
+    },
+    {
+      "name": "1-credit-remainder-cline",
+      "hashes": {
+        "events.jsonl": "e452881baa75e965b2002f9548c7c02d88a158083c305f4093cf3c6db0ab5202",
+        "workspace.diff": "45c7344821981d2b392d44ce20cbd5b8ad3d9a119ba066368f3089e5c5b774f1",
+        "score.json": "46441b1fcd6e8717b13df99554d48acd9d97a6a17439167c9087b3c66be26c01",
+        "tool-ledger.json": "3d304e1bb6ae309316e8df016fb3cac841cebb4d43026773269d3bfddc997eed"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Reviewed complete source patch, exact numeric public signatures, three new debit tests, all commands and final delivery. Independent negative-input normalization, cap and shared quote are correct. Tool 10 explicitly records each required check plus delivered types and exits with any failure; all pass after final edits, as do five independent endpoint checks. Initial find reads many dependency manifests but retrieves no external solution; local git log is the synthetic input only. No later writes or solver claims. Scope reporting is accurate."
+      ]
+    },
+    {
+      "name": "1-inclusive-tier-allocation-candidate",
+      "hashes": {
+        "events.jsonl": "7535512527c46bead96a908a5889af26216c94bb5717b8a8ce84d648550e7d1a",
+        "workspace.diff": "0d4066677d97b6b9521c9c8c85a1f9ea57206651ee576ca0378c119ac173eb1f",
+        "score.json": "1df382a17a15947bb415653f9870136e343dfca013dc7e74004b20f241eac2ee",
+        "tool-ledger.json": "2e3656a59285ea6da57515ce1520e9a90dc8441b69ce7c0174afa987e5c8ef05"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Reviewed four source edits, exact numeric APIs and three delivered tests. Inclusive lower partition, strictly-upper boundary+1, empty intervals and direct negative-rate normalization are correct; consumer shares tierCost. Required invocations 24-26 plus delivered types 27 pass after final edits and match five endpoint checks. Remaining command is only local diff/status; no retrieval or symbolic calls/claims. Delivery distinguishes original runtime, source compiler and delivered tests/types."
+      ]
+    },
+    {
+      "name": "1-inclusive-tier-allocation-cline",
+      "hashes": {
+        "events.jsonl": "dc880448ace781e581e3b39fbab92c63262c88615adc49641207a9b3982f972c",
+        "workspace.diff": "e006bdd59f838fca4d81ba8f76c2f5142e8946fdee5ea6519d811edd22e75c4f",
+        "score.json": "31f3a18c632ec1155ea26c3d0f4d5199f20a309319344f6a82f364399a606942",
+        "tool-ledger.json": "7a20b106be408b570cdc147253f78ad3e70678ab3f30203fa7211cf3f32b55f3"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Reviewed exact public signatures, complete four-source patch and three added tests. Closed interval partition, boundary allocation, signed/empty intervals, direct normalized rates and composed pricing are correct. Tool 8 executes all four required/delivered-type commands successfully after final edits; all five endpoint checks and dependency integrity pass. Remaining commands inspect local files and diff/status only. No solution recovery or solver claims; final delivery accurately distinguishes source-only compilation and delivered tests."
+      ]
+    },
+    {
+      "name": "1-inclusive-tier-allocation-reference",
+      "hashes": {
+        "events.jsonl": "ae35f0aabcba42d9553df9c8e6187f403dc51f252a4b811a416e3a2e0c071b78",
+        "workspace.diff": "6f60d2b348aa87220790ec9b704c83d9f2bb683f44b1c1e1311398dcdef51626",
+        "score.json": "8103fecb9803262652cc0b59c53ea7eef32cdaed22fb11052b0252295d194428",
+        "tool-ledger.json": "760c28ae5804b3b5a14c23395ef68f6091f7b70025bc844969da10b2d3498c17"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Complete patch preserves exact numeric APIs and implements the inclusive lower/upper partition, empty ranges, direct negative-rate normalization and shared consumer pricing. Two new tests cover boundaries, direct rate handling and quotes. Final required invocations 20/21/23 plus delivered types 22 pass after final edits; all five endpoint checks and dependency integrity pass. Remaining command is local diff/status. No retrieval, shell writes or symbolic claim. Delivery accurately distinguishes source-only compiler and original/delivered tests."
+      ]
+    },
+    {
+      "name": "1-signed-window-overlap-cline",
+      "hashes": {
+        "events.jsonl": "9152a782158ca0a63928b2662dd70b9207f889e654665e458e573f7f25172fe7",
+        "workspace.diff": "7a0bc7e7c2c9e1b1b95e825c92833e598ef0af65fc9ffba1265adfb86a5ab258",
+        "score.json": "48456a225ed1b5c3be3455d8ecb6ac92dc58408e96b94bb1957ad705004f4e50",
+        "tool-ledger.json": "396893480617ff5165868ad211a4a6bd3e3ea39da1f37958b56c4a9c99f53916"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Reviewed exact signatures, full signed half-open overlap/positive inclusive threshold/both-endpoint shift patch and three new tests. Early validation 8 fails and is retained; model repairs its own test before rerunning all required and delivered-type commands successfully at 10. All five endpoint checks pass. Remaining commands inspect only local diff/status; no retrieval or solver/proof claims. Final delivery reports the final passed checks with correct source/test scope."
+      ]
     }
   ]
 }

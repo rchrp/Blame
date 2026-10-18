@@ -1,6 +1,6 @@
 {
   "protocolHash": "32c5b7eceb4d31944b09d7518ca30fd5cf9645a20fc9427eef7934238b40933a",
-  "completed": 2,
+  "completed": 7,
   "planned": 18,
   "receipts": [
     {
@@ -10,6 +10,26 @@
     {
       "name": "1-credit-remainder-candidate",
       "sha256": "92db9acc1434bba98058ef9bd3b71879ddb26532f8f8bb1420ab187a5fbcb367"
+    },
+    {
+      "name": "1-credit-remainder-cline",
+      "sha256": "ecf4c73d3afbbb5cb5f1247a792920765421678f0f47cba935fca32455832c30"
+    },
+    {
+      "name": "1-inclusive-tier-allocation-candidate",
+      "sha256": "af5a72ecba85b7d908bd157d84f64e47bf57ebb86667116e116eb36b35e50353"
+    },
+    {
+      "name": "1-inclusive-tier-allocation-cline",
+      "sha256": "5c0f8ab977df36864bcb2701cd561cd7deee075134624da20f4b6605c6516811"
+    },
+    {
+      "name": "1-inclusive-tier-allocation-reference",
+      "sha256": "22948e0cd201fa0eb99798c31974f13c2a7c0b3dddc40438d4bfc65dca8bcd34"
+    },
+    {
+      "name": "1-signed-window-overlap-cline",
+      "sha256": "5fd8684466456318a92da156a140ea8e56aa133a626817f8ac24bb3f37de558f"
     }
   ],
   "note": "Derived index. Each immutable archive is independently verified; no model call is replayed."
