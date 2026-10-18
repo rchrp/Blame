@@ -189,6 +189,90 @@
       "evidence": [
         "Shared getEmptySelections allocates fresh per-key arrays and is called by empty array/set/map paths; map discovers key and value selections, no-argument guards/non-empty loops remain. Production correct from36. Four new tests initially mix named and anonymous selections with an invalid expected object; test-only edits44/48/49 split modes and remove incorrect cross-collection casts. No public API/type weakening. After import-free corrected tests, required50/51/52 and delivered-types53 pass after final edit49; all five independent endpoints pass, protected/dependencies unchanged, no retrieval or misleading report. Candidate follows delivered-runtime repair advice after edit44 (next validation45) but later final checks retain their required order; this observed uptake is not causal mediation. No header/body exposure in this trial."
       ]
+    },
+    {
+      "name": "2-alternative-selections-candidate",
+      "hashes": {
+        "events.jsonl": "637cb8fb8e5b40ca611d93f674e15a54440befdb4822797d203faa238b9afea1",
+        "workspace.diff": "c6726d99546f3be446a2f51da1a42e92e00ae75103544292671669ed35f98c86",
+        "score.json": "cb2ae38105feabbd34ffa6081378e6fa31eb09d00d5dcf82e06588ec96ef364a",
+        "tool-ledger.json": "505bff451609f60e3db1ddac83261e3e7ee1878b905966b632529f291e11d64c",
+        "feedback-wire.jsonl": "ac5d34f71a0b4dc2c0ae40fa8af257e31934ae5a810f931a032141590bfacd0e"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Internal matchPatterns stages each alternative locally, commits only first success, never reevaluates predicates and returns false without publication on total mismatch. Both consumers identical to previously reviewed candidate1, compatible with new helper; union undefined initialization and public types unchanged. Four new tests pass, but first uses separate with calls rather than a multi-pattern with, so authored coverage alone does not prove the specific leak regression; independent feature oracle and source review do. New-test compiler32 catches invalid narrowed subsequent clause; test-only assertion34 fixes it, next validation35 reruns the failed compiler before required36/37/38, all passing after final edit. Five independent endpoints pass; scoped truthful delivery, no protected/dependency changes or retrieval."
+      ]
+    },
+    {
+      "name": "2-alternative-selections-cline",
+      "hashes": {
+        "events.jsonl": "9bd0d6a90b06d518c82758cfd4debf70caa019ba187430183c99000689cc3854",
+        "workspace.diff": "3d92d7f63ab12ebe21b6a090656db146f0c716a4c2709c113b0954752f2cf371",
+        "score.json": "cf590e7fcd84ea8100668f8319a92c2b480811bc1a5f8ec8692cc5a768d6eacf",
+        "tool-ledger.json": "dab564f0e41aac1852bf17e24b3a1b322fdfb46b0e27544d2f947dd2acb0e0a7",
+        "feedback-wire.jsonl": "7b251b5750b3607afced6697909536e466045bca0e96e92f995607f05d1ee43d"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Shared transactional matchPatterns stages per-alternative selections and publishes only complete first success. Optional union-key initialization now lives inside helper; successful keys remain initialized undefined and raw total mismatch safely returns empty map, allowed by upstream contract/precall oracle. Both consumers use compatible helper; public types unchanged. Six new tests directly cover multi-pattern failed selection, first-success, union/defaults, anonymous and total mismatch; new-test-only shape/literal fixes13/18 and stronger predicate case25 do not weaken APIs. Required26/27/28 plus delivered-types29 pass after last edit25, all independent endpoints pass. Malformed extra input properties on native commands9/12 are inert; only declared commands execute in checkout. Local git log sees only frozen input, no protected/dependency edits or solution retrieval; scoped report is accurate."
+      ]
+    },
+    {
+      "name": "2-alternative-selections-reference",
+      "hashes": {
+        "events.jsonl": "606a1f25df77aa82e34fed318ef85d45549a2cf3bb15baf122a9d168bae7b18e",
+        "workspace.diff": "73075eeb7371222c39e9504784d714b79d98374a06714da069eefba8c8008fc9",
+        "score.json": "da3232d00e4f50931dce8cce4806d92a7669ffd36b4c2e0c6bf059e66b49d249",
+        "tool-ledger.json": "02554af1abc68c2a6ed8a588e2aa24d617811d490dcc23787cb0617e917e8253",
+        "feedback-wire.jsonl": "da03aefbb63d9a90db91ed5ae1639c4c52730880c3beb68853e315a9e1309440"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "New helper stages a map per alternative and publishes only first full match; both consumers match reviewed reference1 and retain compatible signatures, union default-key initialization, first-match short-circuit and guard paths. Two authored tests use an early type discriminator, so they do not themselves force a partial selection before failure; independent oracle and source review supply that missing leak/anonymous/mismatch evidence. Initial delivered runtime36 fails because the new test places a union of objects inside the type property instead of using the union as the entire object pattern; test-only shape edit37 precedes required38/39/40 and delivered compiler41, all passing. Public types/protected/dependencies unchanged; truthful scoped report, commands confined to checkout and no solution retrieval."
+      ]
+    },
+    {
+      "name": "2-symbol-pattern-keys-cline",
+      "hashes": {
+        "events.jsonl": "0de5b2034fbd9a82e298a094fddb616afafbd5893ac554ae5cadc58bfc292e06",
+        "workspace.diff": "1c5f5d3a3746294ec99a5dba4032ae07af7363bb2763108412819241060aefab",
+        "score.json": "5619d2b0054726a383d1096729aa439e2bfdd1bca32b37b6fdd512bac6bc16c4",
+        "tool-ledger.json": "fc4ba86010a9342dbf4113621c02b0d673aef1324d64403d45a2b8c16c732fd6",
+        "feedback-wire.jsonl": "ee98cd1309612e3210b987a30b2bb8efa75e47e773faa5c77191c717135712f1"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Shared helper consumer bytes match reviewed Cline1; new getOwnKeys directly returns Reflect.ownKeys with string/symbol type and serves both matching/discovery, preserving special cases/inherited value semantics. Four new tests and independent oracle cover hidden/symbol, optional, empty-array and inherited behavior; public types unchanged. Last explicit edit12 precedes successful conjunctive required plus delivered-types15; root check17 passes before missing Jest causes npm test failure, honestly reported with missing formatter14. All five independent endpoints pass, protected/dependencies unchanged. Local log8 sees frozen input only; no retrieval, installs or late mutation."
+      ]
     }
   ]
 }

@@ -46,6 +46,26 @@
       "name": "1-empty-collection-selections-candidate",
       "ledgerSha256": "e618394a36f37ba5c67ba4008f3d1239d5c90d8a7a99236de5f609961f595ec4",
       "evidence": "After failed delivered runtime39 and compiler40, edit44 repairs only some new-test assumptions; next validation45 directly selects the still-failing runtime before redoing greens. After further new-test edits48/49, final required50/51 precede delivered52 success; their final-source obligations remain necessary. Exposure/uptake is observed, no matched-handoff causal saving established. No source binding repair or header exposure."
+    },
+    {
+      "name": "2-alternative-selections-candidate",
+      "ledgerSha256": "505bff451609f60e3db1ddac83261e3e7ee1878b905966b632529f291e11d64c",
+      "evidence": "Compiler32 rejects a new-test clause narrowed to never. After test-only assertion34, next validation35 explicitly retries the failed compiler before final required36/37/38. These pass on final bytes. The first authored leakage test uses separate with calls and is weaker than the requested multi-pattern case; source and independent oracle, not that test, establish the fix."
+    },
+    {
+      "name": "2-alternative-selections-cline",
+      "ledgerSha256": "dab564f0e41aac1852bf17e24b3a1b322fdfb46b0e27544d2f947dd2acb0e0a7",
+      "evidence": "New-test shape/literal failures12/17 repaired13/18; required19/20/21 and compiler22 pass. Later test25 strengthens a failed alternative predicate, so required26/27/28 plus compiler29 are necessary after final edit. Native command argument objects9/12 contain inert extraneous prose fields; outputs show only commands execute. No inferred duplicate-rerun count."
+    },
+    {
+      "name": "2-alternative-selections-reference",
+      "ledgerSha256": "02554af1abc68c2a6ed8a588e2aa24d617811d490dcc23787cb0617e917e8253",
+      "evidence": "Delivered36 fails one new union test: the test puts a union of object patterns under the type property. Test-only shape edit37 moves P.union to the complete object pattern; required38/39/40 and compiler41 are fresh and pass. Two authored tests discriminate before selecting, so independent oracle and source supply partial-leak evidence. No later mutation or false claim of broader regression coverage."
+    },
+    {
+      "name": "2-symbol-pattern-keys-cline",
+      "ledgerSha256": "fc4ba86010a9342dbf4113621c02b0d673aef1324d64403d45a2b8c16c732fd6",
+      "evidence": "Final edit12 precedes successful conjunctive required+optional tests15. Root compiler check17 succeeds then native Jest cannot launch; missing formatter14 also retained. No installs or later source/test edits. Delivery correctly separates passed study commands from unavailable native Jest and formatter."
     }
   ]
 }
