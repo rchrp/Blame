@@ -1,0 +1,68 @@
+{
+  "method": "Root manual unblinded inspection of every complete immutable endpoint patch, exact public APIs, delivered tests, command chronology and delivery. Hash-bound independent endpoint checks support the judgment; official completion alone is insufficient. Symbolic relevance/witness judgments require separate explicit review.",
+  "decisions": [
+    {
+      "name": "1-suffix-counts-reference",
+      "hashes": {
+        "events.jsonl": "7271669829ad40520b62901f3b13fb2de253a2bd2fa44670b88573f003a099b0",
+        "workspace.diff": "6d3ae8d0247e1ce38735376700a3d209ad654de1a4036315d6c22d10c2d35559",
+        "score.json": "795d83c5473e264b1184fc463b2f739616dac059128af28b61eeae02670caa0b",
+        "tool-ledger.json": "bdce87de086df7649ad0d06b47f9d82c60f89291d8f1705d6a8dfc44d78a9d46",
+        "feedback-wire.jsonl": "d5ff8d85b1d3b1feac18329069afe4eaf1f190364bccb5663252b0e0835eb5c3"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Shared normalizer handles nonpositive/NaN separately, positive infinity tolength and finite floor capped atlength; both consumers safely slice length-normalized count and preserve original overloads. New11 tests include oversized10, all invocation styles, fresh/readonly identity and actual generic assertions; all five endpoints pass. Exact final required43/44/45, delivered types46 and original workspace compiler52 pass after the final edit. Guessed task remeda:check47 is rejected and recovered via literal npm workspace command, without altering configuration. No duplicate final required checks, protected/dependency changes or retrieval; accurate coverage. Forwarded metadata joins every request and confirms zero header receipts in this reference arm."
+      ]
+    },
+    {
+      "name": "1-suffix-counts-candidate",
+      "hashes": {
+        "events.jsonl": "f344f5bf1b66945acf70506894c9ed46cf7219f8e2106d2944724976b521131b",
+        "workspace.diff": "fec4983d69f4c58ca3526e3ef3de221c7f0e77d6f590b9241f2b0063a6d2b8db",
+        "score.json": "18a454723d89c6e9d8cd4c593cf84d70dee51cd4636d2b6770ce5e8b4e9f2c79",
+        "tool-ledger.json": "8ff87b94f23b7dd922f56680fb977e4995a0850102686eb966028e9ac5058e4d",
+        "feedback-wire.jsonl": "5ff7253fe21d364e4fb97083ad786f2db2abd468288c26cd4261ba620a172255"
+      },
+      "sourceBehaviorPassed": false,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": false,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "The helper floors finite positive counts but never caps them at input length; both consumers remove original Math.max index clamps and slice at length-count. For length2/count3, takeLast returns only the last element and dropLast retains a prefix instead of all/empty. This violates preserved integer behavior and is the known F53/F58 model-error family. New tests omit oversized finite counts and mirror the same length-count expectation; they pass runtime/types while independent feature oracle fails. Required final47/48/49 and delivered types50 really pass on final source; signatures/dependencies/original checks are unchanged, no retrieval and reported executions truthful. No replace_body call or header exposure occurs, so this adverse outcome cannot be caused by using the body-header receipt. Retain failed unchanged patch and every cost."
+      ]
+    },
+    {
+      "name": "1-suffix-counts-cline",
+      "hashes": {
+        "events.jsonl": "1def170eb3e884f4a0009fedea7069394147818f7c1c308387b9998572364a97",
+        "workspace.diff": "2c2728bb2ac190c7f08dcd66ce33fbebc92733b2bddcaa17ea101a65a074576d",
+        "score.json": "0405c1b2e7676130126097b0b73cd4849f052a5c27fe57197545ed464f7b1ebb",
+        "tool-ledger.json": "9ca368b6459eb6105b47ed0345849f5e8756592f43cdf12b257d3ed3638799eb",
+        "feedback-wire.jsonl": "94a243a47ae42ac25f59bf179d51a0e306d6fb8212b2311230f8a50124e2c674"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Shared helper uses length/count argument order consistently, explicitly handles nonpositive/NaN/infinity and caps finite floors atlength; both original public overload sets remain untouched. New19 runtime cases and typed readonly/direct/curried/pipe assignments compile; hidden oracle supplies oversized/empty cases absent from authored tests. Only source edit10 precedes exact final required11/12/13 and delivered types14; later diff/read/status tools do not edit source. All five endpoints and dependency/protected integrity pass. No remote/solution retrieval, honest selected/compiler/test counts, no header receipts in native arm."
+      ]
+    }
+  ]
+}
