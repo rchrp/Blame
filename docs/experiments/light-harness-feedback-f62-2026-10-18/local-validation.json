@@ -34,5 +34,18 @@
     "packages/agent-runtime/src/harness/light-validation-provenance.test.ts": "b36ae2b5db60cfbe94bd05e95661de1b4ac9b8f68f62ad475251b9f91538f45a",
     "packages/agent-runtime/src/harness/light-workspace.ts": "3e84c39d4fa8e20463137b3214803cc882238d474d6d7c60aef82252dd3d70a6",
     "packages/agent-runtime/src/harness/light-finish-service.ts": "9b792a641df13ee386fb7f70b19c1a52f3f807c9ac08b5fc96bd040cc7599335"
-  }
+  },
+  "supplementalVitestWrapperChecks": {
+    "tests": 13,
+    "passed": 13,
+    "skipped": 0,
+    "command": "BLAME_TEST_VITEST_DEPENDENCIES=/workspace/Blame/.blame/research/validation-scope-f44/dependencies node --test packages/agent-runtime/dist/harness/invocation-test-report.test.js",
+    "boundary": "Executes the five real Vitest wrapper cases skipped in the default full-suite invocation; eight other cases overlap that suite. Do not add raw totals as independent tests."
+  },
+  "legacyCampaignVerification": [
+    "F59",
+    "F60",
+    "F61"
+  ],
+  "targetedLint": "passed"
 }

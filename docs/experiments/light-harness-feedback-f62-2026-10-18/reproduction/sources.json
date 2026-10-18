@@ -1,0 +1,20 @@
+{
+  "commit": "f74da68be56a4d3ee99cde385a3bcf2e187bb338",
+  "sha256": "625b6173b5d21baddc380351947c7e9e85326290f86df9d1f8affd88c3ba8c46",
+  "paths": [
+    "tools/terminal_bench/feedback-ablation-study",
+    "tools/terminal_bench/durable-campaign.mjs",
+    "tools/terminal_bench/isolated-node-environment.mjs",
+    "tools/terminal_bench/navigation-evidence/wire-audit.mjs",
+    "tools/terminal_bench/navigation-evidence/native-search-repair.mjs",
+    "tools/terminal_bench/request-limit-model-study/prompt-date.mjs",
+    "tools/terminal_bench/navigation-evidence/budget-accounting.mjs",
+    "tools/terminal_bench/corpus/light-study-accounting.mjs",
+    "tools/terminal_bench/request-timing.mjs",
+    "tools/terminal_bench/request-timing-preload.mjs",
+    "tools/terminal_bench/request-timing.test.mjs",
+    "tools/terminal_bench/latency-intervals.mjs",
+    "tools/terminal_bench/latency-profile.mjs"
+  ],
+  "note": "Exact F62 pre-model coordinator and metadata-only observer sources. Runtime treatment bytes separately archived and bound. All local boundary/mutation data remains separate from model outcomes."
+}

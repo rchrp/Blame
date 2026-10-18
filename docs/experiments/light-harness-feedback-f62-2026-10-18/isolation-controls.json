@@ -1,0 +1,13 @@
+{
+  "modelRequests": 0,
+  "changedRuntimeFilesBetweenLightArms": [
+    "agent-runtime/dist/harness/light-finish-service.js",
+    "agent-runtime/dist/harness/light-validation-report.js",
+    "agent-runtime/dist/harness/light-workspace.js"
+  ],
+  "flags": {
+    "analysis": false,
+    "hints": false
+  },
+  "treatment": "Post-edit/current-check provenance feedback only versus current Light and integrated Cline; known Remeda diagnostic requests. Common demand-driven HTTP timing and strengthened finite boundary oracle."
+}
