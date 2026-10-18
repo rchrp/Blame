@@ -1,6 +1,19 @@
 {
-  "complete": false,
+  "complete": true,
   "modelRequests": 0,
+  "method": "Pristine inputs preserve regression success but fail requested behavior; independent positive controls satisfy all checks; semantic mutations preserve original regression tests and are rejected by the hidden oracle. No control solution enters model workspaces.",
+  "scriptHashes": {
+    "setup.mjs": "4c99632dddb8d03f071e0c3bb4a5b6c81e5f9ca42f333179f21605ad6c962c69",
+    "tasks.mjs": "dfe4a7cd5615ff543ced514db32dfb19bfbaad7d1df509fcb3d498327e334e43",
+    "delivered.mjs": "d2b1f64a302c33fabd16783caf8dc8e5146e03f85603bf89f4798696ab3b5b33",
+    "oracle.mjs": "532dc5f5417e0187557eea090a1648a31f987537d133ba11fd1f29cec61825f4",
+    "checks.mjs": "6540810bbcff3c9c3efd889fdb0ae87020d0e5d06377a30dd51c1f244d7ab546",
+    "solutions.mjs": "0c196127cee5e1303396578299cf379446073e72040c17a0dd046a742f160a45",
+    "panels.mjs": "19970b18091bb1756ceae647260257142eb9b15be2a3ff4242d0031443a3f9d4",
+    "ts-pattern.mjs": "4d63bea9217ba60336c435aff37596475e9a4e21ea67effb6b88b83640ffce5c",
+    "ts-pattern-oracle.mjs": "fe1980be13786d6d42861fa3f3d4c1f61d6703a75b5d60a1221a460b5b08fe6b",
+    "ts-pattern-delivered.mjs": "7c95589183641111773d02aeb9cf6c0619b6d9cf2da51e7da9dda50fb2d04569"
+  },
   "rows": [
     {
       "task": "suffix-counts",
@@ -454,6 +467,234 @@
           "error": null,
           "durationMs": 1823.3688790000015,
           "stdout": "\n> remeda@2.0.0 typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"packages/remeda/src/clamp.followup.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "task": "slice-index",
+      "before": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 772.590283000005,
+          "stdout": "\n> remeda@2.0.0 test:study:regression\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f60/controls/slice-index\n\n ✓ packages/remeda/src/splitAt.test.ts (4 tests) 4ms\n\n Test Files  1 passed (1)\n      Tests  4 passed (4)\n   Start at  14:47:56\n   Duration  287ms (transform 52ms, setup 0ms, collect 54ms, tests 4ms, environment 0ms, prepare 72ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/workspace/blame-study-runs/feedback-f60/controls/slice-index/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/feedback-ablation-study/oracle.mjs",
+            "/workspace/blame-study-runs/feedback-f60/controls/slice-index",
+            "slice-index"
+          ],
+          "exitCode": 1,
+          "signal": null,
+          "error": null,
+          "durationMs": 275.9393049999999,
+          "stdout": "",
+          "stderr": "node:internal/modules/run_main:107\n    triggerUncaughtException(\n    ^\n\nAssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n\n  [\n-   [],\n    [\n      0,\n+   ],\n+   [\n      1\n    ]\n  ]\n\n    at equal (/workspace/Blame/tools/terminal_bench/feedback-ablation-study/oracle.mjs:4:28)\n    at <anonymous> (/workspace/Blame/tools/terminal_bench/feedback-ablation-study/oracle.mjs:21:103) {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: [ [ 0 ], [ 1 ] ],\n  expected: [ [], [ 0, 1 ] ],\n  operator: 'deepStrictEqual',\n  diff: 'simple'\n}\n\nNode.js v24.19.0\n"
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1715.303611000003,
+          "stdout": "\n> remeda@2.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 1,
+          "signal": null,
+          "error": null,
+          "durationMs": 151.9467999999979,
+          "stdout": "\n> remeda@2.0.0 test:study:delivered\n> node .study/delivered.mjs runtime\n\n",
+          "stderr": "A new test file is required\n"
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 1,
+          "signal": null,
+          "error": null,
+          "durationMs": 178.7336839999989,
+          "stdout": "\n> remeda@2.0.0 typecheck:delivered\n> node .study/delivered.mjs types\n\n",
+          "stderr": "A new test file is required\n"
+        }
+      ],
+      "after": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 770.8191339999976,
+          "stdout": "\n> remeda@2.0.0 test:study:regression\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f60/controls/slice-index\n\n ✓ packages/remeda/src/splitAt.test.ts (4 tests) 3ms\n\n Test Files  1 passed (1)\n      Tests  4 passed (4)\n   Start at  14:47:59\n   Duration  254ms (transform 55ms, setup 0ms, collect 53ms, tests 3ms, environment 0ms, prepare 60ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/workspace/blame-study-runs/feedback-f60/controls/slice-index/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/feedback-ablation-study/oracle.mjs",
+            "/workspace/blame-study-runs/feedback-f60/controls/slice-index",
+            "slice-index"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2065.4694799999997,
+          "stdout": "Finite behavioral/public types passed slice-index 357\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1760.8168680000017,
+          "stdout": "\n> remeda@2.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1856.9398450000008,
+          "stdout": "\n> remeda@2.0.0 test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"packages/remeda/src/split.followup.test.ts\"]\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f60/controls/slice-index\n\n ✓ packages/remeda/src/splitAt.test.ts (4 tests) 3ms\n ✓ packages/remeda/src/split.followup.test.ts (1 test) 4ms\n\n Test Files  2 passed (2)\n      Tests  5 passed (5)\n   Start at  14:48:04\n   Duration  1.37s (transform 671ms, setup 0ms, collect 972ms, tests 7ms, environment 0ms, prepare 120ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1947.1703160000034,
+          "stdout": "\n> remeda@2.0.0 typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"packages/remeda/src/split.followup.test.ts\"]\n",
+          "stderr": ""
+        }
+      ],
+      "semanticNegative": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 765.9901190000019,
+          "stdout": "\n> remeda@2.0.0 test:study:regression\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f60/controls/slice-index\n\n ✓ packages/remeda/src/splitAt.test.ts (4 tests) 4ms\n\n Test Files  1 passed (1)\n      Tests  4 passed (4)\n   Start at  14:48:08\n   Duration  250ms (transform 52ms, setup 0ms, collect 50ms, tests 4ms, environment 0ms, prepare 55ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/workspace/blame-study-runs/feedback-f60/controls/slice-index/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/feedback-ablation-study/oracle.mjs",
+            "/workspace/blame-study-runs/feedback-f60/controls/slice-index",
+            "slice-index"
+          ],
+          "exitCode": 1,
+          "signal": null,
+          "error": null,
+          "durationMs": 294.4477960000004,
+          "stdout": "",
+          "stderr": "node:internal/modules/run_main:107\n    triggerUncaughtException(\n    ^\n\nAssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n\n  [\n-   [],\n    [\n      0,\n+   ],\n+   [\n      1\n    ]\n  ]\n\n    at equal (/workspace/Blame/tools/terminal_bench/feedback-ablation-study/oracle.mjs:4:28)\n    at <anonymous> (/workspace/Blame/tools/terminal_bench/feedback-ablation-study/oracle.mjs:21:103) {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: [ [ 0 ], [ 1 ] ],\n  expected: [ [], [ 0, 1 ] ],\n  operator: 'deepStrictEqual',\n  diff: 'simple'\n}\n\nNode.js v24.19.0\n"
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1753.547262,
+          "stdout": "\n> remeda@2.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 1,
+          "signal": null,
+          "error": null,
+          "durationMs": 1811.318158999995,
+          "stdout": "\n> remeda@2.0.0 test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"packages/remeda/src/split.followup.test.ts\"]\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f60/controls/slice-index\n\n ✓ packages/remeda/src/splitAt.test.ts (4 tests) 5ms\n ❯ packages/remeda/src/split.followup.test.ts (1 test | 1 failed) 10ms\n   × negative fractional indexes 9ms\n     → expected [ [ 1, 2 ], [ 3 ] ] to deeply equal [ [], [ 1, 2, 3 ] ]\n\n Test Files  1 failed | 1 passed (2)\n      Tests  1 failed | 4 passed (5)\n   Start at  14:48:11\n   Duration  1.30s (transform 561ms, setup 0ms, collect 889ms, tests 15ms, environment 0ms, prepare 114ms)\n\n",
+          "stderr": "\n⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯\n\n FAIL  packages/remeda/src/split.followup.test.ts > negative fractional indexes\nAssertionError: expected [ [ 1, 2 ], [ 3 ] ] to deeply equal [ [], [ 1, 2, 3 ] ]\n\n- Expected\n+ Received\n\n  [\n-   [],\n    [\n      1,\n      2,\n+   ],\n+   [\n      3,\n    ],\n  ]\n\n ❯ packages/remeda/src/split.followup.test.ts:1:137\n      1| import {test,expect} from 'vitest';import {splitAt} from './index';tes…\n       |                                                                                                                                         ^\n      2| \n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯\n\n"
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1779.3858130000008,
+          "stdout": "\n> remeda@2.0.0 typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"packages/remeda/src/split.followup.test.ts\"]\n",
           "stderr": ""
         }
       ]

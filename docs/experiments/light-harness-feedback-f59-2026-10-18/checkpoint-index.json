@@ -1,0 +1,12 @@
+{
+  "protocolHash": "8f8d89f29fbe36285f2ea06f0b728bbd2047276fa3a13dc02a7fc40a78a08891",
+  "completed": 1,
+  "planned": 18,
+  "receipts": [
+    {
+      "name": "1-suffix-counts-reference",
+      "sha256": "459e5673cecdad84021685d2ea4e6323ecf64665185b799d9c8875bf1b1844a5"
+    }
+  ],
+  "note": "Derived index. Each immutable archive is independently verified; no model call is replayed."
+}
