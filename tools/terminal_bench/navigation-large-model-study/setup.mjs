@@ -4,12 +4,14 @@ import {join,resolve} from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {prepareIsolatedNodeEnvironment} from '../isolated-node-environment.mjs';
 import {tasks} from './tasks.mjs';
-export const repo=resolve(import.meta.dirname,'../../..'),work='/tmp/blame-navigation-large-f53';
+export const repo=resolve(import.meta.dirname,'../../..'),work='/workspace/blame-study-runs/navigation-large-f53';
 export const study=join(repo,'docs/experiments/light-harness-navigation-large-f53-2026-10-18');
 export const dependencyRoot=join(repo,'.blame/research/validation-scope-f44/dependencies');
 export const sourceArchive=join(repo,'docs/experiments/light-harness-confirmation-f42-2026-10-17/inputs/remeda.tar.gz');
 export const sha=x=>createHash('sha256').update(x).digest('hex');
-export const json=p=>readFile(p,'utf8').then(JSON.parse),save=(p,v)=>writeFile(p,JSON.stringify(v,null,2)+'\n');
+export const json=p=>readFile(p,'utf8').then(JSON.parse);
+import {atomicJson} from '../durable-campaign.mjs';
+export const save=atomicJson;
 export const sourceRoot=()=> 'packages/remeda/src';
 export async function prepare(root,id,isolated=false){
  const task=tasks.find(t=>t.id===id);if(!task)throw Error('Unknown task '+id);

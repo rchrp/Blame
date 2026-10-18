@@ -1,0 +1,5 @@
+# F55 symbolic discovery after interrupted F52
+
+Known F50/F52 tasks with explicit direct tierCost normalization, two rotated repeats, three arms, 18 assignments. This separate post-interruption campaign does not replace missing F52 results or count as fresh confirmation. Both Light arms expose the same analyze schema and share the Math-capable engine; only BLAME_AGENT_SYMBOLIC_HINTS differs. No forced use or supplied assertion. Integrated Cline has the same ordinary solver access. Durable checkpoints and conservative F52 cost allowances are required before launch.
+
+Run controls, measurement preflight, snapshot, environment smoke and freeze before model requests; bind then commit registration. Run sequential workers without concurrent builds/tests/solver studies. Review immutable source/delivery, property relevance and actual witness tests before publish/verify/replay. Preserve all outcomes, missing receipts, unknown analyses and overhead. Leave default symbolic exposure off without a supported mechanism/quality/resource benefit.

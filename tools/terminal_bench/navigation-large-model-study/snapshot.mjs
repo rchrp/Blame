@@ -7,7 +7,7 @@ for(const arm of ['current','reference'])for(const name of ['agent-runtime','ben
  if(name==='agent-runtime')await symlink(join(source,'node_modules'),join(target,'node_modules'));
  else{await mkdir(join(target,'node_modules/@blame'),{recursive:true});await symlink(join(frozen,arm,'agent-runtime'),join(target,'node_modules/@blame/agent-runtime'));}
 }
-const old='/tmp/blame-symbolic-model-f50/frozen/current/agent-runtime/dist/harness';
+const old='/workspace/blame-study-runs/f50-restored/current/agent-runtime/dist/harness';
 for(const name of ['light-edit','light-reference-search'])for(const suffix of ['.js'])await cp(join(old,name+suffix),join(frozen,'reference/agent-runtime/dist/harness',name+suffix));
 const files={};for(const e of await readdir(frozen,{recursive:true,withFileTypes:true}))if(e.isFile()){const p=join(e.parentPath,e.name);files[relative(frozen,p)]=sha(await readFile(p));}
 const differences=[];for(const [p,h]of Object.entries(files))if(p.startsWith('current/')&&files['reference/'+p.slice(8)]!==h)differences.push(p.slice(8));

@@ -1,0 +1,53 @@
+diff --git a/apps/policy/src/tiers.ts b/apps/policy/src/tiers.ts
+index a354ff5..2f20a0b 100644
+--- a/apps/policy/src/tiers.ts
++++ b/apps/policy/src/tiers.ts
+@@ -1,6 +1,4 @@
+-import {lowerTierUnits,upperTierUnits} from '../../../packages/tiers/src/index.ts';
++import {lowerTierUnits,upperTierUnits,tierCost} from '../../../packages/tiers/src/index.ts';
+ export function quoteTierUsage(first:number,last:number,boundary:number,lowerRate:number,upperRate:number) {
+- const lower=lowerTierUnits(first,last,boundary);
+- const upper=upperTierUnits(first,last,boundary);
+- return {lower,upper,totalCost:lower*lowerRate};
++ const lower=lowerTierUnits(first,last,boundary);const upper=upperTierUnits(first,last,boundary);return {lower,upper,totalCost:tierCost(lower,upper,lowerRate,upperRate)};
+ }
+diff --git a/packages/tiers/src/cost.ts b/packages/tiers/src/cost.ts
+index 16b7685..c13dff1 100644
+--- a/packages/tiers/src/cost.ts
++++ b/packages/tiers/src/cost.ts
+@@ -1,3 +1,3 @@
+ export function tierCost(lowerUnits:number,upperUnits:number,lowerRate:number,upperRate:number):number {
+- return lowerUnits*lowerRate+upperUnits*upperRate;
++ const normalizedLowerRate=lowerRate>0?lowerRate:0;const normalizedUpperRate=upperRate>0?upperRate:0;return lowerUnits*normalizedLowerRate+upperUnits*normalizedUpperRate;
+ }
+diff --git a/packages/tiers/src/lower.ts b/packages/tiers/src/lower.ts
+index e8ccf24..892b574 100644
+--- a/packages/tiers/src/lower.ts
++++ b/packages/tiers/src/lower.ts
+@@ -1,5 +1,3 @@
+ export function lowerTierUnits(first:number,last:number,boundary:number):number {
+- if(first>last)return 0;
+- const lowerEnd=last<boundary?last:boundary;
+- return lowerEnd>=first?lowerEnd-first:0;
++ if(first>last)return 0;const lowerEnd=last<boundary?last:boundary;return lowerEnd>=first?lowerEnd-first+1:0;
+ }
+diff --git a/packages/tiers/src/upper.ts b/packages/tiers/src/upper.ts
+index 0d7cf22..4fc9374 100644
+--- a/packages/tiers/src/upper.ts
++++ b/packages/tiers/src/upper.ts
+@@ -1,5 +1,3 @@
+ export function upperTierUnits(first:number,last:number,boundary:number):number {
+- if(first>last)return 0;
+- const upperStart=first>boundary?first:boundary;
+- return last>=upperStart?last-upperStart+1:0;
++ if(first>last)return 0;const upperStart=first>boundary?first:boundary+1;return last>=upperStart?last-upperStart+1:0;
+ }
+diff --git a/packages/tiers/src/inclusive.test.ts b/packages/tiers/src/inclusive.test.ts
+new file mode 100644
+index 0000000..ae88ae6
+--- /dev/null
++++ b/packages/tiers/src/inclusive.test.ts
+@@ -0,0 +1,3 @@
++import {test,expect} from 'vitest';
++import {quoteTierUsage} from '../../../apps/policy/src/tiers.ts';
++test('tier boundary belongs only to lower tier',()=>{expect(quoteTierUsage(-1,1,0,2,5)).toEqual({lower:2,upper:1,totalCost:9});});

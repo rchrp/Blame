@@ -1,3 +1,4 @@
+import {DurableCampaign, atomicWrite} from '../durable-campaign.mjs';
 // F53 optional Z3 reasoning exposure: same runtime, one Light feature flag.
 // Research setup/grading are outside the measured model worker.
 import assert from 'node:assert/strict';
@@ -17,6 +18,7 @@ import {check,checkNames} from './checks.mjs';
 
 const protocol = await json(join(study, 'protocol.json'));
 const campaign = join(work, 'campaign');
+const storage = new DurableCampaign({campaign, study, protocol, protocolHash: sha(await readFile(join(study,'protocol.json')))});
 const git = (args, cwd) => execFileSync('git', args, { cwd, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 });
 export async function fileTree(root) {
   const files = (await readdir(root, { recursive: true, withFileTypes: true })).filter(entry => entry.isFile())
@@ -25,7 +27,7 @@ export async function fileTree(root) {
 }
 async function bindings() {
   const files = {};
-  for (const path of protocol.boundScripts) files[path] = sha(await readFile(join(repo,path)));
+  for (const path of [...protocol.boundScripts,'tools/terminal_bench/durable-campaign.mjs']) files[path] = sha(await readFile(join(repo,path)));
   files['isolated-node-environment.mjs'] = sha(await readFile(join(import.meta.dirname,'../isolated-node-environment.mjs')));
   for (const root of [join(work, 'frozen'), join(work, 'dependencies/node_modules')])
     files[relative(repo, root)] = await fileTree(root);
@@ -60,7 +62,7 @@ export async function score(directory, task) {
   const protectedPaths = paths.filter(path => !/^packages\/remeda\/src\/.+\.ts$/.test(path) || originalTests.has(path));
   // Reconstruct endpoint against original checks in a fresh tree. Never repair
   // model source or copy an oracle solution back into the agent workspace.
-  const audit = join(directory, 'independent-endpoint'); await prepare(audit, task);
+  const audit = join(directory, 'independent-endpoint'); await rm(audit,{recursive:true,force:true}); await prepare(audit, task);
   let diff = git(['diff', '--binary', inputCommit], workspace);
   for (const path of git(['ls-files', '--others', '--exclude-standard', '-z'], workspace).split('\0').filter(Boolean)) {
     const extra = spawnSync('git', ['diff', '--no-index', '--binary', '--', '/dev/null', path], { cwd: workspace, encoding: 'utf8' });
@@ -77,6 +79,11 @@ export async function score(directory, task) {
   const addedTests=paths.filter(p=>/^(?:packages|apps)\//.test(p)&&/\.(?:test|spec)\.ts$/.test(p)&&spawnSync('git',['cat-file','-e',inputCommit+':'+p],{cwd:workspace,stdio:'ignore'}).status!==0);
   return { changedPaths: paths, protectedPaths, checks, deliveredChecks, addedTests, independentFunctionalSuccess: protectedPaths.length === 0 && checks.every(result => result.exitCode === 0),
     sourceHashes: Object.fromEntries(await Promise.all(paths.map(async path => [path, await readFile(join(workspace, path)).then(sha, () => null)]))) };
+}
+async function endpointIdentity(directory) {
+  const workspace=join(directory,'workspace'),inputCommit=(await readFile(join(directory,'input-commit.txt'),'utf8')).trim();
+  const paths=[...new Set([...git(['ls-tree','-r','--name-only','-z',inputCommit],workspace).split('\0'),...git(['ls-files','-z'],workspace).split('\0'),...git(['ls-files','--others','--exclude-standard','-z'],workspace).split('\0')].filter(Boolean))].sort();
+  return {inputCommit,files:Object.fromEntries(await Promise.all(paths.map(async path=>[path,await readFile(join(workspace,path)).then(sha,e=>{if(e.code==='ENOENT')return null;throw e;})])))};
 }
 async function execute(directory, slot, task) {
   const runtime = protocol.runtimeByArm[slot.arm];
@@ -180,23 +187,36 @@ async function run() {
   await verifyBindings();
   const protocolPath = relative(repo, join(study, 'protocol.json'));
   assert.equal(git(['show', `HEAD:${protocolPath}`], repo), await readFile(join(study, 'protocol.json'), 'utf8'), 'Protocol must be committed before model launch');
-  await mkdir(campaign); const rows = [], wireByTrial = {};
-  await save(join(campaign, 'provenance.json'), { protocolSha256: sha(await readFile(join(study, 'protocol.json'))), startedAtUTC: new Date().toISOString(), order: protocol.order });
+  const {rows, wireByTrial} = await storage.restoreCompleted();
+  const previousRows = new Set(rows.map(row=>row.name));
+  assert.ok(rows.every(row=>row.contract.passed&&(row.contract.forwarded>0||row.officialRuntimeSuccess)),'A recorded contract stop requires inspection; resume must not bypass it');
+  if(!await readFile(join(campaign,'provenance.json')).then(()=>true,e=>{if(e.code==='ENOENT')return false;throw e;})) await save(join(campaign, 'provenance.json'), { protocolSha256: sha(await readFile(join(study, 'protocol.json'))), startedAtUTC: new Date().toISOString(), order: protocol.order });
+  await save(join(campaign,'analysis.json'),{planned:protocol.order.length,rows});
   const prior = await json(join(study, 'prior-budget.json')); let accounting = reserveTrialCosts(rows, wireByTrial, protocol.budgets);
   for (const slot of protocol.order) {
+    if(previousRows.has(`${slot.repeat}-${slot.task}-${slot.arm}`)) continue;
     if (await readFile(join(work, 'pause-before-next-trial')).then(() => true, error => { if (error.code === 'ENOENT') return false; throw error; })) {
       await save(join(campaign, 'administrative-pause.json'), { nextSlot: slot, modelRetried: false }); break;
     }
+    await verifyBindings(); const task = protocol.tasks.find(task => task.id === slot.task);
+    const name = `${slot.repeat}-${slot.task}-${slot.arm}`, state=await storage.inspect(slot), directory=state.directory;
     const reserve = protocol.budgets.perTrialSdkCostLimitUsd + protocol.budgets.requestOvershootReserveUsd;
-    if (accounting.accountedUsd + reserve > protocol.budgets.panelObservedCostStopUsd || prior.accountedUsd + accounting.accountedUsd + reserve > protocol.budgets.sharedStudyObservedCostStopUsd) {
+    if (state.state==='unstarted'&&(accounting.accountedUsd + reserve > protocol.budgets.panelObservedCostStopUsd || prior.accountedUsd + accounting.accountedUsd + reserve > protocol.budgets.sharedStudyObservedCostStopUsd)) {
       await save(join(campaign, 'budget-stop.json'), { slot, accounting, prior, reserve }); break;
     }
-    await verifyBindings(); const task = protocol.tasks.find(task => task.id === slot.task);
-    const name = `${slot.repeat}-${slot.task}-${slot.arm}`, directory = join(campaign, name); await mkdir(directory);
-    await prepare(join(directory, 'workspace'), task.id, true); await writeFile(join(directory,'input-commit.txt'),git(['rev-parse','HEAD'],join(directory,'workspace'))); await writeFile(join(directory, 'instruction.txt'), task.instruction);
-    await save(join(directory, 'required-checks.json'), task.requiredChecks);
-    console.log('START', name); await save(join(directory, 'model-start.json'), { slot, startedAtUTC: new Date().toISOString() });
-    const exit = await execute(directory, slot, task); await save(join(directory, 'model-exit.json'), exit);
+    let exit;
+    if(state.state==='finalize') {console.log('FINALIZE_WITHOUT_MODEL',name); exit=await json(join(directory,'model-exit.json'));}
+    else {
+      assert.equal(state.state,'unstarted');
+      // No model-start record exists: incomplete preparation can safely be recreated.
+      await rm(directory,{recursive:true,force:true}); await mkdir(directory);
+      await prepare(join(directory,'workspace'),task.id,true);
+      await atomicWrite(join(directory,'input-commit.txt'),git(['rev-parse','HEAD'],join(directory,'workspace')));
+      await atomicWrite(join(directory,'instruction.txt'),task.instruction); await save(join(directory,'required-checks.json'),task.requiredChecks);
+      await storage.begin(slot); console.log('START',name);
+      exit=await execute(directory,slot,task); await save(join(directory,'endpoint-manifest.json'),await endpointIdentity(directory)); await save(join(directory,'model-exit.json'),exit);
+    }
+    assert.deepEqual(await endpointIdentity(directory),await json(join(directory,'endpoint-manifest.json')),'Source changed after recorded model exit');
     const grade = await score(directory, task.id);
     const environment = await json(join(directory,'environment.json'));
     grade.dependencyIntegrity = compareDependencyManifests(environment.manifest,await dependencyManifest(join(directory,'workspace/node_modules')));
@@ -208,6 +228,7 @@ async function run() {
     // Release extracted fixture inodes only after a successful archive and grade.
     execFileSync('tar', ['-czf', join(directory, 'workspace.tar.gz'), '--exclude=workspace/node_modules', '-C', directory, 'workspace']);
     await save(join(directory, 'workspace-archive.json'), { sha256: sha(await readFile(join(directory, 'workspace.tar.gz'))), includesJournal: true });
+    await storage.checkpoint(row,wire); await storage.restoreCompleted();
     await rm(join(directory, 'workspace'), { recursive: true, force: true });
     await rm(join(directory, 'independent-endpoint'), { recursive: true, force: true });
     await rm(join(directory,'npm-cache'),{recursive:true,force:true});
@@ -218,4 +239,4 @@ async function run() {
     observedSdkUsd: accounting.observedUsd, newReservedUsd: accounting.reservedUsd, cumulativeAccountedUsd: prior.accountedUsd + accounting.accountedUsd });
 }
 if (process.argv[2] === 'bind') { await save(join(study, 'execution-bindings.json'), await bindings()); console.log('Frozen bindings written; no model requests.'); }
-else if (process.argv[2] === 'run') await run();
+else if (['run','resume'].includes(process.argv[2])) {await storage.acquire();try{await run();}finally{await storage.release();}}

@@ -1,0 +1,46 @@
+diff --git a/apps/policy/src/debit.ts b/apps/policy/src/debit.ts
+index 343eb06..eb9163e 100644
+--- a/apps/policy/src/debit.ts
++++ b/apps/policy/src/debit.ts
+@@ -1,5 +1,4 @@
+-import {approveDebit} from '../../../packages/credit/src/index.ts';
++import {availableCredit,approveDebit} from '../../../packages/credit/src/index.ts';
+ export function quoteDebit(balance:number,reserved:number,limit:number,requested:number) {
+- const approved=approveDebit(balance,reserved,limit,requested);
+- return {approved,remaining:limit-approved,denied:requested-approved};
++ const approved=approveDebit(balance,reserved,limit,requested);const available=availableCredit(balance,reserved,limit);const demand=requested>0?requested:0;return {approved,remaining:available-approved,denied:demand-approved};
+ }
+diff --git a/packages/credit/src/allocation.ts b/packages/credit/src/allocation.ts
+index 91982b7..e7883c2 100644
+--- a/packages/credit/src/allocation.ts
++++ b/packages/credit/src/allocation.ts
+@@ -1,5 +1,4 @@
+ import {availableCredit} from './remainder.ts';
+ export function approveDebit(balance:number,reserved:number,limit:number,requested:number):number {
+- const available=availableCredit(balance,reserved,limit);
+- return requested<available?requested:available;
++ const demand=requested>0?requested:0;const available=availableCredit(balance,reserved,limit);return demand<available?demand:available;
+ }
+diff --git a/packages/credit/src/remainder.ts b/packages/credit/src/remainder.ts
+index 0ad584b..d949bcb 100644
+--- a/packages/credit/src/remainder.ts
++++ b/packages/credit/src/remainder.ts
+@@ -1,4 +1,7 @@
+ export function availableCredit(balance:number,reserved:number,limit:number):number {
+- const remainder=limit-balance-reserved;
+- return remainder;
++ const normalizedLimit=limit>0?limit:0;
++ const normalizedBalance=balance>0?balance:0;
++ const normalizedReserved=reserved>0?reserved:0;
++ const remainder=normalizedLimit-normalizedBalance-normalizedReserved;
++ return remainder>0?remainder:0;
+ }
+diff --git a/packages/credit/src/reservation.test.ts b/packages/credit/src/reservation.test.ts
+new file mode 100644
+index 0000000..e3a3a1e
+--- /dev/null
++++ b/packages/credit/src/reservation.test.ts
+@@ -0,0 +1,3 @@
++import {test,expect} from 'vitest';
++import {quoteDebit} from '../../../apps/policy/src/debit.ts';
++test('negative values normalize and reservation remains accounted',()=>{expect(quoteDebit(-3,5,10,20)).toEqual({approved:5,remaining:0,denied:15});});

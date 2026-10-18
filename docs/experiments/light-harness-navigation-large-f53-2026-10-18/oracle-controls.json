@@ -3,7 +3,7 @@
   "modelRequests": 0,
   "method": "Pristine inputs preserve regression success but fail requested behavior; independent positive controls satisfy all checks; semantic mutations preserve original regression tests and are rejected by the hidden oracle. No control solution enters model workspaces.",
   "scriptHashes": {
-    "setup.mjs": "bc9a88f55e80c57a944234154d2387635c99b9e34d10254d530210f3016caf51",
+    "setup.mjs": "e6038f8eef63fb66655183529aacaa2193f7efc9df9f7416cb06d2135a90eac6",
     "tasks.mjs": "9fa35908b83f5427bbb53f482d94172456c8cb89b1e7b5656ad59190e7407355",
     "delivered.mjs": "d2b1f64a302c33fabd16783caf8dc8e5146e03f85603bf89f4798696ab3b5b33",
     "oracle.mjs": "532dc5f5417e0187557eea090a1648a31f987537d133ba11fd1f29cec61825f4",
@@ -24,8 +24,8 @@
           "exitCode": 0,
           "signal": null,
           "error": null,
-          "durationMs": 898.2521110000001,
-          "stdout": "\n> remeda@2.0.0 test:study:regression\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /tmp/blame-navigation-large-f53/controls/suffix-counts\n\n ✓ packages/remeda/src/takeLast.test.ts (7 tests) 6ms\n ✓ packages/remeda/src/dropLast.test.ts (7 tests) 3ms\n\n Test Files  2 passed (2)\n      Tests  14 passed (14)\n   Start at  00:15:22\n   Duration  411ms (transform 50ms, setup 0ms, collect 60ms, tests 9ms, environment 0ms, prepare 108ms)\n\n",
+          "durationMs": 788.096708,
+          "stdout": "\n> remeda@2.0.0 test:study:regression\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-large-f53/controls/suffix-counts\n\n ✓ packages/remeda/src/takeLast.test.ts (7 tests) 4ms\n ✓ packages/remeda/src/dropLast.test.ts (7 tests) 4ms\n\n Test Files  2 passed (2)\n      Tests  14 passed (14)\n   Start at  10:45:27\n   Duration  371ms (transform 44ms, setup 0ms, collect 56ms, tests 8ms, environment 0ms, prepare 98ms)\n\n",
           "stderr": ""
         },
         {
@@ -33,15 +33,15 @@
           "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
           "argv": [
             "--import",
-            "/tmp/blame-navigation-large-f53/controls/suffix-counts/node_modules/tsx/dist/loader.mjs",
+            "/workspace/blame-study-runs/navigation-large-f53/controls/suffix-counts/node_modules/tsx/dist/loader.mjs",
             "/workspace/Blame/tools/terminal_bench/navigation-large-model-study/oracle.mjs",
-            "/tmp/blame-navigation-large-f53/controls/suffix-counts",
+            "/workspace/blame-study-runs/navigation-large-f53/controls/suffix-counts",
             "suffix-counts"
           ],
           "exitCode": 1,
           "signal": null,
           "error": null,
-          "durationMs": 878.855499,
+          "durationMs": 474.24231799999995,
           "stdout": "",
           "stderr": "node:internal/modules/run_main:107\n    triggerUncaughtException(\n    ^\n\nAssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n\n+ [\n+   0\n+ ]\n- []\n\n    at equal (/workspace/Blame/tools/terminal_bench/navigation-large-model-study/oracle.mjs:4:28)\n    at <anonymous> (/workspace/Blame/tools/terminal_bench/navigation-large-model-study/oracle.mjs:9:94) {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: [ 0 ],\n  expected: [],\n  operator: 'deepStrictEqual',\n  diff: 'simple'\n}\n\nNode.js v24.19.0\n"
         },
@@ -55,7 +55,7 @@
           "exitCode": 0,
           "signal": null,
           "error": null,
-          "durationMs": 2127.0508929999996,
+          "durationMs": 1765.338631,
           "stdout": "\n> remeda@2.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
           "stderr": ""
         },
@@ -69,7 +69,7 @@
           "exitCode": 1,
           "signal": null,
           "error": null,
-          "durationMs": 194.69016200000033,
+          "durationMs": 130.16506299999992,
           "stdout": "\n> remeda@2.0.0 test:study:delivered\n> node .study/delivered.mjs runtime\n\n",
           "stderr": "A new test file is required\n"
         },
@@ -83,7 +83,7 @@
           "exitCode": 1,
           "signal": null,
           "error": null,
-          "durationMs": 175.90047400000003,
+          "durationMs": 128.39518399999997,
           "stdout": "\n> remeda@2.0.0 typecheck:delivered\n> node .study/delivered.mjs types\n\n",
           "stderr": "A new test file is required\n"
         }
@@ -99,8 +99,8 @@
           "exitCode": 0,
           "signal": null,
           "error": null,
-          "durationMs": 961.8726150000002,
-          "stdout": "\n> remeda@2.0.0 test:study:regression\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /tmp/blame-navigation-large-f53/controls/suffix-counts\n\n ✓ packages/remeda/src/takeLast.test.ts (7 tests) 4ms\n ✓ packages/remeda/src/dropLast.test.ts (7 tests) 3ms\n\n Test Files  2 passed (2)\n      Tests  14 passed (14)\n   Start at  00:15:26\n   Duration  427ms (transform 57ms, setup 0ms, collect 70ms, tests 8ms, environment 0ms, prepare 109ms)\n\n",
+          "durationMs": 798.3078390000001,
+          "stdout": "\n> remeda@2.0.0 test:study:regression\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-large-f53/controls/suffix-counts\n\n ✓ packages/remeda/src/takeLast.test.ts (7 tests) 4ms\n ✓ packages/remeda/src/dropLast.test.ts (7 tests) 4ms\n\n Test Files  2 passed (2)\n      Tests  14 passed (14)\n   Start at  10:45:30\n   Duration  385ms (transform 48ms, setup 0ms, collect 57ms, tests 8ms, environment 0ms, prepare 104ms)\n\n",
           "stderr": ""
         },
         {
@@ -108,15 +108,15 @@
           "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
           "argv": [
             "--import",
-            "/tmp/blame-navigation-large-f53/controls/suffix-counts/node_modules/tsx/dist/loader.mjs",
+            "/workspace/blame-study-runs/navigation-large-f53/controls/suffix-counts/node_modules/tsx/dist/loader.mjs",
             "/workspace/Blame/tools/terminal_bench/navigation-large-model-study/oracle.mjs",
-            "/tmp/blame-navigation-large-f53/controls/suffix-counts",
+            "/workspace/blame-study-runs/navigation-large-f53/controls/suffix-counts",
             "suffix-counts"
           ],
           "exitCode": 0,
           "signal": null,
           "error": null,
-          "durationMs": 2228.5991569999996,
+          "durationMs": 1981.044852,
           "stdout": "Finite behavioral/public types passed suffix-counts 714\n",
           "stderr": ""
         },
@@ -130,7 +130,7 @@
           "exitCode": 0,
           "signal": null,
           "error": null,
-          "durationMs": 1784.2960059999996,
+          "durationMs": 1656.7493290000002,
           "stdout": "\n> remeda@2.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
           "stderr": ""
         },
@@ -144,8 +144,8 @@
           "exitCode": 0,
           "signal": null,
           "error": null,
-          "durationMs": 1986.0914190000003,
-          "stdout": "\n> remeda@2.0.0 test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"packages/remeda/src/suffix.followup.test.ts\"]\n\n RUN  v3.2.4 /tmp/blame-navigation-large-f53/controls/suffix-counts\n\n ✓ packages/remeda/src/takeLast.test.ts (7 tests) 3ms\n ✓ packages/remeda/src/dropLast.test.ts (7 tests) 4ms\n ✓ packages/remeda/src/suffix.followup.test.ts (1 test) 2ms\n\n Test Files  3 passed (3)\n      Tests  15 passed (15)\n   Start at  00:15:31\n   Duration  1.46s (transform 598ms, setup 0ms, collect 929ms, tests 10ms, environment 0ms, prepare 167ms)\n\n",
+          "durationMs": 1526.6429940000007,
+          "stdout": "\n> remeda@2.0.0 test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"packages/remeda/src/suffix.followup.test.ts\"]\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-large-f53/controls/suffix-counts\n\n ✓ packages/remeda/src/takeLast.test.ts (7 tests) 7ms\n ✓ packages/remeda/src/dropLast.test.ts (7 tests) 4ms\n ✓ packages/remeda/src/suffix.followup.test.ts (1 test) 2ms\n\n Test Files  3 passed (3)\n      Tests  15 passed (15)\n   Start at  10:45:35\n   Duration  1.09s (transform 416ms, setup 0ms, collect 632ms, tests 13ms, environment 0ms, prepare 144ms)\n\n",
           "stderr": ""
         },
         {
@@ -158,7 +158,7 @@
           "exitCode": 0,
           "signal": null,
           "error": null,
-          "durationMs": 2073.4080589999994,
+          "durationMs": 1885.6056719999997,
           "stdout": "\n> remeda@2.0.0 typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"packages/remeda/src/suffix.followup.test.ts\"]\n",
           "stderr": ""
         }
@@ -174,8 +174,8 @@
           "exitCode": 0,
           "signal": null,
           "error": null,
-          "durationMs": 910.6961840000004,
-          "stdout": "\n> remeda@2.0.0 test:study:regression\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /tmp/blame-navigation-large-f53/controls/suffix-counts\n\n ✓ packages/remeda/src/takeLast.test.ts (7 tests) 3ms\n ✓ packages/remeda/src/dropLast.test.ts (7 tests) 4ms\n\n Test Files  2 passed (2)\n      Tests  14 passed (14)\n   Start at  00:15:35\n   Duration  465ms (transform 67ms, setup 0ms, collect 71ms, tests 8ms, environment 0ms, prepare 124ms)\n\n",
+          "durationMs": 860.434392000001,
+          "stdout": "\n> remeda@2.0.0 test:study:regression\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-large-f53/controls/suffix-counts\n\n ✓ packages/remeda/src/takeLast.test.ts (7 tests) 4ms\n ✓ packages/remeda/src/dropLast.test.ts (7 tests) 4ms\n\n Test Files  2 passed (2)\n      Tests  14 passed (14)\n   Start at  10:45:38\n   Duration  386ms (transform 43ms, setup 0ms, collect 53ms, tests 8ms, environment 0ms, prepare 104ms)\n\n",
           "stderr": ""
         },
         {
@@ -183,15 +183,15 @@
           "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
           "argv": [
             "--import",
-            "/tmp/blame-navigation-large-f53/controls/suffix-counts/node_modules/tsx/dist/loader.mjs",
+            "/workspace/blame-study-runs/navigation-large-f53/controls/suffix-counts/node_modules/tsx/dist/loader.mjs",
             "/workspace/Blame/tools/terminal_bench/navigation-large-model-study/oracle.mjs",
-            "/tmp/blame-navigation-large-f53/controls/suffix-counts",
+            "/workspace/blame-study-runs/navigation-large-f53/controls/suffix-counts",
             "suffix-counts"
           ],
           "exitCode": 1,
           "signal": null,
           "error": null,
-          "durationMs": 488.2530209999986,
+          "durationMs": 289.6712690000004,
           "stdout": "",
           "stderr": "node:internal/modules/run_main:107\n    triggerUncaughtException(\n    ^\n\nAssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n\n+ [\n+   0\n+ ]\n- []\n\n    at equal (/workspace/Blame/tools/terminal_bench/navigation-large-model-study/oracle.mjs:4:28)\n    at <anonymous> (/workspace/Blame/tools/terminal_bench/navigation-large-model-study/oracle.mjs:9:94) {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: [ 0 ],\n  expected: [],\n  operator: 'deepStrictEqual',\n  diff: 'simple'\n}\n\nNode.js v24.19.0\n"
         },
@@ -205,7 +205,7 @@
           "exitCode": 0,
           "signal": null,
           "error": null,
-          "durationMs": 2025.0935499999978,
+          "durationMs": 1687.7990950000003,
           "stdout": "\n> remeda@2.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
           "stderr": ""
         },
@@ -219,8 +219,8 @@
           "exitCode": 1,
           "signal": null,
           "error": null,
-          "durationMs": 1702.6021760000003,
-          "stdout": "\n> remeda@2.0.0 test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"packages/remeda/src/suffix.followup.test.ts\"]\n\n RUN  v3.2.4 /tmp/blame-navigation-large-f53/controls/suffix-counts\n\n ✓ packages/remeda/src/takeLast.test.ts (7 tests) 5ms\n ✓ packages/remeda/src/dropLast.test.ts (7 tests) 4ms\n ❯ packages/remeda/src/suffix.followup.test.ts (1 test | 1 failed) 8ms\n   × floor counts 8ms\n     → expected [ 2, 3 ] to deeply equal [ 3 ]\n\n Test Files  1 failed | 2 passed (3)\n      Tests  1 failed | 14 passed (15)\n   Start at  00:15:38\n   Duration  1.21s (transform 458ms, setup 0ms, collect 679ms, tests 17ms, environment 0ms, prepare 162ms)\n\n",
+          "durationMs": 1505.1862899999996,
+          "stdout": "\n> remeda@2.0.0 test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"packages/remeda/src/suffix.followup.test.ts\"]\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-large-f53/controls/suffix-counts\n\n ✓ packages/remeda/src/takeLast.test.ts (7 tests) 3ms\n ✓ packages/remeda/src/dropLast.test.ts (7 tests) 3ms\n ❯ packages/remeda/src/suffix.followup.test.ts (1 test | 1 failed) 7ms\n   × floor counts 7ms\n     → expected [ 2, 3 ] to deeply equal [ 3 ]\n\n Test Files  1 failed | 2 passed (3)\n      Tests  1 failed | 14 passed (15)\n   Start at  10:45:41\n   Duration  1.05s (transform 385ms, setup 0ms, collect 585ms, tests 14ms, environment 0ms, prepare 142ms)\n\n",
           "stderr": "\n⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯\n\n FAIL  packages/remeda/src/suffix.followup.test.ts > floor counts\nAssertionError: expected [ 2, 3 ] to deeply equal [ 3 ]\n\n- Expected\n+ Received\n\n  [\n+   2,\n    3,\n  ]\n\n ❯ packages/remeda/src/suffix.followup.test.ts:1:133\n      1| import {test,expect} from 'vitest';import {takeLast,dropLast} from './…\n       |                                                                                                                                     ^\n      2| \n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯\n\n"
         },
         {
@@ -233,7 +233,7 @@
           "exitCode": 0,
           "signal": null,
           "error": null,
-          "durationMs": 2106.771402000002,
+          "durationMs": 1831.3051969999997,
           "stdout": "\n> remeda@2.0.0 typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"packages/remeda/src/suffix.followup.test.ts\"]\n",
           "stderr": ""
         }
@@ -252,8 +252,8 @@
           "exitCode": 0,
           "signal": null,
           "error": null,
-          "durationMs": 627.8938239999989,
-          "stdout": "\n> remeda@2.0.0 test:study:regression\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /tmp/blame-navigation-large-f53/controls/reversed-clamp\n\n ✓ packages/remeda/src/clamp.test.ts (3 tests) 3ms\n\n Test Files  1 passed (1)\n      Tests  3 passed (3)\n   Start at  00:15:42\n   Duration  218ms (transform 35ms, setup 0ms, collect 31ms, tests 3ms, environment 0ms, prepare 58ms)\n\n",
+          "durationMs": 595.2066310000009,
+          "stdout": "\n> remeda@2.0.0 test:study:regression\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-large-f53/controls/reversed-clamp\n\n ✓ packages/remeda/src/clamp.test.ts (3 tests) 2ms\n\n Test Files  1 passed (1)\n      Tests  3 passed (3)\n   Start at  10:45:45\n   Duration  193ms (transform 33ms, setup 0ms, collect 31ms, tests 2ms, environment 0ms, prepare 51ms)\n\n",
           "stderr": ""
         },
         {
@@ -261,15 +261,15 @@
           "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
           "argv": [
             "--import",
-            "/tmp/blame-navigation-large-f53/controls/reversed-clamp/node_modules/tsx/dist/loader.mjs",
+            "/workspace/blame-study-runs/navigation-large-f53/controls/reversed-clamp/node_modules/tsx/dist/loader.mjs",
             "/workspace/Blame/tools/terminal_bench/navigation-large-model-study/oracle.mjs",
-            "/tmp/blame-navigation-large-f53/controls/reversed-clamp",
+            "/workspace/blame-study-runs/navigation-large-f53/controls/reversed-clamp",
             "reversed-clamp"
           ],
           "exitCode": 1,
           "signal": null,
           "error": null,
-          "durationMs": 726.8657029999995,
+          "durationMs": 479.8488070000021,
           "stdout": "",
           "stderr": "node:internal/modules/run_main:107\n    triggerUncaughtException(\n    ^\n\nAssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n\n-1 !== -5\n\n    at equal (/workspace/Blame/tools/terminal_bench/navigation-large-model-study/oracle.mjs:4:28)\n    at <anonymous> (/workspace/Blame/tools/terminal_bench/navigation-large-model-study/oracle.mjs:16:87) {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: -1,\n  expected: -5,\n  operator: 'deepStrictEqual',\n  diff: 'simple'\n}\n\nNode.js v24.19.0\n"
         },
@@ -283,7 +283,7 @@
           "exitCode": 0,
           "signal": null,
           "error": null,
-          "durationMs": 1676.8847739999983,
+          "durationMs": 1612.3040060000021,
           "stdout": "\n> remeda@2.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
           "stderr": ""
         },
@@ -297,7 +297,7 @@
           "exitCode": 1,
           "signal": null,
           "error": null,
-          "durationMs": 126.7048079999986,
+          "durationMs": 130.94162900000083,
           "stdout": "\n> remeda@2.0.0 test:study:delivered\n> node .study/delivered.mjs runtime\n\n",
           "stderr": "A new test file is required\n"
         },
@@ -311,7 +311,7 @@
           "exitCode": 1,
           "signal": null,
           "error": null,
-          "durationMs": 132.2225499999986,
+          "durationMs": 123.44841000000088,
           "stdout": "\n> remeda@2.0.0 typecheck:delivered\n> node .study/delivered.mjs types\n\n",
           "stderr": "A new test file is required\n"
         }
@@ -327,8 +327,8 @@
           "exitCode": 0,
           "signal": null,
           "error": null,
-          "durationMs": 640.8337050000009,
-          "stdout": "\n> remeda@2.0.0 test:study:regression\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /tmp/blame-navigation-large-f53/controls/reversed-clamp\n\n ✓ packages/remeda/src/clamp.test.ts (3 tests) 3ms\n\n Test Files  1 passed (1)\n      Tests  3 passed (3)\n   Start at  00:15:46\n   Duration  218ms (transform 38ms, setup 0ms, collect 42ms, tests 3ms, environment 0ms, prepare 58ms)\n\n",
+          "durationMs": 572.6513940000004,
+          "stdout": "\n> remeda@2.0.0 test:study:regression\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-large-f53/controls/reversed-clamp\n\n ✓ packages/remeda/src/clamp.test.ts (3 tests) 2ms\n\n Test Files  1 passed (1)\n      Tests  3 passed (3)\n   Start at  10:45:48\n   Duration  181ms (transform 33ms, setup 0ms, collect 32ms, tests 2ms, environment 0ms, prepare 49ms)\n\n",
           "stderr": ""
         },
         {
@@ -336,15 +336,15 @@
           "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
           "argv": [
             "--import",
-            "/tmp/blame-navigation-large-f53/controls/reversed-clamp/node_modules/tsx/dist/loader.mjs",
+            "/workspace/blame-study-runs/navigation-large-f53/controls/reversed-clamp/node_modules/tsx/dist/loader.mjs",
             "/workspace/Blame/tools/terminal_bench/navigation-large-model-study/oracle.mjs",
-            "/tmp/blame-navigation-large-f53/controls/reversed-clamp",
+            "/workspace/blame-study-runs/navigation-large-f53/controls/reversed-clamp",
             "reversed-clamp"
           ],
           "exitCode": 0,
           "signal": null,
           "error": null,
-          "durationMs": 2262.887870999999,
+          "durationMs": 1766.6153279999999,
           "stdout": "Finite behavioral/public types passed reversed-clamp 1947\n",
           "stderr": ""
         },
@@ -358,7 +358,7 @@
           "exitCode": 0,
           "signal": null,
           "error": null,
-          "durationMs": 1708.212072000002,
+          "durationMs": 1698.9956730000013,
           "stdout": "\n> remeda@2.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
           "stderr": ""
         },
@@ -372,8 +372,8 @@
           "exitCode": 0,
           "signal": null,
           "error": null,
-          "durationMs": 1396.403710999999,
-          "stdout": "\n> remeda@2.0.0 test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"packages/remeda/src/clamp.followup.test.ts\"]\n\n RUN  v3.2.4 /tmp/blame-navigation-large-f53/controls/reversed-clamp\n\n ✓ packages/remeda/src/clamp.test.ts (3 tests) 2ms\n ✓ packages/remeda/src/clamp.followup.test.ts (1 test) 2ms\n\n Test Files  2 passed (2)\n      Tests  4 passed (4)\n   Start at  00:15:50\n   Duration  922ms (transform 392ms, setup 0ms, collect 600ms, tests 4ms, environment 0ms, prepare 102ms)\n\n",
+          "durationMs": 1363.0437859999984,
+          "stdout": "\n> remeda@2.0.0 test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"packages/remeda/src/clamp.followup.test.ts\"]\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-large-f53/controls/reversed-clamp\n\n ✓ packages/remeda/src/clamp.test.ts (3 tests) 2ms\n ✓ packages/remeda/src/clamp.followup.test.ts (1 test) 2ms\n\n Test Files  2 passed (2)\n      Tests  4 passed (4)\n   Start at  10:45:52\n   Duration  920ms (transform 395ms, setup 0ms, collect 611ms, tests 4ms, environment 0ms, prepare 103ms)\n\n",
           "stderr": ""
         },
         {
@@ -386,7 +386,7 @@
           "exitCode": 0,
           "signal": null,
           "error": null,
-          "durationMs": 1860.2238700000016,
+          "durationMs": 1823.2508269999998,
           "stdout": "\n> remeda@2.0.0 typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"packages/remeda/src/clamp.followup.test.ts\"]\n",
           "stderr": ""
         }
@@ -402,8 +402,8 @@
           "exitCode": 0,
           "signal": null,
           "error": null,
-          "durationMs": 606.147151000001,
-          "stdout": "\n> remeda@2.0.0 test:study:regression\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /tmp/blame-navigation-large-f53/controls/reversed-clamp\n\n ✓ packages/remeda/src/clamp.test.ts (3 tests) 2ms\n\n Test Files  1 passed (1)\n      Tests  3 passed (3)\n   Start at  00:15:53\n   Duration  197ms (transform 34ms, setup 0ms, collect 31ms, tests 2ms, environment 0ms, prepare 55ms)\n\n",
+          "durationMs": 662.5968399999983,
+          "stdout": "\n> remeda@2.0.0 test:study:regression\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-large-f53/controls/reversed-clamp\n\n ✓ packages/remeda/src/clamp.test.ts (3 tests) 5ms\n\n Test Files  1 passed (1)\n      Tests  3 passed (3)\n   Start at  10:45:55\n   Duration  229ms (transform 38ms, setup 0ms, collect 40ms, tests 5ms, environment 0ms, prepare 55ms)\n\n",
           "stderr": ""
         },
         {
@@ -411,15 +411,15 @@
           "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
           "argv": [
             "--import",
-            "/tmp/blame-navigation-large-f53/controls/reversed-clamp/node_modules/tsx/dist/loader.mjs",
+            "/workspace/blame-study-runs/navigation-large-f53/controls/reversed-clamp/node_modules/tsx/dist/loader.mjs",
             "/workspace/Blame/tools/terminal_bench/navigation-large-model-study/oracle.mjs",
-            "/tmp/blame-navigation-large-f53/controls/reversed-clamp",
+            "/workspace/blame-study-runs/navigation-large-f53/controls/reversed-clamp",
             "reversed-clamp"
           ],
           "exitCode": 1,
           "signal": null,
           "error": null,
-          "durationMs": 486.02668099999573,
+          "durationMs": 262.2201000000023,
           "stdout": "",
           "stderr": "node:internal/modules/run_main:107\n    triggerUncaughtException(\n    ^\n\nAssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n\n-1 !== -5\n\n    at equal (/workspace/Blame/tools/terminal_bench/navigation-large-model-study/oracle.mjs:4:28)\n    at <anonymous> (/workspace/Blame/tools/terminal_bench/navigation-large-model-study/oracle.mjs:16:87) {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: -1,\n  expected: -5,\n  operator: 'deepStrictEqual',\n  diff: 'simple'\n}\n\nNode.js v24.19.0\n"
         },
@@ -433,7 +433,7 @@
           "exitCode": 0,
           "signal": null,
           "error": null,
-          "durationMs": 1705.983014999998,
+          "durationMs": 1700.6136790000019,
           "stdout": "\n> remeda@2.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
           "stderr": ""
         },
@@ -447,8 +447,8 @@
           "exitCode": 1,
           "signal": null,
           "error": null,
-          "durationMs": 1346.7992069999964,
-          "stdout": "\n> remeda@2.0.0 test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"packages/remeda/src/clamp.followup.test.ts\"]\n\n RUN  v3.2.4 /tmp/blame-navigation-large-f53/controls/reversed-clamp\n\n ✓ packages/remeda/src/clamp.test.ts (3 tests) 2ms\n ❯ packages/remeda/src/clamp.followup.test.ts (1 test | 1 failed) 7ms\n   × reverse finite bounds 6ms\n     → expected 4 to be 2 // Object.is equality\n\n Test Files  1 failed | 1 passed (2)\n      Tests  1 failed | 3 passed (4)\n   Start at  00:15:56\n   Duration  899ms (transform 381ms, setup 0ms, collect 574ms, tests 9ms, environment 0ms, prepare 100ms)\n\n",
+          "durationMs": 1465.4745309999998,
+          "stdout": "\n> remeda@2.0.0 test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"packages/remeda/src/clamp.followup.test.ts\"]\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-large-f53/controls/reversed-clamp\n\n ✓ packages/remeda/src/clamp.test.ts (3 tests) 2ms\n ❯ packages/remeda/src/clamp.followup.test.ts (1 test | 1 failed) 7ms\n   × reverse finite bounds 6ms\n     → expected 4 to be 2 // Object.is equality\n\n Test Files  1 failed | 1 passed (2)\n      Tests  1 failed | 3 passed (4)\n   Start at  10:45:58\n   Duration  1.00s (transform 418ms, setup 0ms, collect 626ms, tests 9ms, environment 0ms, prepare 119ms)\n\n",
           "stderr": "\n⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯\n\n FAIL  packages/remeda/src/clamp.followup.test.ts > reverse finite bounds\nAssertionError: expected 4 to be 2 // Object.is equality\n\n- Expected\n+ Received\n\n- 2\n+ 4\n\n ❯ packages/remeda/src/clamp.followup.test.ts:1:146\n      1| import {test,expect} from 'vitest';import {clamp} from './index';test(…\n       |                                                                                                                                                  ^\n      2| \n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯\n\n"
         },
         {
@@ -461,7 +461,7 @@
           "exitCode": 0,
           "signal": null,
           "error": null,
-          "durationMs": 1740.858687,
+          "durationMs": 1910.5838199999998,
           "stdout": "\n> remeda@2.0.0 typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"packages/remeda/src/clamp.followup.test.ts\"]\n",
           "stderr": ""
         }
@@ -480,8 +480,8 @@
           "exitCode": 0,
           "signal": null,
           "error": null,
-          "durationMs": 624.7224849999984,
-          "stdout": "\n> remeda@2.0.0 test:study:regression\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /tmp/blame-navigation-large-f53/controls/slice-index\n\n ✓ packages/remeda/src/splitAt.test.ts (4 tests) 3ms\n\n Test Files  1 passed (1)\n      Tests  4 passed (4)\n   Start at  00:15:59\n   Duration  208ms (transform 34ms, setup 0ms, collect 37ms, tests 3ms, environment 0ms, prepare 52ms)\n\n",
+          "durationMs": 674.539939000002,
+          "stdout": "\n> remeda@2.0.0 test:study:regression\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-large-f53/controls/slice-index\n\n ✓ packages/remeda/src/splitAt.test.ts (4 tests) 4ms\n\n Test Files  1 passed (1)\n      Tests  4 passed (4)\n   Start at  10:46:01\n   Duration  240ms (transform 42ms, setup 0ms, collect 41ms, tests 4ms, environment 0ms, prepare 59ms)\n\n",
           "stderr": ""
         },
         {
@@ -489,15 +489,15 @@
           "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
           "argv": [
             "--import",
-            "/tmp/blame-navigation-large-f53/controls/slice-index/node_modules/tsx/dist/loader.mjs",
+            "/workspace/blame-study-runs/navigation-large-f53/controls/slice-index/node_modules/tsx/dist/loader.mjs",
             "/workspace/Blame/tools/terminal_bench/navigation-large-model-study/oracle.mjs",
-            "/tmp/blame-navigation-large-f53/controls/slice-index",
+            "/workspace/blame-study-runs/navigation-large-f53/controls/slice-index",
             "slice-index"
           ],
           "exitCode": 1,
           "signal": null,
           "error": null,
-          "durationMs": 742.4637010000006,
+          "durationMs": 482.2925350000005,
           "stdout": "",
           "stderr": "node:internal/modules/run_main:107\n    triggerUncaughtException(\n    ^\n\nAssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n\n  [\n-   [],\n    [\n      0,\n+   ],\n+   [\n      1\n    ]\n  ]\n\n    at equal (/workspace/Blame/tools/terminal_bench/navigation-large-model-study/oracle.mjs:4:28)\n    at <anonymous> (/workspace/Blame/tools/terminal_bench/navigation-large-model-study/oracle.mjs:21:103) {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: [ [ 0 ], [ 1 ] ],\n  expected: [ [], [ 0, 1 ] ],\n  operator: 'deepStrictEqual',\n  diff: 'simple'\n}\n\nNode.js v24.19.0\n"
         },
@@ -511,7 +511,7 @@
           "exitCode": 0,
           "signal": null,
           "error": null,
-          "durationMs": 1722.147447000003,
+          "durationMs": 1712.355997999999,
           "stdout": "\n> remeda@2.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
           "stderr": ""
         },
@@ -525,7 +525,7 @@
           "exitCode": 1,
           "signal": null,
           "error": null,
-          "durationMs": 129.893799999998,
+          "durationMs": 125.31262299999798,
           "stdout": "\n> remeda@2.0.0 test:study:delivered\n> node .study/delivered.mjs runtime\n\n",
           "stderr": "A new test file is required\n"
         },
@@ -539,7 +539,7 @@
           "exitCode": 1,
           "signal": null,
           "error": null,
-          "durationMs": 131.19298900000285,
+          "durationMs": 132.1687940000047,
           "stdout": "\n> remeda@2.0.0 typecheck:delivered\n> node .study/delivered.mjs types\n\n",
           "stderr": "A new test file is required\n"
         }
@@ -555,8 +555,8 @@
           "exitCode": 0,
           "signal": null,
           "error": null,
-          "durationMs": 609.8119329999972,
-          "stdout": "\n> remeda@2.0.0 test:study:regression\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /tmp/blame-navigation-large-f53/controls/slice-index\n\n ✓ packages/remeda/src/splitAt.test.ts (4 tests) 3ms\n\n Test Files  1 passed (1)\n      Tests  4 passed (4)\n   Start at  00:16:03\n   Duration  203ms (transform 38ms, setup 0ms, collect 35ms, tests 3ms, environment 0ms, prepare 53ms)\n\n",
+          "durationMs": 618.027651999997,
+          "stdout": "\n> remeda@2.0.0 test:study:regression\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-large-f53/controls/slice-index\n\n ✓ packages/remeda/src/splitAt.test.ts (4 tests) 3ms\n\n Test Files  1 passed (1)\n      Tests  4 passed (4)\n   Start at  10:46:04\n   Duration  195ms (transform 32ms, setup 0ms, collect 32ms, tests 3ms, environment 0ms, prepare 50ms)\n\n",
           "stderr": ""
         },
         {
@@ -564,15 +564,15 @@
           "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
           "argv": [
             "--import",
-            "/tmp/blame-navigation-large-f53/controls/slice-index/node_modules/tsx/dist/loader.mjs",
+            "/workspace/blame-study-runs/navigation-large-f53/controls/slice-index/node_modules/tsx/dist/loader.mjs",
             "/workspace/Blame/tools/terminal_bench/navigation-large-model-study/oracle.mjs",
-            "/tmp/blame-navigation-large-f53/controls/slice-index",
+            "/workspace/blame-study-runs/navigation-large-f53/controls/slice-index",
             "slice-index"
           ],
           "exitCode": 0,
           "signal": null,
           "error": null,
-          "durationMs": 2104.5184670000017,
+          "durationMs": 1785.0734000000011,
           "stdout": "Finite behavioral/public types passed slice-index 357\n",
           "stderr": ""
         },
@@ -586,7 +586,7 @@
           "exitCode": 0,
           "signal": null,
           "error": null,
-          "durationMs": 1733.7619449999984,
+          "durationMs": 1721.1477709999963,
           "stdout": "\n> remeda@2.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
           "stderr": ""
         },
@@ -600,8 +600,8 @@
           "exitCode": 0,
           "signal": null,
           "error": null,
-          "durationMs": 1418.5017649999936,
-          "stdout": "\n> remeda@2.0.0 test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"packages/remeda/src/split.followup.test.ts\"]\n\n RUN  v3.2.4 /tmp/blame-navigation-large-f53/controls/slice-index\n\n ✓ packages/remeda/src/splitAt.test.ts (4 tests) 4ms\n ✓ packages/remeda/src/split.followup.test.ts (1 test) 2ms\n\n Test Files  2 passed (2)\n      Tests  5 passed (5)\n   Start at  00:16:07\n   Duration  944ms (transform 400ms, setup 0ms, collect 609ms, tests 6ms, environment 0ms, prepare 99ms)\n\n",
+          "durationMs": 1359.4065029999983,
+          "stdout": "\n> remeda@2.0.0 test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"packages/remeda/src/split.followup.test.ts\"]\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-large-f53/controls/slice-index\n\n ✓ packages/remeda/src/splitAt.test.ts (4 tests) 4ms\n ✓ packages/remeda/src/split.followup.test.ts (1 test) 2ms\n\n Test Files  2 passed (2)\n      Tests  5 passed (5)\n   Start at  10:46:08\n   Duration  901ms (transform 398ms, setup 0ms, collect 569ms, tests 6ms, environment 0ms, prepare 107ms)\n\n",
           "stderr": ""
         },
         {
@@ -614,7 +614,7 @@
           "exitCode": 0,
           "signal": null,
           "error": null,
-          "durationMs": 1924.1666360000017,
+          "durationMs": 1789.6358190000028,
           "stdout": "\n> remeda@2.0.0 typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"packages/remeda/src/split.followup.test.ts\"]\n",
           "stderr": ""
         }
@@ -630,8 +630,8 @@
           "exitCode": 0,
           "signal": null,
           "error": null,
-          "durationMs": 642.2494140000053,
-          "stdout": "\n> remeda@2.0.0 test:study:regression\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /tmp/blame-navigation-large-f53/controls/slice-index\n\n ✓ packages/remeda/src/splitAt.test.ts (4 tests) 5ms\n\n Test Files  1 passed (1)\n      Tests  4 passed (4)\n   Start at  00:16:11\n   Duration  209ms (transform 39ms, setup 0ms, collect 36ms, tests 5ms, environment 0ms, prepare 54ms)\n\n",
+          "durationMs": 654.0973490000033,
+          "stdout": "\n> remeda@2.0.0 test:study:regression\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-large-f53/controls/slice-index\n\n ✓ packages/remeda/src/splitAt.test.ts (4 tests) 3ms\n\n Test Files  1 passed (1)\n      Tests  4 passed (4)\n   Start at  10:46:12\n   Duration  219ms (transform 41ms, setup 0ms, collect 41ms, tests 3ms, environment 0ms, prepare 54ms)\n\n",
           "stderr": ""
         },
         {
@@ -639,15 +639,15 @@
           "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
           "argv": [
             "--import",
-            "/tmp/blame-navigation-large-f53/controls/slice-index/node_modules/tsx/dist/loader.mjs",
+            "/workspace/blame-study-runs/navigation-large-f53/controls/slice-index/node_modules/tsx/dist/loader.mjs",
             "/workspace/Blame/tools/terminal_bench/navigation-large-model-study/oracle.mjs",
-            "/tmp/blame-navigation-large-f53/controls/slice-index",
+            "/workspace/blame-study-runs/navigation-large-f53/controls/slice-index",
             "slice-index"
           ],
           "exitCode": 1,
           "signal": null,
           "error": null,
-          "durationMs": 486.25904399999854,
+          "durationMs": 347.90010299999994,
           "stdout": "",
           "stderr": "node:internal/modules/run_main:107\n    triggerUncaughtException(\n    ^\n\nAssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n\n  [\n-   [],\n    [\n      0,\n+   ],\n+   [\n      1\n    ]\n  ]\n\n    at equal (/workspace/Blame/tools/terminal_bench/navigation-large-model-study/oracle.mjs:4:28)\n    at <anonymous> (/workspace/Blame/tools/terminal_bench/navigation-large-model-study/oracle.mjs:21:103) {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: [ [ 0 ], [ 1 ] ],\n  expected: [ [], [ 0, 1 ] ],\n  operator: 'deepStrictEqual',\n  diff: 'simple'\n}\n\nNode.js v24.19.0\n"
         },
@@ -661,7 +661,7 @@
           "exitCode": 0,
           "signal": null,
           "error": null,
-          "durationMs": 1741.4674990000058,
+          "durationMs": 1768.0391549999986,
           "stdout": "\n> remeda@2.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
           "stderr": ""
         },
@@ -675,8 +675,8 @@
           "exitCode": 1,
           "signal": null,
           "error": null,
-          "durationMs": 1364.1550730000017,
-          "stdout": "\n> remeda@2.0.0 test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"packages/remeda/src/split.followup.test.ts\"]\n\n RUN  v3.2.4 /tmp/blame-navigation-large-f53/controls/slice-index\n\n ✓ packages/remeda/src/splitAt.test.ts (4 tests) 4ms\n ❯ packages/remeda/src/split.followup.test.ts (1 test | 1 failed) 8ms\n   × negative fractional indexes 8ms\n     → expected [ [ 1, 2 ], [ 3 ] ] to deeply equal [ [], [ 1, 2, 3 ] ]\n\n Test Files  1 failed | 1 passed (2)\n      Tests  1 failed | 4 passed (5)\n   Start at  00:16:14\n   Duration  908ms (transform 386ms, setup 0ms, collect 586ms, tests 12ms, environment 0ms, prepare 96ms)\n\n",
+          "durationMs": 1558.6569759999984,
+          "stdout": "\n> remeda@2.0.0 test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"packages/remeda/src/split.followup.test.ts\"]\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-large-f53/controls/slice-index\n\n ✓ packages/remeda/src/splitAt.test.ts (4 tests) 3ms\n ❯ packages/remeda/src/split.followup.test.ts (1 test | 1 failed) 11ms\n   × negative fractional indexes 10ms\n     → expected [ [ 1, 2 ], [ 3 ] ] to deeply equal [ [], [ 1, 2, 3 ] ]\n\n Test Files  1 failed | 1 passed (2)\n      Tests  1 failed | 4 passed (5)\n   Start at  10:46:14\n   Duration  1.07s (transform 469ms, setup 0ms, collect 723ms, tests 14ms, environment 0ms, prepare 102ms)\n\n",
           "stderr": "\n⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯\n\n FAIL  packages/remeda/src/split.followup.test.ts > negative fractional indexes\nAssertionError: expected [ [ 1, 2 ], [ 3 ] ] to deeply equal [ [], [ 1, 2, 3 ] ]\n\n- Expected\n+ Received\n\n  [\n-   [],\n    [\n      1,\n      2,\n+   ],\n+   [\n      3,\n    ],\n  ]\n\n ❯ packages/remeda/src/split.followup.test.ts:1:137\n      1| import {test,expect} from 'vitest';import {splitAt} from './index';tes…\n       |                                                                                                                                         ^\n      2| \n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯\n\n"
         },
         {
@@ -689,7 +689,7 @@
           "exitCode": 0,
           "signal": null,
           "error": null,
-          "durationMs": 1788.7302529999943,
+          "durationMs": 1899.869620999998,
           "stdout": "\n> remeda@2.0.0 typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"packages/remeda/src/split.followup.test.ts\"]\n",
           "stderr": ""
         }
