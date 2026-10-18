@@ -1,0 +1,25 @@
+{
+  "method": "Root manual unblinded inspection of every complete immutable endpoint patch, exact public APIs, delivered tests, command chronology and delivery. Hash-bound independent endpoint checks support the judgment; official completion alone is insufficient. Symbolic relevance/witness judgments require separate explicit review.",
+  "decisions": [
+    {
+      "name": "1-credit-remainder-reference",
+      "hashes": {
+        "events.jsonl": "90ccfc21cf1b2f2e07674bdad0f700ebfacc4beb8d95d8b1a04027123c93548b",
+        "workspace.diff": "dfeb86a4753ee192a1f525c36a0e53bae57e310d5223b468c94bac64e6f93b1f",
+        "score.json": "500e31066e802d9a12db1b7a191eb48398e1883616cdd97a62065339ec11fad7",
+        "tool-ledger.json": "9deecd13d49e2bd1c62bf76836bbe75c73599dd560aff3d8e4dc05eae83e9b3b"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Reviewed the complete scalar signatures, source patch, two new debit tests, all commands and delivery. Independent negative-input normalization, clamp/cap and shared quote satisfy the specified integer domain without mutation. Early regression/types commands 19/20 fail; model repairs its source before final required commands 24-26 and delivered types 31, which all pass. All five endpoint checks and dependency integrity pass. No shell retrieval or later writes. Summary honestly distinguishes original/source/delivered scopes and makes no solver claim."
+      ]
+    }
+  ]
+}

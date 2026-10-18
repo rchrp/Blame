@@ -1,0 +1,16 @@
+{
+  "protocolHash": "32c5b7eceb4d31944b09d7518ca30fd5cf9645a20fc9427eef7934238b40933a",
+  "completed": 2,
+  "planned": 18,
+  "receipts": [
+    {
+      "name": "1-credit-remainder-reference",
+      "sha256": "18558959682555d3517bd5c8446baad91328fa18fdf5bac70ebf3cc94edf144e"
+    },
+    {
+      "name": "1-credit-remainder-candidate",
+      "sha256": "92db9acc1434bba98058ef9bd3b71879ddb26532f8f8bb1420ab187a5fbcb367"
+    }
+  ],
+  "note": "Derived index. Each immutable archive is independently verified; no model call is replayed."
+}
