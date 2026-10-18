@@ -1,3 +1,4 @@
+import {existsSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import {cp,mkdir,readFile,writeFile,symlink,readdir} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
@@ -9,7 +10,7 @@ import * as confirmation from './ts-pattern.mjs';
 export const repo=resolve(import.meta.dirname,'../../..'),work=resolve('/workspace/blame-study-runs/feedback-'+panel.id.toLowerCase());
 export const study=resolve(join(repo,'docs/experiments/light-harness-feedback-'+panel.id.toLowerCase()+'-2026-10-18'));
 export const dependencyRoot=join(repo,'.blame/research/validation-scope-f44/dependencies');
-export const sourceArchive=panel.kind==='confirmation'?'/workspace/blame-study-runs/feedback-confirmation-inputs/ts-pattern.tar.gz':join(repo,'docs/experiments/light-harness-confirmation-f42-2026-10-17/inputs/remeda.tar.gz');
+export const sourceArchive=panel.kind==='confirmation'?(existsSync(join(study,'inputs/ts-pattern.tar.gz'))?join(study,'inputs/ts-pattern.tar.gz'):'/workspace/blame-study-runs/feedback-confirmation-inputs/ts-pattern.tar.gz'):join(repo,'docs/experiments/light-harness-confirmation-f42-2026-10-17/inputs/remeda.tar.gz');
 export const sha=x=>createHash('sha256').update(x).digest('hex');
 export const json=p=>readFile(p,'utf8').then(JSON.parse);
 import {atomicJson} from '../durable-campaign.mjs';

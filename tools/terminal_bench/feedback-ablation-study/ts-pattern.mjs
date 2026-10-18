@@ -1,4 +1,5 @@
 // Fresh-project fixture and researcher controls. Control source is never copied to workers.
+import {existsSync} from 'node:fs';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {readFile,writeFile,mkdir,symlink,cp} from 'node:fs/promises';
@@ -7,7 +8,8 @@ import {execFileSync,spawnSync} from 'node:child_process';
 import {prepareIsolatedNodeEnvironment} from '../isolated-node-environment.mjs';
 import {atomicJson as save} from '../durable-campaign.mjs';
 const repo=resolve(import.meta.dirname,'../../..'),deps=join(repo,'.blame/research/validation-scope-f44/dependencies');
-const archive='/workspace/blame-study-runs/feedback-confirmation-inputs/ts-pattern.tar.gz';
+const publicArchive=join(repo,'docs/experiments/light-harness-feedback-f61-2026-10-18/inputs/ts-pattern.tar.gz');
+const archive=existsSync(publicArchive)?publicArchive:'/workspace/blame-study-runs/feedback-confirmation-inputs/ts-pattern.tar.gz';
 const common=' Work only in this checkout; do not retrieve remote history, solutions or previous study artifacts. Do not install dependencies. Preserve original tests, manifests, locks, configuration and supplied checks. Preserve public types and unrelated behavior. Add new src/*.test.ts tests for the request. After the final source or test edit run npm run test:study:regression, npm run test:study:types and npm run test:study:delivered. Source compilation excludes tests; typecheck:delivered checks new tests. Report exact commands, results and limits honestly.';
 export const confirmationTasks=[
  {id:'alternative-selections',request:'Fix selection leakage from failed alternatives in multi-pattern match(...).with(...) and P.union. Only the first successful alternative may contribute selected values. P.union must still initialize keys belonging only to other alternatives to undefined, and a total mismatch must not leak a partial selection. Add one shared internal transactional matching helper and use it in both the match-expression and union paths. Preserve first-match short-circuiting, named and anonymous selection, and guard behavior.'},

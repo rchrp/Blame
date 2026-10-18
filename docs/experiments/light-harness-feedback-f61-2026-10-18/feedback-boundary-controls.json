@@ -1,0 +1,34 @@
+{
+  "modelRequests": 0,
+  "complete": true,
+  "actualModelToolHeaderArrayRetained": true,
+  "benchmarkRecorderArrayMasked": true,
+  "modelContextMetadata": {
+    "callIdSha256": "0fcd568a5cb9bdb4677b69354b11ee415af8f784519cff3da49a26f84eaee7f2",
+    "receipt": "c1",
+    "contextSha256": "e2b08925ff5be2cf738767f4149f28878a67c777766c3b27abb4ff012edda886",
+    "contextJsonBytes": 582,
+    "headerArrayObserved": true,
+    "headerDeclarations": 1,
+    "headerJsonBytes": 170
+  },
+  "knownRepresentations": [
+    "Responses function_call_output",
+    "chat tool",
+    "SDK text wrapper"
+  ],
+  "ignored": [
+    "user JSON",
+    "source file JSON in data.content",
+    "transport headers",
+    "malformed tool text"
+  ],
+  "credentialFieldMaskingPreserved": true,
+  "actualPreloadsPreserveRequestAndJoinHashes": true,
+  "sourceHashes": {
+    "feedback-wire-audit.mjs": "9f1628d56eee0aab4aa51798544cb4851cc97198ec84a38798c41b2cf35f67fe",
+    "feedback-wire-metadata.mjs": "68fc1afcd7e3c65acfc0676af533161392160a49417d5e68799dfefee15dc6db",
+    "feedback-boundary-controls.mjs": "b42970466e576f7ba57fa2a5d9f1317140758cd758433bcec925e0717b5961f9"
+  },
+  "boundary": "Actual Light SDK tool execute() response retains declarations. Metadata control verifies forwarded-body extraction; a model seeing a declaration does not prove reasoning/use. Stored bytes are context JSON, not extra billed tokens."
+}

@@ -1,0 +1,18 @@
+{
+  "beforeFirstPanelModelCall": true,
+  "modelStarts": 0,
+  "unchanged": [
+    "preselected requests",
+    "two-repeat rotated order",
+    "three arms",
+    "prompts/schemas/model/effort",
+    "executable variants",
+    "budgets",
+    "primary quality/resource criteria"
+  ],
+  "reason": "F59 reveals that benchmark event-field masking redacts declaration arrays called headers. Distinguish recorder observability from actual model messages before evaluating body feedback.",
+  "change": "Add identical passive metadata preload to all arms. Observe hashes, counts and JSON sizes of body-edit contexts inside tool messages in actual forwarded request bodies; retain no declaration/conversation/credential text. Join to existing forwarded request hashes, preserving budget rejections. No request is rewritten.",
+  "controls": "Actual Light SDK execute() response retains arrays; benchmark recorder masks arrays; Responses/chat/text-wrapper extraction, fake source/user JSON, malformed/credential fields, resend deduplication, missing receipt detection and actual passive preloads tested with in-process fake fetch and zero network/model calls.",
+  "interpretation": "Exposure is not use or mediation. JSON sizes are neither extra request bytes nor billed tokens. F59 original traces/results remain sealed; their headerFeedbackBytes field denotes sanitized event metadata only.",
+  "sourceArchiveReproduction": "F61 now reads the committed source archive when present; source bytes/commit unchanged, all three positive/negative controls rerun with that path."
+}
