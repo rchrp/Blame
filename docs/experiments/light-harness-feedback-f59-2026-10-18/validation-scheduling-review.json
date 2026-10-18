@@ -66,6 +66,36 @@
       "avoidableGreensBeforeRenewedFailure": 0,
       "duplicateRequiredGreensOnSameSource": 0,
       "evidence": "Required35/36/37 and delivered types38 pass once on final source; no failure."
+    },
+    {
+      "name": "2-suffix-counts-cline",
+      "avoidableGreensBeforeRenewedFailure": 0,
+      "duplicateRequiredGreensOnSameSource": 0,
+      "evidence": "Direct Vitest13 has empty file selection under supplied original-only config, followed by successful required14/15/16 and delivered types17; no repeated required greens or source repair."
+    },
+    {
+      "name": "2-suffix-counts-reference",
+      "avoidableGreensBeforeRenewedFailure": 0,
+      "duplicateRequiredGreensOnSameSource": 0,
+      "evidence": "Literal required commands36/37/38 and delivered types42 pass once on final source; no failure."
+    },
+    {
+      "name": "2-reversed-clamp-cline",
+      "avoidableGreensBeforeRenewedFailure": 0,
+      "duplicateRequiredGreensOnSameSource": 0,
+      "evidence": "Compound10 returns each required status via run_check and fails immediately; all pass, delivered types11 passes, no repeats."
+    },
+    {
+      "name": "2-reversed-clamp-reference",
+      "avoidableGreensBeforeRenewedFailure": 0,
+      "duplicateRequiredGreensOnSameSource": 0,
+      "evidence": "Wrong wrapper edit20 causes all three failures21/22/23; wrong destructured-parameter body24 causes all three failures26/27/28. Whole-declaration repair29, final31/32/33 all pass; no previously green required check existed in either failed epoch."
+    },
+    {
+      "name": "2-reversed-clamp-candidate",
+      "avoidableGreensBeforeRenewedFailure": 0,
+      "duplicateRequiredGreensOnSameSource": 0,
+      "evidence": "Final literal required32/33/34 and optional delivered types35 pass once; no failing opportunity."
     }
   ]
 }

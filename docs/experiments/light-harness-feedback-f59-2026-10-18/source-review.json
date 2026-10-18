@@ -200,6 +200,106 @@
       "evidence": [
         "Shared helper handles positive infinity and floors only positive finite counts; both consumers retain Math.max index clamps, preserving oversized integer semantics and fresh arrays for zero/full selections. Public overloads unchanged. New table tests cover normalizer cases with direct and pipe invocation and readonly/fresh identity; independent finite oracle supplies empty/oversized/direct-curried coverage. All five independent checks and exact final required35/36/37 plus delivered types38 pass once. No failed validation opportunity, later edit, protected/dependency mutation or solution retrieval. Accurate scoped delivery."
       ]
+    },
+    {
+      "name": "2-suffix-counts-cline",
+      "hashes": {
+        "events.jsonl": "ccc023e31bb062bd849ebed16cd39a8fe249e3f442c235ef181ab12af0ffcb4b",
+        "workspace.diff": "7eb72fa43d3d08c00e17fa7a524361fbae864e19dc8d63340509b34e4113a906",
+        "score.json": "9600beda94a1f11063d2d5d81cbfdb1d2d8370376c87c7574dd727ecd8201061",
+        "tool-ledger.json": "4e3b9d1ebf06ae47758a595617a17a52197fd33fe975c46d233ba7dc7a4d9398"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Both consumers exactly match the reviewed safe capped-count Cline source. Shared arrow helper handles positive infinity then positive finite floor capped at length; NaN and negative infinity fall through tozero. Existing public overloads unchanged. New15 cases cover both direct/curried/pipe forms and immutable/fresh outputs. Required14/15/16 and delivered types17 pass on final source; direct Vitest13 selected no files because the supplied regression config excludes new tests, then delivered command correctly executes them. Missing formatter acknowledged; original checks/dependencies intact. git log reads only the single frozen local input commit, not remote/solution history; no retrieval. No avoidable repeated greens before a renewed failing repair."
+      ]
+    },
+    {
+      "name": "2-suffix-counts-reference",
+      "hashes": {
+        "events.jsonl": "8ac539ad08b2a15f0df65ccc1dca0bb7619c6c754aa4bbd1abda8bcdc6bb14a7",
+        "workspace.diff": "38c4bafccc0579eabe0ee705e81ffe5215d2931363d50ec448e55b342b6b5cdf",
+        "score.json": "81c332528b3e1d21dbfb05213166725388d8e081f525a602ae064584598701cd",
+        "tool-ledger.json": "8e35fabab12a4b0f7f4eae905e6feef6928ecb7f685e76ff97b292c1b4ed41bd"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Shared helper caps positive finite floored counts at length and handles positive infinity; both consumers can safely use length-count directly. NaN/negative values normalize tozero; original public overloads and readonly generic signatures unchanged. New16 cases explicitly include oversized10 and preserve freshness/order across direct/curried/pipe. Final required commands36/37/38 use literal npm commands and all pass, delivered types42 passes; no repair or subsequent source edit. All five endpoints and protected/dependency integrity pass; navigation remains within this checkout, no solution retrieval and accurate selected/compiler/test coverage."
+      ]
+    },
+    {
+      "name": "2-reversed-clamp-cline",
+      "hashes": {
+        "events.jsonl": "2a1d18041699a03b2ab4ea703c891c618d01e2e9704438b253381b32e74883e7",
+        "workspace.diff": "ac4a23ce1cd56bce6311e16fd07857b19123f5ee7784ac3aae1ab5e403271620",
+        "score.json": "01cdb727d1741324954b65f26346f2c13d36a50a90ab14b48752024343c40a4e",
+        "tool-ledger.json": "419fa3a0e2cf94b1ca004be53959903ed824ac2544a50b4b3f09283afd0161dd"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Finite reversed range uses guarded opposite-bound comparisons; exceptional/missing cases preserve original lower-first path and overloads. Per-call limits destructuring prevents snapshotting; tests mutate actual interval10/0 to2/8 and cover readonly/frozen/all forms/NaN/infinite behavior. Composite10 uses a run_check shell function returning each exact status and exits immediately on failure; all three required checks succeed on final source, optional delivered types11 passes. All five endpoints, protected/dependency integrity pass; no failing repair, duplicate required success, later edit or solution retrieval. Scoped delivery accurate."
+      ]
+    },
+    {
+      "name": "2-reversed-clamp-reference",
+      "hashes": {
+        "events.jsonl": "629ae75d748b94034fcd4866b593819171679d1271ecedfb150867a4586b3e19",
+        "workspace.diff": "5a6f6e0e3eb977490cec26adb32d7e6bbc08fbfbb724748fdfa6ae7add0bd147",
+        "score.json": "7e578acb79dd48ccb6230d5704ed706bfe6f1d89c3b258d1846ab2371051c443",
+        "tool-ledger.json": "399b90fec550300833424183437a23446f9c82c3d6afa894a6a226509273a2c6"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Final production source is byte-identical to reviewed correct clamp implementation with original wrapper/signatures restored. New tests alter actual curried interval8/2 to20/30, cover readonly/frozen and exceptional/all forms. Earlier edit20 wrongly targets public wrapper s12 and references nonexistent limits/value; edit24 restores wrapper but moves the same incorrect body to destructured implementation s13, producing duplicate min/max and missing limits. Whole-declaration repair29 resolves both without altering public types; final exact required31/32/33 and all five independent endpoints pass. Both failed cycles fail every required check, so no green-before-renewed-failure saving is inferred. Common header feedback exists but does not prevent these successive mistakes; logged arrays are redacted. Dependencies/original checks intact, no retrieval, accurate final coverage."
+      ]
+    },
+    {
+      "name": "2-reversed-clamp-candidate",
+      "hashes": {
+        "events.jsonl": "0f902cdea53cc2ed2f20d0390672bdcd3f21fc1cb0ec0d09d07f18df4e837162",
+        "workspace.diff": "161af0a3738e106fa77cfa416c4835774111e3697bf1c4100a196433e78036a5",
+        "score.json": "58b19301d55ca6fe2e41aebff6f1b738647907a4c7b6f5e9ad0e2077380be710",
+        "tool-ledger.json": "d5dd7fccb81a2e2d03bf3f689c097df37d0cdef63f960027cd9c0d03605691fe"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Finite-only normalization with explicit undefined guards, original lower-first nonfinite semantics and per-invocation limits observation; public overloads unchanged. New tests change actual interval20/5 to0/10 and cover readonly/frozen, all forms, missing/NaN/infinite bounds and NaN values. Required literal commands32/33/34 and delivered types35 pass once on final source; no failing-check opportunity, later edit or duplicate required run. All five endpoints and protected/dependency integrity pass, no retrieval, accurate limited delivery."
+      ]
     }
   ]
 }
