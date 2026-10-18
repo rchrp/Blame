@@ -1,0 +1,12 @@
+{
+  "modelRequests": 0,
+  "changedRuntimeFilesBetweenLightArms": [
+    "agent-runtime/dist/harness/light-edit.js",
+    "agent-runtime/dist/harness/light-reference-search.js"
+  ],
+  "flags": {
+    "analysis": false,
+    "hints": false
+  },
+  "treatment": "Only two executable JavaScript modules differ; declaration metadata is common; common current alias safety, validation and all other code."
+}
