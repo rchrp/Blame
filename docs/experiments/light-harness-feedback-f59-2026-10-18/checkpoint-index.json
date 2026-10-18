@@ -1,6 +1,6 @@
 {
   "protocolHash": "8f8d89f29fbe36285f2ea06f0b728bbd2047276fa3a13dc02a7fc40a78a08891",
-  "completed": 16,
+  "completed": 18,
   "planned": 18,
   "receipts": [
     {
@@ -66,6 +66,14 @@
     {
       "name": "2-slice-index-reference",
       "sha256": "9cfb55fa6bde29e309059140e8d6228c78bed3477c237c1267b64bcff33f608d"
+    },
+    {
+      "name": "2-slice-index-candidate",
+      "sha256": "af9cafd44fcb20c5e14200a4200eb9d9973a7be55ab358fe9d61d02dc3586433"
+    },
+    {
+      "name": "2-slice-index-cline",
+      "sha256": "01326190483021a09090a145827ad17cde0706a35db5fef0ea3dc2f5d38d5c42"
     }
   ],
   "note": "Derived index. Each immutable archive is independently verified; no model call is replayed."

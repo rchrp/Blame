@@ -96,6 +96,25 @@
       "avoidableGreensBeforeRenewedFailure": 0,
       "duplicateRequiredGreensOnSameSource": 0,
       "evidence": "Final literal required32/33/34 and optional delivered types35 pass once; no failing opportunity."
+    },
+    {
+      "name": "2-slice-index-reference",
+      "avoidableGreensBeforeRenewedFailure": 0,
+      "duplicateRequiredGreensOnSameSource": 0,
+      "evidence": "Final project required19/20/21 pass once, no repair or later edit. Agent does not run optional delivered types and does not claim it."
+    },
+    {
+      "name": "2-slice-index-candidate",
+      "avoidableGreensBeforeRenewedFailure": 0,
+      "duplicateRequiredGreensOnSameSource": 0,
+      "evidence": "Final literal required23/24/25 and delivered types27 pass once, no repair or later edit."
+    },
+    {
+      "name": "2-slice-index-cline",
+      "avoidableGreensBeforeRenewedFailure": 0,
+      "duplicateRequiredGreensOnSameSource": 0,
+      "finalSourceObligationsMet": false,
+      "evidence": "Required11, delivered types12 and workspace compiler13 all pass, but apply_patch18 subsequently edits the test ending newline. Command19 only checks newline/diff/status; no validation on the final source/test bytes. All independent endpoints pass; strict failure is freshness/compliance, not behavior."
     }
   ]
 }

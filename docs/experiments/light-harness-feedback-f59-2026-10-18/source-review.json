@@ -300,6 +300,66 @@
       "evidence": [
         "Finite-only normalization with explicit undefined guards, original lower-first nonfinite semantics and per-invocation limits observation; public overloads unchanged. New tests change actual interval20/5 to0/10 and cover readonly/frozen, all forms, missing/NaN/infinite bounds and NaN values. Required literal commands32/33/34 and delivered types35 pass once on final source; no failing-check opportunity, later edit or duplicate required run. All five endpoints and protected/dependency integrity pass, no retrieval, accurate limited delivery."
       ]
+    },
+    {
+      "name": "2-slice-index-reference",
+      "hashes": {
+        "events.jsonl": "aceee164125e784ee3e04ddc5de7a4d1555878bcd4375b72daa5dd7edfcd3362",
+        "workspace.diff": "87053c14a7df6e1b870f40698ae9a88d9389e8b7b024ea8b07ae255994c4cb55",
+        "score.json": "d4fbbadd375d097680581cff8423145f3bd4c23157fd1f439fa721805824058d",
+        "tool-ledger.json": "528f4e945d9f01e9fac068642d37aaaff7554b890e1c0728502e946c1c7da361"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Production source byte-identical to reviewed native-slice implementation, public overloads unchanged. New21 cases exercise direct/curried/pipe with readonly tuple, native fractional/nonfinite indexes and direct fresh-array identity; independent oracle supplies more lengths. All five endpoints pass. Final required project19/20/21 pass once, no failure or later source/test edit. Delivered types not run by agent and honestly excluded from claims; independent grader compiles them. No protected/dependency mutation or solution retrieval."
+      ]
+    },
+    {
+      "name": "2-slice-index-candidate",
+      "hashes": {
+        "events.jsonl": "0a9a1e6d20c85122dbf8bd2f40fec6eb4dd2cc620fa3387d520f1f80ff599cd6",
+        "workspace.diff": "2d1ad56906747e480158e680f88a1d73932d84c6f8a519a0f8020d0af11c33e2",
+        "score.json": "a0381a27e21bf9a694f7d0370b51f99fff4dcfdcc57cc37fe9d155861d53e633",
+        "tool-ledger.json": "384bbdfdbb7eec4578a524ab2bfb475c20d47cb3bf6ec5b193d5c280dc53afae"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Production source matches reviewed native slices exactly, unchanged overloads. New27 direct/curried/pipe cases include integer/fractional/signed-zero/nonfinite indexes and fresh identity for both outputs in all forms. All five endpoints, literal final required23/24/25 and delivered types27 pass without later edit or repair. Expected helper uses independent native slice spec and is test-only. Original checks/dependencies preserved, no retrieval, accurate selected/full-source/test compilation claims."
+      ]
+    },
+    {
+      "name": "2-slice-index-cline",
+      "hashes": {
+        "events.jsonl": "37e49f347bc4f5bd1913c7818e644e493fb2eb81e34c58531f313638380fe812",
+        "workspace.diff": "92651fec04a3c5780bf9609774a09339873bf4c743caa09009ac85c979cd0770",
+        "score.json": "62a33741bcf73872d09654970d9a4657de629496f177e767be49185a7f284f12",
+        "tool-ledger.json": "5624c449c66da5f552ec6e18dd54d63d1294f4c1e46dad3d749eb44198b27f21"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": false,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": false,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Production source exactly matches reviewed native slices and all five independent endpoint checks pass; new22 runtime cases preserve readonly/fresh/immutable outputs and compile. Required composite11 explicitly captures and checks three zero statuses; delivered types12 and original workspace source compiler13 pass. However apply_patch18 changes the new test file to add an ending newline after every validation command; only diff/newline/status command19 follows. The explicit final-source/test-edit validation obligation is therefore unmet, despite correct delivered behavior. This is a final-source freshness/compliance failure, not a failing endpoint or functional regression. Original checks/dependencies preserved and no retrieval; retain the unchanged patch and failure."
+      ]
     }
   ]
 }
