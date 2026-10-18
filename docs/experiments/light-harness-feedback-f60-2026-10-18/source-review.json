@@ -336,6 +336,48 @@
       "evidence": [
         "Native-slice private implementation byte-identical to reviewed correct source and original public overloads untouched. New3 framework cases loop over7 indexes in direct/curried/pipe use (21 form/index comparisons); direct branch checks fresh identity. All five endpoints and exact final required23/24/25 plus delivered types27 pass, no later edit or failure. No protected/dependency mutation or retrieval; truthful distinction between3 delivered cases and4 originals, source-only compiler and delivered-test compiler."
       ]
+    },
+    {
+      "name": "2-slice-index-candidate",
+      "hashes": {
+        "events.jsonl": "04c71281d10279eb88d070307aaf660fe9158a06116c72f06bddee60d8574230",
+        "workspace.diff": "2c9c86001b3ae69edcc02e3908d2f4487dd5a6cd3b768816b0a03305c1752204",
+        "score.json": "4e464b944ce742fd305a1553e10b3b9fd84cafba854380cc351a8b35d14195ad",
+        "tool-ledger.json": "76f38e5685d84cab9fb8d0b187a372259b73541cd6ee1a8fc1f358813c848e9a",
+        "feedback-wire.jsonl": "233001b50909b8ebf3dc86e66764bc33218fbf32ed728f2af68a1b6bd75ba638"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Native-slice private implementation matches reviewed source, public overloads unchanged. New24 parameterized direct/curried/pipe cases plus readonly nonmutation test pass all five endpoints. Final required25/26/27 and delivered types30 pass after the only source/test batch, no later edit; direct cases check both fresh outputs. No protected/dependency mutation or retrieval; truthful selected runtime/source-only versus delivered-type coverage. No proof of header-mediated prevention inferred from a correct source edit."
+      ]
+    },
+    {
+      "name": "2-slice-index-cline",
+      "hashes": {
+        "events.jsonl": "09784d72a99c1974f7bfa292650c39845685ee55351dca633081c34e2ca59765",
+        "workspace.diff": "d894e79d1d8978aa375748ecd32b6aa1b62effc844741121e9cfc16e1047ece4",
+        "score.json": "7a0df0eca0d48726a93188099daa24a7df187bbf02e01953bb4e0ced344cf5de",
+        "tool-ledger.json": "611ecec661a3a73a8c1d9ad51f3e258edd50d13c1b4960059f39f70033c49f60",
+        "feedback-wire.jsonl": "82eb31e7d5a177e8452cfa54a6df43881d7dba7c4614e1246652f449acd2a84b"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Correct native slices, unchanged original public/readonly/generic overloads. New21 index/form cases plus nonmutation test compile and pass, independent oracle covers further lengths and fresh outputs. Only apply_patch7 precedes composite8, which captures all three required statuses and exits their Boolean OR; output success establishes final required checks, delivered types9 also passes. No later edit, protected/dependency mutation or retrieval; accurate selected scope and no broader suite/lint/build claim."
+      ]
     }
   ]
 }

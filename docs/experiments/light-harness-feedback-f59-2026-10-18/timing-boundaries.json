@@ -1,0 +1,9 @@
+{
+  "coordinatorStartedUTC": "2026-10-18T14:49:01.799Z",
+  "coordinatorEndedFromDriverFileMetadataUTC": "2026-10-18T15:14:49.262366+00:00",
+  "coordinatorWallMs": 1547463.366,
+  "sdkAgentMs": 1286115,
+  "outerWorkerMs": 1317596.9419000002,
+  "graderCommandsMs": 136258.72255099984,
+  "boundary": "SDK times exclude preparation, independent grading, checkpoint IO and research. Coordinator start is recorded by the driver; end is retained file metadata rather than independent clock attestation. Outer workers include runtime startup/shutdown. Command sums do not cover every coordinator overhead. No development build/test/compiler/solver ran concurrently with live model workers; provider and nonexclusive-host contention unknown."
+}
