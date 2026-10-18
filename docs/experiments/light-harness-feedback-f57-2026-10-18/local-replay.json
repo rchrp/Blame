@@ -1,0 +1,1617 @@
+{
+  "phase": "F57",
+  "sourceHead": "96955a4007dfba386a10d92b482b15bb7f393b66",
+  "modelRequests": 0,
+  "files": {
+    "baseline/light-workspace.js": "08c30ffb5cf4c8ea8bf8d5db4113443b885c5d59b4dc6ca9b9b7e2b3b515dd85",
+    "baseline/light-reference-search.js": "02dd424ecabebd0ff3daf582774c7910f5d1bf79e185c8f5e855926b353397a1",
+    "baseline/light-reference-candidates.js": "1ff458e39bc8fb949284e712098936f8f02a49d17a17166344d346cb1f6b0923",
+    "baseline/light-edit.js": "33d479367f82edfcdfa461ee0b1cfad19db637c544dcac51a99864162d6b5073",
+    "baseline/light-finish-service.js": "8d10207c9dbd2ac347847ace98870f8503b6fa93589b0964d2b30f426c63c928",
+    "navigation/light-workspace.js": "a3f5e46e9fb2c34b06b7986bc576983f4576648e383b80099e9be5dd2d4fa0cb",
+    "navigation/light-reference-search.js": "05b3a6e98c6b9a5ef4606b1a50a1ceb338f9b9ad1322bfd87ff6a73b977647fa",
+    "navigation/light-reference-candidates.js": "9525e874629e608d164401bc35b312a29220b54bb4544a9bf871db23e5dbefe2",
+    "navigation/light-edit.js": "33d479367f82edfcdfa461ee0b1cfad19db637c544dcac51a99864162d6b5073",
+    "navigation/light-finish-service.js": "8d10207c9dbd2ac347847ace98870f8503b6fa93589b0964d2b30f426c63c928",
+    "body/light-workspace.js": "a3f5e46e9fb2c34b06b7986bc576983f4576648e383b80099e9be5dd2d4fa0cb",
+    "body/light-reference-search.js": "05b3a6e98c6b9a5ef4606b1a50a1ceb338f9b9ad1322bfd87ff6a73b977647fa",
+    "body/light-reference-candidates.js": "9525e874629e608d164401bc35b312a29220b54bb4544a9bf871db23e5dbefe2",
+    "body/light-edit.js": "3803a60a7972202020c6a7018d60ad81bec991d6c9f1dd503fe8749c03fe179a",
+    "body/light-finish-service.js": "8d10207c9dbd2ac347847ace98870f8503b6fa93589b0964d2b30f426c63c928",
+    "repair/light-workspace.js": "ba50655570483fa1b03b8a5977b068048ae566c5ff0fcacbf47f8aec08f670a7",
+    "repair/light-reference-search.js": "05b3a6e98c6b9a5ef4606b1a50a1ceb338f9b9ad1322bfd87ff6a73b977647fa",
+    "repair/light-reference-candidates.js": "9525e874629e608d164401bc35b312a29220b54bb4544a9bf871db23e5dbefe2",
+    "repair/light-edit.js": "3803a60a7972202020c6a7018d60ad81bec991d6c9f1dd503fe8749c03fe179a",
+    "repair/light-finish-service.js": "cecb28ee1a5aa6db904560f71ce3edda940f8d5e36fffdf5286a7f7c40ea4c86"
+  },
+  "observations": [
+    {
+      "mechanism": "navigation",
+      "stage": "baseline",
+      "mode": "default",
+      "offered": false,
+      "calls": 3,
+      "search": {
+        "status": "ok",
+        "data": {
+          "mode": "auto",
+          "engine": "syntax_and_ripgrep",
+          "results": [
+            {
+              "alias": "s1",
+              "path": "a00.ts",
+              "lines": [
+                1,
+                1
+              ],
+              "kind": "variable",
+              "qualifiedName": "caller0",
+              "signature": "caller0=()=>",
+              "reason": "lexical_symbol"
+            },
+            {
+              "alias": "s2",
+              "path": "a01.ts",
+              "lines": [
+                1,
+                1
+              ],
+              "kind": "variable",
+              "qualifiedName": "caller1",
+              "signature": "caller1=()=>",
+              "reason": "lexical_symbol"
+            },
+            {
+              "alias": "s3",
+              "path": "a02.ts",
+              "lines": [
+                1,
+                1
+              ],
+              "kind": "variable",
+              "qualifiedName": "caller2",
+              "signature": "caller2=()=>",
+              "reason": "lexical_symbol"
+            },
+            {
+              "alias": "s4",
+              "path": "a03.ts",
+              "lines": [
+                1,
+                1
+              ],
+              "kind": "variable",
+              "qualifiedName": "caller3",
+              "signature": "caller3=()=>",
+              "reason": "lexical_symbol"
+            },
+            {
+              "alias": "s5",
+              "path": "a04.ts",
+              "lines": [
+                1,
+                1
+              ],
+              "kind": "variable",
+              "qualifiedName": "caller4",
+              "signature": "caller4=()=>",
+              "reason": "lexical_symbol"
+            },
+            {
+              "alias": "s6",
+              "path": "a05.ts",
+              "lines": [
+                1,
+                1
+              ],
+              "kind": "variable",
+              "qualifiedName": "caller5",
+              "signature": "caller5=()=>",
+              "reason": "lexical_symbol"
+            },
+            {
+              "alias": "s7",
+              "path": "a06.ts",
+              "lines": [
+                1,
+                1
+              ],
+              "kind": "variable",
+              "qualifiedName": "caller6",
+              "signature": "caller6=()=>",
+              "reason": "lexical_symbol"
+            },
+            {
+              "alias": "s8",
+              "path": "a07.ts",
+              "lines": [
+                1,
+                1
+              ],
+              "kind": "variable",
+              "qualifiedName": "caller7",
+              "signature": "caller7=()=>",
+              "reason": "lexical_symbol"
+            }
+          ],
+          "candidateCount": 13,
+          "limited": true,
+          "guidance": "Result limit reached; narrow the query or scope, or use run_task for an exhaustive scan."
+        }
+      },
+      "followup": {
+        "status": "ok",
+        "receipt": "r1",
+        "data": {
+          "path": "z.ts",
+          "view": "symbol",
+          "alias": "s9",
+          "editTarget": "s9",
+          "kind": "function",
+          "qualifiedName": "needle",
+          "signature": "function needle(n:number)",
+          "body": "{return n+1;}"
+        }
+      }
+    },
+    {
+      "mechanism": "navigation",
+      "stage": "baseline",
+      "mode": "text",
+      "offered": false,
+      "calls": 3,
+      "search": {
+        "status": "ok",
+        "data": {
+          "mode": "text",
+          "engine": "ripgrep",
+          "results": [
+            {
+              "alias": "s1",
+              "kind": "text",
+              "path": "a00.ts",
+              "lines": [
+                1,
+                1
+              ],
+              "snippet": "export const caller0=()=>needle(0);",
+              "reason": "lexical_exact"
+            },
+            {
+              "alias": "s2",
+              "kind": "text",
+              "path": "a01.ts",
+              "lines": [
+                1,
+                1
+              ],
+              "snippet": "export const caller1=()=>needle(1);",
+              "reason": "lexical_exact"
+            },
+            {
+              "alias": "s3",
+              "kind": "text",
+              "path": "a02.ts",
+              "lines": [
+                1,
+                1
+              ],
+              "snippet": "export const caller2=()=>needle(2);",
+              "reason": "lexical_exact"
+            },
+            {
+              "alias": "s4",
+              "kind": "text",
+              "path": "a03.ts",
+              "lines": [
+                1,
+                1
+              ],
+              "snippet": "export const caller3=()=>needle(3);",
+              "reason": "lexical_exact"
+            },
+            {
+              "alias": "s5",
+              "kind": "text",
+              "path": "a04.ts",
+              "lines": [
+                1,
+                1
+              ],
+              "snippet": "export const caller4=()=>needle(4);",
+              "reason": "lexical_exact"
+            },
+            {
+              "alias": "s6",
+              "kind": "text",
+              "path": "a05.ts",
+              "lines": [
+                1,
+                1
+              ],
+              "snippet": "export const caller5=()=>needle(5);",
+              "reason": "lexical_exact"
+            },
+            {
+              "alias": "s7",
+              "kind": "text",
+              "path": "a06.ts",
+              "lines": [
+                1,
+                1
+              ],
+              "snippet": "export const caller6=()=>needle(6);",
+              "reason": "lexical_exact"
+            },
+            {
+              "alias": "s8",
+              "kind": "text",
+              "path": "a07.ts",
+              "lines": [
+                1,
+                1
+              ],
+              "snippet": "export const caller7=()=>needle(7);",
+              "reason": "lexical_exact"
+            }
+          ],
+          "candidateCount": 13,
+          "limited": true,
+          "guidance": "Result limit reached; narrow the query or scope, or use run_task for an exhaustive scan."
+        }
+      },
+      "followup": {
+        "status": "ok",
+        "receipt": "r1",
+        "data": {
+          "path": "z.ts",
+          "view": "symbol",
+          "alias": "s9",
+          "editTarget": "s9",
+          "kind": "function",
+          "qualifiedName": "needle",
+          "signature": "function needle(n:number)",
+          "body": "{return n+1;}"
+        }
+      }
+    },
+    {
+      "mechanism": "navigation",
+      "stage": "navigation",
+      "mode": "default",
+      "offered": true,
+      "calls": 2,
+      "search": {
+        "status": "ok",
+        "data": {
+          "mode": "auto",
+          "engine": "syntax_and_ripgrep",
+          "results": [
+            {
+              "alias": "s1",
+              "path": "a00.ts",
+              "lines": [
+                1,
+                1
+              ],
+              "kind": "variable",
+              "qualifiedName": "caller0",
+              "signature": "caller0=()=>",
+              "reason": "lexical_symbol"
+            },
+            {
+              "alias": "s2",
+              "path": "a01.ts",
+              "lines": [
+                1,
+                1
+              ],
+              "kind": "variable",
+              "qualifiedName": "caller1",
+              "signature": "caller1=()=>",
+              "reason": "lexical_symbol"
+            },
+            {
+              "alias": "s3",
+              "path": "a02.ts",
+              "lines": [
+                1,
+                1
+              ],
+              "kind": "variable",
+              "qualifiedName": "caller2",
+              "signature": "caller2=()=>",
+              "reason": "lexical_symbol"
+            },
+            {
+              "alias": "s4",
+              "path": "a03.ts",
+              "lines": [
+                1,
+                1
+              ],
+              "kind": "variable",
+              "qualifiedName": "caller3",
+              "signature": "caller3=()=>",
+              "reason": "lexical_symbol"
+            },
+            {
+              "alias": "s5",
+              "path": "a04.ts",
+              "lines": [
+                1,
+                1
+              ],
+              "kind": "variable",
+              "qualifiedName": "caller4",
+              "signature": "caller4=()=>",
+              "reason": "lexical_symbol"
+            },
+            {
+              "alias": "s6",
+              "path": "a05.ts",
+              "lines": [
+                1,
+                1
+              ],
+              "kind": "variable",
+              "qualifiedName": "caller5",
+              "signature": "caller5=()=>",
+              "reason": "lexical_symbol"
+            },
+            {
+              "alias": "s7",
+              "path": "a06.ts",
+              "lines": [
+                1,
+                1
+              ],
+              "kind": "variable",
+              "qualifiedName": "caller6",
+              "signature": "caller6=()=>",
+              "reason": "lexical_symbol"
+            },
+            {
+              "alias": "s8",
+              "path": "a07.ts",
+              "lines": [
+                1,
+                1
+              ],
+              "kind": "variable",
+              "qualifiedName": "caller7",
+              "signature": "caller7=()=>",
+              "reason": "lexical_symbol"
+            }
+          ],
+          "candidateCount": 13,
+          "limited": true,
+          "guidance": "Bounded syntax candidates, not exhaustive and not compiler-resolved references. Choose the intended declaration, then follow nextSearches. No edit coverage; read truncated signatures explicitly.",
+          "declarationDiscovery": {
+            "engine": "syntax",
+            "status": "current",
+            "navigationOnly": true,
+            "sourceRevision": "src_57860e0c5c62a135f4a456588a95328b",
+            "eligibleFiles": 13,
+            "visitedFiles": 13,
+            "readBytes": 482,
+            "skippedFiles": 0,
+            "limited": false,
+            "limits": {
+              "files": 64,
+              "bytes": 1048576,
+              "fileBytes": 262144,
+              "declarations": 4
+            }
+          },
+          "declarationCandidates": [
+            {
+              "alias": "s9",
+              "path": "z.ts",
+              "lines": [
+                1,
+                1
+              ],
+              "kind": "function",
+              "qualifiedName": "needle",
+              "signature": "function needle(n:number)",
+              "reason": "exact_declaration_candidate",
+              "target": "z.ts#needle"
+            }
+          ],
+          "nextReads": [
+            {
+              "target": "z.ts#needle",
+              "view": "symbol"
+            }
+          ],
+          "nextSearches": [
+            {
+              "query": "z.ts#needle",
+              "mode": "references"
+            }
+          ]
+        }
+      },
+      "followup": {
+        "status": "ok",
+        "receipt": "r1",
+        "data": {
+          "path": "z.ts",
+          "view": "symbol",
+          "alias": "s9",
+          "editTarget": "s9",
+          "kind": "function",
+          "qualifiedName": "needle",
+          "signature": "function needle(n:number)",
+          "body": "{return n+1;}"
+        }
+      }
+    },
+    {
+      "mechanism": "navigation",
+      "stage": "navigation",
+      "mode": "text",
+      "offered": true,
+      "calls": 2,
+      "search": {
+        "status": "ok",
+        "data": {
+          "mode": "text",
+          "engine": "ripgrep",
+          "results": [
+            {
+              "alias": "s1",
+              "kind": "text",
+              "path": "a00.ts",
+              "lines": [
+                1,
+                1
+              ],
+              "snippet": "export const caller0=()=>needle(0);",
+              "reason": "lexical_exact"
+            },
+            {
+              "alias": "s2",
+              "kind": "text",
+              "path": "a01.ts",
+              "lines": [
+                1,
+                1
+              ],
+              "snippet": "export const caller1=()=>needle(1);",
+              "reason": "lexical_exact"
+            },
+            {
+              "alias": "s3",
+              "kind": "text",
+              "path": "a02.ts",
+              "lines": [
+                1,
+                1
+              ],
+              "snippet": "export const caller2=()=>needle(2);",
+              "reason": "lexical_exact"
+            },
+            {
+              "alias": "s4",
+              "kind": "text",
+              "path": "a03.ts",
+              "lines": [
+                1,
+                1
+              ],
+              "snippet": "export const caller3=()=>needle(3);",
+              "reason": "lexical_exact"
+            },
+            {
+              "alias": "s5",
+              "kind": "text",
+              "path": "a04.ts",
+              "lines": [
+                1,
+                1
+              ],
+              "snippet": "export const caller4=()=>needle(4);",
+              "reason": "lexical_exact"
+            },
+            {
+              "alias": "s6",
+              "kind": "text",
+              "path": "a05.ts",
+              "lines": [
+                1,
+                1
+              ],
+              "snippet": "export const caller5=()=>needle(5);",
+              "reason": "lexical_exact"
+            },
+            {
+              "alias": "s7",
+              "kind": "text",
+              "path": "a06.ts",
+              "lines": [
+                1,
+                1
+              ],
+              "snippet": "export const caller6=()=>needle(6);",
+              "reason": "lexical_exact"
+            },
+            {
+              "alias": "s8",
+              "kind": "text",
+              "path": "a07.ts",
+              "lines": [
+                1,
+                1
+              ],
+              "snippet": "export const caller7=()=>needle(7);",
+              "reason": "lexical_exact"
+            }
+          ],
+          "candidateCount": 13,
+          "limited": true,
+          "guidance": "Bounded syntax candidates, not exhaustive and not compiler-resolved references. Choose the intended declaration, then follow nextSearches. No edit coverage; read truncated signatures explicitly.",
+          "declarationDiscovery": {
+            "engine": "syntax",
+            "status": "current",
+            "navigationOnly": true,
+            "sourceRevision": "src_57860e0c5c62a135f4a456588a95328b",
+            "eligibleFiles": 13,
+            "visitedFiles": 13,
+            "readBytes": 482,
+            "skippedFiles": 0,
+            "limited": false,
+            "limits": {
+              "files": 64,
+              "bytes": 1048576,
+              "fileBytes": 262144,
+              "declarations": 4
+            }
+          },
+          "declarationCandidates": [
+            {
+              "alias": "s9",
+              "path": "z.ts",
+              "lines": [
+                1,
+                1
+              ],
+              "kind": "function",
+              "qualifiedName": "needle",
+              "signature": "function needle(n:number)",
+              "reason": "exact_declaration_candidate",
+              "target": "z.ts#needle"
+            }
+          ],
+          "nextReads": [
+            {
+              "target": "z.ts#needle",
+              "view": "symbol"
+            }
+          ],
+          "nextSearches": [
+            {
+              "query": "z.ts#needle",
+              "mode": "references"
+            }
+          ]
+        }
+      },
+      "followup": {
+        "status": "ok",
+        "receipt": "r1",
+        "data": {
+          "path": "z.ts",
+          "view": "symbol",
+          "alias": "s9",
+          "editTarget": "s9",
+          "kind": "function",
+          "qualifiedName": "needle",
+          "signature": "function needle(n:number)",
+          "body": "{return n+1;}"
+        }
+      }
+    },
+    {
+      "mechanism": "body-header",
+      "stage": "navigation",
+      "receipt": {
+        "status": "ok",
+        "receipt": "c1",
+        "data": {
+          "changed": true,
+          "changes": [
+            {
+              "path": "value.ts",
+              "additions": 1,
+              "deletions": 1,
+              "symbols": [
+                "clamp"
+              ]
+            }
+          ],
+          "aliases": [
+            {
+              "alias": "s1",
+              "path": "value.ts",
+              "qualifiedName": "clamp"
+            }
+          ],
+          "parse": {
+            "status": "passed",
+            "files": [
+              {
+                "path": "value.ts",
+                "status": "passed"
+              }
+            ]
+          },
+          "basedOn": "filesystem",
+          "sourceRevisionId": "src_a9d190168149f910cc20abce5cc990bb"
+        }
+      },
+      "receiptBytes": 360,
+      "sourceHash": "897fc2800d9f6c8a2501932334a38ef347bb350ea857ec798f8c445123f6de7d",
+      "headerShown": false
+    },
+    {
+      "mechanism": "body-header",
+      "stage": "body",
+      "receipt": {
+        "status": "ok",
+        "receipt": "c1",
+        "data": {
+          "changed": true,
+          "changes": [
+            {
+              "path": "value.ts",
+              "additions": 1,
+              "deletions": 1,
+              "symbols": [
+                "clamp"
+              ]
+            }
+          ],
+          "aliases": [
+            {
+              "alias": "s1",
+              "path": "value.ts",
+              "qualifiedName": "clamp"
+            }
+          ],
+          "parse": {
+            "status": "passed",
+            "files": [
+              {
+                "path": "value.ts",
+                "status": "passed"
+              }
+            ]
+          },
+          "basedOn": "filesystem",
+          "sourceRevisionId": "src_a9d190168149f910cc20abce5cc990bb",
+          "bodyEditContext": {
+            "headers": [
+              {
+                "path": "value.ts",
+                "target": "value.ts#clamp",
+                "qualifiedName": "clamp",
+                "header": "function clamp(value:number,{min,max}:{min:number;max:number}):number",
+                "truncated": false
+              }
+            ],
+            "omitted": 0,
+            "scope": "headers_before_body_edits",
+            "instruction": "replace_body retains these parameters and return types and does not add imports. Other explicit operations in this batch may change them. Use the shown parameter names; to change a header or imports, read the complete declaration/file and use replace or a file patch. This receipt grants no additional read coverage or type validation."
+          }
+        }
+      },
+      "receiptBytes": 961,
+      "sourceHash": "897fc2800d9f6c8a2501932334a38ef347bb350ea857ec798f8c445123f6de7d",
+      "headerShown": true
+    },
+    {
+      "mechanism": "repair-order",
+      "stage": "body",
+      "firstEdit": {
+        "changed": true,
+        "changes": [
+          {
+            "path": "value.cjs",
+            "additions": 1,
+            "deletions": 1
+          }
+        ],
+        "parse": {
+          "status": "passed",
+          "files": [
+            {
+              "path": "value.cjs",
+              "status": "passed"
+            }
+          ]
+        },
+        "basedOn": "filesystem",
+        "sourceRevisionId": "src_90d207ff4802d9b1f168f4b72d30d3a8"
+      },
+      "outputs": [
+        {
+          "status": "ok",
+          "data": {
+            "command": "npm run test -- --test-reporter=spec --test-reporter=/workspace/blame-study-runs/harness-feedback-f57/body/dist/harness/node-event-reporter.js --test-reporter-destination=stdout --test-reporter-destination=/workspace/blame-study-runs/harness-feedback-f57/local/repair-body/.blame/harness/test-results/node-99995-1-tOiQsP/events.jsonl --test-name-pattern=alpha suite.test.cjs",
+            "exitCode": 1,
+            "output": "> test\n> node --test --test-reporter=spec --test-reporter=/workspace/blame-study-runs/harness-feedback-f57/body/dist/harness/node-event-reporter.js --test-reporter-destination=stdout --test-reporter-destination=/workspace/blame-study-runs/harness-feedback-f57/local/repair-body/.blame/harness/test-results/node-99995-1-tOiQsP/events.jsonl --test-name-pattern=alpha suite.test.cjs\n\n✖ alpha (1.21953ms)\nℹ tests 1\nℹ suites 0\nℹ pass 0\nℹ fail 1\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 56.130622\n\n✖ failing tests:\n\ntest at suite.test.cjs:1:113\n✖ alpha (1.21953ms)\n  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n  \n  1 !== 2\n  \n      at TestContext.<anonymous> (/workspace/blame-study-runs/harness-feedback-f57/local/repair-body/suite.test.cjs:1:137)\n      at Test.runInAsyncScope (node:async_hooks:227:14)\n      at Test.run (node:internal/test_runner/test:1382:25)\n      at Test.start (node:internal/test_runner/test:1242:17)\n      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {\n    generatedMessage: true,\n    code: 'ERR_ASSERTION',\n    actual: 1,\n    expected: 2,\n    operator: 'strictEqual',\n    diff: 'simple'\n  }\nActive Node case results: 0 passed, 1 failed, 0 skipped/todo. File workers and suites are excluded. Command outcome: failed. Test scope, selection and freshness are not admitted by these counts.",
+            "failure": {
+              "category": "code",
+              "recovery": "Fix the reported project error before running the relevant validation again."
+            },
+            "check": {
+              "process": "exited",
+              "exitCode": 1,
+              "execution": "observed",
+              "outcome": "failed",
+              "counts": {
+                "executed": 1,
+                "passed": 0,
+                "failed": 1,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "node_events",
+              "evidence": {
+                "invocationId": "node-99995-1-tOiQsP",
+                "reporterSha256": "0d0f0810b15a57c649d96966f17f40765cf48c2589daf0375f261a08b0b4143b",
+                "reportSha256": "e06b814d904ef361cf9865ed922c6af29242f3d8d6d4228060cc2fc74f6d1deb",
+                "runner": {
+                  "version": "v24.19.0",
+                  "executable": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+                  "platform": "linux",
+                  "arch": "x64",
+                  "timezone": null
+                },
+                "caseFiles": [
+                  "/workspace/blame-study-runs/harness-feedback-f57/local/repair-body/suite.test.cjs"
+                ],
+                "caseFilesTruncated": false,
+                "boundary": "Actual runner/version and reported case files; dependency coverage and complete environment remain unknown.",
+                "command": "npm run test -- --test-reporter=spec --test-reporter=/workspace/blame-study-runs/harness-feedback-f57/body/dist/harness/node-event-reporter.js --test-reporter-destination=stdout --test-reporter-destination=/workspace/blame-study-runs/harness-feedback-f57/local/repair-body/.blame/harness/test-results/node-99995-1-tOiQsP/events.jsonl --test-name-pattern=alpha suite.test.cjs",
+                "cwd": ".",
+                "taskId": "test",
+                "args": [
+                  "--test-name-pattern=alpha",
+                  "suite.test.cjs"
+                ],
+                "invocationSourceRevisionId": "src_d40a96fa1052212055793951c3f06c20",
+                "completedSourceRevisionId": "src_d40a96fa1052212055793951c3f06c20",
+                "manifestEnvironment": {
+                  "before": {
+                    "revisionId": "env_5e98050bc92a515d6c93c2d82dc31371",
+                    "manifests": [
+                      {
+                        "path": "package.json",
+                        "sha256": "423112710221161baae161e96a57dbae370fdec1fe7954a7dac2d1f254aed57a"
+                      }
+                    ],
+                    "truncated": false,
+                    "boundary": "Manifest and lockfile bytes; installed dependencies, services, other variables and dependency coverage remain unknown."
+                  },
+                  "after": {
+                    "revisionId": "env_5e98050bc92a515d6c93c2d82dc31371",
+                    "manifests": [
+                      {
+                        "path": "package.json",
+                        "sha256": "423112710221161baae161e96a57dbae370fdec1fe7954a7dac2d1f254aed57a"
+                      }
+                    ],
+                    "truncated": false,
+                    "boundary": "Manifest and lockfile bytes; installed dependencies, services, other variables and dependency coverage remain unknown."
+                  }
+                }
+              }
+            },
+            "reporting": {
+              "process": "exited",
+              "exitCode": 1,
+              "execution": "observed",
+              "outcome": "failed",
+              "counts": {
+                "executed": 1,
+                "passed": 0,
+                "failed": 1,
+                "skipped": 0,
+                "pending": null
+              },
+              "evidenceOrigin": "node_events",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "admission": "unverified",
+              "guidance": "Null means unreported, never zero. Pending is distinct from skipped. Counters follow the runner (some combine skipped/todo). Process success, passing tests, admitted source verification and user acceptance are separate claims.",
+              "invocationSourceRevisionId": "src_d40a96fa1052212055793951c3f06c20",
+              "completedSourceRevisionId": "src_d40a96fa1052212055793951c3f06c20",
+              "cwd": "."
+            },
+            "changed": false,
+            "paths": [],
+            "validation": {
+              "status": "failed"
+            },
+            "diagnostics": [
+              {
+                "path": "suite.test.cjs",
+                "view": "range",
+                "complete": true,
+                "editTargets": [
+                  {
+                    "alias": "s1",
+                    "qualifiedName": "assert"
+                  },
+                  {
+                    "alias": "s2",
+                    "qualifiedName": "{value}"
+                  },
+                  {
+                    "alias": "s3",
+                    "qualifiedName": "{test}"
+                  }
+                ],
+                "content": "const{test}=require('node:test');const assert=require('node:assert/strict');const{value}=require('./value.cjs');test('alpha',()=>assert.equal(value,2));test('beta',()=>assert.ok(value<4));\n",
+                "truncated": false,
+                "source": "current workspace; diagnostic revision not certified"
+              }
+            ]
+          }
+        },
+        {
+          "status": "ok",
+          "data": {
+            "command": "npm run test -- --test-reporter=spec --test-reporter=/workspace/blame-study-runs/harness-feedback-f57/body/dist/harness/node-event-reporter.js --test-reporter-destination=stdout --test-reporter-destination=/workspace/blame-study-runs/harness-feedback-f57/local/repair-body/.blame/harness/test-results/node-99995-2-71loQJ/events.jsonl --test-name-pattern=beta suite.test.cjs",
+            "exitCode": 0,
+            "output": "> test\n> node --test --test-reporter=spec --test-reporter=/workspace/blame-study-runs/harness-feedback-f57/body/dist/harness/node-event-reporter.js --test-reporter-destination=stdout --test-reporter-destination=/workspace/blame-study-runs/harness-feedback-f57/local/repair-body/.blame/harness/test-results/node-99995-2-71loQJ/events.jsonl --test-name-pattern=beta suite.test.cjs\n\n✔ beta (0.670986ms)\nℹ tests 1\nℹ suites 0\nℹ pass 1\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 57.347257\nActive Node case results: 1 passed, 0 failed, 0 skipped/todo. File workers and suites are excluded. Command outcome: passed. Test scope, selection and freshness are not admitted by these counts.",
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 1,
+                "passed": 1,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "node_events",
+              "evidence": {
+                "invocationId": "node-99995-2-71loQJ",
+                "reporterSha256": "0d0f0810b15a57c649d96966f17f40765cf48c2589daf0375f261a08b0b4143b",
+                "reportSha256": "b59216152ade2d1045b14e568aa50fb1bdec7793e839e9e896ac25074e377b4b",
+                "runner": {
+                  "version": "v24.19.0",
+                  "executable": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+                  "platform": "linux",
+                  "arch": "x64",
+                  "timezone": null
+                },
+                "caseFiles": [
+                  "/workspace/blame-study-runs/harness-feedback-f57/local/repair-body/suite.test.cjs"
+                ],
+                "caseFilesTruncated": false,
+                "boundary": "Actual runner/version and reported case files; dependency coverage and complete environment remain unknown.",
+                "command": "npm run test -- --test-reporter=spec --test-reporter=/workspace/blame-study-runs/harness-feedback-f57/body/dist/harness/node-event-reporter.js --test-reporter-destination=stdout --test-reporter-destination=/workspace/blame-study-runs/harness-feedback-f57/local/repair-body/.blame/harness/test-results/node-99995-2-71loQJ/events.jsonl --test-name-pattern=beta suite.test.cjs",
+                "cwd": ".",
+                "taskId": "test",
+                "args": [
+                  "--test-name-pattern=beta",
+                  "suite.test.cjs"
+                ],
+                "invocationSourceRevisionId": "src_d40a96fa1052212055793951c3f06c20",
+                "completedSourceRevisionId": "src_d40a96fa1052212055793951c3f06c20",
+                "manifestEnvironment": {
+                  "before": {
+                    "revisionId": "env_5e98050bc92a515d6c93c2d82dc31371",
+                    "manifests": [
+                      {
+                        "path": "package.json",
+                        "sha256": "423112710221161baae161e96a57dbae370fdec1fe7954a7dac2d1f254aed57a"
+                      }
+                    ],
+                    "truncated": false,
+                    "boundary": "Manifest and lockfile bytes; installed dependencies, services, other variables and dependency coverage remain unknown."
+                  },
+                  "after": {
+                    "revisionId": "env_5e98050bc92a515d6c93c2d82dc31371",
+                    "manifests": [
+                      {
+                        "path": "package.json",
+                        "sha256": "423112710221161baae161e96a57dbae370fdec1fe7954a7dac2d1f254aed57a"
+                      }
+                    ],
+                    "truncated": false,
+                    "boundary": "Manifest and lockfile bytes; installed dependencies, services, other variables and dependency coverage remain unknown."
+                  }
+                }
+              }
+            },
+            "reporting": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 1,
+                "passed": 1,
+                "failed": 0,
+                "skipped": 0,
+                "pending": null
+              },
+              "evidenceOrigin": "node_events",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "admission": "unverified",
+              "guidance": "Null means unreported, never zero. Pending is distinct from skipped. Counters follow the runner (some combine skipped/todo). Process success, passing tests, admitted source verification and user acceptance are separate claims.",
+              "invocationSourceRevisionId": "src_d40a96fa1052212055793951c3f06c20",
+              "completedSourceRevisionId": "src_d40a96fa1052212055793951c3f06c20",
+              "cwd": "."
+            },
+            "changed": false,
+            "paths": [],
+            "validation": {
+              "status": "unknown"
+            }
+          }
+        },
+        {
+          "status": "ok",
+          "data": {
+            "command": "npm run build",
+            "exitCode": 0,
+            "output": "> build\n> node --check value.cjs",
+            "environment": "linux-native",
+            "validation": {
+              "paths": [],
+              "sourceRevisionId": "src_d40a96fa1052212055793951c3f06c20",
+              "status": "passed",
+              "taskId": "build",
+              "taskKind": "build"
+            }
+          }
+        }
+      ],
+      "failedFinishInvocations": [
+        {
+          "kind": "project",
+          "task": "build"
+        },
+        {
+          "kind": "project",
+          "task": "test",
+          "args": [
+            "--test-name-pattern=alpha",
+            "suite.test.cjs"
+          ]
+        },
+        {
+          "kind": "project",
+          "task": "test",
+          "args": [
+            "--test-name-pattern=beta",
+            "suite.test.cjs"
+          ]
+        }
+      ],
+      "failure": "Current validation is still failing: test. Resolve it and run the relevant check before finishing.",
+      "finalInvocations": [
+        {
+          "kind": "project",
+          "task": "build"
+        },
+        {
+          "kind": "project",
+          "task": "test",
+          "args": [
+            "--test-name-pattern=alpha",
+            "suite.test.cjs"
+          ]
+        },
+        {
+          "kind": "project",
+          "task": "test",
+          "args": [
+            "--test-name-pattern=beta",
+            "suite.test.cjs"
+          ]
+        }
+      ],
+      "completion": {
+        "source_revision_id": "src_0dc740cc061a24125ff74923d2c03ec6",
+        "delivery": "satisfied",
+        "verification": "verified",
+        "satisfied_obligations": [
+          "validation",
+          "check:build",
+          "check:alpha",
+          "check:beta"
+        ],
+        "missing_obligations": [],
+        "failed_obligations": [],
+        "reservations": []
+      }
+    },
+    {
+      "mechanism": "repair-order",
+      "stage": "repair",
+      "firstEdit": {
+        "changed": true,
+        "changes": [
+          {
+            "path": "value.cjs",
+            "additions": 1,
+            "deletions": 1
+          }
+        ],
+        "parse": {
+          "status": "passed",
+          "files": [
+            {
+              "path": "value.cjs",
+              "status": "passed"
+            }
+          ]
+        },
+        "basedOn": "filesystem",
+        "sourceRevisionId": "src_90d207ff4802d9b1f168f4b72d30d3a8",
+        "validationRepair": {
+          "sourceRevisionId": "src_90d207ff4802d9b1f168f4b72d30d3a8",
+          "advisoryOnly": true,
+          "repairFirst": [
+            {
+              "input": {
+                "kind": "project",
+                "task": "test",
+                "args": [
+                  "--test-name-pattern=alpha",
+                  "suite.test.cjs"
+                ]
+              },
+              "cwd": ".",
+              "category": "code",
+              "sourceRevisionId": "src_d40a96fa1052212055793951c3f06c20",
+              "freshness": "earlier_source",
+              "recovery": "Fix the reported project error before running the relevant validation again."
+            }
+          ],
+          "omittedFailures": 0,
+          "requiredAfterRepair": [
+            {
+              "id": "build",
+              "input": {
+                "kind": "project",
+                "task": "build"
+              },
+              "cwd": "."
+            },
+            {
+              "id": "alpha",
+              "input": {
+                "kind": "project",
+                "task": "test",
+                "args": [
+                  "--test-name-pattern=alpha",
+                  "suite.test.cjs"
+                ]
+              },
+              "cwd": "."
+            },
+            {
+              "id": "beta",
+              "input": {
+                "kind": "project",
+                "task": "test",
+                "args": [
+                  "--test-name-pattern=beta",
+                  "suite.test.cjs"
+                ]
+              },
+              "cwd": "."
+            }
+          ],
+          "omittedRequirements": 0,
+          "unresolvedRequirements": 0,
+          "instruction": "Investigate the failed selection first, including environment or test-expectation errors; an earlier-source failure is a repair lead, not a current result. Rerun that exact selection after repairing it before repeating already passing checks. After the final source/test edit, run every required invocation on that final source. Do not weaken tests, public types or user criteria. This advice runs no command and admits no validation or acceptance."
+        }
+      },
+      "outputs": [
+        {
+          "status": "ok",
+          "data": {
+            "command": "npm run test -- --test-reporter=spec --test-reporter=/workspace/Blame/packages/agent-runtime/dist/harness/node-event-reporter.js --test-reporter-destination=stdout --test-reporter-destination=/workspace/blame-study-runs/harness-feedback-f57/local/repair-repair/.blame/harness/test-results/node-99995-1-vnbhAZ/events.jsonl --test-name-pattern=alpha suite.test.cjs",
+            "exitCode": 1,
+            "output": "> test\n> node --test --test-reporter=spec --test-reporter=/workspace/Blame/packages/agent-runtime/dist/harness/node-event-reporter.js --test-reporter-destination=stdout --test-reporter-destination=/workspace/blame-study-runs/harness-feedback-f57/local/repair-repair/.blame/harness/test-results/node-99995-1-vnbhAZ/events.jsonl --test-name-pattern=alpha suite.test.cjs\n\n✖ alpha (1.23901ms)\nℹ tests 1\nℹ suites 0\nℹ pass 0\nℹ fail 1\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 55.543802\n\n✖ failing tests:\n\ntest at suite.test.cjs:1:113\n✖ alpha (1.23901ms)\n  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n  \n  1 !== 2\n  \n      at TestContext.<anonymous> (/workspace/blame-study-runs/harness-feedback-f57/local/repair-repair/suite.test.cjs:1:137)\n      at Test.runInAsyncScope (node:async_hooks:227:14)\n      at Test.run (node:internal/test_runner/test:1382:25)\n      at Test.start (node:internal/test_runner/test:1242:17)\n      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {\n    generatedMessage: true,\n    code: 'ERR_ASSERTION',\n    actual: 1,\n    expected: 2,\n    operator: 'strictEqual',\n    diff: 'simple'\n  }\nActive Node case results: 0 passed, 1 failed, 0 skipped/todo. File workers and suites are excluded. Command outcome: failed. Test scope, selection and freshness are not admitted by these counts.",
+            "failure": {
+              "category": "code",
+              "recovery": "Fix the reported project error before running the relevant validation again."
+            },
+            "check": {
+              "process": "exited",
+              "exitCode": 1,
+              "execution": "observed",
+              "outcome": "failed",
+              "counts": {
+                "executed": 1,
+                "passed": 0,
+                "failed": 1,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "node_events",
+              "evidence": {
+                "invocationId": "node-99995-1-vnbhAZ",
+                "reporterSha256": "0d0f0810b15a57c649d96966f17f40765cf48c2589daf0375f261a08b0b4143b",
+                "reportSha256": "7cbc9572ab822a417a9ce05b56ec221b4800307775eb5e191ef874784c12d99e",
+                "runner": {
+                  "version": "v24.19.0",
+                  "executable": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+                  "platform": "linux",
+                  "arch": "x64",
+                  "timezone": null
+                },
+                "caseFiles": [
+                  "/workspace/blame-study-runs/harness-feedback-f57/local/repair-repair/suite.test.cjs"
+                ],
+                "caseFilesTruncated": false,
+                "boundary": "Actual runner/version and reported case files; dependency coverage and complete environment remain unknown.",
+                "command": "npm run test -- --test-reporter=spec --test-reporter=/workspace/Blame/packages/agent-runtime/dist/harness/node-event-reporter.js --test-reporter-destination=stdout --test-reporter-destination=/workspace/blame-study-runs/harness-feedback-f57/local/repair-repair/.blame/harness/test-results/node-99995-1-vnbhAZ/events.jsonl --test-name-pattern=alpha suite.test.cjs",
+                "cwd": ".",
+                "taskId": "test",
+                "args": [
+                  "--test-name-pattern=alpha",
+                  "suite.test.cjs"
+                ],
+                "invocationSourceRevisionId": "src_d40a96fa1052212055793951c3f06c20",
+                "completedSourceRevisionId": "src_d40a96fa1052212055793951c3f06c20",
+                "manifestEnvironment": {
+                  "before": {
+                    "revisionId": "env_5e98050bc92a515d6c93c2d82dc31371",
+                    "manifests": [
+                      {
+                        "path": "package.json",
+                        "sha256": "423112710221161baae161e96a57dbae370fdec1fe7954a7dac2d1f254aed57a"
+                      }
+                    ],
+                    "truncated": false,
+                    "boundary": "Manifest and lockfile bytes; installed dependencies, services, other variables and dependency coverage remain unknown."
+                  },
+                  "after": {
+                    "revisionId": "env_5e98050bc92a515d6c93c2d82dc31371",
+                    "manifests": [
+                      {
+                        "path": "package.json",
+                        "sha256": "423112710221161baae161e96a57dbae370fdec1fe7954a7dac2d1f254aed57a"
+                      }
+                    ],
+                    "truncated": false,
+                    "boundary": "Manifest and lockfile bytes; installed dependencies, services, other variables and dependency coverage remain unknown."
+                  }
+                }
+              }
+            },
+            "reporting": {
+              "process": "exited",
+              "exitCode": 1,
+              "execution": "observed",
+              "outcome": "failed",
+              "counts": {
+                "executed": 1,
+                "passed": 0,
+                "failed": 1,
+                "skipped": 0,
+                "pending": null
+              },
+              "evidenceOrigin": "node_events",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "admission": "unverified",
+              "guidance": "Null means unreported, never zero. Pending is distinct from skipped. Counters follow the runner (some combine skipped/todo). Process success, passing tests, admitted source verification and user acceptance are separate claims.",
+              "invocationSourceRevisionId": "src_d40a96fa1052212055793951c3f06c20",
+              "completedSourceRevisionId": "src_d40a96fa1052212055793951c3f06c20",
+              "cwd": "."
+            },
+            "changed": false,
+            "paths": [],
+            "validation": {
+              "status": "failed"
+            },
+            "diagnostics": [
+              {
+                "path": "suite.test.cjs",
+                "view": "range",
+                "complete": true,
+                "editTargets": [
+                  {
+                    "alias": "s1",
+                    "qualifiedName": "assert"
+                  },
+                  {
+                    "alias": "s2",
+                    "qualifiedName": "{value}"
+                  },
+                  {
+                    "alias": "s3",
+                    "qualifiedName": "{test}"
+                  }
+                ],
+                "content": "const{test}=require('node:test');const assert=require('node:assert/strict');const{value}=require('./value.cjs');test('alpha',()=>assert.equal(value,2));test('beta',()=>assert.ok(value<4));\n",
+                "truncated": false,
+                "source": "current workspace; diagnostic revision not certified"
+              }
+            ],
+            "validationRepair": {
+              "sourceRevisionId": "src_d40a96fa1052212055793951c3f06c20",
+              "advisoryOnly": true,
+              "repairFirst": [
+                {
+                  "input": {
+                    "kind": "project",
+                    "task": "test",
+                    "args": [
+                      "--test-name-pattern=alpha",
+                      "suite.test.cjs"
+                    ]
+                  },
+                  "cwd": ".",
+                  "category": "code",
+                  "sourceRevisionId": "src_d40a96fa1052212055793951c3f06c20",
+                  "freshness": "current",
+                  "recovery": "Fix the reported project error before running the relevant validation again."
+                }
+              ],
+              "omittedFailures": 0,
+              "requiredAfterRepair": [
+                {
+                  "id": "build",
+                  "input": {
+                    "kind": "project",
+                    "task": "build"
+                  },
+                  "cwd": "."
+                },
+                {
+                  "id": "alpha",
+                  "input": {
+                    "kind": "project",
+                    "task": "test",
+                    "args": [
+                      "--test-name-pattern=alpha",
+                      "suite.test.cjs"
+                    ]
+                  },
+                  "cwd": "."
+                },
+                {
+                  "id": "beta",
+                  "input": {
+                    "kind": "project",
+                    "task": "test",
+                    "args": [
+                      "--test-name-pattern=beta",
+                      "suite.test.cjs"
+                    ]
+                  },
+                  "cwd": "."
+                }
+              ],
+              "omittedRequirements": 0,
+              "unresolvedRequirements": 0,
+              "instruction": "Investigate the failed selection first, including environment or test-expectation errors; an earlier-source failure is a repair lead, not a current result. Rerun that exact selection after repairing it before repeating already passing checks. After the final source/test edit, run every required invocation on that final source. Do not weaken tests, public types or user criteria. This advice runs no command and admits no validation or acceptance."
+            }
+          }
+        },
+        {
+          "status": "ok",
+          "data": {
+            "command": "npm run test -- --test-reporter=spec --test-reporter=/workspace/Blame/packages/agent-runtime/dist/harness/node-event-reporter.js --test-reporter-destination=stdout --test-reporter-destination=/workspace/blame-study-runs/harness-feedback-f57/local/repair-repair/.blame/harness/test-results/node-99995-2-zjpCJ5/events.jsonl --test-name-pattern=beta suite.test.cjs",
+            "exitCode": 0,
+            "output": "> test\n> node --test --test-reporter=spec --test-reporter=/workspace/Blame/packages/agent-runtime/dist/harness/node-event-reporter.js --test-reporter-destination=stdout --test-reporter-destination=/workspace/blame-study-runs/harness-feedback-f57/local/repair-repair/.blame/harness/test-results/node-99995-2-zjpCJ5/events.jsonl --test-name-pattern=beta suite.test.cjs\n\n✔ beta (0.778123ms)\nℹ tests 1\nℹ suites 0\nℹ pass 1\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 50.063864\nActive Node case results: 1 passed, 0 failed, 0 skipped/todo. File workers and suites are excluded. Command outcome: passed. Test scope, selection and freshness are not admitted by these counts.",
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 1,
+                "passed": 1,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "node_events",
+              "evidence": {
+                "invocationId": "node-99995-2-zjpCJ5",
+                "reporterSha256": "0d0f0810b15a57c649d96966f17f40765cf48c2589daf0375f261a08b0b4143b",
+                "reportSha256": "58898c206658ad99d00c1e351d1ce04a18f8b6146627b0b9307dbfab81017a2b",
+                "runner": {
+                  "version": "v24.19.0",
+                  "executable": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+                  "platform": "linux",
+                  "arch": "x64",
+                  "timezone": null
+                },
+                "caseFiles": [
+                  "/workspace/blame-study-runs/harness-feedback-f57/local/repair-repair/suite.test.cjs"
+                ],
+                "caseFilesTruncated": false,
+                "boundary": "Actual runner/version and reported case files; dependency coverage and complete environment remain unknown.",
+                "command": "npm run test -- --test-reporter=spec --test-reporter=/workspace/Blame/packages/agent-runtime/dist/harness/node-event-reporter.js --test-reporter-destination=stdout --test-reporter-destination=/workspace/blame-study-runs/harness-feedback-f57/local/repair-repair/.blame/harness/test-results/node-99995-2-zjpCJ5/events.jsonl --test-name-pattern=beta suite.test.cjs",
+                "cwd": ".",
+                "taskId": "test",
+                "args": [
+                  "--test-name-pattern=beta",
+                  "suite.test.cjs"
+                ],
+                "invocationSourceRevisionId": "src_d40a96fa1052212055793951c3f06c20",
+                "completedSourceRevisionId": "src_d40a96fa1052212055793951c3f06c20",
+                "manifestEnvironment": {
+                  "before": {
+                    "revisionId": "env_5e98050bc92a515d6c93c2d82dc31371",
+                    "manifests": [
+                      {
+                        "path": "package.json",
+                        "sha256": "423112710221161baae161e96a57dbae370fdec1fe7954a7dac2d1f254aed57a"
+                      }
+                    ],
+                    "truncated": false,
+                    "boundary": "Manifest and lockfile bytes; installed dependencies, services, other variables and dependency coverage remain unknown."
+                  },
+                  "after": {
+                    "revisionId": "env_5e98050bc92a515d6c93c2d82dc31371",
+                    "manifests": [
+                      {
+                        "path": "package.json",
+                        "sha256": "423112710221161baae161e96a57dbae370fdec1fe7954a7dac2d1f254aed57a"
+                      }
+                    ],
+                    "truncated": false,
+                    "boundary": "Manifest and lockfile bytes; installed dependencies, services, other variables and dependency coverage remain unknown."
+                  }
+                }
+              }
+            },
+            "reporting": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 1,
+                "passed": 1,
+                "failed": 0,
+                "skipped": 0,
+                "pending": null
+              },
+              "evidenceOrigin": "node_events",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "admission": "unverified",
+              "guidance": "Null means unreported, never zero. Pending is distinct from skipped. Counters follow the runner (some combine skipped/todo). Process success, passing tests, admitted source verification and user acceptance are separate claims.",
+              "invocationSourceRevisionId": "src_d40a96fa1052212055793951c3f06c20",
+              "completedSourceRevisionId": "src_d40a96fa1052212055793951c3f06c20",
+              "cwd": "."
+            },
+            "changed": false,
+            "paths": [],
+            "validation": {
+              "status": "unknown"
+            },
+            "validationRepair": {
+              "sourceRevisionId": "src_d40a96fa1052212055793951c3f06c20",
+              "advisoryOnly": true,
+              "repairFirst": [
+                {
+                  "input": {
+                    "kind": "project",
+                    "task": "test",
+                    "args": [
+                      "--test-name-pattern=alpha",
+                      "suite.test.cjs"
+                    ]
+                  },
+                  "cwd": ".",
+                  "category": "code",
+                  "sourceRevisionId": "src_d40a96fa1052212055793951c3f06c20",
+                  "freshness": "current",
+                  "recovery": "Fix the reported project error before running the relevant validation again."
+                }
+              ],
+              "omittedFailures": 0,
+              "requiredAfterRepair": [
+                {
+                  "id": "build",
+                  "input": {
+                    "kind": "project",
+                    "task": "build"
+                  },
+                  "cwd": "."
+                },
+                {
+                  "id": "alpha",
+                  "input": {
+                    "kind": "project",
+                    "task": "test",
+                    "args": [
+                      "--test-name-pattern=alpha",
+                      "suite.test.cjs"
+                    ]
+                  },
+                  "cwd": "."
+                },
+                {
+                  "id": "beta",
+                  "input": {
+                    "kind": "project",
+                    "task": "test",
+                    "args": [
+                      "--test-name-pattern=beta",
+                      "suite.test.cjs"
+                    ]
+                  },
+                  "cwd": "."
+                }
+              ],
+              "omittedRequirements": 0,
+              "unresolvedRequirements": 0,
+              "instruction": "Investigate the failed selection first, including environment or test-expectation errors; an earlier-source failure is a repair lead, not a current result. Rerun that exact selection after repairing it before repeating already passing checks. After the final source/test edit, run every required invocation on that final source. Do not weaken tests, public types or user criteria. This advice runs no command and admits no validation or acceptance."
+            }
+          }
+        },
+        {
+          "status": "ok",
+          "data": {
+            "command": "npm run build",
+            "exitCode": 0,
+            "output": "> build\n> node --check value.cjs",
+            "environment": "linux-native",
+            "validation": {
+              "paths": [],
+              "sourceRevisionId": "src_d40a96fa1052212055793951c3f06c20",
+              "status": "passed",
+              "taskId": "build",
+              "taskKind": "build"
+            },
+            "validationRepair": {
+              "sourceRevisionId": "src_d40a96fa1052212055793951c3f06c20",
+              "advisoryOnly": true,
+              "repairFirst": [
+                {
+                  "input": {
+                    "kind": "project",
+                    "task": "test",
+                    "args": [
+                      "--test-name-pattern=alpha",
+                      "suite.test.cjs"
+                    ]
+                  },
+                  "cwd": ".",
+                  "category": "code",
+                  "sourceRevisionId": "src_d40a96fa1052212055793951c3f06c20",
+                  "freshness": "current",
+                  "recovery": "Fix the reported project error before running the relevant validation again."
+                }
+              ],
+              "omittedFailures": 0,
+              "requiredAfterRepair": [
+                {
+                  "id": "build",
+                  "input": {
+                    "kind": "project",
+                    "task": "build"
+                  },
+                  "cwd": "."
+                },
+                {
+                  "id": "alpha",
+                  "input": {
+                    "kind": "project",
+                    "task": "test",
+                    "args": [
+                      "--test-name-pattern=alpha",
+                      "suite.test.cjs"
+                    ]
+                  },
+                  "cwd": "."
+                },
+                {
+                  "id": "beta",
+                  "input": {
+                    "kind": "project",
+                    "task": "test",
+                    "args": [
+                      "--test-name-pattern=beta",
+                      "suite.test.cjs"
+                    ]
+                  },
+                  "cwd": "."
+                }
+              ],
+              "omittedRequirements": 0,
+              "unresolvedRequirements": 0,
+              "instruction": "Investigate the failed selection first, including environment or test-expectation errors; an earlier-source failure is a repair lead, not a current result. Rerun that exact selection after repairing it before repeating already passing checks. After the final source/test edit, run every required invocation on that final source. Do not weaken tests, public types or user criteria. This advice runs no command and admits no validation or acceptance."
+            }
+          }
+        }
+      ],
+      "failedFinishInvocations": [
+        {
+          "kind": "project",
+          "task": "test",
+          "args": [
+            "--test-name-pattern=alpha",
+            "suite.test.cjs"
+          ]
+        }
+      ],
+      "failure": "Current validation is still failing: test. Resolve it and run the relevant check before finishing.",
+      "finalInvocations": [
+        {
+          "kind": "project",
+          "task": "test",
+          "args": [
+            "--test-name-pattern=alpha",
+            "suite.test.cjs"
+          ]
+        },
+        {
+          "kind": "project",
+          "task": "build"
+        },
+        {
+          "kind": "project",
+          "task": "test",
+          "args": [
+            "--test-name-pattern=beta",
+            "suite.test.cjs"
+          ]
+        }
+      ],
+      "completion": {
+        "source_revision_id": "src_0dc740cc061a24125ff74923d2c03ec6",
+        "delivery": "satisfied",
+        "verification": "verified",
+        "satisfied_obligations": [
+          "validation",
+          "check:build",
+          "check:alpha",
+          "check:beta"
+        ],
+        "missing_obligations": [],
+        "failed_obligations": [],
+        "reservations": []
+      }
+    }
+  ],
+  "navigation": {
+    "constructedCases": 2,
+    "baselineCalls": 6,
+    "candidateCalls": 4,
+    "limitation": "Scripted route selection on saturated cross-file cases, not observed agent adoption or token savings."
+  },
+  "body": {
+    "identicalSource": true,
+    "baselineReceiptBytes": 360,
+    "candidateReceiptBytes": 961,
+    "limitation": "More feedback bytes; prevention/recovery is not established without agent behavior."
+  },
+  "repair": {
+    "failedRefreshInvocationsBefore": 3,
+    "failedRefreshInvocationsAfter": 1,
+    "finalInvocationsInBoth": 3,
+    "limitation": "Avoids two checks while this constructed failure persists; final required checks remain unchanged. Not a global latency benchmark."
+  }
+}

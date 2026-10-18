@@ -1,0 +1,69 @@
+{
+  "phase": "F57",
+  "sourceHead": "96955a4007dfba386a10d92b482b15bb7f393b66",
+  "modelRequests": 0,
+  "baseline": {
+    "targeted": 57,
+    "failed": 0
+  },
+  "navigation": {
+    "targeted": 59,
+    "failed": 0
+  },
+  "body": {
+    "targeted": 136,
+    "failed": 0
+  },
+  "repair": {
+    "targeted": 44,
+    "failed": 0
+  },
+  "runtimeFull": {
+    "tests": 1069,
+    "passed": 1056,
+    "failed": 0,
+    "skipped": 13,
+    "skipReason": "11 optional solver tests without configured path plus pytest/platform controls"
+  },
+  "solverRerun": {
+    "passed": 69,
+    "failed": 0,
+    "skipped": 0,
+    "path": "/workspace/blame-study-runs/tooling/z3/bin/z3",
+    "note": "Includes the 11 skipped solver cases; overlaps full-suite cases, do not add totals."
+  },
+  "runner": {
+    "passed": 37,
+    "failed": 0
+  },
+  "coordinator": {
+    "passed": 20,
+    "failed": 0
+  },
+  "lint": "passed",
+  "developmentFailures": [
+    "Navigation refactoring changed inferred union return type; fixed explicit optional return annotation.",
+    "Three new body tests initially assumed export belongs to the AST header, duplicate names are syntax errors, and existing files accept raw replacement patches. Corrected these test assumptions; actual compiler binding errors remain a required check.",
+    "New repair tests initially used the wrong completion field and incomplete public journal fixtures; corrected tests. Advisory recovery preserves the literal harness-failure recovery contract."
+  ],
+  "logs": {
+    "logs/f57-baseline-build.log.gz": "b8ba29348444ff8f273ce4a864367527d190fd87f3747cc73ea3eaf46f3560f7",
+    "logs/f57-baseline-tests.log.gz": "a0547d2cab2cb6484b4c453ca3040c3ad58a1890400d4bd75df9d89cfcf91bba",
+    "logs/f57-navigation-build.log.gz": "e5c0a8b8db18c89fa98af2b7d2840e1641021d4d59b6af9eed185b38aef7a17a",
+    "logs/f57-navigation-build-fixed.log.gz": "b8ba29348444ff8f273ce4a864367527d190fd87f3747cc73ea3eaf46f3560f7",
+    "logs/f57-navigation-tests.log.gz": "f315c161e27e84a788700ce3535b22bd8c97769101df68c71a59220fefec9846",
+    "logs/f57-body-build.log.gz": "b8ba29348444ff8f273ce4a864367527d190fd87f3747cc73ea3eaf46f3560f7",
+    "logs/f57-body-tests.log.gz": "85136f20c0b9443d1acb81b8a805d6f9dc3b95c412c6b4d6ff0dc50ba4b4910d",
+    "logs/f57-body-build-fixed.log.gz": "b8ba29348444ff8f273ce4a864367527d190fd87f3747cc73ea3eaf46f3560f7",
+    "logs/f57-body-tests-fixed.log.gz": "581772ff1b9cecf4fd60e1fdce35cae934b7dfecd63ed4a8bd79a56c479c6054",
+    "logs/f57-repair-build.log.gz": "2c41a46388dbab4a9a1e65cd9b48bf73e9f76065b0c06e0504bd74412531b7e0",
+    "logs/f57-repair-build-fixed.log.gz": "b8ba29348444ff8f273ce4a864367527d190fd87f3747cc73ea3eaf46f3560f7",
+    "logs/f57-repair-tests.log.gz": "dd56d4761a7390220d717fcd73733bb38adcae48b36b8c9668dd483df38f5706",
+    "logs/f57-runtime-full.log.gz": "080c4b41c91d5c706d3f03b2010f7df1c7094e812bb8101bfe4c7ede6937c0f8",
+    "logs/f57-lint.log.gz": "c1fcfb743b08bdcdcd480a6374ab3c2c15c6872147b72e543c083d0a2f7a2a47",
+    "logs/f57-solver-tests.log.gz": "5c23afcc82625442657f738e42c120be96f7d2105a7cace107ff47e9071f63ee",
+    "logs/f57-runner-tests.log.gz": "cfcc2454fe9ba728d888c2716624964b66e3ef4a94dad71228c10245aeb6fb16",
+    "logs/f57-coordinator-tests.log.gz": "d8d044fcf2f0f4ee2b55f94e436a5eaef94a58673a660bbfdaf7db781c7e2587",
+    "logs/f57-local.log.gz": "7c6cbefe6ffa0e6a6d3fb4dce54ace195cad3d9818d02195d90c4ea97a4d16da"
+  }
+}
