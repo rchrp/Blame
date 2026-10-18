@@ -1,0 +1,81 @@
+{
+  "method": "Supplemental deduplication of registered exposure counters. Multiple advice receipts can point to the same subsequent validation. Literal later selection is chronology, not model comprehension, unique errors, prevented failures or causal mediation. All primary scores/gates unchanged.",
+  "repairReceipts": 20,
+  "matchingRepairReceipts": 5,
+  "distinctNextValidationSelections": 3,
+  "rows": [
+    {
+      "name": "1-alternative-selections-candidate",
+      "ledgerSha256": "95b718341247490b6849a50b5be776675fb8ebc87b12cf5435b07be500ed3f4a",
+      "repairReceiptCount": 4,
+      "matchingReceiptCount": 0,
+      "distinctNextValidationIndices": [],
+      "navigationOffers": 3,
+      "followedNavigationOffers": [
+        {
+          "index": 0,
+          "followedIndices": [
+            7
+          ]
+        }
+      ],
+      "actualHeaderReceipts": 0
+    },
+    {
+      "name": "1-symbol-pattern-keys-candidate",
+      "ledgerSha256": "e121fd42c905b6d0d4a4afebbdec1a70339811e6b3da72b3f6cde3582d7c9f0f",
+      "repairReceiptCount": 0,
+      "matchingReceiptCount": 0,
+      "distinctNextValidationIndices": [],
+      "navigationOffers": 3,
+      "followedNavigationOffers": [],
+      "actualHeaderReceipts": 0
+    },
+    {
+      "name": "1-empty-collection-selections-candidate",
+      "ledgerSha256": "e618394a36f37ba5c67ba4008f3d1239d5c90d8a7a99236de5f609961f595ec4",
+      "repairReceiptCount": 10,
+      "matchingReceiptCount": 3,
+      "distinctNextValidationIndices": [
+        45
+      ],
+      "navigationOffers": 0,
+      "followedNavigationOffers": [],
+      "actualHeaderReceipts": 0
+    },
+    {
+      "name": "2-alternative-selections-candidate",
+      "ledgerSha256": "505bff451609f60e3db1ddac83261e3e7ee1878b905966b632529f291e11d64c",
+      "repairReceiptCount": 1,
+      "matchingReceiptCount": 1,
+      "distinctNextValidationIndices": [
+        35
+      ],
+      "navigationOffers": 2,
+      "followedNavigationOffers": [],
+      "actualHeaderReceipts": 0
+    },
+    {
+      "name": "2-symbol-pattern-keys-candidate",
+      "ledgerSha256": "0b722c66e227c3ffbbf5d19d4dd7a7ab999fd6b96dcc5d71e27fe2e4b5940334",
+      "repairReceiptCount": 4,
+      "matchingReceiptCount": 0,
+      "distinctNextValidationIndices": [],
+      "navigationOffers": 1,
+      "followedNavigationOffers": [],
+      "actualHeaderReceipts": 0
+    },
+    {
+      "name": "2-empty-collection-selections-candidate",
+      "ledgerSha256": "ce0a4167c8467721b46d9964be035dff3c15332b484a958cdac6ee6072dd27c2",
+      "repairReceiptCount": 1,
+      "matchingReceiptCount": 1,
+      "distinctNextValidationIndices": [
+        38
+      ],
+      "navigationOffers": 2,
+      "followedNavigationOffers": [],
+      "actualHeaderReceipts": 0
+    }
+  ]
+}

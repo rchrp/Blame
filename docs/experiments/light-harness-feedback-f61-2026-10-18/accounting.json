@@ -1,0 +1,206 @@
+{
+  "method": "Known SDK estimates plus explicit missing-aggregate/unreported-request reserves, not imputed consumption. Wire/report counts do not establish billing or hidden retries.",
+  "trials": [
+    {
+      "name": "1-alternative-selections-reference",
+      "observedUsd": 0.03484528,
+      "forwardedAttempts": 19,
+      "usageReports": 19,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.03484528,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "1-alternative-selections-candidate",
+      "observedUsd": 0.02211592,
+      "forwardedAttempts": 12,
+      "usageReports": 12,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.02211592,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "1-alternative-selections-cline",
+      "observedUsd": 0.05092528,
+      "forwardedAttempts": 19,
+      "usageReports": 19,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.05092528,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "1-symbol-pattern-keys-candidate",
+      "observedUsd": 0.020416399999999998,
+      "forwardedAttempts": 13,
+      "usageReports": 13,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.020416399999999998,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "1-symbol-pattern-keys-cline",
+      "observedUsd": 0.03635216,
+      "forwardedAttempts": 12,
+      "usageReports": 12,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.03635216,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "1-symbol-pattern-keys-reference",
+      "observedUsd": 0.028500880000000006,
+      "forwardedAttempts": 18,
+      "usageReports": 18,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.028500880000000006,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "1-empty-collection-selections-cline",
+      "observedUsd": 0.03289628,
+      "forwardedAttempts": 12,
+      "usageReports": 12,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.03289628,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "1-empty-collection-selections-reference",
+      "observedUsd": 0.029867720000000004,
+      "forwardedAttempts": 20,
+      "usageReports": 20,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.029867720000000004,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "1-empty-collection-selections-candidate",
+      "observedUsd": 0.029578759999999996,
+      "forwardedAttempts": 17,
+      "usageReports": 17,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.029578759999999996,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "2-alternative-selections-candidate",
+      "observedUsd": 0.021661600000000003,
+      "forwardedAttempts": 13,
+      "usageReports": 13,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.021661600000000003,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "2-alternative-selections-cline",
+      "observedUsd": 0.051597840000000006,
+      "forwardedAttempts": 15,
+      "usageReports": 15,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.051597840000000006,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "2-alternative-selections-reference",
+      "observedUsd": 0.02141088,
+      "forwardedAttempts": 14,
+      "usageReports": 14,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.02141088,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "2-symbol-pattern-keys-cline",
+      "observedUsd": 0.026746479999999996,
+      "forwardedAttempts": 8,
+      "usageReports": 8,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.026746479999999996,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "2-symbol-pattern-keys-reference",
+      "observedUsd": 0.019521919999999995,
+      "forwardedAttempts": 12,
+      "usageReports": 12,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.019521919999999995,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "2-symbol-pattern-keys-candidate",
+      "observedUsd": 0.02753324,
+      "forwardedAttempts": 12,
+      "usageReports": 12,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.02753324,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "2-empty-collection-selections-reference",
+      "observedUsd": 0.018877840000000003,
+      "forwardedAttempts": 12,
+      "usageReports": 12,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.018877840000000003,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "2-empty-collection-selections-candidate",
+      "observedUsd": 0.023301120000000005,
+      "forwardedAttempts": 11,
+      "usageReports": 11,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.023301120000000005,
+      "basis": "wire/report counts; billing unknown"
+    },
+    {
+      "name": "2-empty-collection-selections-cline",
+      "observedUsd": 0.036988160000000006,
+      "forwardedAttempts": 13,
+      "usageReports": 13,
+      "wireUsageCountGap": 0,
+      "aggregateReserveUsd": 0,
+      "unreportedRequestReserveUsd": 0,
+      "accountedUsd": 0.036988160000000006,
+      "basis": "wire/report counts; billing unknown"
+    }
+  ],
+  "observedUsd": 0.53313776,
+  "reservedUsd": 0,
+  "accountedUsd": 0.53313776
+}

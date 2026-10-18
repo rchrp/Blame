@@ -273,6 +273,111 @@
       "evidence": [
         "Shared helper consumer bytes match reviewed Cline1; new getOwnKeys directly returns Reflect.ownKeys with string/symbol type and serves both matching/discovery, preserving special cases/inherited value semantics. Four new tests and independent oracle cover hidden/symbol, optional, empty-array and inherited behavior; public types unchanged. Last explicit edit12 precedes successful conjunctive required plus delivered-types15; root check17 passes before missing Jest causes npm test failure, honestly reported with missing formatter14. All five independent endpoints pass, protected/dependencies unchanged. Local log8 sees frozen input only; no retrieval, installs or late mutation."
       ]
+    },
+    {
+      "name": "2-symbol-pattern-keys-reference",
+      "hashes": {
+        "events.jsonl": "ce260bbc04d5f27ec8d1f2fe5350138f3385c888bfe84e44489a30cb416f8827",
+        "workspace.diff": "e71e5462d16a21a34c44abb14b903472f32d85827e45a4af5f4e371069934d84",
+        "score.json": "c92d930cc051b51b7f6ae8c9aa42c1be832b6291693fad13329dff50d6778369",
+        "tool-ledger.json": "ef390d9f736ae257149e79b13e782e26fc9b5f72a811f1a4763c316a836d6ea8",
+        "feedback-wire.jsonl": "7a3acda5d48f39ff8e971da56c6f64b1b56326203526dc37d4380c27ad4a6672"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "New object-pattern helper centralizes Reflect.ownKeys in both ordinary matching and discovery; own hidden/symbol keys included, inherited pattern keys ignored, inherited value lookup and special cases preserved. Four new tests and independent oracle cover requested cases. Initial multifile symbol-scoped batch25 rejected atomically; corrected file patches26 succeed. Delivered compiler30 rejects a pattern constrained to an undefined-only new-test input; assertion-only test edit34 preserves public API/types, followed by fresh required35/36/37 and compiler38, all passing. All independent endpoints pass; protected/dependencies intact, no late edit/retrieval or misleading report."
+      ]
+    },
+    {
+      "name": "2-symbol-pattern-keys-candidate",
+      "hashes": {
+        "events.jsonl": "bbc2c5bc7102b15b00941ae2354a3847ace6eb9691bc28e8034286785c4cca19",
+        "workspace.diff": "ad9f60ac1fe9998f8c8e7206bb8aa5e2756c6b0691beb918c4c4ecf90a6157e8",
+        "score.json": "0c370bc2c25c11a84dfade62af3e8e831f11812bf3e4e15cba9368b2731efcbd",
+        "tool-ledger.json": "0b722c66e227c3ffbbf5d19d4dd7a7ab999fd6b96dcc5d71e27fe2e4b5940334",
+        "feedback-wire.jsonl": "a96f23bbb0ec7cd322dfca4d7cd2c3fe577b7ba68af877a5425aa1ad1a644a51"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Shared object-pattern helper returns Reflect.ownKeys and is compatible with both consumer bytes matching reviewed reference2, preserving inherited value lookup and matcher/tuple branches. Four authored tests plus independent oracle cover symbols/hidden keys, optional absence, empty arrays and inherited behavior. No public type-module changes. Final-source required36/37/38 and delivered-types40 pass after last edit35; all five independent endpoints pass, no protected/dependency mutation, late changes, retrieval or misleading coverage claims. Initial project regression11 is a pre-edit observation and does not replace final-source validation."
+      ]
+    },
+    {
+      "name": "2-empty-collection-selections-reference",
+      "hashes": {
+        "events.jsonl": "c64da050a0acd8a1b58e637b2c176bca450262a1b107549ee5fc0209a79d377f",
+        "workspace.diff": "8d25120a64366034fd37b1ce75e78a9b72e1edc36990fd500805ae7ef2d598d2",
+        "score.json": "8a7ec70aaf6ae3145585aa03c9f08cf181288522692641f097a8941ea5da6c15",
+        "tool-ledger.json": "6eba65d0983ae763d5d2bcdcc133fcad4e3c1f3cbdc223599068b8da9b66a076",
+        "feedback-wire.jsonl": "6fdabc28e389ad0c63745733cf5502ef5572c436a6759d6d67ffd8e5381452f4"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Shared initializeSelections discovers keys and allocates arrays per call. Empty array/set use the element pattern; map passes its argument array, which getSelectionKeys recursively flattens, covering both key/value patterns and duplicate/nested/anonymous names. No arrays are cached; no-argument guards/non-empty loops preserve existing behavior. Three new tests plus independent oracle cover freshness and ordering; public types unchanged. Final edit40 precedes required41/42/43, all pass; optional delivered compiler not invoked by agent but independent endpoint passes it, and delivery makes no false compiler claim. No protected/dependency mutation, late changes or solution retrieval."
+      ]
+    },
+    {
+      "name": "2-empty-collection-selections-candidate",
+      "hashes": {
+        "events.jsonl": "81b474acecd952bc7d480faa5f0bd250dca3e46d92d5e0457ebcf1b10feed5b5",
+        "workspace.diff": "92906f7c090a51148f4042d7e7cb4c16302a6f0940c77a514bae032df9ac3f47",
+        "score.json": "73d37a394a557ad4fb0899da68e94cae89f9a2f98344ef4bdad65738a51ecdf7",
+        "tool-ledger.json": "ce0a4167c8467721b46d9964be035dff3c15332b484a958cdac6ee6072dd27c2",
+        "feedback-wire.jsonl": "e294fcfcba30a5d070bc9b9adc59c02a8ef65fddb4233fc8eed3a6248939ab26"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Shared initializeSelections takes multiple patterns, discovers all selection keys and creates arrays inside each empty match; empty array/set/map call it, preserving no-argument and non-empty branches. Both map patterns, duplicate/nested/anonymous keys handled with no cached selection arrays. Four authored tests pass, but freshness cases recreate the pattern each run and an anonymous fallback can mask nonmatch: independent reused-pattern oracle and source review establish those criteria. Compiler36 rejects new-test callback destructuring; callback-only any annotations37 leave public types unchanged. Next validation38 retries that compiler before fresh required39/40/41, all passing; all independent endpoints pass. No protected/dependency mutation, late edit, retrieval or false scope claim."
+      ]
+    },
+    {
+      "name": "2-empty-collection-selections-cline",
+      "hashes": {
+        "events.jsonl": "ddcff2e03bfeedf7458cf830e372220dc6d90037cb4edee97f0dfce76623be12",
+        "workspace.diff": "610a1b3c6b49fb0d02df5b99d517664ccf5c0fd85e9977afff0f0566fc746cb0",
+        "score.json": "6e343d47ae16125e6acaafed635b2da75b2ad70ab6fb12ca16429e9039acc0f9",
+        "tool-ledger.json": "51ae6bf7a7d6c6a45c2d761379018a05829081892624d57eec38458f7932780e",
+        "feedback-wire.jsonl": "f04e3912d8cb544ac6cfcb23a5f4400450c4f4c5fc212bb60fef1473cf475e57"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Shared initializeSelections receives discovered keys and allocates fresh arrays on each empty array/set/map match, including both map patterns, duplicate/nested/anonymous names. No-argument empty results and non-empty loops preserved; no cached mutable selections or public type changes. Five new tests reuse pattern instances and mutate first arrays, providing direct freshness coverage alongside independent oracle. Initial delivered15 and optional compiler21 fail in new tests; final test casts24 precede required25/26/27 and compiler28, all passing. All five independent endpoints pass; protected/dependencies intact, local log9 sees only frozen input, no retrieval/installs or misleading validation scope."
+      ]
     }
   ]
 }

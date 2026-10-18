@@ -1,0 +1,21 @@
+{
+  "source": "docs/semantic-harness-study.tex",
+  "sourceSha256": "4717bf0d44058e01d42bc7d326d10e1f831656d2e838d45071f4146a60682f58",
+  "compiler": "Codex desktop built-in LaTeX editor compiler",
+  "kind": "success",
+  "message": "The current source compiled successfully with the desktop editor's compiler.",
+  "recordedUTC": "2026-10-18T17:05:42.406318+00:00",
+  "crossPanelConsistency": {
+    "panels": [
+      "F59",
+      "F60",
+      "F61"
+    ],
+    "modelTrials": 54,
+    "manualReviews": 54,
+    "unchangedPatchEndpointReplays": 54,
+    "allEndpointOutcomesReproduced": true,
+    "replayModelRequests": 0
+  },
+  "limits": "Compilation confirms document syntax/rendering support, not empirical conclusions. Endpoint reproduction does not establish representative task success or causal mediation."
+}

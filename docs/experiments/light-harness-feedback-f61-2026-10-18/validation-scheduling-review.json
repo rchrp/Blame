@@ -1,5 +1,5 @@
 {
-  "status": "partial; remaining assigned trials pending",
+  "status": "complete; all18 immutable ledgers manually reviewed",
   "method": "Manual command/source-epoch review. Initial and final-source obligations are never classified as avoidable; an exit status for a conjunction does not prove every child ran. No rerun count or causal mediation is inferred from this narrative. All costs remain in the assigned-arm totals.",
   "rows": [
     {
@@ -66,6 +66,31 @@
       "name": "2-symbol-pattern-keys-cline",
       "ledgerSha256": "fc4ba86010a9342dbf4113621c02b0d673aef1324d64403d45a2b8c16c732fd6",
       "evidence": "Final edit12 precedes successful conjunctive required+optional tests15. Root compiler check17 succeeds then native Jest cannot launch; missing formatter14 also retained. No installs or later source/test edits. Delivery correctly separates passed study commands from unavailable native Jest and formatter."
+    },
+    {
+      "name": "2-symbol-pattern-keys-reference",
+      "ledgerSha256": "ef390d9f736ae257149e79b13e782e26fc9b5f72a811f1a4763c316a836d6ea8",
+      "evidence": "Multifile symbol-scoped batch25 rejects with no writes; file patches26 succeed. Optional compiler30 rejects a new pattern with undefined-only inferred input. Test-only cast34 does not alter public types. Required35/36/37 and compiler38 run after final edit, no further mutations. Final-source reruns are necessary despite earlier green checks."
+    },
+    {
+      "name": "2-symbol-pattern-keys-candidate",
+      "ledgerSha256": "0b722c66e227c3ffbbf5d19d4dd7a7ab999fd6b96dcc5d71e27fe2e4b5940334",
+      "evidence": "Initial regression11 is pre-edit. Overscoped patch30 rejects without widening; corrected file batch31 succeeds. Delivered34 fails missing Vitest globals, import35 repairs it. Required36/37/38 and compiler40 pass after final edit. Final checks remain necessary after imports; no header/body-binding recovery opportunity."
+    },
+    {
+      "name": "2-empty-collection-selections-reference",
+      "ledgerSha256": "6eba65d0983ae763d5d2bcdcc133fcad4e3c1f3cbdc223599068b8da9b66a076",
+      "evidence": "Final edit40 precedes all required41/42/43; all pass with no earlier executed failing validation cycle. Optional new-test compiler is not invoked by agent but independently passes on original final patch; delivery accurately limits claimed checks. Source/test compilers remain separate."
+    },
+    {
+      "name": "2-empty-collection-selections-candidate",
+      "ledgerSha256": "ce0a4167c8467721b46d9964be035dff3c15332b484a958cdac6ee6072dd27c2",
+      "evidence": "New-test compiler36 fails callback types; callback-only annotations37 preserve public types. Next validation38 reruns failed compiler before required39/40/41, all successful on final bytes. Authored freshness tests recreate patterns, so source and independent reused-pattern oracle provide stronger caching evidence. No hypothetical green reruns counted as measured savings."
+    },
+    {
+      "name": "2-empty-collection-selections-cline",
+      "ledgerSha256": "51ae6bf7a7d6c6a45c2d761379018a05829081892624d57eec38458f7932780e",
+      "evidence": "Delivered15 fails in new tests and compiler21 rejects overly broad inference/casts. Final new-test-only edit24 precedes required25/26/27 and compiler28, all passing. Freshness tests reuse pattern instances before mutating first arrays. Required checks after final edits remain necessary; scope/truthful report passes."
     }
   ]
 }

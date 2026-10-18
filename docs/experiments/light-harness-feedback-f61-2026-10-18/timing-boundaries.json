@@ -1,0 +1,155 @@
+{
+  "coordinatorStartedUTC": "2026-10-18T16:13:41.842Z",
+  "coordinatorEndedFromDriverFileMetadataUTC": "2026-10-18T16:58:56.823513+00:00",
+  "coordinatorWallMs": 2714981.5130000003,
+  "sdkAgentMs": 2492178,
+  "outerWorkerMs": 2524237.0685530007,
+  "graderCommandsMs": 117764.81748900123,
+  "boundary": "SDK agent times exclude preparation, independent grading, checkpoint IO and research. Coordinator start is driver-recorded; end uses retained file metadata, not independent clock attestation. Outer workers include startup/shutdown. Recorded tool duration sums may overlap and are not equivalent wall-time phases; do not infer network/provider time by subtracting them. No research build/test/compiler/solver overlaps live model workers; nonexclusive-host/provider contention unknown. Replay timings do not enter arm resource comparisons.",
+  "rows": [
+    {
+      "name": "1-alternative-selections-reference",
+      "ledgerSha256": "22e1396841006696bbea35f3ddc964dd54b8d1a0dc57243aeec0308deb34c90f",
+      "sdkAgentMs": 165471,
+      "outerWorkerMs": 167234.087259,
+      "recordedToolCalls": 54,
+      "recordedToolDurationSumMs": 25634
+    },
+    {
+      "name": "1-alternative-selections-candidate",
+      "ledgerSha256": "95b718341247490b6849a50b5be776675fb8ebc87b12cf5435b07be500ed3f4a",
+      "sdkAgentMs": 209025,
+      "outerWorkerMs": 210855.80481,
+      "recordedToolCalls": 39,
+      "recordedToolDurationSumMs": 14443
+    },
+    {
+      "name": "1-alternative-selections-cline",
+      "ledgerSha256": "035a37e0de23cc8dae0120527317c2d4e91f5ce1ab7570a10f93892e1ad7597c",
+      "sdkAgentMs": 166349,
+      "outerWorkerMs": 168045.04384300002,
+      "recordedToolCalls": 44,
+      "recordedToolDurationSumMs": 27636
+    },
+    {
+      "name": "1-symbol-pattern-keys-candidate",
+      "ledgerSha256": "e121fd42c905b6d0d4a4afebbdec1a70339811e6b3da72b3f6cde3582d7c9f0f",
+      "sdkAgentMs": 152517,
+      "outerWorkerMs": 154268.599531,
+      "recordedToolCalls": 44,
+      "recordedToolDurationSumMs": 7918
+    },
+    {
+      "name": "1-symbol-pattern-keys-cline",
+      "ledgerSha256": "41d0e5af3a44d02eaef4f07cf9195d1b4a0e23c3c870c86a3e1e056ee8fe355c",
+      "sdkAgentMs": 100534,
+      "outerWorkerMs": 102263.63581500005,
+      "recordedToolCalls": 24,
+      "recordedToolDurationSumMs": 10059
+    },
+    {
+      "name": "1-symbol-pattern-keys-reference",
+      "ledgerSha256": "7834d0a39d9acfe320f524c4c4dfbc00e63e011fb7483225977bcff8ee25912e",
+      "sdkAgentMs": 224622,
+      "outerWorkerMs": 226472.7430270001,
+      "recordedToolCalls": 51,
+      "recordedToolDurationSumMs": 15208
+    },
+    {
+      "name": "1-empty-collection-selections-cline",
+      "ledgerSha256": "5394ffc0487dae23b769996917cdb7828f25ce0c5fea7658c9ee5ce9045bc03d",
+      "sdkAgentMs": 115374,
+      "outerWorkerMs": 117298.67694599996,
+      "recordedToolCalls": 28,
+      "recordedToolDurationSumMs": 12509
+    },
+    {
+      "name": "1-empty-collection-selections-reference",
+      "ledgerSha256": "ca592dc52ea07b32a59475285469bb5b5e63d66a2acde49cc14cff71138f83d2",
+      "sdkAgentMs": 115204,
+      "outerWorkerMs": 117018.661325,
+      "recordedToolCalls": 64,
+      "recordedToolDurationSumMs": 28417
+    },
+    {
+      "name": "1-empty-collection-selections-candidate",
+      "ledgerSha256": "e618394a36f37ba5c67ba4008f3d1239d5c90d8a7a99236de5f609961f595ec4",
+      "sdkAgentMs": 183549,
+      "outerWorkerMs": 185382.89549499983,
+      "recordedToolCalls": 56,
+      "recordedToolDurationSumMs": 19089
+    },
+    {
+      "name": "2-alternative-selections-candidate",
+      "ledgerSha256": "505bff451609f60e3db1ddac83261e3e7ee1878b905966b632529f291e11d64c",
+      "sdkAgentMs": 122200,
+      "outerWorkerMs": 123925.01957700006,
+      "recordedToolCalls": 40,
+      "recordedToolDurationSumMs": 15226
+    },
+    {
+      "name": "2-alternative-selections-cline",
+      "ledgerSha256": "dab564f0e41aac1852bf17e24b3a1b322fdfb46b0e27544d2f947dd2acb0e0a7",
+      "sdkAgentMs": 169809,
+      "outerWorkerMs": 171516.79938600003,
+      "recordedToolCalls": 32,
+      "recordedToolDurationSumMs": 19930
+    },
+    {
+      "name": "2-alternative-selections-reference",
+      "ledgerSha256": "02554af1abc68c2a6ed8a588e2aa24d617811d490dcc23787cb0617e917e8253",
+      "sdkAgentMs": 94129,
+      "outerWorkerMs": 95768.09040199989,
+      "recordedToolCalls": 46,
+      "recordedToolDurationSumMs": 11536
+    },
+    {
+      "name": "2-symbol-pattern-keys-cline",
+      "ledgerSha256": "fc4ba86010a9342dbf4113621c02b0d673aef1324d64403d45a2b8c16c732fd6",
+      "sdkAgentMs": 88327,
+      "outerWorkerMs": 90091.30303200008,
+      "recordedToolCalls": 19,
+      "recordedToolDurationSumMs": 7091
+    },
+    {
+      "name": "2-symbol-pattern-keys-reference",
+      "ledgerSha256": "ef390d9f736ae257149e79b13e782e26fc9b5f72a811f1a4763c316a836d6ea8",
+      "sdkAgentMs": 88340,
+      "outerWorkerMs": 90038.77995200013,
+      "recordedToolCalls": 43,
+      "recordedToolDurationSumMs": 13715
+    },
+    {
+      "name": "2-symbol-pattern-keys-candidate",
+      "ledgerSha256": "0b722c66e227c3ffbbf5d19d4dd7a7ab999fd6b96dcc5d71e27fe2e4b5940334",
+      "sdkAgentMs": 157295,
+      "outerWorkerMs": 159067.15118900035,
+      "recordedToolCalls": 43,
+      "recordedToolDurationSumMs": 14913
+    },
+    {
+      "name": "2-empty-collection-selections-reference",
+      "ledgerSha256": "6eba65d0983ae763d5d2bcdcc133fcad4e3c1f3cbdc223599068b8da9b66a076",
+      "sdkAgentMs": 84484,
+      "outerWorkerMs": 86465.44159599999,
+      "recordedToolCalls": 46,
+      "recordedToolDurationSumMs": 6324
+    },
+    {
+      "name": "2-empty-collection-selections-candidate",
+      "ledgerSha256": "ce0a4167c8467721b46d9964be035dff3c15332b484a958cdac6ee6072dd27c2",
+      "sdkAgentMs": 138927,
+      "outerWorkerMs": 140748.4244860001,
+      "recordedToolCalls": 45,
+      "recordedToolDurationSumMs": 14890
+    },
+    {
+      "name": "2-empty-collection-selections-cline",
+      "ledgerSha256": "51ae6bf7a7d6c6a45c2d761379018a05829081892624d57eec38458f7932780e",
+      "sdkAgentMs": 116022,
+      "outerWorkerMs": 117775.91088199988,
+      "recordedToolCalls": 32,
+      "recordedToolDurationSumMs": 15838
+    }
+  ]
+}

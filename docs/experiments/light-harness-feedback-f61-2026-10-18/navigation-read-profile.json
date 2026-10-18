@@ -1,0 +1,4730 @@
+{
+  "status": "complete",
+  "method": "Exploratory post-hoc inventory of explicit read_code/read_files calls from complete immutable ledgers. Bytes serialize the recorded output JSON compactly in UTF-8; batching, formatting and recorder redaction differ between tools. These are not forwarded request bytes, billed tokens, cache misses, semantic relevance, total information exposure or a causal explanation of arm resource differences. Shell reads/search/edit/validation outputs are deliberately outside this narrow inventory; do not treat missing read calls as no reading. All primary acceptance/resource criteria remain unchanged.",
+  "rows": [
+    {
+      "name": "1-alternative-selections-reference",
+      "arm": "reference",
+      "ledgerSha256": "22e1396841006696bbea35f3ddc964dd54b8d1a0dc57243aeec0308deb34c90f",
+      "readCalls": 21,
+      "readSelections": 21,
+      "recordedOutputJsonBytes": 107419,
+      "calls": [
+        {
+          "toolIndex": 0,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/match.ts",
+              "view": "outline",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 2480
+        },
+        {
+          "toolIndex": 1,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/is-matching.ts",
+              "view": "outline",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 416
+        },
+        {
+          "toolIndex": 2,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "outline",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 6610
+        },
+        {
+          "toolIndex": 3,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "package.json",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 2985
+        },
+        {
+          "toolIndex": 6,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/match.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 4056
+        },
+        {
+          "toolIndex": 7,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "default",
+              "range": {
+                "startLine": 1,
+                "endLine": 520
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 16587
+        },
+        {
+          "toolIndex": 8,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/internals/helpers.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 4359
+        },
+        {
+          "toolIndex": 9,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/internals/symbols.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 1388
+        },
+        {
+          "toolIndex": 10,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/types/FindSelected.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 5772
+        },
+        {
+          "toolIndex": 11,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "tests/intersection-and-union.test.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 21916
+        },
+        {
+          "toolIndex": 12,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": ".study",
+              "view": "outline",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 316
+        },
+        {
+          "toolIndex": 15,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "default",
+              "range": {
+                "startLine": 190,
+                "endLine": 470
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 9496
+        },
+        {
+          "toolIndex": 16,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/types/Pattern.ts",
+              "view": "default",
+              "range": {
+                "startLine": 1,
+                "endLine": 180
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 5395
+        },
+        {
+          "toolIndex": 17,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": ".study/task.json",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 2182
+        },
+        {
+          "toolIndex": 18,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": ".study/vitest.config.mjs",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 398
+        },
+        {
+          "toolIndex": 19,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": ".study/tsconfig.json",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 583
+        },
+        {
+          "toolIndex": 20,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": ".study/delivered.mjs",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 1604
+        },
+        {
+          "toolIndex": 22,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/index.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 326
+        },
+        {
+          "toolIndex": 23,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "tests/select.test.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 15656
+        },
+        {
+          "toolIndex": 28,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "default",
+              "range": {
+                "startLine": 530,
+                "endLine": 615
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 2825
+        },
+        {
+          "toolIndex": 46,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "default",
+              "range": {
+                "startLine": 145,
+                "endLine": 195
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 2069
+        }
+      ]
+    },
+    {
+      "name": "1-alternative-selections-candidate",
+      "arm": "candidate",
+      "ledgerSha256": "95b718341247490b6849a50b5be776675fb8ebc87b12cf5435b07be500ed3f4a",
+      "readCalls": 21,
+      "readSelections": 21,
+      "recordedOutputJsonBytes": 88761,
+      "calls": [
+        {
+          "toolIndex": 2,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/is-matching.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 1995
+        },
+        {
+          "toolIndex": 3,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/match.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 4059
+        },
+        {
+          "toolIndex": 4,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "package.json",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 2985
+        },
+        {
+          "toolIndex": 6,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/internals/helpers.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 4359
+        },
+        {
+          "toolIndex": 7,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts#union",
+              "view": "symbol",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 1505
+        },
+        {
+          "toolIndex": 8,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "default",
+              "range": {
+                "startLine": 1,
+                "endLine": 120
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 3473
+        },
+        {
+          "toolIndex": 9,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "default",
+              "range": {
+                "startLine": 420,
+                "endLine": 490
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 2572
+        },
+        {
+          "toolIndex": 10,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "tests/select.test.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 15654
+        },
+        {
+          "toolIndex": 11,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": ".study/task.json",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 2181
+        },
+        {
+          "toolIndex": 12,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": ".study/vitest.config.mjs",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 398
+        },
+        {
+          "toolIndex": 15,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "default",
+              "range": {
+                "startLine": 350,
+                "endLine": 455
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 3670
+        },
+        {
+          "toolIndex": 16,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/types/FindSelected.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 5773
+        },
+        {
+          "toolIndex": 17,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/types/Pattern.ts",
+              "view": "default",
+              "range": {
+                "startLine": 100,
+                "endLine": 230
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 4709
+        },
+        {
+          "toolIndex": 18,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": ".study/delivered.mjs",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 1604
+        },
+        {
+          "toolIndex": 20,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/types/Pattern.ts",
+              "view": "default",
+              "range": {
+                "startLine": 1,
+                "endLine": 110
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 3377
+        },
+        {
+          "toolIndex": 21,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "tests/intersection-and-union.test.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 21916
+        },
+        {
+          "toolIndex": 22,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/internals/symbols.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 1389
+        },
+        {
+          "toolIndex": 33,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/internals/helpers.ts",
+              "view": "default",
+              "range": {
+                "startLine": 35,
+                "endLine": 95
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 2297
+        },
+        {
+          "toolIndex": 34,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/match.ts",
+              "view": "default",
+              "range": {
+                "startLine": 45,
+                "endLine": 90
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 1704
+        },
+        {
+          "toolIndex": 35,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "default",
+              "range": {
+                "startLine": 445,
+                "endLine": 480
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 1403
+        },
+        {
+          "toolIndex": 36,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/alternative-selections.test.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 1738
+        }
+      ]
+    },
+    {
+      "name": "1-alternative-selections-cline",
+      "arm": "cline",
+      "ledgerSha256": "035a37e0de23cc8dae0120527317c2d4e91f5ce1ab7570a10f93892e1ad7597c",
+      "readCalls": 8,
+      "readSelections": 28,
+      "recordedOutputJsonBytes": 151893,
+      "calls": [
+        {
+          "toolIndex": 2,
+          "tool": "read_files",
+          "inputs": [
+            {
+              "target": "package.json",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": "tsconfig.json",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            }
+          ],
+          "recordedOutputJsonBytes": 4020
+        },
+        {
+          "toolIndex": 3,
+          "tool": "read_files",
+          "inputs": [
+            {
+              "target": "src/match.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": "src/patterns.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": "src/internals/helpers.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": "src/internals/symbols.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            }
+          ],
+          "recordedOutputJsonBytes": 56501
+        },
+        {
+          "toolIndex": 6,
+          "tool": "read_files",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "range",
+              "startLine": 145,
+              "endLine": 515
+            },
+            {
+              "target": "src/patterns.ts",
+              "view": "range",
+              "startLine": 560,
+              "endLine": 610
+            },
+            {
+              "target": "src/types/Pattern.ts",
+              "view": "range",
+              "startLine": 1,
+              "endLine": 75
+            },
+            {
+              "target": "src/types/FindSelected.ts",
+              "view": "range",
+              "startLine": 90,
+              "endLine": 135
+            }
+          ],
+          "recordedOutputJsonBytes": 21111
+        },
+        {
+          "toolIndex": 7,
+          "tool": "read_files",
+          "inputs": [
+            {
+              "target": "tests/intersection-and-union.test.ts",
+              "view": "range",
+              "startLine": 1,
+              "endLine": 450
+            },
+            {
+              "target": "tests/select.test.ts",
+              "view": "range",
+              "startLine": 1,
+              "endLine": 500
+            },
+            {
+              "target": "tests/when.test.ts",
+              "view": "range",
+              "startLine": 150,
+              "endLine": 340
+            }
+          ],
+          "recordedOutputJsonBytes": 41244
+        },
+        {
+          "toolIndex": 10,
+          "tool": "read_files",
+          "inputs": [
+            {
+              "target": "tests/tsconfig.json",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": "jest.config.cjs",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": "src/index.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            }
+          ],
+          "recordedOutputJsonBytes": 1166
+        },
+        {
+          "toolIndex": 12,
+          "tool": "read_files",
+          "inputs": [
+            {
+              "target": "src/internals/helpers.ts",
+              "view": "range",
+              "startLine": 105,
+              "endLine": 165
+            },
+            {
+              "target": "src/match.ts",
+              "view": "range",
+              "startLine": 1,
+              "endLine": 100
+            },
+            {
+              "target": "src/patterns.ts",
+              "view": "range",
+              "startLine": 1,
+              "endLine": 12
+            },
+            {
+              "target": "src/patterns.ts",
+              "view": "range",
+              "startLine": 448,
+              "endLine": 480
+            },
+            {
+              "target": "src/alternative-selections.test.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            }
+          ],
+          "recordedOutputJsonBytes": 10588
+        },
+        {
+          "toolIndex": 21,
+          "tool": "read_files",
+          "inputs": [
+            {
+              "target": "src/alternative-selections.test.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": "src/patterns.ts",
+              "view": "range",
+              "startLine": 240,
+              "endLine": 390
+            },
+            {
+              "target": "src/patterns.ts",
+              "view": "range",
+              "startLine": 515,
+              "endLine": 565
+            }
+          ],
+          "recordedOutputJsonBytes": 11524
+        },
+        {
+          "toolIndex": 42,
+          "tool": "read_files",
+          "inputs": [
+            {
+              "target": "src/alternative-selections.test.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": "src/internals/helpers.ts",
+              "view": "range",
+              "startLine": 115,
+              "endLine": 140
+            },
+            {
+              "target": "src/match.ts",
+              "view": "range",
+              "startLine": 67,
+              "endLine": 83
+            },
+            {
+              "target": "src/patterns.ts",
+              "view": "range",
+              "startLine": 460,
+              "endLine": 475
+            }
+          ],
+          "recordedOutputJsonBytes": 5739
+        }
+      ]
+    },
+    {
+      "name": "1-symbol-pattern-keys-candidate",
+      "arm": "candidate",
+      "ledgerSha256": "e121fd42c905b6d0d4a4afebbdec1a70339811e6b3da72b3f6cde3582d7c9f0f",
+      "readCalls": 17,
+      "readSelections": 17,
+      "recordedOutputJsonBytes": 50805,
+      "calls": [
+        {
+          "toolIndex": 0,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/internals/symbols.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 1385
+        },
+        {
+          "toolIndex": 1,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/is-matching.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 1994
+        },
+        {
+          "toolIndex": 4,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/internals/helpers.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 4359
+        },
+        {
+          "toolIndex": 8,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "default",
+              "range": {
+                "startLine": 1,
+                "endLine": 280
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 8889
+        },
+        {
+          "toolIndex": 9,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/match.ts",
+              "view": "default",
+              "range": {
+                "startLine": 1,
+                "endLine": 150
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 4057
+        },
+        {
+          "toolIndex": 10,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/types/FindSelected.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 5772
+        },
+        {
+          "toolIndex": 17,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "package.json",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 2985
+        },
+        {
+          "toolIndex": 22,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "tsconfig.json",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 499
+        },
+        {
+          "toolIndex": 23,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": ".study/tsconfig.json",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 582
+        },
+        {
+          "toolIndex": 24,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": ".study/vitest.config.mjs",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 398
+        },
+        {
+          "toolIndex": 25,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": ".study/task.json",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 2311
+        },
+        {
+          "toolIndex": 28,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "tests/optional.test.ts",
+              "view": "default",
+              "range": {
+                "startLine": 1,
+                "endLine": 220
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 6164
+        },
+        {
+          "toolIndex": 29,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "tests/is-matching.test.ts",
+              "view": "default",
+              "range": {
+                "startLine": 1,
+                "endLine": 180
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 2743
+        },
+        {
+          "toolIndex": 30,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": ".study/delivered.mjs",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 1607
+        },
+        {
+          "toolIndex": 38,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/internals/own-keys.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 293
+        },
+        {
+          "toolIndex": 39,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/internals/helpers.ts",
+              "view": "default",
+              "range": {
+                "startLine": 1,
+                "endLine": 145
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 4443
+        },
+        {
+          "toolIndex": 40,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/symbol-pattern-keys.test.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 2324
+        }
+      ]
+    },
+    {
+      "name": "1-symbol-pattern-keys-cline",
+      "arm": "cline",
+      "ledgerSha256": "41d0e5af3a44d02eaef4f07cf9195d1b4a0e23c3c870c86a3e1e056ee8fe355c",
+      "readCalls": 9,
+      "readSelections": 28,
+      "recordedOutputJsonBytes": 163953,
+      "calls": [
+        {
+          "toolIndex": 2,
+          "tool": "read_files",
+          "inputs": [
+            {
+              "target": "package.json",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": "tsconfig.json",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            }
+          ],
+          "recordedOutputJsonBytes": 4014
+        },
+        {
+          "toolIndex": 3,
+          "tool": "read_files",
+          "inputs": [
+            {
+              "target": "src/internals/helpers.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": "src/patterns.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": "src/internals/symbols.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            }
+          ],
+          "recordedOutputJsonBytes": 51800
+        },
+        {
+          "toolIndex": 4,
+          "tool": "read_files",
+          "inputs": [
+            {
+              "target": "tests/select.test.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": "tests/optional.test.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": "tests/objects.test.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": "tests/tuples.test.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            }
+          ],
+          "recordedOutputJsonBytes": 36604
+        },
+        {
+          "toolIndex": 5,
+          "tool": "read_files",
+          "inputs": [
+            {
+              "target": ".study/tsconfig.json",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": ".study/vitest.config.mjs",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": ".study/delivered.mjs",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": ".study/task.json",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            }
+          ],
+          "recordedOutputJsonBytes": 5101
+        },
+        {
+          "toolIndex": 8,
+          "tool": "read_files",
+          "inputs": [
+            {
+              "target": "src/index.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": "src/match.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": "src/types/Pattern.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            }
+          ],
+          "recordedOutputJsonBytes": 32130
+        },
+        {
+          "toolIndex": 9,
+          "tool": "read_files",
+          "inputs": [
+            {
+              "target": "jest.config.cjs",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": "tests/tsconfig.json",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": ".gitignore",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            }
+          ],
+          "recordedOutputJsonBytes": 1087
+        },
+        {
+          "toolIndex": 10,
+          "tool": "read_files",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "range",
+              "startLine": 150,
+              "endLine": 260
+            },
+            {
+              "target": "src/patterns.ts",
+              "view": "range",
+              "startLine": 560,
+              "endLine": 615
+            },
+            {
+              "target": "src/types/FindSelected.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            }
+          ],
+          "recordedOutputJsonBytes": 13255
+        },
+        {
+          "toolIndex": 15,
+          "tool": "read_files",
+          "inputs": [
+            {
+              "target": "src/internals/own-keys.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": "src/internals/helpers.ts",
+              "view": "range",
+              "startLine": 1,
+              "endLine": 145
+            },
+            {
+              "target": "src/selection-key-discovery.test.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            }
+          ],
+          "recordedOutputJsonBytes": 9954
+        },
+        {
+          "toolIndex": 23,
+          "tool": "read_files",
+          "inputs": [
+            {
+              "target": "src/internals/own-keys.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": "src/internals/helpers.ts",
+              "view": "range",
+              "startLine": 1,
+              "endLine": 140
+            },
+            {
+              "target": "src/selection-key-discovery.test.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            }
+          ],
+          "recordedOutputJsonBytes": 10008
+        }
+      ]
+    },
+    {
+      "name": "1-symbol-pattern-keys-reference",
+      "arm": "reference",
+      "ledgerSha256": "7834d0a39d9acfe320f524c4c4dfbc00e63e011fb7483225977bcff8ee25912e",
+      "readCalls": 22,
+      "readSelections": 22,
+      "recordedOutputJsonBytes": 60432,
+      "calls": [
+        {
+          "toolIndex": 2,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/is-matching.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 1995
+        },
+        {
+          "toolIndex": 3,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/internals/symbols.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 1388
+        },
+        {
+          "toolIndex": 4,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "package.json",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 2985
+        },
+        {
+          "toolIndex": 5,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "tsconfig.json",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 499
+        },
+        {
+          "toolIndex": 6,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/internals/helpers.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 4359
+        },
+        {
+          "toolIndex": 10,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": ".study/vitest.config.mjs",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 397
+        },
+        {
+          "toolIndex": 11,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": ".study/tsconfig.json",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 582
+        },
+        {
+          "toolIndex": 12,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "default",
+              "range": {
+                "startLine": 90,
+                "endLine": 260
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 5934
+        },
+        {
+          "toolIndex": 13,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "default",
+              "range": {
+                "startLine": 520,
+                "endLine": 620
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 3286
+        },
+        {
+          "toolIndex": 15,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "tests/is-matching.test.ts",
+              "view": "default",
+              "range": {
+                "startLine": 1,
+                "endLine": 180
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 2740
+        },
+        {
+          "toolIndex": 16,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "tests/optional.test.ts",
+              "view": "default",
+              "range": {
+                "startLine": 1,
+                "endLine": 220
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 6164
+        },
+        {
+          "toolIndex": 18,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": ".study/delivered.mjs",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 1604
+        },
+        {
+          "toolIndex": 19,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": ".study/task.json",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 2311
+        },
+        {
+          "toolIndex": 20,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/index.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 326
+        },
+        {
+          "toolIndex": 23,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/internals",
+              "view": "outline",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 235
+        },
+        {
+          "toolIndex": 27,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/match.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 4060
+        },
+        {
+          "toolIndex": 28,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/types/FindSelected.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 5773
+        },
+        {
+          "toolIndex": 29,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/types/Pattern.ts",
+              "view": "range",
+              "range": {
+                "startLine": 1,
+                "endLine": 180
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 5395
+        },
+        {
+          "toolIndex": 30,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/types/helpers.ts",
+              "view": "range",
+              "range": {
+                "startLine": 1,
+                "endLine": 100
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 3164
+        },
+        {
+          "toolIndex": 33,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/symbol-pattern-keys.test.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 2454
+        },
+        {
+          "toolIndex": 48,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/internals/helpers.ts",
+              "view": "default",
+              "range": {
+                "startLine": 1,
+                "endLine": 140
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 4438
+        },
+        {
+          "toolIndex": 49,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/internals/object-pattern.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 343
+        }
+      ]
+    },
+    {
+      "name": "1-empty-collection-selections-cline",
+      "arm": "cline",
+      "ledgerSha256": "5394ffc0487dae23b769996917cdb7828f25ce0c5fea7658c9ee5ce9045bc03d",
+      "readCalls": 8,
+      "readSelections": 29,
+      "recordedOutputJsonBytes": 132870,
+      "calls": [
+        {
+          "toolIndex": 3,
+          "tool": "read_files",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": "src/internals/helpers.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": "src/match.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": "src/is-matching.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            }
+          ],
+          "recordedOutputJsonBytes": 57345
+        },
+        {
+          "toolIndex": 4,
+          "tool": "read_files",
+          "inputs": [
+            {
+              "target": "tests/select.test.ts",
+              "view": "range",
+              "startLine": 1,
+              "endLine": 520
+            },
+            {
+              "target": "tests/sets.test.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": "tests/maps.test.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": "tests/lists.test.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            }
+          ],
+          "recordedOutputJsonBytes": 24783
+        },
+        {
+          "toolIndex": 5,
+          "tool": "read_files",
+          "inputs": [
+            {
+              "target": ".study/task.json",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": ".study/vitest.config.mjs",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": ".study/tsconfig.json",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": ".study/delivered.mjs",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": "tsconfig.json",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            }
+          ],
+          "recordedOutputJsonBytes": 5589
+        },
+        {
+          "toolIndex": 7,
+          "tool": "read_files",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "range",
+              "startLine": 115,
+              "endLine": 410
+            },
+            {
+              "target": "src/types/FindSelected.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": "src/internals/symbols.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": "src/index.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            }
+          ],
+          "recordedOutputJsonBytes": 20235
+        },
+        {
+          "toolIndex": 10,
+          "tool": "read_files",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "range",
+              "startLine": 219,
+              "endLine": 315
+            },
+            {
+              "target": "src/patterns.ts",
+              "view": "range",
+              "startLine": 540,
+              "endLine": 615
+            }
+          ],
+          "recordedOutputJsonBytes": 6572
+        },
+        {
+          "toolIndex": 12,
+          "tool": "read_files",
+          "inputs": [
+            {
+              "target": "package.json",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": "jest.config.cjs",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": "tests/tsconfig.json",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            }
+          ],
+          "recordedOutputJsonBytes": 4242
+        },
+        {
+          "toolIndex": 15,
+          "tool": "read_files",
+          "inputs": [
+            {
+              "target": "src/internals/helpers.ts",
+              "view": "range",
+              "startLine": 115,
+              "endLine": 165
+            },
+            {
+              "target": "src/patterns.ts",
+              "view": "range",
+              "startLine": 1,
+              "endLine": 12
+            },
+            {
+              "target": "src/patterns.ts",
+              "view": "range",
+              "startLine": 225,
+              "endLine": 310
+            },
+            {
+              "target": "src/patterns.ts",
+              "view": "range",
+              "startLine": 342,
+              "endLine": 385
+            },
+            {
+              "target": "src/empty-collection-selections.test.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            }
+          ],
+          "recordedOutputJsonBytes": 9988
+        },
+        {
+          "toolIndex": 27,
+          "tool": "read_files",
+          "inputs": [
+            {
+              "target": "src/internals/helpers.ts",
+              "view": "range",
+              "startLine": 119,
+              "endLine": 148
+            },
+            {
+              "target": "src/empty-collection-selections.test.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            }
+          ],
+          "recordedOutputJsonBytes": 4116
+        }
+      ]
+    },
+    {
+      "name": "1-empty-collection-selections-reference",
+      "arm": "reference",
+      "ledgerSha256": "ca592dc52ea07b32a59475285469bb5b5e63d66a2acde49cc14cff71138f83d2",
+      "readCalls": 23,
+      "readSelections": 23,
+      "recordedOutputJsonBytes": 79247,
+      "calls": [
+        {
+          "toolIndex": 3,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "outline",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 6607
+        },
+        {
+          "toolIndex": 4,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "package.json",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 2985
+        },
+        {
+          "toolIndex": 6,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "default",
+              "range": {
+                "startLine": 1,
+                "endLine": 410
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 13051
+        },
+        {
+          "toolIndex": 7,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/internals/helpers.ts",
+              "view": "default",
+              "range": {
+                "startLine": 1,
+                "endLine": 170
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 4374
+        },
+        {
+          "toolIndex": 10,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": ".study/vitest.config.mjs",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 397
+        },
+        {
+          "toolIndex": 11,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": ".study/tsconfig.json",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 582
+        },
+        {
+          "toolIndex": 12,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": ".study/task.json",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 2172
+        },
+        {
+          "toolIndex": 13,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "default",
+              "range": {
+                "startLine": 115,
+                "endLine": 400
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 9793
+        },
+        {
+          "toolIndex": 14,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "tests/sets.test.ts",
+              "view": "default",
+              "range": {
+                "startLine": 1,
+                "endLine": 240
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 1791
+        },
+        {
+          "toolIndex": 15,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "tests/maps.test.ts",
+              "view": "default",
+              "range": {
+                "startLine": 1,
+                "endLine": 220
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 1375
+        },
+        {
+          "toolIndex": 16,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "tests/is-matching.test.ts",
+              "view": "default",
+              "range": {
+                "startLine": 1,
+                "endLine": 220
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 2740
+        },
+        {
+          "toolIndex": 19,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "default",
+              "range": {
+                "startLine": 205,
+                "endLine": 320
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 4027
+        },
+        {
+          "toolIndex": 20,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "default",
+              "range": {
+                "startLine": 530,
+                "endLine": 590
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 2197
+        },
+        {
+          "toolIndex": 21,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/internals/symbols.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 1389
+        },
+        {
+          "toolIndex": 22,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/types/Pattern.ts",
+              "view": "default",
+              "range": {
+                "startLine": 180,
+                "endLine": 280
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 4265
+        },
+        {
+          "toolIndex": 23,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/match.ts",
+              "view": "default",
+              "range": {
+                "startLine": 1,
+                "endLine": 125
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 4048
+        },
+        {
+          "toolIndex": 24,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/index.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 326
+        },
+        {
+          "toolIndex": 25,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": ".study/delivered.mjs",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 1604
+        },
+        {
+          "toolIndex": 28,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "default",
+              "range": {
+                "startLine": 585,
+                "endLine": 635
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 1623
+        },
+        {
+          "toolIndex": 29,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "tests/optional.test.ts",
+              "view": "default",
+              "range": {
+                "startLine": 1,
+                "endLine": 180
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 5317
+        },
+        {
+          "toolIndex": 37,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/empty-collection-selections.test.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 1651
+        },
+        {
+          "toolIndex": 49,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/internals/helpers.ts",
+              "view": "default",
+              "range": {
+                "startLine": 110,
+                "endLine": 155
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 1298
+        },
+        {
+          "toolIndex": 50,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "default",
+              "range": {
+                "startLine": 215,
+                "endLine": 375
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 5635
+        }
+      ]
+    },
+    {
+      "name": "1-empty-collection-selections-candidate",
+      "arm": "candidate",
+      "ledgerSha256": "e618394a36f37ba5c67ba4008f3d1239d5c90d8a7a99236de5f609961f595ec4",
+      "readCalls": 25,
+      "readSelections": 25,
+      "recordedOutputJsonBytes": 67226,
+      "calls": [
+        {
+          "toolIndex": 4,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "package.json",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 2985
+        },
+        {
+          "toolIndex": 5,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "outline",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 6607
+        },
+        {
+          "toolIndex": 6,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "default",
+              "range": {
+                "startLine": 1,
+                "endLine": 410
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 13051
+        },
+        {
+          "toolIndex": 7,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/internals/helpers.ts",
+              "view": "outline",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 1457
+        },
+        {
+          "toolIndex": 11,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": ".study/task.json",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 2172
+        },
+        {
+          "toolIndex": 12,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "default",
+              "range": {
+                "startLine": 127,
+                "endLine": 400
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 9382
+        },
+        {
+          "toolIndex": 13,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/internals/helpers.ts",
+              "view": "default",
+              "range": {
+                "startLine": 1,
+                "endLine": 145
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 4374
+        },
+        {
+          "toolIndex": 17,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": ".study/vitest.config.mjs",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 397
+        },
+        {
+          "toolIndex": 18,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": ".study/tsconfig.json",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 582
+        },
+        {
+          "toolIndex": 19,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts#array",
+              "view": "symbol",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 1238
+        },
+        {
+          "toolIndex": 20,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts#set",
+              "view": "symbol",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 1240
+        },
+        {
+          "toolIndex": 21,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts#map",
+              "view": "symbol",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 1783
+        },
+        {
+          "toolIndex": 22,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "tests/maps.test.ts",
+              "view": "default",
+              "range": {
+                "startLine": 1,
+                "endLine": 130
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 1375
+        },
+        {
+          "toolIndex": 23,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "tests/sets.test.ts",
+              "view": "default",
+              "range": {
+                "startLine": 1,
+                "endLine": 160
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 1792
+        },
+        {
+          "toolIndex": 24,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "tests/optional.test.ts",
+              "view": "default",
+              "range": {
+                "startLine": 1,
+                "endLine": 100
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 3170
+        },
+        {
+          "toolIndex": 25,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/match.ts",
+              "view": "outline",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 2501
+        },
+        {
+          "toolIndex": 26,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "default",
+              "range": {
+                "startLine": 250,
+                "endLine": 320
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 2465
+        },
+        {
+          "toolIndex": 27,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "default",
+              "range": {
+                "startLine": 505,
+                "endLine": 590
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 3100
+        },
+        {
+          "toolIndex": 28,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/internals/symbols.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 1392
+        },
+        {
+          "toolIndex": 29,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": ".study/delivered.mjs",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 1607
+        },
+        {
+          "toolIndex": 30,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": ".study/vitest.config.mjs",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 398
+        },
+        {
+          "toolIndex": 31,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/match.ts#MatchExpression",
+              "view": "symbol",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 2732
+        },
+        {
+          "toolIndex": 34,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/index.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 326
+        },
+        {
+          "toolIndex": 35,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "tsconfig.json",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 500
+        },
+        {
+          "toolIndex": 43,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/empty-collection-selections.test.ts",
+              "view": "outline",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 600
+        }
+      ]
+    },
+    {
+      "name": "2-alternative-selections-candidate",
+      "arm": "candidate",
+      "ledgerSha256": "505bff451609f60e3db1ddac83261e3e7ee1878b905966b632529f291e11d64c",
+      "readCalls": 19,
+      "readSelections": 19,
+      "recordedOutputJsonBytes": 56473,
+      "calls": [
+        {
+          "toolIndex": 3,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/match.ts",
+              "view": "outline",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 2500
+        },
+        {
+          "toolIndex": 4,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/is-matching.ts",
+              "view": "outline",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 416
+        },
+        {
+          "toolIndex": 5,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "package.json",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 2985
+        },
+        {
+          "toolIndex": 6,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/match.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 4059
+        },
+        {
+          "toolIndex": 7,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/internals/helpers.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 4359
+        },
+        {
+          "toolIndex": 8,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "default",
+              "range": {
+                "startLine": 400,
+                "endLine": 650
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 7873
+        },
+        {
+          "toolIndex": 12,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": ".study/task.json",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 2181
+        },
+        {
+          "toolIndex": 13,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "default",
+              "range": {
+                "startLine": 1,
+                "endLine": 180
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 5602
+        },
+        {
+          "toolIndex": 14,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "tests/intersection-and-union.test.ts",
+              "view": "default",
+              "range": {
+                "startLine": 1,
+                "endLine": 240
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 7025
+        },
+        {
+          "toolIndex": 15,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "tsconfig.json",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 500
+        },
+        {
+          "toolIndex": 16,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": ".study/vitest.config.mjs",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 398
+        },
+        {
+          "toolIndex": 17,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": ".study/tsconfig.json",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 583
+        },
+        {
+          "toolIndex": 19,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": ".study/delivered.mjs",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 1604
+        },
+        {
+          "toolIndex": 22,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "default",
+              "range": {
+                "startLine": 150,
+                "endLine": 280
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 4737
+        },
+        {
+          "toolIndex": 23,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/internals/symbols.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 1389
+        },
+        {
+          "toolIndex": 29,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/internals/helpers.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 4873
+        },
+        {
+          "toolIndex": 30,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/match.ts",
+              "view": "default",
+              "range": {
+                "startLine": 45,
+                "endLine": 90
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 1704
+        },
+        {
+          "toolIndex": 31,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "default",
+              "range": {
+                "startLine": 435,
+                "endLine": 485
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 1812
+        },
+        {
+          "toolIndex": 33,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/alternative-selections.test.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 1873
+        }
+      ]
+    },
+    {
+      "name": "2-alternative-selections-cline",
+      "arm": "cline",
+      "ledgerSha256": "dab564f0e41aac1852bf17e24b3a1b322fdfb46b0e27544d2f947dd2acb0e0a7",
+      "readCalls": 8,
+      "readSelections": 29,
+      "recordedOutputJsonBytes": 163805,
+      "calls": [
+        {
+          "toolIndex": 3,
+          "tool": "read_files",
+          "inputs": [
+            {
+              "target": "src/match.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": "src/patterns.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": "src/internals/helpers.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": "src/internals/symbols.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            }
+          ],
+          "recordedOutputJsonBytes": 56501
+        },
+        {
+          "toolIndex": 4,
+          "tool": "read_files",
+          "inputs": [
+            {
+              "target": "tests/multiple-patterns.test.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": "tests/select.test.ts",
+              "view": "range",
+              "startLine": 1,
+              "endLine": 520
+            },
+            {
+              "target": "tests/intersection-and-union.test.ts",
+              "view": "range",
+              "startLine": 1,
+              "endLine": 460
+            }
+          ],
+          "recordedOutputJsonBytes": 44506
+        },
+        {
+          "toolIndex": 5,
+          "tool": "read_files",
+          "inputs": [
+            {
+              "target": ".study/vitest.config.mjs",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": ".study/tsconfig.json",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": ".study/task.json",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": "jest.config.cjs",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": "tsconfig.json",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            }
+          ],
+          "recordedOutputJsonBytes": 4283
+        },
+        {
+          "toolIndex": 6,
+          "tool": "read_files",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "range",
+              "startLine": 115,
+              "endLine": 250
+            },
+            {
+              "target": "src/patterns.ts",
+              "view": "range",
+              "startLine": 360,
+              "endLine": 530
+            },
+            {
+              "target": "src/patterns.ts",
+              "view": "range",
+              "startLine": 530,
+              "endLine": 700
+            }
+          ],
+          "recordedOutputJsonBytes": 18398
+        },
+        {
+          "toolIndex": 8,
+          "tool": "read_files",
+          "inputs": [
+            {
+              "target": "src/types/Pattern.ts",
+              "view": "range",
+              "startLine": 1,
+              "endLine": 180
+            },
+            {
+              "target": "src/types/Pattern.ts",
+              "view": "range",
+              "startLine": 180,
+              "endLine": 290
+            },
+            {
+              "target": "src/types/Pattern.ts",
+              "view": "range",
+              "startLine": 900,
+              "endLine": 1040
+            }
+          ],
+          "recordedOutputJsonBytes": 11631
+        },
+        {
+          "toolIndex": 10,
+          "tool": "read_files",
+          "inputs": [
+            {
+              "target": ".study/delivered.mjs",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": "src/index.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": "src/is-matching.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": "src/types/Match.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            }
+          ],
+          "recordedOutputJsonBytes": 13436
+        },
+        {
+          "toolIndex": 24,
+          "tool": "read_files",
+          "inputs": [
+            {
+              "target": "src/internals/helpers.ts",
+              "view": "range",
+              "startLine": 115,
+              "endLine": 180
+            },
+            {
+              "target": "src/match.ts",
+              "view": "range",
+              "startLine": 45,
+              "endLine": 95
+            },
+            {
+              "target": "src/patterns.ts",
+              "view": "range",
+              "startLine": 1,
+              "endLine": 12
+            },
+            {
+              "target": "src/patterns.ts",
+              "view": "range",
+              "startLine": 449,
+              "endLine": 477
+            },
+            {
+              "target": "src/alternative-selections.test.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            }
+          ],
+          "recordedOutputJsonBytes": 9448
+        },
+        {
+          "toolIndex": 31,
+          "tool": "read_files",
+          "inputs": [
+            {
+              "target": "src/alternative-selections.test.ts",
+              "view": "range",
+              "startLine": 1,
+              "endLine": 130
+            },
+            {
+              "target": "src/internals/helpers.ts",
+              "view": "range",
+              "startLine": 119,
+              "endLine": 166
+            }
+          ],
+          "recordedOutputJsonBytes": 5602
+        }
+      ]
+    },
+    {
+      "name": "2-alternative-selections-reference",
+      "arm": "reference",
+      "ledgerSha256": "02554af1abc68c2a6ed8a588e2aa24d617811d490dcc23787cb0617e917e8253",
+      "readCalls": 20,
+      "readSelections": 20,
+      "recordedOutputJsonBytes": 67036,
+      "calls": [
+        {
+          "toolIndex": 3,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/is-matching.ts",
+              "view": "outline",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 416
+        },
+        {
+          "toolIndex": 4,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/match.ts",
+              "view": "outline",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 2500
+        },
+        {
+          "toolIndex": 5,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "package.json",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 2985
+        },
+        {
+          "toolIndex": 6,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/match.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 4059
+        },
+        {
+          "toolIndex": 7,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/internals/helpers.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 4359
+        },
+        {
+          "toolIndex": 10,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/types/FindSelected.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 5772
+        },
+        {
+          "toolIndex": 11,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": ".study",
+              "view": "outline",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 315
+        },
+        {
+          "toolIndex": 12,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "default",
+              "range": {
+                "startLine": 400,
+                "endLine": 480
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 2882
+        },
+        {
+          "toolIndex": 16,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/internals/symbols.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 1388
+        },
+        {
+          "toolIndex": 18,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "default",
+              "range": {
+                "startLine": 140,
+                "endLine": 255
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 4081
+        },
+        {
+          "toolIndex": 19,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": ".study/vitest.config.mjs",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 398
+        },
+        {
+          "toolIndex": 20,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": ".study/tsconfig.json",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 583
+        },
+        {
+          "toolIndex": 23,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "default",
+              "range": {
+                "startLine": 1,
+                "endLine": 40
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 1037
+        },
+        {
+          "toolIndex": 24,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/index.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 326
+        },
+        {
+          "toolIndex": 25,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": ".study/delivered.mjs",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 1604
+        },
+        {
+          "toolIndex": 26,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "default",
+              "range": {
+                "startLine": 480,
+                "endLine": 590
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 3865
+        },
+        {
+          "toolIndex": 27,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/types/Pattern.ts",
+              "view": "default",
+              "range": {
+                "startLine": 1,
+                "endLine": 100
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 3061
+        },
+        {
+          "toolIndex": 28,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "tests/intersection-and-union.test.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 21919
+        },
+        {
+          "toolIndex": 42,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/selection-transaction.test.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 1233
+        },
+        {
+          "toolIndex": 43,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/internals/helpers.ts",
+              "view": "default",
+              "range": {
+                "startLine": 25,
+                "endLine": 155
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 4253
+        }
+      ]
+    },
+    {
+      "name": "2-symbol-pattern-keys-cline",
+      "arm": "cline",
+      "ledgerSha256": "fc4ba86010a9342dbf4113621c02b0d673aef1324d64403d45a2b8c16c732fd6",
+      "readCalls": 6,
+      "readSelections": 24,
+      "recordedOutputJsonBytes": 114602,
+      "calls": [
+        {
+          "toolIndex": 3,
+          "tool": "read_files",
+          "inputs": [
+            {
+              "target": "src/internals/helpers.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": "src/internals/symbols.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": "src/match.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": "src/is-matching.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": "src/patterns.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            }
+          ],
+          "recordedOutputJsonBytes": 58725
+        },
+        {
+          "toolIndex": 4,
+          "tool": "read_files",
+          "inputs": [
+            {
+              "target": ".study/task.json",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": ".study/vitest.config.mjs",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": ".study/tsconfig.json",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": ".study/delivered.mjs",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": "tsconfig.json",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": "tests/tsconfig.json",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            }
+          ],
+          "recordedOutputJsonBytes": 6246
+        },
+        {
+          "toolIndex": 5,
+          "tool": "read_files",
+          "inputs": [
+            {
+              "target": "tests/select.test.ts",
+              "view": "range",
+              "startLine": 1,
+              "endLine": 520
+            },
+            {
+              "target": "tests/objects.test.ts",
+              "view": "range",
+              "startLine": 1,
+              "endLine": 360
+            },
+            {
+              "target": "tests/optional.test.ts",
+              "view": "range",
+              "startLine": 1,
+              "endLine": 300
+            }
+          ],
+          "recordedOutputJsonBytes": 29177
+        },
+        {
+          "toolIndex": 7,
+          "tool": "read_files",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "range",
+              "startLine": 150,
+              "endLine": 265
+            },
+            {
+              "target": "src/patterns.ts",
+              "view": "range",
+              "startLine": 570,
+              "endLine": 615
+            },
+            {
+              "target": "src/types/Pattern.ts",
+              "view": "range",
+              "startLine": 180,
+              "endLine": 230
+            },
+            {
+              "target": "src/types/Pattern.ts",
+              "view": "range",
+              "startLine": 620,
+              "endLine": 665
+            }
+          ],
+          "recordedOutputJsonBytes": 11180
+        },
+        {
+          "toolIndex": 10,
+          "tool": "read_files",
+          "inputs": [
+            {
+              "target": "src/index.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": ".gitignore",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": ".prettierrc",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            }
+          ],
+          "recordedOutputJsonBytes": 845
+        },
+        {
+          "toolIndex": 16,
+          "tool": "read_files",
+          "inputs": [
+            {
+              "target": "src/internals/own-keys.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            },
+            {
+              "target": "src/internals/helpers.ts",
+              "view": "range",
+              "startLine": 1,
+              "endLine": 145
+            },
+            {
+              "target": "src/symbol-pattern-keys.test.ts",
+              "view": "whole-file",
+              "startLine": null,
+              "endLine": null
+            }
+          ],
+          "recordedOutputJsonBytes": 8429
+        }
+      ]
+    },
+    {
+      "name": "2-symbol-pattern-keys-reference",
+      "arm": "reference",
+      "ledgerSha256": "ef390d9f736ae257149e79b13e782e26fc9b5f72a811f1a4763c316a836d6ea8",
+      "readCalls": 20,
+      "readSelections": 20,
+      "recordedOutputJsonBytes": 82234,
+      "calls": [
+        {
+          "toolIndex": 2,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/internals/symbols.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 1388
+        },
+        {
+          "toolIndex": 3,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/is-matching.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 1995
+        },
+        {
+          "toolIndex": 4,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "package.json",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 2985
+        },
+        {
+          "toolIndex": 6,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/internals/helpers.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 4358
+        },
+        {
+          "toolIndex": 7,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/types/FindSelected.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 5772
+        },
+        {
+          "toolIndex": 8,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "tests/find-selected.test.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 14746
+        },
+        {
+          "toolIndex": 9,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "tests/select.test.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 15654
+        },
+        {
+          "toolIndex": 12,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": ".study/vitest.config.mjs",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 397
+        },
+        {
+          "toolIndex": 13,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": ".study/tsconfig.json",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 582
+        },
+        {
+          "toolIndex": 14,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "default",
+              "range": {
+                "startLine": 1,
+                "endLine": 280
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 8890
+        },
+        {
+          "toolIndex": 15,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "default",
+              "range": {
+                "startLine": 280,
+                "endLine": 520
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 8044
+        },
+        {
+          "toolIndex": 16,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/match.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 4060
+        },
+        {
+          "toolIndex": 21,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src",
+              "view": "outline",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 419
+        },
+        {
+          "toolIndex": 22,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": ".study/delivered.mjs",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 1604
+        },
+        {
+          "toolIndex": 23,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": ".study/task.json",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 2311
+        },
+        {
+          "toolIndex": 24,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "tsconfig.json",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 500
+        },
+        {
+          "toolIndex": 32,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/internals/helpers.ts",
+              "view": "default",
+              "range": {
+                "startLine": 1,
+                "endLine": 145
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 4448
+        },
+        {
+          "toolIndex": 33,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/internals/object-pattern.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 622
+        },
+        {
+          "toolIndex": 40,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/symbol-pattern-keys.test.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 2837
+        },
+        {
+          "toolIndex": 41,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/internals/object-pattern.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 622
+        }
+      ]
+    },
+    {
+      "name": "2-symbol-pattern-keys-candidate",
+      "arm": "candidate",
+      "ledgerSha256": "0b722c66e227c3ffbbf5d19d4dd7a7ab999fd6b96dcc5d71e27fe2e4b5940334",
+      "readCalls": 18,
+      "readSelections": 18,
+      "recordedOutputJsonBytes": 68317,
+      "calls": [
+        {
+          "toolIndex": 3,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/internals/symbols.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 1388
+        },
+        {
+          "toolIndex": 4,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/is-matching.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 1995
+        },
+        {
+          "toolIndex": 5,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "package.json",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 2985
+        },
+        {
+          "toolIndex": 6,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "tsconfig.json",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 499
+        },
+        {
+          "toolIndex": 7,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/internals/helpers.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 4359
+        },
+        {
+          "toolIndex": 8,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "default",
+              "range": {
+                "startLine": 130,
+                "endLine": 270
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 4953
+        },
+        {
+          "toolIndex": 12,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": ".study/vitest.config.mjs",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 397
+        },
+        {
+          "toolIndex": 13,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": ".study/tsconfig.json",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 582
+        },
+        {
+          "toolIndex": 14,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "default",
+              "range": {
+                "startLine": 1,
+                "endLine": 140
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 4176
+        },
+        {
+          "toolIndex": 15,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "default",
+              "range": {
+                "startLine": 530,
+                "endLine": 620
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 2913
+        },
+        {
+          "toolIndex": 16,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/types/FindSelected.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 5773
+        },
+        {
+          "toolIndex": 19,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/index.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 326
+        },
+        {
+          "toolIndex": 20,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/types/Pattern.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 23175
+        },
+        {
+          "toolIndex": 21,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "tests/optional.test.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 6166
+        },
+        {
+          "toolIndex": 22,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "tests/is-matching.test.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 2731
+        },
+        {
+          "toolIndex": 23,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": ".study/delivered.mjs",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 1604
+        },
+        {
+          "toolIndex": 26,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/match.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 4060
+        },
+        {
+          "toolIndex": 28,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/internals",
+              "view": "outline",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 235
+        }
+      ]
+    },
+    {
+      "name": "2-empty-collection-selections-reference",
+      "arm": "reference",
+      "ledgerSha256": "6eba65d0983ae763d5d2bcdcc133fcad4e3c1f3cbdc223599068b8da9b66a076",
+      "readCalls": 20,
+      "readSelections": 20,
+      "recordedOutputJsonBytes": 54472,
+      "calls": [
+        {
+          "toolIndex": 3,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "package.json",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 2985
+        },
+        {
+          "toolIndex": 4,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": ".study/task.json",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 2172
+        },
+        {
+          "toolIndex": 5,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "default",
+              "range": {
+                "startLine": 1,
+                "endLine": 330
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 10366
+        },
+        {
+          "toolIndex": 11,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "default",
+              "range": {
+                "startLine": 300,
+                "endLine": 430
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 4627
+        },
+        {
+          "toolIndex": 12,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/internals/helpers.ts",
+              "view": "default",
+              "range": {
+                "startLine": 1,
+                "endLine": 180
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 4374
+        },
+        {
+          "toolIndex": 13,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts#array.[matcher]",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 1121
+        },
+        {
+          "toolIndex": 14,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts#map",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 1782
+        },
+        {
+          "toolIndex": 21,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": ".study/vitest.config.mjs",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 397
+        },
+        {
+          "toolIndex": 22,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": ".study/tsconfig.json",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 582
+        },
+        {
+          "toolIndex": 23,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "tests/sets.test.ts",
+              "view": "default",
+              "range": {
+                "startLine": 1,
+                "endLine": 240
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 1792
+        },
+        {
+          "toolIndex": 24,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "tests/maps.test.ts",
+              "view": "default",
+              "range": {
+                "startLine": 1,
+                "endLine": 220
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 1375
+        },
+        {
+          "toolIndex": 25,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/index.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 326
+        },
+        {
+          "toolIndex": 26,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/match.ts",
+              "view": "default",
+              "range": {
+                "startLine": 1,
+                "endLine": 130
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 4058
+        },
+        {
+          "toolIndex": 27,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/internals/symbols.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 1389
+        },
+        {
+          "toolIndex": 28,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": ".study/delivered.mjs",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 1604
+        },
+        {
+          "toolIndex": 29,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "default",
+              "range": {
+                "startLine": 200,
+                "endLine": 370
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 6131
+        },
+        {
+          "toolIndex": 30,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "tsconfig.json",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 500
+        },
+        {
+          "toolIndex": 34,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "default",
+              "range": {
+                "startLine": 130,
+                "endLine": 205
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 2823
+        },
+        {
+          "toolIndex": 35,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/types/Pattern.ts",
+              "view": "default",
+              "range": {
+                "startLine": 600,
+                "endLine": 690
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 2902
+        },
+        {
+          "toolIndex": 38,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "default",
+              "range": {
+                "startLine": 430,
+                "endLine": 520
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 3166
+        }
+      ]
+    },
+    {
+      "name": "2-empty-collection-selections-candidate",
+      "arm": "candidate",
+      "ledgerSha256": "ce0a4167c8467721b46d9964be035dff3c15332b484a958cdac6ee6072dd27c2",
+      "readCalls": 23,
+      "readSelections": 23,
+      "recordedOutputJsonBytes": 71355,
+      "calls": [
+        {
+          "toolIndex": 4,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "package.json",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 2985
+        },
+        {
+          "toolIndex": 5,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "outline",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 6609
+        },
+        {
+          "toolIndex": 6,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "default",
+              "range": {
+                "startLine": 1,
+                "endLine": 405
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 12848
+        },
+        {
+          "toolIndex": 9,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/internals/helpers.ts",
+              "view": "outline",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 1457
+        },
+        {
+          "toolIndex": 10,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/types/Pattern.ts",
+              "view": "default",
+              "range": {
+                "startLine": 600,
+                "endLine": 715
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 2900
+        },
+        {
+          "toolIndex": 11,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "tests",
+              "view": "outline",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 2677
+        },
+        {
+          "toolIndex": 12,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts#array",
+              "view": "symbol",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 1239
+        },
+        {
+          "toolIndex": 13,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts#set",
+              "view": "symbol",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 1239
+        },
+        {
+          "toolIndex": 14,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts#map",
+              "view": "symbol",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 1782
+        },
+        {
+          "toolIndex": 15,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/internals/helpers.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 4360
+        },
+        {
+          "toolIndex": 16,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "tests/select.test.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 15655
+        },
+        {
+          "toolIndex": 17,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "tests/maps.test.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 1373
+        },
+        {
+          "toolIndex": 18,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "tests/sets.test.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 1790
+        },
+        {
+          "toolIndex": 19,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": ".study/vitest.config.mjs",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 398
+        },
+        {
+          "toolIndex": 20,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": ".study/tsconfig.json",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 583
+        },
+        {
+          "toolIndex": 21,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": ".study/task.json",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 2173
+        },
+        {
+          "toolIndex": 22,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "default",
+              "range": {
+                "startLine": 530,
+                "endLine": 630
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 3183
+        },
+        {
+          "toolIndex": 23,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/internals/symbols.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 1389
+        },
+        {
+          "toolIndex": 24,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/match.ts",
+              "view": "default",
+              "range": {
+                "startLine": 1,
+                "endLine": 115
+              }
+            }
+          ],
+          "recordedOutputJsonBytes": 3863
+        },
+        {
+          "toolIndex": 27,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": ".study/delivered.mjs",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 1607
+        },
+        {
+          "toolIndex": 28,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src",
+              "view": "outline",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 419
+        },
+        {
+          "toolIndex": 30,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "src/index.ts",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 326
+        },
+        {
+          "toolIndex": 31,
+          "tool": "read_code",
+          "inputs": [
+            {
+              "target": "tsconfig.json",
+              "view": "raw",
+              "range": null
+            }
+          ],
+          "recordedOutputJsonBytes": 500
+        }
+      ]
+    },
+    {
+      "name": "2-empty-collection-selections-cline",
+      "arm": "cline",
+      "ledgerSha256": "51ae6bf7a7d6c6a45c2d761379018a05829081892624d57eec38458f7932780e",
+      "readCalls": 8,
+      "readSelections": 27,
+      "recordedOutputJsonBytes": 117482,
+      "calls": [
+        {
+          "toolIndex": 3,
+          "tool": "read_files",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "range",
+              "startLine": 1,
+              "endLine": 540
+            },
+            {
+              "target": "src/internals/helpers.ts",
+              "view": "range",
+              "startLine": 1,
+              "endLine": 220
+            },
+            {
+              "target": "src/internals/symbols.ts",
+              "view": "range",
+              "startLine": 1,
+              "endLine": 120
+            },
+            {
+              "target": "src/match.ts",
+              "view": "range",
+              "startLine": 1,
+              "endLine": 260
+            }
+          ],
+          "recordedOutputJsonBytes": 31529
+        },
+        {
+          "toolIndex": 4,
+          "tool": "read_files",
+          "inputs": [
+            {
+              "target": "tests/select.test.ts",
+              "view": "range",
+              "startLine": 1,
+              "endLine": 520
+            },
+            {
+              "target": "tests/sets.test.ts",
+              "view": "range",
+              "startLine": 1,
+              "endLine": 260
+            },
+            {
+              "target": "tests/maps.test.ts",
+              "view": "range",
+              "startLine": 1,
+              "endLine": 220
+            },
+            {
+              "target": "tests/tsconfig.json",
+              "view": "range",
+              "startLine": 1,
+              "endLine": 160
+            }
+          ],
+          "recordedOutputJsonBytes": 22510
+        },
+        {
+          "toolIndex": 5,
+          "tool": "read_files",
+          "inputs": [
+            {
+              "target": ".study/task.json",
+              "view": "range",
+              "startLine": 1,
+              "endLine": 240
+            },
+            {
+              "target": ".study/vitest.config.mjs",
+              "view": "range",
+              "startLine": 1,
+              "endLine": 200
+            },
+            {
+              "target": ".study/tsconfig.json",
+              "view": "range",
+              "startLine": 1,
+              "endLine": 200
+            },
+            {
+              "target": ".study/delivered.mjs",
+              "view": "range",
+              "startLine": 1,
+              "endLine": 260
+            },
+            {
+              "target": "tsconfig.json",
+              "view": "range",
+              "startLine": 1,
+              "endLine": 180
+            },
+            {
+              "target": "jest.config.cjs",
+              "view": "range",
+              "startLine": 1,
+              "endLine": 160
+            }
+          ],
+          "recordedOutputJsonBytes": 5864
+        },
+        {
+          "toolIndex": 7,
+          "tool": "read_files",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "range",
+              "startLine": 130,
+              "endLine": 390
+            },
+            {
+              "target": "src/patterns.ts",
+              "view": "range",
+              "startLine": 530,
+              "endLine": 630
+            },
+            {
+              "target": "src/types/FindSelected.ts",
+              "view": "range",
+              "startLine": 1,
+              "endLine": 190
+            },
+            {
+              "target": "src/index.ts",
+              "view": "range",
+              "startLine": 1,
+              "endLine": 100
+            }
+          ],
+          "recordedOutputJsonBytes": 21088
+        },
+        {
+          "toolIndex": 8,
+          "tool": "read_files",
+          "inputs": [
+            {
+              "target": "tests/intersection-and-union.test.ts",
+              "view": "range",
+              "startLine": 1,
+              "endLine": 240
+            },
+            {
+              "target": "tests/is-matching.test.ts",
+              "view": "range",
+              "startLine": 1,
+              "endLine": 160
+            }
+          ],
+          "recordedOutputJsonBytes": 11466
+        },
+        {
+          "toolIndex": 10,
+          "tool": "read_files",
+          "inputs": [
+            {
+              "target": "src/patterns.ts",
+              "view": "range",
+              "startLine": 219,
+              "endLine": 315
+            }
+          ],
+          "recordedOutputJsonBytes": 3643
+        },
+        {
+          "toolIndex": 22,
+          "tool": "read_files",
+          "inputs": [
+            {
+              "target": "src/empty-collection-selections.test.ts",
+              "view": "range",
+              "startLine": 1,
+              "endLine": 120
+            },
+            {
+              "target": "src/types/Match.ts",
+              "view": "range",
+              "startLine": 1,
+              "endLine": 180
+            }
+          ],
+          "recordedOutputJsonBytes": 9294
+        },
+        {
+          "toolIndex": 30,
+          "tool": "read_files",
+          "inputs": [
+            {
+              "target": "src/internals/helpers.ts",
+              "view": "range",
+              "startLine": 115,
+              "endLine": 155
+            },
+            {
+              "target": "src/patterns.ts",
+              "view": "range",
+              "startLine": 1,
+              "endLine": 12
+            },
+            {
+              "target": "src/patterns.ts",
+              "view": "range",
+              "startLine": 220,
+              "endLine": 385
+            },
+            {
+              "target": "src/empty-collection-selections.test.ts",
+              "view": "range",
+              "startLine": 1,
+              "endLine": 110
+            }
+          ],
+          "recordedOutputJsonBytes": 12088
+        }
+      ]
+    }
+  ]
+}
