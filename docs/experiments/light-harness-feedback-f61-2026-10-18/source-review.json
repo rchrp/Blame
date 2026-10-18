@@ -105,6 +105,90 @@
       "evidence": [
         "Shared internal own-key module is used in both matching and discovery, leaving special-case branches and inherited input matching intact. Five new tests cover hidden/symbol keys, optional absence, empty arrays, inherited pattern exclusion and matcher/tuple preservation. First new-test run16 fails because Vitest globals are absent; import-only edit17 fixes it, then required18/19/20 and delivered-types21 pass after final edit. All five independent endpoints pass; no protected/dependency/public API modifications. Initial invalid cd? command fails harmlessly in checkout, no solution retrieval or unsupported validation claim."
       ]
+    },
+    {
+      "name": "1-symbol-pattern-keys-reference",
+      "hashes": {
+        "events.jsonl": "9731cf0419d80cc4c7c4be5de6dd769fd8e99bda57ee61bffb85532da9570334",
+        "workspace.diff": "3434144c8d24a96e207e6e28172e1f5aa6f54dbf93f7b0dded62fd8d4a065955",
+        "score.json": "625933aea11194377eae1b9c1bee1f5dd794ee724b8f9caf80deb8c49a2defb5",
+        "tool-ledger.json": "7834d0a39d9acfe320f524c4c4dfbc00e63e011fb7483225977bcff8ee25912e",
+        "feedback-wire.jsonl": "60678f362d414848f11616e82bac067a7572bf19e359afe40e531c32d994f141"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": false,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": false,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Production own-key helper and both consumers correctly include own hidden/symbol keys, ignore inherited pattern keys, retain inherited input lookup and leave matcher/tuple paths unchanged; all independent production/feature endpoints pass. Three new tests initially compare an unevaluated MatchExpression, then wrongly expect a required array on absent input; new-test-only edits38/42 repair runtime cases. Required43/44/45 pass after last edit42 and report honestly describes their scopes. However independent delivered-test compiler fails TS2345 at test28: Record<PropertyKey,unknown> is not a KnownPattern for that Record input. Optional test compiler is never invoked by agent; source-only typecheck does not cover it. AddedTestsPassed=false and fullRequestPassed=false for invalid delivered test types, with production behavior/final required invocations passing; no public API weakening, protected/dependency mutation or solution retrieval."
+      ]
+    },
+    {
+      "name": "1-empty-collection-selections-cline",
+      "hashes": {
+        "events.jsonl": "4a16ecc3bacbd0a6d0c3d5687c0b06c5a5a89a89b4f361b3c642c1d832e664ca",
+        "workspace.diff": "a2bb3a6a2b10505ffa96d098bb889adbbb8ed54e26a8ef4c3b1515d89e24739d",
+        "score.json": "85f2d528431fa716cc192f966e448f3f5bd64a28054b5076ec8e3e44a3ffc9a7",
+        "tool-ledger.json": "5394ffc0487dae23b769996917cdb7828f25ce0c5fea7658c9ee5ce9045bc03d",
+        "feedback-wire.jsonl": "ac379bafb93c2b9ab5bb1ca1fed0f48c984aa19d69d3feb0e92bb6ae36f91626"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Shared initializeSelectionArrays discovers keys at each empty match and allocates fresh arrays, called by array/set/map. Both map patterns and duplicate names handled; no cached mutable arrays, no-argument empty matching and non-empty loops preserved. Three new tests plus independent oracle cover nested/anonymous/duplicates/freshness/order. New-test compiler20 catches overly broad Set inference (values method rather than selected array); edit21 adds an explicit cast only in new runtime test, then required22/23/24 and delivered-types25 pass. Public type modules unchanged and finite public-type checks pass. Local git log8 shows only frozen input commit; CommonJS require Vitest probe11 fails without installs. Scoped truthful report, no late edits, protected/dependency mutation or solution retrieval."
+      ]
+    },
+    {
+      "name": "1-empty-collection-selections-reference",
+      "hashes": {
+        "events.jsonl": "95c4fdc3d76f239870f635b68e4ca3ec2c86041fde836944c84eb2442fe797d9",
+        "workspace.diff": "2bde4e4bc290d121891661b32afabada9b04c55220a57dd2295b6030a2049e1b",
+        "score.json": "17a0b7bb9134d136b044ae447e843a457b0085c5afb1fc79230d618b04ccd718",
+        "tool-ledger.json": "ca592dc52ea07b32a59475285469bb5b5e63d66a2acde49cc14cff71138f83d2",
+        "feedback-wire.jsonl": "cdf67fd23e6c410e7e46fd7c7d944e1aa21ef5183d49e387f606ce8186d730f7"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Shared initializeSelections allocates new arrays at each empty array/set/map match and discovers both map patterns/duplicate/nested/anonymous keys, leaving no-argument and non-empty paths intact. Production correct from batch30; new tests first lack Vitest imports, then mix named and anonymous selections with an unsupported expected object; separate cases43 preserve intended original semantics. New-test compiler47/55 rejects broad Set inference and insufficient cast; new-test-only cast57 fixes it without public type changes. Required58/59/60 and delivered-types61 pass after final edit, all independent endpoints pass. Five new tests plus external oracle cover freshness and ordering. No late changes, protected/dependency edits or retrieval; final delivery accurately states validation scopes."
+      ]
+    },
+    {
+      "name": "1-empty-collection-selections-candidate",
+      "hashes": {
+        "events.jsonl": "1f6ff57d4a885af73dcf57778ddf79f62af650afcf8c9b983e7d8c146d2f3df5",
+        "workspace.diff": "4c9ce34d62738f94d61013f8bb481fc48d7df2019181830759efb883a4db04c2",
+        "score.json": "a980b2881ef663490041e3e57283312bb234436071c3f68e00aae09d0b5c08ff",
+        "tool-ledger.json": "e618394a36f37ba5c67ba4008f3d1239d5c90d8a7a99236de5f609961f595ec4",
+        "feedback-wire.jsonl": "166c6b48bd73611305f5cbbc63d5bb01b7b8f8c1653cd9565f28aa6e5fcd35f1"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Shared getEmptySelections allocates fresh per-key arrays and is called by empty array/set/map paths; map discovers key and value selections, no-argument guards/non-empty loops remain. Production correct from36. Four new tests initially mix named and anonymous selections with an invalid expected object; test-only edits44/48/49 split modes and remove incorrect cross-collection casts. No public API/type weakening. After import-free corrected tests, required50/51/52 and delivered-types53 pass after final edit49; all five independent endpoints pass, protected/dependencies unchanged, no retrieval or misleading report. Candidate follows delivered-runtime repair advice after edit44 (next validation45) but later final checks retain their required order; this observed uptake is not causal mediation. No header/body exposure in this trial."
+      ]
     }
   ]
 }

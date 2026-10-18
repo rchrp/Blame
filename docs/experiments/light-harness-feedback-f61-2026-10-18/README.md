@@ -1,6 +1,6 @@
 # F61: registered feedback follow-up
 
-Three tasks, two rotated repetitions and three arms: Light reference, isolated candidate (or full bundle for fresh-project F61), integrated Cline. Task selection is committed before any new model call in F59 selection-registration.json. Exact protocols/bindings precede each dispatch. No forced tool use, seeded journal, retry, solution retrieval or replacement of null opportunities.
+Three fresh cross-module tasks, two rotated repetitions and three arms: executable Light baseline b70c21fa, the complete current feedback bundle, and integrated Cline. Five executable modules differ between the Light arms; this panel cannot isolate any one mechanism. Task selection is committed before any new model call in F59 selection-registration.json. Exact protocols/bindings precede each dispatch. No forced tool use, seeded journal, retry, solution retrieval or replacement of null opportunities.
 
 Use `BLAME_FEEDBACK_PANEL=F61 node tools/terminal_bench/feedback-ablation-study/entry.mjs <phase>`. Phases: snapshot, controls, preflight-controls, environment-smoke, freeze, bind, run/resume, audit, publish, verify, readout, replay (`--output=...`). Model-free controls run before live workers; no development builds/tests overlap the sequential model workers.
 
@@ -8,6 +8,6 @@ Five endpoint checks distinguish selected original regressions, independent fini
 
 Body receipt exposure does not establish reasoning; exact next-selection chronology does not establish causality. Every failure, timeout and missing consumption is retained. Strict paired success resource totals have per-task and leave-pair/task-out sensitivity. SDK estimates exclude invoices and research/infrastructure costs; historical F52 unknown consumption and reservations remain separate.
 
-Results will be appended after the registered sequence.
+Results will be appended after the registered sequence. The source and command reviews are unblinded. This is a fresh-project confirmation on TS-Pattern 5.6.0 (upstream d68fbcf16c0ae21d94957979cada45a911c169c1), with eighteen production TypeScript modules. It does not establish performance on large repositories or representative issue prevalence. Optional Z3 analysis and hints are disabled in every arm.
 
 Before any F61 model call, static protocol review found an overstrict raw-failure oracle: upstream MatchResult makes selections optional. The original unbound registration/control source is preserved in pre-model-oracle-amendment/. The corrected oracle accepts an omitted selection map on total mismatch and still rejects partial values; successful-alternative declared undefined-key behavior is unchanged. A distinct valid omitted-selection implementation passes all five checks, and a false-only leaked-value mutant is rejected. Task instructions, project/runtime bytes, order, budgets and primary criteria remain unchanged. The selected original Jest-style tests run through the pinned Vitest study adapter with globals; this is not the complete native upstream Jest/type-test suite. Full structural requirements remain separately audited.

@@ -1,0 +1,51 @@
+{
+  "status": "partial; remaining assigned trials pending",
+  "method": "Manual command/source-epoch review. Initial and final-source obligations are never classified as avoidable; an exit status for a conjunction does not prove every child ran. No rerun count or causal mediation is inferred from this narrative. All costs remain in the assigned-arm totals.",
+  "rows": [
+    {
+      "name": "1-alternative-selections-reference",
+      "ledgerSha256": "22e1396841006696bbea35f3ddc964dd54b8d1a0dc57243aeec0308deb34c90f",
+      "evidence": "Each added or repaired test changes final bytes. Required48/49/50 follow last real test edit47; earlier green reruns therefore do not replace final-source obligations. Delivered compiler33 rejects a too-narrow new test, while source-only checks correctly exclude that test."
+    },
+    {
+      "name": "1-alternative-selections-candidate",
+      "ledgerSha256": "95b718341247490b6849a50b5be776675fb8ebc87b12cf5435b07be500ed3f4a",
+      "evidence": "Delivered26 fails missing Vitest globals. Source is already correct; import-only edit28 precedes required29/30/31 and optional test compiler37. Rejected target27 writes nothing. Four repair receipts do not establish automatic repair or causal savings."
+    },
+    {
+      "name": "1-alternative-selections-cline",
+      "ledgerSha256": "035a37e0de23cc8dae0120527317c2d4e91f5ce1ab7570a10f93892e1ad7597c",
+      "evidence": "Raw root compilation repeatedly fails on invalid new-test literal patterns. A conjunctive command can skip later commands (16 skips regression;17 never reaches delivered-types). Required37/38/39 and successful test/root compilers40 follow final edit36. Costs from earlier passes remain, but no numeric avoidable-rerun total is inferred from compound shells."
+    },
+    {
+      "name": "1-symbol-pattern-keys-candidate",
+      "ledgerSha256": "e121fd42c905b6d0d4a4afebbdec1a70339811e6b3da72b3f6cde3582d7c9f0f",
+      "evidence": "Atomic edit32 fails final parse and writes no files. Corrected batch34 precedes all final required invocations35/36/37 and optional test compiler42."
+    },
+    {
+      "name": "1-symbol-pattern-keys-cline",
+      "ledgerSha256": "41d0e5af3a44d02eaef4f07cf9195d1b4a0e23c3c870c86a3e1e056ee8fe355c",
+      "evidence": "Loop16 executes regression and source compilation successfully, then fails delivered runtime due missing Vitest imports. Import17 invalidates final-source obligations; repeated required18/19/20 are necessary after that edit."
+    },
+    {
+      "name": "1-symbol-pattern-keys-reference",
+      "ledgerSha256": "7834d0a39d9acfe320f524c4c4dfbc00e63e011fb7483225977bcff8ee25912e",
+      "evidence": "Initial tests forget to evaluate MatchExpression, then require an absent array property. Test-only edits38/42 fix runtime; required43/44/45 are fresh and pass. Source compilation excludes tests. Optional test compiler is omitted and the independent endpoint finds TS2345 in a new test; no false claim of that compiler running is made."
+    },
+    {
+      "name": "1-empty-collection-selections-cline",
+      "ledgerSha256": "5394ffc0487dae23b769996917cdb7828f25ce0c5fea7658c9ee5ce9045bc03d",
+      "evidence": "Initial delivered test compiler20 fails because an overly broad new-test Set inference exposes the original values method. New-test-only cast21 preserves original public types. All required22/23/24 and optional delivered compiler25 run after that final edit; earlier greens remain in measured cost but cannot replace fresh final obligations."
+    },
+    {
+      "name": "1-empty-collection-selections-reference",
+      "ledgerSha256": "ca592dc52ea07b32a59475285469bb5b5e63d66a2acde49cc14cff71138f83d2",
+      "evidence": "Production remains correct from30. New-test runtime failures33/42 and compiler failures47/55 require new test epochs. After cast51, three already-passing required checks52/53/54 precede a renewed optional compiler failure55; final required58/59/60 and compiler61 after cast57 remain necessary. This is an observed ordering opportunity, not proof the candidate advice causes savings."
+    },
+    {
+      "name": "1-empty-collection-selections-candidate",
+      "ledgerSha256": "e618394a36f37ba5c67ba4008f3d1239d5c90d8a7a99236de5f609961f595ec4",
+      "evidence": "After failed delivered runtime39 and compiler40, edit44 repairs only some new-test assumptions; next validation45 directly selects the still-failing runtime before redoing greens. After further new-test edits48/49, final required50/51 precede delivered52 success; their final-source obligations remain necessary. Exposure/uptake is observed, no matched-handoff causal saving established. No source binding repair or header exposure."
+    }
+  ]
+}
