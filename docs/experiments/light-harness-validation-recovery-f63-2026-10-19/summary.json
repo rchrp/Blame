@@ -1,0 +1,1139 @@
+{
+  "phase": "F63",
+  "complete": true,
+  "arms": {
+    "reference": {
+      "trials": 6,
+      "official": 6,
+      "selected": 6,
+      "independent": 6,
+      "audited": 6,
+      "sourceAudited": 6,
+      "input": 341911,
+      "output": 15721,
+      "tokens": 357632,
+      "cacheRead": 258176,
+      "cacheWrite": 0,
+      "sdkEstimatedUsd": 0.04077572,
+      "durationMs": 206956,
+      "forwardedRequests": 41,
+      "missingUsageReceipts": 0,
+      "cachePerRequestReconciled": false,
+      "navigationOffers": 1,
+      "navigationOffersFollowed": 0,
+      "hintOffers": 0,
+      "hintOffersFollowed": 0,
+      "meaningfulSymbolicCalls": 0,
+      "symbolicCalls": 0,
+      "symbolicCounterexamples": 0,
+      "symbolicUnknowns": 0,
+      "symbolicBlockedCalls": 0,
+      "boundedNoCounterexamples": 0,
+      "requestBodyBytes": 1583869,
+      "schemaBytes": [
+        10473
+      ],
+      "emptySelectionTrials": 0,
+      "selectionFailureReports": 0,
+      "finishFailures": 0
+    },
+    "candidate": {
+      "trials": 6,
+      "official": 6,
+      "selected": 6,
+      "independent": 6,
+      "audited": 6,
+      "sourceAudited": 6,
+      "input": 376495,
+      "output": 17793,
+      "tokens": 394288,
+      "cacheRead": 292352,
+      "cacheWrite": 0,
+      "sdkEstimatedUsd": 0.044027239999999995,
+      "durationMs": 239108,
+      "forwardedRequests": 41,
+      "missingUsageReceipts": 0,
+      "cachePerRequestReconciled": false,
+      "navigationOffers": 1,
+      "navigationOffersFollowed": 0,
+      "hintOffers": 0,
+      "hintOffersFollowed": 0,
+      "meaningfulSymbolicCalls": 0,
+      "symbolicCalls": 0,
+      "symbolicCounterexamples": 0,
+      "symbolicUnknowns": 0,
+      "symbolicBlockedCalls": 0,
+      "boundedNoCounterexamples": 0,
+      "requestBodyBytes": 1710545,
+      "schemaBytes": [
+        10473
+      ],
+      "emptySelectionTrials": 0,
+      "selectionFailureReports": 0,
+      "finishFailures": 0
+    },
+    "cline": {
+      "trials": 6,
+      "official": 6,
+      "selected": 6,
+      "independent": 6,
+      "audited": 6,
+      "sourceAudited": 6,
+      "input": 342675,
+      "output": 35664,
+      "tokens": 378339,
+      "cacheRead": 253696,
+      "cacheWrite": 0,
+      "sdkEstimatedUsd": 0.06566652,
+      "durationMs": 326565,
+      "forwardedRequests": 40,
+      "missingUsageReceipts": 0,
+      "cachePerRequestReconciled": false,
+      "navigationOffers": 0,
+      "navigationOffersFollowed": 0,
+      "hintOffers": 0,
+      "hintOffersFollowed": 0,
+      "meaningfulSymbolicCalls": 0,
+      "symbolicCalls": 0,
+      "symbolicCounterexamples": 0,
+      "symbolicUnknowns": 0,
+      "symbolicBlockedCalls": 0,
+      "boundedNoCounterexamples": 0,
+      "requestBodyBytes": 1476689,
+      "schemaBytes": [
+        7117
+      ],
+      "emptySelectionTrials": 0,
+      "selectionFailureReports": 0,
+      "finishFailures": 0
+    }
+  },
+  "comparisons": {
+    "candidate/reference": {
+      "pairs": 6,
+      "candidate": {
+        "trials": 6,
+        "tokens": 394288,
+        "cost": 0.044027239999999995,
+        "durationMs": 239108
+      },
+      "baseline": {
+        "trials": 6,
+        "tokens": 357632,
+        "cost": 0.04077572,
+        "durationMs": 206956
+      },
+      "tokenDelta": 0.10249642090193278,
+      "costDelta": 0.07974157170002139,
+      "durationDelta": 0.15535669417653986,
+      "pairDetails": [
+        {
+          "task": "source-format",
+          "repeat": 1,
+          "candidate": "1-source-format-candidate",
+          "baseline": "1-source-format-reference",
+          "tokenDelta": -0.04946034094347873,
+          "costDelta": 0.028092532554382155,
+          "durationDelta": 0.025951090289190404
+        },
+        {
+          "task": "test-only-type-error",
+          "repeat": 1,
+          "candidate": "1-test-only-type-error-candidate",
+          "baseline": "1-test-only-type-error-reference",
+          "tokenDelta": 0.11991199119912,
+          "costDelta": -0.05766589491033225,
+          "durationDelta": -0.06799490635114347
+        },
+        {
+          "task": "wrapper-mode-argument",
+          "repeat": 1,
+          "candidate": "1-wrapper-mode-argument-candidate",
+          "baseline": "1-wrapper-mode-argument-reference",
+          "tokenDelta": 0.5255640944660842,
+          "costDelta": 0.17989071180104865,
+          "durationDelta": 0.38860630722278744
+        },
+        {
+          "task": "source-format",
+          "repeat": 2,
+          "candidate": "2-source-format-candidate",
+          "baseline": "2-source-format-reference",
+          "tokenDelta": -0.11582107561480115,
+          "costDelta": 0.09182420447826822,
+          "durationDelta": 0.039309257985039814
+        },
+        {
+          "task": "test-only-type-error",
+          "repeat": 2,
+          "candidate": "2-test-only-type-error-candidate",
+          "baseline": "2-test-only-type-error-reference",
+          "tokenDelta": -0.08887594853784142,
+          "costDelta": -0.04976943612976292,
+          "durationDelta": 0.42117990410673345
+        },
+        {
+          "task": "wrapper-mode-argument",
+          "repeat": 2,
+          "candidate": "2-wrapper-mode-argument-candidate",
+          "baseline": "2-wrapper-mode-argument-reference",
+          "tokenDelta": 0.24413220040681494,
+          "costDelta": 0.33893870661462167,
+          "durationDelta": 0.343040507901456
+        }
+      ],
+      "byTask": [
+        {
+          "task": "source-format",
+          "pairs": 2,
+          "tokenDelta": -0.08524531751072828
+        },
+        {
+          "task": "test-only-type-error",
+          "pairs": 2,
+          "tokenDelta": 0.007669656919810919
+        },
+        {
+          "task": "wrapper-mode-argument",
+          "pairs": 2,
+          "tokenDelta": 0.37111777885094965
+        }
+      ],
+      "leaveOnePairOut": [
+        {
+          "omitted": "1-source-format-candidate",
+          "tokenDelta": 0.1328123427804797
+        },
+        {
+          "omitted": "1-test-only-type-error-candidate",
+          "tokenDelta": 0.09984405407843688
+        },
+        {
+          "omitted": "1-wrapper-mode-argument-candidate",
+          "tokenDelta": 0.02229259108961612
+        },
+        {
+          "omitted": "2-source-format-candidate",
+          "tokenDelta": 0.15526567968446203
+        },
+        {
+          "omitted": "2-test-only-type-error-candidate",
+          "tokenDelta": 0.13724110361141673
+        },
+        {
+          "omitted": "2-wrapper-mode-argument-candidate",
+          "tokenDelta": 0.06844297690357348
+        }
+      ],
+      "leaveOneTaskOut": [
+        {
+          "omitted": "source-format",
+          "tokenDelta": 0.2085510252303815
+        },
+        {
+          "omitted": "test-only-type-error",
+          "tokenDelta": 0.14044814044814036
+        },
+        {
+          "omitted": "wrapper-mode-argument",
+          "tokenDelta": -0.04418573485100663
+        }
+      ]
+    },
+    "candidate/cline": {
+      "pairs": 6,
+      "candidate": {
+        "trials": 6,
+        "tokens": 394288,
+        "cost": 0.044027239999999995,
+        "durationMs": 239108
+      },
+      "baseline": {
+        "trials": 6,
+        "tokens": 378339,
+        "cost": 0.06566652,
+        "durationMs": 326565
+      },
+      "tokenDelta": 0.04215531573535913,
+      "costDelta": -0.32953291875372726,
+      "durationDelta": -0.2678088588795492,
+      "pairDetails": [
+        {
+          "task": "source-format",
+          "repeat": 1,
+          "candidate": "1-source-format-candidate",
+          "baseline": "1-source-format-cline",
+          "tokenDelta": 0.03968224780258178,
+          "costDelta": -0.2203148456201568,
+          "durationDelta": -0.22162051511091263
+        },
+        {
+          "task": "test-only-type-error",
+          "repeat": 1,
+          "candidate": "1-test-only-type-error-candidate",
+          "baseline": "1-test-only-type-error-cline",
+          "tokenDelta": -0.0944454898472381,
+          "costDelta": -0.4549983356533317,
+          "durationDelta": -0.3086082027867433
+        },
+        {
+          "task": "wrapper-mode-argument",
+          "repeat": 1,
+          "candidate": "1-wrapper-mode-argument-candidate",
+          "baseline": "1-wrapper-mode-argument-cline",
+          "tokenDelta": 0.05406847056541553,
+          "costDelta": -0.5974042654017941,
+          "durationDelta": -0.540598638569521
+        },
+        {
+          "task": "source-format",
+          "repeat": 2,
+          "candidate": "2-source-format-candidate",
+          "baseline": "2-source-format-cline",
+          "tokenDelta": 0.020390232581270817,
+          "costDelta": -0.10519711257718645,
+          "durationDelta": 0.034213141910546696
+        },
+        {
+          "task": "test-only-type-error",
+          "repeat": 2,
+          "candidate": "2-test-only-type-error-candidate",
+          "baseline": "2-test-only-type-error-cline",
+          "tokenDelta": -0.04113602849646669,
+          "costDelta": -0.1496848486018475,
+          "durationDelta": -0.1609973417347642
+        },
+        {
+          "task": "wrapper-mode-argument",
+          "repeat": 2,
+          "candidate": "2-wrapper-mode-argument-candidate",
+          "baseline": "2-wrapper-mode-argument-cline",
+          "tokenDelta": 0.22377681916222047,
+          "costDelta": -0.1743380678737938,
+          "durationDelta": -0.11546415180093172
+        }
+      ],
+      "byTask": [
+        {
+          "task": "source-format",
+          "pairs": 2,
+          "tokenDelta": 0.02953663746131374
+        },
+        {
+          "task": "test-only-type-error",
+          "pairs": 2,
+          "tokenDelta": -0.069293601026438
+        },
+        {
+          "task": "wrapper-mode-argument",
+          "pairs": 2,
+          "tokenDelta": 0.13225679916318
+        }
+      ],
+      "leaveOnePairOut": [
+        {
+          "omitted": "1-source-format-candidate",
+          "tokenDelta": 0.042570464598696844
+        },
+        {
+          "omitted": "1-test-only-type-error-candidate",
+          "tokenDelta": 0.06711849994685548
+        },
+        {
+          "omitted": "1-wrapper-mode-argument-candidate",
+          "tokenDelta": 0.03883373725287398
+        },
+        {
+          "omitted": "2-source-format-candidate",
+          "tokenDelta": 0.04628383477560871
+        },
+        {
+          "omitted": "2-test-only-type-error-candidate",
+          "tokenDelta": 0.05549150317979157
+        },
+        {
+          "omitted": "2-wrapper-mode-argument-candidate",
+          "tokenDelta": 0.0005814198988525199
+        }
+      ],
+      "leaveOneTaskOut": [
+        {
+          "omitted": "source-format",
+          "tokenDelta": 0.04764559958123771
+        },
+        {
+          "omitted": "test-only-type-error",
+          "tokenDelta": 0.08823716212429722
+        },
+        {
+          "omitted": "wrapper-mode-argument",
+          "tokenDelta": -0.01899467119829268
+        }
+      ]
+    }
+  },
+  "selectedComparisons": {
+    "candidate/reference": {
+      "pairs": 6,
+      "candidate": {
+        "trials": 6,
+        "tokens": 394288,
+        "cost": 0.044027239999999995,
+        "durationMs": 239108
+      },
+      "baseline": {
+        "trials": 6,
+        "tokens": 357632,
+        "cost": 0.04077572,
+        "durationMs": 206956
+      },
+      "tokenDelta": 0.10249642090193278,
+      "costDelta": 0.07974157170002139,
+      "durationDelta": 0.15535669417653986,
+      "pairDetails": [
+        {
+          "task": "source-format",
+          "repeat": 1,
+          "candidate": "1-source-format-candidate",
+          "baseline": "1-source-format-reference",
+          "tokenDelta": -0.04946034094347873,
+          "costDelta": 0.028092532554382155,
+          "durationDelta": 0.025951090289190404
+        },
+        {
+          "task": "test-only-type-error",
+          "repeat": 1,
+          "candidate": "1-test-only-type-error-candidate",
+          "baseline": "1-test-only-type-error-reference",
+          "tokenDelta": 0.11991199119912,
+          "costDelta": -0.05766589491033225,
+          "durationDelta": -0.06799490635114347
+        },
+        {
+          "task": "wrapper-mode-argument",
+          "repeat": 1,
+          "candidate": "1-wrapper-mode-argument-candidate",
+          "baseline": "1-wrapper-mode-argument-reference",
+          "tokenDelta": 0.5255640944660842,
+          "costDelta": 0.17989071180104865,
+          "durationDelta": 0.38860630722278744
+        },
+        {
+          "task": "source-format",
+          "repeat": 2,
+          "candidate": "2-source-format-candidate",
+          "baseline": "2-source-format-reference",
+          "tokenDelta": -0.11582107561480115,
+          "costDelta": 0.09182420447826822,
+          "durationDelta": 0.039309257985039814
+        },
+        {
+          "task": "test-only-type-error",
+          "repeat": 2,
+          "candidate": "2-test-only-type-error-candidate",
+          "baseline": "2-test-only-type-error-reference",
+          "tokenDelta": -0.08887594853784142,
+          "costDelta": -0.04976943612976292,
+          "durationDelta": 0.42117990410673345
+        },
+        {
+          "task": "wrapper-mode-argument",
+          "repeat": 2,
+          "candidate": "2-wrapper-mode-argument-candidate",
+          "baseline": "2-wrapper-mode-argument-reference",
+          "tokenDelta": 0.24413220040681494,
+          "costDelta": 0.33893870661462167,
+          "durationDelta": 0.343040507901456
+        }
+      ],
+      "byTask": [
+        {
+          "task": "source-format",
+          "pairs": 2,
+          "tokenDelta": -0.08524531751072828
+        },
+        {
+          "task": "test-only-type-error",
+          "pairs": 2,
+          "tokenDelta": 0.007669656919810919
+        },
+        {
+          "task": "wrapper-mode-argument",
+          "pairs": 2,
+          "tokenDelta": 0.37111777885094965
+        }
+      ],
+      "leaveOnePairOut": [
+        {
+          "omitted": "1-source-format-candidate",
+          "tokenDelta": 0.1328123427804797
+        },
+        {
+          "omitted": "1-test-only-type-error-candidate",
+          "tokenDelta": 0.09984405407843688
+        },
+        {
+          "omitted": "1-wrapper-mode-argument-candidate",
+          "tokenDelta": 0.02229259108961612
+        },
+        {
+          "omitted": "2-source-format-candidate",
+          "tokenDelta": 0.15526567968446203
+        },
+        {
+          "omitted": "2-test-only-type-error-candidate",
+          "tokenDelta": 0.13724110361141673
+        },
+        {
+          "omitted": "2-wrapper-mode-argument-candidate",
+          "tokenDelta": 0.06844297690357348
+        }
+      ],
+      "leaveOneTaskOut": [
+        {
+          "omitted": "source-format",
+          "tokenDelta": 0.2085510252303815
+        },
+        {
+          "omitted": "test-only-type-error",
+          "tokenDelta": 0.14044814044814036
+        },
+        {
+          "omitted": "wrapper-mode-argument",
+          "tokenDelta": -0.04418573485100663
+        }
+      ]
+    },
+    "candidate/cline": {
+      "pairs": 6,
+      "candidate": {
+        "trials": 6,
+        "tokens": 394288,
+        "cost": 0.044027239999999995,
+        "durationMs": 239108
+      },
+      "baseline": {
+        "trials": 6,
+        "tokens": 378339,
+        "cost": 0.06566652,
+        "durationMs": 326565
+      },
+      "tokenDelta": 0.04215531573535913,
+      "costDelta": -0.32953291875372726,
+      "durationDelta": -0.2678088588795492,
+      "pairDetails": [
+        {
+          "task": "source-format",
+          "repeat": 1,
+          "candidate": "1-source-format-candidate",
+          "baseline": "1-source-format-cline",
+          "tokenDelta": 0.03968224780258178,
+          "costDelta": -0.2203148456201568,
+          "durationDelta": -0.22162051511091263
+        },
+        {
+          "task": "test-only-type-error",
+          "repeat": 1,
+          "candidate": "1-test-only-type-error-candidate",
+          "baseline": "1-test-only-type-error-cline",
+          "tokenDelta": -0.0944454898472381,
+          "costDelta": -0.4549983356533317,
+          "durationDelta": -0.3086082027867433
+        },
+        {
+          "task": "wrapper-mode-argument",
+          "repeat": 1,
+          "candidate": "1-wrapper-mode-argument-candidate",
+          "baseline": "1-wrapper-mode-argument-cline",
+          "tokenDelta": 0.05406847056541553,
+          "costDelta": -0.5974042654017941,
+          "durationDelta": -0.540598638569521
+        },
+        {
+          "task": "source-format",
+          "repeat": 2,
+          "candidate": "2-source-format-candidate",
+          "baseline": "2-source-format-cline",
+          "tokenDelta": 0.020390232581270817,
+          "costDelta": -0.10519711257718645,
+          "durationDelta": 0.034213141910546696
+        },
+        {
+          "task": "test-only-type-error",
+          "repeat": 2,
+          "candidate": "2-test-only-type-error-candidate",
+          "baseline": "2-test-only-type-error-cline",
+          "tokenDelta": -0.04113602849646669,
+          "costDelta": -0.1496848486018475,
+          "durationDelta": -0.1609973417347642
+        },
+        {
+          "task": "wrapper-mode-argument",
+          "repeat": 2,
+          "candidate": "2-wrapper-mode-argument-candidate",
+          "baseline": "2-wrapper-mode-argument-cline",
+          "tokenDelta": 0.22377681916222047,
+          "costDelta": -0.1743380678737938,
+          "durationDelta": -0.11546415180093172
+        }
+      ],
+      "byTask": [
+        {
+          "task": "source-format",
+          "pairs": 2,
+          "tokenDelta": 0.02953663746131374
+        },
+        {
+          "task": "test-only-type-error",
+          "pairs": 2,
+          "tokenDelta": -0.069293601026438
+        },
+        {
+          "task": "wrapper-mode-argument",
+          "pairs": 2,
+          "tokenDelta": 0.13225679916318
+        }
+      ],
+      "leaveOnePairOut": [
+        {
+          "omitted": "1-source-format-candidate",
+          "tokenDelta": 0.042570464598696844
+        },
+        {
+          "omitted": "1-test-only-type-error-candidate",
+          "tokenDelta": 0.06711849994685548
+        },
+        {
+          "omitted": "1-wrapper-mode-argument-candidate",
+          "tokenDelta": 0.03883373725287398
+        },
+        {
+          "omitted": "2-source-format-candidate",
+          "tokenDelta": 0.04628383477560871
+        },
+        {
+          "omitted": "2-test-only-type-error-candidate",
+          "tokenDelta": 0.05549150317979157
+        },
+        {
+          "omitted": "2-wrapper-mode-argument-candidate",
+          "tokenDelta": 0.0005814198988525199
+        }
+      ],
+      "leaveOneTaskOut": [
+        {
+          "omitted": "source-format",
+          "tokenDelta": 0.04764559958123771
+        },
+        {
+          "omitted": "test-only-type-error",
+          "tokenDelta": 0.08823716212429722
+        },
+        {
+          "omitted": "wrapper-mode-argument",
+          "tokenDelta": -0.01899467119829268
+        }
+      ]
+    }
+  },
+  "functionalComparisons": {
+    "candidate/reference": {
+      "pairs": 6,
+      "candidate": {
+        "trials": 6,
+        "tokens": 394288,
+        "cost": 0.044027239999999995,
+        "durationMs": 239108
+      },
+      "baseline": {
+        "trials": 6,
+        "tokens": 357632,
+        "cost": 0.04077572,
+        "durationMs": 206956
+      },
+      "tokenDelta": 0.10249642090193278,
+      "costDelta": 0.07974157170002139,
+      "durationDelta": 0.15535669417653986,
+      "pairDetails": [
+        {
+          "task": "source-format",
+          "repeat": 1,
+          "candidate": "1-source-format-candidate",
+          "baseline": "1-source-format-reference",
+          "tokenDelta": -0.04946034094347873,
+          "costDelta": 0.028092532554382155,
+          "durationDelta": 0.025951090289190404
+        },
+        {
+          "task": "test-only-type-error",
+          "repeat": 1,
+          "candidate": "1-test-only-type-error-candidate",
+          "baseline": "1-test-only-type-error-reference",
+          "tokenDelta": 0.11991199119912,
+          "costDelta": -0.05766589491033225,
+          "durationDelta": -0.06799490635114347
+        },
+        {
+          "task": "wrapper-mode-argument",
+          "repeat": 1,
+          "candidate": "1-wrapper-mode-argument-candidate",
+          "baseline": "1-wrapper-mode-argument-reference",
+          "tokenDelta": 0.5255640944660842,
+          "costDelta": 0.17989071180104865,
+          "durationDelta": 0.38860630722278744
+        },
+        {
+          "task": "source-format",
+          "repeat": 2,
+          "candidate": "2-source-format-candidate",
+          "baseline": "2-source-format-reference",
+          "tokenDelta": -0.11582107561480115,
+          "costDelta": 0.09182420447826822,
+          "durationDelta": 0.039309257985039814
+        },
+        {
+          "task": "test-only-type-error",
+          "repeat": 2,
+          "candidate": "2-test-only-type-error-candidate",
+          "baseline": "2-test-only-type-error-reference",
+          "tokenDelta": -0.08887594853784142,
+          "costDelta": -0.04976943612976292,
+          "durationDelta": 0.42117990410673345
+        },
+        {
+          "task": "wrapper-mode-argument",
+          "repeat": 2,
+          "candidate": "2-wrapper-mode-argument-candidate",
+          "baseline": "2-wrapper-mode-argument-reference",
+          "tokenDelta": 0.24413220040681494,
+          "costDelta": 0.33893870661462167,
+          "durationDelta": 0.343040507901456
+        }
+      ],
+      "byTask": [
+        {
+          "task": "source-format",
+          "pairs": 2,
+          "tokenDelta": -0.08524531751072828
+        },
+        {
+          "task": "test-only-type-error",
+          "pairs": 2,
+          "tokenDelta": 0.007669656919810919
+        },
+        {
+          "task": "wrapper-mode-argument",
+          "pairs": 2,
+          "tokenDelta": 0.37111777885094965
+        }
+      ],
+      "leaveOnePairOut": [
+        {
+          "omitted": "1-source-format-candidate",
+          "tokenDelta": 0.1328123427804797
+        },
+        {
+          "omitted": "1-test-only-type-error-candidate",
+          "tokenDelta": 0.09984405407843688
+        },
+        {
+          "omitted": "1-wrapper-mode-argument-candidate",
+          "tokenDelta": 0.02229259108961612
+        },
+        {
+          "omitted": "2-source-format-candidate",
+          "tokenDelta": 0.15526567968446203
+        },
+        {
+          "omitted": "2-test-only-type-error-candidate",
+          "tokenDelta": 0.13724110361141673
+        },
+        {
+          "omitted": "2-wrapper-mode-argument-candidate",
+          "tokenDelta": 0.06844297690357348
+        }
+      ],
+      "leaveOneTaskOut": [
+        {
+          "omitted": "source-format",
+          "tokenDelta": 0.2085510252303815
+        },
+        {
+          "omitted": "test-only-type-error",
+          "tokenDelta": 0.14044814044814036
+        },
+        {
+          "omitted": "wrapper-mode-argument",
+          "tokenDelta": -0.04418573485100663
+        }
+      ]
+    },
+    "candidate/cline": {
+      "pairs": 6,
+      "candidate": {
+        "trials": 6,
+        "tokens": 394288,
+        "cost": 0.044027239999999995,
+        "durationMs": 239108
+      },
+      "baseline": {
+        "trials": 6,
+        "tokens": 378339,
+        "cost": 0.06566652,
+        "durationMs": 326565
+      },
+      "tokenDelta": 0.04215531573535913,
+      "costDelta": -0.32953291875372726,
+      "durationDelta": -0.2678088588795492,
+      "pairDetails": [
+        {
+          "task": "source-format",
+          "repeat": 1,
+          "candidate": "1-source-format-candidate",
+          "baseline": "1-source-format-cline",
+          "tokenDelta": 0.03968224780258178,
+          "costDelta": -0.2203148456201568,
+          "durationDelta": -0.22162051511091263
+        },
+        {
+          "task": "test-only-type-error",
+          "repeat": 1,
+          "candidate": "1-test-only-type-error-candidate",
+          "baseline": "1-test-only-type-error-cline",
+          "tokenDelta": -0.0944454898472381,
+          "costDelta": -0.4549983356533317,
+          "durationDelta": -0.3086082027867433
+        },
+        {
+          "task": "wrapper-mode-argument",
+          "repeat": 1,
+          "candidate": "1-wrapper-mode-argument-candidate",
+          "baseline": "1-wrapper-mode-argument-cline",
+          "tokenDelta": 0.05406847056541553,
+          "costDelta": -0.5974042654017941,
+          "durationDelta": -0.540598638569521
+        },
+        {
+          "task": "source-format",
+          "repeat": 2,
+          "candidate": "2-source-format-candidate",
+          "baseline": "2-source-format-cline",
+          "tokenDelta": 0.020390232581270817,
+          "costDelta": -0.10519711257718645,
+          "durationDelta": 0.034213141910546696
+        },
+        {
+          "task": "test-only-type-error",
+          "repeat": 2,
+          "candidate": "2-test-only-type-error-candidate",
+          "baseline": "2-test-only-type-error-cline",
+          "tokenDelta": -0.04113602849646669,
+          "costDelta": -0.1496848486018475,
+          "durationDelta": -0.1609973417347642
+        },
+        {
+          "task": "wrapper-mode-argument",
+          "repeat": 2,
+          "candidate": "2-wrapper-mode-argument-candidate",
+          "baseline": "2-wrapper-mode-argument-cline",
+          "tokenDelta": 0.22377681916222047,
+          "costDelta": -0.1743380678737938,
+          "durationDelta": -0.11546415180093172
+        }
+      ],
+      "byTask": [
+        {
+          "task": "source-format",
+          "pairs": 2,
+          "tokenDelta": 0.02953663746131374
+        },
+        {
+          "task": "test-only-type-error",
+          "pairs": 2,
+          "tokenDelta": -0.069293601026438
+        },
+        {
+          "task": "wrapper-mode-argument",
+          "pairs": 2,
+          "tokenDelta": 0.13225679916318
+        }
+      ],
+      "leaveOnePairOut": [
+        {
+          "omitted": "1-source-format-candidate",
+          "tokenDelta": 0.042570464598696844
+        },
+        {
+          "omitted": "1-test-only-type-error-candidate",
+          "tokenDelta": 0.06711849994685548
+        },
+        {
+          "omitted": "1-wrapper-mode-argument-candidate",
+          "tokenDelta": 0.03883373725287398
+        },
+        {
+          "omitted": "2-source-format-candidate",
+          "tokenDelta": 0.04628383477560871
+        },
+        {
+          "omitted": "2-test-only-type-error-candidate",
+          "tokenDelta": 0.05549150317979157
+        },
+        {
+          "omitted": "2-wrapper-mode-argument-candidate",
+          "tokenDelta": 0.0005814198988525199
+        }
+      ],
+      "leaveOneTaskOut": [
+        {
+          "omitted": "source-format",
+          "tokenDelta": 0.04764559958123771
+        },
+        {
+          "omitted": "test-only-type-error",
+          "tokenDelta": 0.08823716212429722
+        },
+        {
+          "omitted": "wrapper-mode-argument",
+          "tokenDelta": -0.01899467119829268
+        }
+      ]
+    }
+  },
+  "allAssignedComparisons": {
+    "candidate/reference": {
+      "assignmentsPerArm": 6,
+      "candidateAudited": 6,
+      "baselineAudited": 6,
+      "tokenDelta": 0.10249642090193278,
+      "costDelta": 0.07974157170002139,
+      "durationDelta": 0.15535669417653986,
+      "caveat": "Every assigned failure is retained. Unequal audited quality is not efficiency at quality parity."
+    },
+    "candidate/cline": {
+      "assignmentsPerArm": 6,
+      "candidateAudited": 6,
+      "baselineAudited": 6,
+      "tokenDelta": 0.04215531573535913,
+      "costDelta": -0.32953291875372726,
+      "durationDelta": -0.2678088588795492,
+      "caveat": "Every assigned failure is retained. Unequal audited quality is not efficiency at quality parity."
+    }
+  },
+  "qualityGate": true,
+  "mechanismGate": true,
+  "resourceGate": false,
+  "modelBenefitDemonstrated": false,
+  "accounting": {
+    "method": "Known SDK estimates plus explicit missing-aggregate/unreported-request reserves, not imputed consumption. Wire/report counts do not establish billing or hidden retries.",
+    "trials": [
+      {
+        "name": "1-source-format-reference",
+        "observedUsd": 0.007476719999999999,
+        "forwardedAttempts": 7,
+        "usageReports": 7,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.007476719999999999,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-source-format-candidate",
+        "observedUsd": 0.007686759999999999,
+        "forwardedAttempts": 6,
+        "usageReports": 6,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.007686759999999999,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-source-format-cline",
+        "observedUsd": 0.009858800000000001,
+        "forwardedAttempts": 6,
+        "usageReports": 6,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.009858800000000001,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-test-only-type-error-candidate",
+        "observedUsd": 0.00576324,
+        "forwardedAttempts": 6,
+        "usageReports": 6,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.00576324,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-test-only-type-error-cline",
+        "observedUsd": 0.010574720000000001,
+        "forwardedAttempts": 7,
+        "usageReports": 7,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.010574720000000001,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-test-only-type-error-reference",
+        "observedUsd": 0.0061159199999999995,
+        "forwardedAttempts": 6,
+        "usageReports": 6,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.0061159199999999995,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-wrapper-mode-argument-cline",
+        "observedUsd": 0.018063480000000003,
+        "forwardedAttempts": 8,
+        "usageReports": 8,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.018063480000000003,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-wrapper-mode-argument-reference",
+        "observedUsd": 0.0061635200000000005,
+        "forwardedAttempts": 6,
+        "usageReports": 6,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.0061635200000000005,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "1-wrapper-mode-argument-candidate",
+        "observedUsd": 0.00727228,
+        "forwardedAttempts": 8,
+        "usageReports": 8,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.00727228,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "2-source-format-candidate",
+        "observedUsd": 0.0086424,
+        "forwardedAttempts": 7,
+        "usageReports": 7,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.0086424,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "2-source-format-cline",
+        "observedUsd": 0.00965844,
+        "forwardedAttempts": 6,
+        "usageReports": 6,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.00965844,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "2-source-format-reference",
+        "observedUsd": 0.007915559999999999,
+        "forwardedAttempts": 8,
+        "usageReports": 8,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.007915559999999999,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "2-test-only-type-error-cline",
+        "observedUsd": 0.008288080000000001,
+        "forwardedAttempts": 6,
+        "usageReports": 6,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.008288080000000001,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "2-test-only-type-error-reference",
+        "observedUsd": 0.007416600000000001,
+        "forwardedAttempts": 7,
+        "usageReports": 7,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.007416600000000001,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "2-test-only-type-error-candidate",
+        "observedUsd": 0.007047480000000001,
+        "forwardedAttempts": 6,
+        "usageReports": 6,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.007047480000000001,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "2-wrapper-mode-argument-reference",
+        "observedUsd": 0.0056874000000000004,
+        "forwardedAttempts": 7,
+        "usageReports": 7,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.0056874000000000004,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "2-wrapper-mode-argument-candidate",
+        "observedUsd": 0.00761508,
+        "forwardedAttempts": 8,
+        "usageReports": 8,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.00761508,
+        "basis": "wire/report counts; billing unknown"
+      },
+      {
+        "name": "2-wrapper-mode-argument-cline",
+        "observedUsd": 0.009223,
+        "forwardedAttempts": 7,
+        "usageReports": 7,
+        "wireUsageCountGap": 0,
+        "aggregateReserveUsd": 0,
+        "unreportedRequestReserveUsd": 0,
+        "accountedUsd": 0.009223,
+        "basis": "wire/report counts; billing unknown"
+      }
+    ],
+    "observedUsd": 0.15046948000000002,
+    "reservedUsd": 0,
+    "accountedUsd": 0.15046948000000002
+  },
+  "priorObservedUsd": 10.70180208,
+  "priorReservedUsd": 17.14,
+  "cumulativeObservedSdkUsd": 10.85227156,
+  "cumulativeReservedUsd": 17.14,
+  "cumulativeAccountedUsd": 27.992271559999995,
+  "limitations": "Controlled handoff is artificial with an explicitly supplied editing history, not natural opportunity prevalence. RxJS tasks are new constructed features on a full larger checkout, not representative historical issues or a complete native upstream suite. Two dependent repetitions, unblinded audit, unknown seeds/provider revision/host contention/invoices; per-request cache attribution can remain incomplete; retain old F52 reserves."
+}

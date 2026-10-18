@@ -1,0 +1,7 @@
+{
+  "artifacts": {
+    "rxjs.tar.gz": "34059d516d0ead85522eb319130829e7bb8491392e57da70b7274f94bb1d242c",
+    "frozen-runtimes.tar.gz": "a65fb1c0d27c1ac3d2f6f1a97fe6dfffd481760c71177c92e51a2533f1a5803a"
+  },
+  "note": "Whole pinned source/executables; no researcher solution or oracle in model inputs. Controlled fixture includes its generated Git HEAD to preserve source identity, with an explicit input snapshot ref for endpoint diffs."
+}

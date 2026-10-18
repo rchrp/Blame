@@ -8,11 +8,11 @@ export function scopeMetadata(body){
   if(Array.isArray(v)){for(const x of v)consume(x,id,depth+1);return;}if(!v||typeof v!=='object')return;
   const scope=v.data?.testValidationScope;
   if(scope?.kind==='runtime_test_scope'&&scope.testCompilation==='not_established')receipts.push({callIdSha256:typeof id==='string'?sha(id):null,contextSha256:sha(JSON.stringify(scope)),contextJsonBytes:Buffer.byteLength(JSON.stringify(scope)),changedTestCount:scope.changedTestCount,forwardedArgumentCount:scope.forwardedArgs?.length??null});
-  if(v.type==='text')consume(v.text,id,depth+1);if(v.type==='tool_result')consume(v.content,id,depth+1);
+  if(v.type==='text'||v.type==='input_text')consume(v.text,id,depth+1);if(v.type==='tool_result')consume(v.content,id,depth+1);
   if(v.result!==undefined)consume(v.result,id,depth+1);if(v.output!==undefined)consume(v.output,id,depth+1);
  }
  for(const item of [...(Array.isArray(body.input)?body.input:[]),...(Array.isArray(body.messages)?body.messages:[])]){
-  if(item.type==='function_call_output')consume(item.output,item.call_id);
+  if(item.type==='function_call_output'||item.type==='custom_tool_call_output')consume(item.output,item.call_id);
   else if(item.role==='tool')consume(item.content,item.tool_call_id);
   else if(Array.isArray(item.content))for(const part of item.content)if(part.type==='tool_result')consume(part.content,part.tool_use_id);
  }

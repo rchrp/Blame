@@ -17,13 +17,13 @@ export function bodyReceiptMetadata(body){
   }
   // SDK text/result wrappers only. Never parse a read_code data.content string
   // as another tool result: source files can contain arbitrary example JSON.
-  if(value.type==='text'&&typeof value.text==='string')consume(value.text,id,depth+1);
+  if((value.type==='text'||value.type==='input_text')&&typeof value.text==='string')consume(value.text,id,depth+1);
   if(value.type==='tool_result')consume(value.content,id,depth+1);
   if(value.result!==undefined)consume(value.result,id,depth+1);
   if(value.output!==undefined)consume(value.output,id,depth+1);
  }
  for(const item of [...(Array.isArray(body.input)?body.input:[]),...(Array.isArray(body.messages)?body.messages:[])]){
-  if(item.type==='function_call_output')consume(item.output,item.call_id);
+  if(item.type==='function_call_output'||item.type==='custom_tool_call_output')consume(item.output,item.call_id);
   else if(item.role==='tool')consume(item.content,item.tool_call_id);
   else if(Array.isArray(item.content))for(const part of item.content)if(part.type==='tool_result')consume(part.content,part.tool_use_id);
  }

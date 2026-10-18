@@ -14,7 +14,7 @@
   },
   "actualProvenanceReceiptMetadata": {
     "callIdSha256": "96d815328a42cb4ef89d5e0b7a1df6be43b484832c83a7b4596d8402c7c0b12b",
-    "contextSha256": "ab62f76597869d099f3372ea1fd55d370a64bb98b020d8c9af83b3ffecd77e60",
+    "contextSha256": "95fb394bcfe55f5a9cb3adadcec1f80c37998de8297a0b4f5c2fdf8fb20481e4",
     "contextJsonBytes": 856,
     "invalidatedChecks": 1,
     "omitted": 0
@@ -41,12 +41,24 @@
   ],
   "credentialFieldMaskingPreserved": true,
   "actualPreloadsPreserveRequestAndJoinHashes": true,
+  "providerSerialization": {
+    "modelRequests": 0,
+    "localFetches": 3,
+    "representations": [
+      "installed provider JSON",
+      "installed provider content/input_text",
+      "installed provider cached JSON/input_text",
+      "custom tool output/input_text"
+    ],
+    "providerFileSha256": "c96e1d3930c31156571d444a05cce87a2fa25a3e1502a95f812ba685cb91d760",
+    "scopeReceiptsPerRepresentation": 1
+  },
   "sourceHashes": {
     "feedback-wire-audit.mjs": "394b9c94844af7da7bb29594f5a212f0df7ff1e2b290ee75c4398c51a616ea05",
-    "feedback-wire-metadata.mjs": "68fc1afcd7e3c65acfc0676af533161392160a49417d5e68799dfefee15dc6db",
-    "feedback-boundary-controls.mjs": "97cf3d38671f8fd9b142ef259966b91aa178a50a8a6e10f07712074be6f32159",
-    "provenance-observations.mjs": "1c1176ae5fc676f46ee5ca7097e7137cb44ed3c2039dc0e153202cb427cd39be",
-    "scope-observations.mjs": "6156dda169120a2ef765675cb541acc28253f9accfab25b83c5e2093bf867523"
+    "feedback-wire-metadata.mjs": "e3f9842a092c9c24655196e8f2b9f5e8eaa1b34037136a037e05607f8ac188e0",
+    "feedback-boundary-controls.mjs": "ec60b0d4c6d65c8569e3a4b3f61dacadb78c732f5fd05813cef1bdf4ac4fd95d",
+    "provenance-observations.mjs": "74251d91ffb610e5a8b8ac4c8835713101371d4bc76b63ef73819e8eddda0a9f",
+    "scope-observations.mjs": "fe6175249a9ed0cfb263e968b7d0ee08c2f16e0700fddafd7f1d5383fbf8e8df"
   },
   "boundary": "Actual Light SDK tool execute() response retains declarations. Typed scope metadata ignores user/source JSON; explicit handoff presence is separately measured. Exposure is not comprehension/use. Context JSON bytes are not extra billed tokens."
 }

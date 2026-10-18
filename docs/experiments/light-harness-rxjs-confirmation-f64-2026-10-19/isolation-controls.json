@@ -1,0 +1,11 @@
+{
+  "modelRequests": 0,
+  "changedRuntimeFilesBetweenLightArms": [
+    "agent-runtime/dist/harness/light-task-runner.js"
+  ],
+  "flags": {
+    "analysis": false,
+    "hints": false
+  },
+  "treatment": "Runtime-test scope feedback only versus sealed F62 current Light and integrated Cline on three new complete-project RxJS cross-file feature requests."
+}

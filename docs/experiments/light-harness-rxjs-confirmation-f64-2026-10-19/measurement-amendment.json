@@ -1,0 +1,4 @@
+{
+  "beforeModelRequests": true,
+  "description": "Common F62 passive timing, typed scope metadata and explicit-user-handoff exposure. No response/request rewrite; context bytes are not billed tokens. New controls and observer hashes precede dispatch."
+}

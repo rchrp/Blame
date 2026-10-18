@@ -1,4 +1,4 @@
-import assert from 'node:assert/strict';import {mkdtemp,writeFile,rm,readFile} from 'node:fs/promises';import {join} from 'node:path';
+import assert from 'node:assert/strict';import {createRequire} from 'node:module';import {pathToFileURL} from 'node:url';import {realpath} from 'node:fs/promises';import {mkdtemp,writeFile,rm,readFile} from 'node:fs/promises';import {join} from 'node:path';
 import {lightSemanticHarnessTools} from '../../../packages/agent-runtime/dist/harness/light-tools.js';
 import {sanitizeValue} from '../../../packages/benchmark-runner/dist/event-recorder.js';
 import {bodyReceiptMetadata,feedbackWireObservation} from './feedback-wire-metadata.mjs';
@@ -42,6 +42,29 @@ try{
   const instruction=join(root,'instruction.txt');await writeFile(instruction,'Controlled handoff (recorded before this session; no previous result is admitted here):\n'+controlled+'\n');
   process.env.BLAME_STUDY_HANDOFF_INSTRUCTION=instruction;process.env.BLAME_STUDY_SCOPE_AUDIT='true';
  }
+ // Use the installed provider serializer, rather than inventing only one
+ // function-output representation. No network or model call is possible here.
+ let providerSerialization=null;
+ if(panel.id==='F64'){
+  const llms=await realpath(new URL('../../../packages/agent-runtime/node_modules/@cline/llms/dist/index.js',import.meta.url));
+  const require=createRequire(llms),{createOpenAI}=await import(pathToFileURL(require.resolve('@ai-sdk/openai')).href);
+  const captured=[];
+  const provider=createOpenAI({apiKey:'local-control',fetch:async(_url,init)=>{
+   captured.push(JSON.parse(init.body));return Response.json({id:'control',object:'response',created_at:0,model:'control',status:'completed',output:[],usage:{input_tokens:1,output_tokens:0,total_tokens:1}});
+  }});
+  const outputs=responses.input.filter(i=>i.type==='function_call_output');
+  for(const representation of ['json','content','cached-json']){
+   await provider.responses('control').doGenerate({prompt:[{role:'tool',content:outputs.map(i=>({type:'tool-result',toolCallId:i.call_id,toolName:'run_task',output:representation!=='content'?{type:'json',value:JSON.parse(i.output),...(representation==='cached-json'?{providerOptions:{openai:{promptCacheBreakpoint:{type:'ephemeral'}}}}:{})}:{type:'content',value:[{type:'text',text:i.output}]}}))}],tools:[]});
+   const actual=captured.at(-1);
+   assert.deepEqual(scopeMetadata(actual),scopes);
+   assert.deepEqual(provenanceMetadata(actual),provenance);
+   assert.deepEqual(bodyReceiptMetadata(actual),bodyReceiptMetadata(responses));
+  }
+  const custom={input:outputs.map(i=>({...i,type:'custom_tool_call_output',output:[{type:'input_text',text:i.output}]}))};
+  assert.deepEqual(scopeMetadata(custom),scopes);assert.deepEqual(provenanceMetadata(custom),provenance);assert.deepEqual(bodyReceiptMetadata(custom),bodyReceiptMetadata(responses));
+  assert.deepEqual(scopeMetadata({messages:[{role:'user',content:[{type:'input_text',text:outputs.at(-1).output}]}]}),[]);
+  providerSerialization={modelRequests:0,localFetches:captured.length,representations:['installed provider JSON','installed provider content/input_text','installed provider cached JSON/input_text','custom tool output/input_text'],providerFileSha256:sha(await readFile(require.resolve('@ai-sdk/openai'))),scopeReceiptsPerRepresentation:1};
+ }
  const metadata=bodyReceiptMetadata(responses);assert.equal(metadata.length,1);assert.equal(metadata[0].headerArrayObserved,true);assert.equal(metadata[0].headerDeclarations,1);assert.ok(metadata[0].contextJsonBytes>Buffer.byteLength(JSON.stringify(recorded.data.bodyEditContext)));assert.deepEqual(bodyReceiptMetadata(chat),metadata);
  const hash='a'.repeat(64),record={requestBodySha256:hash,bodyReceipts:metadata},forwarded=[{requestBodySha256:hash,budgetRejected:false}];
  const observed=feedbackWireObservation([record],forwarded);assert.equal(observed.matched,true);assert.equal(observed.uniqueHeaderReceipts,1);assert.equal(observed.headerReceiptResends,1);
@@ -72,6 +95,6 @@ try{
  assert.deepEqual(bodyReceiptMetadata({input:[{type:'function_call_output',output:JSON.stringify({status:'ok',data:{content:JSON.stringify(result)}})}]}),[]);
  assert.deepEqual(bodyReceiptMetadata({headers:{authorization:'control'},messages:[{role:'tool',content:'not JSON'}]}),[]);
  assert.equal(sanitizeValue({headers:{authorization:'control'},token:'control'}).headers,'[REDACTED]');
- await save(join(study,'feedback-boundary-controls.json'),{modelRequests:0,complete:true,actualModelToolHeaderArrayRetained:true,benchmarkRecorderArrayMasked:true,modelContextMetadata:metadata[0],...(provenance?{actualProvenanceReceiptMetadata:provenance[0],timingPreloadPreservesRequest:true}:{}),...(scopes?{actualScopeMetadata:scopes[0],explicitUserHandoffDistinctFromToolReceipt:true}:{}),knownRepresentations:['Responses function_call_output','chat tool','SDK text wrapper'],ignored:['user JSON','source file JSON in data.content','transport headers','malformed tool text'],credentialFieldMaskingPreserved:true,actualPreloadsPreserveRequestAndJoinHashes:true,sourceHashes:Object.fromEntries(await Promise.all(['feedback-wire-audit','feedback-wire-metadata','feedback-boundary-controls',...((panel.id==='F62'||panel.date)?['provenance-observations']:[]),...(panel.date?['scope-observations']:[])].map(async n=>[n+'.mjs',sha(await readFile(join(import.meta.dirname,n+'.mjs')))]))),boundary:'Actual Light SDK tool execute() response retains declarations. Typed scope metadata ignores user/source JSON; explicit handoff presence is separately measured. Exposure is not comprehension/use. Context JSON bytes are not extra billed tokens.'});
+ await save(join(study,'feedback-boundary-controls.json'),{modelRequests:0,complete:true,actualModelToolHeaderArrayRetained:true,benchmarkRecorderArrayMasked:true,modelContextMetadata:metadata[0],...(provenance?{actualProvenanceReceiptMetadata:provenance[0],timingPreloadPreservesRequest:true}:{}),...(scopes?{actualScopeMetadata:scopes[0],explicitUserHandoffDistinctFromToolReceipt:true}:{}),knownRepresentations:['Responses function_call_output','chat tool','SDK text wrapper'],ignored:['user JSON','source file JSON in data.content','transport headers','malformed tool text'],credentialFieldMaskingPreserved:true,actualPreloadsPreserveRequestAndJoinHashes:true,...(providerSerialization?{providerSerialization}:{}),sourceHashes:Object.fromEntries(await Promise.all(['feedback-wire-audit','feedback-wire-metadata','feedback-boundary-controls',...((panel.id==='F62'||panel.date)?['provenance-observations']:[]),...(panel.date?['scope-observations']:[])].map(async n=>[n+'.mjs',sha(await readFile(join(import.meta.dirname,n+'.mjs')))]))),boundary:'Actual Light SDK tool execute() response retains declarations. Typed scope metadata ignores user/source JSON; explicit handoff presence is separately measured. Exposure is not comprehension/use. Context JSON bytes are not extra billed tokens.'});
  console.log('Actual SDK Light tool headers retained; recorder masking and metadata-only representations verified; zero model calls.');
 }finally{await rm(root,{recursive:true});}

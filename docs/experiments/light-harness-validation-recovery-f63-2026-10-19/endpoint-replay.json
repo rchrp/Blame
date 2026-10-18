@@ -1,0 +1,1825 @@
+{
+  "phase": "F63",
+  "modelRequests": 0,
+  "method": "Original unchanged patch on pinned pristine Remeda input, protected checks restored as in the original grader. Identical endpoint outcomes establish reproducibility, not new agent successes.",
+  "rows": [
+    {
+      "name": "1-source-format-reference",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:unit"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 823.654859,
+          "stdout": "\n> test:unit\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/1-source-format-reference\n\n ✓ src/late.test.ts (1 test) 2ms\n ✓ src/base.test.ts (1 test) 2ms\n\n Test Files  2 passed (2)\n      Tests  2 passed (2)\n   Start at  22:40:11\n   Duration  393ms (transform 37ms, setup 0ms, collect 46ms, tests 4ms, environment 0ms, prepare 119ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/1-source-format-reference/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/feedback-ablation-study/recovery-oracle.mjs",
+            "/workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/1-source-format-reference",
+            "source-format"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 225.64750200000015,
+          "stdout": "Pinned value/API and retained test assertion passed. Compilation is a separate endpoint.\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "check:source"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 717.9869299999998,
+          "stdout": "\n> check:source\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1009.726343,
+          "stdout": "\n> test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"src/late.test.ts\",\"src/value-type.test.ts\"]\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/1-source-format-reference\n\n ✓ src/late.test.ts (1 test) 2ms\n ✓ src/value-type.test.ts (1 test) 2ms\n ✓ src/base.test.ts (1 test) 2ms\n\n Test Files  3 passed (3)\n      Tests  3 passed (3)\n   Start at  22:40:13\n   Duration  527ms (transform 34ms, setup 0ms, collect 46ms, tests 6ms, environment 0ms, prepare 159ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 818.6350860000002,
+          "stdout": "\n> typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"src/late.test.ts\",\"src/value-type.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "1-source-format-candidate",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:unit"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 806.9075710000002,
+          "stdout": "\n> test:unit\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/1-source-format-candidate\n\n ✓ src/late.test.ts (1 test) 2ms\n ✓ src/base.test.ts (1 test) 2ms\n\n Test Files  2 passed (2)\n      Tests  2 passed (2)\n   Start at  22:40:15\n   Duration  369ms (transform 38ms, setup 0ms, collect 46ms, tests 4ms, environment 0ms, prepare 111ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/1-source-format-candidate/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/feedback-ablation-study/recovery-oracle.mjs",
+            "/workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/1-source-format-candidate",
+            "source-format"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 217.99653899999976,
+          "stdout": "Pinned value/API and retained test assertion passed. Compilation is a separate endpoint.\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "check:source"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 596.467721,
+          "stdout": "\n> check:source\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 976.3197630000004,
+          "stdout": "\n> test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"src/late.test.ts\",\"src/value.numeric.test.ts\"]\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/1-source-format-candidate\n\n ✓ src/value.numeric.test.ts (1 test) 2ms\n ✓ src/late.test.ts (1 test) 2ms\n ✓ src/base.test.ts (1 test) 2ms\n\n Test Files  3 passed (3)\n      Tests  3 passed (3)\n   Start at  22:40:16\n   Duration  523ms (transform 37ms, setup 0ms, collect 49ms, tests 6ms, environment 0ms, prepare 163ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 820.7841930000004,
+          "stdout": "\n> typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"src/late.test.ts\",\"src/value.numeric.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "1-source-format-cline",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:unit"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 757.1795420000008,
+          "stdout": "\n> test:unit\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/1-source-format-cline\n\n ✓ src/late.test.ts (1 test) 2ms\n ✓ src/base.test.ts (1 test) 2ms\n\n Test Files  2 passed (2)\n      Tests  2 passed (2)\n   Start at  22:40:18\n   Duration  347ms (transform 33ms, setup 0ms, collect 34ms, tests 3ms, environment 0ms, prepare 101ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/1-source-format-cline/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/feedback-ablation-study/recovery-oracle.mjs",
+            "/workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/1-source-format-cline",
+            "source-format"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 208.77696500000002,
+          "stdout": "Pinned value/API and retained test assertion passed. Compilation is a separate endpoint.\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "check:source"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 632.5566130000007,
+          "stdout": "\n> check:source\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 965.0870190000005,
+          "stdout": "\n> test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"src/late.test.ts\",\"src/value-api.test.ts\"]\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/1-source-format-cline\n\n ✓ src/late.test.ts (1 test) 2ms\n ✓ src/value-api.test.ts (1 test) 2ms\n ✓ src/base.test.ts (1 test) 2ms\n\n Test Files  3 passed (3)\n      Tests  3 passed (3)\n   Start at  22:40:20\n   Duration  542ms (transform 36ms, setup 0ms, collect 47ms, tests 6ms, environment 1ms, prepare 177ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 801.4580719999994,
+          "stdout": "\n> typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"src/late.test.ts\",\"src/value-api.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "1-test-only-type-error-candidate",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:unit"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 786.6756699999987,
+          "stdout": "\n> test:unit\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/1-test-only-type-error-candidate\n\n ✓ src/late.test.ts (1 test) 2ms\n ✓ src/base.test.ts (1 test) 2ms\n\n Test Files  2 passed (2)\n      Tests  2 passed (2)\n   Start at  22:40:21\n   Duration  364ms (transform 32ms, setup 0ms, collect 34ms, tests 4ms, environment 0ms, prepare 112ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/1-test-only-type-error-candidate/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/feedback-ablation-study/recovery-oracle.mjs",
+            "/workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/1-test-only-type-error-candidate",
+            "test-only-type-error"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 212.24946099999943,
+          "stdout": "Pinned value/API and retained test assertion passed. Compilation is a separate endpoint.\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "check:source"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 609.1589969999986,
+          "stdout": "\n> check:source\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 955.8901010000009,
+          "stdout": "\n> test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"src/independent.test.ts\",\"src/late.test.ts\"]\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/1-test-only-type-error-candidate\n\n ✓ src/late.test.ts (1 test) 2ms\n ✓ src/independent.test.ts (1 test) 2ms\n ✓ src/base.test.ts (1 test) 2ms\n\n Test Files  3 passed (3)\n      Tests  3 passed (3)\n   Start at  22:40:23\n   Duration  505ms (transform 39ms, setup 0ms, collect 46ms, tests 6ms, environment 1ms, prepare 156ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 813.0574809999998,
+          "stdout": "\n> typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"src/independent.test.ts\",\"src/late.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "1-test-only-type-error-cline",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:unit"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 745.9994970000007,
+          "stdout": "\n> test:unit\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/1-test-only-type-error-cline\n\n ✓ src/late.test.ts (1 test) 2ms\n ✓ src/base.test.ts (1 test) 2ms\n\n Test Files  2 passed (2)\n      Tests  2 passed (2)\n   Start at  22:40:25\n   Duration  345ms (transform 32ms, setup 0ms, collect 34ms, tests 4ms, environment 0ms, prepare 105ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/1-test-only-type-error-cline/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/feedback-ablation-study/recovery-oracle.mjs",
+            "/workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/1-test-only-type-error-cline",
+            "test-only-type-error"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 217.1499390000008,
+          "stdout": "Pinned value/API and retained test assertion passed. Compilation is a separate endpoint.\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "check:source"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 582.7604210000009,
+          "stdout": "\n> check:source\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 961.0097069999993,
+          "stdout": "\n> test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"src/late.test.ts\",\"src/numeric-api.test.ts\"]\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/1-test-only-type-error-cline\n\n ✓ src/late.test.ts (1 test) 2ms\n ✓ src/numeric-api.test.ts (1 test) 2ms\n ✓ src/base.test.ts (1 test) 2ms\n\n Test Files  3 passed (3)\n      Tests  3 passed (3)\n   Start at  22:40:26\n   Duration  515ms (transform 34ms, setup 0ms, collect 43ms, tests 5ms, environment 0ms, prepare 157ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 832.343237000001,
+          "stdout": "\n> typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"src/late.test.ts\",\"src/numeric-api.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "1-test-only-type-error-reference",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:unit"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 764.056996000003,
+          "stdout": "\n> test:unit\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/1-test-only-type-error-reference\n\n ✓ src/late.test.ts (1 test) 2ms\n ✓ src/base.test.ts (1 test) 2ms\n\n Test Files  2 passed (2)\n      Tests  2 passed (2)\n   Start at  22:40:28\n   Duration  348ms (transform 32ms, setup 0ms, collect 33ms, tests 4ms, environment 0ms, prepare 106ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/1-test-only-type-error-reference/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/feedback-ablation-study/recovery-oracle.mjs",
+            "/workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/1-test-only-type-error-reference",
+            "test-only-type-error"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 207.37254300000131,
+          "stdout": "Pinned value/API and retained test assertion passed. Compilation is a separate endpoint.\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "check:source"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 649.5170450000005,
+          "stdout": "\n> check:source\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1005.343997,
+          "stdout": "\n> test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"src/late.test.ts\",\"src/numeric.test.ts\"]\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/1-test-only-type-error-reference\n\n ✓ src/late.test.ts (1 test) 2ms\n ✓ src/numeric.test.ts (1 test) 2ms\n ✓ src/base.test.ts (1 test) 2ms\n\n Test Files  3 passed (3)\n      Tests  3 passed (3)\n   Start at  22:40:30\n   Duration  540ms (transform 38ms, setup 0ms, collect 48ms, tests 5ms, environment 0ms, prepare 162ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 865.882018999997,
+          "stdout": "\n> typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"src/late.test.ts\",\"src/numeric.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "1-wrapper-mode-argument-cline",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:unit"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 811.715323999997,
+          "stdout": "\n> test:unit\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/1-wrapper-mode-argument-cline\n\n ✓ src/late.test.ts (1 test) 2ms\n ✓ src/base.test.ts (1 test) 2ms\n\n Test Files  2 passed (2)\n      Tests  2 passed (2)\n   Start at  22:40:32\n   Duration  397ms (transform 39ms, setup 0ms, collect 42ms, tests 4ms, environment 0ms, prepare 128ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/1-wrapper-mode-argument-cline/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/feedback-ablation-study/recovery-oracle.mjs",
+            "/workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/1-wrapper-mode-argument-cline",
+            "wrapper-mode-argument"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 221.37764400000015,
+          "stdout": "Pinned value/API and retained test assertion passed. Compilation is a separate endpoint.\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "check:source"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 642.9670299999998,
+          "stdout": "\n> check:source\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1040.9855599999973,
+          "stdout": "\n> test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"src/late.test.ts\",\"src/value-api.test.ts\"]\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/1-wrapper-mode-argument-cline\n\n ✓ src/late.test.ts (1 test) 2ms\n ✓ src/value-api.test.ts (1 test) 2ms\n ✓ src/base.test.ts (1 test) 2ms\n\n Test Files  3 passed (3)\n      Tests  3 passed (3)\n   Start at  22:40:33\n   Duration  574ms (transform 44ms, setup 0ms, collect 54ms, tests 5ms, environment 0ms, prepare 173ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 849.7243369999997,
+          "stdout": "\n> typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"src/late.test.ts\",\"src/value-api.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "1-wrapper-mode-argument-reference",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:unit"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 761.0617940000011,
+          "stdout": "\n> test:unit\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/1-wrapper-mode-argument-reference\n\n ✓ src/late.test.ts (1 test) 2ms\n ✓ src/base.test.ts (1 test) 2ms\n\n Test Files  2 passed (2)\n      Tests  2 passed (2)\n   Start at  22:40:35\n   Duration  352ms (transform 35ms, setup 0ms, collect 36ms, tests 3ms, environment 0ms, prepare 104ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/1-wrapper-mode-argument-reference/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/feedback-ablation-study/recovery-oracle.mjs",
+            "/workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/1-wrapper-mode-argument-reference",
+            "wrapper-mode-argument"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 206.9718279999979,
+          "stdout": "Pinned value/API and retained test assertion passed. Compilation is a separate endpoint.\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "check:source"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 610.368692,
+          "stdout": "\n> check:source\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 963.4389789999987,
+          "stdout": "\n> test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"src/late.test.ts\",\"src/value-api.test.ts\"]\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/1-wrapper-mode-argument-reference\n\n ✓ src/late.test.ts (1 test) 2ms\n ✓ src/value-api.test.ts (1 test) 2ms\n ✓ src/base.test.ts (1 test) 2ms\n\n Test Files  3 passed (3)\n      Tests  3 passed (3)\n   Start at  22:40:37\n   Duration  524ms (transform 37ms, setup 0ms, collect 46ms, tests 5ms, environment 0ms, prepare 164ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 776.3994930000008,
+          "stdout": "\n> typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"src/late.test.ts\",\"src/value-api.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "1-wrapper-mode-argument-candidate",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:unit"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 768.5312640000011,
+          "stdout": "\n> test:unit\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/1-wrapper-mode-argument-candidate\n\n ✓ src/late.test.ts (1 test) 2ms\n ✓ src/base.test.ts (1 test) 2ms\n\n Test Files  2 passed (2)\n      Tests  2 passed (2)\n   Start at  22:40:39\n   Duration  347ms (transform 32ms, setup 0ms, collect 33ms, tests 3ms, environment 0ms, prepare 106ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/1-wrapper-mode-argument-candidate/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/feedback-ablation-study/recovery-oracle.mjs",
+            "/workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/1-wrapper-mode-argument-candidate",
+            "wrapper-mode-argument"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 207.5205369999967,
+          "stdout": "Pinned value/API and retained test assertion passed. Compilation is a separate endpoint.\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "check:source"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 651.9264799999983,
+          "stdout": "\n> check:source\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 933.5047090000007,
+          "stdout": "\n> test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"src/late.test.ts\",\"src/numeric-api.test.ts\"]\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/1-wrapper-mode-argument-candidate\n\n ✓ src/late.test.ts (1 test) 2ms\n ✓ src/numeric-api.test.ts (1 test) 2ms\n ✓ src/base.test.ts (1 test) 2ms\n\n Test Files  3 passed (3)\n      Tests  3 passed (3)\n   Start at  22:40:40\n   Duration  500ms (transform 33ms, setup 0ms, collect 44ms, tests 5ms, environment 0ms, prepare 152ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 812.5378029999993,
+          "stdout": "\n> typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"src/late.test.ts\",\"src/numeric-api.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "2-source-format-candidate",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:unit"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 726.0963989999982,
+          "stdout": "\n> test:unit\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/2-source-format-candidate\n\n ✓ src/late.test.ts (1 test) 2ms\n ✓ src/base.test.ts (1 test) 2ms\n\n Test Files  2 passed (2)\n      Tests  2 passed (2)\n   Start at  22:40:42\n   Duration  338ms (transform 31ms, setup 0ms, collect 33ms, tests 3ms, environment 0ms, prepare 100ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/2-source-format-candidate/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/feedback-ablation-study/recovery-oracle.mjs",
+            "/workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/2-source-format-candidate",
+            "source-format"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 201.74973600000158,
+          "stdout": "Pinned value/API and retained test assertion passed. Compilation is a separate endpoint.\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "check:source"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 600.214310000003,
+          "stdout": "\n> check:source\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 982.4033610000006,
+          "stdout": "\n> test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"src/late.test.ts\",\"src/numeric-api.test.ts\"]\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/2-source-format-candidate\n\n ✓ src/numeric-api.test.ts (1 test) 2ms\n ✓ src/late.test.ts (1 test) 2ms\n ✓ src/base.test.ts (1 test) 2ms\n\n Test Files  3 passed (3)\n      Tests  3 passed (3)\n   Start at  22:40:44\n   Duration  528ms (transform 37ms, setup 0ms, collect 48ms, tests 5ms, environment 1ms, prepare 154ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 809.3804200000013,
+          "stdout": "\n> typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"src/late.test.ts\",\"src/numeric-api.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "2-source-format-cline",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:unit"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 779.1153090000007,
+          "stdout": "\n> test:unit\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/2-source-format-cline\n\n ✓ src/late.test.ts (1 test) 2ms\n ✓ src/base.test.ts (1 test) 2ms\n\n Test Files  2 passed (2)\n      Tests  2 passed (2)\n   Start at  22:40:45\n   Duration  353ms (transform 30ms, setup 0ms, collect 35ms, tests 4ms, environment 0ms, prepare 105ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/2-source-format-cline/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/feedback-ablation-study/recovery-oracle.mjs",
+            "/workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/2-source-format-cline",
+            "source-format"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 204.34388000000035,
+          "stdout": "Pinned value/API and retained test assertion passed. Compilation is a separate endpoint.\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "check:source"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 669.4330699999991,
+          "stdout": "\n> check:source\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 976.1199790000028,
+          "stdout": "\n> test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"src/late.test.ts\",\"src/value-api.test.ts\"]\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/2-source-format-cline\n\n ✓ src/value-api.test.ts (1 test) 2ms\n ✓ src/late.test.ts (1 test) 2ms\n ✓ src/base.test.ts (1 test) 2ms\n\n Test Files  3 passed (3)\n      Tests  3 passed (3)\n   Start at  22:40:47\n   Duration  515ms (transform 35ms, setup 0ms, collect 44ms, tests 6ms, environment 1ms, prepare 164ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 900.3428789999962,
+          "stdout": "\n> typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"src/late.test.ts\",\"src/value-api.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "2-source-format-reference",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:unit"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 866.8476230000015,
+          "stdout": "\n> test:unit\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/2-source-format-reference\n\n ✓ src/late.test.ts (1 test) 2ms\n ✓ src/base.test.ts (1 test) 2ms\n\n Test Files  2 passed (2)\n      Tests  2 passed (2)\n   Start at  22:40:49\n   Duration  417ms (transform 40ms, setup 0ms, collect 40ms, tests 4ms, environment 0ms, prepare 117ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/2-source-format-reference/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/feedback-ablation-study/recovery-oracle.mjs",
+            "/workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/2-source-format-reference",
+            "source-format"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 234.72820599999977,
+          "stdout": "Pinned value/API and retained test assertion passed. Compilation is a separate endpoint.\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "check:source"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 672.9314539999978,
+          "stdout": "\n> check:source\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1078.234451999997,
+          "stdout": "\n> test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"src/late.test.ts\",\"src/public-number.test.ts\"]\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/2-source-format-reference\n\n ✓ src/public-number.test.ts (1 test) 2ms\n ✓ src/late.test.ts (1 test) 2ms\n ✓ src/base.test.ts (1 test) 2ms\n\n Test Files  3 passed (3)\n      Tests  3 passed (3)\n   Start at  22:40:51\n   Duration  571ms (transform 40ms, setup 0ms, collect 51ms, tests 6ms, environment 0ms, prepare 167ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 910.4250210000027,
+          "stdout": "\n> typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"src/late.test.ts\",\"src/public-number.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "2-test-only-type-error-cline",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:unit"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 800.6061439999976,
+          "stdout": "\n> test:unit\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/2-test-only-type-error-cline\n\n ✓ src/late.test.ts (1 test) 2ms\n ✓ src/base.test.ts (1 test) 2ms\n\n Test Files  2 passed (2)\n      Tests  2 passed (2)\n   Start at  22:40:53\n   Duration  357ms (transform 32ms, setup 0ms, collect 35ms, tests 3ms, environment 0ms, prepare 109ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/2-test-only-type-error-cline/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/feedback-ablation-study/recovery-oracle.mjs",
+            "/workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/2-test-only-type-error-cline",
+            "test-only-type-error"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 222.50614099999802,
+          "stdout": "Pinned value/API and retained test assertion passed. Compilation is a separate endpoint.\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "check:source"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 628.9052520000041,
+          "stdout": "\n> check:source\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1036.4965620000003,
+          "stdout": "\n> test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"src/late.test.ts\",\"src/value.test.ts\"]\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/2-test-only-type-error-cline\n\n ✓ src/late.test.ts (1 test) 2ms\n ✓ src/value.test.ts (1 test) 2ms\n ✓ src/base.test.ts (1 test) 2ms\n\n Test Files  3 passed (3)\n      Tests  3 passed (3)\n   Start at  22:40:54\n   Duration  544ms (transform 40ms, setup 0ms, collect 54ms, tests 5ms, environment 0ms, prepare 171ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 802.5986720000001,
+          "stdout": "\n> typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"src/late.test.ts\",\"src/value.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "2-test-only-type-error-reference",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:unit"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 820.6800979999971,
+          "stdout": "\n> test:unit\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/2-test-only-type-error-reference\n\n ✓ src/late.test.ts (1 test) 2ms\n ✓ src/base.test.ts (1 test) 3ms\n\n Test Files  2 passed (2)\n      Tests  2 passed (2)\n   Start at  22:40:56\n   Duration  373ms (transform 34ms, setup 0ms, collect 36ms, tests 5ms, environment 0ms, prepare 106ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/2-test-only-type-error-reference/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/feedback-ablation-study/recovery-oracle.mjs",
+            "/workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/2-test-only-type-error-reference",
+            "test-only-type-error"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 233.50511000000552,
+          "stdout": "Pinned value/API and retained test assertion passed. Compilation is a separate endpoint.\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "check:source"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 638.766819000004,
+          "stdout": "\n> check:source\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1002.4971359999981,
+          "stdout": "\n> test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"src/late.test.ts\",\"src/value.test.ts\"]\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/2-test-only-type-error-reference\n\n ✓ src/value.test.ts (1 test) 2ms\n ✓ src/late.test.ts (1 test) 2ms\n ✓ src/base.test.ts (1 test) 2ms\n\n Test Files  3 passed (3)\n      Tests  3 passed (3)\n   Start at  22:40:58\n   Duration  532ms (transform 49ms, setup 0ms, collect 58ms, tests 6ms, environment 0ms, prepare 160ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 857.3971369999999,
+          "stdout": "\n> typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"src/late.test.ts\",\"src/value.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "2-test-only-type-error-candidate",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:unit"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 842.0891170000032,
+          "stdout": "\n> test:unit\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/2-test-only-type-error-candidate\n\n ✓ src/late.test.ts (1 test) 2ms\n ✓ src/base.test.ts (1 test) 2ms\n\n Test Files  2 passed (2)\n      Tests  2 passed (2)\n   Start at  22:41:00\n   Duration  371ms (transform 39ms, setup 0ms, collect 40ms, tests 4ms, environment 0ms, prepare 109ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/2-test-only-type-error-candidate/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/feedback-ablation-study/recovery-oracle.mjs",
+            "/workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/2-test-only-type-error-candidate",
+            "test-only-type-error"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 234.29701700000442,
+          "stdout": "Pinned value/API and retained test assertion passed. Compilation is a separate endpoint.\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "check:source"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 669.3657429999948,
+          "stdout": "\n> check:source\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1012.4129249999969,
+          "stdout": "\n> test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"src/late.test.ts\",\"src/numeric-api.test.ts\"]\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/2-test-only-type-error-candidate\n\n ✓ src/late.test.ts (1 test) 2ms\n ✓ src/numeric-api.test.ts (1 test) 2ms\n ✓ src/base.test.ts (1 test) 2ms\n\n Test Files  3 passed (3)\n      Tests  3 passed (3)\n   Start at  22:41:02\n   Duration  557ms (transform 36ms, setup 0ms, collect 52ms, tests 6ms, environment 0ms, prepare 155ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 879.2681630000006,
+          "stdout": "\n> typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"src/late.test.ts\",\"src/numeric-api.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "2-wrapper-mode-argument-reference",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:unit"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 835.3448619999981,
+          "stdout": "\n> test:unit\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/2-wrapper-mode-argument-reference\n\n ✓ src/late.test.ts (1 test) 2ms\n ✓ src/base.test.ts (1 test) 2ms\n\n Test Files  2 passed (2)\n      Tests  2 passed (2)\n   Start at  22:41:04\n   Duration  376ms (transform 39ms, setup 0ms, collect 35ms, tests 4ms, environment 0ms, prepare 118ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/2-wrapper-mode-argument-reference/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/feedback-ablation-study/recovery-oracle.mjs",
+            "/workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/2-wrapper-mode-argument-reference",
+            "wrapper-mode-argument"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 249.28760899999907,
+          "stdout": "Pinned value/API and retained test assertion passed. Compilation is a separate endpoint.\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "check:source"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 688.7974840000024,
+          "stdout": "\n> check:source\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1007.488609,
+          "stdout": "\n> test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"src/late.test.ts\",\"src/numeric-api.test.ts\"]\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/2-wrapper-mode-argument-reference\n\n ✓ src/late.test.ts (1 test) 2ms\n ✓ src/numeric-api.test.ts (1 test) 2ms\n ✓ src/base.test.ts (1 test) 2ms\n\n Test Files  3 passed (3)\n      Tests  3 passed (3)\n   Start at  22:41:05\n   Duration  541ms (transform 49ms, setup 0ms, collect 55ms, tests 6ms, environment 0ms, prepare 161ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 859.434921,
+          "stdout": "\n> typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"src/late.test.ts\",\"src/numeric-api.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "2-wrapper-mode-argument-candidate",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:unit"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 754.9173299999966,
+          "stdout": "\n> test:unit\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/2-wrapper-mode-argument-candidate\n\n ✓ src/late.test.ts (1 test) 2ms\n ✓ src/base.test.ts (1 test) 2ms\n\n Test Files  2 passed (2)\n      Tests  2 passed (2)\n   Start at  22:41:07\n   Duration  354ms (transform 28ms, setup 0ms, collect 38ms, tests 3ms, environment 0ms, prepare 101ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/2-wrapper-mode-argument-candidate/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/feedback-ablation-study/recovery-oracle.mjs",
+            "/workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/2-wrapper-mode-argument-candidate",
+            "wrapper-mode-argument"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 216.8942240000033,
+          "stdout": "Pinned value/API and retained test assertion passed. Compilation is a separate endpoint.\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "check:source"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 713.7841040000058,
+          "stdout": "\n> check:source\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1114.0586449999973,
+          "stdout": "\n> test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"src/late.test.ts\",\"src/numeric.test.ts\"]\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/2-wrapper-mode-argument-candidate\n\n ✓ src/late.test.ts (1 test) 2ms\n ✓ src/numeric.test.ts (1 test) 2ms\n ✓ src/base.test.ts (1 test) 2ms\n\n Test Files  3 passed (3)\n      Tests  3 passed (3)\n   Start at  22:41:09\n   Duration  574ms (transform 38ms, setup 0ms, collect 54ms, tests 6ms, environment 0ms, prepare 170ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 897.6362049999952,
+          "stdout": "\n> typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"src/late.test.ts\",\"src/numeric.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "2-wrapper-mode-argument-cline",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:unit"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 895.4697490000035,
+          "stdout": "\n> test:unit\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/2-wrapper-mode-argument-cline\n\n ✓ src/late.test.ts (1 test) 2ms\n ✓ src/base.test.ts (1 test) 3ms\n\n Test Files  2 passed (2)\n      Tests  2 passed (2)\n   Start at  22:41:11\n   Duration  432ms (transform 32ms, setup 0ms, collect 37ms, tests 4ms, environment 0ms, prepare 122ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/2-wrapper-mode-argument-cline/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/feedback-ablation-study/recovery-oracle.mjs",
+            "/workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/2-wrapper-mode-argument-cline",
+            "wrapper-mode-argument"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 230.40069100000255,
+          "stdout": "Pinned value/API and retained test assertion passed. Compilation is a separate endpoint.\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "check:source"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 704.4976840000018,
+          "stdout": "\n> check:source\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 989.2471719999958,
+          "stdout": "\n> test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"src/late.test.ts\",\"src/numeric-api.test.ts\"]\n\n RUN  v3.2.4 /workspace/blame-study-runs/feedback-f63/endpoint-replay-d511Vf/2-wrapper-mode-argument-cline\n\n ✓ src/late.test.ts (1 test) 2ms\n ✓ src/numeric-api.test.ts (1 test) 2ms\n ✓ src/base.test.ts (1 test) 2ms\n\n Test Files  3 passed (3)\n      Tests  3 passed (3)\n   Start at  22:41:13\n   Duration  523ms (transform 39ms, setup 0ms, collect 48ms, tests 6ms, environment 0ms, prepare 159ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 841.3324470000007,
+          "stdout": "\n> typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"src/late.test.ts\",\"src/numeric-api.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    }
+  ]
+}

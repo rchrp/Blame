@@ -1,6 +1,6 @@
 {
   "protocolHash": "e229048b2c949fa39b3c7d2adc9c9fc6677cede10005c2e81f44749249ff8c9e",
-  "completed": 10,
+  "completed": 18,
   "planned": 18,
   "receipts": [
     {
@@ -42,6 +42,38 @@
     {
       "name": "2-source-format-candidate",
       "sha256": "1c7190c099145a03bbd418a7a0dbec0709c7cce4acca57de816ccd786175e75a"
+    },
+    {
+      "name": "2-source-format-cline",
+      "sha256": "948fbb6992cd41690f388877fe3d30b2b0a8fe6315c43996625761e7fe3e40cb"
+    },
+    {
+      "name": "2-source-format-reference",
+      "sha256": "6c7f5c59847e21eefb1e01ecaaec8999f96be379b6fe9f9e8645257b7db2e315"
+    },
+    {
+      "name": "2-test-only-type-error-cline",
+      "sha256": "806df87c1cfb0991a62f4d6731fa856f51a7821b7f397fe1f9e6c932fd322148"
+    },
+    {
+      "name": "2-test-only-type-error-reference",
+      "sha256": "94c03792ba2973bfd0f3afc4caaa7ba1e926c6ec98071bccd8d444b822e46c26"
+    },
+    {
+      "name": "2-test-only-type-error-candidate",
+      "sha256": "c43b4850dc378a01ddcce8bccde0e4caa24cbc957538eb46a2f3be43ebbdf58d"
+    },
+    {
+      "name": "2-wrapper-mode-argument-reference",
+      "sha256": "4da5ec26f0a351e2e23dd07ab56806f8720c1ee9717e18dff9aec6e0f0916865"
+    },
+    {
+      "name": "2-wrapper-mode-argument-candidate",
+      "sha256": "f38ff3c131bdfbd6223f953a07cf738ce9d203ce61d27355d17a5a1f380cc2a8"
+    },
+    {
+      "name": "2-wrapper-mode-argument-cline",
+      "sha256": "a848a2e5ad4215b08549e98bdb0a855d5044887b55a4a5b956624cb8df2470d4"
     }
   ],
   "note": "Derived index. Each immutable archive is independently verified; no model call is replayed."

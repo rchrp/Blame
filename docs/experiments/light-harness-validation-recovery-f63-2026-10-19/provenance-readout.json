@@ -1,0 +1,153 @@
+{
+  "phase": "F63",
+  "rows": [
+    {
+      "name": "1-source-format-reference",
+      "arm": "reference",
+      "offers": 0,
+      "actualModelReceipts": 0,
+      "contextJsonBytes": 0,
+      "confirmedSameSourceReruns": []
+    },
+    {
+      "name": "1-source-format-candidate",
+      "arm": "candidate",
+      "offers": 1,
+      "actualModelReceipts": 1,
+      "contextJsonBytes": 1222,
+      "confirmedSameSourceReruns": [
+        16,
+        17
+      ]
+    },
+    {
+      "name": "1-source-format-cline",
+      "arm": "cline",
+      "offers": 0,
+      "actualModelReceipts": 0,
+      "contextJsonBytes": 0,
+      "confirmedSameSourceReruns": []
+    },
+    {
+      "name": "1-test-only-type-error-candidate",
+      "arm": "candidate",
+      "offers": 0,
+      "actualModelReceipts": 0,
+      "contextJsonBytes": 0,
+      "confirmedSameSourceReruns": []
+    },
+    {
+      "name": "1-test-only-type-error-cline",
+      "arm": "cline",
+      "offers": 0,
+      "actualModelReceipts": 0,
+      "contextJsonBytes": 0,
+      "confirmedSameSourceReruns": []
+    },
+    {
+      "name": "1-test-only-type-error-reference",
+      "arm": "reference",
+      "offers": 0,
+      "actualModelReceipts": 0,
+      "contextJsonBytes": 0,
+      "confirmedSameSourceReruns": []
+    },
+    {
+      "name": "1-wrapper-mode-argument-cline",
+      "arm": "cline",
+      "offers": 0,
+      "actualModelReceipts": 0,
+      "contextJsonBytes": 0,
+      "confirmedSameSourceReruns": []
+    },
+    {
+      "name": "1-wrapper-mode-argument-reference",
+      "arm": "reference",
+      "offers": 0,
+      "actualModelReceipts": 0,
+      "contextJsonBytes": 0,
+      "confirmedSameSourceReruns": []
+    },
+    {
+      "name": "1-wrapper-mode-argument-candidate",
+      "arm": "candidate",
+      "offers": 0,
+      "actualModelReceipts": 0,
+      "contextJsonBytes": 0,
+      "confirmedSameSourceReruns": []
+    },
+    {
+      "name": "2-source-format-candidate",
+      "arm": "candidate",
+      "offers": 0,
+      "actualModelReceipts": 0,
+      "contextJsonBytes": 0,
+      "confirmedSameSourceReruns": []
+    },
+    {
+      "name": "2-source-format-cline",
+      "arm": "cline",
+      "offers": 0,
+      "actualModelReceipts": 0,
+      "contextJsonBytes": 0,
+      "confirmedSameSourceReruns": []
+    },
+    {
+      "name": "2-source-format-reference",
+      "arm": "reference",
+      "offers": 0,
+      "actualModelReceipts": 0,
+      "contextJsonBytes": 0,
+      "confirmedSameSourceReruns": []
+    },
+    {
+      "name": "2-test-only-type-error-cline",
+      "arm": "cline",
+      "offers": 0,
+      "actualModelReceipts": 0,
+      "contextJsonBytes": 0,
+      "confirmedSameSourceReruns": []
+    },
+    {
+      "name": "2-test-only-type-error-reference",
+      "arm": "reference",
+      "offers": 0,
+      "actualModelReceipts": 0,
+      "contextJsonBytes": 0,
+      "confirmedSameSourceReruns": []
+    },
+    {
+      "name": "2-test-only-type-error-candidate",
+      "arm": "candidate",
+      "offers": 0,
+      "actualModelReceipts": 0,
+      "contextJsonBytes": 0,
+      "confirmedSameSourceReruns": []
+    },
+    {
+      "name": "2-wrapper-mode-argument-reference",
+      "arm": "reference",
+      "offers": 0,
+      "actualModelReceipts": 0,
+      "contextJsonBytes": 0,
+      "confirmedSameSourceReruns": []
+    },
+    {
+      "name": "2-wrapper-mode-argument-candidate",
+      "arm": "candidate",
+      "offers": 0,
+      "actualModelReceipts": 0,
+      "contextJsonBytes": 0,
+      "confirmedSameSourceReruns": []
+    },
+    {
+      "name": "2-wrapper-mode-argument-cline",
+      "arm": "cline",
+      "offers": 0,
+      "actualModelReceipts": 0,
+      "contextJsonBytes": 0,
+      "confirmedSameSourceReruns": []
+    }
+  ],
+  "meaning": "Observed receipt metadata and literal same-source reruns only. Not unique prevented errors, comprehension, causal mediation or a truthful-prose guarantee."
+}

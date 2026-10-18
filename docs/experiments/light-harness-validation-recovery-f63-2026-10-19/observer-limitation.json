@@ -1,0 +1,6 @@
+{
+  "afterF63BeforeF64": true,
+  "modelRequests": 0,
+  "limitation": "The frozen F63 observer recognizes plain Responses output and SDK text wrappers but omits Responses input_text/custom outputs. Zero live receipt counts do not establish no exposure. Actual provider JSON/content/cached JSON controls exposed the gap; prospective F64 observer handles them. F63 exact explicit user-handoff exposure is measured independently and remains valid. No F63 historical request bodies exist to reconstruct missed live receipts; no historical metric is silently rescored.",
+  "replayLabelCorrection": "F63 endpoint-replay.json inherited a Remeda method label; actual prepare/check paths use the bound controlled-validation input, confirmed by protocol, archived sources and eighteen exact endpoint matches. The F64 generator label uses the actual project."
+}

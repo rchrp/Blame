@@ -11,13 +11,13 @@ export function provenanceMetadata(body){
   const c=value.data?.validationState;
   if(c&&typeof c.sourceRevisionId==='string'&&Array.isArray(c.invalidatedChecks)&&c.invalidatedChecks.every(x=>x.eligibleForCurrentSource===false))
    receipts.push({callIdSha256:typeof id==='string'?sha(id):null,contextSha256:sha(JSON.stringify(c)),contextJsonBytes:Buffer.byteLength(JSON.stringify(c)),invalidatedChecks:c.invalidatedChecks.length,omitted:c.omitted??null});
-  if(value.type==='text')consume(value.text,id,depth+1);
+  if(value.type==='text'||value.type==='input_text')consume(value.text,id,depth+1);
   if(value.type==='tool_result')consume(value.content,id,depth+1);
   if(value.result!==undefined)consume(value.result,id,depth+1);
   if(value.output!==undefined)consume(value.output,id,depth+1);
  }
  for(const item of [...(Array.isArray(body.input)?body.input:[]),...(Array.isArray(body.messages)?body.messages:[])]){
-  if(item.type==='function_call_output')consume(item.output,item.call_id);
+  if(item.type==='function_call_output'||item.type==='custom_tool_call_output')consume(item.output,item.call_id);
   else if(item.role==='tool')consume(item.content,item.tool_call_id);
   else if(Array.isArray(item.content))for(const part of item.content)if(part.type==='tool_result')consume(part.content,part.tool_use_id);
  }

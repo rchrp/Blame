@@ -1,0 +1,276 @@
+{
+  "phase": "F63",
+  "rows": [
+    {
+      "name": "1-source-format-reference",
+      "arm": "reference",
+      "offers": 2,
+      "forwardedReceipts": 0,
+      "contextJsonBytes": 0,
+      "literalFollowingSelections": [
+        14,
+        15
+      ],
+      "handoff": {
+        "origin": "explicit_user_handoff",
+        "withInvalidationField": false,
+        "observedForwardedRequests": 7
+      }
+    },
+    {
+      "name": "1-source-format-candidate",
+      "arm": "candidate",
+      "offers": 2,
+      "forwardedReceipts": 0,
+      "contextJsonBytes": 0,
+      "literalFollowingSelections": [
+        15,
+        16
+      ],
+      "handoff": {
+        "origin": "explicit_user_handoff",
+        "withInvalidationField": true,
+        "observedForwardedRequests": 6
+      }
+    },
+    {
+      "name": "1-source-format-cline",
+      "arm": "cline",
+      "offers": 0,
+      "forwardedReceipts": 0,
+      "contextJsonBytes": 0,
+      "literalFollowingSelections": [],
+      "handoff": {
+        "origin": "explicit_user_handoff",
+        "withInvalidationField": false,
+        "observedForwardedRequests": 6
+      }
+    },
+    {
+      "name": "1-test-only-type-error-candidate",
+      "arm": "candidate",
+      "offers": 2,
+      "forwardedReceipts": 0,
+      "contextJsonBytes": 0,
+      "literalFollowingSelections": [
+        11,
+        12
+      ],
+      "handoff": {
+        "origin": "explicit_user_handoff",
+        "withInvalidationField": true,
+        "observedForwardedRequests": 6
+      }
+    },
+    {
+      "name": "1-test-only-type-error-cline",
+      "arm": "cline",
+      "offers": 0,
+      "forwardedReceipts": 0,
+      "contextJsonBytes": 0,
+      "literalFollowingSelections": [],
+      "handoff": {
+        "origin": "explicit_user_handoff",
+        "withInvalidationField": false,
+        "observedForwardedRequests": 7
+      }
+    },
+    {
+      "name": "1-test-only-type-error-reference",
+      "arm": "reference",
+      "offers": 1,
+      "forwardedReceipts": 0,
+      "contextJsonBytes": 0,
+      "literalFollowingSelections": [
+        12,
+        13
+      ],
+      "handoff": {
+        "origin": "explicit_user_handoff",
+        "withInvalidationField": false,
+        "observedForwardedRequests": 6
+      }
+    },
+    {
+      "name": "1-wrapper-mode-argument-cline",
+      "arm": "cline",
+      "offers": 0,
+      "forwardedReceipts": 0,
+      "contextJsonBytes": 0,
+      "literalFollowingSelections": [],
+      "handoff": {
+        "origin": "explicit_user_handoff",
+        "withInvalidationField": false,
+        "observedForwardedRequests": 8
+      }
+    },
+    {
+      "name": "1-wrapper-mode-argument-reference",
+      "arm": "reference",
+      "offers": 1,
+      "forwardedReceipts": 0,
+      "contextJsonBytes": 0,
+      "literalFollowingSelections": [
+        12,
+        13
+      ],
+      "handoff": {
+        "origin": "explicit_user_handoff",
+        "withInvalidationField": false,
+        "observedForwardedRequests": 6
+      }
+    },
+    {
+      "name": "1-wrapper-mode-argument-candidate",
+      "arm": "candidate",
+      "offers": 2,
+      "forwardedReceipts": 0,
+      "contextJsonBytes": 0,
+      "literalFollowingSelections": [
+        12,
+        13
+      ],
+      "handoff": {
+        "origin": "explicit_user_handoff",
+        "withInvalidationField": true,
+        "observedForwardedRequests": 8
+      }
+    },
+    {
+      "name": "2-source-format-candidate",
+      "arm": "candidate",
+      "offers": 1,
+      "forwardedReceipts": 0,
+      "contextJsonBytes": 0,
+      "literalFollowingSelections": [
+        13,
+        14
+      ],
+      "handoff": {
+        "origin": "explicit_user_handoff",
+        "withInvalidationField": true,
+        "observedForwardedRequests": 7
+      }
+    },
+    {
+      "name": "2-source-format-cline",
+      "arm": "cline",
+      "offers": 0,
+      "forwardedReceipts": 0,
+      "contextJsonBytes": 0,
+      "literalFollowingSelections": [],
+      "handoff": {
+        "origin": "explicit_user_handoff",
+        "withInvalidationField": false,
+        "observedForwardedRequests": 6
+      }
+    },
+    {
+      "name": "2-source-format-reference",
+      "arm": "reference",
+      "offers": 2,
+      "forwardedReceipts": 0,
+      "contextJsonBytes": 0,
+      "literalFollowingSelections": [
+        18,
+        20
+      ],
+      "handoff": {
+        "origin": "explicit_user_handoff",
+        "withInvalidationField": false,
+        "observedForwardedRequests": 8
+      }
+    },
+    {
+      "name": "2-test-only-type-error-cline",
+      "arm": "cline",
+      "offers": 0,
+      "forwardedReceipts": 0,
+      "contextJsonBytes": 0,
+      "literalFollowingSelections": [],
+      "handoff": {
+        "origin": "explicit_user_handoff",
+        "withInvalidationField": false,
+        "observedForwardedRequests": 6
+      }
+    },
+    {
+      "name": "2-test-only-type-error-reference",
+      "arm": "reference",
+      "offers": 1,
+      "forwardedReceipts": 0,
+      "contextJsonBytes": 0,
+      "literalFollowingSelections": [
+        13,
+        14
+      ],
+      "handoff": {
+        "origin": "explicit_user_handoff",
+        "withInvalidationField": false,
+        "observedForwardedRequests": 7
+      }
+    },
+    {
+      "name": "2-test-only-type-error-candidate",
+      "arm": "candidate",
+      "offers": 1,
+      "forwardedReceipts": 0,
+      "contextJsonBytes": 0,
+      "literalFollowingSelections": [
+        12,
+        13
+      ],
+      "handoff": {
+        "origin": "explicit_user_handoff",
+        "withInvalidationField": true,
+        "observedForwardedRequests": 6
+      }
+    },
+    {
+      "name": "2-wrapper-mode-argument-reference",
+      "arm": "reference",
+      "offers": 2,
+      "forwardedReceipts": 0,
+      "contextJsonBytes": 0,
+      "literalFollowingSelections": [
+        11,
+        12
+      ],
+      "handoff": {
+        "origin": "explicit_user_handoff",
+        "withInvalidationField": false,
+        "observedForwardedRequests": 7
+      }
+    },
+    {
+      "name": "2-wrapper-mode-argument-candidate",
+      "arm": "candidate",
+      "offers": 2,
+      "forwardedReceipts": 0,
+      "contextJsonBytes": 0,
+      "literalFollowingSelections": [
+        14,
+        15
+      ],
+      "handoff": {
+        "origin": "explicit_user_handoff",
+        "withInvalidationField": true,
+        "observedForwardedRequests": 8
+      }
+    },
+    {
+      "name": "2-wrapper-mode-argument-cline",
+      "arm": "cline",
+      "offers": 0,
+      "forwardedReceipts": 0,
+      "contextJsonBytes": 0,
+      "literalFollowingSelections": [],
+      "handoff": {
+        "origin": "explicit_user_handoff",
+        "withInvalidationField": false,
+        "observedForwardedRequests": 7
+      }
+    }
+  ],
+  "boundary": "Actual typed tool-result metadata versus explicit user handoff are separate origins. Exposure and literal subsequent selection are not comprehension, actual compiler membership or mediation."
+}
