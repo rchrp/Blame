@@ -63,7 +63,8 @@ projects retain labeled lexical fallback. Discovery grants no edit coverage or
 runtime-completeness proof. Multiple scopes use arrays; literal spaces are not
 an implicit union. Bare-name fallback additionally offers bounded exact syntax
 declaration candidates requiring explicit choice; same-file homonyms retain
-distinct aliases. Production retains the bounded lexical OR collection. \\
+distinct aliases. Signatures are capped at 160 code points with an explicit
+truncation flag and non-exhaustiveness warning. Production retains the bounded lexical OR collection. \\
 \code{read_code} & Files, ranges, symbols, signatures/outlines, changes and check
 journals. Small automatic reads can expose a complete file; large files route
 to outlines. Signature reads omit implementations and cannot authorize unseen
@@ -77,6 +78,8 @@ replacement and body-only replacement differ; the latter preserves parameters.
 Configured compiler rename preserves identity/aliases and remains bounded.
 Symbol writes require observed coverage; file patches require exact preimages
 and explicit scope. Stale/ambiguous targets and invalid batches are refused.
+Repeated unchanged body replacements now explain preserved signature/imports
+and offer a read route; the first unchanged operation remains silent.
 Commit locks, durable pending records and recovery preserve conflicts; they do
 not isolate all external editors/processes. \\
 \code{run_task} & Project tasks, literal commands, dependencies and running
@@ -116,7 +119,17 @@ domains, safe intermediate arithmetic and syntax/path/process/output limits are
 explicit. Reproduced witnesses, bounded absence and unknown outcomes are distinct;
 source changes invalidate results. No solver result admits source verification,
 edit coverage, a required invocation or user acceptance. Calls, loops, mutation,
-globals and general floating-point semantics remain unsupported.
+globals and general floating-point semantics remain unsupported, except
+explicitly modeled standard integer \code{Math.min/max/abs}. Shadowing, visible
+mutation and escaping Math references are refused; imported side effects remain
+an explicit assumption. Optional complete-body read hints screen supported syntax
+without a solver call, inferred property, automatic bounds or edit admission.
+\code{BLAME_AGENT_SYMBOLIC_HINTS=false} disables these hints independently of
+analysis-schema exposure. Invocation-owned reports for supported Vitest 3.2.4
+runs behind Node/npm wrappers now retain actual case counts, file hashes,
+invocation identities and partial environment identities. A masked failed child
+is failed; an empty selection or unsupported reporter stays unknown. Runtime
+selection does not establish delivered-test type selection or admitted verification.
 The local provider-compatible HTTP adapter now restores an explicitly configured
 output limit on the exact HTTPS Codex Responses endpoint. It preserves stricter
 limits and cancellation, rejects uninspectable capped requests and adds no default
@@ -1209,6 +1222,36 @@ unchanged. This is capability/coverage evidence under supplied small domains,
 not confirmation or module-level proof. All 18 original patches also reproduce
 their five endpoint-check outcomes without repair. Evidence and reproduction:
 \filepath{docs/experiments/light-harness-symbolic-model-f50-2026-10-18}.
+
+\section{New local mechanisms: F51}
+Three limited changes address observed boundaries. First, inherited Node
+preloading observes actual supported Vitest invocations, including npm binary
+symlinks, without changing selection or wrapper control flow. Unique start/end
+records and fresh JSON reports bind the invocation, unchanged selected sources,
+Node version and manifest/lock identities; these are not full environment
+attestations. Collection failures with reported files remain failed even with
+zero executed cases; empty selection stays unknown. Twelve constructed
+old/current controls preserve masked failures, stale source, missing selection,
+unsupported reporters and a passing-runtime/failing-types distinction. None
+admits source verification or user acceptance.
+
+Second, compact declarations and repeat-only unchanged-body guidance preserve
+explicit target choice. The known six-runs-per-arm replay retains twelve calls
+and reduces tool-feedback bytes from 25,302 to 24,060 (4.9\%). This is still
+11.6\% above the older pre-F48 21,552-byte control; it is not a model-token or
+speed measurement. Third, three constructed formerly unsupported integer Math
+shapes now produce bounded absence of counterexamples. Shadowing, mutation,
+unsupported calls and unsafe domains remain unknown; assumptions include
+standard intrinsics and unmodeled imported effects. Discovery is opt-in and
+requires agent-supplied relevant properties and domains.
+
+Final validation records 1,054 runtime passes, zero failures and two skips,
+37 runner passes and four standalone-payload passes. Thirteen report tests
+include actual wrapped, masked, npm-bin, empty and setup-error invocations.
+Adverse development controls and subsequent fixes are retained separately:
+these are introduced prototype failures, not historical product defects.
+No timing claim is made for overlapping local runs. Evidence:
+\filepath{docs/experiments/light-harness-followup-f51-2026-10-18}.
 
 \section{Next hypotheses: proposals, not measurements}
 \begin{enumerate}

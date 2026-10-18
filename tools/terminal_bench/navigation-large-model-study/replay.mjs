@@ -23,4 +23,4 @@ for(const row of results.rows){
  rows.push({name:row.name,matches,original:original.map(c=>({exitCode:c.exitCode,signal:c.signal})),checks});
  await rm(folder,{recursive:true});await rm(patch);console.log(row.name,matches?'MATCH':'MISMATCH');
 }
-await writeFile(resolve(output),JSON.stringify({phase:'F53',modelRequests:0,method:'Original unchanged patch on pristine constructed input, protected checks restored as in the original grader. Identical endpoint outcomes establish reproducibility, not new agent successes.',rows},null,2)+'\n',{flag:'wx'});if(rows.some(r=>!r.matches))process.exitCode=1;
+await writeFile(resolve(output),JSON.stringify({phase:'F53',modelRequests:0,method:'Original unchanged patch on pinned pristine Remeda input, protected checks restored as in the original grader. Identical endpoint outcomes establish reproducibility, not new agent successes.',rows},null,2)+'\n',{flag:'wx'});if(rows.some(r=>!r.matches))process.exitCode=1;

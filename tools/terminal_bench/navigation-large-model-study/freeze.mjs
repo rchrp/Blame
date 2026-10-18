@@ -1,7 +1,8 @@
 // Registration requires completed local controls and the verified preceding accounting.
-import assert from 'node:assert/strict';import {access,cp,mkdir,readFile} from 'node:fs/promises';import {join} from 'node:path';import {execFileSync} from 'node:child_process';
+import assert from 'node:assert/strict';import {access,cp,mkdir,readFile,symlink} from 'node:fs/promises';import {join} from 'node:path';import {execFileSync} from 'node:child_process';
 import {repo,work,study,dependencyRoot,sourceArchive,json,save,sha} from './setup.mjs';import {tasks} from './tasks.mjs';import {solverIdentity} from './solver-identity.mjs';
 await access(join(study,'protocol.json')).then(()=>{throw Error('Refuse replacing protocol');},e=>{if(e.code!=='ENOENT')throw e;});
+await symlink(dependencyRoot,join(work,'dependencies'));
 const sourceHead=execFileSync('git',['rev-parse','HEAD'],{cwd:repo,encoding:'utf8'}).trim(),snapshot=await json(join(study,'snapshot.json'));assert.equal(snapshot.sourceHead,sourceHead);
 for(const file of ['oracle-controls.json','preflight-controls.json']){const c=await json(join(study,file));assert.equal(c.complete,true);for(const [p,h]of Object.entries(c.scriptHashes))assert.equal(sha(await readFile(join(import.meta.dirname,p))),h);}
 assert.equal((await json(join(study,'environment-smoke.json'))).modelRequests,0);

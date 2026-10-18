@@ -42,7 +42,7 @@ async function bindings() {
   files['@cline/core'] = await fileTree(join(dirname(sdk), 'core/dist'));
   const settings = Object.fromEntries(Object.entries(process.env).filter(([key]) => key.startsWith('BLAME_AGENT_') || key.startsWith('CLINE_MESSAGE_BUILDER_')).sort());
   const solver=await solverIdentity(protocol.solver.path);assert.deepEqual(solver,protocol.solver,'Solver or dynamic dependency changed');
-  const runtimeDependencyResolution=createRequire(join(work,'frozen/current/benchmark-runner/dist/cli.js')).resolve('@blame/agent-runtime');assert.equal(runtimeDependencyResolution,join(work,'frozen/current/agent-runtime/dist/index.js'),'Runner must use frozen runtime');
+  const runtimeDependencyResolution={};for(const arm of ['current','reference']){runtimeDependencyResolution[arm]=createRequire(join(work,'frozen',arm,'benchmark-runner/dist/cli.js')).resolve('@blame/agent-runtime');assert.equal(runtimeDependencyResolution[arm],join(work,'frozen',arm,'agent-runtime/dist/index.js'),'Runner must use its own frozen runtime');}
   return { solver, runtimeDependencyResolution, files, node: process.version, platform: process.platform, arch: process.arch, release: os.release(),
     cpuModels: os.cpus().map(cpu => cpu.model), totalMemoryBytes: os.totalmem(), inheritedSettingsSha256: sha(JSON.stringify(settings)) };
 }
