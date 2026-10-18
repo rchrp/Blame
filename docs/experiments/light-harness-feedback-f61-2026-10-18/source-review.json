@@ -42,6 +42,69 @@
       "evidence": [
         "Shared internal matchPatterns stages callback values per alternative, publishes only on the first successful match and short-circuits without re-evaluating predicates. Both .with and P.union use the same helper; union preserves its own undefined-key initialization and failed callbacks never publish, including anonymous selection. Public signatures/type modules unchanged; finite oracle additionally checks anonymous/guards beyond the3 authored cases. Source already correct in first batch23; initial delivered26 fails because new tests copy upstream Jest globals while the pinned delivered adapter expects Vitest imports. Patch28 adds imports after an invalid s? target27 is rejected, without editing configuration. Final required29/30/31 and delivered types37 pass, no later edit; protected/dependencies intact, no retrieval and scope/export warnings accurately reported. Candidate follows one ordinary-search union declaration route to a symbol read; lower tokens are observed alongside slower agent time, with no inferred causal mediation or header benefit (no body edit)."
       ]
+    },
+    {
+      "name": "1-alternative-selections-cline",
+      "hashes": {
+        "events.jsonl": "2adc4743076fc2095c499e7056b46a0489e77e56b3089549e11063c26a1748fd",
+        "workspace.diff": "3a4a8c4479aefc4cc634e4bdc7eb27cbe10e86f35691f5bc7598ef60b3fe2be7",
+        "score.json": "5f6a67e48a5123e46768bfe98d349063caeb9920bfff046d07352dea80ec2e9f",
+        "tool-ledger.json": "035a37e0de23cc8dae0120527317c2d4e91f5ce1ab7570a10f93892e1ad7597c",
+        "feedback-wire.jsonl": "d432960cf490ff08b9af0a883dfce8b38cebff611b8f88ff309f4627ad4e96cc"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Internal transactional helper stages callbacks once per alternative and publishes only on success; both multi-pattern with and P.union import it, preserving first-success order, anonymous selections, guard behavior and union undefined keys. Five new tests; several invalid test expectations/literal-narrowing annotations were repaired only in new tests. Final edit36 precedes required37/38/39 and successful delivered-types plus root compiler40. All five independent endpoints pass; public types, protected inputs and pinned dependencies unchanged. Commands/read paths stay in checkout; final report accurately lists final-source results and formatter absence; no solution retrieval."
+      ]
+    },
+    {
+      "name": "1-symbol-pattern-keys-candidate",
+      "hashes": {
+        "events.jsonl": "1e9fbf4c5f49b0ed2fa9f2545c057fc91d5924013022faee3dc92bda1ca15df3",
+        "workspace.diff": "3325e91ec289d180a9dc2135bf82512303e9da05043c10d05488976f1d4b73fd",
+        "score.json": "37f0a0a5090b8e31e006e9a27d513fae1102636c747d52e14f6390479a5b3632",
+        "tool-ledger.json": "e121fd42c905b6d0d4a4afebbdec1a70339811e6b3da72b3f6cde3582d7c9f0f",
+        "feedback-wire.jsonl": "f95821c20acc5e6bc9c76d9df1e2f4e0c9664cdd1ae9ed09ac27502f827453e1"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Shared new internal getOwnKeys uses Reflect.ownKeys in ordinary matching and selection discovery, preserving matcher/tuple branches and inherited value lookup. Own symbol/nonenumerable keys are included and inherited pattern keys excluded. Three new tests cover optional absence, empty-array initialization and inherited behavior; independent feature endpoint supplies additional direct-match coverage. Invalid batch32 failed parsing atomically without writes; corrected batch34 precedes required35/36/37 and delivered-types42. All five endpoints pass; protected files/dependencies/public types unchanged, no late edits, truthful scoped delivery, no solution retrieval."
+      ]
+    },
+    {
+      "name": "1-symbol-pattern-keys-cline",
+      "hashes": {
+        "events.jsonl": "bd128a67118f3d9116b1db7a26d005fb0cb1d12ef2dd89aba2186b988b711cb1",
+        "workspace.diff": "1105b6c068503dfe702f684c8398cad339e8c97d3c959926d16e7931e38c3bd6",
+        "score.json": "e66e19ddaf68ef6dd3ae04c5e204e06cd2e82a8d18f799ad603ac1ee4ea54cb2",
+        "tool-ledger.json": "41d0e5af3a44d02eaef4f07cf9195d1b4a0e23c3c870c86a3e1e056ee8fe355c",
+        "feedback-wire.jsonl": "de026cbb0999919a2723f1ea743e4b0bd2b6cbf2e2d80f1576742bc3283852ca"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Shared internal own-key module is used in both matching and discovery, leaving special-case branches and inherited input matching intact. Five new tests cover hidden/symbol keys, optional absence, empty arrays, inherited pattern exclusion and matcher/tuple preservation. First new-test run16 fails because Vitest globals are absent; import-only edit17 fixes it, then required18/19/20 and delivered-types21 pass after final edit. All five independent endpoints pass; no protected/dependency/public API modifications. Initial invalid cd? command fails harmlessly in checkout, no solution retrieval or unsupported validation claim."
+      ]
     }
   ]
 }
