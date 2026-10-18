@@ -1,4 +1,5 @@
 import { SpeechToTextProvider } from "@/components/backlog/drawer/speech-to-text-provider"
+import { MotionConfig } from "motion/react"
 import { StrictMode } from "react"
 import { createRoot, type Root } from "react-dom/client"
 
@@ -49,11 +50,14 @@ export function mountApp(element: HTMLElement, options?: MountAppOptions) {
           <ServerProvider>
             <ProjectProvider>
               <ThemeProvider>
-                <PerformanceDiagnosticsProfiler id="app">
-                  <SpeechToTextProvider>
-                    <App />
-                  </SpeechToTextProvider>
-                </PerformanceDiagnosticsProfiler>
+                {/* Every animation follows the system "reduce motion" setting. */}
+                <MotionConfig reducedMotion="user">
+                  <PerformanceDiagnosticsProfiler id="app">
+                    <SpeechToTextProvider>
+                      <App />
+                    </SpeechToTextProvider>
+                  </PerformanceDiagnosticsProfiler>
+                </MotionConfig>
               </ThemeProvider>
             </ProjectProvider>
           </ServerProvider>

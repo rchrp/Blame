@@ -1,0 +1,27 @@
+{
+  "name": "@blame/hero-scene",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "version": "0.0.0",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "node --test --experimental-strip-types src/*.test.ts"
+  },
+  "peerDependencies": {
+    "three": "^0.185.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.12.0",
+    "@types/three": "^0.185.0",
+    "three": "^0.185.0",
+    "typescript": "~5.9.3"
+  }
+}

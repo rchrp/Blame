@@ -26,11 +26,13 @@ COPY patches/ ./patches/
 
 # Copy the vitrine package manifest first for better dependency layer caching
 COPY packages/vitrine/package.json ./packages/vitrine/package.json
+COPY packages/hero-scene/package.json ./packages/hero-scene/package.json
 
 # Install only the vitrine workspace dependencies
 RUN pnpm install --frozen-lockfile --filter @blame/vitrine...
 
-# Copy the vitrine source
+# Copy the vitrine source and the workspace packages it compiles from source
+COPY packages/hero-scene/ ./packages/hero-scene/
 COPY packages/vitrine/ ./packages/vitrine/
 
 # Increase memory limit for the build process
@@ -62,6 +64,7 @@ ENV PORT=3000
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY patches/ ./patches/
 COPY packages/vitrine/package.json ./packages/vitrine/package.json
+COPY packages/hero-scene/package.json ./packages/hero-scene/package.json
 
 # Install production dependencies only for the vitrine app
 RUN pnpm install --prod --frozen-lockfile --filter @blame/vitrine...
