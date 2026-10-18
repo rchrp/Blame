@@ -1,0 +1,9 @@
+{
+  "sdkAgentDurationMs": 869457,
+  "outerWorkerDurationMs": 900421.8171079999,
+  "independentEndpointCheckDurationMs": 74160.98246199984,
+  "coordinatorElapsedObservedMs": 1084062.3948574066,
+  "coordinatorStartUTC": "2026-10-18T10:48:55.578Z",
+  "endObservedFromDriverExitMtimeUTC": "2026-10-18T11:06:59.640395+00:00",
+  "boundary": "Tables report SDK agent duration, including its tools/validation but excluding research fixture preparation, independent grading, checkpoint publication and administration. Outer worker and grader times are separate. Coordinator elapsed is derived from root provenance and retained host file mtime, not independent clock attestation; F55 includes one administrative pause. Setup/build/control runs and cloud compute pricing are outside these durations and costs. Do not call SDK sums full campaign wall time."
+}

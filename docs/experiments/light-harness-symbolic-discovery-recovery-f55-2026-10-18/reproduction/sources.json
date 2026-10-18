@@ -1,0 +1,33 @@
+{
+  "registrationCommit": "589572ec",
+  "archiveSha256": "0a72bd1b6476cf9684258a6a92014e3ed35933c078f2ce43058d6bbf877fa410",
+  "paths": [
+    "tools/terminal_bench"
+  ],
+  "registeredSourceHashesVerified": {
+    "tools/terminal_bench/symbolic-discovery-recovery-study/setup.mjs": "c2d249335256d89f05485867f62a3a816fea44f1fd5f8513f685556e30ef24ee",
+    "tools/terminal_bench/symbolic-discovery-recovery-study/fixture.mjs": "96375ff16bb52f5324e252dbdb57bf5ce81d9cffff5d1bfbaee7846538d9bec3",
+    "tools/terminal_bench/symbolic-discovery-recovery-study/tasks.mjs": "6e9702ff2a5443b96b5a0ffc75e3598b224f7193726ac90212d1e4d8b9b0e6c7",
+    "tools/terminal_bench/symbolic-discovery-recovery-study/delivered.mjs": "0a7bdbcc7f4a031f59f6a68512614379f4d42bc41d1e61cdab79983ac4dccefb",
+    "tools/terminal_bench/symbolic-discovery-recovery-study/oracle.mjs": "13fa73541eeb147fe0eab33bb958d3266bd5f076c2578d91fefc33401172e9b7",
+    "tools/terminal_bench/symbolic-discovery-recovery-study/checks.mjs": "33843d746686dc8e47dabac7c25a0db238f2f84f7e7eea7f487773a199e58ed7",
+    "tools/terminal_bench/symbolic-discovery-recovery-study/solutions.mjs": "e5a76cd0af5b65d4b176e286c3cf1d8fe5a5f862300bf4aa43273d7115c426b6",
+    "tools/terminal_bench/symbolic-discovery-recovery-study/controls.mjs": "f0490ab56aae884100f4cdd2c02e0b6b517ba499d7ddafbe8382588b70e05ed4",
+    "tools/terminal_bench/symbolic-discovery-recovery-study/environment-smoke.mjs": "f9e88740e573b550558e584801e0f9cde39ec067d5f5dd9933cae888a93aec0e",
+    "tools/terminal_bench/symbolic-discovery-recovery-study/snapshot.mjs": "3ce5fa39d071e7dc3f5dd0f8a442c4fa30aca96ba5d529a57e7938ae889ca7a1",
+    "tools/terminal_bench/symbolic-discovery-recovery-study/solver-identity.mjs": "1c9fd0687484b1a7f1fb16c768b3260eaa6948203b18d4667c1f2e2b009de6b2",
+    "tools/terminal_bench/symbolic-discovery-recovery-study/schema-exposure.mjs": "efeef10872a07590ee54efdf4576e60464910ba2a8cdc24cfa74fb084d8f21d2",
+    "tools/terminal_bench/symbolic-discovery-recovery-study/evidence-io.mjs": "bec4e89f0336d0ac330b11eed6cbb1de7572559e7d252f0fe1e4fb82c86393a9",
+    "tools/terminal_bench/symbolic-discovery-recovery-study/resource-values.mjs": "6ec919ba6d0cf7647843397bf8f6c83906f2a600eee68f57bf37c6b132af7fcf",
+    "tools/terminal_bench/symbolic-discovery-recovery-study/preflight-controls.mjs": "0c0e8e653c63d2d3e9059500ee0f3816a32797487e4268eb740dddd888113c44",
+    "tools/terminal_bench/symbolic-discovery-recovery-study/freeze.mjs": "5b943837a5a244118bae1e1b15d4bfffe28d87b6f264d74141a68ea206962e60",
+    "tools/terminal_bench/symbolic-discovery-recovery-study/run.mjs": "1d6825c3c9614ef7c4d3a75af1d5e7f6e2713f81632a7509248d41f80697975d",
+    "tools/terminal_bench/symbolic-discovery-recovery-study/audit.mjs": "d1d1700d6483f3e4e5934b42546583ce30715129c2287384d7e863adea1ed79d",
+    "tools/terminal_bench/symbolic-discovery-recovery-study/publish.mjs": "948b844b4da4ef179e9345d429079c7e62f389dc7d041491ae0ac6d60f0a46e1",
+    "tools/terminal_bench/symbolic-discovery-recovery-study/verify.mjs": "9288d934ba9630792b140e468d86b07255915da94750f615c44085be1795fe16",
+    "tools/terminal_bench/symbolic-discovery-recovery-study/replay.mjs": "e6765a1701892d0c9ee48b02f654c1cba4f4c5f04a5b9fff124bac5d1132b2bc",
+    "tools/terminal_bench/durable-campaign.mjs": "c1e6b0ae0cef6d947fc4c7144c466f5456028fda6c9572cd75fc69a40d33b931",
+    "tools/terminal_bench/isolated-node-environment.mjs": "cb7a39768acdfbabb4f0893ec77c27b156c6b212528feaa46d1e95cae6f60db7"
+  },
+  "note": "Original coordinator sources before later cache accounting corrections. Extract into a checkout with its registered experiment data, frozen runtime/dependencies and pinned environment. Do not replace original primary outcomes with a new model run."
+}

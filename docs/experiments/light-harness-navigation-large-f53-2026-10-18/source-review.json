@@ -301,6 +301,66 @@
       "evidence": [
         "Reviewed unchanged public numeric overloads, local let-destructuring implementation and six added tests. Finite reversed bounds swap only local variables; original special-number comparisons, object nonmutation and fresh curried observation are preserved. Initial source/compilation/test runs 30-32 fail, model repairs before final required commands 34-36, all pass. Independent five endpoint checks and dependency integrity pass, including delivered types. The model does not run optional delivered types and explicitly limits its claim. No retrieval or later source writes."
       ]
+    },
+    {
+      "name": "2-slice-index-reference",
+      "hashes": {
+        "events.jsonl": "ec7c12a8b68c3a59ca5304176a43ac1a6ed7bf2bb1bba67c11639d5447135d08",
+        "workspace.diff": "b980320ed95890fe0f2bbee6602ee3447ded6f70d58f8cd9f3f68fb30236a5bb",
+        "score.json": "f9e1d601ba0679c743f93ed9db0bd48a66c7a21177a921dbc06a4deb1ce61684",
+        "tool-ledger.json": "02a717c84f145054ea14ae9bf4a4f79e23ff61a1425fa580829322791886c847"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Production source hash matches the previously reviewed native-slice implementation with exact generic overloads/tuple output. Inspected ten added tests across all call forms, special indexes, typed direct/pipe inference, mutation and identity. Required commands 24-26 plus delivered types 30 pass after final edits; all five independent endpoint checks and dependency integrity pass. Only local status follows and no source writes/retrieval occur. Final delivery truthfully limits selected runtime scope."
+      ]
+    },
+    {
+      "name": "2-slice-index-candidate",
+      "hashes": {
+        "events.jsonl": "ff5bd95d5fd5ad2d18b97ace48d7665c298dabe896225f3276c539379b6fe6ad",
+        "workspace.diff": "d97543985e123428b7c0c14064b49ea83e405e030ca3674b34f368f73e514c46",
+        "score.json": "ad9d1837df90f24c28ecc06b8e4c4818b532b5ade0994cc883832a3d3f035ca8",
+        "tool-ledger.json": "700f0161d8c4b62468654f4e773ef61925140ddd21de71e21d6cb3d93f991d55"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Production source hash matches the exact previously reviewed native-slice implementation and preserves all public generic/tuple signatures. Inspected all 31 delivered tests and full chronology. Required literal commands 20-22 and delivered types 24 pass after final edits, matching five independent endpoint checks and dependency integrity. Only local diff/status occurs afterward. No retrieval or solver claim. Delivery correctly limits configured coverage and does not claim Array-subclass/sparse semantics testing."
+      ]
+    },
+    {
+      "name": "2-slice-index-cline",
+      "hashes": {
+        "events.jsonl": "c0f28db86f2d465f9a365e46b836aa8a2db6e157d47b6d518615608d9eb4ff00",
+        "workspace.diff": "c25c17f410ef209f8b3ead0391a2e3272018a5e62484b635e6c1ed4e68b24a46",
+        "score.json": "1e8bfc8869d5e0a048afe8c9aeabea4712967063e6f0b67592ddb880f2e17188",
+        "tool-ledger.json": "07105704aba893fa1eb1d00d0b6bd0fce3c5477c8f8fbab264c0f905aed9b1c9"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": false,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Production source SHA equals the exact reviewed native-slice implementation with all public overloads unchanged. Inspected the new 31-case test file and complete chronology. Four delivered-type failures at 16/24/30/38 lead to test-only repairs of the existing curried-unknown inference expectation, then final required commands 41-43, delivered types 44 and focused/upstream checks 45 pass. All five endpoint checks pass. Existing Vitest results cache is the only dependency-manifest change: retain primary strict failure and uniform conditional cache sensitivity; no package install/change or retrieval is reported. Remaining local commands only inspect status/diffs. Delivery is truthful about final scopes; costly intermediate retries remain recorded."
+      ]
     }
   ]
 }

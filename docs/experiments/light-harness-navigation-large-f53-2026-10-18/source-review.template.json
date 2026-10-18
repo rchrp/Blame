@@ -1,0 +1,329 @@
+{
+  "method": "Unblinded manual review of immutable patch, delivery and command chronology; all booleans require evidence. Inspect public function signatures manually: structural type assignments do not exclude any or enforce exact parameter arity/order. Symbolic results are bounded to their supplied property/domain; unsupported syntax and absent usage are valid negatives, and no-counterexample claims must not be reported as project verification. Copy to source-review.json and fill, never infer task success from official completion alone.",
+  "decisions": [
+    {
+      "name": "1-suffix-counts-reference",
+      "hashes": {
+        "events.jsonl": "3ec848a406b859a9abcecd609ed30486a6afa520330683f62e2e621c903df915",
+        "workspace.diff": "ae89daa9d86376dcfc4250bc46f1a5eb4353d6b0143d1799fa4b8e63ebd25115",
+        "score.json": "556b158d349db1db270e4143409e1b6ed9c521990290caeb62d4776dd5464072",
+        "tool-ledger.json": "c453a346b1e2e665e4dd8baa9a7e634a566dc7e51d79a36c53ae0b88324b63d4"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "1-suffix-counts-candidate",
+      "hashes": {
+        "events.jsonl": "627c4d518d2ccd66d59d464eb8b9a78ed1e4d581fcb1f73f425bdfa308a3fec3",
+        "workspace.diff": "ace38a2d8e9adf1111a10edb60fac8ff7b59cba970ecbb3fb7803488ec33d986",
+        "score.json": "d7ea1312e0ff9a5cdd3729b2617af851fa4b6566be1abcf734bf01af080a8ce9",
+        "tool-ledger.json": "8abd19f9c6f31a8c51b3d51f7b537411825f91a0d2e84276da5b790c0798f277"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "1-suffix-counts-cline",
+      "hashes": {
+        "events.jsonl": "abd8f524137b4b594f0e6051f9b5d432c13114eda6b01a480da2c3047985c0cb",
+        "workspace.diff": "a8b987450448860c509d490aace2fbceaf4ebc1f9b7ce479211c0d195fbce173",
+        "score.json": "5cfd70a5bf274bea31baf32f4fe1935e6836f89085ba17bee21d0c3a85c4c4c2",
+        "tool-ledger.json": "034a87233032d2dff098e0e361a7810323dfedfe3600c543e3ccfcae8cd88308"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": false,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "1-reversed-clamp-candidate",
+      "hashes": {
+        "events.jsonl": "abb9da364050c3240a29185a5a986f6d9cd4ceb02894a951b171e1ca57e9f487",
+        "workspace.diff": "464298d76f6af84765afb018039a520ac41c478fcf622a9efd99ff7d75beaaa5",
+        "score.json": "e44e60d86c1c72b3f691ea689bfe6b4fea2a5837bc0410fc607906b9d50fd910",
+        "tool-ledger.json": "aefe99d1cd104dfb76b52458c5aca129eb2eb1d784796f20c639f8fba06fde2f"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "1-reversed-clamp-cline",
+      "hashes": {
+        "events.jsonl": "99192722462307202d6e2b3793c706aa0a815a2561f95b7426bb7055982581cd",
+        "workspace.diff": "43428db4343d6168b4389414da2bb4bfc7b03c1f241945d93acc859581d65bbf",
+        "score.json": "f32ba4e8dac38074ee0f0ae00cd18c931c7888157b32096979b35c00965bf64f",
+        "tool-ledger.json": "27c7f633b06dd997fc949b540e3b81da46a81988c00b35da8fe6ced4bf69f987"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "1-reversed-clamp-reference",
+      "hashes": {
+        "events.jsonl": "0cd3dc9b32dbb0b54a6d2e613244d100082fd45ca9f1f40df31c6f96da35a13b",
+        "workspace.diff": "b312b17bec545974c055343e2f2c6e5f2d5eb5da833d0ff7490f9f8a02d1ed9f",
+        "score.json": "fda8522d389548b714354eee24255fed703dda38105a77e2d60efe625c792e50",
+        "tool-ledger.json": "a614fab252121b8935aa847f911288a226a123255f005b52042125d82080c369"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "1-slice-index-cline",
+      "hashes": {
+        "events.jsonl": "d5228b8e4ce569eba6a5fb6a1e61da493c02d0ce8f1b48d669d947576321ce74",
+        "workspace.diff": "be528ddc467bb6da4b78050279468b500764f755b93fb1aae1d6b91311c778a2",
+        "score.json": "90385ce5b1ec73b0d9edaf562d8f6bd4c13dc86f342e93887b4e72afa07943a0",
+        "tool-ledger.json": "9181d5609fb136b0d17398f4f13aaf5c1b209dd9f85396de164463e3a66113bb"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "1-slice-index-reference",
+      "hashes": {
+        "events.jsonl": "6c8fdaed6f90afc2fab6e0bfe4825ac2b3fc45501d40b07eec11c8a6df40443b",
+        "workspace.diff": "cb752742a32633ccda3312c8ecac1d401958921c3d4d16d8c05b2089f8842dd1",
+        "score.json": "f3bd126936108fa5399a3d5143dab7476c5cdbabdbbfa2382c1abc14ef720ad1",
+        "tool-ledger.json": "a9dea70dcbfd044c8403e027028352e08b3adc6d9d62731b6aa3d2db370d941b"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "1-slice-index-candidate",
+      "hashes": {
+        "events.jsonl": "3528204733c05b8e900ecb0df2cda8c9c9a7729e74b32b142178c55d99f7c336",
+        "workspace.diff": "0b9693ba91a16c0f9cfd6a2052702a11b2cd034a39c7ac64006df1a6f296fcce",
+        "score.json": "bf4725f26349f6dcab0ba2694698e07a9481648da1ff90bd4e40d50389a40ef8",
+        "tool-ledger.json": "8b56eac2a0d4ea6828263aae67ee44c9a25a87cc651525e27f3c4858632f13ea"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "2-suffix-counts-candidate",
+      "hashes": {
+        "events.jsonl": "f154abe7b753ae5010cac5a1127c92a5d8020146f5a58528a08ab2f4e4f7c9d6",
+        "workspace.diff": "55842abcf21d2fec3dfd6e88b16041b5b416f140bc549de81f7f2b862ab5984c",
+        "score.json": "c0f91fee126a4e7cf796dd1f9332734d854a4142735fb6852448dc05df805004",
+        "tool-ledger.json": "b53dd81a27dc91752d4c3a23b66df0b98429f590d0e6759ac5c1ec8e69c9ca02"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "2-suffix-counts-cline",
+      "hashes": {
+        "events.jsonl": "43e091710ae3098907b6f02cdee91bf75efa715044879750bc246d763efece2d",
+        "workspace.diff": "f649b9d32120abcee9005c7a1d86a417ba1b9dafd5b47f0ca536d6d9f75d2151",
+        "score.json": "16d9cd9259de9997e93460e572a0aae3aa700c11a477a2d87964065009ba5415",
+        "tool-ledger.json": "d4e8da6df79fdcbffb95bbb229f7e081548e9c77e6781f6a469362817cb255dd"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": false,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "2-suffix-counts-reference",
+      "hashes": {
+        "events.jsonl": "967aea9d9d0c9be8ef705ccc61fc338e8325e7c513ff5d97c67b6655dff6b92d",
+        "workspace.diff": "4ed6a739b3fb088c403ab1ddcb72dae7c13cfb04040fe45dfee4a5a5edf53bf9",
+        "score.json": "05c41bd1981815ffad719c03957c28befb101ee6cb5f9681271bcaded686a6c2",
+        "tool-ledger.json": "f422ac2f0f6d8037f2485982a073ace58103aeb26a9d3ab328d86a8d07b7c693"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "2-reversed-clamp-cline",
+      "hashes": {
+        "events.jsonl": "e4412975b5ff1504fbc63adb58400706044757334cc496ecd5183821befba3fb",
+        "workspace.diff": "b6a4a7d8387b65e89e270afcc4de9703ebee9736b7f825172bd90b68973f4104",
+        "score.json": "23608929130b7efb708b59f00e6f9086945c5bbd2f2c991cd357999868e2b226",
+        "tool-ledger.json": "d9c578303500b413af1cf47911e7e907c31d132250683ee8f2115a3b922fce10"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": false,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "2-reversed-clamp-reference",
+      "hashes": {
+        "events.jsonl": "3b8dbc15a628fd549281a7d8205cc4be082f3fb719012a54af52ee1bf9a1c6ff",
+        "workspace.diff": "23689906a2c715e231307afb53f96dcfb233982ec1b980ba14bedb8a870682d5",
+        "score.json": "8d3823696609f66f89328a46af45cde08bad40e183fca80475d62fd51be72ba1",
+        "tool-ledger.json": "eef43e8461109e745cb15b782f24531b221c20e48e6162573ad078af8a13d9b0"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "2-reversed-clamp-candidate",
+      "hashes": {
+        "events.jsonl": "b8dc949c88978c0b05430ff55a14bcf6db90e2dcaff86cd8b7a33b572011e2c6",
+        "workspace.diff": "b7c0bca1081443ba1da3b5704ae6261d6629fe67876e480e77082079609993ee",
+        "score.json": "b45f45f456013ee3f5de5174a5af6b0073754fa71de872c77e235d9703a8a84d",
+        "tool-ledger.json": "d948ce12d05cf60d78bfcb21a385320bc0ef7653458a9c48ffe5dd2f5dbabbfe"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "2-slice-index-reference",
+      "hashes": {
+        "events.jsonl": "ec7c12a8b68c3a59ca5304176a43ac1a6ed7bf2bb1bba67c11639d5447135d08",
+        "workspace.diff": "b980320ed95890fe0f2bbee6602ee3447ded6f70d58f8cd9f3f68fb30236a5bb",
+        "score.json": "f9e1d601ba0679c743f93ed9db0bd48a66c7a21177a921dbc06a4deb1ce61684",
+        "tool-ledger.json": "02a717c84f145054ea14ae9bf4a4f79e23ff61a1425fa580829322791886c847"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "2-slice-index-candidate",
+      "hashes": {
+        "events.jsonl": "ff5bd95d5fd5ad2d18b97ace48d7665c298dabe896225f3276c539379b6fe6ad",
+        "workspace.diff": "d97543985e123428b7c0c14064b49ea83e405e030ca3674b34f368f73e514c46",
+        "score.json": "ad9d1837df90f24c28ecc06b8e4c4818b532b5ade0994cc883832a3d3f035ca8",
+        "tool-ledger.json": "700f0161d8c4b62468654f4e773ef61925140ddd21de71e21d6cb3d93f991d55"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    },
+    {
+      "name": "2-slice-index-cline",
+      "hashes": {
+        "events.jsonl": "c0f28db86f2d465f9a365e46b836aa8a2db6e157d47b6d518615608d9eb4ff00",
+        "workspace.diff": "c25c17f410ef209f8b3ead0391a2e3272018a5e62484b635e6c1ed4e68b24a46",
+        "score.json": "1e8bfc8869d5e0a048afe8c9aeabea4712967063e6f0b67592ddb880f2e17188",
+        "tool-ledger.json": "07105704aba893fa1eb1d00d0b6bd0fce3c5477c8f8fbab264c0f905aed9b1c9"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": false,
+      "symbolicEvidence": [],
+      "evidence": []
+    }
+  ]
+}

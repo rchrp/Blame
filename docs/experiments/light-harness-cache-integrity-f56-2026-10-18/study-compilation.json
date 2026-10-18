@@ -1,0 +1,10 @@
+{
+  "source": "docs/semantic-harness-study.tex",
+  "sourceSha256": "a1b767aa8e70daa41d7aded812fafaafe46186c22af6f0631e1333da2f9c0bcb",
+  "compiler": "Codex built-in LaTeX editor",
+  "result": {
+    "path": "/workspace/Blame/docs/semantic-harness-study.tex",
+    "kind": "success",
+    "message": "The current source compiled successfully with the desktop editor's compiler."
+  }
+}

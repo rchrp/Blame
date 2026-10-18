@@ -1,0 +1,477 @@
+{
+  "modelCalls": 0,
+  "postHoc": true,
+  "primaryUnchanged": true,
+  "arms": {
+    "reference": {
+      "assigned": 6,
+      "primaryStrict": 5,
+      "independentFunctional": 5,
+      "conditional": 5,
+      "cacheOnlyDeviations": 0
+    },
+    "candidate": {
+      "assigned": 6,
+      "primaryStrict": 6,
+      "independentFunctional": 6,
+      "conditional": 6,
+      "cacheOnlyDeviations": 0
+    },
+    "cline": {
+      "assigned": 6,
+      "primaryStrict": 2,
+      "independentFunctional": 6,
+      "conditional": 6,
+      "cacheOnlyDeviations": 4
+    }
+  },
+  "rows": [
+    {
+      "name": "1-suffix-counts-reference",
+      "arm": "reference",
+      "primaryStrict": false,
+      "independentFunctional": false,
+      "cacheOnlyDeviation": false,
+      "changed": [],
+      "conditionalCompletion": false,
+      "afterManifestRetained": false
+    },
+    {
+      "name": "1-suffix-counts-candidate",
+      "arm": "candidate",
+      "primaryStrict": true,
+      "independentFunctional": true,
+      "cacheOnlyDeviation": false,
+      "changed": [],
+      "conditionalCompletion": true,
+      "afterManifestRetained": false
+    },
+    {
+      "name": "1-suffix-counts-cline",
+      "arm": "cline",
+      "primaryStrict": false,
+      "independentFunctional": true,
+      "cacheOnlyDeviation": true,
+      "changed": [
+        ".vite/vitest/da39a3ee5e6b4b0d3255bfef95601890afd80709/results.json"
+      ],
+      "conditionalCompletion": true,
+      "afterManifestRetained": false
+    },
+    {
+      "name": "1-reversed-clamp-candidate",
+      "arm": "candidate",
+      "primaryStrict": true,
+      "independentFunctional": true,
+      "cacheOnlyDeviation": false,
+      "changed": [],
+      "conditionalCompletion": true,
+      "afterManifestRetained": false
+    },
+    {
+      "name": "1-reversed-clamp-cline",
+      "arm": "cline",
+      "primaryStrict": true,
+      "independentFunctional": true,
+      "cacheOnlyDeviation": false,
+      "changed": [],
+      "conditionalCompletion": true,
+      "afterManifestRetained": false
+    },
+    {
+      "name": "1-reversed-clamp-reference",
+      "arm": "reference",
+      "primaryStrict": true,
+      "independentFunctional": true,
+      "cacheOnlyDeviation": false,
+      "changed": [],
+      "conditionalCompletion": true,
+      "afterManifestRetained": false
+    },
+    {
+      "name": "1-slice-index-cline",
+      "arm": "cline",
+      "primaryStrict": true,
+      "independentFunctional": true,
+      "cacheOnlyDeviation": false,
+      "changed": [],
+      "conditionalCompletion": true,
+      "afterManifestRetained": false
+    },
+    {
+      "name": "1-slice-index-reference",
+      "arm": "reference",
+      "primaryStrict": true,
+      "independentFunctional": true,
+      "cacheOnlyDeviation": false,
+      "changed": [],
+      "conditionalCompletion": true,
+      "afterManifestRetained": false
+    },
+    {
+      "name": "1-slice-index-candidate",
+      "arm": "candidate",
+      "primaryStrict": true,
+      "independentFunctional": true,
+      "cacheOnlyDeviation": false,
+      "changed": [],
+      "conditionalCompletion": true,
+      "afterManifestRetained": false
+    },
+    {
+      "name": "2-suffix-counts-candidate",
+      "arm": "candidate",
+      "primaryStrict": true,
+      "independentFunctional": true,
+      "cacheOnlyDeviation": false,
+      "changed": [],
+      "conditionalCompletion": true,
+      "afterManifestRetained": false
+    },
+    {
+      "name": "2-suffix-counts-cline",
+      "arm": "cline",
+      "primaryStrict": false,
+      "independentFunctional": true,
+      "cacheOnlyDeviation": true,
+      "changed": [
+        ".vite/vitest/da39a3ee5e6b4b0d3255bfef95601890afd80709/results.json"
+      ],
+      "conditionalCompletion": true,
+      "afterManifestRetained": false
+    },
+    {
+      "name": "2-suffix-counts-reference",
+      "arm": "reference",
+      "primaryStrict": true,
+      "independentFunctional": true,
+      "cacheOnlyDeviation": false,
+      "changed": [],
+      "conditionalCompletion": true,
+      "afterManifestRetained": false
+    },
+    {
+      "name": "2-reversed-clamp-cline",
+      "arm": "cline",
+      "primaryStrict": false,
+      "independentFunctional": true,
+      "cacheOnlyDeviation": true,
+      "changed": [
+        ".vite/vitest/da39a3ee5e6b4b0d3255bfef95601890afd80709/results.json"
+      ],
+      "conditionalCompletion": true,
+      "afterManifestRetained": false
+    },
+    {
+      "name": "2-reversed-clamp-reference",
+      "arm": "reference",
+      "primaryStrict": true,
+      "independentFunctional": true,
+      "cacheOnlyDeviation": false,
+      "changed": [],
+      "conditionalCompletion": true,
+      "afterManifestRetained": false
+    },
+    {
+      "name": "2-reversed-clamp-candidate",
+      "arm": "candidate",
+      "primaryStrict": true,
+      "independentFunctional": true,
+      "cacheOnlyDeviation": false,
+      "changed": [],
+      "conditionalCompletion": true,
+      "afterManifestRetained": false
+    },
+    {
+      "name": "2-slice-index-reference",
+      "arm": "reference",
+      "primaryStrict": true,
+      "independentFunctional": true,
+      "cacheOnlyDeviation": false,
+      "changed": [],
+      "conditionalCompletion": true,
+      "afterManifestRetained": false
+    },
+    {
+      "name": "2-slice-index-candidate",
+      "arm": "candidate",
+      "primaryStrict": true,
+      "independentFunctional": true,
+      "cacheOnlyDeviation": false,
+      "changed": [],
+      "conditionalCompletion": true,
+      "afterManifestRetained": false
+    },
+    {
+      "name": "2-slice-index-cline",
+      "arm": "cline",
+      "primaryStrict": false,
+      "independentFunctional": true,
+      "cacheOnlyDeviation": true,
+      "changed": [
+        ".vite/vitest/da39a3ee5e6b4b0d3255bfef95601890afd80709/results.json"
+      ],
+      "conditionalCompletion": true,
+      "afterManifestRetained": false
+    }
+  ],
+  "comparisons": {
+    "candidate/reference": {
+      "pairs": 5,
+      "candidate": {
+        "trials": 5,
+        "tokens": 1183471,
+        "cost": 0.08579908000000001,
+        "durationMs": 369103
+      },
+      "baseline": {
+        "trials": 5,
+        "tokens": 620411,
+        "cost": 0.05931608000000001,
+        "durationMs": 281747
+      },
+      "tokenDelta": 0.9075596660923162,
+      "costDelta": 0.4464725248195769,
+      "durationDelta": 0.3100512161620177,
+      "pairDetails": [
+        {
+          "task": "reversed-clamp",
+          "repeat": 1,
+          "candidate": "1-reversed-clamp-candidate",
+          "baseline": "1-reversed-clamp-reference",
+          "tokenDelta": 0.8692382275097612,
+          "costDelta": 0.24977805982089518,
+          "durationDelta": 0.32523348133242935
+        },
+        {
+          "task": "slice-index",
+          "repeat": 1,
+          "candidate": "1-slice-index-candidate",
+          "baseline": "1-slice-index-reference",
+          "tokenDelta": 2.7392126576763896,
+          "costDelta": 1.3367509600753569,
+          "durationDelta": 0.7983576501764063
+        },
+        {
+          "task": "suffix-counts",
+          "repeat": 2,
+          "candidate": "2-suffix-counts-candidate",
+          "baseline": "2-suffix-counts-reference",
+          "tokenDelta": 0.8389689477341722,
+          "costDelta": 0.5776118110865451,
+          "durationDelta": 0.38333400394318584
+        },
+        {
+          "task": "reversed-clamp",
+          "repeat": 2,
+          "candidate": "2-reversed-clamp-candidate",
+          "baseline": "2-reversed-clamp-reference",
+          "tokenDelta": 0.7058150408504773,
+          "costDelta": 0.36366476697428185,
+          "durationDelta": 0.2337874389761183
+        },
+        {
+          "task": "slice-index",
+          "repeat": 2,
+          "candidate": "2-slice-index-candidate",
+          "baseline": "2-slice-index-reference",
+          "tokenDelta": -0.1472463201575679,
+          "costDelta": -0.14774411004841992,
+          "durationDelta": -0.206676428489166
+        }
+      ],
+      "byTask": [
+        {
+          "task": "suffix-counts",
+          "pairs": 1,
+          "tokenDelta": 0.8389689477341722
+        },
+        {
+          "task": "reversed-clamp",
+          "pairs": 2,
+          "tokenDelta": 0.773350612034206
+        },
+        {
+          "task": "slice-index",
+          "pairs": 2,
+          "tokenDelta": 1.0984873087770275
+        }
+      ],
+      "leaveOnePairOut": [
+        {
+          "omitted": "1-reversed-clamp-candidate",
+          "tokenDelta": 0.9162311633275881
+        },
+        {
+          "omitted": "1-slice-index-candidate",
+          "tokenDelta": 0.5514012933831074
+        },
+        {
+          "omitted": "2-suffix-counts-candidate",
+          "tokenDelta": 0.9222380720364272
+        },
+        {
+          "omitted": "2-reversed-clamp-candidate",
+          "tokenDelta": 0.9791795434045258
+        },
+        {
+          "omitted": "2-slice-index-candidate",
+          "tokenDelta": 1.1954455270841158
+        }
+      ],
+      "leaveOneTaskOut": [
+        {
+          "omitted": "suffix-counts",
+          "tokenDelta": 0.9222380720364272
+        },
+        {
+          "omitted": "reversed-clamp",
+          "tokenDelta": 1.0158335857232719
+        },
+        {
+          "omitted": "slice-index",
+          "tokenDelta": 0.7919232073210816
+        }
+      ]
+    },
+    "candidate/cline": {
+      "pairs": 6,
+      "candidate": {
+        "trials": 6,
+        "tokens": 1499485,
+        "cost": 0.10751004000000002,
+        "durationMs": 457606
+      },
+      "baseline": {
+        "trials": 6,
+        "tokens": 1936119,
+        "cost": 0.1391766,
+        "durationMs": 465712
+      },
+      "tokenDelta": -0.2255202288702296,
+      "costDelta": -0.2275279033975538,
+      "durationDelta": -0.0174056068986842,
+      "pairDetails": [
+        {
+          "task": "suffix-counts",
+          "repeat": 1,
+          "candidate": "1-suffix-counts-candidate",
+          "baseline": "1-suffix-counts-cline",
+          "tokenDelta": 0.23605684045012376,
+          "costDelta": -0.027668352384995654,
+          "durationDelta": 0.1874337541760025
+        },
+        {
+          "task": "reversed-clamp",
+          "repeat": 1,
+          "candidate": "1-reversed-clamp-candidate",
+          "baseline": "1-reversed-clamp-cline",
+          "tokenDelta": 0.1430250134868789,
+          "costDelta": -0.1642370532227555,
+          "durationDelta": 0.07181900196352453
+        },
+        {
+          "task": "slice-index",
+          "repeat": 1,
+          "candidate": "1-slice-index-candidate",
+          "baseline": "1-slice-index-cline",
+          "tokenDelta": 0.5920685977344873,
+          "costDelta": 0.2786511508038778,
+          "durationDelta": 1.0195857916500857
+        },
+        {
+          "task": "suffix-counts",
+          "repeat": 2,
+          "candidate": "2-suffix-counts-candidate",
+          "baseline": "2-suffix-counts-cline",
+          "tokenDelta": 0.004294481591155419,
+          "costDelta": 0.029312981742659394,
+          "durationDelta": 0.1738596012018574
+        },
+        {
+          "task": "reversed-clamp",
+          "repeat": 2,
+          "candidate": "2-reversed-clamp-candidate",
+          "baseline": "2-reversed-clamp-cline",
+          "tokenDelta": -0.1446903678568674,
+          "costDelta": -0.22221397209145766,
+          "durationDelta": -0.1718109957265903
+        },
+        {
+          "task": "slice-index",
+          "repeat": 2,
+          "candidate": "2-slice-index-candidate",
+          "baseline": "2-slice-index-cline",
+          "tokenDelta": -0.8449485781770267,
+          "costDelta": -0.7399795791381478,
+          "durationDelta": -0.6231389069082213
+        }
+      ],
+      "byTask": [
+        {
+          "task": "suffix-counts",
+          "pairs": 2,
+          "tokenDelta": 0.13425820319354265
+        },
+        {
+          "task": "reversed-clamp",
+          "pairs": 2,
+          "tokenDelta": -0.03935908516720965
+        },
+        {
+          "task": "slice-index",
+          "pairs": 2,
+          "tokenDelta": -0.4930992304953009
+        }
+      ],
+      "leaveOnePairOut": [
+        {
+          "omitted": "1-suffix-counts-candidate",
+          "tokenDelta": -0.2957441313548227
+        },
+        {
+          "omitted": "1-reversed-clamp-candidate",
+          "tokenDelta": -0.2649728400709017
+        },
+        {
+          "omitted": "1-slice-index-candidate",
+          "tokenDelta": -0.3396754389579201
+        },
+        {
+          "omitted": "2-suffix-counts-candidate",
+          "tokenDelta": -0.2520327076691581
+        },
+        {
+          "omitted": "2-reversed-clamp-candidate",
+          "tokenDelta": -0.2417757688852714
+        },
+        {
+          "omitted": "2-slice-index-candidate",
+          "tokenDelta": 0.1507044697361528
+        }
+      ],
+      "leaveOneTaskOut": [
+        {
+          "omitted": "suffix-counts",
+          "tokenDelta": -0.3363365331283159
+        },
+        {
+          "omitted": "reversed-clamp",
+          "tokenDelta": -0.29234132902840904
+        },
+        {
+          "omitted": "slice-index",
+          "tokenDelta": 0.042471214104210286
+        }
+      ]
+    }
+  },
+  "bindings": {
+    "results.json": "6c822650b28b653ee8ed252d3febd46336378eb250c6ff590efe1041d397b6a8",
+    "summary.json": "06430ee0429a7295f86b653b75eaecb784aa8900c92be084cb571d8eb2ea929a",
+    "source-review.json": "b5bea7a23b85441c0b8ceb1c9d6343492aba8269f4720c35784861d009b8726b",
+    "cache-sensitivity-protocol.json": "590b5cbf15b48bfbd5c66b286691126b2e16cec5228aa117c978a8ad710719c9"
+  },
+  "method": "Apply registered cache-only condition uniformly to every assigned trial and retain all other reviewed criteria. The resulting cohort exactly matches the independently verified functional-comparison cohort; its arithmetic is reused only after per-trial equality assertions.",
+  "limitation": "Old cache contents and post-run dependency kinds/hashes were not archived. This is a conditional path/command-based sensitivity, not attestation of the modified cache payload, and does not replace the primary strict scores. New local controls verify the future classifier; they do not recover missing old bytes."
+}
