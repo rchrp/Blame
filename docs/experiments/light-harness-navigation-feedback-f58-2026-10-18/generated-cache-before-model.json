@@ -1,0 +1,1 @@
+{"version":"3.2.4","results":[[":src/fail.test.ts",{"duration":7.677505000000025,"failed":true}],[":src/pass.test.ts",{"duration":1.8587850000000117,"failed":false}],[":src/type-gap.test.ts",{"duration":1.613113999999996,"failed":false}],[":case.test.ts",{"duration":0,"failed":true}]]}

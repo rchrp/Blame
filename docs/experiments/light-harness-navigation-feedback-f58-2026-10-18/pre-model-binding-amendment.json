@@ -1,0 +1,17 @@
+{
+  "modelRequests": 0,
+  "modelStartRecords": 0,
+  "completedCheckpoints": 0,
+  "originalRegistrationCommit": "d2428a52",
+  "protocolUnchanged": true,
+  "runtimeAndAllOtherBoundInputsUnchanged": true,
+  "changes": [
+    {
+      "key": "/files/../blame-study-runs/navigation-feedback-f58/dependencies/node_modules/.vite/vitest/da39a3ee5e6b4b0d3255bfef95601890afd80709/results.json",
+      "before": "9299340a16969e8ad7e80034bf69af91ca886de661c7183640e1dad6c9b5cf37",
+      "after": "50c78818a7cb521d22466a778441515dd293ec2c3454e0b5194a3c0cf90a77a8"
+    }
+  ],
+  "cause": "The optional real-Vitest regression tests finished after initial binding and updated the shared preexisting generated results cache. Binding verification refused before dispatch. All testing is now complete. Both arms inherit the same re-bound dependency tree.",
+  "decision": "Retain original binding and refusal; freeze current common cache bytes before the first model call; no trial retry, budget imputation, classifier weakening or discarded outcome."
+}
