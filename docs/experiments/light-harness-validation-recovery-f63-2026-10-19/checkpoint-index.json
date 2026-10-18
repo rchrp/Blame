@@ -1,7 +1,24 @@
 {
   "protocolHash": "e229048b2c949fa39b3c7d2adc9c9fc6677cede10005c2e81f44749249ff8c9e",
-  "completed": 0,
+  "completed": 4,
   "planned": 18,
-  "receipts": [],
+  "receipts": [
+    {
+      "name": "1-source-format-reference",
+      "sha256": "93a590ef86ad85cc22556975cb6ee4fe3f948c4a9bba3f57fe494d2638cf5901"
+    },
+    {
+      "name": "1-source-format-candidate",
+      "sha256": "b03d62a775180d971fe7746d3ff8149baa62f8045ebdafde0f4bfa0e90fdf12b"
+    },
+    {
+      "name": "1-source-format-cline",
+      "sha256": "ecfb95794df85fb6cc80df6df4f4415ac35f6566f91473a53b98792f3db4e62f"
+    },
+    {
+      "name": "1-test-only-type-error-candidate",
+      "sha256": "15a9507e797436489807dedd5c8ffaa1d25e8e9664471d1b26ccc6582889a274"
+    }
+  ],
   "note": "Derived index. Each immutable archive is independently verified; no model call is replayed."
 }
