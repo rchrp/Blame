@@ -120,6 +120,66 @@
       "evidence": [
         "Endpoint source hash equals the already manually reviewed 1-reversed-clamp-candidate implementation. Independently inspected new tests include updated reversed bounds on a retained curried closure, finite-only and missing/nonfinite cases. All five endpoint checks pass and all required final-source commands plus delivered test types run successfully. Public overloads, original checks and dependencies preserved; truthful limited coverage, no solution retrieval."
       ]
+    },
+    {
+      "name": "1-slice-index-cline",
+      "hashes": {
+        "events.jsonl": "35ad6a4b24982a1cca445facce5a61a92b32fbf0668839b965d983243eafe5b3",
+        "workspace.diff": "6af10c6bbfbca1789d0f178e881a578b70621b01f14b1e981d85352df4873a1e",
+        "score.json": "facbcdc93d5a2b2e26d23d68b67ebecdf2c49a9ddd70f28b259762594d1c28c4",
+        "tool-ledger.json": "5f62bae8f088bfadbf0db7927456b72ae72bd2aff18aaef6a45bc7ba9a335aa7"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Manual patch review: delegates both halves directly to native slice, preserving exact public generic overloads, readonly inputs and new arrays. Added tests cover fractions/signed zero/NaN/infinities in every call style and compile. Five endpoint checks pass. The final set+e command explicitly captures all three required statuses and returns success only when each is zero; delivered typecheck also passes. No post-validation source edit or solution retrieval; extraneous SDK input fields are retained, not silently repaired."
+      ]
+    },
+    {
+      "name": "1-slice-index-reference",
+      "hashes": {
+        "events.jsonl": "7ac149ba7366d1556fca1b7da6dd4bfa847b778b6239f77ac0fa60fd8d253f1d",
+        "workspace.diff": "5f4a704e3d1aa641e4ce67e1f56224d0e6b4e1c3e944690078105ce60d501ea7",
+        "score.json": "4940cb640f9a67903f6144559ee4c3b7c6eed743a1b421ec67169c49e84605c7",
+        "tool-ledger.json": "351707927b3a2636edcf993d058b5d22e09dfb527ac8af0c6ea379c680d391f9"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Source hash equals manually reviewed 1-slice-index-cline native-slice implementation; original public overloads unchanged. New tests inspect fractions around zero, signed zero, NaN/infinities, each call style, readonly/direct generic result types and fresh arrays. All five endpoint checks and required final-source commands pass; delivered test compilation also passes. No broader-suite claim or solution retrieval."
+      ]
+    },
+    {
+      "name": "1-slice-index-candidate",
+      "hashes": {
+        "events.jsonl": "bb014b9c7ecb9f5a50a6d8247034227efb238644da100d7fc821c4d2375b5e1b",
+        "workspace.diff": "aac5f708717f6aa76d4bdb91860722ea657ca5806743d00fad9138ac415531f4",
+        "score.json": "71c4f6de01663cbc5f9f093c0c64ad9bbf794de274d5958fb48ff522d2e29001",
+        "tool-ledger.json": "e04937303702eacfbafbcff06a7985641c9a74cae6427ab7e5e1b09b388611f8"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Native-slice source hash equals already reviewed reference/Cline endpoints; public overloads remain unchanged. New string/readonly tests cover every usage style, fractions/NaN/infinities/signed zero, input preservation and distinct arrays. All five endpoint checks pass, including independent delivered-test compilation; model ran each required final-source command and correctly limits its type/coverage claims. No solution retrieval."
+      ]
     }
   ]
 }
