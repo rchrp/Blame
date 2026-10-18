@@ -20,6 +20,86 @@
       "evidence": [
         "Shared normalizer floors positive finite counts and handles infinities/NaN; both original consumers retain Math.max index clamps, so oversized counts preserve full/empty behavior. Existing generic signatures and readonly inputs unchanged; slice always returns fresh arrays. New tests cover counts and pipe/immutability; independent oracle supplies empty/oversized/data-last coverage omitted by authored cases. After the failed delivered test and test-only repair, exact regression/types/delivered invocations 37/38/39 pass on the final source; these are required final checks, not avoidable reruns. Missing formatter honestly reported; all five independent checks pass, original checks/dependencies intact, no solution retrieval."
       ]
+    },
+    {
+      "name": "1-suffix-counts-candidate",
+      "hashes": {
+        "events.jsonl": "b4d67beb710b646bdba2c627e46a5bf84fb80a79adc212bc4a7c39e9df353507",
+        "workspace.diff": "e62e9ca7dfc7a92e48fa80678728870ec0db67abe4c13cc57f501075e0d5710d",
+        "score.json": "e6636ec24c31487e5d6e2b6150a4f87fa5aade2e347fad996ae4cb8f7b2430f0",
+        "tool-ledger.json": "f525b290061c763c5c3d07e0cd2b7ac2896f2e9143c2f14c9d29722a8413c298"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Both consumers are byte-identical to the reviewed correct reference consumers and retain index clamping; the shared normalizer handles positive infinity separately and otherwise floors only positive finite counts. Original public signatures remain unchanged. New tests cover zero/nonfinite/fractional counts, fresh output identity, readonly data-last and pipe. All five independent endpoints pass; exact final required commands 34/35/36 and optional delivered types 37 pass after the only source batch. Truthful targeted/full-source/test compilation scope; no protected changes or dependency mutation/solution retrieval. No failed-check opportunity occurred, so this success cannot establish a repair-advice effect."
+      ]
+    },
+    {
+      "name": "1-suffix-counts-cline",
+      "hashes": {
+        "events.jsonl": "1ff7b64661e96bf44ad9124a22b0e06af86ad5a551da87dc6f217c2fcce5f2f5",
+        "workspace.diff": "d51df5418b7d644a15c6dc5f8079697304e81721480365f33bd1969c9e2271d8",
+        "score.json": "6fa47c6c7b33806f0da9550786d758bfd424fafa02065338bf7f9c19d6ca328b",
+        "tool-ledger.json": "dff09663a343f8f3312a09201e328dc345f8ee8a6a294cd1eec8aaaf5f4d3633"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Shared helper explicitly caps finite floored counts at length; both consumers therefore safely drop old index clamps. Public signatures, readonly input and fresh slice outputs preserved. New tests cover all three invocation forms, exceptional counts and output identity; independent oracle supplies oversized/empty cases. Required checks and optional delivered-type compilation all pass in command13 conjunction on final source; command18 repeats the three required greens without any subsequent production/test edit, and command20 repeats delivered types. Those three duplicate required runs are distinct from failed-repair scheduling opportunities (none here). Only ignored generated study files are cleaned. Protected paths/dependencies unchanged, no remote retrieval, truthful scoped counts and compiler/test distinction."
+      ]
+    },
+    {
+      "name": "1-reversed-clamp-candidate",
+      "hashes": {
+        "events.jsonl": "ce0aad0c672a33d3c17e3ef5af117fd5f369f1bc364457554fd37cedba47ac94",
+        "workspace.diff": "4cc50b7500de98da59983ad346f14c64cfda9ae136d6280dc3c7c407e5551237",
+        "score.json": "1f50ddaadaad7aed23312d8180a02c65e7c64152ff2f57c220ba1fa90b5cbad4",
+        "tool-ledger.json": "d6ae0b1c039c43f95beb21caf2b8b749d189d3149c34e0664f2bcde51446707b"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Implementation normalizes only two finite reversed bounds, compares in original lower-first order, reads the limits parameter afresh inside each invocation and never mutates it. Public overloads remain byte-identical. New mutable-limits test changes the actual normalized interval (20/5 to1/3), unlike a mere bound swap; frozen/missing/NaN/infinite cases covered. First checks reveal missing undefined narrowing (TS18048) and an incorrect new min-only expectation; both fixed at edit26 without weakening any contract. All final required27/28/29 pass, five independent endpoints pass. Four advisory receipts are exposed but next fresh decision still runs regression first; those three final checks remain necessary, with no renewed failing repair. No dependency/protected mutation, no retrieval, accurate limited delivery."
+      ]
+    },
+    {
+      "name": "1-reversed-clamp-cline",
+      "hashes": {
+        "events.jsonl": "31234497f7da0f228f38cb30849c59d9daa465ad681278de74d13f0f706ff1f5",
+        "workspace.diff": "600e61ed662984a63a2a8052515dfeb1428da179bfbc1cfdfd0ed40b555f65e3",
+        "score.json": "2bc7cd3569b0a5271d15de24a13578f5c04924e99bbb4c858d4cf61309d87dbb",
+        "tool-ledger.json": "b0bc7f4f17728c79ac17edf25266893c88fbfc4423bc044d023e6fc13bf84202"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Finite reversed bounds normalized with explicit undefined/finite guards; fresh per-call destructuring retains mutable-curried behavior, original lower-first exceptional semantics and public overloads. Tests change the actual interval from10/-10 to-5/5 and cover all invocation forms/frozen/NaN/infinite/missing cases. All five endpoints and final required9/10/11 plus delivered types12 pass. No source edit after checks, duplicate green execution, failure/recovery, protected/dependency mutation or solution retrieval. Delivery states selected scope and test compilation accurately."
+      ]
     }
   ]
 }
