@@ -1,0 +1,26 @@
+{
+  "method": "Root manual unblinded inspection of every complete immutable endpoint patch, exact public APIs, delivered tests, command chronology and delivery. Hash-bound independent endpoint checks support the judgment; official completion alone is insufficient. Symbolic relevance/witness judgments require separate explicit review.",
+  "decisions": [
+    {
+      "name": "1-alternative-selections-reference",
+      "hashes": {
+        "events.jsonl": "5dee942a1b7090a50ba671af5205a756dcf515f147980df20c6c66f9d7c5cdde",
+        "workspace.diff": "473b03e7c28cf44f2bdf257798b493c90fa2c6c0f161c26708b5e6ea2a346608",
+        "score.json": "8871ff80f0a398ba66addd80be37f8a762b471120708df72f7d0d1fb042003c8",
+        "tool-ledger.json": "22e1396841006696bbea35f3ddc964dd54b8d1a0dc57243aeec0308deb34c90f",
+        "feedback-wire.jsonl": "589b4368be4b66abdd1af6a7caecfb0826d0491dae5d3fd958bc200d5da50776"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Shared internal matchPatternTransactional evaluates each alternative once, stages callback values locally and publishes only the first successful pattern; both MatchExpression.with and P.union import/use it, preserving short-circuit and guard evaluation. Union retains its own declared-key undefined initialization; total mismatch cannot commit partial values. Public match/union/type interfaces unchanged. New5 tests cover named isolation, union defaults, anonymous, mismatch fallback and guard transition. Initial new tests used a b-only literal input while testing an a/b alternative; delivered compiler33 rejects it, edit36 widens only test input to the intended original public union (no API weakening). Further actual test additions41/47 strengthen coverage and each invalidates previous final-source checks; final required48/49/50 and delivered types51 pass. All five independent endpoints and protected/dependency integrity pass, no retrieval and scoped truthful delivery. Repeated full checks after incremental test additions remain measured costs, not same-source duplicates."
+      ]
+    }
+  ]
+}
