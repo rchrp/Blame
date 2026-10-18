@@ -79,6 +79,7 @@ export class LightEditService {
   private readonly files: WorkspaceFiles;
   private readonly journal: SessionJournal;
   private receiptSequence = 0;
+  private lastNoopBodyKey?: string;
 
   constructor(aliases: LightAliasRegistry, options: LightEditOptions) {
     this.aliases = aliases;
@@ -396,16 +397,21 @@ export class LightEditService {
     files: FinalFile[],
     snapshot: WorkspaceSnapshot,
   ): Promise<LightToolResult<unknown>> {
-    if (!result.changedPaths.length)
+    if (!result.changedPaths.length) {
+      const key = JSON.stringify([snapshot.revision.source_revision_id, files.flatMap(file => file.bodyTargets ?? [])]);
+      const repeatedBody = key === this.lastNoopBodyKey && files.some(file => file.bodyTargets?.length);
+      this.lastNoopBodyKey = key;
       return {
         status: "ok",
         data: { changed: false, parse: parseSummary(files),
-          ...(files.some(file => file.bodyTargets?.length) ? {
+          ...(repeatedBody ? {
             guidance: "The observed body already matches. replace_body preserves parameters, return type and imports. To change them, read the complete declaration/file and use replace or a file patch; do not repeat this body edit.",
             nextReads: [...new Set(files.flatMap(file => file.bodyTargets ?? []))].map(target => ({ target, view: "symbol" })),
           } : {}),
         },
       };
+    }
+    this.lastNoopBodyKey = undefined;
     return this.appliedResult(files, snapshot, result);
   }
 

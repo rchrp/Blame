@@ -4,13 +4,15 @@ import { mkdtemp, rm, writeFile, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { LightWorkspace } from "./light-workspace.js";
-test("an unchanged body edit gives a bounded route to changing the signature, without changing it", async () => {
+test("a repeated unchanged body edit gives a bounded route to changing the signature, without changing it", async () => {
   const root = await mkdtemp(join(tmpdir(), "blame-noop-body-"));
   const source = "export function value(_input: number) { return 1; }\n";
   try {
     await writeFile(join(root, "value.ts"), source);
     const workspace = new LightWorkspace(root, { sessionId: "noop" });
     await workspace.readCode({ target: "value.ts#value" }, {});
+    const first = await workspace.editCode({ operations: [{ kind: "symbol", target: "value.ts#value", action: "replace_body", content: "return 1;" }] });
+    assert.doesNotMatch(JSON.stringify(first), /guidance/);
     const result = await workspace.editCode({ operations: [{ kind: "symbol", target: "value.ts#value", action: "replace_body", content: "return 1;" }] });
     assert.equal(result.status, "ok");
     const data = (result as { data: { changed: boolean; guidance: string; nextReads: {target:string;view:string}[] } }).data;

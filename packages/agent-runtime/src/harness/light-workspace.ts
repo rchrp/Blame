@@ -292,7 +292,7 @@ export class LightWorkspace {
       let result = await this.commits.exclusive(() =>
         this.readCurrentWorkspace(input, context),
       );
-      if (process.env.BLAME_AGENT_SYMBOLIC_ANALYSIS === "true" && result.status === "ok") {
+      if (process.env.BLAME_AGENT_SYMBOLIC_ANALYSIS === "true" && process.env.BLAME_AGENT_SYMBOLIC_HINTS !== "false" && result.status === "ok") {
         const data = recordValue(result.data), path = stringValue(data.path);
         if (path && data.view === "raw" && data.complete === true && typeof data.content === "string") {
           const { symbolicReadHints } = await import("./light-symbolic-hint.js");
@@ -764,7 +764,7 @@ export class LightWorkspace {
       [signature, body, ...coverage.uncovered],
       coverage.receipt,
     );
-    if (process.env.BLAME_AGENT_SYMBOLIC_ANALYSIS === "true" && result.status === "ok" &&
+    if (process.env.BLAME_AGENT_SYMBOLIC_ANALYSIS === "true" && process.env.BLAME_AGENT_SYMBOLIC_HINTS !== "false" && result.status === "ok" &&
         typeof recordValue(result.data).body === "string") {
       const { symbolicReadHints } = await import("./light-symbolic-hint.js");
       const hints = symbolicReadHints(resolved.path, resolved.content.toString("utf8"), resolved.symbol.qualified_name);

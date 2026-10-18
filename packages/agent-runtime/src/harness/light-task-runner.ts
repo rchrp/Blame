@@ -408,7 +408,7 @@ export class LightTaskRunner {
     const validation = metadata.taskId
       ? metadata
       : await this.commandValidation(command, directory, snapshot.files);
-    const invocationReport = validation.taskKind === "test" && !validation.report
+    const invocationReport = validation.taskKind === "test" && !validation.report && /\b(?:node|vitest|npm|pnpm|yarn|bun)\b/u.test(validation.taskCommand ?? command)
       ? await invocationTestReport(this.files.root) : undefined;
     const invocationEnvironment = validation.report?.nodeEvents || invocationReport
       ? await environmentManifestEvidence(this.files, snapshot.files) : undefined;
@@ -489,6 +489,8 @@ export class LightTaskRunner {
       const observed = metadata.invocationSnapshot
         ? await metadata.invocationReport?.read(metadata.invocationSnapshot, snapshot) : undefined;
       if (observed) {
+        const environmentAfter = metadata.invocationEnvironment
+          ? await environmentManifestEvidence(this.files, snapshot.files) : undefined;
         check.counts = observed.report.counts;
         check.execution = check.counts.executed > 0 ? "observed" : "zero_tests";
         check.outcome = result.interruption ? "unknown" : observed.report.setupFailed || check.counts.failed > 0
@@ -497,8 +499,8 @@ export class LightTaskRunner {
         check.evidence = { ...observed.evidence, command, cwd: metadata.cwd ?? ".",
           invocationSourceRevisionId: metadata.sourceRevisionId,
           completedSourceRevisionId: snapshot.revision.source_revision_id,
-          ...(metadata.invocationEnvironment ? { manifestEnvironment: { before: metadata.invocationEnvironment,
-            after: await environmentManifestEvidence(this.files, snapshot.files) } } : {}) };
+          ...(metadata.invocationEnvironment ? { manifestEnvironment: { beforeRevisionId: metadata.invocationEnvironment.revisionId,
+            afterRevisionId: environmentAfter?.revisionId ?? null, boundary: "Manifest/lock hashes only; installed dependencies and full environment are unknown." } } : {}) };
       }
       const failure = check.selectionFailure === "no_test_files"
         ? { category: "command" as const,

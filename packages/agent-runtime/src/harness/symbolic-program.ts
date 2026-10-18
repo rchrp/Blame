@@ -343,6 +343,8 @@ export function compileSymbolicProgram(
   }
   assertionEnv.set("result", result);
   const property = compileExpression(assertion, assertionEnv);
+  for (const assumption of symbolicMathAssumptions(assertionSource, assertion))
+    if (!assumptions.includes(assumption)) assumptions.push(assumption);
   if (property.type !== "boolean") unsupported("boolean_assertion_required");
   const query = [
     "(set-logic QF_NIA)",

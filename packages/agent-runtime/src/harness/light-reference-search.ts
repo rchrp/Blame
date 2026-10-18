@@ -46,7 +46,7 @@ export class LightReferenceSearch {
       nextSearches: declarations.length ? declarations.map(({ target }) =>
         ({ query: target, mode: "references", ...(input.scope ? { scope: input.scope } : {}) }))
         : [{ query: input.query, mode: "symbol", ...(input.scope ? { scope: input.scope } : {}) }],
-      guidance: "Bounded syntax candidates, not compiler-resolved references. Choose the intended declaration, then follow nextSearches. No edit coverage; read truncated signatures explicitly.",
+      guidance: "Bounded syntax candidates, not exhaustive and not compiler-resolved references. Choose the intended declaration, then follow nextSearches. No edit coverage; read truncated signatures explicitly.",
     };
   }
 
