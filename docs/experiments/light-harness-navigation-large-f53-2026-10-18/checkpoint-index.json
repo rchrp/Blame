@@ -1,6 +1,6 @@
 {
   "protocolHash": "e1245dde472187e6a46401cb4a2e7c9ec49b462f0edd074d038b0c819d1a4182",
-  "completed": 10,
+  "completed": 16,
   "planned": 18,
   "receipts": [
     {
@@ -42,6 +42,30 @@
     {
       "name": "2-suffix-counts-candidate",
       "sha256": "fa34084b13c9e942cc96a697733ece44e1594a8e54002bee8f5efcbed0ad66c7"
+    },
+    {
+      "name": "2-suffix-counts-cline",
+      "sha256": "f1b7caacf63eaa17b225d675cc43005da5e81fed8b871dc58994ee0afc2b4684"
+    },
+    {
+      "name": "2-suffix-counts-reference",
+      "sha256": "84504b525401dc3fe2e351ae42db9b8b357e0fc18b0aa9d43ae50059ff22289e"
+    },
+    {
+      "name": "2-reversed-clamp-cline",
+      "sha256": "7f78739cca61141830e377a4e5158b878b1cf61c2bb1b49edd7a21bb2366c221"
+    },
+    {
+      "name": "2-reversed-clamp-reference",
+      "sha256": "5883fb561021db270df681f02c1cc115ce114bf92bb1a9a426882a54f721055d"
+    },
+    {
+      "name": "2-reversed-clamp-candidate",
+      "sha256": "9bb7f21138f36b031a333ed0fa959683de856476423ae18ef83e3a631eb8b4ec"
+    },
+    {
+      "name": "2-slice-index-reference",
+      "sha256": "63ab77417e1788d25f965207a2ed5cba7c6ed01ad1890a87161b5a635207533e"
     }
   ],
   "note": "Derived index. Each immutable archive is independently verified; no model call is replayed."

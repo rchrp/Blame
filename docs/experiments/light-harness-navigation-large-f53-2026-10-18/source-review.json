@@ -178,7 +178,128 @@
       "dependencyIntegrityPassed": true,
       "symbolicEvidence": [],
       "evidence": [
-        "Production source hash equals the previously reviewed exact native-slice implementation; generic overloads/tuple output remain unchanged. Inspected all 24 new index-grid tests and complete command chronology. Optional delivered-type checks fail at 23/39/48; the model repairs its added tests and reruns final required commands 51-53 plus delivered types 54 successfully. All five endpoint checks and dependency integrity pass. These repeated repairs remain charged to the original trial. No retrieval or shell source writes. Delivery accurately limits original/delivered runtime and invocation-level type evidence."
+        "Production source hash equals the previously reviewed exact native-slice implementation; generic overloads/tuple output remain unchanged. Inspected all 24 new index-grid tests and complete command chronology. Optional delivered-type checks fail at 23/39/48; the model repairs its added tests and reruns final required commands 51-53 plus delivered types 54 successfully. All five endpoint checks and dependency integrity pass. These repeated repairs remain charged to the original trial. No retrieval or shell source writes. Delivery accurately limits original/delivered runtime and invocation-level type evidence.",
+        "The repeated TS2322 is a pre-existing Remeda data-last overload limitation: splitAt<T>(index) binds T before the array argument, producing unknown[] absent context. The original production API remains unchanged; the new test annotation expected stronger inference. This is test/API-expectation friction, not a generic regression introduced by the harness."
+      ]
+    },
+    {
+      "name": "2-suffix-counts-candidate",
+      "hashes": {
+        "events.jsonl": "f154abe7b753ae5010cac5a1127c92a5d8020146f5a58528a08ab2f4e4f7c9d6",
+        "workspace.diff": "55842abcf21d2fec3dfd6e88b16041b5b416f140bc549de81f7f2b862ab5984c",
+        "score.json": "c0f91fee126a4e7cf796dd1f9332734d854a4142735fb6852448dc05df805004",
+        "tool-ledger.json": "b53dd81a27dc91752d4c3a23b66df0b98429f590d0e6759ac5c1ec8e69c9ca02"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Reviewed exact generic overloads, shared helper and all 25 new tests. count>0 ? min(floor(count),length) :0 safely normalizes NaN/nonpositives/infinity and finite oversize counts, so simple slice endpoints remain in range. Fresh readonly arrays, order and all call styles are preserved. Required commands 36-38 and delivered types 39 pass after final edits; all five independent endpoint checks and dependency integrity pass. Only local diff/status follows, no retrieval or solver claim. Delivery truthfully separates selected original, source-only and delivered test scopes."
+      ]
+    },
+    {
+      "name": "2-suffix-counts-cline",
+      "hashes": {
+        "events.jsonl": "43e091710ae3098907b6f02cdee91bf75efa715044879750bc246d763efece2d",
+        "workspace.diff": "f649b9d32120abcee9005c7a1d86a417ba1b9dafd5b47f0ca536d6d9f75d2151",
+        "score.json": "16d9cd9259de9997e93460e572a0aae3aa700c11a477a2d87964065009ba5415",
+        "tool-ledger.json": "d4e8da6df79fdcbffb95bbb229f7e081548e9c77e6781f6a469362817cb255dd"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": false,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Public source files match reviewed correct generic implementations; inspected the new typed scalar helper and 19 tests. It handles NaN/nonpositives, floors/caps finite positives and maps infinity to length, preserving order/fresh readonly arrays. Required commands 12-14 and delivered types 17 pass after edits, all five endpoint checks pass. Focused command 11 selects zero tests under the supplied original-only config; direct 16 succeeds and delivery explicitly distinguishes them. Frozen dependency failure is only the preexisting Vitest results cache modification, retained as primary strict failure with conditional all-arm sensitivity. No package installation, solution retrieval, later source writes or solver claims."
+      ]
+    },
+    {
+      "name": "2-suffix-counts-reference",
+      "hashes": {
+        "events.jsonl": "967aea9d9d0c9be8ef705ccc61fc338e8325e7c513ff5d97c67b6655dff6b92d",
+        "workspace.diff": "4ed6a739b3fb088c403ab1ddcb72dae7c13cfb04040fe45dfee4a5a5edf53bf9",
+        "score.json": "05c41bd1981815ffad719c03957c28befb101ee6cb5f9681271bcaded686a6c2",
+        "tool-ledger.json": "f422ac2f0f6d8037f2485982a073ace58103aeb26a9d3ab328d86a8d07b7c693"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "The two public API source hashes match reviewed correct suffix implementations, preserving all overloads; inspected the new scalar floor/cap helper and eight new tests. NaN/nonpositive/positive-infinity and finite oversize counts are correct without negative slice wraparound; readonly arrays are copied. Final required commands 24-26 and delivered types 27 pass with all five endpoint checks and dependency integrity. Only local diff/status follows; no retrieval or solver claims. Reporting accurately limits original/source/delivered coverage."
+      ]
+    },
+    {
+      "name": "2-reversed-clamp-cline",
+      "hashes": {
+        "events.jsonl": "e4412975b5ff1504fbc63adb58400706044757334cc496ecd5183821befba3fb",
+        "workspace.diff": "b6a4a7d8387b65e89e270afcc4de9703ebee9736b7f825172bd90b68973f4104",
+        "score.json": "23608929130b7efb708b59f00e6f9086945c5bbd2f2c991cd357999868e2b226",
+        "tool-ledger.json": "d9c578303500b413af1cf47911e7e907c31d132250683ee8f2115a3b922fce10"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": false,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Reviewed exact numeric overloads, full local-bound normalization and six new tests. Only finite reversed pairs swap; missing/NaN/infinite/value behavior, frozen-object nonmutation and curried object observation are correct. Initial CLI include/formatter attempts fail; types fail at 15 and the model repairs source typing before all required checks plus delivered types pass at 17. All five independent endpoint checks pass. Frozen dependency failure is solely the same preexisting Vitest results cache update, retained in primary strict score and conditional sensitivity. No installation/retrieval or later source writes. Final delivery reports final required results and selected scope honestly."
+      ]
+    },
+    {
+      "name": "2-reversed-clamp-reference",
+      "hashes": {
+        "events.jsonl": "3b8dbc15a628fd549281a7d8205cc4be082f3fb719012a54af52ee1bf9a1c6ff",
+        "workspace.diff": "23689906a2c715e231307afb53f96dcfb233982ec1b980ba14bedb8a870682d5",
+        "score.json": "8d3823696609f66f89328a46af45cde08bad40e183fca80475d62fd51be72ba1",
+        "tool-ledger.json": "eef43e8461109e745cb15b782f24531b221c20e48e6162573ad078af8a13d9b0"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Reviewed unchanged numeric overloads, local destructured-bound aliases and all six added tests. Only finite reversed min/max values swap locally, preserving every other original comparison behavior; no object mutation, purry observes current curried limits. Source types initially fail at 23; model repairs local binding declarations and final required commands 26-28 pass. All five endpoint checks, including independent delivered types, and dependency integrity pass. The model truthfully says its own commands do not establish delivered-test type coverage; no retrieval or later writes."
+      ]
+    },
+    {
+      "name": "2-reversed-clamp-candidate",
+      "hashes": {
+        "events.jsonl": "b8dc949c88978c0b05430ff55a14bcf6db90e2dcaff86cd8b7a33b572011e2c6",
+        "workspace.diff": "b7c0bca1081443ba1da3b5704ae6261d6629fe67876e480e77082079609993ee",
+        "score.json": "b45f45f456013ee3f5de5174a5af6b0073754fa71de872c77e235d9703a8a84d",
+        "tool-ledger.json": "d948ce12d05cf60d78bfcb21a385320bc0ef7653458a9c48ffe5dd2f5dbabbfe"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Reviewed unchanged public numeric overloads, local let-destructuring implementation and six added tests. Finite reversed bounds swap only local variables; original special-number comparisons, object nonmutation and fresh curried observation are preserved. Initial source/compilation/test runs 30-32 fail, model repairs before final required commands 34-36, all pass. Independent five endpoint checks and dependency integrity pass, including delivered types. The model does not run optional delivered types and explicitly limits its claim. No retrieval or later source writes."
       ]
     }
   ]
