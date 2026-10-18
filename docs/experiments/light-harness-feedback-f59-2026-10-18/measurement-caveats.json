@@ -1,0 +1,9 @@
+{
+  "headerArrayInEventTrace": "The benchmark event recorder replaces every object field named headers with [REDACTED], including bodyEditContext.headers. Receipt exposure counts survive, exact declaration content/byte size does not. The current headerFeedbackBytes counter is the sanitized event context size and is not model-visible feedback bytes or token overhead. SDK tokens/actual forwarded request sizes remain direct observations.",
+  "evidence": {
+    "packages/benchmark-runner/src/event-recorder.ts": "ec06a6f053fd1d2cb3b01b1b78cb582b7fa23557a62eb33d186505874aac9a65",
+    "packages/agent-runtime/src/harness/light-tools.ts": "34ed4a95267c9704accf13b91904bdb3acd01d7e9f9ca1640032024607001cef",
+    "packages/agent-runtime/src/security-secret-redaction.ts": "e832730359357f803943781afd257f9174ef5d1fcc2a253ed1df4c6c5fd20161"
+  },
+  "notAProductionHeaderRemoval": "Light model-tool output uses redactSecurityValue recursively on values, not the benchmark recorder field-name masking. A model-free boundary control is planned outside live workers before F60. Do not disable credential redaction to collect declaration metadata."
+}

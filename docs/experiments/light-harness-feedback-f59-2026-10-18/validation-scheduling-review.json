@@ -36,6 +36,36 @@
       "avoidableGreensBeforeRenewedFailure": 0,
       "duplicateRequiredGreensOnSameSource": 0,
       "evidence": "Final required9/10/11 and optional delivered types12 all pass once; no subsequent edit or failing repair."
+    },
+    {
+      "name": "1-reversed-clamp-reference",
+      "avoidableGreensBeforeRenewedFailure": 0,
+      "duplicateRequiredGreensOnSameSource": 0,
+      "evidence": "Compiler failure26 repaired29, then successful30/31/32. Subsequent real formatting/body/declaration edits38/40 invalidate prior source hashes; final41/42/43 necessary. Formatter availability/policy friction and post-validation formatting churn remain explicit costs."
+    },
+    {
+      "name": "1-slice-index-cline",
+      "avoidableGreensBeforeRenewedFailure": 0,
+      "duplicateRequiredGreensOnSameSource": 0,
+      "evidence": "Composite10 captures required exit statuses and exits Boolean OR; all pass, optional delivered types11 passes. No later source/test edits or required duplicates."
+    },
+    {
+      "name": "1-slice-index-reference",
+      "avoidableGreensBeforeRenewedFailure": 0,
+      "duplicateRequiredGreensOnSameSource": 0,
+      "evidence": "Required19/20/21 and delivered types22 pass once on final source, no repair."
+    },
+    {
+      "name": "1-slice-index-candidate",
+      "avoidableGreensBeforeRenewedFailure": 0,
+      "duplicateRequiredGreensOnSameSource": 0,
+      "evidence": "Final required23/24/25 and delivered types26 pass once, no repair."
+    },
+    {
+      "name": "2-suffix-counts-candidate",
+      "avoidableGreensBeforeRenewedFailure": 0,
+      "duplicateRequiredGreensOnSameSource": 0,
+      "evidence": "Required35/36/37 and delivered types38 pass once on final source; no failure."
     }
   ]
 }

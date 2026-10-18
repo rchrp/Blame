@@ -100,6 +100,106 @@
       "evidence": [
         "Finite reversed bounds normalized with explicit undefined/finite guards; fresh per-call destructuring retains mutable-curried behavior, original lower-first exceptional semantics and public overloads. Tests change the actual interval from10/-10 to-5/5 and cover all invocation forms/frozen/NaN/infinite/missing cases. All five endpoints and final required9/10/11 plus delivered types12 pass. No source edit after checks, duplicate green execution, failure/recovery, protected/dependency mutation or solution retrieval. Delivery states selected scope and test compilation accurately."
       ]
+    },
+    {
+      "name": "1-reversed-clamp-reference",
+      "hashes": {
+        "events.jsonl": "b975243f50e3d353a96c41bc9710d25fb3b050c6e7e8c0e513d448484abdb8a7",
+        "workspace.diff": "d4c3b979b2852d76bfcae41305c36ec53e447cc5a4a3a41066b740ec841cd938",
+        "score.json": "291fe55640ae1c7b15dbf21d7ef50745026bd06b922a7c6cfb89c2510dfcbfaa",
+        "tool-ledger.json": "165a2cd963c133a5463579e707327de25c6cf46b6aa9fa8e835f59c1f8544364"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Correct finite-only normalized bounds and per-invocation destructuring, unchanged numeric overloads, no limits mutation. New tests change the actual curried interval20/10 to0/5 and cover all public forms and exceptional semantics. Initial missing undefined narrowing fails26 and is repaired29. Source/test checks30/31/32 and delivered types33 pass; formatter35/36 unavailable/blocked, then actual formatting/body and whole-declaration edits38/40 invalidate those source hashes. Final required41/42/43 and delivered types44 therefore necessary, not duplicate same-source greens. All five endpoint checks, protected/dependency integrity pass; no solution retrieval and scoped delivery accurate. Extra manual formatting churn remains in costs."
+      ]
+    },
+    {
+      "name": "1-slice-index-cline",
+      "hashes": {
+        "events.jsonl": "06150d4a736ad53e054d15f33287fc167edcbdd4c7319840732fad1fbb5bb773",
+        "workspace.diff": "996a920d522be38f1ca4bb788042e6abf82d81c3b9db9ea0314ba87d77f0c821",
+        "score.json": "ef4e20561f4300fc2a9f9ac365e324ca4c60458fe2a2725b53ccb935475968f8",
+        "tool-ledger.json": "e8981197459a488669704724eee33c04a729b4fa5585bcf20b6263fc2cb6f0a4"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Production implementation exactly delegates both slices to native index normalization, with original overloads and readonly/generic contract unchanged. New 41 cases plus original4 cover three invocation forms, native edge indexes, readonly/fresh arrays, direct string and contextual pipe inference; delivered-test compiler passes all assertions. Command10 explicitly captures three required exit statuses and exits their Boolean OR, so success establishes each required check on the final source; delivered types11 passes. No repair cycle, same-source duplicate required runs, protected/dependency mutation or solution retrieval; delivery scopes accurately distinguish runtime and types."
+      ]
+    },
+    {
+      "name": "1-slice-index-reference",
+      "hashes": {
+        "events.jsonl": "85e7e4f3eaf5985035a507ad09287725de58687ee563eebacc6b3ee5b60fa4f3",
+        "workspace.diff": "d53a9d8c1c585f52ceb6e13526f3b258cf7241176f5a1f7bb42b0196ec9b192f",
+        "score.json": "85592402a54733149cea6c13e776c4a26d989acb2e6e0be927e8b41e3b166397",
+        "tool-ledger.json": "aa02dad6d54143a6f5448f55707377583bf09601994bfe93b70387907fc76ea4"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Exact native-slice implementation, byte-identical to reviewed Cline production source, unchanged public overloads. New27 parameterized cases plus readonly/fresh-array check cover all three forms; independent oracle supplies more lengths/indexes and public type probes. All five endpoints and exact final required19/20/21 plus delivered types22 pass once; no subsequent edit or repair. Accurate targeted counts and source-vs-test compilation scope; original checks and dependencies intact, no retrieval."
+      ]
+    },
+    {
+      "name": "1-slice-index-candidate",
+      "hashes": {
+        "events.jsonl": "17eb5710554cfc0101911b5fe5a3160b3c5b07631e6cf325d43fc0736467245c",
+        "workspace.diff": "fc23f14915bd76af99bf8857036362d6363b5b5b790b8cdb28ec36078bdb1312",
+        "score.json": "13d8fd81bc62112552009c548d6c516851a27daf6a5dee399c3785a024548ffd",
+        "tool-ledger.json": "cfaa4ebc4aa59e3791611baa9d91641d25e930d56be22a2f2516fae40c3a884b"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Native-slice production source matches the already-reviewed correct implementation byte-for-byte, original overloads unchanged. New27 index/form cases plus readonly/fresh-array test pass runtime and compilation. Exact final required23/24/25 and delivered types26 pass once; no failures or later edits, protected/dependency integrity intact and no retrieval. Truthful selected-versus-delivered coverage. One body replacement emits common input-header metadata; the benchmark recorder redacts its headers array, which limits byte/content observability but is separate from model-visible tool serialization."
+      ]
+    },
+    {
+      "name": "2-suffix-counts-candidate",
+      "hashes": {
+        "events.jsonl": "aaea2ab7c978899fc05d9076b92be3878fbbd0b7c2c5f991959f5d30eecaa799",
+        "workspace.diff": "c593afcfd888e488b0f9e364abe1225e96517a4d49d90b223ec630e4d33a1b0d",
+        "score.json": "8b1ee4f6de79bdfac48f06b26cec8dd1a41b00b4f31a44cf7abfc6daf2347e17",
+        "tool-ledger.json": "0fb026fc3eb4b16cd81f749fc64047614d3894bba805cfaff2ab67909bad19fa"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Shared helper handles positive infinity and floors only positive finite counts; both consumers retain Math.max index clamps, preserving oversized integer semantics and fresh arrays for zero/full selections. Public overloads unchanged. New table tests cover normalizer cases with direct and pipe invocation and readonly/fresh identity; independent finite oracle supplies empty/oversized/direct-curried coverage. All five independent checks and exact final required35/36/37 plus delivered types38 pass once. No failed validation opportunity, later edit, protected/dependency mutation or solution retrieval. Accurate scoped delivery."
+      ]
     }
   ]
 }
