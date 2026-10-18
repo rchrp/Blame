@@ -29,9 +29,15 @@ export class LightReferenceSearch {
   }
 
   async recovery(input: LightSearchCodeInput, reason: string,
-    paths: string[], revision: string, signal?: AbortSignal) {
+    paths: string[], revision: string, signal?: AbortSignal): Promise<
+      Partial<Awaited<ReturnType<LightReferenceSearch["declarations"]>>>> {
     const guidance = "Lexical fallback. For compiler references, choose an sN or path#name target; read before editing.";
     if (reason !== "symbol_target_required") return { guidance };
+    return this.declarations(input, paths, revision, signal);
+  }
+
+  async declarations(input: LightSearchCodeInput,
+    paths: string[], revision: string, signal?: AbortSignal) {
     const found = await referenceDeclarationCandidates(this.files, input.query, paths, revision, signal);
     const declarations = found.candidates.map(({ path, content, symbol, qualifiedUnique }) => {
       const { alias, materialized } = this.aliases.registerSymbol(path, content, symbol, revision);
@@ -43,6 +49,7 @@ export class LightReferenceSearch {
     return {
       declarationDiscovery: found.discovery,
       declarationCandidates: declarations,
+      nextReads: declarations.map(({ target }) => ({ target, view: "symbol" as const })),
       nextSearches: declarations.length ? declarations.map(({ target }) =>
         ({ query: target, mode: "references", ...(input.scope ? { scope: input.scope } : {}) }))
         : [{ query: input.query, mode: "symbol", ...(input.scope ? { scope: input.scope } : {}) }],

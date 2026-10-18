@@ -48,6 +48,7 @@ import {
 } from "./light-navigation.js";
 import { LightTaskRunner } from "./light-task-runner.js";
 import { LightReferenceSearch } from "./light-reference-search.js";
+import { declarationQuery } from "./light-reference-candidates.js";
 import { readDependencyDeclaration } from "./light-dependency-read.js";
 import { withMissingPathRecovery } from "./light-path-recovery.js";
 import {
@@ -251,10 +252,28 @@ export class LightWorkspace {
       snapshot.revision.source_revision_id,
       signal,
     );
-    const labeled = semantic && result.status === "ok" ? { ...result, data: { ...recordValue(result.data),
+    let labeled = semantic && result.status === "ok" ? { ...result, data: { ...recordValue(result.data),
       semanticFallback: semantic.fallback,
       ...await this.references.recovery(input, semantic.fallback,
         candidates, snapshot.revision.source_revision_id, signal) } } : result;
+    // Keep the original lexical/symbol results and explicit target choice. The
+    // bounded syntax route is also reachable from ordinary searches, even when
+    // early call sites or substring matches crowd out the exact declaration.
+    if (!semantic && result.status === "ok") {
+      const query = declarationQuery(input.query), data = recordValue(result.data);
+      const exact = arrayValue(data.results).some(value => {
+        const item = recordValue(value);
+        return item.reason === "symbol_name" && typeof item.qualifiedName === "string" &&
+          (item.qualifiedName === query || item.qualifiedName.endsWith(`.${query}`));
+      });
+      if (query && !exact) {
+        const discovery = await this.references.declarations({ ...input, query },
+          candidates, snapshot.revision.source_revision_id, signal);
+        if (discovery.declarationCandidates.length || discovery.declarationDiscovery.limited ||
+            discovery.declarationDiscovery.status === "source_changed")
+          labeled = { ...result, data: { ...data, ...discovery } };
+      }
+    }
     const expanded = await this.expandSearch(labeled, snapshot.revision.source_revision_id);
     return this.persistAliases(expanded);
   }

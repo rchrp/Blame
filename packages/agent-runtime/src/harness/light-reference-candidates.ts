@@ -5,6 +5,13 @@ import type { WorkspaceFiles } from "./workspace-files.js";
 const limits = { files: 64, bytes: 1024 * 1024, fileBytes: 256 * 1024, declarations: 4 };
 const identifier = "[\\p{ID_Start}_$][\\p{ID_Continue}$]*";
 const supportedQuery = new RegExp(`^${identifier}(?:\\.${identifier})*$`, "u");
+const declarationPrefix = new RegExp(`^(?:export\\s+)?(?:default\\s+)?(?:async\\s+)?(?:function|class|interface|type|const|let|var)\\s+(${identifier})$`, "u");
+
+/** Recognize only a literal name or a complete declaration prefix, never a regex or expression. */
+export function declarationQuery(query: string) {
+  const text = query.trim();
+  return supportedQuery.test(text) ? text : declarationPrefix.exec(text)?.[1];
+}
 type Candidate = { path: string; content: Buffer; symbol: ParsedSymbol; qualifiedUnique: boolean };
 
 /** Syntax discovery only: a caller must explicitly choose a declaration before compiler resolution. */
