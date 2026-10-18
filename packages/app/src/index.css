@@ -807,3 +807,167 @@
     transform: translateX(450%) skewX(-12deg);
   }
 }
+
+/* Conversation motion. Every animation runs once, on mount, and only for
+   items that just arrived (see isFreshTimestamp), so long histories open
+   without replaying anything. */
+@keyframes chat-enter-user {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0) scale(0.96);
+    filter: blur(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+@keyframes chat-enter-agent {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes chat-enter-step {
+  from {
+    opacity: 0;
+    transform: translate3d(-6px, 0, 0);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes chat-step-done {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+
+  60% {
+    transform: scale(1.18);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes chat-step-pulse {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.55;
+  }
+
+  100% {
+    transform: scale(1.45);
+    opacity: 0;
+  }
+}
+
+@property --composer-aura-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes composer-aura-spin {
+  to {
+    --composer-aura-angle: 360deg;
+  }
+}
+
+@layer components {
+  .chat-enter-user {
+    transform-origin: 100% 100%;
+    animation: chat-enter-user 460ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .chat-enter-agent {
+    animation: chat-enter-agent 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .chat-enter-step {
+    animation: chat-enter-step 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .chat-step-done {
+    animation: chat-step-done 380ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+
+  .chat-step-running {
+    position: relative;
+  }
+
+  .chat-step-running::after {
+    position: absolute;
+    inset: 0.35rem;
+    border-radius: 999px;
+    background: oklch(0.72 0.2 270 / 35%);
+    content: "";
+    pointer-events: none;
+    animation: chat-step-pulse 1.4s cubic-bezier(0.2, 0.6, 0.3, 1) infinite;
+  }
+
+  /* A slow glowing ring around the composer while the agent works. */
+  .composer-aura {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .composer-aura::before {
+    position: absolute;
+    z-index: -1;
+    inset: -2px;
+    border-radius: calc(var(--radius-3xl) + 2px);
+    background: conic-gradient(
+      from var(--composer-aura-angle),
+      transparent 0deg,
+      oklch(0.72 0.2 285 / 75%) 60deg,
+      oklch(0.78 0.16 230 / 75%) 120deg,
+      transparent 200deg,
+      transparent 360deg
+    );
+    content: "";
+    filter: blur(8px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 500ms ease;
+  }
+
+  .composer-aura[data-running="true"]::before {
+    opacity: 0.85;
+    animation: composer-aura-spin 3.2s linear infinite;
+  }
+
+  .composer-icon-swap {
+    animation: chat-step-done 320ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .chat-enter-user,
+    .chat-enter-agent,
+    .chat-enter-step,
+    .chat-step-done,
+    .composer-icon-swap {
+      animation: none;
+    }
+
+    .chat-step-running::after,
+    .composer-aura[data-running="true"]::before {
+      animation: none;
+    }
+  }
+}

@@ -26,10 +26,14 @@ function MessageScrollerProvider({ children }: { children: React.ReactNode }) {
     const viewport = viewportRef.current
     if (!viewport) return
     followingRef.current = true
-    viewport.scrollTop = viewport.scrollHeight
-    const distance =
-      viewport.scrollHeight - viewport.clientHeight - viewport.scrollTop
-    setAtBottom(distance <= bottomThreshold)
+    const reduceMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches
+    viewport.scrollTo({
+      top: viewport.scrollHeight,
+      behavior: reduceMotion ? "auto" : "smooth",
+    })
+    setAtBottom(true)
   }, [])
 
   const value = React.useMemo(
@@ -70,27 +74,70 @@ function MessageScrollerViewport({
   React.useEffect(() => {
     const viewport = viewportRef.current
     if (!viewport) return
+    const reduceMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches
+    let glideFrame = 0
+    let glideTime = 0
+    // Last scrollTop the glide wrote. Scroll events at or past it are ours;
+    // anything above it means the reader scrolled up.
+    let glideTop = -1
+
+    const distanceToBottom = () =>
+      viewport.scrollHeight - viewport.clientHeight - viewport.scrollTop
+
+    const stopGlide = () => {
+      if (glideFrame) cancelAnimationFrame(glideFrame)
+      glideFrame = 0
+      glideTop = -1
+    }
 
     const updatePosition = () => {
-      const distance =
-        viewport.scrollHeight - viewport.clientHeight - viewport.scrollTop
-      const atBottom = distance <= bottomThreshold
-      setAtBottom(atBottom)
+      setAtBottom(distanceToBottom() <= bottomThreshold)
     }
     const handleScroll = () => {
-      const distance =
-        viewport.scrollHeight - viewport.clientHeight - viewport.scrollTop
-      const atBottom = distance <= bottomThreshold
+      if (glideFrame && viewport.scrollTop >= glideTop - 1) return
+      stopGlide()
+      const atBottom = distanceToBottom() <= bottomThreshold
       followingRef.current = atBottom
       setAtBottom(atBottom)
     }
+
+    // Eases toward the bottom instead of jumping, so streamed text scrolls
+    // like a teleprompter. Large gaps (opening a conversation) still jump.
+    const glide = (time: number) => {
+      const delta = glideTime ? Math.min(time - glideTime, 64) : 16
+      glideTime = time
+      const target = viewport.scrollHeight - viewport.clientHeight
+      const remaining = target - viewport.scrollTop
+      if (remaining <= 1) {
+        viewport.scrollTop = target
+        stopGlide()
+        setAtBottom(true)
+        return
+      }
+      const step = Math.max(remaining * (1 - Math.exp(-delta / 90)), 1)
+      viewport.scrollTop = viewport.scrollTop + step
+      glideTop = viewport.scrollTop
+      glideFrame = requestAnimationFrame(glide)
+    }
+
     const followLatest = () => {
       if (!followingRef.current) {
         updatePosition()
         return
       }
-      viewport.scrollTop = viewport.scrollHeight
-      setAtBottom(true)
+      const distance = distanceToBottom()
+      if (reduceMotion || distance > viewport.clientHeight * 1.5) {
+        stopGlide()
+        viewport.scrollTop = viewport.scrollHeight
+        setAtBottom(true)
+        return
+      }
+      if (distance <= 1 || glideFrame) return
+      glideTime = 0
+      glideTop = viewport.scrollTop
+      glideFrame = requestAnimationFrame(glide)
     }
 
     const resizeObserver = new ResizeObserver(followLatest)
@@ -103,6 +150,7 @@ function MessageScrollerViewport({
     followLatest()
 
     return () => {
+      stopGlide()
       resizeObserver.disconnect()
       mutationObserver.disconnect()
       viewport.removeEventListener("scroll", handleScroll)

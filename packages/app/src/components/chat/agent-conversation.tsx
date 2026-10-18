@@ -584,7 +584,7 @@ export function AgentConversationComposer({
           {title}
         </div>
       ) : null}
-      <div className="relative">
+      <div className="composer-aura" data-running={agentRunning}>
         {turnMetrics ? <AgentTurnIndicator metrics={turnMetrics} /> : null}
         <MarkdownEditor
           speechSessionKey={speechSessionKey}
@@ -608,7 +608,7 @@ export function AgentConversationComposer({
             <Button
               aria-label={primaryActionLabel}
               className={cn(
-                "size-9 rounded-xl border p-0 text-white shadow-md disabled:border-muted disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none",
+                "size-9 rounded-xl border p-0 text-white shadow-md transition-[transform,background-color,box-shadow] duration-200 active:scale-90 disabled:border-muted disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none",
                 agentRunning
                   ? "border-destructive bg-destructive shadow-destructive/25 hover:bg-destructive/90 hover:text-white"
                   : "border-blue-500 bg-blue-500 shadow-blue-500/25 hover:bg-blue-600 hover:text-white"
@@ -622,13 +622,18 @@ export function AgentConversationComposer({
               type="button"
               onClick={handlePrimaryAction}
             >
-              {submitting ? (
-                <LoaderCircleIcon className="size-4 animate-spin" />
-              ) : agentRunning ? (
-                <SquareIcon className="size-3.5 fill-current" />
-              ) : (
-                <ArrowUpIcon className="size-4" />
-              )}
+              <span
+                key={submitting ? "submitting" : agentRunning ? "running" : "idle"}
+                className="composer-icon-swap flex items-center justify-center"
+              >
+                {submitting ? (
+                  <LoaderCircleIcon className="size-4 animate-spin" />
+                ) : agentRunning ? (
+                  <SquareIcon className="size-3.5 fill-current" />
+                ) : (
+                  <ArrowUpIcon className="size-4" />
+                )}
+              </span>
             </Button>
           }
           toolbarEnd={toolbarEnd}
@@ -667,11 +672,17 @@ function RunCommentItem({
   onUndo?: (comment: AgentConversationComment) => Promise<void> | void
   run?: AgentConversationRun
 }) {
+  const entering = useEnterAnimation(comment?.createdAt)
   if (run?.kind === "initial") return null
   if (!comment) return null
 
   return (
-    <div className="group/message relative w-full min-w-0 pl-[12%]">
+    <div
+      className={cn(
+        "group/message relative w-full min-w-0 pl-[12%]",
+        entering && "chat-enter-user"
+      )}
+    >
       <div className="ml-auto grid w-full max-w-3xl min-w-0 gap-2 overflow-hidden">
         <div className="max-w-full min-w-0 overflow-hidden rounded-3xl bg-muted/80 p-1 ring-1 ring-foreground/10 [&>div]:max-w-full [&>div]:min-w-0 [&>div]:bg-transparent [&>div]:shadow-none [&>div]:ring-0">
           <MarkdownEditor
@@ -1055,7 +1066,7 @@ function AgentStreamError({
 function AgentThinkingTimelineItem() {
   return (
     <div
-      className="flex min-w-0 items-center gap-3 px-2 py-2 text-sm text-muted-foreground"
+      className="chat-enter-agent flex min-w-0 items-center gap-3 px-2 py-2 text-sm text-muted-foreground"
       role="status"
     >
       <span className="agent-thinking-mark" aria-hidden="true" />
@@ -1171,6 +1182,8 @@ function AgentActivityDetailLeafItem({
 }) {
   const [fullDetail, setFullDetail] = React.useState<string>()
   const [loading, setLoading] = React.useState(false)
+  const entering = useEnterAnimation(activity.createdAt)
+  const running = activityIsRunning(activity, runActive, runningToolActivityId)
   const details = activityDetails(
     fullDetail ? { ...activity, detail: fullDetail } : activity
   )
@@ -1184,19 +1197,25 @@ function AgentActivityDetailLeafItem({
   }, [activity, onLoadDetail])
 
   return (
-    <AccordionItem value={value} className="border-b-0!">
+    <AccordionItem
+      value={value}
+      className={cn("border-b-0!", entering && "chat-enter-step")}
+    >
       <div className="grid grid-cols-[2rem_minmax(0,1fr)] items-start gap-2 text-sm">
-        <span className="flex size-8 items-center justify-center text-muted-foreground">
+        {/* Keyed by state: the icon pops when the step finishes. */}
+        <span
+          key={running ? "running" : "idle"}
+          className={cn(
+            "flex size-8 items-center justify-center text-muted-foreground",
+            running ? "chat-step-running" : entering && "chat-step-done"
+          )}
+        >
           <ActivityToolIcon activity={activity} toolName={details.toolName} />
         </span>
         <div className="min-w-0">
           <AccordionTrigger className="min-h-8 items-center py-0 text-muted-foreground hover:no-underline">
             <span
-              className={
-                activityIsRunning(activity, runActive, runningToolActivityId)
-                  ? "agent-activity-running truncate"
-                  : "truncate"
-              }
+              className={running ? "agent-activity-running truncate" : "truncate"}
             >
               {activityTitle(activity, details)}
             </span>
@@ -1695,6 +1714,7 @@ function AgentMarkdownTimelineItem({
   const [contentOverflows, setContentOverflows] = React.useState(false)
   const [contentHeight, setContentHeight] = React.useState(320)
   const collapsible = Boolean(effectColor)
+  const entering = useEnterAnimation(createdAt)
   const effectStyle =
     effectColor && effectGlowColor
       ? ({
@@ -1722,7 +1742,10 @@ function AgentMarkdownTimelineItem({
   }, [collapsible, markdown])
 
   return (
-    <div className="group/message relative min-w-0" data-agent-response>
+    <div
+      className={cn("group/message relative min-w-0", entering && "chat-enter-agent")}
+      data-agent-response
+    >
       {avatar ? <div className="absolute top-0 -left-10">{avatar}</div> : null}
       <div className="grid min-w-0 gap-2">
         <div
@@ -1803,8 +1826,12 @@ function AgentErrorTimelineItem({
   resetAt?: string
 }) {
   const platform = usePlatform()
+  const entering = useEnterAnimation(createdAt)
   return (
-    <div className="group/message grid min-w-0 gap-2" role="alert">
+    <div
+      className={cn("group/message grid min-w-0 gap-2", entering && "chat-enter-agent")}
+      role="alert"
+    >
       <div className="flex min-w-0 gap-3 rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-destructive shadow-sm">
         <AlertCircleIcon className="mt-0.5 size-5 shrink-0" />
         <div className="min-w-0">
@@ -2253,4 +2280,20 @@ function runComment(
 ) {
   const commentId = run.commentId ?? run.messageId
   return commentId ? commentsById.get(commentId) : undefined
+}
+
+// Only items that arrived in the last few seconds animate in. Opening a
+// conversation shows its history at once instead of replaying every entrance.
+const freshItemWindowMs = 15_000
+
+function isFreshTimestamp(value: string | null | undefined) {
+  if (!value) return false
+  const time = Date.parse(value)
+  return Number.isFinite(time) && Date.now() - time < freshItemWindowMs
+}
+
+// Decided once, at mount, so the class never flips during streaming.
+function useEnterAnimation(createdAt: string | null | undefined) {
+  const [entering] = React.useState(() => isFreshTimestamp(createdAt))
+  return entering
 }

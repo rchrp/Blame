@@ -577,6 +577,16 @@ function QuickChatProjectPage() {
     toast.success("Message restored to editor.", { position: "bottom-right" })
   }
 
+  function applySuggestion(prompt: string) {
+    setDraft(prompt)
+    setDraftEditorKey((key) => key + 1)
+    requestAnimationFrame(() => {
+      draftRef.current
+        ?.querySelector<HTMLElement>("[data-markdown-editor-input='true']")
+        ?.focus()
+    })
+  }
+
   async function submitDraft() {
     if (!draftHasContent() || sending) return
     const validationError = quickChatSendValidationError({
@@ -1020,7 +1030,11 @@ function QuickChatProjectPage() {
               />
               <div className="pointer-events-auto relative px-3 pb-3 md:px-5 md:pb-5">
                 <div className="mx-auto w-full max-w-4xl">
-                  {emptyConversation ? <QuickChatEmptyState /> : null}
+                  {emptyConversation ? (
+                    <QuickChatEmptyState
+                      onSuggestion={project ? applySuggestion : undefined}
+                    />
+                  ) : null}
                   <AgentConversationComposer
                     speechSessionKey={draftStorageKey}
                     minHeight={emptyConversation ? "min-h-44" : "min-h-24"}
