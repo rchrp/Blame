@@ -15,7 +15,7 @@ if(id==='alternative-selections'){
   eq(match(value).with(P.union({a:P.select(),b:0},{a:n,b:P.select()}),s=>s).run(),2);
  }
  const p=P.union({a:P.select('x'),b:0},{a:0,b:P.select('y')});
- const raw=p[P.matcher]().match({a:1,b:2});eq(raw.matched,false);eq(raw.selections,{x:undefined,y:undefined});
+ const raw=p[P.matcher]().match({a:1,b:2});eq(raw.matched,false);for(const value of Object.values(raw.selections??{}))eq(value,undefined);
  let called=0;eq(match({a:1,b:2}).with({a:P.select('x')},()=>{called++;return false;},()=>3).otherwise(()=>4),4);eq(called,1);
 }else if(id==='symbol-pattern-keys'){
  for(const key of [Symbol('key'),'hidden']){

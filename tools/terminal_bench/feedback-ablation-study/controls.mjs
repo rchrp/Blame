@@ -14,8 +14,19 @@ for(const task of tasks){
  let patch=execFileSync('git',['diff','--binary','HEAD'],{cwd:root,encoding:'utf8'});
  for(const path of execFileSync('git',['ls-files','--others','--exclude-standard','-z'],{cwd:root,encoding:'utf8'}).split('\0').filter(Boolean)){const p=spawnSync('git',['diff','--no-index','--binary','--','/dev/null',path],{cwd:root,encoding:'utf8'});assert.equal(p.status,1);patch+=p.stdout;}
  await writeFile(join(study,'positive-'+task.id+'.patch'),patch);
+ let optionalFailureSelections=null;
+ if(task.id==='alternative-selections'){
+  const path=join(root,'src/patterns.ts'),original=await readFile(path,'utf8'),start=original.indexOf('export function union<'),end=original.indexOf('export function not<',start);
+  const change=expression=>original.slice(0,start)+original.slice(start,end).replace('return { matched, selections };',expression)+original.slice(end);
+  const omitted=change('return matched ? {matched,selections} : {matched:false};');assert.notEqual(omitted,original);await writeFile(path,omitted);
+  const accepted=checkNames.map(name=>check(root,name,task.id));assert.ok(accepted.every(c=>c.exitCode===0),JSON.stringify(accepted));
+  const leaked=change('return matched ? {matched,selections} : {matched:false,selections:{x:1}};');await writeFile(path,leaked);
+  const rejected=check(root,'feature',task.id);assert.notEqual(rejected.exitCode,0);
+  optionalFailureSelections={protocol:'MatchResult.selections?: Record<string, any>, upstream src/types/Pattern.ts',acceptedOmittedSelection:accepted,rejectedFalseOnlyLeak:rejected,sourceHashes:{original:sha(original),omitted:sha(omitted),leaked:sha(leaked)}};
+  await writeFile(path,original);
+ }
  await negative(root,task.id);const semanticNegative=checkNames.map(n=>check(root,n,task.id));
- rows.push({task:task.id,before,after,semanticNegative});await save(join(study,'oracle-controls.json'),{complete:false,modelRequests:0,rows});
+ rows.push({task:task.id,before,after,semanticNegative,...(optionalFailureSelections?{optionalFailureSelections}:{})});await save(join(study,'oracle-controls.json'),{complete:false,modelRequests:0,rows});
  console.log(task.id,JSON.stringify({before:before.map(c=>c.exitCode),after:after.map(c=>c.exitCode),negative:semanticNegative.map(c=>c.exitCode)}));
  assert.equal(before.find(c=>c.name==='regression').exitCode,0);assert.notEqual(before.find(c=>c.name==='feature').exitCode,0);
  assert.ok(after.every(c=>c.exitCode===0),JSON.stringify(after.filter(c=>c.exitCode!==0)));
@@ -23,5 +34,5 @@ for(const task of tasks){
  assert.notEqual(semanticNegative.find(c=>c.name==='feature').exitCode,0);
  await rm(root,{recursive:true});
 }
-const files=['setup','tasks','delivered','oracle','checks','solutions','panels','ts-pattern','ts-pattern-oracle','ts-pattern-delivered'];
+const files=['controls','setup','tasks','delivered','oracle','checks','solutions','panels','ts-pattern','ts-pattern-oracle','ts-pattern-delivered'];
 await save(join(study,'oracle-controls.json'),{complete:true,modelRequests:0,method:'Pristine inputs preserve regression success but fail requested behavior; independent positive controls satisfy all checks; semantic mutations preserve original regression tests and are rejected by the hidden oracle. No control solution enters model workspaces.',scriptHashes:Object.fromEntries(await Promise.all(files.map(async n=>[n+'.mjs',sha(await readFile(join(import.meta.dirname,n+'.mjs')))]))),rows});

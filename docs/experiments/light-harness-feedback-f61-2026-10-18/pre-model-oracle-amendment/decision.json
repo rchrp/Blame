@@ -1,0 +1,15 @@
+{
+  "modelCalls": 0,
+  "reason": "The documented matcher protocol permits selections to be omitted on failure. Original oracle unnecessarily required an exact undefined-key object for a total mismatch, although the requested property is no leaked partial selection.",
+  "change": "Keep successful-alternative initialization assertions unchanged. For matched:false accept an omitted/empty/all-undefined selection map and reject every nonundefined leaked value. Add a valid omitted-selection positive control before any F61 dispatch.",
+  "unchanged": [
+    "all preselected task requests/instructions",
+    "project commit/source bytes",
+    "runtime variants",
+    "model/effort/prompts/schemas",
+    "rotation/budgets",
+    "primary audited criteria",
+    "all F59/F60 primary results"
+  ],
+  "evidence": "F61 campaign directory absent; original unbound registration and controls retained here. New oracle/control source and protocol will be committed before first model call. This is not outcome-based regrading."
+}

@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
-import {access,cp,mkdir,readFile,readdir,symlink} from 'node:fs/promises';
+import {access,cp,mkdir,readFile,readdir,symlink,realpath} from 'node:fs/promises';
 import {join,relative} from 'node:path';import {execFileSync} from 'node:child_process';
 import {panel} from './panels.mjs';import {repo,work,study,dependencyRoot,sourceArchive,json,save,sha} from './setup.mjs';
 import {tasks} from './tasks.mjs';import {solverIdentity} from './solver-identity.mjs';
 await access(join(study,'protocol.json')).then(()=>{throw Error('Refuse replacing protocol');},e=>{if(e.code!=='ENOENT')throw e;});
-await mkdir(work,{recursive:true});await symlink(dependencyRoot,join(work,'dependencies'));
+await mkdir(work,{recursive:true});try{await symlink(dependencyRoot,join(work,'dependencies'));}catch(e){if(e.code!=='EEXIST')throw e;assert.equal(await realpath(join(work,'dependencies')),await realpath(dependencyRoot));}
 const sourceHead=execFileSync('git',['rev-parse','HEAD'],{cwd:repo,encoding:'utf8'}).trim(),snapshot=await json(join(study,'snapshot.json'));
 for(const name of ['oracle-controls','preflight-controls']){const c=await json(join(study,name+'.json'));assert.equal(c.complete,true);for(const [p,h]of Object.entries(c.scriptHashes))assert.equal(sha(await readFile(join(import.meta.dirname,p))),h);}
 assert.equal((await json(join(study,'environment-smoke.json'))).modelRequests,0);

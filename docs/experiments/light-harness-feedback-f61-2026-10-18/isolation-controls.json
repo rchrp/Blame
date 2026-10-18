@@ -1,0 +1,15 @@
+{
+  "modelRequests": 0,
+  "changedRuntimeFilesBetweenLightArms": [
+    "agent-runtime/dist/harness/light-edit.js",
+    "agent-runtime/dist/harness/light-finish-service.js",
+    "agent-runtime/dist/harness/light-reference-candidates.js",
+    "agent-runtime/dist/harness/light-reference-search.js",
+    "agent-runtime/dist/harness/light-workspace.js"
+  ],
+  "flags": {
+    "analysis": false,
+    "hints": false
+  },
+  "treatment": "Full current feedback bundle versus b70c21fa baseline and integrated Cline on fresh TS-Pattern cross-module requests."
+}
