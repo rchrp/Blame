@@ -1,0 +1,71 @@
+{
+  "method": "Root manual unblinded inspection of every complete immutable endpoint patch, exact public APIs, delivered tests, command chronology and delivery. Hash-bound independent endpoint checks support the judgment; official completion alone is insufficient. Symbolic relevance/witness judgments require separate explicit review.",
+  "decisions": [
+    {
+      "name": "1-filter-map-reference",
+      "hashes": {
+        "events.jsonl": "3bfe292bb3a15d55c67e7328853f4c6c2a51c63f22bb1eccd1163202b4cd21ab",
+        "workspace.diff": "b88b14f872fffc36bbc50119fa89276849a1b2b37075946920b43e8d86e4ac2c",
+        "score.json": "41e66c14e6701eaf86f6509a859c7aa667d074181c51700861828891ea3ac4b0",
+        "tool-ledger.json": "ae13a761f3096ad3df1e928a87e9106a00dec5fd71c8a40086f562cd53a2783c",
+        "feedback-wire.jsonl": "6e61984c8a01c7555c190433ccfaebc8b6b3dabe95bed4ab0e8b0c829085298e",
+        "request-timing.jsonl": "bef58302a05c74ab0cf5ff432311d77e350b9213cbc5859c2a91688049299f71"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Complete four-file patch, all reads/searches/commands/edits and delivery reviewed. Operator uses subscription-local index increment before projection, discriminated keep guard and standard operate/createOperatorSubscriber error teardown; both public barrels export it. Five added tests cover selection, every-source indices, per-sub reuse, projection failure/teardown and typed Observable<string>. Initial runtime/compiler failures and repeated scoped-edit rejections retained; final edit60 before actual compiler61 and all three required62-64, all pass. Accurate69 selected vs74 delivered cases, source-test exclusion and unavailable optional tslint disclosed. Five independent finite/reentrant/public-type/delivered endpoints pass, protected/dependencies intact; all retrieval checkout-only, no solutions."
+      ]
+    },
+    {
+      "name": "1-filter-map-candidate",
+      "hashes": {
+        "events.jsonl": "b6e3265106b81aff5dc14048a924d955f71ca874c1e954f4ef8d0b5be25e8c0d",
+        "workspace.diff": "18bd3a0e4cef6d2d7e299ff54b41739b9260f0e37930a85497d5d682064c50f2",
+        "score.json": "fd7d030784d9dd93a26e7f78c3857b0230b973bde55b11224e47e16771d85e8b",
+        "tool-ledger.json": "437d9ae52fd77223aafe4d974a5a008ff98c0e96da8b8a8d7a2fbf65512c3310",
+        "feedback-wire.jsonl": "10e90c4b4654e290b216e8cc0ae956a4e096f1b6484b140a1db284dc29690a2e",
+        "request-timing.jsonl": "0d6e116eb9cef2e41f9be507c240fc3d788e8a762b7b08a6cfbe7f154f41140b"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Complete source/test patch, every tool input/edit/command and delivery reviewed. Subscription-local index before callback, keep-discriminated result and standard operator subscriber preserve errors/teardown; both public barrels match reviewed reference. Four delivered tests cover filtering/index/per-sub state/error, meaningful assertions and actual compilation after correcting test inference. Initial compiler failures retained. Formatting attempts blocked (compound command guard; no cached prettier), no dependency mutation; not claimed successful. Final edit62 before required63-65 and optional compiler66, all pass; accurate69 vs73 runtime cases, excludes-test source scope. Five independent endpoints including finite/reentrant/public types and delivered compilation pass; protected/dependencies intact, checkout-only reads/no solution retrieval. Typed scope offers in ledger but zero matching network receipts: mechanism exposure remains unestablished despite expanded serializer controls."
+      ]
+    },
+    {
+      "name": "1-filter-map-cline",
+      "hashes": {
+        "events.jsonl": "2b67bd4086ce66688f38e8c6374fe6c4b2d4d21b88bcc119c9fdc55c575d8145",
+        "workspace.diff": "c95f3bab4a3c89b58edd767c93bbe4f498cfbbb937d9ccae612e0ff55962a6e8",
+        "score.json": "b8286f7e8a5c172e1696c9348d58e62cf9a7358989d37cfaa80e57b10cef0eb2",
+        "tool-ledger.json": "95559a63cee8e12ee9803409472687c4af4befabd47c4dde360ca66f399afc65",
+        "feedback-wire.jsonl": "ed764a12b0bdcb3c5760874867e079a8254a5f7685b51e384925f1388099f6dc",
+        "request-timing.jsonl": "d8791c9491d81cd37769b8843f4d3fbdb911f88d431c0fa1f668b33c5df6f4e0"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Complete patch/all tool inputs/commands and delivery reviewed. Operator increments every source index within subscription, branches keep and uses standard error/unsubscribe subscriber; exports function/type at both barrels. Five added tests cover mapping/index/error teardown/state/export/generic types; independent finite/reentrant/public-type oracle and delivered compiler pass. Initial new-test compiler error retained then corrected. Last source edit26 precedes all required plus delivered compiler27;69 selected vs74 delivered truthful. Later .blame cleanup/status loops retained (SDK recreates metadata), no source/test/check/dependency edits or outside retrieval; no successful absence/cleanup claim made. Full endpoint protected/dependency integrity passes."
+      ]
+    }
+  ]
+}
