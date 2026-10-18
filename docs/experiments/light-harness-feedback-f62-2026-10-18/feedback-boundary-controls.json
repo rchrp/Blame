@@ -1,0 +1,43 @@
+{
+  "modelRequests": 0,
+  "complete": true,
+  "actualModelToolHeaderArrayRetained": true,
+  "benchmarkRecorderArrayMasked": true,
+  "modelContextMetadata": {
+    "callIdSha256": "0fcd568a5cb9bdb4677b69354b11ee415af8f784519cff3da49a26f84eaee7f2",
+    "receipt": "c1",
+    "contextSha256": "e2b08925ff5be2cf738767f4149f28878a67c777766c3b27abb4ff012edda886",
+    "contextJsonBytes": 582,
+    "headerArrayObserved": true,
+    "headerDeclarations": 1,
+    "headerJsonBytes": 170
+  },
+  "actualProvenanceReceiptMetadata": {
+    "callIdSha256": "96d815328a42cb4ef89d5e0b7a1df6be43b484832c83a7b4596d8402c7c0b12b",
+    "contextSha256": "d910acd51173872b7819cb0936f8e3c6cb28a82f9212a7f1a95986380a41f53e",
+    "contextJsonBytes": 856,
+    "invalidatedChecks": 1,
+    "omitted": 0
+  },
+  "timingPreloadPreservesRequest": true,
+  "knownRepresentations": [
+    "Responses function_call_output",
+    "chat tool",
+    "SDK text wrapper"
+  ],
+  "ignored": [
+    "user JSON",
+    "source file JSON in data.content",
+    "transport headers",
+    "malformed tool text"
+  ],
+  "credentialFieldMaskingPreserved": true,
+  "actualPreloadsPreserveRequestAndJoinHashes": true,
+  "sourceHashes": {
+    "feedback-wire-audit.mjs": "ea3056c4ef5d44f96fe220c8d1021d58101fded914e0aa4477d96e714dd12a30",
+    "feedback-wire-metadata.mjs": "68fc1afcd7e3c65acfc0676af533161392160a49417d5e68799dfefee15dc6db",
+    "feedback-boundary-controls.mjs": "bd18263411c299d66eb5c30c8cd2a13501e85268a60952d0917c36716d5de059",
+    "provenance-observations.mjs": "1c1176ae5fc676f46ee5ca7097e7137cb44ed3c2039dc0e153202cb427cd39be"
+  },
+  "boundary": "Actual Light SDK tool execute() response retains declarations. Metadata control verifies forwarded-body extraction; a model seeing a declaration does not prove reasoning/use. Stored bytes are context JSON, not extra billed tokens."
+}

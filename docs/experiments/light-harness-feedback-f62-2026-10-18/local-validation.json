@@ -1,0 +1,38 @@
+{
+  "modelRequests": 0,
+  "runtime": {
+    "command": "BLAME_Z3_PATH=/workspace/blame-study-runs/tooling/z3/bin/z3 corepack pnpm --filter @blame/agent-runtime test",
+    "tests": 1075,
+    "passed": 1068,
+    "skipped": 7,
+    "failed": 0
+  },
+  "benchmarkRunner": {
+    "tests": 37,
+    "passed": 37,
+    "failed": 0
+  },
+  "timing": {
+    "tests": 12,
+    "passed": 12,
+    "failed": 0
+  },
+  "baselineGap": "Two original missing-receipt/history integration assertions fail against F61 current executable; these are newly exposed presentation gaps, not introduced runtime regressions. Ordinary-command admission regression also covered in current suite.",
+  "preModelPreparationFailures": [
+    {
+      "action": "environment smoke",
+      "cause": "Historical /tmp/blame-z3-f46/bin/z3 fallback absent. Use already configured persistent solver path; no model call occurred."
+    },
+    {
+      "action": "runtime snapshot",
+      "cause": "An unbound copy was created while local compilation was active. It was discarded before registration/model calls; rebuild exact snapshot after the final suite."
+    }
+  ],
+  "scope": "Local functional tests, source-hash provenance and controlled fakes, not new model benefit. Z3 optional tests retain their declared skips. No research verification overlaps live model workers.",
+  "sourceHashes": {
+    "packages/agent-runtime/src/harness/light-validation-report.ts": "e178a065fdbab6b752de728c7fc3499f781bc763042e9ff02d95ba6b6317a9e6",
+    "packages/agent-runtime/src/harness/light-validation-provenance.test.ts": "b36ae2b5db60cfbe94bd05e95661de1b4ac9b8f68f62ad475251b9f91538f45a",
+    "packages/agent-runtime/src/harness/light-workspace.ts": "3e84c39d4fa8e20463137b3214803cc882238d474d6d7c60aef82252dd3d70a6",
+    "packages/agent-runtime/src/harness/light-finish-service.ts": "9b792a641df13ee386fb7f70b19c1a52f3f807c9ac08b5fc96bd040cc7599335"
+  }
+}

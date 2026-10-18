@@ -1,5 +1,7 @@
 import {feedbackWireObservation} from './feedback-wire-metadata.mjs';
 import {feedbackObservations} from './feedback-observations.mjs';
+import {provenanceObservations,provenanceWireObservation} from './provenance-observations.mjs';
+import {requestTimingObservation} from '../latency-intervals.mjs';
 import {DurableCampaign, atomicWrite} from '../durable-campaign.mjs';
 // F53 optional Z3 reasoning exposure: same runtime, one Light feature flag.
 // Research setup/grading are outside the measured model worker.
@@ -33,7 +35,7 @@ async function bindings() {
   files['isolated-node-environment.mjs'] = sha(await readFile(join(import.meta.dirname,'../isolated-node-environment.mjs')));
   for (const root of [join(work, 'frozen'), join(work, 'dependencies/node_modules')])
     files[relative(repo, root)] = await fileTree(root);
-  for (const path of ['protocol.json', 'prior-budget.json', 'prompt-date-binding.json', 'native-search-bindings.json', 'isolation-controls.json', 'oracle-controls.json', 'input-archives.json', 'environment-smoke.json', 'snapshot.json', 'preflight-controls.json',...(protocol.feedbackWireAudit?['feedback-boundary-controls.json','measurement-amendment.json']:[])])
+  for (const path of ['protocol.json', 'prior-budget.json', 'prompt-date-binding.json', 'native-search-bindings.json', 'isolation-controls.json', 'oracle-controls.json', 'input-archives.json', 'environment-smoke.json', 'snapshot.json', 'preflight-controls.json',...(protocol.feedbackWireAudit?['feedback-boundary-controls.json','measurement-amendment.json']:[]),...(protocol.requestTimingAudit?['timing-controls.json','contract-test-sensitivity.json','selection-registration.json']:[])])
     files[path] = sha(await readFile(join(study, path)));
   for (const path of ['tools/terminal_bench/navigation-evidence/wire-audit.mjs', 'tools/terminal_bench/navigation-evidence/native-search-repair.mjs',
     'tools/terminal_bench/request-limit-model-study/prompt-date.mjs', 'tools/terminal_bench/navigation-evidence/budget-accounting.mjs',
@@ -94,6 +96,7 @@ async function execute(directory, slot, task) {
   const native = slot.arm === 'cline';
   const imports = ['--import', join(repo, 'tools/terminal_bench/navigation-evidence/wire-audit.mjs'),
     '--import', join(repo, 'tools/terminal_bench/request-limit-model-study/prompt-date.mjs'),
+    ...(protocol.requestTimingAudit?['--import',join(repo,'tools/terminal_bench/request-timing-preload.mjs')]:[]),
     ...(protocol.feedbackWireAudit?['--import',join(import.meta.dirname,'feedback-wire-audit.mjs')]:[]),
     ...(native ? ['--import', join(repo, 'tools/terminal_bench/navigation-evidence/native-search-repair.mjs')] : [])];
   const args = [runner, 'run', '--workspace', join(directory, 'workspace'), '--instruction-file', join(directory, 'instruction.txt'),
@@ -104,6 +107,8 @@ async function execute(directory, slot, task) {
     BLAME_STUDY_DATE_BINDING: join(study, 'prompt-date-binding.json'), BLAME_STUDY_DATE_AUDIT: join(directory, 'date-loads.jsonl'),
     BLAME_STUDY_NATIVE_SEARCH_BINDINGS: join(study, 'native-search-bindings.json'), BLAME_STUDY_NATIVE_SEARCH_AUDIT: join(directory, 'search-loads.jsonl'),
     BLAME_STUDY_WIRE_AUDIT: join(directory, 'wire-contracts.jsonl'), BLAME_STUDY_FEEDBACK_WIRE_AUDIT: join(directory,'feedback-wire.jsonl'), BLAME_STUDY_WORKSPACE: join(directory, 'workspace'),
+    ...(protocol.requestTimingAudit?{BLAME_STUDY_TIMING_AUDIT:join(directory,'request-timing.jsonl')}:{}),
+    ...(protocol.provenanceAudit?{BLAME_STUDY_PROVENANCE_AUDIT:'true'}:{}),
     BLAME_AGENT_SYMBOLIC_ANALYSIS: protocol.flagByArm[slot.arm], BLAME_AGENT_SYMBOLIC_HINTS: protocol.hintsByArm[slot.arm], BLAME_Z3_PATH: protocol.solver.path,
     BLAME_STUDY_REQUEST_MAX_BYTES: String(protocol.budgets.maximumSerializedRequestBytes), BLAME_AGENT_REQUEST_MAX_OUTPUT_TOKENS: '8192', BLAME_AGENT_MAX_SESSION_COST_USD: String(protocol.budgets.perTrialSdkCostLimitUsd) };
   return new Promise((done) => {
@@ -168,11 +173,15 @@ export async function analyse(slot, directory, exit, grade) {
   const directSolverCommands=tools.filter(tool=>/\bz3\b|BLAME_Z3_PATH/.test(JSON.stringify(tool.input??{}))).map(tool=>({tool:tool.tool,input:tool.input,output:tool.output}));
   const feedbackEvidence=protocol.feedbackWireAudit?await readJsonLines(join(directory,'feedback-wire.jsonl')):null;
   const feedbackWire=feedbackEvidence?feedbackWireObservation(feedbackEvidence.rows,wire):null;
+  const timingEvidence=protocol.requestTimingAudit?await readJsonLines(join(directory,'request-timing.jsonl')):null;
+  const timing=timingEvidence?requestTimingObservation(timingEvidence.rows,wire):null;
+  const provenanceWire=protocol.provenanceAudit?provenanceWireObservation(feedbackEvidence?.rows??[],wire):null;
+  if(timingEvidence)evidenceAnomalies.timing=timingEvidence.anomalies;
   if(feedbackEvidence)evidenceAnomalies.feedback=feedbackEvidence.anomalies;
-  const contractPassed = (!feedbackWire||feedbackWire.matched) && Object.values(evidenceAnomalies).every(items=>items.length===0) && !exit.spawnError && schemaExposurePassed && forwarded.every(request => request.maximumOutputTokens === 8192 && request.model === protocol.model && request.reasoning?.effort === protocol.effort)
+  const contractPassed = (!feedbackWire||feedbackWire.matched) && (!timing||timing.matched) && (!provenanceWire||provenanceWire.matched) && Object.values(evidenceAnomalies).every(items=>items.length===0) && !exit.spawnError && schemaExposurePassed && forwarded.every(request => request.maximumOutputTokens === 8192 && request.model === protocol.model && request.reasoning?.effort === protocol.effort)
     && usage.perRequest.every(report => report.output === null || report.output <= 8192) && !(usage.reports > 0 && forwarded.length === 0);
   await save(join(directory, 'tool-ledger.json'), tools);
-  const row = { ...(feedbackWire?{feedbackWire}:{}), feedback:feedbackObservations(tools), ...slot, name: `${slot.repeat}-${slot.task}-${slot.arm}`, officialRuntimeSuccess: result.status === 'succeeded', status: result.status ?? 'missing',
+  const row = { ...(feedbackWire?{feedbackWire}:{}), ...(timing?{timing}:{}), ...(provenanceWire?{provenanceWire,provenance:provenanceObservations(tools)}:{}), feedback:feedbackObservations(tools), ...slot, name: `${slot.repeat}-${slot.task}-${slot.arm}`, officialRuntimeSuccess: result.status === 'succeeded', status: result.status ?? 'missing',
     selectedCheckSuccess: grade.protectedPaths.length===0&&grade.checks.filter(c=>c.name!=='feature').every(c=>c.exitCode===0)&&grade.deliveredChecks.find(c=>c.name==='delivered')?.exitCode===0,
     independentFunctionalSuccess: grade.independentFunctionalSuccess, auditedCompletion: null, durationMs: result.durationMs ?? exit.durationMs,
     evidenceAnomalies,finishObservations,usage, metrics: result.metrics ?? null, completion: result.completion ?? null, error: result.error ?? null, exit,
@@ -185,7 +194,7 @@ export async function analyse(slot, directory, exit, grade) {
     successfulDeclarationCalls: tools.filter(tool => tool.tool === 'read_code' && tool.output?.status === 'ok' && tool.output?.data?.view === 'declaration').length,
     blockedEdits: tools.filter(tool => tool.tool === 'edit_code' && tool.output?.status !== 'ok').length,
     contract: { passed: contractPassed, forwarded: forwarded.length, usageReports: usage.reports, unreported: Math.max(0, forwarded.length - usage.reports) },
-    hashes: Object.fromEntries(await Promise.all(['events.jsonl', 'workspace.diff', 'score.json', 'tool-ledger.json',...(protocol.feedbackWireAudit?['feedback-wire.jsonl']:[])].map(async path =>
+    hashes: Object.fromEntries(await Promise.all(['events.jsonl', 'workspace.diff', 'score.json', 'tool-ledger.json',...(protocol.feedbackWireAudit?['feedback-wire.jsonl']:[]),...(protocol.requestTimingAudit?['request-timing.jsonl']:[])].map(async path =>
       [path, await readFile(join(directory, path)).then(sha, () => null)]))) };
   return { row, wire };
 }

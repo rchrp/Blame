@@ -1,0 +1,4651 @@
+{
+  "complete": true,
+  "modelRequests": 0,
+  "method": "New authored test files are copied unchanged into clean pinned inputs. F60 self controls reproduce their own runtime results; then each authored test set is run against both archived faulty suffix implementations. F61 alternative tests run against pristine production known to violate the requested partial-selection contract. Only these authored files execute, with the pinned Vitest adapter and JSON case evidence. A runtime case failure differs from setup/import failure or no active cases. No historical score changes, patch repairs, retrieved solutions or new model calls.",
+  "knownDefectBoundary": {
+    "length": 2,
+    "count": 3,
+    "note": "The original F60 oracle already detected these defects. New relative-boundary probes strengthen local diagnostic breadth, not repair a historically missed official failure."
+  },
+  "rows": [
+    {
+      "label": "self-1-suffix-counts-reference",
+      "author": {
+        "panel": "f60",
+        "name": "1-suffix-counts-reference",
+        "patchSha256": "6d3ae8d0247e1ce38735376700a3d209ad654de1a4036315d6c22d10c2d35559"
+      },
+      "production": {
+        "panel": "f60",
+        "name": "1-suffix-counts-reference",
+        "patchSha256": "6d3ae8d0247e1ce38735376700a3d209ad654de1a4036315d6c22d10c2d35559"
+      },
+      "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+      "argv": [
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "--config",
+        ".study/sensitivity.vitest.mjs",
+        "--reporter=json",
+        "--outputFile=.study/sensitivity.json"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "authoredFiles": [
+        "packages/remeda/src/takeLast-dropLast.test.ts"
+      ],
+      "counts": {
+        "passed": 11,
+        "failed": 0,
+        "other": 0
+      },
+      "outcome": "tests_pass",
+      "report": {
+        "numTotalTestSuites": 2,
+        "numPassedTestSuites": 2,
+        "numFailedTestSuites": 0,
+        "numPendingTestSuites": 0,
+        "numTotalTests": 11,
+        "numPassedTests": 11,
+        "numFailedTests": 0,
+        "numPendingTests": 0,
+        "numTodoTests": 0,
+        "snapshot": {
+          "added": 0,
+          "failure": false,
+          "filesAdded": 0,
+          "filesRemoved": 0,
+          "filesRemovedList": [],
+          "filesUnmatched": 0,
+          "filesUpdated": 0,
+          "matched": 0,
+          "total": 0,
+          "unchecked": 0,
+          "uncheckedKeysByFile": [],
+          "unmatched": 0,
+          "updated": 0,
+          "didUpdate": false
+        },
+        "startTime": 1792348841935,
+        "success": true,
+        "testResults": [
+          {
+            "assertionResults": [
+              {
+                "ancestorTitles": [
+                  "shared count policy"
+                ],
+                "fullName": "shared count policy normalizes 2.9",
+                "status": "passed",
+                "title": "normalizes 2.9",
+                "duration": 1.5299920000000213,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "shared count policy"
+                ],
+                "fullName": "shared count policy normalizes 0.9",
+                "status": "passed",
+                "title": "normalizes 0.9",
+                "duration": 0.19558499999999412,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "shared count policy"
+                ],
+                "fullName": "shared count policy normalizes 0",
+                "status": "passed",
+                "title": "normalizes 0",
+                "duration": 0.1312780000000089,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "shared count policy"
+                ],
+                "fullName": "shared count policy normalizes -1",
+                "status": "passed",
+                "title": "normalizes -1",
+                "duration": 0.13249900000002413,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "shared count policy"
+                ],
+                "fullName": "shared count policy normalizes -Infinity",
+                "status": "passed",
+                "title": "normalizes -Infinity",
+                "duration": 0.13181800000000976,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "shared count policy"
+                ],
+                "fullName": "shared count policy normalizes NaN",
+                "status": "passed",
+                "title": "normalizes NaN",
+                "duration": 0.10405700000001161,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "shared count policy"
+                ],
+                "fullName": "shared count policy normalizes Infinity",
+                "status": "passed",
+                "title": "normalizes Infinity",
+                "duration": 0.07635500000000661,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "shared count policy"
+                ],
+                "fullName": "shared count policy normalizes 10",
+                "status": "passed",
+                "title": "normalizes 10",
+                "duration": 0.06441699999999173,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "shared count policy"
+                ],
+                "fullName": "shared count policy is used by data-last and pipe calls",
+                "status": "passed",
+                "title": "is used by data-last and pipe calls",
+                "duration": 0.3372579999999914,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "shared count policy"
+                ],
+                "fullName": "shared count policy returns new arrays without changing the input",
+                "status": "passed",
+                "title": "returns new arrays without changing the input",
+                "duration": 0.38446899999999573,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "shared count policy"
+                ],
+                "fullName": "shared count policy supports readonly arrays and preserves element inference",
+                "status": "passed",
+                "title": "supports readonly arrays and preserves element inference",
+                "duration": 0.2486949999999979,
+                "failureMessages": [],
+                "meta": {}
+              }
+            ],
+            "startTime": 1792348842162,
+            "endTime": 1792348842165.3845,
+            "status": "passed",
+            "message": "",
+            "name": "/workspace/blame-study-runs/feedback-f62/contract-controls/self-1-suffix-counts-reference/packages/remeda/src/takeLast-dropLast.test.ts"
+          }
+        ]
+      },
+      "stdout": "JSON report written to /workspace/blame-study-runs/feedback-f62/contract-controls/self-1-suffix-counts-reference/.study/sensitivity.json\n",
+      "stderr": ""
+    },
+    {
+      "label": "self-1-suffix-counts-candidate",
+      "author": {
+        "panel": "f60",
+        "name": "1-suffix-counts-candidate",
+        "patchSha256": "fec4983d69f4c58ca3526e3ef3de221c7f0e77d6f590b9241f2b0063a6d2b8db"
+      },
+      "production": {
+        "panel": "f60",
+        "name": "1-suffix-counts-candidate",
+        "patchSha256": "fec4983d69f4c58ca3526e3ef3de221c7f0e77d6f590b9241f2b0063a6d2b8db"
+      },
+      "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+      "argv": [
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "--config",
+        ".study/sensitivity.vitest.mjs",
+        "--reporter=json",
+        "--outputFile=.study/sensitivity.json"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "authoredFiles": [
+        "packages/remeda/src/takeLast-dropLast.test.ts"
+      ],
+      "counts": {
+        "passed": 8,
+        "failed": 0,
+        "other": 0
+      },
+      "outcome": "tests_pass",
+      "report": {
+        "numTotalTestSuites": 1,
+        "numPassedTestSuites": 1,
+        "numFailedTestSuites": 0,
+        "numPendingTestSuites": 0,
+        "numTotalTests": 8,
+        "numPassedTests": 8,
+        "numFailedTests": 0,
+        "numPendingTests": 0,
+        "numTodoTests": 0,
+        "snapshot": {
+          "added": 0,
+          "failure": false,
+          "filesAdded": 0,
+          "filesRemoved": 0,
+          "filesRemovedList": [],
+          "filesUnmatched": 0,
+          "filesUpdated": 0,
+          "matched": 0,
+          "total": 0,
+          "unchecked": 0,
+          "uncheckedKeysByFile": [],
+          "unmatched": 0,
+          "updated": 0,
+          "didUpdate": false
+        },
+        "startTime": 1792348842759,
+        "success": true,
+        "testResults": [
+          {
+            "assertionResults": [
+              {
+                "ancestorTitles": [],
+                "fullName": "positive fractional count is shared by takeLast and dropLast",
+                "status": "passed",
+                "title": "positive fractional count is shared by takeLast and dropLast",
+                "duration": 2.3113969999999995,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "fraction less than one count is shared by takeLast and dropLast",
+                "status": "passed",
+                "title": "fraction less than one count is shared by takeLast and dropLast",
+                "duration": 0.37404300000000035,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "zero count is shared by takeLast and dropLast",
+                "status": "passed",
+                "title": "zero count is shared by takeLast and dropLast",
+                "duration": 0.24063199999997664,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "negative count is shared by takeLast and dropLast",
+                "status": "passed",
+                "title": "negative count is shared by takeLast and dropLast",
+                "duration": 0.2204110000000128,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "negative infinity count is shared by takeLast and dropLast",
+                "status": "passed",
+                "title": "negative infinity count is shared by takeLast and dropLast",
+                "duration": 0.17972100000000069,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "NaN count is shared by takeLast and dropLast",
+                "status": "passed",
+                "title": "NaN count is shared by takeLast and dropLast",
+                "duration": 0.19325100000000361,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "positive infinity count is shared by takeLast and dropLast",
+                "status": "passed",
+                "title": "positive infinity count is shared by takeLast and dropLast",
+                "duration": 0.23974000000001183,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "returns new arrays without changing readonly inputs",
+                "status": "passed",
+                "title": "returns new arrays without changing readonly inputs",
+                "duration": 0.29422300000001655,
+                "failureMessages": [],
+                "meta": {}
+              }
+            ],
+            "startTime": 1792348843010,
+            "endTime": 1792348843014.2942,
+            "status": "passed",
+            "message": "",
+            "name": "/workspace/blame-study-runs/feedback-f62/contract-controls/self-1-suffix-counts-candidate/packages/remeda/src/takeLast-dropLast.test.ts"
+          }
+        ]
+      },
+      "stdout": "JSON report written to /workspace/blame-study-runs/feedback-f62/contract-controls/self-1-suffix-counts-candidate/.study/sensitivity.json\n",
+      "stderr": ""
+    },
+    {
+      "label": "self-1-suffix-counts-cline",
+      "author": {
+        "panel": "f60",
+        "name": "1-suffix-counts-cline",
+        "patchSha256": "2c2728bb2ac190c7f08dcd66ce33fbebc92733b2bddcaa17ea101a65a074576d"
+      },
+      "production": {
+        "panel": "f60",
+        "name": "1-suffix-counts-cline",
+        "patchSha256": "2c2728bb2ac190c7f08dcd66ce33fbebc92733b2bddcaa17ea101a65a074576d"
+      },
+      "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+      "argv": [
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "--config",
+        ".study/sensitivity.vitest.mjs",
+        "--reporter=json",
+        "--outputFile=.study/sensitivity.json"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "authoredFiles": [
+        "packages/remeda/src/takeLast.dropLast.test.ts"
+      ],
+      "counts": {
+        "passed": 19,
+        "failed": 0,
+        "other": 0
+      },
+      "outcome": "tests_pass",
+      "report": {
+        "numTotalTestSuites": 4,
+        "numPassedTestSuites": 4,
+        "numFailedTestSuites": 0,
+        "numPendingTestSuites": 0,
+        "numTotalTests": 19,
+        "numPassedTests": 19,
+        "numFailedTests": 0,
+        "numPendingTests": 0,
+        "numTodoTests": 0,
+        "snapshot": {
+          "added": 0,
+          "failure": false,
+          "filesAdded": 0,
+          "filesRemoved": 0,
+          "filesRemovedList": [],
+          "filesUnmatched": 0,
+          "filesUpdated": 0,
+          "matched": 0,
+          "total": 0,
+          "unchecked": 0,
+          "uncheckedKeysByFile": [],
+          "unmatched": 0,
+          "updated": 0,
+          "didUpdate": false
+        },
+        "startTime": 1792348843693,
+        "success": true,
+        "testResults": [
+          {
+            "assertionResults": [
+              {
+                "ancestorTitles": [
+                  "data-first"
+                ],
+                "fullName": "data-first normalizes count 2.9",
+                "status": "passed",
+                "title": "normalizes count 2.9",
+                "duration": 1.6067069999999717,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-first"
+                ],
+                "fullName": "data-first normalizes count 0",
+                "status": "passed",
+                "title": "normalizes count 0",
+                "duration": 0.21552500000001373,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-first"
+                ],
+                "fullName": "data-first normalizes count -1",
+                "status": "passed",
+                "title": "normalizes count -1",
+                "duration": 0.1279519999999934,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-first"
+                ],
+                "fullName": "data-first normalizes count -Infinity",
+                "status": "passed",
+                "title": "normalizes count -Infinity",
+                "duration": 0.21854899999999589,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-first"
+                ],
+                "fullName": "data-first normalizes count NaN",
+                "status": "passed",
+                "title": "normalizes count NaN",
+                "duration": 0.1302959999999871,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-first"
+                ],
+                "fullName": "data-first normalizes count Infinity",
+                "status": "passed",
+                "title": "normalizes count Infinity",
+                "duration": 0.1089640000000145,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-last"
+                ],
+                "fullName": "data-last normalizes count 2.9",
+                "status": "passed",
+                "title": "normalizes count 2.9",
+                "duration": 0.23521399999998494,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-last"
+                ],
+                "fullName": "data-last normalizes count 0",
+                "status": "passed",
+                "title": "normalizes count 0",
+                "duration": 0.08104200000002493,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-last"
+                ],
+                "fullName": "data-last normalizes count -1",
+                "status": "passed",
+                "title": "normalizes count -1",
+                "duration": 0.12880400000000236,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-last"
+                ],
+                "fullName": "data-last normalizes count -Infinity",
+                "status": "passed",
+                "title": "normalizes count -Infinity",
+                "duration": 0.09634499999998525,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-last"
+                ],
+                "fullName": "data-last normalizes count NaN",
+                "status": "passed",
+                "title": "normalizes count NaN",
+                "duration": 0.09958000000000311,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-last"
+                ],
+                "fullName": "data-last normalizes count Infinity",
+                "status": "passed",
+                "title": "normalizes count Infinity",
+                "duration": 0.09211799999997083,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "pipe"
+                ],
+                "fullName": "pipe normalizes count 2.9",
+                "status": "passed",
+                "title": "normalizes count 2.9",
+                "duration": 0.13391100000001188,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "pipe"
+                ],
+                "fullName": "pipe normalizes count 0",
+                "status": "passed",
+                "title": "normalizes count 0",
+                "duration": 0.06808300000000145,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "pipe"
+                ],
+                "fullName": "pipe normalizes count -1",
+                "status": "passed",
+                "title": "normalizes count -1",
+                "duration": 0.06682099999994762,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "pipe"
+                ],
+                "fullName": "pipe normalizes count -Infinity",
+                "status": "passed",
+                "title": "normalizes count -Infinity",
+                "duration": 0.055052999999986696,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "pipe"
+                ],
+                "fullName": "pipe normalizes count NaN",
+                "status": "passed",
+                "title": "normalizes count NaN",
+                "duration": 0.07476200000002109,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "pipe"
+                ],
+                "fullName": "pipe normalizes count Infinity",
+                "status": "passed",
+                "title": "normalizes count Infinity",
+                "duration": 0.3255999999999517,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "returns new arrays without changing the input",
+                "status": "passed",
+                "title": "returns new arrays without changing the input",
+                "duration": 1.0366500000000087,
+                "failureMessages": [],
+                "meta": {}
+              }
+            ],
+            "startTime": 1792348843990,
+            "endTime": 1792348843995.0366,
+            "status": "passed",
+            "message": "",
+            "name": "/workspace/blame-study-runs/feedback-f62/contract-controls/self-1-suffix-counts-cline/packages/remeda/src/takeLast.dropLast.test.ts"
+          }
+        ]
+      },
+      "stdout": "JSON report written to /workspace/blame-study-runs/feedback-f62/contract-controls/self-1-suffix-counts-cline/.study/sensitivity.json\n",
+      "stderr": ""
+    },
+    {
+      "label": "self-2-suffix-counts-reference",
+      "author": {
+        "panel": "f60",
+        "name": "2-suffix-counts-reference",
+        "patchSha256": "7731ebb7bf183deff748edd6ba19d8c3120622a9f6032da441c51caf6c314279"
+      },
+      "production": {
+        "panel": "f60",
+        "name": "2-suffix-counts-reference",
+        "patchSha256": "7731ebb7bf183deff748edd6ba19d8c3120622a9f6032da441c51caf6c314279"
+      },
+      "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+      "argv": [
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "--config",
+        ".study/sensitivity.vitest.mjs",
+        "--reporter=json",
+        "--outputFile=.study/sensitivity.json"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "authoredFiles": [
+        "packages/remeda/src/takeLast-dropLast.test.ts"
+      ],
+      "counts": {
+        "passed": 14,
+        "failed": 0,
+        "other": 0
+      },
+      "outcome": "tests_pass",
+      "report": {
+        "numTotalTestSuites": 1,
+        "numPassedTestSuites": 1,
+        "numFailedTestSuites": 0,
+        "numPendingTestSuites": 0,
+        "numTotalTests": 14,
+        "numPassedTests": 14,
+        "numFailedTests": 0,
+        "numPendingTests": 0,
+        "numTodoTests": 0,
+        "snapshot": {
+          "added": 0,
+          "failure": false,
+          "filesAdded": 0,
+          "filesRemoved": 0,
+          "filesRemovedList": [],
+          "filesUnmatched": 0,
+          "filesUpdated": 0,
+          "matched": 0,
+          "total": 0,
+          "unchecked": 0,
+          "uncheckedKeysByFile": [],
+          "unmatched": 0,
+          "updated": 0,
+          "didUpdate": false
+        },
+        "startTime": 1792348844667,
+        "success": true,
+        "testResults": [
+          {
+            "assertionResults": [
+              {
+                "ancestorTitles": [],
+                "fullName": "normalizes takeLast count 0",
+                "status": "passed",
+                "title": "normalizes takeLast count 0",
+                "duration": 1.981630999999993,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "normalizes takeLast count -1",
+                "status": "passed",
+                "title": "normalizes takeLast count -1",
+                "duration": 0.33039700000000494,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "normalizes takeLast count -Infinity",
+                "status": "passed",
+                "title": "normalizes takeLast count -Infinity",
+                "duration": 0.28830399999998235,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "normalizes takeLast count NaN",
+                "status": "passed",
+                "title": "normalizes takeLast count NaN",
+                "duration": 0.34115399999998886,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "normalizes takeLast count 0.9",
+                "status": "passed",
+                "title": "normalizes takeLast count 0.9",
+                "duration": 0.2244179999999858,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "normalizes takeLast count 1.9",
+                "status": "passed",
+                "title": "normalizes takeLast count 1.9",
+                "duration": 0.22612000000000876,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "normalizes takeLast count Infinity",
+                "status": "passed",
+                "title": "normalizes takeLast count Infinity",
+                "duration": 0.2848989999999958,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "normalizes dropLast count 0",
+                "status": "passed",
+                "title": "normalizes dropLast count 0",
+                "duration": 0.32398800000001415,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "normalizes dropLast count -1",
+                "status": "passed",
+                "title": "normalizes dropLast count -1",
+                "duration": 0.26284499999999866,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "normalizes dropLast count -Infinity",
+                "status": "passed",
+                "title": "normalizes dropLast count -Infinity",
+                "duration": 0.24262500000000387,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "normalizes dropLast count NaN",
+                "status": "passed",
+                "title": "normalizes dropLast count NaN",
+                "duration": 0.17896899999999505,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "normalizes dropLast count 0.9",
+                "status": "passed",
+                "title": "normalizes dropLast count 0.9",
+                "duration": 0.16152300000001674,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "normalizes dropLast count 1.9",
+                "status": "passed",
+                "title": "normalizes dropLast count 1.9",
+                "duration": 0.1705959999999891,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "normalizes dropLast count Infinity",
+                "status": "passed",
+                "title": "normalizes dropLast count Infinity",
+                "duration": 0.2727199999999925,
+                "failureMessages": [],
+                "meta": {}
+              }
+            ],
+            "startTime": 1792348844900,
+            "endTime": 1792348844905.2727,
+            "status": "passed",
+            "message": "",
+            "name": "/workspace/blame-study-runs/feedback-f62/contract-controls/self-2-suffix-counts-reference/packages/remeda/src/takeLast-dropLast.test.ts"
+          }
+        ]
+      },
+      "stdout": "JSON report written to /workspace/blame-study-runs/feedback-f62/contract-controls/self-2-suffix-counts-reference/.study/sensitivity.json\n",
+      "stderr": ""
+    },
+    {
+      "label": "self-2-suffix-counts-candidate",
+      "author": {
+        "panel": "f60",
+        "name": "2-suffix-counts-candidate",
+        "patchSha256": "f555ba861568ab8944091e0f4373f5ac0bfd7f355acbfeda782cdb801a942a90"
+      },
+      "production": {
+        "panel": "f60",
+        "name": "2-suffix-counts-candidate",
+        "patchSha256": "f555ba861568ab8944091e0f4373f5ac0bfd7f355acbfeda782cdb801a942a90"
+      },
+      "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+      "argv": [
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "--config",
+        ".study/sensitivity.vitest.mjs",
+        "--reporter=json",
+        "--outputFile=.study/sensitivity.json"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "authoredFiles": [
+        "packages/remeda/src/takeLastDropLast.test.ts"
+      ],
+      "counts": {
+        "passed": 13,
+        "failed": 0,
+        "other": 0
+      },
+      "outcome": "tests_pass",
+      "report": {
+        "numTotalTestSuites": 1,
+        "numPassedTestSuites": 1,
+        "numFailedTestSuites": 0,
+        "numPendingTestSuites": 0,
+        "numTotalTests": 13,
+        "numPassedTests": 13,
+        "numFailedTests": 0,
+        "numPendingTests": 0,
+        "numTodoTests": 0,
+        "snapshot": {
+          "added": 0,
+          "failure": false,
+          "filesAdded": 0,
+          "filesRemoved": 0,
+          "filesRemovedList": [],
+          "filesUnmatched": 0,
+          "filesUpdated": 0,
+          "matched": 0,
+          "total": 0,
+          "unchecked": 0,
+          "uncheckedKeysByFile": [],
+          "unmatched": 0,
+          "updated": 0,
+          "didUpdate": false
+        },
+        "startTime": 1792348845541,
+        "success": true,
+        "testResults": [
+          {
+            "assertionResults": [
+              {
+                "ancestorTitles": [],
+                "fullName": "takeLast normalizes count 2.9",
+                "status": "passed",
+                "title": "takeLast normalizes count 2.9",
+                "duration": 2.3432249999999897,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "takeLast normalizes count 0",
+                "status": "passed",
+                "title": "takeLast normalizes count 0",
+                "duration": 0.17455300000000307,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "takeLast normalizes count -1",
+                "status": "passed",
+                "title": "takeLast normalizes count -1",
+                "duration": 0.22972599999999943,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "takeLast normalizes count -Infinity",
+                "status": "passed",
+                "title": "takeLast normalizes count -Infinity",
+                "duration": 0.1236159999999984,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "takeLast normalizes count NaN",
+                "status": "passed",
+                "title": "takeLast normalizes count NaN",
+                "duration": 0.10378599999998528,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "takeLast normalizes count Infinity",
+                "status": "passed",
+                "title": "takeLast normalizes count Infinity",
+                "duration": 0.3337319999999977,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "dropLast normalizes count 2.9",
+                "status": "passed",
+                "title": "dropLast normalizes count 2.9",
+                "duration": 0.22266500000000633,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "dropLast normalizes count 0",
+                "status": "passed",
+                "title": "dropLast normalizes count 0",
+                "duration": 0.2680729999999869,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "dropLast normalizes count -1",
+                "status": "passed",
+                "title": "dropLast normalizes count -1",
+                "duration": 0.25825900000000956,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "dropLast normalizes count -Infinity",
+                "status": "passed",
+                "title": "dropLast normalizes count -Infinity",
+                "duration": 0.20446699999999396,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "dropLast normalizes count NaN",
+                "status": "passed",
+                "title": "dropLast normalizes count NaN",
+                "duration": 0.17420200000000818,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "dropLast normalizes count Infinity",
+                "status": "passed",
+                "title": "dropLast normalizes count Infinity",
+                "duration": 0.17375100000000998,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "suffix operations preserve order, clone results, and do not mutate input",
+                "status": "passed",
+                "title": "suffix operations preserve order, clone results, and do not mutate input",
+                "duration": 0.2822349999999858,
+                "failureMessages": [],
+                "meta": {}
+              }
+            ],
+            "startTime": 1792348845760,
+            "endTime": 1792348845765.2822,
+            "status": "passed",
+            "message": "",
+            "name": "/workspace/blame-study-runs/feedback-f62/contract-controls/self-2-suffix-counts-candidate/packages/remeda/src/takeLastDropLast.test.ts"
+          }
+        ]
+      },
+      "stdout": "JSON report written to /workspace/blame-study-runs/feedback-f62/contract-controls/self-2-suffix-counts-candidate/.study/sensitivity.json\n",
+      "stderr": ""
+    },
+    {
+      "label": "self-2-suffix-counts-cline",
+      "author": {
+        "panel": "f60",
+        "name": "2-suffix-counts-cline",
+        "patchSha256": "718610d80d306b814674478550e2759a214cd8e25e6c39ed848e17e016bf3b55"
+      },
+      "production": {
+        "panel": "f60",
+        "name": "2-suffix-counts-cline",
+        "patchSha256": "718610d80d306b814674478550e2759a214cd8e25e6c39ed848e17e016bf3b55"
+      },
+      "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+      "argv": [
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "--config",
+        ".study/sensitivity.vitest.mjs",
+        "--reporter=json",
+        "--outputFile=.study/sensitivity.json"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "authoredFiles": [
+        "packages/remeda/src/suffixCounts.test.ts"
+      ],
+      "counts": {
+        "passed": 19,
+        "failed": 0,
+        "other": 0
+      },
+      "outcome": "tests_pass",
+      "report": {
+        "numTotalTestSuites": 3,
+        "numPassedTestSuites": 3,
+        "numFailedTestSuites": 0,
+        "numPendingTestSuites": 0,
+        "numTotalTests": 19,
+        "numPassedTests": 19,
+        "numFailedTests": 0,
+        "numPendingTests": 0,
+        "numTodoTests": 0,
+        "snapshot": {
+          "added": 0,
+          "failure": false,
+          "filesAdded": 0,
+          "filesRemoved": 0,
+          "filesRemovedList": [],
+          "filesUnmatched": 0,
+          "filesUpdated": 0,
+          "matched": 0,
+          "total": 0,
+          "unchecked": 0,
+          "uncheckedKeysByFile": [],
+          "unmatched": 0,
+          "updated": 0,
+          "didUpdate": false
+        },
+        "startTime": 1792348846451,
+        "success": true,
+        "testResults": [
+          {
+            "assertionResults": [
+              {
+                "ancestorTitles": [
+                  "data-first"
+                ],
+                "fullName": "data-first normalizes count 0",
+                "status": "passed",
+                "title": "normalizes count 0",
+                "duration": 1.4789240000000063,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-first"
+                ],
+                "fullName": "data-first normalizes count -2",
+                "status": "passed",
+                "title": "normalizes count -2",
+                "duration": 0.21921999999997865,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-first"
+                ],
+                "fullName": "data-first normalizes count -Infinity",
+                "status": "passed",
+                "title": "normalizes count -Infinity",
+                "duration": 0.12499800000000505,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-first"
+                ],
+                "fullName": "data-first normalizes count NaN",
+                "status": "passed",
+                "title": "normalizes count NaN",
+                "duration": 0.08794299999999566,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-first"
+                ],
+                "fullName": "data-first normalizes count 0.9",
+                "status": "passed",
+                "title": "normalizes count 0.9",
+                "duration": 0.13548400000001948,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-first"
+                ],
+                "fullName": "data-first normalizes count 1.9",
+                "status": "passed",
+                "title": "normalizes count 1.9",
+                "duration": 0.14111199999999258,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-first"
+                ],
+                "fullName": "data-first normalizes count 2.9",
+                "status": "passed",
+                "title": "normalizes count 2.9",
+                "duration": 0.08004099999999426,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-first"
+                ],
+                "fullName": "data-first normalizes count Infinity",
+                "status": "passed",
+                "title": "normalizes count Infinity",
+                "duration": 0.061021999999979926,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-first"
+                ],
+                "fullName": "data-first normalizes count 10.9",
+                "status": "passed",
+                "title": "normalizes count 10.9",
+                "duration": 0.10372599999999466,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-last"
+                ],
+                "fullName": "data-last normalizes count 0 in a pipe",
+                "status": "passed",
+                "title": "normalizes count 0 in a pipe",
+                "duration": 0.3441969999999799,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-last"
+                ],
+                "fullName": "data-last normalizes count -2 in a pipe",
+                "status": "passed",
+                "title": "normalizes count -2 in a pipe",
+                "duration": 0.17942999999999643,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-last"
+                ],
+                "fullName": "data-last normalizes count -Infinity in a pipe",
+                "status": "passed",
+                "title": "normalizes count -Infinity in a pipe",
+                "duration": 0.13849799999999846,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-last"
+                ],
+                "fullName": "data-last normalizes count NaN in a pipe",
+                "status": "passed",
+                "title": "normalizes count NaN in a pipe",
+                "duration": 0.06732199999999011,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-last"
+                ],
+                "fullName": "data-last normalizes count 0.9 in a pipe",
+                "status": "passed",
+                "title": "normalizes count 0.9 in a pipe",
+                "duration": 0.07688500000000431,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-last"
+                ],
+                "fullName": "data-last normalizes count 1.9 in a pipe",
+                "status": "passed",
+                "title": "normalizes count 1.9 in a pipe",
+                "duration": 0.06301500000000715,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-last"
+                ],
+                "fullName": "data-last normalizes count 2.9 in a pipe",
+                "status": "passed",
+                "title": "normalizes count 2.9 in a pipe",
+                "duration": 0.1838459999999884,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-last"
+                ],
+                "fullName": "data-last normalizes count Infinity in a pipe",
+                "status": "passed",
+                "title": "normalizes count Infinity in a pipe",
+                "duration": 0.05991999999997688,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-last"
+                ],
+                "fullName": "data-last normalizes count 10.9 in a pipe",
+                "status": "passed",
+                "title": "normalizes count 10.9 in a pipe",
+                "duration": 0.04758100000000809,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "supports readonly arrays without mutating or reusing the input",
+                "status": "passed",
+                "title": "supports readonly arrays without mutating or reusing the input",
+                "duration": 0.3681840000000136,
+                "failureMessages": [],
+                "meta": {}
+              }
+            ],
+            "startTime": 1792348846676,
+            "endTime": 1792348846680.3682,
+            "status": "passed",
+            "message": "",
+            "name": "/workspace/blame-study-runs/feedback-f62/contract-controls/self-2-suffix-counts-cline/packages/remeda/src/suffixCounts.test.ts"
+          }
+        ]
+      },
+      "stdout": "JSON report written to /workspace/blame-study-runs/feedback-f62/contract-controls/self-2-suffix-counts-cline/.study/sensitivity.json\n",
+      "stderr": ""
+    },
+    {
+      "label": "1-suffix-counts-candidate--1-suffix-counts-reference",
+      "author": {
+        "panel": "f60",
+        "name": "1-suffix-counts-reference",
+        "patchSha256": "6d3ae8d0247e1ce38735376700a3d209ad654de1a4036315d6c22d10c2d35559"
+      },
+      "production": {
+        "panel": "f60",
+        "name": "1-suffix-counts-candidate",
+        "patchSha256": "fec4983d69f4c58ca3526e3ef3de221c7f0e77d6f590b9241f2b0063a6d2b8db"
+      },
+      "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+      "argv": [
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "--config",
+        ".study/sensitivity.vitest.mjs",
+        "--reporter=json",
+        "--outputFile=.study/sensitivity.json"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "authoredFiles": [
+        "packages/remeda/src/takeLast-dropLast.test.ts"
+      ],
+      "counts": {
+        "passed": 11,
+        "failed": 0,
+        "other": 0
+      },
+      "outcome": "tests_pass",
+      "report": {
+        "numTotalTestSuites": 2,
+        "numPassedTestSuites": 2,
+        "numFailedTestSuites": 0,
+        "numPendingTestSuites": 0,
+        "numTotalTests": 11,
+        "numPassedTests": 11,
+        "numFailedTests": 0,
+        "numPendingTests": 0,
+        "numTodoTests": 0,
+        "snapshot": {
+          "added": 0,
+          "failure": false,
+          "filesAdded": 0,
+          "filesRemoved": 0,
+          "filesRemovedList": [],
+          "filesUnmatched": 0,
+          "filesUpdated": 0,
+          "matched": 0,
+          "total": 0,
+          "unchecked": 0,
+          "uncheckedKeysByFile": [],
+          "unmatched": 0,
+          "updated": 0,
+          "didUpdate": false
+        },
+        "startTime": 1792348847331,
+        "success": true,
+        "testResults": [
+          {
+            "assertionResults": [
+              {
+                "ancestorTitles": [
+                  "shared count policy"
+                ],
+                "fullName": "shared count policy normalizes 2.9",
+                "status": "passed",
+                "title": "normalizes 2.9",
+                "duration": 1.6389750000000163,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "shared count policy"
+                ],
+                "fullName": "shared count policy normalizes 0.9",
+                "status": "passed",
+                "title": "normalizes 0.9",
+                "duration": 0.20737199999999234,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "shared count policy"
+                ],
+                "fullName": "shared count policy normalizes 0",
+                "status": "passed",
+                "title": "normalizes 0",
+                "duration": 0.1312780000000089,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "shared count policy"
+                ],
+                "fullName": "shared count policy normalizes -1",
+                "status": "passed",
+                "title": "normalizes -1",
+                "duration": 0.10181299999999283,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "shared count policy"
+                ],
+                "fullName": "shared count policy normalizes -Infinity",
+                "status": "passed",
+                "title": "normalizes -Infinity",
+                "duration": 0.11570399999999381,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "shared count policy"
+                ],
+                "fullName": "shared count policy normalizes NaN",
+                "status": "passed",
+                "title": "normalizes NaN",
+                "duration": 0.13938000000001693,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "shared count policy"
+                ],
+                "fullName": "shared count policy normalizes Infinity",
+                "status": "passed",
+                "title": "normalizes Infinity",
+                "duration": 0.08455700000001798,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "shared count policy"
+                ],
+                "fullName": "shared count policy normalizes 10",
+                "status": "passed",
+                "title": "normalizes 10",
+                "duration": 0.06291500000000383,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "shared count policy"
+                ],
+                "fullName": "shared count policy is used by data-last and pipe calls",
+                "status": "passed",
+                "title": "is used by data-last and pipe calls",
+                "duration": 0.46949599999999236,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "shared count policy"
+                ],
+                "fullName": "shared count policy returns new arrays without changing the input",
+                "status": "passed",
+                "title": "returns new arrays without changing the input",
+                "duration": 0.42878500000000486,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "shared count policy"
+                ],
+                "fullName": "shared count policy supports readonly arrays and preserves element inference",
+                "status": "passed",
+                "title": "supports readonly arrays and preserves element inference",
+                "duration": 0.2522000000000162,
+                "failureMessages": [],
+                "meta": {}
+              }
+            ],
+            "startTime": 1792348847550,
+            "endTime": 1792348847553.4287,
+            "status": "passed",
+            "message": "",
+            "name": "/workspace/blame-study-runs/feedback-f62/contract-controls/1-suffix-counts-candidate--1-suffix-counts-reference/packages/remeda/src/takeLast-dropLast.test.ts"
+          }
+        ]
+      },
+      "stdout": "JSON report written to /workspace/blame-study-runs/feedback-f62/contract-controls/1-suffix-counts-candidate--1-suffix-counts-reference/.study/sensitivity.json\n",
+      "stderr": ""
+    },
+    {
+      "label": "1-suffix-counts-candidate--1-suffix-counts-candidate",
+      "author": {
+        "panel": "f60",
+        "name": "1-suffix-counts-candidate",
+        "patchSha256": "fec4983d69f4c58ca3526e3ef3de221c7f0e77d6f590b9241f2b0063a6d2b8db"
+      },
+      "production": {
+        "panel": "f60",
+        "name": "1-suffix-counts-candidate",
+        "patchSha256": "fec4983d69f4c58ca3526e3ef3de221c7f0e77d6f590b9241f2b0063a6d2b8db"
+      },
+      "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+      "argv": [
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "--config",
+        ".study/sensitivity.vitest.mjs",
+        "--reporter=json",
+        "--outputFile=.study/sensitivity.json"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "authoredFiles": [
+        "packages/remeda/src/takeLast-dropLast.test.ts"
+      ],
+      "counts": {
+        "passed": 8,
+        "failed": 0,
+        "other": 0
+      },
+      "outcome": "tests_pass",
+      "report": {
+        "numTotalTestSuites": 1,
+        "numPassedTestSuites": 1,
+        "numFailedTestSuites": 0,
+        "numPendingTestSuites": 0,
+        "numTotalTests": 8,
+        "numPassedTests": 8,
+        "numFailedTests": 0,
+        "numPendingTests": 0,
+        "numTodoTests": 0,
+        "snapshot": {
+          "added": 0,
+          "failure": false,
+          "filesAdded": 0,
+          "filesRemoved": 0,
+          "filesRemovedList": [],
+          "filesUnmatched": 0,
+          "filesUpdated": 0,
+          "matched": 0,
+          "total": 0,
+          "unchecked": 0,
+          "uncheckedKeysByFile": [],
+          "unmatched": 0,
+          "updated": 0,
+          "didUpdate": false
+        },
+        "startTime": 1792348848200,
+        "success": true,
+        "testResults": [
+          {
+            "assertionResults": [
+              {
+                "ancestorTitles": [],
+                "fullName": "positive fractional count is shared by takeLast and dropLast",
+                "status": "passed",
+                "title": "positive fractional count is shared by takeLast and dropLast",
+                "duration": 2.1407299999999907,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "fraction less than one count is shared by takeLast and dropLast",
+                "status": "passed",
+                "title": "fraction less than one count is shared by takeLast and dropLast",
+                "duration": 0.2807729999999822,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "zero count is shared by takeLast and dropLast",
+                "status": "passed",
+                "title": "zero count is shared by takeLast and dropLast",
+                "duration": 0.27029699999999934,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "negative count is shared by takeLast and dropLast",
+                "status": "passed",
+                "title": "negative count is shared by takeLast and dropLast",
+                "duration": 0.3760960000000182,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "negative infinity count is shared by takeLast and dropLast",
+                "status": "passed",
+                "title": "negative infinity count is shared by takeLast and dropLast",
+                "duration": 0.22297499999999104,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "NaN count is shared by takeLast and dropLast",
+                "status": "passed",
+                "title": "NaN count is shared by takeLast and dropLast",
+                "duration": 0.20303499999999985,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "positive infinity count is shared by takeLast and dropLast",
+                "status": "passed",
+                "title": "positive infinity count is shared by takeLast and dropLast",
+                "duration": 0.1787089999999978,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "returns new arrays without changing readonly inputs",
+                "status": "passed",
+                "title": "returns new arrays without changing readonly inputs",
+                "duration": 0.3907780000000116,
+                "failureMessages": [],
+                "meta": {}
+              }
+            ],
+            "startTime": 1792348848415,
+            "endTime": 1792348848419.3909,
+            "status": "passed",
+            "message": "",
+            "name": "/workspace/blame-study-runs/feedback-f62/contract-controls/1-suffix-counts-candidate--1-suffix-counts-candidate/packages/remeda/src/takeLast-dropLast.test.ts"
+          }
+        ]
+      },
+      "stdout": "JSON report written to /workspace/blame-study-runs/feedback-f62/contract-controls/1-suffix-counts-candidate--1-suffix-counts-candidate/.study/sensitivity.json\n",
+      "stderr": ""
+    },
+    {
+      "label": "1-suffix-counts-candidate--1-suffix-counts-cline",
+      "author": {
+        "panel": "f60",
+        "name": "1-suffix-counts-cline",
+        "patchSha256": "2c2728bb2ac190c7f08dcd66ce33fbebc92733b2bddcaa17ea101a65a074576d"
+      },
+      "production": {
+        "panel": "f60",
+        "name": "1-suffix-counts-candidate",
+        "patchSha256": "fec4983d69f4c58ca3526e3ef3de221c7f0e77d6f590b9241f2b0063a6d2b8db"
+      },
+      "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+      "argv": [
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "--config",
+        ".study/sensitivity.vitest.mjs",
+        "--reporter=json",
+        "--outputFile=.study/sensitivity.json"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "authoredFiles": [
+        "packages/remeda/src/takeLast.dropLast.test.ts"
+      ],
+      "counts": {
+        "passed": 19,
+        "failed": 0,
+        "other": 0
+      },
+      "outcome": "tests_pass",
+      "report": {
+        "numTotalTestSuites": 4,
+        "numPassedTestSuites": 4,
+        "numFailedTestSuites": 0,
+        "numPendingTestSuites": 0,
+        "numTotalTests": 19,
+        "numPassedTests": 19,
+        "numFailedTests": 0,
+        "numPendingTests": 0,
+        "numTodoTests": 0,
+        "snapshot": {
+          "added": 0,
+          "failure": false,
+          "filesAdded": 0,
+          "filesRemoved": 0,
+          "filesRemovedList": [],
+          "filesUnmatched": 0,
+          "filesUpdated": 0,
+          "matched": 0,
+          "total": 0,
+          "unchecked": 0,
+          "uncheckedKeysByFile": [],
+          "unmatched": 0,
+          "updated": 0,
+          "didUpdate": false
+        },
+        "startTime": 1792348849074,
+        "success": true,
+        "testResults": [
+          {
+            "assertionResults": [
+              {
+                "ancestorTitles": [
+                  "data-first"
+                ],
+                "fullName": "data-first normalizes count 2.9",
+                "status": "passed",
+                "title": "normalizes count 2.9",
+                "duration": 1.4003160000000037,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-first"
+                ],
+                "fullName": "data-first normalizes count 0",
+                "status": "passed",
+                "title": "normalizes count 0",
+                "duration": 0.23745699999997782,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-first"
+                ],
+                "fullName": "data-first normalizes count -1",
+                "status": "passed",
+                "title": "normalizes count -1",
+                "duration": 0.18764199999998254,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-first"
+                ],
+                "fullName": "data-first normalizes count -Infinity",
+                "status": "passed",
+                "title": "normalizes count -Infinity",
+                "duration": 0.12043199999999388,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-first"
+                ],
+                "fullName": "data-first normalizes count NaN",
+                "status": "passed",
+                "title": "normalizes count NaN",
+                "duration": 0.1623440000000187,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-first"
+                ],
+                "fullName": "data-first normalizes count Infinity",
+                "status": "passed",
+                "title": "normalizes count Infinity",
+                "duration": 0.1303259999999966,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-last"
+                ],
+                "fullName": "data-last normalizes count 2.9",
+                "status": "passed",
+                "title": "normalizes count 2.9",
+                "duration": 0.188223000000022,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-last"
+                ],
+                "fullName": "data-last normalizes count 0",
+                "status": "passed",
+                "title": "normalizes count 0",
+                "duration": 0.08172300000001087,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-last"
+                ],
+                "fullName": "data-last normalizes count -1",
+                "status": "passed",
+                "title": "normalizes count -1",
+                "duration": 0.08435700000001134,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-last"
+                ],
+                "fullName": "data-last normalizes count -Infinity",
+                "status": "passed",
+                "title": "normalizes count -Infinity",
+                "duration": 0.09956999999999994,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-last"
+                ],
+                "fullName": "data-last normalizes count NaN",
+                "status": "passed",
+                "title": "normalizes count NaN",
+                "duration": 0.15479300000001217,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-last"
+                ],
+                "fullName": "data-last normalizes count Infinity",
+                "status": "passed",
+                "title": "normalizes count Infinity",
+                "duration": 0.16489899999999125,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "pipe"
+                ],
+                "fullName": "pipe normalizes count 2.9",
+                "status": "passed",
+                "title": "normalizes count 2.9",
+                "duration": 0.17759700000002,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "pipe"
+                ],
+                "fullName": "pipe normalizes count 0",
+                "status": "passed",
+                "title": "normalizes count 0",
+                "duration": 0.07154800000000705,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "pipe"
+                ],
+                "fullName": "pipe normalizes count -1",
+                "status": "passed",
+                "title": "normalizes count -1",
+                "duration": 0.05089600000002292,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "pipe"
+                ],
+                "fullName": "pipe normalizes count -Infinity",
+                "status": "passed",
+                "title": "normalizes count -Infinity",
+                "duration": 0.04758099999997967,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "pipe"
+                ],
+                "fullName": "pipe normalizes count NaN",
+                "status": "passed",
+                "title": "normalizes count NaN",
+                "duration": 0.07734700000000316,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "pipe"
+                ],
+                "fullName": "pipe normalizes count Infinity",
+                "status": "passed",
+                "title": "normalizes count Infinity",
+                "duration": 0.12261399999999867,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "returns new arrays without changing the input",
+                "status": "passed",
+                "title": "returns new arrays without changing the input",
+                "duration": 0.28055200000000013,
+                "failureMessages": [],
+                "meta": {}
+              }
+            ],
+            "startTime": 1792348849281,
+            "endTime": 1792348849285.2805,
+            "status": "passed",
+            "message": "",
+            "name": "/workspace/blame-study-runs/feedback-f62/contract-controls/1-suffix-counts-candidate--1-suffix-counts-cline/packages/remeda/src/takeLast.dropLast.test.ts"
+          }
+        ]
+      },
+      "stdout": "JSON report written to /workspace/blame-study-runs/feedback-f62/contract-controls/1-suffix-counts-candidate--1-suffix-counts-cline/.study/sensitivity.json\n",
+      "stderr": ""
+    },
+    {
+      "label": "1-suffix-counts-candidate--2-suffix-counts-reference",
+      "author": {
+        "panel": "f60",
+        "name": "2-suffix-counts-reference",
+        "patchSha256": "7731ebb7bf183deff748edd6ba19d8c3120622a9f6032da441c51caf6c314279"
+      },
+      "production": {
+        "panel": "f60",
+        "name": "1-suffix-counts-candidate",
+        "patchSha256": "fec4983d69f4c58ca3526e3ef3de221c7f0e77d6f590b9241f2b0063a6d2b8db"
+      },
+      "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+      "argv": [
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "--config",
+        ".study/sensitivity.vitest.mjs",
+        "--reporter=json",
+        "--outputFile=.study/sensitivity.json"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "authoredFiles": [
+        "packages/remeda/src/takeLast-dropLast.test.ts"
+      ],
+      "counts": {
+        "passed": 14,
+        "failed": 0,
+        "other": 0
+      },
+      "outcome": "tests_pass",
+      "report": {
+        "numTotalTestSuites": 1,
+        "numPassedTestSuites": 1,
+        "numFailedTestSuites": 0,
+        "numPendingTestSuites": 0,
+        "numTotalTests": 14,
+        "numPassedTests": 14,
+        "numFailedTests": 0,
+        "numPendingTests": 0,
+        "numTodoTests": 0,
+        "snapshot": {
+          "added": 0,
+          "failure": false,
+          "filesAdded": 0,
+          "filesRemoved": 0,
+          "filesRemovedList": [],
+          "filesUnmatched": 0,
+          "filesUpdated": 0,
+          "matched": 0,
+          "total": 0,
+          "unchecked": 0,
+          "uncheckedKeysByFile": [],
+          "unmatched": 0,
+          "updated": 0,
+          "didUpdate": false
+        },
+        "startTime": 1792348850003,
+        "success": true,
+        "testResults": [
+          {
+            "assertionResults": [
+              {
+                "ancestorTitles": [],
+                "fullName": "normalizes takeLast count 0",
+                "status": "passed",
+                "title": "normalizes takeLast count 0",
+                "duration": 2.607902999999993,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "normalizes takeLast count -1",
+                "status": "passed",
+                "title": "normalizes takeLast count -1",
+                "duration": 0.6025159999999801,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "normalizes takeLast count -Infinity",
+                "status": "passed",
+                "title": "normalizes takeLast count -Infinity",
+                "duration": 0.3597910000000297,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "normalizes takeLast count NaN",
+                "status": "passed",
+                "title": "normalizes takeLast count NaN",
+                "duration": 0.3154450000000111,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "normalizes takeLast count 0.9",
+                "status": "passed",
+                "title": "normalizes takeLast count 0.9",
+                "duration": 0.28621099999998023,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "normalizes takeLast count 1.9",
+                "status": "passed",
+                "title": "normalizes takeLast count 1.9",
+                "duration": 0.20151399999997466,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "normalizes takeLast count Infinity",
+                "status": "passed",
+                "title": "normalizes takeLast count Infinity",
+                "duration": 0.35902099999998427,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "normalizes dropLast count 0",
+                "status": "passed",
+                "title": "normalizes dropLast count 0",
+                "duration": 0.38066300000002684,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "normalizes dropLast count -1",
+                "status": "passed",
+                "title": "normalizes dropLast count -1",
+                "duration": 0.298199000000011,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "normalizes dropLast count -Infinity",
+                "status": "passed",
+                "title": "normalizes dropLast count -Infinity",
+                "duration": 0.25052699999997685,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "normalizes dropLast count NaN",
+                "status": "passed",
+                "title": "normalizes dropLast count NaN",
+                "duration": 0.3005820000000199,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "normalizes dropLast count 0.9",
+                "status": "passed",
+                "title": "normalizes dropLast count 0.9",
+                "duration": 0.16061200000001463,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "normalizes dropLast count 1.9",
+                "status": "passed",
+                "title": "normalizes dropLast count 1.9",
+                "duration": 0.29395200000004706,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "normalizes dropLast count Infinity",
+                "status": "passed",
+                "title": "normalizes dropLast count Infinity",
+                "duration": 0.20718199999998888,
+                "failureMessages": [],
+                "meta": {}
+              }
+            ],
+            "startTime": 1792348850275,
+            "endTime": 1792348850282.2073,
+            "status": "passed",
+            "message": "",
+            "name": "/workspace/blame-study-runs/feedback-f62/contract-controls/1-suffix-counts-candidate--2-suffix-counts-reference/packages/remeda/src/takeLast-dropLast.test.ts"
+          }
+        ]
+      },
+      "stdout": "JSON report written to /workspace/blame-study-runs/feedback-f62/contract-controls/1-suffix-counts-candidate--2-suffix-counts-reference/.study/sensitivity.json\n",
+      "stderr": ""
+    },
+    {
+      "label": "1-suffix-counts-candidate--2-suffix-counts-candidate",
+      "author": {
+        "panel": "f60",
+        "name": "2-suffix-counts-candidate",
+        "patchSha256": "f555ba861568ab8944091e0f4373f5ac0bfd7f355acbfeda782cdb801a942a90"
+      },
+      "production": {
+        "panel": "f60",
+        "name": "1-suffix-counts-candidate",
+        "patchSha256": "fec4983d69f4c58ca3526e3ef3de221c7f0e77d6f590b9241f2b0063a6d2b8db"
+      },
+      "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+      "argv": [
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "--config",
+        ".study/sensitivity.vitest.mjs",
+        "--reporter=json",
+        "--outputFile=.study/sensitivity.json"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "authoredFiles": [
+        "packages/remeda/src/takeLastDropLast.test.ts"
+      ],
+      "counts": {
+        "passed": 13,
+        "failed": 0,
+        "other": 0
+      },
+      "outcome": "tests_pass",
+      "report": {
+        "numTotalTestSuites": 1,
+        "numPassedTestSuites": 1,
+        "numFailedTestSuites": 0,
+        "numPendingTestSuites": 0,
+        "numTotalTests": 13,
+        "numPassedTests": 13,
+        "numFailedTests": 0,
+        "numPendingTests": 0,
+        "numTodoTests": 0,
+        "snapshot": {
+          "added": 0,
+          "failure": false,
+          "filesAdded": 0,
+          "filesRemoved": 0,
+          "filesRemovedList": [],
+          "filesUnmatched": 0,
+          "filesUpdated": 0,
+          "matched": 0,
+          "total": 0,
+          "unchecked": 0,
+          "uncheckedKeysByFile": [],
+          "unmatched": 0,
+          "updated": 0,
+          "didUpdate": false
+        },
+        "startTime": 1792348851049,
+        "success": true,
+        "testResults": [
+          {
+            "assertionResults": [
+              {
+                "ancestorTitles": [],
+                "fullName": "takeLast normalizes count 2.9",
+                "status": "passed",
+                "title": "takeLast normalizes count 2.9",
+                "duration": 1.9770839999999907,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "takeLast normalizes count 0",
+                "status": "passed",
+                "title": "takeLast normalizes count 0",
+                "duration": 0.17707599999999957,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "takeLast normalizes count -1",
+                "status": "passed",
+                "title": "takeLast normalizes count -1",
+                "duration": 0.12590000000000146,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "takeLast normalizes count -Infinity",
+                "status": "passed",
+                "title": "takeLast normalizes count -Infinity",
+                "duration": 0.2048680000000047,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "takeLast normalizes count NaN",
+                "status": "passed",
+                "title": "takeLast normalizes count NaN",
+                "duration": 0.1236159999999984,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "takeLast normalizes count Infinity",
+                "status": "passed",
+                "title": "takeLast normalizes count Infinity",
+                "duration": 0.12122300000001474,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "dropLast normalizes count 2.9",
+                "status": "passed",
+                "title": "dropLast normalizes count 2.9",
+                "duration": 0.17743699999999762,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "dropLast normalizes count 0",
+                "status": "passed",
+                "title": "dropLast normalizes count 0",
+                "duration": 0.17609499999997524,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "dropLast normalizes count -1",
+                "status": "passed",
+                "title": "dropLast normalizes count -1",
+                "duration": 0.12534800000000246,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "dropLast normalizes count -Infinity",
+                "status": "passed",
+                "title": "dropLast normalizes count -Infinity",
+                "duration": 0.26142300000000773,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "dropLast normalizes count NaN",
+                "status": "passed",
+                "title": "dropLast normalizes count NaN",
+                "duration": 0.1635859999999809,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "dropLast normalizes count Infinity",
+                "status": "passed",
+                "title": "dropLast normalizes count Infinity",
+                "duration": 0.11289899999999875,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "suffix operations preserve order, clone results, and do not mutate input",
+                "status": "passed",
+                "title": "suffix operations preserve order, clone results, and do not mutate input",
+                "duration": 0.27159800000001155,
+                "failureMessages": [],
+                "meta": {}
+              }
+            ],
+            "startTime": 1792348851296,
+            "endTime": 1792348851300.2715,
+            "status": "passed",
+            "message": "",
+            "name": "/workspace/blame-study-runs/feedback-f62/contract-controls/1-suffix-counts-candidate--2-suffix-counts-candidate/packages/remeda/src/takeLastDropLast.test.ts"
+          }
+        ]
+      },
+      "stdout": "JSON report written to /workspace/blame-study-runs/feedback-f62/contract-controls/1-suffix-counts-candidate--2-suffix-counts-candidate/.study/sensitivity.json\n",
+      "stderr": ""
+    },
+    {
+      "label": "1-suffix-counts-candidate--2-suffix-counts-cline",
+      "author": {
+        "panel": "f60",
+        "name": "2-suffix-counts-cline",
+        "patchSha256": "718610d80d306b814674478550e2759a214cd8e25e6c39ed848e17e016bf3b55"
+      },
+      "production": {
+        "panel": "f60",
+        "name": "1-suffix-counts-candidate",
+        "patchSha256": "fec4983d69f4c58ca3526e3ef3de221c7f0e77d6f590b9241f2b0063a6d2b8db"
+      },
+      "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+      "argv": [
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "--config",
+        ".study/sensitivity.vitest.mjs",
+        "--reporter=json",
+        "--outputFile=.study/sensitivity.json"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "authoredFiles": [
+        "packages/remeda/src/suffixCounts.test.ts"
+      ],
+      "counts": {
+        "passed": 19,
+        "failed": 0,
+        "other": 0
+      },
+      "outcome": "tests_pass",
+      "report": {
+        "numTotalTestSuites": 3,
+        "numPassedTestSuites": 3,
+        "numFailedTestSuites": 0,
+        "numPendingTestSuites": 0,
+        "numTotalTests": 19,
+        "numPassedTests": 19,
+        "numFailedTests": 0,
+        "numPendingTests": 0,
+        "numTodoTests": 0,
+        "snapshot": {
+          "added": 0,
+          "failure": false,
+          "filesAdded": 0,
+          "filesRemoved": 0,
+          "filesRemovedList": [],
+          "filesUnmatched": 0,
+          "filesUpdated": 0,
+          "matched": 0,
+          "total": 0,
+          "unchecked": 0,
+          "uncheckedKeysByFile": [],
+          "unmatched": 0,
+          "updated": 0,
+          "didUpdate": false
+        },
+        "startTime": 1792348852271,
+        "success": true,
+        "testResults": [
+          {
+            "assertionResults": [
+              {
+                "ancestorTitles": [
+                  "data-first"
+                ],
+                "fullName": "data-first normalizes count 0",
+                "status": "passed",
+                "title": "normalizes count 0",
+                "duration": 1.8563429999999812,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-first"
+                ],
+                "fullName": "data-first normalizes count -2",
+                "status": "passed",
+                "title": "normalizes count -2",
+                "duration": 0.2339009999999746,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-first"
+                ],
+                "fullName": "data-first normalizes count -Infinity",
+                "status": "passed",
+                "title": "normalizes count -Infinity",
+                "duration": 0.1290649999999971,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-first"
+                ],
+                "fullName": "data-first normalizes count NaN",
+                "status": "passed",
+                "title": "normalizes count NaN",
+                "duration": 0.08516800000001012,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-first"
+                ],
+                "fullName": "data-first normalizes count 0.9",
+                "status": "passed",
+                "title": "normalizes count 0.9",
+                "duration": 0.177205999999984,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-first"
+                ],
+                "fullName": "data-first normalizes count 1.9",
+                "status": "passed",
+                "title": "normalizes count 1.9",
+                "duration": 0.12451699999999732,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-first"
+                ],
+                "fullName": "data-first normalizes count 2.9",
+                "status": "passed",
+                "title": "normalizes count 2.9",
+                "duration": 0.0790489999999977,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-first"
+                ],
+                "fullName": "data-first normalizes count Infinity",
+                "status": "passed",
+                "title": "normalizes count Infinity",
+                "duration": 0.061491999999987,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-first"
+                ],
+                "fullName": "data-first normalizes count 10.9",
+                "status": "passed",
+                "title": "normalizes count 10.9",
+                "duration": 0.13302999999999088,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-last"
+                ],
+                "fullName": "data-last normalizes count 0 in a pipe",
+                "status": "passed",
+                "title": "normalizes count 0 in a pipe",
+                "duration": 0.3160960000000159,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-last"
+                ],
+                "fullName": "data-last normalizes count -2 in a pipe",
+                "status": "passed",
+                "title": "normalizes count -2 in a pipe",
+                "duration": 0.13293000000001598,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-last"
+                ],
+                "fullName": "data-last normalizes count -Infinity in a pipe",
+                "status": "passed",
+                "title": "normalizes count -Infinity in a pipe",
+                "duration": 0.16867400000000998,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-last"
+                ],
+                "fullName": "data-last normalizes count NaN in a pipe",
+                "status": "passed",
+                "title": "normalizes count NaN in a pipe",
+                "duration": 0.06620000000000914,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-last"
+                ],
+                "fullName": "data-last normalizes count 0.9 in a pipe",
+                "status": "passed",
+                "title": "normalizes count 0.9 in a pipe",
+                "duration": 0.058066999999994096,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-last"
+                ],
+                "fullName": "data-last normalizes count 1.9 in a pipe",
+                "status": "passed",
+                "title": "normalizes count 1.9 in a pipe",
+                "duration": 0.0569460000000106,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-last"
+                ],
+                "fullName": "data-last normalizes count 2.9 in a pipe",
+                "status": "passed",
+                "title": "normalizes count 2.9 in a pipe",
+                "duration": 0.05164800000000014,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-last"
+                ],
+                "fullName": "data-last normalizes count Infinity in a pipe",
+                "status": "passed",
+                "title": "normalizes count Infinity in a pipe",
+                "duration": 0.049824999999998454,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-last"
+                ],
+                "fullName": "data-last normalizes count 10.9 in a pipe",
+                "status": "passed",
+                "title": "normalizes count 10.9 in a pipe",
+                "duration": 0.103746000000001,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "supports readonly arrays without mutating or reusing the input",
+                "status": "passed",
+                "title": "supports readonly arrays without mutating or reusing the input",
+                "duration": 0.37316099999998187,
+                "failureMessages": [],
+                "meta": {}
+              }
+            ],
+            "startTime": 1792348852522,
+            "endTime": 1792348852526.373,
+            "status": "passed",
+            "message": "",
+            "name": "/workspace/blame-study-runs/feedback-f62/contract-controls/1-suffix-counts-candidate--2-suffix-counts-cline/packages/remeda/src/suffixCounts.test.ts"
+          }
+        ]
+      },
+      "stdout": "JSON report written to /workspace/blame-study-runs/feedback-f62/contract-controls/1-suffix-counts-candidate--2-suffix-counts-cline/.study/sensitivity.json\n",
+      "stderr": ""
+    },
+    {
+      "label": "2-suffix-counts-candidate--1-suffix-counts-reference",
+      "author": {
+        "panel": "f60",
+        "name": "1-suffix-counts-reference",
+        "patchSha256": "6d3ae8d0247e1ce38735376700a3d209ad654de1a4036315d6c22d10c2d35559"
+      },
+      "production": {
+        "panel": "f60",
+        "name": "2-suffix-counts-candidate",
+        "patchSha256": "f555ba861568ab8944091e0f4373f5ac0bfd7f355acbfeda782cdb801a942a90"
+      },
+      "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+      "argv": [
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "--config",
+        ".study/sensitivity.vitest.mjs",
+        "--reporter=json",
+        "--outputFile=.study/sensitivity.json"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "authoredFiles": [
+        "packages/remeda/src/takeLast-dropLast.test.ts"
+      ],
+      "counts": {
+        "passed": 11,
+        "failed": 0,
+        "other": 0
+      },
+      "outcome": "tests_pass",
+      "report": {
+        "numTotalTestSuites": 2,
+        "numPassedTestSuites": 2,
+        "numFailedTestSuites": 0,
+        "numPendingTestSuites": 0,
+        "numTotalTests": 11,
+        "numPassedTests": 11,
+        "numFailedTests": 0,
+        "numPendingTests": 0,
+        "numTodoTests": 0,
+        "snapshot": {
+          "added": 0,
+          "failure": false,
+          "filesAdded": 0,
+          "filesRemoved": 0,
+          "filesRemovedList": [],
+          "filesUnmatched": 0,
+          "filesUpdated": 0,
+          "matched": 0,
+          "total": 0,
+          "unchecked": 0,
+          "uncheckedKeysByFile": [],
+          "unmatched": 0,
+          "updated": 0,
+          "didUpdate": false
+        },
+        "startTime": 1792348853200,
+        "success": true,
+        "testResults": [
+          {
+            "assertionResults": [
+              {
+                "ancestorTitles": [
+                  "shared count policy"
+                ],
+                "fullName": "shared count policy normalizes 2.9",
+                "status": "passed",
+                "title": "normalizes 2.9",
+                "duration": 1.443741999999986,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "shared count policy"
+                ],
+                "fullName": "shared count policy normalizes 0.9",
+                "status": "passed",
+                "title": "normalizes 0.9",
+                "duration": 0.5031170000000031,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "shared count policy"
+                ],
+                "fullName": "shared count policy normalizes 0",
+                "status": "passed",
+                "title": "normalizes 0",
+                "duration": 0.13635499999998046,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "shared count policy"
+                ],
+                "fullName": "shared count policy normalizes -1",
+                "status": "passed",
+                "title": "normalizes -1",
+                "duration": 0.10469799999998486,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "shared count policy"
+                ],
+                "fullName": "shared count policy normalizes -Infinity",
+                "status": "passed",
+                "title": "normalizes -Infinity",
+                "duration": 0.1229550000000188,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "shared count policy"
+                ],
+                "fullName": "shared count policy normalizes NaN",
+                "status": "passed",
+                "title": "normalizes NaN",
+                "duration": 0.11056700000000319,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "shared count policy"
+                ],
+                "fullName": "shared count policy normalizes Infinity",
+                "status": "passed",
+                "title": "normalizes Infinity",
+                "duration": 0.10063199999999028,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "shared count policy"
+                ],
+                "fullName": "shared count policy normalizes 10",
+                "status": "passed",
+                "title": "normalizes 10",
+                "duration": 0.06597899999999868,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "shared count policy"
+                ],
+                "fullName": "shared count policy is used by data-last and pipe calls",
+                "status": "passed",
+                "title": "is used by data-last and pipe calls",
+                "duration": 0.351177999999976,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "shared count policy"
+                ],
+                "fullName": "shared count policy returns new arrays without changing the input",
+                "status": "passed",
+                "title": "returns new arrays without changing the input",
+                "duration": 0.3706269999999847,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "shared count policy"
+                ],
+                "fullName": "shared count policy supports readonly arrays and preserves element inference",
+                "status": "passed",
+                "title": "supports readonly arrays and preserves element inference",
+                "duration": 0.5385200000000054,
+                "failureMessages": [],
+                "meta": {}
+              }
+            ],
+            "startTime": 1792348853432,
+            "endTime": 1792348853435.5386,
+            "status": "passed",
+            "message": "",
+            "name": "/workspace/blame-study-runs/feedback-f62/contract-controls/2-suffix-counts-candidate--1-suffix-counts-reference/packages/remeda/src/takeLast-dropLast.test.ts"
+          }
+        ]
+      },
+      "stdout": "JSON report written to /workspace/blame-study-runs/feedback-f62/contract-controls/2-suffix-counts-candidate--1-suffix-counts-reference/.study/sensitivity.json\n",
+      "stderr": ""
+    },
+    {
+      "label": "2-suffix-counts-candidate--1-suffix-counts-candidate",
+      "author": {
+        "panel": "f60",
+        "name": "1-suffix-counts-candidate",
+        "patchSha256": "fec4983d69f4c58ca3526e3ef3de221c7f0e77d6f590b9241f2b0063a6d2b8db"
+      },
+      "production": {
+        "panel": "f60",
+        "name": "2-suffix-counts-candidate",
+        "patchSha256": "f555ba861568ab8944091e0f4373f5ac0bfd7f355acbfeda782cdb801a942a90"
+      },
+      "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+      "argv": [
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "--config",
+        ".study/sensitivity.vitest.mjs",
+        "--reporter=json",
+        "--outputFile=.study/sensitivity.json"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "authoredFiles": [
+        "packages/remeda/src/takeLast-dropLast.test.ts"
+      ],
+      "counts": {
+        "passed": 8,
+        "failed": 0,
+        "other": 0
+      },
+      "outcome": "tests_pass",
+      "report": {
+        "numTotalTestSuites": 1,
+        "numPassedTestSuites": 1,
+        "numFailedTestSuites": 0,
+        "numPendingTestSuites": 0,
+        "numTotalTests": 8,
+        "numPassedTests": 8,
+        "numFailedTests": 0,
+        "numPendingTests": 0,
+        "numTodoTests": 0,
+        "snapshot": {
+          "added": 0,
+          "failure": false,
+          "filesAdded": 0,
+          "filesRemoved": 0,
+          "filesRemovedList": [],
+          "filesUnmatched": 0,
+          "filesUpdated": 0,
+          "matched": 0,
+          "total": 0,
+          "unchecked": 0,
+          "uncheckedKeysByFile": [],
+          "unmatched": 0,
+          "updated": 0,
+          "didUpdate": false
+        },
+        "startTime": 1792348854216,
+        "success": true,
+        "testResults": [
+          {
+            "assertionResults": [
+              {
+                "ancestorTitles": [],
+                "fullName": "positive fractional count is shared by takeLast and dropLast",
+                "status": "passed",
+                "title": "positive fractional count is shared by takeLast and dropLast",
+                "duration": 1.7490820000000156,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "fraction less than one count is shared by takeLast and dropLast",
+                "status": "passed",
+                "title": "fraction less than one count is shared by takeLast and dropLast",
+                "duration": 0.30709200000001147,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "zero count is shared by takeLast and dropLast",
+                "status": "passed",
+                "title": "zero count is shared by takeLast and dropLast",
+                "duration": 0.18728199999998196,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "negative count is shared by takeLast and dropLast",
+                "status": "passed",
+                "title": "negative count is shared by takeLast and dropLast",
+                "duration": 0.30559900000000084,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "negative infinity count is shared by takeLast and dropLast",
+                "status": "passed",
+                "title": "negative infinity count is shared by takeLast and dropLast",
+                "duration": 0.19071700000000646,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "NaN count is shared by takeLast and dropLast",
+                "status": "passed",
+                "title": "NaN count is shared by takeLast and dropLast",
+                "duration": 0.2756649999999752,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "positive infinity count is shared by takeLast and dropLast",
+                "status": "passed",
+                "title": "positive infinity count is shared by takeLast and dropLast",
+                "duration": 0.2445989999999938,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "returns new arrays without changing readonly inputs",
+                "status": "passed",
+                "title": "returns new arrays without changing readonly inputs",
+                "duration": 0.2753140000000087,
+                "failureMessages": [],
+                "meta": {}
+              }
+            ],
+            "startTime": 1792348854444,
+            "endTime": 1792348854448.2754,
+            "status": "passed",
+            "message": "",
+            "name": "/workspace/blame-study-runs/feedback-f62/contract-controls/2-suffix-counts-candidate--1-suffix-counts-candidate/packages/remeda/src/takeLast-dropLast.test.ts"
+          }
+        ]
+      },
+      "stdout": "JSON report written to /workspace/blame-study-runs/feedback-f62/contract-controls/2-suffix-counts-candidate--1-suffix-counts-candidate/.study/sensitivity.json\n",
+      "stderr": ""
+    },
+    {
+      "label": "2-suffix-counts-candidate--1-suffix-counts-cline",
+      "author": {
+        "panel": "f60",
+        "name": "1-suffix-counts-cline",
+        "patchSha256": "2c2728bb2ac190c7f08dcd66ce33fbebc92733b2bddcaa17ea101a65a074576d"
+      },
+      "production": {
+        "panel": "f60",
+        "name": "2-suffix-counts-candidate",
+        "patchSha256": "f555ba861568ab8944091e0f4373f5ac0bfd7f355acbfeda782cdb801a942a90"
+      },
+      "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+      "argv": [
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "--config",
+        ".study/sensitivity.vitest.mjs",
+        "--reporter=json",
+        "--outputFile=.study/sensitivity.json"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "authoredFiles": [
+        "packages/remeda/src/takeLast.dropLast.test.ts"
+      ],
+      "counts": {
+        "passed": 19,
+        "failed": 0,
+        "other": 0
+      },
+      "outcome": "tests_pass",
+      "report": {
+        "numTotalTestSuites": 4,
+        "numPassedTestSuites": 4,
+        "numFailedTestSuites": 0,
+        "numPendingTestSuites": 0,
+        "numTotalTests": 19,
+        "numPassedTests": 19,
+        "numFailedTests": 0,
+        "numPendingTests": 0,
+        "numTodoTests": 0,
+        "snapshot": {
+          "added": 0,
+          "failure": false,
+          "filesAdded": 0,
+          "filesRemoved": 0,
+          "filesRemovedList": [],
+          "filesUnmatched": 0,
+          "filesUpdated": 0,
+          "matched": 0,
+          "total": 0,
+          "unchecked": 0,
+          "uncheckedKeysByFile": [],
+          "unmatched": 0,
+          "updated": 0,
+          "didUpdate": false
+        },
+        "startTime": 1792348855104,
+        "success": true,
+        "testResults": [
+          {
+            "assertionResults": [
+              {
+                "ancestorTitles": [
+                  "data-first"
+                ],
+                "fullName": "data-first normalizes count 2.9",
+                "status": "passed",
+                "title": "normalizes count 2.9",
+                "duration": 1.433476000000013,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-first"
+                ],
+                "fullName": "data-first normalizes count 0",
+                "status": "passed",
+                "title": "normalizes count 0",
+                "duration": 0.19823800000000347,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-first"
+                ],
+                "fullName": "data-first normalizes count -1",
+                "status": "passed",
+                "title": "normalizes count -1",
+                "duration": 0.12815299999999752,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-first"
+                ],
+                "fullName": "data-first normalizes count -Infinity",
+                "status": "passed",
+                "title": "normalizes count -Infinity",
+                "duration": 0.12743199999999888,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-first"
+                ],
+                "fullName": "data-first normalizes count NaN",
+                "status": "passed",
+                "title": "normalizes count NaN",
+                "duration": 0.11916899999999941,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-first"
+                ],
+                "fullName": "data-first normalizes count Infinity",
+                "status": "passed",
+                "title": "normalizes count Infinity",
+                "duration": 0.1033649999999966,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-last"
+                ],
+                "fullName": "data-last normalizes count 2.9",
+                "status": "passed",
+                "title": "normalizes count 2.9",
+                "duration": 0.21595400000001064,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-last"
+                ],
+                "fullName": "data-last normalizes count 0",
+                "status": "passed",
+                "title": "normalizes count 0",
+                "duration": 0.0791889999999853,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-last"
+                ],
+                "fullName": "data-last normalizes count -1",
+                "status": "passed",
+                "title": "normalizes count -1",
+                "duration": 0.09958999999997786,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-last"
+                ],
+                "fullName": "data-last normalizes count -Infinity",
+                "status": "passed",
+                "title": "normalizes count -Infinity",
+                "duration": 0.09814799999998058,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-last"
+                ],
+                "fullName": "data-last normalizes count NaN",
+                "status": "passed",
+                "title": "normalizes count NaN",
+                "duration": 0.10635000000002037,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-last"
+                ],
+                "fullName": "data-last normalizes count Infinity",
+                "status": "passed",
+                "title": "normalizes count Infinity",
+                "duration": 0.15993100000000027,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "pipe"
+                ],
+                "fullName": "pipe normalizes count 2.9",
+                "status": "passed",
+                "title": "normalizes count 2.9",
+                "duration": 0.14028200000001334,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "pipe"
+                ],
+                "fullName": "pipe normalizes count 0",
+                "status": "passed",
+                "title": "normalizes count 0",
+                "duration": 0.10605000000001041,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "pipe"
+                ],
+                "fullName": "pipe normalizes count -1",
+                "status": "passed",
+                "title": "normalizes count -1",
+                "duration": 0.053910999999999376,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "pipe"
+                ],
+                "fullName": "pipe normalizes count -Infinity",
+                "status": "passed",
+                "title": "normalizes count -Infinity",
+                "duration": 0.049083999999993466,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "pipe"
+                ],
+                "fullName": "pipe normalizes count NaN",
+                "status": "passed",
+                "title": "normalizes count NaN",
+                "duration": 0.07529299999998784,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "pipe"
+                ],
+                "fullName": "pipe normalizes count Infinity",
+                "status": "passed",
+                "title": "normalizes count Infinity",
+                "duration": 0.08956500000002166,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "returns new arrays without changing the input",
+                "status": "passed",
+                "title": "returns new arrays without changing the input",
+                "duration": 0.23251999999999384,
+                "failureMessages": [],
+                "meta": {}
+              }
+            ],
+            "startTime": 1792348855321,
+            "endTime": 1792348855325.2324,
+            "status": "passed",
+            "message": "",
+            "name": "/workspace/blame-study-runs/feedback-f62/contract-controls/2-suffix-counts-candidate--1-suffix-counts-cline/packages/remeda/src/takeLast.dropLast.test.ts"
+          }
+        ]
+      },
+      "stdout": "JSON report written to /workspace/blame-study-runs/feedback-f62/contract-controls/2-suffix-counts-candidate--1-suffix-counts-cline/.study/sensitivity.json\n",
+      "stderr": ""
+    },
+    {
+      "label": "2-suffix-counts-candidate--2-suffix-counts-reference",
+      "author": {
+        "panel": "f60",
+        "name": "2-suffix-counts-reference",
+        "patchSha256": "7731ebb7bf183deff748edd6ba19d8c3120622a9f6032da441c51caf6c314279"
+      },
+      "production": {
+        "panel": "f60",
+        "name": "2-suffix-counts-candidate",
+        "patchSha256": "f555ba861568ab8944091e0f4373f5ac0bfd7f355acbfeda782cdb801a942a90"
+      },
+      "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+      "argv": [
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "--config",
+        ".study/sensitivity.vitest.mjs",
+        "--reporter=json",
+        "--outputFile=.study/sensitivity.json"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "authoredFiles": [
+        "packages/remeda/src/takeLast-dropLast.test.ts"
+      ],
+      "counts": {
+        "passed": 14,
+        "failed": 0,
+        "other": 0
+      },
+      "outcome": "tests_pass",
+      "report": {
+        "numTotalTestSuites": 1,
+        "numPassedTestSuites": 1,
+        "numFailedTestSuites": 0,
+        "numPendingTestSuites": 0,
+        "numTotalTests": 14,
+        "numPassedTests": 14,
+        "numFailedTests": 0,
+        "numPendingTests": 0,
+        "numTodoTests": 0,
+        "snapshot": {
+          "added": 0,
+          "failure": false,
+          "filesAdded": 0,
+          "filesRemoved": 0,
+          "filesRemovedList": [],
+          "filesUnmatched": 0,
+          "filesUpdated": 0,
+          "matched": 0,
+          "total": 0,
+          "unchecked": 0,
+          "uncheckedKeysByFile": [],
+          "unmatched": 0,
+          "updated": 0,
+          "didUpdate": false
+        },
+        "startTime": 1792348855981,
+        "success": true,
+        "testResults": [
+          {
+            "assertionResults": [
+              {
+                "ancestorTitles": [],
+                "fullName": "normalizes takeLast count 0",
+                "status": "passed",
+                "title": "normalizes takeLast count 0",
+                "duration": 2.327941999999979,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "normalizes takeLast count -1",
+                "status": "passed",
+                "title": "normalizes takeLast count -1",
+                "duration": 0.4374990000000025,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "normalizes takeLast count -Infinity",
+                "status": "passed",
+                "title": "normalizes takeLast count -Infinity",
+                "duration": 0.28922500000001605,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "normalizes takeLast count NaN",
+                "status": "passed",
+                "title": "normalizes takeLast count NaN",
+                "duration": 0.21769700000001535,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "normalizes takeLast count 0.9",
+                "status": "passed",
+                "title": "normalizes takeLast count 0.9",
+                "duration": 0.24914499999999862,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "normalizes takeLast count 1.9",
+                "status": "passed",
+                "title": "normalizes takeLast count 1.9",
+                "duration": 0.2935109999999952,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "normalizes takeLast count Infinity",
+                "status": "passed",
+                "title": "normalizes takeLast count Infinity",
+                "duration": 0.2798209999999983,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "normalizes dropLast count 0",
+                "status": "passed",
+                "title": "normalizes dropLast count 0",
+                "duration": 0.4050589999999943,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "normalizes dropLast count -1",
+                "status": "passed",
+                "title": "normalizes dropLast count -1",
+                "duration": 0.22321499999998196,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "normalizes dropLast count -Infinity",
+                "status": "passed",
+                "title": "normalizes dropLast count -Infinity",
+                "duration": 0.22499799999999937,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "normalizes dropLast count NaN",
+                "status": "passed",
+                "title": "normalizes dropLast count NaN",
+                "duration": 0.18932499999999663,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "normalizes dropLast count 0.9",
+                "status": "passed",
+                "title": "normalizes dropLast count 0.9",
+                "duration": 0.1436260000000118,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "normalizes dropLast count 1.9",
+                "status": "passed",
+                "title": "normalizes dropLast count 1.9",
+                "duration": 0.28484900000000835,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "normalizes dropLast count Infinity",
+                "status": "passed",
+                "title": "normalizes dropLast count Infinity",
+                "duration": 0.1397399999999891,
+                "failureMessages": [],
+                "meta": {}
+              }
+            ],
+            "startTime": 1792348856228,
+            "endTime": 1792348856233.285,
+            "status": "passed",
+            "message": "",
+            "name": "/workspace/blame-study-runs/feedback-f62/contract-controls/2-suffix-counts-candidate--2-suffix-counts-reference/packages/remeda/src/takeLast-dropLast.test.ts"
+          }
+        ]
+      },
+      "stdout": "JSON report written to /workspace/blame-study-runs/feedback-f62/contract-controls/2-suffix-counts-candidate--2-suffix-counts-reference/.study/sensitivity.json\n",
+      "stderr": ""
+    },
+    {
+      "label": "2-suffix-counts-candidate--2-suffix-counts-candidate",
+      "author": {
+        "panel": "f60",
+        "name": "2-suffix-counts-candidate",
+        "patchSha256": "f555ba861568ab8944091e0f4373f5ac0bfd7f355acbfeda782cdb801a942a90"
+      },
+      "production": {
+        "panel": "f60",
+        "name": "2-suffix-counts-candidate",
+        "patchSha256": "f555ba861568ab8944091e0f4373f5ac0bfd7f355acbfeda782cdb801a942a90"
+      },
+      "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+      "argv": [
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "--config",
+        ".study/sensitivity.vitest.mjs",
+        "--reporter=json",
+        "--outputFile=.study/sensitivity.json"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "authoredFiles": [
+        "packages/remeda/src/takeLastDropLast.test.ts"
+      ],
+      "counts": {
+        "passed": 13,
+        "failed": 0,
+        "other": 0
+      },
+      "outcome": "tests_pass",
+      "report": {
+        "numTotalTestSuites": 1,
+        "numPassedTestSuites": 1,
+        "numFailedTestSuites": 0,
+        "numPendingTestSuites": 0,
+        "numTotalTests": 13,
+        "numPassedTests": 13,
+        "numFailedTests": 0,
+        "numPendingTests": 0,
+        "numTodoTests": 0,
+        "snapshot": {
+          "added": 0,
+          "failure": false,
+          "filesAdded": 0,
+          "filesRemoved": 0,
+          "filesRemovedList": [],
+          "filesUnmatched": 0,
+          "filesUpdated": 0,
+          "matched": 0,
+          "total": 0,
+          "unchecked": 0,
+          "uncheckedKeysByFile": [],
+          "unmatched": 0,
+          "updated": 0,
+          "didUpdate": false
+        },
+        "startTime": 1792348856903,
+        "success": true,
+        "testResults": [
+          {
+            "assertionResults": [
+              {
+                "ancestorTitles": [],
+                "fullName": "takeLast normalizes count 2.9",
+                "status": "passed",
+                "title": "takeLast normalizes count 2.9",
+                "duration": 2.106861000000009,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "takeLast normalizes count 0",
+                "status": "passed",
+                "title": "takeLast normalizes count 0",
+                "duration": 0.18335599999997498,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "takeLast normalizes count -1",
+                "status": "passed",
+                "title": "takeLast normalizes count -1",
+                "duration": 0.13469299999999862,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "takeLast normalizes count -Infinity",
+                "status": "passed",
+                "title": "takeLast normalizes count -Infinity",
+                "duration": 0.1415630000000192,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "takeLast normalizes count NaN",
+                "status": "passed",
+                "title": "takeLast normalizes count NaN",
+                "duration": 0.16785199999998213,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "takeLast normalizes count Infinity",
+                "status": "passed",
+                "title": "takeLast normalizes count Infinity",
+                "duration": 0.2278129999999976,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "dropLast normalizes count 2.9",
+                "status": "passed",
+                "title": "dropLast normalizes count 2.9",
+                "duration": 0.1863610000000051,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "dropLast normalizes count 0",
+                "status": "passed",
+                "title": "dropLast normalizes count 0",
+                "duration": 0.28099299999999516,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "dropLast normalizes count -1",
+                "status": "passed",
+                "title": "dropLast normalizes count -1",
+                "duration": 0.24179399999999873,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "dropLast normalizes count -Infinity",
+                "status": "passed",
+                "title": "dropLast normalizes count -Infinity",
+                "duration": 0.18397699999999872,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "dropLast normalizes count NaN",
+                "status": "passed",
+                "title": "dropLast normalizes count NaN",
+                "duration": 0.1455090000000041,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "dropLast normalizes count Infinity",
+                "status": "passed",
+                "title": "dropLast normalizes count Infinity",
+                "duration": 0.14872400000001562,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "suffix operations preserve order, clone results, and do not mutate input",
+                "status": "passed",
+                "title": "suffix operations preserve order, clone results, and do not mutate input",
+                "duration": 0.2699869999999862,
+                "failureMessages": [],
+                "meta": {}
+              }
+            ],
+            "startTime": 1792348857129,
+            "endTime": 1792348857134.27,
+            "status": "passed",
+            "message": "",
+            "name": "/workspace/blame-study-runs/feedback-f62/contract-controls/2-suffix-counts-candidate--2-suffix-counts-candidate/packages/remeda/src/takeLastDropLast.test.ts"
+          }
+        ]
+      },
+      "stdout": "JSON report written to /workspace/blame-study-runs/feedback-f62/contract-controls/2-suffix-counts-candidate--2-suffix-counts-candidate/.study/sensitivity.json\n",
+      "stderr": ""
+    },
+    {
+      "label": "2-suffix-counts-candidate--2-suffix-counts-cline",
+      "author": {
+        "panel": "f60",
+        "name": "2-suffix-counts-cline",
+        "patchSha256": "718610d80d306b814674478550e2759a214cd8e25e6c39ed848e17e016bf3b55"
+      },
+      "production": {
+        "panel": "f60",
+        "name": "2-suffix-counts-candidate",
+        "patchSha256": "f555ba861568ab8944091e0f4373f5ac0bfd7f355acbfeda782cdb801a942a90"
+      },
+      "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+      "argv": [
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "--config",
+        ".study/sensitivity.vitest.mjs",
+        "--reporter=json",
+        "--outputFile=.study/sensitivity.json"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "authoredFiles": [
+        "packages/remeda/src/suffixCounts.test.ts"
+      ],
+      "counts": {
+        "passed": 19,
+        "failed": 0,
+        "other": 0
+      },
+      "outcome": "tests_pass",
+      "report": {
+        "numTotalTestSuites": 3,
+        "numPassedTestSuites": 3,
+        "numFailedTestSuites": 0,
+        "numPendingTestSuites": 0,
+        "numTotalTests": 19,
+        "numPassedTests": 19,
+        "numFailedTests": 0,
+        "numPendingTests": 0,
+        "numTodoTests": 0,
+        "snapshot": {
+          "added": 0,
+          "failure": false,
+          "filesAdded": 0,
+          "filesRemoved": 0,
+          "filesRemovedList": [],
+          "filesUnmatched": 0,
+          "filesUpdated": 0,
+          "matched": 0,
+          "total": 0,
+          "unchecked": 0,
+          "uncheckedKeysByFile": [],
+          "unmatched": 0,
+          "updated": 0,
+          "didUpdate": false
+        },
+        "startTime": 1792348857818,
+        "success": true,
+        "testResults": [
+          {
+            "assertionResults": [
+              {
+                "ancestorTitles": [
+                  "data-first"
+                ],
+                "fullName": "data-first normalizes count 0",
+                "status": "passed",
+                "title": "normalizes count 0",
+                "duration": 1.431412999999992,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-first"
+                ],
+                "fullName": "data-first normalizes count -2",
+                "status": "passed",
+                "title": "normalizes count -2",
+                "duration": 0.21844899999999257,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-first"
+                ],
+                "fullName": "data-first normalizes count -Infinity",
+                "status": "passed",
+                "title": "normalizes count -Infinity",
+                "duration": 0.15168800000000715,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-first"
+                ],
+                "fullName": "data-first normalizes count NaN",
+                "status": "passed",
+                "title": "normalizes count NaN",
+                "duration": 0.11647500000000832,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-first"
+                ],
+                "fullName": "data-first normalizes count 0.9",
+                "status": "passed",
+                "title": "normalizes count 0.9",
+                "duration": 0.12475800000001414,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-first"
+                ],
+                "fullName": "data-first normalizes count 1.9",
+                "status": "passed",
+                "title": "normalizes count 1.9",
+                "duration": 0.11079699999999093,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-first"
+                ],
+                "fullName": "data-first normalizes count 2.9",
+                "status": "passed",
+                "title": "normalizes count 2.9",
+                "duration": 0.07663500000001022,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-first"
+                ],
+                "fullName": "data-first normalizes count Infinity",
+                "status": "passed",
+                "title": "normalizes count Infinity",
+                "duration": 0.05868800000001784,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-first"
+                ],
+                "fullName": "data-first normalizes count 10.9",
+                "status": "passed",
+                "title": "normalizes count 10.9",
+                "duration": 0.09648500000000126,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-last"
+                ],
+                "fullName": "data-last normalizes count 0 in a pipe",
+                "status": "passed",
+                "title": "normalizes count 0 in a pipe",
+                "duration": 0.3097259999999835,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-last"
+                ],
+                "fullName": "data-last normalizes count -2 in a pipe",
+                "status": "passed",
+                "title": "normalizes count -2 in a pipe",
+                "duration": 0.1259990000000073,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-last"
+                ],
+                "fullName": "data-last normalizes count -Infinity in a pipe",
+                "status": "passed",
+                "title": "normalizes count -Infinity in a pipe",
+                "duration": 0.17839899999998465,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-last"
+                ],
+                "fullName": "data-last normalizes count NaN in a pipe",
+                "status": "passed",
+                "title": "normalizes count NaN in a pipe",
+                "duration": 0.07213900000002127,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-last"
+                ],
+                "fullName": "data-last normalizes count 0.9 in a pipe",
+                "status": "passed",
+                "title": "normalizes count 0.9 in a pipe",
+                "duration": 0.05609499999999912,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-last"
+                ],
+                "fullName": "data-last normalizes count 1.9 in a pipe",
+                "status": "passed",
+                "title": "normalizes count 1.9 in a pipe",
+                "duration": 0.09452200000001199,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-last"
+                ],
+                "fullName": "data-last normalizes count 2.9 in a pipe",
+                "status": "passed",
+                "title": "normalizes count 2.9 in a pipe",
+                "duration": 0.05303899999998407,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-last"
+                ],
+                "fullName": "data-last normalizes count Infinity in a pipe",
+                "status": "passed",
+                "title": "normalizes count Infinity in a pipe",
+                "duration": 0.04442699999998467,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "data-last"
+                ],
+                "fullName": "data-last normalizes count 10.9 in a pipe",
+                "status": "passed",
+                "title": "normalizes count 10.9 in a pipe",
+                "duration": 0.04539800000000582,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [],
+                "fullName": "supports readonly arrays without mutating or reusing the input",
+                "status": "passed",
+                "title": "supports readonly arrays without mutating or reusing the input",
+                "duration": 0.6477940000000046,
+                "failureMessages": [],
+                "meta": {}
+              }
+            ],
+            "startTime": 1792348858021,
+            "endTime": 1792348858025.6477,
+            "status": "passed",
+            "message": "",
+            "name": "/workspace/blame-study-runs/feedback-f62/contract-controls/2-suffix-counts-candidate--2-suffix-counts-cline/packages/remeda/src/suffixCounts.test.ts"
+          }
+        ]
+      },
+      "stdout": "JSON report written to /workspace/blame-study-runs/feedback-f62/contract-controls/2-suffix-counts-candidate--2-suffix-counts-cline/.study/sensitivity.json\n",
+      "stderr": ""
+    },
+    {
+      "label": "pristine--1-alternative-selections-reference",
+      "author": {
+        "panel": "f61",
+        "name": "1-alternative-selections-reference",
+        "patchSha256": "473b03e7c28cf44f2bdf257798b493c90fa2c6c0f161c26708b5e6ea2a346608"
+      },
+      "production": "pristine frozen production",
+      "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+      "argv": [
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "--config",
+        ".study/sensitivity.vitest.mjs",
+        "--reporter=json",
+        "--outputFile=.study/sensitivity.json"
+      ],
+      "exitCode": 1,
+      "signal": null,
+      "error": null,
+      "authoredFiles": [
+        "src/alternative-selections.test.ts"
+      ],
+      "counts": {
+        "passed": 3,
+        "failed": 2,
+        "other": 0
+      },
+      "outcome": "runtime_case_failure",
+      "report": {
+        "numTotalTestSuites": 2,
+        "numPassedTestSuites": 0,
+        "numFailedTestSuites": 2,
+        "numPendingTestSuites": 0,
+        "numTotalTests": 5,
+        "numPassedTests": 3,
+        "numFailedTests": 2,
+        "numPendingTests": 0,
+        "numTodoTests": 0,
+        "snapshot": {
+          "added": 0,
+          "failure": false,
+          "filesAdded": 0,
+          "filesRemoved": 0,
+          "filesRemovedList": [],
+          "filesUnmatched": 0,
+          "filesUpdated": 0,
+          "matched": 0,
+          "total": 0,
+          "unchecked": 0,
+          "uncheckedKeysByFile": [],
+          "unmatched": 0,
+          "updated": 0,
+          "didUpdate": false
+        },
+        "startTime": 1792348858485,
+        "success": false,
+        "testResults": [
+          {
+            "assertionResults": [
+              {
+                "ancestorTitles": [
+                  "selections from alternative patterns"
+                ],
+                "fullName": "selections from alternative patterns does not keep selections from a failed match alternative",
+                "status": "failed",
+                "title": "does not keep selections from a failed match alternative",
+                "duration": 7.206992999999983,
+                "failureMessages": [
+                  "AssertionError: expected { fromA: 2, fromB: 2 } to deeply equal { fromB: 2 }\n    at /workspace/blame-study-runs/feedback-f62/contract-controls/pristine--1-alternative-selections-reference/src/alternative-selections.test.ts:18:20\n    at file:///workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11\n    at file:///workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26\n    at file:///workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:1897:20\n    at new Promise (<anonymous>)\n    at runWithTimeout (file:///workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:1863:10)\n    at runTest (file:///workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:1574:12)\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at runSuite (file:///workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:1729:8)\n    at runSuite (file:///workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:1729:8)"
+                ],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "selections from alternative patterns"
+                ],
+                "fullName": "selections from alternative patterns does not keep selections from a failed P.union alternative",
+                "status": "failed",
+                "title": "does not keep selections from a failed P.union alternative",
+                "duration": 1.7227220000000045,
+                "failureMessages": [
+                  "AssertionError: expected { fromA: 2, fromB: 2 } to deeply equal { fromA: undefined, fromB: 2 }\n    at /workspace/blame-study-runs/feedback-f62/contract-controls/pristine--1-alternative-selections-reference/src/alternative-selections.test.ts:32:20\n    at file:///workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11\n    at file:///workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26\n    at file:///workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:1897:20\n    at new Promise (<anonymous>)\n    at runWithTimeout (file:///workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:1863:10)\n    at runTest (file:///workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:1574:12)\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at runSuite (file:///workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:1729:8)\n    at runSuite (file:///workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:1729:8)"
+                ],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "selections from alternative patterns"
+                ],
+                "fullName": "selections from alternative patterns preserves anonymous selections from the first successful alternative",
+                "status": "passed",
+                "title": "preserves anonymous selections from the first successful alternative",
+                "duration": 0.2970470000000205,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "selections from alternative patterns"
+                ],
+                "fullName": "selections from alternative patterns does not leak selections when every P.union alternative fails",
+                "status": "passed",
+                "title": "does not leak selections when every P.union alternative fails",
+                "duration": 0.2614430000000141,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "selections from alternative patterns"
+                ],
+                "fullName": "selections from alternative patterns keeps selections from a successful alternative when a guard fails",
+                "status": "passed",
+                "title": "keeps selections from a successful alternative when a guard fails",
+                "duration": 0.22490799999999922,
+                "failureMessages": [],
+                "meta": {}
+              }
+            ],
+            "startTime": 1792348858736,
+            "endTime": 1792348858745.297,
+            "status": "failed",
+            "message": "",
+            "name": "/workspace/blame-study-runs/feedback-f62/contract-controls/pristine--1-alternative-selections-reference/src/alternative-selections.test.ts"
+          }
+        ]
+      },
+      "stdout": "JSON report written to /workspace/blame-study-runs/feedback-f62/contract-controls/pristine--1-alternative-selections-reference/.study/sensitivity.json\n",
+      "stderr": "▲ [WARNING] The conditions \"types\" and \"default\" here will never be used as they come after both \"import\" and \"require\" [package.json]\n\n    package.json:17:6:\n      17 │       \"types\": \"./dist/index.d.ts\",\n         ╵       ~~~~~~~\n\n  The \"import\" condition comes earlier and will be used for all \"import\" statements:\n\n    package.json:13:6:\n      13 │       \"import\": {\n         ╵       ~~~~~~~~\n\n  The \"require\" condition comes earlier and will be used for all \"require\" calls:\n\n    package.json:9:6:\n      9 │       \"require\": {\n        ╵       ~~~~~~~~~\n\n▲ [WARNING] The condition \"types\" here will never be used as it comes after both \"import\" and \"require\" [package.json]\n\n    package.json:27:6:\n      27 │       \"types\": \"./dist/types/index.d.ts\"\n         ╵       ~~~~~~~\n\n  The \"import\" condition comes earlier and will be used for all \"import\" statements:\n\n    package.json:24:6:\n      24 │       \"import\": {\n         ╵       ~~~~~~~~\n\n  The \"require\" condition comes earlier and will be used for all \"require\" calls:\n\n    package.json:21:6:\n      21 │       \"require\": {\n         ╵       ~~~~~~~~~\n\n"
+    },
+    {
+      "label": "pristine--1-alternative-selections-candidate",
+      "author": {
+        "panel": "f61",
+        "name": "1-alternative-selections-candidate",
+        "patchSha256": "2d0849faf452e7cc62c44445e32ec5450ac466e1347f42993d8848e715b94bf0"
+      },
+      "production": "pristine frozen production",
+      "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+      "argv": [
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "--config",
+        ".study/sensitivity.vitest.mjs",
+        "--reporter=json",
+        "--outputFile=.study/sensitivity.json"
+      ],
+      "exitCode": 1,
+      "signal": null,
+      "error": null,
+      "authoredFiles": [
+        "src/alternative-selections.test.ts"
+      ],
+      "counts": {
+        "passed": 1,
+        "failed": 2,
+        "other": 0
+      },
+      "outcome": "runtime_case_failure",
+      "report": {
+        "numTotalTestSuites": 2,
+        "numPassedTestSuites": 0,
+        "numFailedTestSuites": 2,
+        "numPendingTestSuites": 0,
+        "numTotalTests": 3,
+        "numPassedTests": 1,
+        "numFailedTests": 2,
+        "numPendingTests": 0,
+        "numTodoTests": 0,
+        "snapshot": {
+          "added": 0,
+          "failure": false,
+          "filesAdded": 0,
+          "filesRemoved": 0,
+          "filesRemovedList": [],
+          "filesUnmatched": 0,
+          "filesUpdated": 0,
+          "matched": 0,
+          "total": 0,
+          "unchecked": 0,
+          "uncheckedKeysByFile": [],
+          "unmatched": 0,
+          "updated": 0,
+          "didUpdate": false
+        },
+        "startTime": 1792348859148,
+        "success": false,
+        "testResults": [
+          {
+            "assertionResults": [
+              {
+                "ancestorTitles": [
+                  "selections from alternative patterns"
+                ],
+                "fullName": "selections from alternative patterns only keeps selections from the first matching .with pattern",
+                "status": "failed",
+                "title": "only keeps selections from the first matching .with pattern",
+                "duration": 7.362839000000008,
+                "failureMessages": [
+                  "AssertionError: expected { first: 2, second: 2 } to deeply equal { second: 2 }\n    at /workspace/blame-study-runs/feedback-f62/contract-controls/pristine--1-alternative-selections-candidate/src/alternative-selections.test.ts:17:20\n    at file:///workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11\n    at file:///workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26\n    at file:///workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:1897:20\n    at new Promise (<anonymous>)\n    at runWithTimeout (file:///workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:1863:10)\n    at runTest (file:///workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:1574:12)\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at runSuite (file:///workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:1729:8)\n    at runSuite (file:///workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:1729:8)"
+                ],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "selections from alternative patterns"
+                ],
+                "fullName": "selections from alternative patterns initializes selections from unmatched P.union alternatives",
+                "status": "failed",
+                "title": "initializes selections from unmatched P.union alternatives",
+                "duration": 1.7370130000000188,
+                "failureMessages": [
+                  "AssertionError: expected { first: 2, second: 2 } to deeply equal { first: undefined, second: 2 }\n    at /workspace/blame-study-runs/feedback-f62/contract-controls/pristine--1-alternative-selections-candidate/src/alternative-selections.test.ts:34:20\n    at file:///workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11\n    at file:///workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26\n    at file:///workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:1897:20\n    at new Promise (<anonymous>)\n    at runWithTimeout (file:///workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:1863:10)\n    at runTest (file:///workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:1574:12)\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at runSuite (file:///workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:1729:8)\n    at runSuite (file:///workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:1729:8)"
+                ],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "selections from alternative patterns"
+                ],
+                "fullName": "selections from alternative patterns does not retain selections when every P.union alternative fails",
+                "status": "passed",
+                "title": "does not retain selections when every P.union alternative fails",
+                "duration": 0.31371200000000954,
+                "failureMessages": [],
+                "meta": {}
+              }
+            ],
+            "startTime": 1792348859389,
+            "endTime": 1792348859399.3137,
+            "status": "failed",
+            "message": "",
+            "name": "/workspace/blame-study-runs/feedback-f62/contract-controls/pristine--1-alternative-selections-candidate/src/alternative-selections.test.ts"
+          }
+        ]
+      },
+      "stdout": "JSON report written to /workspace/blame-study-runs/feedback-f62/contract-controls/pristine--1-alternative-selections-candidate/.study/sensitivity.json\n",
+      "stderr": "▲ [WARNING] The conditions \"types\" and \"default\" here will never be used as they come after both \"import\" and \"require\" [package.json]\n\n    package.json:17:6:\n      17 │       \"types\": \"./dist/index.d.ts\",\n         ╵       ~~~~~~~\n\n  The \"import\" condition comes earlier and will be used for all \"import\" statements:\n\n    package.json:13:6:\n      13 │       \"import\": {\n         ╵       ~~~~~~~~\n\n  The \"require\" condition comes earlier and will be used for all \"require\" calls:\n\n    package.json:9:6:\n      9 │       \"require\": {\n        ╵       ~~~~~~~~~\n\n▲ [WARNING] The condition \"types\" here will never be used as it comes after both \"import\" and \"require\" [package.json]\n\n    package.json:27:6:\n      27 │       \"types\": \"./dist/types/index.d.ts\"\n         ╵       ~~~~~~~\n\n  The \"import\" condition comes earlier and will be used for all \"import\" statements:\n\n    package.json:24:6:\n      24 │       \"import\": {\n         ╵       ~~~~~~~~\n\n  The \"require\" condition comes earlier and will be used for all \"require\" calls:\n\n    package.json:21:6:\n      21 │       \"require\": {\n         ╵       ~~~~~~~~~\n\n"
+    },
+    {
+      "label": "pristine--1-alternative-selections-cline",
+      "author": {
+        "panel": "f61",
+        "name": "1-alternative-selections-cline",
+        "patchSha256": "3a4a8c4479aefc4cc634e4bdc7eb27cbe10e86f35691f5bc7598ef60b3fe2be7"
+      },
+      "production": "pristine frozen production",
+      "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+      "argv": [
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "--config",
+        ".study/sensitivity.vitest.mjs",
+        "--reporter=json",
+        "--outputFile=.study/sensitivity.json"
+      ],
+      "exitCode": 1,
+      "signal": null,
+      "error": null,
+      "authoredFiles": [
+        "src/alternative-selections.test.ts"
+      ],
+      "counts": {
+        "passed": 3,
+        "failed": 2,
+        "other": 0
+      },
+      "outcome": "runtime_case_failure",
+      "report": {
+        "numTotalTestSuites": 2,
+        "numPassedTestSuites": 0,
+        "numFailedTestSuites": 2,
+        "numPendingTestSuites": 0,
+        "numTotalTests": 5,
+        "numPassedTests": 3,
+        "numFailedTests": 2,
+        "numPendingTests": 0,
+        "numTodoTests": 0,
+        "snapshot": {
+          "added": 0,
+          "failure": false,
+          "filesAdded": 0,
+          "filesRemoved": 0,
+          "filesRemovedList": [],
+          "filesUnmatched": 0,
+          "filesUpdated": 0,
+          "matched": 0,
+          "total": 0,
+          "unchecked": 0,
+          "uncheckedKeysByFile": [],
+          "unmatched": 0,
+          "updated": 0,
+          "didUpdate": false
+        },
+        "startTime": 1792348859798,
+        "success": false,
+        "testResults": [
+          {
+            "assertionResults": [
+              {
+                "ancestorTitles": [
+                  "alternative selections"
+                ],
+                "fullName": "alternative selections does not keep selections from failed match alternatives",
+                "status": "failed",
+                "title": "does not keep selections from failed match alternatives",
+                "duration": 7.759155000000021,
+                "failureMessages": [
+                  "AssertionError: expected { failed: 42, value: 42 } to deeply equal { value: 42 }\n    at /workspace/blame-study-runs/feedback-f62/contract-controls/pristine--1-alternative-selections-cline/src/alternative-selections.test.ts:19:20\n    at file:///workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11\n    at file:///workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26\n    at file:///workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:1897:20\n    at new Promise (<anonymous>)\n    at runWithTimeout (file:///workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:1863:10)\n    at runTest (file:///workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:1574:12)\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at runSuite (file:///workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:1729:8)\n    at runSuite (file:///workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:1729:8)"
+                ],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "alternative selections"
+                ],
+                "fullName": "alternative selections does not keep anonymous selections from failed alternatives",
+                "status": "failed",
+                "title": "does not keep anonymous selections from failed alternatives",
+                "duration": 0.8230179999999905,
+                "failureMessages": [
+                  "AssertionError: expected 42 to deeply equal { kind: 'value', value: 42, …(1) }\n    at /workspace/blame-study-runs/feedback-f62/contract-controls/pristine--1-alternative-selections-cline/src/alternative-selections.test.ts:36:20\n    at file:///workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11\n    at file:///workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26\n    at file:///workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:1897:20\n    at new Promise (<anonymous>)\n    at runWithTimeout (file:///workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:1863:10)\n    at runTest (file:///workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:1574:12)\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at runSuite (file:///workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:1729:8)\n    at runSuite (file:///workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:1729:8)"
+                ],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "alternative selections"
+                ],
+                "fullName": "alternative selections uses only the first successful P.union alternative selections",
+                "status": "passed",
+                "title": "uses only the first successful P.union alternative selections",
+                "duration": 0.3835170000000119,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "alternative selections"
+                ],
+                "fullName": "alternative selections does not keep partial selections when P.union does not match",
+                "status": "passed",
+                "title": "does not keep partial selections when P.union does not match",
+                "duration": 0.18821299999999042,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "alternative selections"
+                ],
+                "fullName": "alternative selections preserves guard behavior after selecting a matching alternative",
+                "status": "passed",
+                "title": "preserves guard behavior after selecting a matching alternative",
+                "duration": 0.15898999999998864,
+                "failureMessages": [],
+                "meta": {}
+              }
+            ],
+            "startTime": 1792348860037,
+            "endTime": 1792348860046.1882,
+            "status": "failed",
+            "message": "",
+            "name": "/workspace/blame-study-runs/feedback-f62/contract-controls/pristine--1-alternative-selections-cline/src/alternative-selections.test.ts"
+          }
+        ]
+      },
+      "stdout": "JSON report written to /workspace/blame-study-runs/feedback-f62/contract-controls/pristine--1-alternative-selections-cline/.study/sensitivity.json\n",
+      "stderr": "▲ [WARNING] The conditions \"types\" and \"default\" here will never be used as they come after both \"import\" and \"require\" [package.json]\n\n    package.json:17:6:\n      17 │       \"types\": \"./dist/index.d.ts\",\n         ╵       ~~~~~~~\n\n  The \"import\" condition comes earlier and will be used for all \"import\" statements:\n\n    package.json:13:6:\n      13 │       \"import\": {\n         ╵       ~~~~~~~~\n\n  The \"require\" condition comes earlier and will be used for all \"require\" calls:\n\n    package.json:9:6:\n      9 │       \"require\": {\n        ╵       ~~~~~~~~~\n\n▲ [WARNING] The condition \"types\" here will never be used as it comes after both \"import\" and \"require\" [package.json]\n\n    package.json:27:6:\n      27 │       \"types\": \"./dist/types/index.d.ts\"\n         ╵       ~~~~~~~\n\n  The \"import\" condition comes earlier and will be used for all \"import\" statements:\n\n    package.json:24:6:\n      24 │       \"import\": {\n         ╵       ~~~~~~~~\n\n  The \"require\" condition comes earlier and will be used for all \"require\" calls:\n\n    package.json:21:6:\n      21 │       \"require\": {\n         ╵       ~~~~~~~~~\n\n"
+    },
+    {
+      "label": "pristine--2-alternative-selections-reference",
+      "author": {
+        "panel": "f61",
+        "name": "2-alternative-selections-reference",
+        "patchSha256": "73075eeb7371222c39e9504784d714b79d98374a06714da069eefba8c8008fc9"
+      },
+      "production": "pristine frozen production",
+      "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+      "argv": [
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "--config",
+        ".study/sensitivity.vitest.mjs",
+        "--reporter=json",
+        "--outputFile=.study/sensitivity.json"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "authoredFiles": [
+        "src/selection-transaction.test.ts"
+      ],
+      "counts": {
+        "passed": 2,
+        "failed": 0,
+        "other": 0
+      },
+      "outcome": "tests_pass",
+      "report": {
+        "numTotalTestSuites": 2,
+        "numPassedTestSuites": 2,
+        "numFailedTestSuites": 0,
+        "numPendingTestSuites": 0,
+        "numTotalTests": 2,
+        "numPassedTests": 2,
+        "numFailedTests": 0,
+        "numPendingTests": 0,
+        "numTodoTests": 0,
+        "snapshot": {
+          "added": 0,
+          "failure": false,
+          "filesAdded": 0,
+          "filesRemoved": 0,
+          "filesRemovedList": [],
+          "filesUnmatched": 0,
+          "filesUpdated": 0,
+          "matched": 0,
+          "total": 0,
+          "unchecked": 0,
+          "uncheckedKeysByFile": [],
+          "unmatched": 0,
+          "updated": 0,
+          "didUpdate": false
+        },
+        "startTime": 1792348860446,
+        "success": true,
+        "testResults": [
+          {
+            "assertionResults": [
+              {
+                "ancestorTitles": [
+                  "selection transactions"
+                ],
+                "fullName": "selection transactions does not leak selections from failed match alternatives",
+                "status": "passed",
+                "title": "does not leak selections from failed match alternatives",
+                "duration": 1.5925260000000208,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "selection transactions"
+                ],
+                "fullName": "selection transactions keeps union selections transactional and initializes all keys",
+                "status": "passed",
+                "title": "keeps union selections transactional and initializes all keys",
+                "duration": 0.40056199999997943,
+                "failureMessages": [],
+                "meta": {}
+              }
+            ],
+            "startTime": 1792348860674,
+            "endTime": 1792348860676.4006,
+            "status": "passed",
+            "message": "",
+            "name": "/workspace/blame-study-runs/feedback-f62/contract-controls/pristine--2-alternative-selections-reference/src/selection-transaction.test.ts"
+          }
+        ]
+      },
+      "stdout": "JSON report written to /workspace/blame-study-runs/feedback-f62/contract-controls/pristine--2-alternative-selections-reference/.study/sensitivity.json\n",
+      "stderr": "▲ [WARNING] The conditions \"types\" and \"default\" here will never be used as they come after both \"import\" and \"require\" [package.json]\n\n    package.json:17:6:\n      17 │       \"types\": \"./dist/index.d.ts\",\n         ╵       ~~~~~~~\n\n  The \"import\" condition comes earlier and will be used for all \"import\" statements:\n\n    package.json:13:6:\n      13 │       \"import\": {\n         ╵       ~~~~~~~~\n\n  The \"require\" condition comes earlier and will be used for all \"require\" calls:\n\n    package.json:9:6:\n      9 │       \"require\": {\n        ╵       ~~~~~~~~~\n\n▲ [WARNING] The condition \"types\" here will never be used as it comes after both \"import\" and \"require\" [package.json]\n\n    package.json:27:6:\n      27 │       \"types\": \"./dist/types/index.d.ts\"\n         ╵       ~~~~~~~\n\n  The \"import\" condition comes earlier and will be used for all \"import\" statements:\n\n    package.json:24:6:\n      24 │       \"import\": {\n         ╵       ~~~~~~~~\n\n  The \"require\" condition comes earlier and will be used for all \"require\" calls:\n\n    package.json:21:6:\n      21 │       \"require\": {\n         ╵       ~~~~~~~~~\n\n"
+    },
+    {
+      "label": "pristine--2-alternative-selections-candidate",
+      "author": {
+        "panel": "f61",
+        "name": "2-alternative-selections-candidate",
+        "patchSha256": "c6726d99546f3be446a2f51da1a42e92e00ae75103544292671669ed35f98c86"
+      },
+      "production": "pristine frozen production",
+      "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+      "argv": [
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "--config",
+        ".study/sensitivity.vitest.mjs",
+        "--reporter=json",
+        "--outputFile=.study/sensitivity.json"
+      ],
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "authoredFiles": [
+        "src/alternative-selections.test.ts"
+      ],
+      "counts": {
+        "passed": 4,
+        "failed": 0,
+        "other": 0
+      },
+      "outcome": "tests_pass",
+      "report": {
+        "numTotalTestSuites": 2,
+        "numPassedTestSuites": 2,
+        "numFailedTestSuites": 0,
+        "numPendingTestSuites": 0,
+        "numTotalTests": 4,
+        "numPassedTests": 4,
+        "numFailedTests": 0,
+        "numPendingTests": 0,
+        "numTodoTests": 0,
+        "snapshot": {
+          "added": 0,
+          "failure": false,
+          "filesAdded": 0,
+          "filesRemoved": 0,
+          "filesRemovedList": [],
+          "filesUnmatched": 0,
+          "filesUpdated": 0,
+          "matched": 0,
+          "total": 0,
+          "unchecked": 0,
+          "uncheckedKeysByFile": [],
+          "unmatched": 0,
+          "updated": 0,
+          "didUpdate": false
+        },
+        "startTime": 1792348861118,
+        "success": true,
+        "testResults": [
+          {
+            "assertionResults": [
+              {
+                "ancestorTitles": [
+                  "alternative selection transactions"
+                ],
+                "fullName": "alternative selection transactions only keeps selections from the first matching with alternative",
+                "status": "passed",
+                "title": "only keeps selections from the first matching with alternative",
+                "duration": 1.996534999999966,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "alternative selection transactions"
+                ],
+                "fullName": "alternative selection transactions initializes selections from non-matching union alternatives",
+                "status": "passed",
+                "title": "initializes selections from non-matching union alternatives",
+                "duration": 0.5357659999999669,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "alternative selection transactions"
+                ],
+                "fullName": "alternative selection transactions does not match a union when every alternative fails",
+                "status": "passed",
+                "title": "does not match a union when every alternative fails",
+                "duration": 0.24560999999999922,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "alternative selection transactions"
+                ],
+                "fullName": "alternative selection transactions still applies a guard after matching alternatives",
+                "status": "passed",
+                "title": "still applies a guard after matching alternatives",
+                "duration": 0.16707200000001876,
+                "failureMessages": [],
+                "meta": {}
+              }
+            ],
+            "startTime": 1792348861383,
+            "endTime": 1792348861386.2456,
+            "status": "passed",
+            "message": "",
+            "name": "/workspace/blame-study-runs/feedback-f62/contract-controls/pristine--2-alternative-selections-candidate/src/alternative-selections.test.ts"
+          }
+        ]
+      },
+      "stdout": "JSON report written to /workspace/blame-study-runs/feedback-f62/contract-controls/pristine--2-alternative-selections-candidate/.study/sensitivity.json\n",
+      "stderr": "▲ [WARNING] The conditions \"types\" and \"default\" here will never be used as they come after both \"import\" and \"require\" [package.json]\n\n    package.json:17:6:\n      17 │       \"types\": \"./dist/index.d.ts\",\n         ╵       ~~~~~~~\n\n  The \"import\" condition comes earlier and will be used for all \"import\" statements:\n\n    package.json:13:6:\n      13 │       \"import\": {\n         ╵       ~~~~~~~~\n\n  The \"require\" condition comes earlier and will be used for all \"require\" calls:\n\n    package.json:9:6:\n      9 │       \"require\": {\n        ╵       ~~~~~~~~~\n\n▲ [WARNING] The condition \"types\" here will never be used as it comes after both \"import\" and \"require\" [package.json]\n\n    package.json:27:6:\n      27 │       \"types\": \"./dist/types/index.d.ts\"\n         ╵       ~~~~~~~\n\n  The \"import\" condition comes earlier and will be used for all \"import\" statements:\n\n    package.json:24:6:\n      24 │       \"import\": {\n         ╵       ~~~~~~~~\n\n  The \"require\" condition comes earlier and will be used for all \"require\" calls:\n\n    package.json:21:6:\n      21 │       \"require\": {\n         ╵       ~~~~~~~~~\n\n"
+    },
+    {
+      "label": "pristine--2-alternative-selections-cline",
+      "author": {
+        "panel": "f61",
+        "name": "2-alternative-selections-cline",
+        "patchSha256": "3d92d7f63ab12ebe21b6a090656db146f0c716a4c2709c113b0954752f2cf371"
+      },
+      "production": "pristine frozen production",
+      "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+      "argv": [
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "--config",
+        ".study/sensitivity.vitest.mjs",
+        "--reporter=json",
+        "--outputFile=.study/sensitivity.json"
+      ],
+      "exitCode": 1,
+      "signal": null,
+      "error": null,
+      "authoredFiles": [
+        "src/alternative-selections.test.ts"
+      ],
+      "counts": {
+        "passed": 5,
+        "failed": 1,
+        "other": 0
+      },
+      "outcome": "runtime_case_failure",
+      "report": {
+        "numTotalTestSuites": 2,
+        "numPassedTestSuites": 0,
+        "numFailedTestSuites": 2,
+        "numPendingTestSuites": 0,
+        "numTotalTests": 6,
+        "numPassedTests": 5,
+        "numFailedTests": 1,
+        "numPendingTests": 0,
+        "numTodoTests": 0,
+        "snapshot": {
+          "added": 0,
+          "failure": false,
+          "filesAdded": 0,
+          "filesRemoved": 0,
+          "filesRemovedList": [],
+          "filesUnmatched": 0,
+          "filesUpdated": 0,
+          "matched": 0,
+          "total": 0,
+          "unchecked": 0,
+          "uncheckedKeysByFile": [],
+          "unmatched": 0,
+          "updated": 0,
+          "didUpdate": false
+        },
+        "startTime": 1792348861820,
+        "success": false,
+        "testResults": [
+          {
+            "assertionResults": [
+              {
+                "ancestorTitles": [
+                  "alternative selections"
+                ],
+                "fullName": "alternative selections does not keep selections from a failed match alternative",
+                "status": "passed",
+                "title": "does not keep selections from a failed match alternative",
+                "duration": 1.6393170000000055,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "alternative selections"
+                ],
+                "fullName": "alternative selections only uses the first successful match alternative",
+                "status": "passed",
+                "title": "only uses the first successful match alternative",
+                "duration": 0.26525000000000887,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "alternative selections"
+                ],
+                "fullName": "alternative selections initializes selections from other P.union alternatives to undefined",
+                "status": "passed",
+                "title": "initializes selections from other P.union alternatives to undefined",
+                "duration": 0.3442180000000121,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "alternative selections"
+                ],
+                "fullName": "alternative selections does not commit failed P.union selections and preserves guards",
+                "status": "passed",
+                "title": "does not commit failed P.union selections and preserves guards",
+                "duration": 0.22663099999999758,
+                "failureMessages": [],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "alternative selections"
+                ],
+                "fullName": "alternative selections does not expose partial selections when every alternative mismatches",
+                "status": "failed",
+                "title": "does not expose partial selections when every alternative mismatches",
+                "duration": 3.110972000000004,
+                "failureMessages": [
+                  "TypeError: (0 , matchPatterns) is not a function\n    at /workspace/blame-study-runs/feedback-f62/contract-controls/pristine--2-alternative-selections-cline/src/alternative-selections.test.ts:73:7\n    at file:///workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11\n    at file:///workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26\n    at file:///workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:1897:20\n    at new Promise (<anonymous>)\n    at runWithTimeout (file:///workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:1863:10)\n    at runTest (file:///workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:1574:12)\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at runSuite (file:///workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:1729:8)\n    at runSuite (file:///workspace/Blame/.blame/research/validation-scope-f44/dependencies/node_modules/@vitest/runner/dist/chunk-hooks.js:1729:8)"
+                ],
+                "meta": {}
+              },
+              {
+                "ancestorTitles": [
+                  "alternative selections"
+                ],
+                "fullName": "alternative selections supports anonymous selections without leaking a failed alternative",
+                "status": "passed",
+                "title": "supports anonymous selections without leaking a failed alternative",
+                "duration": 0.3059609999999964,
+                "failureMessages": [],
+                "meta": {}
+              }
+            ],
+            "startTime": 1792348862074,
+            "endTime": 1792348862080.306,
+            "status": "failed",
+            "message": "",
+            "name": "/workspace/blame-study-runs/feedback-f62/contract-controls/pristine--2-alternative-selections-cline/src/alternative-selections.test.ts"
+          }
+        ]
+      },
+      "stdout": "JSON report written to /workspace/blame-study-runs/feedback-f62/contract-controls/pristine--2-alternative-selections-cline/.study/sensitivity.json\n",
+      "stderr": "▲ [WARNING] The conditions \"types\" and \"default\" here will never be used as they come after both \"import\" and \"require\" [package.json]\n\n    package.json:17:6:\n      17 │       \"types\": \"./dist/index.d.ts\",\n         ╵       ~~~~~~~\n\n  The \"import\" condition comes earlier and will be used for all \"import\" statements:\n\n    package.json:13:6:\n      13 │       \"import\": {\n         ╵       ~~~~~~~~\n\n  The \"require\" condition comes earlier and will be used for all \"require\" calls:\n\n    package.json:9:6:\n      9 │       \"require\": {\n        ╵       ~~~~~~~~~\n\n▲ [WARNING] The condition \"types\" here will never be used as it comes after both \"import\" and \"require\" [package.json]\n\n    package.json:27:6:\n      27 │       \"types\": \"./dist/types/index.d.ts\"\n         ╵       ~~~~~~~\n\n  The \"import\" condition comes earlier and will be used for all \"import\" statements:\n\n    package.json:24:6:\n      24 │       \"import\": {\n         ╵       ~~~~~~~~\n\n  The \"require\" condition comes earlier and will be used for all \"require\" calls:\n\n    package.json:21:6:\n      21 │       \"require\": {\n         ╵       ~~~~~~~~~\n\n"
+    }
+  ]
+}

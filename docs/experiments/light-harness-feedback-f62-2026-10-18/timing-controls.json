@@ -1,0 +1,30 @@
+{
+  "complete": true,
+  "modelRequests": 0,
+  "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+  "argv": [
+    "--test",
+    "--test-reporter=tap",
+    "tools/terminal_bench/request-timing.test.mjs"
+  ],
+  "exitCode": 0,
+  "tests": 12,
+  "passed": 12,
+  "stdout": "TAP version 13\n# Subtest: observes consumer demand without eager reads, buffering or request changes\nok 1 - observes consumer demand without eager reads, buffering or request changes\n  ---\n  duration_ms: 20.769539\n  type: 'test'\n  ...\n# Subtest: preserves JSON, status, response metadata and clone semantics\nok 2 - preserves JSON, status, response metadata and clone semantics\n  ---\n  duration_ms: 3.282138\n  type: 'test'\n  ...\n# Subtest: preserves cancellation before consumption, without leaking reasons\nok 3 - preserves cancellation before consumption, without leaking reasons\n  ---\n  duration_ms: 0.544549\n  type: 'test'\n  ...\n# Subtest: preserves transport rejection and aborted signal; never saves error text\nok 4 - preserves transport rejection and aborted signal; never saves error text\n  ---\n  duration_ms: 0.583628\n  type: 'test'\n  ...\n# Subtest: body failure remains a failure, never a drained response\nok 5 - body failure remains a failure, never a drained response\n  ---\n  duration_ms: 0.569016\n  type: 'test'\n  ...\n# Subtest: null bodies and ordinary authentication requests are distinct\nok 6 - null bodies and ordinary authentication requests are distinct\n  ---\n  duration_ms: 0.452591\n  type: 'test'\n  ...\n# Subtest: identical requests keep distinct attempt IDs and unconsumed requests remain pending\nok 7 - identical requests keep distinct attempt IDs and unconsumed requests remain pending\n  ---\n  duration_ms: 0.573983\n  type: 'test'\n  ...\n# Subtest: uninspectable Request body is not cloned or consumed for identification\nok 8 - uninspectable Request body is not cloned or consumed for identification\n  ---\n  duration_ms: 1.09034\n  type: 'test'\n  ...\n# Subtest: overlapping intervals and intersections retain wall-time accounting\nok 9 - overlapping intervals and intersections retain wall-time accounting\n  ---\n  duration_ms: 0.399001\n  type: 'test'\n  ...\n# Subtest: tool/request interval accounting keeps overlap, errors and missing completions explicit\nok 10 - tool/request interval accounting keeps overlap, errors and missing completions explicit\n  ---\n  duration_ms: 1.752296\n  type: 'test'\n  ...\n# Subtest: partial reads preserve split UTF-8 and cancellation without prefetching the tail\nok 11 - partial reads preserve split UTF-8 and cancellation without prefetching the tail\n  ---\n  duration_ms: 0.889548\n  type: 'test'\n  ...\n# Subtest: request-hash reconciliation distinguishes repeated, missing and unfinished attempts\nok 12 - request-hash reconciliation distinguishes repeated, missing and unfinished attempts\n  ---\n  duration_ms: 0.289635\n  type: 'test'\n  ...\n1..12\n# tests 12\n# suites 0\n# pass 12\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 102.946029\n",
+  "stderr": "",
+  "actualPreloadRequestHashJoin": true,
+  "demandDrivenNoEagerRead": true,
+  "abortCancellationErrorIdentityPreserved": true,
+  "utf8AndJsonPreserved": true,
+  "headerAndCloneMetadataPreserved": true,
+  "pendingAndRepeatedAttemptsDistinct": true,
+  "overlappingIntervalsNotDoubleCounted": true,
+  "sourceHashes": {
+    "tools/terminal_bench/request-timing.mjs": "073d46f6e4cee48314eee1092df36b9f5b96c99aa9320be9330ab5af5c2b2a72",
+    "tools/terminal_bench/request-timing-preload.mjs": "98fd62d193951873494a2b81ce2c214644d96ad521500ae9ce3b77242a815fa1",
+    "tools/terminal_bench/request-timing.test.mjs": "9cbc48d18be55daabc9a7ced65c4379a96145f7850e38bfb5603a0a0ae4ea154",
+    "tools/terminal_bench/latency-intervals.mjs": "86ccdfce7bf866a58aa81f1be29b7933cbedee7221be15f5107f18ef9585c2e4",
+    "tools/terminal_bench/latency-profile.mjs": "1a267a1a55c7a62d0eff4ae5871a4f7451828d50a9513f5fd87adfb2512f0d43"
+  },
+  "limits": "Observer timestamps include observer and client processing overhead. Consumer-driven stream read completion is not a pure server/network span. No request or response body, headers or credential/error text is retained."
+}

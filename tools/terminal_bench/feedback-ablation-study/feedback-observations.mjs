@@ -17,6 +17,7 @@ export function feedbackObservations(tools){
 }
 export function mechanismGate(rows,protocol){
  const candidate=rows.filter(r=>r.arm==='candidate');
+ if(protocol.mechanismKind==='provenance')return candidate.some(r=>r.provenanceWire?.uniqueReceipts>0&&r.provenance?.some(o=>o.confirmedSameSourceRerunIndices.length>0));
  if(protocol.mechanismKind==='repair')return candidate.some(r=>r.feedback.repairs.some(x=>x.exactNextSelection));
  if(protocol.mechanismKind==='body')return candidate.some(r=>protocol.feedbackWireAudit?r.feedbackWire?.uniqueHeaderReceipts>0:r.feedback.headers.length>0);
  return candidate.some(r=>r.navigationOffers.some(o=>o.followedIndices.length>0)||(protocol.feedbackWireAudit?r.feedbackWire?.uniqueHeaderReceipts>0:r.feedback.headers.length>0)||r.feedback.repairs.some(x=>x.exactNextSelection));

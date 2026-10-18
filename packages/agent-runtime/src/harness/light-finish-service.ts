@@ -311,7 +311,7 @@ export class LightFinishService {
       completion: decision,
       ...(memory ? { memory } : {}),
       submission_outcome: "accepted",
-      validationReport: currentValidationReport(state),
+      validationReport: currentValidationReport(state, this.journal.currentValidations()),
       summary,
       verified,
     });

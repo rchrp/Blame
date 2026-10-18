@@ -58,7 +58,7 @@ import {
 } from "./lexical-search.js";
 import { ReadCoverage, type ByteInterval } from "./read-coverage.js";
 import { SessionJournal } from "./session-journal.js";
-import { currentValidationReport } from "./light-validation-report.js";
+import { currentValidationReport, validationStateAfterEdit } from "./light-validation-report.js";
 import { sha256 } from "./light-identity.js";
 import {
   assertMutableWorkspacePath,
@@ -154,12 +154,28 @@ export class LightWorkspace {
         if (path) this.coverage.invalidatePath(path);
       }
     await this.journal.recordCoverage(this.coverage.snapshot());
-    return result.status === "ok" && recordValue(result.data).changed === true
-      ? this.withCheckRepair(result) : result;
+    if (result.status !== "ok" || recordValue(result.data).changed !== true) return result;
+    return this.withCheckRepair(await this.withValidationState(result, recordValue(result.status === "ok" ? result.data : undefined).sourceRevisionId));
+  }
+
+  private async withValidationState(result: LightToolResult<unknown>, expectedRevision?: unknown): Promise<LightToolResult<unknown>> {
+    if (result.status !== "ok") return result;
+    const completed = recordValue(recordValue(result.data).completed);
+    const changed = recordValue(completed.status === "ok" ? completed.data : result.data).changed === true;
+    if (!changed) return result;
+    // Evidence presentation must never mask an already committed edit. Avoid a
+    // new snapshot when no invocation has been recorded in this session.
+    const validationState = this.journal.currentValidations().length
+      ? await this.commits.exclusive(async () => {
+          const state = await this.journal.completionSnapshot();
+          return validationStateAfterEdit(state, this.journal.currentValidations(), expectedRevision ?? state.sourceRevisionId);
+        }).catch(() => undefined)
+      : undefined;
+    return validationState ? { ...result, data: { ...recordValue(result.data), validationState } } : result;
   }
 
   async runTask(input: LightRunTaskInput, context: AgentToolContext) {
-    return this.withCheckRepair(await this.runTaskWithDiagnostics(input, context));
+    return this.withCheckRepair(await this.withValidationState(await this.runTaskWithDiagnostics(input, context)));
   }
 
   private async withCheckRepair(result: LightToolResult<unknown>): Promise<LightToolResult<unknown>> {
@@ -431,7 +447,7 @@ export class LightWorkspace {
 
   private async specialReadResult(target: string) {
     if (target === "@checks")
-      return this.withCheckRepair({ status: "ok" as const, data: currentValidationReport(await this.journal.completionSnapshot()) });
+      return this.withCheckRepair({ status: "ok" as const, data: currentValidationReport(await this.journal.completionSnapshot(), this.journal.currentValidations()) });
     if (target === "@capabilities") return capabilitiesResult();
     if (target === "@changes")
       return {

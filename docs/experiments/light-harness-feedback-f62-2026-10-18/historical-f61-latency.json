@@ -1,0 +1,433 @@
+{
+  "method": "Recorded tool start/end intervals clipped to SDK worker bounds, merged before summing. Historical absent fetch spans are unknown, not zero requests. New fetch spans end on consumer-driven EOF/cancellation/error; they include gateway, transport, generation and client processing/backpressure, not pure network or provider inference. Tool/HTTP overlaps are explicit. Record timestamps and passive observer overhead do not establish exclusive-host causality. Historical diagnosis is post-hoc; original outcomes/costs unchanged.",
+  "rows": [
+    {
+      "name": "1-alternative-selections-reference",
+      "arm": "reference",
+      "sdkDurationMs": 165471,
+      "sourceHashes": {
+        "events": "5dee942a1b7090a50ba671af5205a756dcf515f147980df20c6c66f9d7c5cdde",
+        "result": "614e77263c2a40d96d3450d4dd7d73fe47c6b4d1ebe7ca3e16c9583ec5d913e1"
+      },
+      "windowMs": 165471,
+      "toolMs": 25642,
+      "requestMs": null,
+      "overlapMs": null,
+      "toolOnlyMs": null,
+      "requestOnlyMs": null,
+      "outsideObservedSpansMs": 139829,
+      "toolSpanCount": 54,
+      "toolUnionCount": 38,
+      "toolAnomalies": [],
+      "requestAnomalies": null,
+      "measuredRequests": null,
+      "requestPhaseUnionMs": null
+    },
+    {
+      "name": "1-alternative-selections-candidate",
+      "arm": "candidate",
+      "sdkDurationMs": 209025,
+      "sourceHashes": {
+        "events": "eb6edb4ee2ba1622e8f09537b5783d1549e7e6bab7f576df9cc222c52c3382f6",
+        "result": "b161110bfbfd187d1608163f94cd4c46a3d39fb61d3d66953647fed484242110"
+      },
+      "windowMs": 209025,
+      "toolMs": 14450,
+      "requestMs": null,
+      "overlapMs": null,
+      "toolOnlyMs": null,
+      "requestOnlyMs": null,
+      "outsideObservedSpansMs": 194575,
+      "toolSpanCount": 39,
+      "toolUnionCount": 30,
+      "toolAnomalies": [],
+      "requestAnomalies": null,
+      "measuredRequests": null,
+      "requestPhaseUnionMs": null
+    },
+    {
+      "name": "1-alternative-selections-cline",
+      "arm": "cline",
+      "sdkDurationMs": 166349,
+      "sourceHashes": {
+        "events": "2adc4743076fc2095c499e7056b46a0489e77e56b3089549e11063c26a1748fd",
+        "result": "8d015d417ee78c3121c682c1f8c379f37a85f97b7aa6a0b3c8a6587de1575f87"
+      },
+      "windowMs": 166349,
+      "toolMs": 27629,
+      "requestMs": null,
+      "overlapMs": null,
+      "toolOnlyMs": null,
+      "requestOnlyMs": null,
+      "outsideObservedSpansMs": 138720,
+      "toolSpanCount": 44,
+      "toolUnionCount": 35,
+      "toolAnomalies": [],
+      "requestAnomalies": null,
+      "measuredRequests": null,
+      "requestPhaseUnionMs": null
+    },
+    {
+      "name": "1-symbol-pattern-keys-candidate",
+      "arm": "candidate",
+      "sdkDurationMs": 152517,
+      "sourceHashes": {
+        "events": "1e9fbf4c5f49b0ed2fa9f2545c057fc91d5924013022faee3dc92bda1ca15df3",
+        "result": "7fc88edf853792cb81309353fb4dd3281b56b27a15cf030e7788e97c75d4d789"
+      },
+      "windowMs": 152517,
+      "toolMs": 7925,
+      "requestMs": null,
+      "overlapMs": null,
+      "toolOnlyMs": null,
+      "requestOnlyMs": null,
+      "outsideObservedSpansMs": 144592,
+      "toolSpanCount": 44,
+      "toolUnionCount": 34,
+      "toolAnomalies": [],
+      "requestAnomalies": null,
+      "measuredRequests": null,
+      "requestPhaseUnionMs": null
+    },
+    {
+      "name": "1-symbol-pattern-keys-cline",
+      "arm": "cline",
+      "sdkDurationMs": 100534,
+      "sourceHashes": {
+        "events": "bd128a67118f3d9116b1db7a26d005fb0cb1d12ef2dd89aba2186b988b711cb1",
+        "result": "794f89423621a6a755dd895f6ff57f97c4945991a0050ba1b4c7e1cb518659c2"
+      },
+      "windowMs": 100534,
+      "toolMs": 10058,
+      "requestMs": null,
+      "overlapMs": null,
+      "toolOnlyMs": null,
+      "requestOnlyMs": null,
+      "outsideObservedSpansMs": 90476,
+      "toolSpanCount": 24,
+      "toolUnionCount": 22,
+      "toolAnomalies": [],
+      "requestAnomalies": null,
+      "measuredRequests": null,
+      "requestPhaseUnionMs": null
+    },
+    {
+      "name": "1-symbol-pattern-keys-reference",
+      "arm": "reference",
+      "sdkDurationMs": 224622,
+      "sourceHashes": {
+        "events": "9731cf0419d80cc4c7c4be5de6dd769fd8e99bda57ee61bffb85532da9570334",
+        "result": "9265dbbdd9a7a2b04d0cc3caae9c903bf073775ae253662bb3f0d68a6f2b41e6"
+      },
+      "windowMs": 224622,
+      "toolMs": 15206,
+      "requestMs": null,
+      "overlapMs": null,
+      "toolOnlyMs": null,
+      "requestOnlyMs": null,
+      "outsideObservedSpansMs": 209416,
+      "toolSpanCount": 51,
+      "toolUnionCount": 42,
+      "toolAnomalies": [],
+      "requestAnomalies": null,
+      "measuredRequests": null,
+      "requestPhaseUnionMs": null
+    },
+    {
+      "name": "1-empty-collection-selections-cline",
+      "arm": "cline",
+      "sdkDurationMs": 115374,
+      "sourceHashes": {
+        "events": "4a16ecc3bacbd0a6d0c3d5687c0b06c5a5a89a89b4f361b3c642c1d832e664ca",
+        "result": "f431ad89f64b3761e7bb17b5b5f99ab02f7fc952510bd1475e7a0dc1a251b93f"
+      },
+      "windowMs": 115374,
+      "toolMs": 12502,
+      "requestMs": null,
+      "overlapMs": null,
+      "toolOnlyMs": null,
+      "requestOnlyMs": null,
+      "outsideObservedSpansMs": 102872,
+      "toolSpanCount": 28,
+      "toolUnionCount": 21,
+      "toolAnomalies": [],
+      "requestAnomalies": null,
+      "measuredRequests": null,
+      "requestPhaseUnionMs": null
+    },
+    {
+      "name": "1-empty-collection-selections-reference",
+      "arm": "reference",
+      "sdkDurationMs": 115204,
+      "sourceHashes": {
+        "events": "95c4fdc3d76f239870f635b68e4ca3ec2c86041fde836944c84eb2442fe797d9",
+        "result": "f4c4fde65b738c9066136cf2df9fff79cbed7140c206afd2d300c1fadc2d43cc"
+      },
+      "windowMs": 115204,
+      "toolMs": 28419,
+      "requestMs": null,
+      "overlapMs": null,
+      "toolOnlyMs": null,
+      "requestOnlyMs": null,
+      "outsideObservedSpansMs": 86785,
+      "toolSpanCount": 64,
+      "toolUnionCount": 49,
+      "toolAnomalies": [],
+      "requestAnomalies": null,
+      "measuredRequests": null,
+      "requestPhaseUnionMs": null
+    },
+    {
+      "name": "1-empty-collection-selections-candidate",
+      "arm": "candidate",
+      "sdkDurationMs": 183549,
+      "sourceHashes": {
+        "events": "1f6ff57d4a885af73dcf57778ddf79f62af650afcf8c9b983e7d8c146d2f3df5",
+        "result": "cc9157a126a94ee932a2fa44c0f6965d9415afc635bdf84542714a479e230820"
+      },
+      "windowMs": 183549,
+      "toolMs": 19098,
+      "requestMs": null,
+      "overlapMs": null,
+      "toolOnlyMs": null,
+      "requestOnlyMs": null,
+      "outsideObservedSpansMs": 164451,
+      "toolSpanCount": 56,
+      "toolUnionCount": 41,
+      "toolAnomalies": [],
+      "requestAnomalies": null,
+      "measuredRequests": null,
+      "requestPhaseUnionMs": null
+    },
+    {
+      "name": "2-alternative-selections-candidate",
+      "arm": "candidate",
+      "sdkDurationMs": 122200,
+      "sourceHashes": {
+        "events": "637cb8fb8e5b40ca611d93f674e15a54440befdb4822797d203faa238b9afea1",
+        "result": "a6207c84a2b5c731398af55ba50c573bd4246cbda9b6339f526a2dbf9ccff77f"
+      },
+      "windowMs": 122200,
+      "toolMs": 15233,
+      "requestMs": null,
+      "overlapMs": null,
+      "toolOnlyMs": null,
+      "requestOnlyMs": null,
+      "outsideObservedSpansMs": 106967,
+      "toolSpanCount": 40,
+      "toolUnionCount": 29,
+      "toolAnomalies": [],
+      "requestAnomalies": null,
+      "measuredRequests": null,
+      "requestPhaseUnionMs": null
+    },
+    {
+      "name": "2-alternative-selections-cline",
+      "arm": "cline",
+      "sdkDurationMs": 169809,
+      "sourceHashes": {
+        "events": "9bd0d6a90b06d518c82758cfd4debf70caa019ba187430183c99000689cc3854",
+        "result": "1b6a920e1cf7456d2b77e95238997f9551eebb2625a11ffe0354946f95c490ac"
+      },
+      "windowMs": 169809,
+      "toolMs": 19927,
+      "requestMs": null,
+      "overlapMs": null,
+      "toolOnlyMs": null,
+      "requestOnlyMs": null,
+      "outsideObservedSpansMs": 149882,
+      "toolSpanCount": 32,
+      "toolUnionCount": 26,
+      "toolAnomalies": [],
+      "requestAnomalies": null,
+      "measuredRequests": null,
+      "requestPhaseUnionMs": null
+    },
+    {
+      "name": "2-alternative-selections-reference",
+      "arm": "reference",
+      "sdkDurationMs": 94129,
+      "sourceHashes": {
+        "events": "606a1f25df77aa82e34fed318ef85d45549a2cf3bb15baf122a9d168bae7b18e",
+        "result": "46f2661138576575553dafe0571e7d1e51fe20009f3f356c32fabf12155d3f01"
+      },
+      "windowMs": 94129,
+      "toolMs": 11540,
+      "requestMs": null,
+      "overlapMs": null,
+      "toolOnlyMs": null,
+      "requestOnlyMs": null,
+      "outsideObservedSpansMs": 82589,
+      "toolSpanCount": 46,
+      "toolUnionCount": 32,
+      "toolAnomalies": [],
+      "requestAnomalies": null,
+      "measuredRequests": null,
+      "requestPhaseUnionMs": null
+    },
+    {
+      "name": "2-symbol-pattern-keys-cline",
+      "arm": "cline",
+      "sdkDurationMs": 88327,
+      "sourceHashes": {
+        "events": "0de5b2034fbd9a82e298a094fddb616afafbd5893ac554ae5cadc58bfc292e06",
+        "result": "438877a218b0fe0128e4469b7dcbbd75ae4da0237316785323da620c02f4493b"
+      },
+      "windowMs": 88327,
+      "toolMs": 7093,
+      "requestMs": null,
+      "overlapMs": null,
+      "toolOnlyMs": null,
+      "requestOnlyMs": null,
+      "outsideObservedSpansMs": 81234,
+      "toolSpanCount": 19,
+      "toolUnionCount": 15,
+      "toolAnomalies": [],
+      "requestAnomalies": null,
+      "measuredRequests": null,
+      "requestPhaseUnionMs": null
+    },
+    {
+      "name": "2-symbol-pattern-keys-reference",
+      "arm": "reference",
+      "sdkDurationMs": 88340,
+      "sourceHashes": {
+        "events": "ce260bbc04d5f27ec8d1f2fe5350138f3385c888bfe84e44489a30cb416f8827",
+        "result": "a98e17c1c2409f32a1088f9c406e37a3c737838849baf6fd61752d92a7c5ac67"
+      },
+      "windowMs": 88340,
+      "toolMs": 13729,
+      "requestMs": null,
+      "overlapMs": null,
+      "toolOnlyMs": null,
+      "requestOnlyMs": null,
+      "outsideObservedSpansMs": 74611,
+      "toolSpanCount": 43,
+      "toolUnionCount": 31,
+      "toolAnomalies": [],
+      "requestAnomalies": null,
+      "measuredRequests": null,
+      "requestPhaseUnionMs": null
+    },
+    {
+      "name": "2-symbol-pattern-keys-candidate",
+      "arm": "candidate",
+      "sdkDurationMs": 157295,
+      "sourceHashes": {
+        "events": "bbc2c5bc7102b15b00941ae2354a3847ace6eb9691bc28e8034286785c4cca19",
+        "result": "2866feef206ab2fad94e074193d1e7f5ce59b49e54aaa83423504bb67047d222"
+      },
+      "windowMs": 157295,
+      "toolMs": 14917,
+      "requestMs": null,
+      "overlapMs": null,
+      "toolOnlyMs": null,
+      "requestOnlyMs": null,
+      "outsideObservedSpansMs": 142378,
+      "toolSpanCount": 43,
+      "toolUnionCount": 35,
+      "toolAnomalies": [],
+      "requestAnomalies": null,
+      "measuredRequests": null,
+      "requestPhaseUnionMs": null
+    },
+    {
+      "name": "2-empty-collection-selections-reference",
+      "arm": "reference",
+      "sdkDurationMs": 84484,
+      "sourceHashes": {
+        "events": "c64da050a0acd8a1b58e637b2c176bca450262a1b107549ee5fc0209a79d377f",
+        "result": "dbd3a7b115220a239f0de0240049ff93b5604c0628b39d5c29529862ac9cd25b"
+      },
+      "windowMs": 84484,
+      "toolMs": 6338,
+      "requestMs": null,
+      "overlapMs": null,
+      "toolOnlyMs": null,
+      "requestOnlyMs": null,
+      "outsideObservedSpansMs": 78146,
+      "toolSpanCount": 46,
+      "toolUnionCount": 27,
+      "toolAnomalies": [],
+      "requestAnomalies": null,
+      "measuredRequests": null,
+      "requestPhaseUnionMs": null
+    },
+    {
+      "name": "2-empty-collection-selections-candidate",
+      "arm": "candidate",
+      "sdkDurationMs": 138927,
+      "sourceHashes": {
+        "events": "81b474acecd952bc7d480faa5f0bd250dca3e46d92d5e0457ebcf1b10feed5b5",
+        "result": "b5ca79669d82da923438cc8851f669327e703ed8786d1784549cc41c0ea3446a"
+      },
+      "windowMs": 138927,
+      "toolMs": 14910,
+      "requestMs": null,
+      "overlapMs": null,
+      "toolOnlyMs": null,
+      "requestOnlyMs": null,
+      "outsideObservedSpansMs": 124017,
+      "toolSpanCount": 45,
+      "toolUnionCount": 24,
+      "toolAnomalies": [],
+      "requestAnomalies": null,
+      "measuredRequests": null,
+      "requestPhaseUnionMs": null
+    },
+    {
+      "name": "2-empty-collection-selections-cline",
+      "arm": "cline",
+      "sdkDurationMs": 116022,
+      "sourceHashes": {
+        "events": "ddcff2e03bfeedf7458cf830e372220dc6d90037cb4edee97f0dfce76623be12",
+        "result": "f685ac49e9935dad9a7ae8210e5fe056548e278368783332a1d0b96c4be988eb"
+      },
+      "windowMs": 116022,
+      "toolMs": 15832,
+      "requestMs": null,
+      "overlapMs": null,
+      "toolOnlyMs": null,
+      "requestOnlyMs": null,
+      "outsideObservedSpansMs": 100190,
+      "toolSpanCount": 32,
+      "toolUnionCount": 26,
+      "toolAnomalies": [],
+      "requestAnomalies": null,
+      "measuredRequests": null,
+      "requestPhaseUnionMs": null
+    }
+  ],
+  "arms": {
+    "reference": {
+      "sdkDurationMs": 772250,
+      "windowMs": 772250,
+      "toolMs": 100874,
+      "requestMs": null,
+      "overlapMs": null,
+      "toolOnlyMs": null,
+      "requestOnlyMs": null,
+      "outsideObservedSpansMs": 671376
+    },
+    "candidate": {
+      "sdkDurationMs": 963513,
+      "windowMs": 963513,
+      "toolMs": 86533,
+      "requestMs": null,
+      "overlapMs": null,
+      "toolOnlyMs": null,
+      "requestOnlyMs": null,
+      "outsideObservedSpansMs": 876980
+    },
+    "cline": {
+      "sdkDurationMs": 756415,
+      "windowMs": 756415,
+      "toolMs": 93041,
+      "requestMs": null,
+      "overlapMs": null,
+      "toolOnlyMs": null,
+      "requestOnlyMs": null,
+      "outsideObservedSpansMs": 663374
+    }
+  }
+}
