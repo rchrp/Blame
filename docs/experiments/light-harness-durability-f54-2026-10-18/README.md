@@ -1,0 +1,9 @@
+# F54 durable study runner
+
+Research coordinator change only; no model calls and no production harness change. F52 lost its `/tmp` event/usage/patch evidence during an executor restart. New campaigns use `/workspace/blame-study-runs`, outside repository ancestors so undeclared host dependencies remain inaccessible.
+
+Each completed assignment gets one exclusive compressed checkpoint containing the original files, hashes, result row, usage/wire observations and protocol hash. File and directory fsync precede workspace cleanup. Checkpoint files are archived into repository experiment directories immediately; their index is derived, and completed files can be restored without a model call. These checks protect against corruption and accidental mixing; they are not a trusted signature or full-machine durability guarantee. Git commits/pushes provide an additional remote copy.
+
+`run.mjs resume` checks the registered bindings and restores completed assignments. A recorded model exit plus matching endpoint source manifest permits offline grading/finalization. A start without a recorded exit fails closed, retaining private partial files and a separate unknown-consumption allowance; it is never retried or silently skipped. Another host/boot or an unresolved lease requires inspection. A per-campaign lease excludes concurrent drivers; a proven dead driver on the same boot can be recovered.
+
+Ten dedicated controls pass, including a real SIGKILL, archive restoration, missing-value preservation, corruption/protocol rejection, exclusive publication, credential rejection and concurrent-driver exclusion. Seven existing dependency-isolation controls and 37 runner tests also pass. An initial test cleanup-order bug and a setup import/export mistake were corrected before model registration; adverse logs are retained separately. No solver/model efficiency claim follows from these controls.

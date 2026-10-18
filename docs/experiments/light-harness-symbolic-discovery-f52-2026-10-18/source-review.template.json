@@ -1,0 +1,23 @@
+{
+  "method": "Unblinded manual review of immutable patch, delivery and command chronology; all booleans require evidence. Inspect public function signatures manually: structural type assignments do not exclude any or enforce exact parameter arity/order. Symbolic results are bounded to their supplied property/domain; unsupported syntax and absent usage are valid negatives, and no-counterexample claims must not be reported as project verification. Copy to source-review.json and fill, never infer task success from official completion alone.",
+  "decisions": [
+    {
+      "name": "1-credit-remainder-reference",
+      "hashes": {
+        "events.jsonl": "51b3658a3a7995cb09cac9e65eb6adb17bea01299c49a399ec24f9e896f15ed4",
+        "workspace.diff": "30aa71ece3b95ca88fb2cd2d05663e09adef45257d082b6dd6b09498921f99f1",
+        "score.json": "8e15065df3398fda1401397496f186d3b178fb6bd5b31a50634d511284505b27",
+        "tool-ledger.json": "3dcc4ff0ad7bbd4817da2074799507db33025eb936583ddf5ed1f942b28c8921"
+      },
+      "sourceBehaviorPassed": null,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": null,
+      "noSolutionRetrieval": null,
+      "fullRequestPassed": null,
+      "symbolicClaimsAccurate": null,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": []
+    }
+  ]
+}

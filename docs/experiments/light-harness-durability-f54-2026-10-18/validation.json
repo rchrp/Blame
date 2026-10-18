@@ -1,0 +1,42 @@
+{
+  "durableControls": {
+    "passed": 10,
+    "failed": 0
+  },
+  "isolationControls": {
+    "passed": 7,
+    "failed": 0
+  },
+  "runner": {
+    "passed": 37,
+    "failed": 0
+  },
+  "modelCalls": 0,
+  "logs": [
+    {
+      "name": "durable-campaign-final-checks",
+      "rawSha256": "642d76acf7c2c497302b31ed781e1243a0b9d42fa980c95615049eb1a65c584e",
+      "archiveSha256": "7217f34e4eacf60b163144dcb8c051671c28c3c0b5858065eba64463e5898bdc"
+    },
+    {
+      "name": "durability-runner-checks",
+      "rawSha256": "78623197664ce23b2fa20743344810d5cf44253a6564b92a6ea3f1bebc499632",
+      "archiveSha256": "87fb7eb960f94d745986c6de944989ccad8028dbe99a047446905152dffb5d8b"
+    },
+    {
+      "name": "f53-controls-recovery",
+      "rawSha256": "42144868c06add1f15e72df28a2c84f980d28571ffb64d874aa468e5985e8add",
+      "archiveSha256": "50206d3038ec06f0b5f6785c0729a2787f2347c8216cfd46ddf417450805cd62"
+    },
+    {
+      "name": "f53-controls-recovery-final",
+      "rawSha256": "aa0430ac172bfef0991f49875cae47eee2d86af379d88c760409c46963109805",
+      "archiveSha256": "6c18eabef4a5374223f22036f21a00ce28b9e424da66da488046179a7c979cf0"
+    },
+    {
+      "name": "f55-controls-final",
+      "rawSha256": "ffc212454967a09052bd325fb102c133f843ae3092b856cc5fdf38ade91db3fa",
+      "archiveSha256": "91c767f0250db8144af5c2a6f13f5301527be510262eaaabc7f21b96da0b8539"
+    }
+  ]
+}

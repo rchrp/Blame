@@ -1,0 +1,483 @@
+{
+  "complete": false,
+  "method": "lastEdit identifies successful explicit editing tools, excluding unchanged edits. Shell-write candidates are a conservative review aid, not a complete parser or proof of no mutation. Manual finalSourceChecksPassed review must also inspect commands and delivery; independent endpoint checks run on the archived final source.",
+  "packets": [
+    {
+      "name": "1-credit-remainder-reference",
+      "hashes": {
+        "events.jsonl": "51b3658a3a7995cb09cac9e65eb6adb17bea01299c49a399ec24f9e896f15ed4",
+        "workspace.diff": "30aa71ece3b95ca88fb2cd2d05663e09adef45257d082b6dd6b09498921f99f1",
+        "score.json": "8e15065df3398fda1401397496f186d3b178fb6bd5b31a50634d511284505b27",
+        "tool-ledger.json": "3dcc4ff0ad7bbd4817da2074799507db33025eb936583ddf5ed1f942b28c8921"
+      },
+      "official": true,
+      "functional": true,
+      "lastEdit": 17,
+      "required": {
+        "regression": [
+          {
+            "index": 18,
+            "input": {
+              "kind": "project",
+              "task": "test:study:regression"
+            },
+            "command": "npm run test:study:regression",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "counts": {
+                "executed": 4,
+                "passed": 4,
+                "failed": 0,
+                "skipped": 0
+              },
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "vitest_report",
+              "evidence": {
+                "invocationId": ".blame/harness/test-results/vitest-invocation-vQHa21",
+                "hookSha256": "3db2ebeb6225b43ae231debabae60c0ff5b54f7571bca23f92e95420cdb46541",
+                "reportedFileCount": 4,
+                "invocations": [
+                  {
+                    "format": "blame-vitest-invocation-v1",
+                    "id": "8c4c75d2-e835-49c1-95f8-ba29bc544dc1",
+                    "runner": {
+                      "name": "vitest",
+                      "version": "3.2.4"
+                    },
+                    "executable": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+                    "nodeVersion": "v24.19.0",
+                    "entry": "/tmp/blame-symbolic-discovery-f52/campaign/1-credit-remainder-reference/workspace/node_modules/vitest/vitest.mjs",
+                    "cwd": "/tmp/blame-symbolic-discovery-f52/campaign/1-credit-remainder-reference/workspace",
+                    "args": [
+                      "run",
+                      "--config",
+                      "regression.vitest.mjs"
+                    ],
+                    "exitCode": 0,
+                    "argsSha256": "35f9a382bb1ada3d3a16eca48e734b8ddfe9626fa8688f4d1d22a2c518401c52",
+                    "argsTruncated": false,
+                    "reportSha256": "06a9f978dc0f731611cd4051e5a2b590c510562c890104e4cadcf356ed9e8159",
+                    "files": [
+                      {
+                        "path": "apps/policy/src/original.test.ts",
+                        "cases": 1,
+                        "sourceSha256Before": null,
+                        "sourceSha256After": null,
+                        "unchanged": false
+                      },
+                      {
+                        "path": "packages/credit/src/original.test.ts",
+                        "cases": 1,
+                        "sourceSha256Before": null,
+                        "sourceSha256After": null,
+                        "unchanged": false
+                      },
+                      {
+                        "path": "packages/tiers/src/original.test.ts",
+                        "cases": 1,
+                        "sourceSha256Before": null,
+                        "sourceSha256After": null,
+                        "unchanged": false
+                      },
+                      {
+                        "path": "packages/windows/src/original.test.ts",
+                        "cases": 1,
+                        "sourceSha256Before": null,
+                        "sourceSha256After": null,
+                        "unchanged": false
+                      }
+                    ],
+                    "fileCount": 4,
+                    "filesTruncated": false
+                  }
+                ],
+                "invocationCount": 1,
+                "invocationsTruncated": false,
+                "typeFileSelection": "unknown",
+                "boundary": "Invocation-owned Vitest 3.2.4 reported cases; runtime versus configured typecheck mode is not established. Counts may include repeated invocations. File hashes bind observed tests, not dependencies or typecheck selection. No source admission or user acceptance.",
+                "command": "npm run test:study:regression",
+                "cwd": ".",
+                "invocationSourceRevisionId": "src_2da8de20aa7c20208010e03f7c7ad95e",
+                "completedSourceRevisionId": "src_2da8de20aa7c20208010e03f7c7ad95e",
+                "manifestEnvironment": {
+                  "beforeRevisionId": "env_ce5cf3a145750ee33eb01c48a3fe21b5",
+                  "afterRevisionId": "env_ce5cf3a145750ee33eb01c48a3fe21b5",
+                  "boundary": "Manifest/lock hashes only; installed dependencies and full environment are unknown."
+                }
+              }
+            }
+          }
+        ],
+        "types": [
+          {
+            "index": 19,
+            "input": {
+              "kind": "project",
+              "task": "test:study:types"
+            },
+            "command": "npm run test:study:types",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": null
+          }
+        ],
+        "delivered": [
+          {
+            "index": 20,
+            "input": {
+              "kind": "project",
+              "task": "test:study:delivered"
+            },
+            "command": "npm run test:study:delivered",
+            "exitCode": 0,
+            "processSuccess": true,
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "observed",
+              "outcome": "passed",
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "vitest_report",
+              "counts": {
+                "executed": 1,
+                "passed": 1,
+                "failed": 0,
+                "skipped": 0
+              },
+              "evidence": {
+                "invocationId": ".blame/harness/test-results/vitest-invocation-WRanIi",
+                "hookSha256": "3db2ebeb6225b43ae231debabae60c0ff5b54f7571bca23f92e95420cdb46541",
+                "reportedFileCount": 1,
+                "invocations": [
+                  {
+                    "format": "blame-vitest-invocation-v1",
+                    "id": "ba905621-78af-4323-863d-be2b09eba4c3",
+                    "runner": {
+                      "name": "vitest",
+                      "version": "3.2.4"
+                    },
+                    "executable": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+                    "nodeVersion": "v24.19.0",
+                    "entry": "/tmp/blame-symbolic-discovery-f52/campaign/1-credit-remainder-reference/workspace/node_modules/vitest/vitest.mjs",
+                    "cwd": "/tmp/blame-symbolic-discovery-f52/campaign/1-credit-remainder-reference/workspace",
+                    "args": [
+                      "run",
+                      "--config",
+                      ".blame/delivered.vitest.mjs"
+                    ],
+                    "exitCode": 0,
+                    "argsSha256": "72f02b727c96ef50121179aa4946aaf29b768859c342e27bd3dd7b3e978f093f",
+                    "argsTruncated": false,
+                    "reportSha256": "e622b9e414c20189713ce8b2d387b0cc10a5de6a4f473f24ed235194763ba298",
+                    "files": [
+                      {
+                        "path": "apps/policy/src/debit.test.ts",
+                        "cases": 1,
+                        "sourceSha256Before": "74d7a6812d81e4df2c8870ad122d41b752b294f112d62d5107d3ea5fcfd697cb",
+                        "sourceSha256After": "74d7a6812d81e4df2c8870ad122d41b752b294f112d62d5107d3ea5fcfd697cb",
+                        "unchanged": true
+                      }
+                    ],
+                    "fileCount": 1,
+                    "filesTruncated": false
+                  }
+                ],
+                "invocationCount": 1,
+                "invocationsTruncated": false,
+                "typeFileSelection": "unknown",
+                "boundary": "Invocation-owned Vitest 3.2.4 reported cases; runtime versus configured typecheck mode is not established. Counts may include repeated invocations. File hashes bind observed tests, not dependencies or typecheck selection. No source admission or user acceptance.",
+                "command": "npm run test:study:delivered",
+                "cwd": ".",
+                "invocationSourceRevisionId": "src_2da8de20aa7c20208010e03f7c7ad95e",
+                "completedSourceRevisionId": "src_2da8de20aa7c20208010e03f7c7ad95e",
+                "manifestEnvironment": {
+                  "beforeRevisionId": "env_ce5cf3a145750ee33eb01c48a3fe21b5",
+                  "afterRevisionId": "env_ce5cf3a145750ee33eb01c48a3fe21b5",
+                  "boundary": "Manifest/lock hashes only; installed dependencies and full environment are unknown."
+                }
+              }
+            }
+          }
+        ]
+      },
+      "commands": [
+        {
+          "index": 18,
+          "input": {
+            "kind": "project",
+            "task": "test:study:regression"
+          },
+          "command": "npm run test:study:regression",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "counts": {
+              "executed": 4,
+              "passed": 4,
+              "failed": 0,
+              "skipped": 0
+            },
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "vitest_report",
+            "evidence": {
+              "invocationId": ".blame/harness/test-results/vitest-invocation-vQHa21",
+              "hookSha256": "3db2ebeb6225b43ae231debabae60c0ff5b54f7571bca23f92e95420cdb46541",
+              "reportedFileCount": 4,
+              "invocations": [
+                {
+                  "format": "blame-vitest-invocation-v1",
+                  "id": "8c4c75d2-e835-49c1-95f8-ba29bc544dc1",
+                  "runner": {
+                    "name": "vitest",
+                    "version": "3.2.4"
+                  },
+                  "executable": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+                  "nodeVersion": "v24.19.0",
+                  "entry": "/tmp/blame-symbolic-discovery-f52/campaign/1-credit-remainder-reference/workspace/node_modules/vitest/vitest.mjs",
+                  "cwd": "/tmp/blame-symbolic-discovery-f52/campaign/1-credit-remainder-reference/workspace",
+                  "args": [
+                    "run",
+                    "--config",
+                    "regression.vitest.mjs"
+                  ],
+                  "exitCode": 0,
+                  "argsSha256": "35f9a382bb1ada3d3a16eca48e734b8ddfe9626fa8688f4d1d22a2c518401c52",
+                  "argsTruncated": false,
+                  "reportSha256": "06a9f978dc0f731611cd4051e5a2b590c510562c890104e4cadcf356ed9e8159",
+                  "files": [
+                    {
+                      "path": "apps/policy/src/original.test.ts",
+                      "cases": 1,
+                      "sourceSha256Before": null,
+                      "sourceSha256After": null,
+                      "unchanged": false
+                    },
+                    {
+                      "path": "packages/credit/src/original.test.ts",
+                      "cases": 1,
+                      "sourceSha256Before": null,
+                      "sourceSha256After": null,
+                      "unchanged": false
+                    },
+                    {
+                      "path": "packages/tiers/src/original.test.ts",
+                      "cases": 1,
+                      "sourceSha256Before": null,
+                      "sourceSha256After": null,
+                      "unchanged": false
+                    },
+                    {
+                      "path": "packages/windows/src/original.test.ts",
+                      "cases": 1,
+                      "sourceSha256Before": null,
+                      "sourceSha256After": null,
+                      "unchanged": false
+                    }
+                  ],
+                  "fileCount": 4,
+                  "filesTruncated": false
+                }
+              ],
+              "invocationCount": 1,
+              "invocationsTruncated": false,
+              "typeFileSelection": "unknown",
+              "boundary": "Invocation-owned Vitest 3.2.4 reported cases; runtime versus configured typecheck mode is not established. Counts may include repeated invocations. File hashes bind observed tests, not dependencies or typecheck selection. No source admission or user acceptance.",
+              "command": "npm run test:study:regression",
+              "cwd": ".",
+              "invocationSourceRevisionId": "src_2da8de20aa7c20208010e03f7c7ad95e",
+              "completedSourceRevisionId": "src_2da8de20aa7c20208010e03f7c7ad95e",
+              "manifestEnvironment": {
+                "beforeRevisionId": "env_ce5cf3a145750ee33eb01c48a3fe21b5",
+                "afterRevisionId": "env_ce5cf3a145750ee33eb01c48a3fe21b5",
+                "boundary": "Manifest/lock hashes only; installed dependencies and full environment are unknown."
+              }
+            }
+          }
+        },
+        {
+          "index": 19,
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "command": "npm run test:study:types",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 20,
+          "input": {
+            "kind": "project",
+            "task": "test:study:delivered"
+          },
+          "command": "npm run test:study:delivered",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "observed",
+            "outcome": "passed",
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "vitest_report",
+            "counts": {
+              "executed": 1,
+              "passed": 1,
+              "failed": 0,
+              "skipped": 0
+            },
+            "evidence": {
+              "invocationId": ".blame/harness/test-results/vitest-invocation-WRanIi",
+              "hookSha256": "3db2ebeb6225b43ae231debabae60c0ff5b54f7571bca23f92e95420cdb46541",
+              "reportedFileCount": 1,
+              "invocations": [
+                {
+                  "format": "blame-vitest-invocation-v1",
+                  "id": "ba905621-78af-4323-863d-be2b09eba4c3",
+                  "runner": {
+                    "name": "vitest",
+                    "version": "3.2.4"
+                  },
+                  "executable": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+                  "nodeVersion": "v24.19.0",
+                  "entry": "/tmp/blame-symbolic-discovery-f52/campaign/1-credit-remainder-reference/workspace/node_modules/vitest/vitest.mjs",
+                  "cwd": "/tmp/blame-symbolic-discovery-f52/campaign/1-credit-remainder-reference/workspace",
+                  "args": [
+                    "run",
+                    "--config",
+                    ".blame/delivered.vitest.mjs"
+                  ],
+                  "exitCode": 0,
+                  "argsSha256": "72f02b727c96ef50121179aa4946aaf29b768859c342e27bd3dd7b3e978f093f",
+                  "argsTruncated": false,
+                  "reportSha256": "e622b9e414c20189713ce8b2d387b0cc10a5de6a4f473f24ed235194763ba298",
+                  "files": [
+                    {
+                      "path": "apps/policy/src/debit.test.ts",
+                      "cases": 1,
+                      "sourceSha256Before": "74d7a6812d81e4df2c8870ad122d41b752b294f112d62d5107d3ea5fcfd697cb",
+                      "sourceSha256After": "74d7a6812d81e4df2c8870ad122d41b752b294f112d62d5107d3ea5fcfd697cb",
+                      "unchanged": true
+                    }
+                  ],
+                  "fileCount": 1,
+                  "filesTruncated": false
+                }
+              ],
+              "invocationCount": 1,
+              "invocationsTruncated": false,
+              "typeFileSelection": "unknown",
+              "boundary": "Invocation-owned Vitest 3.2.4 reported cases; runtime versus configured typecheck mode is not established. Counts may include repeated invocations. File hashes bind observed tests, not dependencies or typecheck selection. No source admission or user acceptance.",
+              "command": "npm run test:study:delivered",
+              "cwd": ".",
+              "invocationSourceRevisionId": "src_2da8de20aa7c20208010e03f7c7ad95e",
+              "completedSourceRevisionId": "src_2da8de20aa7c20208010e03f7c7ad95e",
+              "manifestEnvironment": {
+                "beforeRevisionId": "env_ce5cf3a145750ee33eb01c48a3fe21b5",
+                "afterRevisionId": "env_ce5cf3a145750ee33eb01c48a3fe21b5",
+                "boundary": "Manifest/lock hashes only; installed dependencies and full environment are unknown."
+              }
+            }
+          }
+        },
+        {
+          "index": 21,
+          "input": {
+            "kind": "project",
+            "task": "typecheck:delivered"
+          },
+          "command": "npm run typecheck:delivered",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        },
+        {
+          "index": 22,
+          "input": {
+            "kind": "command",
+            "command": "git diff --check && git status --short",
+            "cwd": "/tmp/blame-symbolic-discovery-f52/campaign/1-credit-remainder-reference/workspace"
+          },
+          "command": "git diff --check && git status --short",
+          "exitCode": 0,
+          "processSuccess": true,
+          "check": null
+        }
+      ],
+      "shellWriteCandidates": [],
+      "delivery": "Implemented the credit policy correction.\n\n- `availableCredit` now normalizes negative balance, reservation, and limit values to zero, clamps negative remainders to zero, and preserves its three-number-argument numeric signature.\n- `approveDebit` now normalizes negative requests to zero, caps approval at available credit, and does not mutate inputs.\n- `quoteDebit` now uses the shared credit policy for approval and remaining credit, and reports denied normalized request amount.\n- Added `apps/policy/src/debit.test.ts` covering normalization, clamping, allocation, remaining credit, and denied amounts.\n\nChecks run:\n- `npm run test:study:regression` — passed: 4/4 tests in 4 files. This configured regression suite covers original tests only.\n- `npm run test:study:types` — passed. The configured compiler excludes test files.\n- `npm run test:study:delivered` — passed: 1/1 delivered regression test.\n- `npm run typecheck:delivered` — passed: delivered source plus test typecheck.\n- `git diff --check` — passed.\n\nNo dependencies, manifests, locks, configuration, or original tests were changed.",
+      "blocked": [],
+      "scopeCommands": [],
+      "completion": {
+        "source_revision_id": "src_2da8de20aa7c20208010e03f7c7ad95e",
+        "delivery": "satisfied",
+        "verification": "unverified",
+        "satisfied_obligations": [
+          "check:regression",
+          "check:types",
+          "check:delivered"
+        ],
+        "missing_obligations": [],
+        "failed_obligations": [],
+        "reservations": [
+          {
+            "code": "VALIDATION_UNAVAILABLE",
+            "message": "A test invocation reported a passing result. Its evidence does not establish verification of the current source.",
+            "obligation_ids": []
+          }
+        ]
+      },
+      "selectionFailures": [],
+      "noTestFileOutputs": 0,
+      "finishFailures": 0,
+      "evidenceAnomalies": {
+        "events": [],
+        "result": [],
+        "wire": []
+      },
+      "finishObservations": [
+        {
+          "index": 27,
+          "outputType": "string",
+          "classification": "accepted"
+        }
+      ],
+      "symbolicObservations": [],
+      "directSolverCommands": [],
+      "schemas": [
+        {
+          "sha256": "fad1f71a965ddf4bc2ff2557f3ff93dcea2e72514c236bcf6050ab3928f42602",
+          "bytes": 12278,
+          "runTaskPresent": true,
+          "kinds": [
+            "analyze",
+            "command",
+            "dependency",
+            "inspect",
+            "project"
+          ],
+          "analyzeExposed": true,
+          "runTaskDescriptionSha256": "ecdfd114c52f1c3b3040f32ead60fcfaf680830845c6b45b7dc0ef7c98c27cdb"
+        }
+      ]
+    }
+  ]
+}
