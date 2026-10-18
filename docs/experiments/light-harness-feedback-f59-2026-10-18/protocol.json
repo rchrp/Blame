@@ -1,0 +1,309 @@
+{
+  "phase": "F59",
+  "registeredAtUTC": "2026-10-18T14:48:27.680Z",
+  "readyForModel": true,
+  "sourceHead": "9589f66db369acabcf8a16ec75f8ae10c54325d4",
+  "snapshotSourceHead": "863e5da94490debb3d0392cd0927a0a67f89b6e2",
+  "provider": "openai-codex",
+  "model": "gpt-5.6-luna",
+  "effort": "high",
+  "apiUrl": "https://api.blame.so/api/v1",
+  "projects": [
+    {
+      "name": "remeda",
+      "upstreamCommit": "729ead3f458a24167154e5ba6e9305022baabfcf",
+      "sourceArchiveSha256": "a3b68393881da1d7161481c4d1d20895fd76b83c41771a65d5c6700d06ff2389",
+      "archivedFiles": 991,
+      "sourceTsFiles": 537
+    }
+  ],
+  "arms": [
+    "reference",
+    "candidate",
+    "cline"
+  ],
+  "repetitions": 2,
+  "tasks": [
+    {
+      "id": "suffix-counts",
+      "project": "remeda",
+      "selected": [
+        "takeLast",
+        "dropLast"
+      ],
+      "request": "Make takeLast and dropLast use a shared count policy in data-first, data-last and pipe use. Positive finite counts are floored. Zero, negative values, negative infinity and NaN normalize to zero; positive infinity normalizes to the input length. takeLast returns the final normalized number of elements; dropLast removes that many final elements. Preserve integer behavior and element order. Results must be new arrays, inputs must not change, and readonly arrays and existing generic inference must remain supported.",
+      "instruction": "Make takeLast and dropLast use a shared count policy in data-first, data-last and pipe use. Positive finite counts are floored. Zero, negative values, negative infinity and NaN normalize to zero; positive infinity normalizes to the input length. takeLast returns the final normalized number of elements; dropLast removes that many final elements. Preserve integer behavior and element order. Results must be new arrays, inputs must not change, and readonly arrays and existing generic inference must remain supported. Work only in this checkout. Do not retrieve remote history, solutions or prior study artifacts. Preserve original tests, manifests, locks, configuration and supplied checks. Add a new *.test.ts file alongside the relevant public API source; do not edit original tests. Do not install dependencies. Preserve public types, readonly input support and unrelated behavior. After the final source edit run npm run test:study:regression, npm run test:study:types and npm run test:study:delivered. Source compilation excludes tests; typecheck:delivered checks delivered tests. Report exact commands, outcomes and coverage limits honestly.\n",
+      "requiredChecks": [
+        {
+          "id": "regression",
+          "task": "test:study:regression"
+        },
+        {
+          "id": "types",
+          "task": "test:study:types"
+        },
+        {
+          "id": "delivered",
+          "task": "test:study:delivered"
+        }
+      ]
+    },
+    {
+      "id": "reversed-clamp",
+      "project": "remeda",
+      "selected": [
+        "clamp"
+      ],
+      "request": "Extend clamp to accept a reversed pair of finite bounds: when min and max are both finite and min > max, treat their lower and upper values as the normalized bounds. Apply this in data-first, data-last and pipe use. Do not mutate the limits object, including frozen objects. Preserve existing missing-bound, NaN-bound, infinite-bound and NaN-value behavior. Curried calls must continue observing the supplied limits object at each invocation, rather than snapshotting it at factory creation. Preserve the public numeric signature.",
+      "instruction": "Extend clamp to accept a reversed pair of finite bounds: when min and max are both finite and min > max, treat their lower and upper values as the normalized bounds. Apply this in data-first, data-last and pipe use. Do not mutate the limits object, including frozen objects. Preserve existing missing-bound, NaN-bound, infinite-bound and NaN-value behavior. Curried calls must continue observing the supplied limits object at each invocation, rather than snapshotting it at factory creation. Preserve the public numeric signature. Work only in this checkout. Do not retrieve remote history, solutions or prior study artifacts. Preserve original tests, manifests, locks, configuration and supplied checks. Add a new *.test.ts file alongside the relevant public API source; do not edit original tests. Do not install dependencies. Preserve public types, readonly input support and unrelated behavior. After the final source edit run npm run test:study:regression, npm run test:study:types and npm run test:study:delivered. Source compilation excludes tests; typecheck:delivered checks delivered tests. Report exact commands, outcomes and coverage limits honestly.\n",
+      "requiredChecks": [
+        {
+          "id": "regression",
+          "task": "test:study:regression"
+        },
+        {
+          "id": "types",
+          "task": "test:study:types"
+        },
+        {
+          "id": "delivered",
+          "task": "test:study:delivered"
+        }
+      ]
+    },
+    {
+      "id": "slice-index",
+      "project": "remeda",
+      "selected": [
+        "splitAt"
+      ],
+      "request": "Make splitAt use native Array.prototype.slice index normalization in data-first, data-last and pipe use. Its pair must equal [array.slice(0,index),array.slice(index)], including negative fractional indexes, signed zero, NaN and infinities. In particular truncate a fractional index toward zero before interpreting a negative offset from the end. Preserve integer behavior, readonly inputs, element order, generic return inference and new-array outputs; never mutate the input.",
+      "instruction": "Make splitAt use native Array.prototype.slice index normalization in data-first, data-last and pipe use. Its pair must equal [array.slice(0,index),array.slice(index)], including negative fractional indexes, signed zero, NaN and infinities. In particular truncate a fractional index toward zero before interpreting a negative offset from the end. Preserve integer behavior, readonly inputs, element order, generic return inference and new-array outputs; never mutate the input. Work only in this checkout. Do not retrieve remote history, solutions or prior study artifacts. Preserve original tests, manifests, locks, configuration and supplied checks. Add a new *.test.ts file alongside the relevant public API source; do not edit original tests. Do not install dependencies. Preserve public types, readonly input support and unrelated behavior. After the final source edit run npm run test:study:regression, npm run test:study:types and npm run test:study:delivered. Source compilation excludes tests; typecheck:delivered checks delivered tests. Report exact commands, outcomes and coverage limits honestly.\n",
+      "requiredChecks": [
+        {
+          "id": "regression",
+          "task": "test:study:regression"
+        },
+        {
+          "id": "types",
+          "task": "test:study:types"
+        },
+        {
+          "id": "delivered",
+          "task": "test:study:delivered"
+        }
+      ]
+    }
+  ],
+  "order": [
+    {
+      "repeat": 1,
+      "task": "suffix-counts",
+      "arm": "reference"
+    },
+    {
+      "repeat": 1,
+      "task": "suffix-counts",
+      "arm": "candidate"
+    },
+    {
+      "repeat": 1,
+      "task": "suffix-counts",
+      "arm": "cline"
+    },
+    {
+      "repeat": 1,
+      "task": "reversed-clamp",
+      "arm": "candidate"
+    },
+    {
+      "repeat": 1,
+      "task": "reversed-clamp",
+      "arm": "cline"
+    },
+    {
+      "repeat": 1,
+      "task": "reversed-clamp",
+      "arm": "reference"
+    },
+    {
+      "repeat": 1,
+      "task": "slice-index",
+      "arm": "cline"
+    },
+    {
+      "repeat": 1,
+      "task": "slice-index",
+      "arm": "reference"
+    },
+    {
+      "repeat": 1,
+      "task": "slice-index",
+      "arm": "candidate"
+    },
+    {
+      "repeat": 2,
+      "task": "suffix-counts",
+      "arm": "candidate"
+    },
+    {
+      "repeat": 2,
+      "task": "suffix-counts",
+      "arm": "cline"
+    },
+    {
+      "repeat": 2,
+      "task": "suffix-counts",
+      "arm": "reference"
+    },
+    {
+      "repeat": 2,
+      "task": "reversed-clamp",
+      "arm": "cline"
+    },
+    {
+      "repeat": 2,
+      "task": "reversed-clamp",
+      "arm": "reference"
+    },
+    {
+      "repeat": 2,
+      "task": "reversed-clamp",
+      "arm": "candidate"
+    },
+    {
+      "repeat": 2,
+      "task": "slice-index",
+      "arm": "reference"
+    },
+    {
+      "repeat": 2,
+      "task": "slice-index",
+      "arm": "candidate"
+    },
+    {
+      "repeat": 2,
+      "task": "slice-index",
+      "arm": "cline"
+    }
+  ],
+  "runtimeByArm": {
+    "reference": "reference",
+    "candidate": "current",
+    "cline": "current"
+  },
+  "flagByArm": {
+    "reference": "false",
+    "candidate": "false",
+    "cline": "false"
+  },
+  "hintsByArm": {
+    "reference": "false",
+    "candidate": "false",
+    "cline": "false"
+  },
+  "solver": {
+    "path": "/workspace/blame-study-runs/tooling/z3/bin/z3",
+    "resolvedPath": "/workspace/blame-study-runs/tooling/z3/bin/z3",
+    "sha256": "1bfaf5bbe81fd0b7800500ee08eef426aaabe18f8b9c4c4c32adffcd72f86cd5",
+    "version": "Z3 version 4.15.4 - 64 bit",
+    "package": "z3-solver==4.15.4.0",
+    "libraries": {
+      "/lib/x86_64-linux-gnu/libc.so.6": {
+        "realpath": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+        "sha256": "fa430b8f298f817a266046af84a77533185ad6fc4406c7d3787b5a0a0c207826"
+      },
+      "/lib/x86_64-linux-gnu/libgcc_s.so.1": {
+        "realpath": "/usr/lib/x86_64-linux-gnu/libgcc_s.so.1",
+        "sha256": "30c61ab012a4241bed033725a09b61f5fdd3bb7df95ee852d0b096520524c7af"
+      },
+      "/lib/x86_64-linux-gnu/libm.so.6": {
+        "realpath": "/usr/lib/x86_64-linux-gnu/libm.so.6",
+        "sha256": "6d567d53e895273ca14a1f9dc164fc6c8d39aed2f60aa46a733c2784228915f3"
+      },
+      "/lib/x86_64-linux-gnu/libpthread.so.0": {
+        "realpath": "/usr/lib/x86_64-linux-gnu/libpthread.so.0",
+        "sha256": "85e21f7dba0394411d00959176fd18b470e575b0b05f1f4f41e5636802ce0500"
+      },
+      "/lib/x86_64-linux-gnu/libstdc++.so.6": {
+        "realpath": "/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33",
+        "sha256": "972bb2a18b71140dab0240f8a1f68ab3fb1d56bcd4c4f824a91b70888faf5a00"
+      },
+      "/lib64/ld-linux-x86-64.so.2": {
+        "realpath": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+        "sha256": "438c546d8e8cc48496bf3a95f753051afd9db66a629a74e31a9ded71586b56e0"
+      }
+    },
+    "virtualDependencies": [
+      "linux-vdso.so.1 is kernel-provided and has no file hash; kernel release is recorded separately"
+    ]
+  },
+  "mechanismKind": "repair",
+  "expectedDifferences": [
+    "agent-runtime/dist/harness/light-finish-service.js",
+    "agent-runtime/dist/harness/light-workspace.js"
+  ],
+  "knownDiagnostic": true,
+  "selection": "Failed-check-first advisory and finish ordering only; known Remeda requests, no seeded history or forced tool choice. Three requests selected before outcomes; two rotated repeats. No forced editing style, seeded validation history or automatic tool following. A missing mechanism opportunity is retained as a null, not replaced.",
+  "budgets": {
+    "perTrialSdkCostLimitUsd": 0.5,
+    "requestOvershootReserveUsd": 0.25,
+    "timeoutSeconds": 600,
+    "outerWatchdogExtraSeconds": 25,
+    "maxIterations": 40,
+    "requestMaxOutputTokens": 8192,
+    "maximumSerializedRequestBytes": 500000,
+    "panelObservedCostStopUsd": 20,
+    "sharedStudyObservedCostStopUsd": 100
+  },
+  "execution": {
+    "concurrency": 1,
+    "dependencyLockSha256": "c1b852288a2654d6e93492904f14d957e1da376605d805b8a400e91f4ef1023d",
+    "validation": "Selected upstream runtime regressions, full source-only compiler, new delivered runtime/tests compiler and external finite behavior/public-type oracle. All original checks/configuration protected. Neither selected regression execution nor public type probes establish every upstream test.",
+    "treatment": "Failed-check-first advisory and finish ordering only; known Remeda requests, no seeded history or forced tool choice. All other executable modules, prompts, schemas, fixed date, environment, pinned dependencies and limits common. Optional symbolic analysis/hints disabled."
+  },
+  "durability": {
+    "privateRoot": "/workspace/blame-study-runs/feedback-f59",
+    "checkpoints": "checkpoints/<assignment>.json.gz",
+    "commit": "Atomic exclusive archive and file/directory fsync before workspace cleanup",
+    "resume": "Verify bindings and immutable checkpoints; restore completed/finalize known exits without model calls",
+    "unknownExit": "Fail closed; unknown usage/reservation retained; no automatic retry or skipping"
+  },
+  "criteria": {
+    "minimumPairedSuccesses": 4,
+    "primary": "Strict audited: protected original checks, all five endpoints including delivered types, exact public contracts, full requested mechanism, truthful final-source validation and no solution retrieval.",
+    "mechanism": "Count advisory offers and exact next failed-selection invocations; manually classify avoidable green reruns versus necessary initial/final-source checks. Ordering changes in finish are inspected independently.",
+    "resources": "All failures/timeouts/missing counters retained. Strict paired success resources, per-task and leave-pair/task-out sensitivities. Fewer tokens/cost, duration <=110%, no audited-quality loss.",
+    "decision": "A mechanism exposure/chronology gate and favorable resources are a small-panel signal, never proof of mediation or general benefit. Keep negative/null outcomes; no optional stopping/retries/solution recovery."
+  },
+  "limitations": "Two repetitions of three constructed requests. F59/F60 repeat known Remeda diagnostics and do not guarantee a failed-check or body-edit opportunity. F61 uses a fresh project and requests selected before outcomes, but has only 18 production TS modules, not a large-codebase efficiency benchmark. Manual unblinded review. Per-request cache attribution may be unreconciled, SDK costs are not invoices; historical F52 consumption remains unknown with retained reserves.",
+  "boundScripts": [
+    "tools/terminal_bench/feedback-ablation-study/audit.mjs",
+    "tools/terminal_bench/feedback-ablation-study/checks.mjs",
+    "tools/terminal_bench/feedback-ablation-study/controls.mjs",
+    "tools/terminal_bench/feedback-ablation-study/delivered.mjs",
+    "tools/terminal_bench/feedback-ablation-study/entry.mjs",
+    "tools/terminal_bench/feedback-ablation-study/environment-smoke.mjs",
+    "tools/terminal_bench/feedback-ablation-study/evidence-io.mjs",
+    "tools/terminal_bench/feedback-ablation-study/feedback-observations.mjs",
+    "tools/terminal_bench/feedback-ablation-study/freeze.mjs",
+    "tools/terminal_bench/feedback-ablation-study/oracle.mjs",
+    "tools/terminal_bench/feedback-ablation-study/panels.mjs",
+    "tools/terminal_bench/feedback-ablation-study/preflight-controls.mjs",
+    "tools/terminal_bench/feedback-ablation-study/publish.mjs",
+    "tools/terminal_bench/feedback-ablation-study/readout.mjs",
+    "tools/terminal_bench/feedback-ablation-study/replay.mjs",
+    "tools/terminal_bench/feedback-ablation-study/resource-values.mjs",
+    "tools/terminal_bench/feedback-ablation-study/run.mjs",
+    "tools/terminal_bench/feedback-ablation-study/schema-exposure.mjs",
+    "tools/terminal_bench/feedback-ablation-study/setup.mjs",
+    "tools/terminal_bench/feedback-ablation-study/snapshot.mjs",
+    "tools/terminal_bench/feedback-ablation-study/solutions.mjs",
+    "tools/terminal_bench/feedback-ablation-study/solver-identity.mjs",
+    "tools/terminal_bench/feedback-ablation-study/tasks.mjs",
+    "tools/terminal_bench/feedback-ablation-study/ts-pattern-delivered.mjs",
+    "tools/terminal_bench/feedback-ablation-study/ts-pattern-oracle.mjs",
+    "tools/terminal_bench/feedback-ablation-study/ts-pattern.mjs",
+    "tools/terminal_bench/feedback-ablation-study/verify.mjs"
+  ]
+}

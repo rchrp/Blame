@@ -1,0 +1,15 @@
+{
+  "commit": "9589f66db369acabcf8a16ec75f8ae10c54325d4",
+  "sha256": "fb008d33ce8cb33bc40ec55d047e83b79cb48e7e493f5f025d1339dae2de3ab5",
+  "paths": [
+    "tools/terminal_bench/feedback-ablation-study",
+    "tools/terminal_bench/durable-campaign.mjs",
+    "tools/terminal_bench/isolated-node-environment.mjs",
+    "tools/terminal_bench/navigation-evidence/wire-audit.mjs",
+    "tools/terminal_bench/navigation-evidence/native-search-repair.mjs",
+    "tools/terminal_bench/request-limit-model-study/prompt-date.mjs",
+    "tools/terminal_bench/navigation-evidence/budget-accounting.mjs",
+    "tools/terminal_bench/corpus/light-study-accounting.mjs"
+  ],
+  "note": "Exact source used to bind execution. Restore before reproducing model calls if later audit helpers change. Existing sealed campaigns remain separate."
+}

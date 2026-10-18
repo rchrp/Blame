@@ -1,0 +1,12 @@
+{
+  "modelRequests": 0,
+  "changedRuntimeFilesBetweenLightArms": [
+    "agent-runtime/dist/harness/light-finish-service.js",
+    "agent-runtime/dist/harness/light-workspace.js"
+  ],
+  "flags": {
+    "analysis": false,
+    "hints": false
+  },
+  "treatment": "Failed-check-first advisory and finish ordering only; known Remeda requests, no seeded history or forced tool choice."
+}
