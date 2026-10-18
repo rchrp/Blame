@@ -180,6 +180,66 @@
       "evidence": [
         "Native-slice source hash equals already reviewed reference/Cline endpoints; public overloads remain unchanged. New string/readonly tests cover every usage style, fractions/NaN/infinities/signed zero, input preservation and distinct arrays. All five endpoint checks pass, including independent delivered-test compilation; model ran each required final-source command and correctly limits its type/coverage claims. No solution retrieval."
       ]
+    },
+    {
+      "name": "2-suffix-counts-candidate",
+      "hashes": {
+        "events.jsonl": "39fb94cb39499c2cf2a642bea4e560b671df6bbe3b61789c2cd516741eb01110",
+        "workspace.diff": "827016480c92f7e9ce900ace2a4d1083211bb11260851ddee3e59b7a13a5edb8",
+        "score.json": "2991ab5d457ee0fef3d24a515b121453c1a49a62e8ab807fb48833ceebcb536d",
+        "tool-ledger.json": "e1715605123fad042b8a3990cda344a870816ae651602ba5c73fc1aa65c75cea"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Both consumers exactly match previously reviewed 1-suffix-counts-reference hashes. New shared helper uses positive-count floor capped at length, including +infinity; NaN/nonpositive fall to zero, so all existing integer and oversized cases remain correct. Inspected new typed readonly case matrix, six call styles, fresh arrays and unchanged original overloads. All five endpoint checks, each required final-source command and delivered-test types pass; truthful scope and no solution retrieval."
+      ]
+    },
+    {
+      "name": "2-suffix-counts-cline",
+      "hashes": {
+        "events.jsonl": "8a32aa6f314698fd72c43ba556bc2ebeeafa110abfdc9d5b5533f78a3cee2ce3",
+        "workspace.diff": "052c1b536e73f2cef273e0f49e2510697284b0dbd04af96cf87e305635b3591c",
+        "score.json": "dc69e590bb67dd77de11ea1eb435d296aa88f4c614007ccef0dde4476a3f4f16",
+        "tool-ledger.json": "ad51bff012e398f54f03722f08e6f9f33e4f3c1e280f79c90751037ab3440551"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Manual review of new length/count helper: NaN/nonpositive map to zero; positive infinity and finite oversized counts cap to length, with floor for other positives. Both consumers use safe normalized indices, preserve public overloads and fresh arrays. Authored tests and hidden finite/public-type oracle plus all five endpoint checks pass. Required final-source commands and delivered-test typecheck pass; truthful selected scope and no remote/history solution retrieval."
+      ]
+    },
+    {
+      "name": "2-suffix-counts-reference",
+      "hashes": {
+        "events.jsonl": "cc15e85424c39d69698117238854c3a30eef8a7bf541f1eef1b842864d790fce",
+        "workspace.diff": "e5ab04bdbc3260ac0258080957d1d2af9012d45536879bfa61b628de8f6b4e18",
+        "score.json": "3b7c8e0d000d644ec20b7b0a71272ea892c0fd67354caa70f273edb19e0e0145",
+        "tool-ledger.json": "bc7b3932b99719c19c990ff221e5ddc6bf501c0c731f799cf219a65ae1ea1117"
+      },
+      "sourceBehaviorPassed": false,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": false,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Manual source inspection finds an actual regression: finite oversized counts are floored but not capped, and both consumers remove their original Math.max index clamp. For length2/count3 the negative index returns only one suffix element and retains one prefix element instead of all/empty, violating preserved integer behavior. New passing tests omit finite oversized counts; hidden feature check fails. Original signatures/tests/dependencies and final required commands are preserved; accurate passing-check reports do not establish user correctness. Known F53 failure family; no solution recovery."
+      ]
     }
   ]
 }
