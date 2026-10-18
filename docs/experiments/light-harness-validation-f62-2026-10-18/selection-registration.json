@@ -1,0 +1,140 @@
+{
+  "phase": "F62",
+  "baselineCommit": "18bedd2ec36ab9450c53cf1824dfc91162cf76d7",
+  "status": "selection and hypotheses before implementation/model outcomes",
+  "priorities": [
+    {
+      "hypothesis": "Most of the F61 elapsed-time increase occurs outside recorded active tool spans; new request/body-consumption spans can bound it without calling it provider inference or pure network time.",
+      "comparison": "Historical F61 interval reconstruction plus identical passive timing observer in all new arms.",
+      "measure": "Union/intersection of timestamped tool and fetch-to-headers/first-read/end spans, unmatched/pending/cancelled/error spans and observer limitations.",
+      "risk": "Observer changes backpressure or conflates overlapping phases; test content/cancellation/no-eager-read invariants."
+    },
+    {
+      "hypothesis": "Length-relative boundary cases and reused-state checks detect contract regressions missed by authored tests.",
+      "comparison": "Archived F60 suffix defects against archived authored tests, and common strengthened finite oracle against pristine/positive/negative controls.",
+      "measure": "Exact test discovery, executed/pass/fail counts, defect detection and independent oracle outcomes; do not rescore historical campaigns.",
+      "risk": "Overstrict oracle, vacuous test passes or inferred public obligations; derive expected behavior from explicit task contracts and retain positive controls."
+    },
+    {
+      "hypothesis": "An edit receipt that explicitly marks historical invocations as ineligible for current source reduces unsupported final-check claims.",
+      "comparison": "Current Light baseline, only provenance feedback changed, integrated Cline; all other mechanisms common and existing admission/required checks unchanged.",
+      "measure": "Exposure, following exact reruns, strict audited success, accurate final-source reporting, tokens/cache/SDK cost/time with every assigned failure retained.",
+      "risk": "Payload/latency overhead, confusing source-current with environment/completeness/acceptance or hidden historical results."
+    }
+  ],
+  "modelSelection": {
+    "project": "previously studied Remeda; known diagnostic requests, not confirmation",
+    "tasks": [
+      "suffix-counts",
+      "reversed-clamp",
+      "slice-index"
+    ],
+    "repetitions": 2,
+    "arms": [
+      "reference",
+      "candidate",
+      "cline"
+    ],
+    "order": [
+      {
+        "repeat": 1,
+        "task": "suffix-counts",
+        "arm": "reference"
+      },
+      {
+        "repeat": 1,
+        "task": "suffix-counts",
+        "arm": "candidate"
+      },
+      {
+        "repeat": 1,
+        "task": "suffix-counts",
+        "arm": "cline"
+      },
+      {
+        "repeat": 1,
+        "task": "reversed-clamp",
+        "arm": "candidate"
+      },
+      {
+        "repeat": 1,
+        "task": "reversed-clamp",
+        "arm": "cline"
+      },
+      {
+        "repeat": 1,
+        "task": "reversed-clamp",
+        "arm": "reference"
+      },
+      {
+        "repeat": 1,
+        "task": "slice-index",
+        "arm": "cline"
+      },
+      {
+        "repeat": 1,
+        "task": "slice-index",
+        "arm": "reference"
+      },
+      {
+        "repeat": 1,
+        "task": "slice-index",
+        "arm": "candidate"
+      },
+      {
+        "repeat": 2,
+        "task": "suffix-counts",
+        "arm": "candidate"
+      },
+      {
+        "repeat": 2,
+        "task": "suffix-counts",
+        "arm": "cline"
+      },
+      {
+        "repeat": 2,
+        "task": "suffix-counts",
+        "arm": "reference"
+      },
+      {
+        "repeat": 2,
+        "task": "reversed-clamp",
+        "arm": "cline"
+      },
+      {
+        "repeat": 2,
+        "task": "reversed-clamp",
+        "arm": "reference"
+      },
+      {
+        "repeat": 2,
+        "task": "reversed-clamp",
+        "arm": "candidate"
+      },
+      {
+        "repeat": 2,
+        "task": "slice-index",
+        "arm": "reference"
+      },
+      {
+        "repeat": 2,
+        "task": "slice-index",
+        "arm": "candidate"
+      },
+      {
+        "repeat": 2,
+        "task": "slice-index",
+        "arm": "cline"
+      }
+    ],
+    "optionalZ3": "disabled all arms",
+    "model": "configured gpt-5.6-luna/high; confirm exact settings before dispatch",
+    "budget": "existing .50 USD soft trial cap plus .25 reserve,20 USD panel and100 USD shared accounting; no attempts before final protocol/bindings/controls committed"
+  },
+  "rules": [
+    "No optional stopping, retries, solution recovery or failed-patch repair.",
+    "Historical/raw/model/independent/strict success remain separate.",
+    "No research build/test/compiler/solver overlaps live model workers.",
+    "Freeze all runtime bytes, prompts,schemas,effort,environment,checker inputs and budgets before dispatch."
+  ]
+}
