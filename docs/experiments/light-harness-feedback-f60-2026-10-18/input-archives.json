@@ -1,0 +1,7 @@
+{
+  "artifacts": {
+    "remeda.tar.gz": "a3b68393881da1d7161481c4d1d20895fd76b83c41771a65d5c6700d06ff2389",
+    "frozen-runtimes.tar.gz": "b3704dca351070c02491af2c128f321ff75e0f089b53576dd061766501359d6c"
+  },
+  "note": "Pinned upstream source and executable variants. Research controls/oracles never enter worker inputs."
+}

@@ -1,0 +1,11 @@
+{
+  "modelRequests": 0,
+  "changedRuntimeFilesBetweenLightArms": [
+    "agent-runtime/dist/harness/light-edit.js"
+  ],
+  "flags": {
+    "analysis": false,
+    "hints": false
+  },
+  "treatment": "Observed input headers in body-edit receipts only; known Remeda requests, no forced symbolic editing."
+}
