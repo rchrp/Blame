@@ -88,7 +88,7 @@ import {
 type LightWorkspaceOptions = {
   /** Runner-only experiment; production keeps compact search until the offline gate is met. */
   experimentalSearchExpansion?: boolean;
-  /** Test/embedded runner override; production uses the five-second initial wait. */
+  /** Test/embedded runner override; production uses the fifteen-second initial wait. */
   initialCommandWaitMs?: number;
   refreshPreviewDependencies?: () => Promise<unknown>;
   sessionId: string;

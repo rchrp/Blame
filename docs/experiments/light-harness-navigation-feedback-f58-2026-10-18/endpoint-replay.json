@@ -1,0 +1,1825 @@
+{
+  "phase": "F58",
+  "modelRequests": 0,
+  "method": "Original unchanged patch on pinned pristine Remeda input, protected checks restored as in the original grader. Identical endpoint outcomes establish reproducibility, not new agent successes.",
+  "rows": [
+    {
+      "name": "1-suffix-counts-reference",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 848.1168220000001,
+          "stdout": "\n> remeda@2.0.0 test:study:regression\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/1-suffix-counts-reference\n\n ✓ packages/remeda/src/takeLast.test.ts (7 tests) 3ms\n ✓ packages/remeda/src/dropLast.test.ts (7 tests) 3ms\n\n Test Files  2 passed (2)\n      Tests  14 passed (14)\n   Start at  13:46:29\n   Duration  396ms (transform 54ms, setup 0ms, collect 64ms, tests 6ms, environment 0ms, prepare 102ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/1-suffix-counts-reference/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/navigation-large-model-study/oracle.mjs",
+            "/workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/1-suffix-counts-reference",
+            "suffix-counts"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2530.85592,
+          "stdout": "Finite behavioral/public types passed suffix-counts 714\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1701.2915189999999,
+          "stdout": "\n> remeda@2.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1016.0657120000005,
+          "stdout": "\n> remeda@2.0.0 test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"packages/remeda/src/takeLastDropLast.test.ts\"]\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/1-suffix-counts-reference\n\n ✓ packages/remeda/src/takeLastDropLast.test.ts (17 tests) 5ms\n ✓ packages/remeda/src/takeLast.test.ts (7 tests) 4ms\n ✓ packages/remeda/src/dropLast.test.ts (7 tests) 3ms\n\n Test Files  3 passed (3)\n      Tests  31 passed (31)\n   Start at  13:46:34\n   Duration  552ms (transform 62ms, setup 0ms, collect 84ms, tests 12ms, environment 0ms, prepare 149ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1869.5862850000003,
+          "stdout": "\n> remeda@2.0.0 typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"packages/remeda/src/takeLastDropLast.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "1-suffix-counts-candidate",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 818.2084930000001,
+          "stdout": "\n> remeda@2.0.0 test:study:regression\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/1-suffix-counts-candidate\n\n ✓ packages/remeda/src/takeLast.test.ts (7 tests) 3ms\n ✓ packages/remeda/src/dropLast.test.ts (7 tests) 4ms\n\n Test Files  2 passed (2)\n      Tests  14 passed (14)\n   Start at  13:46:37\n   Duration  386ms (transform 50ms, setup 0ms, collect 67ms, tests 7ms, environment 0ms, prepare 100ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/1-suffix-counts-candidate/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/navigation-large-model-study/oracle.mjs",
+            "/workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/1-suffix-counts-candidate",
+            "suffix-counts"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2201.3756350000003,
+          "stdout": "Finite behavioral/public types passed suffix-counts 714\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1964.1339100000005,
+          "stdout": "\n> remeda@2.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1085.0311270000002,
+          "stdout": "\n> remeda@2.0.0 test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"packages/remeda/src/takeLast-dropLast.test.ts\"]\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/1-suffix-counts-candidate\n\n ✓ packages/remeda/src/takeLast-dropLast.test.ts (13 tests) 5ms\n ✓ packages/remeda/src/takeLast.test.ts (7 tests) 4ms\n ✓ packages/remeda/src/dropLast.test.ts (7 tests) 4ms\n\n Test Files  3 passed (3)\n      Tests  27 passed (27)\n   Start at  13:46:42\n   Duration  590ms (transform 69ms, setup 0ms, collect 96ms, tests 12ms, environment 0ms, prepare 148ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1909.151004999998,
+          "stdout": "\n> remeda@2.0.0 typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"packages/remeda/src/takeLast-dropLast.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "1-suffix-counts-cline",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 815.8704140000009,
+          "stdout": "\n> remeda@2.0.0 test:study:regression\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/1-suffix-counts-cline\n\n ✓ packages/remeda/src/takeLast.test.ts (7 tests) 4ms\n ✓ packages/remeda/src/dropLast.test.ts (7 tests) 4ms\n\n Test Files  2 passed (2)\n      Tests  14 passed (14)\n   Start at  13:46:46\n   Duration  397ms (transform 51ms, setup 0ms, collect 60ms, tests 8ms, environment 0ms, prepare 108ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/1-suffix-counts-cline/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/navigation-large-model-study/oracle.mjs",
+            "/workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/1-suffix-counts-cline",
+            "suffix-counts"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2189.723521,
+          "stdout": "Finite behavioral/public types passed suffix-counts 714\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1715.1634760000015,
+          "stdout": "\n> remeda@2.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1119.5303160000003,
+          "stdout": "\n> remeda@2.0.0 test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"packages/remeda/src/suffixCountPolicy.test.ts\"]\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/1-suffix-counts-cline\n\n ✓ packages/remeda/src/suffixCountPolicy.test.ts (13 tests) 5ms\n ✓ packages/remeda/src/takeLast.test.ts (7 tests) 4ms\n ✓ packages/remeda/src/dropLast.test.ts (7 tests) 4ms\n\n Test Files  3 passed (3)\n      Tests  27 passed (27)\n   Start at  13:46:50\n   Duration  600ms (transform 73ms, setup 0ms, collect 99ms, tests 14ms, environment 0ms, prepare 153ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1974.001522999999,
+          "stdout": "\n> remeda@2.0.0 typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"packages/remeda/src/suffixCountPolicy.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "1-reversed-clamp-candidate",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 666.9154629999975,
+          "stdout": "\n> remeda@2.0.0 test:study:regression\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/1-reversed-clamp-candidate\n\n ✓ packages/remeda/src/clamp.test.ts (3 tests) 2ms\n\n Test Files  1 passed (1)\n      Tests  3 passed (3)\n   Start at  13:46:54\n   Duration  231ms (transform 40ms, setup 0ms, collect 41ms, tests 2ms, environment 0ms, prepare 59ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/1-reversed-clamp-candidate/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/navigation-large-model-study/oracle.mjs",
+            "/workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/1-reversed-clamp-candidate",
+            "reversed-clamp"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2390.072612,
+          "stdout": "Finite behavioral/public types passed reversed-clamp 1947\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1728.4583749999983,
+          "stdout": "\n> remeda@2.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 856.808137,
+          "stdout": "\n> remeda@2.0.0 test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"packages/remeda/src/clamp.reversed.test.ts\"]\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/1-reversed-clamp-candidate\n\n ✓ packages/remeda/src/clamp.reversed.test.ts (5 tests) 3ms\n ✓ packages/remeda/src/clamp.test.ts (3 tests) 2ms\n\n Test Files  2 passed (2)\n      Tests  8 passed (8)\n   Start at  13:46:59\n   Duration  391ms (transform 63ms, setup 0ms, collect 69ms, tests 5ms, environment 0ms, prepare 103ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1968.0234979999987,
+          "stdout": "\n> remeda@2.0.0 typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"packages/remeda/src/clamp.reversed.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "1-reversed-clamp-cline",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 650.4800380000015,
+          "stdout": "\n> remeda@2.0.0 test:study:regression\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/1-reversed-clamp-cline\n\n ✓ packages/remeda/src/clamp.test.ts (3 tests) 3ms\n\n Test Files  1 passed (1)\n      Tests  3 passed (3)\n   Start at  13:47:02\n   Duration  217ms (transform 40ms, setup 0ms, collect 38ms, tests 3ms, environment 0ms, prepare 54ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/1-reversed-clamp-cline/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/navigation-large-model-study/oracle.mjs",
+            "/workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/1-reversed-clamp-cline",
+            "reversed-clamp"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2160.906317000001,
+          "stdout": "Finite behavioral/public types passed reversed-clamp 1947\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1712.271716000003,
+          "stdout": "\n> remeda@2.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 810.4899519999963,
+          "stdout": "\n> remeda@2.0.0 test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"packages/remeda/src/clamp.reversed.test.ts\"]\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/1-reversed-clamp-cline\n\n ✓ packages/remeda/src/clamp.reversed.test.ts (5 tests) 3ms\n ✓ packages/remeda/src/clamp.test.ts (3 tests) 2ms\n\n Test Files  2 passed (2)\n      Tests  8 passed (8)\n   Start at  13:47:07\n   Duration  364ms (transform 49ms, setup 0ms, collect 60ms, tests 5ms, environment 0ms, prepare 96ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1850.2401610000015,
+          "stdout": "\n> remeda@2.0.0 typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"packages/remeda/src/clamp.reversed.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "1-reversed-clamp-reference",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 636.8013789999968,
+          "stdout": "\n> remeda@2.0.0 test:study:regression\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/1-reversed-clamp-reference\n\n ✓ packages/remeda/src/clamp.test.ts (3 tests) 2ms\n\n Test Files  1 passed (1)\n      Tests  3 passed (3)\n   Start at  13:47:10\n   Duration  199ms (transform 38ms, setup 0ms, collect 37ms, tests 2ms, environment 0ms, prepare 50ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/1-reversed-clamp-reference/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/navigation-large-model-study/oracle.mjs",
+            "/workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/1-reversed-clamp-reference",
+            "reversed-clamp"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2331.9462400000048,
+          "stdout": "Finite behavioral/public types passed reversed-clamp 1947\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1812.911745999998,
+          "stdout": "\n> remeda@2.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1400.568352999995,
+          "stdout": "\n> remeda@2.0.0 test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"packages/remeda/src/clamp.reversed.test.ts\"]\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/1-reversed-clamp-reference\n\n ✓ packages/remeda/src/clamp.reversed.test.ts (7 tests) 4ms\n ✓ packages/remeda/src/clamp.test.ts (3 tests) 3ms\n\n Test Files  2 passed (2)\n      Tests  10 passed (10)\n   Start at  13:47:15\n   Duration  940ms (transform 419ms, setup 0ms, collect 608ms, tests 6ms, environment 0ms, prepare 110ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1863.6198860000004,
+          "stdout": "\n> remeda@2.0.0 typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"packages/remeda/src/clamp.reversed.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "1-slice-index-cline",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 638.6166840000005,
+          "stdout": "\n> remeda@2.0.0 test:study:regression\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/1-slice-index-cline\n\n ✓ packages/remeda/src/splitAt.test.ts (4 tests) 3ms\n\n Test Files  1 passed (1)\n      Tests  4 passed (4)\n   Start at  13:47:18\n   Duration  206ms (transform 38ms, setup 0ms, collect 36ms, tests 3ms, environment 0ms, prepare 58ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/1-slice-index-cline/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/navigation-large-model-study/oracle.mjs",
+            "/workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/1-slice-index-cline",
+            "slice-index"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2204.7190800000026,
+          "stdout": "Finite behavioral/public types passed slice-index 357\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1815.9333470000056,
+          "stdout": "\n> remeda@2.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 861.2049279999992,
+          "stdout": "\n> remeda@2.0.0 test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"packages/remeda/src/splitAt.native.test.ts\"]\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/1-slice-index-cline\n\n ✓ packages/remeda/src/splitAt.native.test.ts (22 tests) 5ms\n ✓ packages/remeda/src/splitAt.test.ts (4 tests) 4ms\n\n Test Files  2 passed (2)\n      Tests  26 passed (26)\n   Start at  13:47:23\n   Duration  399ms (transform 54ms, setup 0ms, collect 69ms, tests 9ms, environment 0ms, prepare 106ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1844.5431250000038,
+          "stdout": "\n> remeda@2.0.0 typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"packages/remeda/src/splitAt.native.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "1-slice-index-reference",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 609.2974200000026,
+          "stdout": "\n> remeda@2.0.0 test:study:regression\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/1-slice-index-reference\n\n ✓ packages/remeda/src/splitAt.test.ts (4 tests) 3ms\n\n Test Files  1 passed (1)\n      Tests  4 passed (4)\n   Start at  13:47:26\n   Duration  197ms (transform 35ms, setup 0ms, collect 34ms, tests 3ms, environment 0ms, prepare 50ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/1-slice-index-reference/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/navigation-large-model-study/oracle.mjs",
+            "/workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/1-slice-index-reference",
+            "slice-index"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2282.703609999997,
+          "stdout": "Finite behavioral/public types passed slice-index 357\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1738.4319500000056,
+          "stdout": "\n> remeda@2.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 905.4836450000003,
+          "stdout": "\n> remeda@2.0.0 test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"packages/remeda/src/splitAt.native-index.test.ts\"]\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/1-slice-index-reference\n\n ✓ packages/remeda/src/splitAt.native-index.test.ts (25 tests) 5ms\n ✓ packages/remeda/src/splitAt.test.ts (4 tests) 3ms\n\n Test Files  2 passed (2)\n      Tests  29 passed (29)\n   Start at  13:47:31\n   Duration  428ms (transform 54ms, setup 0ms, collect 70ms, tests 8ms, environment 0ms, prepare 104ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1945.8118889999969,
+          "stdout": "\n> remeda@2.0.0 typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"packages/remeda/src/splitAt.native-index.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "1-slice-index-candidate",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 600.0928140000033,
+          "stdout": "\n> remeda@2.0.0 test:study:regression\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/1-slice-index-candidate\n\n ✓ packages/remeda/src/splitAt.test.ts (4 tests) 3ms\n\n Test Files  1 passed (1)\n      Tests  4 passed (4)\n   Start at  13:47:34\n   Duration  205ms (transform 36ms, setup 0ms, collect 33ms, tests 3ms, environment 0ms, prepare 54ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/1-slice-index-candidate/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/navigation-large-model-study/oracle.mjs",
+            "/workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/1-slice-index-candidate",
+            "slice-index"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2080.2253270000074,
+          "stdout": "Finite behavioral/public types passed slice-index 357\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1827.3307880000066,
+          "stdout": "\n> remeda@2.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 821.7259400000039,
+          "stdout": "\n> remeda@2.0.0 test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"packages/remeda/src/splitAt.native-index.test.ts\"]\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/1-slice-index-candidate\n\n ✓ packages/remeda/src/splitAt.native-index.test.ts (19 tests) 4ms\n ✓ packages/remeda/src/splitAt.test.ts (4 tests) 3ms\n\n Test Files  2 passed (2)\n      Tests  23 passed (23)\n   Start at  13:47:39\n   Duration  361ms (transform 51ms, setup 0ms, collect 64ms, tests 7ms, environment 0ms, prepare 94ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1937.2105420000007,
+          "stdout": "\n> remeda@2.0.0 typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"packages/remeda/src/splitAt.native-index.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "2-suffix-counts-candidate",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 829.5518449999945,
+          "stdout": "\n> remeda@2.0.0 test:study:regression\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/2-suffix-counts-candidate\n\n ✓ packages/remeda/src/takeLast.test.ts (7 tests) 3ms\n ✓ packages/remeda/src/dropLast.test.ts (7 tests) 4ms\n\n Test Files  2 passed (2)\n      Tests  14 passed (14)\n   Start at  13:47:42\n   Duration  387ms (transform 52ms, setup 0ms, collect 59ms, tests 8ms, environment 0ms, prepare 104ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/2-suffix-counts-candidate/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/navigation-large-model-study/oracle.mjs",
+            "/workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/2-suffix-counts-candidate",
+            "suffix-counts"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2291.4254280000023,
+          "stdout": "Finite behavioral/public types passed suffix-counts 714\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1771.1899299999932,
+          "stdout": "\n> remeda@2.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 997.1330219999945,
+          "stdout": "\n> remeda@2.0.0 test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"packages/remeda/src/takeLast-dropLast.test.ts\"]\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/2-suffix-counts-candidate\n\n ✓ packages/remeda/src/takeLast-dropLast.test.ts (7 tests) 4ms\n ✓ packages/remeda/src/takeLast.test.ts (7 tests) 3ms\n ✓ packages/remeda/src/dropLast.test.ts (7 tests) 3ms\n\n Test Files  3 passed (3)\n      Tests  21 passed (21)\n   Start at  13:47:47\n   Duration  536ms (transform 63ms, setup 0ms, collect 84ms, tests 11ms, environment 0ms, prepare 140ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1822.7599020000052,
+          "stdout": "\n> remeda@2.0.0 typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"packages/remeda/src/takeLast-dropLast.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "2-suffix-counts-cline",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 809.5825350000086,
+          "stdout": "\n> remeda@2.0.0 test:study:regression\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/2-suffix-counts-cline\n\n ✓ packages/remeda/src/takeLast.test.ts (7 tests) 4ms\n ✓ packages/remeda/src/dropLast.test.ts (7 tests) 4ms\n\n Test Files  2 passed (2)\n      Tests  14 passed (14)\n   Start at  13:47:50\n   Duration  390ms (transform 50ms, setup 0ms, collect 56ms, tests 8ms, environment 0ms, prepare 114ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/2-suffix-counts-cline/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/navigation-large-model-study/oracle.mjs",
+            "/workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/2-suffix-counts-cline",
+            "suffix-counts"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2233.764909999998,
+          "stdout": "Finite behavioral/public types passed suffix-counts 714\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1776.1361560000078,
+          "stdout": "\n> remeda@2.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1058.347987999994,
+          "stdout": "\n> remeda@2.0.0 test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"packages/remeda/src/suffixCounts.test.ts\"]\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/2-suffix-counts-cline\n\n ✓ packages/remeda/src/suffixCounts.test.ts (14 tests) 4ms\n ✓ packages/remeda/src/takeLast.test.ts (7 tests) 6ms\n ✓ packages/remeda/src/dropLast.test.ts (7 tests) 4ms\n\n Test Files  3 passed (3)\n      Tests  28 passed (28)\n   Start at  13:47:55\n   Duration  578ms (transform 66ms, setup 0ms, collect 89ms, tests 13ms, environment 0ms, prepare 147ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1839.140962999998,
+          "stdout": "\n> remeda@2.0.0 typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"packages/remeda/src/suffixCounts.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "2-suffix-counts-reference",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 1,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 777.2883449999936,
+          "stdout": "\n> remeda@2.0.0 test:study:regression\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/2-suffix-counts-reference\n\n ✓ packages/remeda/src/takeLast.test.ts (7 tests) 4ms\n ✓ packages/remeda/src/dropLast.test.ts (7 tests) 4ms\n\n Test Files  2 passed (2)\n      Tests  14 passed (14)\n   Start at  13:47:58\n   Duration  370ms (transform 52ms, setup 0ms, collect 63ms, tests 7ms, environment 0ms, prepare 95ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/2-suffix-counts-reference/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/navigation-large-model-study/oracle.mjs",
+            "/workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/2-suffix-counts-reference",
+            "suffix-counts"
+          ],
+          "exitCode": 1,
+          "signal": null,
+          "error": null,
+          "durationMs": 561.882580000005,
+          "stdout": "",
+          "stderr": "node:internal/modules/run_main:107\n    triggerUncaughtException(\n    ^\n\nAssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n\n  [\n-   0,\n    1\n  ]\n\n    at equal (/workspace/Blame/tools/terminal_bench/navigation-large-model-study/oracle.mjs:4:28)\n    at <anonymous> (/workspace/Blame/tools/terminal_bench/navigation-large-model-study/oracle.mjs:9:94) {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: [ 1 ],\n  expected: [ 0, 1 ],\n  operator: 'deepStrictEqual',\n  diff: 'simple'\n}\n\nNode.js v24.19.0\n"
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1686.2003620000032,
+          "stdout": "\n> remeda@2.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1083.4544869999954,
+          "stdout": "\n> remeda@2.0.0 test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"packages/remeda/src/suffixCounts.test.ts\"]\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/2-suffix-counts-reference\n\n ✓ packages/remeda/src/suffixCounts.test.ts (22 tests) 6ms\n ✓ packages/remeda/src/takeLast.test.ts (7 tests) 3ms\n ✓ packages/remeda/src/dropLast.test.ts (7 tests) 4ms\n\n Test Files  3 passed (3)\n      Tests  36 passed (36)\n   Start at  13:48:01\n   Duration  602ms (transform 75ms, setup 0ms, collect 101ms, tests 13ms, environment 1ms, prepare 157ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1959.0976149999915,
+          "stdout": "\n> remeda@2.0.0 typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"packages/remeda/src/suffixCounts.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "2-reversed-clamp-cline",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 602.4191029999929,
+          "stdout": "\n> remeda@2.0.0 test:study:regression\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/2-reversed-clamp-cline\n\n ✓ packages/remeda/src/clamp.test.ts (3 tests) 2ms\n\n Test Files  1 passed (1)\n      Tests  3 passed (3)\n   Start at  13:48:05\n   Duration  189ms (transform 37ms, setup 0ms, collect 36ms, tests 2ms, environment 0ms, prepare 49ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/2-reversed-clamp-cline/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/navigation-large-model-study/oracle.mjs",
+            "/workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/2-reversed-clamp-cline",
+            "reversed-clamp"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2260.3626550000045,
+          "stdout": "Finite behavioral/public types passed reversed-clamp 1947\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1764.1972559999995,
+          "stdout": "\n> remeda@2.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 975.9282349999994,
+          "stdout": "\n> remeda@2.0.0 test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"packages/remeda/src/clamp.reversed.test.ts\"]\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/2-reversed-clamp-cline\n\n ✓ packages/remeda/src/clamp.reversed.test.ts (7 tests) 4ms\n ✓ packages/remeda/src/clamp.test.ts (3 tests) 3ms\n\n Test Files  2 passed (2)\n      Tests  10 passed (10)\n   Start at  13:48:09\n   Duration  441ms (transform 79ms, setup 0ms, collect 89ms, tests 6ms, environment 1ms, prepare 109ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2205.112856000007,
+          "stdout": "\n> remeda@2.0.0 typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"packages/remeda/src/clamp.reversed.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "2-reversed-clamp-reference",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 795.8479319999897,
+          "stdout": "\n> remeda@2.0.0 test:study:regression\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/2-reversed-clamp-reference\n\n ✓ packages/remeda/src/clamp.test.ts (3 tests) 3ms\n\n Test Files  1 passed (1)\n      Tests  3 passed (3)\n   Start at  13:48:13\n   Duration  294ms (transform 44ms, setup 0ms, collect 43ms, tests 3ms, environment 0ms, prepare 72ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/2-reversed-clamp-reference/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/navigation-large-model-study/oracle.mjs",
+            "/workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/2-reversed-clamp-reference",
+            "reversed-clamp"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2476.7393909999955,
+          "stdout": "Finite behavioral/public types passed reversed-clamp 1947\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1981.2562040000048,
+          "stdout": "\n> remeda@2.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 873.0370379999949,
+          "stdout": "\n> remeda@2.0.0 test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"packages/remeda/src/clamp.reversed.test.ts\"]\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/2-reversed-clamp-reference\n\n ✓ packages/remeda/src/clamp.reversed.test.ts (5 tests) 3ms\n ✓ packages/remeda/src/clamp.test.ts (3 tests) 2ms\n\n Test Files  2 passed (2)\n      Tests  8 passed (8)\n   Start at  13:48:18\n   Duration  386ms (transform 57ms, setup 0ms, collect 66ms, tests 5ms, environment 0ms, prepare 98ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1940.428074999989,
+          "stdout": "\n> remeda@2.0.0 typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"packages/remeda/src/clamp.reversed.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "2-reversed-clamp-candidate",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 633.2636230000062,
+          "stdout": "\n> remeda@2.0.0 test:study:regression\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/2-reversed-clamp-candidate\n\n ✓ packages/remeda/src/clamp.test.ts (3 tests) 2ms\n\n Test Files  1 passed (1)\n      Tests  3 passed (3)\n   Start at  13:48:22\n   Duration  220ms (transform 46ms, setup 0ms, collect 48ms, tests 2ms, environment 0ms, prepare 56ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/2-reversed-clamp-candidate/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/navigation-large-model-study/oracle.mjs",
+            "/workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/2-reversed-clamp-candidate",
+            "reversed-clamp"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2335.2845820000075,
+          "stdout": "Finite behavioral/public types passed reversed-clamp 1947\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1718.170609000008,
+          "stdout": "\n> remeda@2.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 870.7032290000061,
+          "stdout": "\n> remeda@2.0.0 test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"packages/remeda/src/clamp.reversed.test.ts\"]\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/2-reversed-clamp-candidate\n\n ✓ packages/remeda/src/clamp.reversed.test.ts (5 tests) 4ms\n ✓ packages/remeda/src/clamp.test.ts (3 tests) 2ms\n\n Test Files  2 passed (2)\n      Tests  8 passed (8)\n   Start at  13:48:26\n   Duration  413ms (transform 57ms, setup 0ms, collect 70ms, tests 7ms, environment 0ms, prepare 106ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1909.407567999995,
+          "stdout": "\n> remeda@2.0.0 typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"packages/remeda/src/clamp.reversed.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "2-slice-index-reference",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 626.8599850000028,
+          "stdout": "\n> remeda@2.0.0 test:study:regression\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/2-slice-index-reference\n\n ✓ packages/remeda/src/splitAt.test.ts (4 tests) 3ms\n\n Test Files  1 passed (1)\n      Tests  4 passed (4)\n   Start at  13:48:29\n   Duration  202ms (transform 34ms, setup 0ms, collect 35ms, tests 3ms, environment 0ms, prepare 51ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/2-slice-index-reference/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/navigation-large-model-study/oracle.mjs",
+            "/workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/2-slice-index-reference",
+            "slice-index"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2300.7635889999947,
+          "stdout": "Finite behavioral/public types passed slice-index 357\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1900.3657779999921,
+          "stdout": "\n> remeda@2.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 827.6819410000026,
+          "stdout": "\n> remeda@2.0.0 test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"packages/remeda/src/splitAt.native.test.ts\"]\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/2-slice-index-reference\n\n ✓ packages/remeda/src/splitAt.native.test.ts (22 tests) 5ms\n ✓ packages/remeda/src/splitAt.test.ts (4 tests) 3ms\n\n Test Files  2 passed (2)\n      Tests  26 passed (26)\n   Start at  13:48:34\n   Duration  379ms (transform 51ms, setup 0ms, collect 65ms, tests 8ms, environment 0ms, prepare 96ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1801.1800749999966,
+          "stdout": "\n> remeda@2.0.0 typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"packages/remeda/src/splitAt.native.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "2-slice-index-candidate",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 620.8801309999981,
+          "stdout": "\n> remeda@2.0.0 test:study:regression\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/2-slice-index-candidate\n\n ✓ packages/remeda/src/splitAt.test.ts (4 tests) 3ms\n\n Test Files  1 passed (1)\n      Tests  4 passed (4)\n   Start at  13:48:37\n   Duration  197ms (transform 35ms, setup 0ms, collect 33ms, tests 3ms, environment 0ms, prepare 53ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/2-slice-index-candidate/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/navigation-large-model-study/oracle.mjs",
+            "/workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/2-slice-index-candidate",
+            "slice-index"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2167.311130000002,
+          "stdout": "Finite behavioral/public types passed slice-index 357\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1808.627827999997,
+          "stdout": "\n> remeda@2.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 847.4910910000035,
+          "stdout": "\n> remeda@2.0.0 test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"packages/remeda/src/splitAt.native.test.ts\"]\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/2-slice-index-candidate\n\n ✓ packages/remeda/src/splitAt.native.test.ts (24 tests) 6ms\n ✓ packages/remeda/src/splitAt.test.ts (4 tests) 3ms\n\n Test Files  2 passed (2)\n      Tests  28 passed (28)\n   Start at  13:48:42\n   Duration  391ms (transform 56ms, setup 0ms, collect 69ms, tests 9ms, environment 0ms, prepare 102ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1732.0474159999867,
+          "stdout": "\n> remeda@2.0.0 typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"packages/remeda/src/splitAt.native.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "2-slice-index-cline",
+      "matches": true,
+      "original": [
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "checks": [
+        {
+          "name": "regression",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:regression"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 597.8390969999891,
+          "stdout": "\n> remeda@2.0.0 test:study:regression\n> node node_modules/vitest/vitest.mjs run --config .study/vitest.config.mjs\n\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/2-slice-index-cline\n\n ✓ packages/remeda/src/splitAt.test.ts (4 tests) 3ms\n\n Test Files  1 passed (1)\n      Tests  4 passed (4)\n   Start at  13:48:45\n   Duration  190ms (transform 32ms, setup 0ms, collect 32ms, tests 3ms, environment 0ms, prepare 49ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "feature",
+          "command": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "argv": [
+            "--import",
+            "/workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/2-slice-index-cline/node_modules/tsx/dist/loader.mjs",
+            "/workspace/Blame/tools/terminal_bench/navigation-large-model-study/oracle.mjs",
+            "/workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/2-slice-index-cline",
+            "slice-index"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2166.678944000014,
+          "stdout": "Finite behavioral/public types passed slice-index 357\n",
+          "stderr": ""
+        },
+        {
+          "name": "types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:types"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1757.0317440000072,
+          "stdout": "\n> remeda@2.0.0 test:study:types\n> node node_modules/typescript/bin/tsc --noEmit -p .study/tsconfig.json\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered",
+          "command": "npm",
+          "argv": [
+            "run",
+            "test:study:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 847.4028920000128,
+          "stdout": "\n> remeda@2.0.0 test:study:delivered\n> node .study/delivered.mjs runtime\n\nDelivered test files: [\"packages/remeda/src/splitAt.native.test.ts\"]\n\n RUN  v3.2.4 /workspace/blame-study-runs/navigation-feedback-f58/endpoint-replay-DWPoWB/2-slice-index-cline\n\n ✓ packages/remeda/src/splitAt.native.test.ts (23 tests) 5ms\n ✓ packages/remeda/src/splitAt.test.ts (4 tests) 4ms\n\n Test Files  2 passed (2)\n      Tests  27 passed (27)\n   Start at  13:48:50\n   Duration  384ms (transform 55ms, setup 0ms, collect 68ms, tests 9ms, environment 0ms, prepare 98ms)\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "delivered-types",
+          "command": "npm",
+          "argv": [
+            "run",
+            "typecheck:delivered"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1842.7882929999905,
+          "stdout": "\n> remeda@2.0.0 typecheck:delivered\n> node .study/delivered.mjs types\n\nDelivered test files: [\"packages/remeda/src/splitAt.native.test.ts\"]\n",
+          "stderr": ""
+        }
+      ]
+    }
+  ]
+}

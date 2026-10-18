@@ -1,0 +1,56 @@
+{
+  "phase": "F58",
+  "modelAssignments": 18,
+  "complete": true,
+  "manualReviews": 18,
+  "independentRawVerification": "passed",
+  "immutableEndpointReplays": {
+    "matched": 18,
+    "total": 18,
+    "checksPerEndpoint": 5,
+    "modelRequests": 0,
+    "sourceRepaired": false
+  },
+  "implementationValidation": "../light-harness-feedback-f57-2026-10-18/validation.json",
+  "runtimeSourceHead": "690b9b52f58cb045a2a5ac0d5541135e52c5297e",
+  "postModelChanges": [
+    "Audit-wrapper phase argument is removed before optional positional roots are interpreted; actual18-packet audit and raw verifier pass.",
+    "An existing LightWorkspace comment is corrected to the actual 15-second initial command wait; executable runtime behavior unchanged.",
+    "Manual diagnostic wording distinguishes six avoidable green replays from final required checks; no primary score or cost changes."
+  ],
+  "adversePreparation": [
+    "Initial binding guard refused a changed generated cache before any model start. Original binding/refusal and common prelaunch amendment retained.",
+    "Initial post-model audit used the wrapper phase as a filesystem root and exited ENOENT before audit extraction. No trial/model/source was repeated or changed."
+  ],
+  "studyCompilation": "success",
+  "files": {
+    "protocol.json": "88191abd4f6543c70bf1247c3a7157e8db65f760fe36c613ceafdc0df85985c9",
+    "execution-bindings.json": "7f7d225e7d6d68656b31beed67dace7d8eaeb44090bd559d3fc196620b13ef35",
+    "source-review.json": "42609aa5991b998d8e8adf8f69c33ffd4803bd9da0494b491cf662d960ef5be7",
+    "results.json": "2162b3b31ca90f018755918ea70ec568587636c73f1a693515510e77165053ab",
+    "summary.json": "ff1d4d723d6f573e6fff2d45f82cbbc9288749f0c03c3cdb5bc0eba91e9bccda",
+    "verification.json": "6c67ccb645ab70cfa351dd2ef781a85a0e883b97619852bbdf307968ed77463d",
+    "endpoint-replay.json": "269b9897b661c5f6fa697a6880cc7e23d2cc905ef277be28d2d093312a07ce7d",
+    "mechanism-readout.json": "bb889aab23044acb886770f667be1529bb9fa7b8e171bf9fe14963afd7cf7a9b",
+    "study-compilation.json": "6b746cfd8b25047ac99c103fef36523e594f4b0d51b3aa471e0df7f115d2e6da"
+  },
+  "logs": {
+    "logs/f58-controls.log.gz": "6c18eabef4a5374223f22036f21a00ce28b9e424da66da488046179a7c979cf0",
+    "logs/f58-preflight.log.gz": "1c23b4138ae13758303f02c79eda845024890d5af02d8c513404935fab99e277",
+    "logs/f58-snapshot.log.gz": "024564400bd7603ed57d1068975d2cf58c78b8a380c0bcccc4b57efd59e6cd03",
+    "logs/f58-smoke.log.gz": "3875304b0ba30cbecaadcca1d9f5b11f0e1eeff7584b13420d77e88cf9819455",
+    "logs/f58-snapshot-final.log.gz": "024564400bd7603ed57d1068975d2cf58c78b8a380c0bcccc4b57efd59e6cd03",
+    "logs/f58-smoke-final.log.gz": "3875304b0ba30cbecaadcca1d9f5b11f0e1eeff7584b13420d77e88cf9819455",
+    "logs/f58-freeze.log.gz": "4c7a5977d26883588a04cd69717466e11a128bc07b3d5810cdefb4de9e905596",
+    "logs/f58-bind.log.gz": "7f9bc7f84f61d91d3db44fe38c3cbb2bdd2b7ad54a5fd39a10d23e88645532f3",
+    "logs/f58-bind-final.log.gz": "7f9bc7f84f61d91d3db44fe38c3cbb2bdd2b7ad54a5fd39a10d23e88645532f3",
+    "logs/f58-model-final.log.gz": "41948eda1d03c7dfcb0c5c70a4ed7cbca59eaeab9cf96d81eecd35602fa6d849",
+    "logs/f58-audit.log.gz": "588cccacedecaf44b883d6f8748d1620002ec7d3543ba7e52734c95f5764608f",
+    "logs/f58-audit-final.log.gz": "a14ddfd785dd5f962aa1bf04c6fc9e5808761efe024a2ea34a32a14adf2f1911",
+    "logs/f58-publish.log.gz": "64deffe1d6d940ef9bdaac050d914895f2e0ae6f701585068bcd9a803edc8a25",
+    "logs/f58-publish-final.log.gz": "64deffe1d6d940ef9bdaac050d914895f2e0ae6f701585068bcd9a803edc8a25",
+    "logs/f58-verify.log.gz": "da047720128dcf17de78b3de7a03b522edb0efa5bb881c24a3a608c585df9f79",
+    "logs/f58-verify-final.log.gz": "da047720128dcf17de78b3de7a03b522edb0efa5bb881c24a3a608c585df9f79",
+    "logs/f58-replay.log.gz": "b3fad2b99a12661c052e04d3c6519bf5b3289905c884f4e106fa17d0fa0c7536"
+  }
+}

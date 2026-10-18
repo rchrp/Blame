@@ -1,0 +1,9 @@
+{
+  "startedAtUTC": "2026-10-18T13:18:29.562Z",
+  "endedAtUTC": "2026-10-18T13:44:21.374774+00:00",
+  "sdkAgentMs": 1296377,
+  "outerWorkerMs": 1328806.4231769997,
+  "endpointGradingMs": 135266.84446199908,
+  "coordinatorHostObservedMs": 1551812.7739429474,
+  "boundary": "Coordinator start from durable provenance; end from retained driver-exit file metadata, not independent clock attestation. Tables use SDK agent time. Setup/controls/replays/review and pre-model binding refusal excluded. No intentional heavy local work overlapped workers. Nonexclusive host/provider contention remains unknown. No infrastructure or invoice pricing included."
+}

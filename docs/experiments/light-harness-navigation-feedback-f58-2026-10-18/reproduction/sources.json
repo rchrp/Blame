@@ -1,0 +1,33 @@
+{
+  "registrationCommit": "d2428a529fb2ee36e9fdd7882661d219b3cd7b98",
+  "archiveSha256": "72c9ea69d602c0e4bf32ee3bdcf5c820d710723229497ce7c7b9f27b5ef5d10f",
+  "boundScripts": {
+    "tools/terminal_bench/navigation-large-model-study/setup.mjs": "15b725cb5ace8373f47b9fc14ef91022aee3cd8073d7870a4b4ca26f57c7ec9c",
+    "tools/terminal_bench/navigation-large-model-study/tasks.mjs": "9fa35908b83f5427bbb53f482d94172456c8cb89b1e7b5656ad59190e7407355",
+    "tools/terminal_bench/navigation-large-model-study/delivered.mjs": "d2b1f64a302c33fabd16783caf8dc8e5146e03f85603bf89f4798696ab3b5b33",
+    "tools/terminal_bench/navigation-large-model-study/oracle.mjs": "532dc5f5417e0187557eea090a1648a31f987537d133ba11fd1f29cec61825f4",
+    "tools/terminal_bench/navigation-large-model-study/checks.mjs": "33843d746686dc8e47dabac7c25a0db238f2f84f7e7eea7f487773a199e58ed7",
+    "tools/terminal_bench/navigation-large-model-study/solutions.mjs": "a284760683efb8c884ed633b77bd8986d1d6d8b3ade5f2eed2cd56898ee3723f",
+    "tools/terminal_bench/navigation-large-model-study/controls.mjs": "7f05c589f01f366885d13011d3dbfa7efc2852915a36ceb218e4e8091068eba5",
+    "tools/terminal_bench/navigation-large-model-study/environment-smoke.mjs": "6574d48b136f273f8ccfa0b50ddf30704423cd82512025793b30596392aeab64",
+    "tools/terminal_bench/navigation-large-model-study/snapshot.mjs": "da5618a5a5fe89dbd2e83578037667c876bd623bb652fe20354c59d37b776f16",
+    "tools/terminal_bench/navigation-large-model-study/solver-identity.mjs": "1c9fd0687484b1a7f1fb16c768b3260eaa6948203b18d4667c1f2e2b009de6b2",
+    "tools/terminal_bench/navigation-large-model-study/schema-exposure.mjs": "efeef10872a07590ee54efdf4576e60464910ba2a8cdc24cfa74fb084d8f21d2",
+    "tools/terminal_bench/navigation-large-model-study/evidence-io.mjs": "bec4e89f0336d0ac330b11eed6cbb1de7572559e7d252f0fe1e4fb82c86393a9",
+    "tools/terminal_bench/navigation-large-model-study/resource-values.mjs": "6ec919ba6d0cf7647843397bf8f6c83906f2a600eee68f57bf37c6b132af7fcf",
+    "tools/terminal_bench/navigation-large-model-study/preflight-controls.mjs": "55b465b88d082ab0e3970985aa39fc93ea66513330a05597964be646d2672ce2",
+    "tools/terminal_bench/navigation-large-model-study/freeze.mjs": "3b41e9bb201715a2df2d7ca1548095bd168dd2f6e11b7e8ea0725d230b1a9aba",
+    "tools/terminal_bench/navigation-large-model-study/run.mjs": "95f4041baef06d61a9ed538749cc713d813ff9728ab4d9bece1e353287998173",
+    "tools/terminal_bench/navigation-large-model-study/audit.mjs": "d1d1700d6483f3e4e5934b42546583ce30715129c2287384d7e863adea1ed79d",
+    "tools/terminal_bench/navigation-large-model-study/publish.mjs": "ae8f7958c5b133d3c6d79ad8188369f1fa950731ab424275c8a04913ecf7fce9",
+    "tools/terminal_bench/navigation-large-model-study/verify.mjs": "ac1749624e8e06e97d6d3bd1b922cfb47722b9f28ea4ce1f521de2342769968c",
+    "tools/terminal_bench/navigation-large-model-study/replay.mjs": "7d440a2a721383bb46c777e19d522bacd02aa6c60aacc9fe11908b19c7d42bc3",
+    "tools/terminal_bench/navigation-feedback-model-study/entry.mjs": "1f1dab47515fdec8dd04423cf1e5b62d85cf553d4ecd1928f79636484c199b67",
+    "tools/terminal_bench/navigation-feedback-model-study/snapshot.mjs": "ae396ef05d2e5584ab118d2eef9e268779def6a1e6ef08ee4c7b5610ee84b5c7",
+    "tools/terminal_bench/navigation-feedback-model-study/freeze.mjs": "3cfbd9aba2d67386bcf43cf0127af6f433b1810148c1afc9aeab96c235f8d95d",
+    "tools/terminal_bench/durable-campaign.mjs": "c1e6b0ae0cef6d947fc4c7144c466f5456028fda6c9572cd75fc69a40d33b931",
+    "tools/terminal_bench/isolated-node-environment.mjs": "0b362eccea79f54e6abd0a51b8e6adcc687e41975e39c33c2057be28efe4b438"
+  },
+  "postModelFix": "The current entry wrapper removes its audit phase from positional root arguments. This was fixed only after all18 model exits; model execution/protocol/patches and grades unchanged. Original dispatch source, initial ENOENT audit log and correct final audit remain preserved. Restore the registration sources to reproduce model input bindings.",
+  "preModelAmendment": "59cb7094 updates only the common generated cache binding before any model call; see pre-model-binding-amendment.json."
+}

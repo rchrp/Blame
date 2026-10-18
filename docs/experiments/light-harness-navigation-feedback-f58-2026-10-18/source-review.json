@@ -358,7 +358,7 @@
       "dependencyIntegrityPassed": true,
       "symbolicEvidence": [],
       "evidence": [
-        "Production source hash equals reviewed native-slice endpoints; original generic overloads unchanged. Final new tests correctly check direct literal-union inference and runtime behavior in all call styles, with no any/casts in the delivered endpoint. Three intermediate delivered-type failures asserted stronger curried/pipe inference than the preexisting outer-generic API; only those new assertions were corrected, no original test or public type was weakened. Nine green checks were redundantly repeated before the failing typecheck; original cost retained. All five endpoint checks and final required invocations plus delivered types pass, truthful scope and no solution retrieval."
+        "Production source hash equals reviewed native-slice endpoints; original generic overloads unchanged. Final new tests correctly check direct literal-union inference and runtime behavior in all call styles, with no any/casts in the delivered endpoint. Three intermediate delivered-type failures asserted stronger curried/pipe inference than the preexisting outer-generic API; only those new assertions were corrected, no original test or public type was weakened. Six already-green checks were rerun during two unsuccessful repairs; the initial three green checks and three final-source required checks are kept distinct. Original cost retained. All five endpoint checks and final required invocations plus delivered types pass, truthful scope and no solution retrieval."
       ]
     }
   ]
