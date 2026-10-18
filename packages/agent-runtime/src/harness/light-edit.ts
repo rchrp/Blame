@@ -29,6 +29,7 @@ import { type Replacement, symbolReplacement } from "./light-symbol-replacement.
 
 type PlannedFile = {
   bodyTargets?: string[];
+  bodyHeaders?: Array<{ target: string; qualifiedName: string; header: string; truncated: boolean }>;
   footprint?: ReferenceFootprint;
   semanticRename?: Awaited<ReturnType<typeof planSemanticRename>>["receipt"];
   fileMode?: number;
@@ -145,7 +146,7 @@ export class LightEditService {
     if (footprint && !(await referenceFootprintIsCurrent(footprint, signal)))
       throw new LightCommitConflict("Semantic rename source or dependency changed before commit.");
     const invalid = finalFiles.find(({ parse }) => parse.status === "failed");
-    if (invalid) return invalidParseResult(invalid);
+    if (invalid) return { ...invalidParseResult(invalid), ...bodyEditContext(finalFiles) };
     const result: LightCommitResult | LightEditFailure = await this.commit(
       finalFiles,
       snapshot,
@@ -337,7 +338,14 @@ export class LightEditService {
     const file = await this.filePlan(plans, resolved.path, resolved.content);
     file.symbols.push(resolved.symbol.qualified_name);
     file.replacements.push(symbolReplacement(resolved, operation));
-    if (operation.action === "replace_body") (file.bodyTargets ??= []).push(resolved.alias ?? operation.target);
+    if (operation.action === "replace_body") {
+      (file.bodyTargets ??= []).push(resolved.alias ?? operation.target);
+      const [start, end] = symbolEditRange(resolved.symbol, "signature");
+      const header = resolved.content.subarray(start, end).toString("utf8").trimEnd();
+      const compact = Array.from(header).slice(0, 512).join("");
+      (file.bodyHeaders ??= []).push({ target: operation.target,
+        qualifiedName: resolved.symbol.qualified_name, header: compact, truncated: compact !== header });
+    }
   }
 
   private async filePlan(
@@ -403,7 +411,7 @@ export class LightEditService {
       this.lastNoopBodyKey = key;
       return {
         status: "ok",
-        data: { changed: false, parse: parseSummary(files),
+        data: { changed: false, parse: parseSummary(files), ...bodyEditContext(files),
           ...(repeatedBody ? {
             guidance: "The observed body already matches. replace_body preserves parameters, return type and imports. To change them, read the complete declaration/file and use replace or a file patch; do not repeat this body edit.",
             nextReads: [...new Set(files.flatMap(file => file.bodyTargets ?? []))].map(target => ({ target, view: "symbol" })),
@@ -571,8 +579,20 @@ function appliedEditResult(
       parse,
       basedOn: snapshot.git ? "worktree" : "filesystem",
       sourceRevisionId,
+      ...bodyEditContext(files),
     },
   };
+}
+
+/** Observed input header, not inferred bindings, type validity or final-batch identity. */
+function bodyEditContext(files: PlannedFile[]) {
+  const headers = files.flatMap(file => (file.bodyHeaders ?? []).map(header => ({ path: file.path, ...header })));
+  if (!headers.length) return {};
+  return { bodyEditContext: {
+    headers: headers.slice(0, 4), omitted: Math.max(0, headers.length - 4),
+    scope: "headers_before_body_edits",
+    instruction: "replace_body retains these parameters and return types and does not add imports. Other explicit operations in this batch may change them. Use the shown parameter names; to change a header or imports, read the complete declaration/file and use replace or a file patch. This receipt grants no additional read coverage or type validation.",
+  } };
 }
 
 function assertSymbolEditAvailable(path: string) {
