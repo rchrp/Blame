@@ -1,0 +1,157 @@
+{
+  "registeredBeforeModelOutcomes": true,
+  "parent": "dcabea1e",
+  "implementationPlan": "Bounded runtime-test scope diagnostic: exact script/forwarded arguments, changed TS test paths, static compilation not established, existing typecheck task selections. No command, admission, required-check or schema changes. Local controls distinguish F62 delivered-test defect from a production regression.",
+  "controlledPanel": {
+    "phase": "F63",
+    "kind": "controlled serialized tool-result handoff, not natural-choice completion",
+    "cases": [
+      "source-format",
+      "test-only-type-error",
+      "wrapper-mode-argument"
+    ],
+    "order": [
+      {
+        "repeat": 1,
+        "task": "source-format",
+        "arm": "reference"
+      },
+      {
+        "repeat": 1,
+        "task": "source-format",
+        "arm": "candidate"
+      },
+      {
+        "repeat": 1,
+        "task": "source-format",
+        "arm": "cline"
+      },
+      {
+        "repeat": 1,
+        "task": "test-only-type-error",
+        "arm": "candidate"
+      },
+      {
+        "repeat": 1,
+        "task": "test-only-type-error",
+        "arm": "cline"
+      },
+      {
+        "repeat": 1,
+        "task": "test-only-type-error",
+        "arm": "reference"
+      },
+      {
+        "repeat": 1,
+        "task": "wrapper-mode-argument",
+        "arm": "cline"
+      },
+      {
+        "repeat": 1,
+        "task": "wrapper-mode-argument",
+        "arm": "reference"
+      },
+      {
+        "repeat": 1,
+        "task": "wrapper-mode-argument",
+        "arm": "candidate"
+      },
+      {
+        "repeat": 2,
+        "task": "source-format",
+        "arm": "candidate"
+      },
+      {
+        "repeat": 2,
+        "task": "source-format",
+        "arm": "cline"
+      },
+      {
+        "repeat": 2,
+        "task": "source-format",
+        "arm": "reference"
+      },
+      {
+        "repeat": 2,
+        "task": "test-only-type-error",
+        "arm": "cline"
+      },
+      {
+        "repeat": 2,
+        "task": "test-only-type-error",
+        "arm": "reference"
+      },
+      {
+        "repeat": 2,
+        "task": "test-only-type-error",
+        "arm": "candidate"
+      },
+      {
+        "repeat": 2,
+        "task": "wrapper-mode-argument",
+        "arm": "reference"
+      },
+      {
+        "repeat": 2,
+        "task": "wrapper-mode-argument",
+        "arm": "candidate"
+      },
+      {
+        "repeat": 2,
+        "task": "wrapper-mode-argument",
+        "arm": "cline"
+      }
+    ],
+    "treatment": "Same F63 runtime for both Light arms and same source/previous command evidence; only the source-bound validationState field in an actual pre-model post-edit result is omitted/present in the handoff. Cline gets the same common history and source without the Light field. Handoff is user input, not a claim of a live tool-message receipt or of restored journal admission.",
+    "required": [
+      "test:unit",
+      "check:source"
+    ],
+    "primary": "Endpoint production/test compilation, final exact required invocations, honest optional-compiler freshness and no solution retrieval. All failures/timeouts/missing consumption retained.",
+    "measure": "Check explicit handoff exposure, final actual compiler/runtime invocations, stale claims, audited completion, token/cache/cost/HTTP/tool duration. Controlled opportunity frequency is not natural prevalence.",
+    "repetitions": 2
+  },
+  "confirmationPanel": {
+    "phase": "F64",
+    "project": "ReactiveX/rxjs",
+    "upstreamCommit": "e5351d02e225e275ac0e497c7b66eaa5f0c88791",
+    "tasks": [
+      {
+        "id": "filter-map",
+        "request": "Add public filterMap: projection returns {keep:true,value:R} or {keep:false}, forwarding only kept values. Source indices count every input; projection exceptions error once and unsubscribe; state is per subscription. Preserve RxJS operator conventions and generic inference. Export from root and operators barrels."
+      },
+      {
+        "id": "map-with-previous",
+        "request": "Add public mapWithPrevious projecting (current, previous, index), with previous undefined on first input and the immediately preceding source value thereafter. Indices/state reset for each subscription. Preserve error, completion and unsubscription behavior and generic inference. Export from root and operators barrels."
+      },
+      {
+        "id": "tap-first",
+        "request": "Add public tapFirst: call a supplied next callback only for the first source value per subscription and forward all values unchanged. Empty sources never invoke it. A callback exception errors once, unsubscribes and forwards no failing value. State is per subscription. Export from root and operators barrels with unchanged existing APIs."
+      }
+    ],
+    "selection": "All three new constructed cross-file feature tasks on the complete pinned upstream project, two rotated repetitions and three arms. No failed-task replacement or issue representativeness claim. Candidate differs from sealed F62 current only by scope feedback; F63 history is already common. No batched-navigation optimization is combined with this mechanism."
+  },
+  "commonLimits": {
+    "model": "gpt-5.6-luna",
+    "effort": "high",
+    "provider": "openai-codex",
+    "concurrency": 1,
+    "perTrialSdkCostLimitUsd": 0.5,
+    "requestOvershootReserveUsd": 0.25,
+    "timeoutSeconds": 600,
+    "outerWatchdogExtraSeconds": 25,
+    "maxIterations": 40,
+    "maxOutputTokens": 8192,
+    "maxSerializedRequestBytes": 500000,
+    "panelCostStopUsd": 20,
+    "sharedAccountedStopUsd": 100
+  },
+  "constraints": [
+    "Freeze and commit executable/prompt/schema/input/dependency/observer bindings before calls.",
+    "No research builds/tests/compiler/solver overlap live workers.",
+    "No model retries, solution recovery or repair of evaluated endpoints.",
+    "Keep F63/F64 separate from each other and historical panels.",
+    "Audit executed tests, passed tests, admitted checks and user acceptance separately.",
+    "No general gain claim from a small constructed panel or unexposed mechanism."
+  ]
+}
