@@ -210,6 +210,132 @@
       "evidence": [
         "Again the shared helper does not cap positive finite floors atlength while both consumers remove original index clamps. Although consumer bytes match the correct reference consumers, that reference uses a capped helper; current composition is wrong for oversized counts (length2/count3 gives only last suffix item and retains a prefix). All authored counts omit oversized finite inputs, so runtime/type/new tests pass and external feature oracle fails. Final required34/35/36 and delivered types42 really pass; original signatures/checks/dependencies unchanged and no solution retrieval. Formatter43 unavailable honestly reported. No body replacement or forwarded header receipt occurs; retain this known model-reasoning failure without attributing it to unexposed body feedback."
       ]
+    },
+    {
+      "name": "2-suffix-counts-cline",
+      "hashes": {
+        "events.jsonl": "119a59e02f199f378e5a7485fb6f41061b962873f09468e0b2e60081d71e95e6",
+        "workspace.diff": "718610d80d306b814674478550e2759a214cd8e25e6c39ed848e17e016bf3b55",
+        "score.json": "ea90a43886cf605d1093c7bd77f0e36408c15ac04946ecd2464c09aabc93ec28",
+        "tool-ledger.json": "326d5fde69686a3a05cc68c1a80de4fb7ad29e2016733904283e59cf6ba08202",
+        "feedback-wire.jsonl": "19669039729fb86179bc8741ce0f134aea671e5edc1ccffa509e662672b16928"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Shared finite normalizer floors and caps atlength; initial nonpositive/NaN branch includes negative infinity, positive infinity maps tolength. Original public overloads unchanged; consumer slice composition safe. New19 tests include oversized10.9, all forms via direct/pipe, frozen readonly input, fresh arrays and immutability; all five endpoints pass. Required conjunction12 proves all three exact commands succeeded on final source, delivered types13 passes; no later source/test edit or retrieval. Missing formatter honestly reported; original checks and dependencies intact. The258.3-second agent duration is retained as an observed outlier, without inferring the provider/host cause."
+      ]
+    },
+    {
+      "name": "2-suffix-counts-reference",
+      "hashes": {
+        "events.jsonl": "765ee5e06edfd2f42f72e9cb270ced62b24e4f818911256d507ba5b6bffb560e",
+        "workspace.diff": "7731ebb7bf183deff748edd6ba19d8c3120622a9f6032da441c51caf6c314279",
+        "score.json": "a92b6b0e7f1a5883c5470e828f1f0738a438568be431eaeff2344936ef10c16e",
+        "tool-ledger.json": "9c3618514d1fc9e1c60a02668f2fc5f31b2ad311e4b30d2111af4618dc16d402",
+        "feedback-wire.jsonl": "bc88625a30e05c349cd8929b7b372124d0df929d839da4e5d4ff6aca4579d3dc"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Uncapped finite-floor helper is safe here because BOTH consumers retain Math.max index clamping. This contrasts with failed candidate compositions; helper boundedness alone is not a valid user obligation. Public overloads unchanged; new14 cases cover direct/curried/pipe with readonly/fresh outputs. All five endpoints and final required37/38/39 plus delivered types40 pass, no later edit. Original tests/dependencies intact, no retrieval and scoped delivery accurate; independent oracle supplies near-length oversized counts omitted by authored cases."
+      ]
+    },
+    {
+      "name": "2-reversed-clamp-cline",
+      "hashes": {
+        "events.jsonl": "18a2814e64652dabc8fade4139b01598e56ef62b990fb7a1de0f97cf35ca028c",
+        "workspace.diff": "6473ef876fde628e876aab478c961ceb186020e324838947349c7e39dcd8390d",
+        "score.json": "b26a8b78596bb32f02d7cfac41ebc6b3744647c57db88edf0596362198a566f3",
+        "tool-ledger.json": "a0c5568856a6f70fac5b19681de25292743997263b2820b008bd3d1c141c448e",
+        "feedback-wire.jsonl": "aa010794941c0f958235d62e3633d34e7b6b497788adef21c8cb95eab3ab5da7"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Correct finite-only normalization swaps local destructured min/max inside each invocation, never mutates limits and preserves public overloads and exceptional lower-first behavior. New9 tests run/compile and source plus independent changing-range oracle establish live-curried observation. Authored mutation test merely swaps10/0 to0/10, leaving normalized interval unchanged, so that assertion alone would miss snapshotting; do not count it as independent proof. Final required12/13/14 and delivered types15 pass after only source edit8; no later edit, protected/dependency change or retrieval. Formatter unavailable honestly reported; all five endpoints pass."
+      ]
+    },
+    {
+      "name": "2-reversed-clamp-reference",
+      "hashes": {
+        "events.jsonl": "6bcd708d7cbb3453665a00519ea28c4ca049c3273f69ad7fc2e18535b5703dc0",
+        "workspace.diff": "cbbfcb08a350160d0d961513e5846c7d38771d82584feb83db7c5f1fca86ac0c",
+        "score.json": "5948a630111bd8712670c53b0115adaec825c0149bf1dc60eb3e2763e5e6f640",
+        "tool-ledger.json": "f07b37e41b1956fa23ad40d1d9fe60b32638a9e65e628301d1ab01b7011ec1b6",
+        "feedback-wire.jsonl": "842fa4f2a822768f0a899222b7af31711c7e7c3803bad226bfcbd6e53badfb14"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Final private source byte-identical to reviewed correct local-destructuring Cline implementation, public overloads unchanged. Initial body-only edit keeps destructured parameters but introduces let min/max=limits, causing duplicate bindings/missing limits and three failed validation invocations23/24/25 (no runtime cases collected). Whole-declaration repair27 names limits explicitly; final required28/29/30 and all five independent endpoints pass. New mutable test eventually changes interval0/10 to5/20, so it distinguishes snapshotting after a mere swap. No header receipt in reference as designed. No protected/dependency mutation or retrieval; optional delivered types not claimed and final coverage accurate."
+      ]
+    },
+    {
+      "name": "2-reversed-clamp-candidate",
+      "hashes": {
+        "events.jsonl": "acc293509141fb1ca8624aacafb3a38be61751573a596b2d28a6b4992e8dd68d",
+        "workspace.diff": "33e352d3e70ed9be749baef505bb0164b560ec5cd291e330fefbc5915a1686c0",
+        "score.json": "08a2bf49d249b91d55b0cfa16391a4c5e213c197e942485b4967652e22fd757d",
+        "tool-ledger.json": "ff2785b21c5a4593b521d0fbe8c42bf9d5ce17399afefd7f9cd7fda0071a2023",
+        "feedback-wire.jsonl": "ef1212767d14abd5a9be704b08f5937909351d953902674e145f7fdac37d6d87"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Final finite-only normalization retains original public overloads, no limits mutation and per-call observation. First file patch20 lacks explicit undefined narrowing and adds an incorrect Infinity expected value; compiler22 and delivered23 expose them. Patch26 fixes only those issues, required27/28/29 all pass on final source; all five endpoints pass including delivered types independently. New tests change actual curried interval20/10 to0/10, cover frozen/all forms/nonfinite semantics. No body edit or actual header exposure, so no header-mediated recovery claimed. No later edit, original/dependency change or retrieval, truthful scoped delivery without optional-type freshness claim."
+      ]
+    },
+    {
+      "name": "2-slice-index-reference",
+      "hashes": {
+        "events.jsonl": "9c17be7d4bdb0fe2f8e7fc44e720fa7e1735c77ef1118c85490d6143a16cc975",
+        "workspace.diff": "a0311648b59da93fa4e9e4819cf1750a0458147ede4be1163965b7b4a16ad4cd",
+        "score.json": "400279a778c292624f06c0cd77a5f41642aa3c7541a26d3328dc0c191bccf7aa",
+        "tool-ledger.json": "54d28ee2f3d178326336b382242d281631a292e2b4dfeb4f90086f800d1332a1",
+        "feedback-wire.jsonl": "a91089140f6442efb4e10991a177b9ae511eb385c3bef9a2d5474e2c508b22e8"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Native-slice private implementation byte-identical to reviewed correct source and original public overloads untouched. New3 framework cases loop over7 indexes in direct/curried/pipe use (21 form/index comparisons); direct branch checks fresh identity. All five endpoints and exact final required23/24/25 plus delivered types27 pass, no later edit or failure. No protected/dependency mutation or retrieval; truthful distinction between3 delivered cases and4 originals, source-only compiler and delivered-test compiler."
+      ]
     }
   ]
 }

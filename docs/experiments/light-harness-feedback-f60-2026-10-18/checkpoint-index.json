@@ -1,6 +1,6 @@
 {
   "protocolHash": "dbc87b2e2d8566c04b778c4c90b3a62816df90bc732e71ac6be7a026e495d123",
-  "completed": 10,
+  "completed": 18,
   "planned": 18,
   "receipts": [
     {
@@ -42,6 +42,38 @@
     {
       "name": "2-suffix-counts-candidate",
       "sha256": "94147bf53c5b0acb24ff8709e262ed303241480283892d38b603050a48f89f25"
+    },
+    {
+      "name": "2-suffix-counts-cline",
+      "sha256": "0d59f247e84be226d13ac25b0f00d6aca19de2fc82cc61c22036008cbb99e037"
+    },
+    {
+      "name": "2-suffix-counts-reference",
+      "sha256": "321d6b579cde143df74c30145fa70eac84f9582798cb1b89cc991f9c7d4bcdaa"
+    },
+    {
+      "name": "2-reversed-clamp-cline",
+      "sha256": "3700e7812e9970df1f29b3ca358d2926afbae62acf7fb7540cf3d858e352d88f"
+    },
+    {
+      "name": "2-reversed-clamp-reference",
+      "sha256": "42879bd6f702ef753df1a5287cab5a7e1af557b2572bf86095dfa4ebda9f8050"
+    },
+    {
+      "name": "2-reversed-clamp-candidate",
+      "sha256": "1f5c079e2a7aa657368401ecdeaabbe167dd3974b05f4434b63ba7c16d73d066"
+    },
+    {
+      "name": "2-slice-index-reference",
+      "sha256": "3880625ea250c6f808dd824f99464fc87c8d97ccd925a7026cca17bf28f52542"
+    },
+    {
+      "name": "2-slice-index-candidate",
+      "sha256": "a8271495abbedc4d227e66e8d1565ccbfc4ca0e9e0911b1618adb4752842673d"
+    },
+    {
+      "name": "2-slice-index-cline",
+      "sha256": "86a198d52aae1f586873e9a4a0866c40206438c8d607c91d7c359fb0c3f51e44"
     }
   ],
   "note": "Derived index. Each immutable archive is independently verified; no model call is replayed."
