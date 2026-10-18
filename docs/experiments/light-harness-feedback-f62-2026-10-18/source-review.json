@@ -1,0 +1,137 @@
+{
+  "method": "Root manual unblinded inspection of every complete immutable endpoint patch, exact public APIs, delivered tests, command chronology and delivery. Hash-bound independent endpoint checks support the judgment; official completion alone is insufficient. Symbolic relevance/witness judgments require separate explicit review.",
+  "decisions": [
+    {
+      "name": "1-suffix-counts-reference",
+      "hashes": {
+        "events.jsonl": "0ab69295528a2c8d290ce5fbf92ff2073c98869412663007e40ef909c0906f40",
+        "workspace.diff": "3775ccc3db6374db09c17ea911a09378620c1e65a0063d62c84318bea4f4a60a",
+        "score.json": "016b0bd33e8318eac52057be0eea10295c6d1c866f45ab5b211a876e721b2c10",
+        "tool-ledger.json": "a7b20ec17d830f26078557e52ddd93aacf83fde1c415022ba8f77e2f1128457b",
+        "feedback-wire.jsonl": "2acc5b6934fecb5454b110d8538ef152c33a59f07e61e098d53f91bf44f2f893",
+        "request-timing.jsonl": "d3462ae76814f0ffcc046240d7098bdf27e22bcd9dd34a6b5991b2d7a21580f4"
+      },
+      "sourceBehaviorPassed": false,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": false,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Shared helper handles NaN/nonpositive/infinities/floor but leaves finite counts unbounded while both consumers remove their old index clamps. For length2/count3 takeLast and dropLast each return one element instead of full/empty arrays, violating preserved integer behavior. The original finite oracle already rejects this defect; no claim that only the added F62 probes detect it. All13 authored cases and related original tests pass, omitting near-length oversized counts. Public overloads/types unchanged; independent source and new-test compilers pass. Required41/42/43 and optional compiler46 run after final source/test edit, no late writes/protected/dependency changes or retrieval; reported invocations/scopes accurate, broad integer-behavior claim false because source wrong. Retain functional failure and all costs; no solution recovery or patch repair."
+      ]
+    },
+    {
+      "name": "1-suffix-counts-candidate",
+      "hashes": {
+        "events.jsonl": "f5b15f530330e6b1e19118591f3cb5823a19482f1d55d7c7f34ced42e46ad1e7",
+        "workspace.diff": "fd88ebd39a9e3b814401baa491679d2a030520ff51652160f384700e23faace7",
+        "score.json": "93a0e81a95d576185e8c231c0d9e0d015e3120ab2aad2180f4d0604ab45f22dd",
+        "tool-ledger.json": "0e8c034e7bd15aacd0cf6330cd9fd4fcad4fbd4db43b30d632a9b5742a243a92",
+        "feedback-wire.jsonl": "4fdbb1695658953aadc2f9d47342b34ff9a7838136080c8c0a92603414631fbe",
+        "request-timing.jsonl": "ded27c37cba89b0b9564e4bd31a43b460432cc50979bbec388c8bcb0a21e28b5"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Shared normalizeCount floors finite positives and caps them at length, handles NaN/negative/positive infinity explicitly; unchanged public overloads and slice consumers preserve readonly inference, freshness and order. Five endpoint checks pass. New seven cases pass (the redundant 1.9 branches in expected values do not affect results); they omit near-length oversized cases, so endpoint oracle supplies that independent evidence. Only successful edit is ledger31. Required exact tasks32/33/34 follow it; checkout-only command35 and blocked formatter attempts38/39 make no changes. Delivery reports actual limited source/test scopes and formatting failure, without claiming optional delivered-test compilation. All navigation/commands confined to input checkout, no solution recovery or protected/dependency changes."
+      ]
+    },
+    {
+      "name": "1-suffix-counts-cline",
+      "hashes": {
+        "events.jsonl": "c2b19cbd68cc424f8245cbb60ef7c1d18788516d69ae277176fd29c1056d23dd",
+        "workspace.diff": "a9267ef695799e1de746e58e84bc7a6a42ceef638540aa2abf08a53581092738",
+        "score.json": "37508e0b296d2388dc497d42423061a13953fa86bf64539ea286f5db68118471",
+        "tool-ledger.json": "dd307f0c35ec73bf84a3995a3ef5ab9bb33839301a9edba4ead0217445447072",
+        "feedback-wire.jsonl": "22b22ed5218792ccc289ecf0bab274a800356037b65dafd73124ce734214afa6",
+        "request-timing.jsonl": "72689eccb504b98ee5164d679a40ba0da807232208544d255c73b58b3bb08025"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Shared finite-count normalization floors and clamps to length; positive infinity and all invalid/negative inputs handled, both slice consumers and public overloads preserve generic readonly API and freshness. All five endpoint checks pass. New20 tests cover invocation styles/invalid counts/readonly/nonmutation but omit finite near-length oversized cases independently covered by endpoint oracle. Patch10 is final edit; exact three required commands and optional typecheck:delivered in batch11 succeed after it, later commands13 only inspect checkout. Delivery distinguishes selected regression, source compilation and delivered runtime/test compilation accurately. Reviewed every search/read/command: frozen checkout only, no solution retrieval, protected files or dependency mutation."
+      ]
+    },
+    {
+      "name": "1-reversed-clamp-candidate",
+      "hashes": {
+        "events.jsonl": "55110c2e8c65d27588968827de9998f347deee419b97895f4ca78efb57bce39e",
+        "workspace.diff": "731a2a610809978b3a5ffb9797af047be95d78d66aa6a72359fa9f0ec0b2e767",
+        "score.json": "4dcee622904b4dc62ccccd4dc96066484f76d6b58fa741a76ee7301a58c0742b",
+        "tool-ledger.json": "b7a1b807d4dc8fd2303679d3717210315a5a5c865fc7b721d43f972c6f21f665",
+        "feedback-wire.jsonl": "bc6282999115179a5721f8cc0298c368aadb219fb33337ce427b9fc566c3941e",
+        "request-timing.jsonl": "499c778c5070110556d23c5d49acbc15228cb8d12d2368cf5df21de1b74e92fe"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Finite reversed min/max are normalized locally on every invocation without mutation; nonfinite/undefined/NaN bounds retain old branching and NaN value stays NaN. Seven added cases include frozen limits and reuse with mutated limits. All five endpoint checks pass and public numeric overloads unchanged. Rejected patch23 changes nothing; successful multifile edit24 is final source/test edit. Required25/26/27 and optional delivered-test compiler28 then pass. Later command29 only inspects checkout. Delivery states exact selected scopes and successful optional compilation. All searches/reads/commands confined to frozen checkout, no solution retrieval, protected/dependency changes."
+      ]
+    },
+    {
+      "name": "1-reversed-clamp-cline",
+      "hashes": {
+        "events.jsonl": "7dc3225ef73bc7421241004cb0bc33b247e0bd8fbdb1a79f799e2ed095be5321",
+        "workspace.diff": "80d0f13c8e79182714d90ce523d32978888368409499424220cea336ce81c15a",
+        "score.json": "cf63c7e384684926bc6a5a2060ac6df7c16d439bbe92fb98bd7305e49fade6d7",
+        "tool-ledger.json": "b8db8324690bd9edf85bf7a6596459da101f9e2bfc08136165fe6267fee48398",
+        "feedback-wire.jsonl": "9b68cd260af96c4947b7dd634511605c71e6f8092a51b75125dcfaf8ec150a23",
+        "request-timing.jsonl": "134a32d58672c4b16a27cf0273d1bab0b8fe1a2090804ad1e675962a2fcf9595"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Per-invocation reversed predicate requires two finite defined bounds; local lower/upper values preserve mutable curried observation, nonfinite/NaN/undefined and NaN-value behavior without mutation. Numeric overloads unchanged. Nine new cases and all five endpoint checks pass, including independent changing-bound oracle. Patch7 is final edit; exact required commands in batch8 and optional compiler9 pass afterwards. Later batch10/read11 only inspect checkout. Report states selected regression/source-only compilation and delivered runtime/test compilation accurately. All navigation/commands reviewed: checkout only, no remote/prior-solution retrieval, protected files or dependency changes."
+      ]
+    },
+    {
+      "name": "1-reversed-clamp-reference",
+      "hashes": {
+        "events.jsonl": "0ca32c5a1769b9997684ea4fe762cd4bcdf6b5c50c16e7e3c6189629f3661169",
+        "workspace.diff": "d2b24fd9bfb6033fb22350d25ef3feb758e72677a16d91ac12de548af30d4f50",
+        "score.json": "1990148e3b16d9b5f3cf3d06a09b161ac7a08d76a3a5bd4928e837b5a206d0a8",
+        "tool-ledger.json": "3aa5ec9ee2cdc887fe0cc2149ab988ca2ff2d1da053439b317fe11c0b38f1b75",
+        "feedback-wire.jsonl": "99356b38c39c3e777182c200e635ab981dd73b7ac5e9dd480a9659a3df060fe7",
+        "request-timing.jsonl": "b93d22c6364a2ee64233f29fba47ddc8c5b9ac08c55b3ed98b17b5ad3ae8b8d1"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Final local lower/upper normalization is recomputed each invocation, finite/defined guard and original branch order preserve missing/nonfinite/NaN behavior; frozen objects unchanged and mutable curried bounds observed. Five authored tests plus independent endpoint/type/structural checks pass. Initial edit21 causes real TS18048 at compiler23; edit25 adds defined guards, required26/27/28 pass. Later full-symbol formatting edit32 changes final source epoch, so required33/34/35 are necessary and pass afterwards, with readonly diff36. Delivery correctly limits source-only compiler and original/delivered runtime selections, without claiming optional test compilation. All reads/searches/commands are frozen checkout only; no solution retrieval or protected/dependency edits."
+      ]
+    }
+  ]
+}

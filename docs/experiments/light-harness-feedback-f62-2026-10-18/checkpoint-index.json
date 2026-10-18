@@ -1,0 +1,32 @@
+{
+  "protocolHash": "d813bf47c796178731dcfa9057e3eb3cb37a740421c074e54cb7d2ba75999e65",
+  "completed": 6,
+  "planned": 18,
+  "receipts": [
+    {
+      "name": "1-suffix-counts-reference",
+      "sha256": "acbde9edad254b67e4604e383f3001df52b3d867ff933ea3d68297ca725d0652"
+    },
+    {
+      "name": "1-suffix-counts-candidate",
+      "sha256": "4c00089f09050cfe2e3459592df02a7b1f378dae4f2bc769474efcd251568e59"
+    },
+    {
+      "name": "1-suffix-counts-cline",
+      "sha256": "529a540607cf209336fd3257647e4c58d0c11a5e005378a06b09350da8bce101"
+    },
+    {
+      "name": "1-reversed-clamp-candidate",
+      "sha256": "6d50e701005e92a47c3698822e6f70e89620202046a9f07b53ceb88a92a02af0"
+    },
+    {
+      "name": "1-reversed-clamp-cline",
+      "sha256": "5f8e41eb58f5b77bc7ec5528650852778dced4dc8724c26d418d7c42f8f49b78"
+    },
+    {
+      "name": "1-reversed-clamp-reference",
+      "sha256": "3d1d24d4234a04d041a0d701f2255bdf0ade497f2f8e749998f55c4cd46925a5"
+    }
+  ],
+  "note": "Derived index. Each immutable archive is independently verified; no model call is replayed."
+}
