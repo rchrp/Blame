@@ -168,13 +168,27 @@ export type DesktopUpdates = {
   onStatus(callback: (status: DesktopUpdateStatus) => void): () => void;
 };
 
+export type NotificationTarget = {
+  pathname: string;
+  storyId?: string;
+  chatId?: string;
+  tab?: string;
+};
+
 export type SystemNotificationInput = {
   body?: string;
   title: string;
+  target?: NotificationTarget;
 };
 
 export type SystemNotifications = {
   show(input: SystemNotificationInput): Promise<boolean>;
+  onClick(callback: (target: NotificationTarget) => void): () => void;
+};
+
+export type AppStatus = {
+  setActivity(input: { running: number }): Promise<void>;
+  requestAttention(): Promise<void>;
 };
 
 export type BacklogStatusPip = {
@@ -214,6 +228,7 @@ export type BlameDesktopApi = {
   backlogStatusPip: BacklogStatusPip;
   platform: NodeJS.Platform;
   systemNotifications: SystemNotifications;
+  appStatus: AppStatus;
   updates: DesktopUpdates;
   mcp: McpServersClient;
   windowControls: WindowControls;

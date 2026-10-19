@@ -531,6 +531,7 @@ function QuickChatProjectPage() {
   function notifyQuickChatResponseCompleted(chat: QuickChat) {
     void showSystemNotification(platform, {
       body: chat.title,
+      target: { pathname: "/chat", chatId: chat.id },
       title: "Agent response ready",
     })
   }

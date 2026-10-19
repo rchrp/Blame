@@ -55,6 +55,7 @@ import {
   selectBacklogStory,
   selectedBacklogStoryId,
   subscribeToBacklogStorySelection,
+  takeSelectedBacklogStoryAction,
 } from "@/components/backlog/data/backlog-navigation"
 import { useBacklogStore } from "@/components/backlog/data/backlog-store"
 import {
@@ -289,7 +290,13 @@ export function BacklogPage() {
       const story = storiesRef.current.find(
         (item) => item.id === selectedStoryId
       )
-      if (story) openDrawerRef.current({ mode: "edit", userStory: story })
+      if (!story) return
+      const action = takeSelectedBacklogStoryAction()
+      openDrawerRef.current(
+        action
+          ? drawerTargetForAction(story, action)
+          : { mode: "edit", userStory: story }
+      )
     }
     const timer = window.setTimeout(openSelectedStory, 0)
     const unsubscribe = subscribeToBacklogStorySelection(openSelectedStory)
@@ -1833,6 +1840,7 @@ function notifyStoriesMovedToReview(
     if (story.status !== "in-review") continue
     void showSystemNotification(platform, {
       body: story.title,
+      target: { pathname: "/backlog", storyId: story.id, tab: "diff" },
       title: "User story ready for review",
     })
   }
@@ -1850,6 +1858,7 @@ function notifyCommentResponseCompleted(
   if (!run?.commentId) return
   void showSystemNotification(platform, {
     body: `${userStoryDisplayId(story)} · ${story.title}`,
+    target: { pathname: "/backlog", storyId: story.id },
     title: "Agent replied to a comment",
   })
 }

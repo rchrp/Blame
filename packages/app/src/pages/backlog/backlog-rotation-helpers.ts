@@ -169,6 +169,7 @@ export function notifyCommentResponseCompleted(
   if (!run?.commentId) return
   void showSystemNotification(platform, {
     body: `${userStoryDisplayId(story)} · ${story.title}`,
+    target: { pathname: "/backlog", storyId: story.id },
     title: "Agent replied to a comment",
   })
 }

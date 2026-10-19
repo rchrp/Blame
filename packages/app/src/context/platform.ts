@@ -97,6 +97,7 @@ export type Platform = {
   }
   agent?: AgentClient
   api?: ApiConnection
+  appStatus?: AppStatusClient
   backlogStatusPip?: BacklogStatusPipClient
   deploy?: DeployClient
   platform?: string
@@ -238,13 +239,30 @@ export type BacklogStatusPipSnapshot = {
   stories: UserStory[]
 }
 
+// Where a click on a notification takes the user.
+export type NotificationTarget = {
+  pathname: string
+  storyId?: string
+  chatId?: string
+  tab?: string
+}
+
 export type SystemNotificationInput = {
   body?: string
   title: string
+  target?: NotificationTarget
 }
 
 export type SystemNotificationsClient = {
   show(input: SystemNotificationInput): Promise<boolean>
+  onClick?(callback: (target: NotificationTarget) => void): () => void
+}
+
+// The app's presence outside its window: title, dock/taskbar badge and
+// attention requests.
+export type AppStatusClient = {
+  setActivity(input: { running: number }): Promise<void>
+  requestAttention(): Promise<void>
 }
 
 export type BacklogStatusPipAction =

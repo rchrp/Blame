@@ -11,6 +11,7 @@ import { useQuickChatStore } from "@/components/chat/data/quick-chat-store"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { useProjects } from "@/context/projects"
 import { projectColorValue } from "@/lib/projects"
+import { useAppActivity } from "@/layouts/use-app-activity"
 
 const windowShellGraceMs = 1000
 const windowShellHeightPx = 48
@@ -28,6 +29,7 @@ export function AppLayout({
   title: string
 }) {
   const shortcuts = useAppShortcuts()
+  useAppActivity()
   const projects = useProjects()
   const quickChats = useQuickChatStore()
   const haloColor = projectColorValue(projects.activeProject?.color)

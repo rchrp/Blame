@@ -161,6 +161,18 @@ const api: BlameDesktopApi = {
   platform: process.platform,
   systemNotifications: {
     show: (input) => ipcRenderer.invoke("notifications:show", input),
+    onClick: (callback) => {
+      const handler = (
+        _event: unknown,
+        target: Parameters<typeof callback>[0],
+      ) => callback(target);
+      ipcRenderer.on("notifications:clicked", handler);
+      return () => ipcRenderer.removeListener("notifications:clicked", handler);
+    },
+  },
+  appStatus: {
+    setActivity: (input) => ipcRenderer.invoke("app:set-activity", input),
+    requestAttention: () => ipcRenderer.invoke("app:request-attention"),
   },
   updates: {
     check: () => ipcRenderer.invoke("updates:check"),
