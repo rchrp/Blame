@@ -530,3 +530,59 @@ test("keeps Linux lifecycle operations lightweight", async () => {
     "nerdctl compose version",
   ]);
 });
+
+test("flags an outdated runtime version as an update", async () => {
+  const manager = createRuntimeManager(
+    { platform: "darwin" },
+    async (_command, args) => {
+      if (args[0] !== "status") return "ok";
+      return JSON.stringify({
+        status: "repairable",
+        checks: [
+          { name: "vm", status: "available" },
+          { name: "runtime-version", status: "missing" },
+          { name: "cline-sdk", status: "missing" },
+        ],
+      });
+    },
+  );
+
+  const status = await manager.checkRuntimeDependencies();
+
+  assert.equal(status.updateRequired, true);
+  assert.equal(status.issues[0]?.update, true);
+});
+
+test("does not call a missing VM an update", async () => {
+  const manager = createRuntimeManager(
+    { platform: "darwin" },
+    async (_command, args) => {
+      if (args[0] !== "status") return "ok";
+      return JSON.stringify({
+        status: "missing",
+        checks: [
+          { name: "vm", status: "missing" },
+          { name: "runtime-version", status: "missing" },
+        ],
+      });
+    },
+  );
+
+  const status = await manager.checkRuntimeDependencies();
+
+  assert.equal(status.status, "missing");
+  assert.equal(status.updateRequired, false);
+});
+
+test("a ready runtime needs no update", async () => {
+  const manager = createRuntimeManager(
+    { platform: "darwin" },
+    async (_command, args) =>
+      args[0] === "status" ? JSON.stringify({ status: "ready", checks: [] }) : "ready",
+  );
+
+  const status = await manager.checkRuntimeDependencies();
+
+  assert.equal(status.status, "ready");
+  assert.equal(status.updateRequired, false);
+});

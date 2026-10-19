@@ -57,3 +57,36 @@ export function useMinimumDuration(active: boolean, minimumMs: number) {
 
   return active || !elapsed
 }
+
+// The Blame Runtime step closes the first-run flow. It is offered once per
+// computer, and only while the runtime is not already working.
+const runtimeOfferKey = "blame.runtime-offer-done.v1"
+let runtimeOfferDone = readRuntimeOfferDone()
+
+function readRuntimeOfferDone() {
+  try {
+    return window.localStorage.getItem(runtimeOfferKey) === "true"
+  } catch {
+    return false
+  }
+}
+
+export function finishRuntimeOffer() {
+  if (runtimeOfferDone) return
+  runtimeOfferDone = true
+  try {
+    window.localStorage.setItem(runtimeOfferKey, "true")
+  } catch {
+    // Shown again next time; harmless.
+  }
+  emit()
+}
+
+export function useRuntimeOfferPending(phase: string) {
+  const done = React.useSyncExternalStore(
+    subscribe,
+    () => runtimeOfferDone,
+    () => true
+  )
+  return !done && ["checking", "missing", "needs-repair"].includes(phase)
+}

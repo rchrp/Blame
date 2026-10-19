@@ -373,6 +373,7 @@ const api: BlameDesktopApi = {
       ipcRenderer.invoke("workspace:resolve-project-preview-url", input),
     ensureProjectPreviewUrl: (input) =>
       ipcRenderer.invoke("workspace:ensure-project-preview-url", input),
+    runtimeStatus: () => ipcRenderer.invoke("workspace:get-runtime-status"),
     ensureRuntimeReady: (onProgress) =>
       invokeRuntimeOperation("workspace:ensure-runtime-ready", onProgress),
     repairRuntime: (onProgress) =>

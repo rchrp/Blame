@@ -14,6 +14,7 @@ export type OnboardingScreen =
   | "ai-setup"
   | "premium-offer"
   | "premium"
+  | "runtime-setup"
   | "welcome"
 
 // How far the camera has travelled over the terrain on each screen. Moving
@@ -23,6 +24,7 @@ const screenTravel: Record<OnboardingScreen, number> = {
   connect: 0.12,
   "ai-setup": 0.3,
   "premium-offer": 0.78,
+  "runtime-setup": 0.9,
   premium: 0.6,
   welcome: 1,
 }

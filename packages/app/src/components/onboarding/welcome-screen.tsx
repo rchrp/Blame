@@ -157,7 +157,7 @@ function useProjectOpening() {
     if (!platform.workspace?.checkHostDependencies) return true
     setCheckingOpenDependencies(true)
     try {
-      const report = await platform.workspace.checkHostDependencies({})
+      const report = await platform.workspace.checkHostDependencies({ includeRuntime: false })
       if (report.ok) return true
       setHostDependenciesDialog({
         checking: false,
@@ -177,7 +177,7 @@ function useProjectOpening() {
         project.id
       )
       if (!initialized || !platform.workspace?.checkHostDependencies) return
-      const report = await platform.workspace.checkHostDependencies({})
+      const report = await platform.workspace.checkHostDependencies({ includeRuntime: false })
       if (report.ok) return
       setHostDependenciesDialog({ checking: false, report })
     } catch {
@@ -190,7 +190,7 @@ function useProjectOpening() {
     if (!current || !platform.workspace?.checkHostDependencies) return
     setHostDependenciesDialog({ ...current, checking: true })
     try {
-      const report = await platform.workspace.checkHostDependencies({})
+      const report = await platform.workspace.checkHostDependencies({ includeRuntime: false })
       if (report.ok) {
         setHostDependenciesDialog(undefined)
         if (current.pendingPath) await openProject(current.pendingPath)

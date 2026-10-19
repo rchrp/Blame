@@ -4,7 +4,7 @@ import { motion } from "motion/react"
 import { springSnappy } from "@/lib/motion"
 import { cn } from "@/lib/utils"
 
-const journey = ["Account", "Provider", "Models", "Premium"] as const
+const journey = ["Account", "Provider", "Models", "Premium", "Runtime"] as const
 
 // Where the person stands in the first-run journey. Account is always done by
 // the time this shows.

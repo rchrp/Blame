@@ -271,3 +271,26 @@ test("reports unsupported node versions", async () => {
   assert.equal(report.issues[0]?.name, "node");
   assert.equal(report.issues[0]?.status, "unsupported");
 });
+
+test("skips the container runtime for work that runs on this machine", async () => {
+  for (const platform of ["linux", "darwin", "win32"] as const) {
+    const calls: string[] = [];
+    const report = await checkHostDependencies(
+      { includeRuntime: false, platform, setupScript: "echo ready" },
+      async (command, args) => {
+        calls.push([command, ...args].join(" "));
+        return "ok";
+      },
+    );
+
+    assert.equal(report.ok, true, platform);
+    assert.equal(
+      calls.some((call) =>
+        /blame-lima-runtime|blame-wsl2-runtime|nerdctl|docker/.test(call),
+      ),
+      false,
+      platform,
+    );
+    assert.equal(calls.includes("git --version"), true, platform);
+  }
+});

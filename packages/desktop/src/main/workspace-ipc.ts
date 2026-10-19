@@ -347,6 +347,7 @@ type ApplyProjectPreviewInitializationInput = {
 };
 
 type CheckHostDependenciesInput = {
+  includeRuntime?: boolean;
   runtimeProfile?: RuntimeProfileId;
   setupScript?: string;
   worktree?: string;
@@ -696,6 +697,7 @@ export function registerWorkspaceIpcHandlers(
         env: await setupEnvironment(
           input.worktree ? resolveRuntimePath(input.worktree) : "",
         ),
+        includeRuntime: input.includeRuntime,
         runtimeProfile: input.runtimeProfile,
         setupScript: input.setupScript ?? "",
       }),

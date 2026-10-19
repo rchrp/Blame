@@ -24,6 +24,7 @@ import {
 import {
   useMinimumDuration,
   usePremiumOfferPending,
+  useRuntimeOfferPending,
 } from "@/components/onboarding/onboarding-flow"
 import {
   OnboardingStage,
@@ -31,6 +32,8 @@ import {
 } from "@/components/onboarding/stage/onboarding-stage"
 import { PremiumOfferScreen, PremiumScreen } from "@/pages/premium/page"
 import { WelcomeScreen } from "@/components/onboarding/welcome-screen"
+import { RuntimeSetupScreen } from "@/components/onboarding/runtime-setup-screen"
+import { useBlameRuntime } from "@/context/blame-runtime"
 import { ProjectInitializationRunner } from "@/components/project-initialization/project-initialization-runner"
 import { ProjectCodePracticesRunner } from "@/components/practices/project-code-practices-runner"
 import { UpdateStartupNotifier } from "@/components/updates/update-startup-notifier"
@@ -139,6 +142,8 @@ export function App() {
     statusPipOpen ? 0 : minimumLoadingMs
   )
   const premiumOfferPending = usePremiumOfferPending()
+  const runtime = useBlameRuntime()
+  const runtimeOfferOpen = useRuntimeOfferPending(runtime.phase)
   const premiumOfferOpen =
     premiumOfferPending &&
     auth.status === "authenticated" &&
@@ -198,6 +203,7 @@ export function App() {
     loading,
     premiumOfferOpen,
     premiumOpen,
+    runtimeOfferOpen,
   })
   if (onboardingScreen) {
     return (
@@ -236,12 +242,14 @@ function resolveOnboardingScreen(input: {
   loading: boolean
   premiumOfferOpen: boolean
   premiumOpen: boolean
+  runtimeOfferOpen: boolean
 }): OnboardingScreen | undefined {
   if (input.loading || input.authStatus === "loading") return "loading"
   if (input.authStatus === "unauthenticated") return "connect"
   if (input.premiumOpen) return "premium"
   if (input.aiPreferencesMissing) return "ai-setup"
   if (input.premiumOfferOpen) return "premium-offer"
+  if (!input.activeProject && input.runtimeOfferOpen) return "runtime-setup"
   if (!input.activeProject) return "welcome"
   return undefined
 }
@@ -252,6 +260,7 @@ function onboardingElement(screen: OnboardingScreen) {
   if (screen === "premium") return <PremiumScreen />
   if (screen === "ai-setup") return <AiPreferencesSetupScreen />
   if (screen === "premium-offer") return <PremiumOfferScreen />
+  if (screen === "runtime-setup") return <RuntimeSetupScreen />
   return <WelcomeScreen />
 }
 

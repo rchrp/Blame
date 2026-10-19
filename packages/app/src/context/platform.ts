@@ -173,6 +173,17 @@ export type RuntimeProgress = {
   totalBytes?: number
 }
 
+// The Blame Runtime (Lima on macOS, WSL on Windows, containerd on Linux)
+// that runs local container previews.
+export type RuntimeStatusReport = {
+  issues: { action?: string; name: string; status: string }[]
+  platform: string
+  runtime: string
+  status: "ready" | "missing" | "repairable" | "unsupported" | "broken"
+  // Installed, only out of date: a routine update.
+  updateRequired?: boolean
+}
+
 export type TelemetryClient = {
   configure(session: TelemetryExportSession): Promise<boolean>
   disable(): Promise<boolean>
@@ -720,6 +731,8 @@ export type WorkspaceClient = {
     title: string
   }): Promise<WorktreeResult>
   checkHostDependencies(input: {
+    // False for work that runs straight on this machine: host tools only.
+    includeRuntime?: boolean
     runtimeProfile?: RuntimeProfileId
     setupScript?: string
     worktree?: string
@@ -778,6 +791,7 @@ export type WorkspaceClient = {
     configurationId?: string
     worktree: string
   }): Promise<ProjectPreviewRuntimeState>
+  runtimeStatus?(): Promise<RuntimeStatusReport>
   ensureRuntimeReady?(
     onProgress?: (progress: RuntimeProgress) => void
   ): Promise<unknown>

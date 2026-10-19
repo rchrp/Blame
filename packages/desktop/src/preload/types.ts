@@ -54,6 +54,7 @@ import type { McpServersClient } from "@blame/app";
 import type { RuntimeDiagnosticInput, RuntimeProgress } from "@blame/app";
 import type { TelemetryExportSession } from "@blame/app";
 import type { HostDependencyReport } from "../main/host-dependencies";
+import type { RuntimeStatusReport } from "../main/runtime-manager";
 import type { CreateProjectInput } from "../main/project-creation";
 import type {
   PreviewLogEvent,
@@ -407,6 +408,7 @@ export type BlameDesktopApi = {
       title: string;
     }): Promise<WorktreeResult>;
     checkHostDependencies(input: {
+      includeRuntime?: boolean;
       runtimeProfile?: RuntimeProfileId;
       setupScript?: string;
       worktree?: string;
@@ -456,6 +458,7 @@ export type BlameDesktopApi = {
       telemetryCohorts?: ExecutionTelemetryCohorts;
       worktree: string;
     }): Promise<string | null>;
+    runtimeStatus(): Promise<RuntimeStatusReport>;
     ensureRuntimeReady(
       onProgress?: (progress: RuntimeProgress) => void,
     ): Promise<HostDependencyReport>;
