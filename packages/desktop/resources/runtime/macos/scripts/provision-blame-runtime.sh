@@ -3,7 +3,7 @@ set -eu
 runtime_version="${1:-9}"
 runtime_root="/home/blame/.local/share/blame/runtime"
 package_manager_root="/opt/blame/package-managers"
-cline_sdk_version="${BLAME_CLINE_SDK_VERSION:-${2:-0.0.82}}"
+cline_sdk_version="${BLAME_CLINE_SDK_VERSION:-${2:-0.0.95}}"
 nerdctl_version="${BLAME_NERDCTL_VERSION:-2.1.6}"
 node_version="${BLAME_NODE_VERSION:-22.23.1}"
 npm_version="${BLAME_NPM_VERSION:-11.6.4}"
