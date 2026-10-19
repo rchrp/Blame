@@ -182,7 +182,7 @@ export function App() {
       </TooltipProvider>
     )
   }
-  if (!loading && statusPipOpen && auth.status === "authenticated") {
+  if (!loading && statusPipOpen) {
     return (
       <TooltipProvider>
         <BacklogStatusPipPage />

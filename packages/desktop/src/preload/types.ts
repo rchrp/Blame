@@ -199,6 +199,8 @@ export type BacklogStatusPip = {
   open(): Promise<boolean>;
   publish(snapshot: BacklogStatusPipSnapshot): void;
   request(input: BacklogStatusPipRequest): Promise<boolean>;
+  close(): void;
+  setMode(input: { compact: boolean; contentHeight?: number }): Promise<boolean>;
 };
 
 export type BlameDesktopApi = {

@@ -230,6 +230,9 @@ export type BacklogStatusPipClient = {
   onSnapshot(callback: (snapshot: BacklogStatusPipSnapshot) => void): () => void
   publish(snapshot: BacklogStatusPipSnapshot): void
   request(input: BacklogStatusPipRequest): Promise<boolean>
+  // The window has no system title bar: the page closes and resizes it.
+  close?(): void
+  setMode?(input: { compact: boolean; contentHeight?: number }): Promise<boolean>
 }
 
 export type BacklogStatusPipSnapshot = {

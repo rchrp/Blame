@@ -143,6 +143,8 @@ const api: BlameDesktopApi = {
     publish: (snapshot) =>
       ipcRenderer.send("backlog-status-pip:snapshot", snapshot),
     request: (input) => ipcRenderer.invoke("backlog-status-pip:request", input),
+    close: () => ipcRenderer.send("backlog-status-pip:close"),
+    setMode: (input) => ipcRenderer.invoke("backlog-status-pip:set-mode", input),
   },
   securityAudits: {
     active: (input) => ipcRenderer.invoke("security-audits:active", input),
