@@ -58,6 +58,7 @@ Blame pins every `@cline/*` package to one exact version. The SDK is also baked 
 
 - pins every `@cline/*` dependency to the new version and updates `pnpm-lock.yaml`,
 - writes the new `clineSdkVersion` into both runtime manifests and bumps `runtimeVersion`,
+- updates the version pinned by the sandbox runner image and the runtime provisioning script fallbacks,
 - lists the releases and SDK commits since the current version.
 
 The pull request is never merged automatically. CI runs the **Agent runtime tests**, which include a smoke test that drives a real Cline session through Blame's configuration. After merging, release the runtime and then the desktop app, as the pull request describes.

@@ -14,6 +14,17 @@ const runtimeManifests = [
   "packages/desktop/resources/runtime/macos/manifest.json",
   "packages/desktop/resources/runtime/windows/manifest.json",
 ]
+// Files that pin the SDK version outside package.json: the sandbox runner image
+// and the fallbacks of the runtime provisioning scripts.
+export const pinnedVersionFiles = [
+  "packages/sandbox-runner/Dockerfile",
+  "packages/sandbox-runner/src/runner-application.ts",
+  "packages/desktop/resources/runtime/macos/scripts/blame-lima-runtime.sh",
+  "packages/desktop/resources/runtime/macos/scripts/provision-blame-runtime.sh",
+  "packages/desktop/resources/runtime/windows/scripts/blame-wsl2-runtime.ps1",
+  "packages/desktop/resources/runtime/windows/scripts/build-blame-wsl-rootfs.ps1",
+  "packages/desktop/resources/runtime/windows/scripts/provision-blame-runtime.sh",
+]
 const workspaceFile = "pnpm-workspace.yaml"
 const registry = "https://registry.npmjs.org"
 const clineRepository = "cline/cline"
@@ -57,6 +68,7 @@ function clineDependencyNames(manifest) {
 }
 
 export async function applyVersion(version, root = rootDir) {
+  const previous = await installedVersion(root)
   for (const { path } of await clinePackageManifests(root)) {
     const manifest = JSON.parse(await readFile(path, "utf8"))
     for (const group of ["dependencies", "devDependencies", "peerDependencies"]) {
@@ -79,8 +91,25 @@ export async function applyVersion(version, root = rootDir) {
   if (runtimeVersions.size !== 1) {
     throw new Error("Runtime manifests disagree on runtimeVersion")
   }
+  await updatePinnedVersions(previous, version, root)
   const stalePatches = await removeClinePatches(root)
   return { runtimeVersion: [...runtimeVersions][0], stalePatches }
+}
+
+async function updatePinnedVersions(previous, version, root) {
+  const pinned = versionPattern(previous)
+  for (const relativePath of pinnedVersionFiles) {
+    const path = join(root, relativePath)
+    const text = await readFile(path, "utf8")
+    if (!pinned.test(text)) {
+      throw new Error(`${relativePath} no longer pins Cline ${previous}; update pinnedVersionFiles in scripts/cline-sdk-update.mjs`)
+    }
+    await writeFile(path, text.replace(versionPattern(previous, "g"), version), "utf8")
+  }
+}
+
+export function versionPattern(version, flags = "") {
+  return new RegExp(`(?<![\\d.])${version.replaceAll(".", "\\.")}(?![\\d.])`, flags)
 }
 
 async function removeClinePatches(root) {
@@ -163,6 +192,7 @@ async function notes(from, to) {
     "",
     `1. Publish the runtime: \`git tag runtime-v${runtimeVersion} && git push origin runtime-v${runtimeVersion}\``,
     "2. Once it is published, release the desktop app (see RELEASING.md)",
+    "3. Publish the cloud preview sandbox runner image: `pnpm release:sandbox-runner`",
     "",
     "The API picks up the new model catalog on its next deployment.",
   )
