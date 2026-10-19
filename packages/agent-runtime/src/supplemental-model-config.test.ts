@@ -12,7 +12,10 @@ import {
   type CoreSessionConfig,
 } from "@cline/sdk";
 import { appendProductionConfig } from "./production.js";
-import { supplementalModelConfig } from "./supplemental-model-config.js";
+import {
+  loadCatalogModel,
+  supplementalModelConfig,
+} from "./supplemental-model-config.js";
 import { listClineProviders } from "./provider-catalog.js";
 
 function config(): CoreSessionConfig {
@@ -183,4 +186,33 @@ test("the real Codex handler sends Astra, images, tools and the selected reasoni
   assert.equal((requests[0].reasoning as { effort: string }).effort, "high");
   assert.match(JSON.stringify(requests[0].input), /input_image/);
   assert.match(JSON.stringify(requests[0].tools), /inspect/);
+});
+
+test("catalog metadata reaches sessions for models newer than the bundled SDK", async () => {
+  const modelId = "catalog-only-model";
+  const info = { id: modelId, name: "Catalog only", contextWindow: 400_000, maxTokens: 64_000 };
+  let requests = 0;
+  await loadCatalogModel(async () => (requests++, info), "anthropic", modelId);
+  await loadCatalogModel(async () => (requests++, info), "anthropic", modelId);
+  assert.equal(requests, 1);
+  const session = appendProductionConfig({
+    ...config(),
+    providerId: "anthropic",
+    modelId,
+  });
+  assert.deepEqual(session.knownModels?.[modelId], info);
+  const handler = createHandler({ ...session, apiKey: "offline-placeholder" });
+  assert.equal(handler.getModel().info.contextWindow, 400_000);
+});
+
+test("bundled models and catalog failures never trigger catalog metadata", async () => {
+  const [bundled] = Object.keys(getProviderCollectionSync("anthropic")!.models);
+  let requests = 0;
+  await loadCatalogModel(async () => (requests++, undefined), "anthropic", bundled!);
+  assert.equal(requests, 0);
+  await loadCatalogModel(async () => {
+    throw new Error("API unavailable");
+  }, "anthropic", "unreachable-model");
+  const session = { ...config(), providerId: "anthropic", modelId: "unreachable-model" };
+  assert.equal(supplementalModelConfig(session), session);
 });

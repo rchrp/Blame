@@ -1,3 +1,4 @@
+import type { ModelInfo } from "@cline/llms";
 import type {
   ApiConnection,
   DeleteProviderCredentialInput,
@@ -44,6 +45,18 @@ export async function listProviders(connection: ApiConnection) {
     connected,
     credentials: credentialList,
   } satisfies ProviderListResponse;
+}
+
+/** Complete Cline metadata for a model the bundled SDK may not know yet. */
+export async function fetchCatalogModel(
+  connection: ApiConnection,
+  providerId: string,
+  modelId: string,
+) {
+  const query = new URLSearchParams({ providerId, modelId });
+  return request<ModelInfo>(connection, `/providers/catalog/model?${query}`, {
+    signal: AbortSignal.timeout(2_000),
+  });
 }
 
 export function saveProviderCredential(

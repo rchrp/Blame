@@ -149,6 +149,7 @@ import { writeTools } from "./cline-tool-policy.js";
 import {
   deleteProviderCredential,
   listProjectMemories,
+  fetchCatalogModel,
   listProviders,
   resolveProviderCredential,
   saveOAuthCredential,
@@ -156,6 +157,7 @@ import {
   saveProviderCredential,
 } from "./cloud-api.js";
 import { fallbackCommitSubject } from "./commit-message.js";
+import { loadCatalogModel } from "./supplemental-model-config.js";
 import { createContextProjectionExtension } from "./context-projection.js";
 import {
   appendInitialTaskBriefing,
@@ -693,10 +695,22 @@ export class BlameAgentRuntime {
     const startedAt = Date.now();
     const projectMemoryPromise = this.loadProjectMemory(input);
     try {
-      const credential = await resolveProviderCredential(input.apiConnection, {
-        providerId: input.providerId,
-        label: credentialLabel(input),
-      });
+      const [credential] = await Promise.all([
+        resolveProviderCredential(input.apiConnection, {
+          providerId: input.providerId,
+          label: credentialLabel(input),
+        }),
+        loadCatalogModel(
+          () =>
+            fetchCatalogModel(
+              input.apiConnection,
+              input.providerId,
+              input.modelId,
+            ),
+          input.providerId,
+          input.modelId,
+        ),
+      ]);
       await appendLog(
         startLogFile,
         "credential resolved",
