@@ -990,13 +990,14 @@
 }
 
 /* Runtime install/update progress, lit like a story an agent works on. */
+/* Without a percentage, a segment travels back and forth inside the track. */
 @keyframes runtime-progress-indeterminate {
   from {
-    left: -35%;
+    left: 0;
   }
 
   to {
-    left: 100%;
+    left: 65%;
   }
 }
 
@@ -1007,8 +1008,16 @@
     width: 100%;
     border-radius: 999px;
     background: color-mix(in oklab, var(--foreground) 10%, transparent);
-    /* Clip the sides only, so the glow can spill above and below. */
-    clip-path: inset(-12px 0 -12px 0 round 999px);
+  }
+
+  /* The notification's text column fills the toast so the bar spans it. */
+  .runtime-progress-toast [data-content] {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .runtime-progress-toast [data-description] {
+    width: 100%;
   }
 
   .runtime-progress-fill {
@@ -1026,7 +1035,7 @@
     position: absolute;
     top: 0;
     width: 35%;
-    animation: runtime-progress-indeterminate 1.4s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+    animation: runtime-progress-indeterminate 1.2s cubic-bezier(0.65, 0, 0.35, 1) infinite alternate;
   }
 
   @media (prefers-reduced-motion: reduce) {

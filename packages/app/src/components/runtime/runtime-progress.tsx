@@ -11,7 +11,7 @@ export function RuntimeProgressBody({ progress }: { progress?: RuntimeProgress }
   const glowRef = useAnimatedBorderEffect("story-progress")
 
   return (
-    <div className="grid w-[16.5rem] max-w-full gap-2 pt-0.5">
+    <div className="grid w-full gap-2 pt-0.5">
       <span>{runtimeProgressText(progress)}</span>
       <div
         role="progressbar"
