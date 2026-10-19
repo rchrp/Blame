@@ -40,7 +40,6 @@ import {
 import {
   captureAgentRunDiffEndRef,
   loadAgentRunDiffs,
-  loadAgentRunDiffSummary,
 } from "@/components/chat/agent-run-diffs"
 import { nextCheckpointRunCount } from "@/components/chat/agent-run-checkpoints"
 import {
@@ -209,19 +208,6 @@ function QuickChatProjectPage() {
       selection.currentModel?.provider.id,
     providers: selection.allProviders,
   })
-  const loadChangedFiles = React.useCallback(
-    (sessionId: string, checkpointRunCount: number, diffEndRef: string) => {
-      if (!activeConversation?.workspace) return Promise.resolve([])
-      return loadAgentRunDiffSummary({
-        checkpointRunCount,
-        diffEndRef,
-        platform,
-        root: activeConversation.workspace,
-        sessionId,
-      })
-    },
-    [activeConversation?.workspace, platform]
-  )
   const loadChangedFileDiffs = React.useCallback(
     (sessionId: string, checkpointRunCount: number, diffEndRef: string) => {
       if (!activeConversation?.workspace) return Promise.resolve([])
@@ -977,7 +963,6 @@ function QuickChatProjectPage() {
                       <AgentConversationTimeline
                         comments={activeConversation.messages ?? []}
                         loadChangedFileDiffs={loadChangedFileDiffs}
-                        loadChangedFiles={loadChangedFiles}
                         onChangedFileClick={(path) =>
                           openProjectPath(
                             project?.path,

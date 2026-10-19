@@ -241,7 +241,9 @@ export function describeSearch(source: ToolCallSource): ToolCallView {
   }
 }
 
-export function describeEdit(source: ToolCallSource): ToolCallView {
+// Files an edit tool changed, with line counts. The runtime's counts win over
+// the ones parsed from the patch. Shared with the turn summary so both agree.
+export function editChanges(source: ToolCallSource) {
   const harness = harnessResult(source.output)
   const files = editedFiles(source)
   const changes = list(harness?.data.changes ?? harness?.data.files)
@@ -252,7 +254,6 @@ export function describeEdit(source: ToolCallSource): ToolCallView {
       return path ? [[path, item] as const] : []
     })
   )
-  // Prefer the runtime's counts over the ones parsed from the patch.
   for (const file of files) {
     const reported = counts.get(file.path)
     if (!reported) continue
@@ -263,12 +264,23 @@ export function describeEdit(source: ToolCallSource): ToolCallView {
     if (files.some((file) => file.path === path)) continue
     files.push({ path, additions: num(item.additions), deletions: num(item.deletions), lines: [] })
   }
-
   const clineFailure = operationResults(source.output).find((result) => result.success === false)
-  const failed = Boolean(harness?.failed || clineFailure)
   const symbols = changes.flatMap((entry) => list(record(entry).symbols)).filter(
     (symbol): symbol is string => typeof symbol === "string"
   )
+  return {
+    clineFailure,
+    failed: Boolean(harness?.failed || clineFailure),
+    files,
+    harness,
+    // Edits are applied once the tool finished without failing.
+    applied: !source.running && source.output !== undefined && !(harness?.failed || clineFailure),
+    symbols,
+  }
+}
+
+export function describeEdit(source: ToolCallSource): ToolCallView {
+  const { clineFailure, failed, files, harness, symbols } = editChanges(source)
   const rename = symbolOperations(source.input).find((operation) => operation.action === "rename")
   const allNew = files.length > 0 && files.every((file) => file.status === "added")
   const allDeleted = files.length > 0 && files.every((file) => file.status === "deleted")

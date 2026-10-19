@@ -5,7 +5,6 @@ import {
   ChevronUpIcon,
   CopyIcon,
   ExternalLinkIcon,
-  FilesIcon,
   LoaderCircleIcon,
   MessageSquareIcon,
   RotateCcwIcon,
@@ -29,8 +28,6 @@ import type {
   UserStoryCodeSelectionAttachment,
   UserStoryFileAttachment,
 } from "@/components/backlog/data/backlog-data"
-import { DiffStats } from "@/components/backlog/development/development-diff-stats"
-import { totalDiffStats } from "@/components/backlog/development/development-diff-stats-data"
 import type { VcsFileDiff } from "@/components/backlog/development/development-workspace"
 import {
   MarkdownEditor,
@@ -64,6 +61,7 @@ import { publicAssetUrl } from "@/lib/public-asset-url"
 import { cn } from "@/lib/utils"
 import { specialistTool } from "./tool-calls/tool-call-values"
 import { ToolCallItem } from "./tool-calls/tool-call-item"
+import { TurnSummary } from "./turn-summary"
 
 type SpecialistAgentAppearance = {
   avatar: string
@@ -141,7 +139,6 @@ type AgentConversationVisibleMessage =
 export function AgentConversationTimeline({
   comments,
   unsentComments = [],
-  loadChangedFiles,
   loadChangedFileDiffs,
   onChangedFileClick,
   onUserMessageUndo,
@@ -152,11 +149,6 @@ export function AgentConversationTimeline({
 }: {
   comments: AgentConversationComment[]
   unsentComments?: AgentConversationComment[]
-  loadChangedFiles?: (
-    sessionId: string,
-    checkpointRunCount: number,
-    diffEndRef: string
-  ) => Promise<VcsFileDiff[]>
   loadChangedFileDiffs?: (
     sessionId: string,
     checkpointRunCount: number,
@@ -208,7 +200,6 @@ export function AgentConversationTimeline({
         <AgentConversationTurn
           key={run.id}
           checkpointRunCount={checkpointTargets[index]?.checkpointRunCount}
-          loadChangedFiles={loadChangedFiles}
           loadChangedFileDiffs={loadChangedFileDiffs}
           comment={runComment(run, commentsById)}
           highlightFinalResponse={run.id === highlightedFinalResponseRunId}
@@ -242,7 +233,6 @@ function AgentConversationTurn({
   onChangedFileClick,
   onLoadActivityDetail,
   onUserMessageUndo,
-  loadChangedFiles,
   loadChangedFileDiffs,
   responseHeader,
   run,
@@ -252,11 +242,6 @@ function AgentConversationTurn({
   highlightFinalResponse: boolean
   lastVisibleMessage?: AgentConversationVisibleMessage
   onFileLinkClick?: (path: string) => void
-  loadChangedFiles?: (
-    sessionId: string,
-    checkpointRunCount: number,
-    diffEndRef: string
-  ) => Promise<VcsFileDiff[]>
   loadChangedFileDiffs?: (
     sessionId: string,
     checkpointRunCount: number,
@@ -271,65 +256,23 @@ function AgentConversationTurn({
   run: AgentConversationRun
 }) {
   const activities = agentTimelineActivities(run)
-  const finalMessage = [...activities]
-    .reverse()
-    .find(
-      (activity) =>
-        activity.kind === "message" && activity.messageKind === "final"
-    )
-  const [changedFiles, setChangedFiles] = React.useState<VcsFileDiff[]>([])
-  const [changedFilesTarget, setChangedFilesTarget] =
-    React.useState<HTMLDivElement | null>(null)
-  const [changedFilesNearViewport, setChangedFilesNearViewport] =
-    React.useState(() => typeof IntersectionObserver === "undefined")
-  const shouldLoadChangedFiles =
-    highlightFinalResponse || changedFilesNearViewport
-  const finalMessageId = finalMessage?.id
   const sessionId = run.clineSessionId
 
-  React.useEffect(() => {
-    if (!changedFilesTarget || shouldLoadChangedFiles) return
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (!entries.some((entry) => entry.isIntersecting)) return
-        setChangedFilesNearViewport(true)
-        observer.disconnect()
-      },
-      { rootMargin: "600px 0px" }
-    )
-    observer.observe(changedFilesTarget)
-    return () => observer.disconnect()
-  }, [changedFilesTarget, shouldLoadChangedFiles])
-
-  React.useEffect(() => {
+  function openChangedFile(path: string) {
     if (
-      !shouldLoadChangedFiles ||
-      !finalMessageId ||
-      !loadChangedFiles ||
+      !onChangedFileClick ||
+      !loadChangedFileDiffs ||
       !checkpointRunCount ||
       !sessionId ||
       !run.diffEndRef
-    )
+    ) {
+      onFileLinkClick?.(path)
       return
-    let cancelled = false
-    loadChangedFiles(sessionId, checkpointRunCount, run.diffEndRef)
-      .then((diffs) => {
-        if (!cancelled) setChangedFiles(diffs)
-      })
-      .catch(() => {
-        if (!cancelled) setChangedFiles([])
-      })
-    return () => {
-      cancelled = true
     }
-  }, [
-    checkpointRunCount,
-    finalMessageId,
-    loadChangedFiles,
-    run.diffEndRef,
-    sessionId,
-    shouldLoadChangedFiles,
-  ])
+    void loadChangedFileDiffs(sessionId, checkpointRunCount, run.diffEndRef)
+      .then((diffs) => onChangedFileClick(path, diffs))
+      .catch((error) => toast.error(errorMessage(error)))
+  }
 
   return (
     <section className="grid gap-5" aria-label="Conversation turn">
@@ -360,113 +303,17 @@ function AgentConversationTurn({
           responseHeader={responseHeader}
           run={run}
         />
-        {finalMessage && run.diffEndRef ? (
-          <div ref={setChangedFilesTarget}>
-            {changedFiles.length ? (
-              <AgentChangedFilesSummary
-                diffs={changedFiles}
-                onFileClick={(path) => {
-                  if (
-                    !onChangedFileClick ||
-                    !loadChangedFileDiffs ||
-                    !checkpointRunCount ||
-                    !sessionId ||
-                    !run.diffEndRef
-                  ) {
-                    onFileLinkClick?.(path)
-                    return
-                  }
-                  void loadChangedFileDiffs(
-                    sessionId,
-                    checkpointRunCount,
-                    run.diffEndRef
-                  )
-                    .then((diffs) => onChangedFileClick(path, diffs))
-                    .catch((error) => toast.error(errorMessage(error)))
-                }}
-              />
-            ) : null}
-          </div>
-        ) : null}
+        <TurnSummary
+          activities={activities}
+          onFileClick={openChangedFile}
+          run={run}
+        />
       </div>
     </section>
   )
 }
 
-function AgentChangedFilesSummary({
-  diffs,
-  onFileClick,
-}: {
-  diffs: VcsFileDiff[]
-  onFileClick?: (path: string) => void
-}) {
-  const [expanded, setExpanded] = React.useState(false)
-  const stats = totalDiffStats(diffs)
-  const visibleDiffs = expanded ? diffs : diffs.slice(0, 3)
-  const hiddenCount = diffs.length - visibleDiffs.length
 
-  return (
-    <div className="min-w-0 overflow-hidden rounded-xl border bg-background/30">
-      <div className="flex items-center gap-3 bg-muted/55 px-3 py-3">
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-background shadow-sm">
-          <FilesIcon className="size-4 text-muted-foreground" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium">
-            Modified {stats.files} {stats.files === 1 ? "file" : "files"}
-          </p>
-          <DiffStats compact className="ml-0 justify-start" diff={stats} />
-        </div>
-      </div>
-      <div className="grid gap-0.5 bg-muted/25 p-1.5">
-        {visibleDiffs.map((diff) => (
-          <button
-            className="flex w-full min-w-0 items-center gap-3 rounded-md px-2 py-2 text-left text-sm transition-colors hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-inset"
-            key={diff.file}
-            onClick={() => onFileClick?.(diff.file)}
-            type="button"
-          >
-            <span
-              className="min-w-0 flex-1 truncate font-mono text-xs"
-              title={diff.file}
-            >
-              <ChangedFilePath path={diff.file} />
-            </span>
-            <DiffStats compact diff={diff} />
-          </button>
-        ))}
-      </div>
-      {diffs.length > 3 ? (
-        <button
-          className="flex w-full items-center gap-2 bg-muted/55 px-3 py-2.5 text-left text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/75 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-inset"
-          onClick={() => setExpanded((current) => !current)}
-          type="button"
-        >
-          {expanded ? "Show fewer files" : `Show ${hiddenCount} more files`}
-          {expanded ? (
-            <ChevronUpIcon className="size-3.5" />
-          ) : (
-            <ChevronDownIcon className="size-3.5" />
-          )}
-        </button>
-      ) : null}
-    </div>
-  )
-}
-
-function ChangedFilePath({ path }: { path: string }) {
-  const filenameStart =
-    Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\")) + 1
-
-  return (
-    <>
-      {path.slice(0, filenameStart)}
-      <span className="font-bold text-black dark:text-white">
-        {path.slice(filenameStart)}
-      </span>
-    </>
-  )
-}
 
 export function AgentConversationComposer({
   agentRunning = false,
@@ -615,12 +462,12 @@ export function AgentConversationComposer({
 
 function AgentTurnIndicator({ metrics }: { metrics: AgentTurnMetrics }) {
   const duration = formatAgentTurnDuration(metrics.elapsedMs)
-  const state = metrics.running ? "Working" : "Last turn"
+  const state = metrics.running ? "This turn, in progress" : "Last turn"
   return (
     <div
       aria-label={`${state}: ${duration}, ${metrics.additions} lines added, ${metrics.deletions} lines deleted`}
       className="absolute right-5 bottom-full z-10 flex h-7 translate-y-px items-center gap-1.5 rounded-t-xl border border-b-0 border-foreground/20 bg-muted px-2.5 font-mono text-xs leading-none font-semibold tabular-nums shadow-sm"
-      title={`${state} since the latest user message`}
+      title={`${state}: lines changed by the agent's edits in this turn`}
     >
       <span className="text-foreground">{duration}</span>
       <span className="text-emerald-500">+{metrics.additions}</span>

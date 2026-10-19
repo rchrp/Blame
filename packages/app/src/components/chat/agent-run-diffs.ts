@@ -55,17 +55,6 @@ export async function loadAgentRunDiffs({
   )
 }
 
-export async function loadAgentRunDiffSummary(
-  input: Parameters<typeof loadAgentRunDiffs>[0]
-) {
-  const cacheKey = agentRunDiffKey(input)
-  return loadCachedAgentRunDiffSummary(cacheKey, async () =>
-    compactDiffs(
-      await enqueueAgentRunDiff(cacheKey, () => loadAgentRunDiff(input))
-    )
-  )
-}
-
 function agentRunDiffKey({
   checkpointRunCount,
   diffEndRef,
@@ -114,17 +103,4 @@ async function loadAgentRunDiff({
   return normalizeDiffs(parseGitDiff(patch))
 }
 
-function compactDiffs(diffs: VcsFileDiff[]) {
-  return diffs.map((diff) => ({
-    additions: diff.additions,
-    deletions: diff.deletions,
-    file: diff.file,
-    status: diff.status,
-  }))
-}
-
 const enqueueAgentRunDiff = createCachedTaskQueue<VcsFileDiff[]>(1, 0)
-const loadCachedAgentRunDiffSummary = createCachedTaskQueue<VcsFileDiff[]>(
-  1,
-  20
-)

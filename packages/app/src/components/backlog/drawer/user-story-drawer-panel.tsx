@@ -36,8 +36,7 @@ import {
 } from "@/components/backlog/development/development-workspace"
 import {
   loadAgentRunDiffs,
-  loadAgentRunDiffSummary,
-} from "@/components/chat/agent-run-diffs"
+  } from "@/components/chat/agent-run-diffs"
 import { usePlatform } from "@/context/platform"
 import type { UserStoryDiffStats } from "@/components/backlog/development/user-story-diff-stats"
 import { DrawerActions } from "@/components/backlog/drawer/user-story-drawer-actions"
@@ -237,19 +236,6 @@ export function UserStoryDrawerPanel({
   )
   const developmentWorkspaceRoot = developmentWorkspace.root
   const platform = usePlatform()
-  const loadChangedFiles = React.useCallback(
-    (sessionId: string, checkpointRunCount: number, diffEndRef: string) => {
-      if (!developmentWorkspaceRoot) return Promise.resolve([])
-      return loadAgentRunDiffSummary({
-        checkpointRunCount,
-        diffEndRef,
-        platform,
-        root: developmentWorkspaceRoot,
-        sessionId,
-      })
-    },
-    [developmentWorkspaceRoot, platform]
-  )
   const loadChangedFileDiffs = React.useCallback(
     (sessionId: string, checkpointRunCount: number, diffEndRef: string) => {
       if (!developmentWorkspaceRoot) return Promise.resolve([])
@@ -651,7 +637,6 @@ export function UserStoryDrawerPanel({
           >
             <UserStoryContent
               loadChangedFileDiffs={loadChangedFileDiffs}
-              loadChangedFiles={loadChangedFiles}
               mode={mode}
               onCommentUndo={handleCommentUndo}
               onSummaryCodeSelectionAttachmentRemove={

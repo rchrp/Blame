@@ -1,4 +1,7 @@
+import type { TurnActivity } from "./tool-calls/turn-changes.ts"
+
 export type AgentTurnMetricRun = {
+  activities?: readonly TurnActivity[] | null
   checkpointRunCount?: number | null
   clineSessionId?: string | null
   completedAt?: string | null
