@@ -1,11 +1,15 @@
 // Keeps the Cline SDK packages current. Used by .github/workflows/cline-sdk-update.yml:
 //   check                 compare the installed version with npm's latest release
 //   apply <version>       pin every @cline/* dependency, sync runtime manifests, bump the runtime
+//   patch <version>       regenerate the removed patches that have a generator script
 //   notes <from> <to>     pull request body with release dates, commits and follow-up steps
 // pnpm patches of @cline/* packages target exact versions and cannot follow an
-// upgrade: apply removes them and the pull request asks to regenerate them.
-import { appendFile, readdir, readFile, writeFile } from "node:fs/promises"
-import { join, resolve } from "node:path"
+// upgrade: apply removes them, patch regenerates those it can, and the pull
+// request asks to regenerate the rest by hand.
+import { execFileSync } from "node:child_process"
+import { appendFile, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises"
+import { tmpdir } from "node:os"
+import { basename, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 
 const rootDir = resolve(fileURLToPath(new URL("..", import.meta.url)))
@@ -26,6 +30,8 @@ export const pinnedVersionFiles = [
   "packages/desktop/resources/runtime/windows/scripts/provision-blame-runtime.sh",
 ]
 const workspaceFile = "pnpm-workspace.yaml"
+// Scripts that rebuild a Blame patch on a pristine package directory.
+const patchGenerators = { "@cline/core": "scripts/patch-cline-core.mjs" }
 const registry = "https://registry.npmjs.org"
 const clineRepository = "cline/cline"
 
@@ -212,6 +218,40 @@ async function sdkCommits(since, until) {
   }))
 }
 
+export function patchDependency(patchPath) {
+  const name = basename(patchPath, ".patch").replace("__", "/")
+  return name.slice(0, name.lastIndexOf("@"))
+}
+
+/** Regenerates stale patches for `version`; returns the ones left to redo by hand. */
+async function regeneratePatches(stalePatches, version) {
+  const remaining = []
+  for (const patchPath of stalePatches) {
+    const dependency = patchDependency(patchPath)
+    const generator = patchGenerators[dependency]
+    if (!generator) {
+      remaining.push(patchPath)
+      continue
+    }
+    const editDir = await mkdtemp(join(tmpdir(), "cline-patch-"))
+    try {
+      await rm(editDir, { recursive: true, force: true })
+      const run = (command, args) => execFileSync(command, args, { cwd: rootDir, stdio: "inherit" })
+      run("pnpm", ["patch", `${dependency}@${version}`, "--edit-dir", editDir])
+      run(process.execPath, [join(rootDir, generator), editDir])
+      run("pnpm", ["patch-commit", editDir])
+      await rm(join(rootDir, patchPath), { force: true })
+      console.log(`Regenerated the ${dependency} patch for ${version}`)
+    } catch (error) {
+      console.error(`Could not regenerate ${patchPath}: ${error.message}`)
+      remaining.push(patchPath)
+    } finally {
+      await rm(editDir, { recursive: true, force: true })
+    }
+  }
+  return remaining
+}
+
 async function output(values) {
   if (!process.env.GITHUB_OUTPUT) return
   await appendFile(process.env.GITHUB_OUTPUT, Object.entries(values).map(([key, value]) => `${key}=${value}\n`).join(""))
@@ -228,9 +268,13 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       runtime_version: runtimeVersion,
       stale_patches: stalePatches.map(({ patch }) => patch).join(","),
     })
+  } else if (command === "patch" && args[0]) {
+    const stale = (process.env.STALE_PATCHES ?? "").split(",").filter(Boolean)
+    const remaining = await regeneratePatches(stale, args[0])
+    await output({ stale_patches: remaining.join(",") })
   } else if (command === "notes" && args.length === 2) await notes(args[0], args[1])
   else {
-    console.error("Usage: node scripts/cline-sdk-update.mjs <check | apply <version> | notes <from> <to>>")
+    console.error("Usage: node scripts/cline-sdk-update.mjs <check | apply <version> | patch <version> | notes <from> <to>>")
     process.exit(1)
   }
 }

@@ -10,6 +10,7 @@ import {
   compareVersions,
   installedVersion,
   latestRelease,
+  patchDependency,
   pinnedVersionFiles,
   versionPattern,
 } from "./cline-sdk-update.mjs"
@@ -110,4 +111,9 @@ test("every runtime file pinning the installed SDK version is updated by apply",
     if (versionPattern(version).test(text)) uncovered.push(path)
   }
   assert.deepEqual(uncovered, [], "add these files to pinnedVersionFiles")
+})
+
+test("patch paths map back to their dependency", () => {
+  assert.equal(patchDependency("patches/@cline__core@0.0.82.patch"), "@cline/core")
+  assert.equal(patchDependency("patches/app-builder-lib@26.8.1.patch"), "app-builder-lib")
 })
