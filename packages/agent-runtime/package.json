@@ -40,6 +40,7 @@
     "@blame/telemetry": "workspace:*",
     "@cline/llms": "0.0.95",
     "@cline/sdk": "0.0.95",
+    "@cline/shared": "0.0.95",
     "@vscode/ripgrep": "1.18.0",
     "@xmldom/xmldom": "0.9.10",
     "diff": "9.0.0",

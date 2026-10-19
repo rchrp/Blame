@@ -82,6 +82,9 @@ importers:
       '@cline/sdk':
         specifier: 0.0.95
         version: 0.0.95(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))
+      '@cline/shared':
+        specifier: 0.0.95
+        version: 0.0.95
       '@vscode/ripgrep':
         specifier: 1.18.0
         version: 1.18.0
