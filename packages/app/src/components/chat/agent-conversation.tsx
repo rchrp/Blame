@@ -1,24 +1,15 @@
 import {
   AlertCircleIcon,
   ArrowUpIcon,
-  BrainCircuitIcon,
-  CheckCircle2Icon,
   ChevronDownIcon,
   ChevronUpIcon,
-  ClipboardCheckIcon,
-  Code2Icon,
   CopyIcon,
   ExternalLinkIcon,
-  FileSearchIcon,
   FilesIcon,
-  ListChecksIcon,
   LoaderCircleIcon,
   MessageSquareIcon,
-  PencilIcon,
   RotateCcwIcon,
-  SearchIcon,
   SquareIcon,
-  TerminalIcon,
   ThumbsDownIcon,
   ThumbsUpIcon,
 } from "lucide-react"
@@ -71,29 +62,8 @@ import { usePlatform } from "@/context/platform"
 import { useAnimatedBorderEffect } from "@/hooks/use-animated-border-effect"
 import { publicAssetUrl } from "@/lib/public-asset-url"
 import { cn } from "@/lib/utils"
-import {
-  activityDetails,
-  activityTitle,
-  applyPatchInput,
-  arrayValue,
-  codeGraphTool,
-  detailsHasArtifact,
-  displayScalar,
-  humanizeToolName,
-  inspectedLineCount,
-  inspectedLineRange,
-  outputEntries,
-  readFilesInput,
-  recordValue,
-  specialistTool,
-  splitFilePath,
-  stringArray,
-  stringValue,
-  toolLabel,
-  type ActivityDetail,
-  type EditedFile,
-  type InspectedFile,
-} from "./agent-activity-presentation"
+import { specialistTool } from "./tool-calls/tool-call-values"
+import { ToolCallItem } from "./tool-calls/tool-call-item"
 
 type SpecialistAgentAppearance = {
   avatar: string
@@ -1180,57 +1150,34 @@ function AgentActivityDetailLeafItem({
   runningToolActivityId?: string
   value: string
 }) {
-  const [fullDetail, setFullDetail] = React.useState<string>()
-  const [loading, setLoading] = React.useState(false)
   const entering = useEnterAnimation(activity.createdAt)
   const running = activityIsRunning(activity, runActive, runningToolActivityId)
-  const details = activityDetails(
-    fullDetail ? { ...activity, detail: fullDetail } : activity
-  )
-  const loadDetail = React.useCallback(async () => {
-    setLoading(true)
-    try {
-      setFullDetail(await onLoadDetail(activity))
-    } finally {
-      setLoading(false)
-    }
-  }, [activity, onLoadDetail])
-
   return (
-    <AccordionItem
+    <ToolCallItem
+      activity={activity}
+      avatar={specialistAvatar(activity)}
+      entering={entering}
+      hasFullDetail={Boolean(activity.detailArtifact)}
+      onLoadDetail={() => onLoadDetail(activity)}
+      running={running}
       value={value}
-      className={cn("border-b-0!", entering && "chat-enter-step")}
-    >
-      <div className="grid grid-cols-[2rem_minmax(0,1fr)] items-start gap-2 text-sm">
-        {/* Keyed by state: the icon pops when the step finishes. */}
-        <span
-          key={running ? "running" : "idle"}
-          className={cn(
-            "flex size-8 items-center justify-center text-muted-foreground",
-            running ? "chat-step-running" : entering && "chat-step-done"
-          )}
-        >
-          <ActivityToolIcon activity={activity} toolName={details.toolName} />
-        </span>
-        <div className="min-w-0">
-          <AccordionTrigger className="min-h-8 items-center py-0 text-muted-foreground hover:no-underline">
-            <span
-              className={running ? "agent-activity-running truncate" : "truncate"}
-            >
-              {activityTitle(activity, details)}
-            </span>
-          </AccordionTrigger>
-          <AccordionContent className="pt-2 pb-0">
-            <ActivityDetails
-              activity={activity}
-              details={details}
-              loading={loading}
-              onLoadDetail={loadDetail}
-            />
-          </AccordionContent>
-        </div>
-      </div>
-    </AccordionItem>
+    />
+  )
+}
+
+// Specialist agents show their own avatar instead of a tool icon.
+function specialistAvatar(activity: UserStoryAgentActivity) {
+  if (activity.kind !== "tool" || !specialistTool(activity.toolName)) return undefined
+  const name = activity.agentName ?? "Agent"
+  const avatar =
+    activity.agentAvatar ??
+    specialistAgentAppearanceByName(activity.agentName)?.avatar
+  if (!avatar) return undefined
+  return (
+    <Avatar size="sm" aria-label={name}>
+      <AvatarImage alt={name} src={avatar} />
+      <AvatarFallback>{agentInitials(name)}</AvatarFallback>
+    </Avatar>
   )
 }
 
@@ -1280,407 +1227,13 @@ function activityIsRunning(
   )
 }
 
-function ActivityDetails({
-  details,
-  loading,
-  onLoadDetail,
-}: {
-  activity: UserStoryAgentActivity
-  details: ActivityDetail
-  loading: boolean
-  onLoadDetail: () => void
-}) {
-  const inspectedFiles = readFilesInput(details)
-  const editedFiles = applyPatchInput(details)
-  const customDetails = toolDetailContent(details)
-  const loadButton = detailsHasArtifact(details) ? (
-    <Button
-      className="justify-self-start"
-      disabled={loading}
-      onClick={onLoadDetail}
-      size="sm"
-      type="button"
-      variant="outline"
-    >
-      {loading ? "Loading detail" : "Load full detail"}
-    </Button>
-  ) : null
 
-  if (!customDetails && !inspectedFiles && !editedFiles) {
-    return (
-      <div className="grid gap-2">
-        <p className="rounded-md border bg-muted/25 px-3 py-2 text-sm text-muted-foreground">
-          {details.fallback}
-        </p>
-        {loadButton}
-      </div>
-    )
-  }
 
-  return (
-    <div className="grid gap-2">
-      {inspectedFiles ? <InspectedFiles files={inspectedFiles} /> : null}
-      {editedFiles ? <EditedFiles files={editedFiles} /> : null}
-      {customDetails}
-      {loadButton}
-    </div>
-  )
-}
 
-function ToolSurface({
-  children,
-  durationMs,
-  label,
-}: {
-  children: React.ReactNode
-  durationMs?: number
-  label: string
-}) {
-  return (
-    <div className="min-w-0 overflow-hidden rounded-lg border bg-muted/15">
-      <div className="flex items-center justify-between gap-3 border-b bg-muted/25 px-3 py-2 text-xs font-medium text-muted-foreground">
-        <span>{label}</span>
-        {durationMs !== undefined ? (
-          <span className="tabular-nums">{durationMs} ms</span>
-        ) : null}
-      </div>
-      <div className="grid min-w-0 gap-2 p-2.5">{children}</div>
-    </div>
-  )
-}
 
-function ToolRows({
-  emptyLabel,
-  values,
-}: {
-  emptyLabel: string
-  values: string[]
-}) {
-  if (values.length === 0)
-    return <p className="px-1 text-xs text-muted-foreground">{emptyLabel}</p>
-  return (
-    <div className="grid gap-1.5">
-      {values.map((value, index) => (
-        <div
-          className="min-w-0 rounded-md bg-background/70 px-3 py-2 font-mono text-xs leading-relaxed text-foreground/85"
-          key={`${value}-${index}`}
-        >
-          <div className="overflow-x-auto break-words whitespace-pre-wrap">
-            {value}
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
 
-function ResultCards({ value }: { value: unknown }) {
-  const entries = outputEntries(value)
-  return (
-    <div className="grid gap-2">
-      {entries.map((entry, index) => (
-        <div className="min-w-0 rounded-md bg-background/70 p-3" key={index}>
-          <div className="mb-2 flex min-w-0 items-center justify-between gap-3 text-xs">
-            <span className="truncate font-medium" title={entry.query}>
-              {entry.query || `Result ${index + 1}`}
-            </span>
-            <span
-              className={cn(
-                "shrink-0 rounded-full px-2 py-0.5 font-medium",
-                entry.success === false
-                  ? "bg-red-500/10 text-red-600 dark:text-red-400"
-                  : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
-              )}
-            >
-              {entry.success === false ? "Failed" : "Completed"}
-            </span>
-          </div>
-          {entry.result ? (
-            <div>
-              <pre className="max-h-72 overflow-auto font-mono text-xs leading-relaxed break-words whitespace-pre-wrap text-muted-foreground">
-                {entry.result.text}
-              </pre>
-              {entry.result.truncated ? (
-                <p className="mt-2 text-[11px] text-amber-700 dark:text-amber-400">
-                  Showing a compact preview. Load full detail for the complete
-                  result.
-                </p>
-              ) : null}
-            </div>
-          ) : null}
-        </div>
-      ))}
-    </div>
-  )
-}
 
-function toolDetailContent(details: ActivityDetail): React.ReactNode {
-  if (readFilesInput(details) || applyPatchInput(details)) return null
-  const input = recordValue(details.input)
-  const toolName = details.toolName ?? "tool"
 
-  if (toolName === "search_codebase") {
-    return (
-      <ToolSurface durationMs={details.durationMs} label="Search patterns">
-        <ToolRows
-          emptyLabel="No search pattern provided"
-          values={stringArray(input.queries)}
-        />
-        {details.output !== undefined ? (
-          <ResultCards value={details.output} />
-        ) : null}
-      </ToolSurface>
-    )
-  }
-
-  if (toolName === "run_commands") {
-    return (
-      <ToolSurface durationMs={details.durationMs} label="Terminal session">
-        <ToolRows
-          emptyLabel="No command provided"
-          values={stringArray(input.commands)}
-        />
-        {details.output !== undefined ? (
-          <ResultCards value={details.output} />
-        ) : null}
-      </ToolSurface>
-    )
-  }
-
-  if (toolName === "fetch_web_content") {
-    const requests = arrayValue(input.requests).map((request) => {
-      const value = recordValue(request)
-      return [stringValue(value.url), stringValue(value.prompt)]
-        .filter((part): part is string => Boolean(part))
-        .join("\n")
-    })
-    return (
-      <ToolSurface durationMs={details.durationMs} label="Web content">
-        <ToolRows emptyLabel="No URL provided" values={requests} />
-        {details.output !== undefined ? (
-          <ResultCards value={details.output} />
-        ) : null}
-      </ToolSurface>
-    )
-  }
-
-  if (toolName === "skills") {
-    const skill = stringValue(input.skill)
-    const args = stringValue(input.args)
-    return (
-      <ToolSurface durationMs={details.durationMs} label="Skill invocation">
-        <ToolRows
-          emptyLabel="No skill specified"
-          values={skill ? [`/${skill}${args ? ` ${args}` : ""}`] : []}
-        />
-        {details.output !== undefined ? (
-          <ResultCards value={details.output} />
-        ) : null}
-      </ToolSurface>
-    )
-  }
-
-  if (specialistTool(toolName)) {
-    const specialist = stringValue(input.specialist)
-    const task = stringValue(input.task)
-    const context = stringValue(input.context)
-    return (
-      <ToolSurface durationMs={details.durationMs} label={toolLabel(toolName)}>
-        <StructuredValue
-          label="Input"
-          value={
-            specialist || task || context
-              ? {
-                  ...(specialist ? { specialist } : {}),
-                  ...(task ? { task } : {}),
-                  ...(context ? { context } : {}),
-                }
-              : undefined
-          }
-        />
-        <StructuredValue label="Output" value={details.output} />
-      </ToolSurface>
-    )
-  }
-
-  if (codeGraphTool(toolName)) {
-    return (
-      <ToolSurface durationMs={details.durationMs} label={toolLabel(toolName)}>
-        <StructuredValue label="Scope" value={details.input} />
-        <StructuredValue label="Graph report" value={details.output} />
-      </ToolSurface>
-    )
-  }
-
-  if (
-    toolName === "get_preview_devtools" ||
-    toolName === "get_preview_container_logs"
-  ) {
-    return (
-      <ToolSurface durationMs={details.durationMs} label="Preview diagnostics">
-        <StructuredValue label="Request" value={details.input} />
-        <StructuredValue label="Status" value={details.output} />
-      </ToolSurface>
-    )
-  }
-
-  return (
-    <ToolSurface durationMs={details.durationMs} label={toolLabel(toolName)}>
-      <StructuredValue label="Input" value={details.input} />
-      <StructuredValue label="Output" value={details.output} />
-    </ToolSurface>
-  )
-}
-
-function StructuredValue({ label, value }: { label: string; value: unknown }) {
-  if (value === undefined || value === null) return null
-  if (Array.isArray(value)) {
-    return (
-      <div className="grid gap-1.5">
-        <span className="px-1 text-xs font-medium text-muted-foreground">
-          {label}
-        </span>
-        {value.map((entry, index) => (
-          <StructuredValue
-            key={index}
-            label={`Item ${index + 1}`}
-            value={entry}
-          />
-        ))}
-      </div>
-    )
-  }
-  if (typeof value === "object") {
-    const entries = Object.entries(value as Record<string, unknown>).filter(
-      ([, entry]) => entry !== undefined && entry !== null
-    )
-    return (
-      <div className="grid gap-1.5 rounded-md bg-background/70 p-3">
-        <span className="text-xs font-medium text-muted-foreground">
-          {label}
-        </span>
-        <dl className="grid gap-2">
-          {entries.map(([key, entry]) => (
-            <div
-              className="grid min-w-0 gap-0.5 sm:grid-cols-[9rem_1fr]"
-              key={key}
-            >
-              <dt
-                className="truncate text-xs text-muted-foreground"
-                title={key}
-              >
-                {humanizeToolName(key)}
-              </dt>
-              <dd className="min-w-0">
-                {typeof entry === "object" ? (
-                  <StructuredValue
-                    label={humanizeToolName(key)}
-                    value={entry}
-                  />
-                ) : (
-                  <span className="block overflow-x-auto font-mono text-xs leading-relaxed break-words whitespace-pre-wrap text-foreground/85">
-                    {displayScalar(entry)}
-                  </span>
-                )}
-              </dd>
-            </div>
-          ))}
-        </dl>
-      </div>
-    )
-  }
-  return (
-    <div className="rounded-md bg-background/70 p-3">
-      <div className="mb-1 text-xs font-medium text-muted-foreground">
-        {label}
-      </div>
-      <pre className="max-h-72 overflow-auto font-mono text-xs leading-relaxed break-words whitespace-pre-wrap">
-        {displayScalar(value)}
-      </pre>
-    </div>
-  )
-}
-
-function EditedFiles({ files }: { files: EditedFile[] }) {
-  return (
-    <div className="grid gap-1.5 py-0.5">
-      {files.map((file) => {
-        const { name } = splitFilePath(file.path)
-        return (
-          <div
-            className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground"
-            key={file.path}
-            title={file.path}
-          >
-            <span className="shrink-0">Edited</span>
-            <span className="truncate text-sky-600 dark:text-sky-400">
-              {name}
-            </span>
-            {file.additions !== undefined ? (
-              <span className="shrink-0 text-emerald-600 dark:text-emerald-400">
-                +{file.additions}
-              </span>
-            ) : null}
-            {file.deletions !== undefined ? (
-              <span className="shrink-0 text-red-600 dark:text-red-400">
-                -{file.deletions}
-              </span>
-            ) : null}
-            {file.resolution ? (
-              <span className="shrink-0 text-muted-foreground/70">
-                {file.resolution === "automatically_rebased"
-                  ? "automatically rebased"
-                  : file.resolution}
-              </span>
-            ) : null}
-            {file.validation ? (
-              <span className="shrink-0 text-muted-foreground/70">
-                parse {file.validation}
-              </span>
-            ) : null}
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
-function InspectedFiles({ files }: { files: InspectedFile[] }) {
-  return (
-    <div className="grid gap-1.5 py-0.5">
-      {files.map((file, index) => {
-        const { name } = splitFilePath(file.path)
-        const lineCount = inspectedLineCount(file)
-        return (
-          <div
-            className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground"
-            key={`${file.path}-${file.startLine ?? "start"}-${file.endLine ?? "end"}-${index}`}
-            title={file.path}
-          >
-            <span className="shrink-0">
-              {file.parallelSuppressed
-                ? "Suppressed"
-                : file.reused
-                  ? "Reused"
-                  : "Read"}
-            </span>
-            <span className="truncate text-sky-600 dark:text-sky-400">
-              {file.symbol ?? name}
-            </span>
-            <span className="shrink-0 text-muted-foreground/70">
-              {inspectedLineRange(file)}
-            </span>
-            {lineCount !== undefined ? (
-              <span className="shrink-0 text-emerald-600 dark:text-emerald-400">
-                {lineCount} {lineCount === 1 ? "line" : "lines"}
-              </span>
-            ) : null}
-          </div>
-        )
-      })}
-    </div>
-  )
-}
 
 function AgentMarkdownTimelineItem({
   alwaysVisible,
@@ -2096,41 +1649,6 @@ function MarkdownActionTooltip({
   )
 }
 
-function ActivityToolIcon({
-  activity,
-  toolName,
-}: {
-  activity: UserStoryAgentActivity
-  toolName: string | undefined
-}) {
-  if (activity.kind === "tool" && specialistTool(toolName)) {
-    const name = activity.agentName ?? "Agent"
-    const avatar =
-      activity.agentAvatar ??
-      specialistAgentAppearanceByName(activity.agentName)?.avatar
-    if (avatar) {
-      return (
-        <Avatar size="sm" aria-label={name}>
-          <AvatarImage alt={name} src={avatar} />
-          <AvatarFallback>{agentInitials(name)}</AvatarFallback>
-        </Avatar>
-      )
-    }
-  }
-  if (activity.kind === "reasoning")
-    return <BrainCircuitIcon className="size-4" />
-  if (activity.kind === "approval")
-    return <CheckCircle2Icon className="size-4" />
-  if (activity.kind !== "tool") return <MessageSquareIcon className="size-4" />
-  if (toolName === "run_commands") return <TerminalIcon className="size-4" />
-  if (toolName === "search_codebase") return <SearchIcon className="size-4" />
-  if (toolName === "read_files") return <FileSearchIcon className="size-4" />
-  if (toolName === "apply_patch") return <Code2Icon className="size-4" />
-  if (toolName === "editor") return <PencilIcon className="size-4" />
-  if (toolName === "write_file") return <PencilIcon className="size-4" />
-  if (toolName === "list_files") return <ListChecksIcon className="size-4" />
-  return <ClipboardCheckIcon className="size-4" />
-}
 
 function agentDisplayActivities(run: AgentConversationRun) {
   const activities = run.activities ?? []
