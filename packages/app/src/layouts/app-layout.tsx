@@ -5,6 +5,7 @@ import {
   KeyboardShortcutsDialog,
   useAppShortcuts,
 } from "@/components/navigation/app-shortcuts"
+import { CommandPalette } from "@/components/navigation/command-palette"
 import { AppSidebar } from "@/components/sidebar/app-sidebar"
 import { useQuickChatStore } from "@/components/chat/data/quick-chat-store"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
@@ -118,6 +119,7 @@ export function AppLayout({
         open={shortcuts.helpOpen}
         onOpenChange={shortcuts.setHelpOpen}
       />
+      <CommandPalette onShowShortcuts={() => shortcuts.setHelpOpen(true)} />
     </SidebarProvider>
   )
 }

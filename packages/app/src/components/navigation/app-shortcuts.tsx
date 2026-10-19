@@ -55,6 +55,7 @@ const shortcutGroups: {
   {
     title: "General",
     items: [
+      { keys: [modKeyLabel, "K"], label: "Command palette" },
       { keys: [modKeyLabel, "/"], label: "Show keyboard shortcuts" },
       { keys: ["D"], label: "Toggle light and dark theme" },
       { keys: ["Esc"], label: "Close dialog or panel" },

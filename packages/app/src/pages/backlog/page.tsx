@@ -69,6 +69,7 @@ import { drawerTargetForAction } from "@/components/backlog/shared/backlog-helpe
 import type { DrawerTarget } from "@/components/backlog/shared/backlog-types"
 import { storyPreviewDevtoolsScope } from "@/components/backlog/shared/preview-devtools-scope"
 import type { AgentConversationUserMessageUndo } from "@/components/chat/agent-conversation"
+import { newUserStoryEvent } from "@/components/navigation/command-palette"
 import { nextCheckpointRunCount } from "@/components/chat/agent-run-checkpoints"
 import { useModelSelection } from "@/components/model/model-selection"
 import {
@@ -272,6 +273,12 @@ export function BacklogPage() {
       initialTab: "user-story",
     })
   }, [backlog.projectPath])
+  // "New user story" from the command palette.
+  React.useEffect(() => {
+    const handleNewStory = () => openCreateDrawer()
+    window.addEventListener(newUserStoryEvent, handleNewStory)
+    return () => window.removeEventListener(newUserStoryEvent, handleNewStory)
+  }, [openCreateDrawer])
   React.useEffect(() => {
     const openSelectedStory = () => {
       const selectedStoryId = selectedBacklogStoryId()
