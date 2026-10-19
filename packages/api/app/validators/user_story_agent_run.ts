@@ -28,6 +28,9 @@ export const createUserStoryAgentRunValidator = vine.create({
   executionId: vine.string().trim().uuid().nullable().optional(),
   checkpointRunCount: vine.number().withoutDecimals().positive().nullable().optional(),
   status: status.optional(),
+  providerId: vine.string().trim().maxLength(80).nullable().optional(),
+  modelId: vine.string().trim().maxLength(255).nullable().optional(),
+  reasoningEffort: vine.string().trim().maxLength(32).nullable().optional(),
 })
 
 export const updateUserStoryAgentRunValidator = vine.create({

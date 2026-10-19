@@ -83,6 +83,7 @@ import {
 } from "@/components/backlog/drawer/drawer-resize-handle"
 import { useLatestCallback } from "@/lib/use-latest-callback"
 import { queueComment } from "@/pages/backlog/comment-queue"
+import { readStoryRunMode, type StoryRunMode } from "@/lib/runtime-preference"
 import { createUserStoryCommentSubmission } from "./user-story-comment-submission"
 import {
   actionInput,
@@ -282,6 +283,9 @@ export function UserStoryDrawerPanel({
     [developmentWorkspaceRoot, platform]
   )
   const [pendingAction, setPendingAction] = React.useState<DrawerAction>()
+  const [runMode, setRunMode] = React.useState<StoryRunMode | null>(
+    userStory?.runMode ?? null
+  )
   const [commentSubmission] = React.useState(createUserStoryCommentSubmission)
   const [sidebarOpen, setSidebarOpen] = React.useState(readSidebarOpen)
   const titleDraftKey = `${draftStorageKey}:title`
@@ -708,6 +712,8 @@ export function UserStoryDrawerPanel({
               }
               onFileLinkClick={handleOpenDevelopmentFile}
               onChangedFileClick={handleOpenDevelopmentDiff}
+              onRunModeChange={changeRunMode}
+              runMode={runMode}
               status={status}
               summary={summary}
               summaryCodeSelectionAttachments={summaryCodeSelectionAttachments}
@@ -774,6 +780,13 @@ export function UserStoryDrawerPanel({
     </DrawerContent>
   )
 
+  // Applies right away to an existing story; a new one takes it on create.
+  function changeRunMode(next: StoryRunMode) {
+    setRunMode(next)
+    if (mode !== "create" && userStory)
+      void onUpdateUserStory(userStory, { runMode: next })
+  }
+
   async function handleAction(action: DrawerAction) {
     if (pendingAction || commentSubmission.pending) return
     if (action === "Close") return onCancel()
@@ -782,15 +795,16 @@ export function UserStoryDrawerPanel({
     setPendingAction(action)
     try {
       if (mode === "create") {
-        await onCreateUserStory(
-          createInput(
+        await onCreateUserStory({
+          ...createInput(
             action,
             title,
             summaryValueRef.current,
             summaryCodeSelectionAttachments,
             summaryFileAttachments
-          )
-        )
+          ),
+          runMode: runMode ?? readStoryRunMode(),
+        })
         clearComposerDraft()
       }
       if (mode !== "create" && userStory) {

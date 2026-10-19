@@ -22,8 +22,6 @@ import { useOptionalBlameRuntime } from "@/context/blame-runtime"
 import { usePlatform, type RuntimeProgress } from "@/context/platform"
 import { runtimeProgressText, type RuntimePhase } from "@/lib/blame-runtime-state"
 import {
-  runtimeProfileSwitchBlockReason,
-  saveRuntimePreference,
   saveStoryRunMode,
   useStoryRunMode,
   type StoryRunMode,
@@ -87,21 +85,36 @@ const runtimeOptions = [
 ] as const satisfies readonly RuntimeOption[]
 
 export const RuntimeProfileSelector = React.memo(
-  function RuntimeProfileSelector() {
+  function RuntimeProfileSelector({
+    onChange,
+    value,
+  }: {
+    // The story's own choice; without it, the account default is shown and
+    // changed.
+    value?: StoryRunMode | null
+    onChange?(mode: StoryRunMode): void
+  }) {
     const auth = useCloudAuth()
     const platform = usePlatform()
     const runtime = useOptionalBlameRuntime()
     const premium = auth.license?.licensed === true
-    const preference = { profile: useStoryRunMode(premium) }
+    const accountDefault = useStoryRunMode(premium)
+    const current = value ?? accountDefault
     const [open, setOpen] = React.useState(false)
     const cloudAvailable = Boolean(
       platform.previewRuntime && auth.status === "authenticated"
     )
-    const selected = runtimeOption(preference.profile)
+    const selected = runtimeOption(current)
+
+    // Applies to this story, and becomes the default for the next one.
+    const apply = (mode: StoryRunMode) => {
+      saveStoryRunMode(mode)
+      onChange?.(mode)
+      setOpen(false)
+    }
 
     const selectProfile = (profile: StoryRunMode) => {
-      if (profile === "direct") {
-        saveStoryRunMode("direct")
+      if (profile === current) {
         setOpen(false)
         return
       }
@@ -115,35 +128,15 @@ export const RuntimeProfileSelector = React.memo(
         })
         return
       }
-      if (profile === preference.profile) {
-        setOpen(false)
-        return
-      }
-      const switchBlocked = runtimeProfileSwitchBlockReason(profile)
-      if (switchBlocked) {
-        window.alert(switchBlocked)
-        return
-      }
-      if (profile === "local-container") {
-        const select = () =>
-          saveRuntimePreference({ profile, source: "account-default" })
-        setOpen(false)
+      if (profile === "local-container" && runtimeNeedsSetup(runtime?.phase)) {
         // Without the runtime, explain and offer to install it; the choice
         // applies once the person agrees.
-        if (runtimeNeedsSetup(runtime?.phase)) {
-          runtime?.promptInstall({ onAccept: select })
-          return
-        }
-        select()
+        setOpen(false)
+        runtime?.promptInstall({ onAccept: () => apply(profile) })
         return
       }
-      if (!cloudAvailable) return
-      saveRuntimePreference({
-        profile,
-        source: "account-default",
-        confirmedCloudUploadAt: new Date().toISOString(),
-      })
-      setOpen(false)
+      if (profile === "vercel-compose" && !cloudAvailable) return
+      apply(profile)
     }
 
     const SelectedIcon = selected.icon
@@ -191,7 +184,7 @@ export const RuntimeProfileSelector = React.memo(
                     ? runtimeNote(runtime?.phase, runtime?.progress)
                     : undefined
                 }
-                selected={option.profile === preference.profile}
+                selected={option.profile === current}
                 onSelect={selectProfile}
               />
             ))}

@@ -91,7 +91,6 @@ import {
   recordPerformanceMetric,
 } from "@/lib/performance-diagnostics"
 import { projectCodePractices } from "@/lib/project-code-practices"
-import { useRuntimePreference } from "@/lib/runtime-preference"
 import { showSystemNotification } from "@/lib/system-notifications"
 import { celebrateStory } from "@/lib/celebrate"
 import { notifyCommentResponseCompleted } from "@/pages/backlog/backlog-rotation-helpers"
@@ -155,9 +154,6 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
   const auth = useCloudAuth()
   const platform = usePlatform()
   const projects = useProjects()
-  const runtimePreference = useRuntimePreference(
-    auth.license?.licensed === true
-  )
   const agentSelection = useModelSelection({ role: "agent" })
   const alternativeSelection = useModelSelection({ role: "alternative" })
   const rotation = useBacklogRotation(backlog)
@@ -889,10 +885,12 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
         workspaceRoot: input.worktree,
         workspaceMode:
           story.workspaceMode ??
-          (runtimePreference.profile === "local-container"
-            ? "local-container"
-            : "cloud-mirror"),
-        previewDevtoolsScope: storyPreviewDevtoolsScope(story.id),
+          (story.runMode === "vercel-compose" ? "cloud-mirror" : "local-container"),
+        // Direct stories have no managed preview to inspect.
+        previewDevtoolsScope:
+          story.workspaceMode === "direct"
+            ? undefined
+            : storyPreviewDevtoolsScope(story.id),
         codePractices: await projectCodePractices(auth, projects),
         executionId,
         projectId: story.projectId,
@@ -906,7 +904,6 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
       agentSelection.currentVariant,
       platform.agent,
       projects,
-      runtimePreference.profile,
     ]
   )
   const resumeStoryAgent = React.useCallback(

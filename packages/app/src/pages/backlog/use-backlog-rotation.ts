@@ -1,6 +1,7 @@
 import * as React from "react"
 import { toast } from "sonner"
 import type { AgentEvent } from "@blame/agent-runtime"
+import type { RuntimeProfileId } from "@blame/preview-runtime"
 
 import type {
   UserStory,
@@ -61,7 +62,7 @@ import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
 import { createCloudApi } from "@/lib/cloud-api"
 import { effectiveProjectCodePractices } from "@/lib/project-code-practice-preferences"
-import { useRuntimePreference, useStoryRunMode } from "@/lib/runtime-preference"
+import { type StoryRunMode, useStoryRunMode } from "@/lib/runtime-preference"
 import {
   measurePerformanceOperation,
   recordPerformanceCount,
@@ -124,11 +125,14 @@ export function useBacklogRotation(
   const platform = usePlatform()
   const projects = useProjects()
   const selection = useModelSelection({ role: "agent" })
-  const runtimePreference = useRuntimePreference(
-    auth.license?.licensed === true
+  const premium = auth.license?.licensed === true
+  const runMode = useStoryRunMode(premium)
+  // Each story runs where it was set to run; older stories without a choice
+  // follow the account default.
+  const storyRunMode = React.useCallback(
+    (story: UserStory): StoryRunMode => story.runMode ?? runMode,
+    [runMode]
   )
-  const runMode = useStoryRunMode(auth.license?.licensed === true)
-  const direct = runMode === "direct"
   const ensureProjectPreviewUrl = platform.workspace?.ensureProjectPreviewUrl
   const startingStoryIds = React.useRef(new Set<string>())
   const blockedStories = React.useRef(new Map<string, number>())
@@ -169,7 +173,7 @@ export function useBacklogRotation(
       blockedStories.current.clear()
       refreshStartingStories((value) => value + 1)
     },
-    profile: runtimePreference.profile,
+    runModeOf: storyRunMode,
     stories: backlog.stories,
   })
   const previewRecoveryState = previewRecoveryStateKey(backlog.stories)
@@ -227,6 +231,12 @@ export function useBacklogRotation(
     const agent = platform.agent
     if (!workspace || !agent) return
 
+    const storyMode = storyRunMode(detailedStory)
+    const direct = storyMode === "direct"
+    const previewProfile: RuntimeProfileId = direct ? "local-container" : storyMode
+    if (storyMode === "vercel-compose" && !premium)
+      return reportCloudWithoutPremium(detailedStory)
+
     // Local Container stories wait for the Blame Runtime (or ask for it)
     // instead of failing; the runtime itself is checked by its provider.
     const runtimeDecision = direct ? "go" : runtimeGate.gate(detailedStory)
@@ -237,13 +247,13 @@ export function useBacklogRotation(
 
     const dependencies = await workspace.checkHostDependencies({
       includeRuntime: direct ? false : runtimeGate.hostCheckIncludesRuntime,
-      runtimeProfile: runtimePreference.profile,
+      runtimeProfile: previewProfile,
     })
     if (!dependencies.ok) {
       reportHostDependencyBlocker(
         detailedStory,
         dependencies,
-        runtimePreference.profile
+        previewProfile
       )
       return
     }
@@ -260,7 +270,7 @@ export function useBacklogRotation(
       direct,
       executionId,
       repositoryRoot: projects.activeProject.path,
-      runtimeProfile: runtimePreference.profile,
+      runtimeProfile: previewProfile,
       storyId,
       storyReference: userStoryDisplayId(detailedStory),
       telemetryCohorts,
@@ -296,7 +306,7 @@ export function useBacklogRotation(
         runConfigurations: initialization.runConfigurations,
         runConfigurationId: detailedStory.runConfigurationId,
         hostDependenciesChecked: true,
-        runtimeProfile: runtimePreference.profile,
+        runtimeProfile: previewProfile,
       })
       sessionPromise = agent.sessions.startDevelopment({
         apiConnection: auth.apiConnection,
@@ -418,6 +428,59 @@ export function useBacklogRotation(
       .catch(reportAgentPersistenceError)
   }
 
+  // Up to three agents at a time; Direct stories share the project folder,
+  // so only one of them runs (or waits for review) at a time.
+  function storiesToStartNow(readyStories: UserStory[]) {
+    const stories = storiesRef.current
+    let slots =
+      maxConcurrentDevelopmentStories -
+      runningStories(stories) -
+      startingStoryIds.current.size
+    const isDirect = (story: UserStory) => storyRunMode(story) === "direct"
+    const startingDirect = stories.filter(
+      (story) => startingStoryIds.current.has(story.id) && isDirect(story)
+    ).length
+    let directFree = directStorySlots(stories, startingDirect) > 0
+    const selected: UserStory[] = []
+    for (const story of readyStories) {
+      if (slots <= 0) break
+      if (isDirect(story)) {
+        if (!directFree) continue
+        directFree = false
+      }
+      selected.push(story)
+      slots -= 1
+    }
+    return selected
+  }
+
+  // A Cloud Preview story whose owner no longer has Premium: ask where to
+  // run it instead of switching silently.
+  function reportCloudWithoutPremium(story: UserStory) {
+    retryStory(story, blockerRetryDelay)
+    const key = `${story.id}:cloud-without-premium`
+    if (reportedBlockers.current.has(key)) return
+    reportedBlockers.current.add(key)
+    const switchTo = (mode: StoryRunMode) => {
+      reportedBlockers.current.delete(key)
+      void backlog
+        .update(story, { runMode: mode })
+        .then(() => {
+          blockedStories.current.delete(story.id)
+          refreshStartingStories((value) => value + 1)
+        })
+        .catch(reportAgentPersistenceError)
+    }
+    toast.error("Cloud Preview needs Blame Premium", {
+      action: { label: "Run Direct", onClick: () => switchTo("direct") },
+      cancel: { label: "Local Container", onClick: () => switchTo("local-container") },
+      description: `${story.title} is waiting. Run it on this computer instead?`,
+      duration: Infinity,
+      id: `${setupToastId}-${story.id}-cloud`,
+      position: "bottom-right",
+    })
+  }
+
   // Still the story this start moved to in progress, untouched by the user.
   function storyStillStarting(storyId: string) {
     const current = storiesRef.current.find((story) => story.id === storyId)
@@ -439,7 +502,7 @@ export function useBacklogRotation(
   function reportHostDependencyBlocker(
     story: UserStory,
     report: HostDependencyReport,
-    runtimeProfile: ReturnType<typeof useRuntimePreference>["profile"]
+    runtimeProfile: RuntimeProfileId
   ) {
     retryStory(story, blockerRetryDelay)
     setHostDependenciesDialog({
@@ -509,9 +572,9 @@ export function useBacklogRotation(
           ),
           workspaceMode:
             story.workspaceMode ??
-            (runtimePreference.profile === "local-container"
-              ? "local-container"
-              : "cloud-mirror"),
+            (storyRunMode(story) === "vercel-compose"
+              ? "cloud-mirror"
+              : "local-container"),
           worktree: story.worktree,
         })
           .then((previewUrl) => persistRecoveredPreviewUrl(story, previewUrl))
@@ -522,7 +585,7 @@ export function useBacklogRotation(
     [
       ensureProjectPreviewUrl,
       persistRecoveredPreviewUrl,
-      runtimePreference.profile,
+      storyRunMode,
     ]
   )
 
@@ -1152,9 +1215,11 @@ export function useBacklogRotation(
     })
   }
 
+  const storiesToStartRef = React.useRef(storiesToStartNow)
   React.useEffect(() => {
     startStoryRef.current = startStory
     reportBlockerRef.current = reportBlocker
+    storiesToStartRef.current = storiesToStartNow
   })
 
   React.useEffect(() => {
@@ -1169,14 +1234,8 @@ export function useBacklogRotation(
     )
     if (readyStories.length === 0) return
 
-    const availableSlots = direct
-      ? directStorySlots(backlog.stories, startingStoryIds.current.size)
-      : maxConcurrentDevelopmentStories -
-        runningStories(backlog.stories) -
-        startingStoryIds.current.size
-    if (availableSlots <= 0) return
-
-    const storiesToStart = readyStories.slice(0, availableSlots)
+    const storiesToStart = storiesToStartRef.current(readyStories)
+    if (!storiesToStart.length) return
     storiesToStart.forEach((story) => {
       startingStoryIds.current.add(story.id)
       void startStoryRef
@@ -1193,15 +1252,15 @@ export function useBacklogRotation(
     backlog.loading,
     backlog.projectId,
     backlog.stories,
-    direct,
     projects.activeProject,
     queueTick,
+    storyRunMode,
   ])
 
   return {
-    runtimeWaitingLabel: direct
-      ? directQueueNotice(backlog.stories)
-      : runtimeGate.waitingLabel,
+    runtimeWaitingLabel:
+      runtimeGate.waitingLabel ??
+      directQueueNotice(backlog.stories, (story) => storyRunMode(story) === "direct"),
     hostDependenciesDialog: {
       checking: Boolean(hostDependenciesDialog?.checking),
       onOpenChange(open: boolean) {

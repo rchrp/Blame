@@ -15,6 +15,7 @@ import {
   type PendingFileAttachment,
 } from "@/components/backlog/drawer/markdown-editor"
 import { RuntimeProfileSelector } from "@/components/backlog/drawer/runtime-profile-selector"
+import type { StoryRunMode } from "@/lib/runtime-preference"
 import {
   commentButtonLabel,
   isEditable,
@@ -78,7 +79,9 @@ export const UserStoryContent = React.memo(function UserStoryContent({
   onSummaryOptimize,
   onFileLinkClick,
   onChangedFileClick,
+  onRunModeChange,
   loadChangedFileDiffs,
+  runMode,
   status,
   summary,
   summaryCodeSelectionAttachments,
@@ -90,6 +93,9 @@ export const UserStoryContent = React.memo(function UserStoryContent({
     typeof AgentConversationTimeline
   >[0]["loadChangedFileDiffs"]
   mode: UserStoryDrawerMode
+  // Where this story runs (Local Container, Cloud Preview or Direct).
+  runMode?: StoryRunMode | null
+  onRunModeChange?: (mode: StoryRunMode) => void
   onCommentUndo?: (target: AgentConversationUserMessageUndo) => Promise<void>
   onSummaryChange?: (summary: string) => void
   onSummaryCodeSelectionAttachmentRemove: (id: string) => void
@@ -148,7 +154,7 @@ export const UserStoryContent = React.memo(function UserStoryContent({
           toolbarEnd={
             editable ? (
               <div className="flex max-w-full min-w-0 flex-wrap items-center justify-end gap-2">
-                <RuntimeProfileSelector />
+                <RuntimeProfileSelector value={runMode} onChange={onRunModeChange} />
                 <div className="w-96 shrink-0">
                   <MarkdownEditorModelSelector />
                 </div>

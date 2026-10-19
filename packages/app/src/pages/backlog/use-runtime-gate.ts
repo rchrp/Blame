@@ -1,9 +1,9 @@
 import * as React from "react"
-import type { RuntimeProfileId } from "@blame/preview-runtime"
 
 import type { UserStory } from "@/components/backlog/data/backlog-data"
 import { useBlameRuntime } from "@/context/blame-runtime"
 import { runtimeBlocksNewRuns } from "@/lib/blame-runtime-state"
+import type { StoryRunMode } from "@/lib/runtime-preference"
 
 export type RuntimeGateDecision = "go" | "wait" | "needs-runtime"
 
@@ -12,11 +12,12 @@ export type RuntimeGateDecision = "go" | "wait" | "needs-runtime"
 // them. Only Local Container stories depend on the runtime.
 export function useRuntimeGate({
   onRuntimeReady,
-  profile,
+  runModeOf,
   stories,
 }: {
   onRuntimeReady(): void
-  profile: RuntimeProfileId
+  // Where each story runs; only Local Container needs the runtime.
+  runModeOf(story: UserStory): StoryRunMode
   stories: readonly UserStory[]
 }) {
   const runtime = useBlameRuntime()
@@ -45,7 +46,7 @@ export function useRuntimeGate({
   const gate = React.useCallback(
     (story: UserStory): RuntimeGateDecision => {
       const current = phaseRef.current
-      if (profile !== "local-container") return "go"
+      if (runModeOf(story) !== "local-container") return "go"
       if (current === "ready" || current === "unavailable") return "go"
       if (runtimeBlocksNewRuns(current)) return "wait"
       // Missing or broken: ask once per story, then keep it queued.
@@ -55,7 +56,7 @@ export function useRuntimeGate({
       }
       return "needs-runtime"
     },
-    [profile, promptInstall]
+    [promptInstall, runModeOf]
   )
 
   return {
@@ -64,7 +65,11 @@ export function useRuntimeGate({
     // check include it as before.
     hostCheckIncludesRuntime: phase === "unavailable" ? undefined : false,
     waitingLabel:
-      profile === "local-container" && runtimeBlocksNewRuns(phase)
+      runtimeBlocksNewRuns(phase) &&
+      stories.some(
+        (story) =>
+          story.status === "ready" && runModeOf(story) === "local-container"
+      )
         ? runtimeWaitingLabel(phase)
         : undefined,
   }
@@ -74,7 +79,7 @@ function localStoryRunning(story: UserStory) {
   return (
     story.status === "in-progress" &&
     story.agentStatus === "Running" &&
-    story.workspaceMode !== "cloud-mirror"
+    story.workspaceMode === "local-container"
   )
 }
 
