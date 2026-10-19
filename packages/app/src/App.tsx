@@ -60,7 +60,7 @@ const backlogStatusPipPath = "/backlog-status-pip"
 const minimumLoadingMs = 1600
 
 const routes = [
-  { path: "/backlog", title: "Backlog", element: <BacklogPage /> },
+  { path: "/backlog", title: "Backlog", element: null },
   {
     path: backlogStatusPipPath,
     title: "Active User Stories",
@@ -137,6 +137,8 @@ export function App() {
   const statusPipOpen = pathname === backlogStatusPipPath
   const previousRoute = resolvePreviousRoute(previousPathname)
   const activeRoute = settingsOpen ? previousRoute : route
+  // The backlog page stays mounted: it runs the agents and the story queue.
+  const backlogActive = activeRoute.path === "/backlog"
   const loading = useMinimumDuration(
     auth.status === "loading",
     statusPipOpen ? 0 : minimumLoadingMs
@@ -222,10 +224,12 @@ export function App() {
           <UpdateStartupNotifier />
           <AppLayout
             pathname={pathname}
+            persistent={<BacklogPage active={backlogActive} />}
+            persistentActive={backlogActive}
             routeKey={activeRoute.path}
             title={activeRoute.title}
           >
-            {activeRoute.element}
+            {backlogActive ? null : activeRoute.element}
           </AppLayout>
           <SettingsDialog open={settingsOpen} onOpenChange={closeSettings} />
           <Toaster />

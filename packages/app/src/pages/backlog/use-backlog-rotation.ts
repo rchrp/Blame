@@ -20,10 +20,7 @@ import {
   shouldPersistAgentEvent,
   terminalAgentRunEvent,
 } from "@/components/backlog/data/agent-flow"
-import {
-  registeredAgentEventSubscription,
-  subscribeAgentEvents,
-} from "@/components/backlog/data/agent-event-stream"
+import { subscribeAgentEvents } from "@/components/backlog/data/agent-event-stream"
 import {
   agentPersistenceEvent,
   AgentStreamCoordinator,
@@ -51,6 +48,15 @@ import { useModelSelection } from "@/components/model/model-selection"
 import { useCloudAuth } from "@/context/cloud-auth"
 import type { HostDependencyReport } from "@/context/platform"
 import { useRuntimeGate } from "@/pages/backlog/use-runtime-gate"
+import { deadAgentRuns } from "@/pages/backlog/agent-run-liveness"
+import {
+  closeStoryRunStreams,
+  forgetRunStream,
+  registerRunStream,
+  runStreamOpen,
+} from "@/components/backlog/data/agent-run-streams"
+import { pendingTerminalAgentUpdates } from "@/components/backlog/data/agent-terminal-outbox"
+import { storiesInTransition } from "@/pages/backlog/story-transitions"
 import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
 import { createCloudApi } from "@/lib/cloud-api"
@@ -155,7 +161,9 @@ export function useBacklogRotation(
   >(() => undefined)
   const [hostDependenciesDialog, setHostDependenciesDialog] =
     React.useState<HostDependenciesDialogState>()
-  const [, refreshStartingStories] = React.useState(0)
+  // Bumped to make the queue look again (after a retry delay, when the
+  // runtime becomes ready…), even if no story changed.
+  const [queueTick, refreshStartingStories] = React.useState(0)
   const runtimeGate = useRuntimeGate({
     onRuntimeReady: () => {
       blockedStories.current.clear()
@@ -273,90 +281,122 @@ export function useBacklogRotation(
       workspaceMode: worktree.workspaceMode,
       worktree: worktree.worktree,
     })
-    const preparationPromise = direct
-      ? Promise.resolve()
-      : workspace.prepareProjectPreview({
-      executionId,
-      storyId,
-      telemetryCohorts,
-      worktree: worktree.worktree,
-      previewManifest: initialization.previewManifest,
-      runConfigurations: initialization.runConfigurations,
-      runConfigurationId: detailedStory.runConfigurationId,
-      hostDependenciesChecked: true,
-      runtimeProfile: runtimePreference.profile,
-    })
-    const sessionPromise = agent.sessions.startDevelopment({
-      apiConnection: auth.apiConnection,
-      providerId: selection.currentModel.provider.id,
-      modelId: selection.currentModel.id,
-      credentialLabel: selection.currentModel.credentialLabel,
-      reasoningEffort: selection.currentVariant,
-      autoSendPrompt: false,
-      title: detailedStory.title,
-      summary: detailedStory.summary,
-      codeSelectionAttachments: detailedStory.codeSelectionAttachments ?? [],
-      fileAttachments: detailedStory.fileAttachments ?? [],
-      cwd: worktree.worktree,
-      workspaceRoot: worktree.worktree,
-      workspaceMode: worktree.workspaceMode,
-      // No managed preview in Direct mode.
-      previewDevtoolsScope: direct
-        ? undefined
-        : storyPreviewDevtoolsScope(detailedStory.id),
-      codePractices: effectiveProjectCodePractices(
-        projectInitialization.practices
-      ),
-      projectInitialization: {
+    let startedSessionId: string | undefined
+    let sessionPromise: ReturnType<typeof agent.sessions.startDevelopment> | undefined
+    let started: { run: UserStoryAgentRun; sessionId: string } | undefined
+    try {
+      const preparationPromise = direct
+        ? Promise.resolve()
+        : workspace.prepareProjectPreview({
+        executionId,
+        storyId,
+        telemetryCohorts,
+        worktree: worktree.worktree,
         previewManifest: initialization.previewManifest,
         runConfigurations: initialization.runConfigurations,
-        databaseMode: initialization.databaseMode,
-      },
-      executionId,
-      projectId: detailedStory.projectId,
-      storyId,
-    })
-    void sessionPromise.catch(() => undefined)
-    await preparationPromise
-    if (
-      worktree.workspaceMode === "local-container" &&
-      typeof detailedStory.runConfigurationId === "string" &&
-      workspace.controlProjectPreview
-    ) {
-      void workspace
-        .controlProjectPreview({
-          action: "start",
-          configurationId: detailedStory.runConfigurationId,
-          worktree: worktree.worktree,
-        })
-        .then((runtime) => {
-          if (runtime.previewUrl) {
-            return backlog.update(detailedStory, {
-              previewUrl: runtime.previewUrl,
-            })
-          }
-        })
-        .catch(() => undefined)
-    }
-    const session = await sessionPromise
-    const run = await backlog.createAgentRun(detailedStory, {
-      checkpointRunCount: nextCheckpointRunCount(detailedStory.agentRuns ?? []),
-      clineSessionId: session.sessionId,
-      executionId,
-      kind: "initial",
-    })
-    subscribeStoryStream(detailedStory, run, session.sessionId, executionId)
+        runConfigurationId: detailedStory.runConfigurationId,
+        hostDependenciesChecked: true,
+        runtimeProfile: runtimePreference.profile,
+      })
+      sessionPromise = agent.sessions.startDevelopment({
+        apiConnection: auth.apiConnection,
+        providerId: selection.currentModel.provider.id,
+        modelId: selection.currentModel.id,
+        credentialLabel: selection.currentModel.credentialLabel,
+        reasoningEffort: selection.currentVariant,
+        autoSendPrompt: false,
+        title: detailedStory.title,
+        summary: detailedStory.summary,
+        codeSelectionAttachments: detailedStory.codeSelectionAttachments ?? [],
+        fileAttachments: detailedStory.fileAttachments ?? [],
+        cwd: worktree.worktree,
+        workspaceRoot: worktree.worktree,
+        workspaceMode: worktree.workspaceMode,
+        // No managed preview in Direct mode.
+        previewDevtoolsScope: direct
+          ? undefined
+          : storyPreviewDevtoolsScope(detailedStory.id),
+        codePractices: effectiveProjectCodePractices(
+          projectInitialization.practices
+        ),
+        projectInitialization: {
+          previewManifest: initialization.previewManifest,
+          runConfigurations: initialization.runConfigurations,
+          databaseMode: initialization.databaseMode,
+        },
+        executionId,
+        projectId: detailedStory.projectId,
+        storyId,
+      })
+      void sessionPromise.catch(() => undefined)
+      await preparationPromise
+      if (
+        worktree.workspaceMode === "local-container" &&
+        typeof detailedStory.runConfigurationId === "string" &&
+        workspace.controlProjectPreview
+      ) {
+        void workspace
+          .controlProjectPreview({
+            action: "start",
+            configurationId: detailedStory.runConfigurationId,
+            worktree: worktree.worktree,
+          })
+          .then((runtime) => {
+            if (runtime.previewUrl) {
+              return backlog.update(detailedStory, {
+                previewUrl: runtime.previewUrl,
+              })
+            }
+          })
+          .catch(() => undefined)
+      }
+      const session = await sessionPromise
+      startedSessionId = session.sessionId
+      // Stopped, dequeued or discarded while it was starting: let it go.
+      if (!storyStillStarting(storyId)) {
+        await agent.sessions.abort(session.sessionId).catch(() => undefined)
+        return
+      }
+      const run = await backlog.createAgentRun(detailedStory, {
+        checkpointRunCount: nextCheckpointRunCount(detailedStory.agentRuns ?? []),
+        clineSessionId: session.sessionId,
+        executionId,
+        kind: "initial",
+      })
+      subscribeStoryStream(detailedStory, run, session.sessionId, executionId)
 
-    await backlog.update(detailedStory, {
-      agentModelId: selection.currentModel.id,
-      agentProviderId: selection.currentModel.provider.id,
-      agentActivities: [],
-      agentFinalResponse: null,
-      agentUsage: null,
-      agentStatus: "Running",
-      agentLastEvent: `Cline debug log: ${clineLogPath(worktree.worktree, session.sessionId)}`,
-      clineSessionId: session.sessionId,
-    })
+      await backlog.update(detailedStory, {
+        agentModelId: selection.currentModel.id,
+        agentProviderId: selection.currentModel.provider.id,
+        agentActivities: [],
+        agentFinalResponse: null,
+        agentUsage: null,
+        agentStatus: "Running",
+        agentLastEvent: `Cline debug log: ${clineLogPath(worktree.worktree, session.sessionId)}`,
+        clineSessionId: session.sessionId,
+      })
+      started = { run, sessionId: session.sessionId }
+    } catch (error) {
+      // The story did not start: stop the half-started session and put it
+      // back in the queue (its worktree is reused on the next attempt).
+      const sessionId =
+        startedSessionId ??
+        (await sessionPromise?.then((session) => session.sessionId).catch(() => undefined))
+      if (sessionId) void agent.sessions.abort(sessionId).catch(() => undefined)
+      if (storyStillStarting(storyId)) {
+        await backlog
+          .update(detailedStory, {
+            agentLastError: errorMessage(error),
+            agentLastEvent: "Couldn't start the agent; the story is back in the queue.",
+            status: "ready",
+          })
+          .catch(() => undefined)
+      }
+      throw error
+    }
+    if (!started) return
+    const { run, sessionId: startedSession } = started
+    const session = { sessionId: startedSession }
     void agent.sessions
       .sendDevelopment({
         executionId,
@@ -376,6 +416,12 @@ export function useBacklogRotation(
         })
       )
       .catch(reportAgentPersistenceError)
+  }
+
+  // Still the story this start moved to in progress, untouched by the user.
+  function storyStillStarting(storyId: string) {
+    const current = storiesRef.current.find((story) => story.id === storyId)
+    return current?.status === "in-progress" && current.agentStatus !== "Paused"
   }
 
   function reportBlocker(story: UserStory, message: string) {
@@ -513,20 +559,47 @@ export function useBacklogRotation(
   }
 
   function recoverInterruptedAgentRuns(stories: UserStory[]) {
-    stories.forEach((story) => {
-      const run = recoverableAgentRun(story)
-      if (!run || interruptedAgentRecoveryStoryIds.current.has(story.id)) return
+    const recover = (story: UserStory, run: UserStoryAgentRun) => {
+      if (interruptedAgentRecoveryStoryIds.current.has(story.id)) return
       interruptedAgentRecoveryStoryIds.current.add(story.id)
-      void recoverInterruptedAgentRun(story, run).finally(() =>
-        interruptedAgentRecoveryStoryIds.current.delete(story.id)
-      )
-    })
+      void recoverInterruptedAgentRun(story, run)
+        .catch(reportAgentPersistenceError)
+        .finally(() =>
+          interruptedAgentRecoveryStoryIds.current.delete(story.id)
+        )
+    }
+    const live = platform.agent?.sessions.live
+    if (!live) {
+      // Older desktop builds cannot tell: fall back to the idle heuristic.
+      stories.forEach((story) => {
+        const run = recoverableAgentRun(story)
+        if (run) recover(story, run)
+      })
+      return
+    }
+    // Ask the desktop which sessions still run: dead ones are recovered at
+    // once, live ones are never touched however quiet they are.
+    const skip = new Set([
+      ...startingStoryIds.current,
+      ...interruptedAgentRecoveryStoryIds.current,
+      ...storiesInTransition(),
+    ])
+    void deadAgentRuns(stories, live, { skip })
+      .then((dead) => dead.forEach(({ run, story }) => recover(story, run)))
+      .catch(reportAgentPersistenceError)
   }
 
   async function recoverInterruptedAgentRun(
     story: UserStory,
     run: UserStoryAgentRun
   ) {
+    // A finished run whose result is still waiting to be saved: let the
+    // outbox replay it instead of calling it interrupted.
+    const savedLocally = pendingTerminalAgentUpdates(
+      window.localStorage,
+      story.projectId
+    ).some((update) => update.runId === run.id)
+    if (savedLocally) return
     if (await recoverCompletedAgentRun(story, run)) return
     const currentStory = await backlog.loadDetail(story)
     const currentRun = activeAgentRun(currentStory, run) ?? run
@@ -684,12 +757,14 @@ export function useBacklogRotation(
 
   React.useEffect(() => {
     if (!platform.workspace || backlog.loading) return
-    const timer = window.setInterval(
-      () => recoverCompletedAgentRunsRef.current(storiesRef.current),
-      agentCompletionRecoveryIntervalMs
-    )
+    const timer = window.setInterval(() => {
+      recoverCompletedAgentRunsRef.current(storiesRef.current)
+      // A session can die at any time (worker crash): keep checking.
+      if (platform.agent?.sessions.live)
+        recoverInterruptedAgentRunsRef.current(storiesRef.current)
+    }, agentCompletionRecoveryIntervalMs)
     return () => window.clearInterval(timer)
-  }, [backlog.loading, platform.workspace])
+  }, [backlog.loading, platform.agent, platform.workspace])
 
   async function persistAgentEvent(
     story: UserStory,
@@ -742,10 +817,10 @@ export function useBacklogRotation(
       )
       return
     }
-    if (reportedAgentErrors.current.has(agentAuthenticationErrorKey(story)))
+    if (reportedAgentErrors.current.has(agentAuthenticationErrorKey(story, run)))
       return
     if (expiredAuthenticationToken(text)) {
-      reportExpiredAuthenticationToken(story, text)
+      reportExpiredAuthenticationToken(story, text, run)
       persistAgentUpdate(
         currentStory,
         {
@@ -859,6 +934,8 @@ export function useBacklogRotation(
     sessionId: string,
     executionId?: string
   ) {
+    if (runStreamOpen(run.id)) return
+    closeStoryRunStreams(story.id, run.id)
     const coordinator = createStoryStreamCoordinator(
       story,
       run,
@@ -869,8 +946,10 @@ export function useBacklogRotation(
     const close = () => {
       unsubscribeSession()
       agentStreamClosers.current.delete(close)
+      forgetRunStream(run.id, close)
       void coordinator.disconnect().catch(reportAgentPersistenceError)
     }
+    registerRunStream(run.id, story.id, close)
     unsubscribeSession = subscribeAgentEvents(
       platform,
       sessionId,
@@ -896,7 +975,7 @@ export function useBacklogRotation(
       stories.forEach((story) => {
         runningAgentRunsForStory(story).forEach((run) => {
           const sessionId = run.clineSessionId ?? story.clineSessionId
-          if (!sessionId || registeredAgentEventSubscription(sessionId)) return
+          if (!sessionId || runStreamOpen(run.id)) return
           subscribeStoryStream(story, run, sessionId)
         })
       })
@@ -1053,8 +1132,12 @@ export function useBacklogRotation(
     return nextStory
   }
 
-  function reportExpiredAuthenticationToken(story: UserStory, message: string) {
-    const key = agentAuthenticationErrorKey(story)
+  function reportExpiredAuthenticationToken(
+    story: UserStory,
+    message: string,
+    run?: UserStoryAgentRun
+  ) {
+    const key = agentAuthenticationErrorKey(story, run)
     if (reportedAgentErrors.current.has(key)) return
     agentAuthenticationBlockedUntil.current = Date.now() + blockerRetryDelay
     window.setTimeout(
@@ -1112,6 +1195,7 @@ export function useBacklogRotation(
     backlog.stories,
     direct,
     projects.activeProject,
+    queueTick,
   ])
 
   return {

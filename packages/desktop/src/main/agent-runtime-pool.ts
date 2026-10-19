@@ -85,6 +85,15 @@ export class AgentRuntimePool {
     return this.runOnWorker<Result>(worker, method, input);
   }
 
+  // True while a worker is still executing this session. False after the
+  // app restarted, the worker died, or the run ended.
+  sessionLive(sessionId: string) {
+    const worker = this.sessionRoutes.get(sessionId);
+    return Boolean(
+      worker?.client.alive && worker.sessionStates.get(sessionId) === "active",
+    );
+  }
+
   async abortSession(sessionId: string) {
     const worker = this.sessionWorker(sessionId);
     try {

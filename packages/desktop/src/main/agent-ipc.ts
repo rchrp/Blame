@@ -209,6 +209,11 @@ function registerSessionControlIpcHandlers(
       await optimizeDevelopmentAttachments(input),
     );
   });
+  ipcMain.handle("agent:sessions:live", (_event, sessionId) =>
+    typeof sessionId === "string" && runtime
+      ? runtime.sessionLive(sessionId)
+      : false,
+  );
   ipcMain.handle("agent:sessions:abort", async (_event, sessionId) => {
     try {
       return await agentRuntime().abortSession(sessionId);
