@@ -1,0 +1,85 @@
+# Opens (or refreshes) one pull request whenever npm has a newer Cline SDK.
+# The pull request pins every @cline/* package, syncs the runtime manifests and
+# bumps the runtime version. A maintainer reviews, merges and then releases.
+# When Blame patches a Cline package, the patch is removed and the pull request
+# opens as a draft until the patch is regenerated for the new version.
+#
+# Pull requests created with the default GITHUB_TOKEN do not trigger CI. Store a
+# fine-grained token with "Contents" and "Pull requests" write access in the
+# CLINE_SDK_UPDATE_TOKEN secret so CI runs on the pull request automatically.
+name: Update Cline SDK
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: cline-sdk-update
+
+env:
+  BRANCH: automation/cline-sdk
+
+jobs:
+  update:
+    name: Check for a new Cline SDK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          token: ${{ secrets.CLINE_SDK_UPDATE_TOKEN || github.token }}
+
+      - uses: ./.github/actions/setup
+
+      - id: check
+        run: node scripts/cline-sdk-update.mjs check
+
+      - id: pending
+        if: steps.check.outputs.updated == 'true'
+        name: Skip when the open pull request already targets this version
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LATEST: ${{ steps.check.outputs.latest }}
+        run: |
+          title=$(gh pr list --head "$BRANCH" --state open --json title --jq '.[0].title // ""')
+          if [[ "$title" == *"to $LATEST" ]]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "An open pull request already updates to $LATEST"
+          fi
+
+      - id: apply
+        if: steps.check.outputs.updated == 'true' && steps.pending.outputs.skip != 'true'
+        env:
+          LATEST: ${{ steps.check.outputs.latest }}
+        run: |
+          node scripts/cline-sdk-update.mjs apply "$LATEST"
+          pnpm install --no-frozen-lockfile
+
+      - name: Open or update the pull request
+        if: steps.apply.outcome == 'success'
+        env:
+          CURRENT: ${{ steps.check.outputs.current }}
+          GH_TOKEN: ${{ secrets.CLINE_SDK_UPDATE_TOKEN || github.token }}
+          LATEST: ${{ steps.check.outputs.latest }}
+          STALE_PATCHES: ${{ steps.apply.outputs.stale_patches }}
+        run: |
+          title="chore(deps): update Cline SDK from $CURRENT to $LATEST"
+          node scripts/cline-sdk-update.mjs notes "$CURRENT" "$LATEST" > "$RUNNER_TEMP/body.md"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -C "$BRANCH"
+          git commit -am "$title"
+          git push --force origin "$BRANCH"
+          if gh pr view "$BRANCH" --json state --jq .state 2>/dev/null | grep -q OPEN; then
+            gh pr edit "$BRANCH" --title "$title" --body-file "$RUNNER_TEMP/body.md"
+          else
+            flags=(--head "$BRANCH" --base main --title "$title" --body-file "$RUNNER_TEMP/body.md")
+            if [ -n "$STALE_PATCHES" ]; then
+              flags+=(--draft)
+            fi
+            gh pr create "${flags[@]}"
+          fi
