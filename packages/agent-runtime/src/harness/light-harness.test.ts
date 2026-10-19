@@ -4,6 +4,7 @@ import {
   mkdir,
   mkdtemp,
   readFile,
+  realpath,
   rm,
   writeFile,
 } from "node:fs/promises";
@@ -712,7 +713,8 @@ test("run_task executes an unambiguous command without a kind", async () => {
       { command: "node -p 'process.cwd()'", cwd: "src" },
       { sessionId: "implicit-command", toolCallId: "cwd" } as never,
     ) as LightToolResult<unknown>;
-    assert.equal(data(result).output, join(root, "src"));
+    // The OS reports the physical working directory (/private/var on macOS).
+    assert.equal(data(result).output, join(await realpath(root), "src"));
   });
 });
 
@@ -761,7 +763,7 @@ test("run_task keeps command policy for an implicit operation", async () => {
 test("run_task accepts an absolute cwd inside the workspace", async () => {
   await withWorkspace({ "package.json": "{}\n" }, async (root) => {
     const workspace = lightWorkspace(root, "absolute-command-cwd");
-    const command = `node -e "if(process.cwd()!==process.argv[1])process.exit(1)" ${JSON.stringify(root)}`;
+    const command = `node -e "if(process.cwd()!==process.argv[1])process.exit(1)" ${JSON.stringify(await realpath(root))}`;
     const result = await workspace.tasks.run({
       kind: "command",
       command,
