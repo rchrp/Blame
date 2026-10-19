@@ -3,7 +3,6 @@ import { codeObservation, presentObservation } from "./code-observation.js";
 import { readIsolatedEnvironmentImage, readWorkspaceImage } from "./light-images.js";
 import { pythonBodyRange } from "./python-body.js";
 import {
-  outlineSymbol,
   parseCode,
   symbolEditRange,
   type ParsedSymbol,
@@ -28,7 +27,6 @@ import {
   emptySearchScope,
   enclosingSymbol,
   lexicalQuery,
-  pathMatches,
   qualifiedTarget,
   rankedTextMatches,
   recordValue,
@@ -52,6 +50,7 @@ import { LightReferenceSearch } from "./light-reference-search.js";
 import { declarationQuery } from "./light-reference-candidates.js";
 import { readDependencyDeclaration } from "./light-dependency-read.js";
 import { withMissingPathRecovery } from "./light-path-recovery.js";
+import { failedCheckSnippets } from "./light-failure-snippets.js";
 import {
   searchWithRipgrep,
   type LexicalSearchMatch,
@@ -72,12 +71,13 @@ import {
   coveredDirectoryResult,
   directoryEntries,
   emptyOutline,
-  enclosingOutlineTarget,
   inputBlocked,
   lineByteRange,
   nodeTextSearch,
+  outlineItems,
   outlineRangeCandidates,
   outlineResult,
+  pathSearch,
   readableSource,
   type ReadContext,
   shortImportBlock,
@@ -209,40 +209,8 @@ export class LightWorkspace {
       await this.journal.recordCoverage(this.coverage.snapshot());
     if (recordValue(recordValue(result.data).check).outcome === "failed") {
       const data = recordValue(result.data);
-      const output = typeof data.output === "string" ? data.output : "";
-      const snippets: unknown[] = [];
-      let remaining = 4 * 1024;
-      const seen = new Set<string>();
-      const locations = [
-        ...arrayValue(recordValue(data.check).diagnostics).flatMap((value) => {
-          const diagnostic = recordValue(value);
-          return typeof diagnostic.path === "string" && typeof diagnostic.line === "number"
-            ? [{ path: diagnostic.path, line: diagnostic.line }] : [];
-        }),
-        ...[...output.matchAll(/(?:^|\s|\()([^\s():]+\.(?:[cm]?[jt]sx?|py|java|cs)):(\d+)(?::\d+)?/gmu)]
-          .map((match) => ({ path: match[1]!, line: Number(match[2]) })),
-      ];
-      for (const location of locations) {
-        const { line } = location;
-        let path: string;
-        try { path = this.files.normalizePath(location.path); } catch { continue; }
-        if (snippets.length >= 2) break;
-        if (seen.has(path)) continue;
-        seen.add(path);
-        if (!Number.isSafeInteger(line) || line < 1) continue;
-        try {
-          const content = (await this.files.read(path)).content;
-          const [start, end] = lineByteRange(content, Math.max(1, line - 2), line + 2);
-          if (end - start > remaining - 512) continue;
-        } catch { continue; }
-        const snippet = await this.readCode({ target: path, view: "range",
-          range: { startLine: Math.max(1, line - 2), endLine: line + 2 } }, context);
-        if (snippet.status !== "ok") continue;
-        const bytes = Buffer.byteLength(JSON.stringify(snippet.data));
-        if (bytes > remaining) continue;
-        remaining -= bytes;
-        snippets.push({ ...recordValue(snippet.data), source: "current workspace; diagnostic revision not certified" });
-      }
+      const snippets = await failedCheckSnippets(this.files, data, (target, startLine, endLine) =>
+        this.readCode({ target, view: "range", range: { startLine, endLine } }, context));
       if (snippets.length) return { ...result, data: { ...data, diagnostics: snippets } };
     }
     return result;
@@ -556,7 +524,7 @@ export class LightWorkspace {
     promoteSymbols: boolean,
     signal?: AbortSignal,
   ): Promise<TextSearchResults> {
-    const paths = this.pathSearch(query, candidates);
+    const paths = pathSearch(this.aliases, query, candidates);
     const searched = await searchWithRipgrep({
       candidates,
       maximum: 32,
@@ -586,16 +554,6 @@ export class LightWorkspace {
       if (results.length >= 8) break;
     }
     return results;
-  }
-
-  private pathSearch(query: string, candidates: string[]) {
-    return pathMatches(query, candidates).map((path) => ({
-      alias: this.aliases.registerPath(path),
-      kind: "path",
-      path,
-      reason: "path_name",
-      target: path,
-    }));
   }
 
   private textMatch(
@@ -720,7 +678,7 @@ export class LightWorkspace {
     );
     if (!projection) return emptyOutline(path);
     const { candidates, coverage, editTargets, selected } = projection;
-    const items = this.outlineItems(path, content, selected, revision);
+    const items = outlineItems(this.aliases, path, content, selected, revision);
     return outlineResult(
       path,
       items,
@@ -757,31 +715,6 @@ export class LightWorkspace {
       context,
     );
     return { candidates, coverage, editTargets, selected };
-  }
-
-  private outlineItems(
-    path: string,
-    content: Buffer,
-    symbols: ParsedSymbol[],
-    revision: string,
-  ) {
-    const registered = symbols.map((symbol) => {
-      const { alias, materialized } = this.aliases.registerSymbol(
-        path,
-        content,
-        symbol,
-        revision,
-      );
-      return { alias, materialized, symbol };
-    });
-    return registered.map(({ alias, materialized, symbol }) => {
-      const parent = enclosingOutlineTarget(symbol, registered);
-      return {
-        alias,
-        ...outlineSymbol(materialized),
-        ...(parent ? { containedBy: parent.alias } : {}),
-      };
-    });
   }
 
   private async readSymbol(

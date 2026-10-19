@@ -1,11 +1,11 @@
-import { type ParsedSymbol, symbolEditRange } from "./code-intelligence.js";
+import { outlineSymbol, type ParsedSymbol, symbolEditRange } from "./code-intelligence.js";
 import type { LightReadCodeInput, LightToolResult } from "./light-contracts.js";
 import { type EditTarget, outlineCandidates, symbolicPath } from "./light-navigation.js";
 import { type ResolvedLightSymbol, SymbolResolutionError } from "./light-aliases.js";
 import type { ByteInterval } from "./read-coverage.js";
 import type { LightAliasRegistry } from "./light-aliases.js";
 import type { WorkspaceFiles } from "./workspace-files.js";
-import { firstTermIndex, lineRange, matchedTerm, searchTerms, sourceLine } from "./light-navigation.js";
+import { firstTermIndex, lineRange, matchedTerm, pathMatches, searchTerms, sourceLine } from "./light-navigation.js";
 import { lightCapabilityDescription, runtimeCapabilityRegistry } from "./light-capabilities.js";
 import { isUtf8 } from "node:buffer";
 import type { AgentToolContext } from "@cline/sdk";
@@ -330,4 +330,35 @@ export async function nodeTextSearch(
     });
   }
   return results;
+}
+
+export function pathSearch(aliases: LightAliasRegistry, query: string, candidates: string[]) {
+  return pathMatches(query, candidates).map((path) => ({
+    alias: aliases.registerPath(path),
+    kind: "path",
+    path,
+    reason: "path_name",
+    target: path,
+  }));
+}
+
+export function outlineItems(
+  aliases: LightAliasRegistry,
+  path: string,
+  content: Buffer,
+  symbols: ParsedSymbol[],
+  revision: string,
+) {
+  const registered = symbols.map((symbol) => {
+    const { alias, materialized } = aliases.registerSymbol(path, content, symbol, revision);
+    return { alias, materialized, symbol };
+  });
+  return registered.map(({ alias, materialized, symbol }) => {
+    const parent = enclosingOutlineTarget(symbol, registered);
+    return {
+      alias,
+      ...outlineSymbol(materialized),
+      ...(parent ? { containedBy: parent.alias } : {}),
+    };
+  });
 }
