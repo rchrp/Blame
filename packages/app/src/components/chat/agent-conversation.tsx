@@ -338,10 +338,17 @@ export function AgentConversationComposer({
   onAgentCancel,
   placeholder,
   submitLabel,
+  queued,
+  queueWhileRunning = false,
   title,
   toolbarEnd,
   turnMetrics,
 }: {
+  // Shown above the editor: messages waiting for the agent to finish.
+  queued?: React.ReactNode
+  // While the agent runs, typing turns Stop into Send (the message waits
+  // for the agent, or interrupts it on demand) instead of blocking.
+  queueWhileRunning?: boolean
   agentRunning?: boolean
   cancelingAgent?: boolean
   codeSelectionAttachments: PendingCodeSelectionAttachment[]
@@ -376,15 +383,20 @@ export function AgentConversationComposer({
     onMessageSubmit()
   }
 
+  const sendWhileRunning = Boolean(
+    agentRunning && queueWhileRunning && hasMessageBody
+  )
+  const stopAction = Boolean(agentRunning && !sendWhileRunning)
+
   function handlePrimaryAction() {
-    if (agentRunning) {
+    if (stopAction) {
       if (!cancelingAgent) onAgentCancel?.()
       return
     }
     submitMessage()
   }
 
-  const primaryActionLabel = agentRunning
+  const primaryActionLabel = stopAction
     ? cancelingAgent
       ? "Canceling agent"
       : "Cancel agent"
@@ -402,6 +414,7 @@ export function AgentConversationComposer({
           {title}
         </div>
       ) : null}
+      {queued}
       <div className="relative">
         {turnMetrics ? <AgentTurnIndicator metrics={turnMetrics} /> : null}
         <DraftSavedHint message={message} hidden={submitting || disabled} />
@@ -428,12 +441,12 @@ export function AgentConversationComposer({
               aria-label={primaryActionLabel}
               className={cn(
                 "size-9 rounded-xl border p-0 text-white shadow-md transition-[transform,background-color,box-shadow] duration-200 active:scale-90 disabled:border-muted disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none",
-                agentRunning
+                stopAction
                   ? "border-destructive bg-destructive shadow-destructive/25 hover:bg-destructive/90 hover:text-white"
                   : "border-blue-500 bg-blue-500 shadow-blue-500/25 hover:bg-blue-600 hover:text-white"
               )}
               disabled={
-                agentRunning
+                stopAction
                   ? cancelingAgent || !onAgentCancel
                   : disabled || submitting || !hasMessageBody
               }
@@ -442,12 +455,12 @@ export function AgentConversationComposer({
               onClick={handlePrimaryAction}
             >
               <span
-                key={submitting ? "submitting" : agentRunning ? "running" : "idle"}
+                key={submitting ? "submitting" : stopAction ? "running" : "idle"}
                 className="composer-icon-swap flex items-center justify-center"
               >
                 {submitting ? (
                   <LoaderCircleIcon className="size-4 animate-spin" />
-                ) : agentRunning ? (
+                ) : stopAction ? (
                   <SquareIcon className="size-3.5 fill-current" />
                 ) : (
                   <ArrowUpIcon className="size-4" />

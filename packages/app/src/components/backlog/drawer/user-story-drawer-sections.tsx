@@ -35,6 +35,7 @@ import { useModelSelection } from "@/components/model/model-selection"
 import { useProjects } from "@/context/projects"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { useLatestCallback } from "@/lib/use-latest-callback"
+import { QueuedComments } from "@/components/backlog/drawer/queued-comments"
 import { commentsWithoutAgentRun } from "./user-story-comment-submission"
 
 const commentComposerBlurMask = {
@@ -55,6 +56,8 @@ type UserStoryCommentComposerProps = {
   onCommentFileAttachmentRemove: (id: string) => void
   onCommentFileAttachmentsAdd: (attachments: UserStoryFileAttachment[]) => void
   onCommentSubmit: () => void
+  // Pauses the running agent (the composer's stop button).
+  onAgentPause?: () => void
   onFileLinkClick?: (path: string) => void
   status: BacklogColumnId
   userStory?: UserStory
@@ -227,10 +230,13 @@ function UserStoryCommentComposer({
   onCommentFileAttachmentRemove,
   onCommentFileAttachmentsAdd,
   onCommentSubmit,
+  onAgentPause,
   onFileLinkClick,
   status,
   userStory,
 }: UserStoryCommentComposerProps) {
+  const agentRunning =
+    status === "in-progress" && userStory?.agentStatus === "Running"
   const project = useProjects().activeProject
   const mentionDirectory = useFileMentionDirectory(status, userStory)
   const metricsTarget = agentTurnMetricsTarget(
@@ -246,6 +252,10 @@ function UserStoryCommentComposer({
 
   return (
     <AgentConversationComposer
+      agentRunning={agentRunning}
+      onAgentCancel={onAgentPause}
+      queueWhileRunning
+      queued={<QueuedComments storyId={userStory?.id} />}
       speechSessionKey={`backlog-comment:${project?.id}:${userStory?.id}`}
       codeSelectionAttachments={commentCodeSelectionAttachments}
       disabled={status === "done"}
@@ -261,8 +271,12 @@ function UserStoryCommentComposer({
       onFileLinkClick={onFileLinkClick}
       onMessageChange={onCommentChange}
       onMessageSubmit={onCommentSubmit}
-      placeholder={commentPlaceholder(status)}
-      submitLabel={commentButtonLabel(status)}
+      placeholder={
+        agentRunning
+          ? "Message the agent: it reads it when it finishes, or now if you choose"
+          : commentPlaceholder(status)
+      }
+      submitLabel={agentRunning ? "Queue comment" : commentButtonLabel(status)}
       turnMetrics={turnMetrics}
     />
   )

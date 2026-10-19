@@ -87,7 +87,8 @@ import { useProjects } from "@/context/projects"
 import { useProjectInitialization } from "@/components/project-initialization/use-project-initialization"
 import { projectCodePractices } from "@/lib/project-code-practices"
 import { showSystemNotification } from "@/lib/system-notifications"
-import { generateAgentTitle } from "@/lib/agent-title-generation"
+import { QueuedComments } from "@/components/backlog/drawer/queued-comments"
+import { generatedQuickChatTitle, useQuickChatQueue } from "@/pages/chat/use-quick-chat-queue"
 import {
   chatWithMessage,
   errorMessage,
@@ -572,6 +573,12 @@ function QuickChatProjectPage() {
 
   async function submitDraft() {
     if (!draftHasContent() || sending) return
+    // The agent is working: the message waits for it (or "Send now").
+    if (agentRunning && messageQueue.key) {
+      const body = quickChatMessageBody(draft, draftCodeAttachments, draftFileAttachments)
+      messageQueue.queue({ body, codeSelectionAttachments: draftCodeAttachments, fileAttachments: draftFileAttachments })
+      return clearDraft()
+    }
     const validationError = quickChatSendValidationError({
       auth,
       model: selection.currentModel,
@@ -605,6 +612,21 @@ function QuickChatProjectPage() {
     } finally {
       setSending(false)
     }
+  }
+
+  const messageQueue = useQuickChatQueue({
+    agentRunning,
+    cancelAgent: () => cancelAgent(),
+    chatId: activeConversation?.id,
+    send: (queued) => sendQueuedMessage(queued).catch((error: unknown) =>
+      showQuickChatError("Couldn't send your queued message", errorMessage(error))),
+  })
+  async function sendQueuedMessage(queued: Parameters<typeof quickChats.createMessage>[1]) {
+    if (!activeConversation) return
+    const chat = currentChat(await detailedConversation(activeConversation))
+    const message = await quickChats.createMessage(chat, queued)
+    replaceChatRef(chatWithMessage(currentChat(chat), message))
+    await runAgentForMessage(chat, message, queued.codeSelectionAttachments ?? [], queued.fileAttachments ?? [])
   }
 
   async function cancelAgent() {
@@ -656,31 +678,13 @@ function QuickChatProjectPage() {
   }
 
   async function generateQuickChatTitle(chat: QuickChat, message: string) {
-    const generateTitle = platform.agent?.promptOptimizer.generateTitle
-    const model = selection.currentModel
-    if (
-      !generateTitle ||
-      !model ||
-      !project?.path ||
-      auth.status !== "authenticated"
-    )
-      return
-    try {
-      const title = await generateAgentTitle(generateTitle, {
-        apiConnection: auth.apiConnection,
-        context: "quick-chat",
-        providerId: model.provider.id,
-        modelId: model.id,
-        credentialLabel: model.credentialLabel,
-        reasoningEffort: selection.currentVariant,
-        prompt: message,
-        workspace: project.path,
-      })
-      const updatedChat = await quickChats.update(currentChat(chat), { title })
-      replaceChatRef(updatedChat)
-    } catch {
-      return
-    }
+    const title = await generatedQuickChatTitle(message, {
+      auth,
+      generateTitle: platform.agent?.promptOptimizer.generateTitle,
+      projectPath: project?.path,
+      selection,
+    })
+    if (title) replaceChatRef(await quickChats.update(currentChat(chat), { title }))
   }
 
   async function detailedConversation(conversation: QuickChat) {
@@ -1026,7 +1030,9 @@ function QuickChatProjectPage() {
                     agentRunning={agentRunning}
                     cancelingAgent={cancelingAgent}
                     codeSelectionAttachments={draftCodeAttachments}
-                    disabled={sending || agentRunning || !project}
+                    disabled={sending || !project}
+                    queueWhileRunning
+                    queued={<QueuedComments storyId={messageQueue.key} />}
                     editorKey={draftEditorKey}
                     editorRef={draftRef}
                     fileAttachments={pendingFileAttachments(
@@ -1058,10 +1064,10 @@ function QuickChatProjectPage() {
                     onAgentCancel={cancelAgent}
                     placeholder={
                       agentRunning
-                        ? "Agent is working in the current branch."
+                        ? "Message the agent: it reads it when it finishes"
                         : "Ask for a focused code change"
                     }
-                    submitLabel={agentRunning ? "Running" : "Send"}
+                    submitLabel={agentRunning ? "Queue message" : "Send"}
                     toolbarEnd={
                       <div className="w-[28rem] max-w-full min-w-0">
                         <ModelSelector role="agent" />

@@ -82,6 +82,7 @@ import {
   useStoryDrawerWidth,
 } from "@/components/backlog/drawer/drawer-resize-handle"
 import { useLatestCallback } from "@/lib/use-latest-callback"
+import { queueComment } from "@/pages/backlog/comment-queue"
 import { createUserStoryCommentSubmission } from "./user-story-comment-submission"
 import {
   actionInput,
@@ -679,6 +680,11 @@ export function UserStoryDrawerPanel({
                 onCommentFileAttachmentRemove={removeCommentFileAttachment}
                 onCommentFileAttachmentsAdd={addCommentFileAttachments}
                 onCommentSubmit={handleCommentSubmit}
+                onAgentPause={
+                  userStory
+                    ? () => void onStopAgent(userStory, "pause")
+                    : undefined
+                }
                 onFileLinkClick={handleOpenDevelopmentFile}
                 status={status}
                 userStory={userStory}
@@ -846,6 +852,22 @@ export function UserStoryDrawerPanel({
     const body =
       currentComment.trim() || (hasCommentAttachments ? "Attached files." : "")
     if (!body && !hasCommentAttachments) return
+    // The agent is working: the comment waits for it (or "Send now").
+    if (status === "in-progress" && userStory.agentStatus === "Running") {
+      queueComment({
+        body,
+        codeSelectionAttachments: commentCodeSelectionAttachments,
+        fileAttachments: commentFileAttachments,
+        storyId: userStory.id,
+      })
+      clearComposerDraft()
+      commentValueRef.current = ""
+      setComment("")
+      setCommentCodeSelectionAttachments([])
+      setCommentFileAttachments([])
+      setCommentEditorKey((key) => key + 1)
+      return
+    }
     setPendingAction("Request Changes")
     try {
       const submitted = await commentSubmission.submit({

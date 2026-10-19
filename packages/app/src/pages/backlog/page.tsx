@@ -140,7 +140,10 @@ import {
 } from "@/components/backlog/data/agent-run-streams"
 import { useReviewCompletion } from "./use-review-completion"
 import { finalizeStoppedRun } from "./story-agent-control"
-import { useStoryComments } from "./use-story-comments"
+import {
+  useQueuedCommentDelivery,
+  useStoryComments,
+} from "./use-story-comments"
 import { withStoryTransition } from "./story-transitions"
 
 const agentEventPersistDelayMs = 1_500
@@ -1026,6 +1029,11 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
     startStoryDevelopmentSession,
     subscribeStoryAgentEvents,
     updateStory,
+  })
+  useQueuedCommentDelivery({
+    createComment: backlog.createComment,
+    requestChanges,
+    stories: backlog.stories,
   })
   const undoUserStoryComment = React.useCallback(
     async (story: UserStory, target: AgentConversationUserMessageUndo) => {
