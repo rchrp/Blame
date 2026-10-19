@@ -1,10 +1,12 @@
-import { gpt6Astra } from "./models/gpt-6-astra.js";
 import type { ProviderModels, SupplementalModel } from "./types.js";
 
 export type { ProviderModels, SupplementalModel } from "./types.js";
 
-/** Add one module here for each temporary model addition. */
-export const supplementalModels: readonly SupplementalModel[] = [...gpt6Astra];
+/**
+ * Add one module here for each temporary model addition. Remove it once the
+ * bundled Cline release ships the model (GPT-6 Astra: Cline 0.0.95).
+ */
+export const supplementalModels: readonly SupplementalModel[] = [];
 
 export function supplementalModelStatus(
   entry: SupplementalModel,

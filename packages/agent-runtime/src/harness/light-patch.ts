@@ -1,5 +1,8 @@
 import { computePatchChanges, PatchActionType } from "@cline/sdk";
 import type { PatchFileChange } from "@cline/sdk";
+import { mkdtemp } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { diffLines } from "diff";
 
 export type LightPatchReplacement = {
@@ -139,10 +142,22 @@ export async function planLightPatch(
     parseClinePatchShape(patch),
     source,
   );
+  // Cline refuses to add over a file that exists on disk. applyPatchPlan
+  // decides from the planned state instead, so a file deleted earlier in the
+  // same batch can be re-added.
   const exact = exactContextPatch(source, parsed, path);
   const normalized = normalizedPatch(exact, path);
-  const change = await computeSingleChange(normalized, workspaceRoot);
+  const root = parsed.mode === "add" ? await emptyPatchRoot() : workspaceRoot;
+  const change = await computeSingleChange(normalized, root);
   return patchPlanFromChange(change, source);
+}
+
+let emptyRoot: Promise<string> | undefined;
+
+/** An additions-only root: Add File content never depends on existing files. */
+function emptyPatchRoot() {
+  emptyRoot ??= mkdtemp(join(tmpdir(), "blame-patch-add-"));
+  return emptyRoot;
 }
 
 function normalizedMissingTargetAddition(

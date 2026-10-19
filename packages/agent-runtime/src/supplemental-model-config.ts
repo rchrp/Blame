@@ -1,4 +1,8 @@
-import { missingProviderModels } from "@blame/model-catalog";
+import {
+  missingProviderModels,
+  supplementalModels,
+  type SupplementalModel,
+} from "@blame/model-catalog";
 import { getProviderCollectionSync, type ModelInfo } from "@cline/llms";
 import type { CoreModelConfig } from "@cline/sdk";
 
@@ -9,13 +13,14 @@ const catalogModels = new Map<string, Record<string, ModelInfo>>();
 /** knownModels is serialized by Cline for local, remote and delegated sessions. */
 export function supplementalModelConfig<T extends CoreModelConfig>(
   config: T,
+  entries: readonly SupplementalModel[] = supplementalModels,
 ): T {
   const providerId = config.providerConfig?.providerId ?? config.providerId;
   const official = getProviderCollectionSync(providerId)?.models;
   // Never invent a new provider or overwrite a Cline registry entry.
   if (!official) return config;
   const missing = {
-    ...missingProviderModels(providerId, official),
+    ...missingProviderModels(providerId, official, entries),
     ...withoutOfficial(catalogModels.get(providerId), official),
   };
   const modelId = config.providerConfig?.modelId ?? config.modelId;
