@@ -405,7 +405,7 @@ function ProviderStep({
             transition={{ delay: 0.04 * tiles.length, ...springSoft }}
             whileHover={{ y: -2 }}
             whileTap={{ scale: 0.97 }}
-            className="flex h-[5.5rem] flex-col items-start justify-between rounded-2xl border border-dashed border-foreground/15 p-3 text-left text-foreground/70 outline-none transition-colors duration-200 hover:border-primary/40 hover:text-foreground focus-visible:border-primary/50 focus-visible:ring-3 focus-visible:ring-primary/25"
+            className="flex h-[5.5rem] flex-col items-start justify-between rounded-2xl border border-foreground/10 bg-foreground/[0.02] p-3 text-left text-foreground/70 outline-none transition-colors duration-200 hover:border-primary/40 hover:text-foreground focus-visible:border-primary/50 focus-visible:ring-3 focus-visible:ring-primary/25"
             onClick={onBrowse}
           >
             <PlusIcon className="size-5" />

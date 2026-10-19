@@ -49,13 +49,13 @@ function EmptyStateArt({ icon }: { icon: React.ReactNode }) {
   return (
     <div aria-hidden="true" className="relative h-20 w-28">
       <motion.div
-        className="absolute inset-x-3 top-2 h-14 rounded-xl border border-dashed bg-background/60"
+        className="absolute inset-x-3 top-2 h-14 rounded-xl border border-border/60 bg-muted/50"
         initial={{ rotate: 0 }}
         animate={{ rotate: -8, x: -10 }}
         transition={{ delay: 0.1, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
       />
       <motion.div
-        className="absolute inset-x-3 top-2 h-14 rounded-xl border border-dashed bg-background/60"
+        className="absolute inset-x-3 top-2 h-14 rounded-xl border border-border/60 bg-muted/50"
         initial={{ rotate: 0 }}
         animate={{ rotate: 8, x: 10 }}
         transition={{ delay: 0.1, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}

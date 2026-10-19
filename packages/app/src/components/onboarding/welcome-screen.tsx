@@ -504,7 +504,7 @@ function RemoveRecentProject({
 
 function EmptyRecentProjects() {
   return (
-    <div className="mx-2 mb-1 rounded-xl border border-dashed border-foreground/10 p-4 text-sm text-foreground/55">
+    <div className="mx-2 mb-1 rounded-xl bg-foreground/[0.03] p-4 text-sm text-foreground/55">
       No recent projects yet. Open a folder or create a new project to pin it
       here.
     </div>

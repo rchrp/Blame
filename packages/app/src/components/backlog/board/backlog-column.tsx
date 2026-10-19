@@ -158,7 +158,7 @@ export const BacklogColumn = React.memo(function BacklogColumn({
           ))
         : null}
       {!loading && !stories.length && column.id !== "backlog" ? (
-        <p className="rounded-lg border border-dashed px-4 py-6 text-center text-xs text-pretty text-muted-foreground">
+        <p className="px-4 py-6 text-center text-xs text-pretty text-muted-foreground">
           {emptyColumnHints[column.id]}
         </p>
       ) : null}

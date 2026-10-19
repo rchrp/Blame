@@ -199,7 +199,7 @@ function DevelopmentEmptyState({
   title: string
 }) {
   return (
-    <div className="flex h-full min-h-96 flex-col items-center justify-center gap-3 rounded-lg border border-dashed bg-muted/20 p-8 text-center">
+    <div className="flex h-full min-h-96 flex-col items-center justify-center gap-3 rounded-lg bg-muted/20 p-8 text-center">
       <Icon className="size-8 text-muted-foreground" />
       <div>
         <h3 className="font-heading text-lg font-semibold">{title}</h3>

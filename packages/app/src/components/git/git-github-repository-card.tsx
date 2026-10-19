@@ -47,7 +47,7 @@ export function GitHubRepositoryCard({ remote }: { remote?: string }) {
   const current = result?.remote === remote ? result : undefined
   if (current?.error) {
     return (
-      <div className="rounded-xl border border-dashed p-3 text-xs text-muted-foreground">
+      <div className="rounded-xl bg-muted/40 p-3 text-xs text-muted-foreground">
         GitHub repository unavailable.
       </div>
     )
