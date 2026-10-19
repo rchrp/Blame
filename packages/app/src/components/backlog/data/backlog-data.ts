@@ -111,6 +111,10 @@ export type UserStoryAgentRun = {
   kind: UserStoryAgentRunKind
   clineSessionId?: string | null
   executionId?: string | null
+  // The model that answered this turn; it can differ between comments.
+  providerId?: string | null
+  modelId?: string | null
+  reasoningEffort?: string | null
   checkpointRunCount?: number | null
   diffEndRef?: string | null
   status: UserStoryAgentRunStatus
@@ -154,6 +158,9 @@ export type UserStory = {
   runConfigurationId?: string | null
   worktree?: string | null
   workspaceMode?: "local-container" | "cloud-mirror" | "direct" | null
+  // Where the person chose to run it (kept across requeues). Null on
+  // stories made before the choice was per story: the account default.
+  runMode?: "local-container" | "vercel-compose" | "direct" | null
   agentStatus?: UserStoryAgentStatus | null
   activeAgentRunId?: string | null
   clineSessionId?: string | null
@@ -186,6 +193,7 @@ export type UserStoryDraft = {
   status?: BacklogColumnId
   priority?: UserStoryPriority
   owner?: string
+  runMode?: UserStory["runMode"]
 }
 
 export type UserStoryUpdate = Partial<
@@ -205,6 +213,7 @@ export type UserStoryUpdate = Partial<
     | "runConfigurationId"
     | "worktree"
     | "workspaceMode"
+    | "runMode"
     | "agentStatus"
     | "clineSessionId"
     | "agentProviderId"
@@ -236,6 +245,9 @@ export type UserStoryAgentRunDraft = {
   clineSessionId?: string | null
   executionId?: string | null
   status?: UserStoryAgentRunStatus
+  providerId?: string | null
+  modelId?: string | null
+  reasoningEffort?: string | null
 }
 
 export type UserStoryAgentRunFinalization = {

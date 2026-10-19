@@ -69,6 +69,11 @@ export function readRuntimePreference(): RuntimePreference {
   return cachedPreference
 }
 
+// Where new stories run by default (the last mode picked).
+export function readStoryRunMode(): StoryRunMode {
+  return readRunPreference().profile
+}
+
 export function hasStoredRunPreference() {
   try {
     return localStorage.getItem(storageKey) !== null
@@ -92,7 +97,14 @@ export function saveStoryRunMode(mode: StoryRunMode) {
     })
     return
   }
-  saveRuntimePreference({ profile: mode, source: "account-default" })
+  // Keep an earlier cloud upload consent: cloud stories already running
+  // still rely on it.
+  const consent = readRunPreference().confirmedCloudUploadAt
+  saveRuntimePreference({
+    profile: mode,
+    source: "account-default",
+    ...(consent ? { confirmedCloudUploadAt: consent } : {}),
+  })
 }
 
 // Where new stories run. Without Premium, Cloud Preview falls back to the

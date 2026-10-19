@@ -4,6 +4,7 @@ import {
   ArrowUpIcon,
   ChevronDownIcon,
   ChevronUpIcon,
+  ClockIcon,
   CopyIcon,
   ExternalLinkIcon,
   LoaderCircleIcon,
@@ -12,6 +13,7 @@ import {
   SquareIcon,
   ThumbsDownIcon,
   ThumbsUpIcon,
+  Trash2Icon,
 } from "lucide-react"
 import * as React from "react"
 import { toast } from "sonner"
@@ -42,6 +44,7 @@ import {
   formatAgentTurnDuration,
   type AgentTurnMetrics,
 } from "@/components/chat/agent-turn-metrics"
+import { getVariantLabel } from "@/components/model/model-selection"
 import { ProviderMark } from "@/components/model/model-selector"
 import {
   Accordion,
@@ -121,6 +124,10 @@ export type AgentConversationRun = {
   kind: UserStoryAgentRunKind
   lastSequenceNumber?: number | null
   messageId?: string | null
+  // The model that answered this turn, when it was recorded.
+  modelId?: string | null
+  providerId?: string | null
+  reasoningEffort?: string | null
   sessionSummary?: string | null
   status: UserStoryAgentRunStatus
   updatedAt?: string | null
@@ -146,6 +153,8 @@ export function AgentConversationTimeline({
   onFileLinkClick,
   onLoadActivityDetail,
   responseHeader,
+  responseHeaderForRun,
+  queued,
   runs,
 }: {
   comments: AgentConversationComment[]
@@ -165,6 +174,12 @@ export function AgentConversationTimeline({
     activity: UserStoryAgentActivity
   ) => Promise<string>
   responseHeader: AgentConversationResponseHeader
+  // The header of one turn, when turns can use different models.
+  responseHeaderForRun?: (
+    run: AgentConversationRun
+  ) => AgentConversationResponseHeader | undefined
+  // Messages waiting for the agent, shown after the conversation.
+  queued?: React.ReactNode
   runs: AgentConversationRun[]
   topOffset?: "default" | "message-actions"
 }) {
@@ -190,7 +205,7 @@ export function AgentConversationTimeline({
     [runs]
   )
 
-  if (runs.length === 0 && unsentComments.length === 0) return null
+  if (runs.length === 0 && unsentComments.length === 0 && !queued) return null
 
   return (
     <div
@@ -209,7 +224,8 @@ export function AgentConversationTimeline({
           onChangedFileClick={onChangedFileClick}
           onLoadActivityDetail={(activity) => loadActivityDetail(run, activity)}
           onUserMessageUndo={onUserMessageUndo}
-          responseHeader={responseHeader}
+          modelSwitch={modelSwitched(runs[index - 1], run)}
+          responseHeader={responseHeaderForRun?.(run) ?? responseHeader}
           run={run}
         />
       ))}
@@ -221,6 +237,7 @@ export function AgentConversationTimeline({
           onFileLinkClick={onFileLinkClick}
         />
       ))}
+      {queued}
     </div>
   )
 }
@@ -235,6 +252,7 @@ function AgentConversationTurn({
   onLoadActivityDetail,
   onUserMessageUndo,
   loadChangedFileDiffs,
+  modelSwitch,
   responseHeader,
   run,
 }: {
@@ -253,6 +271,8 @@ function AgentConversationTurn({
   onUserMessageUndo?: (
     target: AgentConversationUserMessageUndo
   ) => Promise<void> | void
+  // This turn runs on another model or reasoning than the one before.
+  modelSwitch?: boolean
   responseHeader: AgentConversationResponseHeader
   run: AgentConversationRun
 }) {
@@ -291,6 +311,9 @@ function AgentConversationTurn({
             : undefined
         }
       />
+      {modelSwitch ? (
+        <ModelSwitchNote responseHeader={responseHeader} run={run} />
+      ) : null}
       <div className="grid min-w-0 gap-5">
         <AgentWorkDetails
           activities={activities}
@@ -338,10 +361,14 @@ export function AgentConversationComposer({
   onAgentCancel,
   placeholder,
   submitLabel,
+  queueWhileRunning = false,
   title,
   toolbarEnd,
   turnMetrics,
 }: {
+  // While the agent runs, typing turns Stop into Send (the message waits
+  // for the agent, or interrupts it on demand) instead of blocking.
+  queueWhileRunning?: boolean
   agentRunning?: boolean
   cancelingAgent?: boolean
   codeSelectionAttachments: PendingCodeSelectionAttachment[]
@@ -376,15 +403,20 @@ export function AgentConversationComposer({
     onMessageSubmit()
   }
 
+  const sendWhileRunning = Boolean(
+    agentRunning && queueWhileRunning && hasMessageBody
+  )
+  const stopAction = Boolean(agentRunning && !sendWhileRunning)
+
   function handlePrimaryAction() {
-    if (agentRunning) {
+    if (stopAction) {
       if (!cancelingAgent) onAgentCancel?.()
       return
     }
     submitMessage()
   }
 
-  const primaryActionLabel = agentRunning
+  const primaryActionLabel = stopAction
     ? cancelingAgent
       ? "Canceling agent"
       : "Cancel agent"
@@ -428,12 +460,12 @@ export function AgentConversationComposer({
               aria-label={primaryActionLabel}
               className={cn(
                 "size-9 rounded-xl border p-0 text-white shadow-md transition-[transform,background-color,box-shadow] duration-200 active:scale-90 disabled:border-muted disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none",
-                agentRunning
+                stopAction
                   ? "border-destructive bg-destructive shadow-destructive/25 hover:bg-destructive/90 hover:text-white"
                   : "border-blue-500 bg-blue-500 shadow-blue-500/25 hover:bg-blue-600 hover:text-white"
               )}
               disabled={
-                agentRunning
+                stopAction
                   ? cancelingAgent || !onAgentCancel
                   : disabled || submitting || !hasMessageBody
               }
@@ -442,12 +474,12 @@ export function AgentConversationComposer({
               onClick={handlePrimaryAction}
             >
               <span
-                key={submitting ? "submitting" : agentRunning ? "running" : "idle"}
+                key={submitting ? "submitting" : stopAction ? "running" : "idle"}
                 className="composer-icon-swap flex items-center justify-center"
               >
                 {submitting ? (
                   <LoaderCircleIcon className="size-4 animate-spin" />
-                ) : agentRunning ? (
+                ) : stopAction ? (
                   <SquareIcon className="size-3.5 fill-current" />
                 ) : (
                   <ArrowUpIcon className="size-4" />
@@ -483,12 +515,14 @@ function RunCommentItem({
   comment,
   onFileLinkClick,
   onUndo,
+  queued,
   run,
 }: {
   alwaysVisible: boolean
   comment?: AgentConversationComment
   onFileLinkClick?: (path: string) => void
   onUndo?: (comment: AgentConversationComment) => Promise<void> | void
+  queued?: QueuedMessageActions
   run?: AgentConversationRun
 }) {
   const entering = useEnterAnimation(comment?.createdAt)
@@ -503,7 +537,14 @@ function RunCommentItem({
       )}
     >
       <div className="ml-auto grid w-full max-w-3xl min-w-0 gap-2 overflow-hidden">
-        <div className="max-w-full min-w-0 overflow-hidden rounded-3xl bg-muted/80 p-1 ring-1 ring-foreground/10 [&>div]:max-w-full [&>div]:min-w-0 [&>div]:bg-transparent [&>div]:shadow-none [&>div]:ring-0">
+        <div
+          className={cn(
+            "max-w-full min-w-0 overflow-hidden rounded-3xl p-1 [&>div]:max-w-full [&>div]:min-w-0 [&>div]:bg-transparent [&>div]:shadow-none [&>div]:ring-0",
+            queued
+              ? "border border-dashed border-foreground/30 bg-muted/35"
+              : "bg-muted/80 ring-1 ring-foreground/10"
+          )}
+        >
           <MarkdownEditor
             codeSelectionAttachments={comment.codeSelectionAttachments ?? []}
             fileAttachments={pendingFileAttachments(
@@ -516,6 +557,9 @@ function RunCommentItem({
             minHeight="min-h-0"
           />
         </div>
+        {queued ? (
+          <QueuedMessageFooter actions={queued} />
+        ) : (
         <div className="flex items-center justify-end gap-2">
           {!run ? (
             <span className="text-xs text-muted-foreground">
@@ -532,10 +576,67 @@ function RunCommentItem({
             undoDisabled={run?.status === "running"}
           />
         </div>
+        )}
       </div>
       <div className="absolute top-0 -right-10">
         <UserMessageAvatar author={comment.author} />
       </div>
+    </div>
+  )
+}
+
+type QueuedMessageActions = {
+  onRemove(): void
+  onSendNow(): void
+}
+
+// A message waiting for the agent to finish its turn. Dashed so it reads as
+// not sent yet; "Send now" interrupts the agent with this message only.
+export function QueuedConversationMessage({
+  comment,
+  onFileLinkClick,
+  ...actions
+}: QueuedMessageActions & {
+  comment: AgentConversationComment
+  onFileLinkClick?: (path: string) => void
+}) {
+  return (
+    <RunCommentItem
+      alwaysVisible
+      comment={comment}
+      onFileLinkClick={onFileLinkClick}
+      queued={actions}
+    />
+  )
+}
+
+function QueuedMessageFooter({ actions }: { actions: QueuedMessageActions }) {
+  return (
+    <div className="flex items-center justify-end gap-1.5">
+      <span className="mr-auto flex items-center gap-1.5 pl-3 text-xs text-muted-foreground">
+        <ClockIcon className="size-3.5" />
+        Queued · sent when the agent finishes
+      </span>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        aria-label="Remove queued message"
+        title="Remove"
+        className="size-7 rounded-full text-muted-foreground hover:text-destructive"
+        onClick={actions.onRemove}
+      >
+        <Trash2Icon className="size-3.5" />
+      </Button>
+      <Button
+        type="button"
+        size="sm"
+        className="h-7 rounded-full px-3 text-xs"
+        onClick={actions.onSendNow}
+      >
+        <ArrowUpIcon className="size-3.5" />
+        Send now
+      </Button>
     </div>
   )
 }
@@ -1282,6 +1383,41 @@ function clineLimitResetLabel(resetAt: string) {
   return Number.isNaN(date.getTime())
     ? `Limit resets ${resetAt}.`
     : `Limit resets ${date.toLocaleString()}.`
+}
+
+function modelSwitched(
+  previous: AgentConversationRun | undefined,
+  run: AgentConversationRun
+) {
+  if (!previous?.modelId || !run.modelId) return false
+  return (
+    previous.modelId !== run.modelId ||
+    previous.providerId !== run.providerId ||
+    (previous.reasoningEffort ?? null) !== (run.reasoningEffort ?? null)
+  )
+}
+
+function ModelSwitchNote({
+  responseHeader,
+  run,
+}: {
+  responseHeader: AgentConversationResponseHeader
+  run: AgentConversationRun
+}) {
+  const reasoning = run.reasoningEffort
+    ? ` · ${getVariantLabel(run.reasoningEffort)} reasoning`
+    : ""
+  return (
+    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+      <span className="h-px flex-1 bg-border" />
+      <span className="flex items-center gap-1.5">
+        <ProviderMark provider={responseHeader.provider} />
+        Continued with {responseHeader.modelName ?? responseHeader.provider.name}
+        {reasoning}
+      </span>
+      <span className="h-px flex-1 bg-border" />
+    </div>
+  )
 }
 
 function UserMessageAvatar({ author }: { author: string }) {

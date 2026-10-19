@@ -515,6 +515,7 @@ function nullableStoryAttributes(input: CreateUserStoryInput) {
     runConfigurationId: input.runConfigurationId ?? null,
     worktree: input.worktree ?? null,
     workspaceMode: input.workspaceMode ?? null,
+    runMode: input.runMode ?? null,
   }
 }
 
@@ -602,6 +603,9 @@ function agentRunAttributes(storyId: string, input: CreateUserStoryAgentRunInput
     executionId: input.executionId ?? null,
     finalResponse: null,
     kind: input.kind,
+    modelId: input.modelId ?? null,
+    providerId: input.providerId ?? null,
+    reasoningEffort: input.reasoningEffort ?? null,
     sessionSummary: null,
     status: input.status ?? ('running' as const),
     usage: null,

@@ -36,7 +36,11 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
 
-export type StopAgentChoice = "pause-feedback" | "backlog" | "discard-worktree"
+export type StopAgentChoice =
+  | "pause"
+  | "pause-feedback"
+  | "backlog"
+  | "discard-worktree"
 export type RejectChoice = "request-changes" | "discard"
 
 export function DeleteUserStoryDialog({
@@ -148,15 +152,26 @@ export function StopAgentDialog({
         <DialogHeader>
           <DialogTitle>Stop Agent</DialogTitle>
           <DialogDescription>
-            Choose how this in-progress user story should continue.
+            Pause keeps the story and its preview in progress so you can
+            resume it, or send a comment to steer the agent.
             {story.workspaceMode === "direct"
               ? " It runs directly in your project folder: the files it changed stay there."
               : ""}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-2">
+          {story.agentStatus === "Paused" ? null : (
+            <StopChoice
+              icon={PauseIcon}
+              label="Pause"
+              loading={stopping === "pause"}
+              onClick={() => {
+                void stop("pause")
+              }}
+            />
+          )}
           <StopChoice
-            icon={PauseIcon}
+            icon={MessageSquareReplyIcon}
             label="Pause & Give Feedback"
             loading={stopping === "pause-feedback"}
             onClick={() => {
@@ -201,6 +216,12 @@ export function StopAgentDialog({
     setStopping(choice)
     try {
       return await onStopAgent(story, choice)
+    } catch (error) {
+      toast.error("Couldn't stop the agent", {
+        description: error instanceof Error ? error.message : "Please try again.",
+        position: "bottom-right",
+      })
+      return undefined
     } finally {
       setStopping(undefined)
     }

@@ -6,10 +6,15 @@ export function directStorySlots(stories: UserStory[], starting: number) {
   return activeDirectStory(stories) || starting > 0 ? 0 : 1
 }
 
-export function directQueueNotice(stories: UserStory[]) {
+export function directQueueNotice(
+  stories: UserStory[],
+  isDirect: (story: UserStory) => boolean = () => true
+) {
   const active = activeDirectStory(stories)
   if (!active) return undefined
-  const queued = stories.some((story) => story.status === "ready")
+  const queued = stories.some(
+    (story) => story.status === "ready" && isDirect(story)
+  )
   if (!queued) return undefined
   return active.status === "in-review"
     ? "Waiting for the Direct story in review"

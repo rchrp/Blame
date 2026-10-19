@@ -305,7 +305,7 @@ export type BacklogStatusPipRequest = {
     initialTab?: "user-story" | "development" | "preview"
   }
   rejectChoice?: "request-changes" | "discard"
-  stopChoice?: "pause-feedback" | "backlog" | "discard-worktree"
+  stopChoice?: "pause" | "pause-feedback" | "backlog" | "discard-worktree"
   storyId: string
 }
 
@@ -370,6 +370,8 @@ export type AgentClient = {
     send(input: SendSessionInput): Promise<unknown>
     sendDevelopment(input: SendDevelopmentSessionInput): Promise<unknown>
     abort(sessionId: string): Promise<void>
+    // Whether this session is still executing in the desktop app.
+    live?(sessionId: string): Promise<boolean>
     compareCheckpoint(
       input: CompareCheckpointInput
     ): Promise<CompareCheckpointResult>

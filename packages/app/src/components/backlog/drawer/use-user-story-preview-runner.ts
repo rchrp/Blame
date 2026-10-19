@@ -1,3 +1,4 @@
+import type { RuntimeProfileId } from "@blame/preview-runtime"
 import type {
   PreviewManifest,
   ProjectPreviewRuntimeState,
@@ -43,6 +44,9 @@ export type PreviewRunnerAction = "start" | "stop" | "restart"
 type PreviewRunnerOptions = {
   autoStart?: boolean
   autoStartConfigurationId?: string | null
+  // The story's own mode once it runs: its preview follows it, whatever
+  // the default for new stories is.
+  workspaceMode?: "local-container" | "cloud-mirror" | "direct" | null
 }
 type PreviewRuntimeSetter = React.Dispatch<
   React.SetStateAction<ProjectPreviewRuntimeState | undefined>
@@ -59,7 +63,19 @@ export function useUserStoryPreviewRunner(
   const auth = useCloudAuth()
   const workspace = platform.workspace
   const premium = auth.license?.licensed === true
-  const preference = useRuntimePreference(premium)
+  const accountPreference = useRuntimePreference(premium)
+  const storyProfile: RuntimeProfileId | undefined = options.workspaceMode
+    ? options.workspaceMode === "cloud-mirror"
+      ? "vercel-compose"
+      : "local-container"
+    : undefined
+  const preference = React.useMemo(
+    () =>
+      storyProfile
+        ? { ...accountPreference, profile: storyProfile }
+        : accountPreference,
+    [accountPreference, storyProfile]
+  )
   const autoStart =
     Boolean(options.autoStart) &&
     (premium || preference.profile === "local-container")

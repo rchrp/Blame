@@ -241,13 +241,8 @@ export function recoverableAgentRun(story: UserStory) {
   )
 }
 
-export function runningAgentRunsForStory(story: UserStory) {
-  const runs = new Map(
-    (story.runningAgentRuns ?? []).map((run) => [run.id, run])
-  )
-  story.agentRuns?.forEach((run) => runs.set(run.id, run))
-  return [...runs.values()].filter((run) => run.status === "running")
-}
+export { runningAgentRunsForStory } from "./agent-run-liveness"
+import { runningAgentRunsForStory } from "./agent-run-liveness"
 
 export function nextAgentRun(story: UserStory, run: UserStoryAgentRun) {
   return story.agentRuns?.find(
@@ -351,8 +346,13 @@ export function expiredAuthenticationToken(message: string) {
   )
 }
 
-export function agentAuthenticationErrorKey(story: UserStory) {
-  return `${story.id}:expired-authentication-token`
+// Scoped to the run: once a run failed to authenticate its later events
+// are ignored, but a restarted run of the same story is followed again.
+export function agentAuthenticationErrorKey(
+  story: UserStory,
+  run?: UserStoryAgentRun
+) {
+  return `${story.id}:${run?.id ?? "story"}:expired-authentication-token`
 }
 
 export { directQueueNotice, directStorySlots } from "./direct-story-queue"

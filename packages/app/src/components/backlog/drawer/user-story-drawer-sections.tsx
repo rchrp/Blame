@@ -15,6 +15,7 @@ import {
   type PendingFileAttachment,
 } from "@/components/backlog/drawer/markdown-editor"
 import { RuntimeProfileSelector } from "@/components/backlog/drawer/runtime-profile-selector"
+import type { StoryRunMode } from "@/lib/runtime-preference"
 import {
   commentButtonLabel,
   isEditable,
@@ -31,10 +32,16 @@ import {
   useAgentTurnMetrics,
 } from "@/components/chat/agent-turn-metrics"
 import { ModelSelector } from "@/components/model/model-selector"
+import {
+  saveStoryModelChoice,
+  useStoryModelChoice,
+} from "@/components/backlog/data/story-model-choice"
+import type { CloudAiModelPreference } from "@/context/cloud-auth"
 import { useModelSelection } from "@/components/model/model-selection"
 import { useProjects } from "@/context/projects"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { useLatestCallback } from "@/lib/use-latest-callback"
+import { QueuedComments } from "@/components/backlog/drawer/queued-comments"
 import { commentsWithoutAgentRun } from "./user-story-comment-submission"
 
 const commentComposerBlurMask = {
@@ -55,6 +62,8 @@ type UserStoryCommentComposerProps = {
   onCommentFileAttachmentRemove: (id: string) => void
   onCommentFileAttachmentsAdd: (attachments: UserStoryFileAttachment[]) => void
   onCommentSubmit: () => void
+  // Pauses the running agent (the composer's stop button).
+  onAgentPause?: () => void
   onFileLinkClick?: (path: string) => void
   status: BacklogColumnId
   userStory?: UserStory
@@ -75,7 +84,9 @@ export const UserStoryContent = React.memo(function UserStoryContent({
   onSummaryOptimize,
   onFileLinkClick,
   onChangedFileClick,
+  onRunModeChange,
   loadChangedFileDiffs,
+  runMode,
   status,
   summary,
   summaryCodeSelectionAttachments,
@@ -87,6 +98,9 @@ export const UserStoryContent = React.memo(function UserStoryContent({
     typeof AgentConversationTimeline
   >[0]["loadChangedFileDiffs"]
   mode: UserStoryDrawerMode
+  // Where this story runs (Local Container, Cloud Preview or Direct).
+  runMode?: StoryRunMode | null
+  onRunModeChange?: (mode: StoryRunMode) => void
   onCommentUndo?: (target: AgentConversationUserMessageUndo) => Promise<void>
   onSummaryChange?: (summary: string) => void
   onSummaryCodeSelectionAttachmentRemove: (id: string) => void
@@ -145,7 +159,7 @@ export const UserStoryContent = React.memo(function UserStoryContent({
           toolbarEnd={
             editable ? (
               <div className="flex max-w-full min-w-0 flex-wrap items-center justify-end gap-2">
-                <RuntimeProfileSelector />
+                <RuntimeProfileSelector value={runMode} onChange={onRunModeChange} />
                 <div className="w-96 shrink-0">
                   <MarkdownEditorModelSelector />
                 </div>
@@ -227,10 +241,13 @@ function UserStoryCommentComposer({
   onCommentFileAttachmentRemove,
   onCommentFileAttachmentsAdd,
   onCommentSubmit,
+  onAgentPause,
   onFileLinkClick,
   status,
   userStory,
 }: UserStoryCommentComposerProps) {
+  const agentRunning =
+    status === "in-progress" && userStory?.agentStatus === "Running"
   const project = useProjects().activeProject
   const mentionDirectory = useFileMentionDirectory(status, userStory)
   const metricsTarget = agentTurnMetricsTarget(
@@ -246,6 +263,9 @@ function UserStoryCommentComposer({
 
   return (
     <AgentConversationComposer
+      agentRunning={agentRunning}
+      onAgentCancel={onAgentPause}
+      queueWhileRunning
       speechSessionKey={`backlog-comment:${project?.id}:${userStory?.id}`}
       codeSelectionAttachments={commentCodeSelectionAttachments}
       disabled={status === "done"}
@@ -261,12 +281,45 @@ function UserStoryCommentComposer({
       onFileLinkClick={onFileLinkClick}
       onMessageChange={onCommentChange}
       onMessageSubmit={onCommentSubmit}
-      placeholder={commentPlaceholder(status)}
-      submitLabel={commentButtonLabel(status)}
+      placeholder={
+        agentRunning
+          ? "Message the agent: it reads it when it finishes, or now if you choose"
+          : commentPlaceholder(status)
+      }
+      submitLabel={agentRunning ? "Queue comment" : commentButtonLabel(status)}
+      toolbarEnd={
+        userStory && status !== "done" ? (
+          <StoryCommentModelSelector userStory={userStory} />
+        ) : undefined
+      }
       turnMetrics={turnMetrics}
     />
   )
 }
+
+// Picks the model and reasoning of this story's next turn, without changing
+// the default used by new stories.
+const StoryCommentModelSelector = React.memo(function StoryCommentModelSelector({
+  userStory,
+}: {
+  userStory: UserStory
+}) {
+  const preference = useStoryModelChoice(userStory)
+  const storyId = userStory.id
+  const scope = React.useMemo(
+    () => ({
+      preference,
+      onChange: (next: CloudAiModelPreference) =>
+        saveStoryModelChoice(storyId, next),
+    }),
+    [preference, storyId]
+  )
+  return (
+    <div className="w-80 max-w-full min-w-0">
+      <ModelSelector modelTriggerClassName="max-w-none" role="agent" scope={scope} />
+    </div>
+  )
+})
 
 function commentPlaceholder(status: BacklogColumnId) {
   if (status === "done") return "Comments are read-only after merge."
@@ -307,6 +360,18 @@ const AgentRunTimeline = React.memo(function AgentRunTimeline({
     providerId: userStory?.agentProviderId,
     providers: modelSelection.allProviders,
   })
+  const providers = modelSelection.allProviders
+  const responseHeaderForRun = React.useCallback(
+    (run: { modelId?: string | null; providerId?: string | null }) =>
+      run.providerId && run.modelId
+        ? agentConversationResponseHeader({
+            modelId: run.modelId,
+            providerId: run.providerId,
+            providers,
+          })
+        : undefined,
+    [providers]
+  )
   const loadActivityDetail = React.useCallback(
     async (run: { id: string }, activity: UserStoryAgentActivity) => {
       if (!userStory) return activity.detail
@@ -327,6 +392,14 @@ const AgentRunTimeline = React.memo(function AgentRunTimeline({
       onLoadActivityDetail={loadActivityDetail}
       onUserMessageUndo={onCommentUndo}
       responseHeader={responseHeader}
+      responseHeaderForRun={responseHeaderForRun}
+      queued={
+        <QueuedComments
+          author={userStory?.comments?.at(-1)?.author ?? "You"}
+          onFileLinkClick={onFileLinkClick}
+          storyId={userStory?.id}
+        />
+      }
       runs={userStory?.agentRuns ?? []}
       topOffset={connectSummaryActions ? "message-actions" : "default"}
     />

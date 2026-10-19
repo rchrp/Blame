@@ -20,6 +20,7 @@ import { UserStoryTitleCloud } from "@/components/backlog/shared/user-story-titl
 import type { OpenDrawer } from "@/components/backlog/shared/backlog-types"
 import { equalUserStoryCardStory } from "@/components/backlog/board/user-story-card-equality"
 import { StoryActions } from "@/components/backlog/actions/story-actions"
+import { StoryRunModeIcon } from "@/components/backlog/shared/story-run-mode-icon"
 import { Button } from "@/components/ui/button"
 import { useAnimatedBorderEffect } from "@/hooks/use-animated-border-effect"
 import { recordPerformanceCount } from "@/lib/performance-diagnostics"
@@ -169,6 +170,7 @@ function UserStoryCardBody({
       <CardHeader className="gap-0 has-data-[slot=card-action]:grid-cols-[minmax(0,1fr)_auto]">
         <p className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
           <span>{userStoryLabel(story)}</span>
+          <StoryRunModeIcon story={story} />
           {isSecurityStory(story.summary) ? (
             <span className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-300">
               <ShieldCheckIcon className="size-3" /> Security

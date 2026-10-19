@@ -82,6 +82,8 @@ import {
   useStoryDrawerWidth,
 } from "@/components/backlog/drawer/drawer-resize-handle"
 import { useLatestCallback } from "@/lib/use-latest-callback"
+import { queueComment } from "@/pages/backlog/comment-queue"
+import { readStoryRunMode, type StoryRunMode } from "@/lib/runtime-preference"
 import { createUserStoryCommentSubmission } from "./user-story-comment-submission"
 import {
   actionInput,
@@ -281,6 +283,9 @@ export function UserStoryDrawerPanel({
     [developmentWorkspaceRoot, platform]
   )
   const [pendingAction, setPendingAction] = React.useState<DrawerAction>()
+  const [runMode, setRunMode] = React.useState<StoryRunMode | null>(
+    userStory?.runMode ?? null
+  )
   const [commentSubmission] = React.useState(createUserStoryCommentSubmission)
   const [sidebarOpen, setSidebarOpen] = React.useState(readSidebarOpen)
   const titleDraftKey = `${draftStorageKey}:title`
@@ -679,6 +684,11 @@ export function UserStoryDrawerPanel({
                 onCommentFileAttachmentRemove={removeCommentFileAttachment}
                 onCommentFileAttachmentsAdd={addCommentFileAttachments}
                 onCommentSubmit={handleCommentSubmit}
+                onAgentPause={
+                  userStory
+                    ? () => void onStopAgent(userStory, "pause")
+                    : undefined
+                }
                 onFileLinkClick={handleOpenDevelopmentFile}
                 status={status}
                 userStory={userStory}
@@ -702,6 +712,8 @@ export function UserStoryDrawerPanel({
               }
               onFileLinkClick={handleOpenDevelopmentFile}
               onChangedFileClick={handleOpenDevelopmentDiff}
+              onRunModeChange={changeRunMode}
+              runMode={runMode}
               status={status}
               summary={summary}
               summaryCodeSelectionAttachments={summaryCodeSelectionAttachments}
@@ -768,6 +780,13 @@ export function UserStoryDrawerPanel({
     </DrawerContent>
   )
 
+  // Applies right away to an existing story; a new one takes it on create.
+  function changeRunMode(next: StoryRunMode) {
+    setRunMode(next)
+    if (mode !== "create" && userStory)
+      void onUpdateUserStory(userStory, { runMode: next })
+  }
+
   async function handleAction(action: DrawerAction) {
     if (pendingAction || commentSubmission.pending) return
     if (action === "Close") return onCancel()
@@ -776,15 +795,16 @@ export function UserStoryDrawerPanel({
     setPendingAction(action)
     try {
       if (mode === "create") {
-        await onCreateUserStory(
-          createInput(
+        await onCreateUserStory({
+          ...createInput(
             action,
             title,
             summaryValueRef.current,
             summaryCodeSelectionAttachments,
             summaryFileAttachments
-          )
-        )
+          ),
+          runMode: runMode ?? readStoryRunMode(),
+        })
         clearComposerDraft()
       }
       if (mode !== "create" && userStory) {
@@ -846,6 +866,22 @@ export function UserStoryDrawerPanel({
     const body =
       currentComment.trim() || (hasCommentAttachments ? "Attached files." : "")
     if (!body && !hasCommentAttachments) return
+    // The agent is working: the comment waits for it (or "Send now").
+    if (status === "in-progress" && userStory.agentStatus === "Running") {
+      queueComment({
+        body,
+        codeSelectionAttachments: commentCodeSelectionAttachments,
+        fileAttachments: commentFileAttachments,
+        storyId: userStory.id,
+      })
+      clearComposerDraft()
+      commentValueRef.current = ""
+      setComment("")
+      setCommentCodeSelectionAttachments([])
+      setCommentFileAttachments([])
+      setCommentEditorKey((key) => key + 1)
+      return
+    }
     setPendingAction("Request Changes")
     try {
       const submitted = await commentSubmission.submit({

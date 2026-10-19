@@ -68,6 +68,17 @@ export default class UserStoryAgentRun extends BaseModel {
   @column()
   declare executionId: string | null
 
+  // The model that answered this turn (it can change from one comment to
+  // the next).
+  @column()
+  declare providerId: string | null
+
+  @column()
+  declare modelId: string | null
+
+  @column()
+  declare reasoningEffort: string | null
+
   @column()
   declare lastEventId: string | null
 

@@ -48,11 +48,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { usePlatform } from "@/context/platform"
-import { useCloudAuth } from "@/context/cloud-auth"
-import {
-  pruneRuntimeSessionStates,
-  useRuntimePreference,
-} from "@/lib/runtime-preference"
+import { pruneRuntimeSessionStates } from "@/lib/runtime-preference"
 import { cn } from "@/lib/utils"
 import {
   destroyReleasedNativePreviewSessions,
@@ -178,22 +174,15 @@ export const UserStoryPreviewWarmup = React.memo(
     userStories: UserStory[]
   }) {
     const platform = usePlatform()
-    const auth = useCloudAuth()
-    const preference = useRuntimePreference(auth.license?.licensed === true)
     const previewBrowser = platform.previewBrowser
+    // Each story warms up the preview of the mode it runs in.
     const stories = React.useMemo(
-      () =>
-        preference.profile === "local-container"
-          ? nativePreviewWarmupStories(userStories)
-          : [],
-      [preference.profile, userStories]
+      () => nativePreviewWarmupStories(userStories),
+      [userStories]
     )
     const cloudStories = React.useMemo(
-      () =>
-        preference.profile === "vercel-compose"
-          ? cloudPreviewWarmupStories(userStories)
-          : [],
-      [preference.profile, userStories]
+      () => cloudPreviewWarmupStories(userStories),
+      [userStories]
     )
     const previousStatusesRef = React.useRef(
       new Map<string, UserStory["status"]>()
@@ -222,10 +211,10 @@ export const UserStoryPreviewWarmup = React.memo(
     }, [userStories])
 
     React.useEffect(() => {
-      if (preference.profile === "local-container") return
+      if (stories.length) return
       const timeout = window.setTimeout(destroyReleasedNativePreviewSessions)
       return () => window.clearTimeout(timeout)
-    }, [preference.profile])
+    }, [stories.length])
 
     return [
       ...cloudStories.map((story) => (
@@ -258,6 +247,7 @@ function CloudPreviewAutoStart({ story }: { story: UserStory }) {
   useUserStoryPreviewRunner(story.worktree, true, story.id, {
     autoStart: true,
     autoStartConfigurationId: story.runConfigurationId,
+    workspaceMode: story.workspaceMode,
   })
   return null
 }
@@ -310,7 +300,8 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
   const previewRunner = useUserStoryPreviewRunner(
     setupLogWorktree,
     visible,
-    userStory?.id
+    userStory?.id,
+    { workspaceMode: userStory?.workspaceMode }
   )
   const previewWorktree =
     previewRunner.profile === "local-container" ? setupLogWorktree : undefined
@@ -1413,7 +1404,7 @@ function cloudPreviewWarmupStories(userStories: UserStory[]) {
   return userStories.filter(
     (story) =>
       isActivePreviewStatus(story.status) &&
-      story.workspaceMode !== "local-container" &&
+      story.workspaceMode === "cloud-mirror" &&
       Boolean(story.worktree) &&
       typeof story.runConfigurationId === "string"
   )
@@ -1460,6 +1451,7 @@ function nativePreviewWarmupKeys(userStories: UserStory[]) {
 function nativePreviewWarmupStory(story: UserStory) {
   return Boolean(
     story.previewUrl &&
+    story.workspaceMode === "local-container" &&
     (story.status === "in-review" || story.status === "in-progress")
   )
 }

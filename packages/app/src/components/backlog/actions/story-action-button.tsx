@@ -1,4 +1,5 @@
 import * as React from "react"
+import { useStoryInTransition } from "@/pages/backlog/story-transitions"
 import {
   CheckIcon,
   CircleStopIcon,
@@ -154,6 +155,8 @@ export function StoryAction({
   story: UserStory
 }) {
   const [loading, setLoading] = React.useState(false)
+  // Another action (pause, resume, comment) is already running on it.
+  const busy = useStoryInTransition(story.id)
 
   if (action === "Stop Agent") {
     if (!onStopAgent) return null
@@ -179,10 +182,11 @@ export function StoryAction({
           "bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-500",
           className
         )}
+        disabled={busy}
         onClick={() => void onUnpauseAgent(story)}
       >
-        <Icon />
-        {label ?? "Resume Agent"}
+        {busy ? <LoaderCircleIcon className="animate-spin" /> : <Icon />}
+        {busy ? "Working…" : (label ?? "Resume Agent")}
       </Button>
     )
   }

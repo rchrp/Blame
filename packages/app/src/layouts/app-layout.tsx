@@ -20,11 +20,17 @@ const windowShellHeightPx = 48
 export function AppLayout({
   children,
   pathname,
+  persistent,
+  persistentActive = false,
   routeKey,
   title,
 }: {
   children: React.ReactNode
   pathname: string
+  // A page that stays mounted while other pages show (the backlog, whose
+  // agents, queue and streams must keep running). Hidden when inactive.
+  persistent?: React.ReactNode
+  persistentActive?: boolean
   // Changes only when the page itself changes (not for dialogs over it).
   routeKey: string
   title: string
@@ -118,12 +124,23 @@ export function AppLayout({
         className="z-[1] min-w-0 overflow-hidden"
       >
         <SiteHeader title={headerTitle} />
-        <div
-          key={routeKey}
-          className="page-enter flex min-h-0 min-w-0 flex-1 flex-col"
-        >
-          {children}
-        </div>
+        {persistent ? (
+          // Becoming visible again replays the page-enter animation.
+          <div
+            hidden={!persistentActive}
+            className="page-enter flex min-h-0 min-w-0 flex-1 flex-col"
+          >
+            {persistent}
+          </div>
+        ) : null}
+        {persistentActive ? null : (
+          <div
+            key={routeKey}
+            className="page-enter flex min-h-0 min-w-0 flex-1 flex-col"
+          >
+            {children}
+          </div>
+        )}
       </SidebarInset>
       <KeyboardShortcutsDialog
         open={shortcuts.helpOpen}

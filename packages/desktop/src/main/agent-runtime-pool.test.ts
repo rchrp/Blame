@@ -32,6 +32,21 @@ test("routes concurrent sessions to separate workers", async () => {
   assert.equal(harness.processes[1].sessionIds.has(second.sessionId), true);
 });
 
+test("reports a session live until it ends or is aborted", async () => {
+  const harness = poolHarness(2);
+  const first = await harness.pool.startSession("sessions.start", {});
+  const second = await harness.pool.startSession("sessions.start", {});
+
+  assert.equal(harness.pool.sessionLive(first.sessionId), true);
+  assert.equal(harness.pool.sessionLive("unknown-session"), false);
+
+  harness.processes[0].emit({ payload: {}, sessionId: first.sessionId, type: "done" });
+  await harness.pool.abortSession(second.sessionId);
+
+  assert.equal(harness.pool.sessionLive(first.sessionId), false);
+  assert.equal(harness.pool.sessionLive(second.sessionId), false);
+});
+
 test("reuses an idle worker after a session completes", async () => {
   const harness = poolHarness(2);
   const first = await harness.pool.startSession("sessions.start", {});

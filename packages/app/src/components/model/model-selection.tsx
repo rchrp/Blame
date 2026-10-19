@@ -74,8 +74,16 @@ export type ModelSelection = ReturnType<typeof useModelSelection>
 
 export type ModelPreferenceRole = "alternative" | "agent"
 
+// Keeps the choice somewhere other than the saved preference (one story's
+// next turn, for example). Without a choice yet, the saved one shows.
+export type ModelSelectionScope = {
+  preference?: CloudAiModelPreference | null
+  onChange(preference: CloudAiModelPreference): void
+}
+
 type ModelSelectionOptions = {
   role?: ModelPreferenceRole
+  scope?: ModelSelectionScope
 }
 
 export function useModelSelection(options: ModelSelectionOptions = {}) {
@@ -106,9 +114,17 @@ export function useModelSelection(options: ModelSelectionOptions = {}) {
     }
   }, [providerState.directory])
 
-  const persistedPreference = modelPreference(providerState.aiPreferences, role)
-  const preference = optimisticPreference ?? persistedPreference
+  const scope = options.scope
+  const persistedPreference =
+    scope?.preference ?? modelPreference(providerState.aiPreferences, role)
+  const preference = scope
+    ? persistedPreference
+    : (optimisticPreference ?? persistedPreference)
   const savePreference = (nextPreference: CloudAiModelPreference) => {
+    if (scope) {
+      scope.onChange(nextPreference)
+      return Promise.resolve()
+    }
     setOptimisticPreference(nextPreference)
     const request = preferenceSaveQueue.current.then(() =>
       saveRolePreference(providerState, role, nextPreference)
@@ -133,7 +149,9 @@ export function useModelSelection(options: ModelSelectionOptions = {}) {
     [models, state]
   )
   const currentModel =
-    findModel(visibleModels, preferenceModelKey(preference)) ??
+    (scope
+      ? modelForPreference(visibleModels, preference)?.model
+      : findModel(visibleModels, preferenceModelKey(preference))) ??
     getDefaultModel(visibleModels, providerState.providers)
   const currentVariant = getCurrentVariant(
     currentModel,
@@ -714,6 +732,25 @@ function getEmptyMessage(input: {
   if (input.loading) return "Loading models"
   if (input.failed) return "Unable to load models"
   return "No models found"
+}
+
+// The offered model and reasoning a choice points to. A choice saved without
+// its account (from an earlier run) matches the model on any account.
+export function modelForPreference(
+  models: SelectableModel[],
+  preference: CloudAiModelPreference | null | undefined
+) {
+  if (!preference) return undefined
+  const model =
+    findModel(models, preferenceModelKey(preference)) ??
+    models.find((item) =>
+      sameCatalogModelKey(modelKey(item), {
+        providerID: preference.providerId,
+        modelID: preference.modelId,
+      })
+    )
+  if (!model) return undefined
+  return { model, variant: getCurrentVariant(model, preference.reasoningEffort) }
 }
 
 function findModel(models: SelectableModel[], key: ModelKey | undefined) {
