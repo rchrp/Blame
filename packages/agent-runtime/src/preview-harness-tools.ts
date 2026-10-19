@@ -44,7 +44,7 @@ export type PreviewDevtoolsTarget = {
 export type PreviewRuntimeContext = {
   scope?: string;
   storyId?: string;
-  workspaceMode?: "local-container" | "cloud-mirror";
+  workspaceMode?: "local-container" | "cloud-mirror" | "direct";
   worktree: string;
 };
 
@@ -122,7 +122,7 @@ type PreviewToolsLogger = {
 type PreviewSessionContextInput = {
   previewDevtoolsScope?: string;
   storyId?: string;
-  workspaceMode?: "local-container" | "cloud-mirror";
+  workspaceMode?: "local-container" | "cloud-mirror" | "direct";
   workspaceRoot: string;
 };
 

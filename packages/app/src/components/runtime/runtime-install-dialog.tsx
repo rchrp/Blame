@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog"
 import { useBlameRuntime } from "@/context/blame-runtime"
 import { usePlatform } from "@/context/platform"
+import { saveStoryRunMode } from "@/lib/runtime-preference"
 
 // The one dialog about the Blame Runtime. It opens when someone picks Local
 // Container without it, or asks for details after a failed repair. Installing
@@ -117,6 +118,17 @@ export function RuntimeInstallDialog() {
                 onClick={() => void sendDiagnostic()}
               >
                 Send diagnostic
+              </Button>
+            ) : storyTitle ? (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  saveStoryRunMode("direct")
+                  runtime.closePrompt()
+                }}
+              >
+                Use Direct instead
               </Button>
             ) : (
               <Button type="button" variant="outline" onClick={runtime.closePrompt}>

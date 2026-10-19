@@ -132,6 +132,7 @@ import {
   stopStoryProjectSetup,
 } from "./story-runtime-cleanup"
 import { activeStory, inactiveStoryFields } from "./story-runtime-state"
+import { useReviewCompletion } from "./use-review-completion"
 
 const agentEventPersistDelayMs = 1_500
 const terminalAgentRetryIntervalMs = 60_000
@@ -1212,21 +1213,8 @@ export function BacklogPage() {
       updateStory,
     ]
   )
-  const markReviewStoryDone = React.useCallback(
-    async (story: UserStory) => {
-      const doneStory = await updateStory(story, {
-        ...inactiveStoryFields(),
-        agentLastError: null,
-        agentLastEvent: "Marked as done.",
-        status: "done",
-      })
-      toast.success("Story marked as done", {
-        position: "bottom-right",
-      })
-      return doneStory
-    },
-    [updateStory]
-  )
+  const { approveDirectStory, markReviewStoryDone } =
+    useReviewCompletion(updateStory)
   const completeReviewStory = React.useCallback(
     async (story: UserStory) => {
       const emptyDiff = await currentReviewDiffEmpty(
@@ -1235,10 +1223,12 @@ export function BacklogPage() {
         projects.activeProject?.path
       )
       if (emptyDiff) return markReviewStoryDone(story)
+      if (story.workspaceMode === "direct") return approveDirectStory(story)
       return approveAndMergeStory(story)
     },
     [
       approveAndMergeStory,
+      approveDirectStory,
       markReviewStoryDone,
       platform.workspace,
       projects.activeProject?.path,

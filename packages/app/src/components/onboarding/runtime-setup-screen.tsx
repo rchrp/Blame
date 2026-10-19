@@ -10,6 +10,7 @@ import { Kbd } from "@/components/ui/kbd"
 import { useBlameRuntime } from "@/context/blame-runtime"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { useWizardKeys } from "@/lib/keyboard"
+import { hasStoredRunPreference, saveStoryRunMode } from "@/lib/runtime-preference"
 import { easeOutExpo, riseIn, staggerContainer } from "@/lib/motion"
 import { cn } from "@/lib/utils"
 
@@ -34,7 +35,14 @@ export function RuntimeSetupScreen() {
     finishRuntimeOffer()
   }
 
-  useWizardKeys({ onBack: finishRuntimeOffer, onNext: install })
+  // Skipping: stories run Direct until the runtime is installed, unless a
+  // mode was already chosen.
+  function skip() {
+    if (!hasStoredRunPreference()) saveStoryRunMode("direct")
+    finishRuntimeOffer()
+  }
+
+  useWizardKeys({ onBack: skip, onNext: install })
 
   const modes = [
     {
@@ -107,15 +115,15 @@ export function RuntimeSetupScreen() {
             <Button
               variant="outline"
               className="h-10 rounded-full bg-background/60 px-4 backdrop-blur"
-              onClick={finishRuntimeOffer}
+              onClick={skip}
             >
               Skip for now
               <Kbd>Esc</Kbd>
             </Button>
           </motion.div>
           <motion.p variants={riseIn} className="mt-3 text-xs text-foreground/50">
-            It installs in the background: you can keep going. You'll find it
-            again in Settings.
+            It installs in the background: you can keep going. Skip it and
+            stories run Direct; you'll find the runtime in Settings.
           </motion.p>
         </motion.div>
         <GlassPanel

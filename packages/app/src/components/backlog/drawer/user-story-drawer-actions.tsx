@@ -1,4 +1,5 @@
 import * as React from "react"
+import { approveActionLabel } from "@/components/backlog/shared/backlog-helpers"
 import {
   CheckIcon,
   CircleStopIcon,
@@ -155,8 +156,8 @@ export function DrawerActions({
             <DrawerActionButton
               action={action}
               label={
-                reviewDiffEmpty && action === "Approve & Merge"
-                  ? "Mark as Done"
+                action === "Approve & Merge"
+                  ? approveActionLabel(story, reviewDiffEmpty)
                   : undefined
               }
               loading={loadingAction === action}

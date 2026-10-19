@@ -195,7 +195,10 @@ export function UserStoryDrawerPanel({
     [draftStorageKey]
   )
   const hasDevelopment = hasDevelopmentTab(status)
-  const hasPreview = status === "in-progress" || status === "in-review"
+  // Direct stories run in the project folder without a managed preview.
+  const hasPreview =
+    (status === "in-progress" || status === "in-review") &&
+    userStory?.workspaceMode !== "direct"
   const sidebarAvailable = Boolean(
     mode !== "create" && (userStory?.clineSessionId || userStory?.agentUsage)
   )

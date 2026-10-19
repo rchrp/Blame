@@ -350,9 +350,7 @@ export async function buildDevelopmentSystemPrompt(
   const metadata = await buildWorkspaceMetadata(input.cwd);
   const practices = input.codePractices ?? [];
   return renderPrompt(loadPrompt("code-agent-system"), {
-    BLAME_ENVIRONMENT: input.isolatedEnvironment
-      ? "Commands run inside an isolated task environment. Apply the authorized environment changes there and verify that requested setup or services are active."
-      : "Commands use the current process permissions. Keep their effects within the user's authorized scope and preserve unrelated state.",
+    BLAME_ENVIRONMENT: developmentEnvironmentPrompt(input),
     BLAME_PRACTICES: developmentPracticePrompts(practices),
     BLAME_PREVIEW: developmentPreviewPrompt(input),
     BLAME_SPECIALISTS: developmentSpecialistConsultEnabled(input)
@@ -366,6 +364,14 @@ export async function buildDevelopmentSystemPrompt(
     WORKSPACE_NAME: basename(input.workspaceRoot),
     WORKSPACE_ROOT: input.workspaceRoot,
   });
+}
+
+function developmentEnvironmentPrompt(input: StartDevelopmentSessionInput) {
+  if (input.isolatedEnvironment)
+    return "Commands run inside an isolated task environment. Apply the authorized environment changes there and verify that requested setup or services are active."
+  if (input.workspaceMode === "direct")
+    return "You work directly in the user's project folder, on their current branch, with no isolation. The folder may hold the user's own uncommitted work and other running processes. Never discard or overwrite changes you did not make: no git reset, git clean, git checkout or git stash, no branch switching, and no commits. Prefer ports and processes that do not collide with ones already running, and stop anything you start."
+  return "Commands use the current process permissions. Keep their effects within the user's authorized scope and preserve unrelated state."
 }
 
 function developmentPreviewPrompt(input: StartDevelopmentSessionInput) {

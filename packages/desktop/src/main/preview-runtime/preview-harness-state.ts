@@ -147,13 +147,16 @@ function previewReadinessTimedOut(
 export function shouldStartStoppedLocalPreview(input: {
   status: PreviewHarnessStatus;
   waitFor?: "none" | "ready";
-  workspaceMode?: "local-container" | "cloud-mirror";
+  workspaceMode?: "local-container" | "cloud-mirror" | "direct";
   worktree?: string;
 }) {
   return (
     input.waitFor === "ready" &&
     input.status === "stopped" &&
     input.workspaceMode !== "cloud-mirror" &&
+    // Direct stories run in the project folder: never start a managed
+    // preview there.
+    input.workspaceMode !== "direct" &&
     Boolean(input.worktree)
   );
 }

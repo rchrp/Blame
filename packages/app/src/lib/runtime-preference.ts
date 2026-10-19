@@ -15,38 +15,105 @@ const defaultRuntimePreference: RuntimePreference = {
   source: "account-default",
 }
 
-export function readRuntimePreference(): RuntimePreference {
+// Where stories run. Local Container and Cloud Preview are preview runtime
+// profiles; Direct runs the agent in the project folder with no managed
+// preview at all.
+export type StoryRunMode = RuntimeProfileId | "direct"
+
+type StoredRunPreference = Omit<RuntimePreference, "profile"> & {
+  profile: StoryRunMode
+}
+
+let cachedRunPreference: StoredRunPreference = resolveRuntimePreference({})
+
+function readRunPreference(): StoredRunPreference {
   const raw = localStorage.getItem(storageKey)
-  if (raw === cachedRaw) return cachedPreference
+  if (raw === cachedRaw) return cachedRunPreference
   cachedRaw = raw
   try {
-    const value = JSON.parse(raw ?? "null") as Partial<RuntimePreference> | null
+    const value = JSON.parse(raw ?? "null") as Partial<StoredRunPreference> | null
     if (
       value &&
-      ["local-container", "vercel-compose"].includes(value.profile ?? "")
+      ["local-container", "vercel-compose", "direct"].includes(value.profile ?? "")
     ) {
-      cachedPreference = {
-        profile: value.profile as RuntimeProfileId,
+      cachedRunPreference = {
+        profile: value.profile as StoryRunMode,
         source: "account-default",
         ...(value.confirmedCloudUploadAt
           ? { confirmedCloudUploadAt: value.confirmedCloudUploadAt }
           : {}),
       }
-      return cachedPreference
+      cachedPreference = previewPreference(cachedRunPreference)
+      return cachedRunPreference
     }
   } catch {
     cachedRaw = undefined
   }
   if (raw !== null) localStorage.removeItem(storageKey)
   cachedRaw = null
-  cachedPreference = resolveRuntimePreference({})
+  cachedRunPreference = resolveRuntimePreference({})
+  cachedPreference = previewPreference(cachedRunPreference)
+  return cachedRunPreference
+}
+
+// The preview runtime profile. Direct stories have no managed preview, so
+// for preview purposes Direct reads as the local default.
+function previewPreference(preference: StoredRunPreference): RuntimePreference {
+  return preference.profile === "direct"
+    ? { ...preference, profile: "local-container" }
+    : (preference as RuntimePreference)
+}
+
+export function readRuntimePreference(): RuntimePreference {
+  readRunPreference()
   return cachedPreference
 }
 
-export function saveRuntimePreference(preference: RuntimePreference) {
+export function hasStoredRunPreference() {
+  try {
+    return localStorage.getItem(storageKey) !== null
+  } catch {
+    return false
+  }
+}
+
+export function saveRuntimePreference(preference: RuntimePreference | StoredRunPreference) {
   localStorage.setItem(storageKey, JSON.stringify(preference))
   cachedRaw = undefined
   window.dispatchEvent(new Event(eventName))
+}
+
+export function saveStoryRunMode(mode: StoryRunMode) {
+  if (mode === "vercel-compose") {
+    saveRuntimePreference({
+      profile: mode,
+      source: "account-default",
+      confirmedCloudUploadAt: new Date().toISOString(),
+    })
+    return
+  }
+  saveRuntimePreference({ profile: mode, source: "account-default" })
+}
+
+// Where new stories run. Without Premium, Cloud Preview falls back to the
+// local default like the preview profile does.
+export function useStoryRunMode(premium: boolean): StoryRunMode {
+  const preference = React.useSyncExternalStore(
+    subscribePreference,
+    readRunPreference,
+    () => defaultRuntimePreference as StoredRunPreference
+  )
+  const preview = useRuntimePreference(premium)
+  return preference.profile === "direct" ? "direct" : preview.profile
+}
+
+function subscribePreference(callback: () => void) {
+  window.addEventListener(eventName, callback)
+  window.addEventListener("storage", callback)
+  return () => {
+    window.removeEventListener(eventName, callback)
+    window.removeEventListener("storage", callback)
+  }
 }
 
 export function recordRuntimeSessionState(

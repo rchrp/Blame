@@ -95,7 +95,7 @@ export type AgentRuntimePrewarmInput = {
   backend: AgentBackendConfig;
   cwd: string;
   workspaceRoot: string;
-  workspaceMode?: "local-container" | "cloud-mirror";
+  workspaceMode?: "local-container" | "cloud-mirror" | "direct";
 };
 
 export type BlameProvider = {
@@ -190,7 +190,7 @@ export type StartSessionInput = {
   userFiles?: string[];
   cwd: string;
   workspaceRoot: string;
-  workspaceMode?: "local-container" | "cloud-mirror";
+  workspaceMode?: "local-container" | "cloud-mirror" | "direct";
   systemPrompt?: string;
   previewDevtoolsScope?: string;
   credentialLabel?: string;
@@ -244,7 +244,7 @@ export type StartDevelopmentSessionInput = {
   sessionId?: string;
   cwd: string;
   workspaceRoot: string;
-  workspaceMode?: "local-container" | "cloud-mirror";
+  workspaceMode?: "local-container" | "cloud-mirror" | "direct";
   previewDevtoolsScope?: string;
   codePractices?: ProjectCodePracticePreference[];
   projectInitialization?: {

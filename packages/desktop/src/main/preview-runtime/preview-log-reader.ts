@@ -4,7 +4,7 @@ type PreviewLogInput = {
   service?: string;
   tailLines?: number;
   timeoutMs?: number;
-  workspaceMode?: "local-container" | "cloud-mirror";
+  workspaceMode?: "local-container" | "cloud-mirror" | "direct";
   worktree: string;
 };
 

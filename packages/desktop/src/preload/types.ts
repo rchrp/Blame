@@ -78,7 +78,7 @@ export type WorkspaceEntry = {
 export type WorktreeResult = {
   worktree: string;
   branch: string;
-  workspaceMode: "local-container" | "cloud-mirror";
+  workspaceMode: "local-container" | "cloud-mirror" | "direct";
 };
 
 export type ProjectSetupEvent = {
@@ -399,6 +399,8 @@ export type BlameDesktopApi = {
       path: string;
     }>;
     createWorktree(input: {
+      // Run in the project folder instead of a new worktree.
+      direct?: boolean;
       executionId: string;
       repositoryRoot: string;
       runtimeProfile: RuntimeProfileId;
@@ -440,13 +442,13 @@ export type BlameDesktopApi = {
       launchError: string;
     }): Promise<ProjectInitializationDiagnostics>;
     stopProjectSetup(input: {
-      workspaceMode?: "local-container" | "cloud-mirror";
+      workspaceMode?: "local-container" | "cloud-mirror" | "direct";
       worktree: string;
     }): Promise<boolean>;
     removeWorktree(input: {
       projectSetupStopped?: boolean;
       repositoryRoot: string;
-      workspaceMode?: "local-container" | "cloud-mirror";
+      workspaceMode?: "local-container" | "cloud-mirror" | "direct";
       worktree: string;
     }): Promise<boolean>;
     resolveProjectPreviewUrl(input: {
@@ -470,7 +472,7 @@ export type BlameDesktopApi = {
     ): Promise<HostDependencyReport>;
     projectRuntimeHealthy(input: { worktree: string }): Promise<boolean>;
     projectPreviewRuntimeState(input: {
-      workspaceMode?: "local-container" | "cloud-mirror";
+      workspaceMode?: "local-container" | "cloud-mirror" | "direct";
       worktree: string;
     }): Promise<ProjectPreviewRuntimeState>;
     controlProjectPreview(input: {

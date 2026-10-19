@@ -1,10 +1,10 @@
-import type { RuntimeProfileId } from "@blame/preview-runtime"
 import {
   CheckIcon,
   ChevronDownIcon,
   ChevronUpIcon,
   CloudIcon,
   ContainerIcon,
+  FolderGit2Icon,
   type LucideIcon,
 } from "lucide-react"
 import * as React from "react"
@@ -24,7 +24,9 @@ import { runtimeProgressText, type RuntimePhase } from "@/lib/blame-runtime-stat
 import {
   runtimeProfileSwitchBlockReason,
   saveRuntimePreference,
-  useRuntimePreference,
+  saveStoryRunMode,
+  useStoryRunMode,
+  type StoryRunMode,
 } from "@/lib/runtime-preference"
 import { cn } from "@/lib/utils"
 
@@ -34,7 +36,7 @@ type RuntimeOption = {
   iconClassName: string
   iconStyle?: React.CSSProperties
   label: string
-  profile: RuntimeProfileId
+  profile: StoryRunMode
   selectedClassName: string
   triggerClassName: string
   triggerStyle?: React.CSSProperties
@@ -71,6 +73,17 @@ const runtimeOptions = [
     triggerClassName:
       "bg-violet-500/10 text-foreground shadow-none ring-1 ring-violet-500/25 transition-colors hover:bg-violet-500/15",
   },
+  {
+    description:
+      "Runs right in your project folder: the fastest and lightest. No isolation, so agents can collide on files and ports.",
+    icon: FolderGit2Icon,
+    iconClassName: "bg-muted/70 text-muted-foreground ring-1 ring-foreground/10",
+    label: "Direct",
+    profile: "direct",
+    selectedClassName: "text-foreground",
+    triggerClassName:
+      "bg-muted/70 text-foreground shadow-none ring-0 transition-colors hover:bg-muted",
+  },
 ] as const satisfies readonly RuntimeOption[]
 
 export const RuntimeProfileSelector = React.memo(
@@ -79,14 +92,19 @@ export const RuntimeProfileSelector = React.memo(
     const platform = usePlatform()
     const runtime = useOptionalBlameRuntime()
     const premium = auth.license?.licensed === true
-    const preference = useRuntimePreference(premium)
+    const preference = { profile: useStoryRunMode(premium) }
     const [open, setOpen] = React.useState(false)
     const cloudAvailable = Boolean(
       platform.previewRuntime && auth.status === "authenticated"
     )
     const selected = runtimeOption(preference.profile)
 
-    const selectProfile = (profile: RuntimeProfileId) => {
+    const selectProfile = (profile: StoryRunMode) => {
+      if (profile === "direct") {
+        saveStoryRunMode("direct")
+        setOpen(false)
+        return
+      }
       if (profile === "vercel-compose" && !premium) {
         setOpen(false)
         toast.info("Cloud previews require Blame Premium.", {
@@ -157,7 +175,7 @@ export const RuntimeProfileSelector = React.memo(
           align="start"
           side="top"
           sideOffset={6}
-          className="w-80 rounded-xl p-2"
+          className="w-[22rem] rounded-xl p-2"
         >
           <div className="space-y-0.5">
             {runtimeOptions.map((option) => (
@@ -193,7 +211,7 @@ function RuntimeProfileOption({
   selected,
 }: {
   disabled: boolean
-  onSelect: (profile: RuntimeProfileId) => void
+  onSelect: (profile: StoryRunMode) => void
   option: RuntimeOption
   premium: boolean
   runtimeNote?: string
@@ -249,7 +267,7 @@ function runtimeNote(phase?: RuntimePhase, progress?: RuntimeProgress) {
   return undefined
 }
 
-function runtimeOption(profile: RuntimeProfileId): RuntimeOption {
+function runtimeOption(profile: StoryRunMode): RuntimeOption {
   return (
     runtimeOptions.find((option) => option.profile === profile) ??
     runtimeOptions[1]
