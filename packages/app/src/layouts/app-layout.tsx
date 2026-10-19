@@ -1,6 +1,10 @@
 import * as React from "react"
 
 import { SiteHeader, WindowControls } from "@/components/layout/site-header"
+import {
+  KeyboardShortcutsDialog,
+  useAppShortcuts,
+} from "@/components/navigation/app-shortcuts"
 import { AppSidebar } from "@/components/sidebar/app-sidebar"
 import { useQuickChatStore } from "@/components/chat/data/quick-chat-store"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
@@ -13,12 +17,16 @@ const windowShellHeightPx = 48
 export function AppLayout({
   children,
   pathname,
+  routeKey,
   title,
 }: {
   children: React.ReactNode
   pathname: string
+  // Changes only when the page itself changes (not for dialogs over it).
+  routeKey: string
   title: string
 }) {
+  const shortcuts = useAppShortcuts()
   const projects = useProjects()
   const quickChats = useQuickChatStore()
   const haloColor = projectColorValue(projects.activeProject?.color)
@@ -99,10 +107,17 @@ export function AppLayout({
         className="z-[1] min-w-0 overflow-hidden"
       >
         <SiteHeader title={headerTitle} />
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <div
+          key={routeKey}
+          className="page-enter flex min-h-0 min-w-0 flex-1 flex-col"
+        >
           {children}
         </div>
       </SidebarInset>
+      <KeyboardShortcutsDialog
+        open={shortcuts.helpOpen}
+        onOpenChange={shortcuts.setHelpOpen}
+      />
     </SidebarProvider>
   )
 }

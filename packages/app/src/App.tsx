@@ -214,7 +214,11 @@ export function App() {
           <ProjectInitializationRunner />
           <ProjectCodePracticesRunner />
           <UpdateStartupNotifier />
-          <AppLayout pathname={pathname} title={activeRoute.title}>
+          <AppLayout
+            pathname={pathname}
+            routeKey={activeRoute.path}
+            title={activeRoute.title}
+          >
             {activeRoute.element}
           </AppLayout>
           <SettingsDialog open={settingsOpen} onOpenChange={closeSettings} />

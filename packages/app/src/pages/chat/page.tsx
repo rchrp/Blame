@@ -107,6 +107,7 @@ import {
   showQuickChatError,
   titleFromMessage,
 } from "./quick-chat-helpers"
+import { useComposerShortcuts } from "./use-composer-shortcuts"
 import { useQuickChatDraft } from "./use-quick-chat-draft"
 import { useQuickChatSnapshotReplay } from "./use-quick-chat-snapshot-replay"
 import { QuickChatStatus } from "./quick-chat-status"
@@ -194,6 +195,11 @@ function QuickChatProjectPage() {
     setDraftEditorKey,
     setDraftFileAttachments,
   } = useQuickChatDraft(draftStorageKey)
+  const applySuggestion = useComposerShortcuts({
+    draftRef,
+    setDraft,
+    setDraftEditorKey,
+  })
   const activeConversationLoaded =
     !activeConversation || quickChats.chatDetailsLoaded(activeConversation)
   const responseHeader = agentConversationResponseHeader({
@@ -575,16 +581,6 @@ function QuickChatProjectPage() {
         ?.focus()
     })
     toast.success("Message restored to editor.", { position: "bottom-right" })
-  }
-
-  function applySuggestion(prompt: string) {
-    setDraft(prompt)
-    setDraftEditorKey((key) => key + 1)
-    requestAnimationFrame(() => {
-      draftRef.current
-        ?.querySelector<HTMLElement>("[data-markdown-editor-input='true']")
-        ?.focus()
-    })
   }
 
   async function submitDraft() {

@@ -265,7 +265,7 @@ function EmailTwoFactorActions({
 }) {
   return (
     <>
-      <Button disabled={loading} type="button" variant="link" onClick={onResend}>
+      <Button className="dark:text-indigo-300" disabled={loading} type="button" variant="link" onClick={onResend}>
         Send a new code
       </Button>
       <ModePrompt action="Back to login" onClick={onBack}>
@@ -715,7 +715,7 @@ function ModePrompt({
       <FieldDescription className="px-6 text-center text-foreground/70">
         {children}{" "}
         <Button
-          className="h-auto p-0"
+          className="h-auto p-0 dark:text-indigo-300"
           variant="link"
           type="button"
           onClick={onClick}

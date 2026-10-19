@@ -7,7 +7,9 @@ import {
 } from "@/components/backlog/data/backlog-navigation"
 import { quickChatSelectedEvent } from "@/components/chat/data/quick-chat-data"
 import { useQuickChatStore } from "@/components/chat/data/quick-chat-store"
+import { routeShortcutLabel } from "@/components/navigation/app-shortcuts"
 import { QuickChatHistory } from "@/components/sidebar/quick-chat-history"
+import { Kbd } from "@/components/ui/kbd"
 import { ActiveBacklogStories } from "@/components/sidebar/active-backlog-stories"
 import {
   SidebarGroup,
@@ -70,6 +72,10 @@ export function NavMain({
                     <span className="ml-auto inline-flex items-center">
                       {item.status}
                     </span>
+                  ) : routeShortcutLabel(item.url) ? (
+                    <Kbd className="ml-auto bg-transparent opacity-0 transition-opacity duration-150 group-focus-within/menu-item:opacity-100 group-hover/menu-item:opacity-100">
+                      {routeShortcutLabel(item.url)}
+                    </Kbd>
                   ) : null}
                 </AppLink>
               </SidebarMenuButton>
