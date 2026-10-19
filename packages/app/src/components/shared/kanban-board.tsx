@@ -1,3 +1,4 @@
+import { CountUp } from "@/components/shared/count-up"
 import type { ReactNode, Ref } from "react"
 
 import { Badge } from "@/components/ui/badge"
@@ -88,7 +89,7 @@ export function KanbanColumnHeader({
         </div>
       </div>
       <Badge variant="secondary" className="tabular-nums">
-        {count}
+        <CountUp value={count} />
       </Badge>
     </div>
   )

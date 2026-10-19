@@ -49,7 +49,6 @@ import type {
 } from "@/components/backlog/data/backlog-data"
 import {
   backlogColumns,
-  userStoryDisplayId,
 } from "@/components/backlog/data/backlog-data"
 import {
   selectBacklogStory,
@@ -94,6 +93,8 @@ import {
 import { projectCodePractices } from "@/lib/project-code-practices"
 import { useRuntimePreference } from "@/lib/runtime-preference"
 import { showSystemNotification } from "@/lib/system-notifications"
+import { celebrateStory } from "@/lib/celebrate"
+import { notifyCommentResponseCompleted } from "@/pages/backlog/backlog-rotation-helpers"
 import { OpenProjectEmptyState } from "@/components/shared/open-project-empty-state"
 import { backlogStatusPipStories } from "@/pages/backlog/backlog-status-pip-snapshot"
 import { HostDependenciesDialog } from "@/pages/backlog/host-dependencies-dialog"
@@ -1157,6 +1158,7 @@ export function BacklogPage() {
           description: `Merged into ${result.targetBranch}.`,
           position: "bottom-right",
         })
+        celebrateStory(story.id)
         const mergedStory = await updateStory(
           runningStory,
           {
@@ -1845,19 +1847,6 @@ function notifyStoriesMovedToReview(
 
 function storyStatusMap(stories: UserStory[]) {
   return new Map(stories.map((story) => [story.id, story.status]))
-}
-
-function notifyCommentResponseCompleted(
-  story: UserStory,
-  run: UserStoryAgentRun | undefined,
-  platform: ReturnType<typeof usePlatform>
-) {
-  if (!run?.commentId) return
-  void showSystemNotification(platform, {
-    body: `${userStoryDisplayId(story)} · ${story.title}`,
-    target: { pathname: "/backlog", storyId: story.id },
-    title: "Agent replied to a comment",
-  })
 }
 
 async function stopStoryRuntime(
