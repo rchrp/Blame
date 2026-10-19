@@ -1,0 +1,56 @@
+{
+  "protocolHash": "33fa1c05335c043b464fe756a81541f999e0f7ce1d7eaf6c4af3059a2a38cb44",
+  "completed": 12,
+  "planned": 18,
+  "receipts": [
+    {
+      "name": "1-filter-map-reference",
+      "sha256": "57f1ae1d3b01d2e4469f811295a93a0dc642b98df929a40d391b3c225a7579ca"
+    },
+    {
+      "name": "1-filter-map-candidate",
+      "sha256": "61fa63da91db8a238670f0f3fa28ad844b7925dda9d7b82b52fea33b0e848066"
+    },
+    {
+      "name": "1-filter-map-cline",
+      "sha256": "3981f571374b2617e5800cfc19329e4a27da0a64c3629ff23109e2311a77cbc6"
+    },
+    {
+      "name": "1-map-with-previous-candidate",
+      "sha256": "6b0e50f7eff4061eda3513c8ec6bf7e99a6e839baed9a9148c867e077f290a9b"
+    },
+    {
+      "name": "1-map-with-previous-cline",
+      "sha256": "e34c067ac432d9e1ea696a379119a65dcf583b2a943b8c5c4a75c9d7e1cfef56"
+    },
+    {
+      "name": "1-map-with-previous-reference",
+      "sha256": "8ba8c24dc74150fa67625426aba2eff011383ef627c01b619d6a13641deef6c3"
+    },
+    {
+      "name": "1-tap-first-cline",
+      "sha256": "d701eb8a9b788350ba66ce8b2be6b02ada228b97e3cc298f92a00450a20c515a"
+    },
+    {
+      "name": "1-tap-first-reference",
+      "sha256": "a9f9a2e9eb67f196fc6ffba57bfaa01a714181d985fc77089da5a5753c9213b7"
+    },
+    {
+      "name": "1-tap-first-candidate",
+      "sha256": "ffaa564146913bad1adaa87a91c4b2369f7004e9b78f2b34ae130638f2247a57"
+    },
+    {
+      "name": "2-filter-map-candidate",
+      "sha256": "a9902fb300dbbee21bc45a762da291699d97b8a95cd45fe4408ec9a9e92bab09"
+    },
+    {
+      "name": "2-filter-map-cline",
+      "sha256": "9e7fc4a9a67a8ad1186a9a929ae8963336ae24139da7db604cd7ec02584dafa5"
+    },
+    {
+      "name": "2-filter-map-reference",
+      "sha256": "26e0375c5d40d1f8a6b1a91accca06fe728218016d241866d168b609fb317aee"
+    }
+  ],
+  "note": "Derived index. Each immutable archive is independently verified; no model call is replayed."
+}

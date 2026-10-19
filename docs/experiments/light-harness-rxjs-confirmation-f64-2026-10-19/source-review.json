@@ -1,0 +1,269 @@
+{
+  "method": "Root manual unblinded inspection of every complete immutable endpoint patch, exact public APIs, delivered tests, command chronology and delivery. Hash-bound independent endpoint checks support the judgment; official completion alone is insufficient. Symbolic relevance/witness judgments require separate explicit review.",
+  "decisions": [
+    {
+      "name": "1-filter-map-reference",
+      "hashes": {
+        "events.jsonl": "3bfe292bb3a15d55c67e7328853f4c6c2a51c63f22bb1eccd1163202b4cd21ab",
+        "workspace.diff": "b88b14f872fffc36bbc50119fa89276849a1b2b37075946920b43e8d86e4ac2c",
+        "score.json": "41e66c14e6701eaf86f6509a859c7aa667d074181c51700861828891ea3ac4b0",
+        "tool-ledger.json": "ae13a761f3096ad3df1e928a87e9106a00dec5fd71c8a40086f562cd53a2783c",
+        "feedback-wire.jsonl": "6e61984c8a01c7555c190433ccfaebc8b6b3dabe95bed4ab0e8b0c829085298e",
+        "request-timing.jsonl": "bef58302a05c74ab0cf5ff432311d77e350b9213cbc5859c2a91688049299f71"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Complete four-file patch, all reads/searches/commands/edits and delivery reviewed. Operator uses subscription-local index increment before projection, discriminated keep guard and standard operate/createOperatorSubscriber error teardown; both public barrels export it. Five added tests cover selection, every-source indices, per-sub reuse, projection failure/teardown and typed Observable<string>. Initial runtime/compiler failures and repeated scoped-edit rejections retained; final edit60 before actual compiler61 and all three required62-64, all pass. Accurate69 selected vs74 delivered cases, source-test exclusion and unavailable optional tslint disclosed. Five independent finite/reentrant/public-type/delivered endpoints pass, protected/dependencies intact; all retrieval checkout-only, no solutions."
+      ]
+    },
+    {
+      "name": "1-filter-map-candidate",
+      "hashes": {
+        "events.jsonl": "b6e3265106b81aff5dc14048a924d955f71ca874c1e954f4ef8d0b5be25e8c0d",
+        "workspace.diff": "18bd3a0e4cef6d2d7e299ff54b41739b9260f0e37930a85497d5d682064c50f2",
+        "score.json": "fd7d030784d9dd93a26e7f78c3857b0230b973bde55b11224e47e16771d85e8b",
+        "tool-ledger.json": "437d9ae52fd77223aafe4d974a5a008ff98c0e96da8b8a8d7a2fbf65512c3310",
+        "feedback-wire.jsonl": "10e90c4b4654e290b216e8cc0ae956a4e096f1b6484b140a1db284dc29690a2e",
+        "request-timing.jsonl": "0d6e116eb9cef2e41f9be507c240fc3d788e8a762b7b08a6cfbe7f154f41140b"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Complete source/test patch, every tool input/edit/command and delivery reviewed. Subscription-local index before callback, keep-discriminated result and standard operator subscriber preserve errors/teardown; both public barrels match reviewed reference. Four delivered tests cover filtering/index/per-sub state/error, meaningful assertions and actual compilation after correcting test inference. Initial compiler failures retained. Formatting attempts blocked (compound command guard; no cached prettier), no dependency mutation; not claimed successful. Final edit62 before required63-65 and optional compiler66, all pass; accurate69 vs73 runtime cases, excludes-test source scope. Five independent endpoints including finite/reentrant/public types and delivered compilation pass; protected/dependencies intact, checkout-only reads/no solution retrieval. Typed scope offers in ledger but zero matching network receipts: mechanism exposure remains unestablished despite expanded serializer controls."
+      ]
+    },
+    {
+      "name": "1-filter-map-cline",
+      "hashes": {
+        "events.jsonl": "2b67bd4086ce66688f38e8c6374fe6c4b2d4d21b88bcc119c9fdc55c575d8145",
+        "workspace.diff": "c95f3bab4a3c89b58edd767c93bbe4f498cfbbb937d9ccae612e0ff55962a6e8",
+        "score.json": "b8286f7e8a5c172e1696c9348d58e62cf9a7358989d37cfaa80e57b10cef0eb2",
+        "tool-ledger.json": "95559a63cee8e12ee9803409472687c4af4befabd47c4dde360ca66f399afc65",
+        "feedback-wire.jsonl": "ed764a12b0bdcb3c5760874867e079a8254a5f7685b51e384925f1388099f6dc",
+        "request-timing.jsonl": "d8791c9491d81cd37769b8843f4d3fbdb911f88d431c0fa1f668b33c5df6f4e0"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Complete patch/all tool inputs/commands and delivery reviewed. Operator increments every source index within subscription, branches keep and uses standard error/unsubscribe subscriber; exports function/type at both barrels. Five added tests cover mapping/index/error teardown/state/export/generic types; independent finite/reentrant/public-type oracle and delivered compiler pass. Initial new-test compiler error retained then corrected. Last source edit26 precedes all required plus delivered compiler27;69 selected vs74 delivered truthful. Later .blame cleanup/status loops retained (SDK recreates metadata), no source/test/check/dependency edits or outside retrieval; no successful absence/cleanup claim made. Full endpoint protected/dependency integrity passes."
+      ]
+    },
+    {
+      "name": "1-map-with-previous-candidate",
+      "hashes": {
+        "events.jsonl": "2e8e943da1e056a26416574c40590ae01a344d8940073979232b6d40e91ce92e",
+        "workspace.diff": "9aafd1006df45df7815049b76a931951e08eadd01ae07680b360c19e7af5dfd6",
+        "score.json": "c7c1ea2087950266a0b53751e0f90caa845734e5eb625772661d89346b745d23",
+        "tool-ledger.json": "aafe1d3e56c45940ed6d013af90bbcdcc83fdfa00a52f786eaa3b44cf9be32df",
+        "feedback-wire.jsonl": "e6f1bdb8ad9f5d9ccb2eafb059c0843dbeb2d024a6bf0819a282de91c62e999f",
+        "request-timing.jsonl": "6032009a8b2c2d5e92dfe25e11e915089e90cb836795d507870bc3d1149d7ec0"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Complete four-file patch and all inputs/command outputs/delivery inspected. previous is saved then advanced BEFORE user projection (reentrant correctness); index increments before call, per-sub state, normal subscriber errors/terminal/unsubscription; both barrels exported. Five meaningful tests state/projection/terminals/take(2)/generic inference. Initial take(2) expected[0,1,2] corrected to proper[0,1], preserving assertion, not weakening contract; invalid s? rejected before file patch. Missing vi/tuple inference errors fixed in last edit43. All required44-46 and actual compiler47 run after final edit and pass, accurate69/74 cases and scope. Five independent endpoints including reentrant/public-type oracle pass; protected/dependencies intact, all retrieval within checkout. Repeating green required checks before exact failed compiler remains efficiency observation, not acceptance failure."
+      ]
+    },
+    {
+      "name": "1-map-with-previous-cline",
+      "hashes": {
+        "events.jsonl": "c6a3e069e391acc4c65be761a6de1daf2227db8c0ab5b2afef0a4669a54692fb",
+        "workspace.diff": "fbd4c84638dfe340aaf3591f92d58d2604922583f6cac98340ca0a60f7efee5e",
+        "score.json": "d7154ae86d2bef4a83873637b91b79f889f412316c32997e22b8243cef995807",
+        "tool-ledger.json": "df6cb9602cfcfbd1c954490431a7f8a45b8753f1fcb47f523a4a63cc1b747f70",
+        "feedback-wire.jsonl": "a92d883a01b8e35961cb4b8be10b329683121e11afe077976404380e80ce9cae",
+        "request-timing.jsonl": "21e9655fd6740a63c59f9ca144837e4d16b8ed1cd8c86e9f68b646d8c2d9a7af"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Complete patch/all inputs/commands/output and delivery inspected. Operator advances previous before user project and index before call, per-sub state, standard errors/teardown. Both barrels match reviewed candidate. Six tests cover projection/inference/state/source error+completion/unsubscription. Only edit10 precedes command11; although wrapper ends exit0 unconditionally, every actual unit/source/delivered/compiler child reports exit0 and matching69/75 cases. Later reads/status only. Five independent finite/reentrant/public-type/compiler endpoints pass. Truthful scope excludes full suite; protected/dependencies intact, no outside solution retrieval (only local remote metadata inspection)."
+      ]
+    },
+    {
+      "name": "1-map-with-previous-reference",
+      "hashes": {
+        "events.jsonl": "39e4af1160bbef804eedbecb98af6cef283d910a6b0a727086dd8694ca6de588",
+        "workspace.diff": "009833cc8246193d4da81b4996375f4b8198d9d0eb1b1e594926db89d87d40a1",
+        "score.json": "0d2fc796371b577d13e2b2fceedba34b7755c93ff19db4db55cbd7c4bce1754a",
+        "tool-ledger.json": "4caa955ac0d0098d56430839d2c2ae9650b1b86a1e733e90514e0e11c4524cf6",
+        "feedback-wire.jsonl": "1964b2cbc1ec5a063f4b6314b13c234ae9ce234bfe1afc8519722576e88bf1db",
+        "request-timing.jsonl": "34c233135a36eb008606610b42d29135217e5245f60a8ea42814e62f002d9e1c"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Complete patch/all inputs/chronology/delivery inspected. Advances previous before project with per-sub index/state and standard subscriber error/teardown. Both barrel exports correct. Five meaningful tests projection/state/errors/completion/teardown/export; initial delivered-test failure and invalid s? patch retained, corrected test patch36 before all required37-39 and compiler40. Final69/74 counts and source-test compilation limits accurately disclosed; no full-suite claim. Five independent finite/reentrant/public-type/delivered endpoints pass, protected/dependencies intact, all reads/searches local and no solution retrieval."
+      ]
+    },
+    {
+      "name": "1-tap-first-cline",
+      "hashes": {
+        "events.jsonl": "d57e14a5e1900ad4cfddde19426d2e374e4e6d55d11dab47e5ebe25cb2dc9e11",
+        "workspace.diff": "2357097ecccf722ed0b02b6d5d7838dbe493ed11d32318b87fea9e387db55c21",
+        "score.json": "878630bd2678eebccad401798e28fd3946a0b2765cf560a8e1377249abe0d199",
+        "tool-ledger.json": "20e491b347e4b17493d3593588042bb5a09924ec4827cc2022b5d09cdd7fa653",
+        "feedback-wire.jsonl": "7b37ff0f712702f5c9c09dfa4aca09dc8bd3ef48b4810df82f7df423ff0b62ca",
+        "request-timing.jsonl": "7bba85b266c38130fd143c7a9e8eb4bbc383605fd7a36ad041bd1f49f11719de"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Complete four-file patch/all reads/searches/commands and delivery inspected. Per-sub seen guard set BEFORE callback handles reentrance, forwards values unchanged; standard operator subscriber stops/errors without forwarding failing value. Both barrel exports correct. Five meaningful tests values/empty/state/throw+teardown/export; independent finite/reentrant/public-type/compiler endpoints pass. Only edit10 precedes all required plus compiler in13, child exits checked,69/74 cases accurate. Later readonly, truthful no full-suite/build claim. Protected/dependencies intact; all retrieval local/no solution recovery."
+      ]
+    },
+    {
+      "name": "1-tap-first-reference",
+      "hashes": {
+        "events.jsonl": "a3d40f8e77ebc1852be707d335fa140987ca6000319583109b39f40d83cdccc7",
+        "workspace.diff": "ab215e174cc349cafed7bb68d167ba66598a0f73bdcce8ee2cd9ddd9b59b3ed4",
+        "score.json": "eb23780fa5daf1b453dc872ab0612ffa50960c487817ef038acb83244ca6587d",
+        "tool-ledger.json": "7c39a620be471f4a86894e90c597949f5b8252b711f62d6b54aba224121e66a4",
+        "feedback-wire.jsonl": "9f93902c92022c88fbd539c326ef48dd96de2b10b6203252c87a45e274736877",
+        "request-timing.jsonl": "64fa37c37930f2f6485eb253eefb20b3c64404252ba64c5c6cb9684eade8f3d5"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Complete patch/all tool inputs/commands/delivery inspected. Per-sub seen flag set before callback preserves reentrance, standard operator subscriber prevents forwarding failing value and tears down. Both barrel exports match reviewed Cline. Eight tests (four scenarios for each public export) assert object identity/empty/state/throw+teardown. Only edit29 precedes exact required raw commands30-32 and compiler33, all pass;69 selected/77 delivered accurate and source scope explicit. Five independent finite/reentrant/public-type/delivered endpoints pass, protected/dependency integrity intact; no outside retrieval."
+      ]
+    },
+    {
+      "name": "1-tap-first-candidate",
+      "hashes": {
+        "events.jsonl": "6e1230f2e7ad6fc72da9dd848d609ea8a50faa79af2a6d2f1f1827ddbe5b360a",
+        "workspace.diff": "8d8cab67293c47a9b5bb05fdfbd8e4d46486de1f03d620ce469fd8237275f3d0",
+        "score.json": "4a84c2aaebb08faac14344b82d49139f96afb5a3ad1d79324dc639eb53f0c65b",
+        "tool-ledger.json": "542f34dbaaa087c5ef039e4ffc29c4ecae046ac4e7970108ec34fe9b798b7ffd",
+        "feedback-wire.jsonl": "44aab5a0ec01f5f3f3706cb6607c7b9f217b28eecb038bb9ecca6a2b7fde7430",
+        "request-timing.jsonl": "72aa566f8db2b83f6abdb0910dfe11de3b09655a8cbdf74f06e08562d3f37886"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Complete source/test patch/all inputs/commands/final delivery reviewed. Seen flag set before callback, explicit callback catch routes error to already-created operator subscriber and returns before forwarding; per-sub state and both exports correct. Four meaningful tests values/empty/state/error, initial new-test generic compilation error fixed in edit37. Exact required38/39/41 and optional compiler40 run on final revision and pass, accurate69/73 cases and no broad-suite claim. Five independent finite/reentrant/public-type/delivered endpoints pass; protected/dependencies intact; no outside retrieval. Explicit try/catch is extra code but behavior matches conventions and oracle."
+      ]
+    },
+    {
+      "name": "2-filter-map-candidate",
+      "hashes": {
+        "events.jsonl": "fe989fd8f2f9d2804e87372f24377b35f672b1daf0eb4c6e520f8874b9173b79",
+        "workspace.diff": "1c4e03eeb5d31379e82f29e80c45b244fcde024cf116d286b5c7b13efc39b5bd",
+        "score.json": "87ff7755c26d7daea42498bf60bf7e91b06abc44cd4f54c2e597e5a0f79590e9",
+        "tool-ledger.json": "217d5f98426ae1f776ab2a2340387667df15ffed3cc8fa578d763cdab8d6d74e",
+        "feedback-wire.jsonl": "06baf233f2c48d76440545bebd66ec92d73a2e68419ce9347984aa42b51c6351",
+        "request-timing.jsonl": "dc8d7b1ee270cc5791c4b14c3eed56fb3c5e73fedf961e2e27db12345e83106a"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Complete four-file patch/all inputs/edits/commands/delivery inspected. Per-sub index before project, keep discriminant and standard subscriber error teardown; exports function/result type at both barrels matching reviewed Cline. Five tests filtering/index/state/error+teardown/export. Incorrect newly-authored second-sub expectation a2/b3 corrected to a0/b1 as contract requires; original tests untouched, independent state oracle passes. Initial runtime and two delivered compiler failures retained, no endpoint repair. Last edit64 before required65-67/compiler68,69/74 cases truthful. All five endpoints incl finite/reentrant/public types pass, protected/dependencies intact, no outside retrieval."
+      ]
+    },
+    {
+      "name": "2-filter-map-cline",
+      "hashes": {
+        "events.jsonl": "9c1a3b57ced01d4b577bbea79a606980c0d35581f954ab9ea62c7ca55eb0f002",
+        "workspace.diff": "6bd13cc3e4127cfed4c78a0cd5725a33278a5a0fea5a996b6ee9672d405fe96c",
+        "score.json": "652de0e9a118098ca15ce06a5e091c1c8fae8d1562d0fe0088245709ed8babb2",
+        "tool-ledger.json": "b71ff1d2136cbcd5ae20ad7dc02dd61f4ba8442585e48c02db4b30c2080cee41",
+        "feedback-wire.jsonl": "66554011c68131f6ce9b44ca7d874ed32e2c45d7b432172334ba0a0bd75ba0d3",
+        "request-timing.jsonl": "d395fd665067aa062590e16c278b4fb8b5f527043a077681c0ebea75a40c5fcc"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Complete patch/all inputs/compound child outputs/delivery inspected. Per-sub every-source index, discriminant guard and standard subscriber error teardown; both barrels correct. Conditional KeptValue<Result> preserves inferred public output despite internal any constraint; independent public-type probes reject output any and pass. Five meaningful tests behavior/index/error+teardown/state/inference. Early command success masks intermediate compiler failures; retained and judged from child output. Last edit21 precedes full final commands22; no TS errors and69/74 cases pass, confirmed independent five endpoints. Honest source-test limits and no broad coverage claim. Protected/dependencies intact, no outside retrieval."
+      ]
+    },
+    {
+      "name": "2-filter-map-reference",
+      "hashes": {
+        "events.jsonl": "b87621356b6dbd288999622567a2f455f7b6e10ef90a16f7c5c3d4fddf7b33ac",
+        "workspace.diff": "3adf48fbf9b3334d7c88906ce5b6b576de600c05d43dd27a901cc3c1eacacd69",
+        "score.json": "9874ecd5e17c50848512dfcc46ed405512412d9e080238d387fec90ab2e10df2",
+        "tool-ledger.json": "d6830a11ba29b6e026ffcea5353fc2de7373beae7f98c94739a821434b20dc85",
+        "feedback-wire.jsonl": "65f28a4fcba51e51e7380b12ecc64bbb9d8d2d24701527e73c1b0406be303737",
+        "request-timing.jsonl": "cee7e42d3c67f5c8ee9a3a8f127e7debeea694c6cbf223fe736edd1a86dcbe21"
+      },
+      "sourceBehaviorPassed": true,
+      "addedTestsPassed": true,
+      "finalSourceChecksPassed": true,
+      "noSolutionRetrieval": true,
+      "fullRequestPassed": true,
+      "symbolicClaimsAccurate": true,
+      "dependencyIntegrityPassed": true,
+      "symbolicEvidence": [],
+      "evidence": [
+        "Complete patch/all inputs/edits/commands and delivery inspected. Subscription-local every-source index, keep-discriminant branch and standard subscriber error teardown; both public barrels correct. Conditional overload retains inferred output, independent no-any/public-type probes pass. Five tests cover filtering/index/state/error teardown/exports+inference; original assertions unchanged. Several own compiler failures and scoped patch rejections retained; last source edit59 precedes all required60-62 and compiler63,69/74 cases accurate. No stale optional compiler claim, truthful limited scope. Five independent finite/reentrant/compiler endpoints pass, protected/dependencies intact; no outside retrieval."
+      ]
+    }
+  ]
+}
