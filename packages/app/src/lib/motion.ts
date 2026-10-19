@@ -1,6 +1,10 @@
 import type { Transition, Variants } from "motion/react"
 
 // Shared motion vocabulary, so every screen moves the same way.
+//
+// Blur entrances must end on `filter: none`, not `blur(0px)`: any filter on an
+// ancestor turns off backdrop-filter (the frosted glass) for everything inside.
+const clearFilter = { filter: "none" }
 
 // Fast start, long soft landing. Used for most entrances.
 export const easeOutExpo = [0.16, 1, 0.3, 1] as const
@@ -29,6 +33,7 @@ export const screenVariants: Variants = {
     scale: 1,
     filter: "blur(0px)",
     transition: { duration: 0.6, ease: easeOutExpo },
+    transitionEnd: clearFilter,
   },
   exit: {
     opacity: 0,
@@ -52,6 +57,7 @@ export const riseIn: Variants = {
     y: 0,
     filter: "blur(0px)",
     transition: { duration: 0.5, ease: easeOutExpo },
+    transitionEnd: clearFilter,
   },
 }
 
@@ -67,6 +73,7 @@ export const stepVariants: Variants = {
     x: 0,
     filter: "blur(0px)",
     transition: { duration: 0.38, ease: easeOutExpo },
+    transitionEnd: clearFilter,
   },
   exit: (direction: number) => ({
     opacity: 0,

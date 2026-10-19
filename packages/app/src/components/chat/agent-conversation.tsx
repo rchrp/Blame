@@ -584,7 +584,7 @@ export function AgentConversationComposer({
           {title}
         </div>
       ) : null}
-      <div className="composer-aura" data-running={agentRunning}>
+      <div className="relative">
         {turnMetrics ? <AgentTurnIndicator metrics={turnMetrics} /> : null}
         <MarkdownEditor
           speechSessionKey={speechSessionKey}

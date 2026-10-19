@@ -6,6 +6,7 @@
 @source "../components";
 @source "../lib";
 @source "../hooks";
+@source "../../pricing-card/src";
 
 @custom-variant dark (&:is(.dark *):not(:is(.light, .light *)));
 

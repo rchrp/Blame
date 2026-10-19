@@ -131,7 +131,7 @@ function AppLogo() {
         className="block size-9"
         transition={{ duration: 0.7, ease: easeOutExpo }}
       >
-        <BlameLogoMark className="size-full drop-shadow-[0_6px_16px_rgba(36,64,220,0.35)]" />
+        <BlameLogoMark className="size-full" />
       </motion.span>
       <motion.span
         layoutId="blame-logo-word"

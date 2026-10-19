@@ -2,7 +2,7 @@ import {
   BugIcon,
   CompassIcon,
   FlaskConicalIcon,
-  SparklesIcon,
+  PaletteIcon,
   WrenchIcon,
 } from "lucide-react"
 
@@ -23,7 +23,7 @@ const suggestions = [
     prompt: "Add focused tests for ",
   },
   {
-    icon: SparklesIcon,
+    icon: PaletteIcon,
     label: "Polish the UI",
     prompt: "Polish the UI of ",
   },

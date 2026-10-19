@@ -45,7 +45,7 @@ function dialogOpen() {
 }
 
 export type WizardKeys = {
-  // Enter (when no field owns it) or Mod+Enter (always): next step.
+  // Enter, when no field, list or button owns it: next step.
   onNext?: () => void
   // Escape or Alt+Left: previous step / skip.
   onBack?: () => void
@@ -70,11 +70,12 @@ export function useWizardKeys({ onNext, onBack, enabled = true }: WizardKeys) {
       const { onNext: next, onBack: back } = handlers.current
 
       if (event.key === "Enter" && next) {
-        const forced = hasModKey(event)
+        // Fields, lists and buttons handle Enter themselves; anywhere else
+        // it moves to the next step.
         const target = event.target
         const onButton =
           target instanceof HTMLElement && target.closest("button, a[href]")
-        if (!forced && (isKeyOwnedByTarget(target) || onButton)) return
+        if (isKeyOwnedByTarget(target) || onButton) return
         event.preventDefault()
         next()
         return

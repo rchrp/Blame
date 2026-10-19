@@ -217,7 +217,7 @@ function WelcomeHeader() {
       animate="animate"
     >
       <motion.span variants={riseIn} className="block size-12">
-        <BlameLogoMark className="size-full drop-shadow-[0_10px_24px_rgba(36,64,220,0.4)]" />
+        <BlameLogoMark className="size-full" />
       </motion.span>
       <motion.p variants={riseIn} className="text-sm font-medium text-foreground/60">
         {greeting()}

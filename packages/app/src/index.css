@@ -5,6 +5,7 @@
 @import "@fontsource-variable/nunito-sans";
 
 @source "./";
+@source "../../pricing-card/src";
 
 @custom-variant dark (&:is(.dark *):not(:is(.light, .light *)));
 
@@ -877,18 +878,6 @@
   }
 }
 
-@property --composer-aura-angle {
-  syntax: "<angle>";
-  inherits: false;
-  initial-value: 0deg;
-}
-
-@keyframes composer-aura-spin {
-  to {
-    --composer-aura-angle: 360deg;
-  }
-}
-
 @layer components {
   .chat-enter-user {
     transform-origin: 100% 100%;
@@ -921,37 +910,6 @@
     animation: chat-step-pulse 1.4s cubic-bezier(0.2, 0.6, 0.3, 1) infinite;
   }
 
-  /* A slow glowing ring around the composer while the agent works. */
-  .composer-aura {
-    position: relative;
-    isolation: isolate;
-  }
-
-  .composer-aura::before {
-    position: absolute;
-    z-index: -1;
-    inset: -2px;
-    border-radius: calc(var(--radius-3xl) + 2px);
-    background: conic-gradient(
-      from var(--composer-aura-angle),
-      transparent 0deg,
-      oklch(0.72 0.2 285 / 75%) 60deg,
-      oklch(0.78 0.16 230 / 75%) 120deg,
-      transparent 200deg,
-      transparent 360deg
-    );
-    content: "";
-    filter: blur(8px);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 500ms ease;
-  }
-
-  .composer-aura[data-running="true"]::before {
-    opacity: 0.85;
-    animation: composer-aura-spin 3.2s linear infinite;
-  }
-
   .composer-icon-swap {
     animation: chat-step-done 320ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
   }
@@ -965,8 +923,7 @@
       animation: none;
     }
 
-    .chat-step-running::after,
-    .composer-aura[data-running="true"]::before {
+    .chat-step-running::after {
       animation: none;
     }
   }

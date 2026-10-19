@@ -30,7 +30,7 @@ export function LoadingScreen() {
         transition={{ duration: 0.7, ease: easeOutExpo }}
       >
         <LogoGlow />
-        <BlameLogoMark animated className="relative size-full drop-shadow-[0_18px_40px_rgba(36,64,220,0.45)]" />
+        <BlameLogoMark animated className="relative size-full" />
       </motion.div>
       <motion.span
         layoutId="blame-logo-word"

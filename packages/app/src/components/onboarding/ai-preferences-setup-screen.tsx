@@ -1,14 +1,11 @@
 import * as React from "react"
 import type { ReasoningSelection } from "@blame/agent-runtime"
 import {
-  ArrowLeftIcon,
-  ArrowRightIcon,
   CheckIcon,
   CopyIcon,
   LoaderCircleIcon,
   PlusIcon,
   RefreshCwIcon,
-  SparklesIcon,
 } from "lucide-react"
 import { AnimatePresence, motion } from "motion/react"
 import { toast } from "sonner"
@@ -56,7 +53,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useCloudAuth } from "@/context/cloud-auth"
-import { modKeyLabel, useRovingFocus, useWizardKeys } from "@/lib/keyboard"
+import { useRovingFocus, useWizardKeys } from "@/lib/keyboard"
 import { springSnappy, springSoft, stepVariants } from "@/lib/motion"
 import { cn } from "@/lib/utils"
 
@@ -142,6 +139,36 @@ export function AiPreferencesSetupScreen() {
     else void save()
   }
 
+  // One rule for the keyboard: once a choice is made, focus lands on
+  // Continue, so Enter always means "next".
+  const continueRef = React.useRef<HTMLButtonElement>(null)
+  const canContinueRef = React.useRef(canContinue)
+  React.useEffect(() => {
+    canContinueRef.current = canContinue
+  })
+  const focusContinue = React.useCallback(() => {
+    requestAnimationFrame(() => continueRef.current?.focus())
+  }, [])
+  React.useEffect(() => {
+    if (canContinueRef.current) focusContinue()
+  }, [focusContinue, step])
+
+  function pickAgent(value: RoleSelection) {
+    setAgent(value)
+    focusContinue()
+  }
+
+  function pickAlternative(value: RoleSelection) {
+    setAlternative(value)
+    focusContinue()
+  }
+
+  function handleDialogCloseAutoFocus(event: Event) {
+    if (!canContinueRef.current) return
+    event.preventDefault()
+    focusContinue()
+  }
+
   useWizardKeys({
     enabled: !dialog,
     onNext: next,
@@ -185,6 +212,7 @@ export function AiPreferencesSetupScreen() {
                   selection={selection}
                   value={agent}
                   onChange={setAgent}
+                  onPick={pickAgent}
                 />
               ) : (
                 <ModelStep
@@ -196,6 +224,7 @@ export function AiPreferencesSetupScreen() {
                   selection={selection}
                   value={alternative}
                   onChange={setAlternative}
+                  onPick={pickAlternative}
                   sameAs={agent.model ? agent : undefined}
                 />
               )}
@@ -210,14 +239,11 @@ export function AiPreferencesSetupScreen() {
             tabIndex={step === 0 ? -1 : undefined}
             onClick={() => goTo(step - 1)}
           >
-            <ArrowLeftIcon /> Back
+            Back
             <Kbd className="ml-1 bg-foreground/[0.06]">Esc</Kbd>
           </Button>
-          <span className="hidden text-xs text-foreground/45 sm:inline">
-            <Kbd className="bg-foreground/[0.06]">{modKeyLabel}</Kbd>{" "}
-            <Kbd className="bg-foreground/[0.06]">↵</Kbd> continues from anywhere
-          </span>
           <Button
+            ref={continueRef}
             type="button"
             disabled={!canContinue || saving}
             className="min-w-36 shadow-[0_10px_24px_-10px_var(--primary)] transition-[transform,box-shadow] duration-200 hover:-translate-y-px active:scale-[0.99]"
@@ -225,7 +251,6 @@ export function AiPreferencesSetupScreen() {
           >
             {saving ? <LoaderCircleIcon className="animate-spin" /> : null}
             {step < lastStep ? "Continue" : "Finish setup"}
-            {saving ? null : step < lastStep ? <ArrowRightIcon /> : <CheckIcon />}
             <Kbd className="ml-1 bg-primary-foreground/15 text-primary-foreground/80">↵</Kbd>
           </Button>
         </footer>
@@ -233,6 +258,7 @@ export function AiPreferencesSetupScreen() {
       <ProviderSelectDialog
         open={dialog?.type === "providers"}
         selection={selection}
+        onCloseAutoFocus={handleDialogCloseAutoFocus}
         onConnect={(providerID) => setDialog({ type: "connect", providerID })}
         onOpenChange={(open) =>
           setDialog(open ? { type: "providers" } : undefined)
@@ -242,6 +268,7 @@ export function AiPreferencesSetupScreen() {
         providerID={dialog?.type === "connect" ? dialog.providerID : undefined}
         selection={selection}
         onBack={() => setDialog({ type: "providers" })}
+        onCloseAutoFocus={handleDialogCloseAutoFocus}
         onOpenChange={(open) => {
           if (!open) setDialog(undefined)
         }}
@@ -326,7 +353,7 @@ function ProviderStep({
                   key={provider.id}
                   type="button"
                   data-roving-item
-                  autoFocus={index === 0}
+                  autoFocus={index === 0 && connectedCount === 0}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.04 * index, ...springSoft }}
@@ -404,8 +431,7 @@ function ProviderStep({
               <span className="font-medium text-foreground">
                 {connectedCount} provider{connectedCount > 1 ? "s" : ""} connected.
               </span>{" "}
-              Press <Kbd className="bg-foreground/[0.06]">{modKeyLabel}</Kbd>{" "}
-              <Kbd className="bg-foreground/[0.06]">↵</Kbd> to choose your models.
+              Continue to choose your models.
             </>
           ) : (
             "Use the arrow keys to move between providers, Enter to connect."
@@ -420,6 +446,7 @@ function ModelStep({
   description,
   eyebrow,
   onChange,
+  onPick,
   recommended,
   role,
   sameAs,
@@ -430,6 +457,8 @@ function ModelStep({
   description: string
   eyebrow: string
   onChange: (value: RoleSelection) => void
+  // A deliberate choice (card, list or shortcut): also moves focus on.
+  onPick: (value: RoleSelection) => void
   recommended: SelectableModel[]
   role: ModelPreferenceRole
   sameAs?: RoleSelection
@@ -447,7 +476,7 @@ function ModelStep({
       {picks.length > 0 ? (
         <div className="grid gap-2">
           <span className="flex items-center gap-1.5 text-xs font-semibold text-foreground/55">
-            <SparklesIcon className="size-3.5 text-primary dark:text-indigo-300" /> Recommended for you
+            Recommended for you
           </span>
           <div
             role="radiogroup"
@@ -464,14 +493,14 @@ function ModelStep({
                   role="radio"
                   aria-checked={selected}
                   data-roving-item
-                  autoFocus={selected || (!selectedKey && index === 0)}
+                  autoFocus={!selectedKey && index === 0}
                   whileHover={{ y: -2 }}
                   whileTap={{ scale: 0.98 }}
                   className={cn(
                     "relative flex min-w-0 flex-col items-start gap-2 rounded-2xl border border-foreground/[0.08] bg-background/55 p-3 text-left outline-none transition-[border-color,background-color] duration-200 hover:bg-background/90 focus-visible:ring-3 focus-visible:ring-primary/25",
                     selected && "border-transparent"
                   )}
-                  onClick={() => onChange({ model })}
+                  onClick={() => onPick({ model })}
                 >
                   {selected ? (
                     <motion.span
@@ -512,7 +541,7 @@ function ModelStep({
               variant="ghost"
               size="xs"
               className="text-xs"
-              onClick={() => onChange({ ...sameAs })}
+              onClick={() => onPick({ ...sameAs })}
             >
               <CopyIcon /> Same as coding agent
             </Button>
@@ -531,7 +560,7 @@ function ModelStep({
                   <CommandItem
                     key={`${role}-${modelReactKey(model)}`}
                     value={`${model.provider.name} ${model.name} ${model.id}`}
-                    onSelect={() => onChange({ model })}
+                    onSelect={() => onPick({ model })}
                   >
                     <ProviderMark provider={model.provider} />
                     <span className="min-w-0 flex-1 truncate">

@@ -38,10 +38,6 @@ export function BlameLogoMark({
           <stop offset="0" stopColor="#ffffff" />
           <stop offset="1" stopColor="#c7cff6" />
         </linearGradient>
-        <radialGradient id={`${id}-shine`} cx="0.3" cy="0.1" r="0.9">
-          <stop offset="0" stopColor="#ffffff" stopOpacity="0.38" />
-          <stop offset="0.55" stopColor="#ffffff" stopOpacity="0" />
-        </radialGradient>
       </defs>
       <motion.g
         initial={draw ? { scale: 0.6, opacity: 0, rotate: -8 } : false}
@@ -56,25 +52,6 @@ export function BlameLogoMark({
           height="484"
           rx="112"
           fill={`url(#${id}-tile)`}
-        />
-        <rect
-          x="14"
-          y="14"
-          width="484"
-          height="484"
-          rx="112"
-          fill={`url(#${id}-shine)`}
-        />
-        <rect
-          x="15.5"
-          y="15.5"
-          width="481"
-          height="481"
-          rx="110.5"
-          fill="none"
-          stroke="#ffffff"
-          strokeOpacity="0.28"
-          strokeWidth="3"
         />
       </motion.g>
       <motion.path

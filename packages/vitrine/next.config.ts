@@ -7,7 +7,7 @@ const workspaceRoot = join(packageRoot, "../..");
 
 const nextConfig: NextConfig = {
   // Workspace packages that ship TypeScript sources.
-  transpilePackages: ["@blame/hero-scene"],
+  transpilePackages: ["@blame/hero-scene", "@blame/pricing-card"],
   turbopack: {
     root: workspaceRoot,
   },
