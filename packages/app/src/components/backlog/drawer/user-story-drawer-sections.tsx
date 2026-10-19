@@ -32,6 +32,11 @@ import {
   useAgentTurnMetrics,
 } from "@/components/chat/agent-turn-metrics"
 import { ModelSelector } from "@/components/model/model-selector"
+import {
+  saveStoryModelChoice,
+  useStoryModelChoice,
+} from "@/components/backlog/data/story-model-choice"
+import type { CloudAiModelPreference } from "@/context/cloud-auth"
 import { useModelSelection } from "@/components/model/model-selection"
 import { useProjects } from "@/context/projects"
 import { useCloudAuth } from "@/context/cloud-auth"
@@ -283,10 +288,39 @@ function UserStoryCommentComposer({
           : commentPlaceholder(status)
       }
       submitLabel={agentRunning ? "Queue comment" : commentButtonLabel(status)}
+      toolbarEnd={
+        userStory && status !== "done" ? (
+          <StoryCommentModelSelector userStory={userStory} />
+        ) : undefined
+      }
       turnMetrics={turnMetrics}
     />
   )
 }
+
+// Picks the model and reasoning of this story's next turn, without changing
+// the default used by new stories.
+const StoryCommentModelSelector = React.memo(function StoryCommentModelSelector({
+  userStory,
+}: {
+  userStory: UserStory
+}) {
+  const preference = useStoryModelChoice(userStory)
+  const storyId = userStory.id
+  const scope = React.useMemo(
+    () => ({
+      preference,
+      onChange: (next: CloudAiModelPreference) =>
+        saveStoryModelChoice(storyId, next),
+    }),
+    [preference, storyId]
+  )
+  return (
+    <div className="w-80 max-w-full min-w-0">
+      <ModelSelector modelTriggerClassName="max-w-none" role="agent" scope={scope} />
+    </div>
+  )
+})
 
 function commentPlaceholder(status: BacklogColumnId) {
   if (status === "done") return "Comments are read-only after merge."
@@ -327,6 +361,18 @@ const AgentRunTimeline = React.memo(function AgentRunTimeline({
     providerId: userStory?.agentProviderId,
     providers: modelSelection.allProviders,
   })
+  const providers = modelSelection.allProviders
+  const responseHeaderForRun = React.useCallback(
+    (run: { modelId?: string | null; providerId?: string | null }) =>
+      run.providerId && run.modelId
+        ? agentConversationResponseHeader({
+            modelId: run.modelId,
+            providerId: run.providerId,
+            providers,
+          })
+        : undefined,
+    [providers]
+  )
   const loadActivityDetail = React.useCallback(
     async (run: { id: string }, activity: UserStoryAgentActivity) => {
       if (!userStory) return activity.detail
@@ -347,6 +393,7 @@ const AgentRunTimeline = React.memo(function AgentRunTimeline({
       onLoadActivityDetail={loadActivityDetail}
       onUserMessageUndo={onCommentUndo}
       responseHeader={responseHeader}
+      responseHeaderForRun={responseHeaderForRun}
       runs={userStory?.agentRuns ?? []}
       topOffset={connectSummaryActions ? "message-actions" : "default"}
     />

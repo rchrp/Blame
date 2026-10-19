@@ -28,6 +28,14 @@ import {
 import { finalizeStoppedRun } from "./story-agent-control"
 import { storiesInTransition, withStoryTransition } from "./story-transitions"
 
+type StorySession = {
+  executionId: string
+  // The model this turn runs on, recorded on its run.
+  model: { modelId: string; providerId: string; reasoningEffort: string | null }
+  sessionId: string
+  storyId: string
+}
+
 type StoryComments = {
   backlog: ReturnType<typeof useBacklogStore>
   persistAgentEvent(
@@ -45,7 +53,7 @@ type StoryComments = {
       resumeSessionId?: string | null
       worktree: string
     }
-  ): Promise<{ executionId: string; sessionId: string; storyId: string }>
+  ): Promise<StorySession>
   subscribeStoryAgentEvents(
     story: UserStory,
     run: UserStoryAgentRun,
@@ -102,7 +110,7 @@ export function useStoryComments({
         })
         return undefined
       }
-      let session: { executionId: string; sessionId: string; storyId: string }
+      let session: StorySession
       const interrupting =
         story.status === "in-progress" && story.agentStatus !== "Paused"
       // Sent mid-task: the agent reads it, then picks the task back up.
@@ -137,6 +145,7 @@ export function useStoryComments({
         clineSessionId: sessionId,
         executionId: session.executionId,
         kind: "change-request",
+        ...session.model,
       })
       const updatedStory = await updateStory(story, {
         agentLastError: null,
@@ -144,6 +153,8 @@ export function useStoryComments({
         agentActivities: [],
         agentFinalResponse: null,
         agentUsage: null,
+        agentModelId: session.model.modelId,
+        agentProviderId: session.model.providerId,
         agentStatus: "Running",
         clineSessionId: sessionId,
         status: "in-progress",

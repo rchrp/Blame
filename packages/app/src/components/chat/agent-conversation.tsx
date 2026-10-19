@@ -42,6 +42,7 @@ import {
   formatAgentTurnDuration,
   type AgentTurnMetrics,
 } from "@/components/chat/agent-turn-metrics"
+import { getVariantLabel } from "@/components/model/model-selection"
 import { ProviderMark } from "@/components/model/model-selector"
 import {
   Accordion,
@@ -121,6 +122,10 @@ export type AgentConversationRun = {
   kind: UserStoryAgentRunKind
   lastSequenceNumber?: number | null
   messageId?: string | null
+  // The model that answered this turn, when it was recorded.
+  modelId?: string | null
+  providerId?: string | null
+  reasoningEffort?: string | null
   sessionSummary?: string | null
   status: UserStoryAgentRunStatus
   updatedAt?: string | null
@@ -146,6 +151,7 @@ export function AgentConversationTimeline({
   onFileLinkClick,
   onLoadActivityDetail,
   responseHeader,
+  responseHeaderForRun,
   runs,
 }: {
   comments: AgentConversationComment[]
@@ -165,6 +171,10 @@ export function AgentConversationTimeline({
     activity: UserStoryAgentActivity
   ) => Promise<string>
   responseHeader: AgentConversationResponseHeader
+  // The header of one turn, when turns can use different models.
+  responseHeaderForRun?: (
+    run: AgentConversationRun
+  ) => AgentConversationResponseHeader | undefined
   runs: AgentConversationRun[]
   topOffset?: "default" | "message-actions"
 }) {
@@ -209,7 +219,8 @@ export function AgentConversationTimeline({
           onChangedFileClick={onChangedFileClick}
           onLoadActivityDetail={(activity) => loadActivityDetail(run, activity)}
           onUserMessageUndo={onUserMessageUndo}
-          responseHeader={responseHeader}
+          modelSwitch={modelSwitched(runs[index - 1], run)}
+          responseHeader={responseHeaderForRun?.(run) ?? responseHeader}
           run={run}
         />
       ))}
@@ -235,6 +246,7 @@ function AgentConversationTurn({
   onLoadActivityDetail,
   onUserMessageUndo,
   loadChangedFileDiffs,
+  modelSwitch,
   responseHeader,
   run,
 }: {
@@ -253,6 +265,8 @@ function AgentConversationTurn({
   onUserMessageUndo?: (
     target: AgentConversationUserMessageUndo
   ) => Promise<void> | void
+  // This turn runs on another model or reasoning than the one before.
+  modelSwitch?: boolean
   responseHeader: AgentConversationResponseHeader
   run: AgentConversationRun
 }) {
@@ -291,6 +305,9 @@ function AgentConversationTurn({
             : undefined
         }
       />
+      {modelSwitch ? (
+        <ModelSwitchNote responseHeader={responseHeader} run={run} />
+      ) : null}
       <div className="grid min-w-0 gap-5">
         <AgentWorkDetails
           activities={activities}
@@ -1295,6 +1312,41 @@ function clineLimitResetLabel(resetAt: string) {
   return Number.isNaN(date.getTime())
     ? `Limit resets ${resetAt}.`
     : `Limit resets ${date.toLocaleString()}.`
+}
+
+function modelSwitched(
+  previous: AgentConversationRun | undefined,
+  run: AgentConversationRun
+) {
+  if (!previous?.modelId || !run.modelId) return false
+  return (
+    previous.modelId !== run.modelId ||
+    previous.providerId !== run.providerId ||
+    (previous.reasoningEffort ?? null) !== (run.reasoningEffort ?? null)
+  )
+}
+
+function ModelSwitchNote({
+  responseHeader,
+  run,
+}: {
+  responseHeader: AgentConversationResponseHeader
+  run: AgentConversationRun
+}) {
+  const reasoning = run.reasoningEffort
+    ? ` · ${getVariantLabel(run.reasoningEffort)} reasoning`
+    : ""
+  return (
+    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+      <span className="h-px flex-1 bg-border" />
+      <span className="flex items-center gap-1.5">
+        <ProviderMark provider={responseHeader.provider} />
+        Continued with {responseHeader.modelName ?? responseHeader.provider.name}
+        {reasoning}
+      </span>
+      <span className="h-px flex-1 bg-border" />
+    </div>
+  )
 }
 
 function UserMessageAvatar({ author }: { author: string }) {

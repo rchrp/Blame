@@ -38,6 +38,7 @@ import {
   type ModelGroup,
   type ModelPreferenceRole,
   type ModelSelection,
+  type ModelSelectionScope,
   openAICompatibleProviderID,
   type RecommendedSelectableModel,
   type SelectableModel,
@@ -61,11 +62,13 @@ type WheelDirection = -1 | 1
 export function ModelSelector({
   modelTriggerClassName,
   role,
+  scope,
 }: {
   modelTriggerClassName?: string
   role?: ModelPreferenceRole
+  scope?: ModelSelectionScope
 }) {
-  const selection = useModelSelection({ role })
+  const selection = useModelSelection({ role, scope })
   const [dialog, setDialog] = React.useState<ModelDialog>()
 
   return (

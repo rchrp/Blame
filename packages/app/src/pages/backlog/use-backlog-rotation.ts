@@ -372,6 +372,9 @@ export function useBacklogRotation(
         clineSessionId: session.sessionId,
         executionId,
         kind: "initial",
+        modelId: selection.currentModel.id,
+        providerId: selection.currentModel.provider.id,
+        reasoningEffort: selection.currentVariant ?? null,
       })
       subscribeStoryStream(detailedStory, run, session.sessionId, executionId)
 

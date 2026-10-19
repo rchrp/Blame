@@ -71,7 +71,11 @@ import { storyPreviewDevtoolsScope } from "@/components/backlog/shared/preview-d
 import type { AgentConversationUserMessageUndo } from "@/components/chat/agent-conversation"
 import { newUserStoryEvent } from "@/components/navigation/command-palette"
 import { nextCheckpointRunCount } from "@/components/chat/agent-run-checkpoints"
-import { useModelSelection } from "@/components/model/model-selection"
+import {
+  modelForPreference,
+  useModelSelection,
+} from "@/components/model/model-selection"
+import { storyModelChoice } from "@/components/backlog/data/story-model-choice"
 import {
   projectInitializing,
   useProjectInitialization,
@@ -858,9 +862,18 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
         throw new Error("Reconnect the selected provider.")
       const agent = platform.agent
       if (!agent) throw new Error("Desktop agent runtime is not available.")
-      const providerId =
-        agentSelection.currentModel?.provider.id ?? story.agentProviderId
-      const modelId = agentSelection.currentModel?.id ?? story.agentModelId
+      // The story's own choice (its last model unless the person picked
+      // another for it), else the default.
+      const chosen = modelForPreference(
+        agentSelection.models,
+        storyModelChoice(story)
+      )
+      const model = chosen?.model ?? agentSelection.currentModel
+      const reasoningEffort = chosen
+        ? chosen.variant
+        : agentSelection.currentVariant
+      const providerId = model?.provider.id ?? story.agentProviderId
+      const modelId = model?.id ?? story.agentModelId
       if (!providerId || !modelId)
         throw new Error("Select a model before resuming this user story.")
       const executionId = crypto.randomUUID()
@@ -869,8 +882,8 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
         apiConnection: auth.apiConnection,
         providerId,
         modelId,
-        credentialLabel: agentSelection.currentModel?.credentialLabel,
-        reasoningEffort: agentSelection.currentVariant,
+        credentialLabel: model?.credentialLabel,
+        reasoningEffort,
         autoSendPrompt: false,
         title: story.title,
         summary: story.summary,
@@ -896,12 +909,18 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
         projectId: story.projectId,
         storyId,
       })
-      return { ...session, executionId, storyId }
+      return {
+        ...session,
+        executionId,
+        model: { modelId, providerId, reasoningEffort: reasoningEffort ?? null },
+        storyId,
+      }
     },
     [
       auth,
       agentSelection.currentModel,
       agentSelection.currentVariant,
+      agentSelection.models,
       platform.agent,
       projects,
     ]
@@ -954,6 +973,7 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
         clineSessionId: session.sessionId,
         executionId: session.executionId,
         kind: "resume",
+        ...session.model,
       })
       const updatedStory = await updateStory(currentStory, {
         agentLastError: null,
@@ -961,8 +981,8 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
         agentActivities: [],
         agentFinalResponse: null,
         agentUsage: null,
-        agentModelId: agentSelection.currentModel.id,
-        agentProviderId: agentSelection.currentModel.provider.id,
+        agentModelId: session.model.modelId,
+        agentProviderId: session.model.providerId,
         agentStatus: "Running",
         clineSessionId: session.sessionId,
         status: "in-progress",
