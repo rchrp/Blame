@@ -55,6 +55,7 @@ export function ToolCallItem({
   entering,
   hasFullDetail,
   onLoadDetail,
+  onOpenFile,
   running,
   value,
 }: {
@@ -64,6 +65,8 @@ export function ToolCallItem({
   entering: boolean
   hasFullDetail: boolean
   onLoadDetail: () => Promise<string>
+  // Opens a file of the workspace in the editor.
+  onOpenFile?: (path: string) => void
   running: boolean
   value: string
 }) {
@@ -149,7 +152,11 @@ export function ToolCallItem({
           {expandable ? (
             <AccordionContent className="grid gap-2 pt-1.5 pb-1">
               {view.bodies.map((body, index) => (
-                <ToolCallBodyView key={`${body.type}-${index}`} body={body} />
+                <ToolCallBodyView
+                  key={`${body.type}-${index}`}
+                  body={body}
+                  onOpenFile={onOpenFile}
+                />
               ))}
               {hasFullDetail && !fullDetail ? (
                 <Button

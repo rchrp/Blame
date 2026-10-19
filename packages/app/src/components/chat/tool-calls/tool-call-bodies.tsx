@@ -1,4 +1,12 @@
-import { CircleAlertIcon, FileIcon, FolderIcon } from "lucide-react"
+import * as React from "react"
+import {
+  CheckIcon,
+  CircleAlertIcon,
+  CopyIcon,
+  ExternalLinkIcon,
+  FileIcon,
+  FolderIcon,
+} from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
@@ -8,12 +16,20 @@ import type { DiffFile, SearchHit, TestCounts, ToolCallBody } from "./tool-call-
 
 const maxLines = 400
 
-export function ToolCallBodyView({ body }: { body: ToolCallBody }) {
-  if (body.type === "code") return <CodeBody {...body} />
-  if (body.type === "diff") return <DiffBody files={body.files} />
+type OpenFile = ((path: string) => void) | undefined
+
+export function ToolCallBodyView({
+  body,
+  onOpenFile,
+}: {
+  body: ToolCallBody
+  onOpenFile?: (path: string) => void
+}) {
+  if (body.type === "code") return <CodeBody {...body} onOpenFile={onOpenFile} />
+  if (body.type === "diff") return <DiffBody files={body.files} onOpenFile={onOpenFile} />
   if (body.type === "terminal") return <TerminalBody {...body} />
-  if (body.type === "search") return <SearchBody hits={body.hits} more={body.more} />
-  if (body.type === "files") return <FilesBody files={body.files} more={body.more} />
+  if (body.type === "search") return <SearchBody hits={body.hits} more={body.more} onOpenFile={onOpenFile} />
+  if (body.type === "files") return <FilesBody files={body.files} more={body.more} onOpenFile={onOpenFile} />
   if (body.type === "tests") return <TestsBody counts={body.counts} />
   if (body.type === "text") return <TextBody {...body} />
   if (body.type === "fields") return <FieldsBody fields={body.fields} />
@@ -42,6 +58,56 @@ function Panel({
   )
 }
 
+// Copies text and confirms with a check mark for a moment.
+export function CopyButton({
+  className,
+  label = "Copy",
+  text,
+}: {
+  className?: string
+  label?: string
+  text: string
+}) {
+  const [copied, setCopied] = React.useState(false)
+  React.useEffect(() => {
+    if (!copied) return
+    const timer = window.setTimeout(() => setCopied(false), 1400)
+    return () => window.clearTimeout(timer)
+  }, [copied])
+  return (
+    <button
+      type="button"
+      aria-label={copied ? "Copied" : label}
+      title={copied ? "Copied" : label}
+      className={cn(
+        "flex shrink-0 items-center gap-1 rounded px-1 py-0.5 text-[11px] text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+        className
+      )}
+      onClick={() => {
+        void navigator.clipboard?.writeText(text).then(() => setCopied(true))
+      }}
+    >
+      {copied ? <CheckIcon className="size-3 text-emerald-500" /> : <CopyIcon className="size-3" />}
+      {copied ? "Copied" : null}
+    </button>
+  )
+}
+
+function PathButton({ onOpenFile, path, children }: { onOpenFile: OpenFile; path: string; children: React.ReactNode }) {
+  if (!onOpenFile) return <>{children}</>
+  return (
+    <button
+      type="button"
+      title={`Open ${path}`}
+      className="group/path flex min-w-0 items-center gap-1 rounded text-left hover:text-foreground hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+      onClick={() => onOpenFile(path)}
+    >
+      {children}
+      <ExternalLinkIcon className="size-3 shrink-0 opacity-0 transition-opacity group-hover/path:opacity-70" />
+    </button>
+  )
+}
+
 function Truncated({ hidden }: { hidden?: number | boolean }) {
   if (!hidden) return null
   return (
@@ -53,12 +119,14 @@ function Truncated({ hidden }: { hidden?: number | boolean }) {
 
 function CodeBody({
   label,
+  onOpenFile,
   path,
   startLine,
   text,
   truncated,
 }: {
   label?: string
+  onOpenFile: OpenFile
   path?: string
   startLine?: number
   text: string
@@ -68,7 +136,22 @@ function CodeBody({
   const shown = lines.slice(0, maxLines)
   const header = label ?? path
   return (
-    <Panel header={header ? <span className="truncate font-mono" title={path}>{header}</span> : undefined}>
+    <Panel
+      header={
+        <>
+          {header ? (
+            path && !label ? (
+              <PathButton onOpenFile={onOpenFile} path={path}>
+                <span className="truncate font-mono">{header}</span>
+              </PathButton>
+            ) : (
+              <span className="truncate font-mono" title={path}>{header}</span>
+            )
+          ) : null}
+          <CopyButton className="ml-auto" label="Copy code" text={text} />
+        </>
+      }
+    >
       <div className="max-h-80 overflow-auto">
         <table className="w-full border-collapse font-mono text-xs leading-5">
           <tbody>
@@ -92,7 +175,7 @@ function CodeBody({
   )
 }
 
-function DiffBody({ files }: { files: DiffFile[] }) {
+function DiffBody({ files, onOpenFile }: { files: DiffFile[]; onOpenFile: OpenFile }) {
   return (
     <div className="grid gap-2">
       {files.map((file, index) => (
@@ -100,9 +183,11 @@ function DiffBody({ files }: { files: DiffFile[] }) {
           key={`${file.path}-${index}`}
           header={
             <>
-              <span className="min-w-0 truncate font-mono text-foreground/80" title={file.path}>
-                {file.path}
-              </span>
+              <PathButton onOpenFile={onOpenFile} path={file.path}>
+                <span className="min-w-0 truncate font-mono text-foreground/80" title={file.path}>
+                  {file.path}
+                </span>
+              </PathButton>
               {file.status === "added" ? <StatusTag label="New" /> : null}
               {file.status === "deleted" ? <StatusTag label="Deleted" /> : null}
               {file.note ? <span className="truncate">{file.note}</span> : null}
@@ -184,7 +269,12 @@ function TerminalBody({
       {command ? (
         <div className="flex gap-2 border-b border-white/[0.06] px-3 py-2">
           <span className="shrink-0 text-emerald-400 select-none">{cwd ? `${cwd} $` : "$"}</span>
-          <span className="min-w-0 break-all whitespace-pre-wrap text-white">{command}</span>
+          <span className="min-w-0 flex-1 break-all whitespace-pre-wrap text-white">{command}</span>
+          <CopyButton
+            className="text-[#7f8898] hover:bg-white/10 hover:text-white"
+            label="Copy command"
+            text={command}
+          />
         </div>
       ) : null}
       {shown.length ? (
@@ -221,7 +311,7 @@ const kindLabels: Record<string, string> = {
   enum: "enum",
 }
 
-function SearchBody({ hits, more }: { hits: SearchHit[]; more?: number }) {
+function SearchBody({ hits, more, onOpenFile }: { hits: SearchHit[]; more?: number; onOpenFile: OpenFile }) {
   return (
     <Panel>
       <ul className="divide-y">
@@ -235,9 +325,13 @@ function SearchBody({ hits, more }: { hits: SearchHit[]; more?: number }) {
             <span className="min-w-0 truncate font-mono text-foreground/90" title={hit.snippet}>
               {hit.name ?? hit.snippet ?? hit.path}
             </span>
-            <span className="ml-auto shrink-0 truncate font-mono text-muted-foreground" title={hit.path}>
-              {hit.path.split("/").slice(-2).join("/")}
-              {hit.line !== undefined ? `:${hit.line}` : ""}
+            <span className="ml-auto shrink-0 font-mono text-muted-foreground">
+              <PathButton onOpenFile={onOpenFile} path={hit.path}>
+                <span className="truncate" title={hit.path}>
+                  {hit.path.split("/").slice(-2).join("/")}
+                  {hit.line !== undefined ? `:${hit.line}` : ""}
+                </span>
+              </PathButton>
             </span>
           </li>
         ))}
@@ -254,9 +348,11 @@ function SearchBody({ hits, more }: { hits: SearchHit[]; more?: number }) {
 function FilesBody({
   files,
   more,
+  onOpenFile,
 }: {
   files: { path: string; detail?: string; kind?: "file" | "directory" }[]
   more?: number
+  onOpenFile: OpenFile
 }) {
   return (
     <Panel>
@@ -268,9 +364,15 @@ function FilesBody({
             ) : (
               <FileIcon className="size-3.5 shrink-0 text-muted-foreground" />
             )}
-            <span className="min-w-0 truncate text-foreground/90" title={file.path}>
-              {file.path}
-            </span>
+            {file.kind === "directory" ? (
+              <span className="min-w-0 truncate text-foreground/90" title={file.path}>
+                {file.path}
+              </span>
+            ) : (
+              <PathButton onOpenFile={onOpenFile} path={file.path}>
+                <span className="min-w-0 truncate text-foreground/90">{file.path}</span>
+              </PathButton>
+            )}
             {file.detail ? <span className="ml-auto shrink-0 text-muted-foreground">{file.detail}</span> : null}
           </li>
         ))}

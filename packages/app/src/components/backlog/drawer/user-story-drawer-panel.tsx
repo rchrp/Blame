@@ -252,8 +252,11 @@ export function UserStoryDrawerPanel({
   const [pendingAction, setPendingAction] = React.useState<DrawerAction>()
   const [commentSubmission] = React.useState(createUserStoryCommentSubmission)
   const [sidebarOpen, setSidebarOpen] = React.useState(readSidebarOpen)
+  const titleDraftKey = `${draftStorageKey}:title`
   const [title, setTitle] = React.useState(
-    mode === "create" ? (initialDraft?.title ?? "") : (userStory?.title ?? "")
+    mode === "create"
+      ? (readTitleDraft(titleDraftKey) ?? initialDraft?.title ?? "")
+      : (userStory?.title ?? "")
   )
   const [summary, setSummary] = React.useState(
     mode === "create"
@@ -275,6 +278,20 @@ export function UserStoryDrawerPanel({
   React.useEffect(() => {
     localStorage.setItem(drawerSidebarStorageKey, JSON.stringify(sidebarOpen))
   }, [sidebarOpen])
+
+  // A new story's title survives closing the drawer, like its description.
+  React.useEffect(() => {
+    if (mode !== "create") return
+    const timer = window.setTimeout(() => {
+      try {
+        if (title.trim()) localStorage.setItem(titleDraftKey, title)
+        else localStorage.removeItem(titleDraftKey)
+      } catch {
+        return
+      }
+    }, composerDraftPersistDelayMs)
+    return () => window.clearTimeout(timer)
+  }, [mode, title, titleDraftKey])
 
   React.useEffect(() => {
     const draft = drawerComposerDraft({
@@ -834,6 +851,11 @@ export function UserStoryDrawerPanel({
   function clearComposerDraft() {
     composerDraftRemovedRef.current = true
     removeComposerDraft(localStorage, draftStorageKey)
+    try {
+      localStorage.removeItem(titleDraftKey)
+    } catch {
+      return
+    }
   }
 
   async function undoCommentMessage(target: AgentConversationUserMessageUndo) {
@@ -851,5 +873,13 @@ export function UserStoryDrawerPanel({
         ?.querySelector<HTMLElement>("[data-markdown-editor-input='true']")
         ?.focus()
     })
+  }
+}
+
+function readTitleDraft(key: string) {
+  try {
+    return localStorage.getItem(key) ?? undefined
+  } catch {
+    return undefined
   }
 }

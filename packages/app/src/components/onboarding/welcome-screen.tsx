@@ -21,6 +21,7 @@ import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
 import { createCloudApi } from "@/lib/cloud-api"
 import { isKeyOwnedByTarget, useRovingFocus } from "@/lib/keyboard"
+import { undoable } from "@/lib/undoable"
 import { easeOutExpo, riseIn, staggerContainer } from "@/lib/motion"
 import type { Project } from "@/lib/projects"
 import { HostDependenciesDialog } from "@/pages/backlog/host-dependencies-dialog"
@@ -28,7 +29,35 @@ import { HostDependenciesDialog } from "@/pages/backlog/host-dependencies-dialog
 export function WelcomeScreen() {
   const projectOpening = useProjectOpening()
   const [newProjectOpen, setNewProjectOpen] = React.useState(false)
-  const recentProjects = projectOpening.recentProjects.slice(0, 6)
+  // Removed projects stay hidden while their "Undo" toast is visible.
+  const [pendingRemovals, setPendingRemovals] = React.useState<ReadonlySet<string>>(
+    () => new Set()
+  )
+  const recentProjects = projectOpening.recentProjects
+    .filter((project) => !pendingRemovals.has(project.path))
+    .slice(0, 6)
+
+  function setPendingRemoval(path: string, pending: boolean) {
+    setPendingRemovals((current) => {
+      const next = new Set(current)
+      if (pending) next.add(path)
+      else next.delete(path)
+      return next
+    })
+  }
+
+  function removeRecentProject(path: string) {
+    const project = projectOpening.recentProjects.find((item) => item.path === path)
+    setPendingRemoval(path, true)
+    undoable({
+      message: `Removed ${project?.name ?? "project"} from recent projects`,
+      undo: () => setPendingRemoval(path, false),
+      commit: () => {
+        projectOpening.removeRecentProject(path)
+        setPendingRemoval(path, false)
+      },
+    })
+  }
 
   useWelcomeShortcuts({
     enabled: !newProjectOpen && !projectOpening.hostDependenciesDialog.open,
@@ -53,7 +82,7 @@ export function WelcomeScreen() {
           projects={recentProjects}
           opening={projectOpening.opening}
           onOpen={projectOpening.openProject}
-          onRemove={projectOpening.removeRecentProject}
+          onRemove={removeRecentProject}
         />
       </section>
       <NewProjectDialog

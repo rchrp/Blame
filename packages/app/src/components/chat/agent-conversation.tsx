@@ -1,5 +1,6 @@
 import {
   AlertCircleIcon,
+  CheckIcon,
   ArrowUpIcon,
   ChevronDownIcon,
   ChevronUpIcon,
@@ -403,6 +404,7 @@ export function AgentConversationComposer({
       ) : null}
       <div className="relative">
         {turnMetrics ? <AgentTurnIndicator metrics={turnMetrics} /> : null}
+        <DraftSavedHint message={message} hidden={submitting || disabled} />
         <MarkdownEditor
           speechSessionKey={speechSessionKey}
           key={editorKey}
@@ -939,6 +941,7 @@ function AgentActivityLeafItem({
   return (
     <AgentActivityDetailLeafItem
       activity={activity}
+      onFileLinkClick={onFileLinkClick}
       onLoadDetail={onLoadDetail}
       runActive={runActive}
       runningToolActivityId={runningToolActivityId}
@@ -986,12 +989,14 @@ function AgentReasoning({
 
 function AgentActivityDetailLeafItem({
   activity,
+  onFileLinkClick,
   onLoadDetail,
   runActive,
   runningToolActivityId,
   value,
 }: {
   activity: UserStoryAgentActivity
+  onFileLinkClick?: (path: string) => void
   onLoadDetail: (activity: UserStoryAgentActivity) => Promise<string>
   runActive: boolean
   runningToolActivityId?: string
@@ -1006,6 +1011,7 @@ function AgentActivityDetailLeafItem({
       entering={entering}
       hasFullDetail={Boolean(activity.detailArtifact)}
       onLoadDetail={() => onLoadDetail(activity)}
+      onOpenFile={onFileLinkClick}
       running={running}
       value={value}
     />
@@ -1661,4 +1667,31 @@ function isFreshTimestamp(value: string | null | undefined) {
 function useEnterAnimation(createdAt: string | null | undefined) {
   const [entering] = React.useState(() => isFreshTimestamp(createdAt))
   return entering
+}
+
+// "Draft saved" appears once typing pauses: drafts are kept per conversation
+// and per story, so closing the app never loses what was being written.
+function DraftSavedHint({ hidden, message }: { hidden?: boolean; message: string }) {
+  const [saved, setSaved] = React.useState(false)
+  const hasText = Boolean(message.trim())
+  React.useEffect(() => {
+    const reset = requestAnimationFrame(() => setSaved(false))
+    if (!hasText) return () => cancelAnimationFrame(reset)
+    const timer = window.setTimeout(() => setSaved(true), 900)
+    return () => {
+      cancelAnimationFrame(reset)
+      window.clearTimeout(timer)
+    }
+  }, [hasText, message])
+  return (
+    <span
+      aria-live="polite"
+      className={cn(
+        "pointer-events-none absolute left-5 bottom-full z-10 mb-1.5 flex items-center gap-1 text-[11px] text-muted-foreground transition-opacity duration-300",
+        saved && hasText && !hidden ? "opacity-100" : "opacity-0"
+      )}
+    >
+      <CheckIcon className="size-3" /> Draft saved
+    </span>
+  )
 }
