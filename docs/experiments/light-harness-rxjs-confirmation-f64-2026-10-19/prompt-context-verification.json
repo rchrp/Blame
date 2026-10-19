@@ -1,0 +1,50 @@
+{
+  "phase": "F64",
+  "postCampaignVerificationAmendment": true,
+  "modelRequests": 0,
+  "pairs": [
+    {
+      "candidate": "1-filter-map-candidate",
+      "reference": "1-filter-map-reference",
+      "rawPromptEqual": false,
+      "originalPathNormalizedContractEqual": false,
+      "checkedInputIdentityAndPathNormalizedPromptSha256": "372dce64a1445f8dbf7a15236021ed20bcd5f4073881c20769f5caa7d4f14123"
+    },
+    {
+      "candidate": "1-map-with-previous-candidate",
+      "reference": "1-map-with-previous-reference",
+      "rawPromptEqual": false,
+      "originalPathNormalizedContractEqual": false,
+      "checkedInputIdentityAndPathNormalizedPromptSha256": "372dce64a1445f8dbf7a15236021ed20bcd5f4073881c20769f5caa7d4f14123"
+    },
+    {
+      "candidate": "1-tap-first-candidate",
+      "reference": "1-tap-first-reference",
+      "rawPromptEqual": false,
+      "originalPathNormalizedContractEqual": false,
+      "checkedInputIdentityAndPathNormalizedPromptSha256": "372dce64a1445f8dbf7a15236021ed20bcd5f4073881c20769f5caa7d4f14123"
+    },
+    {
+      "candidate": "2-filter-map-candidate",
+      "reference": "2-filter-map-reference",
+      "rawPromptEqual": false,
+      "originalPathNormalizedContractEqual": false,
+      "checkedInputIdentityAndPathNormalizedPromptSha256": "372dce64a1445f8dbf7a15236021ed20bcd5f4073881c20769f5caa7d4f14123"
+    },
+    {
+      "candidate": "2-map-with-previous-candidate",
+      "reference": "2-map-with-previous-reference",
+      "rawPromptEqual": false,
+      "originalPathNormalizedContractEqual": false,
+      "checkedInputIdentityAndPathNormalizedPromptSha256": "372dce64a1445f8dbf7a15236021ed20bcd5f4073881c20769f5caa7d4f14123"
+    },
+    {
+      "candidate": "2-tap-first-candidate",
+      "reference": "2-tap-first-reference",
+      "rawPromptEqual": false,
+      "originalPathNormalizedContractEqual": false,
+      "checkedInputIdentityAndPathNormalizedPromptSha256": "372dce64a1445f8dbf7a15236021ed20bcd5f4073881c20769f5caa7d4f14123"
+    }
+  ],
+  "limitation": "Raw prompts and original path-normalized contracts differ. Equality is established only after checking and normalizing each archived input commit and workspace path. Seeded commits include path-specific study adapters. Requests, outcomes, traces and original hashes remain unchanged; incidental context is a comparison limitation, not exact prompt identity."
+}

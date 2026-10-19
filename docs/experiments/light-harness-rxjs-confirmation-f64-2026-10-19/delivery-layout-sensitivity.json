@@ -1,0 +1,20 @@
+{
+  "modelRequests": 0,
+  "type": "Explicit secondary interpretation, not a replacement primary audit",
+  "strictCounts": {
+    "reference": 5,
+    "candidate": 6,
+    "cline": 6
+  },
+  "layoutNeutralSourceAuditCounts": {
+    "reference": 6,
+    "candidate": 6,
+    "cline": 6
+  },
+  "onlyAffectedAssignment": "2-map-with-previous-reference",
+  "requested": "src/*.test.ts",
+  "delivered": "src/internal/operators/mapWithPrevious.test.ts",
+  "behaviorAndCompilerPassed": true,
+  "sourceReviewSha256": "d620c2814b699efd57beb8dd7b603ffeb903427e593405755d0f1d21e46d89a5",
+  "resultsSha256": "2abac329c499553dae55f51002b6e7d9bc0c7f161a22e62670e90dd30e623a9d"
+}

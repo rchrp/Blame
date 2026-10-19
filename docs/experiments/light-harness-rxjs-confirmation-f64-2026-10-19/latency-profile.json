@@ -1,0 +1,2101 @@
+{
+  "method": "Recorded tool start/end intervals clipped to SDK worker bounds, merged before summing. Historical absent fetch spans are unknown, not zero requests. New fetch spans end on consumer-driven EOF/cancellation/error; they include gateway, transport, generation and client processing/backpressure, not pure network or provider inference. Tool/HTTP overlaps are explicit. Record timestamps and passive observer overhead do not establish exclusive-host causality. Historical diagnosis is post-hoc; original outcomes/costs unchanged.",
+  "rows": [
+    {
+      "name": "1-filter-map-reference",
+      "arm": "reference",
+      "sdkDurationMs": 185044,
+      "sourceHashes": {
+        "events": "3bfe292bb3a15d55c67e7328853f4c6c2a51c63f22bb1eccd1163202b4cd21ab",
+        "result": "b5e4592d54593a7b1f7622af09c7c5f55cea5a8d7945fb19ef02d737a81cd631",
+        "requestTiming": "bef58302a05c74ab0cf5ff432311d77e350b9213cbc5859c2a91688049299f71"
+      },
+      "windowMs": 185044,
+      "toolMs": 44839,
+      "requestMs": 136662.89013671875,
+      "overlapMs": 0,
+      "toolOnlyMs": 44839,
+      "requestOnlyMs": 136662.89013671875,
+      "outsideObservedSpansMs": 3542.10986328125,
+      "toolSpanCount": 69,
+      "toolUnionCount": 53,
+      "toolAnomalies": [],
+      "requestAnomalies": [],
+      "measuredRequests": [
+        {
+          "attempt": 1,
+          "requestBodySha256": "e3e62e70d3589052e66cb77d46b9f9f78ce7c933e23ee265633ea1865b5aa5e8",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 2,
+          "requestBodySha256": "c973014cc2ad91c35a90d5d77236a591230cae28ff90811a9da492fc808329f1",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 3,
+          "requestBodySha256": "576c314ab92340ee62f31bace0798fcd52f562ecc3704baf9b9caab4ed317835",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 4,
+          "requestBodySha256": "98c56b76b46743fc5321d168fe2cfc47cc4b6d8d31a6508eea80fdbc345904c1",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 5,
+          "requestBodySha256": "eead9264d08f910e237c9d1171019a66bba08d1276729e6f1ed1a0fca88e1258",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 6,
+          "requestBodySha256": "894371e0e6f5d159829de2e7b69d275622103347dd4d2e2189dddb801f387c40",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 7,
+          "requestBodySha256": "5d4f66cff1a1bf8a201f88ca19cf2585dc8af828b0587c637e8921905ee1feff",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 8,
+          "requestBodySha256": "4dfdeb81eed8d08915bd7952190cbe82323726c2fa92e162cebd504cc22fd3a1",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 9,
+          "requestBodySha256": "8abd9e58f85d5267c021a16e2573dab5c4e47a7773952fc3b3867acf2911824b",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 10,
+          "requestBodySha256": "1ee6d1b9ee7b9ab3a1e2e0de737748717dba811acabd7cfaea3bf266934d1510",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 11,
+          "requestBodySha256": "f43e2c042e0ee894a422f431ad9a73d725335a6cd16146d255657f1031516924",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 12,
+          "requestBodySha256": "d5c37ff9d3c50cc2e2e9c53e0e2e8abaf54bffdfb88e6bf5b3f2fab6cf85cdb5",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 13,
+          "requestBodySha256": "8c12d19411cd368f9d0c06f3b80e8257b22d8bebd61eeac05a8eaa8069aa4b07",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 14,
+          "requestBodySha256": "fb126e3b4743ffc9cc76070ad06c2f3d3fd0f935a1234fcaf2c6c29dd1f9cd25",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 15,
+          "requestBodySha256": "5dbc9e473cf71fa4720556df0e80b25c6e0dfdb89244ed9c66b09c14a9aa7b2f",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 16,
+          "requestBodySha256": "375b69fdfb4cf90efeb3f5ab27444e237c0e5eb7e3c4606e2626ed2a60a33ce3",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 17,
+          "requestBodySha256": "bc6573b9c2eda1139480539e761c365548fc13056756da3cdde99f3f83d66c60",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 18,
+          "requestBodySha256": "ffe01a169c0bdee0a3a714f5463e398f2a0cfeded79c38481d382fdbbe107662",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 19,
+          "requestBodySha256": "7e5aeb9654aefe1d327b17bc071631a8bb251d0d5391ddf61337ce0cc13dbc4e",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 20,
+          "requestBodySha256": "4d85f58f3c4d3129963a6224b726a90eba9cbf4e06a7307e4e734306462ceaa4",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 21,
+          "requestBodySha256": "7fdbb6154b7ad18e7c4374f753b8f3d41ce969dce55c4dff2fe1910a50d878dd",
+          "complete": true,
+          "terminal": "body_end"
+        }
+      ],
+      "requestPhaseUnionMs": {
+        "headers": 24250.405517578125,
+        "firstRead": 69.995849609375,
+        "bodyTail": 112342.48876953125
+      }
+    },
+    {
+      "name": "1-filter-map-candidate",
+      "arm": "candidate",
+      "sdkDurationMs": 233300,
+      "sourceHashes": {
+        "events": "b6e3265106b81aff5dc14048a924d955f71ca874c1e954f4ef8d0b5be25e8c0d",
+        "result": "753938dcd5f9207dde3eedadb67054d55d64e57de6cf509dbddf172708a9fe05",
+        "requestTiming": "0d6e116eb9cef2e41f9be507c240fc3d788e8a762b7b08a6cfbe7f154f41140b"
+      },
+      "windowMs": 233300,
+      "toolMs": 46261,
+      "requestMs": 183359.96923828125,
+      "overlapMs": 0,
+      "toolOnlyMs": 46261,
+      "requestOnlyMs": 183359.96923828125,
+      "outsideObservedSpansMs": 3679.03076171875,
+      "toolSpanCount": 69,
+      "toolUnionCount": 54,
+      "toolAnomalies": [],
+      "requestAnomalies": [],
+      "measuredRequests": [
+        {
+          "attempt": 1,
+          "requestBodySha256": "b4574d329ec1d6c518f516f0b29c7d97916149f6b379a2e4af26f2b22f898176",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 2,
+          "requestBodySha256": "7db97eecdc046e86850ebeb5aabc6e143b0e30757b4ee3cb0a9fc024552dedf7",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 3,
+          "requestBodySha256": "837a6b3b61529bd0ed1ce470c3a92a3e645a5a29b07e4996816247fdd2c21706",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 4,
+          "requestBodySha256": "a29bc7a27fa7add8a1f06ed5bf1b59ccdaecdaf3b1de7f2c4627c9b67c6a6f8d",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 5,
+          "requestBodySha256": "09457341ba9eddb53bd0c025e5ea9345c3136e88e85b3c11da1ed119de56baea",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 6,
+          "requestBodySha256": "eec303524e4a6340b18a9777426609096f08bf62ed23823ebc3666f92fe9cad6",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 7,
+          "requestBodySha256": "ebe3f6123573f7dee658d07d3b0dceba04f49360d5127774df0cce430b9cb9f4",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 8,
+          "requestBodySha256": "1070cc94bb11cbb3ea106463989e04c4ff00b27b9d8d8b8837b798a8e6b03223",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 9,
+          "requestBodySha256": "547f63ce4a6870a5da11ef113ba7e406e5091d5837b2b2c0665db16108c4048c",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 10,
+          "requestBodySha256": "c4f6597bcbb955dc9971cd4966d85ae9762a3f99f4ef5dd9d7ba0da45afe01a4",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 11,
+          "requestBodySha256": "641963154a884d3e1342e38f65c81798be70cc880bcad777d9661e675d90c120",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 12,
+          "requestBodySha256": "94b14769676cecfb8f09d1a2f5cca234822d29560c2ea350e132cb858dce9c31",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 13,
+          "requestBodySha256": "44017f0966f68a7a9317847af6eb7ffcdd227e558cb510a8c2c0dcede74a15fe",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 14,
+          "requestBodySha256": "e27fa6f8f727a1a5e264d1404e4b1436b6373b14c53b59fd60286712f384a654",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 15,
+          "requestBodySha256": "fdb859dbbb93aa2a779763b01c8ebf60d1d0a23789c87b4e35605f106310b976",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 16,
+          "requestBodySha256": "d5677c4e32b76c78ff68f99d2c4527cb7d7e5ebd9e7e9326d78657d77f7eb14f",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 17,
+          "requestBodySha256": "6f74da8bb244f3618c03354f7c15589a23c13ee16f17586b33dff55a84846fcb",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 18,
+          "requestBodySha256": "4123a6143ab2c50055f5584c98d55770f9c97cafc8c05a46a1a686aca95bbd68",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 19,
+          "requestBodySha256": "d81ce26ea0222d03ab86fcf576fa7f16b335af014edcfad14cd6df568a41c5c2",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 20,
+          "requestBodySha256": "34d9733c3a28f6dd77bb7ead13d9f9308ac734bf4c0cb8f5e0f7703a5705938f",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 21,
+          "requestBodySha256": "d5d63d86e744bb1d16f5683bc92a1543f00ce2b8d7fecd398f2bad39c52c0e9c",
+          "complete": true,
+          "terminal": "body_end"
+        }
+      ],
+      "requestPhaseUnionMs": {
+        "headers": 26404.18408203125,
+        "firstRead": 196.218017578125,
+        "bodyTail": 156759.56713867188
+      }
+    },
+    {
+      "name": "1-filter-map-cline",
+      "arm": "cline",
+      "sdkDurationMs": 137545,
+      "sourceHashes": {
+        "events": "2b67bd4086ce66688f38e8c6374fe6c4b2d4d21b88bcc119c9fdc55c575d8145",
+        "result": "abb164af0e252ef2b5f83d3f4487d2ceefc0c3e64c8fa56cbad108ae158bbd98",
+        "requestTiming": "d8791c9491d81cd37769b8843f4d3fbdb911f88d431c0fa1f668b33c5df6f4e0"
+      },
+      "windowMs": 137545,
+      "toolMs": 29657,
+      "requestMs": 105165.8330078125,
+      "overlapMs": 0,
+      "toolOnlyMs": 29657,
+      "requestOnlyMs": 105165.8330078125,
+      "outsideObservedSpansMs": 2722.1669921875,
+      "toolSpanCount": 33,
+      "toolUnionCount": 26,
+      "toolAnomalies": [],
+      "requestAnomalies": [],
+      "measuredRequests": [
+        {
+          "attempt": 1,
+          "requestBodySha256": "78c306d9e4e0b71822101ff3e05603e05cef095cfe5a725f22a0430da90d79e2",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 2,
+          "requestBodySha256": "8f7cebb0f107bde96188e82f5f3e5a38c58437f5279d807f59977e93cb56133f",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 3,
+          "requestBodySha256": "86bd12f693255d625b8fa077d4029b74ef5bcb5b96f0139a5b50da888c314ad1",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 4,
+          "requestBodySha256": "d46703bf6589fb7a2bd2076468bfb726b557a36ba06786e09398fae8fca3a965",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 5,
+          "requestBodySha256": "9c98b42c287112440b858e2e568f48865795ff2e68ec9ecca0ba8aecad2115ff",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 6,
+          "requestBodySha256": "2c1d5c02b0670ed4cdd85b0f146d700b9983089b6c89f61f663f0afb76e3f04f",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 7,
+          "requestBodySha256": "8c138a498f356568c096f0c0a7ee5f8cfae0051a9624604e3662c7e4110e8ec5",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 8,
+          "requestBodySha256": "d5a98cd360d5bab8a3d2c9425a7540013235066c3d61735041826d87314489f8",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 9,
+          "requestBodySha256": "3221c58994569e691e3cfc09c2fc9ebaaeefa0d0d1af97a67a04f74042968386",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 10,
+          "requestBodySha256": "f35fd8fbca9805dafb24e67df921c32ec4812ac89d767f9d1f733385d4cb44a5",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 11,
+          "requestBodySha256": "28d25ddc5267df1894d39000a2cfdbf11aae81f428249d0cdd1d0f6f6a3a0401",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 12,
+          "requestBodySha256": "06df0f718535da6e13a3434b3f2364d608683cba0196e13a4e7aa6603813c403",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 13,
+          "requestBodySha256": "84f41ef56732d86532e49f245fe6875260c358782e8a1790e0f98568f602d386",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 14,
+          "requestBodySha256": "9ced27cf83029d0ff9adc59b3599650ed65277e7b337f3a01ebb001751323555",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 15,
+          "requestBodySha256": "5bd1064c2650a049cc9616040bc6ffb3460befc25796e3f6f3683ed3f3bb3019",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 16,
+          "requestBodySha256": "8d263e869b7aa13567db37b091bf13ba5b04c7f17ef1e232791c59fe3c74bd8c",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 17,
+          "requestBodySha256": "f426fcf9d510b398bb39af9debd18b3a7a8ea7bb5ea1190c34c138f2dacdf8ad",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 18,
+          "requestBodySha256": "a1359d1074e4b3e0a4994b153039b3c9102c09177fcba8612e3af7efac06bee0",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 19,
+          "requestBodySha256": "b3646c8e24ec9e6c28c6083f8d98629cfa7f1be8cd6514b432d61a1c904dd91e",
+          "complete": true,
+          "terminal": "body_end"
+        }
+      ],
+      "requestPhaseUnionMs": {
+        "headers": 19577.114990234375,
+        "firstRead": 55.81201171875,
+        "bodyTail": 85532.90600585938
+      }
+    },
+    {
+      "name": "1-map-with-previous-candidate",
+      "arm": "candidate",
+      "sdkDurationMs": 98982,
+      "sourceHashes": {
+        "events": "2e8e943da1e056a26416574c40590ae01a344d8940073979232b6d40e91ce92e",
+        "result": "23500d56f6070d3bda5b1121b37c0fb6c1cd6d4b34bff425b76d907453118a85",
+        "requestTiming": "6032009a8b2c2d5e92dfe25e11e915089e90cb836795d507870bc3d1149d7ec0"
+      },
+      "windowMs": 98982,
+      "toolMs": 34101,
+      "requestMs": 61803.63623046875,
+      "overlapMs": 0,
+      "toolOnlyMs": 34101,
+      "requestOnlyMs": 61803.63623046875,
+      "outsideObservedSpansMs": 3077.36376953125,
+      "toolSpanCount": 49,
+      "toolUnionCount": 36,
+      "toolAnomalies": [],
+      "requestAnomalies": [],
+      "measuredRequests": [
+        {
+          "attempt": 1,
+          "requestBodySha256": "e981a1dfd4e8096e084f175d76aa9049966f3d85bce97485b32f863183a2872a",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 2,
+          "requestBodySha256": "b488a68fb06ce327b7f9712de797a8b412276ccc42e13f8a5664e2fb1102c5ce",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 3,
+          "requestBodySha256": "94c00f72d4c93623852b1563e4a69bb1741b21addf0f8224665e4861c70099ac",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 4,
+          "requestBodySha256": "accbd17f9df6f96d7fff24fd34814d02d99a9928284f8b266b2c7198da5852de",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 5,
+          "requestBodySha256": "fe44a41c2e16bec0f5e6135315c592020222367f2453972e6aaa1e0a8b60defd",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 6,
+          "requestBodySha256": "b71a2e4252e0e8618ce3f538cadd526b4993af66d7c7d963f58d738f5f561d50",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 7,
+          "requestBodySha256": "2fbf66e51ef1bfe959d1b794827c37de9b374886962f5aa52008ac71c9e8c411",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 8,
+          "requestBodySha256": "af089cec2124bf6414821804ba20890af94880a324755f75ba5daca8603a4617",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 9,
+          "requestBodySha256": "c5029f0e6c7412f31b45f5e7b4f4bb40de9c5aa628379a5908078f5a8c7bb813",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 10,
+          "requestBodySha256": "390f5ced4526c1cae0e81fd7cfaba97bc4b63202aabadc13cdbd7c481af2fbd6",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 11,
+          "requestBodySha256": "5f2bab48f2be865a488718c609c7698b8e15a951c5147b399563218d591e44a0",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 12,
+          "requestBodySha256": "1dac6f9e2e37672949ec27ffc76242c1f4fe49dfd385477cd1a5a24cbf3e249a",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 13,
+          "requestBodySha256": "6c4f618d6b90cf55f07ca74d9776a0bc1240cf7781a5f7bfb2dc522f65b1001c",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 14,
+          "requestBodySha256": "40e5b3422935fb82e93127283488d0ac3c323e35ff93651433d857fbb82dbe54",
+          "complete": true,
+          "terminal": "body_end"
+        }
+      ],
+      "requestPhaseUnionMs": {
+        "headers": 14159.322998046875,
+        "firstRead": 33.5556640625,
+        "bodyTail": 47610.757568359375
+      }
+    },
+    {
+      "name": "1-map-with-previous-cline",
+      "arm": "cline",
+      "sdkDurationMs": 72441,
+      "sourceHashes": {
+        "events": "c6a3e069e391acc4c65be761a6de1daf2227db8c0ab5b2afef0a4669a54692fb",
+        "result": "50e388be960e2dee356f45503f421306edfee82690b7211ea69b5b0b6a854637",
+        "requestTiming": "21e9655fd6740a63c59f9ca144837e4d16b8ed1cd8c86e9f68b646d8c2d9a7af"
+      },
+      "windowMs": 72441,
+      "toolMs": 12748,
+      "requestMs": 57265.563720703125,
+      "overlapMs": 0,
+      "toolOnlyMs": 12748,
+      "requestOnlyMs": 57265.563720703125,
+      "outsideObservedSpansMs": 2427.436279296875,
+      "toolSpanCount": 15,
+      "toolUnionCount": 11,
+      "toolAnomalies": [],
+      "requestAnomalies": [],
+      "measuredRequests": [
+        {
+          "attempt": 1,
+          "requestBodySha256": "e053d20f86fbe0c70f2117d7a492439d41826d48d77d1d0caa7bdd016b9e7c4b",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 2,
+          "requestBodySha256": "0f98915d1a21b8da91d9758348cc37ab98b2eb7cc032b601f24316309914eb9b",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 3,
+          "requestBodySha256": "ed3cd37cb368ce942e7bbbd5fa50558c2f79446a70b65ffbb613c9ae0d4b0951",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 4,
+          "requestBodySha256": "8b0f9f3e7bb16a5ba103be384f55e88924247eed1e24a516413ed207f726ca7f",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 5,
+          "requestBodySha256": "55cf918660dcd989f022990117a301622e640b9cca1e2d51e56f0256e25c2137",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 6,
+          "requestBodySha256": "a547d3d50f5deac1a98d67d97359d94e902a1b57ae3adb30f5b5f15eda55a6fd",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 7,
+          "requestBodySha256": "6d01484754ce1410e280e6faf60ec4c710a839a71fe6b983f36262a938a720fc",
+          "complete": true,
+          "terminal": "body_end"
+        }
+      ],
+      "requestPhaseUnionMs": {
+        "headers": 6672.7041015625,
+        "firstRead": 10.903564453125,
+        "bodyTail": 50581.9560546875
+      }
+    },
+    {
+      "name": "1-map-with-previous-reference",
+      "arm": "reference",
+      "sdkDurationMs": 82610,
+      "sourceHashes": {
+        "events": "39e4af1160bbef804eedbecb98af6cef283d910a6b0a727086dd8694ca6de588",
+        "result": "1d4750ea7007e18ce56164172907686e501d4a981e26a1345a405ae85817419a",
+        "requestTiming": "34c233135a36eb008606610b42d29135217e5245f60a8ea42814e62f002d9e1c"
+      },
+      "windowMs": 82610,
+      "toolMs": 21392,
+      "requestMs": 58748.744873046875,
+      "overlapMs": 0,
+      "toolOnlyMs": 21392,
+      "requestOnlyMs": 58748.744873046875,
+      "outsideObservedSpansMs": 2469.255126953125,
+      "toolSpanCount": 43,
+      "toolUnionCount": 30,
+      "toolAnomalies": [],
+      "requestAnomalies": [],
+      "measuredRequests": [
+        {
+          "attempt": 1,
+          "requestBodySha256": "f3091fecae2c2f115e8c5b30f0ec2b97ee802a29203ee0c9a8985a9764ae9e3d",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 2,
+          "requestBodySha256": "b59a79a35745ecf8e497228d11708961558d783f3f3353237705a75ba5899ff2",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 3,
+          "requestBodySha256": "676458afd208578a3566a289e9e822adf5a1505d64fb9671440667904195d802",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 4,
+          "requestBodySha256": "4517f63bbde6cd1efba553f620a7041c27f5614f7348491805c11c0df907d6a5",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 5,
+          "requestBodySha256": "5c326507e6fddebdda51a9221689dd69b11cd5a1ab22a5c8f2bbb18c50c648ba",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 6,
+          "requestBodySha256": "f15f8e40ee1895d2f0d4e05924ce631c8b711fadc1b15a6438c9e63fc6ce31e1",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 7,
+          "requestBodySha256": "ce07a4b8c65c37b893ce3d73168b71df07fa5025d945b448d7c1946a66aa7d18",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 8,
+          "requestBodySha256": "d537749241bf548ade205f914fe100372ad33615da6e749e80ec3d91fa0eacc8",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 9,
+          "requestBodySha256": "2d7ec894b97ba19658c0d5ac9fdf11f3b258d4f09e358ad8e9c5b8e442ecb293",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 10,
+          "requestBodySha256": "4bd8a36f7e42dfac8b97250c7321a38f7013d18bb192455c719ca34789e4fe36",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 11,
+          "requestBodySha256": "6c91ef479d8e6611162b697b4afc811a68b0d6d447f76870a0cb811c83098c40",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 12,
+          "requestBodySha256": "9911a63bd76005c2a2036093a996d420238180b23aecef051f28aab14e02fc49",
+          "complete": true,
+          "terminal": "body_end"
+        }
+      ],
+      "requestPhaseUnionMs": {
+        "headers": 12207.96728515625,
+        "firstRead": 54.255859375,
+        "bodyTail": 46486.521728515625
+      }
+    },
+    {
+      "name": "1-tap-first-cline",
+      "arm": "cline",
+      "sdkDurationMs": 78544,
+      "sourceHashes": {
+        "events": "d57e14a5e1900ad4cfddde19426d2e374e4e6d55d11dab47e5ebe25cb2dc9e11",
+        "result": "4a387df8b1edb55b4026d304d8f7c678be51e7d46b1388b64dcd1a52ab5c3fcf",
+        "requestTiming": "7bba85b266c38130fd143c7a9e8eb4bbc383605fd7a36ad041bd1f49f11719de"
+      },
+      "windowMs": 78544,
+      "toolMs": 11214,
+      "requestMs": 65194.469970703125,
+      "overlapMs": 0,
+      "toolOnlyMs": 11214,
+      "requestOnlyMs": 65194.469970703125,
+      "outsideObservedSpansMs": 2135.530029296875,
+      "toolSpanCount": 16,
+      "toolUnionCount": 16,
+      "toolAnomalies": [],
+      "requestAnomalies": [],
+      "measuredRequests": [
+        {
+          "attempt": 1,
+          "requestBodySha256": "5cc67481307d741e9b3803f2576ed8f084b77f78d079da2a8660864487d4c8f2",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 2,
+          "requestBodySha256": "44aeb2e867a9fbaae876d3de7d4981612580e4fa1935693da19b4e3110dbd0e9",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 3,
+          "requestBodySha256": "5f34ee5890c0968d1e98f3d2ed48755e0cbfe41cefb00b113a850713eb4f8dc0",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 4,
+          "requestBodySha256": "4f74f7b71d6f14db7f325f42a520cd101ad8b141bff7ab3b6acaaa5d6f62d5b3",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 5,
+          "requestBodySha256": "58b5aac78de02f8637451ad4b65fbe27894d6ddebe1f44ae0e59b402029f5770",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 6,
+          "requestBodySha256": "adeccb340e08195320539b4810f6822df395f2a60cb3b8c0adb05cc003154e32",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 7,
+          "requestBodySha256": "595be05899b7520140e5051b3abb95a3db4f8100bbfd06bd0eed5b52d2146ab4",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 8,
+          "requestBodySha256": "3df8f558b1cad37e7378adc7fd9a3f16bc5407b4572b4ff42288674c8de8ba57",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 9,
+          "requestBodySha256": "01cf6ac0a7c4b5780570cc9ddcaf6e4de78482562f4041904f693e6c986d4b4c",
+          "complete": true,
+          "terminal": "body_end"
+        }
+      ],
+      "requestPhaseUnionMs": {
+        "headers": 8775.845947265625,
+        "firstRead": 10.8408203125,
+        "bodyTail": 56407.783203125
+      }
+    },
+    {
+      "name": "1-tap-first-reference",
+      "arm": "reference",
+      "sdkDurationMs": 65651,
+      "sourceHashes": {
+        "events": "a3d40f8e77ebc1852be707d335fa140987ca6000319583109b39f40d83cdccc7",
+        "result": "067db153239e211da6fa02f537c2d7774b1a1b21a56440e6b6a13639d7257eb1",
+        "requestTiming": "64fa37c37930f2f6485eb253eefb20b3c64404252ba64c5c6cb9684eade8f3d5"
+      },
+      "windowMs": 65651,
+      "toolMs": 13440,
+      "requestMs": 49624.646484375,
+      "overlapMs": 0,
+      "toolOnlyMs": 13440,
+      "requestOnlyMs": 49624.646484375,
+      "outsideObservedSpansMs": 2586.353515625,
+      "toolSpanCount": 36,
+      "toolUnionCount": 29,
+      "toolAnomalies": [],
+      "requestAnomalies": [],
+      "measuredRequests": [
+        {
+          "attempt": 1,
+          "requestBodySha256": "ad72848b8f768877b223440b9fd512ba6949f8f9c046994616e04beaac3aef62",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 2,
+          "requestBodySha256": "a64b98854cf20181afecc92ba6751213f6fe87a6bc6584e9bba40b908f6df067",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 3,
+          "requestBodySha256": "40274b372d1fe37a61d931ffc13a4301f70c78e79abde045b46bd071814b80e5",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 4,
+          "requestBodySha256": "5dd6eacab5d3bb250ef967380f71b59c83a0efeedf2ee118b64923ebd6488cdd",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 5,
+          "requestBodySha256": "42f918da6318023b97eba30bfb27c9ba2cd27e790487a8b3d2de397bbb6da65f",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 6,
+          "requestBodySha256": "ed57d3451567bad7bf1f0d0fb16070d88253e2d96a8d9e68a8f006207abc427c",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 7,
+          "requestBodySha256": "ba98de0175f6070f4298d434574a1e5c1eeb2ba07548ee4c657ce0787d0145f6",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 8,
+          "requestBodySha256": "45d7ecb53d32a5ef149d19cc5dbcac2a40bf8fd372ee84083f766e27999f2a81",
+          "complete": true,
+          "terminal": "body_end"
+        }
+      ],
+      "requestPhaseUnionMs": {
+        "headers": 8376.015380859375,
+        "firstRead": 14.2138671875,
+        "bodyTail": 41234.417236328125
+      }
+    },
+    {
+      "name": "1-tap-first-candidate",
+      "arm": "candidate",
+      "sdkDurationMs": 98035,
+      "sourceHashes": {
+        "events": "6e1230f2e7ad6fc72da9dd848d609ea8a50faa79af2a6d2f1f1827ddbe5b360a",
+        "result": "335b940f9d74235057138f4e522d45d82539d19fafc0078d06c62565ca620e3d",
+        "requestTiming": "72aa566f8db2b83f6abdb0910dfe11de3b09655a8cbdf74f06e08562d3f37886"
+      },
+      "windowMs": 98035,
+      "toolMs": 23536,
+      "requestMs": 72212.55053710938,
+      "overlapMs": 0,
+      "toolOnlyMs": 23536,
+      "requestOnlyMs": 72212.55053710938,
+      "outsideObservedSpansMs": 2286.449462890625,
+      "toolSpanCount": 43,
+      "toolUnionCount": 30,
+      "toolAnomalies": [],
+      "requestAnomalies": [],
+      "measuredRequests": [
+        {
+          "attempt": 1,
+          "requestBodySha256": "49a1be607e9dd82ce60e1b7a63ae6dee0cb4a7ce46fe9fdaecab345f9fcb10cc",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 2,
+          "requestBodySha256": "adb1050264c3c085b990c7eedd1deda687c38a43b88109f2ed79d00bc01e81c0",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 3,
+          "requestBodySha256": "c9aabcaf57c619f8ccc4f193f8bbfac02150440f0fd525c6b78f7a2e90e421ab",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 4,
+          "requestBodySha256": "19c87ba64a265f148a3052c9fa59b31043aa2d5435542da6e6bf4a953a7584ab",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 5,
+          "requestBodySha256": "f454222c8ee823745cd8ca995d64cb942b2a98dccd44024af823acb813863a7c",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 6,
+          "requestBodySha256": "4264ba095888a272400060cdd4623b4360445d6cd1fc4f33a9f5fa80053db45d",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 7,
+          "requestBodySha256": "48395d66c4ebae2849c1e78b0fae1a24217626d434c7516c35119037fa1c9e75",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 8,
+          "requestBodySha256": "0fcad1e1343e2fd32fadc862f85196fc3daa857df743672db3d32c2f2ab618d1",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 9,
+          "requestBodySha256": "690e34b499c86d11d846b9a929b625aaf064da2e7167aeb9b98821d2d4bd4572",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 10,
+          "requestBodySha256": "8f16d6e2dc18e238c7d94f32a2072d433775ca0b51f1f38055c576285885b3f5",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 11,
+          "requestBodySha256": "02980baa740c6dea9f735fc4d5c4da36fbdb34eb2950c4638e158fa87366a6a1",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 12,
+          "requestBodySha256": "e054549646168c4c004a2cb372e0062d71d279f47db803b332bcd62cec2d2a65",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 13,
+          "requestBodySha256": "c95d76be605d23b2f406646690842dbec46c0d76fe84600d92e0fbac9aba44d2",
+          "complete": true,
+          "terminal": "body_end"
+        }
+      ],
+      "requestPhaseUnionMs": {
+        "headers": 15060.196533203125,
+        "firstRead": 88.992919921875,
+        "bodyTail": 57063.361083984375
+      }
+    },
+    {
+      "name": "2-filter-map-candidate",
+      "arm": "candidate",
+      "sdkDurationMs": 159598,
+      "sourceHashes": {
+        "events": "fe989fd8f2f9d2804e87372f24377b35f672b1daf0eb4c6e520f8874b9173b79",
+        "result": "0fba2c2c57e5c3f90ab5dd1b8828638ce6fc3a313e973f4c3ba2f738ee8c47e5",
+        "requestTiming": "dc8d7b1ee270cc5791c4b14c3eed56fb3c5e73fedf961e2e27db12345e83106a"
+      },
+      "windowMs": 159598,
+      "toolMs": 43828,
+      "requestMs": 111860.294921875,
+      "overlapMs": 0,
+      "toolOnlyMs": 43828,
+      "requestOnlyMs": 111860.294921875,
+      "outsideObservedSpansMs": 3909.705078125,
+      "toolSpanCount": 73,
+      "toolUnionCount": 56,
+      "toolAnomalies": [],
+      "requestAnomalies": [],
+      "measuredRequests": [
+        {
+          "attempt": 1,
+          "requestBodySha256": "7c1e21a4da0cc02076d48a0eeff088248c5955d39cc6ddfcd742dc933abecd23",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 2,
+          "requestBodySha256": "9cd9a501f73e8240691892291e250af65a9157fcc5294c3a33c01b8edabf5e80",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 3,
+          "requestBodySha256": "4650880249d4bcd42f530bfca5d7ff88470545fcfffa3b4e1f99678743e59992",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 4,
+          "requestBodySha256": "8771f49acc71c7dc97dea65117a2bb5139c338dd7abe71e47cf199adcfaa6645",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 5,
+          "requestBodySha256": "51a75f19e9881c23231cfff41d2b902222cd57bae8b9a4e4a123a164e16e602c",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 6,
+          "requestBodySha256": "16947744e8a8e2ab2ad474d24743c69005bb26e67dc3ea9bd2a8db434655e41b",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 7,
+          "requestBodySha256": "2450cd5db1a5983bda0b82f325002ecde564d172e587becd456b26e6b8416a42",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 8,
+          "requestBodySha256": "65d0de505442ef8ce4096a4d54ef7dad30c998b882b0393ff625f4348516afa7",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 9,
+          "requestBodySha256": "77967ebb1ce8d0d0fe86ed51f56a8a54c6eb5aebe419accc32edcc62f7c81696",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 10,
+          "requestBodySha256": "c375e9a7bcfeff1478c8fc1ab75665b8e1ca65f11238fe5014e71f8482828d2d",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 11,
+          "requestBodySha256": "0b7c0a9d8dfc6548655ef07063ff2bf28f46e675331b7fb38ecd0168b1f4d7b9",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 12,
+          "requestBodySha256": "44ac724572f8086dea4d0afbbd8bbd1022a01bced4e223599afab784b78d0ad7",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 13,
+          "requestBodySha256": "7d7cafb32911d80cb770a2aee7e991684fe64e6fdd8cbf353c7bbdc583deb37b",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 14,
+          "requestBodySha256": "30276d85c507e39a91222e38193fbbc783311bff6bebd8fdbdd9fefc7ae879a0",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 15,
+          "requestBodySha256": "554c2c5ec0b16f3122ecbb2260cf295dba554d12da6f4eb87fea034d70ba5ea8",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 16,
+          "requestBodySha256": "29b2e166cc2a348d86fe14ba13e726eda8fd4d6cc51e8137f543fc2fd37ccf2d",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 17,
+          "requestBodySha256": "57fc3518c01f01e1901642324a367fbc8ec6ec0f4f9ba8da259f9cd0fbb55c52",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 18,
+          "requestBodySha256": "0c6ecdc1cee2bafa780d0f799988b97182f3e31f11f79f28f2ce0a543ff2b0ec",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 19,
+          "requestBodySha256": "900430641b434ecb811738f22dd61d79927688cacc77bc622742f6399b3e0ba3",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 20,
+          "requestBodySha256": "b186592065e9d032a3536abb45efaadaca8a66e03f69f264a72d572c0e5eb164",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 21,
+          "requestBodySha256": "22e2aaab7f5efdda6a33e1cecd8e37c600538623c207deebe91326af0ba894ae",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 22,
+          "requestBodySha256": "e76c0b7a7099c8a6af88499e9e955adb5031f20b46a966b1585c901ea7ef35df",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 23,
+          "requestBodySha256": "d9e05947ca46e6d700ca5043aa0bacafe9bdd4a478ec19e395f251c702aee273",
+          "complete": true,
+          "terminal": "body_end"
+        }
+      ],
+      "requestPhaseUnionMs": {
+        "headers": 25269.675537109375,
+        "firstRead": 59.84326171875,
+        "bodyTail": 86530.77612304688
+      }
+    },
+    {
+      "name": "2-filter-map-cline",
+      "arm": "cline",
+      "sdkDurationMs": 341325,
+      "sourceHashes": {
+        "events": "9c1a3b57ced01d4b577bbea79a606980c0d35581f954ab9ea62c7ca55eb0f002",
+        "result": "eac6ab90471682e8db08e3a0c0ede57f356d5c4a18e4be129dcbe9507e25e6e2",
+        "requestTiming": "d395fd665067aa062590e16c278b4fb8b5f527043a077681c0ebea75a40c5fcc"
+      },
+      "windowMs": 341325,
+      "toolMs": 38323,
+      "requestMs": 299906.47216796875,
+      "overlapMs": 0,
+      "toolOnlyMs": 38323,
+      "requestOnlyMs": 299906.47216796875,
+      "outsideObservedSpansMs": 3095.52783203125,
+      "toolSpanCount": 26,
+      "toolUnionCount": 22,
+      "toolAnomalies": [],
+      "requestAnomalies": [],
+      "measuredRequests": [
+        {
+          "attempt": 1,
+          "requestBodySha256": "2f164b91dcace0258a44221006f4268db80575fe087a0de561e8adce2042a0a3",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 2,
+          "requestBodySha256": "05b1b15309772d815783c44d0b86a53e38e3e7a7847ff69b1b314401c06ab572",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 3,
+          "requestBodySha256": "f49e723f54e2eb66bde14e6fed86bc4965f7e2b3d560db0331248d096c71a37f",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 4,
+          "requestBodySha256": "b580e508eb0e6acb2528cef8cbdd67d8af3cbe4e0c0db90374dd81a3bef581f6",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 5,
+          "requestBodySha256": "b6ee39a369cab29b6cb44f0963707a78706b002486be58c238946bdb9763073a",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 6,
+          "requestBodySha256": "1e706bd5251543f84cfb4cd9bc01499bad12f1484b34b1b9b3eaa65b95015ab2",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 7,
+          "requestBodySha256": "5c366466b0a2dc475d699dcc51ed3a817f0446d8a54f1c4e4723786e06821373",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 8,
+          "requestBodySha256": "25467e57f5bff44006bdb3808349d66c765d231ac43c2a6988099a5dbe7c5d28",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 9,
+          "requestBodySha256": "21b8abb101594fe50df60432b36102751732afae06dd334988b89d920c97936f",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 10,
+          "requestBodySha256": "4c8f4e46322050539c646df35e3bebbb212cad3d228f420c1eba10bff99b9247",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 11,
+          "requestBodySha256": "2bdff58d03bf61e01a7edc60e8ca6f0bac56a500aef7f43c3c80ebc355cb7a1e",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 12,
+          "requestBodySha256": "af47f285db0b1ad88da24c6a1f7d7f34c8ef4192fed334cb2bc80027b8c58c0f",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 13,
+          "requestBodySha256": "b24314a047ba7d68506df73c1218dd641a7734aca898eaeeeeea8a3383c6408e",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 14,
+          "requestBodySha256": "7719c60cff6ee2bffe19ea5baeeabdbee71b4c607cd2c36b48fedb981cecce78",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 15,
+          "requestBodySha256": "43feea249be4629e38370b8e2435e8b135ce1b2fc7ab060f0a2fffb1bee638ea",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 16,
+          "requestBodySha256": "5957fba129f15c73383ce644538922d42e23766208bc36e570ae011637ab8a3c",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 17,
+          "requestBodySha256": "00adaa19c4aa8c72c8b129cff07a0fed601766fdec0417a922534a8cebf5dcd4",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 18,
+          "requestBodySha256": "9773749ccc1ef4f5faf6e1b3ce10ac49922f6ae3309472bb0f401bc797918ff9",
+          "complete": true,
+          "terminal": "body_end"
+        }
+      ],
+      "requestPhaseUnionMs": {
+        "headers": 19477.37939453125,
+        "firstRead": 64.258544921875,
+        "bodyTail": 280364.8342285156
+      }
+    },
+    {
+      "name": "2-filter-map-reference",
+      "arm": "reference",
+      "sdkDurationMs": 263149,
+      "sourceHashes": {
+        "events": "b87621356b6dbd288999622567a2f455f7b6e10ef90a16f7c5c3d4fddf7b33ac",
+        "result": "5549493278c48907a5a7017830738fa2cfa79a6f7b9b97b81db4141e1f72b187",
+        "requestTiming": "cee7e42d3c67f5c8ee9a3a8f127e7debeea694c6cbf223fe736edd1a86dcbe21"
+      },
+      "windowMs": 263149,
+      "toolMs": 58324,
+      "requestMs": 201412.8369140625,
+      "overlapMs": 0,
+      "toolOnlyMs": 58324,
+      "requestOnlyMs": 201412.8369140625,
+      "outsideObservedSpansMs": 3412.1630859375,
+      "toolSpanCount": 66,
+      "toolUnionCount": 48,
+      "toolAnomalies": [],
+      "requestAnomalies": [],
+      "measuredRequests": [
+        {
+          "attempt": 1,
+          "requestBodySha256": "1bede8f078deb8cb7a3cf1fe212dbf6e585b9db95efbfee4750cd500f9c16f4e",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 2,
+          "requestBodySha256": "eca3442e70b9057b006664ef40c5f2ad4e8340e483c4b91231ad5a033190a1a7",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 3,
+          "requestBodySha256": "36780f987c611bdcd11688ae0561dda22f3ae903817dc933590a6472465f34ef",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 4,
+          "requestBodySha256": "d1044328618e04084e1d97bae6c7b9a4fb29125f1bcf1ad977740bbcb76e7193",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 5,
+          "requestBodySha256": "a42ff37c9872c36fdf8e7e6a720373b33f82902faeb1543f727f0dd2994e6c35",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 6,
+          "requestBodySha256": "9853acc86d0f51cc263bee4473cc5ee9ce1cc107224bd3991c962a7b9133f934",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 7,
+          "requestBodySha256": "0144c3dd3d4805551a18e3c24f68a37ef0ca2196b6d7b1a6ac35764bac098243",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 8,
+          "requestBodySha256": "bf6c706f797cc4659c9161694d3b6a2eeb2af879a582db9e032d76c907606dd4",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 9,
+          "requestBodySha256": "24b6f0df9a1675257181712769d94949a3828f64b651c58b8deeef0493cc863f",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 10,
+          "requestBodySha256": "05722da1f63bc23fe2d5f2022e44244e43ae6839a8d310fc4af4988e32c94f51",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 11,
+          "requestBodySha256": "42ac4c778a53fde15aebaae3a60df4bd36cbcf9c1ba62cd2bb3fafa4f25281ae",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 12,
+          "requestBodySha256": "cfa6439816c9596976edc476b6717807111874178451a472465ea475a907be53",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 13,
+          "requestBodySha256": "ae075a148d2bdbb168a9dffa234cb687ae12d62e80420a42c3405e75940c49d7",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 14,
+          "requestBodySha256": "3c4021e5e02aa3e97890700a8f172af5d6ce3fafdad3da1a24d3ef71212becd1",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 15,
+          "requestBodySha256": "99b20d95693cd3f6ed0840bb4dabd0cf93864dc83e9bdd7a4b698aa813820078",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 16,
+          "requestBodySha256": "e4b9f711790f5b1f54a9a79f7450ebf8ed62a4e18c81620a0bd1428839e989f1",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 17,
+          "requestBodySha256": "7777c3c1d7441fe6599b2758473f166caff92bfd36929dc167d47559cb6e1a36",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 18,
+          "requestBodySha256": "edf076478e65cf6ef65e2846a5e564fbd565150090be5b8e58cd014f9ab71117",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 19,
+          "requestBodySha256": "53c04b05833a8bdf2539f96badedd988bcc91e4c61b4f042c7263aaca5e7e054",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 20,
+          "requestBodySha256": "a1a76e67ff494479e19d833b7e195b2e4e734bb9f4ad29e0afc7b5be665d8ca3",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 21,
+          "requestBodySha256": "3f8d5a2c6ca34eee80947c8cdcdbdb9b96bf49e2e0ca4c9cfac33c0a0cf12fec",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 22,
+          "requestBodySha256": "5318fafca455857449bf0588f3cc1253e675aec75797453bcef16156b8295b95",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 23,
+          "requestBodySha256": "d59955201657826483c93d03e7ab89646ed099df1e0dc4012c10bafeedfc36c7",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 24,
+          "requestBodySha256": "31d11e6ee7678eef253ad303ab4f1159b0492469eb44ccc15e22ee08706c390f",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 25,
+          "requestBodySha256": "a46278c8a3ec476d3cb5446400242f8cc76d7686f47c3e4b0d66eeee008c0a6c",
+          "complete": true,
+          "terminal": "body_end"
+        }
+      ],
+      "requestPhaseUnionMs": {
+        "headers": 25791.301513671875,
+        "firstRead": 62.360595703125,
+        "bodyTail": 175559.1748046875
+      }
+    },
+    {
+      "name": "2-map-with-previous-cline",
+      "arm": "cline",
+      "sdkDurationMs": 110562,
+      "sourceHashes": {
+        "events": "2771b41606eea5a3e803d3904afd6237ca2b92f35e66f0705ef5c82e32b2df9c",
+        "result": "bc401077718b8e31be651a37fd1e9ac781ac8c8cb21a1a8ee2ecbeae32b3eb8f",
+        "requestTiming": "ad7138961a5d5613eacec7058896f1d9c3abcaa01f0e6d070038c8a66c79f0d4"
+      },
+      "windowMs": 110562,
+      "toolMs": 27083,
+      "requestMs": 80656.60522460938,
+      "overlapMs": 0,
+      "toolOnlyMs": 27083,
+      "requestOnlyMs": 80656.60522460938,
+      "outsideObservedSpansMs": 2822.394775390625,
+      "toolSpanCount": 29,
+      "toolUnionCount": 18,
+      "toolAnomalies": [],
+      "requestAnomalies": [],
+      "measuredRequests": [
+        {
+          "attempt": 1,
+          "requestBodySha256": "07ecd6ded0b58f9952637be96d498eb04b62721719ae5c1b31c95c1b652fd918",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 2,
+          "requestBodySha256": "948548afb2571cfae7cf54543339688e3ed5dcfa6f24366453e633410c8d7b5f",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 3,
+          "requestBodySha256": "abc3e5987b46f0da35d596382db97d62c74a48a9fc0a0c34f10d6998064d630c",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 4,
+          "requestBodySha256": "2a83e4bd01dedaa61c8f12026a7a84fb864e8258f8fccb989ea2a18e54ac1477",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 5,
+          "requestBodySha256": "106667d755f64f3158d111976fe2404efd00f0c773199547482c55ec0c169354",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 6,
+          "requestBodySha256": "ee1f0b223dd94a3d6d968183ed0b319c98ea93ebe75c41f3735c9d4496b16a68",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 7,
+          "requestBodySha256": "ed7825598c2082100be6f54e96b3f485b8fce5da70d1e46d43219bd4fba5adce",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 8,
+          "requestBodySha256": "f6b49f9ad41a07e259ee813e90615246441608927f39387d4f4fbf9f88a55f75",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 9,
+          "requestBodySha256": "1ace25ddb34dc6a4fc02e2acaa2feab080228f11715078ffdb24f3daeee715ba",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 10,
+          "requestBodySha256": "fcaad128ea63c843ed85d9d15bb1239c98c57ed65583d7427a40c80344035135",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 11,
+          "requestBodySha256": "bd377439fbc0795c2e29f875dcdcfcd2196f1fd6f56bf8de1ec1058a0e951b4a",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 12,
+          "requestBodySha256": "b048c5fcc57a8ec187cd64a8bb07eea7f6dbb00a10c6e657711658af6a3415f2",
+          "complete": true,
+          "terminal": "body_end"
+        }
+      ],
+      "requestPhaseUnionMs": {
+        "headers": 15021.095703125,
+        "firstRead": 114.575439453125,
+        "bodyTail": 65520.93408203125
+      }
+    },
+    {
+      "name": "2-map-with-previous-reference",
+      "arm": "reference",
+      "sdkDurationMs": 104655,
+      "sourceHashes": {
+        "events": "234728c08de5d09c9c3b9f47e316415e258550367a8e6baf81056159d79bb420",
+        "result": "3386002fc8a712519687b9a4698dde99b39337362c176b73467400624db3afb5",
+        "requestTiming": "9fbb4325eeb7c2c5e4c017d294448f12963918bf9068407306ac73bd936e64b7"
+      },
+      "windowMs": 104655,
+      "toolMs": 22802,
+      "requestMs": 79280.1923828125,
+      "overlapMs": 0,
+      "toolOnlyMs": 22802,
+      "requestOnlyMs": 79280.1923828125,
+      "outsideObservedSpansMs": 2572.8076171875,
+      "toolSpanCount": 43,
+      "toolUnionCount": 33,
+      "toolAnomalies": [],
+      "requestAnomalies": [],
+      "measuredRequests": [
+        {
+          "attempt": 1,
+          "requestBodySha256": "655230394728d5c379d32039d6c7f377cb1d3b58dc5635ed724be971273bad92",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 2,
+          "requestBodySha256": "77de2f80ac2d6caba53ef291518857405880ccecdd5c43eab49abda09c3a714b",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 3,
+          "requestBodySha256": "ba1247eb03819cb429cefd47e2cc62bd827747cb93b04dcc6882c4186b34dc31",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 4,
+          "requestBodySha256": "0068ebc36193ef532a258e45db18f3143d1106c70115f4ebe579f38ee6ed5915",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 5,
+          "requestBodySha256": "bb5e0da2d608b68ebb7f2dcb5372dc30a887b2b6113d00d8e32ed85fb124db25",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 6,
+          "requestBodySha256": "3b4b428954d41173e03c46327a8915687327966b601c5a25c9350e7e8c6eb884",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 7,
+          "requestBodySha256": "c35c5ce3e102bdea4d47a99611fbb0da83a880d7e110210d6daf952e6a900c36",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 8,
+          "requestBodySha256": "f63c4cc8579863f3243987ef4f7ad210bb34ccf619b851e21b5e68b4ddbd03c4",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 9,
+          "requestBodySha256": "5dc8eb624b542c3ae9da0836fa873be2574ff5fdc993377109ccdcee04df2c0b",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 10,
+          "requestBodySha256": "07fb61470c8c7167c3d972d5b4bc9a1269183775ecf39fefe541b1eb003c03e6",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 11,
+          "requestBodySha256": "e7a8784228b36393f4c3dd3181016baf0b2af65129265559af496ec163e62f99",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 12,
+          "requestBodySha256": "a0319b0dc9f617196f47fde251d2879663d9f82ae2b85b86678be157e5e5fb1f",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 13,
+          "requestBodySha256": "b13d5021fd4686805cec3c13ff9da5abb15e99b34f71b84f7570e726e50d13a0",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 14,
+          "requestBodySha256": "326daeca90490fcd4bc240b5409195192bcab6576d14195d438983ebf03a4851",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 15,
+          "requestBodySha256": "ea2aac3ce2ea28a5bfaa43257c2952af4652be0e18da819b831b037a778b19d9",
+          "complete": true,
+          "terminal": "body_end"
+        }
+      ],
+      "requestPhaseUnionMs": {
+        "headers": 18573.880615234375,
+        "firstRead": 16.413330078125,
+        "bodyTail": 60689.8984375
+      }
+    },
+    {
+      "name": "2-map-with-previous-candidate",
+      "arm": "candidate",
+      "sdkDurationMs": 85405,
+      "sourceHashes": {
+        "events": "da680108c0fca8276ff43a0022e8d552c918436d580ac50393747a53ef77c6fe",
+        "result": "614c47498f8f09b2c6179067029a47396cc4457625d246a74b5213a9535e892a",
+        "requestTiming": "29d096229c0f6a44d1910cd2a8985af31cc44e29253aefc4e7666abedd7fbc91"
+      },
+      "windowMs": 85405,
+      "toolMs": 20290,
+      "requestMs": 62173.173828125,
+      "overlapMs": 0,
+      "toolOnlyMs": 20290,
+      "requestOnlyMs": 62173.173828125,
+      "outsideObservedSpansMs": 2941.826171875,
+      "toolSpanCount": 39,
+      "toolUnionCount": 32,
+      "toolAnomalies": [],
+      "requestAnomalies": [],
+      "measuredRequests": [
+        {
+          "attempt": 1,
+          "requestBodySha256": "0e8c842306efabd3b885808f6a31dd09ba330231a385f5f48d5dd29d23343024",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 2,
+          "requestBodySha256": "a69184dc8ebf3cd6103d29fd7c359c1aa065ecf1ab3647bfc87802b34f451b2e",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 3,
+          "requestBodySha256": "fc35d6c7cbf159753dfcc79e4bab2e697e5e030f91e98983e9474de2f29bd4f6",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 4,
+          "requestBodySha256": "4858ecfee782a9c0040f447b8492e6e5f7f809151879c7480ef03337522e930f",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 5,
+          "requestBodySha256": "5d57a6c448d3e940f62bc9fee563299b0a3ffb5ab6b9b463eaf4b2481827306c",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 6,
+          "requestBodySha256": "64a1635907a6935e6e6ed21e822dcbd7ebf62bb7910cf5fbf94523ccf5aa3d0d",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 7,
+          "requestBodySha256": "ed03db65868cf093b7f1aabed67681438eef55469b70047de1f466fddf02dbf4",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 8,
+          "requestBodySha256": "496ba79e1b559b45bba7f626c6ec7b375aae4d81b951a3bcda586f1be7f636ca",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 9,
+          "requestBodySha256": "c36a6571a30ff8c4ee0842aededbb8929f8c4463f15fb93223a35195b12a55c9",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 10,
+          "requestBodySha256": "305f1bd3a9da62c17d8c887dff4c309f682983a8df7b4962edad44a6f28623a6",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 11,
+          "requestBodySha256": "ffabb2bda7e3dfaac034e1b619a8b72203b88657539fb2aca7a4b3d4248f7a5e",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 12,
+          "requestBodySha256": "ca18be3d9704e469207968bec5e2152af23875a119c7baf847614ba3a8ac6a09",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 13,
+          "requestBodySha256": "45e545f9752e0603a9c475e50005c6a87fc30df1edcd814d86be582c751d19e6",
+          "complete": true,
+          "terminal": "body_end"
+        }
+      ],
+      "requestPhaseUnionMs": {
+        "headers": 14898.018310546875,
+        "firstRead": 18.2861328125,
+        "bodyTail": 47256.869384765625
+      }
+    },
+    {
+      "name": "2-tap-first-reference",
+      "arm": "reference",
+      "sdkDurationMs": 248187,
+      "sourceHashes": {
+        "events": "efa6ce80483846ae35f8d1377337c99a8f5509d8057dd3a93bf61e6a90b49ad6",
+        "result": "9042ccc16b0892db7850f36d41dab345dafb4767573a2c6536449db6f9fbaa08",
+        "requestTiming": "c826fbe19ac008b31f46393a23395e2c7c4852d0121a517dcb1f6b5ad2825541"
+      },
+      "windowMs": 248187,
+      "toolMs": 12488,
+      "requestMs": 233527.7822265625,
+      "overlapMs": 0,
+      "toolOnlyMs": 12488,
+      "requestOnlyMs": 233527.7822265625,
+      "outsideObservedSpansMs": 2171.2177734375,
+      "toolSpanCount": 40,
+      "toolUnionCount": 28,
+      "toolAnomalies": [],
+      "requestAnomalies": [],
+      "measuredRequests": [
+        {
+          "attempt": 1,
+          "requestBodySha256": "673c7c4f126c5e9854de75d7c5bfa28b21815caa2efedc38ad82c6381c249d80",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 2,
+          "requestBodySha256": "d9d315378fd70ce6a73071263c9a33ce165ec81571566f5df6888e0f4e04049c",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 3,
+          "requestBodySha256": "0edabff0da744da47b84b07713df249561e04bcbdf7478c189493d74bbff138c",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 4,
+          "requestBodySha256": "e26b640976aee3feab20064963fe17b0abad4c7a28ca57dfc36468be8e87e29d",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 5,
+          "requestBodySha256": "0944d70f2c14cfbcb8ece3ec6a3e1127cb0c99ad487358963b55f70fb08b0588",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 6,
+          "requestBodySha256": "acb75919debe15d3a639012ff655c9433b7c2d0108d410f90091361b8e08402f",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 7,
+          "requestBodySha256": "531656b79ec0455d16e72e6dcdd75618438ab186a5edb0381facd8ddec2c159c",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 8,
+          "requestBodySha256": "e4de73432257ed4b65670a0f41e25aef2d4d6b951268fdee97a8f1118ec7aa4d",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 9,
+          "requestBodySha256": "40b585287acef4eebdfd53cf28ba672a86e341410e60a78e69986ad5b5a61826",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 10,
+          "requestBodySha256": "b1cf9c27c3365bb4faf342e8e470c2898c6940c85159df9336e835dc971be209",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 11,
+          "requestBodySha256": "07c174a4d03ed75b8d37d0fadd1d62b47745b9ce263776bac496dd4aa24c4348",
+          "complete": true,
+          "terminal": "body_end"
+        }
+      ],
+      "requestPhaseUnionMs": {
+        "headers": 11772.51025390625,
+        "firstRead": 14.89599609375,
+        "bodyTail": 221740.3759765625
+      }
+    },
+    {
+      "name": "2-tap-first-candidate",
+      "arm": "candidate",
+      "sdkDurationMs": 222940,
+      "sourceHashes": {
+        "events": "7a3db3ae0287b87a184d8b77ed8a7cb7854de360fa2a22fb9cd23486a6c4816c",
+        "result": "1e95a564188fb1525aa34281a2cc96d757f5458a9d7c376d191b30ee70d8396a",
+        "requestTiming": "34bfe2f43c04d5730d16e55ea1ddd8fc6310ddb604dae20831f8b8de5bf5ff25"
+      },
+      "windowMs": 222940,
+      "toolMs": 13533,
+      "requestMs": 206152.13330078125,
+      "overlapMs": 0,
+      "toolOnlyMs": 13533,
+      "requestOnlyMs": 206152.13330078125,
+      "outsideObservedSpansMs": 3254.86669921875,
+      "toolSpanCount": 47,
+      "toolUnionCount": 36,
+      "toolAnomalies": [],
+      "requestAnomalies": [],
+      "measuredRequests": [
+        {
+          "attempt": 1,
+          "requestBodySha256": "acec6ed544750e7084dcfc5fb953461c734909a044011113138d03ff54aeb5c4",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 2,
+          "requestBodySha256": "3bfce1a288b20051cd1d74ebd9898ea4b5ae6a1572a3e0e19ca85a7602e3695d",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 3,
+          "requestBodySha256": "0fee4575576fe66c197e0e28836159633be2d1e86f6ba87481fcd46fbb752e52",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 4,
+          "requestBodySha256": "1f0a1cffe1f9552b73a2af7c3682d2763154ba103bf2a71041905fa704b64e93",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 5,
+          "requestBodySha256": "0236415c215c1432319da2ec3b8df417b104ffda665c0c18e6e9e8992c0bf1cb",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 6,
+          "requestBodySha256": "cb9171cd4c0836d2b24e730dcb5d0f3e371a1f620ae3de363a2830f1c350fdb8",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 7,
+          "requestBodySha256": "e43f688c96275d081b75f9bfbdbcf619fc8364a12e7834dfbb699f441286c313",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 8,
+          "requestBodySha256": "834f8813ed21a201a182580240d1e5b499216750e3502eff2f5c4239e237ff06",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 9,
+          "requestBodySha256": "f6d840e89c8542add48e37cdc1bcd39381a66bc07fec5cc97457b4f9466040c2",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 10,
+          "requestBodySha256": "470f3b716c02fdb41ac92ec03dc1ef988e8eeb3dbba07b8ad6cbe5d90abfcfc8",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 11,
+          "requestBodySha256": "71d3115d1d68c1c67e984ec5eb777d6c7874aa3de9b2b47e8901a1700359dd96",
+          "complete": true,
+          "terminal": "body_end"
+        }
+      ],
+      "requestPhaseUnionMs": {
+        "headers": 10696.26806640625,
+        "firstRead": 45.6083984375,
+        "bodyTail": 195410.2568359375
+      }
+    },
+    {
+      "name": "2-tap-first-cline",
+      "arm": "cline",
+      "sdkDurationMs": 166556,
+      "sourceHashes": {
+        "events": "4d1675166b6cecdcdeaf46644f1ee2bae98b80fc8854a4b65e85e5e92146d0bf",
+        "result": "7d85abd387db651c67e3545d9864e995d72c186a9ea3afae58770e63f7d9920e",
+        "requestTiming": "933976e39a81e41369b4a48cedf3d577ce3e60722c263a8d5d11d2efe62c34cf"
+      },
+      "windowMs": 166556,
+      "toolMs": 11437,
+      "requestMs": 152565.14331054688,
+      "overlapMs": 0,
+      "toolOnlyMs": 11437,
+      "requestOnlyMs": 152565.14331054688,
+      "outsideObservedSpansMs": 2553.856689453125,
+      "toolSpanCount": 18,
+      "toolUnionCount": 17,
+      "toolAnomalies": [],
+      "requestAnomalies": [],
+      "measuredRequests": [
+        {
+          "attempt": 1,
+          "requestBodySha256": "920497be21c31102f160e1d0531ff8e8328fd8367386af9111b4eb1b8dd91762",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 2,
+          "requestBodySha256": "4ff597659f669c946a11f603e921d78cbaa6a7f20a8e3213c75531c0bb6c59e1",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 3,
+          "requestBodySha256": "3fdcf4a1c965687452b90c95e61df79e2a267344b9cf49521a688b6b8f9f58dd",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 4,
+          "requestBodySha256": "7c7e4e4d47e0c315c23d7d441203500eee6c5c54604dfeb1509801209e06d782",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 5,
+          "requestBodySha256": "6365f8e9de0bd44492caf05975726fb9b68d5b509e642d6e6190c6ae8a5b7b0c",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 6,
+          "requestBodySha256": "fe67e0033808a8e07d8ab321507272534b90dcd31d44f5473168633068f6cc95",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 7,
+          "requestBodySha256": "9fd36ae0ad637b4b0a67d8e7beef72e982d00d17a1de82765d87fb67d38909d4",
+          "complete": true,
+          "terminal": "body_end"
+        },
+        {
+          "attempt": 8,
+          "requestBodySha256": "6b3c1c6dbd70459dc46b6de570ea47d778788b09d281915574804eb54a667cb1",
+          "complete": true,
+          "terminal": "body_end"
+        }
+      ],
+      "requestPhaseUnionMs": {
+        "headers": 9241.6142578125,
+        "firstRead": 19.212158203125,
+        "bodyTail": 143304.31689453125
+      }
+    }
+  ],
+  "arms": {
+    "reference": {
+      "sdkDurationMs": 949296,
+      "windowMs": 949296,
+      "toolMs": 173285,
+      "requestMs": 759257.0930175781,
+      "overlapMs": 0,
+      "toolOnlyMs": 173285,
+      "requestOnlyMs": 759257.0930175781,
+      "outsideObservedSpansMs": 16753.906982421875
+    },
+    "candidate": {
+      "sdkDurationMs": 898260,
+      "windowMs": 898260,
+      "toolMs": 181549,
+      "requestMs": 697561.7580566406,
+      "overlapMs": 0,
+      "toolOnlyMs": 181549,
+      "requestOnlyMs": 697561.7580566406,
+      "outsideObservedSpansMs": 19149.241943359375
+    },
+    "cline": {
+      "sdkDurationMs": 906973,
+      "windowMs": 906973,
+      "toolMs": 130462,
+      "requestMs": 760754.0874023438,
+      "overlapMs": 0,
+      "toolOnlyMs": 130462,
+      "requestOnlyMs": 760754.0874023438,
+      "outsideObservedSpansMs": 15756.91259765625
+    }
+  }
+}

@@ -1,6 +1,6 @@
 {
   "protocolHash": "33fa1c05335c043b464fe756a81541f999e0f7ce1d7eaf6c4af3059a2a38cb44",
-  "completed": 12,
+  "completed": 18,
   "planned": 18,
   "receipts": [
     {
@@ -50,6 +50,30 @@
     {
       "name": "2-filter-map-reference",
       "sha256": "26e0375c5d40d1f8a6b1a91accca06fe728218016d241866d168b609fb317aee"
+    },
+    {
+      "name": "2-map-with-previous-cline",
+      "sha256": "f798da8023c2fcff30c7f379edf376a3ca3faeacaf6785e619e19413e6706325"
+    },
+    {
+      "name": "2-map-with-previous-reference",
+      "sha256": "9498285c77be531923f42dcd0cabc2ca6aea593036b7ba3d301561c5ce5fc514"
+    },
+    {
+      "name": "2-map-with-previous-candidate",
+      "sha256": "40557002e4c1de210503b48c386fab7e4ef5e5b7bd568170ecfb3488e25ad4df"
+    },
+    {
+      "name": "2-tap-first-reference",
+      "sha256": "f0deae08b88b05bfd34768c48be3dc08fb933b184e756f09b672d54605053414"
+    },
+    {
+      "name": "2-tap-first-candidate",
+      "sha256": "bd3baee0bbbc38890e6b37ca04a7bf270114603f36edbe004fc71b0e2ba20be9"
+    },
+    {
+      "name": "2-tap-first-cline",
+      "sha256": "9cd6b580210bf48810a2c42fe2079fd8e7e4a05f2e54b32254d185c6087a3db3"
     }
   ],
   "note": "Derived index. Each immutable archive is independently verified; no model call is replayed."

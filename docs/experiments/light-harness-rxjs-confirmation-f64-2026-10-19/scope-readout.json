@@ -1,0 +1,177 @@
+{
+  "phase": "F64",
+  "rows": [
+    {
+      "name": "1-filter-map-reference",
+      "arm": "reference",
+      "offers": 0,
+      "forwardedReceipts": 0,
+      "contextJsonBytes": 0,
+      "literalFollowingSelections": []
+    },
+    {
+      "name": "1-filter-map-candidate",
+      "arm": "candidate",
+      "offers": 8,
+      "forwardedReceipts": 0,
+      "contextJsonBytes": 0,
+      "literalFollowingSelections": [
+        45,
+        47,
+        51,
+        53,
+        59,
+        61,
+        64,
+        66
+      ]
+    },
+    {
+      "name": "1-filter-map-cline",
+      "arm": "cline",
+      "offers": 0,
+      "forwardedReceipts": 0,
+      "contextJsonBytes": 0,
+      "literalFollowingSelections": []
+    },
+    {
+      "name": "1-map-with-previous-candidate",
+      "arm": "candidate",
+      "offers": 6,
+      "forwardedReceipts": 0,
+      "contextJsonBytes": 0,
+      "literalFollowingSelections": [
+        32,
+        37,
+        39,
+        45,
+        47
+      ]
+    },
+    {
+      "name": "1-map-with-previous-cline",
+      "arm": "cline",
+      "offers": 0,
+      "forwardedReceipts": 0,
+      "contextJsonBytes": 0,
+      "literalFollowingSelections": []
+    },
+    {
+      "name": "1-map-with-previous-reference",
+      "arm": "reference",
+      "offers": 0,
+      "forwardedReceipts": 0,
+      "contextJsonBytes": 0,
+      "literalFollowingSelections": []
+    },
+    {
+      "name": "1-tap-first-cline",
+      "arm": "cline",
+      "offers": 0,
+      "forwardedReceipts": 0,
+      "contextJsonBytes": 0,
+      "literalFollowingSelections": []
+    },
+    {
+      "name": "1-tap-first-reference",
+      "arm": "reference",
+      "offers": 0,
+      "forwardedReceipts": 0,
+      "contextJsonBytes": 0,
+      "literalFollowingSelections": []
+    },
+    {
+      "name": "1-tap-first-candidate",
+      "arm": "candidate",
+      "offers": 4,
+      "forwardedReceipts": 0,
+      "contextJsonBytes": 0,
+      "literalFollowingSelections": []
+    },
+    {
+      "name": "2-filter-map-candidate",
+      "arm": "candidate",
+      "offers": 8,
+      "forwardedReceipts": 0,
+      "contextJsonBytes": 0,
+      "literalFollowingSelections": [
+        52,
+        56,
+        58,
+        61,
+        63,
+        66,
+        68
+      ]
+    },
+    {
+      "name": "2-filter-map-cline",
+      "arm": "cline",
+      "offers": 0,
+      "forwardedReceipts": 0,
+      "contextJsonBytes": 0,
+      "literalFollowingSelections": []
+    },
+    {
+      "name": "2-filter-map-reference",
+      "arm": "reference",
+      "offers": 0,
+      "forwardedReceipts": 0,
+      "contextJsonBytes": 0,
+      "literalFollowingSelections": []
+    },
+    {
+      "name": "2-map-with-previous-cline",
+      "arm": "cline",
+      "offers": 0,
+      "forwardedReceipts": 0,
+      "contextJsonBytes": 0,
+      "literalFollowingSelections": []
+    },
+    {
+      "name": "2-map-with-previous-reference",
+      "arm": "reference",
+      "offers": 0,
+      "forwardedReceipts": 0,
+      "contextJsonBytes": 0,
+      "literalFollowingSelections": []
+    },
+    {
+      "name": "2-map-with-previous-candidate",
+      "arm": "candidate",
+      "offers": 4,
+      "forwardedReceipts": 0,
+      "contextJsonBytes": 0,
+      "literalFollowingSelections": [
+        27,
+        32,
+        34
+      ]
+    },
+    {
+      "name": "2-tap-first-reference",
+      "arm": "reference",
+      "offers": 0,
+      "forwardedReceipts": 0,
+      "contextJsonBytes": 0,
+      "literalFollowingSelections": []
+    },
+    {
+      "name": "2-tap-first-candidate",
+      "arm": "candidate",
+      "offers": 2,
+      "forwardedReceipts": 0,
+      "contextJsonBytes": 0,
+      "literalFollowingSelections": []
+    },
+    {
+      "name": "2-tap-first-cline",
+      "arm": "cline",
+      "offers": 0,
+      "forwardedReceipts": 0,
+      "contextJsonBytes": 0,
+      "literalFollowingSelections": []
+    }
+  ],
+  "boundary": "Actual typed tool-result metadata versus explicit user handoff are separate origins. Exposure and literal subsequent selection are not comprehension, actual compiler membership or mediation."
+}

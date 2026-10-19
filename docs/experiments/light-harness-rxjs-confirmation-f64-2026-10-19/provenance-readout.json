@@ -1,0 +1,216 @@
+{
+  "phase": "F64",
+  "rows": [
+    {
+      "name": "1-filter-map-reference",
+      "arm": "reference",
+      "offers": 4,
+      "actualModelReceipts": 4,
+      "contextJsonBytes": 9040,
+      "confirmedSameSourceReruns": [
+        51,
+        57,
+        58,
+        59,
+        62,
+        63,
+        64
+      ]
+    },
+    {
+      "name": "1-filter-map-candidate",
+      "arm": "candidate",
+      "offers": 3,
+      "actualModelReceipts": 3,
+      "contextJsonBytes": 5763,
+      "confirmedSameSourceReruns": [
+        50,
+        51,
+        52,
+        53,
+        58,
+        59,
+        60,
+        63,
+        64,
+        65,
+        66
+      ]
+    },
+    {
+      "name": "1-filter-map-cline",
+      "arm": "cline",
+      "offers": 0,
+      "actualModelReceipts": 0,
+      "contextJsonBytes": 0,
+      "confirmedSameSourceReruns": []
+    },
+    {
+      "name": "1-map-with-previous-candidate",
+      "arm": "candidate",
+      "offers": 2,
+      "actualModelReceipts": 2,
+      "contextJsonBytes": 3492,
+      "confirmedSameSourceReruns": [
+        36,
+        37,
+        38,
+        44,
+        45,
+        46,
+        47
+      ]
+    },
+    {
+      "name": "1-map-with-previous-cline",
+      "arm": "cline",
+      "offers": 0,
+      "actualModelReceipts": 0,
+      "contextJsonBytes": 0,
+      "confirmedSameSourceReruns": []
+    },
+    {
+      "name": "1-map-with-previous-reference",
+      "arm": "reference",
+      "offers": 1,
+      "actualModelReceipts": 1,
+      "contextJsonBytes": 1571,
+      "confirmedSameSourceReruns": [
+        37,
+        38,
+        39
+      ]
+    },
+    {
+      "name": "1-tap-first-cline",
+      "arm": "cline",
+      "offers": 0,
+      "actualModelReceipts": 0,
+      "contextJsonBytes": 0,
+      "confirmedSameSourceReruns": []
+    },
+    {
+      "name": "1-tap-first-reference",
+      "arm": "reference",
+      "offers": 0,
+      "actualModelReceipts": 0,
+      "contextJsonBytes": 0,
+      "confirmedSameSourceReruns": []
+    },
+    {
+      "name": "1-tap-first-candidate",
+      "arm": "candidate",
+      "offers": 1,
+      "actualModelReceipts": 1,
+      "contextJsonBytes": 1921,
+      "confirmedSameSourceReruns": []
+    },
+    {
+      "name": "2-filter-map-candidate",
+      "arm": "candidate",
+      "offers": 3,
+      "actualModelReceipts": 3,
+      "contextJsonBytes": 5413,
+      "confirmedSameSourceReruns": [
+        55,
+        56,
+        57,
+        60,
+        61,
+        62,
+        65,
+        66,
+        67,
+        68
+      ]
+    },
+    {
+      "name": "2-filter-map-cline",
+      "arm": "cline",
+      "offers": 0,
+      "actualModelReceipts": 0,
+      "contextJsonBytes": 0,
+      "confirmedSameSourceReruns": []
+    },
+    {
+      "name": "2-filter-map-reference",
+      "arm": "reference",
+      "offers": 5,
+      "actualModelReceipts": 5,
+      "contextJsonBytes": 9605,
+      "confirmedSameSourceReruns": [
+        40,
+        41,
+        42,
+        43,
+        46,
+        47,
+        48,
+        52,
+        53,
+        54,
+        60,
+        61,
+        62,
+        63
+      ]
+    },
+    {
+      "name": "2-map-with-previous-cline",
+      "arm": "cline",
+      "offers": 0,
+      "actualModelReceipts": 0,
+      "contextJsonBytes": 0,
+      "confirmedSameSourceReruns": []
+    },
+    {
+      "name": "2-map-with-previous-reference",
+      "arm": "reference",
+      "offers": 1,
+      "actualModelReceipts": 1,
+      "contextJsonBytes": 1571,
+      "confirmedSameSourceReruns": [
+        34,
+        35,
+        36
+      ]
+    },
+    {
+      "name": "2-map-with-previous-candidate",
+      "arm": "candidate",
+      "offers": 1,
+      "actualModelReceipts": 1,
+      "contextJsonBytes": 1571,
+      "confirmedSameSourceReruns": [
+        31,
+        32,
+        33
+      ]
+    },
+    {
+      "name": "2-tap-first-reference",
+      "arm": "reference",
+      "offers": 0,
+      "actualModelReceipts": 0,
+      "contextJsonBytes": 0,
+      "confirmedSameSourceReruns": []
+    },
+    {
+      "name": "2-tap-first-candidate",
+      "arm": "candidate",
+      "offers": 0,
+      "actualModelReceipts": 0,
+      "contextJsonBytes": 0,
+      "confirmedSameSourceReruns": []
+    },
+    {
+      "name": "2-tap-first-cline",
+      "arm": "cline",
+      "offers": 0,
+      "actualModelReceipts": 0,
+      "contextJsonBytes": 0,
+      "confirmedSameSourceReruns": []
+    }
+  ],
+  "meaning": "Observed receipt metadata and literal same-source reruns only. Not unique prevented errors, comprehension, causal mediation or a truthful-prose guarantee."
+}

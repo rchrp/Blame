@@ -1,0 +1,16 @@
+{
+  "afterAllModelExits": true,
+  "modelRequests": 0,
+  "purpose": "Check archived seeded Git identity before incidental prompt normalization; no request, endpoint, primary audit or consumption rewriting.",
+  "originalCheckerFailureLog": "logs/f64-verify.initial.log.gz",
+  "originalFrozenSources": "reproduction/coordinator-sources.tar.gz",
+  "postCampaignCheckerFiles": {
+    "verify.mjs": "7b4902f8dc16ac9854c05af853769084a02959565c3b957e86e448aa16c5fced",
+    "prompt-context-normalization.mjs": "1fd85af5354528da41f33d819210291af23b63930ae2963e61c3c710c58ac5bf",
+    "prompt-context-normalization.test.mjs": "3068f1fd66d7bcc6a5723aa84d9f41fd3118ec3398f35273b4576bc3636707ae"
+  },
+  "positiveAndNegativeLocalControl": "One local test: equivalent checked contexts; changed metadata and changed instructions remain unequal; an unrelated SHA is not normalized; wrong commit and workspace rejected.",
+  "rawPromptIdentity": false,
+  "contextNormalizedPairs": 6,
+  "modelBenefitDemonstrated": false
+}

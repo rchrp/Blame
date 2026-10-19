@@ -1,0 +1,25 @@
+{
+  "source": "docs/semantic-harness-study.tex",
+  "sha256": "8ce1e86f1e7685d259ee49c86bfa987f32d93203a80087707c33be0b8b393eb5",
+  "compiler": "Codex native standalone LaTeX editor",
+  "status": "success",
+  "toolMessage": "The current source compiled successfully with the desktop editor's compiler.",
+  "localNodeVersion": "v24.19.0",
+  "runtimeProductionCommit": "79cc33994fa1c201a418b88ec86f0ba595342824",
+  "runtimeTestSummary": {
+    "passed": 1071,
+    "skipped": 7,
+    "failed": 0,
+    "supplementalWrapperTests": 13,
+    "supplementalPreviouslySkippedCovered": 5
+  },
+  "runnerPassed": 37,
+  "scopePassed": 3,
+  "timingPassed": 12,
+  "sourceNeutralPromptContextControlPassed": 1,
+  "originalPatchReplays": {
+    "F63": 18,
+    "F64": 18,
+    "mismatches": 0
+  }
+}
