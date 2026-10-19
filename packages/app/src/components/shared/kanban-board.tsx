@@ -25,8 +25,9 @@ export function KanbanBoard({
     >
       <div
         className={cn(
-          // pt-px keeps the columns' 1px ring from being clipped at the top.
-          "grid h-full auto-rows-[minmax(0,1fr)] gap-3 pt-px pb-3",
+          // The 1px padding keeps the columns' ring from being clipped by the
+          // scroll container on the top and sides.
+          "grid h-full auto-rows-[minmax(0,1fr)] gap-3 px-px pt-px pb-3",
           gridClassName
         )}
       >
