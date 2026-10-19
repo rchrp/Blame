@@ -94,6 +94,7 @@ import {
 import { projectCodePractices } from "@/lib/project-code-practices"
 import { useRuntimePreference } from "@/lib/runtime-preference"
 import { showSystemNotification } from "@/lib/system-notifications"
+import { OpenProjectEmptyState } from "@/components/shared/open-project-empty-state"
 import { backlogStatusPipStories } from "@/pages/backlog/backlog-status-pip-snapshot"
 import { HostDependenciesDialog } from "@/pages/backlog/host-dependencies-dialog"
 import {
@@ -1495,15 +1496,9 @@ export function BacklogPage() {
         </div>
       )}
       {!backlog.projectPath && (
-        <div className="rounded-lg border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
-          Open a project to load user stories.
-        </div>
+        <OpenProjectEmptyState description="Open a project to plan user stories and let agents build them." />
       )}
-      {backlog.loading && (
-        <div className="rounded-lg border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
-          Loading user stories.
-        </div>
-      )}
+      {backlog.projectPath ? (
       <KanbanBoard className="-mx-6 px-6" gridClassName="min-w-500 grid-cols-6">
         {backlogColumns.map((column) => (
           <BacklogColumn
@@ -1524,9 +1519,11 @@ export function BacklogPage() {
             storySetupInitializing={backlog.storySetupInitializing}
             storyTitleGenerating={storyTitleGenerating}
             stories={backlog.storiesForColumn(column.id)}
+            loading={backlog.loading}
           />
         ))}
       </KanbanBoard>
+      ) : null}
       <UserStoryDrawer
         diffStats={
           drawerUserStory ? storyDiffStats(drawerUserStory) : undefined

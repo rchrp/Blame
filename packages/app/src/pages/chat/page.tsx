@@ -947,7 +947,10 @@ function QuickChatProjectPage() {
       <div className="flex h-svh min-h-0 min-w-0 flex-col overflow-hidden md:h-[calc(100svh_-_1rem)]">
         <div className="grid min-h-0 flex-1 grid-cols-1 gap-2">
           <main className="relative flex min-h-0 min-w-0 flex-col overflow-hidden">
-            <MessageScrollerProvider key={activeConversation?.id ?? "new-chat"}>
+            <MessageScrollerProvider
+              key={activeConversation?.id ?? "new-chat"}
+              memoryKey={activeConversation?.id}
+            >
               <MessageScroller>
                 <MessageScrollerViewport>
                   <MessageScrollerContent

@@ -953,3 +953,38 @@
     }
   }
 }
+
+/* Skeletons: one light sweep shared by every placeholder on screen (the
+   gradient is fixed to the viewport, so neighbours shimmer in step). */
+@keyframes skeleton-sweep {
+  from {
+    background-position: 100vw 0;
+  }
+
+  to {
+    background-position: -100vw 0;
+  }
+}
+
+@layer components {
+  .skeleton-shimmer {
+    background-color: var(--muted);
+    background-image: linear-gradient(
+      100deg,
+      transparent 0%,
+      color-mix(in oklab, var(--foreground) 6%, transparent) 50%,
+      transparent 100%
+    );
+    background-size: 50vw 100%;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    animation: skeleton-sweep 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton-shimmer {
+      background-image: none;
+      animation: none;
+    }
+  }
+}

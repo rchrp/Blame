@@ -1,3 +1,4 @@
+import { SidebarListSkeleton } from "@/components/shared/skeletons"
 import * as React from "react"
 
 import { useBacklogStore } from "@/components/backlog/data/backlog-store"
@@ -49,8 +50,8 @@ export function ActiveBacklogStories({ pathname }: { pathname: string }) {
   return (
     <SidebarMenuSub className="gap-0.5 pb-1">
       {backlog.loading && !stories.length ? (
-        <SidebarMenuSubItem className="px-2 py-1 text-xs text-muted-foreground">
-          Loading stories…
+        <SidebarMenuSubItem>
+          <SidebarListSkeleton rows={2} />
         </SidebarMenuSubItem>
       ) : null}
       {visibleStories.map((story) => (

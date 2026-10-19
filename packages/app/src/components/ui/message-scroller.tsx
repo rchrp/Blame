@@ -6,9 +6,15 @@ import { cn } from "@/lib/utils"
 
 const bottomThreshold = 24
 
+// Where each conversation was left, for this app session. A conversation
+// read up to the end is not stored: it reopens on its latest message.
+const scrollPositions = new Map<string, number>()
+
 type MessageScrollerContextValue = {
   atBottom: boolean
   followingRef: React.RefObject<boolean>
+  memoryKey?: string
+  restoreTopRef: React.RefObject<number | undefined>
   scrollToLatest: () => void
   setAtBottom: React.Dispatch<React.SetStateAction<boolean>>
   viewportRef: React.RefObject<HTMLDivElement | null>
@@ -17,15 +23,27 @@ type MessageScrollerContextValue = {
 const MessageScrollerContext =
   React.createContext<MessageScrollerContextValue | null>(null)
 
-function MessageScrollerProvider({ children }: { children: React.ReactNode }) {
+function MessageScrollerProvider({
+  children,
+  memoryKey,
+}: {
+  children: React.ReactNode
+  // Remembers the reading position under this key while the app is open.
+  memoryKey?: string
+}) {
   const viewportRef = React.useRef<HTMLDivElement>(null)
-  const followingRef = React.useRef(true)
+  const [savedTop] = React.useState(() =>
+    memoryKey ? scrollPositions.get(memoryKey) : undefined
+  )
+  const restoreTopRef = React.useRef(savedTop)
+  const followingRef = React.useRef(savedTop === undefined)
   const [atBottom, setAtBottom] = React.useState(true)
 
   const scrollToLatest = React.useCallback(() => {
     const viewport = viewportRef.current
     if (!viewport) return
     followingRef.current = true
+    restoreTopRef.current = undefined
     const reduceMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
     ).matches
@@ -40,11 +58,13 @@ function MessageScrollerProvider({ children }: { children: React.ReactNode }) {
     () => ({
       atBottom,
       followingRef,
+      memoryKey,
+      restoreTopRef,
       scrollToLatest,
       setAtBottom,
       viewportRef,
     }),
-    [atBottom, scrollToLatest]
+    [atBottom, memoryKey, scrollToLatest]
   )
 
   return (
@@ -69,7 +89,8 @@ function MessageScrollerViewport({
   children,
   ...props
 }: React.ComponentProps<"div">) {
-  const { followingRef, setAtBottom, viewportRef } = useMessageScroller()
+  const { followingRef, memoryKey, restoreTopRef, setAtBottom, viewportRef } =
+    useMessageScroller()
 
   React.useEffect(() => {
     const viewport = viewportRef.current
@@ -101,6 +122,10 @@ function MessageScrollerViewport({
       const atBottom = distanceToBottom() <= bottomThreshold
       followingRef.current = atBottom
       setAtBottom(atBottom)
+      if (memoryKey && restoreTopRef.current === undefined) {
+        if (atBottom) scrollPositions.delete(memoryKey)
+        else scrollPositions.set(memoryKey, viewport.scrollTop)
+      }
     }
 
     // Eases toward the bottom instead of jumping, so streamed text scrolls
@@ -122,7 +147,20 @@ function MessageScrollerViewport({
       glideFrame = requestAnimationFrame(glide)
     }
 
+    // Brings the reader back where they left the conversation once enough
+    // of it has rendered.
+    const restorePosition = () => {
+      const top = restoreTopRef.current
+      if (top === undefined) return false
+      if (viewport.scrollHeight - viewport.clientHeight < top) return true
+      restoreTopRef.current = undefined
+      viewport.scrollTop = top
+      updatePosition()
+      return true
+    }
+
     const followLatest = () => {
+      if (restorePosition()) return
       if (!followingRef.current) {
         updatePosition()
         return
@@ -148,14 +186,22 @@ function MessageScrollerViewport({
     mutationObserver.observe(viewport, { childList: true, subtree: true })
     viewport.addEventListener("scroll", handleScroll, { passive: true })
     followLatest()
+    // The conversation may have shrunk since: give up and show the latest.
+    const restoreTimer = window.setTimeout(() => {
+      if (restoreTopRef.current === undefined) return
+      restoreTopRef.current = undefined
+      followingRef.current = true
+      followLatest()
+    }, 2_000)
 
     return () => {
+      window.clearTimeout(restoreTimer)
       stopGlide()
       resizeObserver.disconnect()
       mutationObserver.disconnect()
       viewport.removeEventListener("scroll", handleScroll)
     }
-  }, [followingRef, setAtBottom, viewportRef])
+  }, [followingRef, memoryKey, restoreTopRef, setAtBottom, viewportRef])
 
   return (
     <div

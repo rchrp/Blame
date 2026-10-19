@@ -7,6 +7,7 @@ import {
 } from "@/components/chat/data/quick-chat-data"
 import { useQuickChatStore } from "@/components/chat/data/quick-chat-store"
 import { undoable } from "@/lib/undoable"
+import { SidebarListSkeleton } from "@/components/shared/skeletons"
 import { AppLink } from "@/components/navigation/app-link"
 import {
   SidebarMenuButton,
@@ -85,8 +86,8 @@ export function QuickChatHistory({ pathname }: { pathname: string }) {
     <>
       <SidebarMenuSub className="gap-0.5 pb-1">
         {quickChats.loading && !chats.length ? (
-          <SidebarMenuSubItem className="px-2 py-1 text-xs text-muted-foreground">
-            Loading chats…
+          <SidebarMenuSubItem>
+            <SidebarListSkeleton />
           </SidebarMenuSubItem>
         ) : null}
         {visibleChats.map((chat) => (

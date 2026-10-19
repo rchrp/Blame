@@ -12,6 +12,7 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { useProjects } from "@/context/projects"
 import { projectColorValue } from "@/lib/projects"
 import { useAppActivity } from "@/layouts/use-app-activity"
+import { isBoolean, useUiMemory } from "@/lib/ui-memory"
 
 const windowShellGraceMs = 1000
 const windowShellHeightPx = 48
@@ -30,6 +31,11 @@ export function AppLayout({
 }) {
   const shortcuts = useAppShortcuts()
   useAppActivity()
+  const [sidebarOpen, setSidebarOpen] = useUiMemory(
+    "sidebar-open",
+    true,
+    isBoolean
+  )
   const projects = useProjects()
   const quickChats = useQuickChatStore()
   const haloColor = projectColorValue(projects.activeProject?.color)
@@ -76,6 +82,8 @@ export function AppLayout({
 
   return (
     <SidebarProvider
+      open={sidebarOpen}
+      onOpenChange={setSidebarOpen}
       className="relative isolate overflow-hidden bg-transparent"
       style={
         {
