@@ -52,6 +52,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
+import { CurrentUserAvatar } from "@/components/shared/user-avatar"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
@@ -539,7 +540,8 @@ function RunCommentItem({
       <div className="ml-auto grid w-full max-w-3xl min-w-0 gap-2 overflow-hidden">
         <div
           className={cn(
-            "max-w-full min-w-0 overflow-hidden rounded-3xl p-1 [&>div]:max-w-full [&>div]:min-w-0 [&>div]:bg-transparent [&>div]:shadow-none [&>div]:ring-0",
+            // Same inner spacing as agent messages.
+            "max-w-full min-w-0 overflow-hidden rounded-3xl [&>div]:max-w-full [&>div]:min-w-0 [&>div]:bg-transparent [&>div]:p-0 [&>div]:shadow-none [&>div]:ring-0",
             queued
               ? "border border-dashed border-foreground/30 bg-muted/35"
               : "bg-muted/80 ring-1 ring-foreground/10"
@@ -1421,11 +1423,7 @@ function ModelSwitchNote({
 }
 
 function UserMessageAvatar({ author }: { author: string }) {
-  return (
-    <Avatar size="default" aria-label={author}>
-      <AvatarFallback>{agentInitials(author)}</AvatarFallback>
-    </Avatar>
-  )
+  return <CurrentUserAvatar fallbackName={author} />
 }
 
 function AgentResponseAvatar({

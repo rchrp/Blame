@@ -14,6 +14,8 @@ export type CloudUser = {
   createdAt: string
   updatedAt: string
   initials: string
+  // Profile photo from a Google, GitHub or Microsoft sign-in.
+  image?: string | null
 }
 
 export type CloudSession = {

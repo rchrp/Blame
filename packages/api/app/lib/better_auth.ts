@@ -89,6 +89,7 @@ export const auth = betterAuth({
       allowDifferentEmails: false,
       allowUnlinkingAll: false,
       requireLocalEmailVerified: true,
+      updateUserInfoOnLink: true,
     },
   },
   verification: {
@@ -138,6 +139,7 @@ export const auth = betterAuth({
         before: async (user) => ({ data: { ...user, twoFactorEnabled: true } }),
         after: async (user) => createEmailTwoFactor(user.id),
       },
+      update: { before: keepNameOnOAuthUpdate },
     },
   },
   socialProviders,
@@ -268,7 +270,11 @@ function configuredSocialProviders() {
 function providerCredentials(prefix: 'GITHUB' | 'GOOGLE' | 'MICROSOFT') {
   const clientId = env.get(`${prefix}_CLIENT_ID`)?.trim()
   const clientSecret = env.get(`${prefix}_CLIENT_SECRET`)?.release().trim()
-  return clientId && clientSecret ? { clientId, clientSecret } : undefined
+  // Signing in refreshes the profile photo; keepNameOnOAuthUpdate keeps the
+  // person's own name.
+  return clientId && clientSecret
+    ? { clientId, clientSecret, overrideUserInfoOnSignIn: true }
+    : undefined
 }
 
 async function createEmailTwoFactor(userId: string) {
@@ -280,4 +286,28 @@ async function createEmailTwoFactor(userId: string) {
     verified: true,
     failed_verification_count: 0,
   })
+}
+
+// Google, GitHub and Microsoft sign-ins and links copy the provider profile
+// onto the user. Only the photo should follow the provider: the name stays
+// the one the person already has.
+async function keepNameOnOAuthUpdate(
+  data: Record<string, unknown>,
+  context: {
+    path?: string
+    context?: { session?: { user?: { name?: string | null } } | null }
+  } | null
+) {
+  if (!context?.path?.includes('/callback/') || !('name' in data)) return
+  try {
+    const sessionName = context.context?.session?.user?.name
+    const row =
+      sessionName || typeof data.email !== 'string'
+        ? undefined
+        : await db.from('users').where('email', data.email).select('full_name').first()
+    const current = sessionName ?? (row?.full_name as string | null | undefined)
+    if (current) return { data: { name: current } }
+  } catch {
+    // Keep the provider name rather than failing the sign-in.
+  }
 }

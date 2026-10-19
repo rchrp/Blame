@@ -45,6 +45,9 @@ function cloudUser(value: unknown): CloudUser | undefined {
     email: value.email,
     initials: value.initials,
     fullName: nullableString(value.fullName),
+    ...(typeof value.image === "string" && value.image
+      ? { image: value.image }
+      : {}),
     createdAt: optionalString(value.createdAt),
     updatedAt: optionalString(value.updatedAt),
   }

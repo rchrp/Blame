@@ -1,4 +1,4 @@
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { UserAvatar } from "@/components/shared/user-avatar"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,11 +43,13 @@ export function NavUser({
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
-              <Avatar className="h-8 w-8 rounded-lg grayscale">
-                <AvatarFallback className="rounded-lg">
-                  {user.initials}
-                </AvatarFallback>
-              </Avatar>
+              <UserAvatar
+                email={user.email}
+                image={user.image}
+                initials={user.initials}
+                name={user.fullName}
+                seed={user.id}
+              />
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{name}</span>
                 <span className="truncate text-xs text-muted-foreground">
@@ -65,11 +67,13 @@ export function NavUser({
           >
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarFallback className="rounded-lg">
-                    {user.initials}
-                  </AvatarFallback>
-                </Avatar>
+                <UserAvatar
+                email={user.email}
+                image={user.image}
+                initials={user.initials}
+                name={user.fullName}
+                seed={user.id}
+              />
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{name}</span>
                   <span className="truncate text-xs text-muted-foreground">

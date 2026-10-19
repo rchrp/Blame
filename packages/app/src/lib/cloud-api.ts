@@ -857,6 +857,7 @@ function cloudSession(response: { body: unknown; token: string | null }) {
       id: string
       name: string
       email: string
+      image?: string | null
       createdAt: string
       updatedAt: string
     }
@@ -877,6 +878,7 @@ function cloudSession(response: { body: unknown; token: string | null }) {
       email: body.user.email,
       createdAt: body.user.createdAt,
       updatedAt: body.user.updatedAt,
+      image: body.user.image ?? null,
       initials,
     },
   } satisfies CloudSession
