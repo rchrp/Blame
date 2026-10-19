@@ -61,7 +61,7 @@ export function RuntimeInstallDialog() {
     <Dialog open={open} onOpenChange={(next) => !next && runtime.closePrompt()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <div className="mb-1 flex size-10 items-center justify-center rounded-xl bg-violet-500/10 text-violet-600 dark:text-violet-300">
+          <div className="mb-1 flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary dark:bg-primary/30 dark:text-blue-300">
             {repair ? <WrenchIcon className="size-5" /> : <BoxIcon className="size-5" />}
           </div>
           <DialogTitle>

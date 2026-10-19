@@ -50,7 +50,7 @@ export function RuntimeSetupScreen() {
         ? "An isolated sandbox on this computer. Blame Runtime is installed but needs a quick repair."
         : "An isolated sandbox on this computer. Needs Blame Runtime, a one-time install of a few minutes.",
       icon: BoxIcon,
-      iconClassName: "bg-violet-500/12 text-violet-600 dark:text-violet-300",
+      iconClassName: "bg-primary/12 text-primary dark:bg-primary/30 dark:text-blue-300",
       title: "Local Container",
       tag: "Recommended",
     },

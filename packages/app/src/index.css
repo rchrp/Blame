@@ -988,3 +988,53 @@
     }
   }
 }
+
+/* Runtime install/update progress, lit like a story an agent works on. */
+@keyframes runtime-progress-indeterminate {
+  from {
+    left: -35%;
+  }
+
+  to {
+    left: 100%;
+  }
+}
+
+@layer components {
+  .runtime-progress-track {
+    position: relative;
+    height: 0.375rem;
+    width: 100%;
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--foreground) 10%, transparent);
+    /* Clip the sides only, so the glow can spill above and below. */
+    clip-path: inset(-12px 0 -12px 0 round 999px);
+  }
+
+  .runtime-progress-fill {
+    position: relative;
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, oklch(0.65 0.22 255), oklch(0.78 0.15 238));
+    box-shadow:
+      0 0 0 1px oklch(0.7 0.17 250 / 25%),
+      0 0 14px oklch(0.65 0.2 250 / 45%);
+    transition: width 500ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .runtime-progress-fill[data-indeterminate] {
+    position: absolute;
+    top: 0;
+    width: 35%;
+    animation: runtime-progress-indeterminate 1.4s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .runtime-progress-fill[data-indeterminate] {
+      left: 0;
+      width: 100%;
+      opacity: 0.6;
+      animation: none;
+    }
+  }
+}

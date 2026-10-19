@@ -1,6 +1,7 @@
 import * as React from "react"
 import { toast } from "sonner"
 
+import { RuntimeProgressBody } from "@/components/runtime/runtime-progress"
 import { usePlatform, type RuntimeProgress, type RuntimeStatusReport } from "@/context/platform"
 import {
   automaticRuntimeOperation,
@@ -9,7 +10,6 @@ import {
   runtimeOperationPhase,
   runtimeOperationTitle,
   runtimePhaseFromReport,
-  runtimeProgressText,
   type RuntimeOperation,
   type RuntimePhase,
 } from "@/lib/blame-runtime-state"
@@ -106,7 +106,7 @@ export function BlameRuntimeProvider({
       const title = runtimeOperationTitle(operation)
       const show = (next?: RuntimeProgress) =>
         toast.loading(title, {
-          description: runtimeProgressText(next),
+          description: <RuntimeProgressBody progress={next} />,
           duration: Infinity,
           id: toastId,
           position: "bottom-right",

@@ -66,12 +66,12 @@ const runtimeOptions = [
     description: "Run the story in an isolated sandbox on this computer.",
     icon: ContainerIcon,
     iconClassName:
-      "bg-violet-500/12 text-violet-600 ring-1 ring-violet-500/20 dark:text-violet-300",
+      "bg-primary/12 text-primary ring-1 ring-primary/25 dark:bg-primary/30 dark:text-blue-300 dark:ring-primary/50",
     label: "Local Container",
     profile: "local-container",
-    selectedClassName: "text-violet-600 dark:text-violet-300",
+    selectedClassName: "text-primary dark:text-blue-300",
     triggerClassName:
-      "bg-violet-500/10 text-foreground shadow-none ring-1 ring-violet-500/25 transition-colors hover:bg-violet-500/15",
+      "bg-primary/10 text-foreground shadow-none ring-1 ring-primary/30 transition-colors hover:bg-primary/15 dark:bg-primary/25 dark:ring-primary/60 dark:hover:bg-primary/35",
   },
   {
     description:
