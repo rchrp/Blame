@@ -22,8 +22,8 @@ type QueuedMessage = {
 }
 
 // Messages written in a quick chat while its agent works: they wait and go
-// out together when it finishes. "Send now" stops the agent first, so it
-// reads them right away.
+// out together when it finishes. "Send now" on one of them stops the agent
+// first, so it reads that message right away.
 export function useQuickChatQueue({
   agentRunning,
   cancelAgent,
@@ -36,9 +36,14 @@ export function useQuickChatQueue({
   send(message: QueuedMessage): Promise<void>
 }) {
   const key = chatId ? `chat:${chatId}` : undefined
+  // The message picked with "Send now": it goes out alone once the agent
+  // has stopped, the others keep waiting for the next turn to end.
+  const sendNow = React.useRef<string | undefined>(undefined)
   const deliver = useLatestCallback(async () => {
     if (!key) return
-    const merged = takeQueuedComments(key)
+    const picked = sendNow.current
+    sendNow.current = undefined
+    const merged = takeQueuedComments(key, picked)
     if (merged) await send(merged)
   })
 
@@ -46,13 +51,19 @@ export function useQuickChatQueue({
     if (key && !agentRunning && queuedComments(key).length) void deliver()
   }, [agentRunning, deliver, key])
 
-  const stopAndDeliver = useLatestCallback(async (requested: string) => {
-    if (requested !== key) return
-    if (agentRunning) await cancelAgent()
-    else await deliver()
-  })
+  const stopAndDeliver = useLatestCallback(
+    async (requested: string, commentId: string) => {
+      if (requested !== key) return
+      sendNow.current = commentId
+      if (agentRunning) await cancelAgent()
+      else await deliver()
+    }
+  )
   React.useEffect(
-    () => onQueuedDeliveryRequest((requested) => void stopAndDeliver(requested)),
+    () =>
+      onQueuedDeliveryRequest(
+        (requested, commentId) => void stopAndDeliver(requested, commentId)
+      ),
     [stopAndDeliver]
   )
 

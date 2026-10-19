@@ -266,7 +266,6 @@ function UserStoryCommentComposer({
       agentRunning={agentRunning}
       onAgentCancel={onAgentPause}
       queueWhileRunning
-      queued={<QueuedComments storyId={userStory?.id} />}
       speechSessionKey={`backlog-comment:${project?.id}:${userStory?.id}`}
       codeSelectionAttachments={commentCodeSelectionAttachments}
       disabled={status === "done"}
@@ -394,6 +393,13 @@ const AgentRunTimeline = React.memo(function AgentRunTimeline({
       onUserMessageUndo={onCommentUndo}
       responseHeader={responseHeader}
       responseHeaderForRun={responseHeaderForRun}
+      queued={
+        <QueuedComments
+          author={userStory?.comments?.at(-1)?.author ?? "You"}
+          onFileLinkClick={onFileLinkClick}
+          storyId={userStory?.id}
+        />
+      }
       runs={userStory?.agentRuns ?? []}
       topOffset={connectSummaryActions ? "message-actions" : "default"}
     />

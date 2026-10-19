@@ -4,6 +4,7 @@ import {
   ArrowUpIcon,
   ChevronDownIcon,
   ChevronUpIcon,
+  ClockIcon,
   CopyIcon,
   ExternalLinkIcon,
   LoaderCircleIcon,
@@ -12,6 +13,7 @@ import {
   SquareIcon,
   ThumbsDownIcon,
   ThumbsUpIcon,
+  XIcon,
 } from "lucide-react"
 import * as React from "react"
 import { toast } from "sonner"
@@ -152,6 +154,7 @@ export function AgentConversationTimeline({
   onLoadActivityDetail,
   responseHeader,
   responseHeaderForRun,
+  queued,
   runs,
 }: {
   comments: AgentConversationComment[]
@@ -175,6 +178,8 @@ export function AgentConversationTimeline({
   responseHeaderForRun?: (
     run: AgentConversationRun
   ) => AgentConversationResponseHeader | undefined
+  // Messages waiting for the agent, shown after the conversation.
+  queued?: React.ReactNode
   runs: AgentConversationRun[]
   topOffset?: "default" | "message-actions"
 }) {
@@ -200,7 +205,7 @@ export function AgentConversationTimeline({
     [runs]
   )
 
-  if (runs.length === 0 && unsentComments.length === 0) return null
+  if (runs.length === 0 && unsentComments.length === 0 && !queued) return null
 
   return (
     <div
@@ -232,6 +237,7 @@ export function AgentConversationTimeline({
           onFileLinkClick={onFileLinkClick}
         />
       ))}
+      {queued}
     </div>
   )
 }
@@ -355,14 +361,11 @@ export function AgentConversationComposer({
   onAgentCancel,
   placeholder,
   submitLabel,
-  queued,
   queueWhileRunning = false,
   title,
   toolbarEnd,
   turnMetrics,
 }: {
-  // Shown above the editor: messages waiting for the agent to finish.
-  queued?: React.ReactNode
   // While the agent runs, typing turns Stop into Send (the message waits
   // for the agent, or interrupts it on demand) instead of blocking.
   queueWhileRunning?: boolean
@@ -431,7 +434,6 @@ export function AgentConversationComposer({
           {title}
         </div>
       ) : null}
-      {queued}
       <div className="relative">
         {turnMetrics ? <AgentTurnIndicator metrics={turnMetrics} /> : null}
         <DraftSavedHint message={message} hidden={submitting || disabled} />
@@ -513,12 +515,14 @@ function RunCommentItem({
   comment,
   onFileLinkClick,
   onUndo,
+  queued,
   run,
 }: {
   alwaysVisible: boolean
   comment?: AgentConversationComment
   onFileLinkClick?: (path: string) => void
   onUndo?: (comment: AgentConversationComment) => Promise<void> | void
+  queued?: QueuedMessageActions
   run?: AgentConversationRun
 }) {
   const entering = useEnterAnimation(comment?.createdAt)
@@ -533,7 +537,14 @@ function RunCommentItem({
       )}
     >
       <div className="ml-auto grid w-full max-w-3xl min-w-0 gap-2 overflow-hidden">
-        <div className="max-w-full min-w-0 overflow-hidden rounded-3xl bg-muted/80 p-1 ring-1 ring-foreground/10 [&>div]:max-w-full [&>div]:min-w-0 [&>div]:bg-transparent [&>div]:shadow-none [&>div]:ring-0">
+        <div
+          className={cn(
+            "max-w-full min-w-0 overflow-hidden rounded-3xl p-1 [&>div]:max-w-full [&>div]:min-w-0 [&>div]:bg-transparent [&>div]:shadow-none [&>div]:ring-0",
+            queued
+              ? "border border-dashed border-foreground/30 bg-muted/35"
+              : "bg-muted/80 ring-1 ring-foreground/10"
+          )}
+        >
           <MarkdownEditor
             codeSelectionAttachments={comment.codeSelectionAttachments ?? []}
             fileAttachments={pendingFileAttachments(
@@ -546,6 +557,9 @@ function RunCommentItem({
             minHeight="min-h-0"
           />
         </div>
+        {queued ? (
+          <QueuedMessageFooter actions={queued} />
+        ) : (
         <div className="flex items-center justify-end gap-2">
           {!run ? (
             <span className="text-xs text-muted-foreground">
@@ -562,10 +576,66 @@ function RunCommentItem({
             undoDisabled={run?.status === "running"}
           />
         </div>
+        )}
       </div>
       <div className="absolute top-0 -right-10">
         <UserMessageAvatar author={comment.author} />
       </div>
+    </div>
+  )
+}
+
+type QueuedMessageActions = {
+  onRemove(): void
+  onSendNow(): void
+}
+
+// A message waiting for the agent to finish its turn. Dashed so it reads as
+// not sent yet; "Send now" interrupts the agent with this message only.
+export function QueuedConversationMessage({
+  comment,
+  onFileLinkClick,
+  ...actions
+}: QueuedMessageActions & {
+  comment: AgentConversationComment
+  onFileLinkClick?: (path: string) => void
+}) {
+  return (
+    <RunCommentItem
+      alwaysVisible
+      comment={comment}
+      onFileLinkClick={onFileLinkClick}
+      queued={actions}
+    />
+  )
+}
+
+function QueuedMessageFooter({ actions }: { actions: QueuedMessageActions }) {
+  return (
+    <div className="flex items-center justify-end gap-1.5">
+      <span className="mr-auto flex items-center gap-1.5 pl-3 text-xs text-muted-foreground">
+        <ClockIcon className="size-3.5" />
+        Queued · sent when the agent finishes
+      </span>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className="h-7 rounded-full px-2.5 text-xs text-muted-foreground"
+        onClick={actions.onRemove}
+      >
+        <XIcon className="size-3.5" />
+        Remove
+      </Button>
+      <Button
+        type="button"
+        size="sm"
+        className="h-7 rounded-full px-3 text-xs"
+        onClick={actions.onSendNow}
+      >
+        <ArrowUpIcon className="size-3.5" />
+        Send now
+      </Button>
     </div>
   )
 }

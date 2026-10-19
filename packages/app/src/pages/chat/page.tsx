@@ -994,6 +994,7 @@ function QuickChatProjectPage() {
                         }
                         onUserMessageUndo={undoQuickChatMessage}
                         responseHeader={responseHeader}
+                        queued={<QueuedComments author={activeConversation.messages?.at(-1)?.author ?? "You"} storyId={messageQueue.key} />}
                         runs={activeConversation.agentRuns}
                       />
                     ) : null}
@@ -1032,7 +1033,6 @@ function QuickChatProjectPage() {
                     codeSelectionAttachments={draftCodeAttachments}
                     disabled={sending || !project}
                     queueWhileRunning
-                    queued={<QueuedComments storyId={messageQueue.key} />}
                     editorKey={draftEditorKey}
                     editorRef={draftRef}
                     fileAttachments={pendingFileAttachments(

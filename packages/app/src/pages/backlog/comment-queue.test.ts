@@ -37,3 +37,14 @@ test("removes a single queued comment", () => {
   dropQueuedComments("s3")
   assert.equal(queuedComments("s3").length, 0)
 })
+
+test("sends one queued comment now and keeps the others queued", () => {
+  const first = queueComment(comment("s5", "First"))
+  queueComment(comment("s5", "Second"))
+  assert.equal(takeQueuedComments("s5", first.id)?.body, "First")
+  assert.deepEqual(
+    queuedComments("s5").map((item) => item.body),
+    ["Second"]
+  )
+  dropQueuedComments("s5")
+})

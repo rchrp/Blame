@@ -21,7 +21,9 @@ export type QueuedComment = {
 
 const storageKey = "blame.comment-queue.v1"
 const listeners = new Set<() => void>()
-const deliveryListeners = new Set<(storyId: string) => void>()
+const deliveryListeners = new Set<
+  (storyId: string, commentId: string) => void
+>()
 let queue: QueuedComment[] = readQueue()
 
 function readQueue(): QueuedComment[] {
@@ -69,11 +71,15 @@ export function storiesWithQueuedComments() {
   return [...new Set(queue.map((comment) => comment.storyId))]
 }
 
-// Removes and returns a story's queued comments, merged into one message.
-export function takeQueuedComments(storyId: string) {
-  const taken = queuedComments(storyId)
+// Removes and returns a story's queued comments (or just one of them),
+// merged into one message.
+export function takeQueuedComments(storyId: string, commentId?: string) {
+  const taken = queuedComments(storyId).filter(
+    (comment) => !commentId || comment.id === commentId
+  )
   if (!taken.length) return undefined
-  save(queue.filter((comment) => comment.storyId !== storyId))
+  const ids = new Set(taken.map((comment) => comment.id))
+  save(queue.filter((comment) => !ids.has(comment.id)))
   return mergeQueuedComments(taken)
 }
 
@@ -92,12 +98,15 @@ export function mergeQueuedComments(comments: QueuedComment[]) {
   }
 }
 
-// "Send now": asks whoever delivers comments to do it immediately.
-export function requestQueuedDelivery(storyId: string) {
-  for (const listener of deliveryListeners) listener(storyId)
+// "Send now" on one queued comment: asks whoever delivers comments to send
+// it immediately. The others stay queued.
+export function requestQueuedDelivery(storyId: string, commentId: string) {
+  for (const listener of deliveryListeners) listener(storyId, commentId)
 }
 
-export function onQueuedDeliveryRequest(listener: (storyId: string) => void) {
+export function onQueuedDeliveryRequest(
+  listener: (storyId: string, commentId: string) => void
+) {
   deliveryListeners.add(listener)
   return () => {
     deliveryListeners.delete(listener)

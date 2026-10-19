@@ -243,7 +243,9 @@ export function useQueuedCommentDelivery({
   ): Promise<UserStory | undefined>
   stories: readonly UserStory[]
 }) {
-  const deliver = useLatestCallback(async (storyId: string, now: boolean) => {
+  // Delivers every queued comment of a story, or only the one picked with
+  // "Send now".
+  const deliver = useLatestCallback(async (storyId: string, now?: string) => {
     const story = stories.find((item) => item.id === storyId)
     if (!story) return
     if (storiesInTransition().has(storyId)) {
@@ -254,7 +256,7 @@ export function useQueuedCommentDelivery({
         })
       return
     }
-    const merged = takeQueuedComments(storyId)
+    const merged = takeQueuedComments(storyId, now)
     if (!merged) return
     try {
       const created = await createComment(story, merged)
@@ -288,12 +290,15 @@ export function useQueuedCommentDelivery({
         dropQueuedComments(storyId)
         continue
       }
-      if (story.status === "in-review") void deliver(storyId, false)
+      if (story.status === "in-review") void deliver(storyId)
     }
   }, [deliver, stories])
 
   React.useEffect(
-    () => onQueuedDeliveryRequest((storyId) => void deliver(storyId, true)),
+    () =>
+      onQueuedDeliveryRequest(
+        (storyId, commentId) => void deliver(storyId, commentId)
+      ),
     [deliver]
   )
 }
