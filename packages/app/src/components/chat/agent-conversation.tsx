@@ -13,7 +13,7 @@ import {
   SquareIcon,
   ThumbsDownIcon,
   ThumbsUpIcon,
-  XIcon,
+  Trash2Icon,
 } from "lucide-react"
 import * as React from "react"
 import { toast } from "sonner"
@@ -620,12 +620,13 @@ function QueuedMessageFooter({ actions }: { actions: QueuedMessageActions }) {
       <Button
         type="button"
         variant="ghost"
-        size="sm"
-        className="h-7 rounded-full px-2.5 text-xs text-muted-foreground"
+        size="icon"
+        aria-label="Remove queued message"
+        title="Remove"
+        className="size-7 rounded-full text-muted-foreground hover:text-destructive"
         onClick={actions.onRemove}
       >
-        <XIcon className="size-3.5" />
-        Remove
+        <Trash2Icon className="size-3.5" />
       </Button>
       <Button
         type="button"

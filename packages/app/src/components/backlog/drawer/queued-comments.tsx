@@ -19,25 +19,29 @@ export function QueuedComments({
   storyId?: string
 }) {
   const queued = useQueuedComments(storyId)
-  if (!storyId) return null
+  if (!storyId || !queued.length) return null
 
+  // Bottom room so the last message's buttons clear the composer; only
+  // while something is queued, so the usual layout stays the same.
   return (
-    <AnimatePresence initial={false}>
-      {queued.map((comment) => (
-        <motion.div
-          key={comment.id}
-          layout
-          exit={{ opacity: 0, height: 0 }}
-          transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-        >
-          <QueuedConversationMessage
-            comment={{ ...comment, author }}
-            onFileLinkClick={onFileLinkClick}
-            onRemove={() => removeQueuedComment(comment.id)}
-            onSendNow={() => requestQueuedDelivery(storyId, comment.id)}
-          />
-        </motion.div>
-      ))}
-    </AnimatePresence>
+    <div className="grid gap-10 pb-8">
+      <AnimatePresence initial={false}>
+        {queued.map((comment) => (
+          <motion.div
+            key={comment.id}
+            layout
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <QueuedConversationMessage
+              comment={{ ...comment, author }}
+              onFileLinkClick={onFileLinkClick}
+              onRemove={() => removeQueuedComment(comment.id)}
+              onSendNow={() => requestQueuedDelivery(storyId, comment.id)}
+            />
+          </motion.div>
+        ))}
+      </AnimatePresence>
+    </div>
   )
 }
