@@ -50,6 +50,7 @@ import { storyPreviewDevtoolsScope } from "@/components/backlog/shared/preview-d
 import { useModelSelection } from "@/components/model/model-selection"
 import { useCloudAuth } from "@/context/cloud-auth"
 import type { HostDependencyReport } from "@/context/platform"
+import { useRuntimeGate } from "@/pages/backlog/use-runtime-gate"
 import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
 import { createCloudApi } from "@/lib/cloud-api"
@@ -151,6 +152,14 @@ export function useBacklogRotation(
   const [hostDependenciesDialog, setHostDependenciesDialog] =
     React.useState<HostDependenciesDialogState>()
   const [, refreshStartingStories] = React.useState(0)
+  const runtimeGate = useRuntimeGate({
+    onRuntimeReady: () => {
+      blockedStories.current.clear()
+      refreshStartingStories((value) => value + 1)
+    },
+    profile: runtimePreference.profile,
+    stories: backlog.stories,
+  })
   const previewRecoveryState = previewRecoveryStateKey(backlog.stories)
 
   React.useEffect(() => {
@@ -206,7 +215,16 @@ export function useBacklogRotation(
     const agent = platform.agent
     if (!workspace || !agent) return
 
+    // Local Container stories wait for the Blame Runtime (or ask for it)
+    // instead of failing; the runtime itself is checked by its provider.
+    const runtimeDecision = runtimeGate.gate(detailedStory)
+    if (runtimeDecision === "wait")
+      return retryStory(detailedStory, initializationRetryDelay)
+    if (runtimeDecision === "needs-runtime")
+      return retryStory(detailedStory, blockerRetryDelay)
+
     const dependencies = await workspace.checkHostDependencies({
+      includeRuntime: runtimeGate.hostCheckIncludesRuntime,
       runtimeProfile: runtimePreference.profile,
     })
     if (!dependencies.ok) {
@@ -382,6 +400,7 @@ export function useBacklogRotation(
     setHostDependenciesDialog({ ...current, checking: true })
     try {
       const report = await platform.workspace.checkHostDependencies({
+        includeRuntime: runtimeGate.hostCheckIncludesRuntime,
         runtimeProfile: current.runtimeProfile,
       })
       if (report.ok) {
@@ -1083,6 +1102,7 @@ export function useBacklogRotation(
   ])
 
   return {
+    runtimeWaitingLabel: runtimeGate.waitingLabel,
     hostDependenciesDialog: {
       checking: Boolean(hostDependenciesDialog?.checking),
       onOpenChange(open: boolean) {

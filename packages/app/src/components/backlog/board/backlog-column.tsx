@@ -56,6 +56,8 @@ type BacklogColumnProps = {
   onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
   onUnpauseAgent: (story: UserStory) => Promise<UserStory>
   queueInitializing?: boolean
+  // A short reason queued stories are waiting (the runtime is updating…).
+  queueNotice?: string
   storyCleanup?: (story: UserStory) => boolean
   storySetupInitializing?: (story: UserStory) => boolean
   storyTitleGenerating?: (story: UserStory) => boolean
@@ -76,6 +78,7 @@ export const BacklogColumn = React.memo(function BacklogColumn({
   onStopAgent,
   onUnpauseAgent,
   queueInitializing,
+  queueNotice,
   storyCleanup,
   storySetupInitializing,
   storyTitleGenerating,
@@ -128,6 +131,7 @@ export const BacklogColumn = React.memo(function BacklogColumn({
           column={column}
           count={stories.length}
           queueInitializing={queueInitializing}
+          queueNotice={queueNotice}
         />
       }
     >
@@ -232,10 +236,12 @@ export function BacklogColumnHeader({
   column,
   count,
   queueInitializing,
+  queueNotice,
 }: {
   column: BacklogColumnHeaderColumn
   count: number
   queueInitializing?: boolean
+  queueNotice?: string
 }) {
   return (
     <KanbanColumnHeader
@@ -244,6 +250,12 @@ export function BacklogColumnHeader({
       count={count}
       color={columnColors[column.id]}
     >
+      {queueNotice && !queueInitializing && (
+        <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+          <LoaderCircleIcon className="size-3 animate-spin" />
+          {queueNotice}
+        </div>
+      )}
       {queueInitializing && (
         <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
           <LoaderCircleIcon className="size-3 animate-spin" />

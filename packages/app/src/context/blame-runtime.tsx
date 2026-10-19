@@ -22,7 +22,11 @@ import {
 // local container previews) and drives installs, updates and repairs.
 // Everything else asks it instead of checking the runtime on its own.
 
-export type RuntimeInstallPrompt = { storyTitle?: string }
+export type RuntimeInstallPrompt = {
+  // Called when the person agrees to install or repair.
+  onAccept?: () => void
+  storyTitle?: string
+}
 
 type BlameRuntimeContextValue = {
   canInstall: boolean

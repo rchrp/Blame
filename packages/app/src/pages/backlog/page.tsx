@@ -1517,6 +1517,7 @@ export function BacklogPage() {
             onStopAgent={columnStopAgent}
             onUnpauseAgent={columnUnpauseAgent}
             queueInitializing={column.id === "ready" && queueInitializing}
+            queueNotice={column.id === "ready" ? rotation.runtimeWaitingLabel : undefined}
             storyCleanup={backlog.storyCleanup}
             storySetupInitializing={backlog.storySetupInitializing}
             storyTitleGenerating={storyTitleGenerating}

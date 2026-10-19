@@ -18,7 +18,9 @@ import {
 import { Button } from "@/components/ui/button"
 import { navigate } from "@/components/navigation/navigation"
 import { useCloudAuth } from "@/context/cloud-auth"
-import { usePlatform } from "@/context/platform"
+import { useOptionalBlameRuntime } from "@/context/blame-runtime"
+import { usePlatform, type RuntimeProgress } from "@/context/platform"
+import { runtimeProgressText, type RuntimePhase } from "@/lib/blame-runtime-state"
 import {
   runtimeProfileSwitchBlockReason,
   saveRuntimePreference,
@@ -59,15 +61,15 @@ const runtimeOptions = [
     triggerStyle: cloudGradient,
   },
   {
-    description: "Run the story with containers on this machine.",
+    description: "Run the story in an isolated sandbox on this computer.",
     icon: ContainerIcon,
     iconClassName:
-      "bg-muted/70 text-muted-foreground ring-1 ring-foreground/10",
+      "bg-violet-500/12 text-violet-600 ring-1 ring-violet-500/20 dark:text-violet-300",
     label: "Local Container",
     profile: "local-container",
-    selectedClassName: "text-foreground",
+    selectedClassName: "text-violet-600 dark:text-violet-300",
     triggerClassName:
-      "bg-muted/70 text-foreground shadow-none ring-0 transition-colors hover:bg-muted",
+      "bg-violet-500/10 text-foreground shadow-none ring-1 ring-violet-500/25 transition-colors hover:bg-violet-500/15",
   },
 ] as const satisfies readonly RuntimeOption[]
 
@@ -75,6 +77,7 @@ export const RuntimeProfileSelector = React.memo(
   function RuntimeProfileSelector() {
     const auth = useCloudAuth()
     const platform = usePlatform()
+    const runtime = useOptionalBlameRuntime()
     const premium = auth.license?.licensed === true
     const preference = useRuntimePreference(premium)
     const [open, setOpen] = React.useState(false)
@@ -104,8 +107,16 @@ export const RuntimeProfileSelector = React.memo(
         return
       }
       if (profile === "local-container") {
-        saveRuntimePreference({ profile, source: "account-default" })
+        const select = () =>
+          saveRuntimePreference({ profile, source: "account-default" })
         setOpen(false)
+        // Without the runtime, explain and offer to install it; the choice
+        // applies once the person agrees.
+        if (runtimeNeedsSetup(runtime?.phase)) {
+          runtime?.promptInstall({ onAccept: select })
+          return
+        }
+        select()
         return
       }
       if (!cloudAvailable) return
@@ -157,6 +168,11 @@ export const RuntimeProfileSelector = React.memo(
                 key={option.profile}
                 option={option}
                 premium={premium}
+                runtimeNote={
+                  option.profile === "local-container"
+                    ? runtimeNote(runtime?.phase, runtime?.progress)
+                    : undefined
+                }
                 selected={option.profile === preference.profile}
                 onSelect={selectProfile}
               />
@@ -173,12 +189,14 @@ function RuntimeProfileOption({
   onSelect,
   option,
   premium,
+  runtimeNote,
   selected,
 }: {
   disabled: boolean
   onSelect: (profile: RuntimeProfileId) => void
   option: RuntimeOption
   premium: boolean
+  runtimeNote?: string
   selected: boolean
 }) {
   const Icon = option.icon
@@ -206,7 +224,7 @@ function RuntimeProfileOption({
             ? "Sign in from the desktop app to use cloud previews."
             : option.profile === "vercel-compose" && !premium
               ? "Available with Blame Premium."
-              : option.description}
+              : (runtimeNote ?? option.description)}
         </span>
       </span>
       {selected ? (
@@ -216,6 +234,19 @@ function RuntimeProfileOption({
       ) : null}
     </button>
   )
+}
+
+function runtimeNeedsSetup(phase?: RuntimePhase) {
+  return phase === "missing" || phase === "needs-repair" || phase === "unsupported"
+}
+
+function runtimeNote(phase?: RuntimePhase, progress?: RuntimeProgress) {
+  if (phase === "missing") return "Needs Blame Runtime, a one-time install."
+  if (phase === "needs-repair") return "Blame Runtime needs a repair."
+  if (phase === "unsupported") return "Not available on this computer."
+  if (phase === "installing" || phase === "updating" || phase === "repairing")
+    return `Blame Runtime: ${runtimeProgressText(progress).toLowerCase()}`
+  return undefined
 }
 
 function runtimeOption(profile: RuntimeProfileId): RuntimeOption {

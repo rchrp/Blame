@@ -33,6 +33,7 @@ export function RuntimeInstallDialog() {
   }, [open, runtime])
 
   function start(action: () => Promise<boolean>) {
+    runtime.prompt?.onAccept?.()
     runtime.closePrompt()
     void action()
   }
