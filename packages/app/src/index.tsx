@@ -1,10 +1,13 @@
 import { SpeechToTextProvider } from "@/components/backlog/drawer/speech-to-text-provider"
+import { MotionConfig } from "motion/react"
 import { StrictMode } from "react"
 import { createRoot, type Root } from "react-dom/client"
 
 import "./index.css"
 import App from "./App"
 import { ThemeProvider } from "@/components/providers/theme-provider"
+import { RuntimeInstallDialog } from "@/components/runtime/runtime-install-dialog"
+import { BlameRuntimeProvider } from "@/context/blame-runtime"
 import { CloudAuthProvider } from "@/context/cloud-auth-provider"
 import type { Platform } from "@/context/platform"
 import { PlatformProvider } from "@/context/platform-provider"
@@ -39,6 +42,10 @@ export type MountAppOptions = {
   platform?: Platform
 }
 
+function secondaryWindow() {
+  return new URLSearchParams(window.location.search).get("view") !== null
+}
+
 export function mountApp(element: HTMLElement, options?: MountAppOptions) {
   installPerformanceDiagnostics()
   const root = createRoot(element)
@@ -49,11 +56,17 @@ export function mountApp(element: HTMLElement, options?: MountAppOptions) {
           <ServerProvider>
             <ProjectProvider>
               <ThemeProvider>
-                <PerformanceDiagnosticsProfiler id="app">
-                  <SpeechToTextProvider>
-                    <App />
-                  </SpeechToTextProvider>
-                </PerformanceDiagnosticsProfiler>
+                {/* Every animation follows the system "reduce motion" setting. */}
+                <MotionConfig reducedMotion="user">
+                  <PerformanceDiagnosticsProfiler id="app">
+                    <SpeechToTextProvider>
+                      <BlameRuntimeProvider enabled={!secondaryWindow()}>
+                        <App />
+                        <RuntimeInstallDialog />
+                      </BlameRuntimeProvider>
+                    </SpeechToTextProvider>
+                  </PerformanceDiagnosticsProfiler>
+                </MotionConfig>
               </ThemeProvider>
             </ProjectProvider>
           </ServerProvider>

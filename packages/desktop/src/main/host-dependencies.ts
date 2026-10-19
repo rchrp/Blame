@@ -42,6 +42,9 @@ export type HostDependencyReport = {
 
 export type HostDependencyCheckInput = {
   env?: NodeJS.ProcessEnv;
+  // False for work that runs straight on this machine (opening or creating
+  // a project): only host tools such as Git matter then.
+  includeRuntime?: boolean;
   platform?: NodeJS.Platform;
   runtimeProfile?: RuntimeProfileId;
   setupScript: string;
@@ -55,6 +58,7 @@ type CommandRunner = (
 
 type CheckContext = {
   env?: NodeJS.ProcessEnv;
+  includeRuntime?: boolean;
   platform: NodeJS.Platform;
   runtimeProfile?: RuntimeProfileId;
   run: CommandRunner;
@@ -82,6 +86,7 @@ export async function checkHostDependencies(
 ): Promise<HostDependencyReport> {
   const context = {
     env: input.env,
+    includeRuntime: input.includeRuntime,
     platform: input.platform ?? process.platform,
     runtimeProfile: input.runtimeProfile,
     run,
@@ -131,6 +136,7 @@ async function hostDependencyIssues(
 }
 
 function contextRequiresContainerRuntime(context: CheckContext) {
+  if (context.includeRuntime === false) return false;
   return (
     !context.runtimeProfile || context.runtimeProfile === "local-container"
   );

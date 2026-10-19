@@ -231,7 +231,9 @@ export function useNewProjectWizard(input: {
       const setupScript = newProjectHostDependencyScript(
         normalizedConfiguration
       )
+      // The project is generated on this machine: host tools only.
       const dependencies = await workspace.checkHostDependencies({
+        includeRuntime: false,
         setupScript,
       })
       if (!dependencies.ok) {
@@ -341,6 +343,7 @@ export function useNewProjectWizard(input: {
     setHostDependenciesDialog({ ...current, checking: true })
     try {
       const report = await workspace.checkHostDependencies({
+        includeRuntime: false,
         setupScript: current.setupScript,
       })
       if (report.ok) {

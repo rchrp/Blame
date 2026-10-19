@@ -153,7 +153,7 @@ export type UserStory = {
   previewUrl?: string | null
   runConfigurationId?: string | null
   worktree?: string | null
-  workspaceMode?: "local-container" | "cloud-mirror" | null
+  workspaceMode?: "local-container" | "cloud-mirror" | "direct" | null
   agentStatus?: UserStoryAgentStatus | null
   activeAgentRunId?: string | null
   clineSessionId?: string | null

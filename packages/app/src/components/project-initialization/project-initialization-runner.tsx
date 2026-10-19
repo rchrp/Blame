@@ -398,7 +398,7 @@ async function startInitialization(
 }
 
 function checkInitializationHostDependencies(workspace: WorkspaceClient) {
-  return workspace.checkHostDependencies({})
+  return workspace.checkHostDependencies({ includeRuntime: false })
 }
 
 async function persistInitializationResult(

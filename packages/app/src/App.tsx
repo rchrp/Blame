@@ -17,9 +17,23 @@ import {
   navigationPreviousPathname,
   subscribeToNavigation,
 } from "@/components/navigation/navigation"
-import { LoadingScreen } from "@/components/onboarding/loading-screen"
-import { PremiumScreen } from "@/pages/premium/page"
+import {
+  CompactLoadingScreen,
+  LoadingScreen,
+} from "@/components/onboarding/loading-screen"
+import {
+  useMinimumDuration,
+  usePremiumOfferPending,
+  useRuntimeOfferPending,
+} from "@/components/onboarding/onboarding-flow"
+import {
+  OnboardingStage,
+  type OnboardingScreen,
+} from "@/components/onboarding/stage/onboarding-stage"
+import { PremiumOfferScreen, PremiumScreen } from "@/pages/premium/page"
 import { WelcomeScreen } from "@/components/onboarding/welcome-screen"
+import { RuntimeSetupScreen } from "@/components/onboarding/runtime-setup-screen"
+import { useBlameRuntime } from "@/context/blame-runtime"
 import { ProjectInitializationRunner } from "@/components/project-initialization/project-initialization-runner"
 import { ProjectCodePracticesRunner } from "@/components/practices/project-code-practices-runner"
 import { UpdateStartupNotifier } from "@/components/updates/update-startup-notifier"
@@ -42,6 +56,8 @@ const settingsPath = "/settings"
 const premiumPath = "/premium"
 const accountPrivacyPath = "/account/privacy"
 const backlogStatusPipPath = "/backlog-status-pip"
+// Long enough for the mark to draw itself and one loading line to be read.
+const minimumLoadingMs = 1600
 
 const routes = [
   { path: "/backlog", title: "Backlog", element: <BacklogPage /> },
@@ -121,12 +137,24 @@ export function App() {
   const statusPipOpen = pathname === backlogStatusPipPath
   const previousRoute = resolvePreviousRoute(previousPathname)
   const activeRoute = settingsOpen ? previousRoute : route
+  const loading = useMinimumDuration(
+    auth.status === "loading",
+    statusPipOpen ? 0 : minimumLoadingMs
+  )
+  const premiumOfferPending = usePremiumOfferPending()
+  const runtime = useBlameRuntime()
+  const runtimeOfferOpen = useRuntimeOfferPending(runtime.phase)
+  const premiumOfferOpen =
+    premiumOfferPending &&
+    auth.status === "authenticated" &&
+    auth.aiPreferences !== null &&
+    auth.license?.licensed !== true
   const windowRole = appWindowRole({
     activeProject: projects.activeProject,
     accountPrivacyOpen,
     aiPreferences: auth.aiPreferences,
-    authStatus: auth.status,
-    premiumOpen,
+    authStatus: loading ? "loading" : auth.status,
+    premiumOpen: premiumOpen || premiumOfferOpen,
     statusPipOpen,
   })
 
@@ -142,8 +170,8 @@ export function App() {
     if (!open) navigate(activeRoute.path)
   }
 
-  if (auth.status === "loading") return <LoadingScreen />
-  if (auth.status === "unauthenticated" && closureReceipt) {
+  if (loading && statusPipOpen) return <CompactLoadingScreen />
+  if (!loading && auth.status === "unauthenticated" && closureReceipt) {
     return (
       <TooltipProvider>
         <AccountClosureReceiptPage receipt={closureReceipt} />
@@ -151,8 +179,7 @@ export function App() {
       </TooltipProvider>
     )
   }
-  if (auth.status === "unauthenticated") return <ConnectScreen />
-  if (accountPrivacyOpen) {
+  if (!loading && accountPrivacyOpen && auth.status === "authenticated") {
     return (
       <TooltipProvider>
         <AccountPrivacyPage />
@@ -160,8 +187,7 @@ export function App() {
       </TooltipProvider>
     )
   }
-  if (premiumOpen) return <PremiumScreen />
-  if (statusPipOpen) {
+  if (!loading && statusPipOpen) {
     return (
       <TooltipProvider>
         <BacklogStatusPipPage />
@@ -169,15 +195,23 @@ export function App() {
       </TooltipProvider>
     )
   }
-  if (auth.aiPreferences === null) {
+
+  const onboardingScreen = resolveOnboardingScreen({
+    activeProject: Boolean(projects.activeProject),
+    aiPreferencesMissing: auth.aiPreferences === null,
+    authStatus: auth.status,
+    loading,
+    premiumOfferOpen,
+    premiumOpen,
+    runtimeOfferOpen,
+  })
+  if (onboardingScreen) {
     return (
-      <TooltipProvider>
-        <AiPreferencesSetupScreen />
-        <Toaster />
-      </TooltipProvider>
+      <OnboardingStage screen={onboardingScreen}>
+        {onboardingElement(onboardingScreen)}
+      </OnboardingStage>
     )
   }
-  if (!projects.activeProject) return <WelcomeScreen />
 
   return (
     <TooltipProvider>
@@ -186,7 +220,11 @@ export function App() {
           <ProjectInitializationRunner />
           <ProjectCodePracticesRunner />
           <UpdateStartupNotifier />
-          <AppLayout pathname={pathname} title={activeRoute.title}>
+          <AppLayout
+            pathname={pathname}
+            routeKey={activeRoute.path}
+            title={activeRoute.title}
+          >
             {activeRoute.element}
           </AppLayout>
           <SettingsDialog open={settingsOpen} onOpenChange={closeSettings} />
@@ -195,6 +233,35 @@ export function App() {
       </BacklogStoreProvider>
     </TooltipProvider>
   )
+}
+
+function resolveOnboardingScreen(input: {
+  activeProject: boolean
+  aiPreferencesMissing: boolean
+  authStatus: "authenticated" | "loading" | "unauthenticated"
+  loading: boolean
+  premiumOfferOpen: boolean
+  premiumOpen: boolean
+  runtimeOfferOpen: boolean
+}): OnboardingScreen | undefined {
+  if (input.loading || input.authStatus === "loading") return "loading"
+  if (input.authStatus === "unauthenticated") return "connect"
+  if (input.premiumOpen) return "premium"
+  if (input.aiPreferencesMissing) return "ai-setup"
+  if (input.premiumOfferOpen) return "premium-offer"
+  if (!input.activeProject && input.runtimeOfferOpen) return "runtime-setup"
+  if (!input.activeProject) return "welcome"
+  return undefined
+}
+
+function onboardingElement(screen: OnboardingScreen) {
+  if (screen === "loading") return <LoadingScreen />
+  if (screen === "connect") return <ConnectScreen />
+  if (screen === "premium") return <PremiumScreen />
+  if (screen === "ai-setup") return <AiPreferencesSetupScreen />
+  if (screen === "premium-offer") return <PremiumOfferScreen />
+  if (screen === "runtime-setup") return <RuntimeSetupScreen />
+  return <WelcomeScreen />
 }
 
 function resolvePreviousRoute(pathname: string) {

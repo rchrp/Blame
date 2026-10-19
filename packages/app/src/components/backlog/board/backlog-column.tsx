@@ -15,6 +15,7 @@ import type {
   RejectChoice,
   StopAgentChoice,
 } from "@/components/backlog/actions/story-action-dialogs"
+import { StoryCardSkeleton } from "@/components/shared/skeletons"
 import { Button } from "@/components/ui/button"
 import {
   KanbanColumn,
@@ -55,10 +56,13 @@ type BacklogColumnProps = {
   onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
   onUnpauseAgent: (story: UserStory) => Promise<UserStory>
   queueInitializing?: boolean
+  // A short reason queued stories are waiting (the runtime is updating…).
+  queueNotice?: string
   storyCleanup?: (story: UserStory) => boolean
   storySetupInitializing?: (story: UserStory) => boolean
   storyTitleGenerating?: (story: UserStory) => boolean
   stories: UserStory[]
+  loading?: boolean
 }
 
 export const BacklogColumn = React.memo(function BacklogColumn({
@@ -74,10 +78,12 @@ export const BacklogColumn = React.memo(function BacklogColumn({
   onStopAgent,
   onUnpauseAgent,
   queueInitializing,
+  queueNotice,
   storyCleanup,
   storySetupInitializing,
   storyTitleGenerating,
   stories,
+  loading,
 }: BacklogColumnProps) {
   recordPerformanceCount("backlog.column.render")
   const viewportRef = React.useRef<HTMLDivElement>(null)
@@ -125,6 +131,7 @@ export const BacklogColumn = React.memo(function BacklogColumn({
           column={column}
           count={stories.length}
           queueInitializing={queueInitializing}
+          queueNotice={queueNotice}
         />
       }
     >
@@ -149,6 +156,16 @@ export const BacklogColumn = React.memo(function BacklogColumn({
         />
       ))}
       {hasMoreStories && <div ref={loadMoreRef} className="h-px" />}
+      {loading && !stories.length
+        ? Array.from({ length: skeletonCounts[column.id] }, (_, index) => (
+            <StoryCardSkeleton key={index} lines={(index % 2) + 1} />
+          ))
+        : null}
+      {!loading && !stories.length && column.id !== "backlog" ? (
+        <p className="px-4 py-6 text-center text-xs text-pretty text-muted-foreground">
+          {emptyColumnHints[column.id]}
+        </p>
+      ) : null}
       {column.id === "backlog" && (
         <Button
           type="button"
@@ -163,6 +180,25 @@ export const BacklogColumn = React.memo(function BacklogColumn({
     </KanbanColumn>
   )
 }, equalBacklogColumnProps)
+
+// Roughly how a typical board fills up, so loading looks like the real thing.
+const skeletonCounts = {
+  backlog: 3,
+  ready: 2,
+  "in-progress": 2,
+  "in-review": 1,
+  done: 2,
+  discarded: 1,
+} satisfies Record<BacklogColumnId, number>
+
+const emptyColumnHints = {
+  backlog: "",
+  ready: "Stories queued for an agent wait here.",
+  "in-progress": "Agents at work show up here, live.",
+  "in-review": "Finished work waits here for your review.",
+  done: "Merged stories land here.",
+  discarded: "Nothing set aside.",
+} satisfies Record<BacklogColumnId, string>
 
 function compareStoriesByRecency(left: UserStory, right: UserStory) {
   const createdAtDifference =
@@ -200,10 +236,12 @@ export function BacklogColumnHeader({
   column,
   count,
   queueInitializing,
+  queueNotice,
 }: {
   column: BacklogColumnHeaderColumn
   count: number
   queueInitializing?: boolean
+  queueNotice?: string
 }) {
   return (
     <KanbanColumnHeader
@@ -212,6 +250,12 @@ export function BacklogColumnHeader({
       count={count}
       color={columnColors[column.id]}
     >
+      {queueNotice && !queueInitializing && (
+        <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+          <LoaderCircleIcon className="size-3 animate-spin" />
+          {queueNotice}
+        </div>
+      )}
       {queueInitializing && (
         <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
           <LoaderCircleIcon className="size-3 animate-spin" />

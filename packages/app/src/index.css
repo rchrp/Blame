@@ -5,6 +5,7 @@
 @import "@fontsource-variable/nunito-sans";
 
 @source "./";
+@source "../../pricing-card/src";
 
 @custom-variant dark (&:is(.dark *):not(:is(.light, .light *)));
 
@@ -757,5 +758,292 @@
   .markdown-stream-block-reveal {
     grid-template-rows: 1fr;
     opacity: 1;
+  }
+}
+
+/* Onboarding: children rise in one after another. */
+@keyframes onboarding-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+    filter: blur(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+@layer components {
+  .onboarding-stagger > * {
+    animation: onboarding-rise 440ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .onboarding-stagger > :nth-child(1) { animation-delay: 0ms; }
+  .onboarding-stagger > :nth-child(2) { animation-delay: 25ms; }
+  .onboarding-stagger > :nth-child(3) { animation-delay: 50ms; }
+  .onboarding-stagger > :nth-child(4) { animation-delay: 75ms; }
+  .onboarding-stagger > :nth-child(5) { animation-delay: 100ms; }
+  .onboarding-stagger > :nth-child(6) { animation-delay: 125ms; }
+  .onboarding-stagger > :nth-child(7) { animation-delay: 150ms; }
+  .onboarding-stagger > :nth-child(8) { animation-delay: 175ms; }
+  .onboarding-stagger > :nth-child(n + 9) { animation-delay: 200ms; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .onboarding-stagger > * {
+      animation: none;
+    }
+  }
+}
+
+@keyframes premium-sheen {
+  0%,
+  55% {
+    transform: translateX(0) skewX(-12deg);
+  }
+
+  100% {
+    transform: translateX(450%) skewX(-12deg);
+  }
+}
+
+/* Conversation motion. Every animation runs once, on mount, and only for
+   items that just arrived (see isFreshTimestamp), so long histories open
+   without replaying anything. */
+@keyframes chat-enter-user {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0) scale(0.96);
+    filter: blur(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+@keyframes chat-enter-agent {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes chat-enter-step {
+  from {
+    opacity: 0;
+    transform: translate3d(-6px, 0, 0);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes chat-step-done {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+
+  60% {
+    transform: scale(1.18);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes chat-step-pulse {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.55;
+  }
+
+  100% {
+    transform: scale(1.45);
+    opacity: 0;
+  }
+}
+
+@layer components {
+  .chat-enter-user {
+    transform-origin: 100% 100%;
+    animation: chat-enter-user 460ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .chat-enter-agent {
+    animation: chat-enter-agent 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .chat-enter-step {
+    animation: chat-enter-step 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .chat-step-done {
+    animation: chat-step-done 380ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+
+  .chat-step-running {
+    position: relative;
+  }
+
+  .chat-step-running::after {
+    position: absolute;
+    inset: 0.35rem;
+    border-radius: 999px;
+    background: oklch(0.72 0.2 270 / 35%);
+    content: "";
+    pointer-events: none;
+    animation: chat-step-pulse 1.4s cubic-bezier(0.2, 0.6, 0.3, 1) infinite;
+  }
+
+  .composer-icon-swap {
+    animation: chat-step-done 320ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .chat-enter-user,
+    .chat-enter-agent,
+    .chat-enter-step,
+    .chat-step-done,
+    .composer-icon-swap {
+      animation: none;
+    }
+
+    .chat-step-running::after {
+      animation: none;
+    }
+  }
+}
+
+/* Page changes fade in instead of cutting. */
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 6px, 0);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@layer components {
+  .page-enter {
+    animation: page-enter 280ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .page-enter {
+      animation: none;
+    }
+  }
+}
+
+/* Skeletons: one light sweep shared by every placeholder on screen (the
+   gradient is fixed to the viewport, so neighbours shimmer in step). */
+@keyframes skeleton-sweep {
+  from {
+    background-position: 100vw 0;
+  }
+
+  to {
+    background-position: -100vw 0;
+  }
+}
+
+@layer components {
+  .skeleton-shimmer {
+    background-color: var(--muted);
+    background-image: linear-gradient(
+      100deg,
+      transparent 0%,
+      color-mix(in oklab, var(--foreground) 6%, transparent) 50%,
+      transparent 100%
+    );
+    background-size: 50vw 100%;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    animation: skeleton-sweep 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton-shimmer {
+      background-image: none;
+      animation: none;
+    }
+  }
+}
+
+/* Runtime install/update progress, lit like a story an agent works on. */
+/* Without a percentage, a segment travels back and forth inside the track. */
+@keyframes runtime-progress-indeterminate {
+  from {
+    left: 0;
+  }
+
+  to {
+    left: 65%;
+  }
+}
+
+@layer components {
+  .runtime-progress-track {
+    position: relative;
+    height: 0.375rem;
+    width: 100%;
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--foreground) 10%, transparent);
+  }
+
+  /* The notification's text column fills the toast so the bar spans it. */
+  .runtime-progress-toast [data-content] {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .runtime-progress-toast [data-description] {
+    width: 100%;
+  }
+
+  .runtime-progress-fill {
+    position: relative;
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, oklch(0.65 0.22 255), oklch(0.78 0.15 238));
+    box-shadow:
+      0 0 0 1px oklch(0.7 0.17 250 / 25%),
+      0 0 14px oklch(0.65 0.2 250 / 45%);
+    transition: width 500ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .runtime-progress-fill[data-indeterminate] {
+    position: absolute;
+    top: 0;
+    width: 35%;
+    animation: runtime-progress-indeterminate 1.2s cubic-bezier(0.65, 0, 0.35, 1) infinite alternate;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .runtime-progress-fill[data-indeterminate] {
+      left: 0;
+      width: 100%;
+      opacity: 0.6;
+      animation: none;
+    }
   }
 }

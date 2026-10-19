@@ -143,6 +143,8 @@ const api: BlameDesktopApi = {
     publish: (snapshot) =>
       ipcRenderer.send("backlog-status-pip:snapshot", snapshot),
     request: (input) => ipcRenderer.invoke("backlog-status-pip:request", input),
+    close: () => ipcRenderer.send("backlog-status-pip:close"),
+    setMode: (input) => ipcRenderer.invoke("backlog-status-pip:set-mode", input),
   },
   securityAudits: {
     active: (input) => ipcRenderer.invoke("security-audits:active", input),
@@ -161,6 +163,18 @@ const api: BlameDesktopApi = {
   platform: process.platform,
   systemNotifications: {
     show: (input) => ipcRenderer.invoke("notifications:show", input),
+    onClick: (callback) => {
+      const handler = (
+        _event: unknown,
+        target: Parameters<typeof callback>[0],
+      ) => callback(target);
+      ipcRenderer.on("notifications:clicked", handler);
+      return () => ipcRenderer.removeListener("notifications:clicked", handler);
+    },
+  },
+  appStatus: {
+    setActivity: (input) => ipcRenderer.invoke("app:set-activity", input),
+    requestAttention: () => ipcRenderer.invoke("app:request-attention"),
   },
   updates: {
     check: () => ipcRenderer.invoke("updates:check"),
@@ -359,6 +373,7 @@ const api: BlameDesktopApi = {
       ipcRenderer.invoke("workspace:resolve-project-preview-url", input),
     ensureProjectPreviewUrl: (input) =>
       ipcRenderer.invoke("workspace:ensure-project-preview-url", input),
+    runtimeStatus: () => ipcRenderer.invoke("workspace:get-runtime-status"),
     ensureRuntimeReady: (onProgress) =>
       invokeRuntimeOperation("workspace:ensure-runtime-ready", onProgress),
     repairRuntime: (onProgress) =>

@@ -694,7 +694,7 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
 
   return (
     <div className="h-full min-h-0 p-6">
-      <div className="flex h-full min-h-96 flex-col items-center justify-center gap-3 rounded-lg border border-dashed bg-muted/20 p-8 text-center">
+      <div className="flex h-full min-h-96 flex-col items-center justify-center gap-3 rounded-lg bg-muted/20 p-8 text-center">
         <MonitorIcon className="size-8 text-muted-foreground" />
         <div>
           <h3 className="font-heading text-lg font-semibold">Preview</h3>

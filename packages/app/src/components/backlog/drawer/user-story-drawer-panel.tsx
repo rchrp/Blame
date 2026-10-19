@@ -36,8 +36,7 @@ import {
 } from "@/components/backlog/development/development-workspace"
 import {
   loadAgentRunDiffs,
-  loadAgentRunDiffSummary,
-} from "@/components/chat/agent-run-diffs"
+  } from "@/components/chat/agent-run-diffs"
 import { usePlatform } from "@/context/platform"
 import type { UserStoryDiffStats } from "@/components/backlog/development/user-story-diff-stats"
 import { DrawerActions } from "@/components/backlog/drawer/user-story-drawer-actions"
@@ -77,6 +76,11 @@ import {
 } from "@/components/ui/drawer"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
+import { recallForItem, rememberForItem } from "@/lib/ui-memory"
+import {
+  DrawerResizeHandle,
+  useStoryDrawerWidth,
+} from "@/components/backlog/drawer/drawer-resize-handle"
 import { useLatestCallback } from "@/lib/use-latest-callback"
 import { createUserStoryCommentSubmission } from "./user-story-comment-submission"
 import {
@@ -191,17 +195,43 @@ export function UserStoryDrawerPanel({
     [draftStorageKey]
   )
   const hasDevelopment = hasDevelopmentTab(status)
-  const hasPreview = status === "in-progress" || status === "in-review"
+  // Direct stories run in the project folder without a managed preview.
+  const hasPreview =
+    (status === "in-progress" || status === "in-review") &&
+    userStory?.workspaceMode !== "direct"
   const sidebarAvailable = Boolean(
     mode !== "create" && (userStory?.clineSessionId || userStory?.agentUsage)
   )
+  // Opening a story on its default tab brings back the tab it was left on.
+  const [rememberedTabs] = React.useState(() =>
+    mode !== "create" && userStory && initialTab === "user-story" && !focusComment
+      ? recallForItem(drawerTabsMemoryKey, userStory.id, isRememberedDrawerTabs)
+      : undefined
+  )
   const [tab, setTab] = React.useState<UserStoryDrawerTab>(
-    initialDrawerTab(hasDevelopment, hasPreview, focusComment, initialTab)
+    initialDrawerTab(
+      hasDevelopment,
+      hasPreview,
+      focusComment,
+      rememberedTabs?.tab ?? initialTab
+    )
   )
   const [developmentTab, setDevelopmentTab] =
     React.useState<UserStoryDevelopmentTab>(
-      normalizeDevelopmentTab(status, initialDevelopmentTab)
+      normalizeDevelopmentTab(
+        status,
+        rememberedTabs?.developmentTab ?? initialDevelopmentTab
+      )
     )
+  const drawerWidth = useStoryDrawerWidth()
+  const rememberedStoryId = mode === "create" ? undefined : userStory?.id
+  React.useEffect(() => {
+    if (!rememberedStoryId) return
+    rememberForItem(drawerTabsMemoryKey, rememberedStoryId, {
+      developmentTab,
+      tab,
+    })
+  }, [developmentTab, rememberedStoryId, tab])
   const [summaryCodeSelectionAttachments, setSummaryCodeSelectionAttachments] =
     React.useState<PendingCodeSelectionAttachment[]>(
       mode === "create"
@@ -237,19 +267,6 @@ export function UserStoryDrawerPanel({
   )
   const developmentWorkspaceRoot = developmentWorkspace.root
   const platform = usePlatform()
-  const loadChangedFiles = React.useCallback(
-    (sessionId: string, checkpointRunCount: number, diffEndRef: string) => {
-      if (!developmentWorkspaceRoot) return Promise.resolve([])
-      return loadAgentRunDiffSummary({
-        checkpointRunCount,
-        diffEndRef,
-        platform,
-        root: developmentWorkspaceRoot,
-        sessionId,
-      })
-    },
-    [developmentWorkspaceRoot, platform]
-  )
   const loadChangedFileDiffs = React.useCallback(
     (sessionId: string, checkpointRunCount: number, diffEndRef: string) => {
       if (!developmentWorkspaceRoot) return Promise.resolve([])
@@ -266,8 +283,11 @@ export function UserStoryDrawerPanel({
   const [pendingAction, setPendingAction] = React.useState<DrawerAction>()
   const [commentSubmission] = React.useState(createUserStoryCommentSubmission)
   const [sidebarOpen, setSidebarOpen] = React.useState(readSidebarOpen)
+  const titleDraftKey = `${draftStorageKey}:title`
   const [title, setTitle] = React.useState(
-    mode === "create" ? (initialDraft?.title ?? "") : (userStory?.title ?? "")
+    mode === "create"
+      ? (readTitleDraft(titleDraftKey) ?? initialDraft?.title ?? "")
+      : (userStory?.title ?? "")
   )
   const [summary, setSummary] = React.useState(
     mode === "create"
@@ -289,6 +309,20 @@ export function UserStoryDrawerPanel({
   React.useEffect(() => {
     localStorage.setItem(drawerSidebarStorageKey, JSON.stringify(sidebarOpen))
   }, [sidebarOpen])
+
+  // A new story's title survives closing the drawer, like its description.
+  React.useEffect(() => {
+    if (mode !== "create") return
+    const timer = window.setTimeout(() => {
+      try {
+        if (title.trim()) localStorage.setItem(titleDraftKey, title)
+        else localStorage.removeItem(titleDraftKey)
+      } catch {
+        return
+      }
+    }, composerDraftPersistDelayMs)
+    return () => window.clearTimeout(timer)
+  }, [mode, title, titleDraftKey])
 
   React.useEffect(() => {
     const draft = drawerComposerDraft({
@@ -537,7 +571,11 @@ export function UserStoryDrawerPanel({
   )
 
   return (
-    <DrawerContent className="inset-y-2 right-2 h-[calc(100svh-1rem)] overflow-hidden rounded-xl border bg-[oklch(1_0_0)] text-foreground data-[vaul-drawer-direction=right]:w-[min(90rem,calc(100vw-1rem))] data-[vaul-drawer-direction=right]:sm:max-w-none dark:bg-[oklch(0.16_0_0)]">
+    <DrawerContent
+      className="inset-y-2 right-2 h-[calc(100svh-1rem)] overflow-hidden rounded-xl border bg-[oklch(1_0_0)] text-foreground data-[vaul-drawer-direction=right]:w-[min(var(--story-drawer-width,90rem),calc(100vw-1rem))] data-[vaul-drawer-direction=right]:sm:max-w-none dark:bg-[oklch(0.16_0_0)]"
+      style={drawerWidth.style}
+    >
+      <DrawerResizeHandle onWidthChange={drawerWidth.setWidth} />
       {tab === "user-story" && sidebarAvailable && (
         <Button
           type="button"
@@ -651,7 +689,6 @@ export function UserStoryDrawerPanel({
           >
             <UserStoryContent
               loadChangedFileDiffs={loadChangedFileDiffs}
-              loadChangedFiles={loadChangedFiles}
               mode={mode}
               onCommentUndo={handleCommentUndo}
               onSummaryCodeSelectionAttachmentRemove={
@@ -849,6 +886,11 @@ export function UserStoryDrawerPanel({
   function clearComposerDraft() {
     composerDraftRemovedRef.current = true
     removeComposerDraft(localStorage, draftStorageKey)
+    try {
+      localStorage.removeItem(titleDraftKey)
+    } catch {
+      return
+    }
   }
 
   async function undoCommentMessage(target: AgentConversationUserMessageUndo) {
@@ -867,4 +909,30 @@ export function UserStoryDrawerPanel({
         ?.focus()
     })
   }
+}
+
+function readTitleDraft(key: string) {
+  try {
+    return localStorage.getItem(key) ?? undefined
+  } catch {
+    return undefined
+  }
+}
+
+const drawerTabsMemoryKey = "story-drawer-tabs"
+const drawerTabs = new Set<string>(["user-story", "preview", "development"])
+const developmentTabs = new Set<string>(["files", "diff", "terminal"])
+
+function isRememberedDrawerTabs(value: unknown): value is {
+  developmentTab: UserStoryDevelopmentTab
+  tab: UserStoryDrawerTab
+} {
+  if (!value || typeof value !== "object") return false
+  const record = value as Record<string, unknown>
+  return (
+    typeof record.tab === "string" &&
+    drawerTabs.has(record.tab) &&
+    typeof record.developmentTab === "string" &&
+    developmentTabs.has(record.developmentTab)
+  )
 }

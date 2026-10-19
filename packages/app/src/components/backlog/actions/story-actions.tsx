@@ -1,3 +1,4 @@
+import { approveActionLabel } from "@/components/backlog/shared/backlog-helpers"
 import { Trash2Icon } from "lucide-react"
 
 import {
@@ -167,22 +168,12 @@ function ProgressActions({
         story={story}
       />
       <Separator className="my-1" />
-      <div className="grid grid-cols-2 gap-2">
-        <StoryAction
-          action="Open Worktree"
-          onAction={onAction}
-          story={story}
-          onOpenDrawer={onOpenDrawer}
-          onOpenWorktree={onOpenWorktree}
-        />
-        <StoryAction
-          action="Open Preview"
-          onAction={onAction}
-          story={story}
-          onOpenDrawer={onOpenDrawer}
-          onOpenWorktree={onOpenWorktree}
-        />
-      </div>
+      <WorkspaceActions
+        onAction={onAction}
+        onOpenDrawer={onOpenDrawer}
+        onOpenWorktree={onOpenWorktree}
+        story={story}
+      />
       <div className="flex justify-end gap-2">
         {story.agentStatus === "Paused" && (
           <StoryAction
@@ -229,22 +220,12 @@ function ReviewActions({
         story={story}
       />
       <Separator className="my-1" />
-      <div className="grid grid-cols-2 gap-2">
-        <StoryAction
-          action="Open Worktree"
-          onAction={onAction}
-          onOpenDrawer={onOpenDrawer}
-          onOpenWorktree={onOpenWorktree}
-          story={story}
-        />
-        <StoryAction
-          action="Open Preview"
-          onAction={onAction}
-          onOpenDrawer={onOpenDrawer}
-          onOpenWorktree={onOpenWorktree}
-          story={story}
-        />
-      </div>
+      <WorkspaceActions
+        onAction={onAction}
+        onOpenDrawer={onOpenDrawer}
+        onOpenWorktree={onOpenWorktree}
+        story={story}
+      />
       <div className="grid grid-cols-2 gap-2">
         {reviewDiffEmpty ? (
           <StoryAction
@@ -267,7 +248,7 @@ function ReviewActions({
         )}
         <StoryAction
           action="Approve & Merge"
-          label={reviewDiffEmpty ? "Mark as Done" : undefined}
+          label={approveActionLabel(story, reviewDiffEmpty)}
           onAction={onAction}
           onOpenDrawer={onOpenDrawer}
           onOpenWorktree={onOpenWorktree}
@@ -308,6 +289,44 @@ function DevelopmentActions({
         onOpenDrawer={onOpenDrawer}
         story={story}
       />
+    </div>
+  )
+}
+
+// Where the story's files live. Direct stories run in the project folder
+// and have no managed preview.
+function WorkspaceActions({
+  onAction,
+  onOpenDrawer,
+  onOpenWorktree,
+  story,
+}: {
+  onAction: StoryActionHandler
+  onOpenDrawer: OpenDrawer
+  onOpenWorktree: (story: UserStory) => Promise<void>
+  story: UserStory
+}) {
+  const direct = story.workspaceMode === "direct"
+  return (
+    <div className="grid grid-cols-2 gap-2">
+      <StoryAction
+        action="Open Worktree"
+        className={direct ? "col-span-2" : undefined}
+        label={direct ? "Open Project Folder" : undefined}
+        onAction={onAction}
+        onOpenDrawer={onOpenDrawer}
+        onOpenWorktree={onOpenWorktree}
+        story={story}
+      />
+      {direct ? null : (
+        <StoryAction
+          action="Open Preview"
+          onAction={onAction}
+          onOpenDrawer={onOpenDrawer}
+          onOpenWorktree={onOpenWorktree}
+          story={story}
+        />
+      )}
     </div>
   )
 }

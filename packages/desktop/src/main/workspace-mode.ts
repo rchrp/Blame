@@ -2,7 +2,9 @@ import type { RuntimeProfileId } from "@blame/preview-runtime";
 import { homedir } from "node:os";
 import { join, posix, win32 } from "node:path";
 
-export type WorkspaceMode = "local-container" | "cloud-mirror";
+// direct: the story runs in the project folder itself (no worktree, no
+// container, no managed preview).
+export type WorkspaceMode = "local-container" | "cloud-mirror" | "direct";
 export type WorkspaceExecution = "native" | "virtualized";
 
 export function runtimeExecution(

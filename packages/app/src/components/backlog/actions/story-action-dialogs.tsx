@@ -149,6 +149,9 @@ export function StopAgentDialog({
           <DialogTitle>Stop Agent</DialogTitle>
           <DialogDescription>
             Choose how this in-progress user story should continue.
+            {story.workspaceMode === "direct"
+              ? " It runs directly in your project folder: the files it changed stay there."
+              : ""}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-2">
@@ -179,7 +182,9 @@ export function StopAgentDialog({
           <Separator />
           <StopChoice
             icon={Trash2Icon}
-            label="Discard Worktree"
+            label={
+              story.workspaceMode === "direct" ? "Stop & Discard Story" : "Discard Worktree"
+            }
             destructive
             loading={stopping === "discard-worktree"}
             onClick={() => {
@@ -236,6 +241,9 @@ export function RejectDialog({
           <DialogDescription>
             Choose whether the agent should continue or the user story should be
             discarded.
+            {story.workspaceMode === "direct"
+              ? " Discarding keeps the files the agent changed in your project folder."
+              : ""}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-2">

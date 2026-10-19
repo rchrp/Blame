@@ -16,7 +16,7 @@ export type UserStoryStatus =
   | 'discarded'
 
 export type UserStoryPriority = 'Low' | 'Medium' | 'High'
-export type UserStoryWorkspaceMode = 'local-container' | 'cloud-mirror'
+export type UserStoryWorkspaceMode = 'local-container' | 'cloud-mirror' | 'direct'
 export type UserStoryAgentStatus = 'Running' | 'Paused'
 export type UserStoryAgentErrorCode =
   | 'cline_not_subscribed'

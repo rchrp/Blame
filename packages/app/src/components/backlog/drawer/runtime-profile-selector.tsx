@@ -1,10 +1,10 @@
-import type { RuntimeProfileId } from "@blame/preview-runtime"
 import {
   CheckIcon,
   ChevronDownIcon,
   ChevronUpIcon,
   CloudIcon,
   ContainerIcon,
+  FolderGit2Icon,
   type LucideIcon,
 } from "lucide-react"
 import * as React from "react"
@@ -18,11 +18,15 @@ import {
 import { Button } from "@/components/ui/button"
 import { navigate } from "@/components/navigation/navigation"
 import { useCloudAuth } from "@/context/cloud-auth"
-import { usePlatform } from "@/context/platform"
+import { useOptionalBlameRuntime } from "@/context/blame-runtime"
+import { usePlatform, type RuntimeProgress } from "@/context/platform"
+import { runtimeProgressText, type RuntimePhase } from "@/lib/blame-runtime-state"
 import {
   runtimeProfileSwitchBlockReason,
   saveRuntimePreference,
-  useRuntimePreference,
+  saveStoryRunMode,
+  useStoryRunMode,
+  type StoryRunMode,
 } from "@/lib/runtime-preference"
 import { cn } from "@/lib/utils"
 
@@ -32,7 +36,7 @@ type RuntimeOption = {
   iconClassName: string
   iconStyle?: React.CSSProperties
   label: string
-  profile: RuntimeProfileId
+  profile: StoryRunMode
   selectedClassName: string
   triggerClassName: string
   triggerStyle?: React.CSSProperties
@@ -59,12 +63,23 @@ const runtimeOptions = [
     triggerStyle: cloudGradient,
   },
   {
-    description: "Run the story with containers on this machine.",
+    description: "Run the story in an isolated sandbox on this computer.",
     icon: ContainerIcon,
     iconClassName:
-      "bg-muted/70 text-muted-foreground ring-1 ring-foreground/10",
+      "bg-primary/12 text-primary ring-1 ring-primary/25 dark:bg-primary/30 dark:text-blue-300 dark:ring-primary/50",
     label: "Local Container",
     profile: "local-container",
+    selectedClassName: "text-primary dark:text-blue-300",
+    triggerClassName:
+      "bg-primary/10 text-foreground shadow-none ring-1 ring-primary/30 transition-colors hover:bg-primary/15 dark:bg-primary/25 dark:ring-primary/60 dark:hover:bg-primary/35",
+  },
+  {
+    description:
+      "Runs right in your project folder: the fastest and lightest. No isolation, so agents can collide on files and ports.",
+    icon: FolderGit2Icon,
+    iconClassName: "bg-muted/70 text-muted-foreground ring-1 ring-foreground/10",
+    label: "Direct",
+    profile: "direct",
     selectedClassName: "text-foreground",
     triggerClassName:
       "bg-muted/70 text-foreground shadow-none ring-0 transition-colors hover:bg-muted",
@@ -75,15 +90,21 @@ export const RuntimeProfileSelector = React.memo(
   function RuntimeProfileSelector() {
     const auth = useCloudAuth()
     const platform = usePlatform()
+    const runtime = useOptionalBlameRuntime()
     const premium = auth.license?.licensed === true
-    const preference = useRuntimePreference(premium)
+    const preference = { profile: useStoryRunMode(premium) }
     const [open, setOpen] = React.useState(false)
     const cloudAvailable = Boolean(
       platform.previewRuntime && auth.status === "authenticated"
     )
     const selected = runtimeOption(preference.profile)
 
-    const selectProfile = (profile: RuntimeProfileId) => {
+    const selectProfile = (profile: StoryRunMode) => {
+      if (profile === "direct") {
+        saveStoryRunMode("direct")
+        setOpen(false)
+        return
+      }
       if (profile === "vercel-compose" && !premium) {
         setOpen(false)
         toast.info("Cloud previews require Blame Premium.", {
@@ -104,8 +125,16 @@ export const RuntimeProfileSelector = React.memo(
         return
       }
       if (profile === "local-container") {
-        saveRuntimePreference({ profile, source: "account-default" })
+        const select = () =>
+          saveRuntimePreference({ profile, source: "account-default" })
         setOpen(false)
+        // Without the runtime, explain and offer to install it; the choice
+        // applies once the person agrees.
+        if (runtimeNeedsSetup(runtime?.phase)) {
+          runtime?.promptInstall({ onAccept: select })
+          return
+        }
+        select()
         return
       }
       if (!cloudAvailable) return
@@ -146,7 +175,7 @@ export const RuntimeProfileSelector = React.memo(
           align="start"
           side="top"
           sideOffset={6}
-          className="w-80 rounded-xl p-2"
+          className="w-[22rem] rounded-xl p-2"
         >
           <div className="space-y-0.5">
             {runtimeOptions.map((option) => (
@@ -157,6 +186,11 @@ export const RuntimeProfileSelector = React.memo(
                 key={option.profile}
                 option={option}
                 premium={premium}
+                runtimeNote={
+                  option.profile === "local-container"
+                    ? runtimeNote(runtime?.phase, runtime?.progress)
+                    : undefined
+                }
                 selected={option.profile === preference.profile}
                 onSelect={selectProfile}
               />
@@ -173,12 +207,14 @@ function RuntimeProfileOption({
   onSelect,
   option,
   premium,
+  runtimeNote,
   selected,
 }: {
   disabled: boolean
-  onSelect: (profile: RuntimeProfileId) => void
+  onSelect: (profile: StoryRunMode) => void
   option: RuntimeOption
   premium: boolean
+  runtimeNote?: string
   selected: boolean
 }) {
   const Icon = option.icon
@@ -206,7 +242,7 @@ function RuntimeProfileOption({
             ? "Sign in from the desktop app to use cloud previews."
             : option.profile === "vercel-compose" && !premium
               ? "Available with Blame Premium."
-              : option.description}
+              : (runtimeNote ?? option.description)}
         </span>
       </span>
       {selected ? (
@@ -218,7 +254,20 @@ function RuntimeProfileOption({
   )
 }
 
-function runtimeOption(profile: RuntimeProfileId): RuntimeOption {
+function runtimeNeedsSetup(phase?: RuntimePhase) {
+  return phase === "missing" || phase === "needs-repair" || phase === "unsupported"
+}
+
+function runtimeNote(phase?: RuntimePhase, progress?: RuntimeProgress) {
+  if (phase === "missing") return "Needs Blame Runtime, a one-time install."
+  if (phase === "needs-repair") return "Blame Runtime needs a repair."
+  if (phase === "unsupported") return "Not available on this computer."
+  if (phase === "installing" || phase === "updating" || phase === "repairing")
+    return `Blame Runtime: ${runtimeProgressText(progress).toLowerCase()}`
+  return undefined
+}
+
+function runtimeOption(profile: StoryRunMode): RuntimeOption {
   return (
     runtimeOptions.find((option) => option.profile === profile) ??
     runtimeOptions[1]

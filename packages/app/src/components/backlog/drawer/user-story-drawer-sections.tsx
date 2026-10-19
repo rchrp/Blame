@@ -76,7 +76,6 @@ export const UserStoryContent = React.memo(function UserStoryContent({
   onFileLinkClick,
   onChangedFileClick,
   loadChangedFileDiffs,
-  loadChangedFiles,
   status,
   summary,
   summaryCodeSelectionAttachments,
@@ -84,9 +83,6 @@ export const UserStoryContent = React.memo(function UserStoryContent({
   summaryRef,
   userStory,
 }: {
-  loadChangedFiles?: Parameters<
-    typeof AgentConversationTimeline
-  >[0]["loadChangedFiles"]
   loadChangedFileDiffs?: Parameters<
     typeof AgentConversationTimeline
   >[0]["loadChangedFileDiffs"]
@@ -109,11 +105,6 @@ export const UserStoryContent = React.memo(function UserStoryContent({
   const project = useProjects().activeProject
   const mentionDirectory = useFileMentionDirectory(status, userStory)
   const editable = isEditable(mode, status)
-  const stableLoadChangedFiles = useLatestCallback(
-    (sessionId: string, checkpointRunCount: number, diffEndRef: string) =>
-      loadChangedFiles?.(sessionId, checkpointRunCount, diffEndRef) ??
-      Promise.resolve([])
-  )
   const stableLoadChangedFileDiffs = useLatestCallback(
     (sessionId: string, checkpointRunCount: number, diffEndRef: string) =>
       loadChangedFileDiffs?.(sessionId, checkpointRunCount, diffEndRef) ??
@@ -177,9 +168,6 @@ export const UserStoryContent = React.memo(function UserStoryContent({
         <AgentRunTimeline
           loadChangedFileDiffs={
             loadChangedFileDiffs ? stableLoadChangedFileDiffs : undefined
-          }
-          loadChangedFiles={
-            loadChangedFiles ? stableLoadChangedFiles : undefined
           }
           connectSummaryActions={Boolean(summary.trim())}
           userStory={userStory}
@@ -303,7 +291,6 @@ function useFileMentionDirectory(
 const AgentRunTimeline = React.memo(function AgentRunTimeline({
   connectSummaryActions,
   loadChangedFileDiffs,
-  loadChangedFiles,
   onCommentUndo,
   onFileLinkClick,
   onChangedFileClick,
@@ -335,7 +322,6 @@ const AgentRunTimeline = React.memo(function AgentRunTimeline({
       comments={userStory?.comments ?? []}
       unsentComments={commentsWithoutAgentRun(userStory ?? {})}
       loadChangedFileDiffs={loadChangedFileDiffs}
-      loadChangedFiles={loadChangedFiles}
       onFileLinkClick={onFileLinkClick}
       onChangedFileClick={onChangedFileClick}
       onLoadActivityDetail={loadActivityDetail}
@@ -349,9 +335,6 @@ const AgentRunTimeline = React.memo(function AgentRunTimeline({
 
 type AgentRunTimelineProps = {
   connectSummaryActions?: boolean
-  loadChangedFiles?: Parameters<
-    typeof AgentConversationTimeline
-  >[0]["loadChangedFiles"]
   loadChangedFileDiffs?: Parameters<
     typeof AgentConversationTimeline
   >[0]["loadChangedFileDiffs"]

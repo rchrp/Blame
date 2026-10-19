@@ -1,8 +1,10 @@
 import * as React from "react"
 import { KeyRoundIcon, LoaderCircleIcon } from "lucide-react"
+import { AnimatePresence, motion, useAnimate } from "motion/react"
 import { toast } from "sonner"
 
-import { CompactWindowChrome } from "@/components/layout/compact-window-chrome"
+import { BlameLogoMark } from "@/components/brand/blame-logo-mark"
+import { GlassPanel } from "@/components/onboarding/stage/glass-panel"
 import { Button } from "@/components/ui/button"
 import {
   Field,
@@ -11,10 +13,11 @@ import {
   FieldLabel,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { Toaster } from "@/components/ui/sonner"
+import { Kbd } from "@/components/ui/kbd"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { LegalLink } from "@/components/legal/legal-link"
 import { useCloudAuth } from "@/context/cloud-auth"
-import { publicAssetUrl } from "@/lib/public-asset-url"
+import { easeOutExpo, springSoft, stepVariants } from "@/lib/motion"
 
 type AuthMode = "login" | "signup" | "forgot" | "verify" | "two-factor"
 type AuthFieldProps = {
@@ -27,84 +30,118 @@ type AuthFieldProps = {
   value: string
   minLength?: number
   maxLength?: number
+  autoFocus?: boolean
 }
 
+// Forms deeper in the flow slide in from the right, going back slides left.
+const modeDepth: Record<AuthMode, number> = {
+  login: 0,
+  signup: 1,
+  forgot: 1,
+  "two-factor": 1,
+  verify: 2,
+}
+
+const ShakeContext = React.createContext<() => void>(() => undefined)
+
 export function ConnectScreen() {
-  const [mode, setMode] = React.useState<AuthMode>("login")
+  const [mode, setModeState] = React.useState<AuthMode>("login")
+  const [direction, setDirection] = React.useState(1)
   const [verificationEmail, setVerificationEmail] = React.useState("")
-  const introReady = useIntroReady()
+  const [card, animateCard] = useAnimate<HTMLDivElement>()
+
+  function setMode(next: AuthMode) {
+    setDirection(modeDepth[next] >= modeDepth[mode] ? 1 : -1)
+    setModeState(next)
+  }
 
   function showVerification(email: string) {
     setVerificationEmail(email.trim())
     setMode("verify")
   }
 
+  const shake = React.useCallback(() => {
+    if (!card.current) return
+    void animateCard(
+      card.current,
+      { x: [0, -10, 9, -6, 4, 0] },
+      { duration: 0.45, ease: "easeOut" }
+    )
+  }, [animateCard, card])
+
   return (
-    <main className="light relative h-svh overflow-hidden bg-background/10 text-foreground backdrop-blur-md">
-      <CompactWindowChrome />
-      <Toaster />
-      <section className="flex h-full flex-col gap-4 bg-background/50 p-6 pb-16 md:p-8 md:pb-16">
+    <section className="relative flex min-h-full flex-col px-7 py-10">
+      <div className="absolute top-7 left-7">
         <AppLogo />
-        <div className="flex flex-1 items-center justify-center">
-          <div
-            key={mode}
-            className={`w-full max-w-xs transform-gpu [zoom:.86] transition-all delay-150 duration-700 ease-out motion-reduce:transform-none motion-reduce:transition-none ${
-              introReady
-                ? "blur-0 translate-y-0 scale-100 opacity-100"
-                : "translate-y-5 scale-[0.98] opacity-0 blur-md"
-            }`}
+      </div>
+      <div className="flex flex-1 items-center justify-center">
+        <ShakeContext.Provider value={shake}>
+          <GlassPanel
+            ref={card}
+            layout
+            transition={{ layout: springSoft }}
+            initial={{ opacity: 0, y: 24, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            className="w-full max-w-[22rem] overflow-hidden px-6 py-6"
           >
-            {mode === "login" ? (
-              <LoginForm
-                onModeChange={setMode}
-                onVerificationRequired={showVerification}
-              />
-            ) : mode === "signup" ? (
-              <SignupForm
-                onModeChange={setMode}
-                onVerificationRequired={showVerification}
-              />
-            ) : mode === "forgot" ? (
-              <ForgotPasswordForm onModeChange={setMode} />
-            ) : mode === "verify" ? (
-              <VerificationForm
-                email={verificationEmail}
-                onModeChange={setMode}
-              />
-            ) : (
-              <EmailTwoFactorForm onModeChange={setMode} />
-            )}
-          </div>
-        </div>
-      </section>
-    </main>
+            <AnimatePresence mode="wait" initial={false} custom={direction}>
+              <motion.div
+                key={mode}
+                layout="position"
+                custom={direction}
+                variants={stepVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+              >
+                {mode === "login" ? (
+                  <LoginForm
+                    onModeChange={setMode}
+                    onVerificationRequired={showVerification}
+                  />
+                ) : mode === "signup" ? (
+                  <SignupForm
+                    onModeChange={setMode}
+                    onVerificationRequired={showVerification}
+                  />
+                ) : mode === "forgot" ? (
+                  <ForgotPasswordForm onModeChange={setMode} />
+                ) : mode === "verify" ? (
+                  <VerificationForm
+                    email={verificationEmail}
+                    onModeChange={setMode}
+                  />
+                ) : (
+                  <EmailTwoFactorForm onModeChange={setMode} />
+                )}
+              </motion.div>
+            </AnimatePresence>
+          </GlassPanel>
+        </ShakeContext.Provider>
+      </div>
+    </section>
   )
 }
 
 function AppLogo() {
   return (
-    <div className="flex [zoom:.86] items-center gap-3" aria-label="Blame">
-      <span className="grid h-10 w-10 place-items-center">
-        <img
-          alt=""
-          className="h-10 w-10 object-contain"
-          src={publicAssetUrl("web-app-manifest-512x512.png")}
-        />
-      </span>
-      <span className="text-2xl font-extrabold">Blame</span>
+    <div className="flex items-center gap-2.5" aria-label="Blame">
+      <motion.span
+        layoutId="blame-logo-mark"
+        className="block size-9"
+        transition={{ duration: 0.7, ease: easeOutExpo }}
+      >
+        <BlameLogoMark className="size-full" />
+      </motion.span>
+      <motion.span
+        layoutId="blame-logo-word"
+        className="font-heading text-xl font-extrabold tracking-tight"
+        transition={{ duration: 0.7, ease: easeOutExpo }}
+      >
+        Blame
+      </motion.span>
     </div>
   )
-}
-
-function useIntroReady() {
-  const [ready, setReady] = React.useState(false)
-
-  React.useEffect(() => {
-    const frame = requestAnimationFrame(() => setReady(true))
-    return () => cancelAnimationFrame(frame)
-  }, [])
-
-  return ready
 }
 
 function LoginForm({
@@ -128,8 +165,8 @@ function LoginForm({
         if (result === "email-verification") onVerificationRequired(email)
       })}
     >
-      <FieldGroup className="gap-4">
-        <FormTitle title="Login to your account" description="" />
+      <FieldGroup className="onboarding-stagger gap-3.5">
+        <FormTitle title="Welcome back" description="Sign in to pick up where your agents left off." />
         <LoginFields
           email={email}
           password={password}
@@ -174,7 +211,7 @@ function EmailTwoFactorForm({ onModeChange }: { onModeChange(mode: AuthMode): vo
       className="flex flex-col gap-6"
       onSubmit={form.submit(() => auth.verifyEmailTwoFactor(code.trim()))}
     >
-      <FieldGroup className="gap-4">
+      <FieldGroup className="onboarding-stagger gap-3.5">
         <EmailTwoFactorFields code={code} sent={sent} setCode={setCode} />
         <AuthErrorToast error={form.error} />
         <SubmitButton loading={form.loading}>Verify code</SubmitButton>
@@ -204,6 +241,7 @@ function EmailTwoFactorFields({
         description="Enter the 6-digit sign-in code we sent you."
       />
       <AuthField
+        autoFocus
         id="email-two-factor-code"
         label="Sign-in code"
         value={code}
@@ -227,7 +265,7 @@ function EmailTwoFactorActions({
 }) {
   return (
     <>
-      <Button disabled={loading} type="button" variant="link" onClick={onResend}>
+      <Button className="dark:text-indigo-300" disabled={loading} type="button" variant="link" onClick={onResend}>
         Send a new code
       </Button>
       <ModePrompt action="Back to login" onClick={onBack}>
@@ -265,8 +303,8 @@ function SignupForm({
         onVerificationRequired(email)
       })}
     >
-      <FieldGroup className="gap-4">
-        <FormTitle title="Create your account" description="" />
+      <FieldGroup className="onboarding-stagger gap-3.5">
+        <FormTitle title="Create your account" description="Set up Blame in a couple of minutes." />
         <SignupFields
           email={email}
           fullName={fullName}
@@ -303,13 +341,13 @@ function ForgotPasswordForm({ onModeChange }: { onModeChange(mode: AuthMode): vo
       await auth.requestPasswordReset(email)
       setSent(true)
     })}>
-      <FieldGroup className="gap-4">
+      <FieldGroup className="onboarding-stagger gap-3.5">
         <FormTitle title="Reset your password" description="We’ll email a secure link if an account exists for this address." />
         {sent ? (
           <FieldDescription className="rounded-md border border-emerald-600/20 bg-emerald-500/10 p-3 text-emerald-800">
             Check your inbox. The reset link expires in 30 minutes.
           </FieldDescription>
-        ) : <AuthField id="reset-email" label="Email" type="email" value={email} onChange={setEmail} />}
+        ) : <AuthField autoFocus id="reset-email" label="Email" type="email" value={email} onChange={setEmail} />}
         <AuthErrorToast error={form.error} />
         {!sent ? <SubmitButton loading={form.loading}>Send reset link</SubmitButton> : null}
         <ModePrompt action="Back to login" onClick={() => onModeChange("login")}>Remembered your password?</ModePrompt>
@@ -333,7 +371,7 @@ function VerificationForm({
       await auth.resendVerification(email)
       setSent(true)
     })}>
-      <FieldGroup className="gap-4">
+      <FieldGroup className="onboarding-stagger gap-3.5">
         <FormTitle title="Verify your email" description={`Open the verification link sent to ${email}.`} />
         {sent ? <FieldDescription>A fresh verification link was sent.</FieldDescription> : null}
         <AuthErrorToast error={form.error ?? auth.error} />
@@ -373,6 +411,7 @@ function LoginFields({
   return (
     <>
       <AuthField
+        autoFocus
         id="login-email"
         label="Email"
         type="email"
@@ -431,6 +470,7 @@ function FullNameField({
 }) {
   return (
     <AuthField
+      autoFocus
       id="signup-name"
       label="Full Name"
       value={value}
@@ -471,7 +511,7 @@ function SignupPasswordField({
       type="password"
       value={value}
       onChange={onChange}
-      description="12–128 characters. Use a unique passphrase; password managers are recommended."
+      description="12 to 128 characters. A passphrase works best."
       minLength={12}
       maxLength={128}
     />
@@ -505,8 +545,10 @@ function FormTitle({
 }) {
   return (
     <div className="flex flex-col items-center gap-1 text-center">
-      <h2 className="text-3xl font-bold">{title}</h2>
-      <p className="text-sm text-balance text-foreground/70">{description}</p>
+      <h2 className="font-heading text-2xl font-bold tracking-tight">{title}</h2>
+      {description ? (
+        <p className="text-sm text-balance text-foreground/70">{description}</p>
+      ) : null}
     </div>
   )
 }
@@ -521,12 +563,14 @@ function AuthField({
   value,
   minLength,
   maxLength,
+  autoFocus,
 }: AuthFieldProps) {
   return (
     <Field>
       <FieldLabel htmlFor={id}>{label}</FieldLabel>
       <Input
-        className="bg-background"
+        autoFocus={autoFocus}
+        className="h-9 bg-background/80 transition-[box-shadow,background-color,border-color] duration-200 focus-visible:border-primary/60 focus-visible:bg-background focus-visible:ring-primary/20"
         id={id}
         minLength={minLength}
         maxLength={maxLength}
@@ -545,9 +589,13 @@ function AuthField({
 }
 
 function AuthErrorToast({ error }: { error: string | undefined }) {
+  const shake = React.useContext(ShakeContext)
+
   React.useEffect(() => {
-    if (error) toast.error(error, { position: "bottom-right" })
-  }, [error])
+    if (!error) return
+    toast.error(error, { position: "bottom-right" })
+    shake()
+  }, [error, shake])
 
   return null
 }
@@ -561,9 +609,27 @@ function SubmitButton({
 }) {
   return (
     <Field>
-      <Button type="submit" disabled={loading}>
-        {loading ? <LoaderCircleIcon className="animate-spin" /> : null}
-        {children}
+      <Button
+        type="submit"
+        disabled={loading}
+        className="relative h-9 shadow-[0_10px_24px_-10px_var(--primary)] transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_14px_28px_-10px_var(--primary)] active:translate-y-0 active:scale-[0.99]"
+      >
+        <AnimatePresence initial={false} mode="popLayout">
+          {loading ? (
+            <motion.span
+              key="loading"
+              initial={{ opacity: 0, scale: 0.6 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.6 }}
+            >
+              <LoaderCircleIcon className="animate-spin" />
+            </motion.span>
+          ) : null}
+        </AnimatePresence>
+        <motion.span layout="position">{children}</motion.span>
+        <Kbd className="absolute right-2.5 bg-primary-foreground/15 text-primary-foreground/80">
+          ↵
+        </Kbd>
       </Button>
     </Field>
   )
@@ -577,21 +643,51 @@ function AlternativeAuth({ loading, onPasskey, onSocial }: {
   return (
     <>
       <AuthSeparator>Or continue with</AuthSeparator>
-      <Field className="grid grid-cols-3 gap-2">
-        <Button aria-label="Continue with GitHub" disabled={loading} variant="outline" type="button" onClick={() => onSocial("github")}>
+      <Field className="grid grid-cols-4 gap-2">
+        <AltAuthButton label="Continue with GitHub" disabled={loading} onClick={() => onSocial("github")}>
           <GitHubIcon />
-        </Button>
-        <Button aria-label="Continue with Google" disabled={loading} variant="outline" type="button" onClick={() => onSocial("google")}>
+        </AltAuthButton>
+        <AltAuthButton label="Continue with Google" disabled={loading} onClick={() => onSocial("google")}>
           <GoogleIcon />
-        </Button>
-        <Button aria-label="Continue with Microsoft" disabled={loading} variant="outline" type="button" onClick={() => onSocial("microsoft")}>
+        </AltAuthButton>
+        <AltAuthButton label="Continue with Microsoft" disabled={loading} onClick={() => onSocial("microsoft")}>
           <MicrosoftIcon />
-        </Button>
+        </AltAuthButton>
+        <AltAuthButton label="Sign in with a passkey" disabled={loading} onClick={onPasskey}>
+          <KeyRoundIcon />
+        </AltAuthButton>
       </Field>
-      <Button disabled={loading} variant="outline" type="button" onClick={onPasskey}>
-        <KeyRoundIcon /> Sign in with a passkey
-      </Button>
     </>
+  )
+}
+
+function AltAuthButton({
+  children,
+  disabled,
+  label,
+  onClick,
+}: {
+  children: React.ReactNode
+  disabled: boolean
+  label: string
+  onClick(): void
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          aria-label={label}
+          className="h-9 bg-background/60 transition-[transform,background-color,box-shadow] duration-200 hover:-translate-y-0.5 hover:bg-background hover:shadow-md"
+          disabled={disabled}
+          variant="outline"
+          type="button"
+          onClick={onClick}
+        >
+          {children}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
   )
 }
 
@@ -619,7 +715,7 @@ function ModePrompt({
       <FieldDescription className="px-6 text-center text-foreground/70">
         {children}{" "}
         <Button
-          className="h-auto p-0"
+          className="h-auto p-0 dark:text-indigo-300"
           variant="link"
           type="button"
           onClick={onClick}

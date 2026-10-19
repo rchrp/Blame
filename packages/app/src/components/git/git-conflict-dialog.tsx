@@ -769,7 +769,7 @@ function ConflictLoadingState({ file }: { file: GitStatusFile }) {
 
 function ResolvedConflictState() {
   return (
-    <div className="flex flex-col items-center justify-center gap-2 rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
+    <div className="flex flex-col items-center justify-center gap-2 rounded-md bg-muted/30 p-6 text-center text-sm text-muted-foreground">
       <CheckCircle2Icon className="size-7 text-emerald-500" />
       <div>No unresolved files.</div>
     </div>

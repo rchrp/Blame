@@ -67,6 +67,7 @@ import {
   checkHostDependencies,
 } from "./host-dependencies";
 import { setupPath } from "./host-tool-path";
+import { isProjectFolder } from "./worktree-safety";
 import type { DesktopBridgeGrant } from "./preview-browser/preview-bridge-grant";
 import {
   composeRuntimeServiceClosure,
@@ -317,6 +318,8 @@ type ExecutionContextInput = {
 };
 
 type CreateWorktreeInput = ExecutionContextInput & {
+  // Run in the project folder instead of a new worktree.
+  direct?: boolean;
   repositoryRoot: string;
   runtimeProfile: RuntimeProfileId;
   storyId: string;
@@ -347,6 +350,7 @@ type ApplyProjectPreviewInitializationInput = {
 };
 
 type CheckHostDependenciesInput = {
+  includeRuntime?: boolean;
   runtimeProfile?: RuntimeProfileId;
   setupScript?: string;
   worktree?: string;
@@ -696,6 +700,7 @@ export function registerWorkspaceIpcHandlers(
         env: await setupEnvironment(
           input.worktree ? resolveRuntimePath(input.worktree) : "",
         ),
+        includeRuntime: input.includeRuntime,
         runtimeProfile: input.runtimeProfile,
         setupScript: input.setupScript ?? "",
       }),
@@ -855,6 +860,7 @@ async function createWorktree(input: CreateWorktreeInput) {
 }
 
 async function createWorktreeOperation(input: CreateWorktreeInput) {
+  if (input.direct) return directWorkspace(input);
   const context = worktreeCreationContext(input);
   await prepareWorktreeCreation(context);
   if (await reuseRegisteredWorktree(context)) return worktreeResult(context);
@@ -948,6 +954,20 @@ async function completeWorktreeCreation(context: WorktreeCreationContext) {
   invalidateSetupEnvironment(worktree);
   removedWorktrees.delete(worktree);
   await appendWorktreeCreateTimings(worktree, timings, startedAt);
+}
+
+// Direct mode: the project folder on its current branch, untouched.
+async function directWorkspace(input: CreateWorktreeInput) {
+  const repositoryRoot = resolveRuntimePath(input.repositoryRoot);
+  await ensureWorkspaceGitRepository(repositoryRoot);
+  const branch = String(
+    await runRuntimeGit(repositoryRoot, ["rev-parse", "--abbrev-ref", "HEAD"], "native"),
+  ).trim();
+  return {
+    branch: branch && branch !== "HEAD" ? branch : "",
+    workspaceMode: "direct" as const,
+    worktree: repositoryRoot,
+  };
 }
 
 function worktreeResult(context: WorktreeCreationContext) {
@@ -2339,7 +2359,8 @@ async function waitForPreviewUrl(worktree: string) {
 async function stopProjectSetup(input: StopProjectSetupInput) {
   const worktree = resolveRuntimePath(input.worktree);
   await stopSetupRunsForWorktree(worktree);
-  if (input.workspaceMode === "cloud-mirror") return true;
+  if (input.workspaceMode === "cloud-mirror" || input.workspaceMode === "direct")
+    return true;
   const composePath = joinWorkspacePath(
     worktree,
     ".blame",
@@ -2373,6 +2394,14 @@ async function removeWorktree(input: RemoveWorktreeInput) {
   if (mode === "local-container")
     await ensureRuntimeGitSafeDirectory(repositoryRoot);
   await assertGitRepository(repositoryRoot);
+  // Direct mode runs in the project folder: stop what runs there, never
+  // delete it.
+  if (mode === "direct" || (await isProjectFolder(repositoryRoot, worktree))) {
+    await stopSetupRunsForWorktree(worktree);
+    await stopProjectLogStream(worktree);
+    await releaseAgentWorkspaceSessions(worktree);
+    return true;
+  }
   const registered = await worktreeRegistered(repositoryRoot, worktree, mode);
   const worktreeExists = await runtimePathExists(worktree);
   if (!registered && !worktreeExists) {
@@ -2500,7 +2529,8 @@ export async function localPreviewBridgeGrant(
 }
 
 async function ensureProjectPreviewUrl(input: EnsureProjectPreviewUrlInput) {
-  if (input.workspaceMode === "cloud-mirror") return null;
+  if (input.workspaceMode === "cloud-mirror" || input.workspaceMode === "direct")
+    return null;
   const worktree = resolveRuntimePath(input.worktree);
   if (removedWorktrees.has(worktree)) return null;
   if (removingWorktrees.has(worktree)) return null;
@@ -2583,7 +2613,8 @@ export async function projectPreviewRuntimeState(
   workspaceMode: WorkspaceMode = "local-container",
 ): Promise<ProjectPreviewRuntimeState> {
   const worktree = resolveRuntimePath(worktreeInput);
-  if (workspaceMode === "cloud-mirror") {
+  // No managed preview runs for these: report it as stopped.
+  if (workspaceMode === "cloud-mirror" || workspaceMode === "direct") {
     return cloudMirrorPreviewRuntimeState(worktree);
   }
   const [configurations, runtimeState, containers, manifest] =
@@ -3659,6 +3690,7 @@ async function removeGitWorktree(
   worktree: string,
   mode: WorkspaceMode,
 ) {
+  await assertRemovableWorktree(repositoryRoot, worktree);
   if (mode === "local-container")
     await ensureRuntimeGitSafeDirectory(repositoryRoot);
   try {
@@ -3679,11 +3711,17 @@ async function removeGitWorktree(
   await rmRuntime(worktree);
 }
 
+async function assertRemovableWorktree(repositoryRoot: string, worktree: string) {
+  if (await isProjectFolder(repositoryRoot, worktree))
+    throw new Error(`Refusing to delete the project folder ${worktree}.`);
+}
+
 async function removeStaleGitWorktree(
   repositoryRoot: string,
   worktree: string,
   mode: WorkspaceMode,
 ) {
+  await assertRemovableWorktree(repositoryRoot, worktree);
   await rmRuntime(worktree);
   if (await worktreeRegistered(repositoryRoot, worktree, mode)) {
     await runRuntimeGit(

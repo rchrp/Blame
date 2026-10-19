@@ -112,6 +112,7 @@ async function prewarmMacosAgentRuntime(runtimeAlreadyReady: boolean) {
           platform: "darwin",
           runtime: "BlameRuntime",
           status: "ready",
+          updateRequired: false,
         },
       platform: "darwin",
     },

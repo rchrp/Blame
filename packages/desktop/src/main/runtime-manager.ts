@@ -43,6 +43,9 @@ export type RuntimeDependencyIssue = {
   name: RuntimeDependencyName;
   runtimeStatus?: RuntimeState;
   status: RuntimeDependencyStatus;
+  // The runtime is installed and only its provisioning is out of date: a
+  // routine update, not a breakdown.
+  update?: boolean;
 };
 
 type ManagedRuntimeCheckName =
@@ -83,6 +86,8 @@ export type RuntimeStatusReport = {
   platform: NodeJS.Platform;
   runtime: string;
   status: RuntimeState;
+  // True when every problem is an outdated version of an installed runtime.
+  updateRequired: boolean;
 };
 
 export type RuntimeManagerInput = {
@@ -484,6 +489,7 @@ function runtimeStatusReport(
     platform,
     runtime: runtimeName(platform),
     status: runtimeState(issues),
+    updateRequired: issues.length > 0 && issues.every((issue) => issue.update),
   };
 }
 
@@ -523,19 +529,33 @@ function managedRuntimeStatusIssueFromOutput(output: string) {
     const status = parseRuntimeState(output);
     return status === "ready" ? null : managedRuntimeStatusIssue(status);
   }
-  const check = report.checks?.find((item) => item.status !== "available");
+  const failing = report.checks?.filter((item) => item.status !== "available") ?? [];
+  const check = failing[0];
   if (!check) {
     const status = report.status ?? "ready";
     return status === "ready"
       ? null
       : managedRuntimeStatusIssue(status, report.action);
   }
-  return managedRuntimeCheckIssue(
+  const issue = managedRuntimeCheckIssue(
     check,
     report.status ?? "broken",
     report.action,
   );
+  return failing.every((item) => updateChecks.has(item.name))
+    ? { ...issue, update: true }
+    : issue;
 }
+
+// Checks that only fail when the installed runtime lags behind the version
+// this app ships with. Re-provisioning (ensure) brings them up to date.
+const updateChecks = new Set<ManagedRuntimeCheckName>([
+  "agent-version",
+  "runtime-version",
+  "cline-sdk",
+  "semantic-harness",
+  "package-managers",
+]);
 
 function managedRuntimeStatusIssue(status: RuntimeState, action?: string) {
   if (status === "missing") {

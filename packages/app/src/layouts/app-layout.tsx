@@ -1,11 +1,18 @@
 import * as React from "react"
 
 import { SiteHeader, WindowControls } from "@/components/layout/site-header"
+import {
+  KeyboardShortcutsDialog,
+  useAppShortcuts,
+} from "@/components/navigation/app-shortcuts"
+import { CommandPalette } from "@/components/navigation/command-palette"
 import { AppSidebar } from "@/components/sidebar/app-sidebar"
 import { useQuickChatStore } from "@/components/chat/data/quick-chat-store"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { useProjects } from "@/context/projects"
 import { projectColorValue } from "@/lib/projects"
+import { useAppActivity } from "@/layouts/use-app-activity"
+import { isBoolean, useUiMemory } from "@/lib/ui-memory"
 
 const windowShellGraceMs = 1000
 const windowShellHeightPx = 48
@@ -13,12 +20,22 @@ const windowShellHeightPx = 48
 export function AppLayout({
   children,
   pathname,
+  routeKey,
   title,
 }: {
   children: React.ReactNode
   pathname: string
+  // Changes only when the page itself changes (not for dialogs over it).
+  routeKey: string
   title: string
 }) {
+  const shortcuts = useAppShortcuts()
+  useAppActivity()
+  const [sidebarOpen, setSidebarOpen] = useUiMemory(
+    "sidebar-open",
+    true,
+    isBoolean
+  )
   const projects = useProjects()
   const quickChats = useQuickChatStore()
   const haloColor = projectColorValue(projects.activeProject?.color)
@@ -65,6 +82,8 @@ export function AppLayout({
 
   return (
     <SidebarProvider
+      open={sidebarOpen}
+      onOpenChange={setSidebarOpen}
       className="relative isolate overflow-hidden bg-transparent"
       style={
         {
@@ -99,10 +118,18 @@ export function AppLayout({
         className="z-[1] min-w-0 overflow-hidden"
       >
         <SiteHeader title={headerTitle} />
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <div
+          key={routeKey}
+          className="page-enter flex min-h-0 min-w-0 flex-1 flex-col"
+        >
           {children}
         </div>
       </SidebarInset>
+      <KeyboardShortcutsDialog
+        open={shortcuts.helpOpen}
+        onOpenChange={shortcuts.setHelpOpen}
+      />
+      <CommandPalette onShowShortcuts={() => shortcuts.setHelpOpen(true)} />
     </SidebarProvider>
   )
 }

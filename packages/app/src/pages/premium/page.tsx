@@ -1,277 +1,232 @@
 import * as React from "react"
-import { ArrowRightIcon, CheckIcon, LoaderCircleIcon } from "lucide-react"
+import {
+  ArrowRightIcon,
+  CloudIcon,
+  LoaderCircleIcon,
+  MicIcon,
+  UploadCloudIcon,
+} from "lucide-react"
+import { AnimatePresence, motion } from "motion/react"
 import { toast } from "sonner"
+import {
+  PricingCard,
+  pricingCardActionClassName,
+  pricingLegalLinkClassName,
+  type PricingBillingCycle,
+} from "@blame/pricing-card"
 
-import blameDarkAppIconUrl from "../../../../vitrine/public/icons/blame-dark-app-icon.png?url"
-import { CompactWindowChrome } from "@/components/layout/compact-window-chrome"
 import { LegalLink } from "@/components/legal/legal-link"
-import { Button } from "@/components/ui/button"
-import { Toaster } from "@/components/ui/sonner"
-import { useCloudAuth } from "@/context/cloud-auth"
 import { navigate } from "@/components/navigation/navigation"
+import { dismissPremiumOffer } from "@/components/onboarding/onboarding-flow"
+import { OnboardingProgress } from "@/components/onboarding/onboarding-progress"
+import { useOnboardingStage } from "@/components/onboarding/stage/onboarding-stage"
+import { Button } from "@/components/ui/button"
+import { Kbd } from "@/components/ui/kbd"
+import { useCloudAuth } from "@/context/cloud-auth"
+import { useWizardKeys } from "@/lib/keyboard"
+import { easeOutExpo, riseIn, staggerContainer } from "@/lib/motion"
+import { publicAssetUrl } from "@/lib/public-asset-url"
 
-const billingOptions = {
-  monthly: { label: "Monthly", price: "20", suffix: "USD /month" },
-  yearly: { label: "Yearly", price: "200", suffix: "USD /year" },
-} as const
-
-const licenseFacts = [
-  "Managed cloud previews",
-  "Cloud voice transcription",
-  "Hosted file uploads",
-  "Existing usage limits apply",
-  "Cancel anytime",
+const premiumFeatures = [
+  {
+    icon: CloudIcon,
+    title: "Managed cloud previews",
+    description: "Share a running preview of any story, no local setup.",
+  },
+  {
+    icon: MicIcon,
+    title: "Cloud voice transcription",
+    description: "Dictate stories and comments, transcribed in the cloud.",
+  },
+  {
+    icon: UploadCloudIcon,
+    title: "Hosted file uploads",
+    description: "Attach files and deployment sources to your work.",
+  },
 ] as const
 
-type BillingCycle = keyof typeof billingOptions
+type BillingCycle = PricingBillingCycle
 type PendingAction = BillingCycle | "refresh" | "portal"
 
+// The Premium page, reached from settings or a Premium-only feature.
 export function PremiumScreen() {
+  return <PremiumPanel variant="page" />
+}
+
+// The one-time Premium step at the end of first-run setup.
+export function PremiumOfferScreen() {
+  return <PremiumPanel variant="offer" />
+}
+
+function PremiumPanel({ variant }: { variant: "offer" | "page" }) {
   const auth = useCloudAuth()
+  const stage = useOnboardingStage()
   const premium = auth.license?.licensed === true
   const actions = useLicenseActions()
-  const [billingCycle, setBillingCycle] =
-    React.useState<BillingCycle>("monthly")
+  const offer = variant === "offer"
+  const wasPremium = React.useRef(premium)
+
+  React.useEffect(() => {
+    if (premium && !wasPremium.current) stage.celebrate()
+    wasPremium.current = premium
+  }, [premium, stage])
+
+  function leave() {
+    if (offer) dismissPremiumOffer()
+    else navigate("/backlog")
+  }
+
+  useWizardKeys({ onBack: leave })
 
   return (
-    <main className="light relative min-h-svh overflow-y-auto bg-[#ededf0] text-[#111]">
-      <CompactWindowChrome />
-      <Toaster />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_-10%,rgba(255,255,255,0.95),transparent_42%),radial-gradient(circle_at_15%_85%,rgba(179,172,243,0.18),transparent_34%)]" />
-      <section className="relative mx-auto grid min-h-svh w-full max-w-6xl items-start gap-8 px-6 pt-12 pb-6 md:grid-cols-[minmax(0,1fr)_430px] md:gap-10 md:px-8 lg:gap-16">
-        <div className="max-w-md md:pt-10">
-          <LicensePageHeader />
-          <LicenseActions actions={actions} />
-          <Button variant="link" onClick={() => navigate("/backlog")}>
-            Continue using Blame
-          </Button>
-        </div>
-        <div className="flex w-full [zoom:.8] flex-col items-center justify-self-end">
+    <section className="mx-auto flex min-h-full w-full max-w-5xl flex-col px-8 pt-10 pb-12">
+      {offer ? <OnboardingProgress current={3} className="mb-4" /> : null}
+      <div className="grid flex-1 items-center gap-10 md:grid-cols-[minmax(0,1fr)_minmax(0,27.5rem)]">
+        <motion.div
+          className="max-w-md"
+          variants={staggerContainer(0.07, 0.1)}
+          initial="initial"
+          animate="animate"
+        >
+          <motion.h1
+            variants={riseIn}
+            className="font-heading text-4xl leading-[1.05] font-bold tracking-[-0.03em]"
+          >
+            Take Blame to the cloud.
+          </motion.h1>
+          <motion.p
+            variants={riseIn}
+            className="mt-3 text-[15px] leading-6 text-foreground/65"
+          >
+            Cloud previews, voice and uploads, hosted by Blame. Everything
+            local, and your own AI providers, stay free.
+          </motion.p>
+          <motion.ul className="mt-7 grid gap-3" variants={staggerContainer(0.08)}>
+            {premiumFeatures.map((feature) => (
+              <motion.li
+                key={feature.title}
+                variants={riseIn}
+                className="flex items-start gap-3"
+              >
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/90 to-indigo-500 text-primary-foreground shadow-[0_8px_20px_-8px_var(--primary)]">
+                  <feature.icon className="size-4" />
+                </span>
+                <span className="grid gap-0.5">
+                  <span className="text-sm font-semibold">{feature.title}</span>
+                  <span className="text-sm text-foreground/60">
+                    {feature.description}
+                  </span>
+                </span>
+              </motion.li>
+            ))}
+          </motion.ul>
+          <motion.div
+            variants={riseIn}
+            className="mt-8 flex flex-wrap items-center gap-x-4 gap-y-2"
+          >
+            <Button
+              variant="outline"
+              className="h-10 rounded-full bg-background/60 px-4 backdrop-blur"
+              onClick={leave}
+            >
+              {offer ? "Continue with free" : "Continue using Blame"}
+              <Kbd>Esc</Kbd>
+            </Button>
+            <Button
+              variant="link"
+              className="h-10 px-0 dark:text-indigo-300"
+              disabled={actions.pending !== null}
+              onClick={actions.refresh}
+            >
+              I completed payment
+              {actions.pending === "refresh" ? (
+                <LoaderCircleIcon className="animate-spin" />
+              ) : (
+                <ArrowRightIcon />
+              )}
+            </Button>
+          </motion.div>
+          {offer ? (
+            <motion.p variants={riseIn} className="mt-2 text-xs text-foreground/50">
+              You can upgrade anytime from Settings.
+            </motion.p>
+          ) : null}
+        </motion.div>
+        <motion.div
+          className="flex w-full flex-col items-center"
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15, duration: 0.7, ease: easeOutExpo }}
+        >
           <PricingCard
-            billingCycle={billingCycle}
-            premium={premium}
-            loading={actions.pending === (premium ? "portal" : billingCycle)}
+            compact
             disabled={actions.pending !== null}
-            onBillingCycleChange={setBillingCycle}
-            onCheckout={premium ? () => actions.manage() : actions.checkout}
+            logo={
+              <img
+                src={publicAssetUrl("blame-dark-app-icon-192.png")}
+                alt=""
+                className="object-contain"
+              />
+            }
+            action={(cycle) => {
+              const loading = actions.pending === (premium ? "portal" : cycle)
+              return (
+                <button
+                  type="button"
+                  className={pricingCardActionClassName}
+                  disabled={actions.pending !== null}
+                  onClick={() =>
+                    premium ? actions.manage() : actions.checkout(cycle)
+                  }
+                >
+                  {loading ? <LoaderCircleIcon className="size-4 animate-spin" /> : null}
+                  {loading
+                    ? "Opening billing"
+                    : premium
+                      ? "Manage subscription"
+                      : "Get Premium"}
+                </button>
+              )
+            }}
+            legalLinks={
+              <>
+                <LegalLink page="terms" className={pricingLegalLinkClassName}>
+                  Terms
+                </LegalLink>
+                <LegalLink page="privacy" className={pricingLegalLinkClassName}>
+                  Privacy
+                </LegalLink>
+                <LegalLink page="refund" className={pricingLegalLinkClassName}>
+                  Refunds
+                </LegalLink>
+                <LegalLink page="withdrawal" className={pricingLegalLinkClassName}>
+                  Withdrawal
+                </LegalLink>
+              </>
+            }
           />
           <LicenseError error={actions.error} />
-        </div>
-      </section>
-    </main>
-  )
-}
-
-function LicensePageHeader() {
-  return (
-    <header className="animate-in text-left duration-700 ease-out fade-in-0 fill-mode-both slide-in-from-bottom-4 motion-reduce:animate-none">
-      <h1 className="font-heading text-4xl leading-tight font-bold tracking-[-0.04em] sm:text-5xl">
-        Blame Premium
-      </h1>
-      <p className="mt-4 max-w-sm text-base leading-7 text-[#111]/60">
-        Add cloud voice transcription, managed previews, and hosted file
-        uploads. Local development and your own AI providers remain free.
-      </p>
-    </header>
-  )
-}
-
-function PricingCard({
-  billingCycle,
-  disabled,
-  loading,
-  premium,
-  onBillingCycleChange,
-  onCheckout,
-}: PricingCardProps) {
-  return (
-    <article className="relative w-full max-w-[430px] animate-in overflow-hidden rounded-[2rem] border border-white/70 bg-white/30 p-2 shadow-[0_34px_100px_rgba(29,29,35,0.18)] backdrop-blur-2xl delay-100 duration-700 ease-out fade-in-0 fill-mode-both slide-in-from-bottom-5 zoom-in-95 motion-reduce:animate-none">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(255,255,255,0.85),transparent_32%),radial-gradient(circle_at_80%_18%,rgba(179,172,243,0.24),transparent_38%)]" />
-      <div className="relative rounded-[1.55rem] border border-white/80 bg-[#f7f7f8]/95 p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_18px_60px_rgba(29,29,35,0.12)] sm:p-7">
-        <PricingCardHeader />
-        <BillingSelector
-          value={billingCycle}
-          disabled={disabled}
-          onChange={onBillingCycleChange}
-        />
-        <PriceSummary billingCycle={billingCycle} />
-        <CheckoutButton
-          billingCycle={billingCycle}
-          loading={loading}
-          premium={premium}
-          disabled={disabled}
-          onCheckout={onCheckout}
-        />
-        <LicenseFactList />
+        </motion.div>
       </div>
-    </article>
-  )
-}
-
-function PricingCardHeader() {
-  return (
-    <header>
-      <img
-        src={blameDarkAppIconUrl}
-        alt=""
-        width={48}
-        height={48}
-        className="size-12 object-contain"
-      />
-      <h2 className="mt-7 font-heading text-2xl font-semibold tracking-[-0.04em]">
-        Premium cloud services
-      </h2>
-      <p className="mt-3 text-base leading-6 text-[#111]/70">
-        Services hosted and funded by Blame.
-      </p>
-    </header>
-  )
-}
-
-function BillingSelector({
-  disabled,
-  value,
-  onChange,
-}: {
-  disabled: boolean
-  value: BillingCycle
-  onChange(cycle: BillingCycle): void
-}) {
-  return (
-    <fieldset className="mt-6 grid grid-cols-2 rounded-full bg-black/[0.06] p-1 text-sm font-semibold">
-      <legend className="sr-only">Billing cycle</legend>
-      {(Object.keys(billingOptions) as BillingCycle[]).map((cycle) => (
-        <button
-          key={cycle}
-          type="button"
-          className={billingOptionClassName(cycle === value)}
-          aria-pressed={cycle === value}
-          disabled={disabled}
-          onClick={() => onChange(cycle)}
-        >
-          {billingOptions[cycle].label}
-        </button>
-      ))}
-    </fieldset>
-  )
-}
-
-function PriceSummary({ billingCycle }: { billingCycle: BillingCycle }) {
-  const selectedBilling = billingOptions[billingCycle]
-
-  return (
-    <div>
-      <div className="mt-7 flex items-end gap-2">
-        <span className="text-6xl leading-none font-semibold tracking-[-0.04em]">
-          {selectedBilling.price}
-        </span>
-        <span className="pb-2 text-lg text-[#111]/54">
-          {selectedBilling.suffix}
-        </span>
-      </div>
-      <p
-        className={`mt-2 min-h-5 text-sm font-medium text-[#111]/54 ${billingCycle === "yearly" ? "visible" : "invisible"}`}
-      >
-        Billed once a year.
-      </p>
-    </div>
-  )
-}
-
-function CheckoutButton({
-  billingCycle,
-  disabled,
-  loading,
-  premium,
-  onCheckout,
-}: CheckoutButtonProps) {
-  return (
-    <div className="mt-6">
-      <Button
-        className="h-11 w-full rounded-full bg-[#111] text-base text-white shadow-[0_10px_28px_rgba(0,0,0,0.2)] hover:bg-[#292929]"
-        disabled={disabled}
-        onClick={() => onCheckout(billingCycle)}
-      >
-        {loading ? <LoaderCircleIcon className="animate-spin" /> : null}
-        {loading
-          ? "Opening billing"
-          : premium
-            ? "Manage subscription"
-            : "Get Premium"}
-      </Button>
-      <PurchaseLegalLinks />
-      <p className="mt-3 text-center text-xs leading-5 text-[#111]/54">
-        AI usage is not included and may be billed separately by your provider.
-      </p>
-    </div>
-  )
-}
-
-function PurchaseLegalLinks() {
-  return (
-    <nav
-      aria-label="Purchase policies"
-      className="mt-3 flex flex-wrap justify-center gap-x-3 gap-y-1 text-xs leading-5 text-[#111]/54"
-    >
-      <LegalLink page="terms" className="hover:text-[#111]">
-        Terms
-      </LegalLink>
-      <LegalLink page="privacy" className="hover:text-[#111]">
-        Privacy
-      </LegalLink>
-      <LegalLink page="refund" className="hover:text-[#111]">
-        Refunds
-      </LegalLink>
-      <LegalLink page="withdrawal" className="hover:text-[#111]">
-        Withdrawal
-      </LegalLink>
-    </nav>
-  )
-}
-
-function LicenseFactList() {
-  return (
-    <ul className="mt-7 space-y-4 text-base">
-      {licenseFacts.map((fact) => (
-        <li key={fact} className="flex items-center gap-3">
-          <CheckIcon className="size-4 shrink-0" aria-hidden="true" />
-          <span>{fact}</span>
-        </li>
-      ))}
-    </ul>
-  )
-}
-
-function LicenseActions({ actions }: { actions: LicenseActionState }) {
-  return (
-    <div className="mt-3 flex animate-in justify-start delay-300 duration-500 ease-out fade-in-0 fill-mode-both slide-in-from-bottom-3 motion-reduce:animate-none">
-      <Button
-        variant="link"
-        className="h-11 w-fit rounded-full px-0 text-base"
-        disabled={actions.pending !== null}
-        onClick={actions.refresh}
-      >
-        I completed payment
-        {actions.pending === "refresh" ? (
-          <LoaderCircleIcon className="animate-spin" />
-        ) : (
-          <ArrowRightIcon />
-        )}
-      </Button>
-    </div>
+    </section>
   )
 }
 
 function LicenseError({ error }: { error: string | null }) {
-  if (!error) return null
-
   return (
-    <p
-      role="alert"
-      className="mt-4 w-full max-w-[430px] rounded-xl bg-destructive/10 px-4 py-3 text-center text-sm text-destructive"
-    >
-      {error}
-    </p>
+    <AnimatePresence>
+      {error ? (
+        <motion.p
+          role="alert"
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          className="mt-4 w-full rounded-xl bg-destructive/10 px-4 py-3 text-center text-sm text-destructive"
+        >
+          {error}
+        </motion.p>
+      ) : null}
+    </AnimatePresence>
   )
 }
 
@@ -311,35 +266,11 @@ function useLicenseActions(): LicenseActionState {
   }
 }
 
-function billingOptionClassName(selected: boolean) {
-  const shared =
-    "rounded-full px-4 py-2.5 transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#111]/20 disabled:cursor-not-allowed"
-  const state = selected
-    ? "bg-white text-[#111] shadow-[0_8px_24px_rgba(0,0,0,0.12)]"
-    : "text-[#111]/54 hover:text-[#111]"
-
-  return `${shared} ${state}`
-}
-
 function errorMessage(cause: unknown) {
   return cause instanceof Error
     ? cause.message
     : "Unable to complete the request. Please try again."
 }
-
-type PricingCardProps = {
-  premium: boolean
-  billingCycle: BillingCycle
-  disabled: boolean
-  loading: boolean
-  onBillingCycleChange(cycle: BillingCycle): void
-  onCheckout(cycle: BillingCycle): void
-}
-
-type CheckoutButtonProps = Pick<
-  PricingCardProps,
-  "billingCycle" | "disabled" | "loading" | "onCheckout" | "premium"
->
 
 type LicenseActionState = {
   manage(): void

@@ -27,7 +27,7 @@ export type PreviewHarnessInput = {
   signal?: AbortSignal;
   storyId?: string;
   waitFor?: "none" | "ready";
-  workspaceMode?: "local-container" | "cloud-mirror";
+  workspaceMode?: "local-container" | "cloud-mirror" | "direct";
   worktree?: string;
 };
 

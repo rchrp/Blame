@@ -49,12 +49,12 @@ import type {
 } from "@/components/backlog/data/backlog-data"
 import {
   backlogColumns,
-  userStoryDisplayId,
 } from "@/components/backlog/data/backlog-data"
 import {
   selectBacklogStory,
   selectedBacklogStoryId,
   subscribeToBacklogStorySelection,
+  takeSelectedBacklogStoryAction,
 } from "@/components/backlog/data/backlog-navigation"
 import { useBacklogStore } from "@/components/backlog/data/backlog-store"
 import {
@@ -69,6 +69,7 @@ import { drawerTargetForAction } from "@/components/backlog/shared/backlog-helpe
 import type { DrawerTarget } from "@/components/backlog/shared/backlog-types"
 import { storyPreviewDevtoolsScope } from "@/components/backlog/shared/preview-devtools-scope"
 import type { AgentConversationUserMessageUndo } from "@/components/chat/agent-conversation"
+import { newUserStoryEvent } from "@/components/navigation/command-palette"
 import { nextCheckpointRunCount } from "@/components/chat/agent-run-checkpoints"
 import { useModelSelection } from "@/components/model/model-selection"
 import {
@@ -92,6 +93,9 @@ import {
 import { projectCodePractices } from "@/lib/project-code-practices"
 import { useRuntimePreference } from "@/lib/runtime-preference"
 import { showSystemNotification } from "@/lib/system-notifications"
+import { celebrateStory } from "@/lib/celebrate"
+import { notifyCommentResponseCompleted } from "@/pages/backlog/backlog-rotation-helpers"
+import { OpenProjectEmptyState } from "@/components/shared/open-project-empty-state"
 import { backlogStatusPipStories } from "@/pages/backlog/backlog-status-pip-snapshot"
 import { HostDependenciesDialog } from "@/pages/backlog/host-dependencies-dialog"
 import {
@@ -128,6 +132,7 @@ import {
   stopStoryProjectSetup,
 } from "./story-runtime-cleanup"
 import { activeStory, inactiveStoryFields } from "./story-runtime-state"
+import { useReviewCompletion } from "./use-review-completion"
 
 const agentEventPersistDelayMs = 1_500
 const terminalAgentRetryIntervalMs = 60_000
@@ -272,6 +277,12 @@ export function BacklogPage() {
       initialTab: "user-story",
     })
   }, [backlog.projectPath])
+  // "New user story" from the command palette.
+  React.useEffect(() => {
+    const handleNewStory = () => openCreateDrawer()
+    window.addEventListener(newUserStoryEvent, handleNewStory)
+    return () => window.removeEventListener(newUserStoryEvent, handleNewStory)
+  }, [openCreateDrawer])
   React.useEffect(() => {
     const openSelectedStory = () => {
       const selectedStoryId = selectedBacklogStoryId()
@@ -282,7 +293,13 @@ export function BacklogPage() {
       const story = storiesRef.current.find(
         (item) => item.id === selectedStoryId
       )
-      if (story) openDrawerRef.current({ mode: "edit", userStory: story })
+      if (!story) return
+      const action = takeSelectedBacklogStoryAction()
+      openDrawerRef.current(
+        action
+          ? drawerTargetForAction(story, action)
+          : { mode: "edit", userStory: story }
+      )
     }
     const timer = window.setTimeout(openSelectedStory, 0)
     const unsubscribe = subscribeToBacklogStorySelection(openSelectedStory)
@@ -1142,6 +1159,7 @@ export function BacklogPage() {
           description: `Merged into ${result.targetBranch}.`,
           position: "bottom-right",
         })
+        celebrateStory(story.id)
         const mergedStory = await updateStory(
           runningStory,
           {
@@ -1195,21 +1213,8 @@ export function BacklogPage() {
       updateStory,
     ]
   )
-  const markReviewStoryDone = React.useCallback(
-    async (story: UserStory) => {
-      const doneStory = await updateStory(story, {
-        ...inactiveStoryFields(),
-        agentLastError: null,
-        agentLastEvent: "Marked as done.",
-        status: "done",
-      })
-      toast.success("Story marked as done", {
-        position: "bottom-right",
-      })
-      return doneStory
-    },
-    [updateStory]
-  )
+  const { approveDirectStory, markReviewStoryDone } =
+    useReviewCompletion(updateStory)
   const completeReviewStory = React.useCallback(
     async (story: UserStory) => {
       const emptyDiff = await currentReviewDiffEmpty(
@@ -1218,10 +1223,12 @@ export function BacklogPage() {
         projects.activeProject?.path
       )
       if (emptyDiff) return markReviewStoryDone(story)
+      if (story.workspaceMode === "direct") return approveDirectStory(story)
       return approveAndMergeStory(story)
     },
     [
       approveAndMergeStory,
+      approveDirectStory,
       markReviewStoryDone,
       platform.workspace,
       projects.activeProject?.path,
@@ -1481,15 +1488,9 @@ export function BacklogPage() {
         </div>
       )}
       {!backlog.projectPath && (
-        <div className="rounded-lg border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
-          Open a project to load user stories.
-        </div>
+        <OpenProjectEmptyState description="Open a project to plan user stories and let agents build them." />
       )}
-      {backlog.loading && (
-        <div className="rounded-lg border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
-          Loading user stories.
-        </div>
-      )}
+      {backlog.projectPath ? (
       <KanbanBoard className="-mx-6 px-6" gridClassName="min-w-500 grid-cols-6">
         {backlogColumns.map((column) => (
           <BacklogColumn
@@ -1506,13 +1507,16 @@ export function BacklogPage() {
             onStopAgent={columnStopAgent}
             onUnpauseAgent={columnUnpauseAgent}
             queueInitializing={column.id === "ready" && queueInitializing}
+            queueNotice={column.id === "ready" ? rotation.runtimeWaitingLabel : undefined}
             storyCleanup={backlog.storyCleanup}
             storySetupInitializing={backlog.storySetupInitializing}
             storyTitleGenerating={storyTitleGenerating}
             stories={backlog.storiesForColumn(column.id)}
+            loading={backlog.loading}
           />
         ))}
       </KanbanBoard>
+      ) : null}
       <UserStoryDrawer
         diffStats={
           drawerUserStory ? storyDiffStats(drawerUserStory) : undefined
@@ -1826,6 +1830,7 @@ function notifyStoriesMovedToReview(
     if (story.status !== "in-review") continue
     void showSystemNotification(platform, {
       body: story.title,
+      target: { pathname: "/backlog", storyId: story.id, tab: "diff" },
       title: "User story ready for review",
     })
   }
@@ -1833,18 +1838,6 @@ function notifyStoriesMovedToReview(
 
 function storyStatusMap(stories: UserStory[]) {
   return new Map(stories.map((story) => [story.id, story.status]))
-}
-
-function notifyCommentResponseCompleted(
-  story: UserStory,
-  run: UserStoryAgentRun | undefined,
-  platform: ReturnType<typeof usePlatform>
-) {
-  if (!run?.commentId) return
-  void showSystemNotification(platform, {
-    body: `${userStoryDisplayId(story)} · ${story.title}`,
-    title: "Agent replied to a comment",
-  })
 }
 
 async function stopStoryRuntime(

@@ -54,6 +54,7 @@ import type { McpServersClient } from "@blame/app";
 import type { RuntimeDiagnosticInput, RuntimeProgress } from "@blame/app";
 import type { TelemetryExportSession } from "@blame/app";
 import type { HostDependencyReport } from "../main/host-dependencies";
+import type { RuntimeStatusReport } from "../main/runtime-manager";
 import type { CreateProjectInput } from "../main/project-creation";
 import type {
   PreviewLogEvent,
@@ -77,7 +78,7 @@ export type WorkspaceEntry = {
 export type WorktreeResult = {
   worktree: string;
   branch: string;
-  workspaceMode: "local-container" | "cloud-mirror";
+  workspaceMode: "local-container" | "cloud-mirror" | "direct";
 };
 
 export type ProjectSetupEvent = {
@@ -168,13 +169,27 @@ export type DesktopUpdates = {
   onStatus(callback: (status: DesktopUpdateStatus) => void): () => void;
 };
 
+export type NotificationTarget = {
+  pathname: string;
+  storyId?: string;
+  chatId?: string;
+  tab?: string;
+};
+
 export type SystemNotificationInput = {
   body?: string;
   title: string;
+  target?: NotificationTarget;
 };
 
 export type SystemNotifications = {
   show(input: SystemNotificationInput): Promise<boolean>;
+  onClick(callback: (target: NotificationTarget) => void): () => void;
+};
+
+export type AppStatus = {
+  setActivity(input: { running: number }): Promise<void>;
+  requestAttention(): Promise<void>;
 };
 
 export type BacklogStatusPip = {
@@ -185,6 +200,8 @@ export type BacklogStatusPip = {
   open(): Promise<boolean>;
   publish(snapshot: BacklogStatusPipSnapshot): void;
   request(input: BacklogStatusPipRequest): Promise<boolean>;
+  close(): void;
+  setMode(input: { compact: boolean; contentHeight?: number }): Promise<boolean>;
 };
 
 export type BlameDesktopApi = {
@@ -214,6 +231,7 @@ export type BlameDesktopApi = {
   backlogStatusPip: BacklogStatusPip;
   platform: NodeJS.Platform;
   systemNotifications: SystemNotifications;
+  appStatus: AppStatus;
   updates: DesktopUpdates;
   mcp: McpServersClient;
   windowControls: WindowControls;
@@ -381,6 +399,8 @@ export type BlameDesktopApi = {
       path: string;
     }>;
     createWorktree(input: {
+      // Run in the project folder instead of a new worktree.
+      direct?: boolean;
       executionId: string;
       repositoryRoot: string;
       runtimeProfile: RuntimeProfileId;
@@ -390,6 +410,7 @@ export type BlameDesktopApi = {
       title: string;
     }): Promise<WorktreeResult>;
     checkHostDependencies(input: {
+      includeRuntime?: boolean;
       runtimeProfile?: RuntimeProfileId;
       setupScript?: string;
       worktree?: string;
@@ -421,13 +442,13 @@ export type BlameDesktopApi = {
       launchError: string;
     }): Promise<ProjectInitializationDiagnostics>;
     stopProjectSetup(input: {
-      workspaceMode?: "local-container" | "cloud-mirror";
+      workspaceMode?: "local-container" | "cloud-mirror" | "direct";
       worktree: string;
     }): Promise<boolean>;
     removeWorktree(input: {
       projectSetupStopped?: boolean;
       repositoryRoot: string;
-      workspaceMode?: "local-container" | "cloud-mirror";
+      workspaceMode?: "local-container" | "cloud-mirror" | "direct";
       worktree: string;
     }): Promise<boolean>;
     resolveProjectPreviewUrl(input: {
@@ -439,6 +460,7 @@ export type BlameDesktopApi = {
       telemetryCohorts?: ExecutionTelemetryCohorts;
       worktree: string;
     }): Promise<string | null>;
+    runtimeStatus(): Promise<RuntimeStatusReport>;
     ensureRuntimeReady(
       onProgress?: (progress: RuntimeProgress) => void,
     ): Promise<HostDependencyReport>;
@@ -450,7 +472,7 @@ export type BlameDesktopApi = {
     ): Promise<HostDependencyReport>;
     projectRuntimeHealthy(input: { worktree: string }): Promise<boolean>;
     projectPreviewRuntimeState(input: {
-      workspaceMode?: "local-container" | "cloud-mirror";
+      workspaceMode?: "local-container" | "cloud-mirror" | "direct";
       worktree: string;
     }): Promise<ProjectPreviewRuntimeState>;
     controlProjectPreview(input: {

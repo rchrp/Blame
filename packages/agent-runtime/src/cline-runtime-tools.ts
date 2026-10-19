@@ -86,7 +86,7 @@ export type RuntimeOptions = PreviewToolRuntimeOptions & {
     runConfigurations: ProjectRunConfiguration[];
     scope?: string;
     storyId?: string;
-    workspaceMode?: "local-container" | "cloud-mirror";
+    workspaceMode?: "local-container" | "cloud-mirror" | "direct";
     worktree: string;
   }): Promise<{ status: "applied" | "unavailable" }>;
   createCore?(backend?: AgentBackendConfig): Promise<ClineCore>;

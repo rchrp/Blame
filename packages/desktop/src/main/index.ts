@@ -8,7 +8,6 @@ import {
   BrowserWindow,
   dialog,
   ipcMain,
-  Notification,
   screen,
   shell,
   type BrowserWindowConstructorOptions,
@@ -44,6 +43,7 @@ import { shutdownPreviewDevtoolsMcp } from "./preview-runtime/preview-devtools-m
 import { shutdownTerminalSessions } from "./terminal-ipc";
 import { shutdownWorkspaceProcesses } from "./workspace-ipc";
 import { runtimeHostPath, runtimeVmInternalPath } from "./workspace-runtime";
+import { registerAppActivityIpc } from "./app-activity-ipc";
 import { registerDesktopIpcHandlers } from "./ipc";
 import { configureHyprlandWindow } from "./hyprland-window";
 import {
@@ -417,8 +417,12 @@ function rendererQuery(role: MainWindowRole, pathname?: string) {
 }
 
 function registerIpcHandlers() {
-  ipcMain.handle("notifications:show", (_event, input) => {
-    return showSystemNotification(input);
+  registerAppActivityIpc({
+    baseTitle: () =>
+      mainWindowPresentation(appIdentity.name, mainWindowRole ?? "workspace")
+        .title,
+    mainWindow: () =>
+      mainWindow && !mainWindow.isDestroyed() ? mainWindow : undefined,
   });
 
   ipcMain.handle("window:is-maximized", (event) => {
@@ -555,25 +559,6 @@ function validRendererPathname(value: unknown) {
   return (
     typeof value === "string" && value.startsWith("/") && value.length <= 2048
   );
-}
-
-function showSystemNotification(input: unknown) {
-  if (!Notification.isSupported()) return false;
-  if (!systemNotificationInput(input)) return false;
-  new Notification(input).show();
-  return true;
-}
-
-function systemNotificationInput(input: unknown): input is {
-  body?: string;
-  title: string;
-} {
-  if (!input || typeof input !== "object") return false;
-  const record = input as Record<string, unknown>;
-  if (typeof record.title !== "string" || !record.title.trim()) return false;
-  if (record.body !== undefined && typeof record.body !== "string")
-    return false;
-  return true;
 }
 
 function registerWindowStateEvents(window: BrowserWindow) {

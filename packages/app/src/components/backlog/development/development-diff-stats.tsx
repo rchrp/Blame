@@ -1,3 +1,4 @@
+import { CountUp } from "@/components/shared/count-up"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import type { DiffStatsValue } from "@/components/backlog/development/development-diff-stats-data"
@@ -33,9 +34,9 @@ function CompactDiffStats({
       )}
     >
       <span className="text-emerald-600 dark:text-emerald-400">
-        +{diff.additions ?? 0}
+        +<CountUp value={diff.additions ?? 0} />
       </span>
-      <span className="text-destructive">-{diff.deletions ?? 0}</span>
+      <span className="text-destructive">-<CountUp value={diff.deletions ?? 0} /></span>
     </span>
   )
 }
@@ -74,7 +75,7 @@ function DiffStatBadge({
       variant="outline"
     >
       {addition ? "+" : "-"}
-      {value}
+      <CountUp value={value} />
     </Badge>
   )
 }

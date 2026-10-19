@@ -97,6 +97,7 @@ export type Platform = {
   }
   agent?: AgentClient
   api?: ApiConnection
+  appStatus?: AppStatusClient
   backlogStatusPip?: BacklogStatusPipClient
   deploy?: DeployClient
   platform?: string
@@ -172,6 +173,17 @@ export type RuntimeProgress = {
   totalBytes?: number
 }
 
+// The Blame Runtime (Lima on macOS, WSL on Windows, containerd on Linux)
+// that runs local container previews.
+export type RuntimeStatusReport = {
+  issues: { action?: string; name: string; status: string }[]
+  platform: string
+  runtime: string
+  status: "ready" | "missing" | "repairable" | "unsupported" | "broken"
+  // Installed, only out of date: a routine update.
+  updateRequired?: boolean
+}
+
 export type TelemetryClient = {
   configure(session: TelemetryExportSession): Promise<boolean>
   disable(): Promise<boolean>
@@ -229,6 +241,9 @@ export type BacklogStatusPipClient = {
   onSnapshot(callback: (snapshot: BacklogStatusPipSnapshot) => void): () => void
   publish(snapshot: BacklogStatusPipSnapshot): void
   request(input: BacklogStatusPipRequest): Promise<boolean>
+  // The window has no system title bar: the page closes and resizes it.
+  close?(): void
+  setMode?(input: { compact: boolean; contentHeight?: number }): Promise<boolean>
 }
 
 export type BacklogStatusPipSnapshot = {
@@ -238,13 +253,30 @@ export type BacklogStatusPipSnapshot = {
   stories: UserStory[]
 }
 
+// Where a click on a notification takes the user.
+export type NotificationTarget = {
+  pathname: string
+  storyId?: string
+  chatId?: string
+  tab?: string
+}
+
 export type SystemNotificationInput = {
   body?: string
   title: string
+  target?: NotificationTarget
 }
 
 export type SystemNotificationsClient = {
   show(input: SystemNotificationInput): Promise<boolean>
+  onClick?(callback: (target: NotificationTarget) => void): () => void
+}
+
+// The app's presence outside its window: title, dock/taskbar badge and
+// attention requests.
+export type AppStatusClient = {
+  setActivity(input: { running: number }): Promise<void>
+  requestAttention(): Promise<void>
 }
 
 export type BacklogStatusPipAction =
@@ -412,7 +444,7 @@ export type WorkspaceEntry = {
 export type WorktreeResult = {
   worktree: string
   branch: string
-  workspaceMode: "local-container" | "cloud-mirror"
+  workspaceMode: "local-container" | "cloud-mirror" | "direct"
 }
 
 export type GitBranchStatus = {
@@ -690,6 +722,8 @@ export type WorkspaceClient = {
     path: string
   }>
   createWorktree(input: {
+    // Run in the project folder instead of a new worktree.
+    direct?: boolean
     executionId: string
     repositoryRoot: string
     runtimeProfile: RuntimeProfileId
@@ -699,6 +733,8 @@ export type WorkspaceClient = {
     title: string
   }): Promise<WorktreeResult>
   checkHostDependencies(input: {
+    // False for work that runs straight on this machine: host tools only.
+    includeRuntime?: boolean
     runtimeProfile?: RuntimeProfileId
     setupScript?: string
     worktree?: string
@@ -730,13 +766,13 @@ export type WorkspaceClient = {
     launchError: string
   }): Promise<ProjectInitializationDiagnostics>
   stopProjectSetup(input: {
-    workspaceMode?: "local-container" | "cloud-mirror"
+    workspaceMode?: "local-container" | "cloud-mirror" | "direct"
     worktree: string
   }): Promise<boolean>
   removeWorktree(input: {
     projectSetupStopped?: boolean
     repositoryRoot: string
-    workspaceMode?: "local-container" | "cloud-mirror"
+    workspaceMode?: "local-container" | "cloud-mirror" | "direct"
     worktree: string
   }): Promise<boolean>
   resolveProjectPreviewUrl(input: { worktree: string }): Promise<string | null>
@@ -744,12 +780,12 @@ export type WorkspaceClient = {
     executionId: string
     storyId?: string
     telemetryCohorts?: ExecutionTelemetryCohorts
-    workspaceMode?: "local-container" | "cloud-mirror"
+    workspaceMode?: "local-container" | "cloud-mirror" | "direct"
     worktree: string
   }): Promise<string | null>
   projectRuntimeHealthy?(input: { worktree: string }): Promise<boolean>
   projectPreviewRuntimeState?(input: {
-    workspaceMode?: "local-container" | "cloud-mirror"
+    workspaceMode?: "local-container" | "cloud-mirror" | "direct"
     worktree: string
   }): Promise<ProjectPreviewRuntimeState>
   controlProjectPreview?(input: {
@@ -757,6 +793,7 @@ export type WorkspaceClient = {
     configurationId?: string
     worktree: string
   }): Promise<ProjectPreviewRuntimeState>
+  runtimeStatus?(): Promise<RuntimeStatusReport>
   ensureRuntimeReady?(
     onProgress?: (progress: RuntimeProgress) => void
   ): Promise<unknown>

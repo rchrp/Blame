@@ -12,6 +12,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@blame/hero-scene": "workspace:*",
+    "@blame/pricing-card": "workspace:*",
     "@radix-ui/react-avatar": "1.1.10",
     "@radix-ui/react-select": "2.2.6",
     "class-variance-authority": "0.7.1",

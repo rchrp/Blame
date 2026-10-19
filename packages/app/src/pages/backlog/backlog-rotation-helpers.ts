@@ -169,6 +169,7 @@ export function notifyCommentResponseCompleted(
   if (!run?.commentId) return
   void showSystemNotification(platform, {
     body: `${userStoryDisplayId(story)} · ${story.title}`,
+    target: { pathname: "/backlog", storyId: story.id },
     title: "Agent replied to a comment",
   })
 }
@@ -353,3 +354,5 @@ export function expiredAuthenticationToken(message: string) {
 export function agentAuthenticationErrorKey(story: UserStory) {
   return `${story.id}:expired-authentication-token`
 }
+
+export { directQueueNotice, directStorySlots } from "./direct-story-queue"

@@ -1,3 +1,6 @@
+import { OpenProjectEmptyState } from "@/components/shared/open-project-empty-state"
+import { ConversationSkeleton } from "@/components/shared/skeletons"
+
 export function QuickChatStatus({
   error,
   loading,
@@ -9,9 +12,7 @@ export function QuickChatStatus({
 }) {
   if (!projectPath) {
     return (
-      <div className="rounded-lg border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
-        Open a project to use quick chat.
-      </div>
+      <OpenProjectEmptyState description="Open a project to chat with an agent about its code." />
     )
   }
   if (error) {
@@ -22,9 +23,5 @@ export function QuickChatStatus({
     )
   }
   if (!loading) return null
-  return (
-    <div className="rounded-lg border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
-      Loading quick chats.
-    </div>
-  )
+  return <ConversationSkeleton />
 }

@@ -82,6 +82,7 @@ export const UserStoryCard = React.memo(function UserStoryCard({
     <div
       ref={stateEffectRef}
       className="user-story-state-effect"
+      data-story-id={story.id}
       data-story-state={story.status}
     >
       <Card
@@ -132,6 +133,7 @@ export function ReadOnlyUserStoryCard({ story }: { story: UserStory }) {
     <div
       ref={stateEffectRef}
       className="user-story-state-effect"
+      data-story-id={story.id}
       data-story-state={story.status}
     >
       <Card

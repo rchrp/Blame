@@ -6,7 +6,10 @@ import {
   totalDiffStats,
   type UserStoryDiffStats,
 } from "@/components/backlog/development/development-diff-stats-data"
-import { parseGitDiff } from "@/components/backlog/development/development-workspace"
+import {
+  normalizeDiffs,
+  parseGitDiff,
+} from "@/components/backlog/development/development-workspace"
 import type { Platform } from "@/context/platform"
 import {
   measurePerformanceOperation,
@@ -68,8 +71,10 @@ export function useUserStoryDiffStats(
   return stats
 }
 
+// The story's total diff. Same parsing and filtering as the Diff tab, so the
+// board card, the drawer and the Diff tab always show the same numbers.
 export function diffStatsFromPatch(patch: string): UserStoryDiffStats {
-  return totalDiffStats(parseGitDiff(patch))
+  return totalDiffStats(normalizeDiffs(parseGitDiff(patch)))
 }
 
 function subscribeUserStoryDiffStats(

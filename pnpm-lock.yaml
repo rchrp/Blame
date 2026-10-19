@@ -318,9 +318,15 @@ importers:
       '@blame/deploy-contract':
         specifier: workspace:*
         version: link:../deploy-contract
+      '@blame/hero-scene':
+        specifier: workspace:*
+        version: link:../hero-scene
       '@blame/preview-runtime':
         specifier: workspace:*
         version: link:../preview-runtime
+      '@blame/pricing-card':
+        specifier: workspace:*
+        version: link:../pricing-card
       '@dnd-kit/core':
         specifier: 6.3.1
         version: 6.3.1(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
@@ -390,6 +396,9 @@ importers:
       mermaid:
         specifier: ^11.16.1
         version: 11.16.1
+      motion:
+        specifier: 12.43.0
+        version: 12.43.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       next-themes:
         specifier: 0.4.6
         version: 0.4.6(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
@@ -420,6 +429,9 @@ importers:
       tailwindcss:
         specifier: ^4.2.1
         version: 4.3.0
+      three:
+        specifier: ^0.185.0
+        version: 0.185.0
       tw-animate-css:
         specifier: 1.4.0
         version: 1.4.0
@@ -442,6 +454,9 @@ importers:
       '@types/react-dom':
         specifier: ^19.2.3
         version: 19.2.3(@types/react@19.2.14)
+      '@types/three':
+        specifier: ^0.185.0
+        version: 0.185.0
       '@vitejs/plugin-react':
         specifier: ^5.2.0
         version: 5.2.0(vite@7.3.3(@types/node@24.12.4)(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.9.0))
@@ -599,6 +614,21 @@ importers:
         specifier: ~5.9.3
         version: 5.9.3
 
+  packages/hero-scene:
+    devDependencies:
+      '@types/node':
+        specifier: ^24.12.0
+        version: 24.12.4
+      '@types/three':
+        specifier: ^0.185.0
+        version: 0.185.0
+      three:
+        specifier: ^0.185.0
+        version: 0.185.0
+      typescript:
+        specifier: ~5.9.3
+        version: 5.9.3
+
   packages/model-catalog:
     devDependencies:
       '@cline/shared':
@@ -638,6 +668,18 @@ importers:
       '@types/node':
         specifier: ^24.12.0
         version: 24.12.4
+      typescript:
+        specifier: ~5.9.3
+        version: 5.9.3
+
+  packages/pricing-card:
+    devDependencies:
+      '@types/react':
+        specifier: ^19.2.14
+        version: 19.2.17
+      react:
+        specifier: 19.2.7
+        version: 19.2.7
       typescript:
         specifier: ~5.9.3
         version: 5.9.3
@@ -727,6 +769,12 @@ importers:
 
   packages/vitrine:
     dependencies:
+      '@blame/hero-scene':
+        specifier: workspace:*
+        version: link:../hero-scene
+      '@blame/pricing-card':
+        specifier: workspace:*
+        version: link:../pricing-card
       '@radix-ui/react-avatar':
         specifier: 1.1.10
         version: 1.1.10(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -7156,6 +7204,20 @@ packages:
     resolution: {integrity: sha512-buRG0fpBtRHSTCOASe6hD258tEubFoRLb4ZNA6NxMVHNw2gOcwHo9wyablzMzOA5z9xA9L1KNjk/Nt6MT9aYow==}
     engines: {node: '>= 0.6'}
 
+  framer-motion@12.43.0:
+    resolution: {integrity: sha512-1eaL3RvR/kAlbG7UYcpMptEyzPoENO0c6w7ZnB3/hh2vSAz/6uGAFn6fdoqTBguNstf3MsFhJHsD/0DHiclG+g==}
+    peerDependencies:
+      '@emotion/is-prop-valid': '*'
+      react: ^18.0.0 || ^19.0.0
+      react-dom: ^18.0.0 || ^19.0.0
+    peerDependenciesMeta:
+      '@emotion/is-prop-valid':
+        optional: true
+      react:
+        optional: true
+      react-dom:
+        optional: true
+
   fresh@0.5.2:
     resolution: {integrity: sha512-zJ2mQYM18rEFOudeV4GShTGIQ7RbzA7ozbU9I/XBpm7kqgMywgmylMwXHxZJmkVoYkna9d2pVXVXPdYTP9ej8Q==}
     engines: {node: '>= 0.6'}
@@ -8318,6 +8380,26 @@ packages:
 
   module-details-from-path@1.0.4:
     resolution: {integrity: sha512-EGWKgxALGMgzvxYF1UyGTy0HXX/2vHLkw6+NvDKW2jypWbHpjQuj4UMcqQWXHERJhVGKikolT06G3bcKe4fi7w==}
+
+  motion-dom@12.43.0:
+    resolution: {integrity: sha512-azKON4d9S65PEoFUiQTMTgPheEmzf2QngdRc50AKfJp9Q9mmcBVw22c8eMq9k8kxOFHdL7+WZY7N/5F/lwiDag==}
+
+  motion-utils@12.39.0:
+    resolution: {integrity: sha512-8nadJAJjTtqRkmRF36FoJTrywK9nnFmnPwnSMyxaOCU7GDjN9RTMJIxx9De8ErM+vpPhMccr/6fo5WciyQLnMQ==}
+
+  motion@12.43.0:
+    resolution: {integrity: sha512-BQgQbSa9Hn3/mtbib0MK53y6JSANa+YKUKlaYnWzAVDH424RYQ5LVpV3pNiWH00BA2z4ojsSdMzqT7g2FQwjuQ==}
+    peerDependencies:
+      '@emotion/is-prop-valid': '*'
+      react: ^18.0.0 || ^19.0.0
+      react-dom: ^18.0.0 || ^19.0.0
+    peerDependenciesMeta:
+      '@emotion/is-prop-valid':
+        optional: true
+      react:
+        optional: true
+      react-dom:
+        optional: true
 
   ms@2.1.2:
     resolution: {integrity: sha512-sGkPx+VjMtmA6MX27oA4FBFELFCZZ4S4XqeGOXCv68tT+jb3vk/RyaKWP0PTKyWtmLSM0b+adUTEvbs1PEaH2w==}
@@ -17677,6 +17759,15 @@ snapshots:
 
   forwarded@0.2.0: {}
 
+  framer-motion@12.43.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6):
+    dependencies:
+      motion-dom: 12.43.0
+      motion-utils: 12.39.0
+      tslib: 2.8.1
+    optionalDependencies:
+      react: 19.2.6
+      react-dom: 19.2.6(react@19.2.6)
+
   fresh@0.5.2: {}
 
   fresh@2.0.0: {}
@@ -18779,6 +18870,20 @@ snapshots:
       minimist: 1.2.8
 
   module-details-from-path@1.0.4: {}
+
+  motion-dom@12.43.0:
+    dependencies:
+      motion-utils: 12.39.0
+
+  motion-utils@12.39.0: {}
+
+  motion@12.43.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6):
+    dependencies:
+      framer-motion: 12.43.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
+      tslib: 2.8.1
+    optionalDependencies:
+      react: 19.2.6
+      react-dom: 19.2.6(react@19.2.6)
 
   ms@2.1.2: {}
 

@@ -1,24 +1,14 @@
 import * as React from "react"
 import { XIcon } from "lucide-react"
-import { toast } from "sonner"
 
 import {
   quickChatSelectedEvent,
   type QuickChat,
 } from "@/components/chat/data/quick-chat-data"
 import { useQuickChatStore } from "@/components/chat/data/quick-chat-store"
+import { undoable } from "@/lib/undoable"
+import { SidebarListSkeleton } from "@/components/shared/skeletons"
 import { AppLink } from "@/components/navigation/app-link"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogMedia,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
 import {
   SidebarMenuButton,
   SidebarMenuSub,
@@ -34,11 +24,16 @@ export function QuickChatHistory({ pathname }: { pathname: string }) {
     count: initialChatCount,
     projectId: quickChats.projectId,
   })
-  const [chatToDelete, setChatToDelete] = React.useState<QuickChat | null>(null)
-  const [deleting, setDeleting] = React.useState(false)
+  // Conversations deleted but still undoable: hidden until the toast closes.
+  const [pendingDeletes, setPendingDeletes] = React.useState<ReadonlySet<string>>(
+    () => new Set()
+  )
   const chats = React.useMemo(
-    () => [...quickChats.chats].sort(compareChatsByMostRecent),
-    [quickChats.chats]
+    () =>
+      [...quickChats.chats]
+        .filter((chat) => !pendingDeletes.has(chat.id))
+        .sort(compareChatsByMostRecent),
+    [pendingDeletes, quickChats.chats]
   )
   const visibleCount =
     pagination.projectId === quickChats.projectId
@@ -53,23 +48,36 @@ export function QuickChatHistory({ pathname }: { pathname: string }) {
     })
   }
 
-  async function deleteChat() {
-    if (!chatToDelete || deleting) return
-    setDeleting(true)
-    try {
-      await quickChats.remove(chatToDelete)
-      setChatToDelete(null)
-    } catch (error) {
-      toast.error("Unable to delete quick chat", {
-        description:
-          error instanceof Error
-            ? error.message
-            : "An unexpected error occurred.",
-        position: "bottom-right",
-      })
-    } finally {
-      setDeleting(false)
+  function setPending(chatId: string, pending: boolean) {
+    setPendingDeletes((current) => {
+      const next = new Set(current)
+      if (pending) next.add(chatId)
+      else next.delete(chatId)
+      return next
+    })
+  }
+
+  function deleteChat(chat: QuickChat) {
+    const wasActive = quickChats.activeId === chat.id
+    setPending(chat.id, true)
+    if (wasActive) {
+      quickChats.setActiveId(undefined)
+      window.dispatchEvent(new Event(quickChatSelectedEvent))
     }
+    undoable({
+      message: `Deleted “${chat.title}”`,
+      undo: () => {
+        setPending(chat.id, false)
+        if (wasActive) {
+          quickChats.setActiveId(chat.id)
+          window.dispatchEvent(new Event(quickChatSelectedEvent))
+        }
+      },
+      commit: async () => {
+        await quickChats.remove(chat)
+        setPending(chat.id, false)
+      },
+    })
   }
 
   if (!quickChats.loading && !chats.length) return null
@@ -78,8 +86,8 @@ export function QuickChatHistory({ pathname }: { pathname: string }) {
     <>
       <SidebarMenuSub className="gap-0.5 pb-1">
         {quickChats.loading && !chats.length ? (
-          <SidebarMenuSubItem className="px-2 py-1 text-xs text-muted-foreground">
-            Loading chats…
+          <SidebarMenuSubItem>
+            <SidebarListSkeleton />
           </SidebarMenuSubItem>
         ) : null}
         {visibleChats.map((chat) => (
@@ -112,7 +120,7 @@ export function QuickChatHistory({ pathname }: { pathname: string }) {
             <button
               aria-label={`Delete ${chat.title}`}
               className="absolute top-1/2 right-1 flex size-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity outline-none group-focus-within/chat:opacity-100 group-hover/chat:opacity-100 hover:bg-destructive/10 hover:text-destructive focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-sidebar-ring"
-              onClick={() => setChatToDelete(chat)}
+              onClick={() => deleteChat(chat)}
               title={`Delete ${chat.title}`}
               type="button"
             >
@@ -151,38 +159,6 @@ export function QuickChatHistory({ pathname }: { pathname: string }) {
           </SidebarMenuSubItem>
         ) : null}
       </SidebarMenuSub>
-      <AlertDialog
-        open={Boolean(chatToDelete)}
-        onOpenChange={(open) => {
-          if (!open && !deleting) setChatToDelete(null)
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogMedia>
-              <XIcon />
-            </AlertDialogMedia>
-            <AlertDialogTitle>Delete conversation</AlertDialogTitle>
-            <AlertDialogDescription>
-              Delete “{chatToDelete?.title}” permanently? This action cannot be
-              undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              disabled={deleting}
-              onClick={(event) => {
-                event.preventDefault()
-                void deleteChat()
-              }}
-              variant="destructive"
-            >
-              Delete permanently
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   )
 }

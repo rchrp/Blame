@@ -40,7 +40,6 @@ import {
 import {
   captureAgentRunDiffEndRef,
   loadAgentRunDiffs,
-  loadAgentRunDiffSummary,
 } from "@/components/chat/agent-run-diffs"
 import { nextCheckpointRunCount } from "@/components/chat/agent-run-checkpoints"
 import {
@@ -107,6 +106,7 @@ import {
   showQuickChatError,
   titleFromMessage,
 } from "./quick-chat-helpers"
+import { useComposerShortcuts } from "./use-composer-shortcuts"
 import { useQuickChatDraft } from "./use-quick-chat-draft"
 import { useQuickChatSnapshotReplay } from "./use-quick-chat-snapshot-replay"
 import { QuickChatStatus } from "./quick-chat-status"
@@ -194,6 +194,11 @@ function QuickChatProjectPage() {
     setDraftEditorKey,
     setDraftFileAttachments,
   } = useQuickChatDraft(draftStorageKey)
+  const applySuggestion = useComposerShortcuts({
+    draftRef,
+    setDraft,
+    setDraftEditorKey,
+  })
   const activeConversationLoaded =
     !activeConversation || quickChats.chatDetailsLoaded(activeConversation)
   const responseHeader = agentConversationResponseHeader({
@@ -203,19 +208,6 @@ function QuickChatProjectPage() {
       selection.currentModel?.provider.id,
     providers: selection.allProviders,
   })
-  const loadChangedFiles = React.useCallback(
-    (sessionId: string, checkpointRunCount: number, diffEndRef: string) => {
-      if (!activeConversation?.workspace) return Promise.resolve([])
-      return loadAgentRunDiffSummary({
-        checkpointRunCount,
-        diffEndRef,
-        platform,
-        root: activeConversation.workspace,
-        sessionId,
-      })
-    },
-    [activeConversation?.workspace, platform]
-  )
   const loadChangedFileDiffs = React.useCallback(
     (sessionId: string, checkpointRunCount: number, diffEndRef: string) => {
       if (!activeConversation?.workspace) return Promise.resolve([])
@@ -539,6 +531,7 @@ function QuickChatProjectPage() {
   function notifyQuickChatResponseCompleted(chat: QuickChat) {
     void showSystemNotification(platform, {
       body: chat.title,
+      target: { pathname: "/chat", chatId: chat.id },
       title: "Agent response ready",
     })
   }
@@ -954,7 +947,10 @@ function QuickChatProjectPage() {
       <div className="flex h-svh min-h-0 min-w-0 flex-col overflow-hidden md:h-[calc(100svh_-_1rem)]">
         <div className="grid min-h-0 flex-1 grid-cols-1 gap-2">
           <main className="relative flex min-h-0 min-w-0 flex-col overflow-hidden">
-            <MessageScrollerProvider key={activeConversation?.id ?? "new-chat"}>
+            <MessageScrollerProvider
+              key={activeConversation?.id ?? "new-chat"}
+              memoryKey={activeConversation?.id}
+            >
               <MessageScroller>
                 <MessageScrollerViewport>
                   <MessageScrollerContent
@@ -971,7 +967,6 @@ function QuickChatProjectPage() {
                       <AgentConversationTimeline
                         comments={activeConversation.messages ?? []}
                         loadChangedFileDiffs={loadChangedFileDiffs}
-                        loadChangedFiles={loadChangedFiles}
                         onChangedFileClick={(path) =>
                           openProjectPath(
                             project?.path,
@@ -1020,7 +1015,11 @@ function QuickChatProjectPage() {
               />
               <div className="pointer-events-auto relative px-3 pb-3 md:px-5 md:pb-5">
                 <div className="mx-auto w-full max-w-4xl">
-                  {emptyConversation ? <QuickChatEmptyState /> : null}
+                  {emptyConversation ? (
+                    <QuickChatEmptyState
+                      onSuggestion={project ? applySuggestion : undefined}
+                    />
+                  ) : null}
                   <AgentConversationComposer
                     speechSessionKey={draftStorageKey}
                     minHeight={emptyConversation ? "min-h-44" : "min-h-24"}

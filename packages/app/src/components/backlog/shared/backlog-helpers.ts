@@ -58,3 +58,13 @@ function developmentTarget(
     initialDevelopmentTab,
   }
 }
+
+// "Approve & Merge" reads differently when there is nothing to merge.
+export function approveActionLabel(
+  story: Pick<UserStory, "workspaceMode"> | undefined,
+  reviewDiffEmpty?: boolean
+) {
+  if (reviewDiffEmpty) return "Mark as Done"
+  if (story?.workspaceMode === "direct") return "Approve"
+  return undefined
+}

@@ -50,11 +50,12 @@ import { storyPreviewDevtoolsScope } from "@/components/backlog/shared/preview-d
 import { useModelSelection } from "@/components/model/model-selection"
 import { useCloudAuth } from "@/context/cloud-auth"
 import type { HostDependencyReport } from "@/context/platform"
+import { useRuntimeGate } from "@/pages/backlog/use-runtime-gate"
 import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
 import { createCloudApi } from "@/lib/cloud-api"
 import { effectiveProjectCodePractices } from "@/lib/project-code-practice-preferences"
-import { useRuntimePreference } from "@/lib/runtime-preference"
+import { useRuntimePreference, useStoryRunMode } from "@/lib/runtime-preference"
 import {
   measurePerformanceOperation,
   recordPerformanceCount,
@@ -74,6 +75,8 @@ import {
   clineLogPath,
   clineLogRelativePath,
   definedUpdate,
+  directQueueNotice,
+  directStorySlots,
   errorMessage,
   expiredAuthenticationToken,
   type HostDependenciesDialogState,
@@ -118,6 +121,8 @@ export function useBacklogRotation(
   const runtimePreference = useRuntimePreference(
     auth.license?.licensed === true
   )
+  const runMode = useStoryRunMode(auth.license?.licensed === true)
+  const direct = runMode === "direct"
   const ensureProjectPreviewUrl = platform.workspace?.ensureProjectPreviewUrl
   const startingStoryIds = React.useRef(new Set<string>())
   const blockedStories = React.useRef(new Map<string, number>())
@@ -151,6 +156,14 @@ export function useBacklogRotation(
   const [hostDependenciesDialog, setHostDependenciesDialog] =
     React.useState<HostDependenciesDialogState>()
   const [, refreshStartingStories] = React.useState(0)
+  const runtimeGate = useRuntimeGate({
+    onRuntimeReady: () => {
+      blockedStories.current.clear()
+      refreshStartingStories((value) => value + 1)
+    },
+    profile: runtimePreference.profile,
+    stories: backlog.stories,
+  })
   const previewRecoveryState = previewRecoveryStateKey(backlog.stories)
 
   React.useEffect(() => {
@@ -206,7 +219,16 @@ export function useBacklogRotation(
     const agent = platform.agent
     if (!workspace || !agent) return
 
+    // Local Container stories wait for the Blame Runtime (or ask for it)
+    // instead of failing; the runtime itself is checked by its provider.
+    const runtimeDecision = direct ? "go" : runtimeGate.gate(detailedStory)
+    if (runtimeDecision === "wait")
+      return retryStory(detailedStory, initializationRetryDelay)
+    if (runtimeDecision === "needs-runtime")
+      return retryStory(detailedStory, blockerRetryDelay)
+
     const dependencies = await workspace.checkHostDependencies({
+      includeRuntime: direct ? false : runtimeGate.hostCheckIncludesRuntime,
       runtimeProfile: runtimePreference.profile,
     })
     if (!dependencies.ok) {
@@ -226,6 +248,8 @@ export function useBacklogRotation(
       selection.currentModel.provider.id
     )
     const worktree = await workspace.createWorktree({
+      // Direct runs in the project folder: no new worktree or branch.
+      direct,
       executionId,
       repositoryRoot: projects.activeProject.path,
       runtimeProfile: runtimePreference.profile,
@@ -249,7 +273,9 @@ export function useBacklogRotation(
       workspaceMode: worktree.workspaceMode,
       worktree: worktree.worktree,
     })
-    const preparationPromise = workspace.prepareProjectPreview({
+    const preparationPromise = direct
+      ? Promise.resolve()
+      : workspace.prepareProjectPreview({
       executionId,
       storyId,
       telemetryCohorts,
@@ -274,7 +300,10 @@ export function useBacklogRotation(
       cwd: worktree.worktree,
       workspaceRoot: worktree.worktree,
       workspaceMode: worktree.workspaceMode,
-      previewDevtoolsScope: storyPreviewDevtoolsScope(detailedStory.id),
+      // No managed preview in Direct mode.
+      previewDevtoolsScope: direct
+        ? undefined
+        : storyPreviewDevtoolsScope(detailedStory.id),
       codePractices: effectiveProjectCodePractices(
         projectInitialization.practices
       ),
@@ -382,6 +411,7 @@ export function useBacklogRotation(
     setHostDependenciesDialog({ ...current, checking: true })
     try {
       const report = await platform.workspace.checkHostDependencies({
+        includeRuntime: runtimeGate.hostCheckIncludesRuntime,
         runtimeProfile: current.runtimeProfile,
       })
       if (report.ok) {
@@ -1056,10 +1086,11 @@ export function useBacklogRotation(
     )
     if (readyStories.length === 0) return
 
-    const availableSlots =
-      maxConcurrentDevelopmentStories -
-      runningStories(backlog.stories) -
-      startingStoryIds.current.size
+    const availableSlots = direct
+      ? directStorySlots(backlog.stories, startingStoryIds.current.size)
+      : maxConcurrentDevelopmentStories -
+        runningStories(backlog.stories) -
+        startingStoryIds.current.size
     if (availableSlots <= 0) return
 
     const storiesToStart = readyStories.slice(0, availableSlots)
@@ -1079,10 +1110,14 @@ export function useBacklogRotation(
     backlog.loading,
     backlog.projectId,
     backlog.stories,
+    direct,
     projects.activeProject,
   ])
 
   return {
+    runtimeWaitingLabel: direct
+      ? directQueueNotice(backlog.stories)
+      : runtimeGate.waitingLabel,
     hostDependenciesDialog: {
       checking: Boolean(hostDependenciesDialog?.checking),
       onOpenChange(open: boolean) {

@@ -30,7 +30,7 @@ export type LightWorkspaceToolName = (typeof lightWorkspaceToolNames)[number];
 export type LightWorkspaceExecutionRequest = {
   execution?: {
     backendMode?: "auto" | "local" | "hub" | "remote";
-    workspaceMode?: "local-container" | "cloud-mirror";
+    workspaceMode?: "local-container" | "cloud-mirror" | "direct";
   };
   input: unknown;
   taskContract?: LightTaskContract;

@@ -34,11 +34,13 @@ import { Input } from "@/components/ui/input"
 const openAICompatibleProviderID = "openai-compatible"
 
 export function ProviderSelectDialog({
+  onCloseAutoFocus,
   onConnect,
   onOpenChange,
   open,
   selection,
 }: {
+  onCloseAutoFocus?: (event: Event) => void
   onConnect: (providerID: string) => void
   onOpenChange: (open: boolean) => void
   open: boolean
@@ -46,7 +48,10 @@ export function ProviderSelectDialog({
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[80vh] overflow-hidden p-0 sm:max-w-lg">
+      <DialogContent
+        className="max-h-[80vh] overflow-hidden p-0 sm:max-w-lg"
+        onCloseAutoFocus={onCloseAutoFocus}
+      >
         <DialogHeader className="px-4 pt-4">
           <DialogTitle>Connect provider</DialogTitle>
           <DialogDescription>
@@ -88,11 +93,13 @@ export function ProviderSelectDialog({
 
 export function ConnectProviderDialog({
   onBack,
+  onCloseAutoFocus,
   onOpenChange,
   providerID,
   selection,
 }: {
   onBack: () => void
+  onCloseAutoFocus?: (event: Event) => void
   onOpenChange: (open: boolean) => void
   providerID: string | undefined
   selection: ModelSelection
@@ -106,7 +113,7 @@ export function ConnectProviderDialog({
 
   return (
     <Dialog open={!!providerID} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg" onCloseAutoFocus={onCloseAutoFocus}>
         <ProviderConnectionsContent
           provider={provider}
           credentials={credentials}
