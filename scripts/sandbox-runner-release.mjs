@@ -8,6 +8,13 @@ const image = process.env.BLAME_SANDBOX_RUNNER_IMAGE_TAG;
 if (!image) throw new Error("BLAME_SANDBOX_RUNNER_IMAGE_TAG is required");
 if (!new Set(["build", "release"]).has(action))
   throw new Error("Expected build or release");
+// Exceptions for critical findings without a fixed upstream build.
+const grypeArgs = [
+  "--config",
+  "packages/sandbox-runner/grype.yaml",
+  "--fail-on",
+  "critical",
+];
 const runnerPackage = JSON.parse(
   await readFile("packages/sandbox-runner/package.json", "utf8"),
 );
@@ -21,7 +28,7 @@ if (!/^\d+\.\d+\.\d+$/.test(runnerVersion)) {
 await command("pnpm", ["--filter", "@blame/sandbox-runner", "build"]);
 await buildImage("build");
 if (action === "release") {
-  await command("grype", [`docker:${image}`, "--fail-on", "critical"]);
+  await command("grype", [`docker:${image}`, ...grypeArgs]);
   await buildImage("release");
   const digest = await output("docker", [
     "buildx",
@@ -35,7 +42,7 @@ if (action === "release") {
     throw new Error("Published runner digest is unavailable");
   const publishedDigest = JSON.parse(digest);
   const immutableImage = `${imageRepository(image)}@${publishedDigest}`;
-  await command("grype", [immutableImage, "--fail-on", "critical"]);
+  await command("grype", [immutableImage, ...grypeArgs]);
   if (immutableImage.startsWith("vcr.vercel.com/")) {
     const signatureImage = await signForVercelRegistry(
       immutableImage,

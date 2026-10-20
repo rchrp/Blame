@@ -1,0 +1,33 @@
+# Release scan exceptions for the sandbox runner image (scripts/sandbox-runner-release.mjs).
+# Each entry is a critical finding with no fixed upstream build yet, scoped to the
+# affected binary or package. Remove an entry as soon as a fixed release exists.
+ignore:
+  # HTTP/2 server flow control in Go (2026-10-08). The latest buildx (0.38.0),
+  # Compose (5.6.0) and containerd from Docker 29.9.1 are still built with
+  # Go 1.26.8 / x/net 0.58-0.59. Remove when they ship Go >= 1.26.9 / x/net >= 0.60.
+  - vulnerability: GO-2026-6612
+    reason: No fixed Docker, Compose or buildx build is available yet.
+    package:
+      location: /usr/local/lib/docker/cli-plugins/*
+  - vulnerability: GO-2026-6612
+    reason: No fixed Docker static build is available yet.
+    package:
+      location: /usr/local/bin/c*
+  # os.Root junction traversal, Windows only; the image is Linux.
+  - vulnerability: GO-2026-6604
+    reason: Windows-only vulnerability in a Linux image.
+    package:
+      location: /usr/local/lib/docker/cli-plugins/*
+  # simple-git unsafe-option guard bypasses. @cline/core pins simple-git 3.36.0
+  # and imports its default export, which simple-git 4 removed, so the fix
+  # cannot be overridden. Remove when Cline moves to simple-git >= 4.0.1.
+  - vulnerability: GHSA-x6jw-m9v5-85vh
+    reason: Pinned by @cline/core; simple-git 4 breaks Cline's import.
+    package:
+      name: simple-git
+      location: /opt/blame/cline/**
+  - vulnerability: GHSA-v5rq-49vh-5v5c
+    reason: Pinned by @cline/core through simple-git 3.36.0.
+    package:
+      name: "@simple-git/argv-parser"
+      location: /opt/blame/cline/**
