@@ -6,12 +6,15 @@
 // Each change below is located by structure instead of by minified names and
 // must match exactly the expected number of times, otherwise nothing is
 // written. scripts/cline-sdk-update.mjs runs this to regenerate the pnpm patch;
-// see patches/README.md for what the changes do.
+// see patches/README.md for what the changes do. It also writes
+// dist/blame-patch.json, which runtime health checks use to tell a patched core
+// from a pristine one.
 import { readFile, writeFile } from "node:fs/promises"
 import { join } from "node:path"
 import { fileURLToPath } from "node:url"
 
 const id = "[\\w$]+"
+const patchMarker = "dist/blame-patch.json"
 const bundles = ["dist/index.js", "dist/hub/index.js", "dist/hub/daemon/entry.js"]
 
 /** A transformation: files it applies to, how often per file, and the rewrite. */
@@ -127,6 +130,7 @@ export async function patchClineCore(directory) {
       files.set(file, text.replace(pattern, (...args) => change.replace(...args.slice(0, -2), context)))
     }
   }
+  files.set(patchMarker, `${JSON.stringify({ changes: changes.map((change) => change.name) }, null, 2)}\n`)
   for (const [file, text] of files) await writeFile(join(directory, file), text, "utf8")
   return [...files.keys()]
 }

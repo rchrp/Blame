@@ -16,6 +16,8 @@ The patch makes three changes:
 - **Planned sessions without replay.** `subscribe(…, { replay: false })` starts a new execution without replaying the events of a previous subscription; reconnects still replay missed events. Planned sessions use it, so resuming story feedback never receives the previous execution's terminal event (`cline-session-replay.test.ts`).
 - **Hub identity.** The bundles carry a distinct, newer hub build identity, so an unpatched managed hub of the same version is never reused.
 
+The generator also adds `dist/blame-patch.json`, listing the applied changes. The runtime payload build and the runtime health checks (`scripts/runtime-sdk-check.mjs` and the provisioning scripts in `packages/desktop/resources/runtime`) require it, so a pristine core is never shipped or kept.
+
 # Electron Builder macOS signing
 
 The `app-builder-lib@26.8.1` patch backports electron-userland/electron-builder#10172. It passes the temporary keychain password to `security set-key-partition-list`, while preserving the certificate password for `security import`. Recent macOS runners reject the certificate password when unlocking the keychain. `node --test scripts/macos-signing.test.mjs` exercises the installed implementation with distinct certificate and keychain passwords. Remove this patch when upgrading to an upstream version containing that fix.

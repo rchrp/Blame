@@ -1,3 +1,23 @@
+diff --git a/dist/blame-patch.json b/dist/blame-patch.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..f1b7aa448fcce0cf6279d75be75ff8084fbece0a
+--- /dev/null
++++ b/dist/blame-patch.json
+@@ -0,0 +1,14 @@
++{
++  "changes": [
++    "type: compaction imageTokenLimit",
++    "type: hub subscribe replay option",
++    "image estimator: configurable per-image tokens",
++    "compaction: use imageTokenLimit for message and request estimates",
++    "transport: keep imageTokenLimit in serialized compaction config",
++    "hub client: subscribe without replaying a previous execution",
++    "planned sessions: subscribe without replay",
++    "session subscription: forward the replay option",
++    "hub build identity",
++    "hub build time"
++  ]
++}
 diff --git a/dist/hub/client/index.d.ts b/dist/hub/client/index.d.ts
 index 38ee19e5cc6a781957534f72cbf89fac01fa6b8d..557c7af9f65404fe3e9990ef0b53bdb694986626 100644
 --- a/dist/hub/client/index.d.ts

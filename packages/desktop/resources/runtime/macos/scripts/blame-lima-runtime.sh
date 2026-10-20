@@ -169,7 +169,7 @@ if (!fs.existsSync(sdkPackage) || !coreRoot) process.exit(1);
 const sdk = JSON.parse(fs.readFileSync(sdkPackage, "utf8"));
 const core = JSON.parse(fs.readFileSync(path.join(coreRoot, "package.json"), "utf8"));
 const sdkEntry = path.join(root, "@cline/sdk/dist/index.js");
-process.exit(sdk.version === version && core.version === version && fs.existsSync(sdkEntry) && fs.existsSync(path.join(coreRoot, "dist/image-token-estimation.js")) ? 0 : 1);
+process.exit(sdk.version === version && core.version === version && fs.existsSync(sdkEntry) && fs.existsSync(path.join(coreRoot, "dist/blame-patch.json")) ? 0 : 1);
 NODE
 }
 check host-home test -d "$host_mount"

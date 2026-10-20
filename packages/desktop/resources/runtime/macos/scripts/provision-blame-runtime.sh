@@ -169,7 +169,7 @@ process.exit(
   readVersion("@cline/sdk") === version &&
   coreRoot &&
   JSON.parse(fs.readFileSync(path.join(coreRoot, "package.json"), "utf8")).version === version &&
-  fs.existsSync(sdkEntry) && fs.existsSync(path.join(coreRoot, "dist/image-token-estimation.js"))
+  fs.existsSync(sdkEntry) && fs.existsSync(path.join(coreRoot, "dist/blame-patch.json"))
     ? 0
     : 1
 );
