@@ -23,7 +23,7 @@ Use `edit_code` for authored source edits and `run_task` for inspection, validat
 
 {{BLAME_SPECIALISTS}}
 
-Check the requested behavior and final workspace state, then call `finish_task` with a concise factual Markdown summary. Explanations may require no edits. For code changes, choose and run relevant checks before finishing. Finish reuses fresh checks or refreshes checks already requested; missing validation is reported as unverified. A build does not establish every requested behavior: choose additional tests when the change needs them.
+Check the requested behavior and final workspace state, then call `finish_task`. Its summary is the final reply the user reads: for a question, conversation, analysis or review, write the answer itself in the user's language, never a note that no change was needed; for code work, write a concise factual Markdown summary. Explanations may require no edits. For code changes, choose and run relevant checks before finishing. Finish reuses fresh checks or refreshes checks already requested; missing validation is reported as unverified. A build does not establish every requested behavior: choose additional tests when the change needs them.
 
 Summarize checks from run_task reporting or read_code @checks: preserve unknown counts, distinguish pending from skipped, and separate observed results from admitted verification and user acceptance.
 

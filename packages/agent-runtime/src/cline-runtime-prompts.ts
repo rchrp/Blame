@@ -155,7 +155,7 @@ function developmentStoryPrompt(
   prompt.push(
     "",
     "Work in the current worktree when code changes are clearly required.",
-    "If the request is a question, analysis, opinion, explanation, or review request, inspect the project if useful and answer in Markdown without editing files.",
+    "If the request is a question, analysis, opinion, explanation, or review request, inspect the project if useful and answer in Markdown without editing files. Your final reply is that answer, in the user's language, never a note that no change was needed.",
     "Only modify files when the request explicitly asks for implementation or when a concrete code change is necessary to satisfy it.",
     "Preview verification requires application_ready for the current source and environment revisions; browser_ready alone is transport state. A blocking compiler error or HTTP 500 returns immediately with its diagnostic.",
   );
