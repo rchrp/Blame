@@ -283,7 +283,9 @@ function useLocalProviderState(enabled = true) {
     return agent.providers
       .list(auth.apiConnection)
       .then((response) => {
-        setProviders(normalizeProviderList(response))
+        const normalized = normalizeProviderList(response)
+        rememberModelNames(normalized)
+        setProviders(normalized)
       })
       .catch((error) => {
         console.error("[renderer] providers:list failed", error)
@@ -316,6 +318,42 @@ function useLocalProviderState(enabled = true) {
     agent,
     serverReady: !!agent,
   }
+}
+
+// Display names of the models seen in the last provider list, for places
+// that show a model without loading the providers themselves (story cards).
+let modelNames = new Map<string, string>()
+const modelNameListeners = new Set<() => void>()
+
+function rememberModelNames(providers: ProviderListResponse | undefined) {
+  if (!providers) return
+  modelNames = new Map(
+    providers.all.flatMap((provider) =>
+      Object.entries(provider.models).map(([id, model]) => [
+        `${provider.id}/${id}`,
+        model.name || id,
+      ])
+    )
+  )
+  for (const listener of modelNameListeners) listener()
+}
+
+export function useModelDisplayName(
+  providerId: string | null | undefined,
+  modelId: string | null | undefined
+) {
+  const names = React.useSyncExternalStore(
+    (listener) => {
+      modelNameListeners.add(listener)
+      return () => {
+        modelNameListeners.delete(listener)
+      }
+    },
+    () => modelNames,
+    () => modelNames
+  )
+  if (!modelId) return undefined
+  return names.get(`${providerId}/${modelId}`) ?? modelId
 }
 
 function normalizeProviderList(input: ProviderListResponse | undefined) {

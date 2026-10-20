@@ -82,7 +82,10 @@ import {
   useStoryDrawerWidth,
 } from "@/components/backlog/drawer/drawer-resize-handle"
 import { useLatestCallback } from "@/lib/use-latest-callback"
-import { queueComment } from "@/pages/backlog/comment-queue"
+import {
+  queueComment,
+  requestQueuedDelivery,
+} from "@/pages/backlog/comment-queue"
 import { readStoryRunMode, type StoryRunMode } from "@/lib/runtime-preference"
 import { createUserStoryCommentSubmission } from "./user-story-comment-submission"
 import {
@@ -520,6 +523,10 @@ export function UserStoryDrawerPanel({
   const handleCommentSubmit = useLatestCallback(() => {
     void submitComment()
   })
+  // ⌘↵ while the agent works: queue the comment and send it right away.
+  const handleCommentSendNow = useLatestCallback(() => {
+    void submitComment(true)
+  })
   const handleCommentUndo = useLatestCallback(undoCommentMessage)
   const handleOpenDevelopmentFile = useLatestCallback(openDevelopmentFile)
   const handleOpenDevelopmentDiff = useLatestCallback(openDevelopmentDiff)
@@ -684,6 +691,7 @@ export function UserStoryDrawerPanel({
                 onCommentFileAttachmentRemove={removeCommentFileAttachment}
                 onCommentFileAttachmentsAdd={addCommentFileAttachments}
                 onCommentSubmit={handleCommentSubmit}
+                onCommentSendNow={handleCommentSendNow}
                 onAgentPause={
                   userStory
                     ? () => void onStopAgent(userStory, "pause")
@@ -857,7 +865,7 @@ export function UserStoryDrawerPanel({
     setCommentFileAttachments((current) => [...current, attachment])
   }
 
-  async function submitComment() {
+  async function submitComment(sendNow = false) {
     if (!userStory || pendingAction || commentSubmission.pending) return
     const hasCommentAttachments =
       commentCodeSelectionAttachments.length > 0 ||
@@ -868,12 +876,13 @@ export function UserStoryDrawerPanel({
     if (!body && !hasCommentAttachments) return
     // The agent is working: the comment waits for it (or "Send now").
     if (status === "in-progress" && userStory.agentStatus === "Running") {
-      queueComment({
+      const queued = queueComment({
         body,
         codeSelectionAttachments: commentCodeSelectionAttachments,
         fileAttachments: commentFileAttachments,
         storyId: userStory.id,
       })
+      if (sendNow) requestQueuedDelivery(userStory.id, queued.id)
       clearComposerDraft()
       commentValueRef.current = ""
       setComment("")

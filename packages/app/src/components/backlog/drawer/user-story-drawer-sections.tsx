@@ -62,6 +62,7 @@ type UserStoryCommentComposerProps = {
   onCommentFileAttachmentRemove: (id: string) => void
   onCommentFileAttachmentsAdd: (attachments: UserStoryFileAttachment[]) => void
   onCommentSubmit: () => void
+  onCommentSendNow?: () => void
   // Pauses the running agent (the composer's stop button).
   onAgentPause?: () => void
   onFileLinkClick?: (path: string) => void
@@ -241,6 +242,7 @@ function UserStoryCommentComposer({
   onCommentFileAttachmentRemove,
   onCommentFileAttachmentsAdd,
   onCommentSubmit,
+  onCommentSendNow,
   onAgentPause,
   onFileLinkClick,
   status,
@@ -281,9 +283,10 @@ function UserStoryCommentComposer({
       onFileLinkClick={onFileLinkClick}
       onMessageChange={onCommentChange}
       onMessageSubmit={onCommentSubmit}
+      onMessageSendNow={onCommentSendNow}
       placeholder={
         agentRunning
-          ? "Message the agent: it reads it when it finishes, or now if you choose"
+          ? "Message the agent: ↵ when it finishes, ⌘↵ right now"
           : commentPlaceholder(status)
       }
       submitLabel={agentRunning ? "Queue comment" : commentButtonLabel(status)}

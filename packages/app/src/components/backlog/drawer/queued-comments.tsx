@@ -4,6 +4,7 @@ import { QueuedConversationMessage } from "@/components/chat/agent-conversation"
 import {
   removeQueuedComment,
   requestQueuedDelivery,
+  updateQueuedComment,
   useQueuedComments,
 } from "@/pages/backlog/comment-queue"
 
@@ -36,6 +37,7 @@ export function QueuedComments({
             <QueuedConversationMessage
               comment={{ ...comment, author }}
               onFileLinkClick={onFileLinkClick}
+              onEdit={(body) => updateQueuedComment(comment.id, body)}
               onRemove={() => removeQueuedComment(comment.id)}
               onSendNow={() => requestQueuedDelivery(storyId, comment.id)}
             />

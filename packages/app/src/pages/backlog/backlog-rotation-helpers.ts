@@ -174,6 +174,9 @@ export function notifyCommentResponseCompleted(
   })
 }
 
+// Agents that may work at the same time, queue starts and resumes alike.
+export const maxConcurrentDevelopmentStories = 3
+
 export function runningStories(stories: UserStory[]) {
   return stories.filter(
     (story) => story.status === "in-progress" && story.agentStatus !== "Paused"

@@ -102,12 +102,12 @@ import {
   rotationBlocker,
   runFlowState,
   runningAgentRunsForStory,
+  maxConcurrentDevelopmentStories,
   runningStories,
   staleAgentRunAge,
   storyTelemetryCohorts,
 } from "./backlog-rotation-helpers"
 
-const maxConcurrentDevelopmentStories = 3
 const blockerRetryDelay = 30_000
 const previewRecoveryIntervalMs = 30_000
 const agentCompletionRecoveryIntervalMs = 60_000

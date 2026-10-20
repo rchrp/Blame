@@ -12,6 +12,7 @@ import {
   onQueuedDeliveryRequest,
   queueComment,
   queuedComments,
+  requestQueuedDelivery,
   takeQueuedComments,
 } from "@/pages/backlog/comment-queue"
 
@@ -67,9 +68,12 @@ export function useQuickChatQueue({
     [stopAndDeliver]
   )
 
+  // sendNow (⌘↵) queues the message and sends it right away.
   const queue = React.useCallback(
-    (message: QueuedMessage) => {
-      if (key) queueComment({ ...message, storyId: key })
+    (message: QueuedMessage, sendNow = false) => {
+      if (!key) return
+      const queued = queueComment({ ...message, storyId: key })
+      if (sendNow) requestQueuedDelivery(key, queued.id)
     },
     [key]
   )

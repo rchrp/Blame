@@ -571,12 +571,12 @@ function QuickChatProjectPage() {
     toast.success("Message restored to editor.", { position: "bottom-right" })
   }
 
-  async function submitDraft() {
+  async function submitDraft(sendNow = false) {
     if (!draftHasContent() || sending) return
     // The agent is working: the message waits for it (or "Send now").
     if (agentRunning && messageQueue.key) {
       const body = quickChatMessageBody(draft, draftCodeAttachments, draftFileAttachments)
-      messageQueue.queue({ body, codeSelectionAttachments: draftCodeAttachments, fileAttachments: draftFileAttachments })
+      messageQueue.queue({ body, codeSelectionAttachments: draftCodeAttachments, fileAttachments: draftFileAttachments }, sendNow)
       return clearDraft()
     }
     const validationError = quickChatSendValidationError({
@@ -1060,11 +1060,12 @@ function QuickChatProjectPage() {
                       openProjectPath(project?.path, path, platform.openPath)
                     }
                     onMessageChange={setDraft}
-                    onMessageSubmit={submitDraft}
+                    onMessageSubmit={() => void submitDraft()}
+                    onMessageSendNow={() => void submitDraft(true)}
                     onAgentCancel={cancelAgent}
                     placeholder={
                       agentRunning
-                        ? "Message the agent: it reads it when it finishes"
+                        ? "Message the agent: ↵ when it finishes, ⌘↵ right now"
                         : "Ask for a focused code change"
                     }
                     submitLabel={agentRunning ? "Queue message" : "Send"}

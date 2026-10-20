@@ -367,6 +367,7 @@ export function AgentConversationComposer({
   onFileLinkClick,
   onMessageChange,
   onMessageSubmit,
+  onMessageSendNow,
   onAgentCancel,
   placeholder,
   submitLabel,
@@ -396,6 +397,8 @@ export function AgentConversationComposer({
   onFileLinkClick?: (path: string) => void
   onMessageChange: (message: string) => void
   onMessageSubmit: () => void
+  // While the agent runs: ⌘↵ sends the message now instead of queuing it.
+  onMessageSendNow?: () => void
   onAgentCancel?: () => void
   placeholder: string
   submitLabel: string
@@ -443,7 +446,22 @@ export function AgentConversationComposer({
           {title}
         </div>
       ) : null}
-      <div className="relative">
+      <div
+        className="relative"
+        onKeyDownCapture={(event) => {
+          if (
+            !sendWhileRunning ||
+            !onMessageSendNow ||
+            event.key !== "Enter" ||
+            !(event.metaKey || event.ctrlKey) ||
+            event.nativeEvent.isComposing
+          )
+            return
+          event.preventDefault()
+          event.stopPropagation()
+          if (!event.repeat && !disabled && !submitting) onMessageSendNow()
+        }}
+      >
         {turnMetrics ? <AgentTurnIndicator metrics={turnMetrics} /> : null}
         <DraftSavedHint message={message} hidden={submitting || disabled} />
         <MarkdownEditor
@@ -535,8 +553,15 @@ function RunCommentItem({
   run?: AgentConversationRun
 }) {
   const entering = useEnterAnimation(comment?.createdAt)
+  // A queued message can still be edited before it is sent.
+  const [draft, setDraft] = React.useState<string>()
   if (run?.kind === "initial") return null
   if (!comment) return null
+  const editing = Boolean(queued?.onEdit) && draft !== undefined
+  const saveDraft = () => {
+    if (draft?.trim()) queued?.onEdit?.(draft)
+    setDraft(undefined)
+  }
 
   return (
     <div
@@ -552,22 +577,60 @@ function RunCommentItem({
             "max-w-full min-w-0 overflow-hidden rounded-3xl [&>div]:max-w-full [&>div]:min-w-0 [&>div]:bg-transparent [&>div]:p-0 [&>div]:shadow-none [&>div]:ring-0",
             queued
               ? "border border-dashed border-foreground/30 bg-muted/35"
-              : "bg-muted/80 ring-1 ring-foreground/10"
+              : "bg-muted/80 ring-1 ring-foreground/10",
+            queued?.onEdit && !editing && "cursor-text",
+            editing && "border-primary/60"
           )}
+          onClick={
+            queued?.onEdit && !editing ? () => setDraft(comment.body) : undefined
+          }
+          onKeyDown={(event) => {
+            if (!editing) return
+            if (event.key === "Escape") setDraft(undefined)
+            if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
+              event.preventDefault()
+              saveDraft()
+            }
+          }}
         >
           <MarkdownEditor
             codeSelectionAttachments={comment.codeSelectionAttachments ?? []}
             fileAttachments={pendingFileAttachments(
               comment.fileAttachments ?? []
             )}
-            markdown={comment.body}
-            readOnly
+            markdown={editing ? (draft ?? "") : comment.body}
+            onMarkdownChange={editing ? setDraft : undefined}
+            readOnly={!editing}
             onFileLinkClick={onFileLinkClick}
             placeholder=""
             minHeight="min-h-0"
           />
         </div>
-        {queued ? (
+        {queued && editing ? (
+          <div className="flex items-center justify-end gap-1.5">
+            <span className="mr-auto pl-3 text-xs text-muted-foreground">
+              ⌘↵ to save · Esc to cancel
+            </span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 rounded-full px-3 text-xs"
+              onClick={() => setDraft(undefined)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              className="h-7 rounded-full px-3 text-xs"
+              disabled={!draft?.trim()}
+              onClick={saveDraft}
+            >
+              Save
+            </Button>
+          </div>
+        ) : queued ? (
           <QueuedMessageFooter actions={queued} />
         ) : (
         <div className="flex items-center justify-end gap-2">
@@ -596,6 +659,8 @@ function RunCommentItem({
 }
 
 type QueuedMessageActions = {
+  // Saves a new text; editing is offered only when set.
+  onEdit?(body: string): void
   onRemove(): void
   onSendNow(): void
 }
@@ -625,7 +690,9 @@ function QueuedMessageFooter({ actions }: { actions: QueuedMessageActions }) {
     <div className="flex items-center justify-end gap-1.5">
       <span className="mr-auto flex items-center gap-1.5 pl-3 text-xs text-muted-foreground">
         <ClockIcon className="size-3.5" />
-        Queued · sent when the agent finishes
+        {actions.onEdit
+          ? "Queued · click to edit"
+          : "Queued · sent when the agent finishes"}
       </span>
       <Button
         type="button"

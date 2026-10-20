@@ -63,6 +63,10 @@ export function removeQueuedComment(id: string) {
   save(queue.filter((comment) => comment.id !== id))
 }
 
+export function updateQueuedComment(id: string, body: string) {
+  save(queue.map((comment) => (comment.id === id ? { ...comment, body } : comment)))
+}
+
 export function queuedComments(storyId: string) {
   return queue.filter((comment) => comment.storyId === storyId)
 }

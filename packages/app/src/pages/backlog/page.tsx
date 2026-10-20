@@ -147,6 +147,7 @@ import {
   useQueuedCommentDelivery,
   useStoryComments,
 } from "./use-story-comments"
+import { useResumeSlots } from "./use-resume-slots"
 import { withStoryTransition } from "./story-transitions"
 
 const agentEventPersistDelayMs = 1_500
@@ -1027,7 +1028,7 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
     ]
   )
   // One resume at a time per story; failures say so instead of vanishing.
-  const unpauseAgent = useLatestCallback(async (story: UserStory) => {
+  const resumeInSlot = useLatestCallback(async (story: UserStory) => {
     const resumed = await withStoryTransition(story.id, () =>
       resumeStoryAgent(story).catch((error: unknown) => {
         toast.error("Couldn't resume the agent", {
@@ -1038,6 +1039,10 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
       })
     )
     return resumed ?? story
+  })
+  const unpauseAgent = useResumeSlots({
+    resume: resumeInSlot,
+    stories: backlog.stories,
   })
   const requestChanges = useStoryComments({
     backlog,
