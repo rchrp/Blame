@@ -199,6 +199,7 @@ router
     router
       .group(() => {
         router.get('catalog', [ModelCatalogController, 'show'])
+        router.get('catalog/model', [ModelCatalogController, 'model'])
         router.get('credentials', [ProviderCredentialsController, 'index'])
         router.post('credentials', [ProviderCredentialsController, 'store'])
         router.post('credentials/oauth', [ProviderCredentialsController, 'storeOAuth'])

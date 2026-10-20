@@ -203,6 +203,6 @@ test("standalone payload ships the patched SDK used by the managed hub", async (
       model: { id: "fixture", provider: "anthropic", info: { maxInputTokens: 922000, contextWindow: 1050000 } },
     });
     assert.equal(result, undefined);
-    assert.match(sdk.resolveHubBuildId(), /^blame-sdk-image-budget-v1-/);
+    assert.match(sdk.resolveHubBuildId(), /^blame-sdk-v1-/);
   });
 });

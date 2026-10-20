@@ -2,11 +2,12 @@
 
 Everything is built on GitHub-hosted runners and published as a GitHub Release. A release starts when you push a tag.
 
-| Workflow                                                 | Trigger                         | Result                                                                   |
-| -------------------------------------------------------- | ------------------------------- | ------------------------------------------------------------------------ |
-| [CI](.github/workflows/ci.yml)                           | Pull requests, pushes to `main` | Line budgets, typecheck, and tests                                       |
-| [Release desktop](.github/workflows/release-desktop.yml) | Tag `v<semver>`                 | **Draft** release with the installers, update metadata, and `SHA256SUMS` |
-| [Release runtime](.github/workflows/release-runtime.yml) | Tag `runtime-v<version>`        | Published release with the four runtime images and their `manifest.json` |
+| Workflow                                                   | Trigger                         | Result                                                                   |
+| ---------------------------------------------------------- | ------------------------------- | ------------------------------------------------------------------------ |
+| [CI](.github/workflows/ci.yml)                             | Pull requests, pushes to `main` | Line budgets, typecheck, and tests                                       |
+| [Release desktop](.github/workflows/release-desktop.yml)   | Tag `v<semver>`                 | **Draft** release with the installers, update metadata, and `SHA256SUMS` |
+| [Release runtime](.github/workflows/release-runtime.yml)   | Tag `runtime-v<version>`        | Published release with the four runtime images and their `manifest.json` |
+| [Update Cline SDK](.github/workflows/cline-sdk-update.yml) | Every Monday, or manually       | Pull request updating every `@cline/*` package and the runtime version   |
 
 Users never download from GitHub URLs directly. [`download.blame.so`](deploy/downloads) is a stable redirector, so you can change the hosting later without breaking installed apps:
 
@@ -51,6 +52,24 @@ The Windows (WSL rootfs) and macOS (Lima image) runtimes are versioned separatel
 
 Never delete a runtime release that a published desktop version still references.
 
+## Cline SDK updates
+
+Blame pins every `@cline/*` package to one exact version. The SDK is also baked into the runtime images. Every Monday, the **Update Cline SDK** workflow compares that version with npm's latest release. When a newer one exists, it opens a pull request (or refreshes the open one) that:
+
+- pins every `@cline/*` dependency to the new version and updates `pnpm-lock.yaml`,
+- writes the new `clineSdkVersion` into both runtime manifests and bumps `runtimeVersion`,
+- updates the version pinned by the sandbox runner image and the runtime provisioning script fallbacks,
+- regenerates Blame's `@cline/core` patch with `scripts/patch-cline-core.mjs` (see `patches/README.md`),
+- lists the releases and SDK commits since the current version.
+
+When the patch cannot be regenerated, the pull request opens as a draft that names it. Once a maintainer has pushed commits to the pull request, the workflow no longer overwrites it and comments when a newer Cline release appears.
+
+The pull request is never merged automatically. CI runs the **Agent runtime tests**, which include a smoke test that drives a real Cline session through Blame's configuration. After merging, release the runtime and then the desktop app, as the pull request describes.
+
+To check by hand: `pnpm update:cline-sdk check`.
+
+New models do not wait for an SDK update. The API refreshes its catalog from the live Cline catalog every few hours, and desktop sessions fetch the metadata of a model their bundled SDK does not know yet from `GET /api/v1/providers/catalog/model`.
+
 ## Local builds
 
 Use local builds to try a change before you tag it. They never publish anything.
@@ -76,6 +95,11 @@ MAC_CSC_LINK
 ```
 
 Optional variables: `BLAME_HOMEPAGE`, `BLAME_MAINTAINER_EMAIL`, `BLAME_MAINTAINER_NAME`.
+
+For Cline SDK update pull requests:
+
+- Allow GitHub Actions to open pull requests: **Settings → Actions → General → Allow GitHub Actions to create and approve pull requests**.
+- Optional secret `CLINE_SDK_UPDATE_TOKEN`: a fine-grained token with **Contents** and **Pull requests** write access on this repository. Pull requests opened with the default token do not trigger CI. Without this secret, close and reopen the pull request to start CI.
 
 ## Sandbox runner image
 

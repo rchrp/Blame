@@ -1741,6 +1741,8 @@ function normalizedFinishReason(
   if (["tool-calls", "tool_calls"].includes(reason)) return "tool-calls";
   if (["length", "max_tokens", "max-tokens"].includes(reason))
     return "max-tokens";
+  if (["content-filter", "content_filter"].includes(reason))
+    return "content-filter";
   if (["cancelled", "canceled", "aborted"].includes(reason)) return "aborted";
   if (["failed", "error", "mistake-limit", "mistake_limit"].includes(reason))
     return "error";

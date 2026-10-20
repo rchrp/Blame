@@ -23,6 +23,24 @@ jobs:
           node-version: 24
       - run: node scripts/check-line-budgets.mjs
 
+  agent-runtime:
+    name: Agent runtime tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      # Node test events used as harness evidence require Node 24.
+      - uses: ./.github/actions/setup
+        with:
+          node-version: 24
+      # Harness tests create and commit to throwaway repositories.
+      - run: |
+          git config --global user.name "Blame CI"
+          git config --global user.email "ci@blame.invalid"
+      # The runtime imports compiled workspace packages.
+      - run: pnpm exec turbo run build --filter="@blame/agent-runtime^..."
+      # Includes the Cline SDK smoke test that guards SDK upgrades.
+      - run: pnpm --filter @blame/agent-runtime test
+
   test:
     name: Typecheck and test
     runs-on: ubuntu-latest

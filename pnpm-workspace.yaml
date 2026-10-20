@@ -27,5 +27,5 @@ overrides:
   "brace-expansion@>=5.0.0 <5.0.9": 5.0.9
 
 patchedDependencies:
-  '@cline/core@0.0.82': patches/@cline__core@0.0.82.patch
+  '@cline/core@0.0.95': patches/@cline__core@0.0.95.patch
   app-builder-lib@26.8.1: patches/app-builder-lib@26.8.1.patch

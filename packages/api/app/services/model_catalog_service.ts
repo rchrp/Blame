@@ -15,6 +15,12 @@ import { buildModelRecommendations } from '#services/model_recommendation_servic
 import ModelUsageProfileService from '#services/model_usage_profile_service'
 import { fetchOpenRouterCatalog } from '#services/openrouter_catalog_client'
 import { credentialModelIds } from '#services/provider_credentials_service'
+import {
+  findModelInfo,
+  mergeModelInfo,
+  saveModelInfo,
+  type ModelInfoCatalog,
+} from '#services/model_info_catalog'
 import env from '#start/env'
 import logger from '@adonisjs/core/services/logger'
 import type { ModelInfo, ProviderInfo } from '@cline/llms'
@@ -22,9 +28,10 @@ import { createHash } from 'node:crypto'
 import { DateTime } from 'luxon'
 
 const snapshotId = 'global'
-const catalogPolicyVersion = 4
+const catalogPolicyVersion = 5
 const externalCliProviderIds = new Set(['claude-code', 'openai-codex-cli'])
 let authoritativeProviderIds = new Set<string>()
+let staticModelInfo: ModelInfoCatalog = {}
 let staticCatalogPromise: Promise<CatalogProvider[]> | undefined
 let refreshPromise: Promise<ModelCatalogSnapshot> | undefined
 
@@ -51,6 +58,12 @@ export default class ModelCatalogService {
     }
   }
 
+  /** Complete Cline metadata for one model, or undefined when the catalog does not know it. */
+  async modelInfo(providerId: string, modelId: string) {
+    await this.snapshot()
+    return findModelInfo(providerId, modelId)
+  }
+
   private async snapshot() {
     const staticCatalog = await loadStaticCatalog()
     const catalogHash = hashCatalog(staticCatalog)
@@ -75,6 +88,9 @@ async function buildStaticCatalog() {
     providers
       .filter(({ authoritativeModels }) => authoritativeModels)
       .map(({ provider }) => provider.id)
+  )
+  staticModelInfo = Object.fromEntries(
+    providers.map(({ provider, models }) => [provider.id, models])
   )
   return providers.map(({ provider, models }) => catalogProvider(provider, models))
 }
@@ -180,13 +196,14 @@ async function performRefresh(
   catalogHash: string,
   previous: ModelCatalogSnapshot | null
 ) {
-  const providers = await refreshedProviders(staticCatalog)
+  const { providers, liveModelInfo } = await refreshedProviders(staticCatalog)
   const openRouterModels = await loadOpenRouterModels()
   const enriched = enrichProviders(providers, openRouterModels, previous)
   const references = openRouterModels.length
     ? openRouterModels
     : ((previous && parseSnapshot(previous).openRouterModels) ?? [])
   const generatedAt = DateTime.utc()
+  await saveModelInfo(mergeModelInfo(staticModelInfo, liveModelInfo), catalogHash, generatedAt)
   return ModelCatalogSnapshot.updateOrCreate(
     { id: snapshotId },
     {
@@ -202,32 +219,42 @@ async function performRefresh(
 }
 
 async function refreshedProviders(staticCatalog: CatalogProvider[]) {
-  if (env.get('BLAME_MODEL_CATALOG_LIVE_REFRESH') === false) return staticCatalog
+  const unchanged = { providers: staticCatalog, liveModelInfo: {} as ModelInfoCatalog }
+  if (env.get('BLAME_MODEL_CATALOG_LIVE_REFRESH') === false) return unchanged
   try {
     const url = env.get('BLAME_MODELS_DEV_URL') ?? 'https://models.dev/api.json'
     const live = await fetchClineLiveProviderModels(
       url,
       staticCatalog.map((provider) => provider.id)
     )
-    return staticCatalog.map((provider) => mergeLiveProvider(provider, live))
+    const allowed = Object.fromEntries(
+      staticCatalog.map((provider) => [provider.id, allowedLiveModels(provider, live)])
+    )
+    return {
+      providers: staticCatalog.map((provider) => mergeLiveProvider(provider, allowed[provider.id])),
+      liveModelInfo: allowed,
+    }
   } catch (error) {
     logger.warn({ err: error }, 'Unable to refresh the live Cline model catalog')
-    return staticCatalog
+    return unchanged
   }
 }
 
-function mergeLiveProvider(
+function allowedLiveModels(
   provider: CatalogProvider,
   live: Record<string, Record<string, ModelInfo>>
 ) {
   const liveModels = live[provider.id] ?? {}
-  const allowedModels = authoritativeProviderIds.has(provider.id)
+  return authoritativeProviderIds.has(provider.id)
     ? Object.fromEntries(
         Object.keys(provider.models)
           .filter((modelId) => modelId in liveModels)
           .map((modelId) => [modelId, liveModels[modelId]])
       )
     : liveModels
+}
+
+function mergeLiveProvider(provider: CatalogProvider, allowedModels: Record<string, ModelInfo>) {
   const normalized = Object.fromEntries(
     Object.entries(allowedModels).map(([modelId, model]) => [modelId, catalogModel(modelId, model)])
   )

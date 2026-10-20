@@ -15,6 +15,7 @@ import { previewInitializationRepairTool } from "./preview-harness-tools.js";
 
 import type { ClineCoreStartInput, CoreSessionEvent } from "@cline/sdk";
 import { ClineFreeModelLimitError, ClineNotSubscribedError } from "@cline/llms";
+import { USER_REJECTED_TOOL_REASON } from "@cline/shared";
 import { SessionJournal } from "./harness/session-journal.js";
 import { executeLightWorkspaceRequest } from "./harness/light-executor.js";
 import { RunLifecycleRegistry } from "./harness/run-lifecycle.js";
@@ -2502,3 +2503,68 @@ for (const failed of [false, true]) {
     } finally { await runtime.shutdown(); await rm(root, { recursive: true, force: true }); }
   });
 }
+
+test("gives the model a reason for every refused tool call", async () => {
+  const approvals: { id: string }[] = [];
+  const runtime = new BlameAgentRuntime({
+    emit: (event) => {
+      if (event.type === "approval") approvals.push(event.payload as { id: string });
+    },
+  });
+  type Approval = { approved: boolean; reason?: string };
+  const internals = runtime as unknown as {
+    requestApproval(request: unknown): Promise<Approval> | Approval;
+    resolveApproval(input: { requestId: string; decision: string }): boolean;
+    resolvePendingApprovals(): void;
+  };
+  const request = (input: unknown, toolName = "edit_code") =>
+    internals.requestApproval({ input, toolName });
+
+  assert.deepEqual(await request({ command: "sudo reboot" }, "run_commands"), {
+    approved: false,
+    reason: "Command blocked by security policy",
+  });
+
+  const denied = request({ path: "a.ts" });
+  internals.resolveApproval({ requestId: approvals[0]!.id, decision: "deny" });
+  assert.deepEqual(await denied, { approved: false, reason: USER_REJECTED_TOOL_REASON });
+
+  const approved = request({ path: "a.ts" });
+  internals.resolveApproval({ requestId: approvals[1]!.id, decision: "approve" });
+  assert.deepEqual(await approved, { approved: true });
+
+  const stopped = request({ path: "a.ts" });
+  internals.resolvePendingApprovals();
+  const result = await stopped;
+  assert.equal(result.approved, false);
+  assert.match(result.reason ?? "", /session stopped before the user answered/);
+});
+
+test("keeps a still-valid OAuth token when a forced refresh fails", async () => {
+  const runtime = new BlameAgentRuntime();
+  const credential = (expires: number) => ({
+    authMethod: "oauth",
+    providerId: "openai-codex",
+    oauthCredentials: { access: "access", refresh: "refresh", expires },
+  });
+  const internals = runtime as unknown as {
+    oauthProvider(providerId: string): Promise<unknown>;
+    refreshOAuthCredential(
+      connection: unknown,
+      input: ReturnType<typeof credential>,
+      options: { force: boolean },
+    ): Promise<unknown>;
+  };
+  internals.oauthProvider = async () => ({
+    refreshToken: async () => {
+      throw new Error("refresh endpoint unavailable");
+    },
+  });
+
+  const valid = credential(Date.now() + 3_600_000);
+  assert.equal(await internals.refreshOAuthCredential({}, valid, { force: true }), valid);
+  await assert.rejects(
+    internals.refreshOAuthCredential({}, credential(Date.now() - 1), { force: true }),
+    /refresh endpoint unavailable/,
+  );
+});

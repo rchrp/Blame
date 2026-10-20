@@ -149,13 +149,16 @@ import { writeTools } from "./cline-tool-policy.js";
 import {
   deleteProviderCredential,
   listProjectMemories,
+  fetchCatalogModel,
   listProviders,
   resolveProviderCredential,
   saveOAuthCredential,
   saveProjectMemory,
   saveProviderCredential,
 } from "./cloud-api.js";
+import { USER_REJECTED_TOOL_REASON } from "@cline/shared";
 import { fallbackCommitSubject } from "./commit-message.js";
+import { loadCatalogModel } from "./supplemental-model-config.js";
 import { createContextProjectionExtension } from "./context-projection.js";
 import {
   appendInitialTaskBriefing,
@@ -329,6 +332,8 @@ const runtimeArtifactPathspecs = runtimeArtifactPaths.map(
 );
 const openAICompatibleProviderID = "openai-compatible";
 const runtimePrewarmSessionId = "blame-runtime-prewarm";
+const stoppedApprovalReason =
+  "This tool call was not executed because the session stopped before the user answered.";
 const cloudProjectMemoryPersistence: ProjectMemoryPersistence = {
   list: listProjectMemories,
   save: saveProjectMemory,
@@ -336,6 +341,8 @@ const cloudProjectMemoryPersistence: ProjectMemoryPersistence = {
 
 type ToolApprovalResult = {
   approved: boolean;
+  /** Model-facing reason; Cline appends its rejection guidance. */
+  reason?: string;
 };
 
 type RuntimeCredentialInput = {
@@ -693,10 +700,22 @@ export class BlameAgentRuntime {
     const startedAt = Date.now();
     const projectMemoryPromise = this.loadProjectMemory(input);
     try {
-      const credential = await resolveProviderCredential(input.apiConnection, {
-        providerId: input.providerId,
-        label: credentialLabel(input),
-      });
+      const [credential] = await Promise.all([
+        resolveProviderCredential(input.apiConnection, {
+          providerId: input.providerId,
+          label: credentialLabel(input),
+        }),
+        loadCatalogModel(
+          () =>
+            fetchCatalogModel(
+              input.apiConnection,
+              input.providerId,
+              input.modelId,
+            ),
+          input.providerId,
+          input.modelId,
+        ),
+      ]);
       await appendLog(
         startLogFile,
         "credential resolved",
@@ -3471,7 +3490,7 @@ export class BlameAgentRuntime {
 
   private resolvePendingApprovals() {
     this.pendingApprovals.forEach((approval) =>
-      approval.resolve({ approved: false }),
+      approval.resolve({ approved: false, reason: stoppedApprovalReason }),
     );
     this.pendingApprovals.clear();
     this.alwaysAllowedTools.clear();
@@ -3490,7 +3509,7 @@ export class BlameAgentRuntime {
     if (blockedReason) {
       if (request.sessionId)
         this.emitSessionError(request.sessionId, blockedReason);
-      return { approved: false };
+      return { approved: false, reason: blockedReason };
     }
     if (
       !writeTools.includes(toolName) ||
@@ -3548,7 +3567,11 @@ export class BlameAgentRuntime {
         },
       );
     }
-    pending.resolve({ approved: input.decision !== "deny" });
+    pending.resolve(
+      input.decision === "deny"
+        ? { approved: false, reason: USER_REJECTED_TOOL_REASON }
+        : { approved: true },
+    );
     return true;
   }
 
@@ -3615,7 +3638,15 @@ export class BlameAgentRuntime {
       return credential;
 
     const provider = await this.oauthProvider(credential.providerId);
-    const refreshed = await provider.refreshToken(credential.oauthCredentials);
+    let refreshed: Awaited<ReturnType<typeof provider.refreshToken>>;
+    try {
+      refreshed = await provider.refreshToken(credential.oauthCredentials);
+    } catch (error) {
+      // A failed proactive refresh keeps a token that is still valid.
+      if (credential.oauthCredentials.expires > Date.now() + 60_000)
+        return credential;
+      throw error;
+    }
     const saved = await saveOAuthCredential(connection, {
       providerId: credential.providerId,
       label: credential.label,

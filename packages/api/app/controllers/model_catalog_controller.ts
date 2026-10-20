@@ -8,4 +8,18 @@ export default class ModelCatalogController {
     const credentials = await new ProviderCredentialsService().list(userId)
     return serialize(await new ModelCatalogService().catalog(userId, credentials))
   }
+
+  async model({ request, response, serialize }: HttpContext) {
+    const { providerId, modelId } = request.qs()
+    if (!nonEmptyString(providerId) || !nonEmptyString(modelId)) {
+      return response.badRequest({ message: 'providerId and modelId are required' })
+    }
+    const model = await new ModelCatalogService().modelInfo(providerId, modelId)
+    if (!model) return response.notFound({ message: 'Unknown model' })
+    return serialize(model)
+  }
+}
+
+function nonEmptyString(value: unknown): value is string {
+  return typeof value === 'string' && value.trim().length > 0
 }

@@ -51,7 +51,8 @@ test("session normalization preserves the serializable image bound", () => {
 test("image transport bytes no longer compact a small visual context", async () => {
   const messages = imageMessages();
   const stored = JSON.stringify(messages);
-  assert.ok(await compact(messages, { enabled: true, strategy: "basic" }));
+  // Since Cline 0.0.95 the native estimate no longer bills base64 bytes either.
+  assert.equal(await compact(messages, { enabled: true, strategy: "basic" }), undefined);
   assert.equal(await compact(messages, configured()), undefined);
   assert.equal(JSON.stringify(messages), stored);
 });
@@ -68,12 +69,15 @@ test("long text compaction matches the native control", async () => {
   assert.deepEqual(corrected.messages.map(({ role, content }: Message) => ({ role, content })), original.messages.map(({ role, content }: Message) => ({ role, content })));
 });
 
-test("image-shaped tool arguments remain text in the token estimate", async () => {
+test("image-shaped tool arguments follow Cline's image detection", async () => {
+  // Cline 0.0.95 bounds any image-shaped node, tool arguments included. The
+  // bound only changes the per-image cost, never which nodes count as images.
   const messages: Message[] = [{ role: "user", content: "Store the payload." },
     { role: "assistant", content: [{ type: "tool_use", id: "store", name: "store", input: { payload: image } }] },
     { role: "user", content: [{ type: "tool_result", tool_use_id: "store", content: "stored" }] },
     { role: "assistant", content: "Completed." }];
-  assert.ok(await compact(messages, configured(), 100_000));
+  assert.equal(await compact(messages, { enabled: true, strategy: "basic" }, 10_000), undefined);
+  assert.ok(await compact(messages, { ...configured(), imageTokenLimit: 20_000 }, 10_000));
 });
 
 test("invalid image bounds retain native behavior", async () => {

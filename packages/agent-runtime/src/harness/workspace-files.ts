@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { createReadStream } from "node:fs";
+import { createReadStream, realpathSync } from "node:fs";
 import { execFile } from "node:child_process";
 import {
   lstat,
@@ -53,9 +53,13 @@ export type WorkspaceSnapshot = {
 
 export class WorkspaceFiles {
   readonly root: string;
+  // Tools and stack traces may report the symlink-free spelling of the root
+  // (for example /private/var for /var on macOS).
+  private readonly physicalRoot: string;
 
   constructor(root: string) {
     this.root = resolve(root);
+    this.physicalRoot = physicalPath(this.root);
   }
 
   async snapshot(signal?: AbortSignal): Promise<WorkspaceSnapshot> {
@@ -216,11 +220,18 @@ export class WorkspaceFiles {
       throw new Error("A non-empty workspace path is required.");
     const portable = path.replaceAll("\\", "/").replace(/^\.\//, "");
     const absolute = resolve(this.root, portable);
-    const local = relative(this.root, absolute);
+    const local = this.localPath(absolute);
     if (!local || local === ".") return ".";
     if (local === ".." || local.startsWith(`..${sep}`) || isAbsolute(local))
       throw new Error("Path escapes the workspace root.");
     return local.split(sep).join("/");
+  }
+
+  private localPath(absolute: string) {
+    const local = relative(this.root, absolute);
+    if (this.physicalRoot === this.root || !escapesRoot(local)) return local;
+    const physical = relative(this.physicalRoot, absolute);
+    return escapesRoot(physical) ? local : physical;
   }
 
   private async resolveExisting(path: string) {
@@ -452,4 +463,16 @@ async function hashFileState(path: string, mode: number, signal?: AbortSignal) {
     state.update(chunk);
   }
   return { contentHash: content.digest("hex"), digest: state.digest("hex") };
+}
+
+function escapesRoot(local: string) {
+  return local === ".." || local.startsWith(`..${sep}`) || isAbsolute(local);
+}
+
+function physicalPath(path: string) {
+  try {
+    return realpathSync(path);
+  } catch {
+    return path;
+  }
 }

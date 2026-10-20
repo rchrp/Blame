@@ -69,7 +69,7 @@ export async function buildSemanticHarnessPayload({ outputPaths, runtimeVersion 
 
 async function copyRuntimeSdk(staging) {
   const coreRoot = await runtimeCorePackagePath();
-  await access(join(coreRoot, "dist/image-token-estimation.js"));
+  await access(join(coreRoot, "dist/blame-patch.json"));
   await cp(coreRoot, join(staging, "vendor/cline-core"), { recursive: true });
   return JSON.parse(await readFile(join(coreRoot, "package.json"), "utf8"));
 }

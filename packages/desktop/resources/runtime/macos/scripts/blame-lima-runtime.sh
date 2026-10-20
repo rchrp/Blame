@@ -7,7 +7,7 @@ manifest_path="$runtime_home/manifest.json"
 runtime_version="$(sed -n 's/.*"runtimeVersion"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$manifest_path" | head -n 1)"
 runtime_version="${runtime_version:-1}"
 manifest_cline_sdk_version="$(sed -n 's/.*"clineSdkVersion"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$manifest_path" | head -n 1)"
-cline_sdk_version="${BLAME_CLINE_SDK_VERSION:-${manifest_cline_sdk_version:-0.0.82}}"
+cline_sdk_version="${BLAME_CLINE_SDK_VERSION:-${manifest_cline_sdk_version:-0.0.95}}"
 runtime_agent_version="$(sed -n 's/.*"runtimeAgentVersion"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$manifest_path" | head -n 1)"
 runtime_agent_version="${runtime_agent_version:-1}"
 semantic_harness_payload="$runtime_home/payloads/blame-semantic-harness.tgz"
@@ -169,7 +169,7 @@ if (!fs.existsSync(sdkPackage) || !coreRoot) process.exit(1);
 const sdk = JSON.parse(fs.readFileSync(sdkPackage, "utf8"));
 const core = JSON.parse(fs.readFileSync(path.join(coreRoot, "package.json"), "utf8"));
 const sdkEntry = path.join(root, "@cline/sdk/dist/index.js");
-process.exit(sdk.version === version && core.version === version && fs.existsSync(sdkEntry) && fs.existsSync(path.join(coreRoot, "dist/image-token-estimation.js")) ? 0 : 1);
+process.exit(sdk.version === version && core.version === version && fs.existsSync(sdkEntry) && fs.existsSync(path.join(coreRoot, "dist/blame-patch.json")) ? 0 : 1);
 NODE
 }
 check host-home test -d "$host_mount"

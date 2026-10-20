@@ -28,6 +28,13 @@ catalog changes. Its subscription allowlist remains in force; an API alias does
 not count as official availability for a subscription provider. Direct live
 provider metadata takes priority over a fallback for that same provider.
 
+The API also stores the complete Cline metadata of every catalog model, from its
+bundled Cline release and the live catalog, and serves one entry at
+`GET /api/v1/providers/catalog/model?providerId=…&modelId=…`. When a desktop
+session starts with a model its bundled Cline registry does not know, the runtime
+fetches that entry alongside the credential and applies it like a supplemental
+model. A bundled supplemental entry remains the offline fallback.
+
 `appendProductionConfig` passes missing model metadata through Cline's serializable
 `knownModels` field. This covers the main agent, utility sessions and remote hub
 starts without modifying Cline's installed packages. Explicit session overrides

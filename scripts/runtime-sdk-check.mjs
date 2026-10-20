@@ -13,7 +13,7 @@ export async function verifyPackagedSdk(packageRoot, version) {
     }
     await access(join(directory, "dist/index.js"));
   }
-  await access(join(core, "dist/image-token-estimation.js"));
+  await access(join(core, "dist/blame-patch.json"));
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

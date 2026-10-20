@@ -15,7 +15,7 @@ $ClineSdkVersion = if ($env:BLAME_CLINE_SDK_VERSION) {
 } elseif ($Manifest.PSObject.Properties["clineSdkVersion"]) {
   [string]$Manifest.clineSdkVersion
 } else {
-  "0.0.82"
+  "0.0.95"
 }
 $SemanticHarnessPayload = Join-Path $RuntimeHome "payloads\blame-semantic-harness.tgz"
 $SemanticHarnessSha256 = if (Test-Path $SemanticHarnessPayload) {
@@ -213,7 +213,7 @@ if (!fs.existsSync(sdkPackage) || !coreRoot) process.exit(1);
 const sdk = JSON.parse(fs.readFileSync(sdkPackage, "utf8"));
 const core = JSON.parse(fs.readFileSync(path.join(coreRoot, "package.json"), "utf8"));
 const sdkEntry = path.join(root, "@cline/sdk/dist/index.js");
-process.exit(sdk.version === version && core.version === version && fs.existsSync(sdkEntry) && fs.existsSync(path.join(coreRoot, "dist/image-token-estimation.js")) ? 0 : 1);
+process.exit(sdk.version === version && core.version === version && fs.existsSync(sdkEntry) && fs.existsSync(path.join(coreRoot, "dist/blame-patch.json")) ? 0 : 1);
 NODE
 }
 check agent test -x /usr/local/bin/blame-runtime-agent
@@ -502,7 +502,7 @@ const sdkEntry = path.join(root, "@cline/sdk/dist/index.js");
 if (!fs.existsSync(sdkPackage) || !coreRoot) process.exit(1);
 const sdk = JSON.parse(fs.readFileSync(sdkPackage, "utf8"));
 const core = JSON.parse(fs.readFileSync(path.join(coreRoot, "package.json"), "utf8"));
-process.exit(sdk.version === version && core.version === version && fs.existsSync(sdkEntry) && fs.existsSync(path.join(coreRoot, "dist/image-token-estimation.js")) ? 0 : 1);
+process.exit(sdk.version === version && core.version === version && fs.existsSync(sdkEntry) && fs.existsSync(path.join(coreRoot, "dist/blame-patch.json")) ? 0 : 1);
 NODE
 }
 version_ok &&

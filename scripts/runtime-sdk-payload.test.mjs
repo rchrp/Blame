@@ -22,7 +22,7 @@ async function sdkFixture(root, version, patched) {
   const core = join(root, "../vendor/cline-core");
   await mkdir(join(core, "dist"), { recursive: true });
   await writeFile(join(core, "package.json"), JSON.stringify({ name: "@cline/core", version }));
-  await writeFile(join(core, "dist/image-token-estimation.js"), "");
+  await writeFile(join(core, "dist/blame-patch.json"), "");
 }
 
 function healthCheck(source, globalRoot) {
