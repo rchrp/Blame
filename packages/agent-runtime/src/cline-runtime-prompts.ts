@@ -29,6 +29,7 @@ import type {
 } from "./types.js";
 
 const attachmentDirectoryName = ".blame/attachments";
+const untitledUserStoryTitle = "Untitled user story";
 
 type DevelopmentUserInput = {
   prompt: string;
@@ -102,7 +103,13 @@ function developmentStoryPrompt(
   input: DevelopmentPromptInput,
   attachments: DevelopmentAttachmentInput = { userFiles: [], userImages: [] },
 ) {
-  const prompt = [`Backlog item: ${input.title}`, "", input.summary];
+  // The app saves this placeholder until the generated title arrives. The run
+  // starts before that, and the summary already carries the whole request.
+  const title = input.title.trim();
+  const prompt =
+    title && title !== untitledUserStoryTitle
+      ? [`Backlog item: ${title}`, "", input.summary]
+      : [input.summary];
   const storyAttachments = codeSelectionAttachmentsMarkdown(
     input.codeSelectionAttachments,
   );
