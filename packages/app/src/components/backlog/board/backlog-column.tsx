@@ -9,6 +9,11 @@ import {
 } from "@/components/backlog/data/backlog-data"
 import type { OpenDrawer } from "@/components/backlog/shared/backlog-types"
 import { UserStoryCard } from "@/components/backlog/board/user-story-card"
+import {
+  ColumnDropZones,
+  DraggableStory,
+  useColumnDrag,
+} from "@/components/backlog/board/backlog-drag-drop"
 import { equalUserStoryCardStory } from "@/components/backlog/board/user-story-card-equality"
 import type { UserStoryDiffStats } from "@/components/backlog/development/user-story-diff-stats"
 import type {
@@ -123,8 +128,12 @@ export const BacklogColumn = React.memo(function BacklogColumn({
     return () => observer.disconnect()
   }, [hasMoreStories, loadMoreStories])
 
+  const drag = useColumnDrag(column.id)
+
   return (
     <KanbanColumn
+      dimmed={drag.state === "disabled"}
+      overlay={<ColumnDropZones actions={drag.actions} overId={drag.overId} />}
       viewportRef={viewportRef}
       header={
         <BacklogColumnHeader
@@ -136,24 +145,29 @@ export const BacklogColumn = React.memo(function BacklogColumn({
       }
     >
       {visibleStories.map((story) => (
-        <UserStoryCard
+        <DraggableStory
           key={story.id}
-          cleanup={storyCleanup?.(story)}
-          diffStats={diffStats?.(story)}
-          onAction={onAction}
-          onDeleteUserStory={onDeleteUserStory}
-          onOpenDrawer={onOpenDrawer}
-          onOpenWorktree={onOpenWorktree}
-          onReject={onReject}
-          reviewDiffEmpty={reviewDiffEmpty?.(story)}
-          onStopAgent={onStopAgent}
-          onUnpauseAgent={onUnpauseAgent}
-          setupInitializing={
-            storySetupInitializing?.(story) || queueInitializing
-          }
+          disabled={storyCleanup?.(story) || storySetupInitializing?.(story)}
           story={story}
-          titleGenerating={storyTitleGenerating?.(story)}
-        />
+        >
+          <UserStoryCard
+            cleanup={storyCleanup?.(story)}
+            diffStats={diffStats?.(story)}
+            onAction={onAction}
+            onDeleteUserStory={onDeleteUserStory}
+            onOpenDrawer={onOpenDrawer}
+            onOpenWorktree={onOpenWorktree}
+            onReject={onReject}
+            reviewDiffEmpty={reviewDiffEmpty?.(story)}
+            onStopAgent={onStopAgent}
+            onUnpauseAgent={onUnpauseAgent}
+            setupInitializing={
+              storySetupInitializing?.(story) || queueInitializing
+            }
+            story={story}
+            titleGenerating={storyTitleGenerating?.(story)}
+          />
+        </DraggableStory>
       ))}
       {hasMoreStories && <div ref={loadMoreRef} className="h-px" />}
       {loading && !stories.length

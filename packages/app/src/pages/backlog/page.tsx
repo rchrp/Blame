@@ -81,6 +81,7 @@ import {
   useProjectInitialization,
 } from "@/components/project-initialization/use-project-initialization"
 import { KanbanBoard } from "@/components/shared/kanban-board"
+import { BacklogDragDrop } from "@/components/backlog/board/backlog-drag-drop"
 import { useCloudAuth } from "@/context/cloud-auth"
 import {
   usePlatform,
@@ -1465,6 +1466,11 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
         <OpenProjectEmptyState description="Open a project to plan user stories and let agents build them." />
       )}
       {backlog.projectPath ? (
+      // Dropping a card runs the same action as its button.
+      <BacklogDragDrop
+        onDrop={(story, drop) => runStatusPipRequest({ ...drop.request, storyId: story.id })}
+        reviewDiffEmpty={reviewDiffEmpty}
+      >
       <KanbanBoard className="-mx-6 px-6" gridClassName="min-w-500 grid-cols-6">
         {backlogColumns.map((column) => (
           <BacklogColumn
@@ -1490,6 +1496,7 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
           />
         ))}
       </KanbanBoard>
+      </BacklogDragDrop>
       ) : null}
       <UserStoryDrawer
         diffStats={

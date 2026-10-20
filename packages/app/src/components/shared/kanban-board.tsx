@@ -39,24 +39,39 @@ export function KanbanBoard({
 
 type KanbanColumnProps = {
   children: ReactNode
+  // Greyed out while a dragged item cannot go here.
+  dimmed?: boolean
   header: ReactNode
+  // Drawn over the column's content (drop zones while dragging).
+  overlay?: ReactNode
   viewportRef?: Ref<HTMLDivElement>
 }
 
 export function KanbanColumn({
   children,
+  dimmed = false,
   header,
+  overlay,
   viewportRef,
 }: KanbanColumnProps) {
   return (
-    <section className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-lg border bg-muted/30 shadow-xl ring-1 shadow-black/10 ring-foreground/15">
+    <section
+      className={cn(
+        "flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-lg border bg-muted/30 shadow-xl ring-1 shadow-black/10 ring-foreground/15 transition-[opacity,filter] duration-300 ease-out",
+        dimmed && "opacity-40 grayscale"
+      )}
+      data-dimmed={dimmed || undefined}
+    >
       {header}
-      <ScrollArea
-        className="min-h-0 flex-1 bg-foreground/5 dark:bg-background [&_[data-slot=scroll-area-viewport]>div]:block!"
-        viewportRef={viewportRef}
-      >
-        <div className="flex flex-col gap-3 p-3">{children}</div>
-      </ScrollArea>
+      <div className="relative flex min-h-0 flex-1 flex-col">
+        <ScrollArea
+          className="min-h-0 flex-1 bg-foreground/5 dark:bg-background [&_[data-slot=scroll-area-viewport]>div]:block!"
+          viewportRef={viewportRef}
+        >
+          <div className="flex flex-col gap-3 p-3">{children}</div>
+        </ScrollArea>
+        {overlay}
+      </div>
     </section>
   )
 }
