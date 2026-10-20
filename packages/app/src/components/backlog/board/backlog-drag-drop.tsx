@@ -268,10 +268,10 @@ function DropZone({
       ref={setNodeRef}
       animate={{ opacity: 1, scale: over ? 1.015 : 1, y: 0 }}
       className={cn(
-        "flex min-h-24 flex-1 flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 text-center transition-[background-color,border-color,box-shadow] duration-200",
+        "flex min-h-24 flex-1 flex-col items-center justify-center gap-2 rounded-xl border px-4 text-center transition-[background-color,border-color,box-shadow] duration-200",
         over
-          ? "border-solid border-blue-500 bg-blue-500/18 shadow-[0_0_0_4px] shadow-blue-500/15"
-          : "border-blue-500/45 bg-blue-500/8",
+          ? "border-blue-500 bg-blue-500/18 shadow-[0_0_0_4px] shadow-blue-500/15"
+          : "border-blue-500/30 bg-blue-500/8",
         action.confirm &&
           over &&
           "border-rose-500 bg-rose-500/15 shadow-rose-500/15"
