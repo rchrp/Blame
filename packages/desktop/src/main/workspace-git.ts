@@ -10,7 +10,8 @@ import {
   ignoredGitDiffPathspecs,
   isIgnoredWorkspaceDiffPath,
 } from "./workspace-diff-policy.ts";
-import { runtimeManagedPath } from "./workspace-runtime.ts";
+import { run as runRuntime, runtimeManagedPath } from "./workspace-runtime.ts";
+import { runRuntimeGit } from "./workspace-runtime-git.ts";
 
 const execFileAsync = promisify(execFile);
 const maxBuffer = 50 * 1024 * 1024;
@@ -82,14 +83,41 @@ export type GitSnapshotInput = {
 
 export async function gitSnapshot(input: GitSnapshotInput) {
   if (!/^[0-9a-z._-]+$/i.test(input.id)) throw new Error("Invalid snapshot id");
-  const directory = await mkdtemp(join(tmpdir(), "blame-git-snapshot-"));
-  const index = join(directory, "index");
-  try {
+  return withSnapshotIndex(input.root, async (index) => {
     const ref = await createSnapshotTree(input.root, index);
     await updateSnapshotRef(input.root, input.id, ref);
     return ref;
+  });
+}
+
+// A throwaway Git index next to the repository: on the host, or inside
+// BlameRuntime when the worktree lives there.
+async function withSnapshotIndex<T>(
+  root: string,
+  use: (index: string) => Promise<T>,
+) {
+  if (!runtimeManagedPath(root)) {
+    const directory = await mkdtemp(join(tmpdir(), "blame-git-snapshot-"));
+    try {
+      return await use(join(directory, "index"));
+    } finally {
+      await rm(directory, { force: true, recursive: true });
+    }
+  }
+  // Also sets up Git access to the worktree before the env-wrapped calls.
+  await runRuntimeGit(root, ["rev-parse", "--git-dir"]);
+  const { stdout } = await runRuntime(
+    "mktemp",
+    ["-d", "/tmp/blame-git-snapshot-XXXXXX"],
+    { execution: "virtualized" },
+  );
+  const directory = stdout.trim();
+  try {
+    return await use(posix.join(directory, "index"));
   } finally {
-    await rm(directory, { force: true, recursive: true });
+    await runRuntime("rm", ["-rf", directory], {
+      execution: "virtualized",
+    }).catch(() => undefined);
   }
 }
 
@@ -414,14 +442,35 @@ function gitPath(value?: string) {
   return normalized.replace(/\/$/, "");
 }
 
+// Story worktrees of a local container can live inside BlameRuntime, out of
+// reach of the host's git: run Git there for them.
 function runGit(
   root: string,
   args: string[],
   environment?: Record<string, string>,
 ) {
+  if (runtimeManagedPath(root))
+    return runVirtualizedGit(root, args, environment);
   return execFileAsync("git", args, {
     cwd: root,
     env: { ...withoutTelemetryEnvironment(process.env), ...environment },
+    maxBuffer,
+  });
+}
+
+async function runVirtualizedGit(
+  root: string,
+  args: string[],
+  environment?: Record<string, string>,
+) {
+  if (!environment) return runRuntimeGit(root, args);
+  // Host variables do not reach the runtime: set them on the command.
+  const variables = Object.entries(environment).map(
+    ([name, value]) => `${name}=${value}`,
+  );
+  return runRuntime("env", [...variables, "git", ...args], {
+    cwd: root,
+    execution: "virtualized",
     maxBuffer,
   });
 }
@@ -431,6 +480,8 @@ function runBackgroundGit(
   args: string[],
   environment?: Record<string, string>,
 ) {
+  if (runtimeManagedPath(root))
+    return runVirtualizedGit(root, args, environment);
   return new Promise<{ stderr: string; stdout: string }>((resolve, reject) => {
     const child = execFile(
       "git",

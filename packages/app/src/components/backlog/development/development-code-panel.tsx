@@ -149,7 +149,8 @@ export function DevelopmentCodePanel({
           </span>
         </div>
         <ScrollArea className="min-h-0 flex-1">
-          {diffError ? (
+          {/* Without the diff the file tree still works, minus change marks. */}
+          {mode === "diff" && diffError ? (
             <div className="p-3 text-sm text-muted-foreground">{diffError}</div>
           ) : mode === "diff" && diffLoading ? (
             <TreeLoading />
