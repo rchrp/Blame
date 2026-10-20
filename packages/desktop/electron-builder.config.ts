@@ -31,6 +31,12 @@ const macosInheritedEntitlements = join(
   projectDir,
   "resources/runtime/macos/entitlements.inherit.plist",
 )
+// Lima ships limactl with these entitlements; re-signing it with --force drops
+// them, and without com.apple.security.virtualization the VM cannot start.
+const limactlEntitlements = join(
+  projectDir,
+  "resources/runtime/macos/entitlements.lima.plist",
+)
 
 const publish = downloadBaseUrl
   ? {
@@ -101,11 +107,33 @@ async function signMacosRuntimeExecutables(context: PackContext) {
     )
     .map((file) => join(limaShareDir, file))
 
+  const limactl = join(limaBundleDir, "bin/limactl")
   for (const executable of await macosExecutables(limaBundleDir)) {
-    await signMacosExecutable(executable, identity, keychainFile)
+    await signMacosExecutable(
+      executable,
+      identity,
+      keychainFile,
+      executable === limactl ? limactlEntitlements : undefined,
+    )
   }
   for (const archive of archives) {
     await signGzipMachO(archive, identity, keychainFile)
+  }
+  await assertVirtualizationEntitlement(limactl)
+}
+
+async function assertVirtualizationEntitlement(executable: string) {
+  const { stdout } = await execFileAsync("codesign", [
+    "-d",
+    "--entitlements",
+    "-",
+    "--xml",
+    executable,
+  ])
+  if (!stdout.includes("com.apple.security.virtualization")) {
+    throw new Error(
+      `${executable} is missing the com.apple.security.virtualization entitlement; the Blame Runtime VM would not start.`,
+    )
   }
 }
 
@@ -169,6 +197,7 @@ async function signMacosExecutable(
   executable: string,
   identity: string,
   keychainFile?: string | null,
+  entitlements?: string,
 ) {
   const signArgs = [
     "--force",
@@ -178,6 +207,7 @@ async function signMacosExecutable(
     "runtime",
     "--timestamp",
   ]
+  if (entitlements) signArgs.push("--entitlements", entitlements)
   if (keychainFile) signArgs.push("--keychain", keychainFile)
   signArgs.push(executable)
   await execFileAsync("codesign", signArgs)
