@@ -104,3 +104,7 @@ For Cline SDK update pull requests:
 ## Sandbox runner image
 
 The cloud preview sandbox runner image is still published manually with `pnpm release:sandbox-runner`. It is a container image, not a GitHub Release.
+
+Before releasing, log Docker in to the registry with a fresh OIDC token (it expires after 12 hours) from the linked `blame-sandbox-runtime` Vercel project: `vercel env pull`, then `docker login vcr.vercel.com -u oidc --password-stdin` with `VERCEL_OIDC_TOKEN`. Signing then asks you to approve a Sigstore login in the browser. If that code expires after the image was pushed, sign the published digest without rebuilding: `node scripts/sandbox-runner-release.mjs sign sha256:<digest>`.
+
+`packages/sandbox-runner/grype.yaml` lists the critical findings the release scans accept because no fixed upstream build exists yet. Remove each entry once its fix ships.

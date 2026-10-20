@@ -6,8 +6,8 @@ import { join } from "node:path";
 const action = process.argv[2];
 const image = process.env.BLAME_SANDBOX_RUNNER_IMAGE_TAG;
 if (!image) throw new Error("BLAME_SANDBOX_RUNNER_IMAGE_TAG is required");
-if (!new Set(["build", "release"]).has(action))
-  throw new Error("Expected build or release");
+if (!new Set(["build", "release", "sign"]).has(action))
+  throw new Error("Expected build, release or sign");
 // Exceptions for critical findings without a fixed upstream build.
 const grypeArgs = [
   "--config",
@@ -25,8 +25,19 @@ if (!/^\d+\.\d+\.\d+$/.test(runnerVersion)) {
   );
 }
 
-await command("pnpm", ["--filter", "@blame/sandbox-runner", "build"]);
-await buildImage("build");
+if (action === "sign") {
+  // Signs an already published digest again, e.g. after an expired Sigstore
+  // login, without rebuilding a new unsigned image.
+  const publishedDigest = process.argv[3];
+  if (!/^sha256:[a-f0-9]{64}$/.test(publishedDigest ?? ""))
+    throw new Error("Expected the published sha256 digest to sign");
+  const immutableImage = `${imageRepository(image)}@${publishedDigest}`;
+  await command("grype", [immutableImage, ...grypeArgs]);
+  await sign(immutableImage, publishedDigest);
+} else {
+  await command("pnpm", ["--filter", "@blame/sandbox-runner", "build"]);
+  await buildImage("build");
+}
 if (action === "release") {
   await command("grype", [`docker:${image}`, ...grypeArgs]);
   await buildImage("release");
@@ -43,6 +54,10 @@ if (action === "release") {
   const publishedDigest = JSON.parse(digest);
   const immutableImage = `${imageRepository(image)}@${publishedDigest}`;
   await command("grype", [immutableImage, ...grypeArgs]);
+  await sign(immutableImage, publishedDigest);
+}
+
+async function sign(immutableImage, publishedDigest) {
   if (immutableImage.startsWith("vcr.vercel.com/")) {
     const signatureImage = await signForVercelRegistry(
       immutableImage,
