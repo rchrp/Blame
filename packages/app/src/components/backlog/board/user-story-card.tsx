@@ -20,9 +20,8 @@ import { UserStoryTitleCloud } from "@/components/backlog/shared/user-story-titl
 import type { OpenDrawer } from "@/components/backlog/shared/backlog-types"
 import { equalUserStoryCardStory } from "@/components/backlog/board/user-story-card-equality"
 import { StoryActions } from "@/components/backlog/actions/story-actions"
-import { StoryModelChip } from "@/components/backlog/shared/story-model-chip"
+import { StoryContributors } from "@/components/backlog/shared/story-contributors"
 import { StoryRunModeIcon } from "@/components/backlog/shared/story-run-mode-icon"
-import { CurrentUserAvatar } from "@/components/shared/user-avatar"
 import { Button } from "@/components/ui/button"
 import { useAnimatedBorderEffect } from "@/hooks/use-animated-border-effect"
 import { recordPerformanceCount } from "@/lib/performance-diagnostics"
@@ -171,18 +170,14 @@ function UserStoryCardBody({
     <>
       <CardHeader className="gap-0 has-data-[slot=card-action]:grid-cols-[minmax(0,1fr)_auto]">
         <p className="flex min-w-0 items-center gap-2 text-xs font-medium text-muted-foreground">
+          <StoryContributors story={story} />
           <span className="shrink-0">{userStoryLabel(story)}</span>
           <StoryRunModeIcon story={story} />
-          <StoryModelChip story={story} />
           {isSecurityStory(story.summary) ? (
             <span className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-300">
               <ShieldCheckIcon className="size-3" /> Security
             </span>
           ) : null}
-          <CurrentUserAvatar
-            className="mr-2 ml-auto size-5 text-[9px] after:hidden"
-            fallbackName={story.owner}
-          />
         </p>
         {setupInitializing && (
           <StoryProgressLabel label="Initializing story setup" />

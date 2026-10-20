@@ -1320,6 +1320,25 @@ export function ProviderMark({ provider }: { provider: Provider }) {
   )
 }
 
+// A provider's logo alone, for avatars and compact lists.
+export function ProviderIcon({
+  className,
+  providerId,
+}: {
+  className?: string
+  providerId: string
+}) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={cn("size-3.5", className)}
+      data-component="provider-icon"
+    >
+      <use href={`${providerIconSprite}#${providerIconName(providerId)}`} />
+    </svg>
+  )
+}
+
 function providerIconName(providerID: string): IconName {
   const icon = providerIconAliases[providerID] ?? providerID
   return iconNames.includes(icon as IconName) ? (icon as IconName) : "synthetic"

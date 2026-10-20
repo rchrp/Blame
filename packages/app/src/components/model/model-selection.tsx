@@ -323,10 +323,14 @@ function useLocalProviderState(enabled = true) {
 // Display names of the models seen in the last provider list, for places
 // that show a model without loading the providers themselves (story cards).
 let modelNames = new Map<string, string>()
+let providerNames = new Map<string, string>()
 const modelNameListeners = new Set<() => void>()
 
 function rememberModelNames(providers: ProviderListResponse | undefined) {
   if (!providers) return
+  providerNames = new Map(
+    providers.all.map((provider) => [provider.id, provider.name || provider.id])
+  )
   modelNames = new Map(
     providers.all.flatMap((provider) =>
       Object.entries(provider.models).map(([id, model]) => [
@@ -338,10 +342,8 @@ function rememberModelNames(providers: ProviderListResponse | undefined) {
   for (const listener of modelNameListeners) listener()
 }
 
-export function useModelDisplayName(
-  providerId: string | null | undefined,
-  modelId: string | null | undefined
-) {
+// Model and provider display names, read from the last provider list.
+export function useModelDisplayNames() {
   const names = React.useSyncExternalStore(
     (listener) => {
       modelNameListeners.add(listener)
@@ -352,8 +354,15 @@ export function useModelDisplayName(
     () => modelNames,
     () => modelNames
   )
-  if (!modelId) return undefined
-  return names.get(`${providerId}/${modelId}`) ?? modelId
+  return React.useMemo(
+    () => ({
+      model: (providerId: string, modelId: string) =>
+        names.get(`${providerId}/${modelId}`) ?? modelId,
+      provider: (providerId: string) =>
+        providerNames.get(providerId) ?? providerId,
+    }),
+    [names]
+  )
 }
 
 function normalizeProviderList(input: ProviderListResponse | undefined) {
