@@ -19,6 +19,12 @@ import {
   truncateMiddle,
 } from "./agent-flow-values.ts"
 import { eventUsage, fileMentions, toolNames } from "./agent-flow-usage.ts"
+import {
+  specialistResponseActivityId,
+  specialistStep,
+  specialistThreadActivityId,
+  type SpecialistStep,
+} from "./specialist-thread.ts"
 
 const maxActivities = 512
 const maxActivityDetailLength = 4096
@@ -615,6 +621,8 @@ function toolActivities(
   event: AgentEvent
 ) {
   const payload = eventPayload(event)
+  const step = specialistStep(payload)
+  if (step) return specialistStepActivities(activities, payload, step)
   const phase = stringValue(payload.phase) ?? stringValue(payload.hookEventName)
   const input = toolActivityInput(activities, payload, phase)
   const message = specialistMessageActivityInput(input, payload)
@@ -623,6 +631,55 @@ function toolActivities(
     input,
     ...(message ? [message] : []),
   ])
+}
+
+// One step of a specialist's own work, kept apart from the lead agent's
+// activities and tied to its consult call.
+function specialistStepActivities(
+  activities: UserStoryAgentActivity[],
+  payload: Record<string, unknown>,
+  step: SpecialistStep
+) {
+  const parentToolCallId = eventToolCallId(payload, recordValue(payload.toolCall))
+  if (!parentToolCallId) return undefined
+  const parent = activities.find(
+    (activity) => activity.id === `tool-${parentToolCallId}`
+  )
+  const id = specialistThreadActivityId(parentToolCallId, step.id)
+  const owner = {
+    iteration: parent?.iteration,
+    parentToolCallId,
+    ...(parent?.agentName ? { agentName: parent.agentName } : {}),
+  }
+  if (step.kind !== "tool")
+    return upsertActivity(activities, {
+      ...owner,
+      id,
+      kind: step.kind,
+      title: step.kind === "message" ? (parent?.agentName ?? "Specialist") : "Reasoning",
+      detail: step.text,
+      status: "completed",
+      ...(step.kind === "message" ? { messageKind: "intermediate" as const } : {}),
+    })
+  const toolPayload = {
+    phase: step.phase,
+    toolCall: { id: step.toolCallId, name: step.toolName, input: step.input },
+    output: step.output ?? (step.error ? { error: step.error } : undefined),
+  }
+  const existing = parseDetailRecord(
+    activities.find((activity) => activity.id === id)?.detail
+  )
+  return upsertActivity(activities, {
+    ...owner,
+    id,
+    kind: "tool",
+    title: toolTitle(step.toolName, step.phase, toolPayload),
+    detail: toolDetail(toolPayload, true, existing),
+    serverDetail: toolDetail(toolPayload, false, existing),
+    status: toolStatus(step.phase, toolPayload),
+    toolCallId: step.toolCallId,
+    toolName: step.toolName,
+  })
 }
 
 function toolActivityInput(
@@ -735,7 +792,10 @@ function eventFinalResponse(
 }
 
 function lastMessageResponse(activities: UserStoryAgentActivity[]) {
-  const lastActivity = activities.at(-1)
+  // A specialist's own messages are never the lead agent's answer.
+  const lastActivity = activities.findLast(
+    (activity) => !activity.parentToolCallId
+  )
   if (lastActivity?.kind !== "message") return undefined
   return lastActivity.detail.trim() || undefined
 }
@@ -798,7 +858,7 @@ function specialistMessageActivityInput(
     specialistInfoFromResponse(text) ??
     fallbackSpecialistInfo
   return {
-    id: `specialist-response-${toolInput.id}`,
+    id: specialistResponseActivityId(toolInput.id),
     kind: "message",
     title: agent.name,
     detail: text,

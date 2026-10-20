@@ -39,6 +39,7 @@ export type UserStoryAgentActivity = {
   agentName?: string
   agentAvatar?: string
   toolCallId?: string
+  parentToolCallId?: string
   toolName?: string
   detailArtifact?: string
   detailTruncated?: boolean

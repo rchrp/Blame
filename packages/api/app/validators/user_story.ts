@@ -40,6 +40,7 @@ export const agentActivity = vine.object({
   agentName: vine.string().trim().maxLength(255).optional(),
   agentAvatar: vine.string().trim().maxLength(2048).optional(),
   toolCallId: vine.string().trim().maxLength(255).optional(),
+  parentToolCallId: vine.string().trim().maxLength(255).optional(),
   toolName: vine.string().trim().maxLength(255).optional(),
   detailArtifact: vine.string().trim().maxLength(2048).optional(),
   detailTruncated: vine.boolean().optional(),

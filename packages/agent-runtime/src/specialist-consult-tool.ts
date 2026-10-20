@@ -6,6 +6,10 @@ import {
   blameSpecialistAgentIds,
   blameSpecialistAgentMetadata,
 } from "./specialist-agents.js";
+import {
+  specialistStepReader,
+  specialistStepUpdate,
+} from "./specialist-thread-events.js";
 
 const consultSpecialistInputSchema = z.object({
   specialist: z.enum(blameSpecialistAgentIds),
@@ -26,13 +30,18 @@ export type ConsultSpecialistInput = z.infer<
 type ConsultSpecialistToolOptions = {
   capsule?: (input: ConsultSpecialistInput) => Promise<string | undefined>;
   objective?: string;
-  spawnTool: Pick<
-    AgentTool<{ systemPrompt: string; task: string }, unknown>,
-    "execute"
-  >;
+  spawnTool: SpawnTool;
+  // Builds a spawn tool for one consultation that reports the sub-agent's
+  // events, so its thread can be shown. Falls back to spawnTool.
+  createSpawnTool?: (onSubAgentEvent: (event: unknown) => void) => SpawnTool;
   storyId?: string;
   timeoutMs?: number;
 };
+
+type SpawnTool = Pick<
+  AgentTool<{ systemPrompt: string; task: string }, unknown>,
+  "execute"
+>;
 
 type ConsultationState = {
   completed: Map<string, number>;
@@ -90,7 +99,7 @@ async function executeConsultation(
     const result = await executeWithDeadline(
       (signal) =>
         Promise.resolve(
-          options.spawnTool.execute(
+          consultationSpawnTool(options, context).execute(
             {
               systemPrompt: specialist.systemPrompt,
               task: specialistTask(parsed.data, options, capsule),
@@ -110,6 +119,25 @@ async function executeConsultation(
   } finally {
     if (state.inFlight.get(key) === execution) state.inFlight.delete(key);
   }
+}
+
+// Relays the specialist's steps as updates of this consult_specialist call.
+function consultationSpawnTool(
+  options: ConsultSpecialistToolOptions,
+  context: AgentToolContext,
+) {
+  if (!options.createSpawnTool || !context.emitUpdate) return options.spawnTool;
+  const emitUpdate = context.emitUpdate;
+  const readStep = specialistStepReader();
+  return options.createSpawnTool((event) => {
+    const step = readStep(event);
+    if (!step) return;
+    try {
+      emitUpdate(specialistStepUpdate(step));
+    } catch {
+      // The thread is a view; the consultation goes on without it.
+    }
+  });
 }
 
 function completedConsultation(value: unknown) {

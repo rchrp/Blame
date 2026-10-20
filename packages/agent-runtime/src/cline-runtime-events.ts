@@ -831,6 +831,7 @@ function normalizeContentEvent(
           name: stringValue(payload.toolName),
           input: payload.input,
         },
+        ...(payload.update === undefined ? {} : { update: payload.update }),
         raw,
       },
     };

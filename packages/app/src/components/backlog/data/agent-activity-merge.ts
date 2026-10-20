@@ -54,6 +54,8 @@ function preserveActivityMetadata(
     agentAvatar: newestActivity.agentAvatar ?? currentActivity.agentAvatar,
     agentName: newestActivity.agentName ?? currentActivity.agentName,
     toolCallId: newestActivity.toolCallId ?? currentActivity.toolCallId,
+    parentToolCallId:
+      newestActivity.parentToolCallId ?? currentActivity.parentToolCallId,
     toolName: newestActivity.toolName ?? currentActivity.toolName,
   }
 }

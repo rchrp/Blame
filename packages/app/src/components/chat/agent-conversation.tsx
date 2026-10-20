@@ -3,6 +3,7 @@ import {
   CheckIcon,
   ArrowUpIcon,
   ChevronDownIcon,
+  ChevronRightIcon,
   ChevronUpIcon,
   ClockIcon,
   CopyIcon,
@@ -64,7 +65,14 @@ import { usePlatform } from "@/context/platform"
 import { useAnimatedBorderEffect } from "@/hooks/use-animated-border-effect"
 import { publicAssetUrl } from "@/lib/public-asset-url"
 import { cn } from "@/lib/utils"
-import { specialistTool } from "./tool-calls/tool-call-values"
+import {
+  isSpecialistResponseActivityId,
+  isSpecialistThreadActivityId,
+  specialistResponseActivityId,
+  specialistThreadActivityIds,
+} from "@/components/backlog/data/specialist-thread"
+import { SpecialistThreadDialog } from "./specialist-thread-dialog"
+import { record, specialistTool, textOf } from "./tool-calls/tool-call-values"
 import { ToolCallItem } from "./tool-calls/tool-call-item"
 import { TurnSummary } from "./turn-summary"
 
@@ -659,8 +667,12 @@ function AgentWorkDetails(props: AgentWorkDetailsProps) {
     return props.run.status === "running" ? <AgentThinkingTimelineItem /> : null
   }
   const responseActivityId = terminalResponseActivityId(props, registry)
+  // A specialist's steps and answer live on its card, not in the main list.
   const workActivityIds = registry.activityIds.filter(
-    (activityId) => activityId !== responseActivityId
+    (activityId) =>
+      activityId !== responseActivityId &&
+      !isSpecialistThreadActivityId(activityId) &&
+      !isSpecialistResponseActivityId(activityId)
   )
   return (
     <div className="grid gap-2">
@@ -797,6 +809,7 @@ function AgentActivityTimeline({
           }
           fallback={registry.persistedById.get(activityId)}
           identity={registry.identity}
+          registry={registry}
           key={`${props.run.id}-${activityId}`}
         />
       ))}
@@ -863,6 +876,7 @@ type StreamingAgentActivityItemProps = Omit<
   activityId: string
   fallback?: UserStoryAgentActivity
   identity?: AgentStreamIdentity
+  registry?: ReturnType<typeof useAgentActivityRegistry>
 }
 
 function StreamingAgentActivityItem(props: StreamingAgentActivityItemProps) {
@@ -912,7 +926,141 @@ function AgentStreamActivity({
   if (activity.kind === "message") {
     return <AgentStreamMessage activity={activity} {...props} />
   }
+  if (
+    activity.kind === "tool" &&
+    specialistTool(activity.toolName) &&
+    props.registry
+  ) {
+    return (
+      <SpecialistConsultation
+        activity={activity}
+        {...props}
+        registry={props.registry}
+      />
+    )
+  }
   return <AgentStreamTool activity={activity} {...props} />
+}
+
+const fallbackSpecialistAppearance = {
+  color: "oklch(0.72 0.16 250)",
+  glowColor: "oklch(0.66 0.18 250 / 28%)",
+}
+
+// A specialist consultation in the conversation: its answer, cropped with a
+// border in the specialist's color, and its full thread on demand.
+function SpecialistConsultation({
+  activity,
+  registry,
+  ...props
+}: StreamingAgentActivityItemProps & {
+  activity: UserStoryAgentActivity
+  registry: ReturnType<typeof useAgentActivityRegistry>
+}) {
+  const [open, setOpen] = React.useState(false)
+  const responseId = specialistResponseActivityId(activity.id)
+  const response = useStreamedAgentActivity({
+    ...props,
+    activityId: responseId,
+    fallback: registry.persistedById.get(responseId),
+    identity: registry.identity,
+  })
+  const threadIds = activity.toolCallId
+    ? specialistThreadActivityIds(registry.activityIds, activity.toolCallId)
+    : []
+  const name = activity.agentName ?? "Specialist"
+  const appearance = specialistAgentAppearanceByName(activity.agentName)
+  const effect = appearance ?? fallbackSpecialistAppearance
+  const running = activity.status === "running" && props.run.status === "running"
+  const steps = `${threadIds.length} ${threadIds.length === 1 ? "step" : "steps"}`
+  const status = running
+    ? `Working · ${steps}`
+    : activity.status === "failed" && !response
+      ? "Stopped"
+      : `Answered · ${steps}`
+  const avatarImage = activity.agentAvatar ?? appearance?.avatar
+  const avatar = (size: "sm" | "default") => (
+    <Avatar size={size} aria-label={name}>
+      {avatarImage ? <AvatarImage alt={name} src={avatarImage} /> : null}
+      <AvatarFallback>{agentInitials(name)}</AvatarFallback>
+    </Avatar>
+  )
+  return (
+    <div className="grid min-w-0 gap-2">
+      <div className="flex min-w-0 items-center gap-2 text-sm">
+        {avatar("sm")}
+        <span className="truncate font-medium">{name}</span>
+        <span
+          className={cn(
+            "shrink-0 text-muted-foreground",
+            running && "agent-activity-running"
+          )}
+        >
+          {status}
+        </span>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="ml-auto h-7 shrink-0 gap-1 rounded-full px-2.5 text-xs text-muted-foreground"
+          onClick={() => setOpen(true)}
+        >
+          {running ? "Follow" : "View thread"}
+          <ChevronRightIcon className="size-3.5" />
+        </Button>
+      </div>
+      {response ? (
+        <AgentMarkdownTimelineItem
+          alwaysVisible={props.alwaysVisible}
+          createdAt={response.createdAt}
+          effectColor={effect.color}
+          effectGlowColor={effect.glowColor}
+          highlight={false}
+          markdown={response.detail}
+          onFileLinkClick={props.onFileLinkClick}
+        />
+      ) : null}
+      <SpecialistThreadDialog
+        avatar={avatar("default")}
+        name={name}
+        onOpenChange={setOpen}
+        open={open}
+        request={specialistRequest(activity.detail)}
+        status={status}
+      >
+        {threadIds.length ? (
+          <AgentActivityTimeline
+            {...props}
+            activities={[]}
+            activityIds={threadIds}
+            alwaysVisible={false}
+            registry={registry}
+          />
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            {running
+              ? "Waiting for the specialist's first step."
+              : "The steps of this consultation weren't recorded."}
+          </p>
+        )}
+        {response ? (
+          <AgentStreamMessage activity={response} {...props} />
+        ) : null}
+      </SpecialistThreadDialog>
+    </div>
+  )
+}
+
+// What the lead agent asked the specialist (its consult call input).
+function specialistRequest(detail: string) {
+  try {
+    const input = record(record(JSON.parse(detail)).input)
+    const task = textOf(input.task)?.text
+    const context = textOf(input.context)?.text
+    return [task, context].filter(Boolean).join("\n\n") || undefined
+  } catch {
+    return undefined
+  }
 }
 
 function AgentStreamMessage({

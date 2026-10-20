@@ -187,6 +187,8 @@ export function runtimeConsultSpecialistTool(options: {
     capsule: specialistCapsuleProvider(options),
     objective: options.objective,
     spawnTool: specialistSpawnTool(options),
+    createSpawnTool: (onSubAgentEvent) =>
+      specialistSpawnTool(options, onSubAgentEvent),
     storyId: options.input.storyId,
     timeoutMs: adaptiveSpecialistTimeoutMs(
       specialistReasoningEffort(options.input.reasoningEffort),
@@ -194,11 +196,14 @@ export function runtimeConsultSpecialistTool(options: {
   });
 }
 
-function specialistSpawnTool(options: {
-  credential: { apiKey: string; baseUrl: string | null };
-  input: RuntimeStartSessionInput;
-  readOnlyTools: AgentTool[];
-}) {
+function specialistSpawnTool(
+  options: {
+    credential: { apiKey: string; baseUrl: string | null };
+    input: RuntimeStartSessionInput;
+    readOnlyTools: AgentTool[];
+  },
+  onSubAgentEvent?: (event: unknown) => void,
+) {
   const configProvider = createDelegatedAgentConfigProvider(
     supplementalModelConfig({
       providerId: options.input.providerId,
@@ -223,6 +228,7 @@ function specialistSpawnTool(options: {
       ]),
     ),
     logger: productionLogger,
+    ...(onSubAgentEvent ? { onSubAgentEvent } : {}),
   });
   return spawnTool;
 }

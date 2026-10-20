@@ -140,3 +140,55 @@ test("consult_specialist resolves the private system prompt server-side", async 
   );
   assert.match(JSON.stringify(identicalAfterCompaction), /previous_receipt/);
 });
+
+test("consult_specialist relays the specialist's steps as updates of its call", async () => {
+  const updates: unknown[] = [];
+  const spawnTool = {
+    async execute() {
+      return { text: "unused" };
+    },
+  };
+  const tool = createConsultSpecialistTool({
+    spawnTool,
+    createSpawnTool: (onSubAgentEvent) => ({
+      async execute() {
+        onSubAgentEvent({ type: "content_start", contentType: "text", text: "Lo" });
+        onSubAgentEvent({
+          type: "content_start",
+          contentType: "tool",
+          toolCallId: "t1",
+          toolName: "read_files",
+          input: { paths: ["src/app.tsx"] },
+        });
+        onSubAgentEvent({
+          type: "content_end",
+          contentType: "tool",
+          toolCallId: "t1",
+          toolName: "read_files",
+          output: "x".repeat(9_000),
+        });
+        onSubAgentEvent({ type: "content_end", contentType: "text", text: "Looks good." });
+        return { text: "advice" };
+      },
+    }),
+  });
+
+  await tool.execute(
+    { specialist: "codebase_analyst", task: "Map the settings screen." },
+    { runId: "request-2", emitUpdate: (update: unknown) => updates.push(update) } as never,
+  );
+
+  assert.deepEqual(
+    updates.map((update) => {
+      const step = (update as { step: Record<string, unknown> }).step;
+      return [step.kind, step.phase ?? step.text];
+    }),
+    [
+      ["tool", "started"],
+      ["tool", "finished"],
+      ["message", "Looks good."],
+    ],
+  );
+  const finished = (updates[1] as { step: { output: { truncated: boolean } } }).step;
+  assert.equal(finished.output.truncated, true);
+});

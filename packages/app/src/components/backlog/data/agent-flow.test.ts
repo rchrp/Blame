@@ -325,6 +325,41 @@ test("adds specialist response messages after consult_specialist results", () =>
   )
 })
 
+test("keeps a specialist's own steps apart, tied to its consult call", () => {
+  const started = updateStory(
+    story(),
+    consultSpecialistToolEvent("tool_call", "call-1", "frontend_design")
+  )
+  const step = (value: Record<string, unknown>): AgentEvent => ({
+    type: "tool",
+    payload: {
+      phase: "progress",
+      toolCall: { id: "call-1", name: "consult_specialist" },
+      update: { type: "blame.specialist_step", step: value },
+    },
+  })
+  const reading = updateStory(
+    started,
+    step({ id: "tool-r1", kind: "tool", phase: "started", toolCallId: "r1", toolName: "read_files", input: { paths: ["a.tsx"] } })
+  )
+  const read = updateStory(
+    reading,
+    step({ id: "tool-r1", kind: "tool", phase: "finished", toolCallId: "r1", toolName: "read_files", output: "ok" })
+  )
+  const answered = updateStory(read, step({ id: "message-1", kind: "message", text: "Spacing is uneven." }))
+  const activities = answered.agentActivities ?? []
+
+  assert.deepEqual(
+    activities.map((activity) => [activity.id, activity.status, activity.parentToolCallId]),
+    [
+      ["tool-call-1", "running", undefined],
+      ["subagent:call-1:tool-r1", "completed", "call-1"],
+      ["subagent:call-1:message-1", "completed", "call-1"],
+    ]
+  )
+  assert.equal(activities[2]?.agentName, "Frontend Design Specialist")
+})
+
 test("appends reasoning deltas while the agent is running", () => {
   const firstDelta = updateStory(story(), reasoningEvent({ text: "Now" }))
   const secondDelta = updateStory(firstDelta, reasoningEvent({ text: " I" }))
