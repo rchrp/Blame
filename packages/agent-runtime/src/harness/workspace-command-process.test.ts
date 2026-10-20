@@ -134,13 +134,22 @@ test("run_task inspects a long command without launching it again", async () => 
       data: { cursor: string; process: string; run: string };
     };
     assert.equal(initial.data.process, "running");
-    await delay(150);
-    const inspected = await workspace.runTask(
-      { kind: "inspect", run: initial.data.run, cursor: initial.data.cursor },
-      {},
+    // The child may start well after the initial wait on a loaded runner, and
+    // the echoed command also contains "second": wait for the real output.
+    let inspected: Awaited<ReturnType<typeof workspace.runTask>>;
+    const deadline = Date.now() + 5000;
+    do {
+      await delay(50);
+      inspected = await workspace.runTask(
+        { kind: "inspect", run: initial.data.run, cursor: initial.data.cursor },
+        {},
+      );
+      assert.equal(inspected.status, "ok", JSON.stringify(inspected));
+    } while (
+      !(inspected as { data: { output: string } }).data.output.includes("second") &&
+      Date.now() < deadline
     );
-    assert.equal(inspected.status, "ok", JSON.stringify(inspected));
-    assert.match(JSON.stringify(inspected), /second/u);
+    assert.match((inspected as { data: { output: string } }).data.output, /second/u);
     controller.abort();
     await delay(150);
     const cancelled = await workspace.runTask(
