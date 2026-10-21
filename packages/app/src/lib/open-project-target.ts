@@ -6,7 +6,9 @@ export type OpenProjectTarget = "ask" | "new-window" | "this-window"
 
 export const openProjectTargetKey = "open-project-target"
 
-export function isOpenProjectTarget(value: unknown): value is OpenProjectTarget {
+export function isOpenProjectTarget(
+  value: unknown
+): value is OpenProjectTarget {
   return value === "ask" || value === "new-window" || value === "this-window"
 }
 
