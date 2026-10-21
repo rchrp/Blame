@@ -2,7 +2,10 @@ import * as React from "react"
 import { motion } from "motion/react"
 
 import type { UserStory } from "@/components/backlog/data/backlog-data"
-import { getVariantLabel, useModelDisplayNames } from "@/components/model/model-selection"
+import {
+  getVariantLabel,
+  useModelDisplayNames,
+} from "@/components/model/model-selection"
 import { ProviderIcon } from "@/components/model/model-selector"
 import { CurrentUserAvatar } from "@/components/shared/user-avatar"
 import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover"
@@ -57,7 +60,7 @@ export function StoryContributors({ story }: { story: UserStory }) {
             transition={stackSpring}
           >
             <CurrentUserAvatar
-              className="size-5 text-[9px] after:hidden"
+              className="size-5 after:hidden"
               fallbackName={story.owner}
             />
           </motion.span>
@@ -74,7 +77,10 @@ export function StoryContributors({ story }: { story: UserStory }) {
               style={{ zIndex: index + 1 }}
               transition={{ ...stackSpring, delay: open ? index * 0.03 : 0 }}
             >
-              <ProviderIcon className="size-3" providerId={provider.providerId} />
+              <ProviderIcon
+                className="size-3"
+                providerId={provider.providerId}
+              />
             </motion.span>
           ))}
         </motion.span>
@@ -109,7 +115,7 @@ function ContributorDetails({
       key="user"
       avatar={
         <CurrentUserAvatar
-          className="size-6 text-[10px] after:hidden"
+          className="size-6 after:hidden"
           fallbackName={story.owner}
         />
       }
@@ -128,8 +134,12 @@ function ContributorDetails({
           .map((model) =>
             [
               names.model(provider.providerId, model.modelId),
-              model.reasoningEffort ? getVariantLabel(model.reasoningEffort) : "",
-              model.turns ? `${model.turns} ${model.turns === 1 ? "turn" : "turns"}` : "",
+              model.reasoningEffort
+                ? getVariantLabel(model.reasoningEffort)
+                : "",
+              model.turns
+                ? `${model.turns} ${model.turns === 1 ? "turn" : "turns"}`
+                : "",
             ]
               .filter(Boolean)
               .join(" · ")

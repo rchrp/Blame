@@ -27,9 +27,13 @@ export function avatarColor(seed: string) {
   return fallbackColors[Math.abs(hash) % fallbackColors.length]!
 }
 
-export function avatarInitials(name: string | null | undefined, email?: string) {
+export function avatarInitials(
+  name: string | null | undefined,
+  email?: string
+) {
   const words = (name ?? "").trim().split(/\s+/).filter(Boolean)
-  if (words.length > 1) return `${words[0]![0]}${words.at(-1)![0]}`.toUpperCase()
+  if (words.length > 1)
+    return `${words[0]![0]}${words.at(-1)![0]}`.toUpperCase()
   if (words.length === 1) return words[0]!.slice(0, 2).toUpperCase()
   return (email ?? "?").slice(0, 2).toUpperCase()
 }
@@ -54,13 +58,18 @@ export function UserAvatar({
 }) {
   const label = name || email || "User"
   return (
-    <Avatar size={size} className={className} aria-label={label}>
+    // The initials scale with the avatar, so every size looks the same.
+    <Avatar
+      size={size}
+      className={cn("@container", className)}
+      aria-label={label}
+    >
       {image ? (
         <AvatarImage alt={label} referrerPolicy="no-referrer" src={image} />
       ) : null}
       <AvatarFallback
         className={cn(
-          "font-medium text-white",
+          "text-[42cqw] leading-none font-medium text-white group-data-[size=sm]/avatar:text-[42cqw]",
           avatarColor(seed ?? email ?? label)
         )}
       >
