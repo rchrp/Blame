@@ -89,14 +89,11 @@ export function StoryStatsIsland({
           ? { height: fullHeight ?? "auto", width: expandedWidth }
           : { height: compactHeight, width: compactWidth }
       }
-      transition={
-        reduceMotion
-          ? { duration: 0 }
-          : { bounce: 0.16, duration: 0.5, type: "spring" }
-      }
+      transition={islandTransition(expanded, reduceMotion)}
     >
       <IslandFace
         className={cn(!fullFaceInFlow && "absolute top-0 right-0")}
+        revealDelay={0.26}
         shown={expanded}
       >
         <div
@@ -111,7 +108,11 @@ export function StoryStatsIsland({
           />
         </div>
       </IslandFace>
-      <IslandFace className="absolute top-0 right-0" shown={!expanded}>
+      <IslandFace
+        className="absolute top-0 right-0"
+        revealDelay={0.5}
+        shown={!expanded}
+      >
         <CompactStats diffStats={diffStats} stats={stats} onExpand={onExpand} />
       </IslandFace>
     </motion.div>
@@ -122,35 +123,82 @@ const expandedWidth = 320
 const compactWidth = 192
 const compactHeight = 48
 
-// One face of the island: it fades in, slightly late, as the island takes
-// its size, and out quickly as the island leaves it.
+const islandEase = [0.32, 0.72, 0, 1] as const
+
+// Opening, the island widens, then grows down; closing, the other way.
+function islandTransition(expanded: boolean, reduceMotion: boolean | null) {
+  if (reduceMotion) return { duration: 0 }
+  return expanded
+    ? {
+        height: { delay: 0.22, duration: 0.4, ease: islandEase },
+        width: { duration: 0.3, ease: islandEase },
+      }
+    : {
+        height: { delay: 0.08, duration: 0.3, ease: islandEase },
+        width: { delay: 0.3, duration: 0.3, ease: islandEase },
+      }
+}
+
+// One face of the island. Its parts pop in one after another once the
+// island makes room for them, and all leave at once.
 function IslandFace({
   children,
   className,
+  revealDelay,
   shown,
 }: {
   children: React.ReactNode
   className?: string
+  revealDelay: number
   shown: boolean
 }) {
   const reduceMotion = useReducedMotion()
-  const hidden = reduceMotion
-    ? { opacity: 0 }
-    : { filter: "blur(6px)", opacity: 0, scale: 0.96 }
   return (
     <motion.div
       aria-hidden={!shown}
       className={cn(!shown && "pointer-events-none", className)}
       inert={!shown}
       initial={false}
-      animate={shown ? { filter: "blur(0px)", opacity: 1, scale: 1 } : hidden}
-      transition={
-        shown
-          ? { delay: 0.06, duration: 0.28, ease: "easeOut" }
-          : { duration: 0.14, ease: "easeIn" }
-      }
-      style={{ transformOrigin: "top right" }}
+      animate={shown ? "shown" : "hidden"}
+      variants={{
+        hidden: {},
+        shown: {
+          transition: reduceMotion
+            ? {}
+            : { delayChildren: revealDelay, staggerChildren: 0.045 },
+        },
+      }}
     >
+      {children}
+    </motion.div>
+  )
+}
+
+const popVariants = {
+  hidden: {
+    opacity: 0,
+    scale: 0.94,
+    transition: { duration: 0.12, ease: "easeIn" },
+    y: -6,
+  },
+  shown: {
+    opacity: 1,
+    scale: 1,
+    transition: { bounce: 0.35, duration: 0.45, type: "spring" },
+    y: 0,
+  },
+} as const
+
+// A part of a face, popping in its turn.
+function Pop({
+  children,
+  className,
+}: {
+  children: React.ReactNode
+  className?: string
+}) {
+  return (
+    <motion.div className={className} variants={popVariants}>
       {children}
     </motion.div>
   )
@@ -184,13 +232,19 @@ function DrawerSidebar({
       <ModelHeader userStory={userStory} />
       <ContextGauge budget={budget} compaction={compaction} context={context} />
       <div className="grid grid-cols-3 gap-2">
-        <Stat label="Cost">
-          {formatCurrency(totals?.totalCost ?? totals?.cost)}
-        </Stat>
-        <TokensStat totals={totals} />
-        <Stat label="Changes">
-          {diffStats ? <DiffCounts diffStats={diffStats} /> : "—"}
-        </Stat>
+        <Pop className="grid min-w-0">
+          <Stat label="Cost">
+            {formatCurrency(totals?.totalCost ?? totals?.cost)}
+          </Stat>
+        </Pop>
+        <Pop className="grid min-w-0">
+          <TokensStat totals={totals} />
+        </Pop>
+        <Pop className="grid min-w-0">
+          <Stat label="Changes">
+            {diffStats ? <DiffCounts diffStats={diffStats} /> : "—"}
+          </Stat>
+        </Pop>
       </div>
     </aside>
   )
@@ -234,8 +288,13 @@ function CompactStats({
             className="flex h-full min-w-0 flex-1 items-center gap-2 rounded-l-xl pr-1 pl-2.5 outline-none hover:bg-foreground/[0.04] focus-visible:bg-foreground/[0.06]"
             onClick={onExpand}
           >
-            <ContextDonut context={context} />
-            <span className="grid gap-0.5 text-left leading-none tabular-nums">
+            <motion.span className="flex" variants={popVariants}>
+              <ContextDonut context={context} />
+            </motion.span>
+            <motion.span
+              className="grid gap-0.5 text-left leading-none tabular-nums"
+              variants={popVariants}
+            >
               <span className="text-sm font-semibold text-foreground">
                 {context ? `${Math.round(context.ratio * 100)}%` : "—"}
               </span>
@@ -244,7 +303,7 @@ function CompactStats({
                   <DiffCounts diffStats={diffStats} />
                 </span>
               ) : null}
-            </span>
+            </motion.span>
           </button>
         </TooltipTrigger>
         <TooltipContent className="grid gap-0.5 tabular-nums" side="bottom">
@@ -311,7 +370,7 @@ function ModelHeader({ userStory }: { userStory?: UserStory }) {
   const effort = latestReasoningEffort(userStory)
   if (!providerId || !modelId) return null
   return (
-    <div className="flex min-w-0 items-center gap-2 pr-[4.75rem]">
+    <Pop className="flex min-w-0 items-center gap-2 pr-[4.75rem]">
       <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-foreground/[0.06] ring-1 ring-foreground/10">
         <ProviderIcon className="size-4" providerId={providerId} />
       </span>
@@ -325,7 +384,7 @@ function ModelHeader({ userStory }: { userStory?: UserStory }) {
             : names.provider(providerId)}
         </span>
       </div>
-    </div>
+    </Pop>
   )
 }
 
@@ -347,7 +406,7 @@ function ContextGauge({
   const usedCells = context ? Math.max(1, Math.round(ratio * contextCells)) : 0
   return (
     <section className="grid gap-2.5" aria-label="Context window">
-      <div className="flex items-baseline justify-between gap-3">
+      <Pop className="flex items-baseline justify-between gap-3">
         <span className="text-xs font-medium text-muted-foreground">
           Context
         </span>
@@ -362,8 +421,8 @@ function ContextGauge({
           ) : null}
           <ContextLimitSelect budget={budget} />
         </span>
-      </div>
-      <div className="grid grid-cols-[repeat(25,minmax(0,1fr))] gap-[3px]">
+      </Pop>
+      <Pop className="grid grid-cols-[repeat(25,minmax(0,1fr))] gap-[3px]">
         {Array.from({ length: contextCells }, (_, index) => (
           <span
             key={index}
@@ -378,9 +437,9 @@ function ContextGauge({
             )}
           />
         ))}
-      </div>
+      </Pop>
       {context ? (
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground tabular-nums">
+        <Pop className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground tabular-nums">
           <Legend
             className="bg-blue-500"
             label="Reused"
@@ -392,20 +451,20 @@ function ContextGauge({
             label="Free"
             value={context.free}
           />
-        </div>
+        </Pop>
       ) : null}
-      <div className="flex items-start justify-between gap-2">
+      <Pop className="flex items-start justify-between gap-2">
         <p className="text-xs text-pretty text-muted-foreground">
           {compactionNote(compaction) ?? contextNote(context)}
         </p>
         <CompactContextButton compaction={compaction} />
-      </div>
+      </Pop>
       {budget.experimental ? (
-        <p className="rounded-md bg-amber-500/10 px-2 py-1.5 text-[11px] text-pretty text-amber-700 dark:text-amber-300">
+        <Pop className="rounded-md bg-amber-500/10 px-2 py-1.5 text-[11px] text-pretty text-amber-700 dark:text-amber-300">
           Experimental: past this provider's usual limit. It uses your quota
           faster, the provider may still cut it shorter, and very long contexts
           can lower quality.
-        </p>
+        </Pop>
       ) : null}
     </section>
   )
