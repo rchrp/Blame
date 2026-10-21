@@ -272,58 +272,42 @@
     -webkit-background-clip: text;
   }
 
-  .smart-model-slider-fill {
-    background: oklch(0.62 0.22 255);
-    filter: grayscale(var(--smart-model-slider-grayscale))
-      saturate(var(--smart-model-slider-saturation))
-      brightness(var(--smart-model-slider-brightness));
-    box-shadow: inset 0 0 10px
-      oklch(0.9 0.1 230 / var(--smart-model-slider-glow-opacity));
+  /* Cheaper to smarter: the house blue, calm and quiet at the cheap end,
+     vivid with a stronger halo at the smart end. One soft light sweeps
+     across it and rests, livelier as the position rises. */
+  .smart-model-slider-track {
+    background: color-mix(in oklab, var(--foreground) 8%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--foreground) 6%, transparent);
   }
 
-  .smart-model-slider-fill::before,
+  .smart-model-slider-fill {
+    --smart-start: oklch(0.56 calc(0.07 + 0.15 * var(--smart-position)) 262);
+    --smart-end: oklch(0.8 calc(0.04 + 0.11 * var(--smart-position)) 236);
+    background: linear-gradient(90deg in oklab, var(--smart-start), var(--smart-end));
+    box-shadow:
+      0 0 0 1px oklch(0.7 0.17 250 / calc(0.1 + 0.2 * var(--smart-position))),
+      0 0 calc(4px + 14px * var(--smart-position))
+        oklch(0.65 0.2 250 / calc(0.1 + 0.38 * var(--smart-position))),
+      inset 0 1px 0 oklch(1 0 0 / 0.22);
+  }
+
   .smart-model-slider-fill::after {
     position: absolute;
-    inset-block: 0;
-    left: 0;
-    width: 200%;
+    inset: 0;
     content: "";
-  }
-
-  .smart-model-slider-fill::before {
-    background: linear-gradient(
-      100deg,
-      oklch(0.62 0.22 255) 0%,
-      oklch(0.78 0.16 230) 12.5%,
-      oklch(0.72 0.2 285) 25%,
-      oklch(0.75 0.18 205) 37.5%,
-      oklch(0.62 0.22 255) 50%,
-      oklch(0.78 0.16 230) 62.5%,
-      oklch(0.72 0.2 285) 75%,
-      oklch(0.75 0.18 205) 87.5%,
-      oklch(0.62 0.22 255) 100%
-    );
-    animation: smart-model-slider-flow var(--smart-model-slider-duration)
-      cubic-bezier(0.35, 0.2, 0.65, 0.8) infinite;
-  }
-
-  .smart-model-slider-fill::after {
-    background: linear-gradient(
-      100deg,
-      transparent 0%,
-      oklch(0.72 0.22 325) 12.5%,
-      transparent 25%,
-      oklch(0.82 0.17 175) 37.5%,
-      transparent 50%,
-      oklch(0.72 0.22 325) 62.5%,
-      transparent 75%,
-      oklch(0.82 0.17 175) 87.5%,
-      transparent 100%
-    );
-    opacity: var(--smart-model-slider-accent-opacity);
-    animation: smart-model-slider-accent-flow
-      var(--smart-model-slider-accent-duration)
-      cubic-bezier(0.35, 0.2, 0.65, 0.8) infinite;
+    background: radial-gradient(
+        closest-side,
+        oklch(1 0 0 / 0.34),
+        oklch(1 0 0 / 0.12) 55%,
+        transparent
+      )
+      no-repeat;
+    background-size: 38% 260%;
+    background-position: -70% 50%;
+    mix-blend-mode: plus-lighter;
+    opacity: calc(0.35 + 0.65 * var(--smart-position));
+    animation: smart-model-slider-sheen var(--smart-sheen-duration)
+      cubic-bezier(0.45, 0, 0.25, 1) infinite;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -333,9 +317,9 @@
       animation: none;
     }
 
-    .smart-model-slider-fill::before,
     .smart-model-slider-fill::after {
       animation: none;
+      opacity: 0;
     }
   }
 
@@ -726,23 +710,14 @@
   }
 }
 
-@keyframes smart-model-slider-flow {
+@keyframes smart-model-slider-sheen {
   from {
-    transform: translateX(-50%);
+    background-position: -70% 50%;
   }
 
+  60%,
   to {
-    transform: translateX(0);
-  }
-}
-
-@keyframes smart-model-slider-accent-flow {
-  from {
-    transform: translateX(0);
-  }
-
-  to {
-    transform: translateX(-50%);
+    background-position: 170% 50%;
   }
 }
 

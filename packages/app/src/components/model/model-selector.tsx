@@ -767,9 +767,9 @@ function SliderRangeInput({
 
 function SliderTrack({ position }: { position: number }) {
   return (
-    <div className="pointer-events-none absolute inset-x-0 top-1/2 h-[18px] -translate-y-1/2 overflow-hidden rounded-full bg-muted">
+    <div className="smart-model-slider-track pointer-events-none absolute inset-x-0 top-1/2 h-[18px] -translate-y-1/2 rounded-full">
       <span
-        className="smart-model-slider-fill absolute inset-y-0 left-0 overflow-hidden rounded-full transition-[width] duration-200 ease-out motion-reduce:transition-none"
+        className="smart-model-slider-fill absolute inset-y-0 left-0 overflow-hidden rounded-full transition-[width,box-shadow] duration-300 ease-out motion-reduce:transition-none"
         style={sliderFillStyle(position)}
       />
     </div>
@@ -786,26 +786,14 @@ function SliderThumb({ position }: { position: number }) {
 }
 
 type SliderFillStyle = React.CSSProperties & {
-  "--smart-model-slider-accent-opacity": number
-  "--smart-model-slider-accent-duration": string
-  "--smart-model-slider-brightness": number
-  "--smart-model-slider-duration": string
-  "--smart-model-slider-glow-opacity": number
-  "--smart-model-slider-grayscale": number
-  "--smart-model-slider-saturation": number
+  "--smart-position": number
+  "--smart-sheen-duration": string
 }
 
 function sliderFillStyle(position: number): SliderFillStyle {
-  const duration = 3.6 - position * 1.2
-  const cheaperIntensity = Math.pow(1 - position, 2)
   return {
-    "--smart-model-slider-accent-duration": `${duration * 1.45}s`,
-    "--smart-model-slider-accent-opacity": 0.08 + position * 0.2,
-    "--smart-model-slider-brightness": 1.04 - cheaperIntensity * 0.26,
-    "--smart-model-slider-duration": `${duration}s`,
-    "--smart-model-slider-glow-opacity": 0.16 + position * 0.2,
-    "--smart-model-slider-grayscale": cheaperIntensity * 0.9,
-    "--smart-model-slider-saturation": 0.88 + position * 0.24,
+    "--smart-position": position,
+    "--smart-sheen-duration": `${(4.6 - position * 2).toFixed(2)}s`,
     width: sliderPoint(position),
   }
 }
