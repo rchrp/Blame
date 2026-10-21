@@ -1852,6 +1852,7 @@ export const MarkdownEditor = React.forwardRef<
     <Popover open={mentionOpen}>
       <PopoverAnchor asChild>
         <div
+          data-slot="markdown-editor"
           ref={(element) => {
             rootRef.current = element
             if (typeof ref === "function") ref(element)

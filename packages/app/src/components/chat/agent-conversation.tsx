@@ -34,6 +34,10 @@ import type {
 } from "@/components/backlog/data/backlog-data"
 import type { VcsFileDiff } from "@/components/backlog/development/development-workspace"
 import { readableReasoning } from "@/components/chat/reasoning-text"
+import {
+  AgentTurnTab,
+  turnTabNotchClass,
+} from "@/components/chat/agent-turn-tab"
 import type { SpeechTarget } from "@/components/backlog/drawer/speech-session-store"
 import {
   MarkdownEditor,
@@ -43,10 +47,7 @@ import { pendingFileAttachments } from "@/components/backlog/drawer/user-story-a
 import type { PendingCodeSelectionAttachment } from "@/components/backlog/shared/comment-attachment-events"
 import type { AgentConversationResponseHeader } from "@/components/chat/agent-conversation-header"
 import { checkpointRunTargets } from "@/components/chat/agent-run-checkpoints"
-import {
-  formatAgentTurnDuration,
-  type AgentTurnMetrics,
-} from "@/components/chat/agent-turn-metrics"
+import type { AgentTurnMetrics } from "@/components/chat/agent-turn-metrics"
 import { getVariantLabel } from "@/components/model/model-selection"
 import { ProviderMark } from "@/components/model/model-selector"
 import {
@@ -451,7 +452,7 @@ export function AgentConversationComposer({
         </div>
       ) : null}
       <div
-        className="relative"
+        className={cn("relative", turnTabNotchClass)}
         onKeyDownCapture={(event) => {
           if (
             !sendWhileRunning ||
@@ -466,7 +467,7 @@ export function AgentConversationComposer({
           if (!event.repeat && !disabled && !submitting) onMessageSendNow()
         }}
       >
-        {turnMetrics ? <AgentTurnIndicator metrics={turnMetrics} /> : null}
+        <AgentTurnTab metrics={turnMetrics} />
         <DraftSavedHint message={message} hidden={submitting || disabled} />
         <MarkdownEditor
           speechSessionKey={speechSessionKey}
@@ -523,22 +524,6 @@ export function AgentConversationComposer({
         />
       </div>
     </section>
-  )
-}
-
-function AgentTurnIndicator({ metrics }: { metrics: AgentTurnMetrics }) {
-  const duration = formatAgentTurnDuration(metrics.elapsedMs)
-  const state = metrics.running ? "This turn, in progress" : "Last turn"
-  return (
-    <div
-      aria-label={`${state}: ${duration}, ${metrics.additions} lines added, ${metrics.deletions} lines deleted`}
-      className="absolute right-5 bottom-full z-10 flex h-7 translate-y-px items-center gap-1.5 rounded-t-xl border border-b-0 border-foreground/20 bg-muted px-2.5 font-mono text-xs leading-none font-semibold tabular-nums shadow-sm"
-      title={`${state}: lines changed by the agent's edits in this turn`}
-    >
-      <span className="text-foreground">{duration}</span>
-      <span className="text-emerald-500">+{metrics.additions}</span>
-      <span className="text-destructive">-{metrics.deletions}</span>
-    </div>
   )
 }
 
