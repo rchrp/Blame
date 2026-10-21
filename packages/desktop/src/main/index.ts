@@ -53,6 +53,13 @@ import {
   type MainWindowRole,
 } from "./main-window-presentation";
 import { createMainWindowNavigationGuard } from "./main-window-navigation";
+import {
+  appWindowWithProject,
+  appWindows,
+  isAppWindowSender,
+  setAppWindowProject,
+  trackAppWindow,
+} from "./app-windows";
 
 contextMenu({
   showInspectElement: true,
@@ -100,6 +107,9 @@ if (!singleInstanceLock) app.exit(0);
 
 let mainWindow: BrowserWindow | undefined;
 let mainWindowRole: MainWindowRole | undefined;
+// Extra workspace windows, each opened on another project. The main window
+// is the one that can switch between compact and workspace.
+const projectWindows = new Set<BrowserWindow>();
 let shutdownPromise: Promise<void> | undefined;
 let shutdownRequested = false;
 let readyToQuit = false;
@@ -117,6 +127,7 @@ void app.whenReady().then(() => {
   }
   registerDesktopIpcHandlers({
     mainWindow: () => mainWindow,
+    isAppWindow: isAppWindowSender,
     packaged: app.isPackaged,
     registerCoreHandlers: registerIpcHandlers,
     backlogStatusPip: {
@@ -194,6 +205,7 @@ function createMainWindow(
   role: MainWindowRole,
   pathname?: string,
   replacedWindow?: BrowserWindow,
+  project?: string,
 ) {
   const presentation = mainWindowPresentation(appIdentity.name, role);
   const state = createWorkspaceWindowState(role, presentation);
@@ -207,6 +219,7 @@ function createMainWindow(
     mainWindowOptions(role, presentation, bounds),
   );
 
+  trackAppWindow(window);
   registerMainWindowEvents(window);
   protectMainWindowNavigation(window);
   preventRendererTitleChanges(window);
@@ -214,7 +227,7 @@ function createMainWindow(
   state?.manage(window);
   attachLiveLogWindow(window);
   registerWindowStateEvents(window);
-  loadRenderer(window, role, pathname);
+  loadRenderer(window, role, pathname, project);
   scheduleInitialWindowShow(window, role, fittedPresentation, replacedWindow);
   return window;
 }
@@ -265,15 +278,53 @@ function mainWindowOptions(
 function registerMainWindowEvents(window: BrowserWindow) {
   window.on("close", (event) => {
     if (process.platform === "darwin" || readyToQuit) return;
+    // Closing one of several windows only closes it; the last one quits.
+    if (appWindows().some((other) => other !== window)) return;
     event.preventDefault();
     shutdownRequested = true;
     void quitGracefully();
   });
   window.on("closed", () => {
+    projectWindows.delete(window);
     if (mainWindow !== window) return;
-    mainWindow = undefined;
-    mainWindowRole = undefined;
+    // Another project window takes over as the main window.
+    const next = [...projectWindows].find((other) => !other.isDestroyed());
+    if (next) projectWindows.delete(next);
+    mainWindow = next;
+    mainWindowRole = next ? "workspace" : undefined;
   });
+}
+
+// Opens a project in a window of its own, or brings forward the window that
+// already has it: two windows on one backlog would run its stories twice.
+function openProjectWindow(path: string) {
+  const existing = appWindowWithProject(path);
+  if (existing) {
+    showPresentedWindow(existing);
+    return "focused";
+  }
+  const window = createMainWindow("workspace", undefined, undefined, path);
+  offsetFromOpenWindows(window);
+  projectWindows.add(window);
+  return "opened";
+}
+
+// Windows share their saved bounds: cascade a new one so it does not hide
+// the window it was opened from.
+function offsetFromOpenWindows(window: BrowserWindow) {
+  const bounds = window.getBounds();
+  const taken = (x: number, y: number) =>
+    appWindows().some((other) => {
+      if (other === window) return false;
+      const position = other.getBounds();
+      return position.x === x && position.y === y;
+    });
+  let { x, y } = bounds;
+  while (taken(x, y)) {
+    x += 28;
+    y += 28;
+  }
+  if (x !== bounds.x) window.setPosition(x, y);
 }
 
 function preventRendererTitleChanges(window: BrowserWindow) {
@@ -396,8 +447,9 @@ function loadRenderer(
   window: BrowserWindow,
   role: MainWindowRole,
   pathname?: string,
+  project?: string,
 ) {
-  const query = rendererQuery(role, pathname);
+  const query = rendererQuery(role, pathname, project);
   if (process.env.ELECTRON_RENDERER_URL) {
     const url = new URL(process.env.ELECTRON_RENDERER_URL);
     for (const [name, value] of Object.entries(query)) {
@@ -409,10 +461,15 @@ function loadRenderer(
   void window.loadFile(desktopResources.renderer, { query });
 }
 
-function rendererQuery(role: MainWindowRole, pathname?: string) {
+function rendererQuery(
+  role: MainWindowRole,
+  pathname?: string,
+  project?: string,
+) {
   return {
     "window-role": role,
     ...(pathname ? { route: pathname } : {}),
+    ...(project ? { project } : {}),
   };
 }
 
@@ -446,6 +503,25 @@ function registerIpcHandlers() {
 
   ipcMain.on("window:close", (event) => {
     getEventWindow(event)?.close();
+  });
+
+  ipcMain.handle("window:open-project", (event, path: unknown) => {
+    if (!isAppWindowSender(event.sender) || !validProjectPath(path)) return;
+    return openProjectWindow(path);
+  });
+
+  // Brings forward another window that has this project open.
+  ipcMain.handle("window:focus-project", (event, path: unknown) => {
+    if (!isAppWindowSender(event.sender) || !validProjectPath(path))
+      return false;
+    const window = appWindowWithProject(path, event.sender);
+    if (!window) return false;
+    showPresentedWindow(window);
+    return true;
+  });
+
+  ipcMain.on("window:report-project", (event, path: unknown) => {
+    setAppWindowProject(event.sender, validProjectPath(path) ? path : null);
   });
 
   ipcMain.handle(
@@ -552,6 +628,10 @@ function windowPresentationInput(input: unknown): input is {
   const record = input as Record<string, unknown>;
   if (!isMainWindowRole(record.role)) return false;
   return validRendererPathname(record.pathname);
+}
+
+function validProjectPath(value: unknown): value is string {
+  return typeof value === "string" && value.length > 0 && value.length <= 4096;
 }
 
 function validRendererPathname(value: unknown) {

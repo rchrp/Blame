@@ -5,7 +5,9 @@ import {
   screen,
   type BrowserWindowConstructorOptions,
   type Rectangle,
+  type WebContents,
 } from "electron";
+import { lastFocusedAppWindow, onAppWindowFocus } from "./app-windows";
 
 const windowWidth = 360;
 const windowHeight = 600;
@@ -19,20 +21,21 @@ const compactMaxHeight = 420;
 const resizeDurationMs = 220;
 
 let statusPipWindow: BrowserWindow | undefined;
-let latestStatusPipSnapshot: unknown;
+// Each app window publishes its own project's stories; the status window
+// shows the ones of the window the user worked in last.
+const snapshots = new Map<number, unknown>();
 // Size to come back to when leaving compact mode.
 let expandedSize: { height: number; width: number } | undefined;
 let stopResize: (() => void) | undefined;
 
 export function registerBacklogStatusPipIpcHandlers(input: {
-  mainWindow(): BrowserWindow | undefined;
   preloadPath: string;
   rendererFile: string;
   rendererUrl?: string;
 }) {
   ipcMain.handle("backlog-status-pip:open", () => openStatusPipWindow(input));
   ipcMain.handle("backlog-status-pip:request", (_event, request) =>
-    sendStatusPipRequest(input.mainWindow(), request),
+    sendStatusPipRequest(lastFocusedAppWindow(), request),
   );
   ipcMain.on("backlog-status-pip:close", (event) => {
     if (event.sender === statusPipWindow?.webContents) statusPipWindow.close();
@@ -42,18 +45,32 @@ export function registerBacklogStatusPipIpcHandlers(input: {
       return false;
     return setStatusPipMode(statusPipWindow, input);
   });
-  ipcMain.handle(
-    "backlog-status-pip:latest-snapshot",
-    () => latestStatusPipSnapshot,
-  );
-  ipcMain.on("backlog-status-pip:snapshot", (_event, snapshot) => {
-    latestStatusPipSnapshot = snapshot;
-    sendStatusPipSnapshot(statusPipWindow, snapshot);
+  ipcMain.handle("backlog-status-pip:latest-snapshot", () => shownSnapshot());
+  ipcMain.on("backlog-status-pip:snapshot", (event, snapshot) => {
+    rememberSnapshot(event.sender, snapshot);
+    if (lastFocusedAppWindow()?.webContents === event.sender)
+      sendStatusPipSnapshot(statusPipWindow, snapshot);
+  });
+  onAppWindowFocus((window) => {
+    const snapshot = snapshots.get(window.webContents.id);
+    if (snapshot !== undefined)
+      sendStatusPipSnapshot(statusPipWindow, snapshot);
   });
 }
 
+function rememberSnapshot(sender: WebContents, snapshot: unknown) {
+  if (!snapshots.has(sender.id)) {
+    sender.once("destroyed", () => snapshots.delete(sender.id));
+  }
+  snapshots.set(sender.id, snapshot);
+}
+
+function shownSnapshot() {
+  const window = lastFocusedAppWindow();
+  return window ? snapshots.get(window.webContents.id) : undefined;
+}
+
 function openStatusPipWindow(input: {
-  mainWindow(): BrowserWindow | undefined;
   preloadPath: string;
   rendererFile: string;
   rendererUrl?: string;
@@ -152,8 +169,9 @@ function sendStatusPipRequest(
 }
 
 function sendLatestStatusPipSnapshot(window: BrowserWindow | undefined) {
-  if (latestStatusPipSnapshot === undefined) return;
-  sendStatusPipSnapshot(window, latestStatusPipSnapshot);
+  const snapshot = shownSnapshot();
+  if (snapshot === undefined) return;
+  sendStatusPipSnapshot(window, snapshot);
 }
 
 function sendStatusPipSnapshot(
@@ -173,22 +191,33 @@ function setStatusPipMode(window: BrowserWindow, input: unknown) {
   if (!mode) return false;
   const current = window.getBounds();
   if (mode.compact) {
-    if (window.isResizable()) expandedSize = { height: current.height, width: current.width };
+    if (window.isResizable())
+      expandedSize = { height: current.height, width: current.width };
     window.setMinimumSize(compactWidth, compactMinHeight);
     window.setResizable(false);
   } else {
     window.setResizable(true);
   }
-  const width = mode.compact ? compactWidth : (expandedSize?.width ?? windowWidth);
+  const width = mode.compact
+    ? compactWidth
+    : (expandedSize?.width ?? windowWidth);
   const height = mode.compact
-    ? clamp(mode.contentHeight ?? compactMinHeight, compactMinHeight, compactMaxHeight)
+    ? clamp(
+        mode.contentHeight ?? compactMinHeight,
+        compactMinHeight,
+        compactMaxHeight,
+      )
     : (expandedSize?.height ?? windowHeight);
   const area = screen.getDisplayMatching(current).workArea;
   const target = {
     height: Math.min(height, area.height),
     width,
     x: Math.max(area.x, current.x + current.width - width),
-    y: clamp(current.y, area.y, area.y + area.height - Math.min(height, area.height)),
+    y: clamp(
+      current.y,
+      area.y,
+      area.y + area.height - Math.min(height, area.height),
+    ),
   };
   animateBounds(window, target, () => {
     if (!mode.compact) window.setMinimumSize(minWindowWidth, minWindowHeight);
@@ -196,7 +225,11 @@ function setStatusPipMode(window: BrowserWindow, input: unknown) {
   return true;
 }
 
-function animateBounds(window: BrowserWindow, target: Rectangle, done: () => void) {
+function animateBounds(
+  window: BrowserWindow,
+  target: Rectangle,
+  done: () => void,
+) {
   stopResize?.();
   if (process.platform === "darwin") {
     window.setBounds(target, true);
@@ -234,7 +267,8 @@ function statusPipMode(input: unknown) {
   const record = input as Record<string, unknown>;
   if (typeof record.compact !== "boolean") return undefined;
   const contentHeight =
-    typeof record.contentHeight === "number" && Number.isFinite(record.contentHeight)
+    typeof record.contentHeight === "number" &&
+    Number.isFinite(record.contentHeight)
       ? Math.round(record.contentHeight)
       : undefined;
   return { compact: record.compact, contentHeight };

@@ -1,20 +1,20 @@
-import { BrowserWindow, ipcMain } from "electron";
+import { BrowserWindow, ipcMain, type WebContents } from "electron";
 import type { PreviewSessionCommand } from "@blame/preview-runtime";
 import { isRuntimeProfileId } from "@blame/preview-runtime";
 import type { PreviewService } from "../preview-runtime/preview-service";
 import { isCloudPreviewSessionId } from "../preview-runtime/cloud-preview-client";
 
 export function registerPreviewRuntimeIpcHandlers(input: {
-  mainWindow(): BrowserWindow | undefined;
+  isAppWindow(sender: WebContents): boolean;
   service: PreviewService;
 }) {
   const subscriptions = new Map<string, AbortController>();
   const owner = (event: Electron.IpcMainInvokeEvent) => {
-    if (event.sender !== input.mainWindow()?.webContents)
+    if (!input.isAppWindow(event.sender))
       throw new Error("Preview request was rejected");
   };
   const connectionOwner = (event: Electron.IpcMainInvokeEvent) => {
-    if (event.sender === input.mainWindow()?.webContents) return;
+    if (input.isAppWindow(event.sender)) return;
     const senderWindow = BrowserWindow.fromWebContents(event.sender);
     if (!senderWindow || event.senderFrame !== event.sender.mainFrame) {
       throw new Error("Preview request was rejected");

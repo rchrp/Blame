@@ -199,6 +199,11 @@ const api: BlameDesktopApi = {
       return () => ipcRenderer.removeListener("updates:status", handler);
     },
   },
+  projectWindows: {
+    focusProject: (path) => ipcRenderer.invoke("window:focus-project", path),
+    openProject: (path) => ipcRenderer.invoke("window:open-project", path),
+    reportProject: (path) => ipcRenderer.send("window:report-project", path),
+  },
   windowControls: {
     close: () => ipcRenderer.send("window:close"),
     isMaximized: () => ipcRenderer.invoke("window:is-maximized"),

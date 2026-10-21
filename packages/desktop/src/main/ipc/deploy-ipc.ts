@@ -1,13 +1,13 @@
-import { BrowserWindow, ipcMain } from "electron";
+import { ipcMain, type WebContents } from "electron";
 import { parsePreviewManifest } from "@blame/preview-contract";
 import type { DeployService } from "../deploy/deploy-service.ts";
 
 export function registerDeployIpcHandlers(input: {
-  mainWindow(): BrowserWindow | undefined;
+  isAppWindow(sender: WebContents): boolean;
   service: DeployService;
 }) {
   const owner = (event: Electron.IpcMainInvokeEvent) => {
-    if (event.sender !== input.mainWindow()?.webContents) {
+    if (!input.isAppWindow(event.sender)) {
       throw new Error("Deployment request was rejected");
     }
   };

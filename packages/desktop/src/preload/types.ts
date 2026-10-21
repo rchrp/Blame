@@ -126,6 +126,13 @@ export type PreviewBrowserState = {
   url?: string;
 };
 
+// One window per open project.
+export type ProjectWindows = {
+  focusProject(path: string): Promise<boolean>;
+  openProject(path: string): Promise<"focused" | "opened" | undefined>;
+  reportProject(path: string | null): void;
+};
+
 export type WindowControls = {
   close(): void;
   isMaximized(): Promise<boolean>;
@@ -236,6 +243,7 @@ export type BlameDesktopApi = {
   updates: DesktopUpdates;
   mcp: McpServersClient;
   windowControls: WindowControls;
+  projectWindows: ProjectWindows;
   previewBrowser: {
     capture(input: {
       id: string;

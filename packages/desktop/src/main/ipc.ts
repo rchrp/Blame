@@ -3,6 +3,7 @@ import {
   shell,
   systemPreferences,
   type BrowserWindow,
+  type WebContents,
 } from "electron";
 import { localAgentOwnsWorkspace, registerAgentIpcHandlers } from "./agent-ipc";
 import { registerBacklogStatusPipIpcHandlers } from "./backlog-status-pip-ipc";
@@ -23,6 +24,8 @@ import {
 
 export type DesktopIpcOptions = {
   mainWindow(): BrowserWindow | undefined;
+  // Any window showing the app, the status PiP aside.
+  isAppWindow(sender: WebContents): boolean;
   packaged: boolean;
   registerCoreHandlers(): void;
   backlogStatusPip: {
@@ -58,11 +61,10 @@ export function registerDesktopIpcHandlers(options: DesktopIpcOptions) {
     openMicrophoneSettings(),
   );
   registerCloudAuthIpcHandlers({
-    mainWindow: options.mainWindow,
+    isAppWindow: options.isAppWindow,
     packaged: options.packaged,
   });
   registerBacklogStatusPipIpcHandlers({
-    mainWindow: options.mainWindow,
     ...options.backlogStatusPip,
   });
   registerAgentIpcHandlers({
@@ -73,11 +75,11 @@ export function registerDesktopIpcHandlers(options: DesktopIpcOptions) {
     beforeWorkspaceWrite: (worktree) => previews.syncBarrier(worktree),
   });
   registerPreviewRuntimeIpcHandlers({
-    mainWindow: options.mainWindow,
+    isAppWindow: options.isAppWindow,
     service: previews,
   });
   registerDeployIpcHandlers({
-    mainWindow: options.mainWindow,
+    isAppWindow: options.isAppWindow,
     service: deploy,
   });
   registerPreviewBrowserIpcHandlers({

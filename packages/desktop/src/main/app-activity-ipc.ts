@@ -1,4 +1,10 @@
-import { app, BrowserWindow, ipcMain, Notification } from "electron";
+import {
+  app,
+  BrowserWindow,
+  ipcMain,
+  Notification,
+  type WebContents,
+} from "electron";
 
 // Keeps the app's presence outside its window in sync with what the agents
 // do: window title, dock/taskbar badge, attention requests, and system
@@ -16,19 +22,30 @@ type AppActivityOptions = {
   baseTitle: () => string;
 };
 
+// Agents running per window: each window shows its own count in its title,
+// the dock badge shows them all.
+const runningByWindow = new Map<number, number>();
+
 export function registerAppActivityIpc(options: AppActivityOptions) {
-  ipcMain.handle("notifications:show", (_event, input) =>
-    showSystemNotification(input, options),
+  ipcMain.handle("notifications:show", (event, input) =>
+    showSystemNotification(input, senderWindow(event.sender, options)),
   );
-  ipcMain.handle("app:set-activity", (_event, input) => {
-    setActivity(input, options);
+  ipcMain.handle("app:set-activity", (event, input) => {
+    setActivity(input, event.sender, options);
   });
-  ipcMain.handle("app:request-attention", () => {
-    requestAttention(options.mainWindow());
+  ipcMain.handle("app:request-attention", (event) => {
+    requestAttention(senderWindow(event.sender, options));
   });
 }
 
-function showSystemNotification(input: unknown, options: AppActivityOptions) {
+function senderWindow(sender: WebContents, options: AppActivityOptions) {
+  return BrowserWindow.fromWebContents(sender) ?? options.mainWindow();
+}
+
+function showSystemNotification(
+  input: unknown,
+  window: BrowserWindow | undefined,
+) {
   if (!Notification.isSupported()) return false;
   if (!systemNotificationInput(input)) return false;
   const notification = new Notification({
@@ -37,8 +54,7 @@ function showSystemNotification(input: unknown, options: AppActivityOptions) {
   });
   const target = notificationTarget(input.target);
   notification.on("click", () => {
-    const window = options.mainWindow();
-    if (!window) return;
+    if (!window || window.isDestroyed()) return;
     if (window.isMinimized()) window.restore();
     window.show();
     window.focus();
@@ -48,21 +64,35 @@ function showSystemNotification(input: unknown, options: AppActivityOptions) {
   return true;
 }
 
-function setActivity(input: unknown, options: AppActivityOptions) {
+function setActivity(
+  input: unknown,
+  sender: WebContents,
+  options: AppActivityOptions,
+) {
   if (!input || typeof input !== "object") return;
   const record = input as Record<string, unknown>;
   const running =
     typeof record.running === "number" && Number.isInteger(record.running)
       ? Math.max(0, Math.min(record.running, 99))
       : 0;
-  const window = options.mainWindow();
+  const window = senderWindow(sender, options);
   const base = options.baseTitle();
   window?.setTitle(running ? `● ${base} — ${agentsLabel(running)}` : base);
+  if (!runningByWindow.has(sender.id)) {
+    sender.once("destroyed", () => {
+      runningByWindow.delete(sender.id);
+      app.setBadgeCount(totalRunning());
+    });
+  }
+  runningByWindow.set(sender.id, running);
   // Dock badge on macOS, launcher badge on supported Linux desktops.
-  if (process.platform !== "win32") app.setBadgeCount(running);
+  if (process.platform !== "win32") app.setBadgeCount(totalRunning());
   // Windows has no numeric badge: an indeterminate taskbar progress shows
   // that agents are working.
-  else window?.setProgressBar(running ? 2 : -1, { mode: running ? "indeterminate" : "none" });
+  else
+    window?.setProgressBar(running ? 2 : -1, {
+      mode: running ? "indeterminate" : "none",
+    });
 }
 
 function requestAttention(window: BrowserWindow | undefined) {
@@ -73,6 +103,12 @@ function requestAttention(window: BrowserWindow | undefined) {
   }
   window.flashFrame(true);
   window.once("focus", () => window.flashFrame(false));
+}
+
+function totalRunning() {
+  let total = 0;
+  for (const count of runningByWindow.values()) total += count;
+  return Math.min(total, 99);
 }
 
 function agentsLabel(count: number) {
@@ -92,7 +128,9 @@ function systemNotificationInput(input: unknown): input is {
   return true;
 }
 
-export function notificationTarget(value: unknown): NotificationTarget | undefined {
+export function notificationTarget(
+  value: unknown,
+): NotificationTarget | undefined {
   if (!value || typeof value !== "object") return undefined;
   const record = value as Record<string, unknown>;
   const pathname = shortString(record.pathname);

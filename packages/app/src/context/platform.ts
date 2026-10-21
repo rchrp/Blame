@@ -111,6 +111,8 @@ export type Platform = {
   mcp?: McpServersClient
   workspace?: WorkspaceClient
   windowControls?: WindowControlsClient
+  // Desktop: one window per open project.
+  projectWindows?: ProjectWindowsClient
   openDirectoryPickerDialog?(
     options?: OpenDirectoryPickerOptions
   ): Promise<PickerPaths>
@@ -309,6 +311,13 @@ export type BacklogStatusPipRequest = {
   rejectChoice?: "request-changes" | "discard"
   stopChoice?: "pause" | "pause-feedback" | "backlog" | "discard-worktree"
   storyId: string
+}
+
+export type ProjectWindowsClient = {
+  // Brings forward another window that has this project open.
+  focusProject(path: string): Promise<boolean>
+  openProject(path: string): Promise<"focused" | "opened" | undefined>
+  reportProject(path: string | null): void
 }
 
 export type WindowControlsClient = {
