@@ -272,18 +272,24 @@
     -webkit-background-clip: text;
   }
 
-  /* Cheaper to smarter: the house blue, calm and quiet at the cheap end,
-     vivid with a stronger halo at the smart end. One soft light sweeps
-     across it and rests, livelier as the position rises. */
+  /* Cheaper to smarter: one blue gradient laid over the whole track, calm
+     at the cheap end and vivid at the smart end. The fill only reveals
+     more or less of it, never squeezes it; the halo grows with it, and one
+     soft light sweeps across the whole track and rests. */
   .smart-model-slider-track {
+    container-type: inline-size;
     background: color-mix(in oklab, var(--foreground) 8%, transparent);
     box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--foreground) 6%, transparent);
   }
 
   .smart-model-slider-fill {
-    --smart-start: oklch(0.56 calc(0.07 + 0.15 * var(--smart-position)) 262);
-    --smart-end: oklch(0.8 calc(0.04 + 0.11 * var(--smart-position)) 236);
-    background: linear-gradient(90deg in oklab, var(--smart-start), var(--smart-end));
+    background: linear-gradient(
+        90deg in oklch,
+        oklch(0.55 0.09 262),
+        oklch(0.66 0.2 248),
+        oklch(0.8 0.15 232)
+      )
+      left / 100cqw 100% no-repeat;
     box-shadow:
       0 0 0 1px oklch(0.7 0.17 250 / calc(0.1 + 0.2 * var(--smart-position))),
       0 0 calc(4px + 14px * var(--smart-position))
@@ -302,12 +308,11 @@
         transparent
       )
       no-repeat;
-    background-size: 38% 260%;
-    background-position: -70% 50%;
+    background-size: 30cqw 260%;
+    background-position: -30cqw 50%;
     mix-blend-mode: plus-lighter;
-    opacity: calc(0.35 + 0.65 * var(--smart-position));
-    animation: smart-model-slider-sheen var(--smart-sheen-duration)
-      cubic-bezier(0.45, 0, 0.25, 1) infinite;
+    animation: smart-model-slider-sheen 3.6s cubic-bezier(0.45, 0, 0.25, 1)
+      infinite;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -712,12 +717,12 @@
 
 @keyframes smart-model-slider-sheen {
   from {
-    background-position: -70% 50%;
+    background-position: -30cqw 50%;
   }
 
   60%,
   to {
-    background-position: 170% 50%;
+    background-position: 100cqw 50%;
   }
 }
 

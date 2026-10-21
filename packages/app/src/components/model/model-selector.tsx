@@ -779,23 +779,16 @@ function SliderTrack({ position }: { position: number }) {
 function SliderThumb({ position }: { position: number }) {
   return (
     <span
-      className="pointer-events-none absolute top-1/2 z-2 size-6 -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground shadow-md ring-2 ring-background transition-[left,scale,box-shadow] duration-200 ease-out peer-hover:scale-125 peer-hover:shadow-lg peer-focus-visible:scale-125 peer-active:scale-125 peer-active:shadow-xl motion-reduce:transition-none"
+      className="pointer-events-none absolute top-1/2 z-2 size-6 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white shadow-md ring-2 ring-neutral-900 dark:ring-background transition-[left,scale,box-shadow] duration-200 ease-out peer-hover:scale-125 peer-hover:shadow-lg peer-focus-visible:scale-125 peer-active:scale-125 peer-active:shadow-xl motion-reduce:transition-none"
       style={{ left: sliderPoint(position) }}
     />
   )
 }
 
-type SliderFillStyle = React.CSSProperties & {
-  "--smart-position": number
-  "--smart-sheen-duration": string
-}
+type SliderFillStyle = React.CSSProperties & { "--smart-position": number }
 
 function sliderFillStyle(position: number): SliderFillStyle {
-  return {
-    "--smart-position": position,
-    "--smart-sheen-duration": `${(4.6 - position * 2).toFixed(2)}s`,
-    width: sliderPoint(position),
-  }
+  return { "--smart-position": position, width: sliderPoint(position) }
 }
 
 function SliderLabels({
