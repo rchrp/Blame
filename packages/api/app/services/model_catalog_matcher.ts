@@ -104,9 +104,11 @@ function providerCandidates(providerId: string, models: OpenRouterModel[]) {
 }
 
 function similarityScore(model: CatalogModel, candidate: OpenRouterModel) {
-  const modelId = normalizeModelText(stripProviderPrefix(model.id))
-  const candidateId = normalizeModelText(stripProviderPrefix(candidate.canonicalSlug))
-  if (!numbersCompatible(modelId, candidateId)) return 0
+  const rawModelId = stripProviderPrefix(model.id)
+  const rawCandidateId = stripProviderPrefix(candidate.canonicalSlug)
+  if (!versionsCompatible(rawModelId, rawCandidateId)) return 0
+  const modelId = normalizeModelText(rawModelId)
+  const candidateId = normalizeModelText(rawCandidateId)
   const idScore = tokenSimilarity(modelId, candidateId)
   const nameScore = tokenSimilarity(
     normalizeModelText(model.name),
@@ -124,15 +126,17 @@ function tokenSimilarity(left: string, right: string) {
   return union ? intersection / union : 0
 }
 
-function numbersCompatible(left: string, right: string) {
-  const leftNumbers = numericTokens(left)
-  const rightNumbers = numericTokens(right)
-  if (!leftNumbers.size || !rightNumbers.size) return true
-  return [...leftNumbers].every((token) => rightNumbers.has(token))
+// Versions are compared whole: "6" is not part of "5.6", so GPT-6 Sol never
+// borrows GPT-5.6 Sol's benchmark.
+function versionsCompatible(left: string, right: string) {
+  const leftVersions = versionTokens(left)
+  const rightVersions = versionTokens(right)
+  if (!leftVersions.size || !rightVersions.size) return true
+  return [...leftVersions].every((token) => rightVersions.has(token))
 }
 
-function numericTokens(value: string) {
-  return new Set(value.split(' ').filter((token) => /^\d+$/.test(token)))
+function versionTokens(value: string) {
+  return new Set(value.toLowerCase().match(/\d+(?:\.\d+)*/g) ?? [])
 }
 
 function normalizeModelText(value: string) {

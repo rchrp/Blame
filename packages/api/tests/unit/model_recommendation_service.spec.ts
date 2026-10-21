@@ -79,7 +79,48 @@ test.group('model recommendation service', () => {
     assert.lengthOf(recommendations.byProvider.openai, 1)
     assert.lengthOf(recommendations.byProvider.openrouter, 1)
   })
+
+  test('ranks only on comparable scores and keeps new models known by another measure', ({
+    assert,
+  }) => {
+    // Brand-new models often come with an intelligence index or a design
+    // arena win rate only: on another scale, they must not look weaker.
+    const provider = catalogProvider('openai-codex', [
+      model('gpt-5.6-luna', 0.2, 50, '2026-07-09'),
+      model('gpt-5.6-terra', 2, 62, '2026-07-09'),
+      model('gpt-5.6-sol', 4, 70, '2026-07-09'),
+      partiallyRated('gpt-6-luna', 0.1, { intelligenceIndex: 30 }, '2026-09-22'),
+      partiallyRated('gpt-6-sol', 2, { designArenaScore: 0.6 }, '2026-09-22'),
+      partiallyRated('gpt-6-astra', 10, { codingIndex: 88 }, '2026-09-04'),
+    ])
+
+    const recommendations = buildModelRecommendations(
+      [provider],
+      [provider.id],
+      profile,
+      '2026-10-21T00:00:00.000Z'
+    )
+    const segment = (name: string) =>
+      recommendations.all.filter((entry) => entry.segment === name).map((entry) => entry.modelId)
+
+    assert.deepEqual(segment('benchmarked'), ['gpt-5.6-luna', 'gpt-5.6-terra', 'gpt-5.6-sol'])
+    assert.deepEqual(segment('unbenchmarked'), ['gpt-6-luna', 'gpt-6-sol', 'gpt-6-astra'])
+  })
 })
+
+function partiallyRated(
+  id: string,
+  inputPrice: number,
+  benchmark: Omit<NonNullable<CatalogModel['benchmark']>, 'smartScore'>,
+  releaseDate: string
+): CatalogModel {
+  const fallbackScore =
+    benchmark.codingIndex ?? benchmark.intelligenceIndex ?? benchmark.designArenaScore ?? 0
+  return {
+    ...model(id, inputPrice, undefined, releaseDate),
+    benchmark: { ...benchmark, smartScore: fallbackScore },
+  }
+}
 
 function catalogProvider(id: string, models: CatalogModel[]): CatalogProvider {
   return {
@@ -101,7 +142,10 @@ function model(
     name: id,
     releaseDate,
     canonicalModelId,
-    benchmark: smartScore === undefined ? undefined : { smartScore },
+    benchmark:
+      smartScore === undefined
+        ? undefined
+        : { smartScore, codingIndex: smartScore, agenticIndex: smartScore },
     cost: {
       input: inputPrice,
       output: null,

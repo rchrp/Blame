@@ -57,7 +57,7 @@ function providerCandidates(provider: CatalogProvider, profile: ModelRecommendat
 function recommendationEntries(candidates: RecommendationCandidate[], generatedAt: string) {
   const benchmarked = paretoFrontier(candidates.filter(hasBenchmark))
   const unbenchmarked = candidates.filter(
-    (candidate) => !candidate.model.benchmark && recentlyReleased(candidate.model, generatedAt)
+    (candidate) => !hasBenchmark(candidate) && recentlyReleased(candidate.model, generatedAt)
   )
   const ranked = benchmarked.sort(compareBenchmarked)
   const unrated = unbenchmarked.sort(compareCost)
@@ -80,8 +80,8 @@ function paretoFrontier(candidates: RecommendationCandidate[]) {
 
 function dominates(left: RecommendationCandidate, right: RecommendationCandidate) {
   if (left === right) return false
-  const leftScore = left.model.benchmark?.smartScore ?? -Infinity
-  const rightScore = right.model.benchmark?.smartScore ?? -Infinity
+  const leftScore = comparableScore(left.model) ?? -Infinity
+  const rightScore = comparableScore(right.model) ?? -Infinity
   const costComparison = comparableCost(left.estimatedCost) <= comparableCost(right.estimatedCost)
   const scoreComparison = leftScore >= rightScore
   const strict =
@@ -112,7 +112,7 @@ function recommendationEntry(
     position: positionValue,
     segment,
     estimatedCost: candidate.estimatedCost,
-    smartScore: candidate.model.benchmark?.smartScore,
+    smartScore: comparableScore(candidate.model),
   }
 }
 
@@ -140,13 +140,24 @@ function pricedTokens(price: number | null, tokens: number) {
 }
 
 function hasBenchmark(candidate: RecommendationCandidate) {
-  return candidate.model.benchmark !== undefined
+  return comparableScore(candidate.model) !== undefined
+}
+
+// Models are ranked on one scale only: Artificial Analysis coding and
+// agentic indexes. A model known only by another measure (intelligence
+// index, design arena win rate: often the case for brand-new models) is not
+// comparable, and joins the new models instead of looking weaker than it is.
+function comparableScore(model: CatalogModel) {
+  const coding = model.benchmark?.codingIndex
+  const agentic = model.benchmark?.agenticIndex
+  if (coding === undefined || agentic === undefined) return undefined
+  return Math.round((coding * 0.7 + agentic * 0.3) * 100) / 100
 }
 
 function compareBenchmarked(left: RecommendationCandidate, right: RecommendationCandidate) {
   return (
     comparableCost(left.estimatedCost) - comparableCost(right.estimatedCost) ||
-    (left.model.benchmark?.smartScore ?? 0) - (right.model.benchmark?.smartScore ?? 0)
+    (comparableScore(left.model) ?? 0) - (comparableScore(right.model) ?? 0)
   )
 }
 

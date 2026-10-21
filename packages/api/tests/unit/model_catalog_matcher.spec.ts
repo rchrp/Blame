@@ -49,6 +49,19 @@ test.group('model catalog matcher', () => {
     assert.equal(match?.confidence, 1)
   })
 
+  test('does not take a whole version for part of another', ({ assert }) => {
+    const matcher = new ModelCatalogMatcher([
+      openRouterModel('openai/gpt-5.6-sol-codex-max', 'GPT-5.6 Sol Codex Max'),
+    ])
+
+    const match = matcher.match(
+      'openai-codex',
+      catalogModel('gpt-6-sol-codex-max', 'GPT-6 Sol Codex Max')
+    )
+
+    assert.isUndefined(match)
+  })
+
   test('does not confuse different numeric model versions', ({ assert }) => {
     const matcher = new ModelCatalogMatcher([
       openRouterModel('openai/gpt-5.5-codex', 'GPT-5.5 Codex'),
