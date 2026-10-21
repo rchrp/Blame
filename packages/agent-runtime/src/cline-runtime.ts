@@ -10,6 +10,7 @@ import {
   sep,
 } from "node:path";
 import { imageAwareCompaction } from "./image-compaction.js";
+import { contextLimitConfig } from "./context-limit-config.js";
 
 import type { ExecutionTerminalReason } from "@blame/harness-core";
 import {
@@ -970,6 +971,7 @@ export class BlameAgentRuntime {
             apiKey: resolvedCredential.apiKey,
             baseUrl: resolvedCredential.baseUrl ?? undefined,
             ...reasoningConfig(input.reasoningEffort),
+            ...contextLimitConfig(input),
             systemPrompt,
             cwd: input.cwd,
             workspaceRoot: input.workspaceRoot,
@@ -3792,6 +3794,7 @@ export class BlameAgentRuntime {
       modelId: input.modelId,
       credentialLabel: input.credentialLabel,
       reasoningEffort: input.reasoningEffort,
+      maxInputTokens: input.maxInputTokens,
       checkpointEnabled: input.checkpointEnabled,
       configExtensions: input.configExtensions,
       disableMcpSettingsTools: input.disableMcpSettingsTools,

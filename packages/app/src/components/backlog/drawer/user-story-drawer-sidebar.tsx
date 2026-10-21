@@ -15,6 +15,27 @@ import {
 } from "@/components/model/model-selection"
 import { ProviderIcon } from "@/components/model/model-selector"
 import {
+  type ContextLimitOption,
+  contextLimitOptions,
+  effectiveContextLimit,
+  modelInputLimit,
+  providerInputLimit,
+} from "@/components/model/context-limits"
+import {
+  saveStoryContextLimit,
+  useStoryContextLimit,
+} from "@/components/backlog/data/story-context-limit"
+import { useStoryModelChoice } from "@/components/backlog/data/story-model-choice"
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectSeparator,
+  SelectTrigger,
+} from "@/components/ui/select"
+import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
@@ -34,16 +55,15 @@ export function DrawerSidebar({
   const sessionUsage = useSessionUsage(
     userStory?.agentUsage ? undefined : userStory?.clineSessionId
   )
-  const selection = useModelSelection()
-  const limit = modelContextLimit(userStory, selection.allProviders)
+  const budget = useStoryContextBudget(userStory)
   const totals =
     usageTotalsFromAgentUsage(userStory?.agentUsage) ?? sessionUsage.totals
-  const context = storyContextUsage(userStory?.agentUsage, limit)
+  const context = storyContextUsage(userStory?.agentUsage, budget.limit)
 
   return (
     <aside className="grid gap-4 p-4">
       <ModelHeader userStory={userStory} />
-      <ContextGauge context={context} limit={limit} />
+      <ContextGauge budget={budget} context={context} />
       <div className="grid grid-cols-3 gap-2">
         <Stat label="Cost">
           {formatCurrency(totals?.totalCost ?? totals?.cost)}
@@ -96,11 +116,11 @@ function ModelHeader({ userStory }: { userStory?: UserStory }) {
 const contextCells = 50
 
 function ContextGauge({
+  budget,
   context,
-  limit,
 }: {
+  budget: StoryContextBudget
   context?: StoryContextUsage
-  limit?: number
 }) {
   const ratio = context?.ratio ?? 0
   const cachedCells = context
@@ -113,17 +133,16 @@ function ContextGauge({
         <span className="text-xs font-medium text-muted-foreground">
           Context
         </span>
-        <span className="text-xs text-muted-foreground tabular-nums">
+        <span className="flex items-baseline gap-1 text-xs text-muted-foreground tabular-nums">
           {context ? (
             <>
               <span className="text-sm font-semibold text-foreground">
                 {Math.round(ratio * 100)}%
-              </span>{" "}
-              · {compactTokens(context.used)} / {compactTokens(context.limit)}
+              </span>
+              · {compactTokens(context.used)} /
             </>
-          ) : limit ? (
-            `${compactTokens(limit)} window`
           ) : null}
+          <ContextLimitSelect budget={budget} />
         </span>
       </div>
       <div className="grid grid-cols-[repeat(25,minmax(0,1fr))] gap-[3px]">
@@ -160,7 +179,109 @@ function ContextGauge({
       <p className="text-xs text-pretty text-muted-foreground">
         {contextNote(context)}
       </p>
+      {budget.experimental ? (
+        <p className="rounded-md bg-amber-500/10 px-2 py-1.5 text-[11px] text-pretty text-amber-700 dark:text-amber-300">
+          Experimental: past this provider's usual limit. It uses your quota
+          faster, the provider may still cut it shorter, and very long contexts
+          can lower quality.
+        </p>
+      ) : null}
     </section>
+  )
+}
+
+type StoryContextBudget = {
+  // The cap the person picked, when any.
+  choice?: number
+  experimental: boolean
+  // The budget the agent works in: the cap, or the provider's limit.
+  limit?: number
+  options: ContextLimitOption[]
+  storyId?: string
+}
+
+// The context budget of the story's next turns: the model it will use, the
+// provider's own input limit, and the cap picked for it.
+function useStoryContextBudget(userStory?: UserStory): StoryContextBudget {
+  const selection = useModelSelection()
+  const choiceOfModel = useStoryModelChoice(userStory)
+  const choice = useStoryContextLimit(userStory?.id)
+  const provider = selection.allProviders.find(
+    (item) => item.id === choiceOfModel?.providerId
+  )
+  const model = provider?.models[choiceOfModel?.modelId ?? ""]
+  const providerLimit = providerInputLimit(model)
+  const modelLimit = modelInputLimit(model, selection.allProviders)
+  const limit = effectiveContextLimit(choice, modelLimit) ?? providerLimit
+  return {
+    choice,
+    experimental: Boolean(limit && providerLimit && limit > providerLimit),
+    limit,
+    options: contextLimitOptions(providerLimit, modelLimit),
+    storyId: userStory?.id,
+  }
+}
+
+const providerDefault = "provider"
+
+// The cap, picked where it is read: next to the context it limits.
+function ContextLimitSelect({ budget }: { budget: StoryContextBudget }) {
+  const storyId = budget.storyId
+  if (!budget.limit) return null
+  if (!storyId || budget.options.length < 2)
+    return <span>{compactTokens(budget.limit)}</span>
+  const selected =
+    budget.options.find((option) => option.value === budget.choice) ??
+    budget.options.find((option) => option.value === undefined)
+  const standard = budget.options.filter((option) => !option.experimental)
+  const experimental = budget.options.filter((option) => option.experimental)
+  return (
+    <Select
+      value={selected?.value ? String(selected.value) : providerDefault}
+      onValueChange={(value) =>
+        saveStoryContextLimit(
+          storyId,
+          value === providerDefault ? undefined : Number(value)
+        )
+      }
+    >
+      <SelectTrigger
+        aria-label="Maximum context"
+        className="h-auto gap-0.5 border-0 bg-transparent p-0 text-xs text-muted-foreground shadow-none hover:text-foreground focus-visible:ring-0 dark:bg-transparent dark:hover:bg-transparent [&_svg:not([class*='size-'])]:size-3"
+        size="sm"
+      >
+        {compactTokens(budget.limit)}
+      </SelectTrigger>
+      <SelectContent align="end" className="min-w-48" position="popper">
+        <SelectGroup>
+          <SelectLabel>Max context · from the next message</SelectLabel>
+          {standard.map((option) => (
+            <SelectItem
+              key={option.value ?? providerDefault}
+              value={option.value ? String(option.value) : providerDefault}
+            >
+              {compactTokens(option.tokens)}
+              {option.value === undefined ? (
+                <span className="text-muted-foreground">Provider limit</span>
+              ) : null}
+            </SelectItem>
+          ))}
+        </SelectGroup>
+        {experimental.length ? (
+          <>
+            <SelectSeparator />
+            <SelectGroup>
+              <SelectLabel>Experimental</SelectLabel>
+              {experimental.map((option) => (
+                <SelectItem key={option.tokens} value={String(option.value)}>
+                  {compactTokens(option.tokens)}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </>
+        ) : null}
+      </SelectContent>
+    </Select>
   )
 }
 
@@ -274,17 +395,6 @@ function useSessionUsage(
 
 function usageTotals(summary: AgentUsageSummary | undefined) {
   return summary?.aggregateUsage ?? summary?.usage
-}
-
-function modelContextLimit(
-  userStory: UserStory | undefined,
-  providers: ReturnType<typeof useModelSelection>["allProviders"]
-) {
-  const provider = providers.find(
-    (item) => item.id === userStory?.agentProviderId
-  )
-  const model = provider?.models[userStory?.agentModelId ?? ""]
-  return model?.contextWindow ?? provider?.models.custom?.contextWindow
 }
 
 function usageTotalsFromAgentUsage(usage: UserStory["agentUsage"]) {

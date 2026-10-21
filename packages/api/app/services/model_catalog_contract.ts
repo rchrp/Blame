@@ -19,6 +19,8 @@ export type CatalogModel = {
   status?: string
   description?: string
   contextWindow?: number
+  // The usable input budget, below the window (ChatGPT plans cap it lower).
+  maxInputTokens?: number
   maxTokens?: number
   capabilities?: string[]
   releaseDate?: string

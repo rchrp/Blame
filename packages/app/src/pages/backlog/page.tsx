@@ -75,6 +75,7 @@ import {
   modelForPreference,
   useModelSelection,
 } from "@/components/model/model-selection"
+import { storyMaxInputTokens } from "@/components/backlog/data/story-context-limit"
 import { storyModelChoice } from "@/components/backlog/data/story-model-choice"
 import {
   projectInitializing,
@@ -888,6 +889,11 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
         modelId,
         credentialLabel: model?.credentialLabel,
         reasoningEffort,
+        maxInputTokens: storyMaxInputTokens(
+          story.id,
+          model,
+          agentSelection.allProviders
+        ),
         autoSendPrompt: false,
         title: story.title,
         summary: story.summary,

@@ -19,6 +19,8 @@ export type BlameModel = {
   status?: string;
   description?: string;
   contextWindow?: number;
+  // The usable input budget, below the window (ChatGPT plans cap it lower).
+  maxInputTokens?: number;
   maxTokens?: number;
   capabilities?: string[];
   releaseDate?: string;
@@ -175,6 +177,9 @@ export type StartSessionInput = {
   providerId: string;
   modelId: string;
   reasoningEffort?: ReasoningSelection;
+  // Caps the context the agent works in (compaction follows it). Unset: the
+  // provider's own input limit.
+  maxInputTokens?: number;
   autoApproveWriteTools?: boolean;
   autoSendPrompt?: boolean;
   checkpointEnabled?: boolean;
@@ -226,6 +231,7 @@ export type StartDevelopmentSessionInput = {
   modelId: string;
   credentialLabel?: string;
   reasoningEffort?: ReasoningSelection;
+  maxInputTokens?: number;
   autoSendPrompt?: boolean;
   checkpointEnabled?: boolean;
   configExtensions?: AgentRuntimeConfigExtension[];

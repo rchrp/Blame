@@ -62,6 +62,7 @@ import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
 import { createCloudApi } from "@/lib/cloud-api"
 import { effectiveProjectCodePractices } from "@/lib/project-code-practice-preferences"
+import { storyMaxInputTokens } from "@/components/backlog/data/story-context-limit"
 import { type StoryRunMode, useStoryRunMode } from "@/lib/runtime-preference"
 import {
   measurePerformanceOperation,
@@ -314,6 +315,11 @@ export function useBacklogRotation(
         modelId: selection.currentModel.id,
         credentialLabel: selection.currentModel.credentialLabel,
         reasoningEffort: selection.currentVariant,
+        maxInputTokens: storyMaxInputTokens(
+          detailedStory.id,
+          selection.currentModel,
+          selection.allProviders
+        ),
         autoSendPrompt: false,
         title: detailedStory.title,
         summary: detailedStory.summary,

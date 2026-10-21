@@ -134,6 +134,7 @@ function catalogModel(modelId: string, model: ModelInfo): CatalogModel {
     status: model.status,
     description: model.description,
     contextWindow: model.contextWindow,
+    maxInputTokens: model.maxInputTokens,
     maxTokens: model.maxTokens,
     capabilities: model.capabilities,
     releaseDate: model.releaseDate,
@@ -408,6 +409,7 @@ function customModel(id: string, fallback: CatalogModel | undefined, matcher: Mo
   const model = {
     ...(fallback ?? { cost: emptyCost() }),
     contextWindow: undefined,
+    maxInputTokens: undefined,
     cost: emptyCost(),
     id,
     maxTokens: undefined,
