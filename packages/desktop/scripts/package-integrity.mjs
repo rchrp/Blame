@@ -115,6 +115,31 @@ export function verifyAsarWorkspaceRuntime(archive) {
   );
 }
 
+// The agent runtime's TypeScript language service resolves built-in types
+// from the compiler's default libraries, which electron-builder drops with
+// every other .d.ts unless electron-builder.config.ts forces them in.
+const requiredTypeScriptLibraries = ["lib.d.ts", "lib.es5.d.ts", "lib.dom.d.ts"];
+
+export function verifyAsarTypeScriptLibraries(archive) {
+  const asar = asarTools();
+  const entries = new Set(
+    asar.listPackage(archive).map((entry) => entry.split(sep).join("/")),
+  );
+  const compilers = [...entries].filter((entry) =>
+    /(?:^|\/)node_modules\/typescript\/lib\/typescript\.js$/.test(entry),
+  );
+  for (const compiler of compilers) {
+    const directory = posix.dirname(compiler);
+    for (const library of requiredTypeScriptLibraries) {
+      if (!entries.has(posix.join(directory, library)))
+        throw new Error(
+          `Desktop package is missing TypeScript default library: ${posix.join(directory, library)}`,
+        );
+    }
+  }
+  return compilers.length;
+}
+
 /** Run after electron-builder, before installers can be copied or uploaded. */
 export async function verifyPackagedWorkspaceRuntime(dist) {
   const archives = [];
@@ -138,6 +163,9 @@ export async function verifyPackagedWorkspaceRuntime(dist) {
     throw new Error(`No packaged app.asar found in ${dist}`);
   for (const archive of archives) {
     const count = await verifyAsarWorkspaceRuntime(archive);
-    console.log(`Verified ${count} workspace packages in ${archive}`);
+    const compilers = verifyAsarTypeScriptLibraries(archive);
+    console.log(
+      `Verified ${count} workspace packages and the default libraries of ${compilers} TypeScript compiler(s) in ${archive}`,
+    );
   }
 }

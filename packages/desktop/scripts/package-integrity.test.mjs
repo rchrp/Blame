@@ -120,6 +120,25 @@ test("detects a dependency lost between deployment and packaging", async () => {
   });
 });
 
+test("requires the default libraries of a packaged TypeScript compiler", async () => {
+  await fixture(async ({ dist, file, pack }) => {
+    for (const name of ["harness-core", "model-catalog"])
+      await file(`node_modules/@blame/${name}/dist/index.js`);
+    await file("node_modules/typescript/lib/typescript.js");
+    await file("node_modules/typescript/lib/lib.d.ts");
+    await pack();
+    await assert.rejects(
+      verifyPackagedWorkspaceRuntime(dist),
+      /missing TypeScript default library: .*typescript\/lib\/lib\.es5\.d\.ts/,
+    );
+
+    await file("node_modules/typescript/lib/lib.es5.d.ts");
+    await file("node_modules/typescript/lib/lib.dom.d.ts");
+    await pack();
+    await verifyPackagedWorkspaceRuntime(dist);
+  });
+});
+
 test("refuses success when no packaged application was produced", async () => {
   await fixture(async ({ dist }) => {
     await mkdir(dist);
