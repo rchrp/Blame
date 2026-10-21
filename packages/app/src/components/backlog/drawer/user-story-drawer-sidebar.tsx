@@ -2,12 +2,28 @@ import * as React from "react"
 import type { AgentUsageSummary, AgentUsageTotals } from "@blame/agent-runtime"
 
 import type { UserStory } from "@/components/backlog/data/backlog-data"
-import { DiffStats } from "@/components/backlog/development/development-diff-stats"
 import type { UserStoryDiffStats } from "@/components/backlog/development/user-story-diff-stats"
-import { useModelSelection } from "@/components/model/model-selection"
-import { Separator } from "@/components/ui/separator"
+import {
+  compactTokens,
+  storyContextUsage,
+  type StoryContextUsage,
+} from "@/components/backlog/drawer/story-context-usage"
+import {
+  getVariantLabel,
+  useModelDisplayNames,
+  useModelSelection,
+} from "@/components/model/model-selection"
+import { ProviderIcon } from "@/components/model/model-selector"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { usePlatform } from "@/context/platform"
+import { cn } from "@/lib/utils"
 
+// The story's agent at a glance: which model, how full its context is, and
+// what the work cost and changed.
 export function DrawerSidebar({
   diffStats,
   userStory,
@@ -15,176 +31,210 @@ export function DrawerSidebar({
   diffStats?: UserStoryDiffStats
   userStory?: UserStory
 }) {
+  const sessionUsage = useSessionUsage(
+    userStory?.agentUsage ? undefined : userStory?.clineSessionId
+  )
+  const selection = useModelSelection()
+  const limit = modelContextLimit(userStory, selection.allProviders)
+  const totals =
+    usageTotalsFromAgentUsage(userStory?.agentUsage) ?? sessionUsage.totals
+  const context = storyContextUsage(userStory?.agentUsage, limit)
+
   return (
-    <aside className="p-5 pr-14">
-      <div className="grid gap-6">
-        <section className="grid min-w-0 gap-5">
-          <div className="min-w-0">
-            <h2 className="text-sm font-semibold text-foreground">Dev Agent</h2>
-            <p className="text-xs text-muted-foreground">Execution settings</p>
-          </div>
-        </section>
-        {diffStats && <CodeChanges diffStats={diffStats} />}
-        <TokenUsage userStory={userStory} />
+    <aside className="grid gap-4 p-4">
+      <ModelHeader userStory={userStory} />
+      <ContextGauge context={context} limit={limit} />
+      <div className="grid grid-cols-3 gap-2">
+        <Stat label="Cost">
+          {formatCurrency(totals?.totalCost ?? totals?.cost)}
+        </Stat>
+        <TokensStat totals={totals} />
+        <Stat label="Changes">
+          {diffStats ? (
+            <span className="flex gap-1.5">
+              <span className="text-emerald-600 dark:text-emerald-400">
+                +{diffStats.additions}
+              </span>
+              <span className="text-rose-600 dark:text-rose-400">
+                −{diffStats.deletions}
+              </span>
+            </span>
+          ) : (
+            "—"
+          )}
+        </Stat>
       </div>
     </aside>
   )
 }
 
-function CodeChanges({ diffStats }: { diffStats: UserStoryDiffStats }) {
+function ModelHeader({ userStory }: { userStory?: UserStory }) {
+  const names = useModelDisplayNames()
+  const providerId = userStory?.agentProviderId
+  const modelId = userStory?.agentModelId
+  const effort = latestReasoningEffort(userStory)
+  if (!providerId || !modelId) return null
   return (
-    <TokenGroup title="Code changes">
-      <TokenStat
-        className="col-span-2"
-        label="Lines added / removed"
-        value={<DiffStats className="ml-0" diff={diffStats} />}
-      />
-    </TokenGroup>
-  )
-}
-
-function TokenUsage({ userStory }: { userStory?: UserStory }) {
-  const sessionUsage = useSessionUsage(userStory?.clineSessionId)
-  const selection = useModelSelection()
-  const contextLimit = modelContextLimit(userStory, selection.allProviders)
-  if (!userStory?.clineSessionId && !userStory?.agentUsage) return null
-
-  return (
-    <section className="grid gap-4">
-      <TokenGroup title="Model configuration">
-        <TokenStat label="Provider" value={userStory.agentProviderId} />
-        <TokenStat label="Model" value={userStory.agentModelId} />
-        <TokenStat label="Context limit" value={formatInteger(contextLimit)} />
-      </TokenGroup>
-      {usageContent(sessionUsage, userStory.agentUsage)}
-    </section>
-  )
-}
-
-function usageContent(
-  sessionUsage: SessionUsageState,
-  agentUsage: UserStory["agentUsage"]
-) {
-  const storyTotals = usageTotalsFromAgentUsage(agentUsage)
-
-  if (sessionUsage.loading && !storyTotals) {
-    return (
-      <TokenGroup title="Loading">
-        <TokenStat label="Usage" value="Loading" />
-      </TokenGroup>
-    )
-  }
-
-  const totals = storyTotals ?? sessionUsage.totals
-  if (!totals) {
-    return (
-      <TokenGroup title="Usage overview">
-        <TokenStat label="Usage" value="-" />
-      </TokenGroup>
-    )
-  }
-
-  return <TokenUsageTotals totals={totals} />
-}
-
-function TokenUsageTotals({ totals }: { totals: AgentUsageTotals }) {
-  return (
-    <div className="grid gap-4">
-      <CostTokens totals={totals} />
-      <InputOutputTokens totals={totals} />
-      <CacheTokens totals={totals} />
+    <div className="flex min-w-0 items-center gap-2 pr-8">
+      <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-foreground/[0.06] ring-1 ring-foreground/10">
+        <ProviderIcon className="size-4" providerId={providerId} />
+      </span>
+      <div className="grid min-w-0 leading-tight">
+        <span className="truncate text-sm font-medium text-foreground">
+          {names.model(providerId, modelId)}
+        </span>
+        <span className="truncate text-xs text-muted-foreground">
+          {effort
+            ? `${getVariantLabel(effort)} reasoning`
+            : names.provider(providerId)}
+        </span>
+      </div>
     </div>
   )
 }
 
-function CostTokens({ totals }: { totals: AgentUsageTotals }) {
-  return (
-    <TokenGroup title="Cost">
-      <TokenStat label="Cost" value={formatCurrency(totals.cost)} />
-      <TokenStat label="Total cost" value={formatCurrency(totals.totalCost)} />
-    </TokenGroup>
-  )
-}
+const contextCells = 50
 
-function InputOutputTokens({ totals }: { totals: AgentUsageTotals }) {
-  return (
-    <TokenGroup title="Generation tokens">
-      <TokenStat
-        label="Input tokens"
-        value={formatInteger(totals.inputTokens)}
-      />
-      <TokenStat
-        label="Output tokens"
-        value={formatInteger(totals.outputTokens)}
-      />
-      <TokenStat
-        label="Total input tokens"
-        value={formatInteger(totals.totalInputTokens)}
-      />
-      <TokenStat
-        label="Total output tokens"
-        value={formatInteger(totals.totalOutputTokens)}
-      />
-    </TokenGroup>
-  )
-}
-
-function CacheTokens({ totals }: { totals: AgentUsageTotals }) {
-  return (
-    <TokenGroup title="Cache tokens">
-      <TokenStat
-        label="Cache read"
-        value={formatInteger(totals.cacheReadTokens)}
-      />
-      <TokenStat
-        label="Cache write"
-        value={formatInteger(totals.cacheWriteTokens)}
-      />
-      <TokenStat
-        label="Total cache read"
-        value={formatInteger(totals.totalCacheReadTokens)}
-      />
-      <TokenStat
-        label="Total cache write"
-        value={formatInteger(totals.totalCacheWriteTokens)}
-      />
-    </TokenGroup>
-  )
-}
-
-function TokenGroup({
-  children,
-  title,
+function ContextGauge({
+  context,
+  limit,
 }: {
-  children: React.ReactNode
-  title: string
+  context?: StoryContextUsage
+  limit?: number
 }) {
+  const ratio = context?.ratio ?? 0
+  const cachedCells = context
+    ? Math.round((context.cached / context.limit) * contextCells)
+    : 0
+  const usedCells = context ? Math.max(1, Math.round(ratio * contextCells)) : 0
   return (
-    <section className="grid gap-3">
-      <Separator />
-      <h3 className="text-sm font-semibold text-foreground">{title}</h3>
-      <div className="grid grid-cols-2 gap-3">{children}</div>
+    <section className="grid gap-2.5" aria-label="Context window">
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="text-xs font-medium text-muted-foreground">
+          Context
+        </span>
+        <span className="text-xs text-muted-foreground tabular-nums">
+          {context ? (
+            <>
+              <span className="text-sm font-semibold text-foreground">
+                {Math.round(ratio * 100)}%
+              </span>{" "}
+              · {compactTokens(context.used)} / {compactTokens(context.limit)}
+            </>
+          ) : limit ? (
+            `${compactTokens(limit)} window`
+          ) : null}
+        </span>
+      </div>
+      <div className="grid grid-cols-[repeat(25,minmax(0,1fr))] gap-[3px]">
+        {Array.from({ length: contextCells }, (_, index) => (
+          <span
+            key={index}
+            className={cn(
+              "h-2 rounded-[3px] transition-colors duration-500",
+              index < Math.min(cachedCells, usedCells)
+                ? "bg-blue-500"
+                : index < usedCells
+                  ? "bg-violet-400"
+                  : "bg-foreground/[0.08]",
+              index >= usedCells && ratio >= 0.8 && "bg-amber-500/20"
+            )}
+          />
+        ))}
+      </div>
+      {context ? (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground tabular-nums">
+          <Legend
+            className="bg-blue-500"
+            label="Reused"
+            value={context.cached}
+          />
+          <Legend className="bg-violet-400" label="New" value={context.fresh} />
+          <Legend
+            className="bg-foreground/15"
+            label="Free"
+            value={context.free}
+          />
+        </div>
+      ) : null}
+      <p className="text-xs text-pretty text-muted-foreground">
+        {contextNote(context)}
+      </p>
     </section>
   )
 }
 
-function TokenStat({
+function contextNote(context?: StoryContextUsage) {
+  if (!context) return "Shows how full the agent's memory is once it runs."
+  if (context.ratio >= 0.8)
+    return "Almost full: the agent will summarize its older steps soon."
+  if (context.ratio >= 0.5) return "Filling up, still room to work."
+  return "Plenty of room left."
+}
+
+function Legend({
   className,
   label,
   value,
 }: {
-  className?: string
+  className: string
   label: string
-  value?: React.ReactNode
+  value: number
 }) {
   return (
-    <div className={className ? `grid gap-1 ${className}` : "grid gap-1"}>
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="text-sm font-medium break-words whitespace-pre-line text-foreground">
-        {value || "-"}
-      </p>
+    <span className="flex items-center gap-1.5">
+      <span className={cn("size-2 rounded-[2px]", className)} />
+      {label} <span className="text-foreground/80">{compactTokens(value)}</span>
+    </span>
+  )
+}
+
+function Stat({
+  children,
+  label,
+}: {
+  children: React.ReactNode
+  label: string
+}) {
+  return (
+    <div className="grid min-w-0 gap-0.5 rounded-lg bg-foreground/[0.04] px-2.5 py-2 ring-1 ring-foreground/[0.06]">
+      <span className="text-[11px] text-muted-foreground">{label}</span>
+      <span className="truncate text-sm font-medium text-foreground tabular-nums">
+        {children}
+      </span>
     </div>
   )
+}
+
+function TokensStat({ totals }: { totals?: AgentUsageTotals }) {
+  if (!totals) return <Stat label="Tokens">—</Stat>
+  const input = totals.totalInputTokens
+  const output = totals.totalOutputTokens
+  const cached = totals.totalCacheReadTokens ?? 0
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div
+          tabIndex={0}
+          className="min-w-0 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+        >
+          <Stat label="Tokens">{compactTokens(input + output)}</Stat>
+        </div>
+      </TooltipTrigger>
+      <TooltipContent className="tabular-nums">
+        In {compactTokens(input)} · Out {compactTokens(output)}
+        {cached ? ` · Read from cache ${compactTokens(cached)}` : ""}
+      </TooltipContent>
+    </Tooltip>
+  )
+}
+
+function latestReasoningEffort(userStory?: UserStory) {
+  const runs = userStory?.agentRuns ?? []
+  const latest = [...runs]
+    .sort((left, right) => left.createdAt.localeCompare(right.createdAt))
+    .at(-1)
+  return latest?.reasoningEffort ?? undefined
 }
 
 type SessionUsageState = {
@@ -193,7 +243,10 @@ type SessionUsageState = {
   totals?: AgentUsageTotals
 }
 
-function useSessionUsage(sessionId: string | null | undefined) {
+// Stories saved before usage was stored ask the agent session for it.
+function useSessionUsage(
+  sessionId: string | null | undefined
+): SessionUsageState {
   const platform = usePlatform()
   const [state, setState] = React.useState<SessionUsageState>({})
 
@@ -250,15 +303,11 @@ function usageTotalsFromAgentUsage(usage: UserStory["agentUsage"]) {
   }
 }
 
-function formatInteger(value: number | null | undefined) {
-  if (value === undefined || value === null) return "-"
-  return new Intl.NumberFormat("en-US").format(value)
-}
-
 function formatCurrency(value: number | null | undefined) {
-  if (value === undefined || value === null) return "-"
+  if (value === undefined || value === null) return "—"
   return new Intl.NumberFormat("en-US", {
     currency: "USD",
+    maximumFractionDigits: value < 1 ? 3 : 2,
     style: "currency",
   }).format(value)
 }
