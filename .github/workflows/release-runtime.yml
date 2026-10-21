@@ -67,6 +67,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup
+        with:
+          save-cache: "false"
 
       - run: pnpm --filter @blame/agent-runtime build
       - run: pnpm test:semantic-harness-payload
