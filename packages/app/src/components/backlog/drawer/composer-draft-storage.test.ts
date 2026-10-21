@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import test from "node:test"
 
 import {
+  appendComposerDraftText,
   composerDraftStorageKey,
   readComposerDraft,
   writeComposerDraft,
@@ -73,4 +74,20 @@ test("removes empty drafts and ignores invalid stored data", () => {
     readComposerDraft({ getItem: () => '{"markdown":1}' }, "draft"),
     undefined
   )
+})
+
+test("appends a dictation to an existing or missing draft", () => {
+  const values = new Map<string, string>()
+  const storage = {
+    getItem: (key: string) => values.get(key) ?? null,
+    removeItem: (key: string) => void values.delete(key),
+    setItem: (key: string, value: string) => void values.set(key, value),
+  }
+  appendComposerDraftText(storage, "empty", " Add tests. ")
+  assert.equal(readComposerDraft(storage, "empty")?.markdown, "Add tests.")
+  writeComposerDraft(storage, "draft", draft)
+  appendComposerDraftText(storage, "draft", "Then ship.")
+  const updated = readComposerDraft(storage, "draft")
+  assert.equal(updated?.markdown, "Work in progress Then ship.")
+  assert.deepEqual(updated?.fileAttachments, draft.fileAttachments)
 })

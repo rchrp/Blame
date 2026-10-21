@@ -6,6 +6,7 @@ import type {
   UserStoryAgentActivity,
   UserStoryFileAttachment,
 } from "@/components/backlog/data/backlog-data"
+import { userStoryDisplayId } from "@/components/backlog/data/backlog-data"
 import { createBacklogApi } from "@/components/backlog/data/backlog-api"
 import type { PendingCodeSelectionAttachment } from "@/components/backlog/shared/comment-attachment-events"
 import type { UserStoryDrawerMode } from "@/components/backlog/shared/backlog-types"
@@ -15,6 +16,8 @@ import {
   type PendingFileAttachment,
 } from "@/components/backlog/drawer/markdown-editor"
 import { RuntimeProfileSelector } from "@/components/backlog/drawer/runtime-profile-selector"
+import { composerDraftStorageKey } from "@/components/backlog/drawer/composer-draft-storage"
+import type { SpeechTarget } from "@/components/backlog/drawer/speech-session-store"
 import type { StoryRunMode } from "@/lib/runtime-preference"
 import {
   commentButtonLabel,
@@ -143,6 +146,7 @@ export const UserStoryContent = React.memo(function UserStoryContent({
       <div className="group/message grid gap-3">
         <MarkdownEditor
           speechSessionKey={`backlog-summary:${project?.id}:${userStory?.id ?? "new"}`}
+          speechTarget={summarySpeechTarget(mode, userStory)}
           codeSelectionAttachments={summaryCodeSelectionAttachments}
           fileAttachments={summaryFileAttachments}
           mentionDirectory={mentionDirectory}
@@ -269,6 +273,10 @@ function UserStoryCommentComposer({
       onAgentCancel={onAgentPause}
       queueWhileRunning
       speechSessionKey={`backlog-comment:${project?.id}:${userStory?.id}`}
+      speechTarget={{
+        draftKey: backlogDraftKey(userStory),
+        label: `your message on ${userStory ? userStoryDisplayId(userStory) : "this story"}`,
+      }}
       codeSelectionAttachments={commentCodeSelectionAttachments}
       disabled={status === "done"}
       submitting={commentSubmitting}
@@ -444,4 +452,27 @@ function fileMentionDirectory(
   if (status === "backlog" || status === "ready") return projectPath
   if (status === "in-progress" || status === "in-review")
     return userStory?.worktree ?? undefined
+}
+
+// The same saved draft the drawer writes while typing.
+function backlogDraftKey(userStory?: UserStory) {
+  return composerDraftStorageKey(
+    userStory?.projectId ?? "project",
+    "backlog",
+    userStory?.id
+  )
+}
+
+// A new story's description is a saved draft; an existing one is the story.
+function summarySpeechTarget(
+  mode: UserStoryDrawerMode,
+  userStory?: UserStory
+): SpeechTarget {
+  if (mode === "create")
+    return { draftKey: backlogDraftKey(), label: "the new story" }
+  return {
+    label: userStory
+      ? `${userStoryDisplayId(userStory)} description`
+      : "the story description",
+  }
 }

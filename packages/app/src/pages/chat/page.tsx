@@ -1027,6 +1027,7 @@ function QuickChatProjectPage() {
                   ) : null}
                   <AgentConversationComposer
                     speechSessionKey={draftStorageKey}
+                    speechTarget={chatSpeechTarget(draftStorageKey)}
                     minHeight={emptyConversation ? "min-h-44" : "min-h-24"}
                     agentRunning={agentRunning}
                     cancelingAgent={cancelingAgent}
@@ -1089,4 +1090,8 @@ function QuickChatProjectPage() {
       />
     </>
   )
+}
+
+function chatSpeechTarget(draftKey: string) {
+  return { draftKey, label: "your chat message" }
 }

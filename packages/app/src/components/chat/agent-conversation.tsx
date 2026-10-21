@@ -34,6 +34,7 @@ import type {
 } from "@/components/backlog/data/backlog-data"
 import type { VcsFileDiff } from "@/components/backlog/development/development-workspace"
 import { readableReasoning } from "@/components/chat/reasoning-text"
+import type { SpeechTarget } from "@/components/backlog/drawer/speech-session-store"
 import {
   MarkdownEditor,
   type PendingFileAttachment,
@@ -356,6 +357,7 @@ export function AgentConversationComposer({
   disabled,
   submitting = false,
   speechSessionKey,
+  speechTarget,
   editorKey,
   editorRef,
   fileAttachments,
@@ -386,6 +388,7 @@ export function AgentConversationComposer({
   disabled?: boolean
   submitting?: boolean
   speechSessionKey?: string
+  speechTarget?: SpeechTarget
   editorKey: number
   editorRef: React.RefObject<HTMLDivElement | null>
   fileAttachments: PendingFileAttachment[]
@@ -467,6 +470,7 @@ export function AgentConversationComposer({
         <DraftSavedHint message={message} hidden={submitting || disabled} />
         <MarkdownEditor
           speechSessionKey={speechSessionKey}
+          speechTarget={speechTarget}
           key={editorKey}
           codeSelectionAttachments={codeSelectionAttachments}
           fileAttachments={fileAttachments}

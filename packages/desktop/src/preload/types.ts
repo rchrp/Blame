@@ -226,6 +226,7 @@ export type BlameDesktopApi = {
     options?: OpenDirectoryPickerOptions,
   ): Promise<string | string[] | null>;
   requestMicrophoneAccess(): Promise<boolean>;
+  openMicrophoneSettings(): Promise<void>;
   openExternalLink(url: string): void;
   openPath(path: string): Promise<string>;
   backlogStatusPip: BacklogStatusPip;

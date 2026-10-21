@@ -193,9 +193,16 @@ export function SpeechRecordingControl({
       setStatus("idle")
       onFinished()
       if (isPermissionError(error)) {
-        toast.error(
-          "Microphone access is required. Allow Blame in your system or browser microphone settings, then try again."
-        )
+        const openSettings = platform.openMicrophoneSettings
+        toast.error("Blame cannot use your microphone", {
+          action: openSettings
+            ? { label: "Open Settings", onClick: () => void openSettings() }
+            : undefined,
+          description: openSettings
+            ? "Allow Blame in the Microphone privacy settings, then try again."
+            : "Allow microphone access in your browser settings, then try again.",
+          duration: 10_000,
+        })
       } else {
         toast.error("Unable to start voice input.")
       }

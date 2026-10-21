@@ -1,4 +1,9 @@
-import { ipcMain, systemPreferences, type BrowserWindow } from "electron";
+import {
+  ipcMain,
+  shell,
+  systemPreferences,
+  type BrowserWindow,
+} from "electron";
 import { localAgentOwnsWorkspace, registerAgentIpcHandlers } from "./agent-ipc";
 import { registerBacklogStatusPipIpcHandlers } from "./backlog-status-pip-ipc";
 import { registerCloudAuthIpcHandlers } from "./cloud-auth-ipc";
@@ -48,10 +53,9 @@ export function registerDesktopIpcHandlers(options: DesktopIpcOptions) {
   );
   const deploy = new DeployService(options.packaged);
   options.registerCoreHandlers();
-  ipcMain.handle("media:request-microphone", () =>
-    process.platform === "darwin"
-      ? systemPreferences.askForMediaAccess("microphone")
-      : true,
+  ipcMain.handle("media:request-microphone", () => requestMicrophoneAccess());
+  ipcMain.handle("media:open-microphone-settings", () =>
+    openMicrophoneSettings(),
   );
   registerCloudAuthIpcHandlers({
     mainWindow: options.mainWindow,
@@ -90,4 +94,29 @@ export function registerDesktopIpcHandlers(options: DesktopIpcOptions) {
     beforeGitWrite: (worktree) => previews.syncBarrier(worktree),
     onRuntimeReady: options.onRuntimeReady,
   });
+}
+
+// macOS asks once. After a refusal it answers "denied" without showing
+// anything again, so the app offers to open the Microphone settings.
+async function requestMicrophoneAccess() {
+  if (process.platform !== "darwin") return true;
+  const status = systemPreferences.getMediaAccessStatus("microphone");
+  if (status === "granted") return true;
+  if (status === "denied" || status === "restricted") return false;
+  try {
+    return await systemPreferences.askForMediaAccess("microphone");
+  } catch {
+    return false;
+  }
+}
+
+function openMicrophoneSettings() {
+  if (process.platform === "darwin") {
+    return shell.openExternal(
+      "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone",
+    );
+  }
+  if (process.platform === "win32") {
+    return shell.openExternal("ms-settings:privacy-microphone");
+  }
 }

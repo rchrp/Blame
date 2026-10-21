@@ -48,6 +48,24 @@ export function writeComposerDraft(
   storage.setItem(key, JSON.stringify(draft))
 }
 
+// A dictation finished while its editor was closed lands in the draft.
+export function appendComposerDraftText(
+  storage: Pick<Storage, "getItem" | "removeItem" | "setItem">,
+  key: string,
+  text: string
+) {
+  const draft = readComposerDraft(storage, key) ?? {
+    codeSelectionAttachments: [],
+    fileAttachments: [],
+    markdown: "",
+  }
+  const separator = !draft.markdown || /\s$/.test(draft.markdown) ? "" : " "
+  writeComposerDraft(storage, key, {
+    ...draft,
+    markdown: `${draft.markdown}${separator}${text.trim()}`,
+  })
+}
+
 export function removeComposerDraft(
   storage: Pick<Storage, "removeItem">,
   key: string

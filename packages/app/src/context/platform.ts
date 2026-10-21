@@ -115,6 +115,8 @@ export type Platform = {
     options?: OpenDirectoryPickerOptions
   ): Promise<PickerPaths>
   requestMicrophoneAccess?(): Promise<boolean>
+  // Opens the system's microphone privacy settings (desktop only).
+  openMicrophoneSettings?(): Promise<void>
   openExternalLink?(url: string): void
   openPath?(path: string): Promise<string>
 }

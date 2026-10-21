@@ -38,6 +38,7 @@ import {
   type MarkdownWysiwygSegment,
 } from "@/components/backlog/drawer/markdown-wysiwyg-parser"
 import { SpeechToTextControl } from "@/components/backlog/drawer/speech-to-text-provider"
+import type { SpeechTarget } from "@/components/backlog/drawer/speech-session-store"
 import { fileAttachment } from "@/components/backlog/drawer/user-story-attachment-files"
 import {
   codeSelectionLineLabel,
@@ -1128,6 +1129,8 @@ export const MarkdownEditor = React.forwardRef<
   {
     animateAppend?: boolean
     speechSessionKey?: string
+    // Where a dictation goes when this editor is closed meanwhile.
+    speechTarget?: SpeechTarget
     appearance?: "bubble" | "subtle"
     markdown: string
     maxHeight?: string
@@ -1152,6 +1155,7 @@ export const MarkdownEditor = React.forwardRef<
     animateAppend,
     appearance = "bubble",
     speechSessionKey,
+    speechTarget,
     codeSelectionAttachments,
     fileAttachments,
     markdown,
@@ -1907,6 +1911,8 @@ export const MarkdownEditor = React.forwardRef<
                 <div className="pointer-events-auto shrink-0">
                   <SpeechToTextControl
                     sessionKey={speechSessionKey}
+                    currentText={() => currentValueRef.current}
+                    target={speechTarget}
                     disabled={optimizing || optimizingAttachments}
                     onStartRecording={rememberSpeechSelection}
                     onTranscription={insertSpeechTranscription}

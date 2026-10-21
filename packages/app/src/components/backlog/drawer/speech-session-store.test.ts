@@ -65,3 +65,40 @@ test("multiple completed dictations are restored together after draft hydration"
   store.flush("story")
   assert.deepEqual(texts, ["First sentence. Second sentence."])
 })
+
+test("a dictation finished away is saved into its draft and not inserted twice", () => {
+  const drafts = new Map<string, string>([["draft:story", "Notes:"]])
+  const store = createSpeechSessionStore({
+    appendToDraft: (key, text) =>
+      drafts.set(key, `${drafts.get(key) ?? ""} ${text}`.trim()),
+  })
+  const target = { draftKey: "draft:story", label: "New story" }
+  const leave = store.register("story", { ...slot(() => {}), target })
+  leave()
+  assert.equal(store.target("story")?.label, "New story")
+  assert.equal(store.deliver("story", "Add a dark mode."), false)
+  assert.equal(drafts.get("draft:story"), "Notes: Add a dark mode.")
+  const texts: string[] = []
+  store.register("story", {
+    ...slot((text) => texts.push(text)),
+    currentText: () => drafts.get("draft:story") ?? "",
+    target,
+  })
+  store.flush("story")
+  assert.deepEqual(texts, [])
+})
+
+test("a dictation finished away still reaches an editor that kept stale text", () => {
+  const store = createSpeechSessionStore({ appendToDraft: () => {} })
+  const target = { draftKey: "draft:comment", label: "Comment" }
+  store.register("comment", { ...slot(() => {}), target })()
+  store.deliver("comment", "Use the Alert component.")
+  const texts: string[] = []
+  store.register("comment", {
+    ...slot((text) => texts.push(text)),
+    currentText: () => "",
+    target,
+  })
+  store.flush("comment")
+  assert.deepEqual(texts, ["Use the Alert component."])
+})

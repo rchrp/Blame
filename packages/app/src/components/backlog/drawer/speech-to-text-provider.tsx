@@ -3,7 +3,11 @@ import { createPortal } from "react-dom"
 import { MicIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { SpeechRecordingControl } from "./speech-to-text-control"
-import { createSpeechSessionStore } from "./speech-session-store"
+import {
+  createSpeechSessionStore,
+  type SpeechTarget,
+} from "./speech-session-store"
+import { appendComposerDraftText } from "./composer-draft-storage"
 import { useLatestCallback } from "@/lib/use-latest-callback"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { navigate } from "@/components/navigation/navigation"
@@ -14,7 +18,17 @@ const SpeechContext = React.createContext<ReturnType<
 > | null>(null)
 
 function useSpeechSession() {
-  const [store] = React.useState(createSpeechSessionStore)
+  const [store] = React.useState(() =>
+    createSpeechSessionStore({
+      appendToDraft(draftKey, text) {
+        try {
+          appendComposerDraftText(localStorage, draftKey, text)
+        } catch {
+          return
+        }
+      },
+    })
+  )
   const [activeKey, setActiveKey] = React.useState<string>()
   const [container] = React.useState(() => document.createElement("div"))
   return { store, activeKey, setActiveKey, container }
@@ -54,27 +68,54 @@ function useSpeechContainer() {
   }
 }
 
+// Away from its editor, the recording follows the user in a corner card
+// that says where the text goes, and can be finished from there.
 function SpeechRecordingHost() {
   const { store, activeKey, container, setActiveKey, fallback, floating } =
     useSpeechContainer()
+  const target = activeKey ? store.target(activeKey) : undefined
+  const deliver = useLatestCallback((key: string, text: string) => {
+    const target = store.target(key)
+    const reachedEditor = store.deliver(key, text)
+    if (reachedEditor && !floating) return
+    toast.success(target ? `Added to ${target.label}` : "Voice note saved", {
+      description:
+        reachedEditor || target?.draftKey
+          ? "It is in the draft, ready when you go back."
+          : "It will be inserted when you open it again.",
+      position: "bottom-right",
+    })
+  })
   return (
     <>
       <div
-        ref={fallback}
         role="region"
         aria-label="Voice input"
         className={
           floating
-            ? "pointer-events-auto fixed right-4 bottom-4 z-[100] max-w-[calc(100vw-2rem)] rounded-2xl border bg-background p-3"
+            ? "pointer-events-auto fixed right-4 bottom-4 z-[100] w-max max-w-[calc(100vw-2rem)] animate-in rounded-2xl border bg-popover p-3 text-popover-foreground shadow-xl duration-200 fade-in-0 slide-in-from-bottom-2"
             : "hidden"
         }
-      />
+      >
+        {floating ? (
+          <div className="mb-2 flex min-w-0 items-center gap-1.5 text-xs">
+            <MicIcon className="size-3.5 shrink-0 text-destructive" />
+            <span className="shrink-0 font-medium">Voice note</span>
+            {target?.label ? (
+              <span className="truncate text-muted-foreground">
+                → {target.label}
+              </span>
+            ) : null}
+          </div>
+        ) : null}
+        <div ref={fallback} />
+      </div>
       {activeKey
         ? createPortal(
             <SpeechRecordingControl
               key={activeKey}
               onFinished={() => setActiveKey(undefined)}
-              onTranscription={(text) => store.deliver(activeKey, text)}
+              onTranscription={(text) => deliver(activeKey, text)}
             />,
             container
           )
@@ -84,10 +125,13 @@ function SpeechRecordingHost() {
 }
 
 type SpeechControlProps = {
+  // The editor's text, so a dictation saved into its draft is not doubled.
+  currentText?: () => string
   disabled?: boolean
   onStartRecording?: () => void
   onTranscription: (text: string) => void
   sessionKey?: string
+  target?: SpeechTarget
 }
 
 export function SpeechToTextControl(properties: SpeechControlProps) {
@@ -95,7 +139,7 @@ export function SpeechToTextControl(properties: SpeechControlProps) {
   const session = React.useContext(SpeechContext)!
   const fallbackKey = React.useId()
   const key = properties.sessionKey ?? fallbackKey
-  const slot = useSpeechSlot(key, properties.onTranscription)
+  const slot = useSpeechSlot(key, properties)
   const startRecording = () => {
     if (!auth.license?.licensed) {
       toast.info("Cloud voice transcription requires Blame Premium.", {
@@ -142,16 +186,21 @@ function SpeechStartButton({
   )
 }
 
-function useSpeechSlot(key: string, onTranscription: (text: string) => void) {
+function useSpeechSlot(key: string, properties: SpeechControlProps) {
   const { store } = React.useContext(SpeechContext)!
   const ref = React.useRef<HTMLDivElement>(null)
-  const deliver = useLatestCallback(onTranscription)
+  const deliver = useLatestCallback(properties.onTranscription)
+  const currentText = useLatestCallback(() => properties.currentText?.() ?? "")
+  const draftKey = properties.target?.draftKey
+  const label = properties.target?.label
   React.useEffect(() => {
     const element = ref.current
     if (!element) return
     const unregister = store.register(key, {
+      currentText,
       element,
       onTranscription: deliver,
+      target: label ? { draftKey, label } : undefined,
       visible: true,
     })
     const timer = window.setTimeout(() => store.flush(key), 0)
@@ -164,6 +213,6 @@ function useSpeechSlot(key: string, onTranscription: (text: string) => void) {
       observer.disconnect()
       unregister()
     }
-  }, [deliver, key, store])
+  }, [currentText, deliver, draftKey, key, label, store])
   return ref
 }
