@@ -2,6 +2,8 @@ import * as React from "react"
 import type {
   AgentEvent,
   AgentUsageSummary,
+  CompactSessionInput,
+  CompactSessionResult,
   AnalyzeProjectCodePracticesInput,
   AnalyzeProjectCodePracticesResult,
   ApiConnection,
@@ -392,6 +394,8 @@ export type AgentClient = {
       input: RestoreCheckpointInput
     ): Promise<RestoreCheckpointResult>
     usage(sessionId: string): Promise<AgentUsageSummary | undefined>
+    // Cline's manual compaction of an idle session, used on its next resume.
+    compact?(input: CompactSessionInput): Promise<CompactSessionResult>
     eventStreamUrl?(sessionId: string): Promise<string | null>
     onEvent(
       sessionId: string,

@@ -16,6 +16,7 @@ export const agentRuntimeMethods = [
   "sessions.messages",
   "sessions.restoreCheckpoint",
   "sessions.usage",
+  "sessions.compact",
   "sessions.releaseWorkspace",
   "approvals.resolve",
   "initializations.run",

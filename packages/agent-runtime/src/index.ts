@@ -171,4 +171,6 @@ export type {
   SecurityThreatModel,
   ValidateSecurityAuditInput,
   ValidateSecurityAuditResult,
+  CompactSessionInput,
+  CompactSessionResult,
 } from "./types.js";

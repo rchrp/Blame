@@ -248,6 +248,9 @@ function registerSessionDataIpcHandlers(
   ipcMain.handle("agent:sessions:usage", (_event, sessionId) =>
     agentRuntime().runSession("sessions.usage", sessionId, sessionId),
   );
+  ipcMain.handle("agent:sessions:compact", (_event, input) =>
+    agentRuntime().runSession("sessions.compact", input.sessionId, input),
+  );
   ipcMain.handle("agent:sessions:event-stream-url", (_event, sessionId) =>
     agentEventStreamUrl(sessionId),
   );

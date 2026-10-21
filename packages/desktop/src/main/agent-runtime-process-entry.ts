@@ -207,6 +207,8 @@ function sessionHandlers(runtime: BlameAgentRuntime) {
       runtime.sessions.restoreCheckpoint(input as never),
     "sessions.usage": (input: unknown) =>
       runtime.sessions.usage(input as string),
+    "sessions.compact": (input: unknown) =>
+      runtime.sessions.compact(input as never),
     "sessions.releaseWorkspace": (input: unknown) =>
       runtime.sessions.releaseWorkspace(input as string),
   };

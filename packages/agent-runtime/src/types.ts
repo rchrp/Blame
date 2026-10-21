@@ -708,6 +708,22 @@ export type AgentUsageTotals = {
   totalOutputTokens: number;
 };
 
+export type CompactSessionInput = {
+  apiConnection: ApiConnection;
+  backend?: AgentBackendConfig;
+  credentialLabel?: string;
+  maxInputTokens?: number;
+  modelId: string;
+  providerId: string;
+  sessionId: string;
+};
+
+export type CompactSessionResult = {
+  compacted: boolean;
+  tokensAfter?: number;
+  tokensBefore?: number;
+};
+
 export type AgentUsageSummary = {
   aggregateUsage?: AgentUsageTotals;
   usage?: AgentUsageTotals;

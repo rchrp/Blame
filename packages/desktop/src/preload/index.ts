@@ -483,6 +483,7 @@ const api: BlameDesktopApi = {
         ipcRenderer.invoke("agent:sessions:restore-checkpoint", input),
       usage: (sessionId) =>
         ipcRenderer.invoke("agent:sessions:usage", sessionId),
+      compact: (input) => ipcRenderer.invoke("agent:sessions:compact", input),
       eventStreamUrl: (sessionId) =>
         ipcRenderer.invoke("agent:sessions:event-stream-url", sessionId),
       onEvent: (sessionId, callback) => {

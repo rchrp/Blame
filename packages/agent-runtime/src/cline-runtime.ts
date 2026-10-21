@@ -11,6 +11,7 @@ import {
 } from "node:path";
 import { imageAwareCompaction } from "./image-compaction.js";
 import { contextLimitConfig } from "./context-limit-config.js";
+import { compactSessionContext } from "./manual-compaction.js";
 
 import type { ExecutionTerminalReason } from "@blame/harness-core";
 import {
@@ -159,7 +160,10 @@ import {
 } from "./cloud-api.js";
 import { USER_REJECTED_TOOL_REASON } from "@cline/shared";
 import { fallbackCommitSubject } from "./commit-message.js";
-import { loadCatalogModel } from "./supplemental-model-config.js";
+import {
+  knownModelInfo,
+  loadCatalogModel,
+} from "./supplemental-model-config.js";
 import { createContextProjectionExtension } from "./context-projection.js";
 import {
   appendInitialTaskBriefing,
@@ -239,6 +243,8 @@ import type {
   AgentRuntimeEvents,
   AgentRuntimePrewarmInput,
   AgentUsageSummary,
+  CompactSessionInput,
+  CompactSessionResult,
   AnalyzeProjectCodePracticesInput,
   AnalyzeProjectCodePracticesResult,
   ApiConnection,
@@ -519,6 +525,7 @@ export class BlameAgentRuntime {
     restoreCheckpoint: (input: RestoreCheckpointInput) =>
       this.restoreCheckpoint(input),
     usage: (sessionId: string) => this.readUsage(sessionId),
+    compact: (input: CompactSessionInput) => this.compactSession(input),
     unsubscribe: (sessionId: string) => this.unsubscribeSession(sessionId),
     releaseWorkspace: (workspace: string) =>
       this.releaseWorkspaceSessions(workspace),
@@ -956,6 +963,9 @@ export class BlameAgentRuntime {
           : {}),
         ...(input.initialMessages?.length
           ? { initialMessages: input.initialMessages }
+          : {}),
+        ...(input.initialMessages?.length && input.initialCompactionState
+          ? { initialCompactionState: input.initialCompactionState }
           : {}),
         ...(autoSendPrompt && input.userImages?.length
           ? { userImages: input.userImages }
@@ -1818,6 +1828,55 @@ export class BlameAgentRuntime {
     } catch {
       return undefined;
     }
+  }
+
+  // A manual compaction of this session, kept for its next resume.
+  private async resumeCompactionState(
+    sessionId: string | null | undefined,
+    backend?: AgentBackendConfig,
+  ) {
+    const normalizedSessionId = sessionId?.trim();
+    if (!normalizedSessionId) return undefined;
+    try {
+      return await (
+        await this.core(backend)
+      ).readSessionCompactionState(normalizedSessionId);
+    } catch {
+      return undefined;
+    }
+  }
+
+  private async compactSession(
+    input: CompactSessionInput,
+  ): Promise<CompactSessionResult> {
+    const sessionId = input.sessionId.trim();
+    const state = this.runLifecycles.state(sessionId)?.state;
+    if (state === "running" || state === "cancelling") {
+      throw new Error("Wait for the agent to finish before compacting.");
+    }
+    const credential = await this.refreshOAuthCredential(
+      input.apiConnection,
+      await resolveProviderCredential(input.apiConnection, {
+        providerId: input.providerId,
+        label: credentialLabel(input),
+      }),
+      { force: forceOAuthRefresh(input.providerId) },
+    );
+    await this.syncClineOAuthProviderSettings(credential);
+    const cline = this.sessionBackendKeys.has(sessionId)
+      ? await this.sessionCore(sessionId)
+      : await this.core(input.backend);
+    return compactSessionContext({
+      apiKey: credential.apiKey,
+      baseUrl: credential.baseUrl ?? undefined,
+      cline,
+      compaction: blameCompactionConfig(this.productionConfig),
+      maxInputTokens: input.maxInputTokens,
+      modelId: input.modelId,
+      modelInfo: knownModelInfo(input.providerId, input.modelId),
+      providerId: input.providerId,
+      sessionId,
+    });
   }
 
   private async readUsage(
@@ -3779,6 +3838,9 @@ export class BlameAgentRuntime {
       input.autoSendPrompt === false
         ? await this.resumeMessages(resumeSessionId, input.backend)
         : undefined;
+    const initialCompactionState = initialMessages
+      ? await this.resumeCompactionState(resumeSessionId, input.backend)
+      : undefined;
     const developmentInput = await developmentUserInput(
       input,
       newAttachmentDirectory(input.cwd),
@@ -3802,6 +3864,7 @@ export class BlameAgentRuntime {
       autoSendPrompt: input.autoSendPrompt !== false,
       sessionId: conversationId,
       initialMessages,
+      initialCompactionState,
       mode: "act",
       maxIterations: iterationBudget,
       prompt: developmentInput.prompt,

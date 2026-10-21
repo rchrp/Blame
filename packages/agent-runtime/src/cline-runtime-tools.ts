@@ -66,6 +66,8 @@ export type ToolApprovalRequest = {
 };
 
 export type RuntimeStartSessionInput = StartSessionInput & {
+  // A compacted working context to resume from (manual compaction).
+  initialCompactionState?: import("@cline/sdk").SessionCompactionState;
   clineDefaultTools?: boolean;
   compaction?: CoreCompactionConfig;
   enableAgentTeams?: boolean;

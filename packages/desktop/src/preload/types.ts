@@ -1,6 +1,8 @@
 import type {
   AgentEvent,
   AgentUsageSummary,
+  CompactSessionInput,
+  CompactSessionResult,
   AnalyzeProjectCodePracticesInput,
   AnalyzeProjectCodePracticesResult,
   ApiConnection,
@@ -544,6 +546,7 @@ export type BlameDesktopApi = {
         input: RestoreCheckpointInput,
       ): Promise<RestoreCheckpointResult>;
       usage(sessionId: string): Promise<AgentUsageSummary | undefined>;
+      compact(input: CompactSessionInput): Promise<CompactSessionResult>;
       eventStreamUrl(sessionId: string): Promise<string | null>;
       onEvent(
         sessionId: string,

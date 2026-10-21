@@ -41,6 +41,12 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { usePlatform } from "@/context/platform"
+import {
+  CompactContextButton,
+  compactionNote,
+  type StoryContextCompaction,
+  useStoryContextCompaction,
+} from "@/components/backlog/drawer/story-context-compaction"
 import { cn } from "@/lib/utils"
 
 // The story's agent at a glance: which model, how full its context is, and
@@ -56,6 +62,7 @@ export function DrawerSidebar({
     userStory?.agentUsage ? undefined : userStory?.clineSessionId
   )
   const budget = useStoryContextBudget(userStory)
+  const compaction = useStoryContextCompaction(userStory)
   const totals =
     usageTotalsFromAgentUsage(userStory?.agentUsage) ?? sessionUsage.totals
   const context = storyContextUsage(userStory?.agentUsage, budget.limit)
@@ -63,7 +70,7 @@ export function DrawerSidebar({
   return (
     <aside className="grid gap-4 p-4">
       <ModelHeader userStory={userStory} />
-      <ContextGauge budget={budget} context={context} />
+      <ContextGauge budget={budget} compaction={compaction} context={context} />
       <div className="grid grid-cols-3 gap-2">
         <Stat label="Cost">
           {formatCurrency(totals?.totalCost ?? totals?.cost)}
@@ -117,9 +124,11 @@ const contextCells = 50
 
 function ContextGauge({
   budget,
+  compaction,
   context,
 }: {
   budget: StoryContextBudget
+  compaction: StoryContextCompaction
   context?: StoryContextUsage
 }) {
   const ratio = context?.ratio ?? 0
@@ -176,9 +185,12 @@ function ContextGauge({
           />
         </div>
       ) : null}
-      <p className="text-xs text-pretty text-muted-foreground">
-        {contextNote(context)}
-      </p>
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-xs text-pretty text-muted-foreground">
+          {compactionNote(compaction) ?? contextNote(context)}
+        </p>
+        <CompactContextButton compaction={compaction} />
+      </div>
       {budget.experimental ? (
         <p className="rounded-md bg-amber-500/10 px-2 py-1.5 text-[11px] text-pretty text-amber-700 dark:text-amber-300">
           Experimental: past this provider's usual limit. It uses your quota

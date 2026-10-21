@@ -68,3 +68,11 @@ function withoutOfficial(
     Object.entries(models ?? {}).filter(([id]) => !Object.hasOwn(official, id)),
   );
 }
+
+/** Metadata of a model, from the bundled registry or the Blame catalog. */
+export function knownModelInfo(providerId: string, modelId: string) {
+  return (
+    getProviderCollectionSync(providerId)?.models[modelId] ??
+    catalogModels.get(providerId)?.[modelId]
+  );
+}
