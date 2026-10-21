@@ -3,10 +3,14 @@ import ProviderCredentialsService from '#services/provider_credentials_service'
 import type { HttpContext } from '@adonisjs/core/http'
 
 export default class ModelCatalogController {
-  async show({ auth, serialize }: HttpContext) {
+  async show({ auth, request, serialize }: HttpContext) {
     const userId = auth.getUserOrFail().id
     const credentials = await new ProviderCredentialsService().list(userId)
-    return serialize(await new ModelCatalogService().catalog(userId, credentials))
+    return serialize(
+      await new ModelCatalogService().catalog(userId, credentials, {
+        connectedOnly: request.input('view') === 'selector',
+      })
+    )
   }
 
   async model({ request, response, serialize }: HttpContext) {

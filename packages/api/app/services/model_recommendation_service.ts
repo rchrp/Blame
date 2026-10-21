@@ -10,6 +10,7 @@ type RecommendationCandidate = {
   providerId: string
   model: CatalogModel
   estimatedCost: number | null
+  smartScore: number | undefined
 }
 
 const benchmarkBoundary = 0.74
@@ -37,6 +38,7 @@ export function buildModelRecommendations(
   )
   return {
     generatedAt,
+    rankingMetric: 'intelligenceIndex',
     benchmarkBoundary,
     all: recommendationEntries(deduplicateCanonicalModels(candidates), generatedAt),
     byProvider,
@@ -51,13 +53,15 @@ function providerCandidates(provider: CatalogProvider, profile: ModelRecommendat
       providerId: provider.id,
       model,
       estimatedCost: estimateModelCost(model, profile),
+      // Never compare the legacy mixed smartScore (coding, intelligence or arena).
+      smartScore: model.benchmark?.intelligenceIndex,
     }))
 }
 
 function recommendationEntries(candidates: RecommendationCandidate[], generatedAt: string) {
   const benchmarked = paretoFrontier(candidates.filter(hasBenchmark))
   const unbenchmarked = candidates.filter(
-    (candidate) => !candidate.model.benchmark && recentlyReleased(candidate.model, generatedAt)
+    (candidate) => !hasBenchmark(candidate) && recentlyReleased(candidate.model, generatedAt)
   )
   const ranked = benchmarked.sort(compareBenchmarked)
   const unrated = unbenchmarked.sort(compareCost)
@@ -80,8 +84,8 @@ function paretoFrontier(candidates: RecommendationCandidate[]) {
 
 function dominates(left: RecommendationCandidate, right: RecommendationCandidate) {
   if (left === right) return false
-  const leftScore = left.model.benchmark?.smartScore ?? -Infinity
-  const rightScore = right.model.benchmark?.smartScore ?? -Infinity
+  const leftScore = left.smartScore ?? -Infinity
+  const rightScore = right.smartScore ?? -Infinity
   const costComparison = comparableCost(left.estimatedCost) <= comparableCost(right.estimatedCost)
   const scoreComparison = leftScore >= rightScore
   const strict =
@@ -112,7 +116,7 @@ function recommendationEntry(
     position: positionValue,
     segment,
     estimatedCost: candidate.estimatedCost,
-    smartScore: candidate.model.benchmark?.smartScore,
+    smartScore: segment === 'benchmarked' ? candidate.smartScore : undefined,
   }
 }
 
@@ -127,26 +131,29 @@ function deduplicateCanonicalModels(candidates: RecommendationCandidate[]) {
 }
 
 function estimateModelCost(model: CatalogModel, profile: ModelRecommendationProfile) {
-  const input = pricedTokens(model.cost.input, profile.inputTokens)
+  // Runtime input totals already include cache reads.
+  const cachedTokens = Math.min(profile.cacheReadTokens, profile.inputTokens)
+  const input = pricedTokens(model.cost.input, profile.inputTokens - cachedTokens)
   const output = pricedTokens(model.cost.output, profile.outputTokens)
-  const cacheRead = pricedTokens(model.cost.cacheRead, profile.cacheReadTokens)
-  const values = [input, output, cacheRead].filter((value): value is number => value !== null)
-  return values.length ? round(values.reduce((sum, value) => sum + value, 0)) : null
+  const cacheRead = pricedTokens(model.cost.cacheRead ?? model.cost.input, cachedTokens)
+  if (input === null || output === null || cacheRead === null) return null
+  return round(input + output + cacheRead)
 }
 
 function pricedTokens(price: number | null, tokens: number) {
+  if (tokens === 0) return 0
   if (price === null) return null
   return (price * tokens) / 1_000_000
 }
 
 function hasBenchmark(candidate: RecommendationCandidate) {
-  return candidate.model.benchmark !== undefined
+  return candidate.smartScore !== undefined && candidate.estimatedCost !== null
 }
 
 function compareBenchmarked(left: RecommendationCandidate, right: RecommendationCandidate) {
   return (
     comparableCost(left.estimatedCost) - comparableCost(right.estimatedCost) ||
-    (left.model.benchmark?.smartScore ?? 0) - (right.model.benchmark?.smartScore ?? 0)
+    (left.smartScore ?? 0) - (right.smartScore ?? 0)
   )
 }
 

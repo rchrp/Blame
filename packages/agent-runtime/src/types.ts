@@ -60,6 +60,7 @@ export type ModelRecommendationProfile = {
 
 export type ModelRecommendations = {
   generatedAt: string;
+  rankingMetric?: "intelligenceIndex";
   benchmarkBoundary: number;
   all: ModelRecommendation[];
   byProvider: Record<string, ModelRecommendation[]>;

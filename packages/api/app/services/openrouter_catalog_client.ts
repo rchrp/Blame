@@ -87,7 +87,9 @@ function benchmarkFromModel(value: unknown) {
 
 function finalizeBenchmark(value: BenchmarkAccumulator): CatalogBenchmark | undefined {
   const designArenaScore = average(value.designArenaScores)
-  const smartScore = weightedSmartScore(value, designArenaScore)
+  // Keep raw dimensions for diagnostics; the selector ranks only intelligenceIndex.
+  const smartScore =
+    value.intelligenceIndex ?? value.codingIndex ?? value.agenticIndex ?? designArenaScore
   if (smartScore === undefined) return undefined
   return {
     smartScore,
@@ -96,13 +98,6 @@ function finalizeBenchmark(value: BenchmarkAccumulator): CatalogBenchmark | unde
     intelligenceIndex: value.intelligenceIndex,
     designArenaScore,
   }
-}
-
-function weightedSmartScore(value: BenchmarkAccumulator, designScore?: number) {
-  if (value.codingIndex !== undefined && value.agenticIndex !== undefined) {
-    return round(value.codingIndex * 0.7 + value.agenticIndex * 0.3)
-  }
-  return value.codingIndex ?? value.agenticIndex ?? value.intelligenceIndex ?? designScore
 }
 
 function designArenaScores(value: unknown) {

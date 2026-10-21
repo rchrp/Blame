@@ -50,6 +50,42 @@ test.group('model catalog', (group) => {
     assert.equal(body.data.contextWindow, expected.contextWindow)
   })
 
+  test('selector view retains every provider but only sends connected models', async ({
+    client,
+    assert,
+  }) => {
+    const user = await createLicensedUser()
+    await new ProviderCredentialsService().save(user.id, {
+      providerId: 'anthropic',
+      label: 'Work',
+      apiKey: 'fixture-secret',
+    })
+    const full = await client.get('/api/v1/providers/catalog').loginAs(user)
+    const compact = await client
+      .get('/api/v1/providers/catalog')
+      .qs({ view: 'selector' })
+      .loginAs(user)
+    full.assertStatus(200)
+    compact.assertStatus(200)
+    const complete = (full.body() as unknown as { data: CatalogResponse }).data
+    const selector = (compact.body() as unknown as { data: CatalogResponse }).data
+    assert.deepEqual(
+      selector.all.map((p) => p.id),
+      complete.all.map((p) => p.id)
+    )
+    assert.deepEqual(
+      selector.all.find((p) => p.id === 'anthropic')?.models,
+      complete.all.find((p) => p.id === 'anthropic')?.models
+    )
+    assert.isTrue(
+      selector.all
+        .filter((p) => p.id !== 'anthropic')
+        .every((p) => Object.keys(p.models).length === 0)
+    )
+    assert.deepEqual(selector.recommendations, complete.recommendations)
+    assert.isBelow(JSON.stringify(selector).length, JSON.stringify(complete).length / 2)
+  })
+
   test('rejects unknown or incomplete model lookups', async ({ client }) => {
     const user = await createLicensedUser()
 
@@ -79,7 +115,7 @@ test.group('model catalog', (group) => {
 })
 
 type CatalogResponse = {
-  all: unknown[]
+  all: { id: string; models: Record<string, unknown> }[]
   default: Record<string, string>
   recommendations: {
     byProvider: Record<string, unknown[]>

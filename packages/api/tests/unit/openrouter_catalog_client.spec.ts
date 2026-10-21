@@ -19,7 +19,7 @@ test.group('OpenRouter catalog client', () => {
     assert.equal(models[0].outputPrice, 8)
     assert.equal(models[0].cacheReadPrice, 0.2)
     assert.equal(models[0].releaseDate, '2026-07-29T12:00:00.000Z')
-    assert.equal(models[0].benchmark?.smartScore, 76)
+    assert.equal(models[0].benchmark?.smartScore, 75)
     assert.equal(models[0].benchmark?.codingIndex, 82)
     assert.equal(models[0].benchmark?.agenticIndex, 62)
     assert.isTrue(requests.every((url) => url.startsWith('https://openrouter.ai/api/v1/')))
