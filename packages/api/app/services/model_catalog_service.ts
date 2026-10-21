@@ -29,7 +29,9 @@ import { DateTime } from 'luxon'
 
 const snapshotId = 'global'
 const catalogPolicyVersion = 5
-const externalCliProviderIds = new Set(['claude-code', 'openai-codex-cli'])
+// Claude Code runs through the desktop's local bridge; the Codex CLI provider
+// is not wired and OpenAI Codex OAuth already covers that subscription.
+const externalCliProviderIds = new Set(['openai-codex-cli'])
 let authoritativeProviderIds = new Set<string>()
 let staticModelInfo: ModelInfoCatalog = {}
 let staticCatalogPromise: Promise<CatalogProvider[]> | undefined

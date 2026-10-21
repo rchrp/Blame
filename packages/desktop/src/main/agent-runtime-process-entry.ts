@@ -184,6 +184,9 @@ function providerHandlers(runtime: BlameAgentRuntime) {
     },
     "providers.loginOAuth": (input: unknown) =>
       runtime.providers.loginOAuth(input as never),
+    "providers.claudeCodeStatus": () => runtime.providers.claudeCodeStatus(),
+    "providers.connectClaudeCode": (input: unknown) =>
+      runtime.providers.connectClaudeCode(input as never),
   };
 }
 

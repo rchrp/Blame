@@ -180,6 +180,42 @@ test.group('provider credentials', (group) => {
     assert.equal(resolved.oauthCredentials?.access, 'oauth-access-token')
     assert.equal(resolved.oauthCredentials?.refresh, 'oauth-refresh-token')
   })
+
+  test('stores a local CLI connection without a secret', async ({ client, assert }) => {
+    const user = await createUser()
+
+    const createResponse = await client
+      .post('/api/v1/providers/credentials/local')
+      .loginAs(user)
+      .json({ providerId: 'claude-code', accountId: 'dev@example.com' })
+
+    createResponse.assertStatus(200)
+    const created = createResponse.body() as {
+      data: CredentialBody['data'] & { authMethod: string; accountId: string | null }
+    }
+    assert.equal(created.data.authMethod, 'local-cli')
+    assert.equal(created.data.accountId, 'dev@example.com')
+    assert.equal(created.data.label, 'default')
+
+    const resolveResponse = await client
+      .post('/api/v1/providers/credentials/resolve')
+      .loginAs(user)
+      .json({ providerId: 'claude-code' })
+
+    resolveResponse.assertStatus(200)
+    const resolved = resolveResponse.body() as unknown as {
+      data: CredentialBody['data'] & { authMethod: string }
+    }
+    assert.equal(resolved.data.authMethod, 'local-cli')
+    assert.equal(resolved.data.apiKey, '')
+
+    const rejected = await client
+      .post('/api/v1/providers/credentials/local')
+      .loginAs(user)
+      .json({ providerId: 'anthropic' })
+
+    rejected.assertStatus(422)
+  })
 })
 
 function createUser() {

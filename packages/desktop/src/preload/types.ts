@@ -20,6 +20,8 @@ import type {
   InitializeProjectInput,
   InitializeProjectResult,
   ProjectInitializationDiagnostics,
+  ClaudeCodeStatus,
+  ConnectClaudeCodeInput,
   LoginOAuthProviderInput,
   NewProjectGenerationResult,
   OptimizeUserStoryPromptInput,
@@ -526,6 +528,8 @@ export type BlameDesktopApi = {
       ): Promise<unknown>;
       deleteCredential(connection: ApiConnection, id: string): Promise<void>;
       loginOAuth(input: LoginOAuthProviderInput): Promise<unknown>;
+      claudeCodeStatus(): Promise<ClaudeCodeStatus>;
+      connectClaudeCode(input: ConnectClaudeCodeInput): Promise<unknown>;
     };
     sessions: {
       start(input: StartSessionInput): Promise<{ sessionId: string }>;

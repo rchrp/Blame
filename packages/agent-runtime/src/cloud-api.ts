@@ -4,7 +4,9 @@ import type {
   DeleteProviderCredentialInput,
   OAuthCredentials,
   ProviderCredentialSummary,
+  ProviderAuthMethod,
   ProviderListResponse,
+  SaveLocalProviderCredentialInput,
   SaveOAuthCredentialInput,
   SaveProviderCredentialInput,
 } from "./types.js";
@@ -21,7 +23,7 @@ type ResolvedCredential = {
   id: string;
   providerId: string;
   label: string;
-  authMethod?: "api-key" | "oauth";
+  authMethod?: ProviderAuthMethod;
   apiKey: string;
   baseUrl: string | null;
   modelIds?: string[];
@@ -80,6 +82,20 @@ export function saveOAuthCredential(
   return request<ProviderCredentialSummary>(
     connection,
     "/providers/credentials/oauth",
+    {
+      body: JSON.stringify(input),
+      method: "POST",
+    },
+  );
+}
+
+export function saveLocalProviderCredential(
+  connection: ApiConnection,
+  input: SaveLocalProviderCredentialInput,
+) {
+  return request<ProviderCredentialSummary>(
+    connection,
+    "/providers/credentials/local",
     {
       body: JSON.stringify(input),
       method: "POST",
