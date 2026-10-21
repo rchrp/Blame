@@ -41,7 +41,7 @@ export async function listProviders(connection: ApiConnection) {
   const [catalog, credentials] = await Promise.all([
     request<Pick<ProviderListResponse, "all" | "default" | "recommendations">>(
       connection,
-      "/providers/catalog",
+      "/providers/catalog?view=selector",
     ),
     request<unknown>(connection, "/providers/credentials"),
   ]);

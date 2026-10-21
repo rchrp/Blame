@@ -45,7 +45,11 @@ let cachedSnapshot: { expiresAt: number; snapshot: ModelCatalogSnapshot } | unde
 let parsedSnapshot: { key: string; payload: CatalogSnapshotPayload } | undefined
 
 export default class ModelCatalogService {
-  async catalog(userId: string, credentials: ProviderCredential[]) {
+  async catalog(
+    userId: string,
+    credentials: ProviderCredential[],
+    options: { connectedOnly?: boolean } = {}
+  ) {
     const snapshot = await this.snapshot()
     const payload = parseSnapshot(snapshot)
     const providers = addCredentialModels(
@@ -56,7 +60,12 @@ export default class ModelCatalogService {
     const connected = Array.from(new Set(credentials.map((credential) => credential.providerId)))
     const profile = await new ModelUsageProfileService().forUser(userId)
     return {
-      all: providers,
+      // Connecting a provider needs its metadata, not thousands of unused models.
+      all: options.connectedOnly
+        ? providers.map((provider) =>
+            connected.includes(provider.id) ? provider : { ...provider, models: {} }
+          )
+        : providers,
       default: providerDefaults(providers),
       recommendations: buildModelRecommendations(
         providers,

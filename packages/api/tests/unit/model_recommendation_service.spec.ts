@@ -111,6 +111,55 @@ test.group('model recommendation service', () => {
     ])
     assert.deepEqual(segment('unbenchmarked'), ['gpt-6-sol', 'gpt-6-astra'])
   })
+
+  test('prices cache reads once and uses input price when no cache tariff is known', ({
+    assert,
+  }) => {
+    const cached = {
+      ...model('cached', 2, 50),
+      cost: { input: 2, output: 10, cacheRead: 0.1, cacheWrite: null },
+    }
+    const fallback = { ...model('fallback', 2, 60), cost: { ...cached.cost, cacheRead: null } }
+    const provider = catalogProvider('openai', [cached, fallback])
+    const result = buildModelRecommendations(
+      [provider],
+      [provider.id],
+      {
+        inputTokens: 1_000_000,
+        cacheReadTokens: 800_000,
+        outputTokens: 100_000,
+        sampleCount: 1,
+      },
+      '2026-10-21'
+    )
+
+    assert.deepEqual(
+      result.all.map((entry) => entry.estimatedCost),
+      [1.48, 3]
+    )
+  })
+
+  test('does not rank an incomplete price as cheaper than a fully priced model', ({ assert }) => {
+    const incomplete = { ...model('new-unknown-output', 0.1, 99, '2026-10-20') }
+    const complete = {
+      ...model('complete', 1, 50),
+      cost: { input: 1, output: 2, cacheRead: null, cacheWrite: null },
+    }
+    const provider = catalogProvider('openai', [incomplete, complete])
+    const result = buildModelRecommendations(
+      [provider],
+      [provider.id],
+      {
+        ...profile,
+        outputTokens: 100_000,
+      },
+      '2026-10-21'
+    )
+
+    assert.equal(result.all[0].modelId, 'complete')
+    assert.equal(result.all[1].segment, 'unbenchmarked')
+    assert.isNull(result.all[1].estimatedCost)
+  })
 })
 
 function partiallyRated(

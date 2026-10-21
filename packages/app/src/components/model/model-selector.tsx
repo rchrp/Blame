@@ -841,7 +841,7 @@ function SliderLabels({
       {hasUnbenchmarked ? (
         <span className="absolute -top-1 right-0 flex flex-col text-right leading-4">
           <span>New</span>
-          <span>No benchmark</span>
+          <span>Not ranked</span>
         </span>
       ) : null}
     </div>
