@@ -12,6 +12,7 @@ import {
 } from "../../../scripts/semantic-harness-payload.mjs";
 
 import { verifyStagedWorkspaceRuntime, verifyPackagedWorkspaceRuntime } from "./package-integrity.mjs";
+import { pruneNodeModules } from "./package-prune.mjs";
 
 const desktopDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const rootDir = resolve(desktopDir, "../..");
@@ -30,6 +31,13 @@ const deployDir =
 
 try {
   await deployPackage(deployDir, args);
+  const pruned = await pruneNodeModules(stagingDir, {
+    platform: builderTargetPlatform(args),
+    arch: builderTargetArchitecture(args),
+  });
+  console.log(
+    `Pruned ${pruned.files} unused dependency files (${Math.round(pruned.bytes / 1048576)} MB)`,
+  );
   const runtimeManifests = await prepareRuntimeManifests(
     join(stagingDir, "resources/runtime"),
     runtimePackagingOptions(args),
@@ -107,6 +115,12 @@ function runtimePackagingOptions(builderArgs) {
     };
   }
   return {};
+}
+
+function builderTargetArchitecture(builderArgs) {
+  if (builderArgs.includes("--arm64")) return "arm64";
+  if (builderArgs.includes("--x64")) return "x64";
+  return process.arch;
 }
 
 function builderTargetPlatform(builderArgs) {
@@ -191,7 +205,7 @@ async function preserveRuntimeArtifacts(stagedDist) {
 }
 
 async function deployPackage(targetDir, builderArgs) {
-  const supportedArchitectures = windowsSupportedArchitectures(builderArgs);
+  const supportedArchitectures = targetSupportedArchitectures(builderArgs);
   if (!supportedArchitectures) {
     await runDeploy(targetDir);
     return;
@@ -209,9 +223,16 @@ async function deployPackage(targetDir, builderArgs) {
   }
 }
 
-function windowsSupportedArchitectures(builderArgs) {
-  if (!builderArgs.some((arg) => arg === "--win" || arg === "win"))
-    return undefined;
+// Platform-specific optional dependencies (native binaries) are installed for
+// the target, not for the machine that packages it.
+function targetSupportedArchitectures(builderArgs) {
+  const platform = builderTargetPlatform(builderArgs);
+  if (platform === "darwin") {
+    const arch = builderTargetArchitecture(builderArgs);
+    if (process.platform === "darwin" && arch === process.arch) return undefined;
+    return { cpu: [arch], os: ["darwin"] };
+  }
+  if (platform !== "win32") return undefined;
 
   const cpu = [];
   if (builderArgs.includes("--x64")) cpu.push("x64");
