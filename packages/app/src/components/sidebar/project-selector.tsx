@@ -34,8 +34,8 @@ export function ProjectSelector() {
   const [newProjectOpen, setNewProjectOpen] = React.useState(false)
 
   async function openProject() {
-    await projects.chooseProject()
     setOpen(false)
+    await projects.chooseProject()
   }
 
   function openNewProject() {
@@ -44,8 +44,8 @@ export function ProjectSelector() {
   }
 
   function selectProject(path: string) {
-    void projects.openProject(path)
     setOpen(false)
+    void projects.switchProject(path)
   }
 
   function removeRecentProject(path: string) {

@@ -200,7 +200,7 @@ export function CommandPalette({
               <CommandItem
                 key={project.path}
                 value={`project ${project.name} ${project.path}`}
-                onSelect={() => run(() => void projects.openProject(project.path))}
+                onSelect={() => run(() => void projects.switchProject(project.path))}
               >
                 <FolderOpenIcon />
                 <span className="min-w-0 truncate">{project.name}</span>

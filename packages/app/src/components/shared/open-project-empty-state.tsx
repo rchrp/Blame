@@ -28,7 +28,7 @@ export function OpenProjectEmptyState({ description }: { description: string }) 
               variant="outline"
               disabled={projects.opening}
               title={project.path}
-              onClick={() => void projects.openProject(project.path)}
+              onClick={() => void projects.switchProject(project.path)}
             >
               {project.name}
             </Button>

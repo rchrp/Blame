@@ -9,9 +9,20 @@ import {
 import { createCloudApi } from "@/lib/cloud-api"
 import { notifyProjectInitializationUpdated } from "@/components/project-initialization/project-initialization-events"
 import { createProject, type Project } from "@/lib/projects"
+import {
+  OpenProjectChoiceDialog,
+  type OpenProjectChoice,
+} from "@/components/projects/open-project-choice-dialog"
+import {
+  readOpenProjectTarget,
+  rememberOpenProjectTarget,
+} from "@/lib/open-project-target"
 
 const storageKey = "blame.app.projects.v1"
 const recentLimit = 10
+// Set on a window opened for one project: it starts on that project.
+const requestedProject =
+  new URLSearchParams(window.location.search).get("project") ?? undefined
 
 type ProjectState = {
   active?: string
@@ -21,10 +32,16 @@ type ProjectState = {
 export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const auth = useCloudAuth()
   const platform = usePlatform()
-  const value = useProjectState(auth, platform)
+  const { choice, value } = useProjectState(auth, platform)
 
   return (
-    <ProjectContext.Provider value={value}>{children}</ProjectContext.Provider>
+    <ProjectContext.Provider value={value}>
+      {children}
+      <OpenProjectChoiceDialog
+        projectName={choice?.name}
+        onChoose={(answer, remember) => choice?.resolve(answer, remember)}
+      />
+    </ProjectContext.Provider>
   )
 }
 
@@ -32,8 +49,12 @@ function useProjectState(
   auth: ReturnType<typeof useCloudAuth>,
   platform: ReturnType<typeof usePlatform>
 ) {
-  const [state, setState] = React.useState(readProjectState)
+  const [state, setState] = React.useState(initialProjectState)
   const [opening, setOpening] = React.useState(false)
+  const [choice, setChoice] = React.useState<{
+    name: string
+    resolve(answer: OpenProjectChoice, remember: boolean): void
+  }>()
   const activeProject = state.recent.find(
     (project) => project.id === state.active
   )
@@ -44,6 +65,12 @@ function useProjectState(
   React.useEffect(() => {
     writeProjectState(state)
   }, [state])
+
+  // The desktop app keeps one window per project: tell it which one this is.
+  const projectWindows = platform.projectWindows
+  React.useEffect(() => {
+    projectWindows?.reportProject(activeProject?.path ?? null)
+  }, [activeProject?.path, projectWindows])
 
   React.useEffect(() => {
     if (authStatus !== "unauthenticated") return
@@ -109,19 +136,62 @@ function useProjectState(
     [auth, platform]
   )
 
+  const requestedOpened = React.useRef(false)
+  React.useEffect(() => {
+    if (!requestedProject || requestedOpened.current) return
+    if (authStatus !== "authenticated") return
+    requestedOpened.current = true
+    const path = requestedProject
+    queueMicrotask(() => void openProject(path).catch(() => undefined))
+  }, [authStatus, openProject])
+
+  const askWhereToOpen = React.useCallback(
+    (path: string) =>
+      new Promise<OpenProjectChoice>((resolve) => {
+        setChoice({
+          name: createProject(path).name,
+          resolve(answer, remember) {
+            setChoice(undefined)
+            if (remember && answer !== "cancel")
+              rememberOpenProjectTarget(answer)
+            resolve(answer)
+          },
+        })
+      }),
+    []
+  )
+
+  // Opening a project while one is open: bring forward the window that has
+  // it, or ask whether to open it in a new window or in this one.
+  const switchProject = React.useCallback(
+    async (path: string) => {
+      if (activeProject && samePath(activeProject.path, path)) return
+      if (projectWindows && (await projectWindows.focusProject(path))) return
+      if (!activeProject || !projectWindows) {
+        await openProject(path)
+        return
+      }
+      const target = readOpenProjectTarget()
+      const answer = target === "ask" ? await askWhereToOpen(path) : target
+      if (answer === "new-window") await projectWindows.openProject(path)
+      else if (answer === "this-window") await openProject(path)
+    },
+    [activeProject, askWhereToOpen, openProject, projectWindows]
+  )
+
   const chooseProject = React.useCallback(async () => {
     const result = await platform.openDirectoryPickerDialog?.({
       title: "Open Project",
     })
     const path = Array.isArray(result) ? result[0] : result
-    if (path) await openProject(path)
-  }, [openProject, platform])
+    if (path) await switchProject(path)
+  }, [platform, switchProject])
 
   const removeRecentProject = React.useCallback((path: string) => {
     setState((current) => removeRecentProjectState(current, path))
   }, [])
 
-  return React.useMemo(
+  const value = React.useMemo(
     () => ({
       activeProject,
       recentProjects: state.recent.filter(
@@ -132,6 +202,7 @@ function useProjectState(
       openGeneratedProject,
       chooseProject,
       removeRecentProject,
+      switchProject,
     }),
     [
       activeProject,
@@ -141,8 +212,10 @@ function useProjectState(
       opening,
       removeRecentProject,
       state.recent,
+      switchProject,
     ]
   )
+  return { choice, value }
 }
 
 async function completeGeneratedProjectInitialization(
@@ -212,6 +285,21 @@ function removeRecentProjectState(
     active: removedActiveProject ? undefined : current.active,
     recent: current.recent.filter((project) => project.path !== path),
   }
+}
+
+function initialProjectState(): ProjectState {
+  const state = readProjectState()
+  if (!requestedProject) return state
+  const project = state.recent.find((item) =>
+    samePath(item.path, requestedProject)
+  )
+  // Never the project another window has open, even for a moment.
+  return { ...state, active: project?.id }
+}
+
+function samePath(left: string, right: string) {
+  const normalize = (value: string) => value.replace(/[\\/]+$/, "")
+  return normalize(left) === normalize(right)
 }
 
 function readProjectState(): ProjectState {

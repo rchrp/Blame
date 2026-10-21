@@ -51,6 +51,7 @@ import {
   StatusText,
 } from "./settings-layout"
 import { DesktopSettingsPanel } from "./desktop-settings-panel"
+import { OpenProjectTargetRow } from "./open-project-target-row"
 import {
   clearRequestedSettingsSection,
   requestedSettingsSection,
@@ -278,6 +279,7 @@ function GeneralSettingsPanel() {
         >
           <LanguagePreview />
         </SettingsRow>
+        <OpenProjectTargetRow />
       </SettingsGroup>
     </SettingsPanel>
   )

@@ -25,6 +25,8 @@ export type ProjectContextValue = {
   ): Promise<void>
   chooseProject(): Promise<void>
   removeRecentProject(path: string): void
+  // Opens a project from the open one: asks for a new window or this one.
+  switchProject(path: string): Promise<void>
 }
 
 export const ProjectContext = React.createContext<
