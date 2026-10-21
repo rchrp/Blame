@@ -42,6 +42,10 @@ export function registerBacklogStatusPipIpcHandlers(input: {
       return false;
     return setStatusPipMode(statusPipWindow, input);
   });
+  ipcMain.handle(
+    "backlog-status-pip:latest-snapshot",
+    () => latestStatusPipSnapshot,
+  );
   ipcMain.on("backlog-status-pip:snapshot", (_event, snapshot) => {
     latestStatusPipSnapshot = snapshot;
     sendStatusPipSnapshot(statusPipWindow, snapshot);

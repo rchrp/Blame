@@ -225,12 +225,14 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
     platform.backlogStatusPip.publish({
       authStatus: auth.status,
       hasActiveProject: Boolean(projects.activeProject),
-      loading: backlog.loading,
+      // A refresh of an already loaded backlog is not "loading".
+      loading: backlog.loading && !backlog.stories.length,
       stories: statusPipStories,
     })
   }, [
     auth.status,
     backlog.loading,
+    backlog.stories.length,
     platform.backlogStatusPip,
     projects.activeProject,
     statusPipStories,

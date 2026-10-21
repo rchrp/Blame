@@ -11,12 +11,14 @@ import type {
   StopAgentChoice,
 } from "@/components/backlog/actions/story-action-dialogs"
 import type { DrawerTarget } from "@/components/backlog/shared/backlog-types"
+import { InboxIcon, LoaderCircleIcon } from "lucide-react"
 import { AnimatePresence, motion } from "motion/react"
 
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { usePlatform, type BacklogStatusPipSnapshot } from "@/context/platform"
 import { hasModKey, isEditableTarget } from "@/lib/keyboard"
 import { isBoolean, useUiMemory } from "@/lib/ui-memory"
+import { cn } from "@/lib/utils"
 import {
   StatusPipCompactRow,
   StatusPipHeader,
@@ -57,6 +59,7 @@ export function BacklogStatusPipPage() {
     snapshot.hasActiveProject,
     snapshot.loading
   )
+  const waiting = snapshot.authStatus === "loading" || snapshot.loading
   const toggleCompact = React.useCallback(
     () => setCompact((current) => !current),
     [setCompact]
@@ -123,9 +126,7 @@ export function BacklogStatusPipPage() {
                   </AnimatePresence>
                 </ul>
               ) : (
-                <p className="px-2 py-2.5 text-xs text-muted-foreground">
-                  {empty}
-                </p>
+                <PipEmptyState compact loading={waiting} text={empty} />
               )}
             </div>
           </motion.div>
@@ -145,9 +146,7 @@ export function BacklogStatusPipPage() {
                   />
                 ))}
                 {!activeStories.length && (
-                  <div className="px-4 py-6 text-center text-sm text-muted-foreground">
-                    {empty}
-                  </div>
+                  <PipEmptyState loading={waiting} text={empty} />
                 )}
               </div>
             </ScrollArea>
@@ -324,13 +323,45 @@ function statusText(
   return `${activeCount} active ${activeCount === 1 ? "story" : "stories"}`
 }
 
+// Loading spins; an empty backlog says so plainly.
+function PipEmptyState({
+  compact,
+  loading,
+  text,
+}: {
+  compact?: boolean
+  loading: boolean
+  text: string
+}) {
+  const Icon = loading ? LoaderCircleIcon : InboxIcon
+  return (
+    <div
+      className={cn(
+        "flex items-center text-muted-foreground",
+        compact
+          ? "gap-2 px-2 py-2.5 text-xs"
+          : "flex-col gap-2 px-4 py-8 text-center text-sm"
+      )}
+    >
+      <Icon
+        aria-hidden
+        className={cn(
+          compact ? "size-3.5" : "size-5",
+          loading && "animate-spin"
+        )}
+      />
+      {text}
+    </div>
+  )
+}
+
 function emptyText(
   authStatus: BacklogStatusPipSnapshot["authStatus"],
   hasActiveProject: boolean,
   loading: boolean
 ) {
-  if (authStatus === "loading" || loading) return "Loading user stories."
+  if (authStatus === "loading" || loading) return "Loading user stories…"
   if (authStatus === "unauthenticated") return "Sign in to view active stories."
   if (!hasActiveProject) return "Open a project to load user stories."
-  return "No user story is currently in progress or in review."
+  return "No story in progress or in review right now."
 }

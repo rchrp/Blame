@@ -138,6 +138,13 @@ const api: BlameDesktopApi = {
         snapshot: Parameters<typeof callback>[0],
       ) => callback(snapshot);
       ipcRenderer.on("backlog-status-pip:snapshot", handler);
+      // The window may start listening after the first snapshot was sent:
+      // ask for the latest one so it never waits on a story change.
+      void ipcRenderer
+        .invoke("backlog-status-pip:latest-snapshot")
+        .then((snapshot) => {
+          if (snapshot !== undefined) callback(snapshot);
+        });
       return () =>
         ipcRenderer.removeListener("backlog-status-pip:snapshot", handler);
     },
