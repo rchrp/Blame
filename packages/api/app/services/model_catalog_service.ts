@@ -33,7 +33,14 @@ const externalCliProviderIds = new Set(['claude-code', 'openai-codex-cli'])
 let authoritativeProviderIds = new Set<string>()
 let staticModelInfo: ModelInfoCatalog = {}
 let staticCatalogPromise: Promise<CatalogProvider[]> | undefined
+let staticCatalogHash: Promise<string> | undefined
 let refreshPromise: Promise<ModelCatalogSnapshot> | undefined
+// Every model picker asks for the catalog: keep the stored snapshot and its
+// parsed payload for a short while instead of reading and parsing megabytes
+// of JSON on each request.
+const snapshotCacheMs = 60_000
+let cachedSnapshot: { expiresAt: number; snapshot: ModelCatalogSnapshot } | undefined
+let parsedSnapshot: { key: string; payload: CatalogSnapshotPayload } | undefined
 
 export default class ModelCatalogService {
   async catalog(userId: string, credentials: ProviderCredential[]) {
@@ -66,14 +73,25 @@ export default class ModelCatalogService {
 
   private async snapshot() {
     const staticCatalog = await loadStaticCatalog()
-    const catalogHash = hashCatalog(staticCatalog)
-    const existing = await ModelCatalogSnapshot.find(snapshotId)
+    staticCatalogHash ??= Promise.resolve(hashCatalog(staticCatalog))
+    const catalogHash = await staticCatalogHash
+    if (cachedSnapshot && cachedSnapshot.expiresAt > Date.now()) {
+      const cached = cachedSnapshot.snapshot
+      if (cached.catalogHash === catalogHash) return cached
+    }
+    const existing = await findSnapshot()
     if (!existing || existing.catalogHash !== catalogHash) {
       return refreshCatalog(staticCatalog, catalogHash, existing)
     }
     if (snapshotStale(existing)) triggerRefresh(staticCatalog, catalogHash, existing)
     return existing
   }
+}
+
+async function findSnapshot() {
+  const snapshot = await ModelCatalogSnapshot.find(snapshotId)
+  if (snapshot) cachedSnapshot = { expiresAt: Date.now() + snapshotCacheMs, snapshot }
+  return snapshot
 }
 
 function loadStaticCatalog() {
@@ -185,9 +203,14 @@ function refreshCatalog(
   catalogHash: string,
   previous: ModelCatalogSnapshot | null
 ) {
-  refreshPromise ??= performRefresh(staticCatalog, catalogHash, previous).finally(() => {
-    refreshPromise = undefined
-  })
+  refreshPromise ??= performRefresh(staticCatalog, catalogHash, previous)
+    .then((snapshot) => {
+      cachedSnapshot = { expiresAt: Date.now() + snapshotCacheMs, snapshot }
+      return snapshot
+    })
+    .finally(() => {
+      refreshPromise = undefined
+    })
   return refreshPromise
 }
 
@@ -401,10 +424,13 @@ function emptyCost() {
 }
 
 function parseSnapshot(snapshot: ModelCatalogSnapshot): CatalogSnapshotPayload {
+  const key = `${snapshot.catalogHash}:${snapshot.refreshedAt.toMillis()}`
+  if (parsedSnapshot?.key === key) return parsedSnapshot.payload
   const value = JSON.parse(snapshot.payload) as CatalogSnapshotPayload
   if (!Array.isArray(value.providers) || typeof value.generatedAt !== 'string') {
     throw new Error('Invalid model catalog snapshot')
   }
+  parsedSnapshot = { key, payload: value }
   return value
 }
 

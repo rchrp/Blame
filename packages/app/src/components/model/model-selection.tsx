@@ -13,8 +13,11 @@ import type {
   ProviderListResponse,
   ReasoningSelection,
 } from "@blame/agent-runtime"
+import { createProviderListCache } from "./provider-list-cache.ts"
 
 const storageKey = "blame.app.drawer-model-selection.v1"
+
+const providerLists = createProviderListCache<ProviderListResponse>()
 
 const globalModelSelectionKey = "__global__"
 
@@ -267,42 +270,63 @@ function useLocalProviderState(enabled = true) {
   const auth = useCloudAuth()
   const platform = usePlatform()
   const directory = globalModelSelectionKey
-  const [providers, setProviders] = React.useState<ProviderListResponse>()
   const [loading, setLoading] = React.useState(false)
   const [failed, setFailed] = React.useState(false)
   const agent = platform.agent
+  // One list per account and API: shared by every picker, shown at once.
+  const cacheKey =
+    agent && auth.status === "authenticated"
+      ? `${auth.apiConnection.url}|${auth.user?.id ?? ""}`
+      : undefined
+  const providers = React.useSyncExternalStore(
+    providerLists.subscribe,
+    () => providerLists.read(cacheKey),
+    () => undefined
+  )
 
-  const refresh = React.useCallback(() => {
-    if (!agent || auth.status !== "authenticated") {
-      setProviders(undefined)
-      return Promise.resolve()
-    }
-
-    setLoading(true)
-    setFailed(false)
-    return agent.providers
-      .list(auth.apiConnection)
-      .then((response) => {
-        const normalized = normalizeProviderList(response)
-        rememberModelNames(normalized)
-        setProviders(normalized)
-      })
-      .catch((error) => {
-        console.error("[renderer] providers:list failed", error)
-        setFailed(true)
-      })
-      .finally(() => {
-        setLoading(false)
-      })
-  }, [agent, auth.apiConnection, auth.status])
+  const load = React.useCallback(
+    (force: boolean) => {
+      if (!agent || !cacheKey || auth.status !== "authenticated") {
+        return Promise.resolve()
+      }
+      // Only a picker with nothing to show waits on the request.
+      if (!providerLists.read(cacheKey)) setLoading(true)
+      setFailed(false)
+      const connection = auth.apiConnection
+      return providerLists
+        .load(
+          cacheKey,
+          async () => {
+            const normalized = normalizeProviderList(
+              await agent.providers.list(connection)
+            )
+            if (!normalized) throw new Error("Empty provider list")
+            return normalized
+          },
+          { force }
+        )
+        .then(() => undefined)
+        .catch((error) => {
+          console.error("[renderer] providers:list failed", error)
+          setFailed(true)
+        })
+        .finally(() => {
+          setLoading(false)
+        })
+    },
+    [agent, auth.apiConnection, auth.status, cacheKey]
+  )
+  React.useEffect(() => rememberModelNames(providers), [providers])
+  // After connecting a provider or changing models: always fetch again.
+  const refresh = React.useCallback(() => load(true), [load])
 
   React.useEffect(() => {
     if (!enabled) return
     const timeout = window.setTimeout(() => {
-      void refresh().then(() => undefined)
+      void load(false)
     })
     return () => window.clearTimeout(timeout)
-  }, [enabled, refresh])
+  }, [enabled, load])
 
   return {
     apiConnection: auth.apiConnection,
