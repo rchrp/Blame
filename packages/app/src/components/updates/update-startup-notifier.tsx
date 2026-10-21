@@ -1,7 +1,7 @@
 import * as React from "react"
 import { toast } from "sonner"
 
-import { navigate } from "@/components/navigation/navigation"
+import { openSettings } from "@/pages/settings/settings-section"
 import { usePlatform } from "@/context/platform"
 
 export function UpdateStartupNotifier() {
@@ -22,15 +22,11 @@ export function UpdateStartupNotifier() {
         description: `Version ${status.latestVersion} is ready to download.`,
         action: {
           label: "Open Settings",
-          onClick: openSettings,
+          onClick: () => openSettings("desktop"),
         },
       })
     })
   }, [platform.updates])
 
   return null
-}
-
-function openSettings() {
-  navigate("/settings")
 }

@@ -44,7 +44,6 @@ import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
 import { AppLayout } from "@/layouts/app-layout"
 import { SettingsDialog } from "@/pages/settings/page"
-import { AccountPrivacyPage } from "@/pages/account-privacy/page"
 import { AccountClosureReceiptPage } from "@/pages/account-privacy/account-closure-receipt-page"
 import {
   getAccountClosureReceipt,
@@ -54,7 +53,6 @@ import { appWindowRole } from "@/lib/app-window-role"
 
 const settingsPath = "/settings"
 const premiumPath = "/premium"
-const accountPrivacyPath = "/account/privacy"
 const backlogStatusPipPath = "/backlog-status-pip"
 // Long enough for the mark to draw itself and one loading line to be read.
 const minimumLoadingMs = 1600
@@ -75,40 +73,10 @@ const routes = [
     element: <SecurityPage />,
   },
   { path: "/deploy", title: "Deploy", element: <DeployPage /> },
-  {
-    path: "/data-library",
-    title: "Data Library",
-    element: <RoutePage title="Data Library" />,
-  },
-  {
-    path: "/reports",
-    title: "Reports",
-    element: <RoutePage title="Reports" />,
-  },
-  {
-    path: "/word-assistant",
-    title: "Word Assistant",
-    element: <RoutePage title="Word Assistant" />,
-  },
-  { path: "/help", title: "Get Help", element: <RoutePage title="Get Help" /> },
-  { path: "/search", title: "Search", element: <RoutePage title="Search" /> },
 ]
 
 function resolveRoute(pathname: string) {
   return routes.find((route) => route.path === pathname) ?? routes[0]
-}
-
-function RoutePage({ title }: { title: string }) {
-  return (
-    <div className="flex flex-1 flex-col gap-4 px-4 pt-[calc(var(--header-height)+1rem)] pb-4 lg:px-6 lg:pt-[calc(var(--header-height)+1.5rem)] lg:pb-6">
-      <div className="rounded-lg border bg-card p-6 text-card-foreground">
-        <h2 className="text-lg font-semibold">{title}</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Cette page est branchee sur sa route.
-        </p>
-      </div>
-    </div>
-  )
 }
 
 export function App() {
@@ -133,7 +101,6 @@ export function App() {
   const route = resolveRoute(pathname)
   const settingsOpen = pathname === settingsPath
   const premiumOpen = pathname === premiumPath
-  const accountPrivacyOpen = pathname === accountPrivacyPath
   const statusPipOpen = pathname === backlogStatusPipPath
   const previousRoute = resolvePreviousRoute(previousPathname)
   const activeRoute = settingsOpen ? previousRoute : route
@@ -153,7 +120,6 @@ export function App() {
     auth.license?.licensed !== true
   const windowRole = appWindowRole({
     activeProject: projects.activeProject,
-    accountPrivacyOpen,
     aiPreferences: auth.aiPreferences,
     authStatus: loading ? "loading" : auth.status,
     premiumOpen: premiumOpen || premiumOfferOpen,
@@ -177,14 +143,6 @@ export function App() {
     return (
       <TooltipProvider>
         <AccountClosureReceiptPage receipt={closureReceipt} />
-        <Toaster />
-      </TooltipProvider>
-    )
-  }
-  if (!loading && accountPrivacyOpen && auth.status === "authenticated") {
-    return (
-      <TooltipProvider>
-        <AccountPrivacyPage />
         <Toaster />
       </TooltipProvider>
     )

@@ -18,11 +18,12 @@ import {
   EllipsisVerticalIcon,
   CircleUserRoundIcon,
   CreditCardIcon,
-  BellIcon,
   LogOutIcon,
 } from "lucide-react"
-import type { CloudUser } from "@/context/cloud-auth"
+import { toast } from "sonner"
+import { type CloudUser, useCloudAuth } from "@/context/cloud-auth"
 import { navigate } from "@/components/navigation/navigation"
+import { openSettings } from "@/pages/settings/settings-section"
 
 export function NavUser({
   onLogout,
@@ -32,7 +33,19 @@ export function NavUser({
   user: CloudUser
 }) {
   const { isMobile } = useSidebar()
+  const auth = useCloudAuth()
   const name = user.fullName || user.email
+
+  // Subscribers manage billing in Stripe; others see the Premium offer.
+  function openBilling() {
+    if (auth.license?.licensed !== true) return navigate("/premium")
+    void auth.openBillingPortal().catch((error: unknown) => {
+      toast.error("Billing could not open", {
+        description: error instanceof Error ? error.message : undefined,
+        position: "bottom-right",
+      })
+    })
+  }
 
   return (
     <SidebarMenu>
@@ -68,12 +81,12 @@ export function NavUser({
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <UserAvatar
-                email={user.email}
-                image={user.image}
-                initials={user.initials}
-                name={user.fullName}
-                seed={user.id}
-              />
+                  email={user.email}
+                  image={user.image}
+                  initials={user.initials}
+                  name={user.fullName}
+                  seed={user.id}
+                />
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{name}</span>
                   <span className="truncate text-xs text-muted-foreground">
@@ -84,17 +97,13 @@ export function NavUser({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem onSelect={() => navigate("/account/privacy")}>
+              <DropdownMenuItem onSelect={() => openSettings("account")}>
                 <CircleUserRoundIcon />
                 Account
               </DropdownMenuItem>
-              <DropdownMenuItem>
+              <DropdownMenuItem onSelect={openBilling}>
                 <CreditCardIcon />
                 Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <BellIcon />
-                Notifications
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />

@@ -51,8 +51,12 @@ import {
   StatusText,
 } from "./settings-layout"
 import { DesktopSettingsPanel } from "./desktop-settings-panel"
+import {
+  clearRequestedSettingsSection,
+  requestedSettingsSection,
+  type SettingsSectionId,
+} from "./settings-section"
 
-type SettingsSectionId = "general" | "models" | "mcp" | "desktop" | "account"
 
 type ThemeValue = "system" | "light" | "dark"
 
@@ -144,8 +148,10 @@ export function SettingsDialogButton({
 
 function SettingsContent() {
   const auth = useCloudAuth()
-  const [activeSection, setActiveSection] =
-    React.useState<SettingsSectionId>("general")
+  const [activeSection, setActiveSection] = React.useState<SettingsSectionId>(
+    () => requestedSettingsSection() ?? "general"
+  )
+  React.useEffect(() => clearRequestedSettingsSection(), [])
   const accountDisabled = auth.status !== "authenticated"
   const visibleSection =
     accountDisabled && activeSection === "account" ? "general" : activeSection

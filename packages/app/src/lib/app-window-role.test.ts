@@ -4,7 +4,6 @@ import test from "node:test"
 import { appWindowRole, type AppWindowRoleInput } from "./app-window-role.ts"
 
 const workspaceInput: AppWindowRoleInput = {
-  accountPrivacyOpen: false,
   activeProject: { id: "project" },
   aiPreferences: {},
   authStatus: "authenticated",
@@ -26,7 +25,6 @@ test("does not manage auxiliary or loading window roles", () => {
 test("uses compact windows for every screen outside the application layout", () => {
   const compactInputs: AppWindowRoleInput[] = [
     { ...workspaceInput, authStatus: "unauthenticated" },
-    { ...workspaceInput, accountPrivacyOpen: true },
     { ...workspaceInput, premiumOpen: true },
     { ...workspaceInput, aiPreferences: null },
     { ...workspaceInput, activeProject: undefined },
