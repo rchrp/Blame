@@ -9,7 +9,7 @@ import {
   CheckCircle2Icon,
   GitMergeIcon,
   RotateCcwIcon,
-  SparklesIcon,
+  BotIcon,
   XCircleIcon,
 } from "lucide-react"
 import { toast } from "sonner"
@@ -506,7 +506,7 @@ function ConflictFooter({
         variant="outline"
         onClick={onResolveWithAgent}
       >
-        <SparklesIcon />
+        <BotIcon />
         Resolve with AI
       </Button>
       <Button

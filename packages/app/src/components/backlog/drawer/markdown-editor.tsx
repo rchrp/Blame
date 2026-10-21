@@ -14,7 +14,7 @@ import {
   PaperclipIcon,
   QuoteIcon,
   Redo2Icon,
-  SparkleIcon,
+  PenLineIcon,
   StrikethroughIcon,
   Trash2Icon,
   Undo2Icon,
@@ -496,7 +496,7 @@ const MarkdownOptimizeButton = React.memo(function MarkdownOptimizeButton({
             {optimizing ? (
               <LoaderCircleIcon className="size-3.5 animate-spin" />
             ) : (
-              <SparkleIcon className="size-3.5" />
+              <PenLineIcon className="size-3.5" />
             )}
             Enhance
           </Button>

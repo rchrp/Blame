@@ -1,5 +1,5 @@
 import * as React from "react"
-import { FolderIcon, LoaderCircleIcon, SparklesIcon } from "lucide-react"
+import { FolderIcon, LoaderCircleIcon, FolderPlusIcon } from "lucide-react"
 
 import {
   advancedOptionLabels,
@@ -666,7 +666,7 @@ function CreateProjectButton({ wizard }: { wizard: NewProjectWizard }) {
       {wizard.creating ? (
         <LoaderCircleIcon className="animate-spin motion-reduce:animate-none" />
       ) : (
-        <SparklesIcon />
+        <FolderPlusIcon />
       )}
       {wizard.creating ? "Checking requirements…" : "Create project"}
     </Button>

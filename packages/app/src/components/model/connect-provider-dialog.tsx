@@ -12,7 +12,12 @@ import type {
 
 import { ClaudeCodeConnectContent } from "@/components/model/claude-code-connect"
 import { ProviderMark } from "@/components/model/model-selector"
-import { type ModelSelection, popularProviders } from "@/components/model/model-selection"
+import {
+  type ModelSelection,
+  recommendedApiKeyProviders,
+  subscriptionProviders,
+} from "@/components/model/model-selection"
+import { ProviderAccessBadge } from "@/components/model/provider-access-badge"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -79,9 +84,7 @@ export function ProviderSelectDialog({
                     {selection.connectedProviderIDs.has(provider.id) ? (
                       <Badge variant="secondary">Connected</Badge>
                     ) : null}
-                    {provider.id === "anthropic" ? (
-                      <Badge variant="outline">Recommended</Badge>
-                    ) : null}
+                    <ProviderAccessBadge providerID={provider.id} />
                   </CommandItem>
                 ))}
               </CommandGroup>
@@ -527,32 +530,26 @@ function connectionDescription(credential: ProviderCredentialSummary) {
   return credential.authMethod === "oauth" ? "OAuth account" : "API key"
 }
 
+const providerSections = [
+  { name: "Use your subscription", providerIDs: subscriptionProviders },
+  { name: "API keys", providerIDs: recommendedApiKeyProviders },
+]
+
+/** Subscriptions first, then the recommended API keys, then everything else. */
 function groupProviders(providers: Provider[]) {
-  const groups = providers.reduce((map, provider) => {
-    const name = popularProviders.includes(provider.id) ? "Popular" : "Other"
-    map.set(name, [...(map.get(name) ?? []), provider])
-    return map
-  }, new Map<string, Provider[]>())
-
-  return Array.from(groups.entries())
-    .map(([name, items]) => ({
-      name,
-      providers: items.sort(
-        (a, b) =>
-          getProviderRank(a.id) - getProviderRank(b.id) ||
-          a.name.localeCompare(b.name)
+  const listed = new Set(providerSections.flatMap((section) => section.providerIDs))
+  return [
+    ...providerSections.map((section) => ({
+      name: section.name,
+      providers: section.providerIDs.flatMap((id) =>
+        providers.filter((provider) => provider.id === id)
       ),
-    }))
-    .sort((a, b) =>
-      a.name === "Popular"
-        ? -1
-        : b.name === "Popular"
-          ? 1
-          : a.name.localeCompare(b.name)
-    )
-}
-
-function getProviderRank(providerID: string) {
-  const index = popularProviders.indexOf(providerID)
-  return index === -1 ? popularProviders.length : index
+    })),
+    {
+      name: "More providers",
+      providers: providers
+        .filter((provider) => !listed.has(provider.id))
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    },
+  ].filter((group) => group.providers.length)
 }
