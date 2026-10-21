@@ -22,17 +22,11 @@ import {
   MessageScrollerProvider,
   MessageScrollerViewport,
 } from "@/components/ui/message-scroller"
-import type {
-  UserStoryDiffStats,
-} from "@/components/backlog/development/user-story-diff-stats"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { DrawerSidebar } from "@/components/backlog/drawer/user-story-drawer-sidebar"
 import type { ComposerDraft } from "@/components/backlog/drawer/composer-draft-storage"
 import type {
   PendingCodeSelectionAttachment,
 } from "@/components/backlog/shared/comment-attachment-events"
 
-export const drawerSidebarStorageKey = "blame.app.user-story-drawer-sidebar-open.v1"
 
 export type PendingComposerDraft = {
   draft: ComposerDraft
@@ -97,15 +91,16 @@ export function DrawerBody({
   const [fixedSectionHeight, setFixedSectionHeight] = React.useState(0)
   const fixedSectionVisible = Boolean(fixedSection)
   const topPaddingClassName = headerTabsVisible ? "pt-36" : "pt-28"
-  const contentClassName = sidebarOpen
-    ? cn(
-        "mx-auto flex max-w-5xl flex-col gap-6 px-6 lg:mx-0 lg:mr-[26rem]",
-        topPaddingClassName
-      )
-    : cn("flex w-full flex-col gap-6 px-6", topPaddingClassName)
-  const fixedSectionClassName = sidebarOpen
-    ? "pointer-events-none absolute right-0 bottom-0 left-0 z-20 lg:right-[26rem]"
-    : "pointer-events-none absolute right-0 bottom-0 left-0 z-20"
+  // Room for the stats panel on the right while it is expanded.
+  const contentClassName = cn(
+    "flex flex-col gap-6 px-6 transition-[margin] duration-500 ease-out",
+    sidebarOpen && "lg:mr-[26rem]",
+    topPaddingClassName
+  )
+  const fixedSectionClassName = cn(
+    "pointer-events-none absolute right-0 bottom-0 left-0 z-20 transition-[right] duration-500 ease-out",
+    sidebarOpen && "lg:right-[26rem]"
+  )
   const fixedSectionContentClassName = "w-full px-6"
   const bottomInset = Math.max(fixedSectionHeight, 24)
 
@@ -149,26 +144,6 @@ export function DrawerBody({
           <div className={fixedSectionContentClassName}>{fixedSection}</div>
         </div>
       ) : null}
-    </div>
-  )
-}
-
-export function DrawerSidebarIsland({
-  diffStats,
-  open,
-  userStory,
-}: {
-  diffStats?: UserStoryDiffStats
-  open: boolean
-  userStory?: UserStory
-}) {
-  if (!open) return null
-
-  return (
-    <div className="absolute top-4 right-4 bottom-16 z-20 h-fit w-[min(20rem,calc(100%-2rem))] overflow-hidden rounded-xl bg-input/40 shadow-xl ring-1 shadow-black/10 ring-foreground/20 backdrop-blur-xl dark:bg-muted">
-      <ScrollArea className="h-full min-h-0">
-        <DrawerSidebar diffStats={diffStats} userStory={userStory} />
-      </ScrollArea>
     </div>
   )
 }
@@ -255,17 +230,6 @@ export function createdAtLabel(userStory?: UserStory) {
   return new Intl.DateTimeFormat(undefined, {
     dateStyle: "medium",
   }).format(new Date(userStory.createdAt))
-}
-
-export function readSidebarOpen() {
-  try {
-    return (
-      JSON.parse(localStorage.getItem(drawerSidebarStorageKey) ?? "false") ===
-      true
-    )
-  } catch {
-    return false
-  }
 }
 
 export function isSendToDevAgentShortcut(event: KeyboardEvent) {

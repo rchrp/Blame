@@ -4,8 +4,8 @@ import {
   AppWindowIcon,
   BookOpenIcon,
   CodeIcon,
-  PanelRightCloseIcon,
-  PanelRightOpenIcon,
+  Maximize2Icon,
+  Minimize2Icon,
   XIcon,
 } from "lucide-react"
 
@@ -76,7 +76,13 @@ import {
 } from "@/components/ui/drawer"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
-import { recallForItem, rememberForItem } from "@/lib/ui-memory"
+import {
+  isBoolean,
+  recallForItem,
+  rememberForItem,
+  useUiMemory,
+} from "@/lib/ui-memory"
+import { StoryStatsIsland } from "@/components/backlog/drawer/user-story-drawer-sidebar"
 import {
   DrawerResizeHandle,
   useStoryDrawerWidth,
@@ -95,13 +101,10 @@ import {
   DrawerBody,
   drawerComposerDraft,
   DrawerHeaderTitle,
-  DrawerSidebarIsland,
-  drawerSidebarStorageKey,
   initialDrawerTab,
   isSendToDevAgentShortcut,
   mergeAttachments,
   type PendingComposerDraft,
-  readSidebarOpen,
   updatePendingDraftMarkdown,
 } from "./user-story-drawer-parts"
 const composerDraftPersistDelayMs = 500
@@ -290,7 +293,12 @@ export function UserStoryDrawerPanel({
     userStory?.runMode ?? null
   )
   const [commentSubmission] = React.useState(createUserStoryCommentSubmission)
-  const [sidebarOpen, setSidebarOpen] = React.useState(readSidebarOpen)
+  // The stats panel opens in full; it can fold into a small pill.
+  const [statsExpanded, setStatsExpanded] = useUiMemory(
+    "story-drawer.stats-expanded",
+    true,
+    isBoolean
+  )
   const titleDraftKey = `${draftStorageKey}:title`
   const [title, setTitle] = React.useState(
     mode === "create"
@@ -313,10 +321,6 @@ export function UserStoryDrawerPanel({
     PendingComposerDraft | undefined
   >(undefined)
   const composerDraftRemovedRef = React.useRef(false)
-
-  React.useEffect(() => {
-    localStorage.setItem(drawerSidebarStorageKey, JSON.stringify(sidebarOpen))
-  }, [sidebarOpen])
 
   // A new story's title survives closing the drawer, like its description.
   React.useEffect(() => {
@@ -594,10 +598,13 @@ export function UserStoryDrawerPanel({
           className="absolute top-6 right-16 z-30 border bg-background/90 shadow-sm"
           size="icon-sm"
           variant="outline"
-          onClick={() => setSidebarOpen((open) => !open)}
-          aria-label={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
+          onClick={() => setStatsExpanded((expanded) => !expanded)}
+          aria-label={
+            statsExpanded ? "Minimize agent stats" : "Show agent stats"
+          }
+          title={statsExpanded ? "Minimize" : "Expand"}
         >
-          {sidebarOpen ? <PanelRightCloseIcon /> : <PanelRightOpenIcon />}
+          {statsExpanded ? <Minimize2Icon /> : <Maximize2Icon />}
         </Button>
       )}
       <DrawerClose asChild>
@@ -617,11 +624,12 @@ export function UserStoryDrawerPanel({
       >
         <DrawerHeader
           className={cn(
-            "absolute top-0 right-0 left-0 isolate z-[15] gap-4 overflow-hidden px-6 pt-6 pr-14 pb-6",
+            // The blur spans the whole width, under the stats panel too;
+            // only the title and tabs keep clear of it.
+            "absolute top-0 right-0 left-0 isolate z-[15] gap-4 overflow-hidden px-6 pt-6 pr-14 pb-6 transition-[padding] duration-500 ease-out",
             tab === "user-story" &&
               sidebarAvailable &&
-              sidebarOpen &&
-              "lg:mr-[26rem]"
+              (statsExpanded ? "lg:pr-[27.5rem]" : "pr-[13rem]")
           )}
         >
           <div
@@ -703,7 +711,7 @@ export function UserStoryDrawerPanel({
               />
             }
             headerTabsVisible={hasDevelopment}
-            sidebarOpen={sidebarAvailable && sidebarOpen}
+            sidebarOpen={sidebarAvailable && statsExpanded}
           >
             <UserStoryContent
               loadChangedFileDiffs={loadChangedFileDiffs}
@@ -774,10 +782,11 @@ export function UserStoryDrawerPanel({
         )}
       </Tabs>
       {tab === "user-story" && sidebarAvailable && (
-        <DrawerSidebarIsland
+        <StoryStatsIsland
           diffStats={diffStats}
-          open={sidebarOpen}
+          expanded={statsExpanded}
           userStory={userStory}
+          onExpand={() => setStatsExpanded(true)}
         />
       )}
       {tab !== "user-story" && (

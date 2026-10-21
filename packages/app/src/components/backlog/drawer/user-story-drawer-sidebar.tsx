@@ -1,4 +1,5 @@
 import * as React from "react"
+import { motion, useReducedMotion } from "motion/react"
 import type { AgentUsageSummary, AgentUsageTotals } from "@blame/agent-runtime"
 
 import type { UserStory } from "@/components/backlog/data/backlog-data"
@@ -49,15 +50,115 @@ import {
 } from "@/components/backlog/drawer/story-context-compaction"
 import { cn } from "@/lib/utils"
 
-// The story's agent at a glance: which model, how full its context is, and
-// what the work cost and changed.
-export function DrawerSidebar({
+// The story's agent at a glance, floating at the top right of the drawer:
+// the full panel, or a small pill with the context donut.
+export function StoryStatsIsland({
   diffStats,
+  expanded,
+  onExpand,
   userStory,
 }: {
   diffStats?: UserStoryDiffStats
+  expanded: boolean
+  onExpand(): void
   userStory?: UserStory
 }) {
+  const stats = useStoryStats(userStory)
+  const reduceMotion = useReducedMotion()
+  // The full face stays mounted so the island always knows its height and
+  // can move between two known sizes.
+  const fullFaceRef = React.useRef<HTMLDivElement>(null)
+  const [fullHeight, setFullHeight] = React.useState<number>()
+  React.useLayoutEffect(() => {
+    const face = fullFaceRef.current
+    if (!face) return
+    const observer = new ResizeObserver(() =>
+      setFullHeight(Math.ceil(face.getBoundingClientRect().height))
+    )
+    observer.observe(face)
+    return () => observer.disconnect()
+  }, [])
+  // Until it is measured, the full face sizes the island itself.
+  const fullFaceInFlow = expanded && fullHeight === undefined
+  return (
+    <motion.div
+      className="absolute top-4 right-4 z-20 max-w-[calc(100%-2rem)] overflow-hidden rounded-xl bg-input/40 shadow-xl ring-1 shadow-black/10 ring-foreground/20 backdrop-blur-xl dark:bg-muted"
+      initial={false}
+      animate={
+        expanded
+          ? { height: fullHeight ?? "auto", width: expandedWidth }
+          : { height: compactHeight, width: compactWidth }
+      }
+      transition={
+        reduceMotion
+          ? { duration: 0 }
+          : { bounce: 0.16, duration: 0.5, type: "spring" }
+      }
+    >
+      <IslandFace
+        className={cn(!fullFaceInFlow && "absolute top-0 right-0")}
+        shown={expanded}
+      >
+        <div
+          ref={fullFaceRef}
+          className="max-h-[calc(100svh-6rem)] overflow-y-auto"
+          style={{ width: expandedWidth }}
+        >
+          <DrawerSidebar
+            diffStats={diffStats}
+            stats={stats}
+            userStory={userStory}
+          />
+        </div>
+      </IslandFace>
+      <IslandFace className="absolute top-0 right-0" shown={!expanded}>
+        <CompactStats diffStats={diffStats} stats={stats} onExpand={onExpand} />
+      </IslandFace>
+    </motion.div>
+  )
+}
+
+const expandedWidth = 320
+const compactWidth = 192
+const compactHeight = 48
+
+// One face of the island: it fades in, slightly late, as the island takes
+// its size, and out quickly as the island leaves it.
+function IslandFace({
+  children,
+  className,
+  shown,
+}: {
+  children: React.ReactNode
+  className?: string
+  shown: boolean
+}) {
+  const reduceMotion = useReducedMotion()
+  const hidden = reduceMotion
+    ? { opacity: 0 }
+    : { filter: "blur(6px)", opacity: 0, scale: 0.96 }
+  return (
+    <motion.div
+      aria-hidden={!shown}
+      className={cn(!shown && "pointer-events-none", className)}
+      inert={!shown}
+      initial={false}
+      animate={shown ? { filter: "blur(0px)", opacity: 1, scale: 1 } : hidden}
+      transition={
+        shown
+          ? { delay: 0.06, duration: 0.28, ease: "easeOut" }
+          : { duration: 0.14, ease: "easeIn" }
+      }
+      style={{ transformOrigin: "top right" }}
+    >
+      {children}
+    </motion.div>
+  )
+}
+
+type StoryStats = ReturnType<typeof useStoryStats>
+
+function useStoryStats(userStory?: UserStory) {
   const sessionUsage = useSessionUsage(
     userStory?.agentUsage ? undefined : userStory?.clineSessionId
   )
@@ -66,7 +167,18 @@ export function DrawerSidebar({
   const totals =
     usageTotalsFromAgentUsage(userStory?.agentUsage) ?? sessionUsage.totals
   const context = storyContextUsage(userStory?.agentUsage, budget.limit)
+  return { budget, compaction, context, totals }
+}
 
+function DrawerSidebar({
+  diffStats,
+  stats: { budget, compaction, context, totals },
+  userStory,
+}: {
+  diffStats?: UserStoryDiffStats
+  stats: StoryStats
+  userStory?: UserStory
+}) {
   return (
     <aside className="grid gap-4 p-4">
       <ModelHeader userStory={userStory} />
@@ -77,21 +189,118 @@ export function DrawerSidebar({
         </Stat>
         <TokensStat totals={totals} />
         <Stat label="Changes">
-          {diffStats ? (
-            <span className="flex gap-1.5">
-              <span className="text-emerald-600 dark:text-emerald-400">
-                +{diffStats.additions}
-              </span>
-              <span className="text-rose-600 dark:text-rose-400">
-                −{diffStats.deletions}
-              </span>
-            </span>
-          ) : (
-            "—"
-          )}
+          {diffStats ? <DiffCounts diffStats={diffStats} /> : "—"}
         </Stat>
       </div>
     </aside>
+  )
+}
+
+function DiffCounts({ diffStats }: { diffStats: UserStoryDiffStats }) {
+  return (
+    <span className="flex gap-[0.4em]">
+      <span className="text-emerald-600 dark:text-emerald-400">
+        +{diffStats.additions}
+      </span>
+      <span className="text-rose-600 dark:text-rose-400">
+        −{diffStats.deletions}
+      </span>
+    </span>
+  )
+}
+
+// The pill: how full the context is and what changed, the rest on hover. The drawer's own
+// toggle and close buttons sit on its right end.
+function CompactStats({
+  diffStats,
+  onExpand,
+  stats: { budget, context, totals },
+}: {
+  diffStats?: UserStoryDiffStats
+  onExpand(): void
+  stats: StoryStats
+}) {
+  const cost = totals?.totalCost ?? totals?.cost
+  return (
+    <div
+      className="flex items-center"
+      style={{ height: compactHeight, width: compactWidth }}
+    >
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            aria-label="Show agent stats"
+            className="flex h-full min-w-0 flex-1 items-center gap-2 rounded-l-xl pr-1 pl-2.5 outline-none hover:bg-foreground/[0.04] focus-visible:bg-foreground/[0.06]"
+            onClick={onExpand}
+          >
+            <ContextDonut context={context} />
+            <span className="grid gap-0.5 text-left leading-none tabular-nums">
+              <span className="text-sm font-semibold text-foreground">
+                {context ? `${Math.round(context.ratio * 100)}%` : "—"}
+              </span>
+              {diffStats ? (
+                <span className="text-[10px] font-medium">
+                  <DiffCounts diffStats={diffStats} />
+                </span>
+              ) : null}
+            </span>
+          </button>
+        </TooltipTrigger>
+        <TooltipContent className="grid gap-0.5 tabular-nums" side="bottom">
+          <span>
+            Context{" "}
+            {context
+              ? `${compactTokens(context.used)} / ${compactTokens(context.limit)}`
+              : budget.limit
+                ? `· ${compactTokens(budget.limit)} max`
+                : "· not started"}
+          </span>
+          {cost !== undefined && cost !== null ? (
+            <span>Cost {formatCurrency(cost)}</span>
+          ) : null}
+        </TooltipContent>
+      </Tooltip>
+      <span aria-hidden className="w-[5.5rem] shrink-0" />
+    </div>
+  )
+}
+
+// The context grid, as a ring: reused, then new, over the free part.
+function ContextDonut({ context }: { context?: StoryContextUsage }) {
+  const size = 28
+  const stroke = 4
+  const radius = (size - stroke) / 2
+  const length = 2 * Math.PI * radius
+  const used = context?.ratio ?? 0
+  const cached = context ? Math.min(context.cached / context.limit, used) : 0
+  const ring = (fraction: number, className: string) => (
+    <circle
+      className={cn(
+        "transition-[stroke-dasharray] duration-500 ease-out",
+        className
+      )}
+      cx={size / 2}
+      cy={size / 2}
+      fill="none"
+      r={radius}
+      strokeDasharray={`${fraction * length} ${length}`}
+      strokeWidth={stroke}
+    />
+  )
+  return (
+    <svg
+      aria-hidden
+      className="size-7 shrink-0 -rotate-90"
+      viewBox={`0 0 ${size} ${size}`}
+    >
+      {ring(
+        1,
+        used >= 0.8 ? "stroke-amber-500/25" : "stroke-foreground/[0.09]"
+      )}
+      {ring(used, "stroke-violet-400")}
+      {ring(cached, "stroke-blue-500")}
+    </svg>
   )
 }
 
@@ -102,7 +311,7 @@ function ModelHeader({ userStory }: { userStory?: UserStory }) {
   const effort = latestReasoningEffort(userStory)
   if (!providerId || !modelId) return null
   return (
-    <div className="flex min-w-0 items-center gap-2 pr-8">
+    <div className="flex min-w-0 items-center gap-2 pr-[4.75rem]">
       <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-foreground/[0.06] ring-1 ring-foreground/10">
         <ProviderIcon className="size-4" providerId={providerId} />
       </span>
