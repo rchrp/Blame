@@ -348,7 +348,10 @@ export type DesktopUpdatePhase =
   | "error"
   | "unsupported"
 
+export type DesktopUpdateChannel = "stable" | "beta"
+
 export type DesktopUpdateStatus = {
+  channel: DesktopUpdateChannel
   currentVersion: string
   error?: string
   latestVersion?: string
@@ -365,6 +368,7 @@ export type DesktopUpdatesClient = {
   getStatus(): Promise<DesktopUpdateStatus>
   install(): Promise<DesktopUpdateStatus>
   onStatus(callback: (status: DesktopUpdateStatus) => void): () => void
+  setChannel(channel: DesktopUpdateChannel): Promise<DesktopUpdateStatus>
 }
 
 export type AgentClient = {

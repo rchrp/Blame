@@ -32,7 +32,16 @@ Users never download from GitHub URLs directly. [`download.blame.so`](deploy/dow
 4. **Pre-production test.** Only maintainers can see a draft. Download the installers from the draft on the [releases page](https://github.com/rchrp/Blame/releases) and test them.
 5. Edit the generated notes and click **Publish release**. From then on, `download.blame.so/latest`, the download page, and the in-app updater serve this version.
 
-A tag with a suffix such as `v1.2.0-beta.1` creates a prerelease. GitHub never treats a prerelease as the latest release, so it never reaches users through the updater or the download page.
+### Beta channel
+
+To try a version in the app before releasing it, push a beta tag:
+
+```bash
+git tag v1.2.0-beta.1
+git push origin v1.2.0-beta.1
+```
+
+A tag with a suffix is published right away as a prerelease, without a draft. GitHub never treats a prerelease as the latest release, so `download.blame.so/latest` and apps on the stable channel never see it. Apps with **Settings → Desktop → Beta channel** turned on update to the newest published release, prereleases included, by reading its update metadata from GitHub. Once `v1.2.0` is published, they move to it, since it is newer than its betas. Turning the channel off keeps the installed beta until a newer stable release ships.
 
 If a job fails, use **Re-run failed jobs** on the workflow run. To abandon a release, delete the draft and the tag (`git push origin :v1.2.0`).
 

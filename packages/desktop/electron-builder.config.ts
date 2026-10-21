@@ -252,6 +252,9 @@ async function executableArchitecture(executable: string) {
 const config: Configuration = {
   afterPack: finalizePackage,
   appId: "dev.blame.desktop",
+  // Betas publish latest*.yml too: the beta channel reads them from the
+  // release itself, and download.blame.so/latest never serves a prerelease.
+  detectUpdateChannel: false,
   asarUnpack: [
     "**/node_modules/@ast-grep/lang-*/**/*",
     "**/node_modules/@vscode/ripgrep-*/**/*",

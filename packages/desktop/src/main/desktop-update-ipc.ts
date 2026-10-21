@@ -1,6 +1,17 @@
-import { app, BrowserWindow, ipcMain } from "electron";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
+import { app, BrowserWindow, ipcMain, net } from "electron";
 import electronUpdater from "electron-updater";
 import type { ProgressInfo, UpdateInfo } from "electron-updater";
+import YAML from "yaml";
+import {
+  betaFeedUrl,
+  isUpdateChannel,
+  readUpdateChannel,
+  updateMetadataFile,
+  writeUpdateChannel,
+  type DesktopUpdateChannel,
+} from "./desktop-update-channel";
 
 const { autoUpdater } = electronUpdater;
 
@@ -15,6 +26,7 @@ export type DesktopUpdatePhase =
   | "unsupported";
 
 export type DesktopUpdateStatus = {
+  channel: DesktopUpdateChannel;
   currentVersion: string;
   error?: string;
   latestVersion?: string;
@@ -29,8 +41,12 @@ type DesktopUpdateOptions = {
   beforeInstall(): Promise<void>;
 };
 
+let channel: DesktopUpdateChannel = "stable";
 let status: DesktopUpdateStatus = initialStatus();
 let configured = false;
+let channelLoaded: Promise<void> | undefined;
+// Set once the beta channel replaced the feed built into the app.
+let customFeed = false;
 
 export function registerDesktopUpdateIpcHandlers(
   options: DesktopUpdateOptions,
@@ -50,6 +66,10 @@ export function registerDesktopUpdateIpcHandlers(
     await installUpdate(options);
     return status;
   });
+  ipcMain.handle("updates:set-channel", async (_event, next: unknown) => {
+    await setChannel(next);
+    return status;
+  });
 }
 
 export function checkForUpdatesOnStartup() {
@@ -62,6 +82,10 @@ export function checkForUpdatesOnStartup() {
 function configureUpdater() {
   if (configured) return;
   configured = true;
+  channelLoaded = readUpdateChannel(channelFile()).then((saved) => {
+    channel = saved;
+    setStatus({ ...status, channel });
+  });
   if (!isUpdaterSupported()) return;
 
   autoUpdater.autoDownload = false;
@@ -101,6 +125,8 @@ async function checkForUpdates() {
 
   setStatus({ ...baseStatus(), phase: "checking" });
   try {
+    await channelLoaded;
+    await useChannelFeed();
     await autoUpdater.checkForUpdates();
   } catch (error) {
     setStatus({ ...baseStatus(), error: errorMessage(error), phase: "error" });
@@ -121,6 +147,52 @@ async function downloadUpdate() {
   } catch (error) {
     setStatus({ ...baseStatus(), error: errorMessage(error), phase: "error" });
   }
+}
+
+async function setChannel(next: unknown) {
+  if (!isUpdateChannel(next))
+    throw new Error(`Unknown update channel: ${next}`);
+  await channelLoaded;
+  if (next === channel) return;
+  channel = next;
+  await writeUpdateChannel(channelFile(), channel);
+  // A download in progress or ready to install keeps going; the next check
+  // uses the new channel.
+  if (status.phase === "downloading" || status.phase === "downloaded") {
+    setStatus({ ...status, channel });
+    return;
+  }
+  setStatus({ ...initialStatus() });
+  await checkForUpdates();
+}
+
+async function useChannelFeed() {
+  if (channel === "beta") {
+    const metadata = updateMetadataFile(process.platform, process.arch);
+    const url = await betaFeedUrl(
+      (input, init) => net.fetch(input, init),
+      metadata,
+    );
+    if (url) {
+      autoUpdater.setFeedURL({ provider: "generic", url });
+      customFeed = true;
+      return;
+    }
+  }
+  if (!customFeed) return;
+  autoUpdater.setFeedURL(await builtInFeed());
+  customFeed = false;
+}
+
+// electron-builder writes the stable feed into app-update.yml.
+async function builtInFeed() {
+  const file = join(process.resourcesPath, "app-update.yml");
+  const { provider, url } = YAML.parse(await readFile(file, "utf8"));
+  return { provider, url };
+}
+
+function channelFile() {
+  return join(app.getPath("userData"), "update-channel.json");
 }
 
 async function installUpdate(options: DesktopUpdateOptions) {
@@ -146,6 +218,7 @@ function unsupportedStatus(): DesktopUpdateStatus {
 
 function baseStatus(): DesktopUpdateStatus {
   return {
+    channel,
     currentVersion: app.getVersion(),
     phase: "idle",
   };

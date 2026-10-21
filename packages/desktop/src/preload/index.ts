@@ -198,6 +198,7 @@ const api: BlameDesktopApi = {
       ipcRenderer.on("updates:status", handler);
       return () => ipcRenderer.removeListener("updates:status", handler);
     },
+    setChannel: (channel) => ipcRenderer.invoke("updates:set-channel", channel),
   },
   projectWindows: {
     focusProject: (path) => ipcRenderer.invoke("window:focus-project", path),

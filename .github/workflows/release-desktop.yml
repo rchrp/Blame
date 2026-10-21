@@ -1,6 +1,8 @@
 # Push a `v<version>` tag to build every installer and attach them to a draft
 # GitHub Release. Test the draft, then publish it: download.blame.so and the
 # in-app updater follow the latest published release.
+# A `v<version>-beta.<n>` tag is published right away as a prerelease. Only
+# desktop apps on the beta channel update to it.
 name: Release desktop
 
 on:
@@ -124,7 +126,7 @@ jobs:
             packages/desktop/dist/latest*.yml
 
   draft:
-    name: Draft GitHub Release
+    name: GitHub Release
     needs: [preflight, build]
     runs-on: ubuntu-latest
     permissions:
@@ -146,14 +148,18 @@ jobs:
       - name: Collect release files
         run: node scripts/desktop-release.mjs collect artifacts release
 
-      - name: Create or update the draft release
+      # Stable versions stay drafts until a maintainer publishes them. Betas are
+      # published as prereleases, which download.blame.so/latest never serves.
+      - name: Create or update the release
         run: |
           if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
             gh release upload "$GITHUB_REF_NAME" release/* --clobber
           else
-            flags=(--draft --generate-notes --title "Blame $VERSION" --verify-tag)
+            flags=(--generate-notes --title "Blame $VERSION" --verify-tag)
             if [[ "$VERSION" == *-* ]]; then
-              flags+=(--prerelease)
+              flags+=(--prerelease --latest=false)
+            else
+              flags+=(--draft)
             fi
             gh release create "$GITHUB_REF_NAME" release/* "${flags[@]}"
           fi
