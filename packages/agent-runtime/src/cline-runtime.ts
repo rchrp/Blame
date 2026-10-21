@@ -159,6 +159,12 @@ import {
 import { USER_REJECTED_TOOL_REASON } from "@cline/shared";
 import { fallbackCommitSubject } from "./commit-message.js";
 import { loadCatalogModel } from "./supplemental-model-config.js";
+import {
+  claudeCodeCredential,
+  claudeCodeStatus,
+  closeClaudeCodeBridge,
+  connectClaudeCode,
+} from "./claude-code/claude-code-provider.js";
 import { createContextProjectionExtension } from "./context-projection.js";
 import {
   appendInitialTaskBriefing,
@@ -254,6 +260,8 @@ import type {
   GenerateTitleResult,
   InitializeProjectInput,
   InitializeProjectResult,
+  ConnectClaudeCodeInput,
+  ReasoningSelection,
   LoginOAuthProviderInput,
   MapSecurityAuditInput,
   NewProjectGenerationResult,
@@ -347,6 +355,8 @@ type ToolApprovalResult = {
 
 type RuntimeCredentialInput = {
   apiConnection: ApiConnection;
+  backend?: AgentBackendConfig;
+  reasoningEffort?: ReasoningSelection;
   providerId: string;
   modelId?: string;
   credentialLabel?: string;
@@ -498,6 +508,9 @@ export class BlameAgentRuntime {
     deleteCredential: (connection: ApiConnection, id: string) =>
       deleteProviderCredential(connection, { id }),
     loginOAuth: (input: LoginOAuthProviderInput) => this.loginOAuth(input),
+    claudeCodeStatus: () => claudeCodeStatus(),
+    connectClaudeCode: (input: ConnectClaudeCodeInput) =>
+      connectClaudeCode(input),
   };
 
   prewarm = (input: AgentRuntimePrewarmInput) =>
@@ -593,6 +606,7 @@ export class BlameAgentRuntime {
     await Promise.allSettled(this.sessionMemoryWrites.values());
     this.sessionMemoryWrites.clear();
     await this.disposeCore();
+    await closeClaudeCodeBridge();
     this.userInstructionServices.stopAll();
     this.agentTelemetry.shutdown();
   }
@@ -726,11 +740,14 @@ export class BlameAgentRuntime {
         },
         telemetryContext,
       );
-      const resolvedCredential = await this.refreshOAuthCredential(
-        input.apiConnection,
-        credential,
-        {
+      const resolvedCredential = await claudeCodeCredential(
+        await this.refreshOAuthCredential(input.apiConnection, credential, {
           force: forceOAuthRefresh(credential.providerId),
+        }),
+        {
+          backend: input.backend,
+          reasoningEffort: input.reasoningEffort,
+          scope: sessionId,
         },
       );
       this.agentTelemetry.setAuthentication(
@@ -2367,7 +2384,10 @@ export class BlameAgentRuntime {
       providerId: input.providerId,
       label: credentialLabel(input),
     });
-    return this.refreshOAuthCredential(input.apiConnection, credential);
+    return claudeCodeCredential(
+      await this.refreshOAuthCredential(input.apiConnection, credential),
+      { backend: input.backend, reasoningEffort: input.reasoningEffort },
+    );
   }
 
   private async approveAndMergeStory(

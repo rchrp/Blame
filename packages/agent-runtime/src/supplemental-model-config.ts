@@ -6,15 +6,18 @@ import {
 import { getProviderCollectionSync, type ModelInfo } from "@cline/llms";
 import type { CoreModelConfig } from "@cline/sdk";
 
+import { claudeCodeModelConfig } from "./claude-code/claude-code-provider.js";
+
 // Models resolved from the Blame API catalog, which tracks newer Cline releases
 // and live provider catalogs than the SDK bundled in this runtime.
 const catalogModels = new Map<string, Record<string, ModelInfo>>();
 
 /** knownModels is serialized by Cline for local, remote and delegated sessions. */
 export function supplementalModelConfig<T extends CoreModelConfig>(
-  config: T,
+  requested: T,
   entries: readonly SupplementalModel[] = supplementalModels,
 ): T {
+  const config = claudeCodeModelConfig(requested);
   const providerId = config.providerConfig?.providerId ?? config.providerId;
   const official = getProviderCollectionSync(providerId)?.models;
   // Never invent a new provider or overwrite a Cline registry entry.

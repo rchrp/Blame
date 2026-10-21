@@ -4,7 +4,9 @@ import type { ModelInfo, ProviderInfo } from "@cline/llms";
 
 import type { BlameModel, BlameProvider } from "./types.js";
 
-const externalCliProviderIds = new Set(["claude-code", "openai-codex-cli"]);
+// Claude Code runs through Blame's local bridge; the Codex CLI provider is
+// not wired yet and the OpenAI Codex OAuth provider covers the subscription.
+const externalCliProviderIds = new Set(["openai-codex-cli"]);
 
 export async function listClineProviders() {
   const providers: ProviderInfo[] = await getAllProviders();

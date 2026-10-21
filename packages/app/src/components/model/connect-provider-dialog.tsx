@@ -10,6 +10,7 @@ import type {
   ProviderCredentialSummary,
 } from "@blame/agent-runtime"
 
+import { ClaudeCodeConnectContent } from "@/components/model/claude-code-connect"
 import { ProviderMark } from "@/components/model/model-selector"
 import { type ModelSelection, popularProviders } from "@/components/model/model-selection"
 import { Badge } from "@/components/ui/badge"
@@ -32,6 +33,7 @@ import {
 import { Input } from "@/components/ui/input"
 
 const openAICompatibleProviderID = "openai-compatible"
+const claudeCodeProviderID = "claude-code"
 
 export function ProviderSelectDialog({
   onCloseAutoFocus,
@@ -143,6 +145,21 @@ function ProviderConnectionsContent({
     ProviderCredentialSummary | undefined
   >()
   const [adding, setAdding] = React.useState(credentials.length === 0)
+
+  if ((adding || editingCredential) && provider.id === claudeCodeProviderID) {
+    return (
+      <ClaudeCodeConnectContent
+        provider={provider}
+        credential={editingCredential}
+        selection={selection}
+        onBack={() => {
+          setAdding(false)
+          setEditingCredential(undefined)
+        }}
+        onDone={onDone}
+      />
+    )
+  }
 
   if (adding || editingCredential) {
     return (
@@ -506,6 +523,7 @@ function connectionDescription(credential: ProviderCredentialSummary) {
     return credential.modelIds.join(", ")
   }
   if (credential.baseUrl) return credential.baseUrl
+  if (credential.authMethod === "local-cli") return "Claude Code on this computer"
   return credential.authMethod === "oauth" ? "OAuth account" : "API key"
 }
 

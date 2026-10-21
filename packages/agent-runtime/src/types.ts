@@ -108,12 +108,15 @@ export type BlameProvider = {
   models: Record<string, BlameModel>;
 };
 
+/** "local-cli": the provider signs in through a CLI on this computer. */
+export type ProviderAuthMethod = "api-key" | "oauth" | "local-cli";
+
 export type ProviderCredentialSummary = {
   id: string;
   userId: string;
   providerId: string;
   label: string;
-  authMethod?: "api-key" | "oauth";
+  authMethod?: ProviderAuthMethod;
   baseUrl: string | null;
   modelIds?: string[];
   accountId?: string | null;
@@ -157,6 +160,29 @@ export type SaveOAuthCredentialInput = {
   apiKey: string;
   oauthCredentials: OAuthCredentials;
   baseUrl?: string | null;
+};
+
+export type SaveLocalProviderCredentialInput = {
+  providerId: string;
+  label?: string;
+  accountId?: string | null;
+};
+
+export type ConnectClaudeCodeInput = {
+  apiConnection: ApiConnection;
+  label?: string;
+};
+
+export type ClaudeCodeStatus = {
+  installed: boolean;
+  executablePath?: string;
+  version?: string;
+  loggedIn: boolean;
+  /** "claude.ai" when Claude Code uses a Pro, Max or Team subscription. */
+  authMethod?: string;
+  email?: string;
+  subscriptionType?: string;
+  error?: string;
 };
 
 export type LoginOAuthProviderInput = {

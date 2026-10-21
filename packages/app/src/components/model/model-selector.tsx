@@ -49,6 +49,7 @@ const providerIconSprite = new URL(
   import.meta.url
 ).href
 const providerIconAliases: Partial<Record<string, IconName>> = {
+  "claude-code": "anthropic",
   "openai-codex": "openai",
   "openai-native": "openai",
 }

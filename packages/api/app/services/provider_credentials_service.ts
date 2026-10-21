@@ -3,11 +3,13 @@ import encryption from '@adonisjs/core/services/encryption'
 import type { Infer } from '@vinejs/vine/types'
 import type {
   resolveProviderCredentialValidator,
+  saveLocalProviderCredentialValidator,
   saveProviderCredentialValidator,
 } from '#validators/provider_credential'
 import { DateTime } from 'luxon'
 
 type SaveProviderCredentialInput = Infer<typeof saveProviderCredentialValidator>
+type SaveLocalProviderCredentialInput = Infer<typeof saveLocalProviderCredentialValidator>
 type ResolveProviderCredentialInput = Infer<typeof resolveProviderCredentialValidator>
 type OAuthCredentialsInput = {
   access: string
@@ -53,6 +55,21 @@ export default class ProviderCredentialsService {
       accountId: null,
       baseUrl: input.baseUrl,
       modelIds: input.modelIds,
+      expiresAt: null,
+    })
+  }
+
+  /** The CLI keeps the sign-in on the user's computer: only the account is recorded. */
+  async saveLocal(userId: string, input: SaveLocalProviderCredentialInput) {
+    return this.upsert(userId, {
+      providerId: input.providerId,
+      label: input.label,
+      encryptedApiKey: await encryption.encrypt(''),
+      authMethod: 'local-cli',
+      encryptedOauthCredentials: null,
+      accountId: input.accountId ?? null,
+      baseUrl: null,
+      modelIds: undefined,
       expiresAt: null,
     })
   }

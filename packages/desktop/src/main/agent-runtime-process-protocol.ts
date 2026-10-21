@@ -6,6 +6,8 @@ export const agentRuntimeMethods = [
   "providers.saveCredential",
   "providers.deleteCredential",
   "providers.loginOAuth",
+  "providers.claudeCodeStatus",
+  "providers.connectClaudeCode",
   "sessions.start",
   "sessions.startDevelopment",
   "sessions.send",

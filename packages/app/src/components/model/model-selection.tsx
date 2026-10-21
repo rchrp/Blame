@@ -35,6 +35,7 @@ const modelStateListeners = new Set<() => void>()
 
 export const popularProviders = [
   "openai-codex",
+  "claude-code",
   "openai",
   "openai-native",
   "anthropic",

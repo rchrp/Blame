@@ -463,6 +463,10 @@ const api: BlameDesktopApi = {
         ipcRenderer.invoke("agent:providers:delete-credential", connection, id),
       loginOAuth: (input) =>
         ipcRenderer.invoke("agent:providers:login-oauth", input),
+      claudeCodeStatus: () =>
+        ipcRenderer.invoke("agent:providers:claude-code-status"),
+      connectClaudeCode: (input) =>
+        ipcRenderer.invoke("agent:providers:connect-claude-code", input),
     },
     sessions: {
       start: (input) => ipcRenderer.invoke("agent:sessions:start", input),
