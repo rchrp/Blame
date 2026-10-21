@@ -1856,7 +1856,8 @@ export const MarkdownEditor = React.forwardRef<
           className={cn(
             "relative max-w-full min-w-0 overflow-hidden rounded-3xl bg-muted/50 p-1 shadow-xl ring-1 shadow-black/10 ring-foreground/20 transition-colors dark:bg-muted/50",
             appearance === "subtle" &&
-              "rounded-none bg-transparent p-0 text-muted-foreground shadow-none ring-0 dark:bg-transparent",
+              // The agent's reasoning: quiet italic, titles included.
+              "rounded-none bg-transparent p-0 text-muted-foreground italic shadow-none ring-0 dark:bg-transparent [&_*]:font-normal",
             fileDropActive && "ring-2 ring-primary"
           )}
           onBlur={() => requestAnimationFrame(() => updateMention())}

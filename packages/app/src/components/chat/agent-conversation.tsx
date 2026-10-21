@@ -33,6 +33,7 @@ import type {
   UserStoryFileAttachment,
 } from "@/components/backlog/data/backlog-data"
 import type { VcsFileDiff } from "@/components/backlog/development/development-workspace"
+import { readableReasoning } from "@/components/chat/reasoning-text"
 import {
   MarkdownEditor,
   type PendingFileAttachment,
@@ -1296,7 +1297,7 @@ function AgentReasoning({
     <MarkdownEditor
       appearance="subtle"
       animateAppend={runActive && activity.status === "running"}
-      markdown={detail ?? activity.detail}
+      markdown={readableReasoning(detail ?? activity.detail)}
       minHeight="min-h-0"
       placeholder=""
       readOnly
