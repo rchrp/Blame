@@ -46,10 +46,25 @@ import {
   planAttachmentContext,
   type PlanMessage,
 } from "./plan-mode-data"
-import { PlannedStoryCard } from "./planned-story-card"
+import { PlanStoryCarousel } from "./plan-story-carousel"
 import { usePlanMode, type PlanMode, type PlanPending } from "./use-plan-mode"
 
 const composerInputSelector = "[data-markdown-editor-input='true']"
+const headerSoftBlurMask = {
+  maskImage:
+    "linear-gradient(to bottom, black 0%, black 60%, transparent 100%)",
+  WebkitMaskImage:
+    "linear-gradient(to bottom, black 0%, black 60%, transparent 100%)",
+} satisfies React.CSSProperties
+const headerStrongBlurMask = {
+  maskImage: "linear-gradient(to bottom, black 0%, transparent 72%)",
+  WebkitMaskImage: "linear-gradient(to bottom, black 0%, transparent 72%)",
+} satisfies React.CSSProperties
+const footerBlurMask = {
+  maskImage: "linear-gradient(to top, black 0%, black 60%, transparent 100%)",
+  WebkitMaskImage:
+    "linear-gradient(to top, black 0%, black 60%, transparent 100%)",
+} satisfies React.CSSProperties
 
 const suggestions = [
   {
@@ -143,6 +158,8 @@ function PlanModeDialog({
   const [fileAttachments, setFileAttachments] = React.useState<
     UserStoryFileAttachment[]
   >([])
+  const footerRef = React.useRef<HTMLElement>(null)
+  const footerHeight = useElementHeight(footerRef, open)
   const messages = plan.thread.messages
   const empty = !messages.length
   const latestProposal = latestProposalId(messages)
@@ -177,18 +194,75 @@ function PlanModeDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="flex h-[min(54rem,calc(100svh-3rem))] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl"
+        className="block h-[min(54rem,calc(100svh-3rem))] overflow-hidden p-0 sm:max-w-3xl"
         onOpenAutoFocus={(event) => {
           event.preventDefault()
           focusComposer()
         }}
       >
-        <header className="flex items-center gap-3 border-b px-5 py-3">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border bg-muted text-muted-foreground shadow-xs">
-            <LightbulbIcon className="size-4" />
-          </span>
+        <MessageScrollerProvider>
+          <MessageScroller className="h-full">
+            <MessageScrollerViewport aria-label="Planning conversation">
+              <MessageScrollerContent
+                className={cn(
+                  "mx-auto grid w-full max-w-2xl gap-6 px-6 pt-24",
+                  empty ? "content-center" : "content-start"
+                )}
+                style={{ paddingBottom: footerHeight + 24 }}
+              >
+                {empty ? (
+                  <PlanEmptyState
+                    onSuggestion={
+                      plan.unavailableReason ? undefined : applySuggestion
+                    }
+                  />
+                ) : null}
+                {messages.map((message) =>
+                  message.role === "user" ? (
+                    <UserMessage
+                      key={message.id}
+                      message={message}
+                      onRetry={
+                        message.failed && !plan.pending
+                          ? () => plan.retry(message.id)
+                          : undefined
+                      }
+                    />
+                  ) : (
+                    <AssistantMessage
+                      key={message.id}
+                      latest={message.id === latestProposal}
+                      message={message}
+                      onOpenStory={onOpenStory}
+                      plan={plan}
+                    />
+                  )
+                )}
+                {plan.pending ? (
+                  <PlanningIndicator pending={plan.pending} />
+                ) : null}
+              </MessageScrollerContent>
+            </MessageScrollerViewport>
+            <MessageScrollerButton
+              className="right-6 z-30"
+              style={{ bottom: footerHeight + 16 }}
+            />
+          </MessageScroller>
+        </MessageScrollerProvider>
+        {/* Header and composer float over the conversation, which fades
+            under them the way it does in the story drawer. */}
+        <header className="absolute inset-x-0 top-0 isolate z-20 flex items-center gap-3 px-6 pt-5 pb-8">
+          <div
+            className="absolute inset-0 -z-10 bg-popover/20 backdrop-blur-sm"
+            style={headerSoftBlurMask}
+          />
+          <div
+            className="absolute inset-0 -z-10 bg-popover/20 backdrop-blur-2xl backdrop-saturate-150"
+            style={headerStrongBlurMask}
+          />
           <div className="grid min-w-0 flex-1 gap-0.5">
-            <DialogTitle className="font-heading text-base leading-tight font-semibold">
+            <DialogTitle className="flex items-center gap-2 font-heading text-xl leading-tight font-semibold">
+              <LightbulbIcon className="size-4.5 text-muted-foreground" />
               Plan mode
             </DialogTitle>
             <DialogDescription className="truncate text-xs">
@@ -198,9 +272,10 @@ function PlanModeDialog({
           </div>
           {!empty ? (
             <Button
+              className="border bg-background/90 shadow-sm"
               size="sm"
               type="button"
-              variant="ghost"
+              variant="outline"
               onClick={plan.reset}
               title="Start a new plan. Stories already added stay in the backlog."
             >
@@ -209,61 +284,26 @@ function PlanModeDialog({
             </Button>
           ) : null}
           <DialogClose asChild>
-            <Button size="icon-sm" type="button" variant="ghost">
+            <Button
+              className="border bg-background/90 shadow-sm"
+              size="icon-sm"
+              type="button"
+              variant="outline"
+            >
               <XIcon />
               <span className="sr-only">Close</span>
             </Button>
           </DialogClose>
         </header>
-        <div className="relative min-h-0 flex-1">
-          <MessageScrollerProvider>
-            <MessageScroller className="h-full">
-              <MessageScrollerViewport aria-label="Planning conversation">
-                <MessageScrollerContent
-                  className={cn(
-                    "mx-auto grid w-full max-w-2xl gap-6 px-5 py-6",
-                    empty ? "content-center" : "content-start"
-                  )}
-                >
-                  {empty ? (
-                    <PlanEmptyState
-                      onSuggestion={
-                        plan.unavailableReason ? undefined : applySuggestion
-                      }
-                    />
-                  ) : null}
-                  {messages.map((message) =>
-                    message.role === "user" ? (
-                      <UserMessage
-                        key={message.id}
-                        message={message}
-                        onRetry={
-                          message.failed && !plan.pending
-                            ? () => plan.retry(message.id)
-                            : undefined
-                        }
-                      />
-                    ) : (
-                      <AssistantMessage
-                        key={message.id}
-                        latest={message.id === latestProposal}
-                        message={message}
-                        onOpenStory={onOpenStory}
-                        plan={plan}
-                      />
-                    )
-                  )}
-                  {plan.pending ? (
-                    <PlanningIndicator pending={plan.pending} />
-                  ) : null}
-                </MessageScrollerContent>
-              </MessageScrollerViewport>
-              <MessageScrollerButton className="right-6 bottom-4" />
-            </MessageScroller>
-          </MessageScrollerProvider>
-        </div>
-        <footer className="border-t bg-muted/20 px-4 pt-3 pb-4">
-          <div className="mx-auto grid w-full max-w-2xl gap-2">
+        <footer
+          ref={footerRef}
+          className="absolute inset-x-0 bottom-0 z-20 px-6 pt-6 pb-5"
+        >
+          <div
+            className="pointer-events-none absolute inset-0 bg-background/40 backdrop-blur-xl"
+            style={footerBlurMask}
+          />
+          <div className="relative mx-auto grid w-full max-w-2xl gap-2">
             {plan.unavailableReason ? (
               <p className="flex items-center gap-2 text-xs text-muted-foreground">
                 <AlertCircleIcon className="size-3.5" />
@@ -484,33 +524,23 @@ function AssistantMessage({
               ) : null}
             </div>
             {expanded ? (
-              <div className="onboarding-stagger grid gap-2">
-                {stories.map((story) => (
-                  <PlannedStoryCard
-                    key={story.key}
-                    adding={plan.adding.has(`${message.id}:${story.key}`)}
-                    dependencyLabel={dependencyLabel}
-                    missingDependencies={missingDependencies(
-                      stories,
-                      story.key
-                    )}
-                    onAdd={() => void plan.addStories(message.id, [story.key])}
-                    onDismiss={(dismissed) =>
-                      plan.dismiss(message.id, story.key, dismissed)
-                    }
-                    onEdit={(patch) => plan.edit(message.id, story.key, patch)}
-                    onOpen={
-                      story.addedStoryId &&
-                      plan.stories.some(
-                        (item) => item.id === story.addedStoryId
-                      )
-                        ? () => onOpenStory(story.addedStoryId!)
-                        : undefined
-                    }
-                    story={story}
-                  />
-                ))}
-              </div>
+              <PlanStoryCarousel
+                stories={stories}
+                actionsFor={(story) => ({
+                  adding: plan.adding.has(`${message.id}:${story.key}`),
+                  dependencyLabel,
+                  missingDependencies: missingDependencies(stories, story.key),
+                  onAdd: () => void plan.addStories(message.id, [story.key]),
+                  onDismiss: (dismissed) =>
+                    plan.dismiss(message.id, story.key, dismissed),
+                  onEdit: (patch) => plan.edit(message.id, story.key, patch),
+                  onOpen:
+                    story.addedStoryId &&
+                    plan.stories.some((item) => item.id === story.addedStoryId)
+                      ? () => onOpenStory(story.addedStoryId!)
+                      : undefined,
+                })}
+              />
             ) : null}
           </section>
         ) : null}
@@ -554,4 +584,25 @@ function PlanningIndicator({ pending }: { pending: PlanPending }) {
       </div>
     </div>
   )
+}
+
+// The floating composer's height, so the conversation can scroll clear of it.
+function useElementHeight(
+  ref: React.RefObject<HTMLElement | null>,
+  active: boolean
+) {
+  const [height, setHeight] = React.useState(160)
+  React.useLayoutEffect(() => {
+    const element = ref.current
+    if (!element || !active) return
+    const update = () => {
+      const next = Math.ceil(element.getBoundingClientRect().height)
+      setHeight((current) => (current === next ? current : next))
+    }
+    update()
+    const observer = new ResizeObserver(update)
+    observer.observe(element)
+    return () => observer.disconnect()
+  }, [active, ref])
+  return height
 }
