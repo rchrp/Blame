@@ -4,6 +4,9 @@ import type { Platform } from "./context/platform"
 
 export declare const App: ComponentType
 export type {
+  AgentScreenshotData,
+  AgentScreenshotMetadata,
+  AgentScreenshotsClient,
   BacklogStatusPipRequest,
   BacklogStatusPipSnapshot,
   CloudAuthRequestClient,

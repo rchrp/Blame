@@ -2,6 +2,7 @@ import type { CoreSessionConfig } from "@cline/sdk";
 import { createMcpTools } from "@cline/sdk";
 import { currentWorkspaceRevisionState } from "./harness/workspace-revisions.js";
 import { sha256 } from "./harness/light-identity.js";
+import { previewToolModelOutput } from "./preview-screenshots.js";
 
 type AgentTool = NonNullable<CoreSessionConfig["extraTools"]>[number];
 type ToolContext = Parameters<AgentTool["execute"]>[1];
@@ -72,6 +73,11 @@ type PreviewDevtoolsProviderInput = PreviewRuntimeContext & {
 
 type PreviewDevtoolsCallInput = PreviewDevtoolsProviderInput & {
   arguments?: Record<string, unknown>;
+  // Recorded with each screenshot, so the final answer can only show
+  // screenshots taken in this conversation.
+  runId?: string;
+  sessionId?: string;
+  toolCallId?: string;
   toolName: string;
 };
 
@@ -189,8 +195,13 @@ function previewMcpProvider(
       const evidence = await currentPreviewEvidence(preview, target);
       if (evidence.status !== "passed")
         return previewEvidenceUnavailableResult();
-      const result = await callPreviewTool(options, preview, request, signal);
-      return attachPreviewEvidence(result, evidence);
+      const result = await callPreviewTool(
+        options,
+        preview,
+        request,
+        request.context,
+      );
+      return previewToolModelOutput(attachPreviewEvidence(result, evidence));
     },
   };
 }
@@ -199,13 +210,20 @@ async function callPreviewTool(
   options: PreviewToolRuntimeOptions,
   preview: PreviewRuntimeContext,
   request: { arguments?: Record<string, unknown>; toolName: string },
-  signal?: AbortSignal,
+  context?: ToolContext,
 ) {
-  const input = {
+  const signal = context?.signal;
+  const sessionId = context?.sessionId ?? context?.conversationId;
+  const input: PreviewDevtoolsCallInput = {
     ...preview,
     arguments: request.arguments,
     signal,
     toolName: request.toolName,
+    ...(context?.runId || sessionId
+      ? { runId: context?.runId ?? sessionId }
+      : {}),
+    ...(sessionId ? { sessionId } : {}),
+    ...(context?.toolCallId ? { toolCallId: context.toolCallId } : {}),
   };
   try {
     return await options.previewDevtoolsCall!(input);

@@ -219,6 +219,12 @@ const api: BlameDesktopApi = {
       ipcRenderer.invoke("window:set-presentation", input),
     toggleMaximize: () => ipcRenderer.invoke("window:toggle-maximize"),
   },
+  agentScreenshots: {
+    cache: (input) => ipcRenderer.invoke("agent-screenshots:cache", input),
+    delete: (input) => ipcRenderer.invoke("agent-screenshots:delete", input),
+    list: (input) => ipcRenderer.invoke("agent-screenshots:list", input),
+    read: (input) => ipcRenderer.invoke("agent-screenshots:read", input),
+  },
   previewBrowser: {
     capture: (input) => ipcRenderer.invoke("preview-browser:capture", input),
     create: (input) => ipcRenderer.invoke("preview-browser:create", input),

@@ -20,6 +20,8 @@ import type {
   UserStoryUpdate,
 } from "@/components/backlog/data/backlog-data"
 import { useCloudAuth } from "@/context/cloud-auth"
+import { usePlatform } from "@/context/platform"
+import { storyPreviewDevtoolsScope } from "@/components/backlog/shared/preview-devtools-scope"
 import { useProjects } from "@/context/projects"
 import { recordPerformanceCount } from "@/lib/performance-diagnostics"
 
@@ -58,6 +60,7 @@ export function useBacklogStore() {
 
 function useBacklogStoreValue() {
   const auth = useCloudAuth()
+  const platform = usePlatform()
   const projects = useProjects()
   const [state, setState] = React.useState<BacklogState>({
     cleanupStoryIds: new Set(),
@@ -73,8 +76,8 @@ function useBacklogStoreValue() {
   const projectPath = projects.activeProject?.path
 
   const api = React.useMemo(
-    () => createBacklogApi(auth.apiConnection),
-    [auth.apiConnection]
+    () => createBacklogApi(auth.apiConnection, platform.agentScreenshots),
+    [auth.apiConnection, platform.agentScreenshots]
   )
 
   const load = React.useCallback(async () => {
@@ -361,6 +364,10 @@ function useBacklogStoreValue() {
   const remove = React.useCallback(
     async (story: UserStory) => {
       await api.delete(story.id)
+      // The account deleted its copies; drop the screenshots on this device.
+      void platform.agentScreenshots
+        ?.delete({ scope: storyPreviewDevtoolsScope(story.id) })
+        .catch(() => undefined)
       setState((current) => ({
         ...current,
         detailedStoryIds: storyStateIds(

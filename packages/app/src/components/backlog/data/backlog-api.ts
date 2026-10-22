@@ -1,5 +1,6 @@
 import type {
   UserStory,
+  UserStoryAgentActivity,
   UserStoryActivityDetail,
   UserStoryAgentRun,
   UserStoryAgentRunDraft,
@@ -11,14 +12,29 @@ import type {
   UserStoryUpdate,
 } from "@/components/backlog/data/backlog-data"
 import type { ApiConnection } from "@blame/agent-runtime"
+import type { AgentScreenshotsClient } from "@/context/platform"
+import { uploadActivityScreenshots } from "../../../lib/agent-screenshot-sync.ts"
 import { boundedAgentUpdate } from "./agent-update-limits.ts"
 import {
   isFileAttachmentReference,
   uploadFileAttachments,
 } from "../../../lib/file-attachment-api.ts"
 
-export function createBacklogApi(connection: ApiConnection) {
+export function createBacklogApi(
+  connection: ApiConnection,
+  screenshots?: AgentScreenshotsClient
+) {
   const baseUrl = connection.url.replace(/\/$/, "")
+  const syncScreenshots = (
+    id: string,
+    input: Parameters<typeof payloadActivities>[0]
+  ) =>
+    void uploadActivityScreenshots(
+      connection,
+      { id, kind: "userStory" },
+      payloadActivities(input),
+      screenshots
+    )
 
   return {
     async list(projectId: string) {
@@ -47,6 +63,7 @@ export function createBacklogApi(connection: ApiConnection) {
       return createUserStory(connection, baseUrl, input)
     },
     async update(id: string, input: UserStoryUpdate) {
+      syncScreenshots(id, input)
       const fileAttachments =
         input.fileAttachments === undefined
           ? undefined
@@ -115,6 +132,7 @@ export function createBacklogApi(connection: ApiConnection) {
       runId: string,
       input: UserStoryAgentRunUpdate
     ) {
+      syncScreenshots(id, input)
       return userStoryAgentRun(
         await request<unknown>(
           connection,
@@ -132,6 +150,7 @@ export function createBacklogApi(connection: ApiConnection) {
       runId: string,
       input: UserStoryAgentRunFinalization
     ) {
+      syncScreenshots(id, input)
       return userStory(
         await request<unknown>(
           connection,
@@ -503,4 +522,20 @@ async function responseMessage(response: Response) {
     return `Request failed with status ${response.status}`
   }
   return `Request failed with status ${response.status}`
+}
+
+// Activities sent to the account: any screenshot they reference is
+// uploaded alongside, in the background.
+function payloadActivities(input: {
+  activities?: UserStoryAgentActivity[] | null
+  agentActivities?: UserStoryAgentActivity[] | null
+  agentActivity?: UserStoryAgentActivity | null
+  agentActivityUpdates?: UserStoryAgentActivity[]
+}) {
+  return [
+    ...(input.activities ?? []),
+    ...(input.agentActivities ?? []),
+    ...(input.agentActivity ? [input.agentActivity] : []),
+    ...(input.agentActivityUpdates ?? []),
+  ]
 }

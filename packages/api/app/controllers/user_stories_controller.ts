@@ -1,6 +1,9 @@
 import UserStoriesService from '#services/user_stories_service'
 import UserStoryTransformer from '#transformers/user_story_transformer'
+import { ScreenshotArtifactError } from '#services/agent_screenshot_artifacts'
 import {
+  agentScreenshotQueryValidator,
+  agentScreenshotUploadValidator,
   createUserStoryValidator,
   listUserStoriesValidator,
   updateUserStoryValidator,
@@ -66,5 +69,37 @@ export default class UserStoriesController {
   async destroy({ auth, params, response }: HttpContext) {
     await new UserStoriesService().delete(auth.getUserOrFail().id, params.id)
     return response.noContent()
+  }
+
+  async storeScreenshot({ auth, params, request, response }: HttpContext) {
+    const input = await request.validateUsing(agentScreenshotUploadValidator)
+    try {
+      return await new UserStoriesService().storeAgentScreenshot(
+        auth.getUserOrFail().id,
+        params.id,
+        params.screenshotId,
+        input
+      )
+    } catch (error) {
+      if (error instanceof ScreenshotArtifactError)
+        return response.badRequest({ message: error.message })
+      throw error
+    }
+  }
+
+  async showScreenshot({ auth, params, request, response }: HttpContext) {
+    const query = await request.validateUsing(agentScreenshotQueryValidator, {
+      data: request.qs(),
+    })
+    try {
+      return await new UserStoriesService().agentScreenshot(
+        auth.getUserOrFail().id,
+        params.id,
+        params.screenshotId,
+        query.sessionId
+      )
+    } catch {
+      return response.notFound({ message: 'Screenshot not found.' })
+    }
   }
 }

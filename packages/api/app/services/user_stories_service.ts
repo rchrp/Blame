@@ -3,6 +3,11 @@ import UserStory, { type UserStoryAgentActivity, type UserStoryStatus } from '#m
 import UserStoryAgentRun from '#models/user_story_agent_run'
 import UserStoryComment from '#models/user_story_comment'
 import {
+  putScreenshotArtifact,
+  screenshotArtifact,
+  type ScreenshotUpload,
+} from '#services/agent_screenshot_artifacts'
+import {
   activityWithArtifact,
   artifactDetail,
   deleteActivityArtifacts,
@@ -269,6 +274,21 @@ export default class UserStoriesService {
     if (!activity) throw new Error('Agent activity not found.')
     if (!activity.detailArtifact) return { detail: activity.detail }
     return { detail: await artifactDetail(story.id, story.worktree, activity) }
+  }
+
+  async storeAgentScreenshot(
+    userId: string,
+    id: string,
+    screenshotId: string,
+    input: ScreenshotUpload
+  ) {
+    const owner = await this.userStoryQuery(userId).where('id', id).firstOrFail()
+    return putScreenshotArtifact(owner.id, screenshotId, input)
+  }
+
+  async agentScreenshot(userId: string, id: string, screenshotId: string, sessionId?: string) {
+    const owner = await this.userStoryQuery(userId).where('id', id).firstOrFail()
+    return screenshotArtifact(owner.id, screenshotId, sessionId)
   }
 
   async delete(userId: string, id: string) {

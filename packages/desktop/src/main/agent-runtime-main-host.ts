@@ -5,9 +5,11 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import type { AgentHostMethod } from "./agent-runtime-process-protocol.ts";
 import {
+  agentPreviewPageState,
   openPreviewDevtoolsEndpoint,
   reloadPreviewBrowserForScope,
 } from "./preview-browser-ipc.ts";
+import { storePreviewDevtoolsScreenshots } from "./agent-screenshots/agent-screenshots-service.ts";
 import {
   previewDevtoolsMcpService,
   type PreviewDevtoolsMcpService,
@@ -187,7 +189,7 @@ async function previewDevtoolsCall(
     return unavailablePreviewDevtoolsResult(preview);
   }
   const scope = String(request.scope ?? "");
-  return devtools.call({
+  const result = await devtools.call({
     arguments: recordInput(request.arguments),
     currentUrl: preview.currentUrl,
     openEndpoint: () => openPreviewDevtoolsEndpoint({ scope }),
@@ -197,6 +199,13 @@ async function previewDevtoolsCall(
     signal,
     toolName: String(request.toolName ?? ""),
     worktree: String(request.worktree ?? ""),
+  });
+  return storePreviewDevtoolsScreenshots(result, {
+    page: await agentPreviewPageState(scope),
+    runId: optionalText(request.runId),
+    scope,
+    sessionId: optionalText(request.sessionId),
+    toolCallId: optionalText(request.toolCallId),
   });
 }
 
@@ -292,6 +301,12 @@ function openAgentExternalUrl(input: unknown) {
 function recordInput(input: unknown): Record<string, unknown> {
   if (!input || typeof input !== "object") return {};
   return input as Record<string, unknown>;
+}
+
+function optionalText(value: unknown) {
+  return typeof value === "string" && value && value.length <= 512
+    ? value
+    : undefined;
 }
 
 function stringArray(value: unknown): value is string[] {

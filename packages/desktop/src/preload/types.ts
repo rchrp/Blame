@@ -56,7 +56,7 @@ import type {
   GitStatusResult,
   SecurityAuditClient,
 } from "@blame/app";
-import type { McpServersClient } from "@blame/app";
+import type { AgentScreenshotsClient, McpServersClient } from "@blame/app";
 import type { RuntimeDiagnosticInput, RuntimeProgress } from "@blame/app";
 import type { TelemetryExportSession } from "@blame/app";
 import type { HostDependencyReport } from "../main/host-dependencies";
@@ -254,6 +254,7 @@ export type BlameDesktopApi = {
   mcp: McpServersClient;
   windowControls: WindowControls;
   projectWindows: ProjectWindows;
+  agentScreenshots: AgentScreenshotsClient;
   previewBrowser: {
     capture(input: {
       id: string;

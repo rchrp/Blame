@@ -11,6 +11,9 @@ import type {
   QuickChatUpdate,
 } from "@/components/chat/data/quick-chat-data"
 import type { useCloudAuth } from "@/context/cloud-auth"
+import type { AgentScreenshotsClient } from "@/context/platform"
+import type { UserStoryAgentActivity } from "@/components/backlog/data/backlog-data"
+import { uploadActivityScreenshots } from "@/lib/agent-screenshot-sync"
 import {
   isFileAttachmentReference,
   uploadFileAttachments,
@@ -18,8 +21,21 @@ import {
 
 type ApiConnection = ReturnType<typeof useCloudAuth>["apiConnection"]
 
-export function createQuickChatApi(connection: ApiConnection) {
+export function createQuickChatApi(
+  connection: ApiConnection,
+  screenshots?: AgentScreenshotsClient
+) {
   const baseUrl = connection.url.replace(/\/$/, "")
+  const syncScreenshots = (
+    id: string,
+    input: Parameters<typeof payloadActivities>[0]
+  ) =>
+    void uploadActivityScreenshots(
+      connection,
+      { id, kind: "quickChat" },
+      payloadActivities(input),
+      screenshots
+    )
 
   return {
     async list(projectId: string) {
@@ -53,6 +69,7 @@ export function createQuickChatApi(connection: ApiConnection) {
       )
     },
     async update(id: string, input: QuickChatUpdate) {
+      syncScreenshots(id, input)
       return quickChat(
         await request<unknown>(
           connection,
@@ -125,6 +142,7 @@ export function createQuickChatApi(connection: ApiConnection) {
       runId: string,
       input: QuickChatAgentRunUpdate
     ) {
+      syncScreenshots(id, input)
       return quickChatAgentRun(
         await request<unknown>(
           connection,
@@ -142,6 +160,7 @@ export function createQuickChatApi(connection: ApiConnection) {
       runId: string,
       input: QuickChatAgentRunFinalization
     ) {
+      syncScreenshots(id, input)
       return quickChat(
         await request<unknown>(
           connection,
@@ -325,4 +344,20 @@ function recordValue(value: unknown) {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === "object")
+}
+
+// Activities sent to the account: any screenshot they reference is
+// uploaded alongside, in the background.
+function payloadActivities(input: {
+  activities?: UserStoryAgentActivity[] | null
+  agentActivities?: UserStoryAgentActivity[] | null
+  agentActivity?: UserStoryAgentActivity | null
+  agentActivityUpdates?: UserStoryAgentActivity[]
+}) {
+  return [
+    ...(input.activities ?? []),
+    ...(input.agentActivities ?? []),
+    ...(input.agentActivity ? [input.agentActivity] : []),
+    ...(input.agentActivityUpdates ?? []),
+  ]
 }

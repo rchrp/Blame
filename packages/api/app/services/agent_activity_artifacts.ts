@@ -1,5 +1,6 @@
 import type { UserStoryAgentActivity } from '#models/user_story'
 import { workspaceArtifactObjectStorage } from '#services/workspace_artifacts/workspace_artifact_object_storage'
+import { screenshotKeysFromActivities } from '#services/agent_screenshot_artifacts'
 import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import { isAbsolute, resolve } from 'node:path'
@@ -49,6 +50,8 @@ export async function deleteActivityArtifacts(
     .filter((reference) => reference.startsWith(objectReferencePrefix))
     .map((reference) => reference.slice(objectReferencePrefix.length))
     .filter((key) => key.startsWith(prefix))
+  // Screenshots referenced by these activities go with them.
+  keys.push(...screenshotKeysFromActivities(ownerId, activityGroups))
   if (keys.length) await workspaceArtifactObjectStorage().delete([...new Set(keys)])
 }
 

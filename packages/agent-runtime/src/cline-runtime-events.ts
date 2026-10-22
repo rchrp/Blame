@@ -8,6 +8,7 @@ import {
 import { type RunTerminalState } from "./harness/run-lifecycle.js";
 
 import { summarizeUsage } from "./production.js";
+import { withScreenshotRefs } from "./preview-screenshots.js";
 
 import type { AgentEvent, AgentUsageSummary } from "./types.js";
 
@@ -16,6 +17,23 @@ export function streamingAgentEvent(event: AgentEvent) {
 }
 
 export function normalizeEvent(
+  sessionId: string,
+  event: CoreSessionEvent,
+): AgentEvent {
+  const normalized = normalizeCoreEvent(sessionId, event);
+  return normalized.type === "tool"
+    ? withToolScreenshotRefs(normalized)
+    : normalized;
+}
+
+// Tool activities are saved and synced: a stored screenshot is kept as a
+// small reference there, never as base64.
+function withToolScreenshotRefs(event: AgentEvent): AgentEvent {
+  const payload = withScreenshotRefs(event.payload);
+  return payload === event.payload ? event : { ...event, payload };
+}
+
+function normalizeCoreEvent(
   sessionId: string,
   event: CoreSessionEvent,
 ): AgentEvent {

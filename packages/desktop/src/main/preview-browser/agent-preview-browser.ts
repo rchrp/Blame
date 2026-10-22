@@ -237,3 +237,38 @@ function updateState(record: AgentRecord, update: PreviewBrowserStateUpdate) {
     update,
   );
 }
+
+// What the agent's page looks like right now, read in an isolated world so
+// page scripts cannot change the answer.
+export async function agentPreviewPageState(scope: string) {
+  const record = agentPreviewBrowser(scope);
+  if (!record) return undefined;
+  try {
+    const value = (await record.webContents.executeJavaScriptInIsolatedWorld(
+      1_207,
+      [
+        {
+          code: `({ url: location.href, width: innerWidth, height: innerHeight, dark: matchMedia("(prefers-color-scheme: dark)").matches })`,
+        },
+      ],
+    )) as { dark?: unknown; height?: unknown; url?: unknown; width?: unknown };
+    return {
+      colorScheme: value.dark === true ? ("dark" as const) : ("light" as const),
+      url: typeof value.url === "string" ? value.url : (record.state.url ?? ""),
+      viewport: {
+        height:
+          typeof value.height === "number"
+            ? value.height
+            : record.viewport.height,
+        width:
+          typeof value.width === "number" ? value.width : record.viewport.width,
+      },
+    };
+  } catch {
+    return {
+      colorScheme: "light" as const,
+      url: record.state.url ?? "",
+      viewport: record.viewport,
+    };
+  }
+}

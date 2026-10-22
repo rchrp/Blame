@@ -4,6 +4,11 @@ import QuickChatAgentRun from '#models/quick_chat_agent_run'
 import QuickChatMessage from '#models/quick_chat_message'
 import type { UserStoryAgentActivity } from '#models/user_story'
 import {
+  putScreenshotArtifact,
+  screenshotArtifact,
+  type ScreenshotUpload,
+} from '#services/agent_screenshot_artifacts'
+import {
   activityWithArtifact,
   artifactDetail,
   deleteActivityArtifacts,
@@ -267,6 +272,21 @@ export default class QuickChatsService {
     if (!activity) throw new Error('Agent activity not found.')
     if (!activity.detailArtifact) return { detail: activity.detail }
     return { detail: await artifactDetail(quickChat.id, quickChat.workspace, activity) }
+  }
+
+  async storeAgentScreenshot(
+    userId: string,
+    id: string,
+    screenshotId: string,
+    input: ScreenshotUpload
+  ) {
+    const owner = await this.quickChatQuery(userId).where('id', id).firstOrFail()
+    return putScreenshotArtifact(owner.id, screenshotId, input)
+  }
+
+  async agentScreenshot(userId: string, id: string, screenshotId: string, sessionId?: string) {
+    const owner = await this.quickChatQuery(userId).where('id', id).firstOrFail()
+    return screenshotArtifact(owner.id, screenshotId, sessionId)
   }
 
   async delete(userId: string, id: string) {

@@ -161,3 +161,17 @@ export const updateUserStoryValidator = vine.create({
   baseCommit: vine.string().trim().maxLength(255).nullable().optional(),
   discardedReason: vine.string().trim().maxLength(2048).nullable().optional(),
 })
+
+export const agentScreenshotUploadValidator = vine.compile(
+  vine.object({
+    content: vine.string().maxLength(21_000_000),
+    mimeType: vine.enum(['image/png', 'image/jpeg', 'image/webp']),
+    sessionId: vine.string().trim().maxLength(160).nullable().optional(),
+  })
+)
+
+export const agentScreenshotQueryValidator = vine.compile(
+  vine.object({
+    sessionId: vine.string().trim().maxLength(160).optional(),
+  })
+)

@@ -10,6 +10,7 @@ mountApp(root, {
   platform: {
     auth: window.blame.auth,
     agent: window.blame.agent,
+    agentScreenshots: window.blame.agentScreenshots,
     billing: window.blame.billing,
     deploy: window.blame.deploy,
     mcp: window.blame.mcp,

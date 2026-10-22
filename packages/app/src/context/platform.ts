@@ -102,6 +102,7 @@ export type Platform = {
     ready(): void
   }
   agent?: AgentClient
+  agentScreenshots?: AgentScreenshotsClient
   api?: ApiConnection
   appStatus?: AppStatusClient
   backlogStatusPip?: BacklogStatusPipClient
@@ -253,7 +254,10 @@ export type BacklogStatusPipClient = {
   request(input: BacklogStatusPipRequest): Promise<boolean>
   // The window has no system title bar: the page closes and resizes it.
   close?(): void
-  setMode?(input: { compact: boolean; contentHeight?: number }): Promise<boolean>
+  setMode?(input: {
+    compact: boolean
+    contentHeight?: number
+  }): Promise<boolean>
 }
 
 export type BacklogStatusPipSnapshot = {
@@ -585,6 +589,47 @@ export type PreviewBrowserState = {
   id: string
   loading: boolean
   url?: string
+}
+
+export type AgentScreenshotMetadata = {
+  byteLength: number
+  colorScheme: "dark" | "light"
+  createdAt: string
+  height: number
+  id: string
+  mimeType: string
+  pageUrl: string
+  runId?: string
+  scope: string
+  sessionId?: string
+  toolCallId?: string
+  viewport: { height: number; width: number }
+  width: number
+}
+
+export type AgentScreenshotData = {
+  dataUrl: string
+  metadata: AgentScreenshotMetadata
+}
+
+// Screenshots the agent took, stored by the desktop app outside the
+// worktree. Copies fetched from the account are cached with `cache`.
+export type AgentScreenshotsClient = {
+  read(input: {
+    id: string
+    scopes?: string[]
+  }): Promise<AgentScreenshotData | null>
+  list(input: {
+    runId?: string
+    scope?: string
+    sessionId?: string
+  }): Promise<AgentScreenshotMetadata[]>
+  cache(input: {
+    dataUrl: string
+    id: string
+    metadata: Partial<AgentScreenshotMetadata> & { scope: string }
+  }): Promise<AgentScreenshotMetadata>
+  delete(input: { scope?: string; sessionIds?: string[] }): Promise<boolean>
 }
 
 export type PreviewBrowserClient = {

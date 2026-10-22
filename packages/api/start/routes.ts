@@ -251,6 +251,11 @@ router
           QuickChatAgentRunsController,
           'activityDetail',
         ])
+        router.put('/:id/agent-screenshots/:screenshotId', [
+          QuickChatsController,
+          'storeScreenshot',
+        ])
+        router.get('/:id/agent-screenshots/:screenshotId', [QuickChatsController, 'showScreenshot'])
       })
       .prefix('projects/quick-chats')
       .as('projects.quick_chats')
@@ -264,6 +269,14 @@ router
         router.patch('/:id', [controllers.UserStories, 'update'])
         router.delete('/:id', [controllers.UserStories, 'destroy'])
         router.get('/:id/agent-activities/:activityId', [controllers.UserStories, 'activityDetail'])
+        router.put('/:id/agent-screenshots/:screenshotId', [
+          controllers.UserStories,
+          'storeScreenshot',
+        ])
+        router.get('/:id/agent-screenshots/:screenshotId', [
+          controllers.UserStories,
+          'showScreenshot',
+        ])
         router.post('/:id/agent-runs', [UserStoryAgentRunsController, 'store'])
         router.patch('/:id/agent-runs/:runId', [UserStoryAgentRunsController, 'update'])
         router.post('/:id/agent-runs/:runId/finalize', [UserStoryAgentRunsController, 'finalize'])

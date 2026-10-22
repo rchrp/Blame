@@ -15,10 +15,15 @@ import { electronCdpDebuggee } from "../src/main/preview-browser/electron-cdp-de
 import { previewNavigationPolicy } from "../src/main/preview-browser/preview-navigation-policy.ts";
 import { startPreviewCdpProxy } from "../src/main/preview-browser/preview-cdp-proxy.ts";
 import {
+  agentPreviewPageState,
   agentPreviewViewport,
   destroyAgentPreviewBrowser,
   ensureAgentPreviewBrowser,
 } from "../src/main/preview-browser/agent-preview-browser.ts";
+import {
+  agentScreenshotStore,
+  storePreviewDevtoolsScreenshots,
+} from "../src/main/agent-screenshots/agent-screenshots-service.ts";
 
 // Drives chrome-devtools-mcp against the agent's offscreen browser while the
 // user's preview view stays hidden, through the scoped CDP proxy. No
@@ -197,6 +202,7 @@ async function verifyResize(call, iteration) {
 async function verifyDarkMode(call, iteration) {
   assertToolSuccess(await call("emulate", { colorScheme: "dark" }));
   const dark = await screenshot(call, `dark-${iteration}`);
+  await verifyStoredScreenshot(call);
   assert.ok(
     dark.brightness < 80,
     `dark capture is too light: ${dark.brightness}`,
@@ -207,6 +213,35 @@ async function verifyDarkMode(call, iteration) {
   );
   assertToolSuccess(await call("emulate", { colorScheme: "auto" }));
   return dark;
+}
+
+// The main process path: the original is stored, the model gets a named,
+// bounded copy, and the page state is recorded.
+async function verifyStoredScreenshot(call) {
+  const result = await call("take_screenshot", { format: "png" });
+  const stored = await storePreviewDevtoolsScreenshots(result, {
+    page: await agentPreviewPageState("smoke"),
+    runId: "smoke-run",
+    scope: "smoke",
+    sessionId: "smoke-session",
+    toolCallId: "smoke-call",
+  });
+  const [reference] = stored._meta.blameScreenshots;
+  assert.equal(reference.colorScheme, "dark");
+  assert.deepEqual(reference.viewport, agentPreviewViewport);
+  assert.equal(reference.pageUrl, agent.webContents.getURL());
+  assert.match(
+    stored.content.at(-1).text,
+    new RegExp(`screenshot:${reference.id} \\(1440×900, dark\\)`),
+  );
+  const saved = await agentScreenshotStore().read(reference.id);
+  assert.equal(saved.metadata.toolCallId, "smoke-call");
+  assert.equal(saved.metadata.width, 1440);
+  const modelImage = stored.content.find((block) => block.type === "image");
+  const { width } = nativeImage
+    .createFromBuffer(Buffer.from(modelImage.data, "base64"))
+    .getSize();
+  assert.ok(width <= 1568);
 }
 
 async function verifyNavigationScope(call) {

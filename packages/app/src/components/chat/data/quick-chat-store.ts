@@ -19,6 +19,7 @@ import type {
 } from "@/components/chat/data/quick-chat-data"
 import type { UserStoryAgentActivity } from "@/components/backlog/data/backlog-data"
 import { useCloudAuth } from "@/context/cloud-auth"
+import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
 
 type QuickChatState = {
@@ -61,6 +62,7 @@ export function useQuickChatStore() {
 
 function useQuickChatStoreValue() {
   const auth = useCloudAuth()
+  const platform = usePlatform()
   const projects = useProjects()
   const [state, setState] = React.useState<QuickChatState>({
     chats: [],
@@ -73,8 +75,8 @@ function useQuickChatStoreValue() {
   const projectId = projects.activeProject?.id
   const projectPath = projects.activeProject?.path
   const api = React.useMemo(
-    () => createQuickChatApi(auth.apiConnection),
-    [auth.apiConnection]
+    () => createQuickChatApi(auth.apiConnection, platform.agentScreenshots),
+    [auth.apiConnection, platform.agentScreenshots]
   )
 
   const load = React.useCallback(async () => {
@@ -347,6 +349,15 @@ function useQuickChatStoreValue() {
   const remove = React.useCallback(
     async (chat: QuickChat) => {
       await api.delete(chat.id)
+      // Chats share a preview scope: their screenshots go by session.
+      const sessionIds = [
+        chat.clineSessionId,
+        ...(chat.agentRuns ?? []).map((run) => run.clineSessionId),
+      ].filter((value): value is string => Boolean(value))
+      if (sessionIds.length)
+        void platform.agentScreenshots
+          ?.delete({ sessionIds })
+          .catch(() => undefined)
       setState((current) => ({
         ...current,
         activeId:
