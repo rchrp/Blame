@@ -13,7 +13,6 @@ export type PreviewDevtoolsTarget = {
     diagnostic?: string;
   };
   available: boolean;
-  browserUrl: string;
   currentUrl?: string;
   error?: string;
   id?: string;
@@ -34,11 +33,6 @@ export type PreviewDevtoolsTarget = {
   };
   scope?: string;
   status: "failed" | "ready" | "starting" | "stopped" | "unavailable";
-  mcpServer: {
-    args: string[];
-    command: string;
-    name: string;
-  };
 };
 
 export type PreviewRuntimeContext = {

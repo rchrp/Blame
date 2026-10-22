@@ -4,7 +4,10 @@ import { shell } from "electron";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import type { AgentHostMethod } from "./agent-runtime-process-protocol.ts";
-import { reloadPreviewBrowserForScope } from "./preview-browser-ipc.ts";
+import {
+  openPreviewDevtoolsEndpoint,
+  reloadPreviewBrowserForScope,
+} from "./preview-browser-ipc.ts";
 import {
   previewDevtoolsMcpService,
   type PreviewDevtoolsMcpService,
@@ -174,9 +177,10 @@ async function preparePreviewDevtools(
   if (!scope || !worktree || !target.currentUrl) return target;
   try {
     await devtools.prepare({
-      browserUrl: target.browserUrl,
       currentUrl: target.currentUrl,
+      openEndpoint: () => openPreviewDevtoolsEndpoint({ scope }),
       pageIdentity: target.id,
+      previewOrigin: target.previewOrigin,
       scope,
       signal,
       worktree,
@@ -216,12 +220,14 @@ async function previewDevtoolsCall(
     devtools.disposeScope(String(request.scope ?? ""));
     return unavailablePreviewDevtoolsResult(preview);
   }
+  const scope = String(request.scope ?? "");
   return devtools.call({
     arguments: recordInput(request.arguments),
-    browserUrl: preview.browserUrl,
     currentUrl: preview.currentUrl,
+    openEndpoint: () => openPreviewDevtoolsEndpoint({ scope }),
     pageIdentity: preview.id,
-    scope: String(request.scope ?? ""),
+    previewOrigin: preview.previewOrigin,
+    scope,
     signal,
     toolName: String(request.toolName ?? ""),
     worktree: String(request.worktree ?? ""),

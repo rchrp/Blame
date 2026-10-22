@@ -2,13 +2,14 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   previewDevtoolsEnabledCapabilities,
-  previewDevtoolsMcpArgs,
   previewDevtoolsMcpVersion,
   previewDevtoolsServerArgs,
   previewDevtoolsUnavailableCapabilities,
 } from "../preview-browser/preview-devtools-config.ts";
 import {
   PreviewDevtoolsMcpService,
+  previewDevtoolsLoader,
+  scopeNavigation,
   scopedArtifactOutputPath,
   scopedPreviewPageId,
   workspaceUploadRelativePath,
@@ -16,12 +17,13 @@ import {
 import toolCatalog from "./preview-devtools-tool-catalog.json" with { type: "json" };
 
 test("uses the verified Google MCP version and important compatible flags", () => {
-  const browserUrl = "http://127.0.0.1:9222";
-  const args = previewDevtoolsMcpArgs(browserUrl);
+  const args = previewDevtoolsServerArgs();
 
   assert.equal(previewDevtoolsMcpVersion, "1.8.0");
-  assert.deepEqual(args.slice(0, 2), ["-y", "chrome-devtools-mcp@1.8.0"]);
-  assert.deepEqual(args.slice(2), previewDevtoolsServerArgs(browserUrl));
+  assert.equal(
+    args.some((arg) => /browser-url|browserUrl|wsEndpoint/u.test(arg)),
+    false,
+  );
   assert.ok(args.includes("--memory-debugging"));
   assert.ok(args.includes("--experimental-vision"));
   assert.ok(args.includes("--experimental-structured-content"));
@@ -57,8 +59,8 @@ test("catalog exposes every compatible scoped tool without page selection", asyn
 test("hidden and unknown tools fail before opening an MCP connection", async () => {
   const service = new PreviewDevtoolsMcpService();
   const input = {
-    browserUrl: "http://127.0.0.1:1",
     currentUrl: "about:blank",
+    openEndpoint: () => Promise.reject(new Error("must not connect")),
     scope: "test",
     worktree: process.cwd(),
   };
@@ -71,6 +73,36 @@ test("hidden and unknown tools fail before opening an MCP connection", async () 
     service.call({ ...input, toolName: "unknown_tool" }),
     /tool is unavailable/,
   );
+});
+
+test("the loader reads the proxy endpoint from the environment, not argv", () => {
+  const loader = previewDevtoolsLoader("/app/chrome-devtools-mcp.js");
+  assert.match(loader, /process\.env\.BLAME_PREVIEW_CDP_ENDPOINT/u);
+  assert.match(loader, /delete process\.env\.BLAME_PREVIEW_CDP_ENDPOINT/u);
+  assert.match(loader, /"--wsEndpoint=" \+ endpoint/u);
+  assert.doesNotMatch(loader, /ws:\/\//u);
+});
+
+test("navigation stays on the preview origin with a readable error", () => {
+  const input = {
+    currentUrl: "http://127.0.0.1:5173/board",
+    previewOrigin: "http://127.0.0.1:5173",
+  };
+  const relative: Record<string, unknown> = { type: "url", url: "/settings" };
+  scopeNavigation(input, relative);
+  assert.equal(relative.url, "http://127.0.0.1:5173/settings");
+  const blank: Record<string, unknown> = { url: "about:blank" };
+  scopeNavigation(input, blank);
+  assert.equal(blank.url, "about:blank");
+  assert.throws(
+    () => scopeNavigation(input, { type: "url", url: "https://example.com/" }),
+    /can only open this story's preview \(http:\/\/127\.0\.0\.1:5173\)/u,
+  );
+  assert.throws(
+    () => scopeNavigation(input, { type: "url", url: "file:///etc/passwd" }),
+    /outside it/u,
+  );
+  scopeNavigation(input, { type: "reload" });
 });
 
 test("capability report distinguishes enabled and incompatible features", () => {
@@ -295,6 +327,7 @@ function previewServiceWithClient(
       artifacts: "/tmp/blame-preview-devtools-test",
       client: { callTool } as never,
       close: async () => undefined,
+      closed: false,
       tools: [pageTool("take_snapshot"), pageTool("list_console_messages")],
       workspace: process.cwd(),
     };
@@ -344,8 +377,8 @@ test("does not retry a discovery diagnostic as an unregistered page", async (con
 
 function previewInput() {
   return {
-    browserUrl: "http://127.0.0.1:9222",
     currentUrl: "http://127.0.0.1:3000/",
+    openEndpoint: () => Promise.reject(new Error("unused in fake")),
     scope: "preview-scope",
     worktree: process.cwd(),
   };
@@ -464,7 +497,7 @@ test("page discovery can be cancelled without cancelling the connection", async 
   assert.equal(connectionSignal?.aborted, false);
 });
 
-test("changing the debugging endpoint replaces the scoped connection", async (context) => {
+test("changing the preview page replaces the scoped connection", async (context) => {
   const connections: AbortSignal[] = [];
   const service = previewServiceWithClient(
     async () => pagesResult(),
@@ -473,11 +506,8 @@ test("changing the debugging endpoint replaces the scoped connection", async (co
     },
   );
   context.after(() => service.dispose());
-  await service.prepare(previewInput());
-  await service.prepare({
-    ...previewInput(),
-    browserUrl: "http://127.0.0.1:9333",
-  });
+  await service.prepare({ ...previewInput(), pageIdentity: "first" });
+  await service.prepare({ ...previewInput(), pageIdentity: "second" });
   assert.equal(connections.length, 2);
   assert.equal(connections[0].aborted, true);
   assert.equal(connections[1].aborted, false);

@@ -20,7 +20,6 @@ type RuntimeHandler = (input: unknown) => Promise<unknown> | unknown;
 
 type PreviewDevtoolsTarget = {
   available: boolean;
-  browserUrl: string;
   currentUrl?: string;
   error?: string;
   id?: string;
@@ -29,11 +28,6 @@ type PreviewDevtoolsTarget = {
   reason: string;
   scope?: string;
   status: "failed" | "ready" | "starting" | "stopped" | "unavailable";
-  mcpServer: {
-    args: string[];
-    command: string;
-    name: string;
-  };
 };
 
 const parentPort = process.parentPort;

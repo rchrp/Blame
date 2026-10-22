@@ -5,12 +5,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { app, BrowserWindow, WebContentsView } from "electron";
 import { PreviewDevtoolsMcpService } from "../src/main/preview-runtime/preview-devtools-mcp-service.ts";
+import { electronCdpDebuggee } from "../src/main/preview-browser/electron-cdp-debuggee.ts";
+import { previewNavigationPolicy } from "../src/main/preview-browser/preview-navigation-policy.ts";
+import { startPreviewCdpProxy } from "../src/main/preview-browser/preview-cdp-proxy.ts";
 
 const artifacts = await mkdtemp(join(tmpdir(), "blame-preview-smoke-"));
 const hidden = process.argv.includes("--hidden");
-const debuggingPort = await unusedPort();
 app.setPath("userData", join(artifacts, "electron"));
-app.commandLine.appendSwitch("remote-debugging-port", String(debuggingPort));
 app.disableHardwareAcceleration();
 const service = new PreviewDevtoolsMcpService();
 const fixture = await readFile(
@@ -22,9 +23,20 @@ const server = createServer((_request, response) => {
 });
 await listen(server);
 const currentUrl = `http://127.0.0.1:${server.address().port}/`;
+const previewOrigin = new URL(currentUrl).origin;
 const input = {
-  browserUrl: `http://127.0.0.1:${debuggingPort}`,
   currentUrl,
+  openEndpoint: () =>
+    startPreviewCdpProxy(
+      electronCdpDebuggee(view.webContents, {
+        contentSize: () => {
+          const { height, width } = view.getBounds();
+          return { height, width };
+        },
+      }),
+      previewNavigationPolicy(previewOrigin),
+    ),
+  previewOrigin,
   scope: "smoke",
   worktree: artifacts,
 };
@@ -41,6 +53,7 @@ void app.whenReady().then(runSmoke);
 async function runSmoke() {
   owner = new BrowserWindow({ show: true, width: 1200, height: 900 });
   try {
+    await assertNoListeningPorts("before any DevTools session");
     for (let iteration = 0; iteration < 3; iteration += 1)
       await inspectRecreatedPage(iteration);
     console.log(
@@ -76,6 +89,7 @@ async function inspectRecreatedPage(iteration) {
     /Preview inspection smoke/,
   );
   const animationMs = await verifyInteractions(call);
+  await verifyNavigationScope(call);
   const screenshotBytes = await saveScreenshot(call, iteration);
   assert.equal(view.webContents.getBackgroundThrottling(), true);
   assert.equal(view.getVisible(), !hidden);
@@ -149,6 +163,42 @@ async function verifyWheelAndState() {
   );
 }
 
+async function verifyNavigationScope(call) {
+  await assert.rejects(
+    call("navigate_page", { type: "url", url: "https://example.com/" }),
+    /can only open this story's preview/,
+  );
+  const location = await call("evaluate_script", {
+    function: "() => location.href",
+  });
+  assert.match(textContent(location), new RegExp(previewOrigin));
+  assertToolSuccess(await call("navigate_page", { type: "url", url: "/" }));
+}
+
+// Linux only: the Electron process must not listen on any TCP port other
+// than the fixture server and the per-session proxy it opens on purpose.
+async function assertNoListeningPorts(label) {
+  if (process.platform !== "linux") return;
+  const { readdir, readlink } = await import("node:fs/promises");
+  const inodes = new Set();
+  for (const fd of await readdir("/proc/self/fd")) {
+    const target = await readlink(`/proc/self/fd/${fd}`).catch(() => "");
+    const match = target.match(/^socket:\[(\d+)\]$/u);
+    if (match) inodes.add(match[1]);
+  }
+  const listening = [];
+  for (const table of ["/proc/net/tcp", "/proc/net/tcp6"]) {
+    const rows = (await readFile(table, "utf8").catch(() => "")).split("\n");
+    for (const row of rows.slice(1)) {
+      const fields = row.trim().split(/\s+/u);
+      if (fields[3] === "0A" && inodes.has(fields[9]))
+        listening.push(parseInt(fields[1].split(":")[1], 16));
+    }
+  }
+  const unexpected = listening.filter((port) => port !== server.address().port);
+  assert.deepEqual(unexpected, [], `listening ports ${label}`);
+}
+
 async function verifyAnimation(call) {
   const animation = await call("evaluate_script", {
     waitForStableDom: false,
@@ -181,12 +231,4 @@ function listen(server) {
     server.once("error", reject);
     server.listen(0, "127.0.0.1", resolve);
   });
-}
-
-async function unusedPort() {
-  const reservation = createServer();
-  await listen(reservation);
-  const port = reservation.address().port;
-  await new Promise((resolve) => reservation.close(resolve));
-  return port;
 }

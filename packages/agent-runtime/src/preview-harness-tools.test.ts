@@ -68,7 +68,6 @@ async function readyPreviewOptions(
   return {
     previewDevtools: () => ({
       available: true,
-      browserUrl: "http://127.0.0.1:9222",
       loading: false,
       message: "Ready",
       reason: "PREVIEW_BROWSER_READY",
@@ -79,7 +78,6 @@ async function readyPreviewOptions(
       },
       revisions,
       status: "ready",
-      mcpServer: { args: [], command: "node", name: "chrome-devtools" },
     }),
     previewDevtoolsCall: call,
     previewDevtoolsTools: () => [

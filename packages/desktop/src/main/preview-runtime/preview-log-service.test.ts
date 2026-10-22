@@ -44,7 +44,6 @@ function previewState(
 ): PreviewHarnessState {
   return {
     available: status === "ready",
-    browserUrl: "http://127.0.0.1:9222",
     loading: status === "starting",
     mcp: {
       enabledCapabilities: [],
@@ -52,7 +51,6 @@ function previewState(
       unavailableCapabilities: [],
       version: "1.8.0",
     },
-    mcpServer: { args: [], command: "node", name: "chrome-devtools" },
     message:
       status === "stopped"
         ? "The preview is not running."

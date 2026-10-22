@@ -18,7 +18,7 @@ export const previewDevtoolsUnavailableCapabilities = [
   {
     capability: "extensions",
     reason:
-      "Google does not support extensions over browser-url on this Chromium version.",
+      "Extensions are not available through the single-page preview proxy.",
   },
   {
     capability: "pwa",
@@ -34,17 +34,11 @@ export const previewDevtoolsUnavailableCapabilities = [
   },
 ] as const;
 
-export function previewDevtoolsMcpArgs(browserUrl: string) {
+// The CDP endpoint is appended as --wsEndpoint by the loader that starts
+// chrome-devtools-mcp, from an environment variable, so its token never
+// appears in the process list.
+export function previewDevtoolsServerArgs() {
   return [
-    "-y",
-    `chrome-devtools-mcp@${previewDevtoolsMcpVersion}`,
-    ...previewDevtoolsServerArgs(browserUrl),
-  ];
-}
-
-export function previewDevtoolsServerArgs(browserUrl: string) {
-  return [
-    `--browser-url=${browserUrl}`,
     "--no-usage-statistics",
     "--no-performance-crux",
     "--memory-debugging",

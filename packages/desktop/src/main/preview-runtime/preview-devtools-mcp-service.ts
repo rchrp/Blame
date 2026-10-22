@@ -22,6 +22,7 @@ import {
   previewDevtoolsServerArgs,
 } from "../preview-browser/preview-devtools-config.ts";
 import { setupPath } from "../host-tool-path.ts";
+import { previewNavigationAllowed } from "../preview-browser/preview-navigation-policy.ts";
 import {
   run as runInWorkspace,
   runtimeHostPath,
@@ -29,9 +30,18 @@ import {
 } from "../workspace-runtime.ts";
 import toolCatalog from "./preview-devtools-tool-catalog.json" with { type: "json" };
 
+export type PreviewDevtoolsEndpoint = {
+  close(): Promise<void>;
+  closed: Promise<void>;
+  wsEndpoint: string;
+};
+
 export type PreviewDevtoolsMcpContext = {
-  browserUrl: string;
+  // Opens a fresh single-page CDP proxy for this scope. Each MCP connection
+  // gets its own port and token, closed with the connection.
+  openEndpoint(): Promise<PreviewDevtoolsEndpoint>;
   pageIdentity?: string;
+  previewOrigin?: string;
   scope: string;
   signal?: AbortSignal;
   worktree: string;
@@ -53,6 +63,8 @@ type McpConnection = {
   artifacts: string;
   client: Client;
   close(): Promise<void>;
+  closed: boolean;
+  onClosed?: () => void;
   page?: { id: number; url: string; identity?: string };
   tools: PreviewDevtoolsMcpTool[];
   workspace?: string;
@@ -64,8 +76,9 @@ type CreateMcpConnection = (
 
 type PendingConnection = {
   abortController: AbortController;
-  browserUrl: string;
+  closed: boolean;
   connection: Promise<McpConnection>;
+  pageIdentity?: string;
   worktree: string;
 };
 
@@ -178,8 +191,10 @@ export class PreviewDevtoolsMcpService {
     const worktree = requiredValue(input.worktree, "worktree");
     const current = this.connections.get(scope);
     if (
-      current?.worktree === worktree &&
-      current.browserUrl === input.browserUrl
+      current &&
+      !current.closed &&
+      current.worktree === worktree &&
+      current.pageIdentity === input.pageIdentity
     )
       return current.connection;
     if (current) {
@@ -195,12 +210,22 @@ export class PreviewDevtoolsMcpService {
       signal: abortController.signal,
       worktree,
     });
-    const pending = {
+    const pending: PendingConnection = {
       abortController,
-      browserUrl: input.browserUrl,
+      closed: false,
       connection,
+      pageIdentity: input.pageIdentity,
       worktree,
     };
+    void connection.then(
+      (value) => {
+        value.onClosed = () => {
+          pending.closed = true;
+        };
+        if (value.closed) pending.closed = true;
+      },
+      () => undefined,
+    );
     this.connections.set(scope, pending);
     void connection.catch(() => {
       if (this.connections.get(scope) === pending)
@@ -242,6 +267,7 @@ async function previewToolArguments(
   input: PreviewDevtoolsMcpCall,
 ) {
   const argumentsValue = { ...(input.arguments ?? {}) };
+  if (tool.name === "navigate_page") scopeNavigation(input, argumentsValue);
   await scopeArtifactPaths(connection.artifacts, tool.name, argumentsValue);
   if (tool.name !== "upload_file" || !Array.isArray(argumentsValue.filePaths)) {
     return argumentsValue;
@@ -252,6 +278,47 @@ async function previewToolArguments(
     argumentsValue.filePaths,
   );
   return argumentsValue;
+}
+
+// The CDP proxy enforces the same rule; checking here gives the agent a
+// clear message and lets it pass a path such as "/settings".
+export function scopeNavigation(
+  input: Pick<PreviewDevtoolsMcpCall, "currentUrl" | "previewOrigin">,
+  argumentsValue: Record<string, unknown>,
+) {
+  const type = argumentsValue.type ?? "url";
+  if (type !== "url") return;
+  const value = argumentsValue.url;
+  if (typeof value !== "string" || !value.trim())
+    throw new Error("navigate_page needs a url when type is url.");
+  const base = input.previewOrigin ?? input.currentUrl;
+  let url: string;
+  try {
+    url =
+      value.trim() === "about:blank"
+        ? "about:blank"
+        : new URL(value.trim(), base).href;
+  } catch {
+    throw new Error(`navigate_page received an invalid url: ${value}`);
+  }
+  if (
+    !previewNavigationAllowed(
+      url,
+      input.previewOrigin ?? originOf(input.currentUrl),
+    )
+  )
+    throw new Error(
+      `navigate_page can only open this story's preview (${input.previewOrigin ?? originOf(input.currentUrl) ?? "unknown origin"}) or about:blank. ${url} is outside it.`,
+    );
+  argumentsValue.url = url;
+}
+
+function originOf(value: string) {
+  try {
+    return new URL(value).origin;
+  } catch {
+    return undefined;
+  }
 }
 
 async function scopeArtifactPaths(
@@ -454,10 +521,11 @@ function unavailableToolError(toolName: string) {
 }
 
 async function createMcpConnection(input: PreviewDevtoolsMcpContext) {
+  const endpoint = await input.openEndpoint();
   const artifacts = await mkdtemp(join(tmpdir(), "blame-preview-devtools-"));
   const workspace = await accessibleWorkspace(input.worktree);
   const client = previewMcpClient(workspace, artifacts);
-  const transport = previewMcpTransport(input.browserUrl, artifacts);
+  const transport = previewMcpTransport(endpoint.wsEndpoint, artifacts);
   try {
     await client.connect(transport, {
       signal: input.signal,
@@ -469,30 +537,50 @@ async function createMcpConnection(input: PreviewDevtoolsMcpContext) {
         { signal: input.signal, timeout: previewMcpCallTimeoutMs },
       )
     ).tools;
-    return {
+    const connection: McpConnection = {
       artifacts,
       client,
-      close: () => closeMcpConnection(client, artifacts),
+      close: () => closeMcpConnection(client, artifacts, endpoint),
+      closed: false,
       tools: tools.filter(exposedTool),
       ...(workspace ? { workspace } : {}),
-    } satisfies McpConnection;
+    };
+    // The proxy closes when its page goes away; the next call reconnects.
+    void endpoint.closed.then(() => {
+      connection.closed = true;
+      connection.onClosed?.();
+      void connection.close();
+    });
+    return connection;
   } catch (error) {
-    await closeMcpConnection(client, artifacts);
+    await closeMcpConnection(client, artifacts, endpoint);
     throw error;
   }
 }
 
-function previewMcpTransport(browserUrl: string, artifacts: string) {
+function previewMcpTransport(wsEndpoint: string, artifacts: string) {
+  const executable = previewDevtoolsExecutable();
   return new StdioClientTransport({
-    args: [
-      previewDevtoolsExecutable(),
-      ...previewDevtoolsServerArgs(browserUrl),
-    ],
+    args: ["-e", previewDevtoolsLoader(executable)],
     command: process.execPath,
     cwd: artifacts,
-    env: previewMcpEnvironment(),
+    env: { ...previewMcpEnvironment(), [endpointVariable]: wsEndpoint },
     stderr: "ignore",
   });
+}
+
+// The endpoint carries the proxy token. Passing it through the environment
+// keeps it out of the process list, where any local user could read it.
+const endpointVariable = "BLAME_PREVIEW_CDP_ENDPOINT";
+
+export function previewDevtoolsLoader(executable: string) {
+  const args = JSON.stringify(previewDevtoolsServerArgs());
+  return [
+    `const endpoint = process.env.${endpointVariable} ?? "";`,
+    `delete process.env.${endpointVariable};`,
+    `process.argv = [process.argv[0], ${JSON.stringify(executable)}, ...${args}, "--wsEndpoint=" + endpoint];`,
+    `import(require("node:url").pathToFileURL(${JSON.stringify(executable)}).href);`,
+  ].join("\n");
 }
 
 function previewMcpClient(workspace: string | undefined, artifacts: string) {
@@ -516,10 +604,15 @@ async function accessibleWorkspace(worktree: string) {
   return existsSync(workspace) ? realpath(workspace) : undefined;
 }
 
-async function closeMcpConnection(client: Client, artifacts: string) {
+async function closeMcpConnection(
+  client: Client,
+  artifacts: string,
+  endpoint: PreviewDevtoolsEndpoint,
+) {
   await Promise.allSettled([
     Promise.resolve().then(() => client.close()),
     rm(artifacts, { force: true, recursive: true }),
+    endpoint.close(),
   ]);
 }
 

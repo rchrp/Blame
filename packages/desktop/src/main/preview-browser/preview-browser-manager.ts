@@ -1,6 +1,5 @@
 import { randomUUID } from "node:crypto";
 import {
-  app,
   BrowserWindow,
   type IpcMainInvokeEvent,
   shell,
@@ -14,7 +13,11 @@ import type {
 } from "./preview-bridge-grant";
 import { attachPreviewRequestTelemetry } from "./preview-request-telemetry";
 import { keepsManagedPreviewBridge } from "./preview-navigation-policy";
-import { previewDevtoolsMcpArgs } from "./preview-devtools-config";
+import {
+  electronCdpDebuggee,
+  previewNavigationPolicy,
+} from "./electron-cdp-debuggee";
+import { startPreviewCdpProxy } from "./preview-cdp-proxy";
 import { probePreviewApplication } from "./preview-application-probe";
 import {
   type PreviewBrowserState,
@@ -26,6 +29,7 @@ type PreviewBrowserRecord = {
   devtoolsScope?: string;
   id: string;
   owner: BrowserWindow;
+  previewOrigin?: string;
   state?: PreviewBrowserState;
   view: WebContentsView;
   visible: boolean;
@@ -53,33 +57,38 @@ const previewLoadTimeoutMs = 30_000;
 const previewApplicationProbeTimeoutMs = 2_000;
 const hiddenPreviewFrameRate = 1;
 const visiblePreviewFrameRate = 30;
-const previewDevtoolsPort =
-  Number(process.env.BLAME_PREVIEW_DEVTOOLS_PORT) || 9222;
-const previewDevtoolsBrowserUrl = `http://127.0.0.1:${previewDevtoolsPort}`;
 let activePreviewDevtoolsTarget: PreviewBrowserState | undefined;
 const previewDevtoolsTargets = new Map<string, PreviewBrowserState>();
 
 export type PreviewDevtoolsTarget = {
   application?: PreviewBrowserState["application"];
   available: boolean;
-  browserUrl: string;
   currentUrl?: string;
   error?: string;
   id?: string;
   loading: boolean;
   visible?: boolean;
+  previewOrigin?: string;
   scope?: string;
-  mcpServer: {
-    args: string[];
-    command: string;
-    name: string;
-  };
 };
 
-export function enablePreviewDevtools() {
-  app.commandLine.appendSwitch(
-    "remote-debugging-port",
-    String(previewDevtoolsPort),
+// No Chromium debugging port is ever opened. Each MCP connection gets a
+// loopback proxy, guarded by a random token, that only reaches this page.
+export async function openPreviewDevtoolsEndpoint(input: { scope: string }) {
+  const scope = normalizedPreviewDevtoolsScope(input.scope);
+  const target = scope ? previewDevtoolsTargets.get(scope) : undefined;
+  const record = target ? previews.get(target.id) : undefined;
+  if (!record || record.view.webContents.isDestroyed())
+    throw new Error("The scoped preview page is no longer available.");
+  const webContents = record.view.webContents;
+  return startPreviewCdpProxy(
+    electronCdpDebuggee(webContents, {
+      contentSize: () => {
+        const { height, width } = record.view.getBounds();
+        return { height, width };
+      },
+    }),
+    previewNavigationPolicy(record.previewOrigin),
   );
 }
 
@@ -117,20 +126,16 @@ function previewDevtoolsTarget(
   target: PreviewBrowserState | undefined,
   scope: string | undefined,
 ): PreviewDevtoolsTarget {
+  const record = target ? previews.get(target.id) : undefined;
   return {
     ...(target?.application ? { application: target.application } : {}),
     available,
-    browserUrl: previewDevtoolsBrowserUrl,
     currentUrl: target?.url,
     error: target?.error,
     id: target?.id,
     loading: target?.loading ?? false,
     visible: target ? previews.get(target.id)?.visible : undefined,
-    mcpServer: {
-      args: previewDevtoolsMcpArgs(previewDevtoolsBrowserUrl),
-      command: "npx",
-      name: "chrome-devtools",
-    },
+    ...(record?.previewOrigin ? { previewOrigin: record.previewOrigin } : {}),
     ...(scope ? { scope } : {}),
   };
 }
@@ -253,6 +258,7 @@ function createPreviewBrowserView(storageKey: string) {
 export async function loadPreviewBrowser(input: { id: string; url: string }) {
   const record = previews.get(input.id);
   if (!record) return false;
+  record.previewOrigin = urlOrigin(input.url);
   startPreviewLoadTimeout(record, input.url);
   try {
     await record.view.webContents.loadURL(input.url);
@@ -522,6 +528,15 @@ function clearPreviewDevtoolsTargets(record: PreviewBrowserRecord) {
 function clearActivePreviewDevtoolsTarget(id: string) {
   if (activePreviewDevtoolsTarget?.id === id)
     activePreviewDevtoolsTarget = undefined;
+}
+
+function urlOrigin(value: string) {
+  try {
+    const url = new URL(value);
+    return ["http:", "https:"].includes(url.protocol) ? url.origin : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 function safeExternalUrl(value: string) {

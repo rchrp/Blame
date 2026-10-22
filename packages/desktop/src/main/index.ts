@@ -35,10 +35,7 @@ import {
   registerLiveLogCapture,
 } from "./desktop-live-log";
 import { checkForUpdatesOnStartup } from "./desktop-update-ipc";
-import {
-  destroyAllPreviewBrowsers,
-  enablePreviewDevtools,
-} from "./preview-browser-ipc";
+import { destroyAllPreviewBrowsers } from "./preview-browser-ipc";
 import { shutdownPreviewDevtoolsMcp } from "./preview-runtime/preview-devtools-mcp-service";
 import { shutdownTerminalSessions } from "./terminal-ipc";
 import { shutdownWorkspaceProcesses } from "./workspace-ipc";
@@ -97,7 +94,6 @@ if (protocolClientArguments.length === 0) {
     protocolClientArguments[1],
   );
 }
-enablePreviewDevtools();
 registerLiveLogCapture();
 
 const appImageTaskSmoke = process.env.BLAME_APPIMAGE_RUN_TASK_SMOKE === "true";

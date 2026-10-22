@@ -23,7 +23,7 @@ export {
 };
 export {
   destroyAllPreviewBrowsers,
-  enablePreviewDevtools,
+  openPreviewDevtoolsEndpoint,
 } from "./preview-browser/preview-browser-manager";
 export type { PreviewDevtoolsTarget } from "./preview-browser/preview-browser-manager";
 

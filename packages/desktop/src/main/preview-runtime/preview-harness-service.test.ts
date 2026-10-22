@@ -278,10 +278,8 @@ function browserTarget(available = false, loading = false) {
       ? { application: { status: "ready" as const, httpStatus: 200 } }
       : {}),
     available,
-    browserUrl: "http://127.0.0.1:9222",
     ...(available || loading ? { currentUrl: "http://127.0.0.1:3000/" } : {}),
     loading,
-    mcpServer: { args: [], command: "node", name: "chrome-devtools" },
   } satisfies PreviewDevtoolsTarget;
 }
 
