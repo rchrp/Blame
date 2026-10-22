@@ -3,6 +3,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
+import { recordClaudeCodeRateLimit } from "../subscription-usage.js";
 import { claudeCodeArguments } from "./claude-code-cli.js";
 import {
   bridgeMcpServerName,
@@ -250,6 +251,8 @@ export class ClaudeCodeLane {
     else if (message.type === "system" && message.subtype === "init")
       this.checkInit(message);
     else if (message.type === "result") this.readResult(message);
+    else if (message.type === "rate_limit_event")
+      recordClaudeCodeRateLimit(message.rate_limit_info);
   }
 
   private readStreamEvent(event: AnthropicBlock) {

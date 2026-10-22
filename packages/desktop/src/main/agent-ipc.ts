@@ -145,6 +145,9 @@ function registerProviderIpcHandlers() {
   ipcMain.handle("agent:providers:connect-claude-code", (_event, input) =>
     agentRuntime().run("providers.connectClaudeCode", input),
   );
+  ipcMain.handle("agent:providers:subscription-usage", (_event, input) =>
+    agentRuntime().run("providers.subscriptionUsage", input),
+  );
 }
 
 function registerSessionStartIpcHandlers(

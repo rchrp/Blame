@@ -187,6 +187,8 @@ function providerHandlers(runtime: BlameAgentRuntime) {
     "providers.claudeCodeStatus": () => runtime.providers.claudeCodeStatus(),
     "providers.connectClaudeCode": (input: unknown) =>
       runtime.providers.connectClaudeCode(input as never),
+    "providers.subscriptionUsage": (input: unknown) =>
+      runtime.providers.subscriptionUsage(input as never),
   };
 }
 

@@ -23,6 +23,8 @@ import type {
   ProjectInitializationDiagnostics,
   ClaudeCodeStatus,
   ConnectClaudeCodeInput,
+  SubscriptionUsage,
+  SubscriptionUsageInput,
   LoginOAuthProviderInput,
   NewProjectGenerationResult,
   OptimizeUserStoryPromptInput,
@@ -383,6 +385,9 @@ export type AgentClient = {
     // Desktop only: Claude Code signs in on the user's computer.
     claudeCodeStatus?(): Promise<ClaudeCodeStatus>
     connectClaudeCode?(input: ConnectClaudeCodeInput): Promise<unknown>
+    subscriptionUsage?(
+      input: SubscriptionUsageInput
+    ): Promise<SubscriptionUsage | null>
   }
   sessions: {
     start(input: StartSessionInput): Promise<{ sessionId: string }>

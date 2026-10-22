@@ -22,6 +22,8 @@ import type {
   ProjectInitializationDiagnostics,
   ClaudeCodeStatus,
   ConnectClaudeCodeInput,
+  SubscriptionUsage,
+  SubscriptionUsageInput,
   LoginOAuthProviderInput,
   NewProjectGenerationResult,
   OptimizeUserStoryPromptInput,
@@ -534,6 +536,9 @@ export type BlameDesktopApi = {
       loginOAuth(input: LoginOAuthProviderInput): Promise<unknown>;
       claudeCodeStatus(): Promise<ClaudeCodeStatus>;
       connectClaudeCode(input: ConnectClaudeCodeInput): Promise<unknown>;
+      subscriptionUsage(
+        input: SubscriptionUsageInput,
+      ): Promise<SubscriptionUsage | null>;
     };
     sessions: {
       start(input: StartSessionInput): Promise<{ sessionId: string }>;

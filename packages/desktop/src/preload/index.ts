@@ -468,6 +468,8 @@ const api: BlameDesktopApi = {
         ipcRenderer.invoke("agent:providers:claude-code-status"),
       connectClaudeCode: (input) =>
         ipcRenderer.invoke("agent:providers:connect-claude-code", input),
+      subscriptionUsage: (input) =>
+        ipcRenderer.invoke("agent:providers:subscription-usage", input),
     },
     sessions: {
       start: (input) => ipcRenderer.invoke("agent:sessions:start", input),

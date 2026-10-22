@@ -16,6 +16,13 @@ import {
 } from "@/components/model/model-selection"
 import { ProviderIcon } from "@/components/model/model-selector"
 import {
+  PlanUsageBars,
+  PlanUsageDonut,
+  PlanUsagePercents,
+  planUsageSummary,
+  usePlanUsage,
+} from "@/components/model/plan-usage"
+import {
   type ContextLimitOption,
   contextLimitOptions,
   effectiveContextLimit,
@@ -87,7 +94,7 @@ export function StoryStatsIsland({
       animate={
         expanded
           ? { height: fullHeight ?? "auto", width: expandedWidth }
-          : { height: compactHeight, width: compactWidth }
+          : { height: compactHeight, width: pillWidth(stats) }
       }
       transition={islandTransition(expanded, reduceMotion)}
     >
@@ -121,6 +128,12 @@ export function StoryStatsIsland({
 
 const expandedWidth = 320
 const compactWidth = 192
+// Room for the plan usage donut and its two percentages.
+const planUsageWidth = 92
+
+function pillWidth(stats: StoryStats) {
+  return compactWidth + (stats.planUsage ? planUsageWidth : 0)
+}
 const compactHeight = 48
 
 const islandEase = [0.32, 0.72, 0, 1] as const
@@ -215,12 +228,19 @@ function useStoryStats(userStory?: UserStory) {
   const totals =
     usageTotalsFromAgentUsage(userStory?.agentUsage) ?? sessionUsage.totals
   const context = storyContextUsage(userStory?.agentUsage, budget.limit)
-  return { budget, compaction, context, totals }
+  const selection = useModelSelection()
+  const plan = usePlanUsage(
+    selection,
+    userStory?.agentProviderId ?? undefined,
+    userStory?.agentUsage
+  )
+  const planUsage = (plan.enabled && plan.usage) || undefined
+  return { budget, compaction, context, planUsage, totals }
 }
 
 function DrawerSidebar({
   diffStats,
-  stats: { budget, compaction, context, totals },
+  stats: { budget, compaction, context, planUsage, totals },
   userStory,
 }: {
   diffStats?: UserStoryDiffStats
@@ -231,6 +251,7 @@ function DrawerSidebar({
     <aside className="grid gap-4 p-4">
       <ModelHeader userStory={userStory} />
       <ContextGauge budget={budget} compaction={compaction} context={context} />
+      {planUsage ? <PlanUsageSection usage={planUsage} /> : null}
       <div className="grid grid-cols-3 gap-2">
         <Pop className="grid min-w-0">
           <Stat label="Cost">
@@ -247,6 +268,27 @@ function DrawerSidebar({
         </Pop>
       </div>
     </aside>
+  )
+}
+
+// The ChatGPT or Claude plan behind the story's model, refreshed after each turn.
+function PlanUsageSection({ usage }: { usage: NonNullable<StoryStats["planUsage"]> }) {
+  return (
+    <section className="grid gap-2.5" aria-label="Plan usage">
+      <Pop className="flex items-baseline justify-between gap-3">
+        <span className="text-xs font-medium text-muted-foreground">
+          Plan usage
+        </span>
+        {usage.planType ? (
+          <span className="text-xs text-muted-foreground capitalize">
+            {usage.planType}
+          </span>
+        ) : null}
+      </Pop>
+      <Pop>
+        <PlanUsageBars usage={usage} />
+      </Pop>
+    </section>
   )
 }
 
@@ -268,17 +310,18 @@ function DiffCounts({ diffStats }: { diffStats: UserStoryDiffStats }) {
 function CompactStats({
   diffStats,
   onExpand,
-  stats: { budget, context, totals },
+  stats,
 }: {
   diffStats?: UserStoryDiffStats
   onExpand(): void
   stats: StoryStats
 }) {
+  const { budget, context, planUsage, totals } = stats
   const cost = totals?.totalCost ?? totals?.cost
   return (
     <div
       className="flex items-center"
-      style={{ height: compactHeight, width: compactWidth }}
+      style={{ height: compactHeight, width: pillWidth(stats) }}
     >
       <Tooltip>
         <TooltipTrigger asChild>
@@ -288,6 +331,17 @@ function CompactStats({
             className="flex h-full min-w-0 flex-1 items-center gap-2 rounded-l-xl pr-1 pl-2.5 outline-none hover:bg-foreground/[0.04] focus-visible:bg-foreground/[0.06]"
             onClick={onExpand}
           >
+            {planUsage ? (
+              <>
+                <motion.span className="flex" variants={popVariants}>
+                  <PlanUsageDonut usage={planUsage} />
+                </motion.span>
+                <motion.span className="flex" variants={popVariants}>
+                  <PlanUsagePercents usage={planUsage} />
+                </motion.span>
+                <span aria-hidden className="mx-0.5 h-6 w-px shrink-0 bg-foreground/10" />
+              </>
+            ) : null}
             <motion.span className="flex" variants={popVariants}>
               <ContextDonut context={context} />
             </motion.span>
@@ -315,6 +369,7 @@ function CompactStats({
                 ? `· ${compactTokens(budget.limit)} max`
                 : "· not started"}
           </span>
+          {planUsage ? <span>Plan {planUsageSummary(planUsage)}</span> : null}
           {cost !== undefined && cost !== null ? (
             <span>Cost {formatCurrency(cost)}</span>
           ) : null}

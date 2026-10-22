@@ -170,6 +170,7 @@ import {
   closeClaudeCodeBridge,
   connectClaudeCode,
 } from "./claude-code/claude-code-provider.js";
+import { readClaudeCodeUsage, readCodexUsage } from "./subscription-usage.js";
 import { createContextProjectionExtension } from "./context-projection.js";
 import {
   appendInitialTaskBriefing,
@@ -269,6 +270,7 @@ import type {
   InitializeProjectResult,
   ConnectClaudeCodeInput,
   ReasoningSelection,
+  SubscriptionUsageInput,
   LoginOAuthProviderInput,
   MapSecurityAuditInput,
   NewProjectGenerationResult,
@@ -518,6 +520,12 @@ export class BlameAgentRuntime {
     claudeCodeStatus: () => claudeCodeStatus(),
     connectClaudeCode: (input: ConnectClaudeCodeInput) =>
       connectClaudeCode(input),
+    subscriptionUsage: async (input: SubscriptionUsageInput) =>
+      input.providerId === "claude-code"
+        ? readClaudeCodeUsage()
+        : input.providerId === "openai-codex"
+          ? readCodexUsage((await this.runtimeCredential(input)).oauthCredentials)
+          : null,
   };
 
   prewarm = (input: AgentRuntimePrewarmInput) =>

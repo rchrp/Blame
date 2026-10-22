@@ -187,6 +187,31 @@ export type ClaudeCodeStatus = {
   error?: string;
 };
 
+export type SubscriptionUsageInput = {
+  apiConnection: ApiConnection;
+  providerId: string;
+  credentialLabel?: string;
+};
+
+/** One limit window of a subscription plan, such as 5 hours or a week. */
+export type SubscriptionUsageWindow = {
+  id: string;
+  label: string;
+  usedPercent: number;
+  /** Epoch milliseconds, when the provider gives an exact time. */
+  resetsAt?: number;
+  /** The provider's own wording, when it gives no exact time. */
+  resetsLabel?: string;
+  windowMinutes?: number;
+};
+
+export type SubscriptionUsage = {
+  providerId: string;
+  windows: SubscriptionUsageWindow[];
+  planType?: string;
+  checkedAt: number;
+};
+
 export type LoginOAuthProviderInput = {
   apiConnection: ApiConnection;
   providerId: string;

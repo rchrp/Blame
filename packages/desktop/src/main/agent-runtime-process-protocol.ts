@@ -8,6 +8,7 @@ export const agentRuntimeMethods = [
   "providers.loginOAuth",
   "providers.claudeCodeStatus",
   "providers.connectClaudeCode",
+  "providers.subscriptionUsage",
   "sessions.start",
   "sessions.startDevelopment",
   "sessions.send",
