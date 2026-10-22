@@ -48,7 +48,11 @@ function openRouterModel(
     cacheReadPrice: tokenPrice(value.pricing, 'input_cache_read'),
     cacheWritePrice: tokenPrice(value.pricing, 'input_cache_write'),
     releaseDate: releaseDate(value.created),
-    benchmark: benchmarks.get(value.id) ?? benchmarks.get(canonicalSlug) ?? inlineBenchmark,
+    benchmark: mergeBenchmarks([
+      benchmarks.get(value.id),
+      benchmarks.get(canonicalSlug),
+      inlineBenchmark,
+    ]),
   }
 }
 
@@ -98,11 +102,31 @@ function finalizeBenchmark(value: BenchmarkAccumulator): CatalogBenchmark | unde
   }
 }
 
+// The same scale the recommendations rank on, then the next best measure.
 function weightedSmartScore(value: BenchmarkAccumulator, designScore?: number) {
+  if (value.intelligenceIndex !== undefined) return value.intelligenceIndex
   if (value.codingIndex !== undefined && value.agenticIndex !== undefined) {
     return round(value.codingIndex * 0.7 + value.agenticIndex * 0.3)
   }
-  return value.codingIndex ?? value.agenticIndex ?? value.intelligenceIndex ?? designScore
+  return value.codingIndex ?? value.agenticIndex ?? designScore
+}
+
+// A model's scores can be filed under its id, its dated slug or inline (an
+// intelligence index under one, a design arena score under another): each
+// measure comes from the first place that has it.
+function mergeBenchmarks(sources: Array<CatalogBenchmark | undefined>) {
+  const found = sources.filter((source): source is CatalogBenchmark => source !== undefined)
+  if (!found.length) return undefined
+  const first = <K extends keyof CatalogBenchmark>(key: K) =>
+    found.find((source) => source[key] !== undefined)?.[key]
+  const designArenaScore = first('designArenaScore')
+  const merged: BenchmarkAccumulator = {
+    codingIndex: first('codingIndex'),
+    agenticIndex: first('agenticIndex'),
+    intelligenceIndex: first('intelligenceIndex'),
+    designArenaScores: designArenaScore === undefined ? [] : [designArenaScore],
+  }
+  return finalizeBenchmark(merged)
 }
 
 function designArenaScores(value: unknown) {

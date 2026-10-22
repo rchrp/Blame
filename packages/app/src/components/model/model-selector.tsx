@@ -820,8 +820,9 @@ function SliderLabels({
             sideOffset={6}
             className="max-w-64 text-pretty"
           >
-            Models that cost more while scoring lower than another model are
-            omitted. They remain available in Manual selection.
+            Ranked by the Artificial Analysis Intelligence Index. Models that
+            cost more while scoring lower than another model are omitted. They
+            remain available in Manual selection.
           </TooltipContent>
         </Tooltip>
       </span>

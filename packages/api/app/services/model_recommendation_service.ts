@@ -143,15 +143,12 @@ function hasBenchmark(candidate: RecommendationCandidate) {
   return comparableScore(candidate.model) !== undefined
 }
 
-// Models are ranked on one scale only: Artificial Analysis coding and
-// agentic indexes. A model known only by another measure (intelligence
-// index, design arena win rate: often the case for brand-new models) is not
-// comparable, and joins the new models instead of looking weaker than it is.
+// Models are ranked on one scale only: the Artificial Analysis
+// Intelligence Index. Nearly every rated model has it, brand-new ones
+// included, while coding and agentic indexes often come weeks later. Mixing
+// scales would misplace models, so a model without it joins the new ones.
 function comparableScore(model: CatalogModel) {
-  const coding = model.benchmark?.codingIndex
-  const agentic = model.benchmark?.agenticIndex
-  if (coding === undefined || agentic === undefined) return undefined
-  return Math.round((coding * 0.7 + agentic * 0.3) * 100) / 100
+  return model.benchmark?.intelligenceIndex
 }
 
 function compareBenchmarked(left: RecommendationCandidate, right: RecommendationCandidate) {

@@ -80,18 +80,18 @@ test.group('model recommendation service', () => {
     assert.lengthOf(recommendations.byProvider.openrouter, 1)
   })
 
-  test('ranks only on comparable scores and keeps new models known by another measure', ({
+  test('ranks on the intelligence index and keeps models known by another measure apart', ({
     assert,
   }) => {
-    // Brand-new models often come with an intelligence index or a design
-    // arena win rate only: on another scale, they must not look weaker.
+    // New models get an intelligence index first; coding and agentic
+    // indexes, or a design arena win rate, are on other scales.
     const provider = catalogProvider('openai-codex', [
-      model('gpt-5.6-luna', 0.2, 50, '2026-07-09'),
-      model('gpt-5.6-terra', 2, 62, '2026-07-09'),
-      model('gpt-5.6-sol', 4, 70, '2026-07-09'),
+      model('gpt-5.6-luna', 0.2, 37, '2026-07-09'),
+      model('gpt-5.6-terra', 2, 42, '2026-07-09'),
+      model('gpt-5.6-sol', 4, 47, '2026-07-09'),
       partiallyRated('gpt-6-luna', 0.1, { intelligenceIndex: 30 }, '2026-09-22'),
       partiallyRated('gpt-6-sol', 2, { designArenaScore: 0.6 }, '2026-09-22'),
-      partiallyRated('gpt-6-astra', 10, { codingIndex: 88 }, '2026-09-04'),
+      partiallyRated('gpt-6-astra', 10, { codingIndex: 88, agenticIndex: 60 }, '2026-09-04'),
     ])
 
     const recommendations = buildModelRecommendations(
@@ -103,8 +103,13 @@ test.group('model recommendation service', () => {
     const segment = (name: string) =>
       recommendations.all.filter((entry) => entry.segment === name).map((entry) => entry.modelId)
 
-    assert.deepEqual(segment('benchmarked'), ['gpt-5.6-luna', 'gpt-5.6-terra', 'gpt-5.6-sol'])
-    assert.deepEqual(segment('unbenchmarked'), ['gpt-6-luna', 'gpt-6-sol', 'gpt-6-astra'])
+    assert.deepEqual(segment('benchmarked'), [
+      'gpt-6-luna',
+      'gpt-5.6-luna',
+      'gpt-5.6-terra',
+      'gpt-5.6-sol',
+    ])
+    assert.deepEqual(segment('unbenchmarked'), ['gpt-6-sol', 'gpt-6-astra'])
   })
 })
 
@@ -142,10 +147,7 @@ function model(
     name: id,
     releaseDate,
     canonicalModelId,
-    benchmark:
-      smartScore === undefined
-        ? undefined
-        : { smartScore, codingIndex: smartScore, agenticIndex: smartScore },
+    benchmark: smartScore === undefined ? undefined : { smartScore, intelligenceIndex: smartScore },
     cost: {
       input: inputPrice,
       output: null,
