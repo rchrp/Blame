@@ -221,6 +221,8 @@ const api: BlameDesktopApi = {
   },
   agentScreenshots: {
     cache: (input) => ipcRenderer.invoke("agent-screenshots:cache", input),
+    copy: (input) => ipcRenderer.invoke("agent-screenshots:copy", input),
+    saveAs: (input) => ipcRenderer.invoke("agent-screenshots:save-as", input),
     delete: (input) => ipcRenderer.invoke("agent-screenshots:delete", input),
     list: (input) => ipcRenderer.invoke("agent-screenshots:list", input),
     read: (input) => ipcRenderer.invoke("agent-screenshots:read", input),

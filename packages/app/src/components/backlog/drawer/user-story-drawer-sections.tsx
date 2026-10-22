@@ -26,6 +26,7 @@ import {
 import {
   AgentConversationComposer,
   AgentConversationTimeline,
+  screenshotOwnerFor,
   MarkdownMessageActions,
   type AgentConversationUserMessageUndo,
 } from "@/components/chat/agent-conversation"
@@ -416,6 +417,7 @@ const AgentRunTimeline = React.memo(function AgentRunTimeline({
         />
       }
       runs={userStory?.agentRuns ?? []}
+      screenshotOwner={screenshotOwnerFor("userStory", userStory?.id)}
       topOffset={connectSummaryActions ? "message-actions" : "default"}
     />
   )

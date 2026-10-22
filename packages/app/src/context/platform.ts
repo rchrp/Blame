@@ -630,6 +630,9 @@ export type AgentScreenshotsClient = {
     metadata: Partial<AgentScreenshotMetadata> & { scope: string }
   }): Promise<AgentScreenshotMetadata>
   delete(input: { scope?: string; sessionIds?: string[] }): Promise<boolean>
+  // Copies the image to the clipboard, or saves it where the user picks.
+  copy(input: { id: string }): Promise<boolean>
+  saveAs(input: { id: string }): Promise<boolean>
 }
 
 export type PreviewBrowserClient = {

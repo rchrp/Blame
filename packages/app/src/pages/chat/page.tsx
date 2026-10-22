@@ -35,6 +35,7 @@ import { ProjectRunConfigurationPreviewWarmup } from "@/components/backlog/board
 import {
   AgentConversationComposer,
   AgentConversationTimeline,
+  screenshotOwnerFor,
   type AgentConversationUserMessageUndo,
 } from "@/components/chat/agent-conversation"
 import {
@@ -969,6 +970,7 @@ function QuickChatProjectPage() {
                     {activeConversationLoaded &&
                     activeConversation?.agentRuns?.length ? (
                       <AgentConversationTimeline
+                        screenshotOwner={screenshotOwnerFor("quickChat", activeConversation.id)}
                         comments={activeConversation.messages ?? []}
                         loadChangedFileDiffs={loadChangedFileDiffs}
                         onChangedFileClick={(path) =>

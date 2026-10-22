@@ -20,7 +20,13 @@ export type ToolCallFamily =
   | "test"
   | "web"
 
-export type ToolCallTone = "neutral" | "success" | "danger" | "warning" | "add" | "remove"
+export type ToolCallTone =
+  | "neutral"
+  | "success"
+  | "danger"
+  | "warning"
+  | "add"
+  | "remove"
 
 export type ToolCallChip = {
   label: string
@@ -84,9 +90,25 @@ export type ToolCallBody =
     }
   | { type: "tests"; counts: TestCounts; outcome?: string }
   | { type: "text"; label?: string; text: string; truncated?: boolean }
-  | { type: "fields"; fields: { label: string; value: string; mono?: boolean }[] }
+  | {
+      type: "fields"
+      fields: { label: string; value: string; mono?: boolean }[]
+    }
   | { type: "list"; label?: string; items: string[] }
   | { type: "error"; message: string; recovery?: string }
+  | { type: "screenshot"; screenshots: ScreenshotRef[]; pending?: boolean }
+
+// A screenshot stored by the desktop app, as referenced by a tool result.
+export type ScreenshotRef = {
+  colorScheme: "dark" | "light"
+  height: number
+  id: string
+  mimeType: string
+  pageUrl: string
+  sessionId?: string
+  viewport: { height: number; width: number }
+  width: number
+}
 
 export type ToolCallView = {
   family: ToolCallFamily

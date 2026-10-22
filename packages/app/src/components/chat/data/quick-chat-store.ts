@@ -370,7 +370,7 @@ function useQuickChatStoreValue() {
         detailedChatIds: chatStateIds(current.detailedChatIds, chat.id, false),
       }))
     },
-    [api]
+    [api, platform.agentScreenshots]
   )
 
   const setActiveId = React.useCallback((activeId: string | undefined) => {

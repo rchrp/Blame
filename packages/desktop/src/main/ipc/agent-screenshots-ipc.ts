@@ -1,4 +1,13 @@
-import { ipcMain, type IpcMainInvokeEvent, type WebContents } from "electron";
+import { writeFile } from "node:fs/promises";
+import {
+  BrowserWindow,
+  clipboard,
+  dialog,
+  ipcMain,
+  nativeImage,
+  type IpcMainInvokeEvent,
+  type WebContents,
+} from "electron";
 import {
   agentScreenshotId,
   isAgentScreenshotId,
@@ -66,6 +75,39 @@ export function registerAgentScreenshotIpcHandlers(input: {
       width: positive(metadata.width),
     });
     return saved satisfies AgentScreenshotMetadata;
+  });
+  ipcMain.handle("agent-screenshots:copy", async (event, value) => {
+    owner(event);
+    const stored = await agentScreenshotStore().read(
+      screenshotId(record(value).id),
+    );
+    if (!stored) return false;
+    clipboard.writeImage(nativeImage.createFromBuffer(stored.data));
+    return true;
+  });
+  ipcMain.handle("agent-screenshots:save-as", async (event, value) => {
+    owner(event);
+    const stored = await agentScreenshotStore().read(
+      screenshotId(record(value).id),
+    );
+    if (!stored) return false;
+    const extension = stored.metadata.mimeType.split("/")[1] ?? "png";
+    const options = {
+      defaultPath: `screenshot-${stored.metadata.id.slice(0, 8)}.${extension === "jpeg" ? "jpg" : extension}`,
+      filters: [
+        {
+          extensions: [extension === "jpeg" ? "jpg" : extension],
+          name: "Image",
+        },
+      ],
+    };
+    const window = BrowserWindow.fromWebContents(event.sender);
+    const result = window
+      ? await dialog.showSaveDialog(window, options)
+      : await dialog.showSaveDialog(options);
+    if (result.canceled || !result.filePath) return false;
+    await writeFile(result.filePath, stored.data);
+    return true;
   });
   ipcMain.handle("agent-screenshots:delete", async (event, value) => {
     owner(event);

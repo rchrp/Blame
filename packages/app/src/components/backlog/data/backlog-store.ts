@@ -380,7 +380,7 @@ function useBacklogStoreValue() {
         ),
       }))
     },
-    [api]
+    [api, platform.agentScreenshots]
   )
 
   const storiesForColumn = React.useCallback(

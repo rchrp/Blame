@@ -24,8 +24,10 @@ function client(local: boolean) {
       cached.push(input)
       return { ...input.metadata, id } as never
     },
+    copy: async () => true,
     delete: async () => true,
     list: async () => [],
+    saveAs: async () => true,
     read: async () =>
       local
         ? ({

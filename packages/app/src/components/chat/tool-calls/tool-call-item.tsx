@@ -25,7 +25,12 @@ import {
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
-import { describeToolCall, toolCallSource, type ToolCallActivity } from "./describe-tool-call"
+import {
+  describeToolCall,
+  toolCallSource,
+  type ToolCallActivity,
+} from "./describe-tool-call"
+import { ToolCallScreenshots } from "../screenshots/screenshot-tool-call"
 import { ToolCallBodyView } from "./tool-call-bodies"
 import type { ToolCallChip, ToolCallFamily } from "./tool-call-view"
 
@@ -84,6 +89,7 @@ export function ToolCallItem({
   )
   const Icon = familyIcons[view.family]
   const expandable = view.bodies.length > 0 || hasFullDetail
+  const screenshots = view.bodies.find((body) => body.type === "screenshot")
 
   async function loadDetail() {
     setLoading(true)
@@ -98,7 +104,10 @@ export function ToolCallItem({
     <AccordionItem
       value={value}
       disabled={!expandable}
-      className={cn("border-b-0!", entering && "chat-enter-step")}
+      className={cn(
+        "group/tool-call border-b-0!",
+        entering && "chat-enter-step"
+      )}
     >
       <div className="grid grid-cols-[2rem_minmax(0,1fr)] items-start gap-2 text-sm">
         {/* Keyed by state: the icon pops when the step finishes. */}
@@ -149,6 +158,14 @@ export function ToolCallItem({
               ) : null}
             </span>
           </AccordionTrigger>
+          {screenshots ? (
+            // Always in sight; the opened call shows it larger instead.
+            <ToolCallScreenshots
+              className="pt-1 pb-1.5 group-data-[state=open]/tool-call:hidden"
+              pending={screenshots.pending}
+              screenshots={screenshots.screenshots}
+            />
+          ) : null}
           {expandable ? (
             <AccordionContent className="grid gap-2 pt-1.5 pb-1">
               {view.bodies.map((body, index) => (
@@ -183,8 +200,10 @@ const chipTones: Record<NonNullable<ToolCallChip["tone"]>, string> = {
   remove: "font-mono text-red-600 dark:text-red-400",
   danger: "rounded-md bg-red-500/10 px-1.5 text-red-700 dark:text-red-300",
   neutral: "rounded-md bg-muted px-1.5 text-muted-foreground",
-  success: "rounded-md bg-emerald-500/10 px-1.5 text-emerald-700 dark:text-emerald-300",
-  warning: "rounded-md bg-amber-500/10 px-1.5 text-amber-700 dark:text-amber-300",
+  success:
+    "rounded-md bg-emerald-500/10 px-1.5 text-emerald-700 dark:text-emerald-300",
+  warning:
+    "rounded-md bg-amber-500/10 px-1.5 text-amber-700 dark:text-amber-300",
 }
 
 function Chip({ chip }: { chip: ToolCallChip }) {

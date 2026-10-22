@@ -1,8 +1,4 @@
-import {
-  describeEdit,
-  describeRead,
-  describeSearch,
-} from "./describe-code.ts"
+import { describeEdit, describeRead, describeSearch } from "./describe-code.ts"
 import {
   describeCommand,
   describeFinish,
@@ -14,6 +10,10 @@ import {
   describeSpecialist,
   describeWeb,
 } from "./describe-run.ts"
+import {
+  describePreviewDevtools,
+  isPreviewDevtoolsTool,
+} from "./describe-preview-devtools.ts"
 import { num, record, str, textOf } from "./tool-call-values.ts"
 import type { ToolCallSource, ToolCallView } from "./tool-call-view.ts"
 
@@ -99,11 +99,18 @@ export function describeToolCall(source: ToolCallSource): ToolCallView {
       family: "other",
       verb: source.title,
       chips: [],
-      bodies: text && !isJson && text.text !== source.title ? [{ type: "text", text: text.text }] : [],
+      bodies:
+        text && !isJson && text.text !== source.title
+          ? [{ type: "text", text: text.text }]
+          : [],
       failed: false,
     }
   }
-  const describe = describers[source.toolName ?? ""] ?? describeOther
+  const describe =
+    describers[source.toolName ?? ""] ??
+    (isPreviewDevtoolsTool(source.toolName)
+      ? describePreviewDevtools
+      : describeOther)
   try {
     return describe(source)
   } catch {
@@ -122,5 +129,7 @@ function parseDetail(detail: string): Record<string, unknown> {
 }
 
 function toolNameFromTitle(title: string) {
-  return title.match(/(?:Tool (?:finished|started|updated|used): )?([\w-]+)$/u)?.[1]
+  return title.match(
+    /(?:Tool (?:finished|started|updated|used): )?([\w-]+)$/u
+  )?.[1]
 }

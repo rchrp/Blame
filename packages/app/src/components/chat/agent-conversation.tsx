@@ -77,6 +77,24 @@ import {
 import { SpecialistThreadDialog } from "./specialist-thread-dialog"
 import { record, specialistTool, textOf } from "./tool-calls/tool-call-values"
 import { ToolCallItem } from "./tool-calls/tool-call-item"
+import {
+  AgentScreenshotOwnerProvider,
+  ScreenshotGroupProvider,
+} from "./screenshots/agent-screenshot-context"
+import type { ScreenshotOwner } from "@/lib/agent-screenshot-sync"
+
+// Where a conversation's screenshots are fetched from, and cached under.
+export function screenshotOwnerFor(
+  kind: ScreenshotOwner["kind"],
+  id: string | undefined
+): ScreenshotOwner | undefined {
+  if (!id) return undefined
+  return {
+    id,
+    kind,
+    scope: kind === "userStory" ? `story:${id}` : `chat:${id}`,
+  }
+}
 import { TurnSummary } from "./turn-summary"
 
 type SpecialistAgentAppearance = {
@@ -168,6 +186,7 @@ export function AgentConversationTimeline({
   responseHeaderForRun,
   queued,
   runs,
+  screenshotOwner,
 }: {
   comments: AgentConversationComment[]
   unsentComments?: AgentConversationComment[]
@@ -193,6 +212,8 @@ export function AgentConversationTimeline({
   // Messages waiting for the agent, shown after the conversation.
   queued?: React.ReactNode
   runs: AgentConversationRun[]
+  // The story or chat these turns belong to, to fetch synced screenshots.
+  screenshotOwner?: ScreenshotOwner
   topOffset?: "default" | "message-actions"
 }) {
   const commentsById = React.useMemo(
@@ -220,37 +241,41 @@ export function AgentConversationTimeline({
   if (runs.length === 0 && unsentComments.length === 0 && !queued) return null
 
   return (
-    <div
-      className="grid gap-10"
-      aria-busy={runs.some((run) => run.status === "running")}
-    >
-      {runs.map((run, index) => (
-        <AgentConversationTurn
-          key={run.id}
-          checkpointRunCount={checkpointTargets[index]?.checkpointRunCount}
-          loadChangedFileDiffs={loadChangedFileDiffs}
-          comment={runComment(run, commentsById)}
-          highlightFinalResponse={run.id === highlightedFinalResponseRunId}
-          lastVisibleMessage={lastVisibleMessage}
-          onFileLinkClick={onFileLinkClick}
-          onChangedFileClick={onChangedFileClick}
-          onLoadActivityDetail={(activity) => loadActivityDetail(run, activity)}
-          onUserMessageUndo={onUserMessageUndo}
-          modelSwitch={modelSwitched(runs[index - 1], run)}
-          responseHeader={responseHeaderForRun?.(run) ?? responseHeader}
-          run={run}
-        />
-      ))}
-      {unsentComments.map((comment) => (
-        <RunCommentItem
-          key={comment.id}
-          alwaysVisible
-          comment={comment}
-          onFileLinkClick={onFileLinkClick}
-        />
-      ))}
-      {queued}
-    </div>
+    <AgentScreenshotOwnerProvider owner={screenshotOwner}>
+      <div
+        className="grid gap-10"
+        aria-busy={runs.some((run) => run.status === "running")}
+      >
+        {runs.map((run, index) => (
+          <AgentConversationTurn
+            key={run.id}
+            checkpointRunCount={checkpointTargets[index]?.checkpointRunCount}
+            loadChangedFileDiffs={loadChangedFileDiffs}
+            comment={runComment(run, commentsById)}
+            highlightFinalResponse={run.id === highlightedFinalResponseRunId}
+            lastVisibleMessage={lastVisibleMessage}
+            onFileLinkClick={onFileLinkClick}
+            onChangedFileClick={onChangedFileClick}
+            onLoadActivityDetail={(activity) =>
+              loadActivityDetail(run, activity)
+            }
+            onUserMessageUndo={onUserMessageUndo}
+            modelSwitch={modelSwitched(runs[index - 1], run)}
+            responseHeader={responseHeaderForRun?.(run) ?? responseHeader}
+            run={run}
+          />
+        ))}
+        {unsentComments.map((comment) => (
+          <RunCommentItem
+            key={comment.id}
+            alwaysVisible
+            comment={comment}
+            onFileLinkClick={onFileLinkClick}
+          />
+        ))}
+        {queued}
+      </div>
+    </AgentScreenshotOwnerProvider>
   )
 }
 
@@ -326,30 +351,30 @@ function AgentConversationTurn({
       {modelSwitch ? (
         <ModelSwitchNote responseHeader={responseHeader} run={run} />
       ) : null}
-      <div className="grid min-w-0 gap-5">
-        <AgentWorkDetails
-          activities={activities}
-          alwaysVisible={
-            lastVisibleMessage?.type === "activity" &&
-            lastVisibleMessage.runId === run.id
-          }
-          highlightFinalResponse={highlightFinalResponse}
-          onFileLinkClick={onFileLinkClick}
-          onLoadDetail={onLoadActivityDetail}
-          responseHeader={responseHeader}
-          run={run}
-        />
-        <TurnSummary
-          activities={activities}
-          onFileClick={openChangedFile}
-          run={run}
-        />
-      </div>
+      <ScreenshotGroupProvider activities={activities}>
+        <div className="grid min-w-0 gap-5">
+          <AgentWorkDetails
+            activities={activities}
+            alwaysVisible={
+              lastVisibleMessage?.type === "activity" &&
+              lastVisibleMessage.runId === run.id
+            }
+            highlightFinalResponse={highlightFinalResponse}
+            onFileLinkClick={onFileLinkClick}
+            onLoadDetail={onLoadActivityDetail}
+            responseHeader={responseHeader}
+            run={run}
+          />
+          <TurnSummary
+            activities={activities}
+            onFileClick={openChangedFile}
+            run={run}
+          />
+        </div>
+      </ScreenshotGroupProvider>
     </section>
   )
 }
-
-
 
 export function AgentConversationComposer({
   agentRunning = false,
@@ -507,7 +532,9 @@ export function AgentConversationComposer({
               onClick={handlePrimaryAction}
             >
               <span
-                key={submitting ? "submitting" : stopAction ? "running" : "idle"}
+                key={
+                  submitting ? "submitting" : stopAction ? "running" : "idle"
+                }
                 className="composer-icon-swap flex items-center justify-center"
               >
                 {submitting ? (
@@ -572,7 +599,9 @@ function RunCommentItem({
             editing && "border-primary/60"
           )}
           onClick={
-            queued?.onEdit && !editing ? () => setDraft(comment.body) : undefined
+            queued?.onEdit && !editing
+              ? () => setDraft(comment.body)
+              : undefined
           }
           onKeyDown={(event) => {
             if (!editing) return
@@ -623,22 +652,22 @@ function RunCommentItem({
         ) : queued ? (
           <QueuedMessageFooter actions={queued} />
         ) : (
-        <div className="flex items-center justify-end gap-2">
-          {!run ? (
+          <div className="flex items-center justify-end gap-2">
+            {!run ? (
+              <span className="text-xs text-muted-foreground">
+                Saved · not sent to agent
+              </span>
+            ) : null}
             <span className="text-xs text-muted-foreground">
-              Saved · not sent to agent
+              {commentDateLabel(comment.createdAt)}
             </span>
-          ) : null}
-          <span className="text-xs text-muted-foreground">
-            {commentDateLabel(comment.createdAt)}
-          </span>
-          <MarkdownMessageActions
-            alwaysVisible={alwaysVisible}
-            markdown={comment.body}
-            onUndo={onUndo ? () => onUndo(comment) : undefined}
-            undoDisabled={run?.status === "running"}
-          />
-        </div>
+            <MarkdownMessageActions
+              alwaysVisible={alwaysVisible}
+              markdown={comment.body}
+              onUndo={onUndo ? () => onUndo(comment) : undefined}
+              undoDisabled={run?.status === "running"}
+            />
+          </div>
         )}
       </div>
       <div className="absolute top-0 -right-10">
@@ -1028,7 +1057,8 @@ function SpecialistConsultation({
   const name = activity.agentName ?? "Specialist"
   const appearance = specialistAgentAppearanceByName(activity.agentName)
   const effect = appearance ?? fallbackSpecialistAppearance
-  const running = activity.status === "running" && props.run.status === "running"
+  const running =
+    activity.status === "running" && props.run.status === "running"
   const steps = `${threadIds.length} ${threadIds.length === 1 ? "step" : "steps"}`
   const status = running
     ? `Working · ${steps}`
@@ -1328,7 +1358,8 @@ function AgentActivityDetailLeafItem({
 
 // Specialist agents show their own avatar instead of a tool icon.
 function specialistAvatar(activity: UserStoryAgentActivity) {
-  if (activity.kind !== "tool" || !specialistTool(activity.toolName)) return undefined
+  if (activity.kind !== "tool" || !specialistTool(activity.toolName))
+    return undefined
   const name = activity.agentName ?? "Agent"
   const avatar =
     activity.agentAvatar ??
@@ -1387,14 +1418,6 @@ function activityIsRunning(
     activity.id === runningToolActivityId
   )
 }
-
-
-
-
-
-
-
-
 
 function AgentMarkdownTimelineItem({
   alwaysVisible,
@@ -1457,7 +1480,10 @@ function AgentMarkdownTimelineItem({
 
   return (
     <div
-      className={cn("group/message relative min-w-0", entering && "chat-enter-agent")}
+      className={cn(
+        "group/message relative min-w-0",
+        entering && "chat-enter-agent"
+      )}
       data-agent-response
     >
       {avatar ? <div className="absolute top-0 -left-10">{avatar}</div> : null}
@@ -1543,7 +1569,10 @@ function AgentErrorTimelineItem({
   const entering = useEnterAnimation(createdAt)
   return (
     <div
-      className={cn("group/message grid min-w-0 gap-2", entering && "chat-enter-agent")}
+      className={cn(
+        "group/message grid min-w-0 gap-2",
+        entering && "chat-enter-agent"
+      )}
       role="alert"
     >
       <div className="flex min-w-0 gap-3 rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-destructive shadow-sm">
@@ -1619,7 +1648,8 @@ function ModelSwitchNote({
       <span className="h-px flex-1 bg-border" />
       <span className="flex items-center gap-1.5">
         <ProviderMark provider={responseHeader.provider} />
-        Continued with {responseHeader.modelName ?? responseHeader.provider.name}
+        Continued with{" "}
+        {responseHeader.modelName ?? responseHeader.provider.name}
         {reasoning}
       </span>
       <span className="h-px flex-1 bg-border" />
@@ -1841,7 +1871,6 @@ function MarkdownActionTooltip({
   )
 }
 
-
 function agentDisplayActivities(run: AgentConversationRun) {
   const activities = run.activities ?? []
   const markdown = run.finalResponse?.trim()
@@ -2010,7 +2039,13 @@ function useEnterAnimation(createdAt: string | null | undefined) {
 
 // "Draft saved" appears once typing pauses: drafts are kept per conversation
 // and per story, so closing the app never loses what was being written.
-function DraftSavedHint({ hidden, message }: { hidden?: boolean; message: string }) {
+function DraftSavedHint({
+  hidden,
+  message,
+}: {
+  hidden?: boolean
+  message: string
+}) {
   const [saved, setSaved] = React.useState(false)
   const hasText = Boolean(message.trim())
   React.useEffect(() => {
@@ -2026,7 +2061,7 @@ function DraftSavedHint({ hidden, message }: { hidden?: boolean; message: string
     <span
       aria-live="polite"
       className={cn(
-        "pointer-events-none absolute left-5 bottom-full z-10 mb-1.5 flex items-center gap-1 text-[11px] text-muted-foreground transition-opacity duration-300",
+        "pointer-events-none absolute bottom-full left-5 z-10 mb-1.5 flex items-center gap-1 text-[11px] text-muted-foreground transition-opacity duration-300",
         saved && hasText && !hidden ? "opacity-100" : "opacity-0"
       )}
     >
