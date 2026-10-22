@@ -40,10 +40,16 @@ type AgentRecord = AgentPreviewBrowser & {
 
 export const agentPreviewViewport = { height: 900, width: 1440 };
 const agentPreviewIdleMs = 10 * 60_000;
+// While a run that used the browser is going, it may spend a long time
+// editing code between two looks; the browser stays open for it, up to this
+// long without a call in case the run never reports its end.
+const agentPreviewHeldIdleMs = 60 * 60_000;
 const agentPreviewLoadTimeoutMs = 30_000;
 const agentPreviewProbeTimeoutMs = 2_000;
 const agentPreviewFrameRate = 30;
 const agents = new Map<string, AgentRecord>();
+// Agent sessions currently using each scope's browser.
+const holders = new Map<string, Set<string>>();
 
 export function agentPreviewBrowser(scope: string) {
   const record = agents.get(scope);
@@ -64,6 +70,26 @@ export async function ensureAgentPreviewBrowser(
   agents.set(scope, record);
   await record.ready;
   return record;
+}
+
+// A session is using this scope's browser: keep it open until the session
+// ends, so a long run does not lose its page, emulation and history.
+export function holdAgentPreviewBrowser(scope: string, sessionId: string) {
+  const sessions = holders.get(scope) ?? new Set<string>();
+  sessions.add(sessionId);
+  holders.set(scope, sessions);
+  const record = agents.get(scope);
+  if (record) restartIdleTimer(record);
+}
+
+// The session's run ended; its browsers fall back to the normal idle delay.
+export function releaseAgentPreviewSession(sessionId: string) {
+  for (const [scope, sessions] of holders) {
+    if (!sessions.delete(sessionId)) continue;
+    if (!sessions.size) holders.delete(scope);
+    const record = agents.get(scope);
+    if (record) restartIdleTimer(record);
+  }
 }
 
 export function destroyAgentPreviewBrowser(scope: string) {
@@ -176,7 +202,9 @@ function restartIdleTimer(record: AgentRecord) {
   if (record.idleTimer) clearTimeout(record.idleTimer);
   record.idleTimer = setTimeout(
     () => destroyAgentPreviewBrowser(record.scope),
-    agentPreviewIdleMs,
+    holders.get(record.scope)?.size
+      ? agentPreviewHeldIdleMs
+      : agentPreviewIdleMs,
   );
   record.idleTimer.unref?.();
 }

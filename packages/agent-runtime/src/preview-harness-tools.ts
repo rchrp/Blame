@@ -161,23 +161,18 @@ export async function previewDevtoolsMcpTools(
 ): Promise<AgentTool[]> {
   if (!preview.scope || !mcpAvailable(options)) return [];
   try {
-    const tools: AgentTool[] = await createMcpTools({
+    // The desktop service sets each call's timeout (the wait asked for,
+    // emulated slowdown); the agent waits past its ceiling, so it reads the
+    // service's timeout message instead of cutting the call itself.
+    return await createMcpTools({
       maxRetries: 0,
       nameTransform: ({ toolName }: { toolName: string }) =>
         `preview_devtools__${toolName}`,
       provider: previewMcpProvider(options, preview),
       retryable: false,
       serverName: "preview-devtools",
-      timeoutMs: previewDevtoolsAgentTimeoutMs(""),
+      timeoutMs: previewDevtoolsAgentTimeoutMs(),
     });
-    // Slow diagnostics get more time; the agent always waits longer than
-    // the desktop service, so it reads the service's timeout message.
-    return tools.map((tool: AgentTool) => ({
-      ...tool,
-      timeoutMs: previewDevtoolsAgentTimeoutMs(
-        tool.name.slice("preview_devtools__".length),
-      ),
-    }));
   } catch (error) {
     logger.log("Preview DevTools MCP tools unavailable", {
       error: errorMessage(error),
@@ -255,15 +250,26 @@ async function callPreviewTool(
     ...(sessionId ? { sessionId } : {}),
     ...(context?.toolCallId ? { toolCallId: context.toolCallId } : {}),
   };
+  const failureKey = sessionId ?? preview.scope ?? "";
   try {
-    return await options.previewDevtoolsCall!(input);
+    const result = await options.previewDevtoolsCall!(input);
+    transientFailures.delete(failureKey);
+    return result;
   } catch (error) {
     if (!transientDevtoolsFailure(error) || signal?.aborted) throw error;
-    return previewToolUnavailableResult(error);
+    const count = (transientFailures.get(failureKey) ?? 0) + 1;
+    transientFailures.set(failureKey, count);
+    return previewToolUnavailableResult(error, count < maxTransientRetries + 1);
   }
 }
 
-function previewToolUnavailableResult(error: unknown) {
+// The desktop resets the browser connection after a timeout or a dropped
+// connection, so the next call usually works. One retry is worth it; after
+// that the browser is likely down for this run.
+const maxTransientRetries = 1;
+const transientFailures = new Map<string, number>();
+
+function previewToolUnavailableResult(error: unknown, retryable: boolean) {
   return {
     content: [
       {
@@ -274,9 +280,10 @@ function previewToolUnavailableResult(error: unknown) {
     isError: false,
     outcome: "unavailable",
     reason: "PREVIEW_DEVTOOLS_TRANSIENT_FAILURE",
-    recommendation:
-      "Continue with local validation. Retry browser inspection only after managed preview state changes; do not start replacement infrastructure.",
-    retryable: false,
+    recommendation: retryable
+      ? "The browser connection was reset. Retry this call once, with a shorter wait if it ran out of time. If it fails the same way again, continue with local validation and report the limitation."
+      : "Continue with local validation. Retry browser inspection only after managed preview state changes; do not start replacement infrastructure.",
+    retryable,
   };
 }
 
@@ -313,7 +320,7 @@ function previewEvidenceUnavailableResult() {
 }
 
 function transientDevtoolsFailure(error: unknown) {
-  return /econnreset|navigation|session closed|target closed|temporar|timed?\s*out|(?:connection|transport|channel) (?:closed|disconnected)|not connected|server (?:closed|disconnected|terminated)|scoped preview page is no longer available/iu.test(
+  return /econnreset|navigation|session closed|target closed|temporar|timed?\s*out|did not finish|(?:connection|transport|channel) (?:closed|disconnected)|not connected|server (?:closed|disconnected|terminated)|scoped preview page is no longer available/iu.test(
     errorMessage(error),
   );
 }

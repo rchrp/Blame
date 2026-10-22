@@ -28,14 +28,21 @@ import {
   runtimeManagedPath,
 } from "../workspace-runtime.ts";
 import {
+  previewDevtoolsBoundedArguments,
   previewDevtoolsToolAllowed,
   previewDevtoolsToolTimeoutMs,
 } from "@blame/agent-runtime";
+import {
+  PreviewDevtoolsPageState,
+  type PreviewReconnectReason,
+} from "./preview-devtools-page-state.ts";
 import toolCatalog from "./preview-devtools-tool-catalog.json" with { type: "json" };
 
 export type PreviewDevtoolsEndpoint = {
   close(): Promise<void>;
   closed: Promise<void>;
+  // Where the agent's page is now.
+  pageUrl?(): string;
   wsEndpoint: string;
 };
 
@@ -70,6 +77,7 @@ type McpConnection = {
   close(): Promise<void>;
   closed: boolean;
   onClosed?: () => void;
+  pageUrl?(): string;
   tools: PreviewDevtoolsMcpTool[];
   workspace?: string;
 };
@@ -82,7 +90,11 @@ type PendingConnection = {
   abortController: AbortController;
   closed: boolean;
   connection: Promise<McpConnection>;
+  // Told to the agent with the first result after a reconnection.
+  notice?: string;
   pageIdentity?: string;
+  reconnected?: PreviewReconnectReason;
+  restored?: Promise<void>;
   worktree: string;
 };
 
@@ -132,6 +144,7 @@ const require = createRequire(import.meta.url);
 export class PreviewDevtoolsMcpService {
   private readonly connections = new Map<string, PendingConnection>();
   private readonly createConnection: CreateMcpConnection;
+  private readonly pageState = new PreviewDevtoolsPageState();
 
   constructor(createConnection: CreateMcpConnection = createMcpConnection) {
     this.createConnection = createConnection;
@@ -156,20 +169,63 @@ export class PreviewDevtoolsMcpService {
       throw new Error(
         `Preview DevTools tool ${input.toolName} is an advanced diagnostic. It is available once Advanced browser diagnostics is turned on for this project in Settings.`,
       );
+    const pending = this.connection(input);
     const connection = await waitForConnection(
-      this.connection(input),
+      pending.connection,
       input.signal,
     );
     const tool = connection.tools.find(({ name }) => name === input.toolName);
     if (!tool || hiddenPageTools.has(tool.name)) {
       throw unavailableToolError(input.toolName);
     }
+    const scope = input.scope.trim();
+    await waitForConnection(
+      (pending.restored ??= this.restore(pending, connection, input)),
+      input.signal,
+    );
+    const notice = pending.notice;
+    pending.notice = undefined;
+    const argumentsValue = previewDevtoolsBoundedArguments(
+      tool.name,
+      await previewToolArguments(connection, tool, input),
+    );
+    const timeout = previewDevtoolsToolTimeoutMs(tool.name, {
+      arguments: argumentsValue,
+      slowdown: this.pageState.slowdown(scope),
+    });
     try {
-      return await callPreviewTool(connection, tool, input);
+      const result = await callMcpTool(
+        connection.client,
+        tool.name,
+        argumentsValue,
+        input.signal,
+        timeout,
+      );
+      this.pageState.record(
+        scope,
+        tool.name,
+        argumentsValue,
+        result,
+        connection.pageUrl?.(),
+      );
+      return notice ? withNotice(result, notice) : result;
     } catch (error) {
-      if (!input.signal?.aborted && mcpConnectionUnavailable(error)) {
-        this.disposeScope(input.scope);
-      }
+      // chrome-devtools-mcp runs one tool at a time and does not stop a
+      // tool its client gave up on. A fresh connection frees the browser
+      // for the next call instead of queueing it behind the stuck one.
+      const reason: PreviewReconnectReason | undefined = input.signal?.aborted
+        ? "cancelled"
+        : mcpTimedOut(error)
+          ? "timeout"
+          : mcpConnectionUnavailable(error)
+            ? "connection"
+            : undefined;
+      if (reason) this.disposeScope(scope, reason);
+      if (reason === "timeout")
+        throw new Error(
+          `Preview DevTools ${tool.name} did not finish within ${Math.round(timeout / 1000)} s. The browser connection was reset so the next call starts clean; the page keeps its address and emulation.`,
+          { cause: error },
+        );
       throw error;
     }
   }
@@ -183,10 +239,11 @@ export class PreviewDevtoolsMcpService {
     );
   }
 
-  disposeScope(scope: string) {
+  disposeScope(scope: string, reason: PreviewReconnectReason = "preview") {
     const normalized = scope.trim();
     const pending = this.connections.get(normalized);
     if (!pending) return;
+    this.pageState.closed(normalized, reason);
     this.connections.delete(normalized);
     pending.abortController.abort();
     void pending.connection.then(({ close }) => close()).catch(() => undefined);
@@ -202,8 +259,9 @@ export class PreviewDevtoolsMcpService {
       current.worktree === worktree &&
       current.pageIdentity === input.pageIdentity
     )
-      return current.connection;
+      return current;
     if (current) {
+      this.pageState.closed(scope, current.closed ? "browser" : "replaced");
       current.abortController.abort();
       void current.connection
         .then(({ close }) => close())
@@ -221,14 +279,18 @@ export class PreviewDevtoolsMcpService {
       closed: false,
       connection,
       pageIdentity: input.pageIdentity,
+      reconnected: this.pageState.opened(scope),
       worktree,
+    };
+    const ended = () => {
+      pending.closed = true;
+      if (this.connections.get(scope) === pending)
+        this.pageState.closed(scope, "browser");
     };
     void connection.then(
       (value) => {
-        value.onClosed = () => {
-          pending.closed = true;
-        };
-        if (value.closed) pending.closed = true;
+        value.onClosed = ended;
+        if (value.closed) ended();
       },
       () => undefined,
     );
@@ -237,24 +299,55 @@ export class PreviewDevtoolsMcpService {
       if (this.connections.get(scope) === pending)
         this.connections.delete(scope);
     });
-    return connection;
+    return pending;
+  }
+
+  // After a reconnection, put back the viewport, emulation and page the
+  // agent had, before its call runs.
+  private async restore(
+    pending: PendingConnection,
+    connection: McpConnection,
+    input: PreviewDevtoolsMcpCall,
+  ) {
+    if (!pending.reconnected) return;
+    const scope = input.scope.trim();
+    pending.notice = await this.pageState.restore(
+      scope,
+      pending.reconnected,
+      (toolName, value) => {
+        const argumentsValue = { ...value };
+        if (toolName === "navigate_page")
+          scopeNavigation(input, argumentsValue);
+        return callMcpTool(
+          connection.client,
+          toolName,
+          argumentsValue,
+          input.signal,
+          previewDevtoolsToolTimeoutMs(toolName, {
+            arguments: argumentsValue,
+            slowdown: this.pageState.slowdown(scope),
+          }),
+        );
+      },
+      {
+        origin: input.previewOrigin ?? originOf(input.currentUrl),
+        url: connection.pageUrl?.(),
+      },
+    );
   }
 }
 
-async function callPreviewTool(
-  connection: McpConnection,
-  tool: PreviewDevtoolsMcpTool,
-  input: PreviewDevtoolsMcpCall,
-) {
-  // The proxy exposes a single page, so tools act on it without routing.
-  const argumentsValue = await previewToolArguments(connection, tool, input);
-  return callMcpTool(
-    connection.client,
-    tool.name,
-    argumentsValue,
-    input.signal,
-    previewDevtoolsToolTimeoutMs(tool.name),
-  );
+function withNotice(result: unknown, notice: string) {
+  if (!result || typeof result !== "object" || Array.isArray(result))
+    return result;
+  const value = result as { content?: unknown };
+  return {
+    ...value,
+    content: [
+      { type: "text", text: notice },
+      ...(Array.isArray(value.content) ? value.content : []),
+    ],
+  };
 }
 
 async function previewToolArguments(
@@ -538,6 +631,7 @@ async function createMcpConnection(input: PreviewDevtoolsMcpContext) {
       client,
       close: () => closeMcpConnection(client, artifacts, endpoint),
       closed: false,
+      ...(endpoint.pageUrl ? { pageUrl: endpoint.pageUrl } : {}),
       tools: tools.filter(exposedTool),
       ...(workspace ? { workspace } : {}),
     };
@@ -675,6 +769,17 @@ function mcpConnectionUnavailable(error: unknown) {
     ) {
       return true;
     }
+    current = current.cause;
+  }
+  return false;
+}
+
+function mcpTimedOut(error: unknown) {
+  let current = error;
+  for (let depth = 0; depth < 3 && current instanceof Error; depth += 1) {
+    // The MCP SDK's RequestTimeout error code.
+    if ((current as { code?: unknown }).code === -32001) return true;
+    if (/request timed out/iu.test(current.message)) return true;
     current = current.cause;
   }
   return false;

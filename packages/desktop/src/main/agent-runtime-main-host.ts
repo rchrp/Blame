@@ -6,6 +6,7 @@ import { promisify } from "node:util";
 import type { AgentHostMethod } from "./agent-runtime-process-protocol.ts";
 import {
   agentPreviewPageState,
+  holdAgentPreviewBrowser,
   openPreviewDevtoolsEndpoint,
   reloadPreviewBrowserForScope,
 } from "./preview-browser-ipc.ts";
@@ -195,6 +196,9 @@ async function previewDevtoolsCall(
     return unavailablePreviewDevtoolsResult(preview);
   }
   const scope = String(request.scope ?? "");
+  const sessionId = optionalText(request.sessionId);
+  if (sessionId && scope.trim())
+    holdAgentPreviewBrowser(scope.trim(), sessionId);
   const result = await devtools.call({
     advanced: await advancedDiagnostics(request.projectId),
     arguments: recordInput(request.arguments),

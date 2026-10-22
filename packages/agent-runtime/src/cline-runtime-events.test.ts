@@ -12,6 +12,7 @@ import { join } from "node:path";
 import test from "node:test";
 import { currentWorkspaceRevisionState } from "./harness/workspace-revisions.js";
 import { previewInitializationRepairTool } from "./preview-harness-tools.js";
+import { previewDevtoolsAgentTimeoutMs } from "./preview-devtools-policy.js";
 
 import type { ClineCoreStartInput, CoreSessionEvent } from "@cline/sdk";
 import { ClineFreeModelLimitError, ClineNotSubscribedError } from "@cline/llms";
@@ -625,7 +626,7 @@ test("starts development sessions with native skills and private specialist cons
         (tool: { name: string }) =>
           tool.name === "preview_devtools__take_snapshot",
       )?.timeoutMs,
-      20_000,
+      previewDevtoolsAgentTimeoutMs(),
     );
     const previewContext = { signal: new AbortController().signal } as never;
     const previewState = await capturedStart.config.extraTools

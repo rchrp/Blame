@@ -26,7 +26,11 @@ export {
   openPreviewDevtoolsEndpoint,
 } from "./preview-browser/preview-browser-manager";
 export type { PreviewDevtoolsTarget } from "./preview-browser/preview-browser-manager";
-export { agentPreviewPageState } from "./preview-browser/agent-preview-browser";
+export {
+  agentPreviewPageState,
+  holdAgentPreviewBrowser,
+  releaseAgentPreviewSession,
+} from "./preview-browser/agent-preview-browser";
 
 export function registerPreviewBrowserIpcHandlers(
   options: {

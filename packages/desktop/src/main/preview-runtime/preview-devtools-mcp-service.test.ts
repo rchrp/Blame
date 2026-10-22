@@ -228,13 +228,15 @@ test("a completed tool signal does not own the persistent connection", async () 
   await service.dispose();
 });
 
-test("keeps the scoped connection after a tool timeout", async () => {
+test("a tool timeout resets the connection so the next call starts clean", async () => {
   let connectionCount = 0;
   let snapshots = 0;
   const service = previewServiceWithClient(
     async (request) => {
       if (request.name === "take_snapshot" && snapshots++ === 0) {
-        throw new Error("Request timed out");
+        throw Object.assign(new Error("MCP error -32001: Request timed out"), {
+          code: -32001,
+        });
       }
       return { content: [{ type: "text", text: "ok" }] };
     },
@@ -243,16 +245,239 @@ test("keeps the scoped connection after a tool timeout", async () => {
     },
   );
 
+  // chrome-devtools-mcp keeps running a tool its client gave up on, and
+  // runs one tool at a time: reusing it would queue the next call.
   await assert.rejects(
     service.call({ ...previewInput(), toolName: "take_snapshot" }),
-    /take_snapshot failed: Request timed out/u,
+    /take_snapshot did not finish within 15 s\. The browser connection was reset/u,
+  );
+  const next = (await service.call({
+    ...previewInput(),
+    toolName: "list_console_messages",
+  })) as { content: Array<{ text: string }> };
+
+  assert.equal(connectionCount, 2);
+  assert.match(
+    next.content[0].text,
+    /reconnected after the previous call ran out of time/u,
+  );
+  await service.dispose();
+});
+
+test("a call cancelled while running resets the connection", async () => {
+  let connectionCount = 0;
+  const service = previewServiceWithClient(
+    (request, signal) =>
+      request.name === "take_snapshot"
+        ? new Promise((_resolve, reject) =>
+            signal?.addEventListener("abort", () =>
+              reject(new Error("This operation was aborted")),
+            ),
+          )
+        : Promise.resolve({ content: [] }),
+    () => {
+      connectionCount += 1;
+    },
+  );
+  const controller = new AbortController();
+  const running = service.call({
+    ...previewInput(),
+    signal: controller.signal,
+    toolName: "take_snapshot",
+  });
+  await new Promise((resolve) => setTimeout(resolve, 10));
+  controller.abort();
+  await assert.rejects(running);
+  await service.call({ ...previewInput(), toolName: "list_console_messages" });
+  assert.equal(connectionCount, 2);
+  await service.dispose();
+});
+
+test("waits the agent asks for and emulated slowdown stretch the call timeout", async () => {
+  const calls: Array<{
+    name: string;
+    timeout: number;
+    arguments?: Record<string, unknown>;
+  }> = [];
+  const service = previewServiceWithClient(
+    async (request, _signal, timeout) => {
+      calls.push({ ...request, timeout: timeout! });
+      return { content: [] };
+    },
+    undefined,
+    ["wait_for", "emulate", "click"],
   );
   await service.call({
     ...previewInput(),
-    toolName: "list_console_messages",
+    arguments: { text: ["Saved"], timeout: 40_000 },
+    toolName: "wait_for",
   });
+  await service.call({
+    ...previewInput(),
+    arguments: { text: ["Saved"], timeout: 3_600_000 },
+    toolName: "wait_for",
+  });
+  await service.call({
+    ...previewInput(),
+    arguments: { cpuThrottlingRate: 4 },
+    toolName: "emulate",
+  });
+  await service.call({ ...previewInput(), toolName: "click" });
+  assert.equal(calls[0].timeout, 45_000);
+  // A wait past the ceiling is shortened before it reaches the browser.
+  assert.equal(calls[1].arguments?.timeout, 295_000);
+  assert.equal(calls[1].timeout, 300_000);
+  assert.equal(calls[3].timeout, 60_000);
+  await service.dispose();
+});
 
-  assert.equal(connectionCount, 1);
+test("a new connection restores the viewport, emulation and page, then says so", async () => {
+  const calls: Array<{
+    connection: number;
+    name: string;
+    arguments?: Record<string, unknown>;
+  }> = [];
+  const connections: Array<{ closed: boolean; onClosed?: () => void }> = [];
+  let pageUrl = "http://127.0.0.1:3000/";
+  const service = new PreviewDevtoolsMcpService(async () => {
+    const index = connections.length;
+    const connection = {
+      artifacts: "/tmp/blame-preview-devtools-test",
+      client: {
+        callTool: async (request: {
+          name: string;
+          arguments?: Record<string, unknown>;
+        }) => {
+          calls.push({ connection: index, ...request });
+          if (request.name === "navigate_page")
+            pageUrl = String(request.arguments?.url);
+          return { content: [{ type: "text", text: request.name }] };
+        },
+      } as never,
+      close: async () => undefined,
+      closed: false,
+      onClosed: undefined as (() => void) | undefined,
+      pageUrl: () => pageUrl,
+      tools: ["emulate", "resize_page", "navigate_page", "take_snapshot"].map(
+        tool,
+      ),
+    };
+    connections.push(connection);
+    return connection;
+  });
+  const input = { ...previewInput(), previewOrigin: "http://127.0.0.1:3000" };
+  await service.call({
+    ...input,
+    arguments: { width: 941, height: 620 },
+    toolName: "resize_page",
+  });
+  await service.call({
+    ...input,
+    arguments: { colorScheme: "dark", extraHttpHeaders: '{"X-Test":"1"}' },
+    toolName: "emulate",
+  });
+  // Headers persist when a later emulate omits them; the rest is replaced.
+  await service.call({
+    ...input,
+    arguments: { colorScheme: "dark", cpuThrottlingRate: 2 },
+    toolName: "emulate",
+  });
+  await service.call({
+    ...input,
+    arguments: { type: "url", url: "/settings" },
+    toolName: "navigate_page",
+  });
+  const first = (await service.call({
+    ...input,
+    toolName: "take_snapshot",
+  })) as {
+    content: Array<{ text: string }>;
+  };
+  assert.equal(first.content.length, 1);
+
+  // The browser reopens on the preview's home page.
+  pageUrl = "http://127.0.0.1:3000/";
+  connections[0].closed = true;
+  connections[0].onClosed?.();
+  const restored = (await service.call({
+    ...input,
+    toolName: "take_snapshot",
+  })) as {
+    content: Array<{ text: string }>;
+  };
+  assert.deepEqual(
+    calls
+      .filter(({ connection }) => connection === 1)
+      .map(({ name, arguments: value }) => [name, value]),
+    [
+      ["resize_page", { width: 941, height: 620 }],
+      [
+        "emulate",
+        {
+          colorScheme: "dark",
+          cpuThrottlingRate: 2,
+          extraHttpHeaders: '{"X-Test":"1"}',
+        },
+      ],
+      ["navigate_page", { type: "url", url: "http://127.0.0.1:3000/settings" }],
+      ["take_snapshot", {}],
+    ],
+  );
+  assert.match(
+    restored.content[0].text,
+    /^Note: the browser was reconnected because the preview browser closed .* Restored: viewport 941×620, emulation \(dark color scheme, CPU 2× slower, extra headers\), page \/settings\.$/u,
+  );
+  assert.equal(restored.content[1].text, "take_snapshot");
+  // Only the first result after the reconnection carries the note.
+  const later = (await service.call({
+    ...input,
+    toolName: "take_snapshot",
+  })) as {
+    content: Array<{ text: string }>;
+  };
+  assert.equal(later.content.length, 1);
+  await service.dispose();
+});
+
+test("a failed emulate does not replace the emulation to restore", async () => {
+  const calls: string[] = [];
+  const connections: Array<{ closed: boolean; onClosed?: () => void }> = [];
+  const service = new PreviewDevtoolsMcpService(async () => {
+    const connection = {
+      artifacts: "/tmp/blame-preview-devtools-test",
+      client: {
+        callTool: async (request: {
+          name: string;
+          arguments?: Record<string, unknown>;
+        }) => {
+          calls.push(`${request.name} ${JSON.stringify(request.arguments)}`);
+          return request.arguments?.colorScheme === "sepia"
+            ? { content: [{ type: "text", text: "invalid" }], isError: true }
+            : { content: [] };
+        },
+      } as never,
+      close: async () => undefined,
+      closed: false,
+      onClosed: undefined as (() => void) | undefined,
+      tools: ["emulate", "take_snapshot"].map(tool),
+    };
+    connections.push(connection);
+    return connection;
+  });
+  await service.call({
+    ...previewInput(),
+    arguments: { colorScheme: "dark" },
+    toolName: "emulate",
+  });
+  await service.call({
+    ...previewInput(),
+    arguments: { colorScheme: "sepia" },
+    toolName: "emulate",
+  });
+  connections[0].closed = true;
+  connections[0].onClosed?.();
+  await service.call({ ...previewInput(), toolName: "take_snapshot" });
+  assert.equal(calls.at(-2), 'emulate {"colorScheme":"dark"}');
   await service.dispose();
 });
 
@@ -413,10 +638,14 @@ test("each tool gets its own timeout", async () => {
 });
 
 function previewServiceWithClient(
-  callTool: (request: {
-    name: string;
-    arguments?: Record<string, unknown>;
-  }) => Promise<unknown>,
+  callTool: (
+    request: {
+      name: string;
+      arguments?: Record<string, unknown>;
+    },
+    signal?: AbortSignal,
+    timeout?: number,
+  ) => Promise<unknown>,
   connected?: (signal: AbortSignal | undefined) => void,
   names = ["take_snapshot", "list_console_messages"],
 ) {
@@ -424,7 +653,13 @@ function previewServiceWithClient(
     connected?.(input.signal);
     return {
       artifacts: "/tmp/blame-preview-devtools-test",
-      client: { callTool } as never,
+      client: {
+        callTool: (
+          request: { name: string; arguments?: Record<string, unknown> },
+          _schema: unknown,
+          options: { signal?: AbortSignal; timeout?: number } = {},
+        ) => callTool(request, options.signal, options.timeout),
+      } as never,
       close: async () => undefined,
       closed: false,
       tools: names.map(tool),
@@ -454,3 +689,37 @@ function schemaHasPageId(schema: Record<string, unknown>) {
 function schemaRequiresPageId(schema: Record<string, unknown>) {
   return Array.isArray(schema.required) && schema.required.includes("pageId");
 }
+
+test("an error page is not remembered as the page to restore", async () => {
+  const calls: string[] = [];
+  const connections: Array<{ closed: boolean; onClosed?: () => void }> = [];
+  let pageUrl = "http://127.0.0.1:3000/settings";
+  const service = new PreviewDevtoolsMcpService(async () => {
+    const connection = {
+      artifacts: "/tmp/blame-preview-devtools-test",
+      client: {
+        callTool: async (request: { name: string }) => {
+          calls.push(request.name);
+          return { content: [] };
+        },
+      } as never,
+      close: async () => undefined,
+      closed: false,
+      onClosed: undefined as (() => void) | undefined,
+      pageUrl: () => pageUrl,
+      tools: ["navigate_page", "take_snapshot"].map(tool),
+    };
+    connections.push(connection);
+    return connection;
+  });
+  const input = { ...previewInput(), previewOrigin: "http://127.0.0.1:3000" };
+  await service.call({ ...input, toolName: "take_snapshot" });
+  pageUrl = "chrome-error://chromewebdata/";
+  await service.call({ ...input, toolName: "take_snapshot" });
+  pageUrl = "http://127.0.0.1:3000/";
+  connections[0].closed = true;
+  connections[0].onClosed?.();
+  await service.call({ ...input, toolName: "take_snapshot" });
+  assert.deepEqual(calls.slice(2), ["navigate_page", "take_snapshot"]);
+  await service.dispose();
+});

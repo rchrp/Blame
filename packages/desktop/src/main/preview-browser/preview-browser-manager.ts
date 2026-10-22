@@ -96,7 +96,7 @@ export async function openPreviewDevtoolsEndpoint(input: { scope: string }) {
   const agent = await ensureAgentPreviewBrowser(scope, source);
   if (agent.destroyed)
     throw new Error("The agent preview browser closed while opening.");
-  return startPreviewCdpProxy(
+  const proxy = await startPreviewCdpProxy(
     electronCdpDebuggee(agent.webContents, {
       activity: agent.touch,
       viewport: {
@@ -108,6 +108,11 @@ export async function openPreviewDevtoolsEndpoint(input: { scope: string }) {
     }),
     previewNavigationPolicy(source.previewOrigin),
   );
+  return {
+    ...proxy,
+    pageUrl: () =>
+      agent.webContents.isDestroyed() ? "" : agent.webContents.getURL(),
+  };
 }
 
 function scopedPreviewRecord(scope: string) {

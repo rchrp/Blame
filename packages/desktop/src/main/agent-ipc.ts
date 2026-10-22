@@ -10,6 +10,7 @@ import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import log from "electron-log";
 import { excludeComponentPreviewFiles } from "./component-preview-exclude";
+import { releaseAgentPreviewSession } from "./preview-browser-ipc";
 import { optimizeDevelopmentAttachments } from "./attachment-ai-context";
 import {
   refreshRuntimeBackendConnection,
@@ -516,6 +517,7 @@ function agentRuntime() {
 function emitAgentEvent(event: AgentEvent) {
   if (event.sessionId && (event.type === "done" || event.type === "error")) {
     agentWorkspaceWriters.end(event.sessionId);
+    releaseAgentPreviewSession(event.sessionId);
   }
   const rawTransportEvent = agentTransportEvent(event);
   const transportEvent =

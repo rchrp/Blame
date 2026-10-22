@@ -21,6 +21,7 @@
     "test:deploy": "pnpm run build:workspace-dependencies && node --test --experimental-strip-types src/main/deploy/deploy-source.test.ts",
     "test:agent-process": "electron scripts/agent-runtime-process-smoke.mjs",
     "test:preview-devtools": "electron --experimental-strip-types scripts/preview-devtools-smoke.mjs",
+    "test:preview-devtools-robustness": "electron --experimental-strip-types scripts/preview-devtools-robustness-smoke.mjs",
     "test:appimage-run-task": "node scripts/appimage-run-task-smoke.mjs",
     "test:performance": "pnpm run build:workspace-dependencies && node --test --experimental-strip-types src/main/agent-event-stream.test.ts src/main/preview-browser-partition.test.ts src/main/preview-browser/preview-navigation-policy.test.ts src/main/preview-browser/preview-route-table.test.ts src/main/preview-runtime/cloud-preview-client.test.ts src/main/preview-runtime/local/local-preview-driver.test.ts src/main/preview-runtime/local/local-preview-lifecycle.test.ts src/main/workspaces/workspace-artifact.test.ts src/main/workspaces/workspace-delta.test.ts src/main/workspaces/workspace-sync-service.test.ts src/main/workspaces/workspace-writer-registry.test.ts",
     "typecheck": "tsc --noEmit",
