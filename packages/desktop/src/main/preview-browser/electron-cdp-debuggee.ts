@@ -2,9 +2,15 @@ import type { WebContents } from "electron";
 import type { CdpDebuggee } from "./preview-cdp-proxy.ts";
 export { previewNavigationPolicy } from "./preview-navigation-policy.ts";
 
+type Size = { height: number; width: number };
+
 type ElectronDebuggeeOptions = {
-  contentSize(): { height: number; width: number };
-  setContentSize?(width: number, height: number): Promise<void> | void;
+  activity?(): void;
+  contentSize?(): Size;
+  // An emulated viewport at scale 1, applied on attach and restored when
+  // emulation is cleared. Captures then have the requested size whatever
+  // screen the hidden window would be clamped to, and whatever its density.
+  viewport?: { get(): Size; set(size: Size): void };
 };
 
 // Only one proxy may drive a page's debugger at a time. A new connection
@@ -41,13 +47,20 @@ export function electronCdpDebuggee(
         const { targetInfo } = (await debuggerApi.sendCommand(
           "Target.getTargetInfo",
         )) as { targetInfo: { targetId: string } };
+        if (options.viewport)
+          await debuggerApi.sendCommand(
+            "Emulation.setDeviceMetricsOverride",
+            baselineMetrics(options.viewport.get()),
+          );
         return { targetId: targetInfo.targetId };
       } catch (error) {
         release();
         throw error;
       }
     },
-    contentSize: options.contentSize,
+    contentSize: () =>
+      options.viewport?.get() ??
+      options.contentSize?.() ?? { height: 0, width: 0 },
     detach: release,
     onDetach(listener) {
       const detached = () => {
@@ -76,10 +89,29 @@ export function electronCdpDebuggee(
     },
     sendCommand(method, params, sessionId) {
       if (!attached) return Promise.reject(new Error("Target closed"));
+      options.activity?.();
+      if (
+        method === "Emulation.clearDeviceMetricsOverride" &&
+        !sessionId &&
+        options.viewport
+      )
+        return debuggerApi.sendCommand(
+          "Emulation.setDeviceMetricsOverride",
+          baselineMetrics(options.viewport.get()),
+        );
       return debuggerApi.sendCommand(method, params, sessionId);
     },
-    ...(options.setContentSize
-      ? { setContentSize: options.setContentSize }
+    ...(options.viewport
+      ? {
+          async setContentSize(width: number, height: number) {
+            options.viewport!.set({ height, width });
+            if (attached)
+              await debuggerApi.sendCommand(
+                "Emulation.setDeviceMetricsOverride",
+                baselineMetrics({ height, width }),
+              );
+          },
+        }
       : {}),
     title: () => (webContents.isDestroyed() ? "" : webContents.getTitle()),
     url: () => (webContents.isDestroyed() ? "" : webContents.getURL()),
@@ -87,4 +119,8 @@ export function electronCdpDebuggee(
       webContents.isDestroyed() ? "" : webContents.getUserAgent(),
     versions: { chrome: process.versions.chrome, v8: process.versions.v8 },
   };
+}
+
+function baselineMetrics({ height, width }: Size) {
+  return { deviceScaleFactor: 1, height, mobile: false, width };
 }

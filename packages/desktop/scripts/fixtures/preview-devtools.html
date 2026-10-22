@@ -7,8 +7,14 @@
       body {
         margin: 48px;
         font: 24px system-ui;
-        background: #111827;
-        color: #f8fafc;
+        background: #f8fafc;
+        color: #111827;
+      }
+      @media (prefers-color-scheme: dark) {
+        body {
+          background: #111827;
+          color: #f8fafc;
+        }
       }
       button,
       #drop {
@@ -61,6 +67,7 @@
         requestAnimationFrame(frame);
       }
       requestAnimationFrame(frame);
+      console.log("preview smoke ready");
     </script>
   </body>
 </html>

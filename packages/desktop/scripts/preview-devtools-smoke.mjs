@@ -1,18 +1,33 @@
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
-import { mkdtemp, readFile, writeFile } from "node:fs/promises";
+import {
+  mkdtemp,
+  readFile,
+  readdir,
+  readlink,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { app, BrowserWindow, WebContentsView } from "electron";
+import { app, BrowserWindow, nativeImage, WebContentsView } from "electron";
 import { PreviewDevtoolsMcpService } from "../src/main/preview-runtime/preview-devtools-mcp-service.ts";
 import { electronCdpDebuggee } from "../src/main/preview-browser/electron-cdp-debuggee.ts";
 import { previewNavigationPolicy } from "../src/main/preview-browser/preview-navigation-policy.ts";
 import { startPreviewCdpProxy } from "../src/main/preview-browser/preview-cdp-proxy.ts";
+import {
+  agentPreviewViewport,
+  destroyAgentPreviewBrowser,
+  ensureAgentPreviewBrowser,
+} from "../src/main/preview-browser/agent-preview-browser.ts";
+
+// Drives chrome-devtools-mcp against the agent's offscreen browser while the
+// user's preview view stays hidden, through the scoped CDP proxy. No
+// Chromium debugging port is opened.
 
 const artifacts = await mkdtemp(join(tmpdir(), "blame-preview-smoke-"));
-const hidden = process.argv.includes("--hidden");
 app.setPath("userData", join(artifacts, "electron"));
 app.disableHardwareAcceleration();
+const partition = "persist:blame-preview-smoke";
 const service = new PreviewDevtoolsMcpService();
 const fixture = await readFile(
   new URL("./fixtures/preview-devtools.html", import.meta.url),
@@ -24,28 +39,13 @@ const server = createServer((_request, response) => {
 await listen(server);
 const currentUrl = `http://127.0.0.1:${server.address().port}/`;
 const previewOrigin = new URL(currentUrl).origin;
-const input = {
-  currentUrl,
-  openEndpoint: () =>
-    startPreviewCdpProxy(
-      electronCdpDebuggee(view.webContents, {
-        contentSize: () => {
-          const { height, width } = view.getBounds();
-          return { height, width };
-        },
-      }),
-      previewNavigationPolicy(previewOrigin),
-    ),
-  previewOrigin,
-  scope: "smoke",
-  worktree: artifacts,
-};
 const timeout = setTimeout(() => {
   console.error("Preview smoke timed out");
   app.exit(1);
-}, 90_000);
+}, 120_000);
 let owner;
-let view;
+let userView;
+let agent;
 const results = [];
 
 void app.whenReady().then(runSmoke);
@@ -54,13 +54,13 @@ async function runSmoke() {
   owner = new BrowserWindow({ show: true, width: 1200, height: 900 });
   try {
     await assertNoListeningPorts("before any DevTools session");
-    for (let iteration = 0; iteration < 3; iteration += 1)
-      await inspectRecreatedPage(iteration);
+    await openHiddenUserPreview();
+    for (let iteration = 0; iteration < 2; iteration += 1)
+      await inspectAgentBrowser(iteration);
     console.log(
       JSON.stringify({
         status: "passed",
         browser: process.versions.chrome,
-        hidden,
         artifacts,
         runs: results,
       }),
@@ -71,63 +71,91 @@ async function runSmoke() {
   } finally {
     clearTimeout(timeout);
     await service.dispose();
+    destroyAgentPreviewBrowser("smoke");
     owner.destroy();
     server.close();
     app.exit(process.exitCode ?? 0);
   }
 }
 
-async function inspectRecreatedPage(iteration) {
+async function openHiddenUserPreview() {
+  userView = new WebContentsView({
+    webPreferences: { partition, sandbox: true, contextIsolation: true },
+  });
+  owner.contentView.addChildView(userView);
+  userView.setBounds({ width: 0, height: 0, x: 0, y: 0 });
+  userView.setVisible(false);
+  await userView.webContents.loadURL(`${currentUrl}#user`);
+}
+
+// Each iteration recreates the agent browser, as the idle timeout does.
+async function inspectAgentBrowser(iteration) {
   const started = Date.now();
-  await recreatePage();
-  const pageIdentity = `browser-${iteration}`;
+  destroyAgentPreviewBrowser("smoke");
+  agent = await ensureAgentPreviewBrowser("smoke", {
+    initialUrl: currentUrl,
+    partition,
+    previewOrigin,
+  });
+  const input = {
+    currentUrl,
+    openEndpoint: () =>
+      startPreviewCdpProxy(
+        electronCdpDebuggee(agent.webContents, {
+          activity: agent.touch,
+          viewport: {
+            get: () => agent.viewport,
+            set: (size) => {
+              agent.viewport = size;
+            },
+          },
+        }),
+        previewNavigationPolicy(previewOrigin),
+      ),
+    pageIdentity: agent.id,
+    previewOrigin,
+    scope: "smoke",
+    worktree: artifacts,
+  };
   const call = (toolName, args) =>
-    service.call({ ...input, pageIdentity, toolName, arguments: args });
-  await service.prepare({ ...input, pageIdentity });
+    service.call({ ...input, toolName, arguments: args });
+  assert.equal(userView.getVisible(), false);
   assert.match(
     textContent(await call("take_snapshot")),
     /Preview inspection smoke/,
   );
-  const animationMs = await verifyInteractions(call);
+  const light = await screenshot(call, `light-${iteration}`);
+  assert.deepEqual(
+    [light.width, light.height],
+    [agentPreviewViewport.width, agentPreviewViewport.height],
+  );
+  assert.ok(
+    light.brightness > 200,
+    `light capture is too dark: ${light.brightness}`,
+  );
+  assertToolSuccess(
+    await call("evaluate_script", {
+      function: '() => console.warn("agent console check")',
+    }),
+  );
+  assert.match(
+    textContent(await call("list_console_messages")),
+    /agent console check/,
+  );
+  await verifyInteractions(call);
+  await verifyResize(call, iteration);
+  const dark = await verifyDarkMode(call, iteration);
   await verifyNavigationScope(call);
-  const screenshotBytes = await saveScreenshot(call, iteration);
-  assert.equal(view.webContents.getBackgroundThrottling(), true);
-  assert.equal(view.getVisible(), !hidden);
+  assert.equal(userView.webContents.getURL(), `${currentUrl}#user`);
   results.push({
     iteration,
     durationMs: Date.now() - started,
-    animationMs,
-    screenshotBytes,
+    light: [light.width, light.height, Math.round(light.brightness)],
+    dark: [dark.width, dark.height, Math.round(dark.brightness)],
   });
-}
-
-async function recreatePage() {
-  if (view) {
-    owner.contentView.removeChildView(view);
-    view.webContents.close();
-  }
-  view = new WebContentsView({
-    webPreferences: { sandbox: true, contextIsolation: true },
-  });
-  owner.contentView.addChildView(view);
-  view.setBounds({ width: 1100, height: 800, x: 0, y: 0 });
-  view.setVisible(!hidden);
-  await view.webContents.loadURL(currentUrl);
-}
-
-async function saveScreenshot(call, iteration) {
-  const screenshot = await call("take_screenshot", { format: "png" });
-  const image = screenshot.content.find((block) => block.type === "image");
-  assert.ok(image?.data, textContent(screenshot));
-  await writeFile(
-    join(artifacts, `preview-${iteration}.png`),
-    Buffer.from(image.data, "base64"),
-  );
-  return Buffer.from(image.data, "base64").length;
 }
 
 async function verifyInteractions(call) {
-  view.setBounds({ width: 941, height: 620, x: 0, y: 0 });
   const snapshot = textContent(await call("take_snapshot"));
   const advance = snapshot.match(/uid=(\S+) button "Advance project"/u)?.[1];
   const drop = snapshot.match(/uid=(\S+) button "Drop project here"/u)?.[1];
@@ -135,32 +163,50 @@ async function verifyInteractions(call) {
   assertToolSuccess(await call("click", { uid: advance }));
   assertToolSuccess(await call("press_key", { key: "ArrowRight" }));
   assertToolSuccess(await call("drag", { from_uid: advance, to_uid: drop }));
-  await verifyWheelAndState();
-  return verifyAnimation(call);
-}
-
-async function verifyWheelAndState() {
-  view.webContents.sendInputEvent({
-    type: "mouseWheel",
-    x: 200,
-    y: 250,
-    deltaX: 100,
-    deltaY: 0,
-    modifiers: ["shift"],
-    canScroll: true,
-  });
-  const state = await view.webContents.executeJavaScript(
-    `new Promise(resolve => setTimeout(() => resolve({ ...window.inspection, width: innerWidth, height: innerHeight }), 100))`,
-  );
-  assert.equal(state.width, 941);
-  assert.equal(state.height, 620);
+  const state = await agent.webContents.executeJavaScript("window.inspection");
   assert.ok(
-    state.clicks >= 1 &&
-      state.keys >= 1 &&
-      state.drops >= 1 &&
-      state.wheels >= 1,
+    state.clicks >= 1 && state.keys >= 1 && state.drops >= 1,
     JSON.stringify(state),
   );
+  const animation = await call("evaluate_script", {
+    function:
+      "async () => { const start = performance.now(); for(let i = 0; i < 3; i++) await new Promise(requestAnimationFrame); return { elapsed: performance.now() - start }; }",
+  });
+  const elapsed = Number(
+    textContent(animation).match(/"elapsed"\s*:\s*([\d.]+)/u)?.[1],
+  );
+  assert.ok(elapsed < 1000, textContent(animation));
+}
+
+async function verifyResize(call, iteration) {
+  assertToolSuccess(await call("resize_page", { width: 941, height: 620 }));
+  const size = await agent.webContents.executeJavaScript(
+    "({ width: innerWidth, height: innerHeight })",
+  );
+  assert.deepEqual(size, { width: 941, height: 620 });
+  const resized = await screenshot(call, `resized-${iteration}`);
+  assert.deepEqual([resized.width, resized.height], [941, 620]);
+  assertToolSuccess(
+    await call("resize_page", {
+      width: agentPreviewViewport.width,
+      height: agentPreviewViewport.height,
+    }),
+  );
+}
+
+async function verifyDarkMode(call, iteration) {
+  assertToolSuccess(await call("emulate", { colorScheme: "dark" }));
+  const dark = await screenshot(call, `dark-${iteration}`);
+  assert.ok(
+    dark.brightness < 80,
+    `dark capture is too light: ${dark.brightness}`,
+  );
+  assert.deepEqual(
+    [dark.width, dark.height],
+    [agentPreviewViewport.width, agentPreviewViewport.height],
+  );
+  assertToolSuccess(await call("emulate", { colorScheme: "auto" }));
+  return dark;
 }
 
 async function verifyNavigationScope(call) {
@@ -168,18 +214,37 @@ async function verifyNavigationScope(call) {
     call("navigate_page", { type: "url", url: "https://example.com/" }),
     /can only open this story's preview/,
   );
-  const location = await call("evaluate_script", {
-    function: "() => location.href",
-  });
-  assert.match(textContent(location), new RegExp(previewOrigin));
-  assertToolSuccess(await call("navigate_page", { type: "url", url: "/" }));
+  assertToolSuccess(
+    await call("navigate_page", { type: "url", url: "/?agent=1" }),
+  );
+  assert.equal(agent.webContents.getURL(), `${currentUrl}?agent=1`);
+}
+
+async function screenshot(call, name) {
+  const result = await call("take_screenshot", { format: "png" });
+  const block = result.content.find((entry) => entry.type === "image");
+  assert.ok(block?.data, textContent(result));
+  const buffer = Buffer.from(block.data, "base64");
+  await writeFile(join(artifacts, `${name}.png`), buffer);
+  const image = nativeImage.createFromBuffer(buffer);
+  const { width, height } = image.getSize();
+  return { brightness: averageBrightness(image.toBitmap()), height, width };
+}
+
+function averageBrightness(bitmap) {
+  let total = 0;
+  let samples = 0;
+  for (let index = 0; index < bitmap.length; index += 4 * 97) {
+    total += (bitmap[index] + bitmap[index + 1] + bitmap[index + 2]) / 3;
+    samples += 1;
+  }
+  return total / samples;
 }
 
 // Linux only: the Electron process must not listen on any TCP port other
-// than the fixture server and the per-session proxy it opens on purpose.
+// than the fixture server.
 async function assertNoListeningPorts(label) {
   if (process.platform !== "linux") return;
-  const { readdir, readlink } = await import("node:fs/promises");
   const inodes = new Set();
   for (const fd of await readdir("/proc/self/fd")) {
     const target = await readlink(`/proc/self/fd/${fd}`).catch(() => "");
@@ -199,20 +264,6 @@ async function assertNoListeningPorts(label) {
   assert.deepEqual(unexpected, [], `listening ports ${label}`);
 }
 
-async function verifyAnimation(call) {
-  const animation = await call("evaluate_script", {
-    waitForStableDom: false,
-    function:
-      "async () => { const start = performance.now(); for(let i = 0; i < 3; i++) await new Promise(requestAnimationFrame); return { elapsed: performance.now() - start }; }",
-  });
-  assertToolSuccess(animation);
-  const elapsed = Number(
-    textContent(animation).match(/"elapsed"\s*:\s*([\d.]+)/u)?.[1],
-  );
-  assert.ok(elapsed < 1000, textContent(animation));
-  return elapsed;
-}
-
 function textContent(result) {
   return (
     result.content
@@ -226,9 +277,9 @@ function assertToolSuccess(result) {
   assert.notEqual(result.isError, true, textContent(result));
 }
 
-function listen(server) {
+function listen(target) {
   return new Promise((resolve, reject) => {
-    server.once("error", reject);
-    server.listen(0, "127.0.0.1", resolve);
+    target.once("error", reject);
+    target.listen(0, "127.0.0.1", resolve);
   });
 }

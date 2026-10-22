@@ -50,7 +50,8 @@ const previewStatusMessages = {
     reason: "PREVIEW_STOPPED",
   },
   unavailable: {
-    message: "The preview runtime is ready, but its browser view is not open.",
+    message:
+      "The preview runtime is ready, but no page has been loaded for this story yet.",
     reason: "PREVIEW_BROWSER_NOT_OPEN",
   },
 } as const;
@@ -180,7 +181,6 @@ function previewHarnessStatus(
   }
   if (browser.application?.status === "failed") return "failed";
   if (browser.error) return "failed";
-  if (browser.visible === false) return "unavailable";
   if (lifecycle?.status === "ready") {
     if (readiness.application_ready) return "ready";
     if (browser.available) return "starting";
@@ -197,13 +197,6 @@ function previewHarnessStatusMessage(
   browser: PreviewDevtoolsTarget,
   lifecycle: PreviewLifecycleState | undefined,
 ) {
-  if (status === "unavailable" && browser.visible === false) {
-    return {
-      message:
-        "The preview browser view is hidden. Keep the preview panel displayed for screenshots and interactions; otherwise report visual validation as unavailable. The managed runtime does not need to be restarted.",
-      reason: "PREVIEW_BROWSER_HIDDEN",
-    };
-  }
   if (status === "failed") {
     const message =
       browser.application?.diagnostic ??
@@ -222,7 +215,9 @@ function previewReadiness(
   lifecycle: PreviewLifecycleState | undefined,
   revisions: WorkspaceRevisionState | undefined,
 ) {
-  const browserReady = browser.available && browser.visible !== false;
+  // The agent has its own browser, so the user's panel visibility is
+  // irrelevant here.
+  const browserReady = browser.available;
   const containerReady = lifecycle
     ? lifecycle.status === "ready"
     : browserReady;

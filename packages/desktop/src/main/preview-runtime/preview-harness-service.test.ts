@@ -55,35 +55,26 @@ test("stopped previews return immediately even when ready was requested", async 
   assert.equal(refreshes, 0);
 });
 
-test("a hidden browser is explicitly unavailable without failing or restarting its ready runtime", async () => {
-  const browser = { ...browserTarget(true), visible: false };
+test("a ready preview is available to the agent whatever the panel shows", async () => {
   const state = await resolvePreviewHarnessState(
-    async () => previewHarnessState(browser, readyLifecycle()),
+    async () => previewHarnessState(browserTarget(true), readyLifecycle()),
     "ready",
     async () => {
-      assert.fail("A hidden browser must not wait for runtime startup");
+      assert.fail("A ready preview must not wait");
     },
   );
-  assert.equal(state.status, "unavailable");
-  assert.equal(state.reason, "PREVIEW_BROWSER_HIDDEN");
-  assert.equal(state.available, false);
+  assert.equal(state.status, "ready");
+  assert.equal(state.available, true);
+  assert.notEqual(state.reason, "PREVIEW_BROWSER_HIDDEN");
   assert.deepEqual(state.readiness, {
-    browser_ready: false,
+    browser_ready: true,
     container_ready: true,
-    application_ready: false,
+    application_ready: true,
   });
-  assert.match(state.message, /does not need to be restarted/);
-  assert.equal(
-    previewHarnessState({ ...browser, visible: true }, readyLifecycle()).status,
-    "ready",
-  );
 });
 
-test("a hidden browser does not truncate managed startup waiting", () => {
-  const state = previewHarnessState(
-    { ...browserTarget(true), visible: false },
-    startingLifecycle(),
-  );
+test("managed startup waiting still reports starting", () => {
+  const state = previewHarnessState(browserTarget(true), startingLifecycle());
   assert.equal(state.status, "starting");
   assert.equal(state.reason, "PREVIEW_STARTING");
 });

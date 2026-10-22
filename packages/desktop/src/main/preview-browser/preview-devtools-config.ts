@@ -11,7 +11,6 @@ export const previewDevtoolsEnabledCapabilities = [
   "vision",
   "structured-content",
   "third-party",
-  "page-id-routing",
 ] as const;
 
 export const previewDevtoolsUnavailableCapabilities = [
@@ -45,7 +44,8 @@ export function previewDevtoolsServerArgs() {
     "--experimental-vision",
     "--experimental-structured-content",
     "--category-experimental-third-party",
-    "--page-id-routing",
+    // The proxy exposes a single page; routing by page id is on by default.
+    "--no-page-id-routing",
     "--redact-network-headers",
   ];
 }

@@ -16,7 +16,6 @@ import {
   sep,
 } from "node:path";
 import { pathToFileURL } from "node:url";
-import { setTimeout as delay } from "node:timers/promises";
 import {
   previewDevtoolsMcpVersion,
   previewDevtoolsServerArgs,
@@ -65,7 +64,6 @@ type McpConnection = {
   close(): Promise<void>;
   closed: boolean;
   onClosed?: () => void;
-  page?: { id: number; url: string; identity?: string };
   tools: PreviewDevtoolsMcpTool[];
   workspace?: string;
 };
@@ -116,7 +114,6 @@ const catalogTools = toolCatalog.tools as PreviewDevtoolsMcpTool[];
 const catalogToolNames = new Set(catalogTools.map(({ name }) => name));
 const maximumStagedUploadBytes = 20 * 1024 * 1024;
 const previewMcpCallTimeoutMs = 15_000;
-const previewPageDiscoveryTimeoutMs = 2_000;
 const require = createRequire(import.meta.url);
 
 export class PreviewDevtoolsMcpService {
@@ -150,20 +147,6 @@ export class PreviewDevtoolsMcpService {
       if (!input.signal?.aborted && mcpConnectionUnavailable(error)) {
         this.disposeScope(input.scope);
       }
-      throw error;
-    }
-  }
-
-  async prepare(input: PreviewDevtoolsMcpContext & { currentUrl: string }) {
-    try {
-      const connection = await waitForConnection(
-        this.connection(input),
-        input.signal,
-      );
-      await previewPageId(connection, input);
-    } catch (error) {
-      if (!input.signal?.aborted && mcpConnectionUnavailable(error))
-        this.disposeScope(input.scope);
       throw error;
     }
   }
@@ -240,19 +223,8 @@ async function callPreviewTool(
   tool: PreviewDevtoolsMcpTool,
   input: PreviewDevtoolsMcpCall,
 ) {
+  // The proxy exposes a single page, so tools act on it without routing.
   const argumentsValue = await previewToolArguments(connection, tool, input);
-  if (pageScoped(tool)) {
-    argumentsValue.pageId = await previewPageId(connection, input);
-  }
-  const result = await callMcpTool(
-    connection.client,
-    tool.name,
-    argumentsValue,
-    input.signal,
-  );
-  if (!pageScoped(tool) || !stalePageResult(result)) return result;
-  connection.page = undefined;
-  argumentsValue.pageId = await previewPageId(connection, input);
   return callMcpTool(
     connection.client,
     tool.name,
@@ -645,68 +617,6 @@ function exposedTool(tool: PreviewDevtoolsMcpTool) {
   return !hiddenPageTools.has(tool.name);
 }
 
-function pageScoped(tool: PreviewDevtoolsMcpTool) {
-  return "pageId" in schemaProperties(tool.inputSchema);
-}
-
-function schemaProperties(schema: Record<string, unknown>) {
-  const value = schema.properties;
-  return value && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : {};
-}
-
-async function previewPageId(
-  connection: McpConnection,
-  input: PreviewDevtoolsMcpContext & { currentUrl: string },
-) {
-  input.signal?.throwIfAborted();
-  if (
-    connection.page &&
-    connection.page.identity === input.pageIdentity &&
-    samePreviewUrl(connection.page.url, input.currentUrl, true)
-  ) {
-    return connection.page.id;
-  }
-  connection.page = undefined;
-  const id = await discoverPreviewPage(
-    connection.client,
-    input.currentUrl,
-    input.signal,
-  );
-  connection.page = { id, url: input.currentUrl, identity: input.pageIdentity };
-  return id;
-}
-
-async function discoverPreviewPage(
-  client: Client,
-  currentUrl: string,
-  signal?: AbortSignal,
-) {
-  const deadline = Date.now() + previewPageDiscoveryTimeoutMs;
-  while (true) {
-    signal?.throwIfAborted();
-    const remaining = Math.max(1, deadline - Date.now());
-    const result = await callMcpTool(
-      client,
-      "list_pages",
-      {},
-      signal,
-      remaining,
-    );
-    const diagnostic = mcpErrorText(result);
-    if (diagnostic)
-      throw new Error(`Preview DevTools discovery failed: ${diagnostic}`);
-    const pages = structuredPages(result);
-    if (
-      matchingPreviewPages(pages, currentUrl).length ||
-      Date.now() >= deadline
-    )
-      return scopedPreviewPageId(pages, currentUrl);
-    await delay(Math.min(100, deadline - Date.now()), undefined, { signal });
-  }
-}
-
 async function callMcpTool(
   client: Client,
   name: string,
@@ -725,23 +635,6 @@ async function callMcpTool(
       cause: error,
     });
   }
-}
-
-function stalePageResult(result: unknown) {
-  return mcpErrorText(result).trim() === "No page found";
-}
-
-function mcpErrorText(result: unknown) {
-  if (!result || typeof result !== "object") return "";
-  const value = result as { content?: unknown; isError?: unknown };
-  if (value.isError !== true || !Array.isArray(value.content)) return "";
-  return value.content
-    .map((entry) =>
-      entry && typeof entry === "object" && "text" in entry
-        ? String(entry.text)
-        : "",
-    )
-    .join("\n");
 }
 
 function errorMessage(error: unknown) {
@@ -773,65 +666,6 @@ function waitForConnection<T>(value: Promise<T>, signal?: AbortSignal) {
       signal.removeEventListener("abort", aborted);
     });
   });
-}
-
-export function scopedPreviewPageId(
-  pages: Array<{ id: number; url: string }>,
-  currentUrl: string,
-) {
-  const matches = matchingPreviewPages(pages, currentUrl);
-  if (matches.length === 0) {
-    throw new Error(
-      "The scoped preview page is no longer available in DevTools.",
-    );
-  }
-  if (matches.length > 1) {
-    throw new Error("Multiple DevTools pages match the scoped preview URL.");
-  }
-  return matches[0].id;
-}
-
-function matchingPreviewPages(
-  pages: Array<{ id: number; url: string }>,
-  currentUrl: string,
-) {
-  const exact = pages.filter(({ url }) =>
-    samePreviewUrl(url, currentUrl, false),
-  );
-  return exact.length
-    ? exact
-    : pages.filter(({ url }) => samePreviewUrl(url, currentUrl, true));
-}
-
-function structuredPages(result: unknown) {
-  if (!result || typeof result !== "object") return [];
-  const content = (result as { structuredContent?: unknown }).structuredContent;
-  if (!content || typeof content !== "object") return [];
-  const pages = (content as { pages?: unknown }).pages;
-  if (!Array.isArray(pages)) return [];
-  return pages.filter(validStructuredPage);
-}
-
-function validStructuredPage(
-  value: unknown,
-): value is { id: number; url: string } {
-  if (!value || typeof value !== "object") return false;
-  const page = value as { id?: unknown; url?: unknown };
-  return typeof page.id === "number" && typeof page.url === "string";
-}
-
-function samePreviewUrl(left: string, right: string, ignoreHash: boolean) {
-  try {
-    const leftUrl = new URL(left);
-    const rightUrl = new URL(right);
-    if (ignoreHash) {
-      leftUrl.hash = "";
-      rightUrl.hash = "";
-    }
-    return leftUrl.href === rightUrl.href;
-  } catch {
-    return left === right;
-  }
 }
 
 function requiredValue(value: string, label: string) {

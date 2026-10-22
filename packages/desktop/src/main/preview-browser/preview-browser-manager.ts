@@ -18,6 +18,15 @@ import {
   previewNavigationPolicy,
 } from "./electron-cdp-debuggee";
 import { startPreviewCdpProxy } from "./preview-cdp-proxy";
+import {
+  agentPreviewBrowser,
+  type AgentPreviewSource,
+  destroyAgentPreviewBrowser,
+  destroyAllAgentPreviewBrowsers,
+  ensureAgentPreviewBrowser,
+  refreshAgentApplicationState,
+  reloadAgentPreviewBrowser,
+} from "./agent-preview-browser";
 import { probePreviewApplication } from "./preview-application-probe";
 import {
   type PreviewBrowserState,
@@ -30,7 +39,9 @@ type PreviewBrowserRecord = {
   id: string;
   owner: BrowserWindow;
   previewOrigin?: string;
+  previewUrl?: string;
   state?: PreviewBrowserState;
+  storageKey: string;
   view: WebContentsView;
   visible: boolean;
   loadTimeout?: NodeJS.Timeout;
@@ -67,29 +78,58 @@ export type PreviewDevtoolsTarget = {
   error?: string;
   id?: string;
   loading: boolean;
-  visible?: boolean;
   previewOrigin?: string;
   scope?: string;
 };
 
 // No Chromium debugging port is ever opened. Each MCP connection gets a
 // loopback proxy, guarded by a random token, that only reaches this page.
+// The proxy drives the agent's own browser for the scope, never the view
+// the user is looking at.
 export async function openPreviewDevtoolsEndpoint(input: { scope: string }) {
   const scope = normalizedPreviewDevtoolsScope(input.scope);
-  const target = scope ? previewDevtoolsTargets.get(scope) : undefined;
-  const record = target ? previews.get(target.id) : undefined;
-  if (!record || record.view.webContents.isDestroyed())
+  const record = scope ? scopedPreviewRecord(scope) : undefined;
+  if (!scope || !record)
     throw new Error("The scoped preview page is no longer available.");
-  const webContents = record.view.webContents;
+  const source = agentPreviewSource(record);
+  if (!source) throw new Error("The scoped preview has not loaded a page yet.");
+  const agent = await ensureAgentPreviewBrowser(scope, source);
+  if (agent.destroyed)
+    throw new Error("The agent preview browser closed while opening.");
   return startPreviewCdpProxy(
-    electronCdpDebuggee(webContents, {
-      contentSize: () => {
-        const { height, width } = record.view.getBounds();
-        return { height, width };
+    electronCdpDebuggee(agent.webContents, {
+      activity: agent.touch,
+      viewport: {
+        get: () => agent.viewport,
+        set: (size) => {
+          agent.viewport = size;
+        },
       },
     }),
-    previewNavigationPolicy(record.previewOrigin),
+    previewNavigationPolicy(source.previewOrigin),
   );
+}
+
+function scopedPreviewRecord(scope: string) {
+  const target = previewDevtoolsTargets.get(scope);
+  const record = target ? previews.get(target.id) : undefined;
+  return record && !record.view.webContents.isDestroyed() ? record : undefined;
+}
+
+function agentPreviewSource(
+  record: PreviewBrowserRecord,
+): AgentPreviewSource | undefined {
+  const current = record.view.webContents.getURL();
+  const initialUrl =
+    current && urlOrigin(current) === record.previewOrigin
+      ? current
+      : record.previewUrl;
+  if (!initialUrl) return undefined;
+  return {
+    initialUrl,
+    partition: previewSessionPartition(record.storageKey),
+    previewOrigin: record.previewOrigin,
+  };
 }
 
 export function getPreviewDevtoolsTarget(
@@ -97,8 +137,12 @@ export function getPreviewDevtoolsTarget(
 ): PreviewDevtoolsTarget {
   const scope = normalizedPreviewDevtoolsScope(input.scope);
   const target = previewDevtoolsTargetForScope(scope);
+  const agent = scope && target ? agentPreviewBrowser(scope) : undefined;
+  // Once the agent has its own browser, its page is what it inspects.
+  const effective = agent?.state ?? target;
   return previewDevtoolsTarget(
-    previewDevtoolsTargetReady(target),
+    previewDevtoolsTargetReady(effective),
+    effective,
     target,
     scope,
   );
@@ -110,13 +154,13 @@ export async function inspectPreviewDevtoolsTarget(
   const scope = normalizedPreviewDevtoolsScope(input.scope);
   const target = previewDevtoolsTargetForScope(scope);
   const record = target ? previews.get(target.id) : undefined;
-  if (
-    input.probeApplication !== false &&
-    record &&
-    record.visible &&
-    previewDevtoolsTargetReady(target)
-  ) {
-    await refreshApplicationState(record);
+  const agent = scope && record ? agentPreviewBrowser(scope) : undefined;
+  if (input.probeApplication !== false) {
+    // Whether the user's panel is visible does not matter to the agent.
+    if (agent && previewDevtoolsTargetReady(agent.state))
+      await refreshAgentApplicationState(agent);
+    else if (!agent && record && previewDevtoolsTargetReady(target))
+      await refreshApplicationState(record);
   }
   return getPreviewDevtoolsTarget(input);
 }
@@ -124,17 +168,19 @@ export async function inspectPreviewDevtoolsTarget(
 function previewDevtoolsTarget(
   available: boolean,
   target: PreviewBrowserState | undefined,
+  userTarget: PreviewBrowserState | undefined,
   scope: string | undefined,
 ): PreviewDevtoolsTarget {
-  const record = target ? previews.get(target.id) : undefined;
+  const record = userTarget ? previews.get(userTarget.id) : undefined;
   return {
     ...(target?.application ? { application: target.application } : {}),
     available,
     currentUrl: target?.url,
     error: target?.error,
-    id: target?.id,
+    // The scope's identity: the agent browser may be recreated under it,
+    // which closes its proxy and makes the next call reconnect.
+    id: userTarget?.id,
     loading: target?.loading ?? false,
-    visible: target ? previews.get(target.id)?.visible : undefined,
     ...(record?.previewOrigin ? { previewOrigin: record.previewOrigin } : {}),
     ...(scope ? { scope } : {}),
   };
@@ -202,6 +248,7 @@ export async function createPreviewBrowser(
   const record: PreviewBrowserRecord = {
     id,
     owner,
+    storageKey: input.storageKey,
     view,
     visible: false,
     bridge,
@@ -258,7 +305,12 @@ function createPreviewBrowserView(storageKey: string) {
 export async function loadPreviewBrowser(input: { id: string; url: string }) {
   const record = previews.get(input.id);
   if (!record) return false;
-  record.previewOrigin = urlOrigin(input.url);
+  const origin = urlOrigin(input.url);
+  // A preview served from a new origin makes the agent's browser stale.
+  if (record.previewOrigin && origin !== record.previewOrigin)
+    destroyScopedAgentBrowser(record);
+  record.previewOrigin = origin;
+  record.previewUrl = origin ? input.url : undefined;
   startPreviewLoadTimeout(record, input.url);
   try {
     await record.view.webContents.loadURL(input.url);
@@ -294,10 +346,10 @@ export function setPreviewBrowserDevtoolsScope(input: {
 }) {
   const record = previews.get(input.id);
   if (!record) return false;
+  const scope = normalizedPreviewDevtoolsScope(input.scope ?? undefined);
+  if (scope !== record.devtoolsScope) destroyScopedAgentBrowser(record);
   clearPreviewDevtoolsScope(record);
-  record.devtoolsScope = normalizedPreviewDevtoolsScope(
-    input.scope ?? undefined,
-  );
+  record.devtoolsScope = scope;
   syncPreviewDevtoolsTargets(record, previewBrowserState(record));
   return true;
 }
@@ -319,6 +371,7 @@ export function reloadPreviewBrowserForScope(input: { scope?: string }) {
   const scope = normalizedPreviewDevtoolsScope(input.scope);
   const target = previewDevtoolsTargetForScope(scope);
   if (!target) return false;
+  if (scope) reloadAgentPreviewBrowser(scope);
   return reloadPreviewBrowser({ id: target.id });
 }
 
@@ -328,6 +381,7 @@ export function destroyPreviewBrowser(id: string) {
   previews.delete(id);
   record.owner.removeListener("closed", record.ownerClosed);
   clearPreviewLoadTimeout(record);
+  destroyScopedAgentBrowser(record);
   clearPreviewDevtoolsTargets(record);
   record.bridge?.disableRoutes();
   void record.bridge?.close();
@@ -339,6 +393,15 @@ export function destroyPreviewBrowser(id: string) {
 
 export function destroyAllPreviewBrowsers() {
   Array.from(previews.keys()).forEach((id) => destroyPreviewBrowser(id));
+  destroyAllAgentPreviewBrowsers();
+}
+
+// The agent's browser lives only as long as the scoped preview it mirrors:
+// it shares that preview's session and network bridge.
+function destroyScopedAgentBrowser(record: PreviewBrowserRecord) {
+  const scope = record.devtoolsScope;
+  if (scope && previewDevtoolsTargets.get(scope)?.id === record.id)
+    destroyAgentPreviewBrowser(scope);
 }
 
 export async function capturePreviewBrowser(

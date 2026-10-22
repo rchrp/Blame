@@ -150,6 +150,8 @@ function dependencyPreviewRuntimeReady(
   );
 }
 
+// The agent's browser and its DevTools connection open on the first
+// preview_devtools__* call, not when readiness is inspected.
 async function previewDevtoolsTarget(
   input: unknown,
   signal: AbortSignal,
@@ -158,44 +160,8 @@ async function previewDevtoolsTarget(
 ) {
   const request = recordInput(input);
   const target = await harness.target({ ...request, signal } as never);
-  if (!target.available) {
-    devtools.disposeScope(String(request.scope ?? ""));
-  } else {
-    return preparePreviewDevtools(request, target, devtools, signal);
-  }
+  if (!target.available) devtools.disposeScope(String(request.scope ?? ""));
   return target;
-}
-
-async function preparePreviewDevtools(
-  request: Record<string, unknown>,
-  target: Awaited<ReturnType<PreviewHarnessService["target"]>>,
-  devtools: PreviewDevtoolsMcpService,
-  signal: AbortSignal,
-) {
-  const scope = String(request.scope ?? "").trim();
-  const worktree = String(request.worktree ?? "").trim();
-  if (!scope || !worktree || !target.currentUrl) return target;
-  try {
-    await devtools.prepare({
-      currentUrl: target.currentUrl,
-      openEndpoint: () => openPreviewDevtoolsEndpoint({ scope }),
-      pageIdentity: target.id,
-      previewOrigin: target.previewOrigin,
-      scope,
-      signal,
-      worktree,
-    });
-    return target;
-  } catch (error) {
-    signal.throwIfAborted();
-    return {
-      ...target,
-      available: false,
-      status: "unavailable",
-      reason: "PREVIEW_DEVTOOLS_UNAVAILABLE",
-      message: error instanceof Error ? error.message : String(error),
-    };
-  }
 }
 
 async function previewContainerLogs(
