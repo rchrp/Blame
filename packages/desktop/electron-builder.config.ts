@@ -249,9 +249,19 @@ async function executableArchitecture(executable: string) {
   )
 }
 
+// electron-builder drops every .d.ts from node_modules, but the agent
+// runtime's TypeScript language service needs the compiler's default
+// libraries: without lib.*.d.ts, built-in types such as Array or Promise do
+// not resolve and semantic references miss most uses.
+const typeScriptDefaultLibrary = /[\\/]typescript[\\/]lib[\\/]lib(?:\.[^\\/]+)?\.d\.ts$/
+
 const config: Configuration = {
   afterPack: finalizePackage,
   appId: "dev.blame.desktop",
+  // Betas publish latest*.yml too: the beta channel reads them from the
+  // release itself, and download.blame.so/latest never serves a prerelease.
+  detectUpdateChannel: false,
+  onNodeModuleFile: (file) => typeScriptDefaultLibrary.test(file),
   asarUnpack: [
     "**/node_modules/@ast-grep/lang-*/**/*",
     "**/node_modules/@vscode/ripgrep-*/**/*",

@@ -21,6 +21,8 @@ import type {
   InitializeProjectInput,
   InitializeProjectResult,
   ProjectInitializationDiagnostics,
+  ClaudeCodeStatus,
+  ConnectClaudeCodeInput,
   LoginOAuthProviderInput,
   NewProjectGenerationResult,
   OptimizeUserStoryPromptInput,
@@ -346,7 +348,10 @@ export type DesktopUpdatePhase =
   | "error"
   | "unsupported"
 
+export type DesktopUpdateChannel = "stable" | "beta"
+
 export type DesktopUpdateStatus = {
+  channel: DesktopUpdateChannel
   currentVersion: string
   error?: string
   latestVersion?: string
@@ -363,6 +368,7 @@ export type DesktopUpdatesClient = {
   getStatus(): Promise<DesktopUpdateStatus>
   install(): Promise<DesktopUpdateStatus>
   onStatus(callback: (status: DesktopUpdateStatus) => void): () => void
+  setChannel(channel: DesktopUpdateChannel): Promise<DesktopUpdateStatus>
 }
 
 export type AgentClient = {
@@ -374,6 +380,9 @@ export type AgentClient = {
     ): Promise<unknown>
     deleteCredential(connection: ApiConnection, id: string): Promise<void>
     loginOAuth(input: LoginOAuthProviderInput): Promise<unknown>
+    // Desktop only: Claude Code signs in on the user's computer.
+    claudeCodeStatus?(): Promise<ClaudeCodeStatus>
+    connectClaudeCode?(input: ConnectClaudeCodeInput): Promise<unknown>
   }
   sessions: {
     start(input: StartSessionInput): Promise<{ sessionId: string }>

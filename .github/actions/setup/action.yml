@@ -5,6 +5,12 @@ inputs:
   node-version:
     description: Node.js version
     default: "22"
+  save-cache:
+    description: >-
+      Save the pnpm store after installing. Tag builds pass "false": a cache
+      saved from a tag is never restored by another ref, while every ref can
+      restore the default branch's cache.
+    default: "true"
 
 runs:
   using: composite
@@ -13,8 +19,24 @@ runs:
 
     - uses: actions/setup-node@v7
       with:
-        cache: pnpm
         node-version: ${{ inputs.node-version }}
+
+    - id: store
+      run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+      shell: bash
+
+    - id: cache
+      uses: actions/cache/restore@v6
+      with:
+        path: ${{ steps.store.outputs.path }}
+        key: pnpm-store-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pnpm-lock.yaml') }}
+        restore-keys: pnpm-store-${{ runner.os }}-${{ runner.arch }}-
 
     - run: pnpm install --frozen-lockfile
       shell: bash
+
+    - if: inputs.save-cache == 'true' && steps.cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v6
+      with:
+        path: ${{ steps.store.outputs.path }}
+        key: ${{ steps.cache.outputs.cache-primary-key }}

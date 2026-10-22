@@ -1,0 +1,29 @@
+# Release builds run on tags, which can only restore caches saved from the
+# default branch. Keep a pnpm store cache on main for the macOS and Windows
+# release runners; CI already keeps the Linux one.
+name: Release cache
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - pnpm-lock.yaml
+      - .github/actions/setup/**
+  # GitHub evicts caches that are not used for 7 days.
+  schedule:
+    - cron: "0 5 * * 1,4"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cache:
+    name: pnpm store (${{ matrix.runner }})
+    strategy:
+      matrix:
+        runner: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup

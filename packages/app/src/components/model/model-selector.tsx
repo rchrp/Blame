@@ -49,6 +49,9 @@ const providerIconSprite = new URL(
   import.meta.url
 ).href
 const providerIconAliases: Partial<Record<string, IconName>> = {
+  "claude-code": "anthropic",
+  gemini: "google",
+  vertex: "google-vertex",
   "openai-codex": "openai",
   "openai-native": "openai",
 }
@@ -1289,14 +1292,18 @@ export function ProviderMark({ provider }: { provider: Provider }) {
 
   return (
     <span className="flex size-5 shrink-0 items-center justify-center rounded-md bg-muted/60">
-      <svg
-        aria-label={provider.name}
-        className="size-4"
-        data-component="provider-icon"
-        role="img"
-      >
-        <use href={`${providerIconSprite}#${icon}`} />
-      </svg>
+      {icon ? (
+        <svg
+          aria-label={provider.name}
+          className="size-4"
+          data-component="provider-icon"
+          role="img"
+        >
+          <use href={`${providerIconSprite}#${icon}`} />
+        </svg>
+      ) : (
+        <ProviderMonogram className="text-[0.625rem]" name={provider.name} />
+      )}
     </span>
   )
 }
@@ -1309,18 +1316,67 @@ export function ProviderIcon({
   className?: string
   providerId: string
 }) {
+  const icon = providerIconName(providerId)
+  if (!icon)
+    return (
+      <ProviderMonogram
+        className={cn("text-[0.5625rem]", className)}
+        name={providerId}
+      />
+    )
   return (
     <svg
       aria-hidden="true"
       className={cn("size-3.5", className)}
       data-component="provider-icon"
     >
-      <use href={`${providerIconSprite}#${providerIconName(providerId)}`} />
+      <use href={`${providerIconSprite}#${icon}`} />
     </svg>
   )
 }
 
-function providerIconName(providerID: string): IconName {
+// Providers without a logo show their initial instead of a generic glyph.
+function ProviderMonogram({
+  className,
+  name,
+}: {
+  className?: string
+  name: string
+}) {
+  return (
+    <span
+      aria-label={name}
+      role="img"
+      className={cn(
+        "flex size-3.5 items-center justify-center font-semibold text-muted-foreground uppercase",
+        className
+      )}
+    >
+      {name.trim().charAt(0) || "?"}
+    </span>
+  )
+}
+
+// Sprite entries that only hold a generic sparkles glyph, not the provider's logo.
+const placeholderIcons = new Set<string>([
+  "azure-cognitive-services",
+  "chutes",
+  "cortecs",
+  "google-vertex-anthropic",
+  "lmstudio",
+  "minimax-cn-coding-plan",
+  "minimax-coding-plan",
+  "morph",
+  "requesty",
+  "sap-ai-core",
+  "stepfun",
+  "synthetic",
+  "upstage",
+  "wandb",
+])
+
+function providerIconName(providerID: string): IconName | undefined {
   const icon = providerIconAliases[providerID] ?? providerID
-  return iconNames.includes(icon as IconName) ? (icon as IconName) : "synthetic"
+  if (placeholderIcons.has(icon)) return undefined
+  return iconNames.includes(icon as IconName) ? (icon as IconName) : undefined
 }

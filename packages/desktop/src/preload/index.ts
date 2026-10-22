@@ -198,6 +198,7 @@ const api: BlameDesktopApi = {
       ipcRenderer.on("updates:status", handler);
       return () => ipcRenderer.removeListener("updates:status", handler);
     },
+    setChannel: (channel) => ipcRenderer.invoke("updates:set-channel", channel),
   },
   projectWindows: {
     focusProject: (path) => ipcRenderer.invoke("window:focus-project", path),
@@ -463,6 +464,10 @@ const api: BlameDesktopApi = {
         ipcRenderer.invoke("agent:providers:delete-credential", connection, id),
       loginOAuth: (input) =>
         ipcRenderer.invoke("agent:providers:login-oauth", input),
+      claudeCodeStatus: () =>
+        ipcRenderer.invoke("agent:providers:claude-code-status"),
+      connectClaudeCode: (input) =>
+        ipcRenderer.invoke("agent:providers:connect-claude-code", input),
     },
     sessions: {
       start: (input) => ipcRenderer.invoke("agent:sessions:start", input),

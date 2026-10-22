@@ -33,15 +33,24 @@ export const allProvidersValue = "all"
 
 const modelStateListeners = new Set<() => void>()
 
-export const popularProviders = [
-  "openai-codex",
-  "openai",
+/** Providers that run on the user's own plan rather than API credits. */
+export const subscriptionProviders = ["openai-codex", "claude-code"]
+
+/** API key providers shown before the long tail; openai-compatible covers most token plans. */
+export const recommendedApiKeyProviders = [
   "openai-native",
   "anthropic",
-  "google",
-  "github-copilot",
   "openrouter",
-  "vercel",
+  "openai-compatible",
+  "gemini",
+  "deepseek",
+  "xai",
+  "mistral",
+]
+
+export const popularProviders = [
+  ...subscriptionProviders,
+  ...recommendedApiKeyProviders,
 ]
 
 export type ModelKey = {

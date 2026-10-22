@@ -27,6 +27,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 
 const fallbackStatus: DesktopUpdateStatus = {
+  channel: "stable",
   currentVersion: "development",
   phase: "unsupported",
   reason: "Updates are available only in the desktop app.",
@@ -62,6 +63,11 @@ function DesktopUpdatesGroup({
       {updates.status.phase === "downloading" ? (
         <DownloadProgress progress={updates.status.progress ?? 0} />
       ) : null}
+      <BetaChannelRow
+        run={updates.run}
+        status={updates.status}
+        updates={platform.updates}
+      />
       <UpdateActions
         status={updates.status}
         updates={platform.updates}
@@ -198,10 +204,47 @@ function UpdateStatusIcon({ status }: { status: DesktopUpdateStatus }) {
   return <MonitorDownIcon className={className} />
 }
 
+function BetaChannelRow({
+  run,
+  status,
+  updates,
+}: {
+  run: (action: () => Promise<DesktopUpdateStatus>) => Promise<void>
+  status: DesktopUpdateStatus
+  updates: DesktopUpdatesClient | undefined
+}) {
+  const busy = status.phase === "checking" || status.phase === "downloading"
+
+  return (
+    <SettingsRow
+      title="Beta channel"
+      description="Get prerelease versions before everyone else. When you turn it off, you keep this version until a newer stable release ships."
+    >
+      <Switch
+        aria-label="Toggle the beta channel"
+        checked={status.channel === "beta"}
+        disabled={!updates || busy || status.phase === "unsupported"}
+        onCheckedChange={(checked) =>
+          updates &&
+          void run(() => updates.setChannel(checked ? "beta" : "stable"))
+        }
+      />
+    </SettingsRow>
+  )
+}
+
 function VersionGrid({ status }: { status: DesktopUpdateStatus }) {
   return (
     <div className="grid gap-4 border-b py-4 sm:grid-cols-2">
-      <VersionCell label="Current version" value={status.currentVersion} />
+      <VersionCell
+        label="Current version"
+        value={status.currentVersion}
+        badge={
+          isPrerelease(status.currentVersion) ? (
+            <Badge variant="outline">Beta</Badge>
+          ) : null
+        }
+      />
       <VersionCell
         label="Latest version"
         value={status.latestVersion ?? "Not checked"}
@@ -325,13 +368,29 @@ function DownloadProgress({ progress }: { progress: number }) {
   )
 }
 
-function VersionCell({ label, value }: { label: string; value: string }) {
+function VersionCell({
+  badge,
+  label,
+  value,
+}: {
+  badge?: React.ReactNode
+  label: string
+  value: string
+}) {
   return (
     <div className="min-w-0">
       <div className="text-xs font-medium text-muted-foreground">{label}</div>
-      <div className="mt-1 truncate text-sm font-medium">{value}</div>
+      <div className="mt-1 flex min-w-0 items-center gap-2">
+        <span className="truncate text-sm font-medium">{value}</span>
+        {badge}
+      </div>
     </div>
   )
+}
+
+// Prerelease versions carry a suffix, such as 1.2.0-beta.1.
+function isPrerelease(version: string) {
+  return /^\d+\.\d+\.\d+-/.test(version)
 }
 
 function UpdateBadge({ status }: { status: DesktopUpdateStatus }) {

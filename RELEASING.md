@@ -6,6 +6,7 @@ Everything is built on GitHub-hosted runners and published as a GitHub Release. 
 | ---------------------------------------------------------- | ------------------------------- | ------------------------------------------------------------------------ |
 | [CI](.github/workflows/ci.yml)                             | Pull requests, pushes to `main` | Line budgets, typecheck, and tests                                       |
 | [Release desktop](.github/workflows/release-desktop.yml)   | Tag `v<semver>`                 | **Draft** release with the installers, update metadata, and `SHA256SUMS` |
+| [Release cache](.github/workflows/release-cache.yml)       | Lockfile changes, twice a week  | pnpm store caches on `main` for the macOS and Windows release runners    |
 | [Release runtime](.github/workflows/release-runtime.yml)   | Tag `runtime-v<version>`        | Published release with the four runtime images and their `manifest.json` |
 | [Update Cline SDK](.github/workflows/cline-sdk-update.yml) | Every Monday, or manually       | Pull request updating every `@cline/*` package and the runtime version   |
 
@@ -27,11 +28,20 @@ Users never download from GitHub URLs directly. [`download.blame.so`](deploy/dow
    git push origin v1.2.0
    ```
 
-3. The workflow checks that the runtime referenced by `packages/desktop/resources/runtime/*/manifest.json` is published, builds macOS (x64 and arm64, signed and notarized), Windows, and Linux, and then creates a draft release.
+3. The workflow checks that the runtime referenced by `packages/desktop/resources/runtime/*/manifest.json` is published while it builds macOS (x64 and arm64, both packaged on Apple Silicon, signed and notarized), Windows, and Linux, and then creates a draft release.
 4. **Pre-production test.** Only maintainers can see a draft. Download the installers from the draft on the [releases page](https://github.com/rchrp/Blame/releases) and test them.
 5. Edit the generated notes and click **Publish release**. From then on, `download.blame.so/latest`, the download page, and the in-app updater serve this version.
 
-A tag with a suffix such as `v1.2.0-beta.1` creates a prerelease. GitHub never treats a prerelease as the latest release, so it never reaches users through the updater or the download page.
+### Beta channel
+
+To try a version in the app before releasing it, push a beta tag:
+
+```bash
+git tag v1.2.0-beta.1
+git push origin v1.2.0-beta.1
+```
+
+A tag with a suffix is published right away as a prerelease, without a draft. GitHub never treats a prerelease as the latest release, so `download.blame.so/latest` and apps on the stable channel never see it. Apps with **Settings → Desktop → Beta channel** turned on update to the newest published release, prereleases included, by reading its update metadata from GitHub. Once `v1.2.0` is published, they move to it, since it is newer than its betas. Turning the channel off keeps the installed beta until a newer stable release ships.
 
 If a job fails, use **Re-run failed jobs** on the workflow run. To abandon a release, delete the draft and the tag (`git push origin :v1.2.0`).
 

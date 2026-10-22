@@ -1,6 +1,7 @@
 import ProviderCredentialsService from '#services/provider_credentials_service'
 import {
   resolveProviderCredentialValidator,
+  saveLocalProviderCredentialValidator,
   saveProviderCredentialValidator,
 } from '#validators/provider_credential'
 import type ProviderCredential from '#models/provider_credential'
@@ -19,6 +20,17 @@ export default class ProviderCredentialsController {
         await new ProviderCredentialsService().save(
           auth.getUserOrFail().id,
           await request.validateUsing(saveProviderCredentialValidator)
+        )
+      )
+    )
+  }
+
+  async storeLocal({ auth, request, serialize }: HttpContext) {
+    return serialize(
+      providerCredentialData(
+        await new ProviderCredentialsService().saveLocal(
+          auth.getUserOrFail().id,
+          await request.validateUsing(saveLocalProviderCredentialValidator)
         )
       )
     )

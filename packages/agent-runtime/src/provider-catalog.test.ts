@@ -6,9 +6,9 @@ import {
   listClineProviders,
 } from "./provider-catalog.js";
 
-test("excludes providers that require external CLI authentication", async () => {
+test("excludes the Codex CLI provider and keeps Claude Code", async () => {
   assert.equal(isBaseRuntimeProvider("openai-codex-cli"), false);
-  assert.equal(isBaseRuntimeProvider("claude-code"), false);
+  assert.equal(isBaseRuntimeProvider("claude-code"), true);
   assert.equal(isBaseRuntimeProvider("openai-codex"), true);
   assert.equal(isBaseRuntimeProvider("anthropic"), true);
 
@@ -16,7 +16,7 @@ test("excludes providers that require external CLI authentication", async () => 
   const providerIds = new Set(providers.map((provider) => provider.id));
 
   assert.equal(providerIds.has("openai-codex-cli"), false);
-  assert.equal(providerIds.has("claude-code"), false);
+  assert.equal(providerIds.has("claude-code"), true);
   assert.equal(providerIds.has("openai-codex"), true);
   assert.equal(providerIds.has("anthropic"), true);
   const codex = providers.find((provider) => provider.id === "openai-codex");

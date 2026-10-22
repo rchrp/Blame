@@ -3,8 +3,9 @@ import type {
   NewProjectGenerationResult,
   StartNewProjectGenerationInput,
 } from "@blame/agent-runtime";
-import { BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, ipcMain } from "electron";
 import { randomUUID } from "node:crypto";
+import { join } from "node:path";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import log from "electron-log";
@@ -137,6 +138,12 @@ function registerProviderIpcHandlers() {
   );
   ipcMain.handle("agent:providers:login-oauth", (_event, input) =>
     agentRuntime().run("providers.loginOAuth", input),
+  );
+  ipcMain.handle("agent:providers:claude-code-status", () =>
+    agentRuntime().run("providers.claudeCodeStatus", undefined),
+  );
+  ipcMain.handle("agent:providers:connect-claude-code", (_event, input) =>
+    agentRuntime().run("providers.connectClaudeCode", input),
   );
 }
 
@@ -459,6 +466,7 @@ function createAgentRuntimePool(input: AgentRuntimeRegistration) {
     ...process.env,
     BLAME_AGENT_PACKAGED: String(input.packaged),
     BLAME_AGENT_SERVICE_VERSION: input.serviceVersion,
+    BLAME_CLAUDE_CODE_STATE_DIR: join(app.getPath("userData"), "claude-code"),
   };
   return new AgentRuntimePool({
     createProcess: (callbacks) =>

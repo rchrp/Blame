@@ -1,6 +1,8 @@
 # Push a `v<version>` tag to build every installer and attach them to a draft
 # GitHub Release. Test the draft, then publish it: download.blame.so and the
 # in-app updater follow the latest published release.
+# A `v<version>-beta.<n>` tag is published right away as a prerelease. Only
+# desktop apps on the beta channel update to it.
 name: Release desktop
 
 on:
@@ -22,10 +24,11 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
-      runtime_version: ${{ steps.runtime.outputs.runtime_version }}
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup
+        with:
+          save-cache: "false"
 
       - id: version
         name: Resolve version from tag
@@ -44,16 +47,17 @@ jobs:
         name: Verify published runtime
         run: node scripts/release-preflight.mjs
 
+  # Builds start with the preflight; only the release waits for both.
   build:
     name: Build ${{ matrix.name }}
-    needs: preflight
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
         include:
+          # Packaged on Apple Silicon: Intel runners are much slower.
           - name: macos-x64
-            runner: macos-15-intel
+            runner: macos-latest
             args: --mac --x64
           - name: macos-arm64
             runner: macos-latest
@@ -65,14 +69,18 @@ jobs:
             runner: ubuntu-latest
             args: --linux --x64
     env:
-      BLAME_VERSION: ${{ needs.preflight.outputs.version }}
-      BLAME_RUNTIME_VERSION: ${{ needs.preflight.outputs.runtime_version }}
       BLAME_REQUIRE_PREBUILT_RUNTIME: true
       BLAME_HOMEPAGE: ${{ vars.BLAME_HOMEPAGE }}
       BLAME_MAINTAINER_EMAIL: ${{ vars.BLAME_MAINTAINER_EMAIL }}
       BLAME_MAINTAINER_NAME: ${{ vars.BLAME_MAINTAINER_NAME }}
     steps:
       - uses: actions/checkout@v7
+
+      # The preflight validates the tag; the runtime version comes from the
+      # manifests, which the preflight checks are published.
+      - name: Resolve version from tag
+        shell: bash
+        run: echo "BLAME_VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
 
       - name: Install Linux packaging dependencies
         if: runner.os == 'Linux'
@@ -81,6 +89,8 @@ jobs:
           sudo apt-get install -y --no-install-recommends rpm
 
       - uses: ./.github/actions/setup
+        with:
+          save-cache: "false"
 
       - name: Test package integrity on target OS
         run: pnpm --filter @blame/desktop test:package
@@ -116,7 +126,7 @@ jobs:
             packages/desktop/dist/latest*.yml
 
   draft:
-    name: Draft GitHub Release
+    name: GitHub Release
     needs: [preflight, build]
     runs-on: ubuntu-latest
     permissions:
@@ -127,6 +137,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup
+        with:
+          save-cache: "false"
 
       - uses: actions/download-artifact@v8
         with:
@@ -136,14 +148,18 @@ jobs:
       - name: Collect release files
         run: node scripts/desktop-release.mjs collect artifacts release
 
-      - name: Create or update the draft release
+      # Stable versions stay drafts until a maintainer publishes them. Betas are
+      # published as prereleases, which download.blame.so/latest never serves.
+      - name: Create or update the release
         run: |
           if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
             gh release upload "$GITHUB_REF_NAME" release/* --clobber
           else
-            flags=(--draft --generate-notes --title "Blame $VERSION" --verify-tag)
+            flags=(--generate-notes --title "Blame $VERSION" --verify-tag)
             if [[ "$VERSION" == *-* ]]; then
-              flags+=(--prerelease)
+              flags+=(--prerelease --latest=false)
+            else
+              flags+=(--draft)
             fi
             gh release create "$GITHUB_REF_NAME" release/* "${flags[@]}"
           fi

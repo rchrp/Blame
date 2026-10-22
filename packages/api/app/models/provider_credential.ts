@@ -2,7 +2,8 @@ import { assignUuidV7Id } from '#lib/uuid_v7_model'
 import { BaseModel, beforeCreate, column } from '@adonisjs/lucid/orm'
 import { DateTime } from 'luxon'
 
-export type ProviderCredentialAuthMethod = 'api-key' | 'oauth'
+/** 'local-cli': the provider signs in through a CLI on the user's computer, so no secret is stored. */
+export type ProviderCredentialAuthMethod = 'api-key' | 'oauth' | 'local-cli'
 
 export default class ProviderCredential extends BaseModel {
   static selfAssignPrimaryKey = true
