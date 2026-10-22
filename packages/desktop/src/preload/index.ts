@@ -153,7 +153,8 @@ const api: BlameDesktopApi = {
       ipcRenderer.send("backlog-status-pip:snapshot", snapshot),
     request: (input) => ipcRenderer.invoke("backlog-status-pip:request", input),
     close: () => ipcRenderer.send("backlog-status-pip:close"),
-    setMode: (input) => ipcRenderer.invoke("backlog-status-pip:set-mode", input),
+    setMode: (input) =>
+      ipcRenderer.invoke("backlog-status-pip:set-mode", input),
   },
   securityAudits: {
     active: (input) => ipcRenderer.invoke("security-audits:active", input),
@@ -218,6 +219,12 @@ const api: BlameDesktopApi = {
     setPresentation: (input) =>
       ipcRenderer.invoke("window:set-presentation", input),
     toggleMaximize: () => ipcRenderer.invoke("window:toggle-maximize"),
+  },
+  previewDevtools: {
+    getAdvancedDiagnostics: (input) =>
+      ipcRenderer.invoke("preview-devtools:get-advanced", input),
+    setAdvancedDiagnostics: (input) =>
+      ipcRenderer.invoke("preview-devtools:set-advanced", input),
   },
   agentScreenshots: {
     cache: (input) => ipcRenderer.invoke("agent-screenshots:cache", input),

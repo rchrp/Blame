@@ -56,7 +56,11 @@ import type {
   GitStatusResult,
   SecurityAuditClient,
 } from "@blame/app";
-import type { AgentScreenshotsClient, McpServersClient } from "@blame/app";
+import type {
+  AgentScreenshotsClient,
+  McpServersClient,
+  PreviewDevtoolsSettingsClient,
+} from "@blame/app";
 import type { RuntimeDiagnosticInput, RuntimeProgress } from "@blame/app";
 import type { TelemetryExportSession } from "@blame/app";
 import type { HostDependencyReport } from "../main/host-dependencies";
@@ -218,7 +222,10 @@ export type BacklogStatusPip = {
   publish(snapshot: BacklogStatusPipSnapshot): void;
   request(input: BacklogStatusPipRequest): Promise<boolean>;
   close(): void;
-  setMode(input: { compact: boolean; contentHeight?: number }): Promise<boolean>;
+  setMode(input: {
+    compact: boolean;
+    contentHeight?: number;
+  }): Promise<boolean>;
 };
 
 export type BlameDesktopApi = {
@@ -255,6 +262,7 @@ export type BlameDesktopApi = {
   windowControls: WindowControls;
   projectWindows: ProjectWindows;
   agentScreenshots: AgentScreenshotsClient;
+  previewDevtools: PreviewDevtoolsSettingsClient;
   previewBrowser: {
     capture(input: {
       id: string;

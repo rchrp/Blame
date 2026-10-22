@@ -58,7 +58,9 @@ async function handleAgentHostRequest(
     return previewDevtoolsTarget(input, signal, harness, devtools);
   }
   if (method === "previewDevtoolsTools") {
-    return devtools.listTools();
+    return devtools.listTools({
+      advanced: await advancedDiagnostics(recordInput(input).projectId),
+    });
   }
   if (method === "previewDevtoolsCall") {
     return previewDevtoolsCall(input, signal, harness, devtools);
@@ -194,6 +196,7 @@ async function previewDevtoolsCall(
   }
   const scope = String(request.scope ?? "");
   const result = await devtools.call({
+    advanced: await advancedDiagnostics(request.projectId),
     arguments: recordInput(request.arguments),
     currentUrl: preview.currentUrl,
     openEndpoint: () => openPreviewDevtoolsEndpoint({ scope }),
@@ -321,6 +324,14 @@ function openAgentExternalUrl(input: unknown) {
 function recordInput(input: unknown): Record<string, unknown> {
   if (!input || typeof input !== "object") return {};
   return input as Record<string, unknown>;
+}
+
+async function advancedDiagnostics(projectId: unknown) {
+  const { previewDevtoolsSettings } =
+    await import("./ipc/preview-devtools-settings-ipc.ts");
+  return previewDevtoolsSettings()
+    .advancedDiagnostics(optionalText(projectId))
+    .catch(() => false);
 }
 
 function optionalText(value: unknown) {

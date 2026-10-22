@@ -8,6 +8,7 @@ import {
   previewDevtoolsMcpTools,
   type PreviewToolRuntimeOptions,
 } from "./preview-harness-tools.js";
+import { previewDevtoolsToolTimeoutMs } from "./preview-devtools-policy.js";
 
 const unavailableErrors = [
   "ECONNRESET",
@@ -58,6 +59,39 @@ test("unexpected preview implementation errors remain errors", async (context) =
     tools[0].execute({}, { signal: new AbortController().signal } as never),
     /Invalid implementation state/,
   );
+});
+
+test("each browser tool waits longer than the desktop service does", async (context) => {
+  const workspace = await mkdtemp(join(tmpdir(), "blame-preview-timeouts-"));
+  context.after(() => rm(workspace, { recursive: true, force: true }));
+  const listed: unknown[] = [];
+  const options = await readyPreviewOptions(workspace, () => {
+    throw new Error("not called");
+  });
+  options.previewDevtoolsTools = (input) => {
+    listed.push(input);
+    return ["click", "lighthouse_audit"].map((name) => ({
+      name,
+      inputSchema: { type: "object", properties: {} },
+    }));
+  };
+  const tools = await previewDevtoolsMcpTools(
+    options,
+    { projectId: "project-1", scope: "preview", worktree: workspace },
+    { log() {} },
+  );
+  const timeouts = Object.fromEntries(
+    tools.map((tool) => [tool.name, tool.timeoutMs]),
+  );
+  assert.equal(timeouts.preview_devtools__click, 20_000);
+  assert.equal(timeouts.preview_devtools__lighthouse_audit, 125_000);
+  for (const name of ["click", "lighthouse_audit"])
+    assert.ok(
+      timeouts[`preview_devtools__${name}`]! >
+        previewDevtoolsToolTimeoutMs(name),
+    );
+  // The project decides whether advanced tools are listed.
+  assert.equal((listed[0] as { projectId?: string }).projectId, "project-1");
 });
 
 async function readyPreviewOptions(

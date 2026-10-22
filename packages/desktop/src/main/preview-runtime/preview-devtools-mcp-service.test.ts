@@ -13,6 +13,7 @@ import {
   scopedArtifactOutputPath,
   workspaceUploadRelativePath,
 } from "./preview-devtools-mcp-service.ts";
+import { defaultPreviewDevtoolsTools } from "@blame/agent-runtime";
 import toolCatalog from "./preview-devtools-tool-catalog.json" with { type: "json" };
 
 test("uses the verified Google MCP version and important compatible flags", () => {
@@ -33,9 +34,26 @@ test("uses the verified Google MCP version and important compatible flags", () =
   assert.ok(args.includes("--no-performance-crux"));
 });
 
-test("catalog exposes every compatible scoped tool without page selection", async () => {
+test("the default catalog keeps the twenty everyday tools", async () => {
   const service = new PreviewDevtoolsMcpService();
   const tools = await service.listTools();
+  assert.deepEqual(
+    tools.map(({ name }) => name).sort(),
+    [...defaultPreviewDevtoolsTools].sort(),
+  );
+  const size = (list: unknown[]) => JSON.stringify(list).length;
+  // The schemas sent with every request are at most half of the former
+  // forty-tool catalog.
+  assert.ok(
+    size(tools) * 2 <= size(toolCatalog.tools),
+    `${size(tools)} vs ${size(toolCatalog.tools)}`,
+  );
+  assert.ok(tools.every((item) => !("$schema" in item.inputSchema)));
+});
+
+test("catalog exposes every compatible scoped tool without page selection", async () => {
+  const service = new PreviewDevtoolsMcpService();
+  const tools = await service.listTools({ advanced: true });
   const names = new Set(tools.map(({ name }) => name));
 
   assert.equal(toolCatalog.source, "chrome-devtools-mcp");
@@ -328,6 +346,69 @@ test("navigate_page outside the preview fails before reaching the browser", asyn
     /can only open this story's preview/u,
   );
   assert.deepEqual(calls, []);
+  await service.dispose();
+});
+
+test("advanced tools need the project setting, before any connection", async () => {
+  const service = new PreviewDevtoolsMcpService(async () => {
+    throw new Error("must not connect");
+  });
+  for (const toolName of [
+    "lighthouse_audit",
+    "performance_start_trace",
+    "take_heapsnapshot",
+    "execute_3p_developer_tool",
+  ])
+    await assert.rejects(
+      service.call({ ...previewInput(), toolName }),
+      /advanced diagnostic.*Advanced browser diagnostics/u,
+    );
+  await assert.rejects(
+    service.call({
+      ...previewInput(),
+      toolName: "not_in_catalog",
+      advanced: true,
+    }),
+    /tool is unavailable/u,
+  );
+});
+
+test("each tool gets its own timeout", async () => {
+  const timeouts: Record<string, number> = {};
+  const service = new PreviewDevtoolsMcpService(async () => ({
+    artifacts: "/tmp/blame-preview-devtools-test",
+    client: {
+      callTool: async (
+        request: { name: string },
+        _schema: unknown,
+        options: { timeout: number },
+      ) => {
+        timeouts[request.name] = options.timeout;
+        return { content: [] };
+      },
+    } as never,
+    close: async () => undefined,
+    closed: false,
+    tools: [
+      "take_snapshot",
+      "lighthouse_audit",
+      "performance_stop_trace",
+      "take_heapsnapshot",
+    ].map(tool),
+  }));
+  for (const toolName of [
+    "take_snapshot",
+    "lighthouse_audit",
+    "performance_stop_trace",
+    "take_heapsnapshot",
+  ])
+    await service.call({ ...previewInput(), advanced: true, toolName });
+  assert.deepEqual(timeouts, {
+    take_snapshot: 15_000,
+    lighthouse_audit: 120_000,
+    performance_stop_trace: 120_000,
+    take_heapsnapshot: 120_000,
+  });
   await service.dispose();
 });
 

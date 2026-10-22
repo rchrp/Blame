@@ -7,6 +7,7 @@ import {
 } from "electron";
 import { localAgentOwnsWorkspace, registerAgentIpcHandlers } from "./agent-ipc";
 import { registerAgentScreenshotIpcHandlers } from "./ipc/agent-screenshots-ipc";
+import { registerPreviewDevtoolsSettingsIpcHandlers } from "./ipc/preview-devtools-settings-ipc";
 import { registerBacklogStatusPipIpcHandlers } from "./backlog-status-pip-ipc";
 import { registerCloudAuthIpcHandlers } from "./cloud-auth-ipc";
 import { registerDesktopUpdateIpcHandlers } from "./desktop-update-ipc";
@@ -90,6 +91,9 @@ export function registerDesktopIpcHandlers(options: DesktopIpcOptions) {
         : localPreviewBridgeGrant(source.worktree),
   });
   registerAgentScreenshotIpcHandlers({ isAppWindow: options.isAppWindow });
+  registerPreviewDevtoolsSettingsIpcHandlers({
+    isAppWindow: options.isAppWindow,
+  });
   registerMcpIpcHandlers();
   registerTerminalIpcHandlers();
   registerTelemetryIpcHandlers(options.telemetry);

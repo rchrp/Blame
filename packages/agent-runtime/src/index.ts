@@ -19,6 +19,7 @@ export {
   type WorkspaceRevisionState,
 } from "./harness/workspace-revisions.js";
 export { taskComplexityBucket } from "./telemetry-cohorts.js";
+export * from "./preview-devtools-policy.js";
 export type { TaskComplexityBucket } from "./telemetry-cohorts.js";
 export { commandWithNextWebpackFallback } from "./next-webpack-fallback.js";
 export { parseRunConfigurations } from "./project-initialization.js";

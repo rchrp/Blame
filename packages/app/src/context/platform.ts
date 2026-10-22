@@ -104,6 +104,7 @@ export type Platform = {
   agent?: AgentClient
   agentScreenshots?: AgentScreenshotsClient
   api?: ApiConnection
+  previewDevtools?: PreviewDevtoolsSettingsClient
   appStatus?: AppStatusClient
   backlogStatusPip?: BacklogStatusPipClient
   deploy?: DeployClient
@@ -633,6 +634,15 @@ export type AgentScreenshotsClient = {
   // Copies the image to the clipboard, or saves it where the user picks.
   copy(input: { id: string }): Promise<boolean>
   saveAs(input: { id: string }): Promise<boolean>
+}
+
+// Per-project settings of the agent's browser tools.
+export type PreviewDevtoolsSettingsClient = {
+  getAdvancedDiagnostics(input: { projectId: string }): Promise<boolean>
+  setAdvancedDiagnostics(input: {
+    enabled: boolean
+    projectId: string
+  }): Promise<boolean>
 }
 
 export type PreviewBrowserClient = {

@@ -27,6 +27,10 @@ import {
   runtimeHostPath,
   runtimeManagedPath,
 } from "../workspace-runtime.ts";
+import {
+  previewDevtoolsToolAllowed,
+  previewDevtoolsToolTimeoutMs,
+} from "@blame/agent-runtime";
 import toolCatalog from "./preview-devtools-tool-catalog.json" with { type: "json" };
 
 export type PreviewDevtoolsEndpoint = {
@@ -53,6 +57,8 @@ export type PreviewDevtoolsMcpTool = {
 };
 
 export type PreviewDevtoolsMcpCall = PreviewDevtoolsMcpContext & {
+  // The project turned on Advanced browser diagnostics.
+  advanced?: boolean;
   arguments?: Record<string, unknown>;
   currentUrl: string;
   toolName: string;
@@ -110,7 +116,14 @@ const artifactOutputPathArguments = new Map<string, readonly string[]>([
   ["take_screenshot", ["filePath"]],
   ["take_snapshot", ["filePath"]],
 ]);
-const catalogTools = toolCatalog.tools as PreviewDevtoolsMcpTool[];
+// The JSON Schema dialect URL is noise to the model: drop it from what is
+// sent with every request.
+const catalogTools = (toolCatalog.tools as PreviewDevtoolsMcpTool[]).map(
+  ({ inputSchema, ...tool }) => {
+    const { $schema: _dialect, ...schema } = inputSchema;
+    return { ...tool, inputSchema: schema };
+  },
+);
 const catalogToolNames = new Set(catalogTools.map(({ name }) => name));
 const maximumStagedUploadBytes = 20 * 1024 * 1024;
 const previewMcpCallTimeoutMs = 15_000;
@@ -124,8 +137,14 @@ export class PreviewDevtoolsMcpService {
     this.createConnection = createConnection;
   }
 
-  listTools() {
-    return Promise.resolve(catalogTools);
+  // The default set keeps the schemas sent with every request small;
+  // diagnostics are added when the project asks for them.
+  listTools(options: { advanced?: boolean } = {}) {
+    return Promise.resolve(
+      catalogTools.filter(({ name }) =>
+        previewDevtoolsToolAllowed(name, options.advanced === true),
+      ),
+    );
   }
 
   async call(input: PreviewDevtoolsMcpCall) {
@@ -133,6 +152,10 @@ export class PreviewDevtoolsMcpService {
     if (!catalogToolNames.has(input.toolName)) {
       throw unavailableToolError(input.toolName);
     }
+    if (!previewDevtoolsToolAllowed(input.toolName, input.advanced === true))
+      throw new Error(
+        `Preview DevTools tool ${input.toolName} is an advanced diagnostic. It is available once Advanced browser diagnostics is turned on for this project in Settings.`,
+      );
     const connection = await waitForConnection(
       this.connection(input),
       input.signal,
@@ -230,6 +253,7 @@ async function callPreviewTool(
     tool.name,
     argumentsValue,
     input.signal,
+    previewDevtoolsToolTimeoutMs(tool.name),
   );
 }
 

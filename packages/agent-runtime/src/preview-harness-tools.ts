@@ -2,6 +2,7 @@ import type { CoreSessionConfig } from "@cline/sdk";
 import { createMcpTools } from "@cline/sdk";
 import { currentWorkspaceRevisionState } from "./harness/workspace-revisions.js";
 import { sha256 } from "./harness/light-identity.js";
+import { previewDevtoolsAgentTimeoutMs } from "./preview-devtools-policy.js";
 import {
   previewToolModelOutput,
   recordSessionScreenshots,
@@ -40,6 +41,8 @@ export type PreviewDevtoolsTarget = {
 };
 
 export type PreviewRuntimeContext = {
+  // Lets the desktop app apply the project's browser tool settings.
+  projectId?: string;
   scope?: string;
   storyId?: string;
   workspaceMode?: "local-container" | "cloud-mirror" | "direct";
@@ -131,6 +134,7 @@ type PreviewToolsLogger = {
 
 type PreviewSessionContextInput = {
   previewDevtoolsScope?: string;
+  projectId?: string;
   storyId?: string;
   workspaceMode?: "local-container" | "cloud-mirror" | "direct";
   workspaceRoot: string;
@@ -143,6 +147,7 @@ export function previewRuntimeContext(
     ...(input.previewDevtoolsScope
       ? { scope: input.previewDevtoolsScope }
       : {}),
+    ...(input.projectId ? { projectId: input.projectId } : {}),
     ...(input.storyId ? { storyId: input.storyId } : {}),
     ...(input.workspaceMode ? { workspaceMode: input.workspaceMode } : {}),
     worktree: input.workspaceRoot,
@@ -156,15 +161,23 @@ export async function previewDevtoolsMcpTools(
 ): Promise<AgentTool[]> {
   if (!preview.scope || !mcpAvailable(options)) return [];
   try {
-    return await createMcpTools({
+    const tools: AgentTool[] = await createMcpTools({
       maxRetries: 0,
       nameTransform: ({ toolName }: { toolName: string }) =>
         `preview_devtools__${toolName}`,
       provider: previewMcpProvider(options, preview),
       retryable: false,
       serverName: "preview-devtools",
-      timeoutMs: 20_000,
+      timeoutMs: previewDevtoolsAgentTimeoutMs(""),
     });
+    // Slow diagnostics get more time; the agent always waits longer than
+    // the desktop service, so it reads the service's timeout message.
+    return tools.map((tool: AgentTool) => ({
+      ...tool,
+      timeoutMs: previewDevtoolsAgentTimeoutMs(
+        tool.name.slice("preview_devtools__".length),
+      ),
+    }));
   } catch (error) {
     logger.log("Preview DevTools MCP tools unavailable", {
       error: errorMessage(error),

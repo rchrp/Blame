@@ -7,6 +7,7 @@ export type {
   AgentScreenshotData,
   AgentScreenshotMetadata,
   AgentScreenshotsClient,
+  PreviewDevtoolsSettingsClient,
   BacklogStatusPipRequest,
   BacklogStatusPipSnapshot,
   CloudAuthRequestClient,
