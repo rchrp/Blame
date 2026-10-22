@@ -18,6 +18,8 @@ import type {
   GenerateCommitMessageResult,
   GenerateTitleInput,
   GenerateTitleResult,
+  PlanUserStoriesInput,
+  PlanUserStoriesResult,
   InitializeProjectInput,
   InitializeProjectResult,
   ProjectInitializationDiagnostics,
@@ -449,6 +451,10 @@ export type AgentClient = {
       input: OptimizeUserStoryPromptInput
     ): Promise<OptimizeUserStoryPromptResult>
     generateTitle(input: GenerateTitleInput): Promise<GenerateTitleResult>
+  }
+  // Desktop only: the agent that turns a conversation into user stories.
+  planning?: {
+    reply(input: PlanUserStoriesInput): Promise<PlanUserStoriesResult>
   }
   approveAndMerge(input: ApproveAndMergeInput): Promise<ApproveAndMergeResult>
   generateCommitMessage(

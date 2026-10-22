@@ -15,6 +15,10 @@ import {
   describePreviewDevtools,
   isPreviewDevtoolsTool,
 } from "./describe-preview-devtools.ts"
+import {
+  describeStoryRead,
+  describeStorySearch,
+} from "./describe-story-history.ts"
 import { num, record, str, textOf } from "./tool-call-values.ts"
 import type { ToolCallSource, ToolCallView } from "./tool-call-view.ts"
 
@@ -51,6 +55,8 @@ const describers: Record<string, (source: ToolCallSource) => ToolCallView> = {
   finish_task: describeFinish,
   submit_and_exit: describeFinish,
   attempt_completion: describeFinish,
+  search_user_stories: describeStorySearch,
+  read_user_story: describeStoryRead,
   consult_specialist: describeSpecialist,
   spawn_agent: describeSpecialist,
   get_preview_devtools: describePreview,

@@ -2,6 +2,7 @@ import {
   lightReadToolNames,
   lightWriteToolNames,
 } from "./harness/light-tools.js";
+import { storyHistoryToolNames } from "./story-history-tools.js";
 export { blockedCommandParts } from "./harness/command-policy.js";
 
 export const readTools: string[] = [
@@ -11,6 +12,7 @@ export const readTools: string[] = [
   "get_preview_devtools",
   "get_preview_container_logs",
   ...lightReadToolNames,
+  ...storyHistoryToolNames,
 ];
 
 export const writeTools: string[] = [...lightWriteToolNames];

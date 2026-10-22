@@ -493,3 +493,18 @@ test("a component preview names its page and flags errors", () => {
     text: "Error overlay: none.\nConsole errors:\nmsgid=4 [error] Missing key prop",
   })
 })
+
+test("story history lookups name the search and the story read", () => {
+  assert.equal(
+    row(view("search_user_stories", { query: "login redirect" }, "2 of 2…")),
+    "Searched stories “login redirect”"
+  )
+  assert.equal(
+    row(view("search_user_stories", {}, undefined, true)),
+    "Searching stories recent"
+  )
+  assert.equal(
+    row(view("read_user_story", { story: "us-012", include: ["files"] })),
+    "Read story US-012 files"
+  )
+})

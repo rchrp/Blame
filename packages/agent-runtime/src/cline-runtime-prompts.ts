@@ -52,7 +52,7 @@ type DevelopmentPromptInput = Pick<
   | "summary"
   | "title"
 > &
-  Partial<Pick<StartDevelopmentSessionInput, "apiConnection">> &
+  Partial<Pick<StartDevelopmentSessionInput, "apiConnection" | "projectId">> &
   Pick<SendDevelopmentSessionInput, "feedbackOnly">;
 
 export async function developmentUserInput(
@@ -137,6 +137,15 @@ function developmentStoryPrompt(
   const feedbackFiles = fileAttachmentReferences(input.feedbackFileAttachments);
   if (feedbackFiles) {
     prompt.push("", "Review feedback files:", "", feedbackFiles);
+  }
+  const earlierStories = input.projectId
+    ? referencedStories(`${input.summary}\n${input.feedback ?? ""}`)
+    : [];
+  if (earlierStories.length) {
+    prompt.push(
+      "",
+      `Earlier stories mentioned: ${earlierStories.join(", ")}. read_user_story loads what was done in them when that context helps.`,
+    );
   }
   if (attachments.userImages.length) {
     prompt.push(
@@ -506,4 +515,12 @@ export function developmentPracticePrompt(
   return loadPrompt(
     `practices/unit-tests/${enabled ? "standard" : "disabled"}`,
   );
+}
+
+// Story ids (US-012) named in a request, at most eight, in order.
+export function referencedStories(text: string) {
+  const ids = Array.from(text.matchAll(/\bUS-0*(\d{1,6})\b/giu), (match) =>
+    `US-${match[1]!.padStart(3, "0")}`,
+  );
+  return Array.from(new Set(ids)).slice(0, 8);
 }

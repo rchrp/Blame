@@ -334,6 +334,11 @@ function registerDeliveryWorkflowIpcHandlers(
       agentRuntime().run("promptOptimizer.generateTitle", resolved),
     ),
   );
+  ipcMain.handle("agent:planning:reply", (_event, input) =>
+    agentWorkspaceInput(input).then((resolved) =>
+      agentRuntime().run("planning.reply", resolved),
+    ),
+  );
   ipcMain.handle("agent:approve-and-merge", async (_event, input) => {
     const resolved = await agentWorkspaceInput(input);
     if (typeof resolved.worktree !== "string" || !resolved.worktree) {

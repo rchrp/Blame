@@ -34,6 +34,7 @@ export const agentRuntimeMethods = [
   "newProjects.generate",
   "promptOptimizer.optimizeUserStory",
   "promptOptimizer.generateTitle",
+  "planning.reply",
   "approveAndMerge",
   "generateCommitMessage",
   "resolveMergeConflicts",

@@ -243,6 +243,8 @@ import { scanSecurityAuditRepository } from "./security-audit-scan.js";
 import { developmentSpecialistConsultEnabled } from "./specialist-agents.js";
 import { taskComplexityBucket } from "./telemetry-cohorts.js";
 import { generateTitle } from "./title-generation.js";
+import { sessionStoryHistoryTools } from "./story-history-tools.js";
+import { runStoryPlanning } from "./story-planning.js";
 import type {
   AgentApprovalRequest,
   AgentBackendConfig,
@@ -276,6 +278,7 @@ import type {
   NewProjectGenerationResult,
   OAuthCredentials,
   OptimizeUserStoryPromptInput,
+  PlanUserStoriesInput,
   OptimizeUserStoryPromptResult,
   RepairProjectInitializationInput,
   RepairProjectInitializationResult,
@@ -588,6 +591,18 @@ export class BlameAgentRuntime {
     optimizeUserStory: (input: OptimizeUserStoryPromptInput) =>
       this.optimizeUserStoryPrompt(input),
     generateTitle: (input: GenerateTitleInput) => this.generateTitle(input),
+  };
+
+  planning = {
+    reply: (input: PlanUserStoriesInput) =>
+      runStoryPlanning(input, {
+        core: (backend) => this.core(backend),
+        credential: (value) => this.runtimeCredential(value),
+        git: this.options.git,
+        subscribe: (id, backend) => this.subscribeSession(id, backend),
+        telemetry: this.agentTelemetry,
+        unsubscribe: (id) => this.unsubscribeSession(id),
+      }),
   };
 
   approveAndMerge = (input: ApproveAndMergeInput) =>
@@ -939,6 +954,7 @@ export class BlameAgentRuntime {
       const extraTools = [
         ...(standardTools ?? []),
         ...(specialistTool ? [specialistTool] : []),
+        ...sessionStoryHistoryTools(input, this.options.git),
       ];
       const systemPrompt =
         (input.systemPrompt ?? loadPrompt("default-agent-system")) +

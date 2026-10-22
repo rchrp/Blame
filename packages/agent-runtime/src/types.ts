@@ -739,6 +739,54 @@ export type OptimizeUserStoryPromptResult = {
   markdown: string;
 };
 
+export type StoryPlanPriority = "Low" | "Medium" | "High";
+
+/** A user story the planning agent proposes; nothing is created until the person adds it. */
+export type PlannedUserStory = {
+  // Stable within one reply (P1, P2…); dependencies point at these keys or
+  // at existing stories (US-012).
+  key: string;
+  title: string;
+  summary: string;
+  priority: StoryPlanPriority;
+  dependsOn: string[];
+  // Set by the app once the person added it to the backlog.
+  addedAs?: string;
+  dismissed?: boolean;
+};
+
+export type StoryPlanMessage = {
+  role: "user" | "assistant";
+  text: string;
+  stories?: PlannedUserStory[];
+};
+
+export type PlanUserStoriesInput = {
+  apiConnection: ApiConnection;
+  providerId: string;
+  modelId: string;
+  credentialLabel?: string;
+  reasoningEffort?: ReasoningSelection;
+  backend?: AgentBackendConfig;
+  cwd: string;
+  workspaceRoot: string;
+  projectId: string;
+  // Chosen by the app so it can follow the agent's steps while it plans.
+  sessionId?: string;
+  executionId?: string;
+  // The conversation so far, ending with the person's latest message.
+  messages: StoryPlanMessage[];
+  // The planner's private notes from its previous reply.
+  notes?: string;
+};
+
+export type PlanUserStoriesResult = {
+  sessionId: string;
+  message: string;
+  stories: PlannedUserStory[];
+  notes?: string;
+};
+
 export type AgentSessionRecord = {
   sessionId: string;
   title?: string;

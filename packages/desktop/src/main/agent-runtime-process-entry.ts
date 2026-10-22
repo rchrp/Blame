@@ -244,6 +244,8 @@ function workflowHandlers(runtime: BlameAgentRuntime) {
       runtime.promptOptimizer.optimizeUserStory(input as never),
     "promptOptimizer.generateTitle": (input: unknown) =>
       runtime.promptOptimizer.generateTitle(input as never),
+    "planning.reply": (input: unknown) =>
+      runtime.planning.reply(input as never),
     approveAndMerge: (input: unknown) =>
       runtime.approveAndMerge(input as never),
     generateCommitMessage: (input: unknown) =>

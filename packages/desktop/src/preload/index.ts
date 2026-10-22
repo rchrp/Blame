@@ -548,6 +548,9 @@ const api: BlameDesktopApi = {
       generateTitle: (input) =>
         ipcRenderer.invoke("agent:prompt-optimizer:generate-title", input),
     },
+    planning: {
+      reply: (input) => ipcRenderer.invoke("agent:planning:reply", input),
+    },
     approveAndMerge: (input) =>
       ipcRenderer.invoke("agent:approve-and-merge", input),
     generateCommitMessage: (input) =>

@@ -153,6 +153,25 @@ export function saveProjectMemory(
   );
 }
 
+/** Light summaries of a project's stories (no activities or runs). */
+export function listProjectUserStories(
+  connection: ApiConnection,
+  projectId: string,
+) {
+  const query = new URLSearchParams({ projectId, view: "summary" });
+  return request<unknown>(connection, `/projects/user-stories?${query}`, {
+    signal: AbortSignal.timeout(8_000),
+  });
+}
+
+export function getProjectUserStory(connection: ApiConnection, id: string) {
+  return request<unknown>(
+    connection,
+    `/projects/user-stories/${encodeURIComponent(id)}`,
+    { signal: AbortSignal.timeout(8_000) },
+  );
+}
+
 async function request<T>(
   connection: ApiConnection,
   path: string,

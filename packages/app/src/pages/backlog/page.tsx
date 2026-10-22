@@ -9,6 +9,7 @@ import type {
 } from "@/components/backlog/actions/story-action-dialogs"
 import { BacklogColumn } from "@/components/backlog/board/backlog-column"
 import { BacklogToolbar } from "@/components/backlog/board/backlog-toolbar"
+import { PlanModeLauncher } from "@/components/backlog/planning/plan-mode-dialog"
 import { subscribeAgentEvents } from "@/components/backlog/data/agent-event-stream"
 import {
   agentEventText,
@@ -1440,6 +1441,14 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
       return story
     }
   )
+  const openPlannedStory = useLatestCallback((storyId: string) => {
+    const userStory = backlog.stories.find((story) => story.id === storyId)
+    if (userStory)
+      openDrawer({
+        userStory,
+        mode: userStory.status === "backlog" ? "edit" : "view",
+      })
+  })
   const createDrawerComment = useLatestCallback(backlog.createComment)
   const deleteDrawerStory = deleteStory
   const updateDrawerStory = useLatestCallback(
@@ -1463,6 +1472,15 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
         disabled={!backlog.projectPath}
         onOpenStatusPip={platform.backlogStatusPip ? openStatusPip : undefined}
         onCreateUserStory={openCreateDrawer}
+        planAction={
+          platform.agent?.planning ? (
+            <PlanModeLauncher
+              key={backlog.projectId}
+              disabled={!backlog.projectPath}
+              onOpenStory={openPlannedStory}
+            />
+          ) : undefined
+        }
         storyCount={backlog.stories.length}
       />
       {backlog.error && (
