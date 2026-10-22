@@ -49,6 +49,24 @@ test.group('model catalog matcher', () => {
     assert.equal(match?.confidence, 1)
   })
 
+  test('resolves a Claude Code alias to its family model', ({ assert }) => {
+    const matcher = new ModelCatalogMatcher([
+      dated('anthropic/claude-opus-5', 'Claude Opus 5', '2026-07-24'),
+      dated('anthropic/claude-opus-5.5', 'Claude Opus 5.5', '2026-09-22'),
+      dated('anthropic/claude-opus-5.5:batch', 'Claude Opus 5.5 (batch)', '2026-09-22'),
+      dated('anthropic/claude-sonnet-5.5', 'Claude Sonnet 5.5', '2026-09-28'),
+      dated('anthropic/claude-4.5-haiku', 'Claude Haiku 4.5', '2025-10-15'),
+    ])
+    const alias = (id: string, name: string, releaseDate?: string) =>
+      matcher.match('claude-code', { ...catalogModel(id, name), releaseDate })
+
+    assert.equal(alias('opus', 'Claude Opus', '2026-09-22')?.model.id, 'anthropic/claude-opus-5.5')
+    assert.equal(alias('sonnet', 'Claude Sonnet')?.model.id, 'anthropic/claude-sonnet-5.5')
+    assert.equal(alias('haiku', 'Claude Haiku')?.model.id, 'anthropic/claude-4.5-haiku')
+    // The alias date wins over the newest release.
+    assert.equal(alias('opus', 'Claude Opus', '2026-07-20')?.model.id, 'anthropic/claude-opus-5')
+  })
+
   test('does not take a whole version for part of another', ({ assert }) => {
     const matcher = new ModelCatalogMatcher([
       openRouterModel('openai/gpt-5.6-sol-codex-max', 'GPT-5.6 Sol Codex Max'),
@@ -84,6 +102,10 @@ function catalogModel(id: string, name: string): CatalogModel {
       cacheWrite: null,
     },
   }
+}
+
+function dated(id: string, name: string, releaseDate: string): OpenRouterModel {
+  return { ...openRouterModel(id, name), releaseDate }
 }
 
 function openRouterModel(id: string, name: string): OpenRouterModel {

@@ -8,6 +8,7 @@ export type OpenRouterMatch = {
 const providerAuthors: Record<string, string[]> = {
   'anthropic': ['anthropic'],
   'bedrock': ['anthropic', 'amazon'],
+  'claude-code': ['anthropic'],
   'gemini': ['google'],
   'google': ['google'],
   'minimax': ['minimax'],
@@ -33,6 +34,8 @@ export class ModelCatalogMatcher {
   match(providerId: string, model: CatalogModel): OpenRouterMatch | undefined {
     const exact = this.exactMatch(providerId, model)
     if (exact) return { model: exact, confidence: 1 }
+    const aliased = this.aliasMatch(providerId, model)
+    if (aliased) return { model: aliased, confidence: 0.9 }
     const named = this.nameMatch(providerId, model)
     if (named) return { model: named, confidence: 0.94 }
     return this.fuzzyMatch(providerId, model)
@@ -63,6 +66,30 @@ export class ModelCatalogMatcher {
       if (match) return match
     }
     return this.byShortId.get(stripProviderPrefix(model.id).toLowerCase()) ?? undefined
+  }
+
+  // A family alias without a version ("opus" in Claude Code) stands for the
+  // family's latest model: the one released closest to the alias, or the
+  // newest one when the alias has no date.
+  private aliasMatch(providerId: string, model: CatalogModel) {
+    const family = stripProviderPrefix(model.id).toLowerCase()
+    if (!/^[a-z]+$/.test(family)) return undefined
+    const authors = new Set(providerAuthors[providerId] ?? [])
+    if (!authors.size) return undefined
+    const pattern = new RegExp(`^[a-z]+-(?:${family}-\\d|[\\d.]+-${family}(?:-|$))`)
+    const members = this.models.filter(
+      (candidate) =>
+        authors.has(modelAuthor(candidate.id)) &&
+        !candidate.id.includes(':') &&
+        pattern.test(stripProviderPrefix(candidate.id).toLowerCase())
+    )
+    const target = releaseTime(model.releaseDate)
+    return members.sort((left, right) =>
+      target
+        ? Math.abs(releaseTime(left.releaseDate) - target) -
+          Math.abs(releaseTime(right.releaseDate) - target)
+        : releaseTime(right.releaseDate) - releaseTime(left.releaseDate)
+    )[0]
   }
 
   private nameMatch(providerId: string, model: CatalogModel) {
@@ -154,6 +181,11 @@ function stripProviderPrefix(value: string) {
 
 function modelAuthor(value: string) {
   return value.includes('/') ? value.slice(0, value.indexOf('/')).toLowerCase() : ''
+}
+
+function releaseTime(value: string | undefined) {
+  const parsed = value ? Date.parse(value) : 0
+  return Number.isFinite(parsed) ? parsed : 0
 }
 
 function roundScore(value: number) {
