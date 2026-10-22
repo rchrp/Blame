@@ -1,5 +1,6 @@
 import * as React from "react"
 import { toast } from "sonner"
+import { mergeDraftSummary } from "@/components/backlog/data/user-story-context"
 import {
   AppWindowIcon,
   BookOpenIcon,
@@ -307,7 +308,7 @@ export function UserStoryDrawerPanel({
   )
   const [summary, setSummary] = React.useState(
     mode === "create"
-      ? (storedDraft?.markdown ?? initialDraft?.summary ?? "")
+      ? mergeDraftSummary(storedDraft?.markdown, initialDraft?.summary)
       : (userStory?.summary ?? "")
   )
   const [comment, setComment] = React.useState(

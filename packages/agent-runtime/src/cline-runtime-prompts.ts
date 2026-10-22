@@ -138,15 +138,10 @@ function developmentStoryPrompt(
   if (feedbackFiles) {
     prompt.push("", "Review feedback files:", "", feedbackFiles);
   }
-  const earlierStories = input.projectId
-    ? referencedStories(`${input.summary}\n${input.feedback ?? ""}`)
-    : [];
-  if (earlierStories.length) {
-    prompt.push(
-      "",
-      `Earlier stories mentioned: ${earlierStories.join(", ")}. read_user_story loads what was done in them when that context helps.`,
-    );
-  }
+  const storyHint = input.projectId
+    ? earlierStoriesHint(`${input.summary}\n${input.feedback ?? ""}`)
+    : undefined;
+  if (storyHint) prompt.push("", storyHint);
   if (attachments.userImages.length) {
     prompt.push(
       "",
@@ -523,4 +518,24 @@ export function referencedStories(text: string) {
     `US-${match[1]!.padStart(3, "0")}`,
   );
   return Array.from(new Set(ids)).slice(0, 8);
+}
+
+// Stories this one builds on ("Builds on US-042", from Use Context) are read
+// first; others it merely names are left to the agent's judgement.
+function earlierStoriesHint(text: string) {
+  const basis = referencedStories(
+    Array.from(text.matchAll(/\bbuilds on\s+(US-\d+)/giu), (match) => match[1])
+      .join(" "),
+  );
+  const others = referencedStories(text).filter((id) => !basis.includes(id));
+  return [
+    basis.length
+      ? `This story builds on ${basis.join(", ")}: start by reading ${basis.length === 1 ? "it" : "them"} with read_user_story (request, outcome and changed files; ask for discussion or activity only if needed).`
+      : undefined,
+    others.length
+      ? `Earlier stories mentioned: ${others.join(", ")}. read_user_story loads what was done in them when that context helps.`
+      : undefined,
+  ]
+    .filter(Boolean)
+    .join("\n") || undefined;
 }

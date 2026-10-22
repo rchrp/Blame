@@ -58,10 +58,7 @@ import {
   takeSelectedBacklogStoryAction,
 } from "@/components/backlog/data/backlog-navigation"
 import { useBacklogStore } from "@/components/backlog/data/backlog-store"
-import {
-  changedFilesFromDiff,
-  completedStoryContextAttachment,
-} from "@/components/backlog/data/user-story-context"
+import { completedStoryReference } from "@/components/backlog/data/user-story-context"
 import { useUserStoryDiffStats } from "@/components/backlog/development/user-story-diff-stats"
 import { stopManagedCloudPreview } from "@/components/backlog/drawer/use-user-story-preview-runner"
 import { UserStoryDrawer } from "@/components/backlog/drawer/user-story-drawer"
@@ -1316,18 +1313,9 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
         })
       }
       if (action === "Use Context") {
-        const changedFiles = await completedStoryChangedFiles(
-          currentStory,
-          platform,
-          projects.activeProject?.path
-        )
         drawerLoadRequestId.current += 1
         setDrawerTarget({
-          initialDraft: {
-            fileAttachments: [
-              completedStoryContextAttachment(currentStory, changedFiles),
-            ],
-          },
+          initialDraft: { summary: completedStoryReference(currentStory) },
           initialTab: "user-story",
           mode: "create",
         })
@@ -2077,20 +2065,3 @@ function diffSummary(diff: string) {
   return `Current git diff files: ${files.join(", ")}.`
 }
 
-async function completedStoryChangedFiles(
-  story: UserStory,
-  platform: Platform,
-  repositoryRoot: string | undefined
-) {
-  if (!repositoryRoot || !platform.workspace || !story.mergeCommit) return []
-  try {
-    const diff = await platform.workspace.gitDiffBetween({
-      from: story.baseCommit ?? `${story.mergeCommit}^`,
-      root: repositoryRoot,
-      to: story.mergeCommit,
-    })
-    return changedFilesFromDiff(diff)
-  } catch {
-    return []
-  }
-}

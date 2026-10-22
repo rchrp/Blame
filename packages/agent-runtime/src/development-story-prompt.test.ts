@@ -46,3 +46,23 @@ test("points the agent at earlier stories the request names", async () => {
     "US-1200",
   ]);
 });
+
+test("a story built on a finished one tells the agent to read it first", async () => {
+  const prompt = (
+    await developmentUserInput(
+      {
+        projectId: "project",
+        summary:
+          "Builds on US-042 · Add OAuth login.\n\nAdd a logout button, like US-7.",
+        title: "Logout",
+      },
+      "/tmp",
+    )
+  ).prompt;
+  assert.match(
+    prompt,
+    /This story builds on US-042: start by reading it with read_user_story/u,
+  );
+  assert.match(prompt, /Earlier stories mentioned: US-007\./u);
+  assert.doesNotMatch(prompt, /mentioned: US-042/u);
+});
