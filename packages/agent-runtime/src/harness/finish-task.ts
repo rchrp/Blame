@@ -24,21 +24,33 @@ export type FinishTaskOptions = {
     activity: LightValidationActivity,
   ): Promise<void> | void;
   screenshots?: FinishTaskScreenshots;
+  // Removes temporary files before the finish checks; returns a note.
+  cleanup?(): Promise<string | undefined>;
   taskContract?: LightTaskContract;
   workspaceRoot: string;
 };
 
 export function createFinishTaskTool(options: FinishTaskOptions) {
-  if (options.executor)
-    return createLightCompletionTool(async (summary, images, context) => {
-      await assertKnownScreenshots(options, images, context);
-      return finishRemotely(options, summary, images, context);
-    });
-  const service = new LightFinishService(options);
+  const service = options.executor
+    ? undefined
+    : new LightFinishService(options);
   return createLightCompletionTool(async (summary, images, context) => {
     await assertKnownScreenshots(options, images, context);
-    return service.finish(summary, context, images);
+    const note = await cleanupNote(options);
+    const result = service
+      ? await service.finish(summary, context, images)
+      : await finishRemotely(options, summary, images, context);
+    return note ? `${result}\n\n${note}` : result;
   });
+}
+
+// A cleanup failure never blocks the finish; it is reported instead.
+async function cleanupNote(options: FinishTaskOptions) {
+  try {
+    return await options.cleanup?.();
+  } catch (error) {
+    return `Temporary preview files could not be removed: ${error instanceof Error ? error.message : String(error)}`;
+  }
 }
 
 // An unknown reference fails the call so the agent can fix it, rather than

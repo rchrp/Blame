@@ -20,6 +20,11 @@ import {
   type FinishTaskScreenshots,
 } from "./harness/finish-task.js";
 import { sessionScreenshotIds } from "./preview-screenshots.js";
+import {
+  componentPreviewFilePatterns,
+  componentPreviewPathspecs,
+  componentPreviewTool,
+} from "./component-preview-tool.js";
 
 import {
   type LightCompletionNotification,
@@ -142,6 +147,9 @@ export function runtimeTools(
               completion.conversationId,
               previewContext,
             ),
+            ...(options.git && worktree && previewContext?.scope
+              ? { cleanup: () => removePreviewScratch(options.git!, worktree) }
+              : {}),
             taskContract,
             workspaceRoot: worktree ?? "",
             onComplete: completion.onComplete,
@@ -150,6 +158,7 @@ export function runtimeTools(
         ]
       : []),
     previewDevtoolsTool(options, previewContext),
+    componentPreviewTool(options, previewContext),
     previewInitializationRepairTool(options, previewContext),
     previewContainerLogsTool(options, previewContext),
     ...previewMcpTools,
@@ -329,4 +338,69 @@ function finishScreenshots(
       return missing.filter((_, index) => !found[index]);
     },
   };
+}
+
+// Temporary component previews never outlive the task: finish_task removes
+// them and says how many it removed. Tracked files are never touched, nor
+// files the project itself ignores, such as a framework's build output.
+export async function removePreviewScratch(
+  git: (cwd: string, args: string[]) => Promise<string>,
+  worktree: string,
+) {
+  const listed = (output: string) => output.split("\0").filter(Boolean);
+  const [untracked, ignored] = await Promise.all([
+    git(worktree, [
+      "ls-files",
+      "-z",
+      "--others",
+      "--exclude-standard",
+      "--",
+      ...componentPreviewPathspecs,
+    ]).then(listed),
+    git(worktree, [
+      "ls-files",
+      "-z",
+      "--others",
+      "--ignored",
+      "--exclude-standard",
+      "--",
+      ...componentPreviewPathspecs,
+    ]).then(listed),
+  ]);
+  const ours = ignored.length
+    ? await ignoredByPreviewRules(git, worktree, ignored)
+    : [];
+  const files = [...new Set([...untracked, ...ours])];
+  if (!files.length) return undefined;
+  for (let index = 0; index < files.length; index += 200)
+    await git(worktree, [
+      "clean",
+      "-f",
+      "-x",
+      "--",
+      ...files.slice(index, index + 200).map((file) => `:(literal)${file}`),
+    ]);
+  return `Removed ${files.length} temporary preview ${files.length === 1 ? "file" : "files"}.`;
+}
+
+// Keeps the ignored files whose deciding rule is one of the preview patterns.
+async function ignoredByPreviewRules(
+  git: (cwd: string, args: string[]) => Promise<string>,
+  worktree: string,
+  files: string[],
+) {
+  const result: string[] = [];
+  for (const file of files.slice(0, 500)) {
+    const output = await git(worktree, [
+      "check-ignore",
+      "-v",
+      "--",
+      file,
+    ]).catch(() => "");
+    // source:line:pattern<TAB>path
+    const pattern = output.match(/^.*:\d+:(.*)\t/u)?.[1];
+    if (pattern && componentPreviewFilePatterns.includes(pattern))
+      result.push(file);
+  }
+  return result;
 }

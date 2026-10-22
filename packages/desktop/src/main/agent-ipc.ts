@@ -9,6 +9,7 @@ import { join } from "node:path";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import log from "electron-log";
+import { excludeComponentPreviewFiles } from "./component-preview-exclude";
 import { optimizeDevelopmentAttachments } from "./attachment-ai-context";
 import {
   refreshRuntimeBackendConnection,
@@ -158,6 +159,7 @@ function registerSessionStartIpcHandlers(
     const workspace = agentWorkspacePath(prepared);
     if (workspace && beforeWorkspaceWrite)
       await beforeWorkspaceWrite(workspace);
+    await prepareComponentPreviews(prepared, workspace);
     return startWorkspaceSession("sessions.start", prepared, workspace);
   });
   ipcMain.handle("agent:sessions:start-development", async (_event, input) => {
@@ -173,6 +175,7 @@ function registerSessionStartIpcHandlers(
     const workspace = agentWorkspacePath(prepared);
     if (workspace && beforeWorkspaceWrite)
       await beforeWorkspaceWrite(workspace);
+    await prepareComponentPreviews(prepared, workspace);
     let session;
     const pendingSessionId = workspace ? `pending:${randomUUID()}` : undefined;
     if (workspace && pendingSessionId)
@@ -355,6 +358,20 @@ function registerDeliveryWorkflowIpcHandlers(
       agentRuntime().run("resolveMergeConflicts", resolved),
     );
   });
+}
+
+// Sessions with a managed preview may write temporary component previews:
+// Git must ignore them from the start.
+async function prepareComponentPreviews(
+  input: Record<string, unknown>,
+  workspace: string | undefined,
+) {
+  if (!workspace || typeof input.previewDevtoolsScope !== "string") return;
+  await excludeComponentPreviewFiles(workspace).catch((error: unknown) =>
+    log.warn("Could not hide temporary component previews from Git", {
+      error: error instanceof Error ? error.message : String(error),
+    }),
+  );
 }
 
 function agentWorkspacePath(input: unknown) {

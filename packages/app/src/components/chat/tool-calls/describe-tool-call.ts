@@ -11,6 +11,7 @@ import {
   describeWeb,
 } from "./describe-run.ts"
 import {
+  describeComponentPreview,
   describePreviewDevtools,
   isPreviewDevtoolsTool,
 } from "./describe-preview-devtools.ts"
@@ -53,6 +54,7 @@ const describers: Record<string, (source: ToolCallSource) => ToolCallView> = {
   consult_specialist: describeSpecialist,
   spawn_agent: describeSpecialist,
   get_preview_devtools: describePreview,
+  open_component_preview: describeComponentPreview,
   get_preview_container_logs: describePreview,
   repair_preview_initialization: describePreview,
   get_code_minimal_context: describeGraph,

@@ -143,6 +143,37 @@ function describeScreenshot(
   }
 }
 
+// A component opened alone on a temporary page, with its screenshot.
+export function describeComponentPreview(source: ToolCallSource): ToolCallView {
+  const input = record(source.input)
+  const failed = !source.running && failedResult(source.output)
+  const shot = describeScreenshot(source, input, failed)
+  const path = str(input.path)
+  const report = outputText(source.output)
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => /^(Error overlay|Console errors|msgid=)/u.test(line))
+    .join("\n")
+  const problems = /Error overlay: (?!none)|^msgid=/mu.test(report)
+  return {
+    ...shot,
+    verb: source.running ? "Previewing" : "Previewed",
+    target: path ? { text: path, mono: true, title: path } : shot.target,
+    chips: [
+      ...shot.chips.filter((chip) => chip.label !== "full page"),
+      ...(problems && !failed
+        ? [{ label: "Errors", tone: "danger" as const }]
+        : []),
+    ],
+    bodies: failed
+      ? shot.bodies
+      : [
+          ...shot.bodies,
+          ...(report ? [{ type: "text" as const, text: report }] : []),
+        ],
+  }
+}
+
 export function screenshotRefs(
   value: unknown,
   refs: ScreenshotRef[] = []

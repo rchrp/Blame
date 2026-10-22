@@ -473,3 +473,23 @@ test("common browser tools read as sentences", () => {
     "Hover element 1_2"
   )
 })
+
+test("a component preview names its page and flags errors", () => {
+  const result = view(
+    "open_component_preview",
+    { path: "/dialog.blame-preview.html?state=empty", colorScheme: "dark" },
+    [
+      {
+        type: "text",
+        text: "Opened /dialog.blame-preview.html?state=empty (dark).\nError overlay: none.\nConsole errors:\nmsgid=4 [error] Missing key prop",
+      },
+      ...screenshotOutput,
+    ]
+  )
+  assert.equal(row(result), "Previewed /dialog.blame-preview.html?state=empty 1440×900 dark Errors")
+  assert.equal(result.bodies[0].type, "screenshot")
+  assert.deepEqual(result.bodies[1], {
+    type: "text",
+    text: "Error overlay: none.\nConsole errors:\nmsgid=4 [error] Missing key prop",
+  })
+})

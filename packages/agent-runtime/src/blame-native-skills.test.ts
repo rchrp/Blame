@@ -23,11 +23,16 @@ test("discovers and invokes Impeccable through Cline native skills", async () =>
   try {
     await service.start();
     const records = service.listRecords("skill");
-    assert.equal(records.length, 1);
-    assert.equal(records[0]?.item.name, "impeccable");
-    assert.match(records[0]?.item.description ?? "", /frontend task/);
-    assert.match(records[0]?.item.description ?? "", /Mandatory/);
-    assert.match(records[0]?.item.description ?? "", /before making design/);
+    const impeccable = records.find(
+      (record: { item: { name: string } }) => record.item.name === "impeccable",
+    );
+    assert.deepEqual(
+      records.map((record: { item: { name: string } }) => record.item.name).sort(),
+      ["component-preview", "impeccable"],
+    );
+    assert.match(impeccable?.item.description ?? "", /frontend task/);
+    assert.match(impeccable?.item.description ?? "", /Mandatory/);
+    assert.match(impeccable?.item.description ?? "", /before making design/);
     const prompt = skillScopeSystemPrompt(service);
     assert.match(prompt, /"name":"impeccable"/);
     assert.match(prompt, /Not for backend-only/);
@@ -36,8 +41,10 @@ test("discovers and invokes Impeccable through Cline native skills", async () =>
     const executor = service.createSkillsExecutor?.();
     assert.ok(executor);
     assert.deepEqual(
-      executor.configuredSkills?.map((skill: { name: string }) => skill.name),
-      ["impeccable"],
+      executor.configuredSkills
+        ?.map((skill: { name: string }) => skill.name)
+        .sort(),
+      ["component-preview", "impeccable"],
     );
     const output = await executor("impeccable", "polish settings", {} as never);
     assert.match(output, /<command-name>impeccable<\/command-name>/);
@@ -101,4 +108,26 @@ test("keeps session startup available when the skill service fails", async () =>
 
   assert.equal(service, undefined);
   assert.equal(stopped, true);
+});
+
+test("the component preview skill explains the recipes and the tool", async () => {
+  const service = createUserInstructionConfigService({
+    skills: {
+      directories: resolvePluginSkillDirectoriesFromPaths([blameNativePluginPath()]),
+    },
+  });
+  try {
+    await service.start();
+    const executor = service.createSkillsExecutor?.();
+    assert.ok(executor);
+    const output = await executor("component-preview", "settings panel", {} as never);
+    assert.match(output, /\.blame-preview\.html/);
+    assert.match(output, /app\/blame-preview\/<name>\/page\.tsx/);
+    assert.match(output, /open_component_preview/);
+    assert.match(output, /take_snapshot/);
+    assert.match(output, /finish_task/);
+    assert.match(output, /Never change the project's real source/);
+  } finally {
+    service.stop();
+  }
 });
