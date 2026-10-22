@@ -76,6 +76,11 @@ function createAgentRuntime(hostClient: AgentRuntimeHostClient) {
         ),
       previewDevtoolsCall: (input) =>
         hostRequest(hostClient, "previewDevtoolsCall", input),
+      previewScreenshotKnown: (input) =>
+        hostRequest<boolean>(hostClient, "previewScreenshotKnown", {
+          ...input,
+          signal: undefined,
+        }),
       previewDevtoolsTools: (input) =>
         hostRequest(hostClient, "previewDevtoolsTools", input),
       refreshPreviewDependencies: (input) =>

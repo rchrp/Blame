@@ -64,6 +64,8 @@ export type UserStoryAgentActivity = {
   detailArtifact?: string
   detailTruncated?: boolean
   originalDetailLength?: number
+  // Screenshots the agent chose to show above its final reply.
+  images?: Array<{ caption: string; id: string }>
   createdAt: string
   updatedAt?: string
 }

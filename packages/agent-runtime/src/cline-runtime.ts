@@ -3106,6 +3106,7 @@ export class BlameAgentRuntime {
       payload: {
         ...asRecord(event.payload),
         text: notification.summary,
+        ...(notification.images?.length ? { images: notification.images } : {}),
         completion: notification.completion,
         verified: notification.verified,
       },

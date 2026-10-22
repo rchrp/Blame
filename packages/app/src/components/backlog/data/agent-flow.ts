@@ -74,7 +74,8 @@ export function agentFlowUpdate(
   if (finalResponse !== undefined) {
     const finalActivity = finalResponseActivity(
       update.agentActivities ?? story.agentActivities ?? [],
-      finalResponse
+      finalResponse,
+      eventImages(event)
     )
     if (finalActivity) {
       update.agentActivities = finalActivity.activities
@@ -562,11 +563,20 @@ function agentMessageKind(): UserStoryAgentActivity["messageKind"] {
 
 function finalResponseActivity(
   activities: UserStoryAgentActivity[],
-  finalResponse: string
+  finalResponse: string,
+  images: UserStoryAgentActivity["images"]
 ) {
   const existing = finalResponseMessageActivity(activities, finalResponse)
-  if (!existing) return undefined
-  const { createdAt, updatedAt, ...activity } = existing
+  // Images need a final message to sit on, even when none was streamed.
+  if (!existing && !images?.length) return undefined
+  const { createdAt, updatedAt, ...activity } = existing ?? {
+    createdAt: undefined,
+    detail: finalResponse,
+    id: "message-final",
+    kind: "message" as const,
+    title: "Agent response",
+    updatedAt: undefined,
+  }
   void createdAt
   void updatedAt
   return upsertActivity(activities, {
@@ -576,7 +586,24 @@ function finalResponseActivity(
     title: "Agent response",
     messageKind: "final",
     status: "completed" as const,
+    ...(images?.length ? { images } : {}),
   })
+}
+
+// The screenshots finish_task attached, as the done event carries them.
+function eventImages(event: AgentEvent) {
+  if (!completedAgentRun(event)) return undefined
+  const images = eventPayload(event).images
+  if (!Array.isArray(images)) return undefined
+  const valid = images.flatMap((image) => {
+    const value = recordValue(image)
+    const id = stringValue(value.id)
+    const caption = stringValue(value.caption)?.trim()
+    return id && /^[0-9a-f]{64}$/u.test(id) && caption
+      ? [{ caption: caption.slice(0, 160), id }]
+      : []
+  })
+  return valid.length ? valid.slice(0, 8) : undefined
 }
 
 function finalResponseMessageActivity(

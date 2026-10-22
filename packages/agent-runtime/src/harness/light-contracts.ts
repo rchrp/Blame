@@ -132,8 +132,23 @@ export const lightDefaultRunTaskInputSchema = z.discriminatedUnion("kind",
   [inspectTask, projectTask, commandTask, dependencyTask]);
 
 export const finishTaskInputSchema = z
-  .object({ summary: z.string().trim().min(1).max(8_000) })
+  .object({
+    summary: z.string().trim().min(1).max(8_000),
+    images: z
+      .array(
+        z
+          .object({
+            ref: z.string().regex(/^screenshot:[0-9a-f]{64}$/u),
+            caption: z.string().trim().min(1).max(160),
+          })
+          .strict(),
+      )
+      .max(8)
+      .optional(),
+  })
   .strict();
+
+export type FinishTaskImage = { caption: string; id: string };
 
 export type LightSearchCodeInput = z.infer<typeof lightSearchCodeInputSchema>;
 export type LightReadCodeInput = z.infer<typeof lightReadCodeInputSchema>;

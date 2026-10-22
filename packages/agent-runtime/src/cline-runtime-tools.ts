@@ -15,7 +15,11 @@ import { asRecord, stringValue } from "./cline-runtime-events.js";
 
 import { blockedCommandParts } from "./cline-tool-policy.js";
 
-import { createFinishTaskTool } from "./harness/finish-task.js";
+import {
+  createFinishTaskTool,
+  type FinishTaskScreenshots,
+} from "./harness/finish-task.js";
+import { sessionScreenshotIds } from "./preview-screenshots.js";
 
 import {
   type LightCompletionNotification,
@@ -133,6 +137,11 @@ export function runtimeTools(
           createFinishTaskTool({
             conversationId: completion.conversationId,
             executor,
+            screenshots: finishScreenshots(
+              options,
+              completion.conversationId,
+              previewContext,
+            ),
             taskContract,
             workspaceRoot: worktree ?? "",
             onComplete: completion.onComplete,
@@ -290,4 +299,34 @@ export function blockedToolReason(toolName: string, input: unknown) {
   return blockedCommandParts.some((part) => command.includes(part))
     ? "Command blocked by security policy"
     : undefined;
+}
+
+// Screenshots this conversation took in this process, then, for a
+// resumed conversation, those the desktop app stored for it.
+function finishScreenshots(
+  options: RuntimeOptions,
+  conversationId: string,
+  previewContext?: PreviewRuntimeContext,
+): FinishTaskScreenshots {
+  return {
+    async unknown(ids, context) {
+      const sessionId =
+        context.sessionId ?? context.conversationId ?? conversationId;
+      const known = sessionScreenshotIds(sessionId);
+      const missing = ids.filter((id) => !known.has(id));
+      if (!missing.length || !options.previewScreenshotKnown) return missing;
+      const found = await Promise.all(
+        missing.map((id) =>
+          Promise.resolve(
+            options.previewScreenshotKnown!({
+              id,
+              scope: previewContext?.scope,
+              sessionId,
+            }),
+          ).catch(() => false),
+        ),
+      );
+      return missing.filter((_, index) => !found[index]);
+    },
+  };
 }

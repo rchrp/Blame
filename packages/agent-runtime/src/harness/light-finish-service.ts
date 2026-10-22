@@ -1,16 +1,21 @@
 import { setTimeout as delay } from "node:timers/promises";
 import type { CompletionDecision } from "@blame/harness-core";
 import type { AgentToolContext } from "@cline/sdk";
-import type {
-  LightCompletionNotification,
-  LightValidationActivity,
+import {
+  finishImages,
+  type LightCompletionNotification,
+  type LightValidationActivity,
 } from "./light-completion.js";
 import type {
+  FinishTaskImage,
   LightRunTaskInput,
   LightTaskContract,
   LightToolResult,
 } from "./light-contracts.js";
-import { lightRequiredChecksSchema } from "./light-contracts.js";
+import {
+  finishTaskInputSchema,
+  lightRequiredChecksSchema,
+} from "./light-contracts.js";
 import { LightTaskRunner } from "./light-task-runner.js";
 import { LightCommitService } from "./light-commit.js";
 import { createProjectMemoryCandidate } from "./project-memory.js";
@@ -52,7 +57,11 @@ export async function executeLocalFinishTask(
     validationActivities,
   );
   try {
-    const summary = await service.finish(value.summary, input.context);
+    const summary = await service.finish(
+      value.summary,
+      input.context,
+      finishImages(parsedImages(value.images)),
+    );
     return {
       status: "ok",
       data: {
@@ -86,7 +95,11 @@ export class LightFinishService {
     });
   }
 
-  async finish(summary: string, context: AgentToolContext) {
+  async finish(
+    summary: string,
+    context: AgentToolContext,
+    images: FinishTaskImage[] = [],
+  ) {
     const initial = await this.completionSnapshot();
     this.assertDelivered(initial.changedPaths);
     assertNoFailedValidation(initial);
@@ -124,6 +137,7 @@ export class LightFinishService {
       validation.taskIds?.find((taskId) =>
         hasPassingValidation(current.validations, current.changedPaths, [taskId]),
       ),
+      images,
     );
     return summary;
   }
@@ -298,6 +312,7 @@ export class LightFinishService {
     unavailable: boolean,
     state: Awaited<ReturnType<SessionJournal["completionSnapshot"]>>,
     validationTaskId?: string,
+    images: FinishTaskImage[] = [],
   ) {
     await this.journal.recordTerminal(
       unavailable ? "completed_with_validation_unavailable" : "completed",
@@ -309,6 +324,7 @@ export class LightFinishService {
         : undefined;
     await this.options.onComplete?.({
       completion: decision,
+      ...(images.length ? { images } : {}),
       ...(memory ? { memory } : {}),
       submission_outcome: "accepted",
       validationReport: currentValidationReport(state, this.journal.currentValidations()),
@@ -524,4 +540,10 @@ function recordValue(value: unknown): Record<string, unknown> {
 
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error);
+}
+
+// The remote finish receives images already checked by the agent runtime.
+function parsedImages(value: unknown) {
+  const parsed = finishTaskInputSchema.shape.images.safeParse(value);
+  return parsed.success ? parsed.data : undefined;
 }

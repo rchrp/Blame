@@ -44,6 +44,7 @@ export type UserStoryAgentActivity = {
   detailArtifact?: string
   detailTruncated?: boolean
   originalDetailLength?: number
+  images?: Array<{ caption: string; id: string }>
   createdAt: string
   updatedAt?: string
 }

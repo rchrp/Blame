@@ -155,3 +155,30 @@ function recordValue(value: unknown): Record<string, unknown> {
     ? (value as Record<string, unknown>)
     : {};
 }
+
+// Screenshots each conversation has taken in this process, so finish_task
+// can only show the user screenshots from its own conversation.
+const sessionScreenshots = new Map<string, Set<string>>();
+const maximumTrackedSessions = 200;
+
+export function recordSessionScreenshots(
+  sessionId: string | undefined,
+  value: unknown,
+) {
+  if (!sessionId) return;
+  const ids = screenshotIdsIn(value);
+  if (!ids.length) return;
+  const known = sessionScreenshots.get(sessionId) ?? new Set<string>();
+  ids.forEach((id) => known.add(id));
+  sessionScreenshots.delete(sessionId);
+  sessionScreenshots.set(sessionId, known);
+  while (sessionScreenshots.size > maximumTrackedSessions) {
+    const oldest = sessionScreenshots.keys().next().value;
+    if (oldest === undefined) break;
+    sessionScreenshots.delete(oldest);
+  }
+}
+
+export function sessionScreenshotIds(sessionId: string | undefined) {
+  return (sessionId && sessionScreenshots.get(sessionId)) || new Set<string>();
+}

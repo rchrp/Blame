@@ -45,6 +45,15 @@ export const agentActivity = vine.object({
   detailArtifact: vine.string().trim().maxLength(2048).optional(),
   detailTruncated: vine.boolean().optional(),
   originalDetailLength: vine.number().optional(),
+  images: vine
+    .array(
+      vine.object({
+        id: vine.string().regex(/^[0-9a-f]{64}$/),
+        caption: vine.string().trim().minLength(1).maxLength(160),
+      })
+    )
+    .maxLength(8)
+    .optional(),
   createdAt: vine.string().trim().minLength(1).maxLength(255),
   updatedAt: vine.string().trim().maxLength(255).optional(),
 })

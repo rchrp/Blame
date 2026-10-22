@@ -47,6 +47,7 @@ export const agentHostMethods = [
   "openExternalUrl",
   "previewDevtools",
   "previewDevtoolsCall",
+  "previewScreenshotKnown",
   "previewDevtoolsTools",
   "previewContainerLogs",
   "refreshPreviewDependencies",

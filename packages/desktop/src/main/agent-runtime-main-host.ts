@@ -9,7 +9,10 @@ import {
   openPreviewDevtoolsEndpoint,
   reloadPreviewBrowserForScope,
 } from "./preview-browser-ipc.ts";
-import { storePreviewDevtoolsScreenshots } from "./agent-screenshots/agent-screenshots-service.ts";
+import {
+  agentScreenshotStore,
+  storePreviewDevtoolsScreenshots,
+} from "./agent-screenshots/agent-screenshots-service.ts";
 import {
   previewDevtoolsMcpService,
   type PreviewDevtoolsMcpService,
@@ -60,6 +63,7 @@ async function handleAgentHostRequest(
   if (method === "previewDevtoolsCall") {
     return previewDevtoolsCall(input, signal, harness, devtools);
   }
+  if (method === "previewScreenshotKnown") return previewScreenshotKnown(input);
   if (method === "previewContainerLogs") {
     return previewContainerLogs(input, signal, harness);
   }
@@ -207,6 +211,22 @@ async function previewDevtoolsCall(
     sessionId: optionalText(request.sessionId),
     toolCallId: optionalText(request.toolCallId),
   });
+}
+
+// A screenshot belongs to the conversation when it was taken in the same
+// session or for the same preview scope.
+async function previewScreenshotKnown(input: unknown) {
+  const request = recordInput(input);
+  const id = optionalText(request.id);
+  if (!id) return false;
+  const metadata = await agentScreenshotStore().metadata(id);
+  if (!metadata) return false;
+  const sessionId = optionalText(request.sessionId);
+  const scope = optionalText(request.scope);
+  return (
+    (Boolean(sessionId) && metadata.sessionId === sessionId) ||
+    (Boolean(scope) && metadata.scope === scope)
+  );
 }
 
 function unavailablePreviewDevtoolsResult(preview: {

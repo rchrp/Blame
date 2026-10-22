@@ -1041,3 +1041,52 @@ function story(): UserStory {
     title: "Story",
   }
 }
+
+const firstScreenshot = "a".repeat(64)
+const secondScreenshot = "b".repeat(64)
+
+test("the final reply keeps the screenshots the agent attached", () => {
+  const streamed = updateStory(
+    story(),
+    textEvent({ text: "The providers page now groups subscriptions first." })
+  )
+  const update = agentFlowUpdate(
+    streamed,
+    doneEvent("The providers page now groups subscriptions first.", undefined, {
+      images: [
+        { id: firstScreenshot, caption: "Light mode" },
+        { id: "not-an-id", caption: "Dropped" },
+        { id: secondScreenshot, caption: "Dark mode" },
+      ],
+    })
+  )
+  const final = update.agentActivities?.at(-1)
+  assert.equal(final?.messageKind, "final")
+  assert.deepEqual(final?.images, [
+    { caption: "Light mode", id: firstScreenshot },
+    { caption: "Dark mode", id: secondScreenshot },
+  ])
+  assert.deepEqual(update.agentActivity?.images, final?.images)
+})
+
+test("screenshots get a final message even when none was streamed", () => {
+  const update = agentFlowUpdate(
+    story(),
+    doneEvent("Checked in both themes.", undefined, {
+      images: [{ id: firstScreenshot, caption: "Light mode" }],
+    })
+  )
+  const final = update.agentActivities?.at(-1)
+  assert.equal(final?.kind, "message")
+  assert.equal(final?.messageKind, "final")
+  assert.equal(final?.detail, "Checked in both themes.")
+  assert.deepEqual(final?.images, [
+    { caption: "Light mode", id: firstScreenshot },
+  ])
+})
+
+test("a final reply without screenshots is unchanged", () => {
+  const update = agentFlowUpdate(story(), doneEvent("Done."))
+  assert.equal(update.agentActivities, undefined)
+  assert.equal(update.agentFinalResponse, "Done.")
+})

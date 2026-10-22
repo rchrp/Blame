@@ -2,7 +2,10 @@ import type { CoreSessionConfig } from "@cline/sdk";
 import { createMcpTools } from "@cline/sdk";
 import { currentWorkspaceRevisionState } from "./harness/workspace-revisions.js";
 import { sha256 } from "./harness/light-identity.js";
-import { previewToolModelOutput } from "./preview-screenshots.js";
+import {
+  previewToolModelOutput,
+  recordSessionScreenshots,
+} from "./preview-screenshots.js";
 
 type AgentTool = NonNullable<CoreSessionConfig["extraTools"]>[number];
 type ToolContext = Parameters<AgentTool["execute"]>[1];
@@ -100,6 +103,13 @@ export type PreviewToolRuntimeOptions = {
   previewDevtoolsCall?(
     input: PreviewDevtoolsCallInput,
   ): Promise<unknown> | unknown;
+  // Whether a stored screenshot belongs to this conversation, for a
+  // conversation resumed in a new process.
+  previewScreenshotKnown?(input: {
+    id: string;
+    scope?: string;
+    sessionId?: string;
+  }): Promise<boolean> | boolean;
   previewDevtoolsTools?(
     input: PreviewDevtoolsProviderInput,
   ):
@@ -201,7 +211,14 @@ function previewMcpProvider(
         request,
         request.context,
       );
-      return previewToolModelOutput(attachPreviewEvidence(result, evidence));
+      const output = previewToolModelOutput(
+        attachPreviewEvidence(result, evidence),
+      );
+      recordSessionScreenshots(
+        request.context?.sessionId ?? request.context?.conversationId,
+        output,
+      );
+      return output;
     },
   };
 }

@@ -81,6 +81,7 @@ import {
   AgentScreenshotOwnerProvider,
   ScreenshotGroupProvider,
 } from "./screenshots/agent-screenshot-context"
+import { ResponseImageCarousel } from "./screenshots/response-image-carousel"
 import type { ScreenshotOwner } from "@/lib/agent-screenshot-sync"
 
 // Where a conversation's screenshots are fetched from, and cached under.
@@ -1169,6 +1170,7 @@ function AgentStreamMessage({
       }
       createdAt={activity.createdAt}
       highlight={highlightFinalResponse && activity.messageKind === "final"}
+      images={activity.messageKind === "final" ? activity.images : undefined}
       markdown={activity.detail}
       onFileLinkClick={onFileLinkClick}
       showFeedback={activity.messageKind === "final"}
@@ -1268,6 +1270,11 @@ function AgentActivityLeafItem({
         effectColor={specialistAppearance?.color}
         effectGlowColor={specialistAppearance?.glowColor}
         highlight={false}
+        images={
+          activity.messageKind === "final" && !activity.parentToolCallId
+            ? activity.images
+            : undefined
+        }
         markdown={activity.detail}
         onFileLinkClick={onFileLinkClick}
         showFeedback={activity.messageKind === "final"}
@@ -1426,6 +1433,7 @@ function AgentMarkdownTimelineItem({
   effectColor,
   effectGlowColor,
   highlight,
+  images,
   markdown,
   onFileLinkClick,
   showFeedback,
@@ -1437,6 +1445,8 @@ function AgentMarkdownTimelineItem({
   effectColor?: string
   effectGlowColor?: string
   highlight: boolean
+  // Screenshots the agent attached to its final reply, shown above it.
+  images?: UserStoryAgentActivity["images"]
   markdown: string
   onFileLinkClick?: (path: string) => void
   showFeedback?: boolean
@@ -1488,6 +1498,9 @@ function AgentMarkdownTimelineItem({
     >
       {avatar ? <div className="absolute top-0 -left-10">{avatar}</div> : null}
       <div className="grid min-w-0 gap-2">
+        {images?.length && !streaming ? (
+          <ResponseImageCarousel images={images} />
+        ) : null}
         <div
           ref={responseRef}
           className={cn(
