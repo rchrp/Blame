@@ -91,17 +91,16 @@ export function DrawerBody({
   const [fixedSectionHeight, setFixedSectionHeight] = React.useState(0)
   const fixedSectionVisible = Boolean(fixedSection)
   const topPaddingClassName = headerTabsVisible ? "pt-36" : "pt-28"
-  // Room for the stats panel on the right while it is expanded.
+  // While the stats panel is expanded, the thread and the composer keep
+  // clear of it, with the same gap as on the left (px-8). The action
+  // buttons still span the whole width, on the right.
   const contentClassName = cn(
-    "flex flex-col gap-6 px-6 transition-[margin] duration-500 ease-out",
-    sidebarOpen && "lg:mr-[26rem]",
+    "flex flex-col gap-6 px-8 transition-[margin] duration-500 ease-out lg:mr-(--story-panel-inset)",
     topPaddingClassName
   )
-  const fixedSectionClassName = cn(
-    "pointer-events-none absolute right-0 bottom-0 left-0 z-20 transition-[right] duration-500 ease-out",
-    sidebarOpen && "lg:right-[26rem]"
-  )
-  const fixedSectionContentClassName = "w-full px-6"
+  const fixedSectionClassName =
+    "pointer-events-none absolute right-0 bottom-0 left-0 z-20"
+  const fixedSectionContentClassName = "w-full px-8"
   const bottomInset = Math.max(fixedSectionHeight, 24)
 
   React.useLayoutEffect(() => {
@@ -121,7 +120,12 @@ export function DrawerBody({
   }, [fixedSectionVisible])
 
   return (
-    <div className="relative h-full min-h-0 overflow-hidden">
+    <div
+      className={cn(
+        "relative h-full min-h-0 overflow-hidden [--story-panel-inset:0px]",
+        sidebarOpen && "lg:[--story-panel-inset:21rem]"
+      )}
+    >
       <MessageScrollerProvider key={resetKey}>
         <MessageScroller className="h-full">
           <MessageScrollerViewport aria-label="User story details">

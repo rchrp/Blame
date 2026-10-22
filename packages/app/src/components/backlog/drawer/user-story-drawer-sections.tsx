@@ -222,12 +222,16 @@ export const UserStoryFixedSection = React.memo(function UserStoryFixedSection({
       />
       <div className="relative grid gap-3">
         {commentComposerVisible ? (
-          <div className="mx-auto w-full max-w-4xl">
-            <UserStoryCommentComposer {...commentComposerProps} />
+          <div className="transition-[margin] duration-500 ease-out lg:mr-(--story-panel-inset,0px)">
+            <div className="mx-auto w-full max-w-4xl">
+              <UserStoryCommentComposer {...commentComposerProps} />
+            </div>
           </div>
         ) : null}
         {actions ? (
-          <div className="flex w-full justify-end">{actions}</div>
+          // On the right edge, lined up with the stats panel and with the
+          // actions of the other tabs.
+          <div className="-mr-4 flex justify-end">{actions}</div>
         ) : null}
       </div>
     </div>
@@ -339,9 +343,9 @@ function commentPlaceholder(status: BacklogColumnId) {
 
 function fixedSectionClassName(commentComposerVisible: boolean) {
   if (commentComposerVisible) {
-    return "pointer-events-auto relative -mx-6 px-6 pt-4 pb-6"
+    return "pointer-events-auto relative -mx-8 px-8 pt-4 pb-6"
   }
-  return "pointer-events-auto relative -mx-6 px-6 pt-6 pb-6"
+  return "pointer-events-auto relative -mx-8 px-8 pt-6 pb-6"
 }
 
 function useFileMentionDirectory(

@@ -627,9 +627,11 @@ export function UserStoryDrawerPanel({
             // The blur spans the whole width, under the stats panel too;
             // only the title and tabs keep clear of it.
             "absolute top-0 right-0 left-0 isolate z-[15] gap-4 overflow-hidden px-6 pt-6 pr-14 pb-6 transition-[padding] duration-500 ease-out",
+            // Lined up with the story's thread (px-8), clear of the panel.
+            tab === "user-story" && "pl-8",
             tab === "user-story" &&
               sidebarAvailable &&
-              (statsExpanded ? "lg:pr-[27.5rem]" : "pr-[13rem]")
+              (statsExpanded ? "lg:pr-[23rem]" : "pr-[14.5rem]")
           )}
         >
           <div
