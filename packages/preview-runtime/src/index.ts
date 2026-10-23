@@ -7,6 +7,7 @@ export * from "./domain/endpoint-map.js";
 export * from "./domain/environment-plan.js";
 export * from "./domain/live-sync-status.js";
 export * from "./domain/execution-plan.js";
+export * from "./domain/functional-probes.js";
 export * from "./domain/preview-errors.js";
 export * from "./domain/preview-lifecycle.js";
 export * from "./domain/preview-session.js";

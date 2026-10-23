@@ -7,9 +7,11 @@ import {
 import type {
   CompatibilityRequirement,
   PreviewExecutionPlan,
+  ProbePlan,
   ServiceEndpointPlan,
   ServiceLaunchPlan,
 } from "../domain/execution-plan.js";
+import { defaultProbeTimeoutMs } from "../domain/functional-probes.js";
 import { PreviewRuntimeError } from "../domain/preview-errors.js";
 import { endpointRouteKey } from "../domain/endpoint-map.js";
 import {
@@ -123,21 +125,7 @@ export function compilePreviewManifest(
     })),
     services,
     caches: manifest.caches.map((cache) => ({ ...cache })),
-    probes: manifest.probes.map((probe) => ({
-      id: probe.id,
-      from: probe.from,
-      target: {
-        serviceId: probe.target.service,
-        endpointId: probe.target.endpoint,
-        path: probe.target.path ?? "/",
-      },
-      type: probe.type,
-      acceptedStatuses: [
-        ...(probe.acceptedStatuses ?? [200, 204, 301, 302, 304]),
-      ],
-      timeoutMs: probe.timeoutMs ?? 30_000,
-      required: probe.required ?? true,
-    })),
+    probes: manifest.probes.map((probe) => compileProbe(manifest, probe)),
     environmentPlan,
     networking: {
       gatewayListeners,
@@ -202,6 +190,30 @@ function environmentEntry(
     classification: "non-secret",
     delivery: "literal",
     snapshot: "never",
+  };
+}
+
+// An empty acceptedStatuses list means "anything below 500"; see
+// probeStatusAccepted.
+function compileProbe(
+  manifest: PreviewManifest,
+  probe: PreviewManifest["probes"][number],
+): ProbePlan {
+  const endpoint = manifest.services
+    .find(({ id }) => id === probe.target.service)
+    ?.endpoints.find(({ id }) => id === probe.target.endpoint);
+  return {
+    id: probe.id,
+    from: probe.from,
+    target: {
+      serviceId: probe.target.service,
+      endpointId: probe.target.endpoint,
+      path: probe.target.path ?? endpoint?.healthcheck?.path ?? "/",
+    },
+    type: probe.type,
+    acceptedStatuses: [...(probe.acceptedStatuses ?? [])],
+    timeoutMs: probe.timeoutMs ?? defaultProbeTimeoutMs,
+    required: probe.required ?? true,
   };
 }
 

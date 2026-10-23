@@ -12,11 +12,20 @@ import {
 } from "@blame/agent-runtime";
 import {
   type PreviewManifest,
-  type PreviewManifestEndpoint,
-  type PreviewManifestProbe,
   type PreviewManifestService,
 } from "@blame/preview-contract";
-import type { RuntimeProfileId } from "@blame/preview-runtime";
+import {
+  activeProbes,
+  compilePreviewManifest,
+  probeEndpoint,
+  probeFailureMessage,
+  probeStatusAccepted,
+  serviceProbeCommand,
+  type PreviewExecutionPlan,
+  type ProbePlan,
+  type RuntimeProfileId,
+  type ServiceEndpointPlan,
+} from "@blame/preview-runtime";
 import {
   ATTR_BLAME_AGENT_ROLE,
   ATTR_BLAME_AGENT_STRATEGY,
@@ -1240,6 +1249,7 @@ async function prepareProjectPreviewArtifacts(
       ),
     ),
   );
+  compiledPreviewPlan(manifest);
   const generated = generatePreviewArtifacts(manifest);
   const dockerCompose = generated.dockerCompose;
   const runConfigurations = parseRunConfigurations(input.runConfigurations);
@@ -4498,27 +4508,38 @@ async function waitForPreview(worktree: string, url: string) {
 async function runPreviewProbes(worktree: string) {
   const manifest = await readProjectPreviewManifest(worktree);
   if (!manifest?.probes?.length) return;
-  const activeServices = await activeRunConfigurationServices(
-    worktree,
-    manifest,
-  );
-  const probes = manifest.probes.filter((probe) =>
-    activePreviewProbe(probe, activeServices),
+  const plan = compiledPreviewPlan(manifest);
+  const probes = activeProbes(
+    plan,
+    await activeRunConfigurationServices(worktree, manifest),
   );
   let passed = 0;
   for (const probe of probes) {
     try {
-      await executePreviewProbe(worktree, manifest, probe);
+      await executePreviewProbe(worktree, plan, probe);
       passed += 1;
     } catch (error) {
       await appendRecoveryLog(worktree, `preview probe ${probe.id} failed`);
-      if (probe.required !== false) throw previewProbeError(error, probe.id);
+      if (probe.required) throw previewProbeError(error, probe);
     }
   }
   await appendRecoveryLog(
     worktree,
     `preview probes passed: ${passed}/${probes.length}`,
   );
+}
+
+// Local previews read the manifest through the same compiler as cloud
+// previews, so both accept, refuse and probe a manifest the same way.
+function compiledPreviewPlan(manifest: PreviewManifest) {
+  try {
+    return compilePreviewManifest(manifest);
+  } catch (error) {
+    throw new PreviewRuntimeError(
+      "preview_manifest_invalid",
+      `Preview manifest is invalid: ${errorMessageText(error)}`,
+    );
+  }
 }
 
 async function activeRunConfigurationServices(
@@ -4536,17 +4557,6 @@ async function activeRunConfigurationServices(
     : new Set<string>();
 }
 
-function activePreviewProbe(
-  probe: PreviewManifestProbe,
-  activeServices: Set<string> | undefined,
-) {
-  if (!activeServices) return true;
-  return (
-    activeServices.has(probe.target.service) &&
-    (probe.from === "host" || activeServices.has(probe.from))
-  );
-}
-
 async function readProjectPreviewManifest(worktree: string) {
   const path = projectPreviewManifestPath(worktree);
   if (!(await runtimePathExists(path))) return undefined;
@@ -4562,79 +4572,56 @@ async function readProjectPreviewManifest(worktree: string) {
 
 async function executePreviewProbe(
   worktree: string,
-  manifest: PreviewManifest,
-  probe: PreviewManifestProbe,
+  plan: PreviewExecutionPlan,
+  probe: ProbePlan,
 ) {
-  const endpoint = manifestProbeEndpoint(manifest, probe);
-  if (probe.from === "host") {
-    await executeHostPreviewProbe(worktree, probe, endpoint);
-    return;
-  }
-  await executeServicePreviewProbe(worktree, manifest, probe, endpoint);
-}
-
-function manifestProbeEndpoint(
-  manifest: PreviewManifest,
-  probe: PreviewManifestProbe,
-) {
-  const service = manifest.services.find(
-    ({ id }) => id === probe.target.service,
-  );
-  const endpoint =
-    service && manifestServiceEndpoint(service, probe.target.endpoint);
+  const endpoint = probeEndpoint(plan, probe);
   if (!endpoint) {
     throw new PreviewRuntimeError(
       "preview_manifest_invalid",
       `Preview probe ${probe.id} references an unknown endpoint`,
     );
   }
-  return endpoint;
-}
-
-function manifestServiceEndpoint(
-  service: PreviewManifestService,
-  endpointId: string,
-): PreviewManifestEndpoint | undefined {
-  return service.endpoints.find(({ id }) => id === endpointId);
+  if (probe.from === "host") {
+    await executeHostPreviewProbe(worktree, probe, endpoint);
+    return;
+  }
+  const consumer = plan.services.find(({ id }) => id === probe.from);
+  const command = consumer && serviceProbeCommand(consumer, probe, endpoint);
+  if (!command) {
+    throw new PreviewRuntimeError(
+      "preview_probe_unsupported",
+      `Preview probe ${probe.id} has no supported runtime`,
+    );
+  }
+  await containerRuntime.compose(
+    [...composeArgs(worktree), "exec", "-T", probe.from, ...command],
+    { cwd: worktree, env: await setupEnvironment(worktree) },
+  );
 }
 
 async function executeHostPreviewProbe(
   worktree: string,
-  probe: PreviewManifestProbe,
-  endpoint: PreviewManifestEndpoint,
+  probe: ProbePlan,
+  endpoint: ServiceEndpointPlan,
 ) {
   const address = await composePublishedAddress(
     worktree,
     projectComposePath(worktree),
-    probe.target.service,
+    probe.target.serviceId,
     endpoint.port,
   );
   if (!address) throw new Error("Probe target is not published to the host");
   if (probe.type === "tcp") {
-    await connectToProbeAddress(address, probe.timeoutMs ?? 10_000);
+    await connectToProbeAddress(address, probe.timeoutMs);
     return;
   }
-  const url = previewUrl(
-    address,
-    endpoint.protocol,
-    probe.target.path ?? endpoint.healthcheck?.path ?? "/",
+  const response = await fetch(
+    previewUrl(address, endpoint.protocol, probe.target.path),
+    { method: "GET", signal: AbortSignal.timeout(probe.timeoutMs) },
   );
-  await requestProbeUrl(url, probe);
-}
-
-async function requestProbeUrl(url: string, probe: PreviewManifestProbe) {
-  const response = await fetch(url, {
-    method: "GET",
-    signal: AbortSignal.timeout(probe.timeoutMs ?? 10_000),
-  });
-  if (probeAcceptsStatus(probe, response.status)) return;
+  if (probeStatusAccepted(response.status, probe.acceptedStatuses)) return;
   throw new Error(`Unexpected probe status ${response.status}`);
-}
-
-function probeAcceptsStatus(probe: PreviewManifestProbe, status: number) {
-  return probe.acceptedStatuses?.length
-    ? probe.acceptedStatuses.includes(status)
-    : status < 500;
 }
 
 function connectToProbeAddress(address: string, timeoutMs: number) {
@@ -4657,115 +4644,11 @@ function connectToProbeAddress(address: string, timeoutMs: number) {
   });
 }
 
-async function executeServicePreviewProbe(
-  worktree: string,
-  manifest: PreviewManifest,
-  probe: PreviewManifestProbe,
-  endpoint: PreviewManifestEndpoint,
-) {
-  const consumer = manifest.services.find(({ id }) => id === probe.from);
-  const command = consumer && serviceProbeCommand(consumer, probe, endpoint);
-  if (!command) {
-    throw new PreviewRuntimeError(
-      "preview_probe_unsupported",
-      `Preview probe ${probe.id} has no supported runtime`,
-    );
-  }
-  await containerRuntime.compose(
-    [...composeArgs(worktree), "exec", "-T", probe.from, ...command],
-    { cwd: worktree, env: await setupEnvironment(worktree) },
-  );
-}
-
-function serviceProbeCommand(
-  service: PreviewManifestService,
-  probe: PreviewManifestProbe,
-  endpoint: PreviewManifestEndpoint,
-) {
-  const javascriptRuntime = serviceJavascriptRuntime(service);
-  if (javascriptRuntime) {
-    return [javascriptRuntime, "-e", nodeProbeScript(probe, endpoint)];
-  }
-  if (serviceUsesPython(service)) {
-    return ["python", "-c", pythonProbeScript(probe, endpoint)];
-  }
-  return undefined;
-}
-
-function serviceJavascriptRuntime(service: PreviewManifestService) {
-  const image = service.container.image ?? "";
-  if (
-    /(?:^|\/)bun(?::|$)/.test(image) ||
-    /\bbun\b/.test(service.command ?? "")
-  ) {
-    return "bun";
-  }
-  if (
-    /(?:^|\/)node(?::|$)/.test(image) ||
-    /\b(?:node|npm|pnpm|yarn)\b/.test(service.command ?? "")
-  ) {
-    return "node";
-  }
-  return undefined;
-}
-
-function serviceUsesPython(service: PreviewManifestService) {
-  const image = service.container.image ?? "";
-  return (
-    /(?:^|\/)python(?::|$)/.test(image) ||
-    /\bpython\b/.test(service.command ?? "")
-  );
-}
-
-function nodeProbeScript(
-  probe: PreviewManifestProbe,
-  endpoint: PreviewManifestEndpoint,
-) {
-  const timeout = probe.timeoutMs ?? 10_000;
-  if (probe.type === "tcp") {
-    return nodeTcpProbeScript(probe.target.service, endpoint.port, timeout);
-  }
-  const url = internalProbeUrl(probe, endpoint);
-  const accepted = JSON.stringify(probe.acceptedStatuses ?? []);
-  return `const a=${accepted};fetch(${JSON.stringify(url)},{signal:AbortSignal.timeout(${timeout})}).then(r=>process.exit((a.length?a.includes(r.status):r.status<500)?0:1)).catch(()=>process.exit(1))`;
-}
-
-function nodeTcpProbeScript(host: string, port: number, timeout: number) {
-  return `const s=require("net").connect(${port},${JSON.stringify(host)},()=>process.exit(0));s.once("error",()=>process.exit(1));s.setTimeout(${timeout},()=>process.exit(1))`;
-}
-
-function pythonProbeScript(
-  probe: PreviewManifestProbe,
-  endpoint: PreviewManifestEndpoint,
-) {
-  const timeout = Math.ceil((probe.timeoutMs ?? 10_000) / 1_000);
-  if (probe.type === "tcp") {
-    return `import socket\nsocket.create_connection((${JSON.stringify(probe.target.service)},${endpoint.port}),${timeout}).close()`;
-  }
-  const accepted = JSON.stringify(probe.acceptedStatuses ?? []);
-  return [
-    "import sys,urllib.request,urllib.error",
-    `accepted=${accepted}`,
-    `url=${JSON.stringify(internalProbeUrl(probe, endpoint))}`,
-    `timeout=${timeout}`,
-    "try:\n status=urllib.request.urlopen(url,timeout=timeout).status\nexcept urllib.error.HTTPError as error:\n status=error.code",
-    "sys.exit(0 if (status in accepted if accepted else status < 500) else 1)",
-  ].join("\n");
-}
-
-function internalProbeUrl(
-  probe: PreviewManifestProbe,
-  endpoint: PreviewManifestEndpoint,
-) {
-  const path = probe.target.path ?? endpoint.healthcheck?.path ?? "/";
-  return `${endpoint.protocol}://${probe.target.service}:${endpoint.port}${path}`;
-}
-
-function previewProbeError(error: unknown, probeId: string) {
+function previewProbeError(error: unknown, probe: ProbePlan) {
   if (error instanceof PreviewRuntimeError) return error;
   return new PreviewRuntimeError(
     "preview_probe_failed",
-    `Required preview probe ${probeId} failed: ${errorMessageText(error)}`,
+    probeFailureMessage(probe, errorMessageText(error)),
   );
 }
 
