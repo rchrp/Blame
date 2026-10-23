@@ -13,6 +13,7 @@ import {
   gitignoreFileName,
   parseWorkspaceSnapshotPolicy,
   WorkspaceIgnore,
+  workspaceSnapshotHash,
   type WorkspaceSnapshotPolicy,
 } from "@blame/preview-runtime/workspace-ignore";
 import { runtimePaths } from "../runtime-paths.js";
@@ -46,17 +47,11 @@ export async function snapshotWorkspace(
   const effectivePolicy = policy ?? (await readWorkspaceSnapshotPolicy());
   const rules = new WorkspaceIgnore(effectivePolicy);
   await visit(root, root, files, casePaths, rules);
-  const hash = createHash("sha256");
-  for (const [path, metadata] of Object.entries(files).sort(([left], [right]) =>
-    left.localeCompare(right),
-  )) {
-    hash
-      .update(path)
-      .update("\0")
-      .update(JSON.stringify(metadata))
-      .update("\0");
-  }
-  return { hash: hash.digest("hex"), files, policy: effectivePolicy };
+  return {
+    hash: workspaceSnapshotHash(files, effectivePolicy),
+    files,
+    policy: effectivePolicy,
+  };
 }
 
 export async function readWorkspaceSnapshotPolicy() {

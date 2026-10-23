@@ -60,6 +60,27 @@ export type ProjectInitializationScan = {
   };
 };
 
+export type ProjectScanRootProvider = (
+  workspace: string,
+) => Promise<{ root: string; release(): Promise<void> }>;
+
+/**
+ * Scans a workspace this process may not read directly, such as a story
+ * worktree inside the local runtime VM, through a readable copy.
+ */
+export async function scanProjectWorkspace(
+  workspace: string,
+  scanRoot?: ProjectScanRootProvider,
+) {
+  if (!scanRoot) return scanProjectForInitialization(workspace);
+  const readable = await scanRoot(workspace);
+  try {
+    return await scanProjectForInitialization(readable.root);
+  } finally {
+    await readable.release();
+  }
+}
+
 export async function scanProjectForInitialization(
   root: string,
 ): Promise<ProjectInitializationScan> {

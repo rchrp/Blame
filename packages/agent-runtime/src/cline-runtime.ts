@@ -230,7 +230,10 @@ import {
 } from "./project-initialization-impact.js";
 import { projectInitializationRepairPrompt } from "./project-initialization-repair.js";
 import type { ProjectInitializationScan } from "./project-initialization.js";
-import { scanProjectForInitialization } from "./project-initialization.js";
+import {
+  scanProjectForInitialization,
+  scanProjectWorkspace,
+} from "./project-initialization.js";
 import { loadPrompt } from "./prompt-loader.js";
 import { optimizeUserStoryPrompt } from "./prompt-optimization.js";
 import { createProviderCompatibleFetch } from "./provider-schema-compatibility.js";
@@ -2231,7 +2234,10 @@ export class BlameAgentRuntime {
   ): Promise<RepairProjectInitializationResult> {
     assertWorkspacePath(input.cwd, input.workspaceRoot, "cwd");
     const credential = await this.runtimeCredential(input);
-    const scan = await scanProjectForInitialization(input.workspaceRoot);
+    const scan = await scanProjectWorkspace(
+      input.workspaceRoot,
+      this.options.projectScanRoot,
+    );
     const cline = await this.core(input.backend);
     let correction: InitializationCorrection | undefined;
     for (let attempt = 1; attempt <= maxInitializationAttempts; attempt += 1) {

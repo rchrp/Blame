@@ -2,8 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  compareWorkspacePaths,
   parseWorkspaceSnapshotPolicy,
   WorkspaceIgnore,
+  workspaceSnapshotHash,
 } from "./workspace-ignore.js";
 
 function portfolioRules() {
@@ -66,4 +68,23 @@ test("the legacy policy skips nothing", () => {
   assert.equal(rules.ignoresWithAncestors("src/index.ts"), false);
   assert.equal(parseWorkspaceSnapshotPolicy(undefined), "legacy");
   assert.equal(parseWorkspaceSnapshotPolicy("gitignore-v1"), "gitignore-v1");
+});
+
+test("gitignore-v1 hashes paths in a language-independent order", () => {
+  const compare = compareWorkspacePaths("gitignore-v1");
+  const paths = ["d.ts", "ch.ts", "abc.ts", "aab.ts", "apps/x.ts", "README.md"];
+  assert.deepEqual([...paths].sort(compare), [
+    "README.md",
+    "aab.ts",
+    "abc.ts",
+    "apps/x.ts",
+    "ch.ts",
+    "d.ts",
+  ]);
+  const files = Object.fromEntries(paths.map((path) => [path, { size: 1 }]));
+  const reversed = Object.fromEntries(Object.entries(files).reverse());
+  assert.equal(
+    workspaceSnapshotHash(files, "gitignore-v1"),
+    workspaceSnapshotHash(reversed, "gitignore-v1"),
+  );
 });

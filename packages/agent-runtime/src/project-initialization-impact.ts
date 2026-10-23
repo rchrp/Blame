@@ -72,7 +72,7 @@ export function projectInitializationImpactPrompt(
   diagnostics: ProjectInitializationImpactDiagnostics,
 ) {
   return [
-    "Assess whether this merged user story makes the persisted project initialization obsolete.",
+    "Assess whether the changes between these commits make the persisted project initialization obsolete.",
     "Return strict JSON only.",
     `Base commit: ${diagnostics.baseCommit}`,
     `Merge commit: ${diagnostics.mergeCommit}`,

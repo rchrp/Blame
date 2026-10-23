@@ -53,6 +53,7 @@ export const agentHostMethods = [
   "previewContainerLogs",
   "refreshPreviewDependencies",
   "applyPreviewInitialization",
+  "projectScanRoot",
   "lightWorkspace",
   "projectApp",
 ] as const;

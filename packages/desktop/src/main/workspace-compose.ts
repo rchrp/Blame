@@ -147,15 +147,28 @@ function npmOptionTakesValue(option: string) {
   ].includes(name);
 }
 
-export async function composeWithAllocatedHostPorts(compose: string) {
+// `preferredPorts` maps "<service>:<container port>" to the host port a
+// previous start used. Reusing it while it is free keeps the preview origin
+// stable across restarts, so its URL, cookies and sessions survive.
+export async function composeWithAllocatedHostPorts(
+  compose: string,
+  preferredPorts: Record<string, number> = {},
+) {
   const result: string[] = [];
   const portMappings: ComposePortMapping[] = [];
+  const taken = new Set<number>();
   let serviceId: string | undefined;
   for (const line of compose.split("\n")) {
     serviceId = composeServiceId(line, serviceId);
     const allocated = allocatedPortLine(line);
     if (allocated) {
-      const port = await freeLocalPort();
+      const preferred =
+        preferredPorts[composePortKey(serviceId, allocated.targetPort)];
+      const port =
+        preferred && !taken.has(preferred) && (await localPortFree(preferred))
+          ? preferred
+          : await freeLocalPort();
+      taken.add(port);
       portMappings.push({
         hostPort: port,
         serviceId,
@@ -175,6 +188,23 @@ export async function composeWithAllocatedHostPorts(compose: string) {
     portMappings,
   );
   return composeWithDeclaredBrowserBindings(materialized, portMappings);
+}
+
+/** The host ports a compose file publishes, keyed like `preferredPorts`. */
+export function composeHostPorts(compose: string) {
+  const ports: Record<string, number> = {};
+  let serviceId: string | undefined;
+  for (const line of compose.split("\n")) {
+    serviceId = composeServiceId(line, serviceId);
+    const explicit = explicitPortLine(line);
+    if (explicit)
+      ports[composePortKey(serviceId, explicit.targetPort)] = explicit.hostPort;
+  }
+  return ports;
+}
+
+function composePortKey(serviceId: string | undefined, targetPort: number) {
+  return `${serviceId ?? ""}:${targetPort}`;
 }
 
 type ComposePortMapping = {
@@ -660,6 +690,15 @@ function projectRootCompose(compose: string, worktree: string) {
   return dockerComposeWithPortableWindowsPaths(
     compose.replace(/\$\{BLAME_PROJECT_ROOT\}/g, worktree),
   );
+}
+
+function localPortFree(port: number) {
+  return new Promise<boolean>((resolve) => {
+    const server = createServer();
+    server.unref();
+    server.once("error", () => resolve(false));
+    server.listen(port, "127.0.0.1", () => server.close(() => resolve(true)));
+  });
 }
 
 function freeLocalPort() {

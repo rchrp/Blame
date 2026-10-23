@@ -64,6 +64,7 @@ import { useProjects } from "@/context/projects"
 import { createCloudApi } from "@/lib/cloud-api"
 import { effectiveProjectCodePractices } from "@/lib/project-code-practice-preferences"
 import { storyMaxInputTokens } from "@/components/backlog/data/story-context-limit"
+import { refreshDriftedProjectInitialization } from "@/pages/backlog/project-initialization-drift"
 import { type StoryRunMode, useStoryRunMode } from "@/lib/runtime-preference"
 import {
   measurePerformanceOperation,
@@ -217,10 +218,13 @@ export function useBacklogRotation(
     const projectInitialization = await createCloudApi(
       auth.apiConnection
     ).projectInitialization(projects.activeProject.id)
-    const initialization = projectInitialization.initialization
+    const savedInitialization = projectInitialization.initialization
 
-    if (initialization?.status !== "done" || !initialization.previewManifest) {
-      if (projectInitializing(initialization?.status))
+    if (
+      savedInitialization?.status !== "done" ||
+      !savedInitialization.previewManifest
+    ) {
+      if (projectInitializing(savedInitialization?.status))
         return retryStory(detailedStory)
       reportBlocker(
         detailedStory,
@@ -228,6 +232,21 @@ export function useBacklogRotation(
       )
       return
     }
+    // Commits made outside Blame can leave the saved preview setup stale.
+    const refreshed = await refreshDriftedProjectInitialization({
+      apiConnection: auth.apiConnection,
+      platform,
+      projectId: projects.activeProject.id,
+      repositoryRoot: projects.activeProject.path,
+      initialization: savedInitialization,
+      providerId: selection.currentModel.provider.id,
+      modelId: selection.currentModel.id,
+      credentialLabel: selection.currentModel.credentialLabel,
+      reasoningEffort: selection.currentVariant,
+    })
+    const initialization = refreshed.previewManifest
+      ? { ...refreshed, previewManifest: refreshed.previewManifest }
+      : { ...savedInitialization, previewManifest: savedInitialization.previewManifest }
 
     const workspace = platform.workspace
     const agent = platform.agent

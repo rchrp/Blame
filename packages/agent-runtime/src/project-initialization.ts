@@ -13,6 +13,10 @@ import {
   normalizePreviewManifestWithPreferences,
 } from "./preview-manifest.js";
 import { jsonPayload } from "./json-payload.js";
+import {
+  manifestWithProjectPackageManager,
+  projectPackageManager,
+} from "./preview-package-manager.js";
 import type { ProjectInitializationScan } from "./project-initialization-scan.js";
 import {
   launchesCompose,
@@ -22,7 +26,9 @@ import {
 
 export {
   scanProjectForInitialization,
+  scanProjectWorkspace,
   type ProjectInitializationScan,
+  type ProjectScanRootProvider,
 } from "./project-initialization-scan.js";
 
 const maxCorrectionPayloadLength = 24_000;
@@ -351,9 +357,9 @@ export function parseProjectInitializationPayload(
   const parsedManifest = parsePreviewManifest(
     previewManifestWithDatabasePreference(parsed.previewManifest, preferences),
   );
-  const manifest = normalizePreviewManifestWithPreferences(
-    parsedManifest,
-    preferences,
+  const manifest = manifestWithProjectPackageManager(
+    normalizePreviewManifestWithPreferences(parsedManifest, preferences),
+    projectPackageManager(projectRootPackageJson(scan, parsedManifest)),
   );
   const generated = generatePreviewArtifacts(manifest);
   const setupScript = generated.setupScript;
@@ -696,6 +702,17 @@ function adjustedDatabaseEnvironment(
         : entry;
   }
   return environment;
+}
+
+function projectRootPackageJson(
+  scan: ProjectInitializationScan | undefined,
+  manifest: PreviewManifest,
+) {
+  const declared = (manifest.project.root || ".")
+    .replace(/^(?:\.\/)+/, "")
+    .replace(/\/+$/, "");
+  const root = declared === "." ? "" : declared;
+  return scan?.files[root ? `${root}/package.json` : "package.json"];
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

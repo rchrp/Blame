@@ -21,6 +21,8 @@ import {
   currentWorkspaceSnapshotPolicy,
   gitignoreFileName,
   WorkspaceIgnore,
+  workspaceSnapshotHash,
+  type WorkspaceSnapshotPolicy,
 } from "@blame/preview-runtime/workspace-ignore";
 import {
   forbiddenWorkspacePath,
@@ -158,7 +160,10 @@ export async function buildWorkspaceArtifact(
           version: 1,
           baseCommit: sourceRevision,
           workspaceHash: snapshot.hash,
-          cleanWorkspaceHash: snapshotHash(baseFiles),
+          cleanWorkspaceHash: snapshotHash(
+            baseFiles,
+            snapshotPolicyOf(snapshot),
+          ),
           snapshotPolicy: snapshotPolicyOf(snapshot),
           files: snapshot.files,
         }),
@@ -251,7 +256,10 @@ export async function buildWorkspaceDeltaArtifact(
     root,
     source,
     {
-      hash: snapshotHash(source.canonical.files),
+      hash: snapshotHash(
+        source.canonical.files,
+        snapshotPolicyOf(source.snapshot),
+      ),
       files: source.canonical.files,
       policy: source.snapshot.policy,
     },
@@ -515,18 +523,11 @@ function sameSnapshotFile(
   );
 }
 
-function snapshotHash(files: Record<string, SnapshotFile>) {
-  const hash = createHash("sha256");
-  for (const [path, metadata] of Object.entries(files).sort(([left], [right]) =>
-    left.localeCompare(right),
-  )) {
-    hash
-      .update(path)
-      .update("\0")
-      .update(JSON.stringify(metadata))
-      .update("\0");
-  }
-  return hash.digest("hex");
+function snapshotHash(
+  files: Record<string, SnapshotFile>,
+  policy: WorkspaceSnapshotPolicy = currentWorkspaceSnapshotPolicy,
+) {
+  return workspaceSnapshotHash(files, policy);
 }
 
 function sanitizedTreeHash(entries: CanonicalEntry[]) {

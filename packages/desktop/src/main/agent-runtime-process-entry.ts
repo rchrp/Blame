@@ -1,3 +1,4 @@
+import { rm } from "node:fs/promises";
 import {
   BlameAgentRuntime,
   type AgentEvent,
@@ -91,6 +92,19 @@ function createAgentRuntime(hostClient: AgentRuntimeHostClient) {
           signal: undefined,
         }),
       projectApp: (input) => hostRequest(hostClient, "projectApp", input),
+      projectScanRoot: async (workspace) => {
+        const request = { workspace, signal: undefined };
+        const { root, temporary } = await hostRequest<{
+          root: string;
+          temporary: boolean;
+        }>(hostClient, "projectScanRoot", request);
+        return {
+          root,
+          release: async () => {
+            if (temporary) await rm(root, { recursive: true, force: true });
+          },
+        };
+      },
       ...(process.platform === "darwin" || process.platform === "win32"
         ? {
             lightWorkspace: (

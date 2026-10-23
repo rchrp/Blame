@@ -586,8 +586,7 @@ export default class PreviewSessionService {
         current.workspaceHash = receipt.workspaceHash
         current.sourceArtifactId = source.id
         if (!lockedLiveDelta) current.baselineId = baseline?.id
-        // A full import replaces the remote workspace: a pending remote delta is obsolete.
-        if (!lockedLiveDelta) current.pendingDeltaArtifactId = undefined
+        if (!lockedLiveDelta) current.pendingDeltaArtifactId = undefined // superseded by this import
         current.lastExportedJournalRevision = '0'
         current.lastAppliedLocalRevision = '0'
         current.lastAcknowledgedRemoteRevision = '0'

@@ -2,9 +2,11 @@ import { createHash } from "node:crypto";
 import { lstat, readFile, readdir, readlink } from "node:fs/promises";
 import { join, relative, sep } from "node:path";
 import {
+  compareWorkspacePaths,
   currentWorkspaceSnapshotPolicy,
   gitignoreFileName,
   WorkspaceIgnore,
+  workspaceSnapshotHash,
   type WorkspaceSnapshotPolicy,
 } from "@blame/preview-runtime/workspace-ignore";
 
@@ -32,18 +34,15 @@ export async function snapshotWorkspace(
   const files: Record<string, WorkspaceFileMetadata> = {};
   const casePaths = new Map<string, string>();
   await visit(root, root, files, casePaths, new WorkspaceIgnore(policy));
+  const compare = compareWorkspacePaths(policy);
   const sortedFiles = Object.fromEntries(
-    Object.entries(files).sort(([left], [right]) => left.localeCompare(right)),
+    Object.entries(files).sort(([left], [right]) => compare(left, right)),
   );
-  const hash = createHash("sha256");
-  for (const [path, metadata] of Object.entries(sortedFiles)) {
-    hash
-      .update(path)
-      .update("\0")
-      .update(JSON.stringify(metadata))
-      .update("\0");
-  }
-  return { hash: hash.digest("hex"), files: sortedFiles, policy };
+  return {
+    hash: workspaceSnapshotHash(sortedFiles, policy),
+    files: sortedFiles,
+    policy,
+  };
 }
 
 export function forbiddenWorkspacePath(path: string) {

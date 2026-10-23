@@ -90,6 +90,8 @@ export type RuntimeStartSessionInput = StartSessionInput & {
 };
 
 export type RuntimeOptions = PreviewToolRuntimeOptions & {
+  // A readable copy of a workspace the runtime cannot read directly.
+  projectScanRoot?: import("./project-initialization.js").ProjectScanRootProvider;
   applyPreviewInitialization?(input: {
     databaseMode: ProjectInitializationDatabaseMode;
     reason: string;

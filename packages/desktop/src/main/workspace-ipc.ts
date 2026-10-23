@@ -3,6 +3,8 @@ import {
   generatePreviewArtifacts,
   parsePreviewManifest,
   parseRunConfigurations,
+  manifestWithProjectPackageManager,
+  projectPackageManager,
   type ApplyPreviewInitializationInput,
   type ExecutionTelemetryCohorts,
   type ProjectPreviewRuntimeState,
@@ -89,6 +91,8 @@ import {
   previewFailureLogExcerpt,
 } from "./preview-readiness";
 import { PreviewRecoveryCircuit } from "./preview-recovery-circuit";
+import { composeWithRememberedHostPorts } from "./preview-port-memory.ts";
+import { stalePreviewSetupReason } from "./preview-setup-preflight.ts";
 import {
   initialPreviewRuntimeSelection,
   previewRunConfigurationServiceIds,
@@ -133,7 +137,6 @@ import {
   type RuntimeProgress,
 } from "./runtime-manager";
 import {
-  composeWithAllocatedHostPorts,
   composeWithCurrentDependencyVolumes,
   composeWithNonMutatingNpmInstalls,
   composeWithoutNumericSuUser,
@@ -483,6 +486,7 @@ type PreviewRuntimeErrorCode =
   | "preview_probe_failed"
   | "preview_probe_unsupported"
   | "preview_response_timeout"
+  | "preview_setup_stale"
   | "preview_url_timeout";
 
 class PreviewRuntimeError extends Error {
@@ -1227,7 +1231,14 @@ async function prepareProjectPreviewArtifacts(
 ) {
   const worktree = resolveRuntimePath(input.worktree);
   const env = await setupEnvironment(worktree);
-  const manifest = parsePreviewManifest(input.previewManifest);
+  const manifest = manifestWithProjectPackageManager(
+    parsePreviewManifest(input.previewManifest),
+    projectPackageManager(
+      await readRuntimeFile(joinWorkspacePath(worktree, "package.json")).catch(
+        () => undefined,
+      ),
+    ),
+  );
   const generated = generatePreviewArtifacts(manifest);
   const dockerCompose = generated.dockerCompose;
   const runConfigurations = parseRunConfigurations(input.runConfigurations);
@@ -1671,6 +1682,25 @@ async function startProjectComposeOperation(
   options: { reallocatePorts?: boolean },
 ) {
   if (await stopPreviewStartWhenRequested(worktree)) return undefined;
+  // A likely stale setup explains a failed start; it never blocks one.
+  const stale = await timedRecoveryStep(worktree, "setup preflight", async () =>
+    stalePreviewSetupReason(worktree, await readProjectPreviewManifest(worktree)),
+  );
+  try {
+    return await startCheckedProjectCompose(worktree, options);
+  } catch (error) {
+    if (!stale || !(error instanceof PreviewRuntimeError)) throw error;
+    throw new PreviewRuntimeError(
+      "preview_setup_stale",
+      `${stale} (${error.message})`,
+    );
+  }
+}
+
+async function startCheckedProjectCompose(
+  worktree: string,
+  options: { reallocatePorts?: boolean },
+) {
   if (!(await projectSetupCompleted(worktree))) {
     await timedRecoveryStep(worktree, "project setup", () =>
       runExistingProjectSetup(worktree),
@@ -4183,7 +4213,8 @@ async function repairComposeFile(
   const nextCompose = (await worktreeHasNextProject(worktree))
     ? commandWithNextWebpackFallback(dependencyCompose)
     : dependencyCompose;
-  const allocatedCompose = await composeWithAllocatedHostPorts(
+  const allocatedCompose = await composeWithRememberedHostPorts(
+    worktree,
     composeWithNonMutatingNpmInstalls(
       composeWithoutNumericSuUser(
         composeWithRuntimePortPlaceholders(
@@ -4254,7 +4285,7 @@ async function prepareProjectCompose(
   const allocatedCompose = await timedRecoveryStep(
     worktree,
     "compose allocate ports",
-    () => composeWithAllocatedHostPorts(normalizedCompose),
+    () => composeWithRememberedHostPorts(worktree, normalizedCompose),
   );
   await timedRecoveryStep(worktree, "compose binding validation", () =>
     validatePreviewComposeBindings(allocatedCompose),

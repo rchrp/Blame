@@ -22,6 +22,16 @@ export { taskComplexityBucket } from "./telemetry-cohorts.js";
 export * from "./preview-devtools-policy.js";
 export type { TaskComplexityBucket } from "./telemetry-cohorts.js";
 export { commandWithNextWebpackFallback } from "./next-webpack-fallback.js";
+export {
+  manifestWithProjectPackageManager,
+  projectPackageManager,
+} from "./preview-package-manager.js";
+export {
+  hostOrchestratedManifestCommand,
+  hostOrchestrationChain,
+  hostOrchestrationError,
+  referencedScriptFiles,
+} from "./project-host-orchestration.js";
 export { parseRunConfigurations } from "./project-initialization.js";
 export {
   generatePreviewArtifacts,

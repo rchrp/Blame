@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import ignore, { type Ignore } from "ignore";
 
 // Which files of a cloud preview workspace are synchronized and hashed.
@@ -9,6 +10,10 @@ import ignore, { type Ignore } from "ignore";
 //   files exclude. Files a running app generates (an ORM client,
 //   next-env.d.ts, *.tsbuildinfo, .nuxt...) then stay out of the hash, the
 //   change journal and the deltas sent back to the local worktree.
+//
+// "gitignore-v1" also orders paths by UTF-16 code unit instead of
+// localeCompare, whose order follows the process language (Czech sorts "ch"
+// after "h", Danish puts "aa" last) and would differ from the sandbox.
 //
 // Only .gitignore files inside the workspace count: global excludes and
 // .git/info/exclude differ between machines, and matching is case-sensitive
@@ -30,6 +35,33 @@ export function parseWorkspaceSnapshotPolicy(
   value: unknown,
 ): WorkspaceSnapshotPolicy {
   return value === "gitignore-v1" ? "gitignore-v1" : "legacy";
+}
+
+/** Orders workspace paths as the policy's snapshot hash does. */
+export function compareWorkspacePaths(policy: WorkspaceSnapshotPolicy) {
+  if (policy === "legacy")
+    return (left: string, right: string) => left.localeCompare(right);
+  return (left: string, right: string) =>
+    left < right ? -1 : left > right ? 1 : 0;
+}
+
+/** The workspace hash both the desktop and the sandbox runner compute. */
+export function workspaceSnapshotHash(
+  files: Record<string, unknown>,
+  policy: WorkspaceSnapshotPolicy,
+) {
+  const hash = createHash("sha256");
+  const compare = compareWorkspacePaths(policy);
+  for (const [path, metadata] of Object.entries(files).sort(([left], [right]) =>
+    compare(left, right),
+  )) {
+    hash
+      .update(path)
+      .update("\0")
+      .update(JSON.stringify(metadata))
+      .update("\0");
+  }
+  return hash.digest("hex");
 }
 
 type GitignoreRules = { directory: string; depth: number; matcher: Ignore };

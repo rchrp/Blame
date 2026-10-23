@@ -1,10 +1,12 @@
 import assert from "node:assert/strict";
+import { createServer } from "node:net";
 import test from "node:test";
 import { parse as parseYaml } from "yaml";
 import {
   composeWithNonMutatingNpmInstalls,
   composeWithCurrentDependencyVolumes,
   composeWithoutNumericSuUser,
+  composeHostPorts,
   composeWithAllocatedHostPorts,
   dockerComposeForPreview,
   dockerComposeWithCiForPackageInstalls,
@@ -990,4 +992,45 @@ test("safely prepends corepack enable to commands using pnpm", () => {
     result,
     /- \(corepack enable 2>\/dev\/null \|\| true\) && corepack prepare pnpm@10.33.2 --activate && corepack pnpm install/,
   );
+});
+
+test("reuses the host ports of the previous start while they are free", async () => {
+  const compose = [
+    "services:",
+    "  web:",
+    "    ports:",
+    '      - "127.0.0.1::3000"',
+    "  api:",
+    "    ports:",
+    '      - "127.0.0.1::3000"',
+  ].join("\n");
+  const first = composeHostPorts(await composeWithAllocatedHostPorts(compose));
+  assert.deepEqual(Object.keys(first).sort(), ["api:3000", "web:3000"]);
+
+  const again = composeHostPorts(
+    await composeWithAllocatedHostPorts(compose, first),
+  );
+  assert.deepEqual(again, first);
+
+  const busy = createServer();
+  await new Promise<void>((resolve) =>
+    busy.listen(first["web:3000"], "127.0.0.1", resolve),
+  );
+  try {
+    const moved = composeHostPorts(
+      await composeWithAllocatedHostPorts(compose, first),
+    );
+    assert.notEqual(moved["web:3000"], first["web:3000"]);
+    assert.equal(moved["api:3000"], first["api:3000"]);
+  } finally {
+    await new Promise((resolve) => busy.close(resolve));
+  }
+
+  const shared = composeHostPorts(
+    await composeWithAllocatedHostPorts(compose, {
+      "web:3000": first["web:3000"]!,
+      "api:3000": first["web:3000"]!,
+    }),
+  );
+  assert.notEqual(shared["web:3000"], shared["api:3000"]);
 });

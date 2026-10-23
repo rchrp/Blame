@@ -76,11 +76,20 @@ async function handleAgentHostRequest(
   if (method === "applyPreviewInitialization") {
     return applyPreviewInitialization(input);
   }
+  if (method === "projectScanRoot") return agentProjectScanRoot(input);
   if (method === "lightWorkspace") {
     return agentLightWorkspace(input, signal);
   }
   if (method === "projectApp") return agentProjectApp(input, signal);
   throw new Error(`Unsupported agent host method: ${method}`);
+}
+
+// The agent process removes a temporary copy itself once its scan is done.
+async function agentProjectScanRoot(input: unknown) {
+  const workspace = String(recordInput(input).workspace ?? "");
+  const { projectScanRoot } = await import("./runtime-workspace-mirror.ts");
+  const { root } = await projectScanRoot(workspace);
+  return { root, temporary: root !== workspace };
 }
 
 // A story working in the project folder checks or starts the project's
