@@ -106,6 +106,9 @@ export type ProjectRunPreview = {
     selected?: string
     onSelect: (id: string) => void
   }
+  // Shown above the logs: the app's port held by another app, or one to
+  // confirm.
+  notice?: React.ReactNode
 }
 
 type PreviewIslandProps = {
@@ -703,7 +706,10 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
               className="h-full min-h-0 overflow-hidden"
             >
               {projectRun ? (
-                <ProjectRunLogPanel content={projectRun.logs.content} />
+                <ProjectRunLogPanel
+                  content={projectRun.logs.content}
+                  notice={projectRun.notice}
+                />
               ) : (
                 <SetupLogPanel
                   managed={managedPreview}
@@ -1220,14 +1226,21 @@ function BlockedLocationBadge() {
 const projectRunStoppedMessage =
   "The app isn't running. Start it from here or from the header to see its preview."
 
-function ProjectRunLogPanel({ content }: { content: string }) {
+function ProjectRunLogPanel({
+  content,
+  notice,
+}: {
+  content: string
+  notice?: React.ReactNode
+}) {
   const logRef = React.useRef<HTMLPreElement>(null)
   React.useEffect(() => {
     const element = logRef.current
     if (element) element.scrollTop = element.scrollHeight
   }, [content])
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-muted/20 px-4 pt-16 pb-4">
+    <div className="flex h-full min-h-0 flex-col gap-3 overflow-hidden bg-muted/20 px-4 pt-16 pb-4">
+      {notice}
       <pre
         ref={logRef}
         className="min-h-0 flex-1 overflow-auto rounded-lg border bg-zinc-950 p-4 font-mono text-xs whitespace-pre-wrap text-zinc-100 select-text"

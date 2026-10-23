@@ -1,16 +1,26 @@
-import { MonitorIcon } from "lucide-react"
+import { CircleAlertIcon, MonitorIcon } from "lucide-react"
 
+import { portOwnerLabel } from "@/components/backlog/board/project-app-port"
 import {
   projectRunConfigurationPreviewKey,
   projectRunConfigurationPreviewUrl,
 } from "@/components/backlog/board/project-run-configuration"
-import { useSharedProjectRunner } from "@/components/backlog/board/project-runner-context"
+import {
+  runningOutside,
+  startBlocked,
+} from "@/components/backlog/board/project-runner-button"
+import {
+  type SharedProjectRunner,
+  useSharedProjectRunner,
+} from "@/components/backlog/board/project-runner-context"
 import { ProjectRunnerControls } from "@/components/backlog/board/project-runner-controls"
 import { UserStoryPreview } from "@/components/backlog/drawer/user-story-preview"
+import { Button } from "@/components/ui/button"
+import { useProjects } from "@/context/projects"
 
 // The preview of a story working directly in the project folder: the usual
 // story preview, but its app is the project's own, started and stopped with
-// the same runner as the header's controls.
+// the same runner as the header's controls, or found already running.
 export function DirectStoryPreview({
   onCapture,
   visible,
@@ -21,11 +31,12 @@ export function DirectStoryPreview({
   const runner = useSharedProjectRunner()
   const selected = runner?.selected
   if (!runner || !selected) return <NoRunConfiguration />
-  const status = runner.sessionFor(selected.id)?.status ?? "stopped"
+  const status = runner.statusFor(selected.id)
   const previewUrl =
     status === "running"
       ? projectRunConfigurationPreviewUrl(selected)
       : undefined
+  const outside = runningOutside(runner, selected.id)
   const session = runner.activeSession
   return (
     <UserStoryPreview
@@ -42,8 +53,10 @@ export function DirectStoryPreview({
             configurations={runner.configurations}
             disabled={!runner.projectPath || !runner.terminal}
             pending={runner.pendingOperation}
+            runningOutside={outside}
+            startBlocked={startBlocked(runner, selected.id)}
             selectedId={selected.id}
-            statusFor={(id) => runner.sessionFor(id)?.status ?? "stopped"}
+            statusFor={runner.statusFor}
             onMenuOpenChange={onMenuOpenChange}
             onSelect={runner.select}
             onStart={runner.start}
@@ -51,7 +64,10 @@ export function DirectStoryPreview({
           />
         ),
         logs: {
-          content: session?.logs ?? "",
+          content:
+            outside && runner.external.kind === "project"
+              ? `${selected.name} is already running outside Blame (${portOwnerLabel(runner.external.owner)}). Its logs stay where it was started.`
+              : (session?.logs ?? ""),
           items: runner.sessions.map((item) => ({
             id: item.configurationId,
             label: item.name,
@@ -60,11 +76,79 @@ export function DirectStoryPreview({
           selected: session?.configurationId,
           onSelect: runner.selectSession,
         },
+        notice:
+          selected.id === runner.previewConfiguration?.id ? (
+            <PortNotice runner={runner} />
+          ) : undefined,
       }}
       visible={visible}
       onCapture={onCapture}
     />
   )
+}
+
+// The app's port is already taken: by another app, or by one Blame cannot
+// place (then the person tells, once for this project and port).
+function PortNotice({ runner }: { runner: SharedProjectRunner }) {
+  const projects = useProjects()
+  const external = runner.external
+  if (external.kind !== "other" && external.kind !== "unknown") return null
+  const port = previewPortLabel(runner)
+  const holder = portOwnerLabel(external.owner)
+  return (
+    <div className="pointer-events-auto flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm">
+      <CircleAlertIcon className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" />
+      <div className="grid min-w-0 flex-1 gap-1">
+        {external.kind === "other" ? (
+          <>
+            <p className="font-medium">{port} is used by another app</p>
+            <p className="text-pretty text-muted-foreground">
+              {holder} holds it. Stop that app to run this project's here.
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="font-medium">Something already runs on {port}</p>
+            <p className="text-pretty text-muted-foreground">
+              Blame can't tell which app it is ({holder}). Is it{" "}
+              {projects.activeProject?.name ?? "this project"}?
+            </p>
+          </>
+        )}
+      </div>
+      {external.kind === "unknown" ? (
+        <div className="flex shrink-0 gap-2">
+          <Button
+            size="sm"
+            type="button"
+            variant="outline"
+            onClick={() => runner.answerExternalApp(false)}
+          >
+            No
+          </Button>
+          <Button
+            size="sm"
+            type="button"
+            onClick={() => runner.answerExternalApp(true)}
+          >
+            Yes, use it
+          </Button>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+function previewPortLabel(runner: SharedProjectRunner) {
+  const url = projectRunConfigurationPreviewUrl(runner.previewConfiguration)
+  try {
+    const parsed = new URL(
+      /^https?:\/\//.test(url ?? "") ? url! : `http://${url}`
+    )
+    return parsed.host
+  } catch {
+    return "Its port"
+  }
 }
 
 function NoRunConfiguration() {

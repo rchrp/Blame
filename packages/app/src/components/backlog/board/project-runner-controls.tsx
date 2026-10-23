@@ -42,6 +42,12 @@ type ProjectRunnerControlsProps = {
   onSelect: (configurationId: string) => void
   onStart: (configurationId: string, restart: boolean) => void
   onStop: (configurationId: string) => void
+  // The selected app already runs outside Blame: Blame can neither rerun
+  // nor stop it.
+  runningOutside?: boolean
+  // Why the selected app cannot start now (its port is held by another
+  // app, which a dev server would silently step around).
+  startBlocked?: string
 }
 type SelectedRunnerControlsProps = ProjectRunnerControlsProps & {
   selected: ProjectRunConfiguration
@@ -98,6 +104,7 @@ function RunnerConfigurationMenu(
 function RunnerConfigurationTrigger({
   disabled,
   pending,
+  runningOutside,
   selected,
   statusFor,
 }: ProjectRunnerControlsProps & { selected: ProjectRunConfiguration }) {
@@ -113,6 +120,11 @@ function RunnerConfigurationTrigger({
         <span className="flex min-w-0 items-center gap-2">
           <ProjectRunnerStatusDot status={status} />
           <span className="truncate">{selected.name}</span>
+          {runningOutside ? (
+            <span className="shrink-0 text-xs font-normal text-muted-foreground">
+              outside Blame
+            </span>
+          ) : null}
         </span>
         <ChevronDownIcon />
       </Button>
@@ -177,10 +189,22 @@ function RunnerStartButton(props: SelectedRunnerControlsProps) {
   const running = props.status === "running"
   const loading = isPendingStart(props.pending, props.selected.id)
   const disabled =
-    props.disabled || Boolean(props.pending) || isTransitioning(props.status)
+    props.disabled ||
+    props.runningOutside ||
+    (Boolean(props.startBlocked) && !running) ||
+    Boolean(props.pending) ||
+    isTransitioning(props.status)
   return (
     <RunnerIconTooltip
-      label={running ? "Rerun configuration" : "Run configuration"}
+      label={
+        props.runningOutside
+          ? "Already running outside Blame"
+          : props.startBlocked && !running
+            ? props.startBlocked
+            : running
+              ? "Rerun configuration"
+              : "Run configuration"
+      }
     >
       <Button
         className={runnerStartClassName(running)}
@@ -204,7 +228,12 @@ function RunnerStopButton(props: SelectedRunnerControlsProps) {
     >
       <Button
         className={runnerStopClassName(running || loading)}
-        disabled={props.disabled || Boolean(props.pending) || !running}
+        disabled={
+          props.disabled ||
+          props.runningOutside ||
+          Boolean(props.pending) ||
+          !running
+        }
         size="icon"
         type="button"
         onClick={() => props.onStop(props.selected.id)}

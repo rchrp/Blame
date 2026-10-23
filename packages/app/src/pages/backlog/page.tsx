@@ -66,6 +66,7 @@ import { UserStoryPreviewWarmup } from "@/components/backlog/drawer/user-story-p
 import { drawerTargetForAction } from "@/components/backlog/shared/backlog-helpers"
 import type { DrawerTarget } from "@/components/backlog/shared/backlog-types"
 import { storyPreviewDevtoolsScope } from "@/components/backlog/shared/preview-devtools-scope"
+import { directStoryPreviewScope } from "@/components/backlog/board/project-run-configuration"
 import type { AgentConversationUserMessageUndo } from "@/components/chat/agent-conversation"
 import { newUserStoryEvent } from "@/components/navigation/command-palette"
 import { nextCheckpointRunCount } from "@/components/chat/agent-run-checkpoints"
@@ -907,10 +908,13 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
         workspaceMode:
           story.workspaceMode ??
           (story.runMode === "vercel-compose" ? "cloud-mirror" : "local-container"),
-        // Direct stories have no managed preview to inspect.
+        // Direct stories inspect the project's own app.
         previewDevtoolsScope:
           story.workspaceMode === "direct"
-            ? undefined
+            ? directStoryPreviewScope(
+                projectInitialization?.initialization?.runConfigurations,
+                projects.activeProject?.path
+              )
             : storyPreviewDevtoolsScope(story.id),
         codePractices: await projectCodePractices(auth, projects),
         executionId,
@@ -930,6 +934,7 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
       agentSelection.currentVariant,
       agentSelection.models,
       platform.agent,
+      projectInitialization?.initialization?.runConfigurations,
       projects,
     ]
   )

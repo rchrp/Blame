@@ -21,6 +21,17 @@ export function projectPreviewConfiguration(
   )
 }
 
+// What an agent working in the project folder inspects with its browser
+// tools: the project's own app, the page Blame's runner keeps open.
+export function directStoryPreviewScope(
+  configurations: ProjectRunConfiguration[] | undefined,
+  projectPath: string | undefined
+) {
+  const configuration = projectPreviewConfiguration(configurations ?? [])
+  if (!configuration || !projectPath) return undefined
+  return projectRunConfigurationPreviewKey(configuration, projectPath)
+}
+
 export function projectRunConfigurationPreviewKey(
   configuration?: ProjectRunConfiguration,
   scope = "project"

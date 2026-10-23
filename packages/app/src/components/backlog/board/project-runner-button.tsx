@@ -42,7 +42,9 @@ export function ProjectRunnerButton() {
         disabled={!runner.projectPath || !runner.terminal}
         pending={runner.pendingOperation}
         selectedId={runner.selected.id}
-        statusFor={(id) => runner.sessionFor(id)?.status ?? "stopped"}
+        runningOutside={runningOutside(runner, runner.selected.id)}
+        startBlocked={startBlocked(runner, runner.selected.id)}
+        statusFor={runner.statusFor}
         onSelect={runner.select}
         onStart={runner.start}
         onStop={runner.stop}
@@ -56,6 +58,22 @@ export function ProjectRunnerButton() {
       />
     </>
   )
+}
+
+export function runningOutside(runner: SharedProjectRunner, id: string) {
+  return (
+    runner.external.kind === "project" &&
+    id === runner.previewConfiguration?.id &&
+    !["running", "starting"].includes(runner.sessionFor(id)?.status ?? "")
+  )
+}
+
+export function startBlocked(runner: SharedProjectRunner, id: string) {
+  if (id !== runner.previewConfiguration?.id) return undefined
+  if (runner.external.kind === "other") return "Its port is used by another app"
+  if (runner.external.kind === "unknown")
+    return "Something already runs on its port"
+  return undefined
 }
 
 function RunnerPreviewButton({

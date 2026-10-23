@@ -123,6 +123,8 @@ export type Platform = {
   windowControls?: WindowControlsClient
   // Desktop: one window per open project.
   projectWindows?: ProjectWindowsClient
+  // Desktop: the open project's app beyond Blame's own runner.
+  projectApp?: ProjectAppClient
   openDirectoryPickerDialog?(
     options?: OpenDirectoryPickerOptions
   ): Promise<PickerPaths>
@@ -324,6 +326,46 @@ export type BacklogStatusPipRequest = {
   rejectChoice?: "request-changes" | "discard"
   stopChoice?: "pause" | "pause-feedback" | "backlog" | "discard-worktree"
   storyId: string
+}
+
+// Who listens on a local port: the project's app already running outside
+// Blame, another app, or one Blame cannot place.
+export type LocalPortOwner =
+  | { status: "free" }
+  | {
+      status: "busy"
+      owner: "project" | "other" | "unknown"
+      cwd?: string
+      pid?: number
+      processName?: string
+    }
+
+export type ProjectAppRequest = { action: "start" | "status"; id: string }
+
+export type ProjectAppResult = {
+  status:
+    | "conflict"
+    | "failed"
+    | "running"
+    | "starting"
+    | "stopped"
+    | "unavailable"
+  message: string
+  configuration?: string
+  logs?: string
+  owner?: { kind: "other" | "unknown"; folder?: string; process?: string }
+  previewUrl?: string
+  runningOutsideBlame?: boolean
+}
+
+export type ProjectAppClient = {
+  inspectPort(input: {
+    port: number
+    projectPath: string
+  }): Promise<LocalPortOwner>
+  // An agent working in the project folder asks about its app.
+  onRequest(callback: (request: ProjectAppRequest) => void): () => void
+  respond(id: string, result: ProjectAppResult): Promise<boolean>
 }
 
 export type ProjectWindowsClient = {

@@ -45,6 +45,7 @@ import {
 } from "@/components/backlog/data/agent-run-recovery"
 import type { useBacklogStore } from "@/components/backlog/data/backlog-store"
 import { storyPreviewDevtoolsScope } from "@/components/backlog/shared/preview-devtools-scope"
+import { directStoryPreviewScope } from "@/components/backlog/board/project-run-configuration"
 import { useModelSelection } from "@/components/model/model-selection"
 import { useCloudAuth } from "@/context/cloud-auth"
 import type { HostDependencyReport } from "@/context/platform"
@@ -328,9 +329,12 @@ export function useBacklogRotation(
         cwd: worktree.worktree,
         workspaceRoot: worktree.worktree,
         workspaceMode: worktree.workspaceMode,
-        // No managed preview in Direct mode.
+        // In Direct mode, the project's own app (Blame's project runner).
         previewDevtoolsScope: direct
-          ? undefined
+          ? directStoryPreviewScope(
+              initialization.runConfigurations,
+              projects.activeProject.path
+            )
           : storyPreviewDevtoolsScope(detailedStory.id),
         codePractices: effectiveProjectCodePractices(
           projectInitialization.practices
