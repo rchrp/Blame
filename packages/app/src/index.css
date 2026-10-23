@@ -513,6 +513,32 @@
     content: "";
   }
 
+  /* The drawer's edge lit from its top left corner when a story changes
+     status: the sub-agent response border, sized by --corner-w/--corner-h. */
+  .story-status-corner {
+    position: absolute;
+    inset: 0;
+    padding: 1.5px;
+    pointer-events: none;
+    border-radius: inherit;
+    background: radial-gradient(
+      ellipse var(--corner-w, 50%) var(--corner-h, 90%) at top left,
+      var(--story-status-color) 0%,
+      var(--story-status-glow-color) 42%,
+      transparent 78%
+    );
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
+  }
+
+  .story-status-corner-glow {
+    padding: 4px;
+    filter: blur(6px);
+    opacity: 0.75;
+  }
+
   .user-story-state-effect {
     position: relative;
     border-radius: var(--radius-lg);
