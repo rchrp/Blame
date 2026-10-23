@@ -144,6 +144,7 @@ export function validPreviewLifecycle(
     ["idle", "pending", "ready", "error"].includes(lifecycle.status) &&
     typeof lifecycle.since === "string" &&
     Number.isFinite(Date.parse(lifecycle.since)) &&
+    (lifecycle.step === undefined || typeof lifecycle.step === "string") &&
     validFailure(lifecycle.failure)
   );
 }
@@ -232,3 +233,20 @@ function errorMessage(error: unknown) {
     ? error
     : "The local preview operation failed.";
 }
+
+// The timed steps of a local preview start that mean something to people,
+// shown while the preview starts; other timed steps are internal.
+export function localPreviewStartStep(label: string) {
+  const setupTask = /^compose setup service (.+)$/.exec(label);
+  if (setupTask) return `Running setup task ${setupTask[1]}`;
+  return localPreviewStartSteps[label];
+}
+
+const localPreviewStartSteps: Record<string, string | undefined> = {
+  "project setup": "Installing dependencies and running setup tasks",
+  "compose setup dependencies": "Starting databases and other dependencies",
+  "compose up": "Starting the app services",
+  "compose runtime services": "Starting the app services",
+  "preview url resolve": "Publishing the preview address",
+  "preview response wait": "Waiting for the app to answer",
+};

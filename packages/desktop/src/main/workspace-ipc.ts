@@ -105,6 +105,7 @@ import {
 import {
   idleLocalPreviewLifecycle,
   localPreviewLifecycle,
+  localPreviewStartStep,
   parseLocalPreviewRuntimeSelectionState,
   pendingLocalPreviewLifecycle,
   runLocalPreviewOperation,
@@ -3607,11 +3608,25 @@ async function timedRecoveryStep<T>(
   action: () => Promise<T> | T,
 ) {
   const start = Date.now();
+  const step = localPreviewStartStep(label);
+  if (step) await recordPreviewStartStep(worktree, step);
   try {
     return await traceWorkspaceStep(label, action);
   } finally {
     await appendTimingLog(worktree, label, Date.now() - start);
   }
+}
+
+async function recordPreviewStartStep(worktree: string, step: string) {
+  try {
+    const state = await readPreviewRuntimeFileState(worktree);
+    const lifecycle = state.lifecycle;
+    if (lifecycle?.status !== "pending" || lifecycle.phase !== "starting") return;
+    await writePreviewRuntimeState(worktree, {
+      ...state,
+      lifecycle: { ...lifecycle, step },
+    });
+  } catch {}
 }
 
 async function appendTimingLog(

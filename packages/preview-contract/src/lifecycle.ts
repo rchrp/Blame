@@ -25,6 +25,8 @@ export type PreviewLifecycleState = {
   phase: PreviewLifecyclePhase;
   status: PreviewLifecycleStatus;
   since: string;
+  /** What a pending start is doing right now, for people (local previews). */
+  step?: string;
   failure?: {
     message: string;
     retryable?: boolean;

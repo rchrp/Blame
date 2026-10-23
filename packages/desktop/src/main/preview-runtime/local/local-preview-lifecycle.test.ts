@@ -8,6 +8,7 @@ import {
   persistLocalPreviewFailure,
   persistLocalPreviewResult,
   validPreviewLifecycle,
+  localPreviewStartStep,
 } from "./local-preview-lifecycle.ts";
 
 test("projects local container and endpoint observations to the shared lifecycle", () => {
@@ -99,3 +100,23 @@ function selection(
     selectedConfigurationId: "web",
   };
 }
+
+test("names the start steps people can follow and keeps them valid", () => {
+  assert.equal(
+    localPreviewStartStep("compose setup service db-migrate"),
+    "Running setup task db-migrate",
+  );
+  assert.equal(
+    localPreviewStartStep("compose up"),
+    "Starting the app services",
+  );
+  assert.equal(localPreviewStartStep("dependency cache check deps"), undefined);
+  const lifecycle = {
+    phase: "starting",
+    status: "pending",
+    since: new Date().toISOString(),
+    step: "Starting the app services",
+  };
+  assert.equal(validPreviewLifecycle(lifecycle), true);
+  assert.equal(validPreviewLifecycle({ ...lifecycle, step: 3 }), false);
+});
