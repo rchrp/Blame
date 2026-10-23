@@ -3,6 +3,7 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   CloudIcon,
+  CloudOffIcon,
   ContainerIcon,
   FolderGit2Icon,
   type LucideIcon,
@@ -20,9 +21,13 @@ import { navigate } from "@/components/navigation/navigation"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { useOptionalBlameRuntime } from "@/context/blame-runtime"
 import { usePlatform, type RuntimeProgress } from "@/context/platform"
-import { runtimeProgressText, type RuntimePhase } from "@/lib/blame-runtime-state"
+import {
+  runtimeProgressText,
+  type RuntimePhase,
+} from "@/lib/blame-runtime-state"
 import {
   saveStoryRunMode,
+  useSavedStoryRunMode,
   useStoryRunMode,
   type StoryRunMode,
 } from "@/lib/runtime-preference"
@@ -75,7 +80,8 @@ const runtimeOptions = [
     description:
       "Runs right in your project folder: the fastest and lightest. No isolation, so agents can collide on files and ports.",
     icon: FolderGit2Icon,
-    iconClassName: "bg-muted/70 text-muted-foreground ring-1 ring-foreground/10",
+    iconClassName:
+      "bg-muted/70 text-muted-foreground ring-1 ring-foreground/10",
     label: "Direct",
     profile: "direct",
     selectedClassName: "text-foreground",
@@ -99,7 +105,12 @@ export const RuntimeProfileSelector = React.memo(
     const runtime = useOptionalBlameRuntime()
     const premium = auth.license?.licensed === true
     const accountDefault = useStoryRunMode(premium)
+    const savedDefault = useSavedStoryRunMode()
     const current = value ?? accountDefault
+    // The saved default is Cloud Preview, but without Premium the story runs
+    // in a Local Container; say so instead of switching silently.
+    const cloudFallback =
+      !value && savedDefault === "vercel-compose" && current !== savedDefault
     const [open, setOpen] = React.useState(false)
     const cloudAvailable = Boolean(
       platform.previewRuntime && auth.status === "authenticated"
@@ -147,6 +158,7 @@ export const RuntimeProfileSelector = React.memo(
           <Button
             type="button"
             aria-label={`Preview runtime: ${selected.label}`}
+            title={cloudFallback ? cloudFallbackNote : undefined}
             className={cn(
               "h-8 w-44 justify-between gap-2 rounded-xl px-3 text-sm font-medium active:translate-y-0",
               selected.triggerClassName
@@ -156,6 +168,12 @@ export const RuntimeProfileSelector = React.memo(
             <span className="flex min-w-0 items-center gap-2">
               <SelectedIcon className="size-4 shrink-0" />
               <span className="truncate">{selected.label}</span>
+              {cloudFallback && (
+                <CloudOffIcon
+                  aria-label={cloudFallbackNote}
+                  className="size-3.5 shrink-0 opacity-70"
+                />
+              )}
             </span>
             {open ? (
               <ChevronUpIcon className="size-4 shrink-0 opacity-70" />
@@ -170,6 +188,21 @@ export const RuntimeProfileSelector = React.memo(
           sideOffset={6}
           className="w-[22rem] rounded-xl p-2"
         >
+          {cloudFallback && (
+            <p className="mb-1 rounded-lg bg-muted/60 px-3 py-2 text-xs text-muted-foreground">
+              {cloudFallbackNote}{" "}
+              <button
+                className="font-medium text-foreground underline-offset-2 hover:underline"
+                type="button"
+                onClick={() => {
+                  setOpen(false)
+                  navigate("/premium")
+                }}
+              >
+                View Premium
+              </button>
+            </p>
+          )}
           <div className="space-y-0.5">
             {runtimeOptions.map((option) => (
               <RuntimeProfileOption
@@ -247,8 +280,13 @@ function RuntimeProfileOption({
   )
 }
 
+const cloudFallbackNote =
+  "Your default is Cloud Preview, which needs Blame Premium, so stories run in a Local Container until then."
+
 function runtimeNeedsSetup(phase?: RuntimePhase) {
-  return phase === "missing" || phase === "needs-repair" || phase === "unsupported"
+  return (
+    phase === "missing" || phase === "needs-repair" || phase === "unsupported"
+  )
 }
 
 function runtimeNote(phase?: RuntimePhase, progress?: RuntimeProgress) {

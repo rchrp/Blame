@@ -109,6 +109,15 @@ export function saveStoryRunMode(mode: StoryRunMode) {
 
 // Where new stories run. Without Premium, Cloud Preview falls back to the
 // local default like the preview profile does.
+/** The run mode the person saved, before Premium decides what can run. */
+export function useSavedStoryRunMode(): StoryRunMode {
+  return React.useSyncExternalStore(
+    subscribePreference,
+    readRunPreference,
+    () => defaultRuntimePreference as StoredRunPreference
+  ).profile
+}
+
 export function useStoryRunMode(premium: boolean): StoryRunMode {
   const preference = React.useSyncExternalStore(
     subscribePreference,
