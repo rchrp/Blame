@@ -4,6 +4,7 @@ export {
   isLocalPreviewDatabaseCredentialKey,
   isLocalPreviewDatabaseEnvironmentValue,
   normalizeLocalPreviewDatabaseEnvironmentValue,
+  previewEnvironmentValueRejection,
 } from "./environment-security.js";
 export type {
   PreviewLifecyclePhase,

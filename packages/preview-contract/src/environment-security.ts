@@ -85,3 +85,39 @@ function localDatabaseUrl(value: string) {
     return undefined;
   }
 }
+
+// Manifest environment values are development values committed with the
+// project, so any key name is accepted. A value that looks like a real
+// credential is still refused: real secrets never belong in the manifest.
+const realCredentialPatterns: { kind: string; pattern: RegExp }[] = [
+  { kind: "a private key", pattern: /-----BEGIN [A-Z ]*PRIVATE KEY-----/ },
+  { kind: "an AWS access key", pattern: /\b(?:AKIA|ASIA)[A-Z0-9]{16}\b/ },
+  { kind: "a GitHub token", pattern: /\bgh[pousr]_[A-Za-z0-9]{20,}\b/ },
+  { kind: "a GitLab token", pattern: /\bglpat-[A-Za-z0-9_-]{20,}\b/ },
+  { kind: "an OpenAI key", pattern: /\bsk-(?:proj-)?[A-Za-z0-9_-]{20,}\b/ },
+  { kind: "a Slack token", pattern: /\bxox[bpars]-[A-Za-z0-9-]{16,}\b/ },
+  { kind: "a live Stripe key", pattern: /\b[sr]k_live_[A-Za-z0-9]{16,}\b/ },
+];
+
+export function previewEnvironmentValueRejection(value: string) {
+  for (const { kind, pattern } of realCredentialPatterns) {
+    if (pattern.test(value)) return `contains ${kind}`;
+  }
+  if (externalCredentialUrl(value)) {
+    return "embeds credentials for a host outside the preview";
+  }
+  return undefined;
+}
+
+// Credentials in a URL are fine for a service of the preview itself
+// (`postgres://app:dev@database/app`), not for an outside host.
+function externalCredentialUrl(value: string) {
+  if (!/^[a-z][a-z0-9+.-]*:\/\/[^\s/@]+@/i.test(value)) return false;
+  try {
+    const parsed = new URL(value);
+    if (!parsed.username && !parsed.password) return false;
+    return !/^[a-z0-9][a-z0-9_-]{0,62}$/i.test(parsed.hostname);
+  } catch {
+    return true;
+  }
+}

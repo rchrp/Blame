@@ -13,7 +13,7 @@ import type {
   PreviewManifestServiceKind,
   PreviewManifestSetupTask,
 } from "./types.js";
-import { isLocalPreviewDatabaseEnvironmentValue } from "./environment-security.js";
+import { previewEnvironmentValueRejection } from "./environment-security.js";
 
 const serviceKinds = new Set<PreviewManifestServiceKind>([
   "preview",
@@ -789,30 +789,15 @@ function parseEnvironment(
     ) {
       throw new Error(`previewManifest ${field} is invalid`);
     }
-    if (
-      (secretEnvironmentKey(key) || literalSecretValue(entry)) &&
-      !isLocalPreviewDatabaseEnvironmentValue(key, entry)
-    ) {
+    const rejection = previewEnvironmentValueRejection(entry);
+    if (rejection) {
       throw new Error(
-        `previewManifest ${field}.${key} requires the explicit secret delivery channel`,
+        `previewManifest ${field}.${key} ${rejection}; keep real credentials out of the preview manifest`,
       );
     }
     environment[key] = entry;
   }
   return environment;
-}
-
-function secretEnvironmentKey(key: string) {
-  return /(?:TOKEN|SECRET|PASSWORD|PASSWD|PRIVATE_KEY|API_KEY|ACCESS_KEY|CREDENTIAL|AUTH|SESSION_KEY)$/i.test(
-    key,
-  );
-}
-
-function literalSecretValue(value: string) {
-  return (
-    /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/.test(value) ||
-    /^[a-z][a-z0-9+.-]*:\/\/[^\s/:]+:[^\s/@]+@/i.test(value)
-  );
 }
 
 function parseRunAs(value: unknown) {

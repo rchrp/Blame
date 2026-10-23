@@ -6,12 +6,15 @@ import {
   initialRuntimeState,
 } from "./runtime-state.js";
 
-test("never serializes secrets or signed URLs into persistent runner state", () => {
+test("never serializes real credentials or signed URLs into runner state", () => {
   const state = initialRuntimeState();
-  state.plan = plan({ API_TOKEN: "literal" });
+  state.plan = plan({ API_TOKEN: "literal", MYSQL_ROOT_PASSWORD: "blame" });
+  assert.doesNotThrow(() => assertRuntimeStateSnapshotSafe(state));
+
+  state.plan = plan({ SIGNING_KEY: "-----BEGIN PRIVATE KEY-----\nabc" });
   assert.throws(() => assertRuntimeStateSnapshotSafe(state), /Secret material/);
 
-  state.plan = plan({ SESSION_KEY: "literal" });
+  state.plan = plan({ UPSTREAM: "https://user:pass@api.example.com" });
   assert.throws(() => assertRuntimeStateSnapshotSafe(state), /Secret material/);
 
   state.plan = plan({ PUBLIC_ORIGIN: "https://app.example" });

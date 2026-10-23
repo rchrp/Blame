@@ -152,58 +152,44 @@ test("rejects dangerous Compose topology escape hatches", () => {
   }
 });
 
-test("rejects Docker socket commands and literal secret environments", () => {
+test("rejects Docker socket commands", () => {
   const socket = manifest();
   socket.setup[0].command = "docker -H unix:///var/run/docker.sock info";
   assert.throws(() => parsePreviewManifest(socket), /command is unsafe/);
-
-  const secret = manifest();
-  secret.services[0].environment = { API_TOKEN: "literal" };
-  assert.throws(() => parsePreviewManifest(secret), /secret delivery channel/);
 });
 
-test("accepts only public throwaway credentials for isolated databases", () => {
-  const isolated = manifest();
-  isolated.setup[0].environment = {
-    DATABASE_URL: "mysql://blame:blame@database:3306/app",
-    DB_PASSWORD: "blame",
+test("accepts development values under any key name", () => {
+  const value = manifest();
+  value.services[0].environment = {
+    API_TOKEN: "literal",
+    NEXTAUTH_SECRET: "dev",
+    SESSION_KEY: "local-session",
   };
-  isolated.services.push({
-    id: "database",
-    kind: "dependency",
-    container: { image: "mysql:9" },
-    environment: {
-      MYSQL_DATABASE: "app",
-      MYSQL_PASSWORD: "blame",
-      MYSQL_ROOT_PASSWORD: "blame",
-      MYSQL_USER: "blame",
-    },
-    endpoints: [{ id: "mysql", protocol: "tcp", port: 3306 }],
-  });
+  value.setup[0].environment = {
+    DATABASE_URL: "postgres://app:dev-password@database:5432/app",
+    DB_PASSWORD: "dev-password",
+    BROKER_URL: "amqp://guest:guest@rabbitmq:5672",
+  };
 
-  const parsed = parsePreviewManifest(isolated);
-  assert.equal(parsed.setup[0]?.environment?.DB_PASSWORD, "blame");
+  const parsed = parsePreviewManifest(value);
+  assert.equal(parsed.services[0]?.environment?.NEXTAUTH_SECRET, "dev");
+  assert.equal(parsed.setup[0]?.environment?.DB_PASSWORD, "dev-password");
+});
 
-  for (const value of [
-    "mysql://blame:production-secret@database:3306/app",
-    "mysql://blame:blame@database.example.com:3306/app",
-  ]) {
-    const unsafeUrl = manifest();
-    unsafeUrl.setup[0].environment = { DATABASE_URL: value };
-    assert.throws(
-      () => parsePreviewManifest(unsafeUrl),
-      /secret delivery channel/,
-    );
+test("rejects values that look like real credentials", () => {
+  for (const [value, reason] of [
+    ["-----BEGIN RSA PRIVATE KEY-----\nabc", /private key/],
+    ["AKIAABCDEFGHIJKLMNOP", /AWS access key/],
+    [`ghp_${"a".repeat(36)}`, /GitHub token/],
+    [`sk_live_${"a".repeat(24)}`, /live Stripe key/],
+    [`xoxb-${"1".repeat(20)}`, /Slack token/],
+    ["mysql://app:secret@db.example.com:3306/app", /outside the preview/],
+    ["https://user:pass@api.example.com/v1", /outside the preview/],
+  ] as const) {
+    const unsafe = manifest();
+    unsafe.services[0].environment = { VALUE: value };
+    assert.throws(() => parsePreviewManifest(unsafe), reason);
   }
-
-  const unsafePassword = manifest();
-  unsafePassword.setup[0].environment = {
-    DB_PASSWORD: "production-secret",
-  };
-  assert.throws(
-    () => parsePreviewManifest(unsafePassword),
-    /secret delivery channel/,
-  );
 });
 
 test("rejects dependency cycles and invalid probes", () => {

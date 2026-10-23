@@ -11,7 +11,7 @@ import type {
   PreviewExecutionPlan,
   RuntimeSelection,
 } from "@blame/preview-runtime";
-import { isLocalPreviewDatabaseEnvironmentValue } from "@blame/preview-runtime";
+import { previewEnvironmentValueRejection } from "@blame/preview-runtime";
 import { runnerError } from "../protocol/runner-errors.js";
 import { measureRunnerPhase } from "../performance-measure.js";
 import {
@@ -445,18 +445,14 @@ function dockerVolumeRoot() {
 
 function validateComposePlan(plan: PreviewExecutionPlan) {
   for (const item of [...plan.setup, ...plan.services]) {
-    if (
-      Object.entries(item.environment).some(
-        ([key, value]) =>
-          /(?:TOKEN|SECRET|PASSWORD|PASSWD|PRIVATE_KEY|API_KEY|ACCESS_KEY|CREDENTIAL|AUTH|SESSION_KEY)$/i.test(
-            key,
-          ) && !isLocalPreviewDatabaseEnvironmentValue(key, value),
-      )
-    ) {
-      throw runnerError(
-        "RAW_SECRET_REJECTED",
-        "Secret-looking environment values require the explicit secret delivery channel.",
-      );
+    for (const [key, value] of Object.entries(item.environment)) {
+      const rejection = previewEnvironmentValueRejection(value);
+      if (rejection) {
+        throw runnerError(
+          "RAW_SECRET_REJECTED",
+          `Environment value ${key} ${rejection}.`,
+        );
+      }
     }
   }
 }

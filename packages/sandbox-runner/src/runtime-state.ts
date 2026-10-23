@@ -1,8 +1,9 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
-import type {
-  PreviewExecutionPlan,
-  RuntimeSelection,
+import {
+  previewEnvironmentValueRejection,
+  type PreviewExecutionPlan,
+  type RuntimeSelection,
 } from "@blame/preview-runtime";
 import { runtimePaths } from "./runtime-paths.js";
 
@@ -49,14 +50,12 @@ export function assertRuntimeStateSnapshotSafe(state: RunnerRuntimeState) {
     ...(state.plan?.services ?? []),
   ]) {
     for (const [key, value] of Object.entries(item.environment)) {
-      if (
-        /(?:TOKEN|SECRET|PASSWORD|PASSWD|PRIVATE_KEY|API_KEY|ACCESS_KEY|CREDENTIAL|AUTH|SESSION_KEY)$/i.test(
-          key,
-        ) ||
-        /-----BEGIN [A-Z ]*PRIVATE KEY-----/.test(value) ||
-        /^https?:\/\/[^/\s]+:[^@/\s]+@/.test(value)
-      ) {
-        throw new Error("Secret material cannot be persisted in runner state.");
+      // Manifest values are development values already in the workspace;
+      // only real-looking credentials must stay out of snapshots.
+      if (previewEnvironmentValueRejection(value)) {
+        throw new Error(
+          `Secret material cannot be persisted in runner state (${key}).`,
+        );
       }
     }
   }

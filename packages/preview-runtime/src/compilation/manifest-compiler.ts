@@ -1,5 +1,4 @@
 import {
-  isLocalPreviewDatabaseEnvironmentValue,
   parsePreviewManifest,
   type PreviewManifest,
   type PreviewManifestEndpoint,
@@ -164,14 +163,12 @@ export function compilePreviewManifest(
 function compileEnvironmentPlan(manifest: PreviewManifest) {
   const entries: EnvironmentPlanEntry[] = [];
   for (const task of manifest.setup) {
-    for (const [key, value] of Object.entries(task.environment ?? {})) {
-      assertLiteralEnvironmentKey(key, value);
+    for (const key of Object.keys(task.environment ?? {})) {
       entries.push(environmentEntry(key, "setup", "manifest"));
     }
   }
   for (const service of manifest.services) {
-    for (const [key, value] of Object.entries(service.environment ?? {})) {
-      assertLiteralEnvironmentKey(key, value);
+    for (const key of Object.keys(service.environment ?? {})) {
       entries.push({
         ...environmentEntry(key, "service", "manifest"),
         serviceId: service.id,
@@ -206,21 +203,6 @@ function environmentEntry(
     delivery: "literal",
     snapshot: "never",
   };
-}
-
-function assertLiteralEnvironmentKey(key: string, value: string) {
-  if (
-    /(?:TOKEN|SECRET|PASSWORD|PASSWD|PRIVATE_KEY|API_KEY|ACCESS_KEY|CREDENTIAL|AUTH|SESSION_KEY)$/i.test(
-      key,
-    ) &&
-    !isLocalPreviewDatabaseEnvironmentValue(key, value)
-  ) {
-    throw new PreviewRuntimeError({
-      code: "INVALID_MANIFEST",
-      message: `Environment key ${key} requires the explicit secret delivery channel.`,
-      retryable: false,
-    });
-  }
 }
 
 function compileService(

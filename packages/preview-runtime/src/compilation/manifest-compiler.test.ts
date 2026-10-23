@@ -134,7 +134,7 @@ test("allows service-scoped endpoint ids", () => {
   );
 });
 
-test("records explicit environment scopes and rejects raw secrets", () => {
+test("records explicit environment scopes and accepts development values", () => {
   const plan = compilePreviewManifest(manifest);
   assert.ok(
     plan.environmentPlan.entries.some(
@@ -144,17 +144,34 @@ test("records explicit environment scopes and rejects raw secrets", () => {
         entry.source === "runtime-binding",
     ),
   );
-  const unsafe = {
+  const development = {
     ...manifest,
     services: [
-      { ...manifest.services[0], environment: { API_TOKEN: "literal" } },
+      { ...manifest.services[0], environment: { NEXTAUTH_SECRET: "dev" } },
       manifest.services[1],
     ],
   };
-  assert.throws(
-    () => compilePreviewManifest(unsafe),
-    /explicit secret delivery channel/,
+  const compiled = compilePreviewManifest(development);
+  assert.equal(compiled.services[0]?.environment.NEXTAUTH_SECRET, "dev");
+  assert.ok(
+    compiled.environmentPlan.entries.some(
+      (entry) =>
+        entry.key === "NEXTAUTH_SECRET" &&
+        entry.classification === "non-secret" &&
+        entry.delivery === "literal",
+    ),
   );
+  const unsafe = {
+    ...manifest,
+    services: [
+      {
+        ...manifest.services[0],
+        environment: { STRIPE_KEY: `sk_live_${"a".repeat(24)}` },
+      },
+      manifest.services[1],
+    ],
+  };
+  assert.throws(() => compilePreviewManifest(unsafe), /live Stripe key/);
 });
 
 test("compiles public throwaway isolated database credentials as literals", () => {
