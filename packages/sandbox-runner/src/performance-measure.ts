@@ -12,7 +12,8 @@ export async function measureRunnerPhase<T>(
     | "dependencies.install"
     | "services.start"
     | "baseline.readiness"
-    | "preview.readiness",
+    | "preview.readiness"
+    | "preview.functional-probes",
   operation: () => Promise<T>,
 ) {
   const startedAt = performance.now();

@@ -29,6 +29,7 @@ import {
 import { runtimePaths } from "./runtime-paths.js";
 import { ComposeSupervisor } from "./supervisor/compose-supervisor.js";
 import { normalizeRuntimeSelection } from "./supervisor/runtime-selection.js";
+import { runFunctionalProbes } from "./supervisor/functional-probes.js";
 import { probeServices } from "./supervisor/service-probes.js";
 import { GatewaySupervisor } from "./gateway/gateway-supervisor.js";
 import { importSourceArtifact } from "./workspace/source-importer.js";
@@ -290,6 +291,8 @@ export class RunnerApplication {
           (!shouldProbeServices ||
             probes.find(({ id }) => id === service.id)?.healthy !== false),
       }));
+      if (shouldProbeServices)
+        await this.verifyFunctionalProbes(state, services, targets);
     }
     const journalRevision = await readChangeJournal()
       .then(({ revision }) => String(revision))
@@ -302,6 +305,34 @@ export class RunnerApplication {
       journalRevision,
       handshake: handshake(),
     };
+  }
+
+  // Once per start, after every selected service is ready, like local
+  // previews. A failing required probe fails the start with its reason.
+  private async verifyFunctionalProbes(
+    state: RunnerRuntimeState,
+    services: RuntimeObservation["services"],
+    targets: Awaited<ReturnType<ComposeSupervisor["targets"]>>,
+  ) {
+    const serviceIds = state.selection?.serviceIds ?? [];
+    if (
+      !state.plan?.probes.length ||
+      state.probedEndpointRevision === state.endpointRevision ||
+      !serviceIds.every(
+        (id) => services.find((service) => service.id === id)?.healthy,
+      )
+    )
+      return;
+    await measureRunnerPhase("preview.functional-probes", () =>
+      runFunctionalProbes({
+        plan: state.plan!,
+        serviceIds,
+        targets,
+        exec: (serviceId, args) => compose.execInService(serviceId, args),
+      }),
+    );
+    state.probedEndpointRevision = state.endpointRevision;
+    await writeRuntimeState(state);
   }
 
   private async endpoints() {

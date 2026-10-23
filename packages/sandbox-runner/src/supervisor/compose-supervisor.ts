@@ -182,6 +182,22 @@ export class ComposeSupervisor {
     });
   }
 
+  async execInService(serviceId: string, args: string[]) {
+    return command(
+      "docker",
+      [
+        "compose",
+        "-f",
+        runtimePaths.composeFile,
+        "exec",
+        "-T",
+        serviceId,
+        ...args,
+      ],
+      true,
+    );
+  }
+
   async targets(): Promise<ComposeRenderResult["targets"]> {
     return JSON.parse(
       await readFile(`${runtimePaths.composeFile}.targets.json`, "utf8"),

@@ -17,6 +17,8 @@ export type RunnerRuntimeState = {
   sessionId: string;
   generation: number;
   selection?: RuntimeSelection;
+  // endpointRevision whose functional probes passed.
+  probedEndpointRevision?: number;
 };
 
 export async function readRuntimeState(): Promise<RunnerRuntimeState> {

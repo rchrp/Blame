@@ -101,7 +101,7 @@ export function ownedSnapshotIdForDeletion(
 
 export function runnerFailure(code: string, message: string) {
   return new PreviewRuntimeError({
-    code: code.includes('HEALTH') ? 'HEALTHCHECK_FAILED' : 'ENGINE_START_FAILED',
+    code: /HEALTH|PROBE/.test(code) ? 'HEALTHCHECK_FAILED' : 'ENGINE_START_FAILED',
     message,
     providerCode: code,
     retryable: false,
