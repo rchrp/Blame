@@ -1,0 +1,74 @@
+{
+  "confidence": "high",
+  "project": { "root": ".", "detectedStack": ["node"], "confidence": "high" },
+  "setup": [
+    {
+      "id": "deps",
+      "container": { "image": "node:22-bookworm" },
+      "workingDir": "/workspace",
+      "command": "corepack prepare pnpm@10.33.2 --activate && corepack pnpm install"
+    }
+  ],
+  "services": [
+    {
+      "id": "backend",
+      "kind": "worker",
+      "container": { "image": "node:22-bookworm" },
+      "workingDir": "/workspace",
+      "command": "node server.js",
+      "environment": { "APP_KEY": "development-key", "API_TOKEN": "local" },
+      "endpoints": [
+        {
+          "id": "http",
+          "protocol": "http",
+          "port": 3333,
+          "healthcheck": { "type": "tcp", "timeoutMs": 30000 }
+        }
+      ]
+    },
+    {
+      "id": "web",
+      "kind": "preview",
+      "container": { "image": "node:22-bookworm" },
+      "workingDir": "/workspace",
+      "command": "corepack prepare pnpm@10.33.2 --activate && corepack pnpm dev",
+      "endpoints": [
+        {
+          "id": "http",
+          "protocol": "http",
+          "port": 3000,
+          "healthcheck": { "type": "http", "path": "/", "timeoutMs": 30000 }
+        }
+      ],
+      "bindings": [
+        {
+          "target": { "type": "environment", "key": "SERVER_API_URL" },
+          "source": { "service": "backend", "endpoint": "http" },
+          "exposure": "server",
+          "format": "url"
+        }
+      ]
+    }
+  ],
+  "caches": [
+    { "name": "blame_node_modules", "target": "/workspace/node_modules" }
+  ],
+  "risks": [],
+  "probes": [
+    {
+      "id": "backend-through-web",
+      "from": "host",
+      "target": { "service": "web", "endpoint": "http", "path": "/api/health" },
+      "type": "http",
+      "acceptedStatuses": [200, 401, 403, 404],
+      "required": true
+    },
+    {
+      "id": "backend-from-web",
+      "from": "web",
+      "target": { "service": "backend", "endpoint": "http", "path": "/health" },
+      "type": "http",
+      "required": false
+    }
+  ]
+}

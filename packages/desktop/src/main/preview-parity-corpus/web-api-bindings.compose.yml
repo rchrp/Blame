@@ -1,0 +1,97 @@
+services:
+  blame-volumes-init:
+    image: node:22-bookworm-slim
+    command: "sh -lc \"mkdir -p /tmp/corepack-cache /workspace/node_modules /pnpm/store && chown -R 0:0 /tmp/corepack-cache /workspace/node_modules /pnpm/store\""
+    volumes:
+      - "blame_corepack_cache:/tmp/corepack-cache"
+      - "blame_node_modules:/workspace/node_modules"
+      - "blame_pnpm_store:/pnpm/store"
+  deps:
+    image: "node:22-bookworm"
+    working_dir: "/workspace"
+    command: "sh -lc 'mkdir -p \"$$COREPACK_HOME/bin\" && corepack enable --install-directory \"$$COREPACK_HOME/bin\" && export PATH=\"$$COREPACK_HOME/bin:$$PATH\" && corepack prepare pnpm@10.33.2 --activate && corepack pnpm install'"
+    labels:
+      blame.setup: "true"
+    environment:
+      COREPACK_HOME: "/tmp/corepack-cache"
+      npm_config_store_dir: "/pnpm/store"
+    depends_on:
+      blame-volumes-init:
+        condition: service_completed_successfully
+    volumes:
+      - "${BLAME_PROJECT_ROOT}:/workspace"
+      - "blame_corepack_cache:/tmp/corepack-cache"
+      - "blame_node_modules:/workspace/node_modules"
+      - "blame_pnpm_store:/pnpm/store"
+  backend:
+    image: "node:22-bookworm"
+    working_dir: "/workspace"
+    command: "sh -lc 'node server.js'"
+    environment:
+      API_TOKEN: "local"
+      COREPACK_HOME: "/tmp/corepack-cache"
+      npm_config_store_dir: "/pnpm/store"
+    labels:
+      blame.service.id: "backend"
+      blame.service.kind: "worker"
+      blame.endpoint.0.id: "http"
+      blame.endpoint.0.protocol: "http"
+      blame.endpoint.0.port: "3333"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - "node -e 'const s=require(\"net\").connect(3333,\"127.0.0.1\",()=>process.exit(0));s.once(\"error\",()=>process.exit(1));s.setTimeout(4000,()=>process.exit(1))'"
+      interval: 5s
+      timeout: 5s
+      retries: 6
+    volumes:
+      - "${BLAME_PROJECT_ROOT}:/workspace"
+      - "blame_corepack_cache:/tmp/corepack-cache"
+      - "blame_node_modules:/workspace/node_modules"
+      - "blame_pnpm_store:/pnpm/store"
+  web:
+    image: "node:22-bookworm"
+    working_dir: "/workspace"
+    command: "sh -lc 'node -e '\\''const net=require(\"net\");const host=\"backend\";const port=3333;const deadline=Date.now()+60000;function retry(){const socket=net.connect(port,host,()=>process.exit(0));socket.setTimeout(1000,()=>socket.destroy());socket.once(\"error\",next);socket.once(\"timeout\",next)};function next(){if(Date.now()>deadline)process.exit(1);setTimeout(retry,1000)};retry()'\\'' && mkdir -p \"$$COREPACK_HOME/bin\" && corepack enable --install-directory \"$$COREPACK_HOME/bin\" && export PATH=\"$$COREPACK_HOME/bin:$$PATH\" && corepack prepare pnpm@10.33.2 --activate && corepack pnpm dev'"
+    environment:
+      COREPACK_HOME: "/tmp/corepack-cache"
+      HOST: "0.0.0.0"
+      npm_config_store_dir: "/pnpm/store"
+      PORT: "3000"
+      SERVER_API_URL: "http://backend:3333"
+    labels:
+      blame.service.id: "web"
+      blame.service.kind: "preview"
+      blame.preview: "true"
+      blame.preview.port: "3000"
+      blame.preview.protocol: "http"
+      blame.preview.path: "/"
+      blame.endpoint.0.id: "http"
+      blame.endpoint.0.protocol: "http"
+      blame.endpoint.0.port: "3000"
+      blame.binding.0.key: "SERVER_API_URL"
+      blame.binding.0.source.service: "backend"
+      blame.binding.0.source.endpoint: "http"
+      blame.binding.0.exposure: "server"
+      blame.binding.0.format: "url"
+    ports:
+      - "127.0.0.1::3000"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - "node -e 'fetch(\"http://127.0.0.1:3000/\").then(r=>process.exit(r.status<500?0:1)).catch(()=>process.exit(1))'"
+      interval: 5s
+      timeout: 5s
+      retries: 6
+    depends_on:
+      backend:
+        condition: service_healthy
+    volumes:
+      - "${BLAME_PROJECT_ROOT}:/workspace"
+      - "blame_corepack_cache:/tmp/corepack-cache"
+      - "blame_node_modules:/workspace/node_modules"
+      - "blame_pnpm_store:/pnpm/store"
+volumes:
+  blame_corepack_cache:
+  blame_node_modules:
+  blame_pnpm_store:

@@ -1,0 +1,78 @@
+{
+  "confidence": "high",
+  "project": {
+    "root": ".",
+    "detectedStack": ["node", "nextjs", "prisma", "mysql"],
+    "confidence": "high"
+  },
+  "setup": [
+    {
+      "id": "deps",
+      "container": { "image": "node:22-bookworm" },
+      "workingDir": "/workspace",
+      "command": "corepack prepare pnpm@10.33.2 --activate && corepack pnpm install --frozen-lockfile"
+    },
+    {
+      "id": "prisma",
+      "container": { "image": "node:22-bookworm" },
+      "workingDir": "/workspace",
+      "command": "pnpm prisma generate && pnpm prisma db push --skip-generate",
+      "dependsOn": ["deps"],
+      "environment": {
+        "DATABASE_URL": "mysql://root:blame@database:3306/portfolio"
+      }
+    }
+  ],
+  "services": [
+    {
+      "id": "database",
+      "kind": "dependency",
+      "container": { "image": "mysql:8.4" },
+      "environment": {
+        "MYSQL_DATABASE": "portfolio",
+        "MYSQL_ROOT_PASSWORD": "blame"
+      },
+      "endpoints": [
+        {
+          "id": "mysql",
+          "protocol": "tcp",
+          "port": 3306,
+          "healthcheck": { "type": "tcp", "timeoutMs": 60000 }
+        }
+      ]
+    },
+    {
+      "id": "web",
+      "kind": "preview",
+      "container": { "image": "node:22-bookworm" },
+      "workingDir": "/workspace",
+      "command": "pnpm dev",
+      "dependsOn": ["database"],
+      "environment": {
+        "DATABASE_URL": "mysql://root:blame@database:3306/portfolio",
+        "NEXTAUTH_SECRET": "development-only",
+        "NEXTAUTH_URL": "http://localhost:3000"
+      },
+      "endpoints": [
+        {
+          "id": "http",
+          "protocol": "http",
+          "port": 3000,
+          "healthcheck": { "type": "http", "path": "/", "timeoutMs": 120000 }
+        }
+      ]
+    }
+  ],
+  "caches": [
+    { "name": "blame_node_modules", "target": "/workspace/node_modules" }
+  ],
+  "risks": [],
+  "probes": [
+    {
+      "id": "home",
+      "from": "host",
+      "type": "http",
+      "target": { "service": "web", "endpoint": "http", "path": "/" }
+    }
+  ]
+}

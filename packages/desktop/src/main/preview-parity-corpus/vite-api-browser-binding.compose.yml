@@ -1,0 +1,94 @@
+services:
+  blame-volumes-init:
+    image: node:22-bookworm-slim
+    command: "sh -lc \"mkdir -p /workspace/node_modules /npm/cache && chown -R 0:0 /workspace/node_modules /npm/cache\""
+    volumes:
+      - "blame_node_modules:/workspace/node_modules"
+      - "blame_npm_cache:/npm/cache"
+  install:
+    image: "node:24-bookworm"
+    working_dir: "/workspace"
+    command: "sh -lc 'npm ci'"
+    labels:
+      blame.setup: "true"
+    environment:
+      NPM_CONFIG_CACHE: "/npm/cache"
+    depends_on:
+      blame-volumes-init:
+        condition: service_completed_successfully
+    volumes:
+      - "${BLAME_PROJECT_ROOT}:/workspace"
+      - "blame_node_modules:/workspace/node_modules"
+      - "blame_npm_cache:/npm/cache"
+  api:
+    image: "node:24-bookworm"
+    working_dir: "/workspace/api"
+    command: "sh -lc 'npm run dev'"
+    environment:
+      HOST: "0.0.0.0"
+      NPM_CONFIG_CACHE: "/npm/cache"
+      PORT: "3333"
+      SESSION_SECRET: "dev"
+    labels:
+      blame.service.id: "api"
+      blame.service.kind: "preview"
+      blame.preview: "true"
+      blame.preview.port: "3333"
+      blame.preview.protocol: "http"
+      blame.preview.path: "/health"
+      blame.endpoint.0.id: "http"
+      blame.endpoint.0.protocol: "http"
+      blame.endpoint.0.port: "3333"
+    ports:
+      - "127.0.0.1::3333"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - "node -e 'fetch(\"http://127.0.0.1:3333/health\").then(r=>process.exit(r.status<500?0:1)).catch(()=>process.exit(1))'"
+      interval: 5s
+      timeout: 5s
+      retries: 6
+    volumes:
+      - "${BLAME_PROJECT_ROOT}:/workspace"
+      - "blame_node_modules:/workspace/node_modules"
+      - "blame_npm_cache:/npm/cache"
+  frontend:
+    image: "node:24-bookworm"
+    working_dir: "/workspace/web"
+    command: "sh -lc 'npm run dev -- --host 0.0.0.0 --port 5173'"
+    environment:
+      HOST: "0.0.0.0"
+      NPM_CONFIG_CACHE: "/npm/cache"
+      PORT: "5173"
+      VITE_API_URL: "http://localhost:__BLAME_PREVIEW_PORT_api_3333__"
+    labels:
+      blame.service.id: "frontend"
+      blame.service.kind: "preview"
+      blame.preview: "true"
+      blame.preview.port: "5173"
+      blame.preview.protocol: "http"
+      blame.preview.path: "/"
+      blame.endpoint.0.id: "http"
+      blame.endpoint.0.protocol: "http"
+      blame.endpoint.0.port: "5173"
+      blame.binding.0.key: "VITE_API_URL"
+      blame.binding.0.source.service: "api"
+      blame.binding.0.source.endpoint: "http"
+      blame.binding.0.exposure: "browser"
+      blame.binding.0.format: "url"
+    ports:
+      - "127.0.0.1::5173"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - "node -e 'fetch(\"http://127.0.0.1:5173/\").then(r=>process.exit(r.status<500?0:1)).catch(()=>process.exit(1))'"
+      interval: 5s
+      timeout: 5s
+      retries: 6
+    volumes:
+      - "${BLAME_PROJECT_ROOT}:/workspace"
+      - "blame_node_modules:/workspace/node_modules"
+      - "blame_npm_cache:/npm/cache"
+volumes:
+  blame_node_modules:
+  blame_npm_cache:

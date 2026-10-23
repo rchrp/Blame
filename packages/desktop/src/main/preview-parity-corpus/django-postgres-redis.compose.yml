@@ -1,0 +1,107 @@
+services:
+  blame-volumes-init:
+    image: node:22-bookworm-slim
+    command: "sh -lc \"mkdir -p /cache/pip && chown -R 0:0 /cache/pip\""
+    volumes:
+      - "blame_pip_cache:/cache/pip"
+  migrate:
+    image: "python:3.13-bookworm"
+    working_dir: "/workspace"
+    command: "sh -lc 'pip install -r requirements.txt && python manage.py migrate --noinput'"
+    labels:
+      blame.setup: "true"
+    environment:
+      DATABASE_URL: "postgres://blame:blame@postgres:5432/app"
+      DJANGO_SECRET_KEY: "development-only"
+      PIP_CACHE_DIR: "/cache/pip"
+    depends_on:
+      blame-volumes-init:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_started
+    volumes:
+      - "${BLAME_PROJECT_ROOT}:/workspace"
+      - "blame_pip_cache:/cache/pip"
+  postgres:
+    image: "postgres:17"
+    environment:
+      PIP_CACHE_DIR: "/cache/pip"
+      POSTGRES_DB: "app"
+      POSTGRES_PASSWORD: "blame"
+      POSTGRES_USER: "blame"
+    labels:
+      blame.service.id: "postgres"
+      blame.service.kind: "dependency"
+      blame.endpoint.0.id: "postgres"
+      blame.endpoint.0.protocol: "tcp"
+      blame.endpoint.0.port: "5432"
+  redis:
+    image: "redis:7"
+    environment:
+      PIP_CACHE_DIR: "/cache/pip"
+    labels:
+      blame.service.id: "redis"
+      blame.service.kind: "dependency"
+      blame.endpoint.0.id: "redis"
+      blame.endpoint.0.protocol: "tcp"
+      blame.endpoint.0.port: "6379"
+  worker:
+    image: "python:3.13-bookworm"
+    working_dir: "/workspace"
+    command: "sh -lc 'celery -A app worker'"
+    environment:
+      BROKER_URL: "redis://redis:6379/0"
+      DATABASE_URL: "postgres://blame:blame@postgres:5432/app"
+      DJANGO_SECRET_KEY: "development-only"
+      PIP_CACHE_DIR: "/cache/pip"
+    labels:
+      blame.service.id: "worker"
+      blame.service.kind: "worker"
+    depends_on:
+      redis:
+        condition: service_started
+      postgres:
+        condition: service_started
+    volumes:
+      - "${BLAME_PROJECT_ROOT}:/workspace"
+      - "blame_pip_cache:/cache/pip"
+  web:
+    image: "python:3.13-bookworm"
+    working_dir: "/workspace"
+    command: "sh -lc 'python manage.py runserver 0.0.0.0:8000'"
+    environment:
+      BROKER_URL: "redis://redis:6379/0"
+      DATABASE_URL: "postgres://blame:blame@postgres:5432/app"
+      DJANGO_SECRET_KEY: "development-only"
+      HOST: "0.0.0.0"
+      PIP_CACHE_DIR: "/cache/pip"
+      PORT: "8000"
+    labels:
+      blame.service.id: "web"
+      blame.service.kind: "preview"
+      blame.preview: "true"
+      blame.preview.port: "8000"
+      blame.preview.protocol: "http"
+      blame.preview.path: "/health/"
+      blame.endpoint.0.id: "http"
+      blame.endpoint.0.protocol: "http"
+      blame.endpoint.0.port: "8000"
+    ports:
+      - "127.0.0.1::8000"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - "python -c 'import sys,urllib.request,urllib.error\ntry:\n urllib.request.urlopen(\"http://127.0.0.1:8000/health/\",timeout=4).close()\nexcept urllib.error.HTTPError as error:\n sys.exit(0 if error.code<500 else 1)'"
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    depends_on:
+      postgres:
+        condition: service_started
+      redis:
+        condition: service_started
+    volumes:
+      - "${BLAME_PROJECT_ROOT}:/workspace"
+      - "blame_pip_cache:/cache/pip"
+volumes:
+  blame_pip_cache:

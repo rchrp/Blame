@@ -1,0 +1,106 @@
+{
+  "confidence": "medium",
+  "project": {
+    "root": ".",
+    "detectedStack": ["python", "django"],
+    "confidence": "medium"
+  },
+  "setup": [
+    {
+      "id": "migrate",
+      "container": { "image": "python:3.13-bookworm" },
+      "workingDir": "/workspace",
+      "command": "pip install -r requirements.txt && python manage.py migrate --noinput",
+      "dependsOn": ["postgres"],
+      "environment": {
+        "DATABASE_URL": "postgres://blame:blame@postgres:5432/app",
+        "DJANGO_SECRET_KEY": "development-only"
+      }
+    }
+  ],
+  "services": [
+    {
+      "id": "postgres",
+      "kind": "dependency",
+      "container": { "image": "postgres:17" },
+      "environment": {
+        "POSTGRES_DB": "app",
+        "POSTGRES_PASSWORD": "blame",
+        "POSTGRES_USER": "blame"
+      },
+      "endpoints": [
+        {
+          "id": "postgres",
+          "protocol": "tcp",
+          "port": 5432,
+          "healthcheck": { "type": "tcp", "timeoutMs": 60000 }
+        }
+      ]
+    },
+    {
+      "id": "redis",
+      "kind": "dependency",
+      "container": { "image": "redis:7" },
+      "endpoints": [{ "id": "redis", "protocol": "tcp", "port": 6379 }]
+    },
+    {
+      "id": "worker",
+      "kind": "worker",
+      "container": { "image": "python:3.13-bookworm" },
+      "workingDir": "/workspace",
+      "command": "celery -A app worker",
+      "dependsOn": ["redis", "postgres"],
+      "environment": {
+        "BROKER_URL": "redis://redis:6379/0",
+        "DATABASE_URL": "postgres://blame:blame@postgres:5432/app",
+        "DJANGO_SECRET_KEY": "development-only"
+      },
+      "endpoints": []
+    },
+    {
+      "id": "web",
+      "kind": "preview",
+      "container": { "image": "python:3.13-bookworm" },
+      "workingDir": "/workspace",
+      "command": "python manage.py runserver 0.0.0.0:8000",
+      "dependsOn": ["postgres", "redis"],
+      "environment": {
+        "BROKER_URL": "redis://redis:6379/0",
+        "DATABASE_URL": "postgres://blame:blame@postgres:5432/app",
+        "DJANGO_SECRET_KEY": "development-only"
+      },
+      "endpoints": [
+        {
+          "id": "http",
+          "protocol": "http",
+          "port": 8000,
+          "healthcheck": {
+            "type": "http",
+            "path": "/health/",
+            "timeoutMs": 60000
+          }
+        }
+      ]
+    }
+  ],
+  "caches": [],
+  "risks": [],
+  "probes": [
+    {
+      "id": "admin",
+      "from": "host",
+      "type": "http",
+      "target": {
+        "service": "web",
+        "endpoint": "http",
+        "path": "/admin/login/"
+      }
+    },
+    {
+      "id": "redis-from-web",
+      "from": "web",
+      "type": "tcp",
+      "target": { "service": "redis", "endpoint": "redis" }
+    }
+  ]
+}

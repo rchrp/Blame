@@ -1,0 +1,78 @@
+{
+  "confidence": "high",
+  "project": {
+    "root": ".",
+    "detectedStack": ["node", "vite"],
+    "confidence": "high"
+  },
+  "setup": [
+    {
+      "id": "install",
+      "container": { "image": "node:24-bookworm" },
+      "workingDir": "/workspace",
+      "command": "npm ci"
+    }
+  ],
+  "services": [
+    {
+      "id": "api",
+      "kind": "preview",
+      "container": { "image": "node:24-bookworm" },
+      "workingDir": "/workspace/api",
+      "command": "npm run dev",
+      "environment": { "PORT": "3333", "SESSION_SECRET": "dev" },
+      "endpoints": [
+        {
+          "id": "http",
+          "protocol": "http",
+          "port": 3333,
+          "healthcheck": {
+            "type": "http",
+            "path": "/health",
+            "timeoutMs": 30000
+          }
+        }
+      ]
+    },
+    {
+      "id": "frontend",
+      "kind": "preview",
+      "container": { "image": "node:24-bookworm" },
+      "workingDir": "/workspace/web",
+      "command": "npm run dev -- --host 0.0.0.0 --port 5173",
+      "endpoints": [
+        {
+          "id": "http",
+          "protocol": "http",
+          "port": 5173,
+          "healthcheck": { "type": "http", "path": "/", "timeoutMs": 30000 }
+        }
+      ],
+      "bindings": [
+        {
+          "target": { "type": "environment", "key": "VITE_API_URL" },
+          "source": { "service": "api", "endpoint": "http" },
+          "exposure": "browser",
+          "format": "url"
+        }
+      ]
+    }
+  ],
+  "caches": [],
+  "risks": [],
+  "probes": [
+    {
+      "id": "app",
+      "from": "host",
+      "type": "http",
+      "target": { "service": "frontend", "endpoint": "http" }
+    },
+    {
+      "id": "api",
+      "from": "host",
+      "type": "http",
+      "target": { "service": "api", "endpoint": "http" },
+      "acceptedStatuses": [200]
+    }
+  ]
+}
