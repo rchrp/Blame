@@ -166,7 +166,8 @@ export function useUserStoryPreviewRunner(
     worktree,
     setRuntime,
     select,
-    repairAction
+    repairAction,
+    userStoryId
   )
   const { control, pendingOperation } =
     preference.profile === "local-container" ? local : cloud
@@ -711,6 +712,11 @@ function markCloudPreviewAutoStartDisabled(userStoryId: string) {
   localStorage.setItem(cloudPreviewAutoStartDisabledStorageId(userStoryId), "1")
 }
 
+/** Whether the user stopped this story's preview, cloud or local. */
+export function isPreviewAutoStartDisabled(userStoryId: string) {
+  return isCloudPreviewAutoStartDisabled(userStoryId)
+}
+
 function isCloudPreviewAutoStartDisabled(userStoryId: string) {
   return (
     deletedPreviewStories.has(userStoryId) ||
@@ -828,7 +834,8 @@ function usePreviewRuntimeControl(
   worktree: string | null | undefined,
   setRuntime: PreviewRuntimeSetter,
   setSelectedId: (configurationId: string) => void,
-  repairAction: (error: string) => PreviewSetupRepairAction | undefined
+  repairAction: (error: string) => PreviewSetupRepairAction | undefined,
+  userStoryId: string | undefined
 ) {
   const [pendingOperation, setPendingOperation] =
     React.useState<ProjectRunnerPendingOperation>()
@@ -840,6 +847,10 @@ function usePreviewRuntimeControl(
       if (!selectedId) return undefined
       setSelectedId(selectedId)
       setPendingOperation({ action, configurationId: selectedId })
+      // A preview the user stopped stays stopped until they start it again.
+      if (userStoryId && action === "stop")
+        markCloudPreviewAutoStartDisabled(userStoryId)
+      else if (userStoryId) clearCloudPreviewAutoStartDisabled(userStoryId)
       const next = await requestPreviewRuntime(
         workspace,
         worktree,
@@ -856,6 +867,7 @@ function usePreviewRuntimeControl(
       repairAction,
       setRuntime,
       setSelectedId,
+      userStoryId,
       workspace,
       worktree,
     ]

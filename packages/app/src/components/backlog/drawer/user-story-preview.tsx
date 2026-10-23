@@ -32,6 +32,8 @@ import {
   useReloadAfterChanges,
 } from "@/components/backlog/drawer/preview-auto-reload"
 import { PreviewFailurePanel } from "@/components/backlog/drawer/preview-failure-panel"
+import { LocalPreviewAutoStart } from "@/components/backlog/drawer/local-preview-auto-start"
+import { localPreviewAutoStartStories } from "@/components/backlog/drawer/local-preview-auto-start-stories"
 import { usePreviewSetupRepair } from "@/components/backlog/drawer/preview-setup-repair"
 import {
   usePreviewWarmupReady,
@@ -221,6 +223,10 @@ export const UserStoryPreviewWarmup = React.memo(
       () => cloudPreviewWarmupStories(userStories),
       [userStories]
     )
+    const localStories = React.useMemo(
+      () => localPreviewAutoStartStories(userStories),
+      [userStories]
+    )
     const previousStatusesRef = React.useRef(
       new Map<string, UserStory["status"]>()
     )
@@ -256,6 +262,9 @@ export const UserStoryPreviewWarmup = React.memo(
     return [
       ...cloudStories.map((story) => (
         <CloudPreviewAutoStart key={`cloud:${story.id}`} story={story} />
+      )),
+      ...localStories.map((story) => (
+        <LocalPreviewAutoStart key={`local:${story.id}`} story={story} />
       )),
       ...(previewBrowser
         ? stories.map((story) => {
@@ -1584,12 +1593,21 @@ function equalUserStoryPreviewWarmupProps(
   const nextKeys = nativePreviewWarmupKeys(next.userStories)
   const previousCloudKeys = cloudPreviewWarmupKeys(previous.userStories)
   const nextCloudKeys = cloudPreviewWarmupKeys(next.userStories)
+  const previousLocalKeys = localPreviewAutoStartKeys(previous.userStories)
+  const nextLocalKeys = localPreviewAutoStartKeys(next.userStories)
   return (
     previousKeys.length === nextKeys.length &&
     previousKeys.every((key, index) => key === nextKeys[index]) &&
     previousCloudKeys.length === nextCloudKeys.length &&
-    previousCloudKeys.every((key, index) => key === nextCloudKeys[index])
+    previousCloudKeys.every((key, index) => key === nextCloudKeys[index]) &&
+    previousLocalKeys === nextLocalKeys
   )
+}
+
+function localPreviewAutoStartKeys(userStories: UserStory[]) {
+  return localPreviewAutoStartStories(userStories)
+    .map((story) => `${story.id}:${story.worktree}:${story.runConfigurationId}`)
+    .join("|")
 }
 
 function cloudPreviewWarmupKeys(userStories: UserStory[]) {
