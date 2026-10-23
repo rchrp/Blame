@@ -31,6 +31,8 @@ import {
   usePreviewHotReloads,
   useReloadAfterChanges,
 } from "@/components/backlog/drawer/preview-auto-reload"
+import { PreviewFailurePanel } from "@/components/backlog/drawer/preview-failure-panel"
+import { usePreviewSetupRepair } from "@/components/backlog/drawer/preview-setup-repair"
 import {
   usePreviewWarmupReady,
   useSetupPreviewReady,
@@ -419,7 +421,17 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
   const autoSelectedPreviewSourceRef = React.useRef<string | undefined>(
     undefined
   )
-  const hasPreviewSurface = Boolean(source) || runtimeStarting
+  const previewFailure =
+    !projectRunMode && !runtimeStarting && runtimeLifecycle?.status === "error"
+      ? (runtimeLifecycle.failure?.message ??
+        "The preview stopped unexpectedly.")
+      : undefined
+  const repairPreviewSetup = usePreviewSetupRepair(
+    setupLogWorktree,
+    userStory?.id
+  )
+  const hasPreviewSurface =
+    Boolean(source) || runtimeStarting || Boolean(previewFailure)
   const activeTab = activePreviewTab(tab, hasPreviewSurface, hasSetupLog)
   const localServices = useProjectServices(
     visible && activeTab === "setup-log" && !managedPreview
@@ -701,7 +713,8 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
                       visible &&
                       activeTab === "preview" &&
                       !runnerMenuOpen &&
-                      !runtimeStarting
+                      !runtimeStarting &&
+                      !previewFailure
                     }
                   />
                 ) : (
@@ -719,6 +732,26 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
               {runtimeStarting && (
                 <div className="absolute inset-0 z-10">
                   <PreviewWaitingPanel lifecycle={runtimeLifecycle} />
+                </div>
+              )}
+              {previewFailure && (
+                <div className="absolute inset-0 z-10">
+                  <PreviewFailurePanel
+                    message={previewFailure}
+                    onOpenLogs={() => setTab("setup-log")}
+                    onRestart={() =>
+                      void previewRunner.control(
+                        "restart",
+                        previewRunner.selectedId
+                      )
+                    }
+                    repair={
+                      previewRunner.profile === "local-container"
+                        ? repairPreviewSetup(previewFailure)
+                        : undefined
+                    }
+                    restarting={Boolean(previewRunner.pendingOperation)}
+                  />
                 </div>
               )}
             </TabsContent>
