@@ -5,7 +5,7 @@ import type { BacklogColumnId } from "@/components/backlog/data/backlog-data"
 
 // A soft light in the drawer's top left corner when the story moves to
 // another status, in that status's color: it rises, lingers a moment and
-// fades, under the header's blur. Nothing on the first render.
+// fades, behind the drawer's content. Nothing on the first render.
 
 const statusColors: Record<BacklogColumnId, string> = {
   backlog: "var(--color-zinc-400)",
@@ -14,6 +14,18 @@ const statusColors: Record<BacklogColumnId, string> = {
   "in-review": "var(--color-violet-500)",
   done: "var(--color-orange-500)",
   discarded: "var(--color-rose-500)",
+}
+
+// A wash rather than a spot: a wide ellipse along the top edge and a
+// narrower one down the left, overlapping unevenly.
+function statusWash(color: string) {
+  const tint = (amount: number) =>
+    `color-mix(in oklch, ${color} ${amount}%, transparent)`
+  return [
+    `radial-gradient(ellipse 58% 26% at 14% 0%, ${tint(22)} 0%, transparent 72%)`,
+    `radial-gradient(ellipse 22% 42% at 0% 12%, ${tint(16)} 0%, transparent 70%)`,
+    `radial-gradient(ellipse 30% 18% at 38% 6%, ${tint(10)} 0%, transparent 75%)`,
+  ].join(", ")
 }
 
 export function StoryStatusGlow({ status }: { status: BacklogColumnId }) {
@@ -34,16 +46,19 @@ export function StoryStatusGlow({ status }: { status: BacklogColumnId }) {
         <motion.div
           key={glow.id}
           aria-hidden
-          className="pointer-events-none absolute -top-48 -left-48 z-[14] size-[34rem] rounded-full"
-          style={{
-            background: `radial-gradient(circle, color-mix(in oklch, ${statusColors[glow.status]} 55%, transparent) 0%, transparent 62%)`,
+          // Behind the drawer's content, just above its background.
+          className="pointer-events-none absolute inset-0 -z-10 blur-2xl"
+          style={{ background: statusWash(statusColors[glow.status]) }}
+          initial={{ opacity: 0, x: -32, y: -16 }}
+          animate={{
+            opacity: [0, 1, 1, 0],
+            x: [-32, 0, 6, 10],
+            y: [-16, 0, 2, 4],
           }}
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: [0, 1, 1, 0], scale: [0.8, 1, 1, 1.04] }}
           transition={{
-            duration: 3.8,
+            duration: 4.5,
             ease: "easeInOut",
-            times: [0, 0.22, 0.6, 1],
+            times: [0, 0.25, 0.62, 1],
           }}
           onAnimationComplete={() =>
             setGlow((current) =>
