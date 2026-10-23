@@ -25,8 +25,10 @@ import {
 import type { LiveSyncStatus } from "@blame/preview-runtime"
 import {
   CloudSyncBadge,
+  PreviewUpdateChip,
   useLiveSyncStatus,
 } from "@/components/backlog/drawer/cloud-sync-status"
+import { usePreviewUpdateNotice } from "@/components/backlog/drawer/preview-update-notice"
 import {
   usePreviewHotReloads,
   useReloadAfterChanges,
@@ -145,6 +147,7 @@ type PreviewIslandProps = {
   source?: string
   previewRunner?: UserStoryPreviewRunner
   syncStatus?: LiveSyncStatus
+  updateNotice?: string
   onRunConfigurationChange?: (
     configurationId: string,
     previewUrl?: string
@@ -365,6 +368,11 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
       ? undefined
       : previewRunner.previewSessionId
   )
+  const updateNotice = usePreviewUpdateNotice({
+    syncSequence: syncStatus?.sequence,
+    changedFiles: syncStatus?.changedFiles,
+    agentRunning: userStory?.agentStatus === "Running",
+  })
   useReloadAfterChanges({
     enabled: usePreviewHotReloads(setupLogWorktree) === false,
     syncSequence: syncStatus?.sequence,
@@ -691,6 +699,7 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
             previewProxy={previewProxy}
             source={presentedSource}
             syncStatus={syncStatus}
+            updateNotice={updateNotice}
           />
           {hasPreviewSurface && (
             <TabsContent
@@ -875,6 +884,7 @@ function PreviewIsland({
   previewProxy,
   source,
   syncStatus,
+  updateNotice,
 }: PreviewIslandProps) {
   if (activeTab === "setup-log") {
     return (
@@ -902,6 +912,7 @@ function PreviewIsland({
         previewProxy={previewProxy}
         source={source}
         syncStatus={syncStatus}
+        updateNotice={updateNotice}
       />
       <PreviewActions
         captureDisabled={navigationDisabled || captureDisabled}
@@ -1056,6 +1067,7 @@ function PreviewAddress({
   previewProxy,
   source,
   syncStatus,
+  updateNotice,
 }: {
   disabled?: boolean
   locationBlocked: boolean
@@ -1065,6 +1077,7 @@ function PreviewAddress({
   previewProxy?: PreviewProxyInfo
   source?: string
   syncStatus?: LiveSyncStatus
+  updateNotice?: string
 }) {
   const address = previewLocation ?? source ?? ""
   const path = address ? previewAddressPath(address) : ""
@@ -1125,6 +1138,7 @@ function PreviewAddress({
             }
           }}
         />
+        <PreviewUpdateChip message={updateNotice} />
         <CloudSyncBadge status={syncStatus} />
         {previewProxy && <PreviewProxyBadge proxy={previewProxy} />}
         {locationBlocked && <BlockedLocationBadge />}

@@ -3,6 +3,7 @@ import {
   CheckIcon,
   ClockIcon,
   LoaderCircleIcon,
+  RefreshCwIcon,
   TriangleAlertIcon,
 } from "lucide-react"
 import * as React from "react"
@@ -121,4 +122,18 @@ function elapsed(at: string, now: number) {
   const minutes = Math.round(seconds / 60)
   if (minutes < 60) return `${minutes} min ago`
   return `at ${new Date(at).toLocaleTimeString()}`
+}
+
+/** A short notice that new content reached the preview. */
+export function PreviewUpdateChip({ message }: { message?: string }) {
+  if (!message) return null
+  return (
+    <span
+      className="mr-1 inline-flex shrink-0 animate-in items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary fade-in"
+      role="status"
+    >
+      <RefreshCwIcon className="size-3" />
+      {message}
+    </span>
+  )
 }
