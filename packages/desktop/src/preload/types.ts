@@ -30,6 +30,7 @@ import type {
   NewProjectGenerationResult,
   OptimizeUserStoryPromptInput,
   OptimizeUserStoryPromptResult,
+  ApplyPreviewInitializationInput,
   PreviewManifest,
   ProjectPreviewRuntimeState,
   ProjectRunConfiguration,
@@ -527,6 +528,9 @@ export type BlameDesktopApi = {
       configurationId?: string;
       worktree: string;
     }): Promise<ProjectPreviewRuntimeState>;
+    applyProjectPreviewInitialization(
+      input: ApplyPreviewInitializationInput,
+    ): Promise<void>;
     listProjectServices(input: { worktree: string }): Promise<string[]>;
     startProjectServiceLogs(input: {
       service: string;

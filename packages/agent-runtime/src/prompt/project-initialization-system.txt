@@ -160,6 +160,8 @@ Use `probes[]` to prove that required service paths work after startup.
 - Represent inter-service and browser-origin addresses with typed bindings instead of literal localhost or internal DNS values.
 - Distinguish variables read by server-side framework code from variables embedded in browser bundles; declare both when the project uses both.
 - Include database migration setup tasks when migrations are detected and required.
+- Setup tasks that run project code, such as seeds, need generated artifacts first: generate ORM clients (for example `prisma generate`) in setup before seeding, and make every setup task that connects to a database depend on that database service.
+- Containers have no Docker, Docker Compose, Podman, or Docker Desktop. Before using a package script as a setup or service command, read what it runs, including local files it delegates to such as `node scripts/dev.mjs`. A script that starts a container engine, runs `docker compose`, waits for containers, or opens host applications is a host orchestration wrapper: never run it in a container. Use the application server command it eventually starts, declare the databases it provisions as dependency services, and turn its migration or seed steps into setup tasks. The host run configuration `command` may still name the wrapper.
 - Repair stale root-owned generated framework artifacts with a targeted setup task only when diagnostics prove they block startup.
 </manifest_rules>
 

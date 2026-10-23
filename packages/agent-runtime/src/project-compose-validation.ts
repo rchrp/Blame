@@ -1,5 +1,9 @@
 import type { ProjectInitializationScan } from "./project-initialization-scan.js";
 import type { PreviewManifest } from "./types.js";
+import {
+  hostOrchestratedManifestCommand,
+  hostOrchestrationError,
+} from "./project-host-orchestration.js";
 
 export function validateDockerCompose(
   compose: string,
@@ -14,6 +18,11 @@ export function validateDockerCompose(
   }
   if (!compose.includes("services:")) {
     throw new Error("Initialization result dockerCompose must define services");
+  }
+  const hostOrchestration =
+    scan && manifest && hostOrchestratedManifestCommand(manifest, scan.files);
+  if (hostOrchestration) {
+    throw new Error(hostOrchestrationError(hostOrchestration));
   }
   if (usesManualHostPort(compose)) {
     throw new Error(
@@ -46,6 +55,11 @@ export function validateDockerCompose(
   if (usesNuxtPreviewWithoutBuild(compose, scan, manifest)) {
     throw new Error(
       "Initialization result dockerCompose must build Nuxt before running its preview script or use the development script",
+    );
+  }
+  if (seedsPrismaWithoutGeneratedClient(compose, scan, manifest)) {
+    throw new Error(
+      "Initialization result dockerCompose must generate the Prisma client in a setup task (for example `prisma generate` or the project's db:generate script) before running database seeds",
     );
   }
   if (usesUnescapedContainerHome(compose)) {
@@ -177,6 +191,33 @@ function usesNuxtPreviewWithoutBuild(
       path.endsWith("package.json") && /"nuxt"\s*:/.test(content.toLowerCase()),
   );
   return usesNuxt && !/\b(?:npm\s+run\s+build|nuxt\s+build)\b/.test(compose);
+}
+
+// Seeds import the generated Prisma client, which a fresh worktree lacks until
+// `prisma generate` runs; projects often only generate it in their dev script.
+function seedsPrismaWithoutGeneratedClient(
+  compose: string,
+  scan: ProjectInitializationScan | undefined,
+  manifest: PreviewManifest | undefined,
+) {
+  if (
+    !scan ||
+    !/\b(?:db:seed|prisma\s+db\s+seed|seed\.[cm]?[jt]s)\b/.test(compose)
+  )
+    return false;
+  if (/\b(?:prisma\s+generate|db:generate)\b/.test(compose)) return false;
+  const packages = relevantInitializationFiles(scan, manifest).filter(
+    ([path]) => path.endsWith("package.json"),
+  );
+  const usesPrisma = packages.some(([, content]) =>
+    /"(?:prisma|@prisma\/client)"\s*:/.test(content),
+  );
+  const generatesImplicitly = packages.some(([, content]) =>
+    /"(?:postinstall|[^"]*seed[^"]*)"\s*:\s*"[^"]*prisma generate/.test(
+      content,
+    ),
+  );
+  return usesPrisma && !generatesImplicitly;
 }
 
 function usesBarePnpm(compose: string) {

@@ -479,3 +479,87 @@ test("artifact validation rejects fixed host ports and Docker checks", () => {
     /must not require Docker/,
   );
 });
+
+test("rejects preview commands that reach a host Docker wrapper", () => {
+  const result = canonicalResult();
+  const scan = {
+    rootName: "portfolio",
+    topLevelEntries: ["package.json", "scripts", "server.js"],
+    gitLog: [],
+    files: {
+      "package.json": JSON.stringify({
+        scripts: { dev: "node scripts/dev.mjs", "dev:app": "next dev" },
+      }),
+      "scripts/dev.mjs":
+        'import { spawnSync } from "node:child_process";\nspawnSync("docker", ["compose", "up", "-d", "db"]);\n',
+    },
+  };
+  assert.throws(
+    () => parseProjectInitializationPayload(result, scan),
+    /service app runs package\.json script "dev" -> scripts\/dev\.mjs, which starts Docker/,
+  );
+  result.previewManifest.services[1]!.command =
+    "corepack prepare pnpm@10.33.2 --activate && corepack pnpm dev:app";
+  assert.doesNotThrow(() => parseProjectInitializationPayload(result, scan));
+});
+
+test("setup tasks wait for the dependency services they connect to", () => {
+  const result = canonicalResult();
+  result.previewManifest.services.push({
+    id: "postgres",
+    kind: "dependency",
+    container: { image: "postgres:17-alpine" },
+    environment: { POSTGRES_PASSWORD: "blame" },
+    endpoints: [{ id: "db", protocol: "tcp", port: 5432 }],
+  });
+  result.previewManifest.setup.push({
+    id: "db-migrate",
+    container: { image: "node:22-bookworm" },
+    workingDir: "/workspace",
+    command: "corepack pnpm db:migrate",
+    environment: {
+      DATABASE_URL: "postgresql://postgres:blame@postgres:5432/app",
+    },
+    dependsOn: ["deps"],
+  });
+  const parsed = parseProjectInitializationPayload(result);
+  const migrate = parsed.previewManifest.setup.find(
+    ({ id }) => id === "db-migrate",
+  );
+  assert.deepEqual(migrate?.dependsOn, ["deps", "postgres"]);
+  const deps = parsed.previewManifest.setup.find(({ id }) => id === "deps");
+  assert.deepEqual(deps?.dependsOn, []);
+  assert.match(
+    parsed.dockerCompose,
+    /db-migrate:[\s\S]*?depends_on:[\s\S]*?postgres:/,
+  );
+});
+
+test("requires the Prisma client before seeding the database", () => {
+  const scan = {
+    rootName: "app",
+    topLevelEntries: ["package.json"],
+    gitLog: [],
+    files: {
+      "package.json": JSON.stringify({
+        scripts: { dev: "next dev", "db:seed": "tsx prisma/seed.ts" },
+        dependencies: { "@prisma/client": "^7.0.0" },
+      }),
+    },
+  };
+  const seeded = canonicalResult();
+  seeded.previewManifest.setup.push({
+    id: "db-seed",
+    container: { image: "node:22-bookworm" },
+    workingDir: "/workspace",
+    command: "corepack pnpm db:seed",
+    dependsOn: ["deps"],
+  });
+  assert.throws(
+    () => parseProjectInitializationPayload(seeded, scan),
+    /generate the Prisma client in a setup task/,
+  );
+  seeded.previewManifest.setup[1]!.command =
+    "corepack pnpm exec prisma generate && corepack pnpm db:seed";
+  assert.doesNotThrow(() => parseProjectInitializationPayload(seeded, scan));
+});

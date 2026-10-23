@@ -128,6 +128,7 @@ export type {
   ProjectInitializationImpactClassification,
   ProjectInitializationImpactDiagnostics,
   ProjectInitializationDatabaseMode,
+  ApplyPreviewInitializationInput,
   ProjectInitializationPreferences,
   ProjectRunConfiguration,
   ProjectRunConfigurationCategory,

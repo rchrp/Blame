@@ -339,6 +339,7 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
   const previewWorktree =
     previewRunner.profile === "local-container" ? setupLogWorktree : undefined
   const runtimeLifecycle = previewRunner.lifecycle
+  useReloadAfterRecovery(runtimeLifecycle?.status, setReloadKey)
   const runtimeStarting = Boolean(
     !projectRunMode &&
     runtimeLifecycle?.status === "pending" &&
@@ -1594,4 +1595,19 @@ function previewFrameLocation(frame: HTMLIFrameElement, source?: string) {
   } catch {
     return undefined
   }
+}
+
+// A preview restarted outside the run button, for example after a setup
+// repair, loads its URL before the server answers; reload once it recovers.
+function useReloadAfterRecovery(
+  status: string | undefined,
+  setReloadKey: React.Dispatch<React.SetStateAction<number>>
+) {
+  const failedSinceReady = React.useRef(status === "error")
+  React.useEffect(() => {
+    if (status === "error") failedSinceReady.current = true
+    if (status !== "ready" || !failedSinceReady.current) return
+    failedSinceReady.current = false
+    setReloadKey((current) => current + 1)
+  }, [setReloadKey, status])
 }

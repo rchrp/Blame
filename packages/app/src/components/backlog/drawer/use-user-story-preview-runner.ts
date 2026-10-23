@@ -32,6 +32,10 @@ import {
   subscribeCloudPreviewPendingOperation,
   subscribeCloudPreviewSession,
 } from "@/components/backlog/drawer/cloud-preview-session-store"
+import {
+  usePreviewSetupRepair,
+  type PreviewSetupRepairAction,
+} from "@/components/backlog/drawer/preview-setup-repair"
 import { usePlatform } from "@/context/platform"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { navigate } from "@/components/navigation/navigation"
@@ -156,11 +160,13 @@ export function useUserStoryPreviewRunner(
     workspace,
     worktree,
   ])
+  const repairAction = usePreviewSetupRepair(worktree, userStoryId)
   const local = usePreviewRuntimeControl(
     preference.profile === "local-container" ? workspace : undefined,
     worktree,
     setRuntime,
-    select
+    select,
+    repairAction
   )
   const { control, pendingOperation } =
     preference.profile === "local-container" ? local : cloud
@@ -821,7 +827,8 @@ function usePreviewRuntimeControl(
   workspace: ReturnType<typeof usePlatform>["workspace"],
   worktree: string | null | undefined,
   setRuntime: PreviewRuntimeSetter,
-  setSelectedId: (configurationId: string) => void
+  setSelectedId: (configurationId: string) => void,
+  repairAction: (error: string) => PreviewSetupRepairAction | undefined
 ) {
   const [pendingOperation, setPendingOperation] =
     React.useState<ProjectRunnerPendingOperation>()
@@ -837,13 +844,21 @@ function usePreviewRuntimeControl(
         workspace,
         worktree,
         action,
-        selectedId
+        selectedId,
+        repairAction
       )
       if (next) setRuntime(next)
       setPendingOperation(undefined)
       return next
     },
-    [pendingOperation, setRuntime, setSelectedId, workspace, worktree]
+    [
+      pendingOperation,
+      repairAction,
+      setRuntime,
+      setSelectedId,
+      workspace,
+      worktree,
+    ]
   )
   return { control, pendingOperation }
 }
@@ -852,7 +867,8 @@ async function requestPreviewRuntime(
   workspace: NonNullable<ReturnType<typeof usePlatform>["workspace"]>,
   worktree: string,
   action: PreviewRunnerAction,
-  configurationId: string | undefined
+  configurationId: string | undefined,
+  repairAction: (error: string) => PreviewSetupRepairAction | undefined
 ) {
   try {
     return await workspace.controlProjectPreview!({
@@ -861,8 +877,11 @@ async function requestPreviewRuntime(
       worktree,
     })
   } catch (error) {
+    const description = errorText(error)
     toast.error("Unable to control preview", {
-      description: errorText(error),
+      action: action === "stop" ? undefined : repairAction(description),
+      description,
+      duration: 15_000,
       position: "bottom-right",
     })
     return undefined

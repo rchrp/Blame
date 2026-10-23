@@ -31,6 +31,7 @@ import type {
   NewProjectGenerationResult,
   OptimizeUserStoryPromptInput,
   OptimizeUserStoryPromptResult,
+  ApplyPreviewInitializationInput,
   PreviewManifest,
   ProjectPreviewRuntimeState,
   ProjectRunConfiguration,
@@ -930,6 +931,9 @@ export type WorkspaceClient = {
     configurationId?: string
     worktree: string
   }): Promise<ProjectPreviewRuntimeState>
+  applyProjectPreviewInitialization?(
+    input: ApplyPreviewInitializationInput
+  ): Promise<void>
   runtimeStatus?(): Promise<RuntimeStatusReport>
   ensureRuntimeReady?(
     onProgress?: (progress: RuntimeProgress) => void

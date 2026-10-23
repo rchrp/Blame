@@ -17,6 +17,7 @@ import {
   type ProjectFileDiscovery,
   type ProjectRootEvidence,
 } from "./project-discovery.js";
+import { referencedScriptFiles } from "./project-host-orchestration.js";
 import {
   balancedGitMessages,
   readBoundedProjectFiles,
@@ -64,10 +65,11 @@ export async function scanProjectForInitialization(
 ): Promise<ProjectInitializationScan> {
   const discovery = await discoverProjectFiles(root);
   const candidates = initializationCandidates(discovery);
-  const [files, gitLog] = await Promise.all([
+  const [evidence, gitLog] = await Promise.all([
     initializationEvidence(root, candidates),
     initializationGitLog(root, discovery.repositoryRoots),
   ]);
+  const files = await withPackageScriptFiles(root, discovery, evidence);
   return {
     rootName: basename(root),
     topLevelEntries: topLevelProjectEntries(discovery),
@@ -168,6 +170,24 @@ async function initializationEvidence(
     ),
   ]);
   return Object.assign({}, ...evidence) as Record<string, string>;
+}
+
+// Package scripts often delegate to local files (`node scripts/dev.mjs`).
+// Their content decides whether a script can run inside a preview container.
+async function withPackageScriptFiles(
+  root: string,
+  discovery: ProjectFileDiscovery,
+  evidence: Record<string, string>,
+) {
+  const discovered = new Set(discovery.files);
+  const paths = referencedScriptFiles(evidence)
+    .filter((path) => discovered.has(path))
+    .slice(0, 8);
+  if (!paths.length) return evidence;
+  return {
+    ...evidence,
+    ...(await readBoundedProjectFiles(root, paths, 24_000, 6_000)),
+  };
 }
 
 async function initializationGitLog(root: string, repositories: string[]) {

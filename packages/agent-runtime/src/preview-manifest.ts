@@ -147,20 +147,30 @@ export function normalizePreviewManifestWithPreferences(
       detectedStack: manifest.project.detectedStack ?? [],
       confidence: manifest.project.confidence ?? manifest.confidence,
     },
-    setup: manifest.setup.map((task) => ({
-      ...task,
-      workingDir: task.workingDir || "/workspace",
-      command: commandWithLocalCorepackShims(task.command),
-      runAs: task.runAs ?? defaultSetupRunAs(task.command),
-      environment: normalizedEnvironment(
+    setup: manifest.setup.map((task) => {
+      const environment = normalizedEnvironment(
         normalizedAppEnvironment({
           ...inheritedSetupTaskDatabaseEnvironment(task, normalizedServices),
           ...(task.environment ?? {}),
         }),
         caches,
-      ),
-      dependsOn: uniqueStrings(task.dependsOn ?? []),
-    })),
+      );
+      return {
+        ...task,
+        workingDir: task.workingDir || "/workspace",
+        command: commandWithLocalCorepackShims(task.command),
+        runAs: task.runAs ?? defaultSetupRunAs(task.command),
+        environment,
+        dependsOn: uniqueStrings([
+          ...(task.dependsOn ?? []),
+          ...referencedDependencyServices(
+            task.command,
+            environment,
+            normalizedServices,
+          ),
+        ]),
+      };
+    }),
     services: normalizedServices,
     caches,
     risks: manifest.risks,
@@ -169,6 +179,26 @@ export function normalizePreviewManifestWithPreferences(
     previewManifestWithNextWebpackFallback(normalized),
     preferences,
   );
+}
+
+// A setup task that reaches a dependency service by host name, such as a
+// migration whose DATABASE_URL points at `postgres:5432`, needs that service
+// running first, whether or not the manifest declared it.
+function referencedDependencyServices(
+  command: string,
+  environment: PreviewManifestEnvironment | undefined,
+  services: PreviewManifestService[],
+) {
+  const text = [command, ...Object.values(environment ?? {})].join("\n");
+  return services
+    .filter(({ kind }) => kind === "dependency")
+    .map(({ id }) => id)
+    .filter((id) =>
+      new RegExp(
+        `(?:^|[\\s/@=])${id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?::\\d+|/|\\s|$)`,
+        "m",
+      ).test(text),
+    );
 }
 
 function normalizeServiceBindings(

@@ -50,6 +50,9 @@ For `repairable_initialization`:
 - normal dependency installation tasks must omit `runAs` or use `runAs: "host"`
 - when the database preference is `compose`, declare an isolated dependency service for every evidenced external database, use `blame` as every password, connect through the service id, and include its data directory as a project-scoped cache
 - when the database preference is `existing`, do not declare a database service or include database credentials in the manifest
+- containers have no Docker, Docker Compose, Podman, or Docker Desktop; when diagnostics show a service command reaching a package script or local file that starts a container engine (for example "Docker is not running"), the manifest is obsolete: replace that command with the application server command the wrapper eventually starts, keep databases as dependency services, and move the wrapper's migration or seed steps into setup tasks
+- setup tasks that run project code, such as seeds, need generated artifacts first: generate ORM clients (for example `prisma generate`) in setup before seeding, and make every setup task that connects to a database depend on that database service
+- projects change after initialization: compare the current manifest with the current project evidence, and repair commands, migrations, and services that no longer match it
 </manifest_repair_rules>
 
 <forbidden_content>

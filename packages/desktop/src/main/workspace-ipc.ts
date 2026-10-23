@@ -3,6 +3,7 @@ import {
   generatePreviewArtifacts,
   parsePreviewManifest,
   parseRunConfigurations,
+  type ApplyPreviewInitializationInput,
   type ExecutionTelemetryCohorts,
   type ProjectPreviewRuntimeState,
   type ProjectRunConfiguration,
@@ -85,6 +86,7 @@ import {
   containerMatchesWorktree,
   previewComposeProjectName,
   previewContainerFailure,
+  previewFailureLogExcerpt,
 } from "./preview-readiness";
 import { PreviewRecoveryCircuit } from "./preview-recovery-circuit";
 import {
@@ -339,15 +341,7 @@ type RunProjectSetupInput = ExecutionContextInput & {
 
 type PrepareProjectPreviewInput = RunProjectSetupInput;
 
-type ApplyProjectPreviewInitializationInput = {
-  databaseMode: "existing" | "compose";
-  previewManifest: PreviewManifest;
-  reason: string;
-  repairSessionId: string;
-  runConfigurations: ProjectRunConfiguration[];
-  storyId: string;
-  worktree: string;
-};
+type ApplyProjectPreviewInitializationInput = ApplyPreviewInitializationInput;
 
 type CheckHostDependenciesInput = {
   includeRuntime?: boolean;
@@ -759,6 +753,11 @@ export function registerWorkspaceIpcHandlers(
     "workspace:control-project-preview",
     (_event, input: ControlProjectPreviewInput) =>
       localPreviewService.control(input),
+  );
+  ipcMain.handle(
+    "workspace:apply-project-preview-initialization",
+    (_event, input: ApplyProjectPreviewInitializationInput) =>
+      applyProjectPreviewInitialization(input),
   );
   ipcMain.handle(
     "workspace:list-project-services",
@@ -4353,6 +4352,7 @@ function composePreviewOrigin(compose: string) {
   return match ? `http://localhost:${match[1]}` : undefined;
 }
 
+// Returns the preview service logs it recorded, for error messages.
 async function appendComposeDiagnostics(worktree: string) {
   await appendRecoveryLog(worktree, "compose diagnostics");
   await appendComposeOutput(worktree, ["ps", "-a"]);
@@ -4360,7 +4360,7 @@ async function appendComposeDiagnostics(worktree: string) {
     worktree,
     projectComposePath(worktree),
   );
-  await appendComposeOutput(
+  return appendComposeOutput(
     worktree,
     target
       ? ["logs", "--tail", "120", target.service]
@@ -4380,9 +4380,16 @@ async function appendComposeOutput(worktree: string, args: string[]) {
     );
     if (stdout) await appendRecoveryLog(worktree, stdout.trimEnd());
     if (stderr) await appendRecoveryLog(worktree, stderr.trimEnd());
+    return `${stdout}\n${stderr}`;
   } catch (error) {
     await appendRecoveryLog(worktree, commandErrorText(error).trim());
+    return "";
   }
+}
+
+function withPreviewLogExcerpt(message: string, logs: string) {
+  const excerpt = previewFailureLogExcerpt(logs);
+  return excerpt ? `${message}: ${excerpt}` : message;
 }
 
 async function previewContainers(includeStopped: boolean, worktree: string) {
@@ -4432,10 +4439,13 @@ async function waitForPreview(worktree: string, url: string) {
     await assertPreviewContainerCanStillStart(worktree, startedAt);
     await delay(previewStartupIntervalMs);
   }
-  await appendComposeDiagnostics(worktree);
+  const logs = await appendComposeDiagnostics(worktree);
   throw new PreviewRuntimeError(
     "preview_response_timeout",
-    `Preview did not respond within ${previewResponseTimeoutMs / 1_000} seconds`,
+    withPreviewLogExcerpt(
+      `Preview did not respond within ${previewResponseTimeoutMs / 1_000} seconds`,
+      logs,
+    ),
   );
 }
 
@@ -4728,11 +4738,14 @@ async function assertPreviewContainerCanStillStart(
     status,
   });
   if (!failure) return;
-  await appendComposeDiagnostics(worktree);
+  const logs = await appendComposeDiagnostics(worktree);
   const state = health || status || "missing";
   throw new PreviewRuntimeError(
     failure,
-    `Preview container cannot become ready (${state})`,
+    withPreviewLogExcerpt(
+      `Preview container cannot become ready (${state})`,
+      logs,
+    ),
   );
 }
 

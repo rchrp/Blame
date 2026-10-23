@@ -523,6 +523,17 @@ export type {
 
 export type ProjectInitializationDatabaseMode = "existing" | "compose";
 
+// Replaces a story worktree's preview setup with a repaired manifest.
+export type ApplyPreviewInitializationInput = {
+  databaseMode: ProjectInitializationDatabaseMode;
+  previewManifest: PreviewManifest;
+  reason: string;
+  repairSessionId: string;
+  runConfigurations: ProjectRunConfiguration[];
+  storyId: string;
+  worktree: string;
+};
+
 export type ProjectInitializationPreferences = {
   database?: {
     mode: ProjectInitializationDatabaseMode;
