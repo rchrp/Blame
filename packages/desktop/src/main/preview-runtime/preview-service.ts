@@ -115,6 +115,10 @@ export class PreviewService {
     return result;
   }
 
+  syncStatus(sessionId: string) {
+    return this.sync.liveStatus(sessionId) ?? null;
+  }
+
   syncBack(sessionId: string, localPath?: string) {
     return this.sync.syncBack(
       this.cloudClient(),

@@ -103,6 +103,10 @@ export function registerPreviewRuntimeIpcHandlers(input: {
       requiredString(body.localPath, "localPath", 8_192),
     );
   });
+  ipcMain.handle("preview-runtime:sync-status", (event, value) => {
+    owner(event);
+    return input.service.syncStatus(requiredSessionId(record(value).sessionId));
+  });
   ipcMain.handle("preview-runtime:sync-out", (event, value) => {
     owner(event);
     const body = record(value);

@@ -22,6 +22,7 @@ import {
   type BuiltWorkspaceDeltaArtifact,
   type PreparedWorkspaceSource,
 } from "./workspace-artifact.ts";
+import type { LiveSyncState, LiveSyncStatus } from "@blame/preview-runtime";
 import { currentWorkspaceSnapshotPolicy } from "@blame/preview-runtime/workspace-ignore";
 import { applyWorkspaceDelta } from "./workspace-delta.ts";
 import { WorkspaceSyncConflict } from "./workspace-sync-conflict.ts";
@@ -35,6 +36,17 @@ import {
 const maximumArtifactBytes = 256 * 1024 * 1024;
 const liveSyncDebounceMilliseconds = 450;
 const liveSyncRetryMilliseconds = 1_500;
+
+type PreviewSession = Awaited<ReturnType<CloudPreviewClient["get"]>>;
+
+type LiveSyncResult = {
+  session: PreviewSession;
+  pending: boolean;
+  synchronized: boolean;
+  changedFiles?: number;
+  reason?: string;
+  source?: Awaited<ReturnType<WorkspaceSyncService["syncInitial"]>>;
+};
 
 type LiveSyncRegistration = {
   client: CloudPreviewClient;
@@ -60,6 +72,7 @@ export class WorkspaceSyncService {
   >();
   private readonly synchronizedSnapshots = new Map<string, WorkspaceSnapshot>();
   private readonly live = new Map<string, LiveSyncRegistration>();
+  private readonly statuses = new Map<string, LiveSyncStatus>();
   private readonly indexPath?: string;
   private readonly snapshotIndexPath?: string;
   private readonly onLiveSyncError: (error: unknown) => void;
@@ -250,11 +263,64 @@ export class WorkspaceSyncService {
     return { session, ...applied };
   }
 
+  /** What live sync is doing for a session, for the preview toolbar. */
+  liveStatus(sessionId: string): LiveSyncStatus | undefined {
+    return this.statuses.get(sessionId);
+  }
+
   async syncLive(
     client: CloudPreviewClient,
     sessionId: string,
     localPath?: string,
   ) {
+    try {
+      const result = await this.performSyncLive(client, sessionId, localPath);
+      if (result.synchronized) {
+        this.setLiveStatus(sessionId, "synced", {
+          changedFiles: result.changedFiles,
+          synced: true,
+        });
+      } else if (result.pending || result.reason) {
+        this.setLiveStatus(sessionId, result.pending ? "waiting" : "idle", {
+          reason: result.reason,
+        });
+      } else {
+        this.setLiveStatus(sessionId, "synced");
+      }
+      return result;
+    } catch (error) {
+      this.setLiveStatus(sessionId, "error", {
+        reason: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    }
+  }
+
+  private setLiveStatus(
+    sessionId: string,
+    state: LiveSyncState,
+    detail: { changedFiles?: number; reason?: string; synced?: boolean } = {},
+  ) {
+    const previous = this.statuses.get(sessionId);
+    const now = new Date().toISOString();
+    this.statuses.set(sessionId, {
+      state,
+      updatedAt:
+        previous?.state === state && !detail.synced ? previous.updatedAt : now,
+      syncedAt: detail.synced ? now : previous?.syncedAt,
+      changedFiles: detail.synced
+        ? detail.changedFiles
+        : previous?.changedFiles,
+      reason: detail.reason,
+      sequence: (previous?.sequence ?? 0) + (detail.synced ? 1 : 0),
+    });
+  }
+
+  private async performSyncLive(
+    client: CloudPreviewClient,
+    sessionId: string,
+    localPath?: string,
+  ): Promise<LiveSyncResult> {
     await this.load();
     const attached = localPath ? await realpath(localPath) : undefined;
     const remembered = this.workspaces.get(sessionId);
@@ -268,7 +334,12 @@ export class WorkspaceSyncService {
       throw new Error("Cloud preview has no registered local worktree");
     const session = await client.get(sessionId);
     if (session.desired.host !== "active" || session.state.host !== "running") {
-      return { session, pending: false, synchronized: false };
+      return {
+        session,
+        pending: false,
+        synchronized: false,
+        reason: "The cloud preview is not running.",
+      };
     }
     if (session.state.sync === "failed" && !session.pendingDeltaArtifactId) {
       return this.restartWithCurrentWorkspace(client, sessionId, root, session);
@@ -281,7 +352,12 @@ export class WorkspaceSyncService {
       session.state.sync !== "clean" ||
       session.state.agent !== "idle"
     ) {
-      return { session, pending: true, synchronized: false };
+      return {
+        session,
+        pending: true,
+        synchronized: false,
+        reason: liveSyncWaitingReason(session),
+      };
     }
     let base = this.synchronizedSnapshots.get(sessionId);
     // A base hashed with another snapshot rule (or before rules existed)
@@ -309,6 +385,8 @@ export class WorkspaceSyncService {
     if (dependencyInputsChanged([...artifact.changed, ...artifact.deleted])) {
       return this.restartWithCurrentWorkspace(client, sessionId, root, session);
     }
+    const changedFiles = artifact.changed.length + artifact.deleted.length;
+    this.setLiveStatus(sessionId, "syncing", { changedFiles });
     const target = await client.prepareSourceUpload(sessionId, {
       ...artifact,
       mode: "delta",
@@ -327,7 +405,12 @@ export class WorkspaceSyncService {
         );
       }
       await this.remember(sessionId, root, artifact.snapshot);
-      return { session: updated, pending: false, synchronized: true };
+      return {
+        session: updated,
+        pending: false,
+        synchronized: true,
+        changedFiles,
+      };
     } catch (error) {
       const observed = await client.get(sessionId).catch(() => undefined);
       if (
@@ -335,12 +418,22 @@ export class WorkspaceSyncService {
         observed.state.sync === "clean"
       ) {
         await this.remember(sessionId, root, artifact.snapshot);
-        return { session: observed, pending: false, synchronized: true };
+        return {
+          session: observed,
+          pending: false,
+          synchronized: true,
+          changedFiles,
+        };
       }
       if (!liveSyncRequiresRestart(error)) throw error;
       const current = observed ?? (await client.get(sessionId));
       if (current.state.agent !== "idle" || current.pendingDeltaArtifactId) {
-        return { session: current, pending: true, synchronized: false };
+        return {
+          session: current,
+          pending: true,
+          synchronized: false,
+          reason: liveSyncWaitingReason(current),
+        };
       }
       return this.restartWithCurrentWorkspace(client, sessionId, root, current);
     }
@@ -615,6 +708,9 @@ export class WorkspaceSyncService {
     const shouldRestart = session.desired.services === "running";
     if (shouldRestart && !selection)
       throw new Error("Cloud preview has no service selection to restart");
+    this.setLiveStatus(sessionId, "restarting", {
+      reason: "Sending the whole workspace and restarting the cloud preview.",
+    });
     if (!["idle", "stopped", "failed"].includes(session.state.engine)) {
       session = await client.command(
         sessionId,
@@ -648,6 +744,16 @@ export class WorkspaceSyncService {
       source: synchronized,
     };
   }
+}
+
+function liveSyncWaitingReason(session: PreviewSession) {
+  if (session.state.sync === "conflict")
+    return "Local and cloud changes conflict; restart the preview to resolve them.";
+  if (session.state.sync !== "clean")
+    return "Waiting for changes made in the cloud preview to reach this computer.";
+  if (session.state.agent !== "idle")
+    return "Waiting for the cloud agent to finish.";
+  return "Waiting for the cloud preview to start.";
 }
 
 function dependencyInputsChanged(paths: string[]) {

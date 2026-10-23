@@ -5,6 +5,7 @@ export * from "./compilation/capability-resolver.js";
 export * from "./compilation/manifest-compiler.js";
 export * from "./domain/endpoint-map.js";
 export * from "./domain/environment-plan.js";
+export * from "./domain/live-sync-status.js";
 export * from "./domain/execution-plan.js";
 export * from "./domain/preview-errors.js";
 export * from "./domain/preview-lifecycle.js";

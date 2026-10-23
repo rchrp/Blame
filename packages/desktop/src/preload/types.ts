@@ -74,6 +74,7 @@ import type {
   PreviewSessionCommand,
   PreviewSessionEvent,
   PreviewSessionView,
+  LiveSyncStatus,
   RuntimeProfileId,
 } from "@blame/preview-runtime";
 
@@ -347,6 +348,7 @@ export type BlameDesktopApi = {
       revision: string;
       finalHash: string;
     }>;
+    syncStatus(input: { sessionId: string }): Promise<LiveSyncStatus | null>;
     onEvent(
       input: { sessionId: string; cursor?: string },
       callback: (event: PreviewSessionEvent) => void,

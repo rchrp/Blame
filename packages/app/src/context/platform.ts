@@ -56,6 +56,7 @@ import type {
 import type { NewProjectConfiguration } from "../components/new-project/new-project-options"
 import type { UserStory } from "../components/backlog/data/backlog-data"
 import type {
+  LiveSyncStatus,
   PreviewLogEvent,
   PreviewSessionCommand,
   PreviewSessionEvent,
@@ -756,6 +757,7 @@ export type PreviewRuntimeClient = {
     revision: string
     finalHash: string
   }>
+  syncStatus?(input: { sessionId: string }): Promise<LiveSyncStatus | null>
   onEvent(
     input: { sessionId: string; cursor?: string },
     callback: (event: PreviewSessionEvent) => void,

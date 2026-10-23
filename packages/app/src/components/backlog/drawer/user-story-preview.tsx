@@ -22,6 +22,11 @@ import {
   activePreviewProxy,
   type PreviewProxyInfo,
 } from "@/components/backlog/drawer/preview-proxy"
+import type { LiveSyncStatus } from "@blame/preview-runtime"
+import {
+  CloudSyncBadge,
+  useLiveSyncStatus,
+} from "@/components/backlog/drawer/cloud-sync-status"
 import {
   usePreviewWarmupReady,
   useSetupPreviewReady,
@@ -131,6 +136,7 @@ type PreviewIslandProps = {
   previewProxy?: PreviewProxyInfo
   source?: string
   previewRunner?: UserStoryPreviewRunner
+  syncStatus?: LiveSyncStatus
   onRunConfigurationChange?: (
     configurationId: string,
     previewUrl?: string
@@ -339,6 +345,11 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
   const previewWorktree =
     previewRunner.profile === "local-container" ? setupLogWorktree : undefined
   const runtimeLifecycle = previewRunner.lifecycle
+  const syncStatus = useLiveSyncStatus(
+    previewRunner.profile === "local-container"
+      ? undefined
+      : previewRunner.previewSessionId
+  )
   useReloadAfterRecovery(runtimeLifecycle?.status, setReloadKey)
   const runtimeStarting = Boolean(
     !projectRunMode &&
@@ -648,6 +659,7 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
             previewLocation={presentedPreviewLocation}
             previewProxy={previewProxy}
             source={presentedSource}
+            syncStatus={syncStatus}
           />
           {hasPreviewSurface && (
             <TabsContent
@@ -810,6 +822,7 @@ function PreviewIsland({
   previewLocation,
   previewProxy,
   source,
+  syncStatus,
 }: PreviewIslandProps) {
   if (activeTab === "setup-log") {
     return (
@@ -836,6 +849,7 @@ function PreviewIsland({
         previewLocation={previewLocation}
         previewProxy={previewProxy}
         source={source}
+        syncStatus={syncStatus}
       />
       <PreviewActions
         captureDisabled={navigationDisabled || captureDisabled}
@@ -989,6 +1003,7 @@ function PreviewAddress({
   previewLocation,
   previewProxy,
   source,
+  syncStatus,
 }: {
   disabled?: boolean
   locationBlocked: boolean
@@ -997,6 +1012,7 @@ function PreviewAddress({
   previewLocation?: string
   previewProxy?: PreviewProxyInfo
   source?: string
+  syncStatus?: LiveSyncStatus
 }) {
   const address = previewLocation ?? source ?? ""
   const path = address ? previewAddressPath(address) : ""
@@ -1057,6 +1073,7 @@ function PreviewAddress({
             }
           }}
         />
+        <CloudSyncBadge status={syncStatus} />
         {previewProxy && <PreviewProxyBadge proxy={previewProxy} />}
         {locationBlocked && <BlockedLocationBadge />}
         <Button

@@ -533,6 +533,65 @@ test("a base saved before snapshot rules resynchronizes once with the current ru
   }
 });
 
+test("reports live sync progress for the preview toolbar", async (context) => {
+  const root = await workspaceFixture();
+  try {
+    context.mock.method(
+      globalThis,
+      "fetch",
+      async () => new Response(null, { status: 200 }),
+    );
+    const service = new WorkspaceSyncService();
+    const metadata = await service.prepareInitial(root);
+    const session = runningSession(metadata.workspaceHash);
+    let uploaded: { workspaceHash?: string } | undefined;
+    let failGet = false;
+    const client = {
+      async negotiateSource() {
+        return { unchanged: true, session };
+      },
+      async get() {
+        if (failGet) throw new Error("Cloud preview is unreachable");
+        return session;
+      },
+      async prepareSourceUpload(_sessionId: string, artifact: typeof uploaded) {
+        uploaded = artifact;
+        return uploadTarget();
+      },
+      async applySourceUpload() {
+        session.workspaceHash = uploaded!.workspaceHash!;
+        return session;
+      },
+    } as unknown as CloudPreviewClient;
+    await service.syncInitial(client, session.id, root);
+    await writeFile(join(root, "index.js"), "console.log('live')\n");
+
+    await service.syncLive(client, session.id, root);
+    let status = service.liveStatus(session.id);
+    assert.equal(status?.state, "synced");
+    assert.equal(status?.changedFiles, 1);
+    assert.equal(status?.sequence, 1);
+    assert.ok(status?.syncedAt);
+
+    session.state.sync = "pending_local_sync";
+    await service.syncLive(client, session.id, root);
+    status = service.liveStatus(session.id);
+    assert.equal(status?.state, "waiting");
+    assert.match(status?.reason ?? "", /changes made in the cloud preview/);
+    assert.equal(status?.sequence, 1);
+
+    failGet = true;
+    await assert.rejects(service.syncLive(client, session.id, root));
+    assert.equal(service.liveStatus(session.id)?.state, "error");
+    assert.equal(
+      service.liveStatus(session.id)?.reason,
+      "Cloud preview is unreachable",
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 async function workspaceFixture() {
   const root = await mkdtemp(join(tmpdir(), "blame-workspace-live-sync-"));
   await execFileAsync("git", ["-C", root, "init", "--quiet"]);

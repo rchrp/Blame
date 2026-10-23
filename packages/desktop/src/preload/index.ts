@@ -281,6 +281,8 @@ const api: BlameDesktopApi = {
     command: (input) => ipcRenderer.invoke("preview-runtime:command", input),
     syncIn: (input) => ipcRenderer.invoke("preview-runtime:sync-in", input),
     syncOut: (input) => ipcRenderer.invoke("preview-runtime:sync-out", input),
+    syncStatus: (input) =>
+      ipcRenderer.invoke("preview-runtime:sync-status", input),
     onEvent: (input, callback, onError) => {
       let active = true;
       const subscriptionId = globalThis.crypto.randomUUID();
