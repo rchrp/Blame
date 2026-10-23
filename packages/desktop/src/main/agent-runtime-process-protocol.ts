@@ -54,6 +54,7 @@ export const agentHostMethods = [
   "refreshPreviewDependencies",
   "applyPreviewInitialization",
   "lightWorkspace",
+  "projectApp",
 ] as const;
 
 export type AgentRuntimeMethod = (typeof agentRuntimeMethods)[number];

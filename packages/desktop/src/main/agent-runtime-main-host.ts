@@ -79,7 +79,22 @@ async function handleAgentHostRequest(
   if (method === "lightWorkspace") {
     return agentLightWorkspace(input, signal);
   }
+  if (method === "projectApp") return agentProjectApp(input, signal);
   throw new Error(`Unsupported agent host method: ${method}`);
+}
+
+// A story working in the project folder checks or starts the project's
+// app through the same runner as the user's header controls.
+async function agentProjectApp(input: unknown, signal: AbortSignal) {
+  const request = recordInput(input);
+  const { projectAppForAgent } = await import("./ipc/project-app-ipc.ts");
+  return projectAppForAgent(
+    {
+      action: request.action === "start" ? "start" : "status",
+      projectPath: String(request.worktree ?? ""),
+    },
+    signal,
+  );
 }
 
 async function applyPreviewInitialization(input: unknown) {

@@ -139,6 +139,22 @@ export type PreviewBrowserState = {
 };
 
 // One window per open project.
+// The open project's app, for the app's shared runner: who holds its port,
+// and the agent's requests about it (answered by this window).
+export type ProjectApp = {
+  inspectPort(input: {
+    port: number;
+    projectPath: string;
+  }): Promise<import("../main/local-port-owner").LocalPortOwner>;
+  onRequest(
+    callback: (request: { action: "start" | "status"; id: string }) => void,
+  ): () => void;
+  respond(
+    id: string,
+    result: import("../main/ipc/project-app-ipc").ProjectAppResult,
+  ): Promise<boolean>;
+};
+
 export type ProjectWindows = {
   focusProject(path: string): Promise<boolean>;
   openProject(path: string): Promise<"focused" | "opened" | undefined>;
@@ -262,6 +278,7 @@ export type BlameDesktopApi = {
   updates: DesktopUpdates;
   mcp: McpServersClient;
   windowControls: WindowControls;
+  projectApp: ProjectApp;
   projectWindows: ProjectWindows;
   agentScreenshots: AgentScreenshotsClient;
   previewDevtools: PreviewDevtoolsSettingsClient;

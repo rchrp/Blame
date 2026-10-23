@@ -105,6 +105,10 @@ export class PreviewHarnessService {
   }
 
   private async lifecycle(input: PreviewHarnessInput) {
+    // A story working in the project folder previews the project's own app
+    // (Blame's project runner, or one already running): there is no
+    // managed container, so the browser alone tells its state.
+    if (input.workspaceMode === "direct") return undefined;
     try {
       if (input.workspaceMode === "cloud-mirror") {
         return this.managedLifecycle(input.storyId);

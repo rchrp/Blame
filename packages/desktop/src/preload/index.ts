@@ -201,6 +201,20 @@ const api: BlameDesktopApi = {
     },
     setChannel: (channel) => ipcRenderer.invoke("updates:set-channel", channel),
   },
+  projectApp: {
+    inspectPort: (input) =>
+      ipcRenderer.invoke("project-app:inspect-port", input),
+    onRequest: (callback) => {
+      const handler = (
+        _event: unknown,
+        request: Parameters<typeof callback>[0],
+      ) => callback(request);
+      ipcRenderer.on("project-app:request", handler);
+      return () => ipcRenderer.removeListener("project-app:request", handler);
+    },
+    respond: (id, result) =>
+      ipcRenderer.invoke("project-app:respond", { id, result }),
+  },
   projectWindows: {
     focusProject: (path) => ipcRenderer.invoke("window:focus-project", path),
     openProject: (path) => ipcRenderer.invoke("window:open-project", path),

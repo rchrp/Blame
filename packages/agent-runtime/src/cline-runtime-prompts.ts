@@ -387,6 +387,8 @@ function developmentEnvironmentPrompt(input: StartDevelopmentSessionInput) {
 
 function developmentPreviewPrompt(input: StartDevelopmentSessionInput) {
   if (!input.previewDevtoolsScope) return "";
+  if (input.workspaceMode === "direct")
+    return "The preview is the project's own app, run by Blame's project runner: the same process the user starts and stops from Blame. Check it or start it with project_app, never by hand. After final UI edits, use get_preview_devtools with waitFor=ready once; if the app is not running, start it with project_app first. If its port is held by another app, or it cannot start, continue with local validation and tell the user.";
   return "After final UI edits, use get_preview_devtools with waitFor=ready once when available. Preview services, databases, containers, and dev servers are managed by Blame and must not be started manually. If preview infrastructure is unavailable, continue with local validation and report it.";
 }
 

@@ -46,6 +46,7 @@ import {
   previewContainerLogsTool,
   previewDevtoolsTool,
   previewInitializationRepairTool,
+  projectAppTool,
   type PreviewRuntimeContext,
   type PreviewToolRuntimeOptions,
 } from "./preview-harness-tools.js";
@@ -158,9 +159,15 @@ export function runtimeTools(
         ]
       : []),
     previewDevtoolsTool(options, previewContext),
-    componentPreviewTool(options, previewContext),
-    previewInitializationRepairTool(options, previewContext),
-    previewContainerLogsTool(options, previewContext),
+    ...(previewContext?.workspaceMode === "direct"
+      ? // The project's own app: no managed container to repair, read or
+        // write temporary previews into.
+        [projectAppTool(options, previewContext)]
+      : [
+          componentPreviewTool(options, previewContext),
+          previewInitializationRepairTool(options, previewContext),
+          previewContainerLogsTool(options, previewContext),
+        ]),
     ...previewMcpTools,
   ].filter((tool): tool is AgentTool => Boolean(tool));
   return tools.length ? tools : undefined;

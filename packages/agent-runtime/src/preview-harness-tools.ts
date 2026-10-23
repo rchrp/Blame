@@ -126,6 +126,13 @@ export type PreviewToolRuntimeOptions = {
   ):
     | Promise<PreviewInitializationRepairResult>
     | PreviewInitializationRepairResult;
+  // The project's own app, run by Blame's shared project runner (a story
+  // working directly in the project folder).
+  projectApp?(input: {
+    action: "start" | "status";
+    signal?: AbortSignal;
+    worktree: string;
+  }): Promise<unknown> | unknown;
 };
 
 type PreviewToolsLogger = {
@@ -347,6 +354,39 @@ export function previewDevtoolsTool(
     inputSchema: previewDevtoolsInputSchema(),
     execute: (input: unknown, context: ToolContext) =>
       executePreviewDevtoolsTool(options, preview, input, context.signal),
+  };
+}
+
+// A story working in the project folder previews the project's own app.
+// Blame's project runner runs it, the same one the user starts and stops
+// from Blame: the agent checks it or starts it there, never by hand.
+export function projectAppTool(
+  options: PreviewToolRuntimeOptions,
+  preview: PreviewRuntimeContext | undefined,
+): AgentTool | undefined {
+  if (!options.projectApp || preview?.workspaceMode !== "direct")
+    return undefined;
+  return {
+    name: "project_app",
+    description:
+      "Check or start the project's own app (its dev server) through Blame's project runner: the same process the user starts and stops from Blame, with its logs. status reports whether it runs (through Blame or already outside it) and returns recent logs. start launches it when it is stopped and returns once it answers on its port, or fails with its logs. If its port is held by another app, it reports that app instead of starting: tell the user. Never start the app's dev server yourself.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        action: {
+          type: "string",
+          enum: ["status", "start"],
+          default: "status",
+        },
+      },
+      additionalProperties: false,
+    },
+    execute: (input: unknown, context: ToolContext) =>
+      options.projectApp!({
+        action: recordValue(input).action === "start" ? "start" : "status",
+        signal: context.signal,
+        worktree: preview.worktree,
+      }),
   };
 }
 

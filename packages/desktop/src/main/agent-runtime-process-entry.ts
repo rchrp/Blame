@@ -90,6 +90,7 @@ function createAgentRuntime(hostClient: AgentRuntimeHostClient) {
           ...input,
           signal: undefined,
         }),
+      projectApp: (input) => hostRequest(hostClient, "projectApp", input),
       ...(process.platform === "darwin" || process.platform === "win32"
         ? {
             lightWorkspace: (

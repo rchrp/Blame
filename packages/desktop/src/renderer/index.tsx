@@ -27,6 +27,7 @@ mountApp(root, {
     updates: window.blame.updates,
     workspace: window.blame.workspace,
     windowControls: window.blame.windowControls,
+    projectApp: window.blame.projectApp,
     projectWindows: window.blame.projectWindows,
     openDirectoryPickerDialog: (options) =>
       window.blame.openDirectoryPicker(options),

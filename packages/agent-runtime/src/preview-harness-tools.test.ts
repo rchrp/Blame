@@ -6,8 +6,10 @@ import test from "node:test";
 import { currentWorkspaceRevisionState } from "./harness/workspace-revisions.js";
 import {
   previewDevtoolsMcpTools,
+  projectAppTool,
   type PreviewToolRuntimeOptions,
 } from "./preview-harness-tools.js";
+import { runtimeTools } from "./cline-runtime-tools.js";
 import {
   previewDevtoolsMaxTimeoutMs,
   previewDevtoolsToolTimeoutMs,
@@ -166,3 +168,60 @@ async function readyPreviewOptions(
     ],
   };
 }
+
+test("a story in the project folder checks and starts the project's app through Blame", async () => {
+  const calls: unknown[] = [];
+  const options: PreviewToolRuntimeOptions = {
+    projectApp: (input) => {
+      calls.push({ action: input.action, worktree: input.worktree });
+      return { status: "starting" };
+    },
+  };
+  const direct = {
+    scope: "runner:/p:web",
+    workspaceMode: "direct" as const,
+    worktree: "/p",
+  };
+  assert.equal(
+    projectAppTool(options, { ...direct, workspaceMode: "local-container" }),
+    undefined,
+  );
+  assert.equal(projectAppTool({}, direct), undefined);
+  const tool = projectAppTool(options, direct);
+  assert.equal(tool?.name, "project_app");
+  await tool!.execute({ action: "start" }, {} as never);
+  await tool!.execute({}, {} as never);
+  assert.deepEqual(calls, [
+    { action: "start", worktree: "/p" },
+    { action: "status", worktree: "/p" },
+  ]);
+});
+
+test("a direct story gets the project app tool, not the managed container's", () => {
+  const options = {
+    previewContainerLogs: () => ({}),
+    previewDevtools: () => undefined,
+    projectApp: () => ({}),
+    repairPreviewInitialization: () => ({
+      classification: "",
+      reason: "",
+      status: "unavailable" as const,
+    }),
+  };
+  const names = (workspaceMode: "direct" | "local-container") =>
+    (
+      runtimeTools(options, "/p", {
+        scope: "s",
+        workspaceMode,
+        worktree: "/p",
+      }) ?? []
+    ).map((tool) => tool.name);
+  const direct = names("direct");
+  assert.ok(direct.includes("project_app"));
+  assert.ok(direct.includes("get_preview_devtools"));
+  assert.ok(!direct.includes("repair_preview_initialization"));
+  assert.ok(!direct.includes("get_preview_container_logs"));
+  const isolated = names("local-container");
+  assert.ok(!isolated.includes("project_app"));
+  assert.ok(isolated.includes("repair_preview_initialization"));
+});
