@@ -422,8 +422,10 @@ export class RunnerApplication {
         "Secret-looking command environment values require the credential broker.",
       );
     }
-    const result = await executeProjectCommand({ ...request, cwd });
+    // Earlier tool changes stay drift; the command's own changes are work.
     await checkpointChangeJournal();
+    const result = await executeProjectCommand({ ...request, cwd });
+    await checkpointChangeJournal({ attribute: true });
     return result;
   }
 

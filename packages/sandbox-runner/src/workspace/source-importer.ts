@@ -21,7 +21,11 @@ import { tmpdir } from "node:os";
 import { spawn } from "node:child_process";
 import type { SourceArtifact } from "@blame/preview-runtime";
 import { runtimePaths } from "../runtime-paths.js";
-import { initializeChangeJournal } from "./change-journal.js";
+import {
+  checkpointChangeJournal,
+  initializeChangeJournal,
+  localView,
+} from "./change-journal.js";
 import { runnerError } from "../protocol/runner-errors.js";
 import {
   addDirectoryGitignore,
@@ -159,7 +163,14 @@ async function applySourceDelta(
       throw runnerError("SOURCE_DELTA_INVALID", "Source delta final hash metadata does not match its manifest.");
     }
     const policy = parseWorkspaceSnapshotPolicy(manifest.snapshotPolicy);
-    const current = await snapshotWorkspace(undefined, policy);
+    // Tool changes since the last checkpoint become drift first, so the base
+    // is compared with the workspace as the local worktree sent it.
+    const drift = (await checkpointChangeJournal())?.drift ?? {};
+    const touched = new Set([...manifest.changed, ...manifest.deleted]);
+    const remainingDrift = Object.fromEntries(
+      Object.entries(drift).filter(([path]) => !touched.has(path)),
+    );
+    const current = localView(await snapshotWorkspace(undefined, policy), drift, policy);
     if (current.hash !== manifest.baseHash) {
       throw runnerError("SOURCE_BASELINE_MISMATCH", "Source delta base does not match the restored baseline.");
     }
@@ -201,7 +212,7 @@ async function applySourceDelta(
           await chmod(target, manifest.files[path]!.mode);
         }
       }
-      const final = await snapshotWorkspace(undefined, policy);
+      const final = localView(await snapshotWorkspace(undefined, policy), remainingDrift, policy);
       if (final.hash !== manifest.finalHash)
         throw runnerError("SOURCE_DELTA_INVALID", "Source delta final hash mismatch.");
     } catch (error) {
@@ -218,9 +229,8 @@ async function applySourceDelta(
       await rm(transaction, { recursive: true, force: true });
     }
     await writeWorkspaceSnapshotPolicy(policy);
-    await initializeChangeJournal();
-    const final = await snapshotWorkspace(undefined, policy);
-    return { sourceRevision, workspaceHash: final.hash };
+    const journal = await initializeChangeJournal(remainingDrift);
+    return { sourceRevision, workspaceHash: journal.current.hash };
   } finally {
     await rm(staging, { recursive: true, force: true });
   }
