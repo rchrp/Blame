@@ -357,7 +357,8 @@ function nodeHealthcheckCommand(endpoint: PreviewManifestEndpoint) {
   }
   const path = endpoint.healthcheck?.path ?? "/";
   const url = `${endpoint.protocol}://127.0.0.1:${endpoint.port}${path}`;
-  const script = `fetch(${JSON.stringify(url)}).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))`;
+  // Ready means "answers without a server error", like cloud readiness.
+  const script = `fetch(${JSON.stringify(url)}).then(r=>process.exit(r.status<500?0:1)).catch(()=>process.exit(1))`;
   return `node -e ${shellQuote(script)}`;
 }
 
@@ -373,7 +374,12 @@ function pythonHealthcheckCommand(endpoint: PreviewManifestEndpoint) {
   }
   const path = endpoint.healthcheck?.path ?? "/";
   const url = `${endpoint.protocol}://127.0.0.1:${endpoint.port}${path}`;
-  return `python -c ${shellQuote(`import urllib.request;urllib.request.urlopen(${JSON.stringify(url)},timeout=4).close()`)}`;
+  const script = [
+    "import sys,urllib.request,urllib.error",
+    `try:\n urllib.request.urlopen(${JSON.stringify(url)},timeout=4).close()`,
+    "except urllib.error.HTTPError as error:\n sys.exit(0 if error.code<500 else 1)",
+  ].join("\n");
+  return `python -c ${shellQuote(script)}`;
 }
 
 function knownDependencyHealthcheckYaml(service: PreviewManifestService) {
