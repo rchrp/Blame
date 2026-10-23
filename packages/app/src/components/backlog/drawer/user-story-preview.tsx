@@ -28,6 +28,10 @@ import {
   useLiveSyncStatus,
 } from "@/components/backlog/drawer/cloud-sync-status"
 import {
+  usePreviewHotReloads,
+  useReloadAfterChanges,
+} from "@/components/backlog/drawer/preview-auto-reload"
+import {
   usePreviewWarmupReady,
   useSetupPreviewReady,
 } from "@/components/backlog/drawer/preview-readiness"
@@ -350,6 +354,12 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
       ? undefined
       : previewRunner.previewSessionId
   )
+  useReloadAfterChanges({
+    enabled: usePreviewHotReloads(setupLogWorktree) === false,
+    syncSequence: syncStatus?.sequence,
+    agentRunning: userStory?.agentStatus === "Running",
+    setReloadKey,
+  })
   useReloadAfterRecovery(runtimeLifecycle?.status, setReloadKey)
   const runtimeStarting = Boolean(
     !projectRunMode &&
