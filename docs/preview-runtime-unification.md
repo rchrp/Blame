@@ -1,6 +1,7 @@
 # Unifying the preview runtime across local, cloud and direct modes
 
-Status: proposal for review, 2026-10-24. Nothing here is implemented yet.
+Status: phase 1 implemented on 2026-10-24 (cloud parts ship with the next
+sandbox runner release); phases 2 and 3 are proposals.
 
 ## Why
 
@@ -39,7 +40,8 @@ through the project runner.
 ## Divergences found
 
 These are behavior differences between local and cloud for the same manifest,
-found while reading both pipelines. Phase 1 removes them.
+found while reading both pipelines. Phase 1 removed 1, 2 and the readiness
+difference in 5; 3 and 4 are phase 2.
 
 1. **Functional probes.** Local runs `previewManifest.probes`
    (`runPreviewProbes` in `workspace-ipc.ts`) and a failing required probe
@@ -47,11 +49,12 @@ found while reading both pipelines. Phase 1 removes them.
    The cloud compiler copies the probes into the plan with a different default
    (`[200, 204, 301, 302, 304]`), and nothing ever executes them: the runner
    only checks endpoint readiness.
-2. **Secret-looking environment keys.** The cloud compiler rejects a manifest
-   whose environment has a key ending in `TOKEN`, `SECRET`, `PASSWORD`,
-   `API_KEY`... (`assertLiteralEnvironmentKey`), except local database values.
-   Local accepts it. A project with `NEXTAUTH_SECRET: "dev"` previews locally
-   and fails in the cloud.
+2. **Secret-looking environment keys.** The shared parser and the cloud
+   compiler reject a manifest whose environment has a key ending in `TOKEN`,
+   `SECRET`, `PASSWORD`, `API_KEY`..., except local database values, so
+   `NEXTAUTH_SECRET: "dev"` fails in both modes. The runner was stricter still:
+   it refused to save its state for any such key, so a plan holding the public
+   `MYSQL_ROOT_PASSWORD: "blame"` could not start in the cloud.
    **Decision (2026-10-24): accept literal values everywhere.** Manifest values
    are development values already committed with the project; real secrets
    stay out of the manifest.
@@ -62,8 +65,12 @@ found while reading both pipelines. Phase 1 removes them.
    (corepack shims for bare `pnpm`, `npm install --no-package-lock`, removal of
    numeric `su` users, the Next.js webpack fallback) only run for local
    previews, after compilation, instead of in the shared normalization.
-5. **Readiness** is consistent (status below 500 on both sides) and is listed
-   here only so it stays that way.
+5. **Readiness.** The desktop readiness check and the runner accept any status
+   below 500, but the local compose healthchecks (Node `r.ok`, Python
+   `urlopen`) required a 2xx, and an unhealthy container fails a local start.
+   The cloud compose healthcheck (`wget -q`) also fails on 4xx and needs `wget`
+   in the image; it is informational today (the runner probes readiness
+   itself and uses no health conditions).
 
 Differences that are by design and stay: where containers run, how source
 reaches them (bind mount versus artifacts and deltas), and how the browser
@@ -85,31 +92,45 @@ reaches a service (local host port versus the preview edge and gateway).
 - **One lifecycle.** The UI reads `PreviewSessionView` (or its
   `PreviewLifecycleState` projection) for every mode, Direct included.
 
-## Phase 1: the same rules everywhere
+## Phase 1: the same rules everywhere (done)
 
-Low risk, no change to how containers run. Roughly one working session.
+1. **Environment values.** `previewEnvironmentValueRejection` in
+   `preview-contract` replaces the key-name rule in the parser, the compiler,
+   the runner's plan check and its state guard. Any key is accepted; a value
+   is refused when it contains a private key or a provider live key (AWS,
+   GitHub, GitLab, OpenAI, Slack, Stripe) or a URL with credentials for a host
+   outside the preview. The runner's `exec` operation keeps refusing
+   secret-looking keys: those come from agent commands, not from the manifest.
+2. **One probe rule.** `preview-runtime/domain/functional-probes.ts` owns
+   `probeStatusAccepted` (listed statuses, otherwise below 500), the defaults
+   (10 s timeout, the endpoint healthcheck path when the probe gives none), the
+   scripts run inside containers (tested against a real server) and the
+   failure message. The compiler emits an empty status list instead of its own
+   default.
+3. **Cloud runs functional probes.** Once every selected service is ready, the
+   runner runs the plan's probes once per start (`probedEndpointRevision`).
+   Host probes reach the service target directly from the runner rather than
+   through the gateway, which needs a capability token; service probes run
+   inside the origin container with `docker compose exec`. A failing required
+   probe fails the start with `FUNCTIONAL_PROBE_FAILED`, reported by the API as
+   a healthcheck failure. Open question 2 was settled as "block", like local.
+4. **Local validates through the shared compiler.**
+   `prepareProjectPreviewArtifacts` compiles the manifest, and local probes run
+   from the compiled plan with the shared helpers.
+5. **Local readiness.** Node and Python compose healthchecks accept any status
+   below 500.
+6. **Parity corpus.** `desktop/src/main/preview-parity.test.ts` checks four
+   manifests (Next.js + Prisma + MySQL, Django + Postgres + Redis, web + API
+   with server and browser bindings): the local compose and the plan agree on
+   services, setup tasks and order, dependencies, environment (binding values
+   included), endpoints and probe targets. The local compose is kept as golden
+   files. Add anonymized real manifests there as they come up.
 
-1. **Secret-looking keys** (`preview-runtime/compilation/manifest-compiler.ts`):
-   accept literal values, keep classifying them in the environment plan.
-2. **One probe rule.** Add `probeStatusAccepted(status, acceptedStatuses)` to
-   `preview-runtime`: listed statuses when given, otherwise any status below
-   500. The desktop probe scripts and the runner use it; the compiler stops
-   injecting its own default list.
-3. **Cloud runs functional probes.** The runner executes `plan.probes` after
-   readiness (service-origin probes inside the compose network, host probes
-   through the gateway). A failing required probe fails the start with the
-   probe id and target, as local does.
-4. **Local validates through the shared compiler.** `prepareProjectPreviewArtifacts`
-   also calls `compilePreviewManifest`, so a manifest is accepted or refused
-   with the same message in both modes.
-5. **Parity corpus.** A test compiles a corpus of manifests (contract fixtures,
-   initialization test results, anonymized real manifests such as
-   Portfolio-V4's) and asserts both pipelines agree on services, dependency
-   closure, setup order, environment including binding values, endpoints and
-   probes.
-
-Acceptance: corpus green, existing suites green, and the local
-`docker-compose.yml` of every corpus manifest byte-identical to today's.
+Shipping: the parser, compiler and local changes ship with the desktop and the
+API. Cloud probe execution and the relaxed runner checks need the next
+sandbox runner release (and the API's pinned runner version bumped with it).
+Changing the compiled probes changes the plan hash, so existing cloud sessions
+are recreated once on their next start.
 
 ## Phase 2: one compose renderer
 
@@ -123,13 +144,15 @@ Medium risk: it changes how local compose files are produced.
    - `local-vm`: the worktree path as bind mount, published ports on
      `127.0.0.1` (with the remembered ports), dependency volumes keyed by the
      lockfile hash, env file mounts.
-3. Move the manifest-level rewrites listed in divergence 4 into
+3. Render one healthcheck rule for both targets (divergence 5: the cloud
+   `wget -q` check still fails on 4xx and needs `wget` in the image).
+4. Move the manifest-level rewrites listed in divergence 4 into
    normalization. What stays desktop-only is what depends on the host: port
    allocation and memory, env file materialization, the VM path mapping.
-4. Golden tests: for the parity corpus, the `local-vm` target must reproduce
+5. Golden tests: for the parity corpus, the `local-vm` target must reproduce
    today's local compose (compared as parsed YAML), and the `sandbox` target
    today's runner output.
-5. Rollout behind a desktop flag (shared renderer off by default), then on
+6. Rollout behind a desktop flag (shared renderer off by default), then on
    for new stories, then default, then the old generator is deleted.
 
 ## Phase 3: the sandbox runner in the local VM
@@ -181,13 +204,12 @@ the same `PreviewSessionView` projection.
 - **Release coupling** (phase 3): desktop, runtime bundle and runner versions
   must move together, like the API and the runner today.
 - **Probe enforcement in the cloud** (phase 1) can turn previews that load
-  today into failures when a required probe was wrong. Ship it with a clear
-  failure message and the repair action.
+  today into failures when a required probe was wrong. The failure names the
+  probe, its target and the reason; the preview's repair action fixes the
+  manifest.
 
 ## Open questions
 
 1. Docker Engine in the VM, or a `nerdctl` engine in the runner?
-2. Should a failing functional probe in the cloud block readiness from day
-   one, or only warn for a release?
-3. Is raising the Blame Runtime VM memory acceptable for phase 3?
-4. Should Direct move to the shared lifecycle in phase 1 or with phase 3?
+2. Is raising the Blame Runtime VM memory acceptable for phase 3?
+3. Should Direct move to the shared lifecycle in phase 1 or with phase 3?
