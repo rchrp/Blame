@@ -13,6 +13,7 @@ import * as React from "react"
 import { toast } from "sonner"
 
 import { ProjectRunnerLogTabs } from "@/components/backlog/board/project-runner-controls"
+import type { ProjectRunnerControlStatus } from "@/components/backlog/board/project-runner-types"
 import type { UserStory } from "@/components/backlog/data/backlog-data"
 import { managedPresentedPreviewUrl } from "@/components/backlog/drawer/managed-preview-url"
 import { ManagedRuntimeSummary } from "@/components/backlog/drawer/managed-runtime-summary"
@@ -88,8 +89,28 @@ type PreviewUrlWarmupProps = {
   previewUrl?: string
   trigger?: number | string
 }
+// A preview whose app runs from the project's own runner (a story working
+// directly in the project folder): its controls and logs come from there.
+export type ProjectRunPreview = {
+  // Hides the native preview while a menu of the controls is open.
+  controls: (props: {
+    onMenuOpenChange: (open: boolean) => void
+  }) => React.ReactNode
+  logs: {
+    content: string
+    items: {
+      id: string
+      label: string
+      status?: ProjectRunnerControlStatus
+    }[]
+    selected?: string
+    onSelect: (id: string) => void
+  }
+}
+
 type PreviewIslandProps = {
   activeTab: string
+  projectRun?: ProjectRunPreview
   captureDisabled?: boolean
   hasPreview: boolean
   hasSetupLog: boolean
@@ -113,6 +134,7 @@ type PreviewIslandProps = {
   ) => void
 }
 type PreviewLogToolbarProps = {
+  projectRun?: ProjectRunPreview
   hasPreview: boolean
   hasSetupLog: boolean
   onConfigurationChange?: (configurationId: string, previewUrl?: string) => void
@@ -258,6 +280,7 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
   previewSessionKey,
   previewTitle,
   previewUrl: previewUrlInput,
+  projectRun,
   setupInitializing,
   userStory,
   visible = true,
@@ -271,6 +294,7 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
   previewSessionKey?: string
   previewTitle?: string
   previewUrl?: string
+  projectRun?: ProjectRunPreview
   setupInitializing?: boolean
   userStory?: UserStory
   visible?: boolean
@@ -295,22 +319,30 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
     ? storyPreviewDevtoolsScope(userStory.id)
     : previewSessionKey
   const previewIdentity = previewScope ?? previewLabel
-  const setupLogWorktree = userStory?.worktree ?? worktree
-  const configuredPreviewUrl = userStory?.previewUrl ?? previewUrlInput
+  // With the project's runner, the story's own preview runtime stays off.
+  const projectRunMode = Boolean(projectRun)
+  const setupLogWorktree = projectRunMode
+    ? undefined
+    : (userStory?.worktree ?? worktree)
+  const configuredPreviewUrl = projectRunMode
+    ? previewUrlInput
+    : (userStory?.previewUrl ?? previewUrlInput)
   const previewRunner = useUserStoryPreviewRunner(
     setupLogWorktree,
-    visible,
-    userStory?.id,
+    visible && !projectRunMode,
+    projectRunMode ? undefined : userStory?.id,
     { workspaceMode: userStory?.workspaceMode }
   )
   const previewWorktree =
     previewRunner.profile === "local-container" ? setupLogWorktree : undefined
   const runtimeLifecycle = previewRunner.lifecycle
   const runtimeStarting = Boolean(
+    !projectRunMode &&
     runtimeLifecycle?.status === "pending" &&
     !["stopping", "suspending", "destroying"].includes(runtimeLifecycle.phase)
   )
-  const managedPreview = previewRunner.profile !== "local-container"
+  const managedPreview =
+    !projectRunMode && previewRunner.profile !== "local-container"
   const previewUrl = previewRunner.runtime
     ? previewRunner.runtime.previewUrl
     : managedPreview
@@ -353,7 +385,8 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
     previewLoad.key === previewKey ? previewLoad.location : undefined
   const locationBlocked =
     previewLoad.key === previewKey && previewLoad.locationBlocked
-  const hasSetupLog = Boolean(setupLogWorktree && !setupInitializing)
+  const hasSetupLog =
+    projectRunMode || Boolean(setupLogWorktree && !setupInitializing)
   const [selectedLogServiceChoice, setSelectedLogService] = React.useState("")
   const [runnerMenuOpen, setRunnerMenuOpen] = React.useState(false)
   const [tab, setTab] = React.useState(source ? "preview" : "setup-log")
@@ -592,6 +625,7 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
         >
           <PreviewIsland
             activeTab={activeTab}
+            projectRun={projectRun}
             captureDisabled={setupPreviewWaiting || !previewCapture}
             hasPreview={hasPreviewSurface}
             hasSetupLog={hasSetupLog}
@@ -606,7 +640,7 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
             onReload={reloadPreview}
             onRunnerMenuOpenChange={setRunnerMenuOpen}
             onRunConfigurationChange={onRunConfigurationChange}
-            previewRunner={previewRunner}
+            previewRunner={projectRunMode ? undefined : previewRunner}
             previewLocation={presentedPreviewLocation}
             previewProxy={previewProxy}
             source={presentedSource}
@@ -668,14 +702,18 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
               value="setup-log"
               className="h-full min-h-0 overflow-hidden"
             >
-              <SetupLogPanel
-                managed={managedPreview}
-                managedError={previewRunner.error}
-                previewSessionId={previewRunner.previewSessionId}
-                service={selectedLogService}
-                serviceCount={services.length}
-                worktree={visible ? setupLogWorktree : undefined}
-              />
+              {projectRun ? (
+                <ProjectRunLogPanel content={projectRun.logs.content} />
+              ) : (
+                <SetupLogPanel
+                  managed={managedPreview}
+                  managedError={previewRunner.error}
+                  previewSessionId={previewRunner.previewSessionId}
+                  service={selectedLogService}
+                  serviceCount={services.length}
+                  worktree={visible ? setupLogWorktree : undefined}
+                />
+              )}
             </TabsContent>
           )}
         </Tabs>
@@ -746,6 +784,7 @@ function PreviewWaitingPanel({
 
 function PreviewIsland({
   activeTab,
+  projectRun,
   captureDisabled,
   hasPreview,
   hasSetupLog,
@@ -768,6 +807,7 @@ function PreviewIsland({
   if (activeTab === "setup-log") {
     return (
       <PreviewLogToolbar
+        projectRun={projectRun}
         hasPreview={hasPreview}
         hasSetupLog={hasSetupLog}
         onConfigurationChange={onRunConfigurationChange}
@@ -803,6 +843,11 @@ function PreviewIsland({
           onMenuOpenChange={onRunnerMenuOpenChange}
         />
       )}
+      {projectRun ? (
+        <div className="pointer-events-auto shrink-0">
+          {projectRun.controls({ onMenuOpenChange: onRunnerMenuOpenChange })}
+        </div>
+      ) : null}
       {previewRunner && <ManagedRuntimeSummary runner={previewRunner} />}
       <div className="preview-toolbar-spacer min-w-2 flex-1" />
       <PreviewTabSelector hasPreview={hasPreview} hasSetupLog={hasSetupLog} />
@@ -811,6 +856,7 @@ function PreviewIsland({
 }
 
 function PreviewLogToolbar({
+  projectRun,
   hasPreview,
   hasSetupLog,
   onConfigurationChange,
@@ -822,11 +868,32 @@ function PreviewLogToolbar({
 }: PreviewLogToolbarProps) {
   return (
     <div className="pointer-events-none absolute inset-x-4 top-4 z-20 flex h-10 items-center gap-2">
-      <ServiceLogTabs
-        selectedService={service}
-        services={services}
-        onSelectService={onServiceChange}
-      />
+      {projectRun ? (
+        <div className="pointer-events-auto min-w-0 flex-1 overflow-x-auto">
+          {projectRun.logs.items.length ? (
+            <ProjectRunnerLogTabs
+              items={projectRun.logs.items}
+              value={projectRun.logs.selected}
+              onValueChange={projectRun.logs.onSelect}
+            />
+          ) : (
+            <span className="px-2 text-sm text-muted-foreground">
+              Not started yet
+            </span>
+          )}
+        </div>
+      ) : (
+        <ServiceLogTabs
+          selectedService={service}
+          services={services}
+          onSelectService={onServiceChange}
+        />
+      )}
+      {projectRun ? (
+        <div className="pointer-events-auto shrink-0">
+          {projectRun.controls({ onMenuOpenChange })}
+        </div>
+      ) : null}
       {runner?.runtime && (
         <UserStoryPreviewRunnerControls
           onConfigurationChange={onConfigurationChange}
@@ -1147,6 +1214,27 @@ function BlockedLocationBadge() {
       <LockIcon className="size-3" />
       URL interne masquée
     </span>
+  )
+}
+
+const projectRunStoppedMessage =
+  "The app isn't running. Start it from here or from the header to see its preview."
+
+function ProjectRunLogPanel({ content }: { content: string }) {
+  const logRef = React.useRef<HTMLPreElement>(null)
+  React.useEffect(() => {
+    const element = logRef.current
+    if (element) element.scrollTop = element.scrollHeight
+  }, [content])
+  return (
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-muted/20 px-4 pt-16 pb-4">
+      <pre
+        ref={logRef}
+        className="min-h-0 flex-1 overflow-auto rounded-lg border bg-zinc-950 p-4 font-mono text-xs whitespace-pre-wrap text-zinc-100 select-text"
+      >
+        {content || projectRunStoppedMessage}
+      </pre>
+    </div>
   )
 }
 

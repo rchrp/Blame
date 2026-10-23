@@ -1,4 +1,3 @@
-import type { ProjectRunConfiguration } from "@blame/agent-runtime"
 import { MonitorIcon, SquareIcon, TerminalIcon } from "lucide-react"
 import * as React from "react"
 
@@ -9,45 +8,26 @@ import {
   ProjectRunnerLogTabs,
   RunnerIconTooltip,
 } from "@/components/backlog/board/project-runner-controls"
+import type { ProjectRunSession } from "@/components/backlog/board/use-project-runner"
 import {
-  type ProjectRunSession,
-  useProjectRunner,
-} from "@/components/backlog/board/use-project-runner"
+  type SharedProjectRunner,
+  useSharedProjectRunner,
+} from "@/components/backlog/board/project-runner-context"
 import {
   projectRunConfigurationPreviewKey,
   projectRunConfigurationPreviewUrl,
 } from "@/components/backlog/board/project-run-configuration"
-import { ProjectRunConfigurationPreviewWarmup } from "@/components/backlog/board/project-run-preview-warmup"
 import { UserStoryPreview } from "@/components/backlog/drawer/user-story-preview"
 
-type Runner = ReturnType<typeof useProjectRunner>
+type Runner = SharedProjectRunner
 
-export function ProjectRunnerButton({
-  configurations,
-  projectPath,
-}: {
-  configurations: ProjectRunConfiguration[]
-  projectPath?: string
-}) {
-  const runner = useProjectRunner(configurations, projectPath)
+// The header's controls for the open project's app. The runner itself is
+// shared (ProjectRunnerProvider), so a story running in the project folder
+// drives the same processes from its preview.
+export function ProjectRunnerButton() {
+  const runner = useSharedProjectRunner()
   const [previewOpen, setPreviewOpen] = React.useState(false)
-  const [warmupRequest, setWarmupRequest] =
-    React.useState<ProjectPreviewWarmupRequest>()
-  const warmupConfiguration = configurations.find(
-    (configuration) => configuration.id === warmupRequest?.configurationId
-  )
-  const requestPreviewWarmup = React.useCallback(
-    (configuration?: ProjectRunConfiguration) => {
-      if (!configuration) return
-      if (!projectRunConfigurationPreviewUrl(configuration)) return
-      setWarmupRequest((current) => ({
-        configurationId: configuration.id,
-        trigger: (current?.trigger ?? 0) + 1,
-      }))
-    },
-    []
-  )
-  if (!runner.selected) return null
+  if (!runner?.selected) return null
   return (
     <>
       <ProjectRunnerControls
@@ -58,39 +38,24 @@ export function ProjectRunnerButton({
           />
         }
         afterStop={<RunnerLogsButton runner={runner} />}
-        configurations={configurations}
-        disabled={!projectPath || !runner.terminal}
+        configurations={runner.configurations}
+        disabled={!runner.projectPath || !runner.terminal}
         pending={runner.pendingOperation}
         selectedId={runner.selected.id}
         statusFor={(id) => runner.sessionFor(id)?.status ?? "stopped"}
         onSelect={runner.select}
-        onStart={(id) => {
-          requestPreviewWarmup(
-            configurations.find((configuration) => configuration.id === id)
-          )
-          runner.start(id)
-        }}
+        onStart={runner.start}
         onStop={runner.stop}
       />
       <RunnerLogsDrawer runner={runner} />
       <RunnerPreviewDrawer
         open={previewOpen}
-        projectPath={projectPath}
+        projectPath={runner.projectPath}
         runner={runner}
         onOpenChange={setPreviewOpen}
       />
-      <ProjectRunConfigurationPreviewWarmup
-        configuration={warmupConfiguration}
-        scope={projectPath}
-        trigger={warmupRequest?.trigger}
-      />
     </>
   )
-}
-
-type ProjectPreviewWarmupRequest = {
-  configurationId: string
-  trigger: number
 }
 
 function RunnerPreviewButton({

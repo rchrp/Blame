@@ -7,8 +7,6 @@ import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { cn } from "@/lib/utils"
 import { ProjectRunnerButton } from "@/components/backlog/board/project-runner-button"
-import { useProjectInitialization } from "@/components/project-initialization/use-project-initialization"
-import { useProjects } from "@/context/projects"
 
 const siteHeaderBlurMask = {
   maskImage: "linear-gradient(to bottom, black 5%, transparent 72%)",
@@ -16,8 +14,6 @@ const siteHeaderBlurMask = {
 } satisfies React.CSSProperties
 
 export function SiteHeader({ title }: { title: string }) {
-  const projects = useProjects()
-  const projectInitialization = useProjectInitialization()
   return (
     <header className="pointer-events-none absolute inset-x-0 top-0 z-20 pb-10 md:pb-12">
       <div
@@ -34,12 +30,7 @@ export function SiteHeader({ title }: { title: string }) {
           />
           <h1 className="truncate text-base font-medium">{title}</h1>
           <div className="ml-auto">
-            <ProjectRunnerButton
-              configurations={
-                projectInitialization?.initialization?.runConfigurations ?? []
-              }
-              projectPath={projects.activeProject?.path}
-            />
+            <ProjectRunnerButton />
           </div>
         </div>
       </div>

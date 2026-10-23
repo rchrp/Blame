@@ -1,5 +1,6 @@
 import * as React from "react"
 
+import { ProjectRunnerProvider } from "@/components/backlog/board/project-runner-context"
 import { SiteHeader, WindowControls } from "@/components/layout/site-header"
 import {
   KeyboardShortcutsDialog,
@@ -87,66 +88,68 @@ export function AppLayout({
   }, [closeWindowShellIfPointerOutside, windowShellOpen])
 
   return (
-    <SidebarProvider
-      open={sidebarOpen}
-      onOpenChange={setSidebarOpen}
-      className="relative isolate overflow-hidden bg-transparent"
-      style={
-        {
-          "--sidebar-width": "calc(var(--spacing) * 72)",
-          "--header-height": "calc(var(--spacing) * 16)",
-        } as React.CSSProperties
-      }
-    >
-      <div
-        aria-hidden="true"
-        className="pointer-events-none fixed top-0 left-0 z-0 h-72 w-96 -translate-x-24 -translate-y-28 blur-3xl"
-        style={{
-          background: `radial-gradient(circle at center, ${haloColor} 0%, transparent 68%)`,
-          opacity: 0.42,
-        }}
-      />
-      <AppSidebar pathname={pathname} variant="inset" />
-      <div
-        data-window-shell-bar
-        data-open={windowShellOpen}
-        className="absolute top-0 right-0 left-0 z-2"
-        onMouseEnter={openWindowShell}
+    <ProjectRunnerProvider>
+      <SidebarProvider
+        open={sidebarOpen}
+        onOpenChange={setSidebarOpen}
+        className="relative isolate overflow-hidden bg-transparent"
+        style={
+          {
+            "--sidebar-width": "calc(var(--spacing) * 72)",
+            "--header-height": "calc(var(--spacing) * 16)",
+          } as React.CSSProperties
+        }
       >
-        {windowShellOpen ? <div data-window-shell-drag /> : null}
-        <WindowControls
-          className="absolute top-2 right-3 z-1 transition-[opacity,transform] duration-200 ease-in-out"
-          data-window-shell-controls
+        <div
+          aria-hidden="true"
+          className="pointer-events-none fixed top-0 left-0 z-0 h-72 w-96 -translate-x-24 -translate-y-28 blur-3xl"
+          style={{
+            background: `radial-gradient(circle at center, ${haloColor} 0%, transparent 68%)`,
+            opacity: 0.42,
+          }}
         />
-      </div>
-      <SidebarInset
-        data-window-shell-inset
-        className="z-[1] min-w-0 overflow-hidden"
-      >
-        <SiteHeader title={headerTitle} />
-        {persistent ? (
-          // Becoming visible again replays the page-enter animation.
-          <div
-            hidden={!persistentActive}
-            className="page-enter flex min-h-0 min-w-0 flex-1 flex-col"
-          >
-            {persistent}
-          </div>
-        ) : null}
-        {persistentActive ? null : (
-          <div
-            key={routeKey}
-            className="page-enter flex min-h-0 min-w-0 flex-1 flex-col"
-          >
-            {children}
-          </div>
-        )}
-      </SidebarInset>
-      <KeyboardShortcutsDialog
-        open={shortcuts.helpOpen}
-        onOpenChange={shortcuts.setHelpOpen}
-      />
-      <CommandPalette onShowShortcuts={() => shortcuts.setHelpOpen(true)} />
-    </SidebarProvider>
+        <AppSidebar pathname={pathname} variant="inset" />
+        <div
+          data-window-shell-bar
+          data-open={windowShellOpen}
+          className="absolute top-0 right-0 left-0 z-2"
+          onMouseEnter={openWindowShell}
+        >
+          {windowShellOpen ? <div data-window-shell-drag /> : null}
+          <WindowControls
+            className="absolute top-2 right-3 z-1 transition-[opacity,transform] duration-200 ease-in-out"
+            data-window-shell-controls
+          />
+        </div>
+        <SidebarInset
+          data-window-shell-inset
+          className="z-[1] min-w-0 overflow-hidden"
+        >
+          <SiteHeader title={headerTitle} />
+          {persistent ? (
+            // Becoming visible again replays the page-enter animation.
+            <div
+              hidden={!persistentActive}
+              className="page-enter flex min-h-0 min-w-0 flex-1 flex-col"
+            >
+              {persistent}
+            </div>
+          ) : null}
+          {persistentActive ? null : (
+            <div
+              key={routeKey}
+              className="page-enter flex min-h-0 min-w-0 flex-1 flex-col"
+            >
+              {children}
+            </div>
+          )}
+        </SidebarInset>
+        <KeyboardShortcutsDialog
+          open={shortcuts.helpOpen}
+          onOpenChange={shortcuts.setHelpOpen}
+        />
+        <CommandPalette onShowShortcuts={() => shortcuts.setHelpOpen(true)} />
+      </SidebarProvider>
+    </ProjectRunnerProvider>
   )
 }

@@ -84,6 +84,7 @@ import {
   useUiMemory,
 } from "@/lib/ui-memory"
 import { StoryStatsIsland } from "@/components/backlog/drawer/user-story-drawer-sidebar"
+import { DirectStoryPreview } from "@/components/backlog/drawer/direct-story-preview"
 import {
   DrawerResizeHandle,
   useStoryDrawerWidth,
@@ -205,9 +206,9 @@ export function UserStoryDrawerPanel({
   )
   const hasDevelopment = hasDevelopmentTab(status)
   // Direct stories run in the project folder without a managed preview.
-  const hasPreview =
-    (status === "in-progress" || status === "in-review") &&
-    userStory?.workspaceMode !== "direct"
+  const hasPreview = status === "in-progress" || status === "in-review"
+  // A story working in the project folder previews the project's own app.
+  const directPreview = userStory?.workspaceMode === "direct"
   const sidebarAvailable = Boolean(
     mode !== "create" && (userStory?.clineSessionId || userStory?.agentUsage)
   )
@@ -752,13 +753,20 @@ export function UserStoryDrawerPanel({
               hasDevelopment ? "pt-36" : "pt-28"
             )}
           >
-            <UserStoryPreview
-              setupInitializing={setupInitializing}
-              userStory={userStory}
-              visible={tab === "preview"}
-              onRunConfigurationChange={handlePreviewRunConfigurationChange}
-              onCapture={handlePreviewCapture}
-            />
+            {directPreview ? (
+              <DirectStoryPreview
+                visible={tab === "preview"}
+                onCapture={handlePreviewCapture}
+              />
+            ) : (
+              <UserStoryPreview
+                setupInitializing={setupInitializing}
+                userStory={userStory}
+                visible={tab === "preview"}
+                onRunConfigurationChange={handlePreviewRunConfigurationChange}
+                onCapture={handlePreviewCapture}
+              />
+            )}
           </TabsContent>
         )}
         {hasDevelopment && (
