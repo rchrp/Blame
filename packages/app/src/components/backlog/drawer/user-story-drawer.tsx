@@ -102,11 +102,12 @@ export const UserStoryDrawer = React.memo(function UserStoryDrawer({
   titleGenerating,
 }: UserStoryDrawerProps) {
   const status = userStory?.status ?? "backlog"
+  // The status is left out: a story that moves on stays where the person
+  // is (same tab, scroll and drafts), it does not reopen.
   const drawerKey = [
     mode,
     userStory?.id ?? "draft",
     initialDraftKey(initialDraft),
-    status === "in-progress" || status === "in-review" ? "active" : status,
     initialTab,
     initialDevelopmentTab,
     focusComment ? "comment" : "default",

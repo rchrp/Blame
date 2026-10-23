@@ -1430,7 +1430,11 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
     async (input: Omit<UserStoryDraft, "projectId">) => {
       const story = await backlog.create(input)
       void generateQueuedStoryTitle(story)
-      setDrawerTarget({ userStory: story, mode: "edit" })
+      // The drawer stays open on the new story.
+      setDrawerTarget({
+        userStory: story,
+        mode: story.status === "backlog" ? "edit" : "view",
+      })
       return story
     }
   )

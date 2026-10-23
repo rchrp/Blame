@@ -85,6 +85,7 @@ import {
 } from "@/lib/ui-memory"
 import { StoryStatsIsland } from "@/components/backlog/drawer/user-story-drawer-sidebar"
 import { DirectStoryPreview } from "@/components/backlog/drawer/direct-story-preview"
+import { StoryStatusGlow } from "@/components/backlog/drawer/story-status-glow"
 import {
   DrawerResizeHandle,
   useStoryDrawerWidth,
@@ -218,7 +219,7 @@ export function UserStoryDrawerPanel({
       ? recallForItem(drawerTabsMemoryKey, userStory.id, isRememberedDrawerTabs)
       : undefined
   )
-  const [tab, setTab] = React.useState<UserStoryDrawerTab>(
+  const [tabChoice, setTab] = React.useState<UserStoryDrawerTab>(
     initialDrawerTab(
       hasDevelopment,
       hasPreview,
@@ -226,13 +227,17 @@ export function UserStoryDrawerPanel({
       rememberedTabs?.tab ?? initialTab
     )
   )
-  const [developmentTab, setDevelopmentTab] =
+  const [developmentTabChoice, setDevelopmentTab] =
     React.useState<UserStoryDevelopmentTab>(
       normalizeDevelopmentTab(
         status,
         rememberedTabs?.developmentTab ?? initialDevelopmentTab
       )
     )
+  // The drawer stays open while the story changes status: a tab the new
+  // status does not have falls back to the story.
+  const tab = initialDrawerTab(hasDevelopment, hasPreview, false, tabChoice)
+  const developmentTab = normalizeDevelopmentTab(status, developmentTabChoice)
   const drawerWidth = useStoryDrawerWidth()
   const rememberedStoryId = mode === "create" ? undefined : userStory?.id
   React.useEffect(() => {
@@ -594,6 +599,7 @@ export function UserStoryDrawerPanel({
       style={drawerWidth.style}
     >
       <DrawerResizeHandle onWidthChange={drawerWidth.setWidth} />
+      {mode !== "create" ? <StoryStatusGlow status={status} /> : null}
       {tab === "user-story" && sidebarAvailable && (
         <Button
           type="button"
@@ -851,7 +857,7 @@ export function UserStoryDrawerPanel({
           )
         }
       }
-      if (action !== "Save Changes" && action !== "Save as Draft") onCancel()
+      // The drawer stays open on the story as it moves on.
     } finally {
       setPendingAction(undefined)
     }
@@ -937,7 +943,6 @@ export function UserStoryDrawerPanel({
       setCommentCodeSelectionAttachments([])
       setCommentFileAttachments([])
       setCommentEditorKey((key) => key + 1)
-      if (status === "in-review") onCancel()
     } catch (error) {
       toast.error("Unable to send comment", {
         description: error instanceof Error ? error.message : String(error),
