@@ -14,6 +14,10 @@ import { dirname, join } from "node:path";
 import { Readable } from "node:stream";
 import { createGunzip } from "node:zlib";
 import { extract } from "tar-stream";
+import {
+  parseWorkspaceSnapshotPolicy,
+  type WorkspaceSnapshotPolicy,
+} from "@blame/preview-runtime/workspace-ignore";
 import { WorkspaceSyncConflict } from "./workspace-sync-conflict.ts";
 import {
   assertSafeSymlink,
@@ -24,6 +28,8 @@ import {
 
 type DeltaManifest = {
   version: 1;
+  // The rule the runner hashed with; older runners omit it ("legacy").
+  snapshotPolicy: WorkspaceSnapshotPolicy;
   generation: number;
   revision: string;
   baseHash: string;
@@ -76,7 +82,7 @@ export async function applyWorkspaceDelta(input: {
     input.expectedGeneration !== manifest.generation
   )
     throw new Error("Delta generation metadata mismatch");
-  const current = await snapshotWorkspace(input.root);
+  const current = await snapshotWorkspace(input.root, manifest.snapshotPolicy);
   if (current.hash !== manifest.baseHash) {
     throw new WorkspaceSyncConflict(
       "The local worktree changed during the remote writer lease",
@@ -84,7 +90,7 @@ export async function applyWorkspaceDelta(input: {
   }
   validateChangedFiles(entries, manifest);
   await applyTransaction(input.root, entries, manifest);
-  const final = await snapshotWorkspace(input.root);
+  const final = await snapshotWorkspace(input.root, manifest.snapshotPolicy);
   if (final.hash !== manifest.finalHash) {
     throw new WorkspaceSyncConflict(
       "Applied workspace hash does not match the durable remote delta",
@@ -131,7 +137,7 @@ async function applyTransaction(
         await rename(join(staged, path), target);
       }
     }
-    const snapshot = await snapshotWorkspace(root);
+    const snapshot = await snapshotWorkspace(root, manifest.snapshotPolicy);
     if (snapshot.hash !== manifest.finalHash)
       throw new Error("Final workspace hash mismatch");
   } catch (error) {
@@ -227,7 +233,10 @@ function validateManifest(value: unknown): DeltaManifest {
       throw new Error("Workspace delta has case-colliding paths");
     folded.set(key, path);
   }
-  return manifest as DeltaManifest;
+  return {
+    ...(manifest as DeltaManifest),
+    snapshotPolicy: parseWorkspaceSnapshotPolicy(manifest.snapshotPolicy),
+  };
 }
 
 function validateChangedFiles(

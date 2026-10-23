@@ -12,6 +12,10 @@
     "./testing": {
       "types": "./src/testing/index.ts",
       "default": "./dist/testing/index.js"
+    },
+    "./workspace-ignore": {
+      "types": "./src/workspace/workspace-ignore.ts",
+      "default": "./dist/workspace/workspace-ignore.js"
     }
   },
   "scripts": {
@@ -20,7 +24,8 @@
     "test": "pnpm build && node --test dist/**/*.test.js"
   },
   "dependencies": {
-    "@blame/preview-contract": "workspace:*"
+    "@blame/preview-contract": "workspace:*",
+    "ignore": "7.0.5"
   },
   "devDependencies": {
     "@types/node": "^24.12.0",

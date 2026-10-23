@@ -1,3 +1,4 @@
+import { workspaceSnapshotPolicies } from "@blame/preview-runtime/workspace-ignore";
 import { createHash } from "node:crypto";
 import { spawn } from "node:child_process";
 import {
@@ -546,6 +547,7 @@ function handshake() {
       credentialBroker: false,
       bidirectionalSync: true,
       maxPublishedPorts: 15,
+      workspaceSnapshotPolicies,
     },
   });
 }

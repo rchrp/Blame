@@ -9,11 +9,13 @@ export type RuntimeCapabilities = {
   credentialBroker: boolean;
   bidirectionalSync: boolean;
   maxPublishedPorts?: number;
+  /** Workspace snapshot rules the runtime can apply (see workspace-ignore). */
+  workspaceSnapshotPolicies?: readonly string[];
 };
 
 export type CapabilityRequirement = keyof Omit<
   RuntimeCapabilities,
-  "maxPublishedPorts"
+  "maxPublishedPorts" | "workspaceSnapshotPolicies"
 >;
 
 export type CapabilityIncompatibility = {

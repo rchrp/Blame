@@ -667,6 +667,9 @@ importers:
       '@blame/preview-contract':
         specifier: workspace:*
         version: link:../preview-contract
+      ignore:
+        specifier: 7.0.5
+        version: 7.0.5
     devDependencies:
       '@types/node':
         specifier: ^24.12.0

@@ -1,6 +1,12 @@
 import { createHash } from "node:crypto";
 import { lstat, readFile, readdir, readlink } from "node:fs/promises";
 import { join, relative, sep } from "node:path";
+import {
+  currentWorkspaceSnapshotPolicy,
+  gitignoreFileName,
+  WorkspaceIgnore,
+  type WorkspaceSnapshotPolicy,
+} from "@blame/preview-runtime/workspace-ignore";
 
 export type WorkspaceFileMetadata = {
   type: "file" | "symlink";
@@ -13,14 +19,19 @@ export type WorkspaceFileMetadata = {
 export type WorkspaceSnapshot = {
   hash: string;
   files: Record<string, WorkspaceFileMetadata>;
+  /** Absent on snapshots persisted before policies existed: "legacy". */
+  policy?: WorkspaceSnapshotPolicy;
 };
 
+// The cloud sandbox runner hashes its copy with the same rule (see
+// @blame/preview-runtime/workspace-ignore); both hashes must match.
 export async function snapshotWorkspace(
   root: string,
+  policy: WorkspaceSnapshotPolicy = currentWorkspaceSnapshotPolicy,
 ): Promise<WorkspaceSnapshot> {
   const files: Record<string, WorkspaceFileMetadata> = {};
   const casePaths = new Map<string, string>();
-  await visit(root, root, files, casePaths);
+  await visit(root, root, files, casePaths, new WorkspaceIgnore(policy));
   const sortedFiles = Object.fromEntries(
     Object.entries(files).sort(([left], [right]) => left.localeCompare(right)),
   );
@@ -32,7 +43,7 @@ export async function snapshotWorkspace(
       .update(JSON.stringify(metadata))
       .update("\0");
   }
-  return { hash: hash.digest("hex"), files: sortedFiles };
+  return { hash: hash.digest("hex"), files: sortedFiles, policy };
 }
 
 export function forbiddenWorkspacePath(path: string) {
@@ -64,11 +75,23 @@ async function visit(
   directory: string,
   files: Record<string, WorkspaceFileMetadata>,
   casePaths: Map<string, string>,
+  rules: WorkspaceIgnore,
 ) {
-  for (const entry of await readdir(directory, { withFileTypes: true })) {
+  const entries = await readdir(directory, { withFileTypes: true });
+  if (
+    rules.policy !== "legacy" &&
+    entries.some((entry) => entry.isFile() && entry.name === gitignoreFileName)
+  ) {
+    rules.add(
+      relative(root, directory).split(sep).join("/"),
+      await readFile(join(directory, gitignoreFileName), "utf8"),
+    );
+  }
+  for (const entry of entries) {
     const absolute = join(directory, entry.name);
     const path = relative(root, absolute).split(sep).join("/");
     if (forbiddenWorkspacePath(path)) continue;
+    if (rules.ignores(path, entry.isDirectory())) continue;
     const folded = path.normalize("NFC").toLocaleLowerCase("en-US");
     const collision = casePaths.get(folded);
     if (collision && collision !== path)
@@ -77,7 +100,8 @@ async function visit(
       );
     casePaths.set(folded, path);
     const stat = await lstat(absolute);
-    if (stat.isDirectory()) await visit(root, absolute, files, casePaths);
+    if (stat.isDirectory())
+      await visit(root, absolute, files, casePaths, rules);
     else if (stat.isSymbolicLink()) {
       const target = await readlink(absolute);
       assertSafeSymlink(path, target);

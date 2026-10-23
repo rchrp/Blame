@@ -12,6 +12,7 @@ import { runtimePaths } from "../runtime-paths.js";
 import { readRuntimeState } from "../runtime-state.js";
 import { checkpointChangeJournal } from "./change-journal.js";
 import { acknowledgeChangeJournal } from "./change-journal.js";
+import { readWorkspaceSnapshotPolicy } from "./workspace-snapshot.js";
 
 type PreparedDelta = {
   artifactId: string;
@@ -52,6 +53,7 @@ export async function prepareSourceDelta(
   const writing = pipeline(archive, createGzip({ level: 6 }), output);
   const manifest = {
     version: 1,
+    snapshotPolicy: journal.current.policy ?? (await readWorkspaceSnapshotPolicy()),
     generation: runtime.generation,
     revision,
     baseHash: journal.base.hash,

@@ -18,9 +18,11 @@ import {
   buildWorkspaceDeltaArtifact,
   buildWorkspaceIncrementalDeltaArtifact,
   prepareWorkspaceSource,
+  snapshotPolicyOf,
   type BuiltWorkspaceDeltaArtifact,
   type PreparedWorkspaceSource,
 } from "./workspace-artifact.ts";
+import { currentWorkspaceSnapshotPolicy } from "@blame/preview-runtime/workspace-ignore";
 import { applyWorkspaceDelta } from "./workspace-delta.ts";
 import { WorkspaceSyncConflict } from "./workspace-sync-conflict.ts";
 import { workspaceSourceMode } from "./baseline-transfer.ts";
@@ -282,7 +284,13 @@ export class WorkspaceSyncService {
       return { session, pending: true, synchronized: false };
     }
     let base = this.synchronizedSnapshots.get(sessionId);
-    if (!base || base.hash !== session.workspaceHash) {
+    // A base hashed with another snapshot rule (or before rules existed)
+    // cannot anchor a delta: resynchronize once with the current rule.
+    if (
+      !base ||
+      base.hash !== session.workspaceHash ||
+      snapshotPolicyOf(base) !== currentWorkspaceSnapshotPolicy
+    ) {
       const current = await snapshotWorkspace(root);
       if (current.hash === session.workspaceHash) {
         await this.remember(sessionId, root, current);

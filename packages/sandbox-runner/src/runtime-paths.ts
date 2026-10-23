@@ -2,6 +2,7 @@ export const runtimePaths = {
   workspace: "/workspace",
   controlRoot: "/var/lib/blame",
   runtimeState: "/var/lib/blame/runtime/state.json",
+  snapshotPolicy: "/var/lib/blame/runtime/snapshot-policy",
   plan: "/var/lib/blame/runtime/plan.json",
   journal: "/var/lib/blame/journal/state.json",
   journalLock: "/var/lib/blame/journal/lock",

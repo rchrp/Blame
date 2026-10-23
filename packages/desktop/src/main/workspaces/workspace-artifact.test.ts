@@ -151,6 +151,60 @@ test("builds a delta against the committed tree and includes new files", async (
   }
 });
 
+test("leaves gitignored files out of deltas and declares the snapshot rule", async () => {
+  const root = await mkdtemp(join(tmpdir(), "blame-source-policy-test-"));
+  try {
+    await exec("git", ["init", root]);
+    await writeFile(
+      join(root, ".gitignore"),
+      "generated/\nnext-env.d.ts\nvendor/\n",
+    );
+    await writeFile(join(root, "index.js"), "console.log('base')\n");
+    await mkdir(join(root, "vendor"));
+    await writeFile(join(root, "vendor/lib.js"), "committed\n");
+    await exec("git", ["-C", root, "add", ".gitignore", "index.js"]);
+    await exec("git", ["-C", root, "add", "--force", "vendor/lib.js"]);
+    await exec("git", [
+      "-C",
+      root,
+      "-c",
+      "user.name=Blame Test",
+      "-c",
+      "user.email=test@blame.so",
+      "commit",
+      "-m",
+      "base",
+    ]);
+    await writeFile(join(root, "index.js"), "console.log('changed')\n");
+    await mkdir(join(root, "generated"));
+    await writeFile(join(root, "generated/client.ts"), "generated\n");
+    await writeFile(join(root, "next-env.d.ts"), "generated\n");
+
+    const delta = await buildWorkspaceDeltaArtifact(root);
+    const entries = await archiveEntries(delta.content);
+    const manifest = JSON.parse(
+      entries.get(".blame/delta-manifest.json")!.toString("utf8"),
+    );
+    assert.equal(manifest.snapshotPolicy, "gitignore-v1");
+    assert.deepEqual(manifest.changed, ["index.js"]);
+    assert.deepEqual(manifest.deleted, []);
+
+    const full = await buildWorkspaceArtifact(root);
+    const source = JSON.parse(
+      (await archiveEntries(full.content))
+        .get(".blame/source-manifest.json")!
+        .toString("utf8"),
+    );
+    assert.equal(source.snapshotPolicy, "gitignore-v1");
+    assert.deepEqual(Object.keys(source.files).sort(), [
+      ".gitignore",
+      "index.js",
+    ]);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test("builds an incremental delta against the last synchronized workspace", async () => {
   const root = await mkdtemp(join(tmpdir(), "blame-source-live-delta-test-"));
   try {

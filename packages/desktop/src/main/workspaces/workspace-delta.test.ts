@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Readable } from "node:stream";
@@ -99,6 +99,51 @@ test("rejects deltas that target credential or repository metadata paths", async
           sha256: createHash("sha256").update(archive).digest("hex"),
         }),
       /forbidden path/,
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("applies a gitignore-v1 delta beside generated local files", async () => {
+  const root = await mkdtemp(join(tmpdir(), "blame-delta-policy-test-"));
+  try {
+    await writeFile(join(root, ".gitignore"), "generated/\n");
+    await writeFile(join(root, "page.tsx"), "base\n");
+    await mkdir(join(root, "generated"));
+    await writeFile(join(root, "generated/client.ts"), "local build\n");
+    const base = await snapshotWorkspace(root, "gitignore-v1");
+    const nextContent = Buffer.from("remote\n");
+    await writeFile(join(root, "page.tsx"), nextContent);
+    const final = await snapshotWorkspace(root, "gitignore-v1");
+    await writeFile(join(root, "page.tsx"), "base\n");
+    assert.notEqual((await snapshotWorkspace(root, "legacy")).hash, base.hash);
+    const archive = await deltaArchive(
+      {
+        version: 1,
+        snapshotPolicy: "gitignore-v1",
+        generation: 1,
+        revision: "1",
+        baseHash: base.hash,
+        finalHash: final.hash,
+        changed: ["page.tsx"],
+        deleted: [],
+        files: { "page.tsx": final.files["page.tsx"]! },
+        baseFiles: { "page.tsx": base.files["page.tsx"]! },
+      },
+      nextContent,
+      "page.tsx",
+    );
+    const result = await applyWorkspaceDelta({
+      root,
+      content: archive,
+      size: archive.byteLength,
+      sha256: createHash("sha256").update(archive).digest("hex"),
+    });
+    assert.equal(result.finalHash, final.hash);
+    assert.equal(
+      await readFile(join(root, "generated/client.ts"), "utf8"),
+      "local build\n",
     );
   } finally {
     await rm(root, { recursive: true, force: true });

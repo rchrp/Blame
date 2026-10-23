@@ -78,6 +78,28 @@ test("full reconstruction still prunes canonical files deleted by the workspace"
   }
 });
 
+test("gitignore-v1 reconstruction keeps committed files the rule skips", async () => {
+  const root = await fixture();
+  try {
+    await writeFile(join(root, ".gitignore"), "vendor/\n");
+    await mkdir(join(root, "vendor"));
+    await writeFile(join(root, "vendor/lib.js"), "committed\n");
+    await pruneReconstructedClone(
+      root,
+      [".gitignore", "src/index.ts"],
+      false,
+      "gitignore-v1",
+    );
+    assert.equal(
+      await readFile(join(root, "vendor/lib.js"), "utf8"),
+      "committed\n",
+    );
+    await assert.rejects(readFile(join(root, "README.md")), { code: "ENOENT" });
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 async function fixture() {
   const root = await mkdtemp(join(tmpdir(), "blame-source-importer-"));
   await mkdir(join(root, "src"));

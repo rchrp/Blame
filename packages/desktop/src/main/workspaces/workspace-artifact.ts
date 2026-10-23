@@ -11,12 +11,17 @@ import {
   writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { Transform, type Readable } from "node:stream";
 import { promisify } from "node:util";
 import { createGzip } from "node:zlib";
 import { pack } from "tar-stream";
 import { pipeline } from "node:stream/promises";
+import {
+  currentWorkspaceSnapshotPolicy,
+  gitignoreFileName,
+  WorkspaceIgnore,
+} from "@blame/preview-runtime/workspace-ignore";
 import {
   forbiddenWorkspacePath,
   snapshotWorkspace,
@@ -154,6 +159,7 @@ export async function buildWorkspaceArtifact(
           baseCommit: sourceRevision,
           workspaceHash: snapshot.hash,
           cleanWorkspaceHash: snapshotHash(baseFiles),
+          snapshotPolicy: snapshotPolicyOf(snapshot),
           files: snapshot.files,
         }),
       );
@@ -247,6 +253,7 @@ export async function buildWorkspaceDeltaArtifact(
     {
       hash: snapshotHash(source.canonical.files),
       files: source.canonical.files,
+      policy: source.snapshot.policy,
     },
     attempt,
     () => buildWorkspaceDeltaArtifact(root, undefined, attempt + 1),
@@ -287,6 +294,11 @@ async function buildWorkspaceDeltaFromSnapshot(
   try {
     const metadata = source.metadata;
     const current = source.snapshot;
+    if (snapshotPolicyOf(base) !== snapshotPolicyOf(current)) {
+      throw new Error(
+        "Workspace snapshot rules changed; synchronize the whole workspace",
+      );
+    }
     const baseFiles = base.files;
     const changed = Object.keys(current.files).filter(
       (path) => !sameSnapshotFile(baseFiles[path], current.files[path]),
@@ -310,6 +322,7 @@ async function buildWorkspaceDeltaFromSnapshot(
         },
         JSON.stringify({
           version: 1,
+          snapshotPolicy: snapshotPolicyOf(current),
           generation: 0,
           revision: "0",
           baseHash: base.hash,
@@ -455,7 +468,36 @@ async function canonicalTree(root: string): Promise<CanonicalTree> {
       };
     }
   }
-  return { entries, files };
+  return {
+    entries,
+    files: await synchronizedCanonicalFiles(root, entries, files),
+  };
+}
+
+// The cloud runner hashes its checkout of HEAD with the snapshot rule, which
+// reads the .gitignore files committed at HEAD; skip the same paths here.
+async function synchronizedCanonicalFiles(
+  root: string,
+  entries: CanonicalEntry[],
+  files: Record<string, SnapshotFile>,
+) {
+  const rules = new WorkspaceIgnore(currentWorkspaceSnapshotPolicy);
+  if (rules.policy === "legacy") return files;
+  for (const entry of entries) {
+    if (entry.mode === "120000") continue;
+    if (entry.path.split("/").at(-1) !== gitignoreFileName) continue;
+    rules.add(
+      dirname(entry.path),
+      await gitOutput(root, ["cat-file", "blob", entry.object]),
+    );
+  }
+  return Object.fromEntries(
+    Object.entries(files).filter(([path]) => !rules.ignoresWithAncestors(path)),
+  );
+}
+
+export function snapshotPolicyOf(snapshot: Pick<WorkspaceSnapshot, "policy">) {
+  return snapshot.policy ?? "legacy";
 }
 
 function sameSnapshotFile(

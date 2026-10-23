@@ -1,6 +1,7 @@
 import type { PreviewExecutionPlan } from "../domain/execution-plan.js";
 import type {
   CapabilityIncompatibility,
+  CapabilityRequirement,
   CapabilityReport,
   RuntimeCapabilities,
 } from "../domain/runtime-capabilities.js";
@@ -127,7 +128,7 @@ export function resolveCapabilities(
 function requireCapability(
   errors: CapabilityIncompatibility[],
   capabilities: RuntimeCapabilities,
-  capability: keyof Omit<RuntimeCapabilities, "maxPublishedPorts">,
+  capability: CapabilityRequirement,
   message: string,
 ) {
   if (capabilities[capability]) return;

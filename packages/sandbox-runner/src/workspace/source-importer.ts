@@ -23,13 +23,23 @@ import type { SourceArtifact } from "@blame/preview-runtime";
 import { runtimePaths } from "../runtime-paths.js";
 import { initializeChangeJournal } from "./change-journal.js";
 import { runnerError } from "../protocol/runner-errors.js";
-import { snapshotWorkspace } from "./workspace-snapshot.js";
+import {
+  addDirectoryGitignore,
+  snapshotWorkspace,
+  writeWorkspaceSnapshotPolicy,
+} from "./workspace-snapshot.js";
+import {
+  parseWorkspaceSnapshotPolicy,
+  WorkspaceIgnore,
+  type WorkspaceSnapshotPolicy,
+} from "@blame/preview-runtime/workspace-ignore";
 
 type SourceManifest = {
   version: 1;
   baseCommit: string;
   workspaceHash: string;
   cleanWorkspaceHash?: string;
+  snapshotPolicy?: string;
   files: Record<
     string,
     {
@@ -66,7 +76,9 @@ export async function importSourceArtifact(source: SourceArtifact) {
     await extractArchive(content, staging);
     const manifest = JSON.parse(await readFile(join(staging, ".blame/source-manifest.json"), "utf8")) as SourceManifest;
     validateManifest(manifest, source.mode === "baseline");
-    await reconstructWorkspace(staging, manifest, source.mode === "baseline");
+    const policy = parseWorkspaceSnapshotPolicy(manifest.snapshotPolicy);
+    await reconstructWorkspace(staging, manifest, source.mode === "baseline", policy);
+    await writeWorkspaceSnapshotPolicy(policy);
     const journal = await initializeChangeJournal();
     const expectedWorkspaceHash = source.mode === "baseline" ? manifest.cleanWorkspaceHash : manifest.workspaceHash;
     if (!expectedWorkspaceHash || journal.current.hash !== expectedWorkspaceHash) {
@@ -127,6 +139,7 @@ async function applySourceDelta(
       changed: string[];
       deleted: string[];
       files: Record<string, SourceManifest["files"][string]>;
+      snapshotPolicy?: string;
     };
     if (
       manifest.version !== 1 ||
@@ -145,7 +158,8 @@ async function applySourceDelta(
     if (expectedFinalHash && manifest.finalHash !== expectedFinalHash) {
       throw runnerError("SOURCE_DELTA_INVALID", "Source delta final hash metadata does not match its manifest.");
     }
-    const current = await snapshotWorkspace();
+    const policy = parseWorkspaceSnapshotPolicy(manifest.snapshotPolicy);
+    const current = await snapshotWorkspace(undefined, policy);
     if (current.hash !== manifest.baseHash) {
       throw runnerError("SOURCE_BASELINE_MISMATCH", "Source delta base does not match the restored baseline.");
     }
@@ -187,7 +201,7 @@ async function applySourceDelta(
           await chmod(target, manifest.files[path]!.mode);
         }
       }
-      const final = await snapshotWorkspace();
+      const final = await snapshotWorkspace(undefined, policy);
       if (final.hash !== manifest.finalHash)
         throw runnerError("SOURCE_DELTA_INVALID", "Source delta final hash mismatch.");
     } catch (error) {
@@ -203,8 +217,9 @@ async function applySourceDelta(
     } finally {
       await rm(transaction, { recursive: true, force: true });
     }
+    await writeWorkspaceSnapshotPolicy(policy);
     await initializeChangeJournal();
-    const final = await snapshotWorkspace();
+    const final = await snapshotWorkspace(undefined, policy);
     return { sourceRevision, workspaceHash: final.hash };
   } finally {
     await rm(staging, { recursive: true, force: true });
@@ -266,13 +281,18 @@ async function extractArchive(content: Uint8Array, root: string, delta = false) 
   await completion;
 }
 
-async function reconstructWorkspace(staging: string, manifest: SourceManifest, baseline = false) {
+async function reconstructWorkspace(
+  staging: string,
+  manifest: SourceManifest,
+  baseline: boolean,
+  policy: WorkspaceSnapshotPolicy,
+) {
   const bundle = join(staging, ".blame/repository.bundle");
   const next = `${runtimePaths.workspace}.next-${process.pid}`;
   const backup = `${runtimePaths.workspace}.previous-${process.pid}`;
   await rm(next, { recursive: true, force: true });
   await cloneCanonicalBundle(bundle, next);
-  await pruneReconstructedClone(next, Object.keys(manifest.files), baseline);
+  await pruneReconstructedClone(next, Object.keys(manifest.files), baseline, policy);
   if (!baseline) {
     const overlay = join(staging, "workspace");
     try {
@@ -311,23 +331,34 @@ export function cloneCanonicalBundle(bundle: string, destination: string) {
   ]);
 }
 
+// Removes committed files the local worktree no longer has. Paths the
+// snapshot rule skips are not synchronized, so their committed copy stays.
 export async function pruneReconstructedClone(
   root: string,
   allowedPaths: string[],
   baseline: boolean,
+  policy: WorkspaceSnapshotPolicy = "legacy",
 ) {
   if (baseline) return;
-  await pruneClone(root, new Set(allowedPaths));
+  await pruneClone(root, new Set(allowedPaths), new WorkspaceIgnore(policy));
 }
 
-async function pruneClone(root: string, allowed: Set<string>, directory = root) {
+async function pruneClone(
+  root: string,
+  allowed: Set<string>,
+  rules: WorkspaceIgnore,
+  directory = root,
+) {
   const { readdir } = await import("node:fs/promises");
-  for (const entry of await readdir(directory, { withFileTypes: true })) {
+  const entries = await readdir(directory, { withFileTypes: true });
+  await addDirectoryGitignore(rules, root, directory, entries);
+  for (const entry of entries) {
     if (directory === root && entry.name === ".git") continue;
     const absolute = join(directory, entry.name);
     const relative = absolute.slice(root.length + 1).replaceAll("\\", "/");
+    if (rules.ignores(relative, entry.isDirectory())) continue;
     if (entry.isDirectory()) {
-      await pruneClone(root, allowed, absolute);
+      await pruneClone(root, allowed, rules, absolute);
       if (!(await readdir(absolute)).length) await rm(absolute, { recursive: true, force: true });
     } else if (!allowed.has(relative)) await rm(absolute, { force: true });
   }
