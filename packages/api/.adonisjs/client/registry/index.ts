@@ -402,6 +402,12 @@ const routes = {
     tokens: [{"old":"/api/v1/providers/catalog","type":0,"val":"api","end":""},{"old":"/api/v1/providers/catalog","type":0,"val":"v1","end":""},{"old":"/api/v1/providers/catalog","type":0,"val":"providers","end":""},{"old":"/api/v1/providers/catalog","type":0,"val":"catalog","end":""}],
     types: placeholder as Registry['providers.model_catalog.show']['types'],
   },
+  'providers.model_catalog.model': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/providers/catalog/model',
+    tokens: [{"old":"/api/v1/providers/catalog/model","type":0,"val":"api","end":""},{"old":"/api/v1/providers/catalog/model","type":0,"val":"v1","end":""},{"old":"/api/v1/providers/catalog/model","type":0,"val":"providers","end":""},{"old":"/api/v1/providers/catalog/model","type":0,"val":"catalog","end":""},{"old":"/api/v1/providers/catalog/model","type":0,"val":"model","end":""}],
+    types: placeholder as Registry['providers.model_catalog.model']['types'],
+  },
   'providers.provider_credentials.index': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/providers/credentials',
@@ -419,6 +425,12 @@ const routes = {
     pattern: '/api/v1/providers/credentials/oauth',
     tokens: [{"old":"/api/v1/providers/credentials/oauth","type":0,"val":"api","end":""},{"old":"/api/v1/providers/credentials/oauth","type":0,"val":"v1","end":""},{"old":"/api/v1/providers/credentials/oauth","type":0,"val":"providers","end":""},{"old":"/api/v1/providers/credentials/oauth","type":0,"val":"credentials","end":""},{"old":"/api/v1/providers/credentials/oauth","type":0,"val":"oauth","end":""}],
     types: placeholder as Registry['providers.provider_credentials.store_o_auth']['types'],
+  },
+  'providers.provider_credentials.store_local': {
+    methods: ["POST"],
+    pattern: '/api/v1/providers/credentials/local',
+    tokens: [{"old":"/api/v1/providers/credentials/local","type":0,"val":"api","end":""},{"old":"/api/v1/providers/credentials/local","type":0,"val":"v1","end":""},{"old":"/api/v1/providers/credentials/local","type":0,"val":"providers","end":""},{"old":"/api/v1/providers/credentials/local","type":0,"val":"credentials","end":""},{"old":"/api/v1/providers/credentials/local","type":0,"val":"local","end":""}],
+    types: placeholder as Registry['providers.provider_credentials.store_local']['types'],
   },
   'providers.provider_credentials.resolve': {
     methods: ["POST"],
@@ -528,6 +540,18 @@ const routes = {
     tokens: [{"old":"/api/v1/projects/quick-chats/:id/agent-runs/:runId/activities/:activityId","type":0,"val":"api","end":""},{"old":"/api/v1/projects/quick-chats/:id/agent-runs/:runId/activities/:activityId","type":0,"val":"v1","end":""},{"old":"/api/v1/projects/quick-chats/:id/agent-runs/:runId/activities/:activityId","type":0,"val":"projects","end":""},{"old":"/api/v1/projects/quick-chats/:id/agent-runs/:runId/activities/:activityId","type":0,"val":"quick-chats","end":""},{"old":"/api/v1/projects/quick-chats/:id/agent-runs/:runId/activities/:activityId","type":1,"val":"id","end":""},{"old":"/api/v1/projects/quick-chats/:id/agent-runs/:runId/activities/:activityId","type":0,"val":"agent-runs","end":""},{"old":"/api/v1/projects/quick-chats/:id/agent-runs/:runId/activities/:activityId","type":1,"val":"runId","end":""},{"old":"/api/v1/projects/quick-chats/:id/agent-runs/:runId/activities/:activityId","type":0,"val":"activities","end":""},{"old":"/api/v1/projects/quick-chats/:id/agent-runs/:runId/activities/:activityId","type":1,"val":"activityId","end":""}],
     types: placeholder as Registry['projects.quick_chats.quick_chat_agent_runs.activity_detail']['types'],
   },
+  'projects.quick_chats.quick_chats.store_screenshot': {
+    methods: ["PUT"],
+    pattern: '/api/v1/projects/quick-chats/:id/agent-screenshots/:screenshotId',
+    tokens: [{"old":"/api/v1/projects/quick-chats/:id/agent-screenshots/:screenshotId","type":0,"val":"api","end":""},{"old":"/api/v1/projects/quick-chats/:id/agent-screenshots/:screenshotId","type":0,"val":"v1","end":""},{"old":"/api/v1/projects/quick-chats/:id/agent-screenshots/:screenshotId","type":0,"val":"projects","end":""},{"old":"/api/v1/projects/quick-chats/:id/agent-screenshots/:screenshotId","type":0,"val":"quick-chats","end":""},{"old":"/api/v1/projects/quick-chats/:id/agent-screenshots/:screenshotId","type":1,"val":"id","end":""},{"old":"/api/v1/projects/quick-chats/:id/agent-screenshots/:screenshotId","type":0,"val":"agent-screenshots","end":""},{"old":"/api/v1/projects/quick-chats/:id/agent-screenshots/:screenshotId","type":1,"val":"screenshotId","end":""}],
+    types: placeholder as Registry['projects.quick_chats.quick_chats.store_screenshot']['types'],
+  },
+  'projects.quick_chats.quick_chats.show_screenshot': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/projects/quick-chats/:id/agent-screenshots/:screenshotId',
+    tokens: [{"old":"/api/v1/projects/quick-chats/:id/agent-screenshots/:screenshotId","type":0,"val":"api","end":""},{"old":"/api/v1/projects/quick-chats/:id/agent-screenshots/:screenshotId","type":0,"val":"v1","end":""},{"old":"/api/v1/projects/quick-chats/:id/agent-screenshots/:screenshotId","type":0,"val":"projects","end":""},{"old":"/api/v1/projects/quick-chats/:id/agent-screenshots/:screenshotId","type":0,"val":"quick-chats","end":""},{"old":"/api/v1/projects/quick-chats/:id/agent-screenshots/:screenshotId","type":1,"val":"id","end":""},{"old":"/api/v1/projects/quick-chats/:id/agent-screenshots/:screenshotId","type":0,"val":"agent-screenshots","end":""},{"old":"/api/v1/projects/quick-chats/:id/agent-screenshots/:screenshotId","type":1,"val":"screenshotId","end":""}],
+    types: placeholder as Registry['projects.quick_chats.quick_chats.show_screenshot']['types'],
+  },
   'projects.user_stories.user_stories.index': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/projects/user-stories',
@@ -563,6 +587,18 @@ const routes = {
     pattern: '/api/v1/projects/user-stories/:id/agent-activities/:activityId',
     tokens: [{"old":"/api/v1/projects/user-stories/:id/agent-activities/:activityId","type":0,"val":"api","end":""},{"old":"/api/v1/projects/user-stories/:id/agent-activities/:activityId","type":0,"val":"v1","end":""},{"old":"/api/v1/projects/user-stories/:id/agent-activities/:activityId","type":0,"val":"projects","end":""},{"old":"/api/v1/projects/user-stories/:id/agent-activities/:activityId","type":0,"val":"user-stories","end":""},{"old":"/api/v1/projects/user-stories/:id/agent-activities/:activityId","type":1,"val":"id","end":""},{"old":"/api/v1/projects/user-stories/:id/agent-activities/:activityId","type":0,"val":"agent-activities","end":""},{"old":"/api/v1/projects/user-stories/:id/agent-activities/:activityId","type":1,"val":"activityId","end":""}],
     types: placeholder as Registry['projects.user_stories.user_stories.activity_detail']['types'],
+  },
+  'projects.user_stories.user_stories.store_screenshot': {
+    methods: ["PUT"],
+    pattern: '/api/v1/projects/user-stories/:id/agent-screenshots/:screenshotId',
+    tokens: [{"old":"/api/v1/projects/user-stories/:id/agent-screenshots/:screenshotId","type":0,"val":"api","end":""},{"old":"/api/v1/projects/user-stories/:id/agent-screenshots/:screenshotId","type":0,"val":"v1","end":""},{"old":"/api/v1/projects/user-stories/:id/agent-screenshots/:screenshotId","type":0,"val":"projects","end":""},{"old":"/api/v1/projects/user-stories/:id/agent-screenshots/:screenshotId","type":0,"val":"user-stories","end":""},{"old":"/api/v1/projects/user-stories/:id/agent-screenshots/:screenshotId","type":1,"val":"id","end":""},{"old":"/api/v1/projects/user-stories/:id/agent-screenshots/:screenshotId","type":0,"val":"agent-screenshots","end":""},{"old":"/api/v1/projects/user-stories/:id/agent-screenshots/:screenshotId","type":1,"val":"screenshotId","end":""}],
+    types: placeholder as Registry['projects.user_stories.user_stories.store_screenshot']['types'],
+  },
+  'projects.user_stories.user_stories.show_screenshot': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/projects/user-stories/:id/agent-screenshots/:screenshotId',
+    tokens: [{"old":"/api/v1/projects/user-stories/:id/agent-screenshots/:screenshotId","type":0,"val":"api","end":""},{"old":"/api/v1/projects/user-stories/:id/agent-screenshots/:screenshotId","type":0,"val":"v1","end":""},{"old":"/api/v1/projects/user-stories/:id/agent-screenshots/:screenshotId","type":0,"val":"projects","end":""},{"old":"/api/v1/projects/user-stories/:id/agent-screenshots/:screenshotId","type":0,"val":"user-stories","end":""},{"old":"/api/v1/projects/user-stories/:id/agent-screenshots/:screenshotId","type":1,"val":"id","end":""},{"old":"/api/v1/projects/user-stories/:id/agent-screenshots/:screenshotId","type":0,"val":"agent-screenshots","end":""},{"old":"/api/v1/projects/user-stories/:id/agent-screenshots/:screenshotId","type":1,"val":"screenshotId","end":""}],
+    types: placeholder as Registry['projects.user_stories.user_stories.show_screenshot']['types'],
   },
   'projects.user_stories.user_story_agent_runs.store': {
     methods: ["POST"],

@@ -621,6 +621,35 @@ export class PreviewWorkspaceArtifactSchema extends BaseModel {
   declare workspaceHash: string | null
 }
 
+export class ProjectAgentMemorySchema extends BaseModel {
+  static $columns = ['createdAt', 'files', 'fingerprint', 'id', 'objective', 'projectId', 'sourceRevisionId', 'storyId', 'summary', 'symbols', 'validationKind', 'validationTaskId'] as const
+  $columns = ProjectAgentMemorySchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare files: any
+  @column()
+  declare fingerprint: string
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare objective: string
+  @column()
+  declare projectId: string
+  @column()
+  declare sourceRevisionId: string
+  @column()
+  declare storyId: string | null
+  @column()
+  declare summary: string
+  @column()
+  declare symbols: any
+  @column()
+  declare validationKind: string | null
+  @column()
+  declare validationTaskId: string | null
+}
+
 export class ProjectCodePracticeAnalysisSchema extends BaseModel {
   static $columns = ['agentModelId', 'agentProviderId', 'clineSessionId', 'createdAt', 'error', 'projectId', 'status', 'updatedAt', 'viewedAt'] as const
   $columns = ProjectCodePracticeAnalysisSchema.$columns
@@ -1028,7 +1057,7 @@ export class UserMcpConfigurationSchema extends BaseModel {
 }
 
 export class UserStorySchema extends BaseModel {
-  static $columns = ['activeAgentRunId', 'agentActivities', 'agentFinalResponse', 'agentLastError', 'agentLastEvent', 'agentModelId', 'agentProviderId', 'agentSessionSummary', 'agentStatus', 'agentUsage', 'baseCommit', 'branch', 'clineSessionId', 'codeSelectionAttachments', 'createdAt', 'discardedReason', 'fileAttachmentUploadPending', 'fileAttachments', 'id', 'mergeCommit', 'mergedAt', 'owner', 'previewUrl', 'priority', 'projectId', 'runConfigurationId', 'status', 'storyNumber', 'summary', 'title', 'runMode', 'updatedAt', 'workspaceMode', 'worktree'] as const
+  static $columns = ['activeAgentRunId', 'agentActivities', 'agentFinalResponse', 'agentLastError', 'agentLastEvent', 'agentModelId', 'agentProviderId', 'agentSessionSummary', 'agentStatus', 'agentUsage', 'baseCommit', 'branch', 'clineSessionId', 'codeSelectionAttachments', 'createdAt', 'discardedReason', 'fileAttachmentUploadPending', 'fileAttachments', 'id', 'mergeCommit', 'mergedAt', 'owner', 'previewUrl', 'priority', 'projectId', 'runConfigurationId', 'runMode', 'status', 'storyNumber', 'summary', 'title', 'updatedAt', 'workspaceMode', 'worktree'] as const
   $columns = UserStorySchema.$columns
   @column()
   declare activeAgentRunId: string | null
@@ -1083,6 +1112,8 @@ export class UserStorySchema extends BaseModel {
   @column()
   declare runConfigurationId: string | null
   @column()
+  declare runMode: string | null
+  @column()
   declare status: string
   @column()
   declare storyNumber: number
@@ -1093,7 +1124,6 @@ export class UserStorySchema extends BaseModel {
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
   @column()
-  declare runMode: string | null
   declare workspaceMode: string | null
   @column()
   declare worktree: string | null
@@ -1119,12 +1149,6 @@ export class UserStoryAgentRunActivitySchema extends BaseModel {
 export class UserStoryAgentRunSchema extends BaseModel {
   static $columns = ['activities', 'checkpointRunCount', 'clineSessionId', 'commentId', 'completedAt', 'createdAt', 'diffEndRef', 'executionId', 'finalResponse', 'id', 'kind', 'lastEventCreatedAt', 'lastEventId', 'lastEventType', 'lastSequenceNumber', 'modelId', 'providerId', 'reasoningEffort', 'sessionSummary', 'status', 'updatedAt', 'usage', 'userStoryId'] as const
   $columns = UserStoryAgentRunSchema.$columns
-  @column()
-  declare modelId: string | null
-  @column()
-  declare providerId: string | null
-  @column()
-  declare reasoningEffort: string | null
   @column()
   declare activities: any | null
   @column()
@@ -1155,6 +1179,12 @@ export class UserStoryAgentRunSchema extends BaseModel {
   declare lastEventType: string | null
   @column()
   declare lastSequenceNumber: bigint | number
+  @column()
+  declare modelId: string | null
+  @column()
+  declare providerId: string | null
+  @column()
+  declare reasoningEffort: string | null
   @column()
   declare sessionSummary: string | null
   @column()

@@ -131,6 +131,8 @@ export interface ApiDefinition {
         show: typeof routes['projects.quick_chats.quick_chats.show']
         update: typeof routes['projects.quick_chats.quick_chats.update']
         destroy: typeof routes['projects.quick_chats.quick_chats.destroy']
+        storeScreenshot: typeof routes['projects.quick_chats.quick_chats.store_screenshot']
+        showScreenshot: typeof routes['projects.quick_chats.quick_chats.show_screenshot']
       }
       quickChatMessages: {
         store: typeof routes['projects.quick_chats.quick_chat_messages.store']
@@ -152,6 +154,8 @@ export interface ApiDefinition {
         update: typeof routes['projects.user_stories.user_stories.update']
         destroy: typeof routes['projects.user_stories.user_stories.destroy']
         activityDetail: typeof routes['projects.user_stories.user_stories.activity_detail']
+        storeScreenshot: typeof routes['projects.user_stories.user_stories.store_screenshot']
+        showScreenshot: typeof routes['projects.user_stories.user_stories.show_screenshot']
       }
       userStoryAgentRuns: {
         store: typeof routes['projects.user_stories.user_story_agent_runs.store']
@@ -169,11 +173,13 @@ export interface ApiDefinition {
   providers: {
     modelCatalog: {
       show: typeof routes['providers.model_catalog.show']
+      model: typeof routes['providers.model_catalog.model']
     }
     providerCredentials: {
       index: typeof routes['providers.provider_credentials.index']
       store: typeof routes['providers.provider_credentials.store']
       storeOAuth: typeof routes['providers.provider_credentials.store_o_auth']
+      storeLocal: typeof routes['providers.provider_credentials.store_local']
       resolve: typeof routes['providers.provider_credentials.resolve']
       destroy: typeof routes['providers.provider_credentials.destroy']
     }

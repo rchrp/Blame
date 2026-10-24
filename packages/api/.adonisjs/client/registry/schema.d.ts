@@ -799,6 +799,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/model_catalog_controller').default['show']>>>
     }
   }
+  'providers.model_catalog.model': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/providers/catalog/model'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/model_catalog_controller').default['model']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/model_catalog_controller').default['model']>>>
+    }
+  }
   'providers.provider_credentials.index': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/providers/credentials'
@@ -833,6 +845,18 @@ export interface Registry {
       query: {}
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/provider_credentials_controller').default['storeOAuth']>>>
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/provider_credentials_controller').default['storeOAuth']>>>
+    }
+  }
+  'providers.provider_credentials.store_local': {
+    methods: ["POST"]
+    pattern: '/api/v1/providers/credentials/local'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/provider_credential').saveLocalProviderCredentialValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/provider_credential').saveLocalProviderCredentialValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/provider_credentials_controller').default['storeLocal']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/provider_credentials_controller').default['storeLocal']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
   'providers.provider_credentials.resolve': {
@@ -1051,6 +1075,30 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/quick_chat_agent_runs_controller').default['activityDetail']>>>
     }
   }
+  'projects.quick_chats.quick_chats.store_screenshot': {
+    methods: ["PUT"]
+    pattern: '/api/v1/projects/quick-chats/:id/agent-screenshots/:screenshotId'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/user_story').agentScreenshotUploadValidator)>>
+      paramsTuple: [ParamValue, ParamValue]
+      params: { id: ParamValue; screenshotId: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/user_story').agentScreenshotUploadValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/quick_chats_controller').default['storeScreenshot']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/quick_chats_controller').default['storeScreenshot']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'projects.quick_chats.quick_chats.show_screenshot': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/projects/quick-chats/:id/agent-screenshots/:screenshotId'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue, ParamValue]
+      params: { id: ParamValue; screenshotId: ParamValue }
+      query: ExtractQueryForGet<InferInput<(typeof import('#validators/user_story').agentScreenshotQueryValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/quick_chats_controller').default['showScreenshot']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/quick_chats_controller').default['showScreenshot']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
   'projects.user_stories.user_stories.index': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/projects/user-stories'
@@ -1121,6 +1169,30 @@ export interface Registry {
       query: {}
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/user_stories_controller').default['activityDetail']>>>
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/user_stories_controller').default['activityDetail']>>>
+    }
+  }
+  'projects.user_stories.user_stories.store_screenshot': {
+    methods: ["PUT"]
+    pattern: '/api/v1/projects/user-stories/:id/agent-screenshots/:screenshotId'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/user_story').agentScreenshotUploadValidator)>>
+      paramsTuple: [ParamValue, ParamValue]
+      params: { id: ParamValue; screenshotId: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/user_story').agentScreenshotUploadValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/user_stories_controller').default['storeScreenshot']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/user_stories_controller').default['storeScreenshot']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'projects.user_stories.user_stories.show_screenshot': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/projects/user-stories/:id/agent-screenshots/:screenshotId'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue, ParamValue]
+      params: { id: ParamValue; screenshotId: ParamValue }
+      query: ExtractQueryForGet<InferInput<(typeof import('#validators/user_story').agentScreenshotQueryValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/user_stories_controller').default['showScreenshot']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/user_stories_controller').default['showScreenshot']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
   'projects.user_stories.user_story_agent_runs.store': {
