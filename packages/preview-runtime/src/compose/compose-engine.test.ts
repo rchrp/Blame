@@ -13,9 +13,13 @@ class FakeHost implements DockerHost {
   readonly files = new Map<string, string>();
   readonly volumes = new Map<string, string>();
   databaseContainer = "db-1";
+  containers: string[] = [];
 
   async run(command: string, args: string[]): Promise<CommandResult> {
     this.commands.push([command, ...args]);
+    if (command === "sh" && args[1]!.includes("docker inspect")) {
+      return ok(this.containers.join("\n"));
+    }
     if (command === "sh") {
       const names = [
         ...new Set(
@@ -217,3 +221,46 @@ function plan(): PreviewExecutionPlan {
 function ok(stdout: string): CommandResult {
   return { exitCode: 0, stdout, stderr: "" };
 }
+
+test("reads service states from the Docker Engine, without one-off containers", async () => {
+  const host = new FakeHost();
+  const engine = engineFor(host, "story-a");
+  await engine.prepare(renderCompose(plan(), target("story-a")), owner);
+  host.containers = [
+    "web\tFalse\texited\t143\t",
+    "web\tFalse\trunning\t0\thealthy",
+    "db\tTrue\trunning\t0\t",
+    "db\tFalse\texited\t1\tunhealthy",
+  ];
+  const states = await engine.inspect({
+    services: [{ id: "web" }, { id: "db" }, { id: "worker" }],
+  } as PreviewExecutionPlan);
+  assert.deepEqual(states, [
+    {
+      id: "web",
+      running: true,
+      healthy: true,
+      health: "healthy",
+      state: "running",
+      exitCode: 0,
+    },
+    {
+      id: "db",
+      running: false,
+      healthy: false,
+      health: "unhealthy",
+      state: "exited",
+      exitCode: 1,
+    },
+    {
+      id: "worker",
+      running: false,
+      healthy: undefined,
+      health: undefined,
+      state: undefined,
+      exitCode: undefined,
+    },
+  ]);
+  const query = host.commands.at(-1)!;
+  assert.equal(query.at(-1), "blame_storya");
+});

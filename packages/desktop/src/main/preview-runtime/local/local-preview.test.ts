@@ -202,24 +202,18 @@ class FakeDockerHost implements DockerHost {
 
   async run(command: string, args: string[]): Promise<CommandResult> {
     this.commands.push([command, ...args]);
+    if (command === "sh" && args[1]!.includes("docker inspect")) {
+      return ok(
+        ["web", "api"]
+          .map((service) => `${service}\tFalse\trunning\t0\thealthy`)
+          .join("\n"),
+      );
+    }
     if (command === "sh") {
       const names = [
         ...args[1]!.matchAll(/docker volume create .* '([^']+)'/g),
       ].map((match) => match[1]!);
       return ok(names.map((name) => `${name}\tcreated\n`).join(""));
-    }
-    if (args.includes("ps") && args.includes("--format")) {
-      return ok(
-        ["web", "api"]
-          .map((service) =>
-            JSON.stringify({
-              Service: service,
-              State: "running",
-              Health: "healthy",
-            }),
-          )
-          .join("\n"),
-      );
     }
     return ok("");
   }
