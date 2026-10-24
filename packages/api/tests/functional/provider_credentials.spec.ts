@@ -212,7 +212,7 @@ test.group('provider credentials', (group) => {
     const rejected = await client
       .post('/api/v1/providers/credentials/local')
       .loginAs(user)
-      .json({ providerId: 'anthropic' })
+      .unsafeJson({ providerId: 'anthropic' })
 
     rejected.assertStatus(422)
   })
