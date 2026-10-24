@@ -159,6 +159,29 @@ are recreated once on their next start.
 - Initialization no longer produces a Compose file or setup script; its
   checks read the manifest.
 
+### Resource use (2026-10-24)
+
+- Preview containers run in `blame-previews.slice` (macOS runtime):
+  MemoryHigh 80 %, MemoryMax 90 % of the VM, CPUWeight 50, so a runaway
+  preview cannot starve the agent. The build cache keeps 3 GB.
+- The desktop reads service states with `docker ps` and `docker inspect`
+  (about 20 ms per call in the VM) instead of `docker compose ps` (58 to
+  83 ms), since each open preview is polled every two seconds.
+- A story whose run configuration is `null` starts nothing while the agent
+  works, but the desktop prefetches its images and the setup tasks that
+  need no service; the review auto-start respects `null`.
+- A local preview unused for 20 minutes is suspended (lifecycle phase
+  `suspended`). Use is a state read from a visible window, an agent preview
+  tool call, or an agent session running in the worktree. Opening the
+  preview, or the agent's `waitFor=ready`, starts it again.
+- Lima attaches a memory balloon but never drives it, and the vz balloon
+  has no free page reporting: the VM keeps every page it touched (4.1 GB
+  on the Mac for 400 MB used in Linux). Quitting Blame stops the VM in a
+  detached process; it boots again in about 8 s (765 MB after boot).
+- Not done: sharing pnpm's store with node_modules by hard links. Links
+  need one mount; putting the virtual store outside the project breaks
+  Vite and Turbopack, and a per-install store loses the shared cache.
+
 ## Phase 2: one compose renderer (original proposal)
 
 Medium risk: it changes how local compose files are produced.
