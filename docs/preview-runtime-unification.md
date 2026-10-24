@@ -1,7 +1,10 @@
 # Unifying the preview runtime across local, cloud and direct modes
 
-Status: phase 1 implemented on 2026-10-24 (cloud parts ship with the next
-sandbox runner release); phases 2 and 3 are proposals.
+Status: phase 1 implemented on 2026-10-24. Phases 2 and 3 implemented on
+branch `preview-runtime-unification` (no flag: the old local system is
+removed), see "Phases 2 and 3 as built" below. Not yet done: a test of the
+upgrade on a real Blame Runtime VM, the runner release (0.2.20) and the
+API pin, and running PreviewOrchestrator locally.
 
 ## Why
 
@@ -132,7 +135,31 @@ sandbox runner release (and the API's pinned runner version bumped with it).
 Changing the compiled probes changes the plan hash, so existing cloud sessions
 are recreated once on their next start.
 
-## Phase 2: one compose renderer
+## Phases 2 and 3 as built
+
+- `@blame/preview-runtime/compose`: `renderCompose(plan, target)` with a
+  `sandbox` and a `local` target, one healthcheck rule, setup tasks as
+  one-shot services of the `setup` profile, health-conditioned
+  `depends_on`, `init` and a 5 s stop grace. `ComposeEngine` runs a
+  rendered project on any `DockerHost` (prepare, fingerprinted setup,
+  images, `up --wait`, inspect, logs, exec); readiness and functional
+  probes live there too. The sandbox runner uses both.
+- Launch commands are normalized by the compiler (corepack pnpm, npm
+  install without lockfile writes, no numeric su, CI for installs).
+- Instead of shipping the runner binary into the VM, the desktop runs the
+  same engine against the VM's Docker through the runtime agent
+  (`desktop/src/main/preview-runtime/local/`). `LocalPreviewDriver` drives
+  it behind `PreviewRuntimeDriver`; the local lifecycle file still feeds
+  the UI.
+- Runtime 11: Docker Engine 29.9.1, Compose 5.6.0 and Buildx 0.38.0 replace
+  containerd/nerdctl/BuildKit/CNI; bounded logs and build cache, overlay2,
+  small address pools; upgrade migrates live worktrees' data volumes and
+  deletes the old state; unneeded Ubuntu services masked; a cleanup removes
+  deleted worktrees' previews, unused node_modules volumes and old images.
+- Initialization no longer produces a Compose file or setup script; its
+  checks read the manifest.
+
+## Phase 2: one compose renderer (original proposal)
 
 Medium risk: it changes how local compose files are produced.
 
