@@ -378,13 +378,17 @@ export class ComposeEngine {
         const labels = `--label blame.preview=true${shared ? " --label blame.shared=true" : ""}`;
         const identity =
           kind === "project" ? `${owner.uid}:${owner.gid}` : "0:0";
+        const volume = shellQuote(name);
+        // The owner applies when the volume is created: an image such as
+        // Postgres then takes over its own data directory.
         return [
-          `docker volume create ${labels} ${shellQuote(name)} >/dev/null`,
-          `mp="$(docker volume inspect --format '{{.Mountpoint}}' ${shellQuote(name)})"`,
+          `created=`,
+          `docker volume inspect ${volume} >/dev/null 2>&1 || { docker volume create ${labels} ${volume} >/dev/null; created=1; }`,
+          `mp="$(docker volume inspect --format '{{.Mountpoint}}' ${volume})"`,
           `case "$mp" in /*/volumes/*/_data) ;; *) echo "volume ${name} has mountpoint $mp" >&2; exit 3;; esac`,
-          `[ "$(stat -c %u:%g "$mp")" = "${identity}" ] || chown ${identity} "$mp"`,
-          `printf '%s\\t%s\\n' ${shellQuote(name)} "$mp"`,
-        ].join(" && ");
+          `[ -z "$created" ] || chown ${identity} "$mp"`,
+          `printf '%s\\t%s\\n' ${volume} "$mp"`,
+        ].join("\n");
       })
       .join("\n");
     const result = await this.options.host.run("sh", [

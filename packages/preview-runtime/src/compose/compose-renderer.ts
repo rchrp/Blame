@@ -142,7 +142,7 @@ function setupService(task: SetupTaskPlan, context: RenderContext) {
       ),
       context,
     ),
-    volumes: workspaceVolumes(task, setupServiceId(task.id), context),
+    volumes: serviceVolumes(task, setupServiceId(task.id), context, true),
     user: task.runAs === "root" ? "0:0" : context.target.projectUser,
     restart: "no",
   });
@@ -166,9 +166,12 @@ function runtimeService(service: ServiceLaunchPlan, context: RenderContext) {
     ),
     network_mode: sharesLoopback ? `service:${anchor}` : undefined,
     ports: sharesLoopback ? undefined : publishedPorts(service, context),
-    volumes: needsWorkspace(service)
-      ? workspaceVolumes(service, service.id, context)
-      : nonEmpty(baseVolumes(context.target)),
+    volumes: serviceVolumes(
+      service,
+      service.id,
+      context,
+      needsWorkspace(service),
+    ),
     user: serviceUser(service, context.target),
     healthcheck: context.healthchecks.get(service.id),
     restart:
@@ -364,35 +367,40 @@ function endpointTargets(plan: PreviewExecutionPlan, target: ComposeTarget) {
   return targets;
 }
 
-function workspaceVolumes(
+// Caches are mounted everywhere: a manifest also declares database data
+// directories as caches. A service that does not run project code gets
+// neither the workspace nor its dependency volumes.
+function serviceVolumes(
   item: ServiceLaunchPlan | SetupTaskPlan,
   serviceId: string,
   context: RenderContext,
+  workspace: boolean,
 ) {
   const { plan, target } = context;
   const volumes = [
     ...cacheVolumes(plan, target),
-    ...packageNodeModulesVolumes(plan, target, item),
+    ...(workspace ? packageNodeModulesVolumes(plan, target, item) : []),
   ];
   for (const volume of volumes) context.mounted.set(volume.alias, volume);
   context.serviceVolumes[serviceId] = volumes.map(({ name }) => name);
-  const workspace =
-    target.kind === "sandbox"
+  const source = !workspace
+    ? []
+    : target.kind === "sandbox"
       ? ["/workspace:/workspace:rw", "/workspace/.git:/workspace/.git:ro"]
       : [`${target.workspacePath}:/workspace`];
   const files =
-    target.kind === "local"
+    workspace && target.kind === "local"
       ? (target.fileMounts ?? []).map(
-          ({ source, target: path }) =>
-            `${source}:${posix.join("/workspace", path)}:ro`,
+          ({ source: path, target: file }) =>
+            `${path}:${posix.join("/workspace", file)}:ro`,
         )
       : [];
-  return [
-    ...workspace,
+  return nonEmpty([
+    ...source,
     ...baseVolumes(target),
     ...volumes.map(({ alias, target: path }) => `${alias}:${path}`),
     ...files,
-  ];
+  ]);
 }
 
 function baseVolumes(target: ComposeTarget) {

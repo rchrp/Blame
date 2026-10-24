@@ -132,7 +132,10 @@ test("orders services with Compose health conditions", () => {
   ]);
   assert.equal(db!.working_dir, undefined);
   assert.equal(db!.user, undefined);
-  assert.deepEqual(db!.volumes, undefined);
+  assert.deepEqual(db!.volumes, [
+    "cache-blame_corepack_cache:/tmp/corepack-cache",
+    "cache-blame_node_modules:/workspace/node_modules",
+  ]);
   const backendCheck = compose.services.backend!.healthcheck as {
     test: string[];
     start_interval: string;

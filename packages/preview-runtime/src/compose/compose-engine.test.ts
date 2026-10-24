@@ -53,7 +53,7 @@ test("writes the Compose file once and prepares owned volumes", async () => {
   assert.deepEqual(await engine.prepare(rendered, owner), { changed: true });
   assert.deepEqual(await engine.prepare(rendered, owner), { changed: false });
   const volumeScript = host.commands.find(([command]) => command === "sh")!;
-  assert.match(volumeScript[2]!, /chown 1001:1001 "\$mp"/);
+  assert.match(volumeScript[2]!, /\|\| chown 1001:1001 "\$mp"/);
   assert.match(volumeScript[2]!, /blame_node_modules_abc123/);
   assert.equal(host.files.get("/state/story-a/compose.yaml"), rendered.yaml);
 });

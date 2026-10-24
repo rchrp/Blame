@@ -66,6 +66,10 @@ services:
       npm_config_store_dir: /pnpm/store
     ports:
       - 127.0.0.1:50000:3306
+    volumes:
+      - cache-blame_corepack_cache:/tmp/corepack-cache
+      - cache-blame_node_modules:/workspace/node_modules
+      - cache-blame_pnpm_store:/pnpm/store
     healthcheck:
       test:
         - CMD-SHELL
