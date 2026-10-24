@@ -1,4 +1,5 @@
 import { UserAvatar } from "@/components/shared/user-avatar"
+import { Badge } from "@/components/ui/badge"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,10 +36,11 @@ export function NavUser({
   const { isMobile } = useSidebar()
   const auth = useCloudAuth()
   const name = user.fullName || user.email
+  const premium = auth.license?.licensed === true
 
   // Subscribers manage billing in Stripe; others see the Premium offer.
   function openBilling() {
-    if (auth.license?.licensed !== true) return navigate("/premium")
+    if (!premium) return navigate("/premium")
     void auth.openBillingPortal().catch((error: unknown) => {
       toast.error("Billing could not open", {
         description: error instanceof Error ? error.message : undefined,
@@ -63,8 +65,11 @@ export function NavUser({
                 name={user.fullName}
                 seed={user.id}
               />
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{name}</span>
+              <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
+                <span className="flex min-w-0 items-center gap-1.5">
+                  <span className="truncate font-medium">{name}</span>
+                  {premium ? <PremiumBadge /> : null}
+                </span>
                 <span className="truncate text-xs text-muted-foreground">
                   {user.email}
                 </span>
@@ -87,8 +92,11 @@ export function NavUser({
                   name={user.fullName}
                   seed={user.id}
                 />
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{name}</span>
+                <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
+                  <span className="flex min-w-0 items-center gap-1.5">
+                    <span className="truncate font-medium">{name}</span>
+                    {premium ? <PremiumBadge /> : null}
+                  </span>
                   <span className="truncate text-xs text-muted-foreground">
                     {user.email}
                   </span>
@@ -115,5 +123,13 @@ export function NavUser({
         </DropdownMenu>
       </SidebarMenuItem>
     </SidebarMenu>
+  )
+}
+
+function PremiumBadge() {
+  return (
+    <Badge className="h-4 px-1.5 text-[10px] leading-none">
+      Premium
+    </Badge>
   )
 }
