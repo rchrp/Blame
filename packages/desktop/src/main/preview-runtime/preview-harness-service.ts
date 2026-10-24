@@ -21,6 +21,8 @@ import {
   projectPreviewLifecycleState,
 } from "../workspace-ipc.ts";
 import type { PreviewService } from "./preview-service.ts";
+import { recordPreviewUse } from "./local/local-preview-idle.ts";
+import { resolveWorkspacePath as resolveRuntimePath } from "../workspace-runtime.ts";
 
 export type PreviewHarnessInput = {
   scope?: string;
@@ -61,6 +63,10 @@ export class PreviewHarnessService {
   }
 
   async inspect(input: PreviewHarnessInput) {
+    // An agent inspecting the preview keeps it from being stopped as unused.
+    if (input.worktree && input.workspaceMode !== "cloud-mirror") {
+      recordPreviewUse(resolveRuntimePath(input.worktree));
+    }
     const [lifecycle, revisions] = await Promise.all([
       this.lifecycle(input),
       this.revisions(input),

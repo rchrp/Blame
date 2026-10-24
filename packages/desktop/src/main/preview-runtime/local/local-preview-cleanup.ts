@@ -41,6 +41,32 @@ export async function collectPreviewGarbage(
     .map((line) => line.slice("removed ".length));
 }
 
+/** The worktrees whose preview has a running service container. */
+export async function runningPreviewWorktrees(
+  host: DockerHost = blameRuntimeDockerHost,
+) {
+  const result = await host.run("docker", [
+    "ps",
+    "--filter",
+    "label=blame.preview",
+    "--filter",
+    "label=com.docker.compose.oneoff=False",
+    "--format",
+    '{{.Label "com.docker.compose.project.working_dir"}}',
+  ]);
+  if (result.exitCode !== 0) return [];
+  const suffix = "/.blame/preview";
+  return [
+    ...new Set(
+      result.stdout
+        .split("\n")
+        .map((line) => line.trim())
+        .filter((line) => line.endsWith(suffix))
+        .map((line) => line.slice(0, -suffix.length)),
+    ),
+  ];
+}
+
 const removeProjectScript = `
 project="$1"
 label="label=com.docker.compose.project=$project"

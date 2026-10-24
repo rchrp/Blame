@@ -75,6 +75,7 @@ import {
   idleLocalPreviewLifecycle,
   localPreviewLifecycle,
   pendingLocalPreviewLifecycle,
+  suspendedLocalPreviewLifecycle,
   runLocalPreviewOperation,
 } from "./preview-runtime/local/local-preview-lifecycle.js";
 import { LocalPreviewService } from "./preview-runtime/local/local-preview-service";
@@ -103,7 +104,13 @@ import {
 import {
   collectPreviewGarbage,
   removePreviewProject,
+  runningPreviewWorktrees,
 } from "./preview-runtime/local/local-preview-cleanup.ts";
+import {
+  previewIdleTimeoutMs,
+  recordPreviewUse,
+  startIdlePreviewSweeper,
+} from "./preview-runtime/local/local-preview-idle.ts";
 import {
   compileLocalPreviewPlan,
   localPreviewPaths,
@@ -435,6 +442,7 @@ export function registerWorkspaceIpcHandlers(
 ) {
   setProjectCreationWindowsProvider(() => BrowserWindow.getAllWindows());
   setNewProjectAgentRuntime({ generate: generateNewProjectWithAgent });
+  startIdlePreviewSuspension();
   ipcMain.handle("workspace:path-exists", (_event, input: { path: string }) =>
     pathExists(input.path),
   );
@@ -632,8 +640,14 @@ export function registerWorkspaceIpcHandlers(
   );
   ipcMain.handle(
     "workspace:project-preview-runtime-state",
-    (_event, input: { worktree: string; workspaceMode?: WorkspaceMode }) =>
-      projectPreviewRuntimeState(input.worktree, input.workspaceMode),
+    (event, input: { worktree: string; workspaceMode?: WorkspaceMode }) => {
+      // The app reads the state while the preview is open and on screen.
+      const window = BrowserWindow.fromWebContents(event.sender);
+      if (window?.isVisible() && !window.isMinimized()) {
+        recordPreviewUse(resolveRuntimePath(input.worktree));
+      }
+      return projectPreviewRuntimeState(input.worktree, input.workspaceMode);
+    },
   );
   ipcMain.handle(
     "workspace:control-project-preview",
@@ -1483,6 +1497,7 @@ async function startProjectComposeOperation(
         !(await previewRuntimeStopped(worktree)),
     });
     if (await stopPreviewStartWhenRequested(worktree)) return undefined;
+    recordPreviewUse(worktree);
     await startProjectLogStream(worktree);
     return previewUrl;
   } catch (error) {
@@ -1787,7 +1802,9 @@ export async function projectPreviewLifecycleState(worktreeInput: string) {
   if (persisted.desiredStatus === "stopped") {
     if (
       persisted.lifecycle?.status === "error" ||
-      persisted.lifecycle?.phase === "stopping"
+      persisted.lifecycle?.phase === "stopping" ||
+      persisted.lifecycle?.phase === "suspending" ||
+      persisted.lifecycle?.phase === "suspended"
     ) {
       return persisted.lifecycle;
     }
@@ -1852,6 +1869,7 @@ function previewStatusConfiguration(
 
 export async function controlProjectPreview(input: ControlProjectPreviewInput) {
   const selection = await previewControlSelection(input);
+  recordPreviewUse(selection.worktree);
   await appendRecoveryLog(
     selection.worktree,
     `run configuration ${input.action}: ${selection.selected.id}`,
@@ -2031,22 +2049,51 @@ async function previewControlSelection(input: ControlProjectPreviewInput) {
   } satisfies PreviewControlSelection;
 }
 
-async function stopProjectPreview(selection: PreviewControlSelection) {
+async function stopProjectPreview(
+  selection: PreviewControlSelection,
+  options: { suspend?: boolean } = {},
+) {
   const { current, selected, worktree } = selection;
   return runLocalPreviewOperation(
     worktree,
     selected.id,
     "stopped",
-    "stopping",
+    options.suspend ? "suspending" : "stopping",
     async () => {
       if (current && current.id !== selected.id) {
         await stopRunConfigurationServices(worktree, current);
       }
       await stopRunConfigurationServices(worktree, selected);
-      return projectPreviewRuntimeState(worktree);
+      const state = await projectPreviewRuntimeState(worktree);
+      return options.suspend
+        ? { ...state, lifecycle: suspendedLocalPreviewLifecycle() }
+        : state;
     },
     writePreviewRuntimeState,
   );
+}
+
+// Stops a preview nobody used for a while, as suspended: opening it in the
+// app starts it again, and so do the agent's preview tools.
+async function suspendIdleProjectPreview(worktree: string) {
+  if (previewStarts.has(worktree) || previewPrefetches.has(worktree)) return;
+  const state = await readPreviewRuntimeFileState(worktree);
+  if (state.desiredStatus !== "running") return;
+  if (state.lifecycle?.status === "pending") return;
+  const selection = await previewControlSelection({ action: "stop", worktree });
+  await appendRecoveryLog(
+    worktree,
+    `run configuration suspended after ${previewIdleTimeoutMs / 60_000} minutes without use: ${selection.selected.id}`,
+  );
+  await stopProjectPreview(selection, { suspend: true });
+}
+
+/** Starts stopping the local previews nobody uses. */
+export function startIdlePreviewSuspension() {
+  startIdlePreviewSweeper({
+    runningWorktrees: () => runningPreviewWorktrees(),
+    suspend: suspendIdleProjectPreview,
+  });
 }
 
 async function startProjectPreview(

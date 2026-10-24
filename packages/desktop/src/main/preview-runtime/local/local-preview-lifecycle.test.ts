@@ -7,6 +7,7 @@ import {
   parseLocalPreviewRuntimeSelectionState,
   persistLocalPreviewFailure,
   persistLocalPreviewResult,
+  suspendedLocalPreviewLifecycle,
   validPreviewLifecycle,
 } from "./local-preview-lifecycle.ts";
 
@@ -131,4 +132,24 @@ test("keeps the start step of a lifecycle valid", () => {
   };
   assert.equal(validPreviewLifecycle(lifecycle), true);
   assert.equal(validPreviewLifecycle({ ...lifecycle, step: 3 }), false);
+});
+
+test("keeps a preview stopped for lack of use suspended", () => {
+  const suspended: PreviewRuntimeSelectionState = {
+    desiredStatus: "stopped",
+    lifecycle: suspendedLocalPreviewLifecycle(),
+  };
+  assert.equal(
+    localPreviewLifecycle(suspended, "stopped", true, undefined).phase,
+    "suspended",
+  );
+  assert.equal(
+    localPreviewLifecycle(suspended, "running", true, undefined).phase,
+    "stopping",
+  );
+  const stopped: PreviewRuntimeSelectionState = { desiredStatus: "stopped" };
+  assert.equal(
+    localPreviewLifecycle(stopped, "stopped", true, undefined).phase,
+    "idle",
+  );
 });

@@ -30,8 +30,12 @@ export function localPreviewLifecycle(
     return localLifecycle("ready", "ready", persisted.lifecycle);
   }
   if (persisted.desiredStatus === "stopped") {
-    return selectedStatus === "running" || selectedStatus === "starting"
-      ? localLifecycle("stopping", "pending", persisted.lifecycle)
+    if (selectedStatus === "running" || selectedStatus === "starting") {
+      return localLifecycle("stopping", "pending", persisted.lifecycle);
+    }
+    // Stopped for lack of use: opening the preview starts it again.
+    return persisted.lifecycle?.phase === "suspended"
+      ? persisted.lifecycle
       : idleLocalPreviewLifecycle(persisted.lifecycle?.since);
   }
   if (persisted.lifecycle?.status === "error") return persisted.lifecycle;
@@ -46,6 +50,14 @@ export function localPreviewLifecycle(
   );
 }
 
+export function suspendedLocalPreviewLifecycle(): PreviewLifecycleState {
+  return {
+    phase: "suspended",
+    status: "idle",
+    since: new Date().toISOString(),
+  };
+}
+
 export function idleLocalPreviewLifecycle(
   since?: string,
 ): PreviewLifecycleState {
@@ -57,7 +69,7 @@ export function idleLocalPreviewLifecycle(
 }
 
 export function pendingLocalPreviewLifecycle(
-  phase: Extract<PreviewLifecyclePhase, "starting" | "stopping">,
+  phase: Extract<PreviewLifecyclePhase, "starting" | "stopping" | "suspending">,
 ): PreviewLifecycleState {
   return { phase, status: "pending", since: new Date().toISOString() };
 }
@@ -92,7 +104,7 @@ export async function runLocalPreviewOperation(
   worktree: string,
   selectedConfigurationId: string,
   desiredStatus: PreviewRuntimeSelectionState["desiredStatus"],
-  phase: Extract<PreviewLifecyclePhase, "starting" | "stopping">,
+  phase: Extract<PreviewLifecyclePhase, "starting" | "stopping" | "suspending">,
   operation: () => Promise<ProjectPreviewRuntimeState>,
   writeState: WritePreviewRuntimeState,
 ) {

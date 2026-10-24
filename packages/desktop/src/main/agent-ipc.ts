@@ -29,6 +29,7 @@ import { runtimeAgentClient } from "./runtime-agent";
 import { registerSecurityAuditIpcHandlers } from "./security-audit-ipc";
 import { WorkspaceWriterRegistry } from "./workspaces/workspace-writer-registry";
 import type { PreviewService } from "./preview-runtime/preview-service";
+import { useAgentWorkspaceCheck } from "./preview-runtime/local/local-preview-idle.ts";
 
 type AgentRuntimeRegistration = {
   modulePath: string;
@@ -47,6 +48,8 @@ const agentWorkspaceWriters = new WorkspaceWriterRegistry();
 
 export function registerAgentIpcHandlers(input: AgentRuntimeRegistration) {
   runtime ??= createAgentRuntimePool(input);
+  // A preview stays up while an agent works in its worktree.
+  useAgentWorkspaceCheck(localAgentOwnsWorkspace);
   registerProviderIpcHandlers();
   registerSessionStartIpcHandlers(input.beforeWorkspaceWrite);
   registerSessionControlIpcHandlers(input.beforeWorkspaceWrite);

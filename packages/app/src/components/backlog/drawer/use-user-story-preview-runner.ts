@@ -169,6 +169,12 @@ export function useUserStoryPreviewRunner(
     repairAction,
     userStoryId
   )
+  useResumeSuspendedLocalPreview(
+    enabled && preference.profile === "local-container",
+    worktree,
+    runtime,
+    local.control
+  )
   const { control, pendingOperation } =
     preference.profile === "local-container" ? local : cloud
   const effectiveRuntime =
@@ -827,6 +833,30 @@ async function refreshPreviewRuntime(
   } catch {
     return
   }
+}
+
+// Blame stops a local preview nobody used for a while and marks it
+// suspended: opening it starts it again.
+function useResumeSuspendedLocalPreview(
+  viewing: boolean,
+  worktree: string | null | undefined,
+  runtime: ProjectPreviewRuntimeState | undefined,
+  control: (
+    action: PreviewRunnerAction,
+    configurationId?: string
+  ) => Promise<unknown>
+) {
+  const resumedRef = React.useRef<string | undefined>(undefined)
+  const lifecycle = runtime?.lifecycle
+  const configurationId = runtime?.selectedConfigurationId
+  React.useEffect(() => {
+    if (!viewing || !worktree || !configurationId) return
+    if (lifecycle?.phase !== "suspended") return
+    const key = `${worktree}:${lifecycle.since}`
+    if (resumedRef.current === key) return
+    resumedRef.current = key
+    void control("start", configurationId)
+  }, [configurationId, control, lifecycle, viewing, worktree])
 }
 
 function usePreviewRuntimeControl(

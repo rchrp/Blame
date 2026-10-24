@@ -28,10 +28,13 @@ export function LocalPreviewAutoStart({ story }: { story: UserStory }) {
         workspaceMode: "local-container",
       })
       if (cancelled || startedPreviews.has(key)) return
+      // A suspended preview was started once and left unused: it starts
+      // again when opened.
       if (
         state.desiredStatus === "running" ||
         state.lifecycle?.status === "pending" ||
-        state.lifecycle?.status === "error"
+        state.lifecycle?.status === "error" ||
+        state.lifecycle?.phase === "suspended"
       )
         return
       const configurationId =
