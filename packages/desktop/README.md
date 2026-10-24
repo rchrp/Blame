@@ -36,7 +36,7 @@ Windows and macOS installers use versioned runtime images so first setup only im
 
 The base images keep Cline's cloud providers, including OpenAI Codex OAuth and the Anthropic API. They exclude the native Codex and Claude CLI payloads because those binaries are only required by the dedicated local CLI providers. Enabling either local CLI provider later must include its authentication and executable-path setup.
 
-On Arch Linux, start Docker and install `qemu-img` plus `qemu-system-x86_64`. Then set `BLAME_RUNTIME_VERSION` in `.env.local` and build both runtimes for the host architecture:
+On Arch Linux, start Docker and install `qemu-img` plus `qemu-system-x86_64`, and make sure `sudo` works (the macOS image is mounted through a loop device). Then set `BLAME_RUNTIME_VERSION` in `.env.local` and build both runtimes for the host architecture:
 
 ```bash
 pnpm build:runtime
@@ -49,7 +49,7 @@ pnpm build:runtime:windows
 pnpm build:runtime:macos
 ```
 
-The Windows command builds a WSL-compatible rootfs with Docker and does not require Windows, WSL, or PowerShell. The macOS command builds a Lima qcow2 image inside a temporary QEMU VM. Lima and every downloaded base image are pinned and checksum-verified.
+The Windows command builds a WSL-compatible rootfs with Docker and does not require Windows, WSL, or PowerShell. The macOS command builds a Lima qcow2 image without booting it: the Ubuntu cloud image is mounted through a loop device and provisioned in a chroot, so everything runs natively. That needs the host's architecture, `sudo`, `sfdisk` and `e2fsprogs`; an image of another architecture is provisioned inside a temporary QEMU VM instead, which is much slower without KVM. Lima and every downloaded base image are pinned and checksum-verified.
 
 The macOS builder also reboots the finished image and checks the runtime. Run `pnpm verify:runtime:macos` to repeat only that verification without rebuilding it.
 

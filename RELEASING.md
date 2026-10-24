@@ -57,8 +57,10 @@ The Windows (WSL rootfs) and macOS (Lima image) runtimes are versioned separatel
    git push origin runtime-v10
    ```
 
-3. Wait for the release to be published (about 1h30). The workflow publishes it right away without making it the latest release, because desktop builds need to download it.
+3. Wait for the release to be published (about 15 minutes). The workflow publishes it right away without making it the latest release, because desktop builds need to download it.
 4. Release the desktop app as usual.
+
+The macOS images are provisioned natively in a chroot on runners of their architecture; only the final verification boots them, under emulation on the Arm runner, which has no KVM. To build and verify the images without publishing, run **Release runtime** manually from the Actions tab.
 
 Never delete a runtime release that a published desktop version still references.
 

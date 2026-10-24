@@ -2,11 +2,14 @@
 # packages/desktop/resources/runtime/*/manifest.json, to build the four runtime
 # images and publish them with their manifest as a GitHub Release. Desktop
 # releases refuse to build until that runtime is published.
+# Run the workflow manually to build and verify the images of the manifests'
+# runtime version without publishing anything.
 name: Release runtime
 
 on:
   push:
     tags: ["runtime-v*"]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -29,6 +32,10 @@ jobs:
       - id: version
         name: Match tag with runtime manifests
         run: |
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "runtime_version=$(jq -r .runtimeVersion packages/desktop/resources/runtime/macos/manifest.json)" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           version="${GITHUB_REF_NAME#runtime-v}"
           for platform in windows macos; do
             manifest="packages/desktop/resources/runtime/$platform/manifest.json"
@@ -74,11 +81,13 @@ jobs:
       - run: pnpm test:semantic-harness-payload
       - run: node --test scripts/semantic-harness-install.test.mjs
 
+      # The image is provisioned natively in a chroot (fdisk, e2fsprogs), then
+      # booted once with QEMU to verify it.
       - name: Install QEMU
         if: matrix.platform == 'macos'
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends ${{ matrix.qemu_packages }} ipxe-qemu qemu-utils
+          sudo apt-get install -y --no-install-recommends ${{ matrix.qemu_packages }} ipxe-qemu qemu-utils fdisk e2fsprogs
           if [ -e /dev/kvm ]; then
             sudo chmod 0666 /dev/kvm
           fi
@@ -99,6 +108,7 @@ jobs:
 
   publish:
     name: Publish GitHub Release
+    if: github.event_name == 'push'
     needs: [preflight, build]
     runs-on: ubuntu-latest
     permissions:

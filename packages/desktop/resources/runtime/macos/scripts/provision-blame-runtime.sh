@@ -405,9 +405,14 @@ remove_legacy_container_stack() {
 }
 
 # The VM only runs Blame: hardware, snap and update services cost memory
-# and wake the CPU for nothing. The journal stays small.
+# and wake the CPU for nothing. The journal stays small. A baked image is
+# trimmed offline (it may be provisioned in a chroot, never booted), so a
+# user's first boot does not seed snaps only to purge them.
 trim_guest_services() {
-  if [ "${BLAME_RUNTIME_BAKE:-0}" = "1" ] || [ ! -d /run/systemd/system ]; then
+  running=0
+  if [ -d /run/systemd/system ]; then
+    running=1
+  elif [ "${BLAME_RUNTIME_BAKE:-0}" != "1" ]; then
     return
   fi
   for unit in \
@@ -420,13 +425,19 @@ trim_guest_services() {
     update-notifier-download.timer update-notifier-motd.timer \
     sysstat-collect.timer sysstat-summary.timer \
     e2scrub_all.timer dpkg-db-backup.timer; do
-    systemctl disable --now "$unit" >/dev/null 2>&1 || true
+    if [ "$running" = "1" ]; then
+      systemctl disable --now "$unit" >/dev/null 2>&1 || true
+    else
+      systemctl disable "$unit" >/dev/null 2>&1 || true
+    fi
     systemctl mask "$unit" >/dev/null 2>&1 || true
   done
   mkdir -p /etc/systemd/journald.conf.d
   if [ ! -s /etc/systemd/journald.conf.d/blame.conf ]; then
     printf '[Journal]\nSystemMaxUse=64M\n' >/etc/systemd/journald.conf.d/blame.conf
-    systemctl restart systemd-journald >/dev/null 2>&1 || true
+    if [ "$running" = "1" ]; then
+      systemctl restart systemd-journald >/dev/null 2>&1 || true
+    fi
   fi
   if dpkg-query -W -f='${Status}' snapd 2>/dev/null | grep -q "install ok installed"; then
     DEBIAN_FRONTEND=noninteractive apt-get purge -y snapd >/dev/null 2>&1 || true

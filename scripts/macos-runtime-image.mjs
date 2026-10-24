@@ -11,6 +11,7 @@ import { dirname, join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { loadEnvFiles, requiredEnv, text } from "./env-files.mjs";
+import { hostCanChroot, provisionImageInChroot } from "./lima-image-chroot.mjs";
 import { resolveLimaBundle } from "./lima-runtime-bundle.mjs";
 import { sha256File } from "./file-sha256.mjs";
 import { runtimeLimaImageFileName } from "./runtime-manifest.mjs";
@@ -76,21 +77,41 @@ async function buildImage(architecture) {
 
   await rm(limaHome, { force: true, recursive: true });
   await mkdir(limaHome, { recursive: true });
-  await writeFile(
-    templatePath,
-    builderTemplate(manifest, architecture),
-    "utf8",
-  );
 
   try {
-    await startInstance(bundle, instanceName, templatePath, environment);
-    await provisionImage(bundle, instanceName, environment);
-    await finalizeImage(bundle, instanceName, environment);
-    await waitForStoppedInstance(bundle, instanceName, environment);
-    await flattenImage(
-      join(limaHome, instanceName, "disk"),
-      temporaryOutputPath,
-    );
+    // Provisioning in a chroot runs natively and takes minutes; booting the
+    // image to provision it is the fallback for another architecture.
+    if (architecture === hostArchitecture() && (await hostCanChroot())) {
+      await provisionImageInChroot({
+        baseImage: baseImage(manifest, architecture),
+        workDirectory: join(limaHome, "chroot"),
+        outputImage: temporaryOutputPath,
+        provisioner: await readFile(provisionerPath, "utf8"),
+        provisionerArgs: [runtimeVersion, await runtimeClineSdkVersion()],
+        environment: bakeEnvironment(),
+        files: [
+          {
+            source: semanticHarnessPayload,
+            target: "tmp/blame-semantic-harness.tgz",
+          },
+        ],
+        finalizer: finalizeCommands().join("\n"),
+      });
+    } else {
+      await writeFile(
+        templatePath,
+        builderTemplate(manifest, architecture),
+        "utf8",
+      );
+      await startInstance(bundle, instanceName, templatePath, environment);
+      await provisionImage(bundle, instanceName, environment);
+      await finalizeImage(bundle, instanceName, environment);
+      await waitForStoppedInstance(bundle, instanceName, environment);
+      await flattenImage(
+        join(limaHome, instanceName, "disk"),
+        temporaryOutputPath,
+      );
+    }
     await verifyImage(bundle, architecture, temporaryOutputPath, environment);
     await rename(temporaryOutputPath, outputPath);
     console.log(`Built ${outputPath}`);
@@ -257,9 +278,7 @@ async function provisionImage(bundle, instanceName, environment) {
       "sudo",
       "-n",
       "env",
-      "BLAME_RUNTIME_BAKE=1",
-      ...dockerVersionAssignments(),
-      `BLAME_NODE_VERSION=${requiredNodeVersion()}`,
+      ...bakeEnvironment(),
       "sh",
       "-s",
       "--",
@@ -271,8 +290,18 @@ async function provisionImage(bundle, instanceName, environment) {
   );
 }
 
-async function finalizeImage(bundle, instanceName, environment) {
-  const script = [
+function bakeEnvironment() {
+  return [
+    "BLAME_RUNTIME_BAKE=1",
+    ...dockerVersionAssignments(),
+    `BLAME_NODE_VERSION=${requiredNodeVersion()}`,
+  ];
+}
+
+// Leaves no build state behind, so the first boot of a user's VM runs
+// cloud-init from scratch.
+function finalizeCommands() {
+  return [
     "set -eu",
     "cd /",
     "cloud-init clean --logs --seed >/dev/null 2>&1 || true",
@@ -283,6 +312,12 @@ async function finalizeImage(bundle, instanceName, environment) {
     "rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /root/.npm /root/.cache",
     "find /var/log -type f -exec truncate -s 0 {} \\; >/dev/null 2>&1 || true",
     "userdel --force --remove blamebuilder >/dev/null 2>&1 || true",
+  ];
+}
+
+async function finalizeImage(bundle, instanceName, environment) {
+  const script = [
+    ...finalizeCommands(),
     "sync",
     "fstrim -av >/dev/null 2>&1 || true",
     "nohup sh -c 'sleep 1; poweroff' >/dev/null 2>&1 &",
@@ -359,10 +394,15 @@ async function waitForDiskUnlock(image) {
   throw new Error(`QEMU did not release the image lock for ${image}.`);
 }
 
-function builderTemplate(manifest, architecture) {
+function baseImage(manifest, architecture) {
   const image = manifest.baseImages[architecture];
   if (!image?.url || !image?.sha256)
     throw new Error(`Missing base image for ${architecture}.`);
+  return image;
+}
+
+function builderTemplate(manifest, architecture) {
+  const image = baseImage(manifest, architecture);
   return [
     "vmType: qemu",
     `arch: ${architecture}`,
