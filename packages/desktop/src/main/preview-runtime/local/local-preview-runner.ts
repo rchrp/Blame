@@ -162,6 +162,28 @@ export async function startLocalPreview(
   return url;
 }
 
+/**
+ * Prepares a later start in the background: images and dependency
+ * installs, with no service left running.
+ */
+export async function prefetchLocalPreview(
+  worktree: string,
+  options: LocalPreviewRunOptions = {},
+) {
+  const context = await localPreviewContext(worktree);
+  const engine = localPreviewEngine(worktree, options);
+  const local = await renderLocalPreview({
+    worktree,
+    plan: context.plan,
+    selected: context.selected,
+    ownPorts: await runningPorts(engine, context.plan),
+  });
+  await engine.prepare(local.rendered, local.owner);
+  await engine.prefetch(context.plan, {
+    lockfiles: async () => local.dependencyKey,
+  });
+}
+
 export async function stopLocalPreview(
   worktree: string,
   serviceIds?: string[],

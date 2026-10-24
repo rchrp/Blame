@@ -146,6 +146,28 @@ export class ComposeEngine {
     );
   }
 
+  /**
+   * Prepares a later start without running anything that stays up: pulls
+   * or builds every image and runs the setup tasks that need no service,
+   * such as dependency installs. Tasks that need a service, such as
+   * migrations, wait for the real start.
+   */
+  async prefetch(
+    plan: PreviewExecutionPlan,
+    fingerprints: WorkspaceFingerprints,
+  ) {
+    await this.prepareImages(
+      plan,
+      [
+        ...plan.setup.map(({ id }) => setupServiceId(id)),
+        ...plan.services.map(({ id }) => id),
+      ],
+      fingerprints,
+    );
+    // With no service selected, only the tasks that need none qualify.
+    await this.runSetupTasks(plan, selectedSetupTasks(plan, []), fingerprints);
+  }
+
   /** Stops the services. `remove` also deletes their containers. */
   async stop(options: { remove?: boolean } = {}) {
     if (!(await this.prepared())) return;
@@ -266,7 +288,18 @@ export class ComposeEngine {
     serviceIds: string[],
     fingerprints: WorkspaceFingerprints,
   ) {
-    const tasks = selectedSetupTasks(plan, serviceIds);
+    await this.runSetupTasks(
+      plan,
+      selectedSetupTasks(plan, serviceIds),
+      fingerprints,
+    );
+  }
+
+  private async runSetupTasks(
+    plan: PreviewExecutionPlan,
+    tasks: PreviewExecutionPlan["setup"],
+    fingerprints: WorkspaceFingerprints,
+  ) {
     if (!tasks.length) return;
     const project = await this.requiredPrepared();
     const stamps = await this.readJson<Record<string, string>>(

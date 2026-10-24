@@ -121,6 +121,7 @@ import {
   localPreviewProbesPass,
   localPreviewServices,
   localPreviewUrl,
+  prefetchLocalPreview,
   removeLocalPreview,
   startLocalPreview,
   stopLocalPreview,
@@ -1089,7 +1090,13 @@ async function prepareProjectPreview(input: PrepareProjectPreviewInput) {
   );
   void enrichExecutionRepositoryCohorts(operation, input.worktree);
   return runExecutionOperation(operation, async () => {
-    await prepareProjectPreviewArtifacts(input);
+    const { worktree } = await prepareProjectPreviewArtifacts(input);
+    if (
+      input.runtimeProfile === "local-container" &&
+      typeof input.runConfigurationId !== "string"
+    ) {
+      prefetchProjectPreview(worktree);
+    }
     return { prepared: true };
   });
 }
@@ -1412,6 +1419,7 @@ type StartProjectComposeOptions = {
 };
 
 const previewStarts = new Map<string, Promise<string | undefined>>();
+const previewPrefetches = new Map<string, Promise<void>>();
 
 function startProjectCompose(
   worktree: string,
@@ -1419,12 +1427,39 @@ function startProjectCompose(
 ) {
   const current = previewStarts.get(worktree);
   if (current) return current;
-  // A cleanup removes unused images and networks: let it finish first.
+  // A cleanup removes unused images and networks: let it finish first, and
+  // a running prefetch of this worktree, whose work the start reuses.
   const next = (previewCleanup ?? Promise.resolve())
+    .then(() => previewPrefetches.get(worktree))
     .then(() => startProjectComposeOperation(worktree, options))
     .finally(() => previewStarts.delete(worktree));
   previewStarts.set(worktree, next);
   return next;
+}
+
+// A story whose run configuration is none starts no preview while the agent
+// works. Its images and dependency installs are still prepared, so opening
+// the preview later starts it in seconds.
+function prefetchProjectPreview(worktree: string) {
+  if (previewStarts.has(worktree) || previewPrefetches.has(worktree)) return;
+  const next = (previewCleanup ?? Promise.resolve())
+    .then(async () => {
+      await appendRunLogSection(worktree, "Preparing the preview");
+      await prefetchLocalPreview(worktree, {
+        log: (chunk) => appendRunLog(worktree, chunk),
+      });
+    })
+    .catch((error) => {
+      appendRunLog(
+        worktree,
+        `Preparing the preview failed: ${errorMessage(error)}\n`,
+      );
+    })
+    .finally(() => {
+      previewPrefetches.delete(worktree);
+      schedulePreviewCleanup();
+    });
+  previewPrefetches.set(worktree, next);
 }
 
 async function startProjectComposeOperation(
@@ -1547,7 +1582,7 @@ export function schedulePreviewCleanup() {
   if (previewCleanupTimer) clearTimeout(previewCleanupTimer);
   previewCleanupTimer = setTimeout(() => {
     previewCleanupTimer = undefined;
-    if (previewStarts.size || setupRuns.size) {
+    if (previewStarts.size || previewPrefetches.size || setupRuns.size) {
       schedulePreviewCleanup();
       return;
     }

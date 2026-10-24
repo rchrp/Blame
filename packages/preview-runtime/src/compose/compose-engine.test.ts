@@ -119,6 +119,25 @@ test("reruns a setup task when its dependency is recreated", async () => {
   assert.deepEqual(host.composeRuns(), ["setup-migrate"]);
 });
 
+test("prefetch pulls every image and installs without starting a service", async () => {
+  const host = new FakeHost();
+  const engine = engineFor(host, "story-a");
+  await engine.prepare(renderCompose(plan(), target("story-a")), owner);
+  await engine.prefetch(plan(), fingerprints);
+  const pull = host.commands.find((command) => command.includes("pull"))!;
+  assert.deepEqual(pull.slice(pull.indexOf("--ignore-buildable") + 1).sort(), [
+    "db",
+    "setup-install",
+    "setup-migrate",
+    "web",
+  ]);
+  assert.deepEqual(host.composeRuns(), ["setup-install"]);
+  assert.ok(!host.commands.some((command) => command.includes("up")));
+  host.commands.length = 0;
+  await engine.start(plan(), ["web", "db"], fingerprints);
+  assert.deepEqual(host.composeRuns(), ["setup-migrate"], "install is done");
+});
+
 test("stops without removing containers unless asked", async () => {
   const host = new FakeHost();
   const engine = engineFor(host, "story-a");
