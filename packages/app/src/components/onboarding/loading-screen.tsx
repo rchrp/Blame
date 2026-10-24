@@ -19,8 +19,8 @@ const loadingLines = [
 const lineDuration = 1900
 
 // Shown inside the onboarding stage while the session loads. The 3D scene
-// glides in behind it; the mark draws itself, then hands over to the next
-// screen through a shared layout animation.
+// glides in behind the official logo, which hands over to the next screen
+// through a shared layout animation.
 export function LoadingScreen() {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-7 px-6 text-foreground">
@@ -30,7 +30,7 @@ export function LoadingScreen() {
         transition={{ duration: 0.7, ease: easeOutExpo }}
       >
         <LogoGlow />
-        <BlameLogoMark animated className="relative size-full" />
+        <BlameLogoMark className="relative size-full" />
       </motion.div>
       <motion.span
         layoutId="blame-logo-word"
@@ -52,7 +52,7 @@ export function LoadingScreen() {
 export function CompactLoadingScreen() {
   return (
     <main className="flex h-svh items-center justify-center bg-background">
-      <BlameLogoMark animated className="size-10" />
+      <BlameLogoMark className="size-10" />
     </main>
   )
 }
