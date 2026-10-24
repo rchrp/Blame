@@ -108,11 +108,11 @@ export function renderCompose(
     projectName: projectName(target),
     yaml: stringify(document, { lineWidth: 0 }),
     targets: Object.fromEntries(targets),
-    volumes: volumes.map(({ name, owner, shared, setupMarker }) => ({
+    volumes: volumes.map(({ name, owner, shared, tracksSetup }) => ({
       name,
       owner,
       shared,
-      setupMarker,
+      tracksSetup,
     })),
     serviceVolumes,
   };

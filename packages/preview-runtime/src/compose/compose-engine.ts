@@ -1,7 +1,6 @@
 import { createHash } from "node:crypto";
 import { posix } from "node:path";
 import type { PreviewExecutionPlan } from "../domain/execution-plan.js";
-import { installsPackages } from "../compilation/command-normalization.js";
 import { setupServiceId, type RenderedCompose } from "./compose-renderer.js";
 import {
   ComposeEngineError,
@@ -59,11 +58,11 @@ type PreparedProject = {
   projectName: string;
   targets: RenderedCompose["targets"];
   serviceVolumes: RenderedCompose["serviceVolumes"];
-  /** Mountpoint of every engine volume that records setup runs. */
-  markers: Record<string, string>;
+  /** Creation time of the volumes a setup task fills, by volume name. */
+  volumeCreatedAt: Record<string, string>;
 };
 
-const markerFile = ".blame-setup-fingerprints.json";
+const ownershipImage = "busybox:1.37.0";
 const defaultSetupTimeoutMs = 15 * 60_000;
 const defaultStartTimeoutMs = 10 * 60_000;
 
@@ -89,18 +88,18 @@ export class ComposeEngine {
       if (previous?.fingerprint !== fingerprint) {
         await this.options.host.writeFile(this.composeFile, rendered.yaml);
       }
-      const mountpoints = await this.ensureVolumes(rendered, owner);
-      const markers = Object.fromEntries(
+      const createdAt = await this.ensureVolumes(rendered, owner);
+      const volumeCreatedAt = Object.fromEntries(
         rendered.volumes
-          .filter(({ setupMarker }) => setupMarker)
-          .map(({ name }) => [name, mountpoints[name]!]),
+          .filter(({ tracksSetup }) => tracksSetup)
+          .map(({ name }) => [name, createdAt[name] ?? ""]),
       );
       const project: PreparedProject = {
         fingerprint,
         projectName: rendered.projectName,
         targets: rendered.targets,
         serviceVolumes: rendered.serviceVolumes,
-        markers,
+        volumeCreatedAt,
       };
       await this.writeJson("project.json", project);
       return { changed: previous?.fingerprint !== fingerprint };
@@ -266,18 +265,24 @@ export class ComposeEngine {
         [serviceId, ...dependencies],
         fingerprints,
       );
-      // A recreated dependency, such as a fresh database, gets its setup
-      // again: its container identity is part of the fingerprint.
+      // Setup runs again when what it filled is gone: a recreated
+      // dependency, such as a fresh database, or a recreated node_modules
+      // volume. Container identities and volume creation times are part of
+      // the fingerprint.
       const containers = dependencies.length
         ? await this.startDependencies(dependencies)
         : "";
-      const fingerprint = sha256(JSON.stringify(task), lockfiles, containers);
-      const markers = installsPackages(task.command)
-        ? (project.serviceVolumes[serviceId] ?? []).flatMap((name) =>
-            project.markers[name] ? [project.markers[name]] : [],
-          )
-        : [];
-      if (await this.setupDone(task.id, fingerprint, stamps, markers)) {
+      const volumes = (project.serviceVolumes[serviceId] ?? [])
+        .filter((name) => name in project.volumeCreatedAt)
+        .map((name) => `${name}@${project.volumeCreatedAt[name]}`)
+        .join(",");
+      const fingerprint = sha256(
+        JSON.stringify(task),
+        lockfiles,
+        containers,
+        volumes,
+      );
+      if (stamps[task.id] === fingerprint) {
         this.options.log?.(`Setup ${task.id} is up to date.\n`);
         continue;
       }
@@ -287,11 +292,6 @@ export class ComposeEngine {
           timeoutMs: this.options.setupTimeoutMs ?? defaultSetupTimeoutMs,
           onOutput: this.options.log,
         }),
-      );
-      await Promise.all(
-        markers.map((mountpoint) =>
-          this.writeMarker(mountpoint, task.id, fingerprint),
-        ),
       );
       stamps[task.id] = fingerprint;
       await this.writeJson("setup-fingerprints.json", stamps);
@@ -313,19 +313,6 @@ export class ComposeEngine {
     );
     const result = await this.compose(["ps", "--quiet", ...serviceIds]);
     return result.stdout.split("\n").filter(Boolean).sort().join(",");
-  }
-
-  private async setupDone(
-    taskId: string,
-    fingerprint: string,
-    stamps: Record<string, string>,
-    markers: string[],
-  ) {
-    if (!markers.length) return stamps[taskId] === fingerprint;
-    const recorded = await Promise.all(
-      markers.map((mountpoint) => this.readMarker(mountpoint)),
-    );
-    return recorded.every((entries) => entries[taskId] === fingerprint);
   }
 
   private async prepareImages(
@@ -369,25 +356,28 @@ export class ComposeEngine {
     await this.writeJson("image-fingerprints.json", stamps);
   }
 
-  // One host command creates every volume, checks that Docker keeps it in
-  // its own volume directory and gives it to its owner.
+  // One host command creates the missing volumes, gives each to its owner
+  // and reports when every volume was created. The owner applies at
+  // creation only: an image such as Postgres then takes over its own data
+  // directory. Without root on the Docker host, a throwaway container
+  // changes the owner.
   private async ensureVolumes(rendered: RenderedCompose, owner: EngineOwner) {
     if (!rendered.volumes.length) return {} as Record<string, string>;
     const script = rendered.volumes
       .map(({ name, owner: kind, shared }) => {
         const labels = `--label blame.preview=true${shared ? " --label blame.shared=true" : ""}`;
-        const identity =
-          kind === "project" ? `${owner.uid}:${owner.gid}` : "0:0";
         const volume = shellQuote(name);
-        // The owner applies when the volume is created: an image such as
-        // Postgres then takes over its own data directory.
+        const identity = `${owner.uid}:${owner.gid}`;
+        const chown =
+          kind === "project"
+            ? `if [ "$(id -u)" = 0 ]; then chown ${identity} "$(docker volume inspect --format '{{.Mountpoint}}' ${volume})"; else docker run --rm --network none --user 0:0 -v ${volume}:/v ${ownershipImage} chown ${identity} /v; fi`
+            : ":";
         return [
-          `created=`,
-          `docker volume inspect ${volume} >/dev/null 2>&1 || { docker volume create ${labels} ${volume} >/dev/null; created=1; }`,
-          `mp="$(docker volume inspect --format '{{.Mountpoint}}' ${volume})"`,
-          `case "$mp" in /*/volumes/*/_data) ;; *) echo "volume ${name} has mountpoint $mp" >&2; exit 3;; esac`,
-          `[ -z "$created" ] || chown ${identity} "$mp"`,
-          `printf '%s\\t%s\\n' ${volume} "$mp"`,
+          `if ! docker volume inspect ${volume} >/dev/null 2>&1; then`,
+          `  docker volume create ${labels} ${volume} >/dev/null`,
+          `  ${chown}`,
+          `fi`,
+          `printf '%s\\t%s\\n' ${volume} "$(docker volume inspect --format '{{.CreatedAt}}' ${volume})"`,
         ].join("\n");
       })
       .join("\n");
@@ -406,26 +396,6 @@ export class ComposeEngine {
         .split("\n")
         .filter(Boolean)
         .map((line) => line.split("\t") as [string, string]),
-    );
-  }
-
-  private async readMarker(mountpoint: string) {
-    const value = await this.options.host.readFile(
-      posix.join(mountpoint, markerFile),
-    );
-    return parseRecord(value);
-  }
-
-  private async writeMarker(
-    mountpoint: string,
-    taskId: string,
-    fingerprint: string,
-  ) {
-    const entries = await this.readMarker(mountpoint);
-    entries[taskId] = fingerprint;
-    await this.options.host.writeFile(
-      posix.join(mountpoint, markerFile),
-      JSON.stringify(entries),
     );
   }
 
@@ -514,21 +484,6 @@ function parseJsonLines(value: string) {
     Health?: string;
     ExitCode?: number;
   }>;
-}
-
-function parseRecord(value: string | undefined): Record<string, string> {
-  try {
-    const parsed = JSON.parse(value ?? "{}") as unknown;
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
-      return {};
-    return Object.fromEntries(
-      Object.entries(parsed).filter(
-        (entry): entry is [string, string] => typeof entry[1] === "string",
-      ),
-    );
-  } catch {
-    return {};
-  }
 }
 
 function sha256(...parts: string[]) {

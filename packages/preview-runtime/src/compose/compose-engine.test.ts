@@ -11,17 +11,26 @@ import type { CommandResult, DockerHost } from "./docker-host.js";
 class FakeHost implements DockerHost {
   readonly commands: string[][] = [];
   readonly files = new Map<string, string>();
+  readonly volumes = new Map<string, string>();
   databaseContainer = "db-1";
 
   async run(command: string, args: string[]): Promise<CommandResult> {
     this.commands.push([command, ...args]);
     if (command === "sh") {
       const names = [
-        ...args[1]!.matchAll(/docker volume create .* '([^']+)'/g),
-      ].map((match) => match[1]!);
+        ...new Set(
+          [...args[1]!.matchAll(/docker volume create .* '([^']+)'/g)].map(
+            (match) => match[1]!,
+          ),
+        ),
+      ];
       return ok(
         names
-          .map((name) => `${name}\t/var/lib/docker/volumes/${name}/_data\n`)
+          .map((name) => {
+            if (!this.volumes.has(name))
+              this.volumes.set(name, `created-${this.volumes.size}`);
+            return `${name}\t${this.volumes.get(name)}\n`;
+          })
           .join(""),
       );
     }
@@ -53,22 +62,22 @@ test("writes the Compose file once and prepares owned volumes", async () => {
   assert.deepEqual(await engine.prepare(rendered, owner), { changed: true });
   assert.deepEqual(await engine.prepare(rendered, owner), { changed: false });
   const volumeScript = host.commands.find(([command]) => command === "sh")!;
-  assert.match(volumeScript[2]!, /\|\| chown 1001:1001 "\$mp"/);
+  assert.match(volumeScript[2]!, /chown 1001:1001 "\$\(docker volume inspect/);
   assert.match(volumeScript[2]!, /blame_node_modules_abc123/);
   assert.equal(host.files.get("/state/story-a/compose.yaml"), rendered.yaml);
 });
 
-test("never writes setup markers into other caches", async () => {
+test("reruns the install when its node_modules volume is recreated", async () => {
   const host = new FakeHost();
   const engine = engineFor(host, "story-a");
-  await engine.prepare(renderCompose(plan(), target("story-a")), owner);
+  const rendered = renderCompose(plan(), target("story-a"));
+  await engine.prepare(rendered, owner);
   await engine.start(plan(), ["web", "db"], fingerprints);
-  const markers = [...host.files.keys()].filter((path) =>
-    path.endsWith(".blame-setup-fingerprints.json"),
-  );
-  assert.deepEqual(markers, [
-    "/var/lib/docker/volumes/blame_node_modules_abc123/_data/.blame-setup-fingerprints.json",
-  ]);
+  host.volumes.set("blame_node_modules_abc123", "recreated");
+  await engine.prepare(rendered, owner);
+  host.commands.length = 0;
+  await engine.start(plan(), ["web", "db"], fingerprints);
+  assert.deepEqual(host.composeRuns(), ["setup-install", "setup-migrate"]);
 });
 
 test("starts services with Docker waiting for health", async () => {
@@ -91,19 +100,6 @@ test("starts services with Docker waiting for health", async () => {
     "db",
   ]);
   assert.deepEqual(host.composeRuns(), ["setup-install", "setup-migrate"]);
-});
-
-test("a worktree sharing the dependency volume skips the install", async () => {
-  const host = new FakeHost();
-  const first = engineFor(host, "story-a");
-  await first.prepare(renderCompose(plan(), target("story-a")), owner);
-  await first.start(plan(), ["web", "db"], fingerprints);
-  const second = engineFor(host, "story-b");
-  await second.prepare(renderCompose(plan(), target("story-b")), owner);
-  host.commands.length = 0;
-  await second.start(plan(), ["web", "db"], fingerprints);
-  // Its own database still needs the migration.
-  assert.deepEqual(host.composeRuns(), ["setup-migrate"]);
 });
 
 test("reruns a setup task when its dependency is recreated", async () => {

@@ -40,16 +40,13 @@ export type ComposeTarget = SandboxComposeTarget | LocalComposeTarget;
 export const sandboxProjectName = "blame-preview";
 
 // Volumes the engine creates before Compose runs, so it can give them to the
-// project user. Shared volumes outlive the preview. A package install
-// records that it ran in the node_modules volumes it fills (`setupMarker`),
-// so a recreated volume reruns it and a worktree sharing the volume skips
-// it. Other caches stay untouched: one may be a database directory, which
-// must stay empty until its server initializes it.
+// project user. Shared volumes outlive the preview. Setup tasks run again
+// when a node_modules volume they fill is recreated (`tracksSetup`).
 export type EngineVolume = {
   name: string;
   owner: "project" | "root";
   shared: boolean;
-  setupMarker: boolean;
+  tracksSetup: boolean;
 };
 
 export type MountedVolume = EngineVolume & { alias: string; target: string };
@@ -84,7 +81,7 @@ function cacheVolume(cache: CachePlan, target: ComposeTarget): MountedVolume {
       target: cache.target,
       owner: "project",
       shared: false,
-      setupMarker: cache.target === "/workspace/node_modules",
+      tracksSetup: cache.target === "/workspace/node_modules",
     };
   }
   if (cache.target === "/workspace/node_modules") {
@@ -94,7 +91,7 @@ function cacheVolume(cache: CachePlan, target: ComposeTarget): MountedVolume {
       target: cache.target,
       owner: "project",
       shared: true,
-      setupMarker: true,
+      tracksSetup: true,
     };
   }
   const shared = sharedPackageCaches.has(cache.name);
@@ -104,7 +101,7 @@ function cacheVolume(cache: CachePlan, target: ComposeTarget): MountedVolume {
     target: cache.target,
     owner: "project",
     shared,
-    setupMarker: false,
+    tracksSetup: false,
   };
 }
 
@@ -130,7 +127,7 @@ export function packageNodeModulesVolumes(
       target: path,
       owner: "project" as const,
       shared: true,
-      setupMarker: true,
+      tracksSetup: true,
     }));
 }
 
