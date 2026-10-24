@@ -49,6 +49,9 @@ export type ServiceState = {
   id: string;
   running: boolean;
   healthy?: boolean;
+  /** Docker's health status: starting, healthy or unhealthy. */
+  health?: string;
+  /** Docker's container state, such as running, exited or created. */
   state?: string;
   exitCode?: number;
 };
@@ -174,6 +177,7 @@ export class ComposeEngine {
         id,
         running: row?.State === "running",
         healthy: row?.Health ? row.Health === "healthy" : undefined,
+        health: row?.Health || undefined,
         state: row?.State,
         exitCode: row?.ExitCode,
       };

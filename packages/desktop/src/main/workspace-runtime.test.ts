@@ -17,10 +17,7 @@ import {
   resetRuntimeGitIdentityConfiguredForTesting,
   findProjectFilesByName,
 } from "./workspace-runtime.ts";
-import {
-  hasMissingWorkspaceNodeModules,
-  sanitizeWorkspaceConfigFiles,
-} from "./workspace-config-sanitizer.ts";
+import { sanitizeWorkspaceConfigFiles } from "./workspace-config-sanitizer.ts";
 
 test("replaces runtime state files atomically", async () => {
   const directory = await mkdtemp(join(tmpdir(), "blame-runtime-state-"));
@@ -319,103 +316,6 @@ test("distinguishes VM-internal worktrees from legacy macOS shared worktrees", (
     ),
     false,
   );
-});
-
-test("hasMissingWorkspaceNodeModules: returns false for single-package root projects", async () => {
-  const mockFns = {
-    run: async () => ({
-      stdout: "/workspace/package.json\n",
-      stderr: "",
-    }),
-    readFile: async () => JSON.stringify({ dependencies: { foo: "1.0.0" } }),
-    pathExists: async () => false,
-    dirnameWorkspacePath: (p: string) => "/workspace",
-    joinWorkspacePath: (dir: string, ...parts: string[]) =>
-      [dir, ...parts].join("/"),
-  };
-
-  const result = await hasMissingWorkspaceNodeModules("/workspace", mockFns);
-  assert.equal(result, false);
-});
-
-test("hasMissingWorkspaceNodeModules: returns false for sub-packages with no dependencies", async () => {
-  const mockFns = {
-    run: async () => ({
-      stdout: "/workspace/package.json\n/workspace/apps/web/package.json\n",
-      stderr: "",
-    }),
-    readFile: async (p: string) => {
-      if (p === "/workspace/apps/web/package.json") {
-        return JSON.stringify({});
-      }
-      return JSON.stringify({ dependencies: { foo: "1.0.0" } });
-    },
-    pathExists: async () => false,
-    dirnameWorkspacePath: (p: string) => {
-      if (p.includes("apps/web")) return "/workspace/apps/web";
-      return "/workspace";
-    },
-    joinWorkspacePath: (dir: string, ...parts: string[]) =>
-      [dir, ...parts].join("/"),
-  };
-
-  const result = await hasMissingWorkspaceNodeModules("/workspace", mockFns);
-  assert.equal(result, false);
-});
-
-test("hasMissingWorkspaceNodeModules: returns false when sub-package node_modules exist", async () => {
-  const mockFns = {
-    run: async () => ({
-      stdout: "/workspace/package.json\n/workspace/apps/web/package.json\n",
-      stderr: "",
-    }),
-    readFile: async (p: string) => {
-      if (p === "/workspace/apps/web/package.json") {
-        return JSON.stringify({ dependencies: { next: "latest" } });
-      }
-      return JSON.stringify({});
-    },
-    pathExists: async (p: string) => {
-      if (p === "/workspace/apps/web/node_modules") return true;
-      return false;
-    },
-    dirnameWorkspacePath: (p: string) => {
-      if (p.includes("apps/web")) return "/workspace/apps/web";
-      return "/workspace";
-    },
-    joinWorkspacePath: (dir: string, ...parts: string[]) =>
-      [dir, ...parts].join("/"),
-  };
-
-  const result = await hasMissingWorkspaceNodeModules("/workspace", mockFns);
-  assert.equal(result, false);
-});
-
-test("hasMissingWorkspaceNodeModules: returns true when sub-package node_modules are missing", async () => {
-  const mockFns = {
-    run: async () => ({
-      stdout: "/workspace/package.json\n/workspace/apps/web/package.json\n",
-      stderr: "",
-    }),
-    readFile: async (p: string) => {
-      if (p === "/workspace/apps/web/package.json") {
-        return JSON.stringify({ devDependencies: { next: "latest" } });
-      }
-      return JSON.stringify({});
-    },
-    pathExists: async (p: string) => {
-      return false;
-    },
-    dirnameWorkspacePath: (p: string) => {
-      if (p.includes("apps/web")) return "/workspace/apps/web";
-      return "/workspace";
-    },
-    joinWorkspacePath: (dir: string, ...parts: string[]) =>
-      [dir, ...parts].join("/"),
-  };
-
-  const result = await hasMissingWorkspaceNodeModules("/workspace", mockFns);
-  assert.equal(result, true);
 });
 
 test("sanitizeWorkspaceConfigFiles: merges configs and deletes duplicate sub-package files", async () => {

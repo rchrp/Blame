@@ -5,7 +5,7 @@ const hardLimit = 1_000
 const reviewThreshold = 600
 const root = new URL("../", import.meta.url).pathname
 const legacy = new Map(Object.entries({
-  "packages/desktop/src/main/workspace-ipc.ts": budget(5185, 5100),
+  "packages/desktop/src/main/workspace-ipc.ts": budget(3100, 3000),
   "packages/agent-runtime/src/cline-runtime.ts": budget(5006, 4900),
   "packages/app/src/components/backlog/drawer/markdown-editor.tsx": budget(2405, 2350),
   "packages/app/src/components/chat/agent-conversation.tsx": budget(2348, 2300),
@@ -14,7 +14,6 @@ const legacy = new Map(Object.entries({
   "packages/app/src/components/model/model-selector.tsx": budget(2087, 2050),
   "packages/app/src/components/backlog/drawer/user-story-preview.tsx": budget(2035, 1950),
   "packages/app/src/pages/backlog/use-backlog-rotation.ts": budget(1393, 1350),
-  "packages/desktop/src/main/workspace-compose.ts": budget(1327, 1250),
   "packages/desktop/src/main/code-review-graph.ts": budget(1314, 1250),
   "packages/app/src/components/backlog/data/agent-flow.ts": budget(1308, 1250),
   "packages/app/src/pages/settings/page.tsx": budget(1270, 1200),

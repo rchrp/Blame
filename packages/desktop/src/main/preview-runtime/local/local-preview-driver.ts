@@ -1,5 +1,3 @@
-import { spawn } from "node:child_process";
-import { resolve } from "node:path";
 import {
   resolveCapabilities,
   runtimeHandle,
@@ -15,8 +13,24 @@ import {
   type RuntimeObservation,
   type RuntimeSelection,
 } from "@blame/preview-runtime";
+import type { ServiceState } from "@blame/preview-runtime/compose";
 import type { ProjectPreviewRuntimeState } from "@blame/agent-runtime";
-import { resolveWorkspacePath } from "../../workspace-runtime.ts";
+import {
+  joinWorkspacePath,
+  resolveWorkspacePath,
+  run,
+} from "../../workspace-runtime.ts";
+import {
+  localPreviewEndpoints,
+  localPreviewLogs,
+  localPreviewServices,
+} from "./local-preview-runner.ts";
+
+// The Local Container profile behind the provider-neutral driver contract.
+// The Blame Runtime is a long-lived host shared by every story, and the
+// worktree is attached at /workspace, so provisioning, synchronization and
+// exports are immediate; starting, stopping, inspection, endpoints and logs
+// go to the story's Compose project on the shared engine.
 
 type LocalHandle = {
   kind: "local-container";
@@ -31,30 +45,29 @@ export type LocalRuntimeAdapter = {
     worktree: string;
   }): Promise<ProjectPreviewRuntimeState>;
   state(worktree: string): Promise<ProjectPreviewRuntimeState>;
-  logs(input: {
-    service?: string;
-    tailLines?: number;
-    worktree: string;
-  }): Promise<{
-    available: boolean;
-    service?: string;
-    services: string[];
-    stdout?: string;
-    stderr?: string;
-  }>;
+  services(worktree: string): Promise<ServiceState[]>;
+  endpoints(worktree: string): ReturnType<typeof localPreviewEndpoints>;
+  logs(
+    worktree: string,
+    serviceId?: string,
+  ): Promise<{ stdout: string; stderr: string } | undefined>;
+  exec(cwd: string, input: ExecInput): Promise<ExecResult>;
 };
 
 const defaultAdapter: LocalRuntimeAdapter = {
+  // Start and stop go through the IPC module, which records the lifecycle.
   control: (input) =>
-    import("./legacy-local-preview-adapter").then(({ control }) =>
-      control(input),
+    import("../../workspace-ipc.ts").then(({ controlProjectPreview }) =>
+      controlProjectPreview(input),
     ),
   state: (worktree) =>
-    import("./legacy-local-preview-adapter").then(({ state }) =>
-      state(worktree),
+    import("../../workspace-ipc.ts").then(({ projectPreviewRuntimeState }) =>
+      projectPreviewRuntimeState(worktree),
     ),
-  logs: (input) =>
-    import("./legacy-local-preview-adapter").then(({ logs }) => logs(input)),
+  services: localPreviewServices,
+  endpoints: localPreviewEndpoints,
+  logs: (worktree, serviceId) => localPreviewLogs(worktree, serviceId),
+  exec: runInWorkspace,
 };
 
 export class LocalPreviewDriver implements PreviewRuntimeDriver {
@@ -75,15 +88,11 @@ export class LocalPreviewDriver implements PreviewRuntimeDriver {
   }
 
   async provisionHost(input: ProvisionInput) {
-    const worktree = resolveWorkspacePath(
-      await this.worktreeForStory(input.userStoryId),
-    );
     return {
-      handle: runtimeHandle({
-        kind: "local-container",
-        sessionId: input.sessionId,
-        worktree,
-      } satisfies LocalHandle),
+      handle: await this.connect(
+        await this.worktreeForStory(input.userStoryId),
+        input.sessionId,
+      ),
     };
   }
 
@@ -108,6 +117,7 @@ export class LocalPreviewDriver implements PreviewRuntimeDriver {
     return { sourceRevision: source.revision, workspaceHash: source.sha256 };
   }
 
+  // A start renders and prepares the project itself.
   async prepareEngine(_handle: RuntimeHandle, _plan: PreviewExecutionPlan) {}
 
   async startServices(handle: RuntimeHandle, selection: RuntimeSelection) {
@@ -127,61 +137,55 @@ export class LocalPreviewDriver implements PreviewRuntimeDriver {
 
   exec(handle: RuntimeHandle, input: ExecInput) {
     const root = localHandle(handle).worktree;
-    const cwd = resolve(root, input.cwd ?? ".");
+    const cwd = input.cwd
+      ? joinWorkspacePath(root, input.cwd.replace(/^\/workspace\/?/, ""))
+      : root;
     if (cwd !== root && !cwd.startsWith(`${root}/`))
       throw new Error("Command escapes the local worktree");
-    return runCommand(cwd, input);
+    return this.adapter.exec(cwd, input);
   }
 
   async inspect(handle: RuntimeHandle): Promise<RuntimeObservation> {
-    const value = await this.adapter.state(localHandle(handle).worktree);
+    const services = await this.adapter.services(localHandle(handle).worktree);
     return {
       host: "running",
-      engine: value.desiredStatus === "running" ? "running" : "stopped",
-      services: value.configurations.map(({ id }) => ({
+      engine: services.some(({ running }) => running) ? "running" : "stopped",
+      services: services.map(({ id, running, healthy }) => ({
         id,
-        running: value.statuses[id] === "running",
-        healthy: value.statuses[id] !== "error",
+        running,
+        healthy: running && healthy !== false,
       })),
     };
   }
 
   async endpoints(handle: RuntimeHandle): Promise<EndpointMap> {
-    const value = await this.adapter.state(localHandle(handle).worktree);
-    const url = value.previewUrl ? new URL(value.previewUrl) : undefined;
-    const selected = value.configurations.find(
-      ({ id }) => id === value.selectedConfigurationId,
-    );
-    const endpointId = selected?.id ?? "preview";
-    const logicalPort = Number(
-      url?.port || (url?.protocol === "https:" ? 443 : 80),
-    );
-    const routes = url
-      ? [
-          {
-            routeId: `${localHandle(handle).sessionId}:${selected?.previewService ?? endpointId}:${endpointId}`,
-            serviceId: selected?.previewService ?? endpointId,
-            endpointId,
-            protocol:
-              url.protocol === "https:"
-                ? ("https" as const)
-                : ("http" as const),
-            logicalHost: "localhost" as const,
-            logicalPort,
-            targetHost: "127.0.0.1",
-            targetPort: logicalPort,
-            sandboxPort: logicalPort,
-            publicUrl: url.toString(),
-            basePathMode: "root" as const,
-            externallyCompatible: true,
-          },
-        ]
-      : [];
+    const { sessionId, worktree } = localHandle(handle);
+    const { routes, primary } = await this.adapter.endpoints(worktree);
+    const mapped = routes.map((route) => ({
+      routeId: `${sessionId}:${route.serviceId}:${route.endpointId}`,
+      serviceId: route.serviceId,
+      endpointId: route.endpointId,
+      protocol: route.protocol,
+      logicalHost: "localhost" as const,
+      logicalPort: route.port,
+      targetHost: "127.0.0.1",
+      targetPort: route.port,
+      sandboxPort: route.port,
+      publicUrl: `${route.protocol}://localhost:${route.port}/`,
+      basePathMode: "root" as const,
+      externallyCompatible: true,
+    }));
+    const primaryRoute =
+      mapped.find(
+        ({ serviceId, endpointId }) =>
+          serviceId === primary?.serviceId &&
+          endpointId === primary?.endpoint.id,
+      ) ?? mapped[0];
     return {
       revision: 1,
-      primaryRouteId: routes[0]?.routeId ?? "",
-      primaryPublicUrl: routes[0]?.publicUrl ?? "",
-      routes,
+      primaryRouteId: primaryRoute?.routeId ?? "",
+      primaryPublicUrl: primaryRoute?.publicUrl ?? "",
+      routes: mapped,
       supportsWebSocket: true,
       integratedPreviewRequired: false,
       incompatibilityReasons: [],
@@ -190,11 +194,8 @@ export class LocalPreviewDriver implements PreviewRuntimeDriver {
 
   async *logs(input: LogRequest): AsyncIterable<PreviewLogEvent> {
     const handle = localHandle(input.handle);
-    const snapshot = await this.adapter.logs({
-      service: input.serviceId,
-      worktree: handle.worktree,
-    });
-    if (!snapshot.available || !("service" in snapshot)) return;
+    const snapshot = await this.adapter.logs(handle.worktree, input.serviceId);
+    if (!snapshot) return;
     yield {
       sessionId: handle.sessionId,
       sequence: 1,
@@ -206,12 +207,13 @@ export class LocalPreviewDriver implements PreviewRuntimeDriver {
         agent: "idle",
         sync: "clean",
       },
-      serviceId: snapshot.service,
+      serviceId: input.serviceId,
       stream: "stdout",
-      message: `${snapshot.stdout ?? ""}${snapshot.stderr ?? ""}`,
+      message: `${snapshot.stdout}${snapshot.stderr}`,
     };
   }
 
+  // The worktree is the workspace: there is no delta to export.
   async exportDelta(_handle: RuntimeHandle, revision: string) {
     return {
       artifactId: `local:${revision}`,
@@ -253,28 +255,28 @@ function localHandle(handle: RuntimeHandle) {
   return value;
 }
 
-function runCommand(cwd: string, input: ExecInput) {
-  return new Promise<ExecResult>((resolveResult, reject) => {
-    const child = spawn(input.command, input.args ?? [], {
+// Commands run where the worktree lives: in the Blame Runtime, as its user.
+async function runInWorkspace(cwd: string, input: ExecInput) {
+  try {
+    const result = await run(input.command, input.args ?? [], {
       cwd,
       env: { ...process.env, ...(input.environment ?? {}) },
-      stdio: ["ignore", "pipe", "pipe"],
     });
-    let stdout = "";
-    let stderr = "";
-    let timedOut = false;
-    child.stdout.setEncoding("utf8").on("data", (chunk) => (stdout += chunk));
-    child.stderr.setEncoding("utf8").on("data", (chunk) => (stderr += chunk));
-    const timeout = input.timeoutMs
-      ? setTimeout(() => {
-          timedOut = true;
-          child.kill("SIGKILL");
-        }, input.timeoutMs)
-      : undefined;
-    child.once("error", reject);
-    child.once("exit", (code) => {
-      if (timeout) clearTimeout(timeout);
-      resolveResult({ exitCode: code ?? 1, stdout, stderr, timedOut });
-    });
-  });
+    return { exitCode: 0, stdout: result.stdout, stderr: result.stderr };
+  } catch (error) {
+    const failure = error as {
+      code?: unknown;
+      stdout?: unknown;
+      stderr?: unknown;
+      message?: string;
+    };
+    return {
+      exitCode: typeof failure.code === "number" ? failure.code : 1,
+      stdout: typeof failure.stdout === "string" ? failure.stdout : "",
+      stderr:
+        typeof failure.stderr === "string"
+          ? failure.stderr
+          : (failure.message ?? ""),
+    };
+  }
 }

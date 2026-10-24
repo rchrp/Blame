@@ -1,8 +1,5 @@
 import type { ProjectInitializationDiagnostics } from "@blame/agent-runtime";
-import {
-  createContainerRuntime,
-  type ContainerRuntime,
-} from "./container-runtime.ts";
+import { localPreviewEngine } from "./preview-runtime/local/local-preview-runner.ts";
 import {
   joinWorkspacePath,
   readFile as readWorkspaceFile,
@@ -11,7 +8,11 @@ import {
 
 const maxDiagnosticLength = 32_000;
 const diagnosticCommandTimeoutMs = 15_000;
-const containerRuntime = createContainerRuntime();
+
+// Runs a Compose command on the worktree's preview project.
+type ComposeCommand = (
+  args: string[],
+) => Promise<{ exitCode: number; stdout: string; stderr: string }>;
 
 export type CollectProjectInitializationDiagnosticsInput = {
   worktree: string;
@@ -19,73 +20,40 @@ export type CollectProjectInitializationDiagnosticsInput = {
 };
 
 type CollectProjectInitializationDiagnosticsOptions = {
-  containerRuntime?: ContainerRuntime;
+  compose?: ComposeCommand;
 };
 
 export async function collectProjectInitializationDiagnostics(
   input: CollectProjectInitializationDiagnosticsInput,
-  env: NodeJS.ProcessEnv,
+  _env: NodeJS.ProcessEnv,
   options: CollectProjectInitializationDiagnosticsOptions = {},
 ): Promise<ProjectInitializationDiagnostics> {
   const worktree = resolveWorkspacePath(input.worktree);
-  const runtime = options.containerRuntime ?? containerRuntime;
-  const composeArgs = [
-    "-f",
-    joinWorkspacePath(
-      worktree,
-      ".blame",
-      "initialization",
-      "docker-compose.yml",
-    ),
-    "--project-directory",
-    worktree,
-  ];
-  const services = await commandOutput(runtime, worktree, env, [
-    ...composeArgs,
-    "config",
-    "--services",
-  ]);
+  const compose =
+    options.compose ??
+    ((args: string[]) =>
+      localPreviewEngine(worktree).compose(
+        args,
+        { timeoutMs: diagnosticCommandTimeoutMs },
+        true,
+      ));
+  const services = await commandOutput(compose, ["config", "--services"]);
   return {
     setupLog: await setupLog(worktree),
     launchError: sanitizeProjectDiagnostic(input.launchError),
-    composeConfig: await commandOutput(runtime, worktree, env, [
-      ...composeArgs,
-      "config",
-    ]),
-    composePs: await commandOutput(runtime, worktree, env, [
-      ...composeArgs,
-      "ps",
-      "-a",
-    ]),
-    serviceLogs: await serviceLogOutputs(
-      runtime,
-      worktree,
-      env,
-      composeArgs,
-      serviceNames(services),
-    ),
+    composeConfig: await commandOutput(compose, ["config"]),
+    composePs: await commandOutput(compose, ["ps", "--all"]),
+    serviceLogs: await serviceLogOutputs(compose, serviceNames(services)),
   };
 }
 
-async function serviceLogOutputs(
-  runtime: ContainerRuntime,
-  worktree: string,
-  env: NodeJS.ProcessEnv,
-  composeArgs: string[],
-  services: string[],
-) {
+async function serviceLogOutputs(compose: ComposeCommand, services: string[]) {
   const entries = await Promise.all(
     services.map(
       async (service) =>
         [
           service,
-          await commandOutput(runtime, worktree, env, [
-            ...composeArgs,
-            "logs",
-            "--tail",
-            "200",
-            service,
-          ]),
+          await commandOutput(compose, ["logs", "--tail", "200", service]),
         ] as const,
     ),
   );
@@ -106,18 +74,9 @@ async function setupLog(worktree: string) {
   }
 }
 
-async function commandOutput(
-  runtime: ContainerRuntime,
-  worktree: string,
-  env: NodeJS.ProcessEnv,
-  args: string[],
-) {
+async function commandOutput(compose: ComposeCommand, args: string[]) {
   try {
-    const result = await runtime.compose(args, {
-      cwd: worktree,
-      env,
-      timeoutMs: diagnosticCommandTimeoutMs,
-    });
+    const result = await compose(args);
     return truncate(
       sanitizeProjectDiagnostic(
         [result.stdout, result.stderr].filter(Boolean).join("\n"),

@@ -9,7 +9,7 @@ import {
   type LocalRuntimeAdapter,
 } from "./local-preview-driver.ts";
 
-test("adapts the existing local runtime to the provider-neutral driver contract", async () => {
+test("drives the local Compose project through the provider-neutral driver contract", async () => {
   const worktree = await mkdtemp(join(tmpdir(), "blame-local-driver-"));
   let running = false;
   const runtime = (): ProjectPreviewRuntimeState => ({
@@ -36,13 +36,27 @@ test("adapts the existing local runtime to the provider-neutral driver contract"
     async state() {
       return runtime();
     },
-    async logs() {
+    async services() {
+      return [{ id: "web", running, healthy: running }];
+    },
+    async endpoints() {
       return {
-        available: true,
-        service: "web",
-        services: ["web"],
-        stdout: "ready",
+        routes: [
+          {
+            serviceId: "web",
+            endpointId: "http",
+            protocol: "http" as const,
+            port: 3000,
+          },
+        ],
+        primary: undefined,
       };
+    },
+    async logs() {
+      return { stdout: "ready", stderr: "" };
+    },
+    async exec() {
+      return { exitCode: 0, stdout: "", stderr: "" };
     },
   };
   try {
@@ -96,8 +110,18 @@ test("connects VM-internal worktrees without resolving them on the desktop host"
       observedWorktrees.push(input);
       return runtime();
     },
+    async services() {
+      return [];
+    },
+    async endpoints() {
+      return { routes: [], primary: undefined };
+    },
     async logs() {
-      return { available: false, services: [] };
+      return undefined;
+    },
+    async exec(cwd) {
+      observedWorktrees.push(cwd);
+      return { exitCode: 0, stdout: "", stderr: "" };
     },
   };
 
@@ -105,8 +129,13 @@ test("connects VM-internal worktrees without resolving them on the desktop host"
   const handle = await driver.connect(`${worktree}/`);
   await driver.runtimeState(handle);
   await driver.startServices(handle, { configurationId: "web" });
+  await driver.exec(handle, { command: "ls", cwd: "/workspace/apps/web" });
 
-  assert.deepEqual(observedWorktrees, [worktree, worktree]);
+  assert.deepEqual(observedWorktrees, [
+    worktree,
+    worktree,
+    `${worktree}/apps/web`,
+  ]);
 });
 
 function plan() {

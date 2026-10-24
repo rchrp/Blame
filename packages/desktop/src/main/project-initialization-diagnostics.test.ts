@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { chmod, mkdir, mkdtemp, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import test from "node:test";
@@ -8,36 +8,36 @@ import {
   collectProjectInitializationDiagnostics,
   sanitizeProjectDiagnostic,
 } from "./project-initialization-diagnostics.ts";
-import { createContainerRuntime } from "./container-runtime.ts";
 
 test("collects compose configuration, status, and every service log", async () => {
   const root = await mkdtemp(join(tmpdir(), "blame-diagnostics-"));
-  const bin = join(root, "bin");
   const worktree = join(root, "worktree");
-  await mkdir(join(worktree, ".blame", "initialization"), { recursive: true });
   await mkdir(join(worktree, ".blame", "logs"), { recursive: true });
-  await mkdir(bin);
   await writeFile(
     join(worktree, ".blame", "logs", "setup.log"),
     "setup failed",
   );
-  await writeFile(
-    join(bin, "docker"),
-    `#!/usr/bin/env bash
-if [[ "$*" == *"config --services"* ]]; then printf "web\\nworker\\n"; exit 0; fi
-if [[ "$*" == *"config"* ]]; then printf "services config"; exit 0; fi
-if [[ "$*" == *"ps -a"* ]]; then printf "containers"; exit 0; fi
-if [[ "$*" == *"logs --tail 200 web"* ]]; then printf "web log"; exit 0; fi
-printf "worker unavailable" >&2
-exit 1
-`,
-  );
-  await chmod(join(bin, "docker"), 0o755);
+  const outputs: Record<
+    string,
+    { exitCode: number; stdout: string; stderr: string }
+  > = {
+    "config --services": { exitCode: 0, stdout: "web\nworker\n", stderr: "" },
+    config: { exitCode: 0, stdout: "services config", stderr: "" },
+    "ps --all": { exitCode: 0, stdout: "containers", stderr: "" },
+    "logs --tail 200 web": { exitCode: 0, stdout: "web log", stderr: "" },
+  };
 
   const result = await collectProjectInitializationDiagnostics(
     { worktree, launchError: "preview failed" },
-    { ...process.env, PATH: `${bin}:${process.env.PATH}` },
-    { containerRuntime: createContainerRuntime("linux") },
+    process.env,
+    {
+      compose: async (args) =>
+        outputs[args.join(" ")] ?? {
+          exitCode: 1,
+          stdout: "",
+          stderr: "worker unavailable",
+        },
+    },
   );
 
   assert.equal(result.setupLog, "setup failed");

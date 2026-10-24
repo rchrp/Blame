@@ -1,5 +1,4 @@
 import {
-  commandWithNextWebpackFallback,
   generatePreviewArtifacts,
   parsePreviewManifest,
   parseRunConfigurations,
@@ -10,22 +9,9 @@ import {
   type ProjectPreviewRuntimeState,
   type ProjectRunConfiguration,
 } from "@blame/agent-runtime";
-import {
-  type PreviewManifest,
-  type PreviewManifestService,
-} from "@blame/preview-contract";
-import {
-  activeProbes,
-  compilePreviewManifest,
-  probeEndpoint,
-  probeFailureMessage,
-  probeStatusAccepted,
-  serviceProbeCommand,
-  type PreviewExecutionPlan,
-  type ProbePlan,
-  type RuntimeProfileId,
-  type ServiceEndpointPlan,
-} from "@blame/preview-runtime";
+import { type PreviewManifest } from "@blame/preview-contract";
+import { type RuntimeProfileId } from "@blame/preview-runtime";
+import type { ServiceState } from "@blame/preview-runtime/compose";
 import {
   ATTR_BLAME_AGENT_ROLE,
   ATTR_BLAME_AGENT_STRATEGY,
@@ -56,12 +42,9 @@ import {
   type TelemetryOutcome,
 } from "@blame/telemetry";
 import { BrowserWindow, ipcMain, type IpcMainInvokeEvent } from "electron";
-import { type ChildProcessWithoutNullStreams } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import { readdir, readFile, stat } from "node:fs/promises";
-import { createConnection } from "node:net";
 import { join, posix, relative, resolve, sep } from "node:path";
-import { parse as parseYaml } from "yaml";
 import {
   generateNewProjectWithAgent,
   releaseAgentWorkspaceSessions,
@@ -70,10 +53,7 @@ import {
   optimizeAttachmentForAiContext,
   type OptimizeAttachmentForAiContextInput,
 } from "./attachment-ai-context";
-import {
-  containerRuntimeEnvironment,
-  createContainerRuntime,
-} from "./container-runtime";
+import { containerRuntimeEnvironment } from "./container-runtime";
 import {
   assertHostDependencies,
   checkHostDependencies,
@@ -81,41 +61,20 @@ import {
 import { setupPath } from "./host-tool-path";
 import { isProjectFolder } from "./worktree-safety";
 import type { DesktopBridgeGrant } from "./preview-browser/preview-bridge-grant";
-import {
-  composeRuntimeServiceClosure,
-  composeServiceHealthcheckCommand,
-  composeSetupTaskEnvironment,
-  previewComposePlan,
-  type PreviewComposeConfig as ComposeConfig,
-  type PreviewComposeService as ComposeService,
-} from "./preview-compose-plan";
-import {
-  previewComposeEnvOverrides,
-  validatePreviewComposeBindings,
-} from "./preview-compose-validation";
-import {
-  containerMatchesWorktree,
-  previewComposeProjectName,
-  previewContainerFailure,
-  previewFailureLogExcerpt,
-} from "./preview-readiness";
+import { previewComposeProjectName } from "./preview-readiness";
 import { PreviewRecoveryCircuit } from "./preview-recovery-circuit";
-import { composeWithRememberedHostPorts } from "./preview-port-memory.ts";
 import { stalePreviewSetupReason } from "./preview-setup-preflight.ts";
 import {
   initialPreviewRuntimeSelection,
   previewRunConfigurationServiceIds,
   previewRunConfigurationStatus,
   selectedPreviewRunConfiguration,
-  selectedPreviewRuntimeServiceIds,
   shouldStartBrowserPreview,
   type PreviewRuntimeSelectionState,
 } from "./preview-run-state";
 import {
   idleLocalPreviewLifecycle,
   localPreviewLifecycle,
-  localPreviewStartStep,
-  parseLocalPreviewRuntimeSelectionState,
   pendingLocalPreviewLifecycle,
   runLocalPreviewOperation,
 } from "./preview-runtime/local/local-preview-lifecycle.js";
@@ -131,10 +90,6 @@ import {
   type CollectProjectInitializationDiagnosticsInput,
 } from "./project-initialization-diagnostics";
 import {
-  detectedStackUsesNext,
-  packageJsonUsesNext,
-} from "./project-stack-detection";
-import {
   repositoryTelemetryCohorts,
   type RepositoryTelemetryCohorts,
 } from "./repository-telemetry-cohorts";
@@ -147,26 +102,31 @@ import {
   type RuntimeProgress,
 } from "./runtime-manager";
 import {
-  composeWithCurrentDependencyVolumes,
-  composeWithNonMutatingNpmInstalls,
-  composeWithoutNumericSuUser,
-  composeWithRuntimePortPlaceholders,
-  dockerComposeForPreview,
-  dockerComposeWithHostFileMounts,
-  dockerComposeWithPortableWindowsPaths,
-} from "./workspace-compose";
-import { dependencyVolumeHashFromInputs } from "./workspace-compose-volumes";
+  collectPreviewGarbage,
+  removePreviewProject,
+} from "./preview-runtime/local/local-preview-cleanup.ts";
 import {
-  cleanupAbandonedBlamePreviews,
-  removeBlamePreviewProjectResources,
-  runtimeAddressPoolExhausted,
-} from "./workspace-docker-cleanup";
+  compileLocalPreviewPlan,
+  localPreviewPaths,
+  LocalPreviewError as PreviewRuntimeError,
+  readLocalPreviewManifest,
+  readLocalRunConfigurations,
+  readLocalRuntimeState,
+  writeLocalRuntimeState,
+} from "./preview-runtime/local/local-preview-files.ts";
 import {
-  envHostFileMounts,
-  materializedPreviewEnvFilesMatch,
-  materializedPreviewEnvHostFileMounts,
-  syncProjectEnvFiles,
-} from "./workspace-env";
+  followLocalPreviewLogs,
+  localPreviewEndpoints,
+  localPreviewHealthy,
+  localPreviewLogs,
+  localPreviewProbesPass,
+  localPreviewServices,
+  localPreviewUrl,
+  removeLocalPreview,
+  startLocalPreview,
+  stopLocalPreview,
+} from "./preview-runtime/local/local-preview-runner.ts";
+import { syncProjectEnvFiles } from "./workspace-env";
 import {
   ensureGitRepository,
   gitDiffBetween,
@@ -184,13 +144,13 @@ import {
   type GitSnapshotInput,
 } from "./workspace-git";
 import {
+  platformWorktreeRoot,
   workspaceExecution,
   workspaceMode,
   type WorkspaceMode,
 } from "./workspace-mode.ts";
 import {
   appendFile as appendRuntimeFile,
-  chmod as chmodRuntime,
   dirnameWorkspacePath,
   findProjectFilesByName,
   joinWorkspacePath,
@@ -204,16 +164,11 @@ import {
   run as runRuntime,
   runtimeManagedPath,
   pathExists as runtimePathExists,
-  spawnRuntime,
   storyBranch,
   worktreePath,
   writeFile as writeRuntimeFile,
   writeFileAtomic as writeRuntimeFileAtomic,
 } from "./workspace-runtime";
-import {
-  hasMissingWorkspaceNodeModules,
-  sanitizeWorkspaceConfigFiles,
-} from "./workspace-config-sanitizer";
 import {
   branchExists,
   ensureRuntimeGitSafeDirectory,
@@ -255,15 +210,7 @@ import {
   type GitResolveConflictFileInput,
 } from "./workspaces/workspace-git-service";
 
-const previewStartupIntervalMs = 1_000;
-const previewDiscoveryGraceMs = 15_000;
-const previewResponseTimeoutMs = 120_000;
 const previewRequestTimeoutMs = 5_000;
-const previewStopTimeoutSeconds = 3;
-const containerMetadataTimeoutMs = 15_000;
-const composeStartTimeoutMs = 10 * 60_000;
-const composeSetupTimeoutMs = 15 * 60_000;
-const setupDependencyReadinessTimeoutMs = 90_000;
 const repositoryLanguageCohorts = new Set([
   "c",
   "cpp",
@@ -297,25 +244,11 @@ const repositoryTelemetryCache = new Map<
   string,
   Promise<RepositoryTelemetryCohorts | undefined>
 >();
-const forceKillDelayMs = 1_500;
-const previewResolveTimeoutMs = 45_000;
-const composeUpRetryDelaysMs = [2_000, 5_000, 10_000, 15_000];
 const setupEnvironmentCacheTtlMs = 2_000;
 const worktreeSetupOperationName = "blame.worktree.setup";
 const previewPrepareOperationName = "blame.preview.prepare";
 const projectSetupOperationName = "blame.project.setup";
 const previewStartOperationName = "blame.preview.start";
-const composeCallPromises = new Map<string, Promise<unknown>>();
-const globalPreviewVolumes = [
-  "blame_bun_cache",
-  "blame_corepack_cache",
-  "blame_npm_cache",
-  "blame_package_store",
-  "blame_pnpm_cache",
-  "blame_pnpm_store",
-  "blame_yarn_cache",
-];
-
 type WorkspacePathInput = {
   root: string;
   path?: string;
@@ -393,34 +326,11 @@ type EnsureProjectPreviewUrlInput = ExecutionContextInput &
     workspaceMode?: WorkspaceMode;
   };
 
-type RuntimeContainer = {
-  Config?: {
-    Env?: string[];
-    Labels?: Record<string, string>;
-  };
-  Id?: string;
-  NetworkSettings?: {
-    Ports?: Record<
-      string,
-      Array<{ HostIp?: string; HostPort?: string }> | null
-    >;
-  };
-  Name?: string;
-  State?: {
-    ExitCode?: number;
-    Health?: {
-      Status?: string;
-    };
-    Status?: string;
-  };
-};
-
 type SetupRun = {
   id: string;
-  process: ChildProcessWithoutNullStreams;
+  abort: AbortController;
   processSpan: BlameSpan;
   startedAt: number;
-  startLocalPreview: boolean;
   telemetry: ExecutionOperation;
   worktree: string;
 };
@@ -430,22 +340,6 @@ type ExecutionOperation = {
   descriptor: ExecutionDescriptor;
   finished: boolean;
   operationName: string;
-};
-
-type ProjectSetupFiles = {
-  composePath: string;
-  directory: string;
-  dockerCompose: string;
-  manifest: PreviewManifest;
-  manifestPath: string;
-  runConfigurations: ProjectRunConfiguration[];
-  runConfigurationsPath: string;
-  runtimeState: PreviewRuntimeSelectionState;
-  runtimeStatePath: string;
-  scriptPath: string;
-  setupScript: string;
-  symlinkEnvMounts: Awaited<ReturnType<typeof envHostFileMounts>>;
-  worktree: string;
 };
 
 type ControlProjectPreviewInput = {
@@ -470,14 +364,12 @@ type WorktreeCreationContext = {
 };
 
 type ProjectLogStream = {
-  process?: ChildProcessWithoutNullStreams;
-  retry?: NodeJS.Timeout;
-  stopped: boolean;
+  abort: AbortController;
 };
 
 type ProjectServiceLogStream = {
+  abort?: AbortController;
   hasOutput: boolean;
-  process?: ChildProcessWithoutNullStreams;
   retry?: NodeJS.Timeout;
   service: string;
   stopped: boolean;
@@ -487,27 +379,6 @@ type ProjectServiceLogStream = {
 type SetupEnvironment = NodeJS.ProcessEnv & {
   COMPOSE_PROJECT_NAME: string;
 };
-
-type PreviewRuntimeErrorCode =
-  | "preview_container_missing"
-  | "preview_container_stopped"
-  | "preview_dependency_timeout"
-  | "preview_manifest_invalid"
-  | "preview_probe_failed"
-  | "preview_probe_unsupported"
-  | "preview_response_timeout"
-  | "preview_setup_stale"
-  | "preview_url_timeout";
-
-class PreviewRuntimeError extends Error {
-  constructor(
-    readonly code: PreviewRuntimeErrorCode,
-    message: string,
-  ) {
-    super(message);
-    this.name = "PreviewRuntimeError";
-  }
-}
 
 const setupRuns = new Map<string, SetupRun>();
 const projectLogStreams = new Map<string, ProjectLogStream>();
@@ -520,8 +391,6 @@ const setupEnvironmentCache = new Map<
 >();
 const removingWorktrees = new Set<string>();
 const removedWorktrees = new Set<string>();
-const workspaceProcesses = new Set<ChildProcessWithoutNullStreams>();
-const containerRuntime = createContainerRuntime();
 const localPreviewService = new LocalPreviewService();
 function runtimeProgressReporter(
   event: IpcMainInvokeEvent,
@@ -550,7 +419,10 @@ function registerRuntimeOperationHandler(
       env: runtimeManagerEnvironment(),
       onProgress: runtimeProgressReporter(event, input.operationId),
     });
-    if (report.status === "ready") onRuntimeReady?.();
+    if (report.status === "ready") {
+      onRuntimeReady?.();
+      schedulePreviewCleanup();
+    }
     return report;
   });
 }
@@ -974,7 +846,11 @@ async function directWorkspace(input: CreateWorktreeInput) {
   const repositoryRoot = resolveRuntimePath(input.repositoryRoot);
   await ensureWorkspaceGitRepository(repositoryRoot);
   const branch = String(
-    await runRuntimeGit(repositoryRoot, ["rev-parse", "--abbrev-ref", "HEAD"], "native"),
+    await runRuntimeGit(
+      repositoryRoot,
+      ["rev-parse", "--abbrev-ref", "HEAD"],
+      "native",
+    ),
   ).trim();
   return {
     branch: branch && branch !== "HEAD" ? branch : "",
@@ -1223,19 +1099,17 @@ async function runProjectSetupOperation(
   input: RunProjectSetupInput,
   operation: ExecutionOperation,
 ) {
-  const { env, scriptPath, worktree } =
-    await prepareProjectPreviewArtifacts(input);
-  return timedRecoveryStep(worktree, "setup process spawn", () =>
-    startProjectSetupProcess(
-      worktree,
-      scriptPath,
-      env,
-      operation,
-      input.runtimeProfile === "local-container",
-    ),
+  const { worktree } = await prepareProjectPreviewArtifacts(input);
+  return startProjectSetupRun(
+    worktree,
+    operation,
+    input.runtimeProfile === "local-container",
   );
 }
 
+// Writes what a local preview starts from: the canonical manifest, compiled
+// once here so an invalid one fails now, and the run configurations with
+// the selected one.
 async function prepareProjectPreviewArtifacts(
   input: PrepareProjectPreviewInput,
 ) {
@@ -1249,30 +1123,58 @@ async function prepareProjectPreviewArtifacts(
       ),
     ),
   );
-  compiledPreviewPlan(manifest);
-  const generated = generatePreviewArtifacts(manifest);
-  const dockerCompose = generated.dockerCompose;
+  compileLocalPreviewPlan(manifest);
   const runConfigurations = parseRunConfigurations(input.runConfigurations);
   validateContainerizedRunConfigurations(runConfigurations, manifest);
-  const setupScript = setupScriptWithoutDockerRuntimeChecks(
-    generated.setupScript,
-  );
   await validateProjectSetup(
     worktree,
-    setupScript,
+    setupScriptWithoutDockerRuntimeChecks(
+      generatePreviewArtifacts(manifest).setupScript,
+    ),
     env,
     input.hostDependenciesChecked,
     input.runtimeProfile,
   );
-  const scriptPath = await prepareProjectSetupFiles(
-    worktree,
-    setupScript,
-    dockerCompose,
-    manifest,
-    runConfigurations,
-    input.runConfigurationId,
+  await timedRecoveryStep(worktree, "initialization files", () =>
+    writeProjectPreviewFiles(
+      worktree,
+      manifest,
+      runConfigurations,
+      input.runConfigurationId,
+    ),
   );
-  return { env, scriptPath, worktree };
+  return { env, worktree };
+}
+
+async function writeProjectPreviewFiles(
+  worktree: string,
+  manifest: PreviewManifest,
+  runConfigurations: ProjectRunConfiguration[],
+  runConfigurationId?: string | null,
+) {
+  const paths = localPreviewPaths(worktree);
+  const initialization = joinWorkspacePath(
+    worktree,
+    ".blame",
+    "initialization",
+  );
+  await mkdirRuntime(dirnameWorkspacePath(paths.setupLog));
+  await writeRuntimeFile(paths.setupLog, "");
+  await writeRuntimeFile(
+    paths.manifest,
+    `${JSON.stringify(manifest, null, 2)}\n`,
+  );
+  await writeRuntimeJson(paths.runConfigurations, runConfigurations);
+  await writeRuntimeJson(
+    paths.runtimeState,
+    initialPreviewRuntimeSelection(runConfigurations, runConfigurationId),
+  );
+  // Files of the previous local engine.
+  await Promise.all(
+    ["docker-compose.yml", "setup.sh"].map((file) =>
+      rmRuntime(joinWorkspacePath(initialization, file)).catch(() => undefined),
+    ),
+  );
 }
 
 async function validateProjectSetup(
@@ -1292,56 +1194,6 @@ async function validateProjectSetup(
   );
 }
 
-async function prepareProjectSetupFiles(
-  worktree: string,
-  setupScript: string,
-  dockerCompose: string,
-  previewManifest: PreviewManifest,
-  runConfigurations: ProjectRunConfiguration[],
-  runConfigurationId?: string | null,
-) {
-  const directory = joinWorkspacePath(worktree, ".blame", "initialization");
-  const scriptPath = joinWorkspacePath(directory, "setup.sh");
-  const composePath = joinWorkspacePath(directory, "docker-compose.yml");
-  const manifestPath = joinWorkspacePath(directory, "preview-manifest.json");
-  const runConfigurationsPath = joinWorkspacePath(
-    directory,
-    "run-configurations.json",
-  );
-  const runtimeStatePath = joinWorkspacePath(
-    directory,
-    "preview-runtime-state.json",
-  );
-  const logPath = setupLogPath(worktree);
-  await mkdirRuntime(dirnameWorkspacePath(logPath));
-  await writeRuntimeFile(logPath, "");
-  const symlinkEnvMounts = await timedRecoveryStep(
-    worktree,
-    "env file scan",
-    () => envHostFileMounts(worktree),
-  );
-  const runtimeState = initialPreviewRuntimeSelection(
-    runConfigurations,
-    runConfigurationId,
-  );
-  await writeProjectSetupFiles({
-    composePath,
-    directory,
-    dockerCompose,
-    manifest: parsePreviewManifest(previewManifest),
-    manifestPath,
-    runConfigurations,
-    runConfigurationsPath,
-    runtimeState,
-    runtimeStatePath,
-    scriptPath,
-    setupScript,
-    symlinkEnvMounts,
-    worktree,
-  });
-  return scriptPath;
-}
-
 function validateContainerizedRunConfigurations(
   configurations: ProjectRunConfiguration[],
   manifest: PreviewManifest,
@@ -1359,157 +1211,49 @@ function validateContainerizedRunConfigurations(
   }
 }
 
-async function writeProjectSetupFiles(input: ProjectSetupFiles) {
-  await timedRecoveryStep(input.worktree, "initialization files", async () => {
-    await timedRecoveryStep(
-      input.worktree,
-      "initialization directory mkdir",
-      () => mkdirRuntime(input.directory),
-    );
-    await timedRecoveryStep(input.worktree, "setup script write", () =>
-      writeRuntimeFile(input.scriptPath, input.setupScript),
-    );
-    const compose = await prepareProjectSetupCompose(input);
-    await timedRecoveryStep(input.worktree, "compose file write", () =>
-      writeRuntimeFile(input.composePath, compose),
-    );
-    await timedRecoveryStep(input.worktree, "preview manifest write", () =>
-      writeProjectPreviewManifest(input),
-    );
-    await timedRecoveryStep(input.worktree, "run configurations write", () =>
-      writePreviewRuntimeFiles(input),
-    );
-    await timedRecoveryStep(input.worktree, "setup script chmod", () =>
-      chmodRuntime(input.scriptPath, 0o755),
-    );
-  });
-}
-
-async function writePreviewRuntimeFiles(input: ProjectSetupFiles) {
-  await writeRuntimeJson(input.runConfigurationsPath, input.runConfigurations);
-  await writeRuntimeJson(input.runtimeStatePath, input.runtimeState);
-}
-
 function writeRuntimeJson(path: string, value: unknown) {
   return writeRuntimeFileAtomic(path, `${JSON.stringify(value, null, 2)}\n`);
 }
 
-async function writeProjectPreviewManifest(input: ProjectSetupFiles) {
-  await writeRuntimeFile(
-    input.manifestPath,
-    `${JSON.stringify(input.manifest, null, 2)}\n`,
-  );
-}
-
-function prepareProjectSetupCompose(input: ProjectSetupFiles) {
-  return timedRecoveryStep(input.worktree, "compose prepare", () =>
-    prepareProjectCompose(
-      input.worktree,
-      input.dockerCompose,
-      input.symlinkEnvMounts,
-    ),
-  );
-}
-
-function startProjectSetupProcess(
+// The renderer subscribes to the run's events once it has the run id, so
+// the run itself starts on the next tick.
+function startProjectSetupRun(
   worktree: string,
-  scriptPath: string,
-  env: NodeJS.ProcessEnv,
   telemetry: ExecutionOperation,
   startLocalPreview: boolean,
 ) {
-  const runId = randomUUID();
-  const child = spawnRuntime("bash", [scriptPath], {
-    cwd: worktree,
-    env,
-  });
-  const processSpan = startWorkspaceStep(
-    "setup process runtime",
-    telemetry.component.span.context,
-  );
-  trackWorkspaceProcess(child);
-  setupRuns.set(runId, {
-    id: runId,
-    process: child,
-    processSpan,
+  const run: SetupRun = {
+    id: randomUUID(),
+    abort: new AbortController(),
+    processSpan: startWorkspaceStep(
+      "setup process runtime",
+      telemetry.component.span.context,
+    ),
     startedAt: Date.now(),
-    startLocalPreview,
     telemetry,
     worktree,
-  });
-  registerProjectSetupProcessEvents(child, runId, worktree);
-  return { runId };
+  };
+  setupRuns.set(run.id, run);
+  setTimeout(() => void completeProjectSetupRun(run, startLocalPreview), 0);
+  return { runId: run.id };
 }
 
-function registerProjectSetupProcessEvents(
-  child: ChildProcessWithoutNullStreams,
-  runId: string,
-  worktree: string,
+async function completeProjectSetupRun(
+  run: SetupRun,
+  startLocalPreview: boolean,
 ) {
-  child.stdout.on("data", (data: Buffer) =>
-    emitSetupOutput(runId, worktree, "stdout", data.toString()),
-  );
-  child.stderr.on("data", (data: Buffer) =>
-    emitSetupOutput(runId, worktree, "stderr", data.toString()),
-  );
-  child.once("error", (error) => {
-    failProjectSetupProcess(runId, worktree, error);
-  });
-  child.on("exit", (code) => {
-    void completeProjectSetup(runId, worktree, code);
-  });
-}
-
-function setupScriptWithoutDockerRuntimeChecks(script: string) {
-  return script
-    .replace(/\n?if\s+!\s+command\s+-v\s+docker\b[\s\S]*?\nfi\s*/g, "\n")
-    .replace(/\n?if\s+!\s+docker\s+compose\s+version\b[\s\S]*?\nfi\s*/g, "\n")
-    .replace(/^\s*command\s+-v\s+docker\b.*$/gm, "")
-    .replace(/^\s*docker\s+compose\s+version\b.*$/gm, "")
-    .replace(/\n{3,}/g, "\n\n");
-}
-
-async function completeProjectSetup(
-  runId: string,
-  worktree: string,
-  code: number | null,
-) {
-  const run = setupRuns.get(runId);
-  if (!run) return;
-  finishSetupProcessSpan(run, code);
-  await getBlameTelemetry().withinSpan(
-    run.telemetry.component.span,
-    async () => {
-      run.telemetry.component.span.setAttributes({
-        "process.exit.code": code ?? -1,
-      });
-      await appendTimingLog(
-        worktree,
-        "setup process runtime",
-        Date.now() - run.startedAt,
-      );
-      if (code === 0) return completeSuccessfulProjectSetup(run);
-      finishSetupRun(run, "failed", new Error("Project setup process failed"));
-      emitSetupOutput(runId, worktree, "exit", String(code ?? ""));
-    },
-  );
-}
-
-function finishSetupProcessSpan(run: SetupRun, code: number | null) {
-  const outcome = code === 0 ? "succeeded" : "failed";
-  run.processSpan.setAttributes({
-    "process.exit.code": code ?? -1,
-    ...(outcome === "failed" ? { [ATTR_ERROR_TYPE]: "Error" } : {}),
-  });
-  run.processSpan.end(outcome);
-}
-
-async function completeSuccessfulProjectSetup(run: SetupRun) {
   const { id: runId, worktree } = run;
   try {
-    const previewUrl = run.startLocalPreview
-      ? await traceSetupPreview(run, () => completeSetupPreview(worktree))
+    const previewUrl = startLocalPreview
+      ? await traceSetupPreview(run, () =>
+          startProjectCompose(worktree, {
+            output: (chunk) =>
+              emitSetupOutput(runId, worktree, "stdout", chunk),
+            signal: run.abort.signal,
+          }),
+        )
       : null;
+    if (run.abort.signal.aborted) return;
     finishSetupRun(run, "succeeded");
     emitSetupOutput(
       runId,
@@ -1521,27 +1265,20 @@ async function completeSuccessfulProjectSetup(run: SetupRun) {
     );
     emitSetupOutput(runId, worktree, "exit", "0");
   } catch (error) {
-    await stopProjectLogStream(worktree);
+    if (run.abort.signal.aborted) return;
     finishSetupRun(run, "failed", error);
     emitSetupOutput(runId, worktree, "stderr", errorMessage(error));
     emitSetupOutput(runId, worktree, "exit", "1");
   }
 }
 
-async function completeSetupPreview(worktree: string) {
-  return startProjectCompose(worktree);
-}
-
-function failProjectSetupProcess(
-  runId: string,
-  worktree: string,
-  error: unknown,
-) {
-  const run = setupRuns.get(runId);
-  if (!run) return;
-  finishSetupRun(run, "failed", error);
-  emitSetupOutput(runId, worktree, "stderr", errorMessage(error));
-  emitSetupOutput(runId, worktree, "exit", "1");
+function setupScriptWithoutDockerRuntimeChecks(script: string) {
+  return script
+    .replace(/\n?if\s+!\s+command\s+-v\s+docker\b[\s\S]*?\nfi\s*/g, "\n")
+    .replace(/\n?if\s+!\s+docker\s+compose\s+version\b[\s\S]*?\nfi\s*/g, "\n")
+    .replace(/^\s*command\s+-v\s+docker\b.*$/gm, "")
+    .replace(/^\s*docker\s+compose\s+version\b.*$/gm, "")
+    .replace(/\n{3,}/g, "\n\n");
 }
 
 function finishSetupRun(
@@ -1679,28 +1416,53 @@ function operationErrorType(error: unknown) {
   return "Error";
 }
 
+type StartProjectComposeOptions = {
+  /** Live output; without it the output goes to the run log. */
+  output?: (chunk: string) => void;
+  signal?: AbortSignal;
+};
+
+const previewStarts = new Map<string, Promise<string | undefined>>();
+
 function startProjectCompose(
   worktree: string,
-  options: { reallocatePorts?: boolean } = {},
+  options: StartProjectComposeOptions = {},
 ) {
-  return dedupeComposeCall(`start:${worktree}`, () =>
-    startProjectComposeOperation(worktree, options),
+  const current = previewStarts.get(worktree);
+  if (current) return current;
+  const next = startProjectComposeOperation(worktree, options).finally(() =>
+    previewStarts.delete(worktree),
   );
+  previewStarts.set(worktree, next);
+  return next;
 }
 
 async function startProjectComposeOperation(
   worktree: string,
-  options: { reallocatePorts?: boolean },
+  options: StartProjectComposeOptions,
 ) {
   if (await stopPreviewStartWhenRequested(worktree)) return undefined;
   // A likely stale setup explains a failed start; it never blocks one.
   const stale = await timedRecoveryStep(worktree, "setup preflight", async () =>
-    stalePreviewSetupReason(worktree, await readProjectPreviewManifest(worktree)),
+    stalePreviewSetupReason(worktree, await readLocalPreviewManifest(worktree)),
   );
   try {
-    return await startCheckedProjectCompose(worktree, options);
+    const previewUrl = await startLocalPreview(worktree, {
+      log: options.output ?? ((chunk) => appendRunLog(worktree, chunk)),
+      step: (step) => void recordPreviewStartStep(worktree, step),
+      timing: (label, durationMs) =>
+        void appendTimingLog(worktree, label, durationMs),
+      wanted: async () =>
+        !options.signal?.aborted &&
+        !removingWorktrees.has(worktree) &&
+        !(await previewRuntimeStopped(worktree)),
+    });
+    if (await stopPreviewStartWhenRequested(worktree)) return undefined;
+    await startProjectLogStream(worktree);
+    return previewUrl;
   } catch (error) {
-    if (!stale || !(error instanceof PreviewRuntimeError)) throw error;
+    await appendServiceLogTail(worktree);
+    if (!stale || !(error instanceof Error)) throw error;
     throw new PreviewRuntimeError(
       "preview_setup_stale",
       `${stale} (${error.message})`,
@@ -1708,719 +1470,27 @@ async function startProjectComposeOperation(
   }
 }
 
-async function startCheckedProjectCompose(
-  worktree: string,
-  options: { reallocatePorts?: boolean },
-) {
-  if (!(await projectSetupCompleted(worktree))) {
-    await timedRecoveryStep(worktree, "project setup", () =>
-      runExistingProjectSetup(worktree),
-    );
-  }
-  if (await stopPreviewStartWhenRequested(worktree)) return undefined;
-  await timedRecoveryStep(worktree, "compose repair", () =>
-    repairProjectCompose(worktree, options),
-  );
-  if (await stopPreviewStartWhenRequested(worktree)) return undefined;
-  await timedRecoveryStep(worktree, "compose up", () =>
-    runProjectComposeUp(worktree),
-  );
-  if (await stopPreviewStartWhenRequested(worktree)) return undefined;
-  if (!(await projectRuntimeShouldStartBrowserPreview(worktree))) {
-    await timedRecoveryStep(worktree, "preview probes", () =>
-      runPreviewProbes(worktree),
-    );
-    return undefined;
-  }
-  return startSelectedWebPreview(worktree);
-}
-
-async function startSelectedWebPreview(worktree: string) {
-  const previewUrl = await timedRecoveryStep(
-    worktree,
-    "preview url resolve",
-    () => waitForPreviewUrl(worktree),
-  );
-  if (!previewUrl) return undefined;
-  if (
-    await timedRecoveryStep(worktree, "preview environment sync", () =>
-      syncPreviewRuntimeEnvironment(worktree, previewUrl),
-    )
-  ) {
-    await timedRecoveryStep(worktree, "preview service restart", () =>
-      restartPreviewService(worktree, true),
-    );
-  }
-  if (await stopPreviewStartWhenRequested(worktree)) return undefined;
-  await timedRecoveryStep(worktree, "preview response wait", () =>
-    waitForPreview(worktree, previewUrl),
-  );
-  if (await stopPreviewStartWhenRequested(worktree)) return undefined;
-  await timedRecoveryStep(worktree, "preview probes", () =>
-    runPreviewProbes(worktree),
-  );
-  return previewUrl;
-}
-
-async function projectRuntimeShouldStartBrowserPreview(worktree: string) {
-  const [configurations, state, manifest] = await Promise.all([
-    readProjectRunConfigurations(worktree),
-    readPreviewRuntimeFileState(worktree),
-    readProjectPreviewManifest(worktree),
-  ]);
-  return shouldStartBrowserPreview(configurations, state, manifest);
-}
-
-async function syncPreviewRuntimeEnvironment(
-  worktree: string,
-  previewUrl: string,
-) {
-  const origin = previewOrigin(previewUrl);
-  if (!origin) return false;
-  const overrides = await projectPreviewEnvOverrides(worktree);
-  if (await materializedPreviewEnvFilesMatch(worktree, origin, overrides)) {
-    return false;
-  }
-  await materializedPreviewEnvHostFileMounts(worktree, origin, overrides);
-  invalidateSetupEnvironment(worktree);
-  return true;
-}
-
-async function projectPreviewEnvOverrides(worktree: string) {
-  const composePath = projectComposePath(worktree);
-  if (!(await runtimePathExists(composePath))) return [];
-  return previewComposeEnvOverrides(await readRuntimeFile(composePath));
-}
-
-async function clearPreviewBuildCache(worktree: string) {
-  await rmRuntime(joinWorkspacePath(worktree, ".next"));
-}
-
-async function restartPreviewService(
-  worktree: string,
-  clearBuildCache = false,
-) {
-  const container = await previewContainerForWorktree(worktree);
-  if (!container?.Id) return;
-  const env = await setupEnvironment(worktree);
-  await containerRuntime.container(["stop", container.Id], {
-    cwd: worktree,
-    env,
-  });
-  if (clearBuildCache) await clearPreviewBuildCache(worktree);
-  await containerRuntime.container(["start", container.Id], {
-    cwd: worktree,
-    env,
-  });
-}
-
-async function runProjectComposeUp(worktree: string) {
-  const args = composeArgs(worktree);
-  await timedRecoveryStep(worktree, "compose volumes", () =>
-    ensureGlobalPreviewVolumes(worktree),
-  );
-  const config = await timedRecoveryStep(worktree, "compose config", () =>
-    composeConfig(worktree, projectComposePath(worktree)),
-  );
-  const plan = previewComposePlan(config);
-  const selectedServices = await selectedComposeRuntimeServices(
-    worktree,
-    plan.runtimeServices,
-  );
-  const runtimeContainers = composeRuntimeServiceClosure(
-    config,
-    uniqueStrings([...plan.setupRuntimeDependencies, ...selectedServices]),
-  );
-  await timedRecoveryStep(worktree, "compose reset runtime containers", () =>
-    resetProjectComposeRuntimeContainers(worktree, runtimeContainers),
-  );
-  await timedRecoveryStep(worktree, "compose one-shot dependencies", () =>
-    runCompletedDependencyServices(worktree, config, plan.oneShotDependencies),
-  );
-  await timedRecoveryStep(worktree, "compose runtime containers", () =>
-    createProjectComposeRuntimeContainers(worktree, runtimeContainers),
-  );
-  await timedRecoveryStep(worktree, "compose setup dependencies", () =>
-    startSetupRuntimeDependencies(
-      worktree,
-      config,
-      plan.setupRuntimeDependencies,
-    ),
-  );
-  await timedRecoveryStep(worktree, "compose setup services", () =>
-    runSetupTaskServices(worktree, config, plan.setupTasks),
-  );
-  if (!selectedServices.length) return;
-  await timedRecoveryStep(worktree, "compose log stream", () =>
-    startProjectLogStream(worktree),
-  );
-  await timedRecoveryStep(worktree, "compose runtime services", () =>
-    runComposeWithRetry(
-      worktree,
-      [...args, "start", ...runtimeContainers],
-      composeUpRetryDelaysMs,
-      "compose start",
-      composeStartTimeoutMs,
-    ),
-  );
-}
-
-async function selectedComposeRuntimeServices(
-  worktree: string,
-  runtimeServiceIds: string[],
-) {
-  const [configurations, state, manifest] = await Promise.all([
-    readProjectRunConfigurations(worktree),
-    readPreviewRuntimeFileState(worktree),
-    readProjectPreviewManifest(worktree),
-  ]);
-  return selectedPreviewRuntimeServiceIds(
-    configurations,
-    state,
-    runtimeServiceIds,
-    manifest,
-  );
-}
-
-async function runSetupTaskServices(
-  worktree: string,
-  config: ComposeConfig,
-  services = setupTaskServices(config),
-) {
-  for (const service of services) {
-    const serviceConfig = config.services?.[service];
-    if (
-      serviceConfig &&
-      (await timedRecoveryStep(
-        worktree,
-        `dependency cache check ${service}`,
-        () => dependencyCacheReady(worktree, serviceConfig),
-      ))
-    ) {
-      await appendRecoveryLog(worktree, `dependency cache hit: ${service}`);
-      continue;
-    }
-    await timedRecoveryStep(worktree, `compose setup service ${service}`, () =>
-      runProjectComposeSetupService(worktree, service, config),
-    );
-    if (serviceConfig)
-      await timedRecoveryStep(
-        worktree,
-        `dependency cache mark ${service}`,
-        () => markDependencyCacheReady(worktree, serviceConfig),
-      );
-  }
-  return new Set(services);
-}
-
-async function runCompletedDependencyServices(
-  worktree: string,
-  config: ComposeConfig,
-  services: string[],
-) {
-  for (const service of services) {
-    if (
-      skippableDependencyInitService(service) &&
-      (await timedRecoveryStep(
-        worktree,
-        `dependency init cache check ${service}`,
-        () => setupDependencyCachesReady(worktree, config),
-      ))
-    ) {
-      await appendRecoveryLog(
-        worktree,
-        `dependency init cache hit: ${service}`,
-      );
-      continue;
-    }
-    await timedRecoveryStep(
-      worktree,
-      `compose dependency service ${service}`,
-      () => runProjectComposeOneShotService(worktree, service),
-    );
-  }
-  return new Set(services);
-}
-
-async function startSetupRuntimeDependencies(
-  worktree: string,
-  config: ComposeConfig,
-  services: string[],
-) {
-  if (!services.length) return;
-  await runComposeWithRetry(
-    worktree,
-    [...composeArgs(worktree), "start", ...services],
-    composeUpRetryDelaysMs,
-    "compose setup dependencies",
-    composeStartTimeoutMs,
-  );
-  for (const service of services) {
-    await waitForComposeServiceReadiness(
-      worktree,
-      service,
-      config.services?.[service],
-    );
-  }
-}
-
-async function createProjectComposeRuntimeContainers(
-  worktree: string,
-  services: string[],
-) {
-  if (!services.length) return;
-  await runComposeWithRetry(
-    worktree,
-    [...composeArgs(worktree), "create", "--pull", "missing", ...services],
-    composeUpRetryDelaysMs,
-    "compose create",
-    composeStartTimeoutMs,
-  );
-}
-
-async function resetProjectComposeRuntimeContainers(
-  worktree: string,
-  services: string[],
-) {
-  if (!services.length) return;
-  await containerRuntime.compose(
-    [
-      ...composeArgs(worktree),
-      "rm",
-      "--force",
-      "--stop",
-      "--volumes",
-      ...services,
-    ],
-    {
-      cwd: worktree,
-      env: await setupEnvironment(worktree),
-      timeoutMs: composeStartTimeoutMs,
-    },
-  );
-}
-
-async function waitForComposeServiceReadiness(
-  worktree: string,
-  service: string,
-  config: ComposeService | undefined,
-) {
-  const healthcheck = composeServiceHealthcheckCommand(config);
-  if (!healthcheck) return;
-  const deadline = Date.now() + setupDependencyReadinessTimeoutMs;
-  let attempts = 0;
-  while (Date.now() < deadline) {
-    attempts += 1;
-    try {
-      await containerRuntime.compose(
-        [...composeArgs(worktree), "exec", "-T", service, ...healthcheck],
-        {
-          cwd: worktree,
-          env: await setupEnvironment(worktree),
-          timeoutMs: containerMetadataTimeoutMs,
-        },
-      );
-      await appendRecoveryLog(
-        worktree,
-        `dependency ${service} ready after ${attempts} attempt${attempts === 1 ? "" : "s"}`,
-      );
-      return;
-    } catch {
-      if (await previewRuntimeStopped(worktree)) return;
-      await delay(previewStartupIntervalMs);
-    }
-  }
-  await appendComposeDiagnostics(worktree);
-  throw new PreviewRuntimeError(
-    "preview_dependency_timeout",
-    `Preview dependency ${service} did not become ready within ${setupDependencyReadinessTimeoutMs / 1_000} seconds`,
-  );
-}
-
-function skippableDependencyInitService(service: string) {
-  return (
-    service === "blame-dependencies-init" || service === "blame-volumes-init"
-  );
-}
-
-async function setupDependencyCachesReady(
-  worktree: string,
-  config: ComposeConfig,
-) {
-  const services = setupTaskServices(config)
-    .map((service) => config.services?.[service])
-    .filter((service): service is ComposeService => Boolean(service));
-  if (services.length === 0) return false;
-  for (const service of services) {
-    if (!(await dependencyCacheReady(worktree, service))) return false;
-  }
-  return true;
-}
-
-async function dependencyCacheReady(worktree: string, service: ComposeService) {
-  const cache = dependencyCache(service);
-  if (!cache) return false;
-  if (await hasMissingWorkspaceNodeModules(worktree)) {
-    return false;
-  }
-  const env = await setupEnvironment(worktree);
-  for (const volume of cache.volumes) {
-    try {
-      await containerRuntime.container(
-        [
-          "run",
-          "--rm",
-          "--pull=never",
-          "-v",
-          `${volume}:/node_modules`,
-          ...(cache.pnpmStore ? ["-v", `${cache.pnpmStore}:/pnpm/store`] : []),
-          dependencyCacheImage(service),
-          "sh",
-          "-lc",
-          dependencyCacheReadyCommand(cache),
-        ],
-        { cwd: worktree, env },
-      );
-    } catch {
-      return false;
-    }
-  }
-  return true;
-}
-
-async function markDependencyCacheReady(
-  worktree: string,
-  service: ComposeService,
-) {
-  const cache = dependencyCache(service);
-  if (!cache) return;
-  try {
-    const env = await setupEnvironment(worktree);
-    for (const volume of cache.volumes) {
-      await containerRuntime.container(
-        [
-          "run",
-          "--rm",
-          "--pull=never",
-          "-v",
-          `${volume}:/node_modules`,
-          ...(cache.pnpmStore ? ["-v", `${cache.pnpmStore}:/pnpm/store`] : []),
-          dependencyCacheImage(service),
-          "sh",
-          "-lc",
-          dependencyCacheMarkCommand(cache),
-        ],
-        { cwd: worktree, env },
-      );
-    }
-  } catch (error) {
-    await appendRecoveryLog(
-      worktree,
-      `dependency cache marker failed: ${errorMessage(error).trim()}`,
-    );
-  }
-}
-
-function dependencyCache(service: ComposeService) {
-  const labels = serviceLabels(service);
-  if (labels["blame.dependencies.cache"] !== "true") return undefined;
-  const key = labels["blame.dependencies.cache.key"];
-  const volumes = nodeModulesVolumeSources(service);
-  if (!key || volumes.length === 0) return undefined;
-  return {
-    key,
-    volumes,
-    pnpmStore: pnpmStoreVolumeSource(service),
-  };
-}
-
-function dependencyCacheReadyCommand(
-  cache: NonNullable<ReturnType<typeof dependencyCache>>,
-) {
-  const checks = [`test -e /node_modules/${dependencyCacheMarker(cache.key)}`];
-  if (cache.pnpmStore) {
-    checks.push("test -d /node_modules/.pnpm", "test -d /pnpm/store");
-  }
-  return checks.join(" && ");
-}
-
-function dependencyCacheMarkCommand(
-  cache: NonNullable<ReturnType<typeof dependencyCache>>,
-) {
-  const checks = cache.pnpmStore
-    ? ["test -d /node_modules/.pnpm", "test -d /pnpm/store"]
-    : [];
-  checks.push(`touch /node_modules/${dependencyCacheMarker(cache.key)}`);
-  return checks.join(" && ");
-}
-
-function pnpmStoreVolumeSource(service: ComposeService) {
-  return (service.volumes ?? []).flatMap((volume) => {
-    const parsed = composeVolume(volume);
-    return parsed?.target.replace(/\/$/u, "") === "/pnpm/store"
-      ? [parsed.source]
-      : [];
-  })[0];
-}
-
-function dependencyCacheImage(service: ComposeService) {
-  return service.image || "node:22-bookworm-slim";
-}
-
-function dependencyCacheMarker(key: string) {
-  return `.blame-deps-${key.replace(/[^a-f0-9]/gi, "")}.ready`;
-}
-
-function nodeModulesVolumeSources(service: ComposeService) {
-  return uniqueStrings(
-    (service.volumes ?? []).flatMap((volume) => {
-      const parsed = composeVolume(volume);
-      return parsed?.target.replace(/\/$/, "").endsWith("/node_modules")
-        ? [parsed.source]
-        : [];
-    }),
-  );
-}
-
-function composeVolume(volume: NonNullable<ComposeService["volumes"]>[number]) {
-  if (typeof volume !== "string") {
-    if (!volume.source || !volume.target) return undefined;
-    if (volume.type && volume.type !== "volume") return undefined;
-    return { source: volume.source, target: volume.target };
-  }
-  const [source, target] = volume.split(":");
-  if (!source || !target || target.startsWith("./") || target.startsWith("../"))
-    return undefined;
-  return { source, target };
-}
-
-async function runProjectComposeOneShotService(
-  worktree: string,
-  service: string,
-) {
-  const result = await containerRuntime.compose(
-    [...composeArgs(worktree), "up", service],
-    {
-      cwd: worktree,
-      env: await setupEnvironment(worktree),
-      timeoutMs: composeSetupTimeoutMs,
-    },
-  );
-  if (result.stdout) await appendRecoveryLog(worktree, result.stdout.trimEnd());
-  if (result.stderr) await appendRecoveryLog(worktree, result.stderr.trimEnd());
-  const container = (await composeProjectContainers(worktree)).find(
-    (candidate) => runtimeContainerService(candidate) === service,
-  );
-  const exitCode = container?.State?.ExitCode;
-  if (exitCode !== 0) {
-    throw new Error(
-      `Preview dependency task ${service} exited with code ${exitCode ?? "unknown"}`,
-    );
-  }
-}
-
-async function runProjectComposeSetupService(
-  worktree: string,
-  service: string,
-  config: ComposeConfig,
-) {
-  const environment = composeSetupTaskEnvironment(config, service);
-  const containerName = setupTaskContainerName(service);
-  try {
-    const result = await containerRuntime.compose(
-      [
-        ...composeArgs(worktree),
-        "run",
-        "--name",
-        containerName,
-        "--no-deps",
-        "--interactive=false",
-        ...Object.entries(environment).flatMap(([key, value]) => [
-          "--env",
-          `${key}=${value}`,
-        ]),
-        service,
-      ],
-      {
-        cwd: worktree,
-        env: await setupEnvironment(worktree),
-        timeoutMs: composeSetupTimeoutMs,
-      },
-    );
-    if (result.stdout)
-      await appendRecoveryLog(worktree, result.stdout.trimEnd());
-    if (result.stderr)
-      await appendRecoveryLog(worktree, result.stderr.trimEnd());
-    const [container] = await containerRuntime.inspect<RuntimeContainer>(
-      [containerName],
-      { timeoutMs: containerMetadataTimeoutMs },
-    );
-    const exitCode = container?.State?.ExitCode;
-    if (exitCode !== 0) {
-      throw new Error(
-        `Preview setup task ${service} exited with code ${exitCode ?? "unknown"}`,
-      );
-    }
-  } finally {
-    await removeSetupTaskContainer(worktree, containerName);
-  }
-}
-
-function setupTaskContainerName(service: string) {
-  const id = service.replace(/[^a-zA-Z0-9_.-]/g, "-").slice(0, 24);
-  return `blame-setup-${id}-${randomUUID().slice(0, 8)}`;
-}
-
-async function removeSetupTaskContainer(
-  worktree: string,
-  containerName: string,
-) {
-  try {
-    await containerRuntime.container(["rm", "--force", containerName], {
-      cwd: worktree,
-      env: await setupEnvironment(worktree),
-      timeoutMs: containerMetadataTimeoutMs,
-    });
-  } catch (error) {
-    await appendRecoveryLog(
-      worktree,
-      `setup container cleanup failed: ${errorMessage(error).trim()}`,
-    );
-  }
-}
-
-function setupTaskServices(config: ComposeConfig) {
-  return previewComposePlan(config).setupTasks;
-}
-
-function uniqueStrings(values: string[]) {
-  return Array.from(new Set(values));
-}
-
-async function ensureGlobalPreviewVolumes(worktree: string) {
-  const env = await setupEnvironment(worktree);
-  await Promise.all(
-    globalPreviewVolumes.map((volume) =>
-      timedRecoveryStep(worktree, `compose volume create ${volume}`, () =>
-        containerRuntime.volume(["create", volume], {
-          cwd: worktree,
-          env,
-        }),
-      ),
-    ),
-  );
-}
-
-function composeArgs(worktree: string) {
-  return ["-f", projectComposePath(worktree), "--project-directory", worktree];
-}
-
-async function runComposeWithRetry(
-  worktree: string,
-  args: string[],
-  retryDelays: number[],
-  label: string,
-  timeoutMs = composeStartTimeoutMs,
-) {
-  let cleanupAttempted = false;
-  for (let attempt = 0; ; attempt += 1) {
-    const start = Date.now();
-    try {
-      await containerRuntime.compose(args, {
-        cwd: worktree,
-        env: await setupEnvironment(worktree),
-        timeoutMs,
-      });
-      await appendTimingLog(
-        worktree,
-        `${label} attempt ${attempt + 1} success`,
-        Date.now() - start,
-      );
-      return;
-    } catch (error) {
-      await appendTimingLog(
-        worktree,
-        `${label} attempt ${attempt + 1} failed`,
-        Date.now() - start,
-      );
-      if (!cleanupAttempted && runtimeAddressPoolExhausted(error)) {
-        cleanupAttempted = true;
-        await appendRecoveryLog(
-          worktree,
-          "container runtime address pools exhausted, cleaning abandoned Blame previews",
-        );
-        const projects = await cleanupAbandonedBlamePreviews();
-        await appendRecoveryLog(
-          worktree,
-          projects.length
-            ? `cleaned abandoned previews: ${projects.join(", ")}`
-            : "no abandoned previews found",
-        );
-        continue;
-      }
-      const retryDelay = retryDelays[attempt];
-      if (!retryDelay || !transientRuntimePullError(error)) throw error;
-      await appendRecoveryLog(
-        worktree,
-        `${label} interrupted, retrying in ${Math.round(retryDelay / 1_000)}s`,
-      );
-      await delay(retryDelay);
-    }
-  }
-}
-
-async function waitForPreviewUrl(worktree: string) {
-  const deadline = Date.now() + previewResolveTimeoutMs;
-  let attempts = 0;
-  while (Date.now() < deadline) {
-    if (await previewRuntimeStopped(worktree)) return undefined;
-    attempts += 1;
-    const previewUrl = await resolveProjectPreviewUrl({ worktree });
-    if (previewUrl) {
-      await appendRecoveryLog(
-        worktree,
-        `preview url resolved after ${attempts} attempt${attempts === 1 ? "" : "s"}`,
-      );
-      return previewUrl;
-    }
-    await delay(previewStartupIntervalMs);
-  }
-  await appendRecoveryLog(
-    worktree,
-    `preview url resolve timed out after ${attempts} attempts`,
-  );
-  await appendComposeDiagnostics(worktree);
-  throw new PreviewRuntimeError(
-    "preview_url_timeout",
-    "Unable to resolve project preview URL",
-  );
+// The last lines of every service, so the run log says why a start failed.
+async function appendServiceLogTail(worktree: string) {
+  const logs = await localPreviewLogs(worktree, undefined, {
+    tail: 120,
+    timeoutMs: 15_000,
+  }).catch(() => undefined);
+  const text = `${logs?.stdout ?? ""}${logs?.stderr ?? ""}`.trim();
+  if (text) await appendRecoveryLog(worktree, `service logs\n${text}`);
 }
 
 async function stopProjectSetup(input: StopProjectSetupInput) {
   const worktree = resolveRuntimePath(input.worktree);
   await stopSetupRunsForWorktree(worktree);
-  if (input.workspaceMode === "cloud-mirror" || input.workspaceMode === "direct")
+  if (
+    input.workspaceMode === "cloud-mirror" ||
+    input.workspaceMode === "direct"
+  )
     return true;
-  const composePath = joinWorkspacePath(
-    worktree,
-    ".blame",
-    "initialization",
-    "docker-compose.yml",
-  );
-  if (!(await runtimePathExists(composePath))) return false;
-  await repairComposeFile(worktree, composePath);
   try {
-    await containerRuntime.compose(
-      [
-        "-f",
-        composePath,
-        "--project-directory",
-        worktree,
-        "down",
-        "--remove-orphans",
-      ],
-      { cwd: worktree, env: await setupEnvironment(worktree) },
-    );
+    await stopProjectLogStream(worktree);
+    await stopLocalPreview(worktree);
     return true;
   } catch {
     return false;
@@ -2445,10 +1515,7 @@ async function removeWorktree(input: RemoveWorktreeInput) {
   const registered = await worktreeRegistered(repositoryRoot, worktree, mode);
   const worktreeExists = await runtimePathExists(worktree);
   if (!registered && !worktreeExists) {
-    if (mode === "local-container") {
-      const env = await setupEnvironment(worktree);
-      await removeBlamePreviewProjectResources(env.COMPOSE_PROJECT_NAME);
-    }
+    if (mode === "local-container") await removeWorktreePreview(worktree);
     removedWorktrees.add(worktree);
     return true;
   }
@@ -2458,12 +1525,7 @@ async function removeWorktree(input: RemoveWorktreeInput) {
     await stopProjectLogStream(worktree);
     await releaseAgentWorkspaceSessions(worktree);
     previewRecoveries.delete(worktree);
-    if (!input.projectSetupStopped)
-      await stopProjectSetup({ workspaceMode: mode, worktree });
-    if (mode === "local-container") {
-      const env = await setupEnvironment(worktree);
-      await removeBlamePreviewProjectResources(env.COMPOSE_PROJECT_NAME);
-    }
+    if (mode === "local-container") await removeWorktreePreview(worktree);
     if (registered) await removeGitWorktree(repositoryRoot, worktree, mode);
     else await rmRuntime(worktree);
     removedWorktrees.add(worktree);
@@ -2473,31 +1535,43 @@ async function removeWorktree(input: RemoveWorktreeInput) {
   }
 }
 
+// A removed worktree takes its containers, network and volumes along; the
+// dependency volumes it shared go at the next cleanup once unused.
+async function removeWorktreePreview(worktree: string) {
+  await removeLocalPreview(worktree);
+  await removePreviewProject(previewComposeProjectName(worktree)).catch(
+    () => undefined,
+  );
+  schedulePreviewCleanup();
+}
+
+let previewCleanupTimer: NodeJS.Timeout | undefined;
+
+/** Cleans the Blame Runtime a minute after the last request. */
+export function schedulePreviewCleanup() {
+  if (previewCleanupTimer) clearTimeout(previewCleanupTimer);
+  previewCleanupTimer = setTimeout(() => {
+    previewCleanupTimer = undefined;
+    const worktrees = platformWorktreeRoot(
+      process.platform,
+      process.env,
+      "local-container",
+    );
+    void collectPreviewGarbage([
+      worktrees,
+      joinWorkspacePath(dirnameWorkspacePath(worktrees), "repos"),
+    ]).catch(() => undefined);
+  }, 60_000);
+  previewCleanupTimer.unref?.();
+}
+
 async function resolveProjectPreviewUrl(input: ResolveProjectPreviewUrlInput) {
   const worktree = resolveRuntimePath(input.worktree);
   if (removedWorktrees.has(worktree)) return null;
   if (!(await isWorkspaceGitRepository(worktree))) return null;
-  const [configurations, runtimeState, manifest] = await Promise.all([
-    readProjectRunConfigurations(worktree),
-    readPreviewRuntimeFileState(worktree),
-    readProjectPreviewManifest(worktree),
-  ]);
-  if (runtimeState.desiredStatus === "stopped") return null;
-  if (!shouldStartBrowserPreview(configurations, runtimeState, manifest)) {
+  if ((await readPreviewRuntimeFileState(worktree)).desiredStatus === "stopped")
     return null;
-  }
-  const composePath = projectComposePath(worktree);
-  if (!(await runtimePathExists(composePath))) return null;
-  const previewTarget = await composePreviewTarget(worktree, composePath);
-  if (!previewTarget) return null;
-  const address = await composePublishedAddress(
-    worktree,
-    composePath,
-    previewTarget.service,
-    previewTarget.port,
-  );
-  if (!address) return null;
-  return previewUrl(address, previewTarget.protocol, previewTarget.path);
+  return (await localPreviewUrl(worktree)) ?? null;
 }
 
 export async function localPreviewBridgeGrant(
@@ -2508,57 +1582,30 @@ export async function localPreviewBridgeGrant(
     throw new Error("Local preview worktree was removed");
   if (!(await isWorkspaceGitRepository(worktree)))
     throw new Error("Local preview worktree is invalid");
-  const composePath = projectComposePath(worktree);
-  if (!(await runtimePathExists(composePath)))
-    throw new Error("Local preview Compose configuration is missing");
-  const config = await composeConfig(worktree, composePath);
-  const primary = await composePreviewTarget(worktree, composePath);
-  const endpoints = composeBridgeEndpoints(config, primary);
+  const { routes: endpoints, primary } = await localPreviewEndpoints(worktree);
+  if (!endpoints.length)
+    throw new Error("Local preview has no published endpoint");
   const expiresAt = new Date(Date.now() + 60_000).toISOString();
   const sessionId = `local:${createHash("sha256")
     .update(worktree)
     .digest("hex")
     .slice(0, 24)}`;
-  const routes = (
-    await Promise.all(
-      endpoints.map(async (endpoint) => {
-        const address = await composePublishedAddress(
-          worktree,
-          composePath,
-          endpoint.serviceId,
-          endpoint.port,
-        );
-        if (!address) return undefined;
-        const provider = localPreviewProvider(address, endpoint.protocol);
-        const logicalPort = Number(provider.port);
-        if (!Number.isSafeInteger(logicalPort) || logicalPort < 1) {
-          return undefined;
-        }
-        return {
-          routeId: `${sessionId}:${endpoint.serviceId}:${endpoint.endpointId}`,
-          serviceId: endpoint.serviceId,
-          endpointId: endpoint.endpointId,
-          logicalHost: "localhost" as const,
-          logicalPort,
-          protocol: endpoint.protocol,
-          providerUrl: provider.toString(),
-          provider: "local" as const,
-          capabilityExpiresAt: expiresAt,
-        };
-      }),
-    )
-  ).filter((route) => route !== undefined);
-  const primaryRoute = primary
-    ? routes.find(
-        (route) =>
-          route.serviceId === primary.service &&
-          endpoints.find(
-            (endpoint) =>
-              endpoint.serviceId === route.serviceId &&
-              endpoint.endpointId === route.endpointId,
-          )?.port === primary.port,
-      )
-    : undefined;
+  const routes = endpoints.map((endpoint) => ({
+    routeId: `${sessionId}:${endpoint.serviceId}:${endpoint.endpointId}`,
+    serviceId: endpoint.serviceId,
+    endpointId: endpoint.endpointId,
+    logicalHost: "localhost" as const,
+    logicalPort: endpoint.port,
+    protocol: endpoint.protocol,
+    providerUrl: `${endpoint.protocol}://127.0.0.1:${endpoint.port}/`,
+    provider: "local" as const,
+    capabilityExpiresAt: expiresAt,
+  }));
+  const primaryRoute = routes.find(
+    (route) =>
+      route.serviceId === primary?.serviceId &&
+      route.endpointId === primary?.endpoint.id,
+  );
   return {
     sessionId,
     endpointRevision: 1,
@@ -2569,7 +1616,10 @@ export async function localPreviewBridgeGrant(
 }
 
 async function ensureProjectPreviewUrl(input: EnsureProjectPreviewUrlInput) {
-  if (input.workspaceMode === "cloud-mirror" || input.workspaceMode === "direct")
+  if (
+    input.workspaceMode === "cloud-mirror" ||
+    input.workspaceMode === "direct"
+  )
     return null;
   const worktree = resolveRuntimePath(input.worktree);
   if (removedWorktrees.has(worktree)) return null;
@@ -2586,15 +1636,12 @@ async function ensureProjectPreviewUrl(input: EnsureProjectPreviewUrlInput) {
     return null;
   }
   const currentUrl = await resolveProjectPreviewUrl({ worktree });
-  if (currentUrl && (await previewResponds(currentUrl))) {
-    const currentOrigin = previewOrigin(currentUrl);
-    const envMatches = await materializedPreviewEnvFilesMatch(
-      worktree,
-      currentOrigin,
-      await projectPreviewEnvOverrides(worktree),
-    );
-    if (envMatches && (await previewProbesPass(worktree))) return currentUrl;
-  }
+  if (
+    currentUrl &&
+    (await previewResponds(currentUrl)) &&
+    (await previewProbesPass(worktree))
+  )
+    return currentUrl;
   const recovery = previewRecoveries.get(worktree);
   if (recovery) return recovery;
   const configurationFingerprint =
@@ -2616,9 +1663,7 @@ async function ensureProjectPreviewUrl(input: EnsureProjectPreviewUrlInput) {
     return null;
   }
   getBlameTelemetry().count("blame.harness.preview_recoveries", 1, {});
-  const nextRecovery = runPreviewRecovery(input, worktree, {
-    reallocatePorts: Boolean(currentUrl),
-  })
+  const nextRecovery = runPreviewRecovery(input, worktree)
     .then((result) => {
       previewRecoveryCircuit.succeeded(worktree);
       return result;
@@ -2661,8 +1706,8 @@ export async function projectPreviewRuntimeState(
     await Promise.all([
       readProjectRunConfigurations(worktree),
       readPreviewRuntimeFileState(worktree),
-      composeProjectContainers(worktree),
-      readProjectPreviewManifest(worktree),
+      localPreviewServices(worktree),
+      readProjectPreviewManifest(worktree).catch(() => undefined),
     ]);
   const selected = selectedPreviewRunConfiguration(
     configurations,
@@ -2845,7 +1890,7 @@ async function refreshProjectDependencyArtifacts(worktree: string) {
     readProjectRunConfigurations(worktree),
     readPreviewRuntimeFileState(worktree),
   ]);
-  if (!manifest) return repairProjectCompose(worktree);
+  if (!manifest) return;
   await prepareProjectPreviewArtifacts({
     executionId: "preview-dependency-refresh",
     storyId: "preview-dependency-refresh",
@@ -2985,7 +2030,6 @@ async function startProjectPreview(
           selectedConfigurationId: selected.id,
         });
       }
-      await stopInactiveRunConfigurationServices(worktree, selected);
       await startProjectCompose(worktree);
       return projectPreviewRuntimeState(worktree);
     },
@@ -3002,22 +2046,10 @@ async function stopRunConfigurationServices(
   worktree: string,
   configuration: ProjectRunConfiguration,
 ) {
-  const services = await runConfigurationServiceIds(worktree, configuration);
-  await stopComposeServices(worktree, services);
-}
-
-async function stopInactiveRunConfigurationServices(
-  worktree: string,
-  configuration: ProjectRunConfiguration,
-) {
-  const config = await composeConfig(worktree, projectComposePath(worktree));
-  const active = new Set(
+  await stopLocalPreview(
+    worktree,
     await runConfigurationServiceIds(worktree, configuration),
   );
-  const inactive = composeRuntimeServices(config).filter(
-    (service) => !active.has(service),
-  );
-  await stopComposeServices(worktree, inactive);
 }
 
 async function runConfigurationServiceIds(
@@ -3032,31 +2064,6 @@ async function runConfigurationServiceIds(
     );
   }
   return previewRunConfigurationServiceIds(configuration, manifest);
-}
-
-async function stopComposeServices(worktree: string, services: string[]) {
-  if (!services.length) return;
-  await containerRuntime.compose(
-    [
-      ...composeArgs(worktree),
-      "stop",
-      "--timeout",
-      String(previewStopTimeoutSeconds),
-      ...services,
-    ],
-    { cwd: worktree, env: await setupEnvironment(worktree) },
-  );
-}
-
-function composeRuntimeServices(config: ComposeConfig) {
-  return previewComposePlan(config).runtimeServices;
-}
-
-function composeServiceDependencies(service: ComposeService | undefined) {
-  if (!service?.depends_on) return [];
-  return Array.isArray(service.depends_on)
-    ? service.depends_on
-    : Object.keys(service.depends_on);
 }
 
 async function stopPreviewStartWhenRequested(worktree: string) {
@@ -3074,57 +2081,25 @@ async function previewRuntimeStopped(worktree: string) {
   );
 }
 
-async function readProjectRunConfigurations(worktree: string) {
-  const path = projectRunConfigurationsPath(worktree);
-  if (!(await runtimePathExists(path))) return [];
-  return parseRunConfigurations(JSON.parse(await readRuntimeFile(path)));
-}
+const readProjectRunConfigurations = readLocalRunConfigurations;
+const readPreviewRuntimeFileState = readLocalRuntimeState;
+const writePreviewRuntimeState = writeLocalRuntimeState;
+const readProjectPreviewManifest = readLocalPreviewManifest;
 
-async function readPreviewRuntimeFileState(
-  worktree: string,
-): Promise<PreviewRuntimeSelectionState> {
-  const path = projectPreviewRuntimeStatePath(worktree);
-  if (!(await runtimePathExists(path))) return { desiredStatus: "stopped" };
-  try {
-    return parseLocalPreviewRuntimeSelectionState(
-      JSON.parse(await readRuntimeFile(path)),
-    );
-  } catch {
-    return { desiredStatus: "stopped" };
-  }
-}
-
-function writePreviewRuntimeState(
-  worktree: string,
-  state: PreviewRuntimeSelectionState,
-) {
-  return writeRuntimeJson(projectPreviewRuntimeStatePath(worktree), state);
-}
-
-function runtimeContainerService(container: RuntimeContainer) {
-  return container.Config?.Labels?.["com.docker.compose.service"] ?? "";
-}
-
-function previewRuntimeContainerState(container: RuntimeContainer) {
+function previewRuntimeContainerState(service: ServiceState) {
   return {
-    exitCode: container.State?.ExitCode,
-    health: container.State?.Health?.Status,
-    service: runtimeContainerService(container),
-    status: container.State?.Status,
+    exitCode: service.exitCode,
+    health: service.health,
+    service: service.id,
+    status: service.state,
   };
 }
 
 async function previewProbesPass(worktree: string) {
-  try {
-    await runPreviewProbes(worktree);
-    return true;
-  } catch (error) {
-    await appendRecoveryLog(
-      worktree,
-      `preview functional check failed: ${operationErrorType(error)}`,
-    );
-    return false;
-  }
+  const passed = await localPreviewProbesPass(worktree);
+  if (!passed)
+    await appendRecoveryLog(worktree, "preview functional check failed");
+  return passed;
 }
 
 function setupRunningForWorktree(worktree: string) {
@@ -3133,22 +2108,9 @@ function setupRunningForWorktree(worktree: string) {
   );
 }
 
-async function projectSetupCompleted(worktree: string) {
-  try {
-    const log = await readRuntimeFile(setupLogPath(worktree));
-    return (
-      log.includes("Project preview containers are running.") ||
-      log.includes("[setup exited with code 0]")
-    );
-  } catch {
-    return false;
-  }
-}
-
 async function runPreviewRecovery(
   input: EnsureProjectPreviewUrlInput,
   worktree: string,
-  options: { reallocatePorts?: boolean },
 ) {
   const operation = beginExecutionOperation(
     input,
@@ -3156,23 +2118,20 @@ async function runPreviewRecovery(
     worktree,
   );
   void enrichExecutionRepositoryCohorts(operation, worktree);
-  const action = () => recoverProjectPreview(worktree, options);
+  const action = () => recoverProjectPreview(worktree);
   return runExecutionOperation(operation, action, (result) =>
     result ? "succeeded" : "canceled",
   );
 }
 
-async function recoverProjectPreview(
-  worktree: string,
-  options: { reallocatePorts?: boolean } = {},
-) {
+async function recoverProjectPreview(worktree: string) {
   if (await previewRuntimeStopped(worktree)) return null;
   if (removedWorktrees.has(worktree)) return null;
   if (removingWorktrees.has(worktree)) return null;
   if (await previewRuntimeStopped(worktree)) return null;
   await appendRecoveryLog(worktree, "compose starting");
   try {
-    const previewUrl = await startProjectCompose(worktree, options);
+    const previewUrl = await startProjectCompose(worktree);
     await appendRecoveryLog(
       worktree,
       previewUrl ? `preview ready at ${previewUrl}` : "run configuration ready",
@@ -3185,92 +2144,36 @@ async function recoverProjectPreview(
   }
 }
 
-async function runExistingProjectSetup(worktree: string) {
-  const scriptPath = joinWorkspacePath(
-    worktree,
-    ".blame",
-    "initialization",
-    "setup.sh",
-  );
-  if (!(await runtimePathExists(scriptPath))) return;
-  await appendRecoveryLog(worktree, "setup starting");
-  const env = await setupEnvironment(worktree);
-  await new Promise<void>((resolve, reject) => {
-    const child = spawnRuntime("bash", [scriptPath], {
-      cwd: worktree,
-      env,
-    });
-    trackWorkspaceProcess(child);
-    child.stdout.on("data", (data: Buffer) =>
-      appendRecoveryOutput(worktree, data),
-    );
-    child.stderr.on("data", (data: Buffer) =>
-      appendRecoveryOutput(worktree, data),
-    );
-    child.on("error", reject);
-    child.on("exit", (code) => {
-      void appendRecoveryLog(worktree, `setup exited with code ${code ?? ""}`);
-      if (code === 0) resolve();
-      else reject(new Error(`Project setup exited with code ${code ?? ""}`));
-    });
-  });
-}
-
 export async function shutdownWorkspaceProcesses() {
-  const activeProcesses = Array.from(workspaceProcesses);
-  Array.from(setupRuns.values()).forEach((run) =>
-    finishSetupRun(run, "canceled"),
-  );
+  Array.from(setupRuns.values()).forEach((run) => {
+    run.abort.abort();
+    finishSetupRun(run, "canceled");
+  });
   setupRuns.clear();
+  for (const stream of projectLogStreams.values()) stream.abort.abort();
+  for (const stream of projectServiceLogStreams.values()) {
+    stream.stopped = true;
+    stream.abort?.abort();
+  }
   projectLogStreams.clear();
   projectServiceLogStreams.clear();
-  workspaceProcesses.clear();
-  await Promise.all(activeProcesses.map(stopChildProcess));
-  await cleanupAbandonedBlamePreviews();
-}
-
-function trackWorkspaceProcess(child: ChildProcessWithoutNullStreams) {
-  workspaceProcesses.add(child);
-  child.once("exit", () => workspaceProcesses.delete(child));
-}
-
-async function stopChildProcess(child: ChildProcessWithoutNullStreams) {
-  killChildProcess(child, "SIGTERM");
-  await waitForExit(child);
+  await flushRunLogs();
 }
 
 async function stopSetupRunsForWorktree(worktree: string) {
-  const runs = Array.from(setupRuns.values()).filter(
-    (run) => run.worktree === worktree,
-  );
-  await Promise.all(
-    runs.map(async (run) => {
-      finishSetupRun(run, "canceled");
-      await stopChildProcess(run.process);
-    }),
-  );
+  for (const run of Array.from(setupRuns.values())) {
+    if (run.worktree !== worktree) continue;
+    run.abort.abort();
+    finishSetupRun(run, "canceled");
+  }
 }
 
 async function listProjectServices(worktreeInput: string) {
   const worktree = resolveRuntimePath(worktreeInput);
-  const composePath = projectComposePath(worktree);
-  try {
-    if (await runtimePathExists(composePath)) {
-      return composeRuntimeServiceNames(await readRuntimeFile(composePath));
-    }
-  } catch {}
-  return listProjectServicesWithCompose(worktree);
-}
-
-async function listProjectServicesWithCompose(worktree: string) {
-  const config = await composeConfig(worktree, projectComposePath(worktree));
-  return composeRuntimeServices(config).sort(serviceSort);
-}
-
-function composeRuntimeServiceNames(compose: string) {
-  const parsed = parseYaml(compose) as unknown;
-  if (!parsed || typeof parsed !== "object") return [];
-  return composeRuntimeServices(parsed as ComposeConfig).sort(serviceSort);
+  const manifest = await readProjectPreviewManifest(worktree).catch(
+    () => undefined,
+  );
+  return (manifest?.services.map(({ id }) => id) ?? []).sort(serviceSort);
 }
 
 async function startProjectServiceLogs(input: ProjectServiceLogsInput) {
@@ -3297,43 +2200,27 @@ async function startProjectServiceLogProcess(
 ) {
   if (stream.stopped || projectServiceLogStreams.get(streamId) !== stream)
     return;
-  const child = containerRuntime.spawnCompose(
-    [
-      ...composeArgs(stream.worktree),
-      "logs",
-      "--tail",
-      "120",
-      "--follow",
-      stream.service,
-    ],
-    {
-      cwd: stream.worktree,
-      env: await setupEnvironment(stream.worktree),
+  stream.abort = new AbortController();
+  const result = await followLocalPreviewLogs(
+    stream.worktree,
+    stream.service,
+    (chunk) => {
+      stream.hasOutput = true;
+      emitProjectServiceLog(streamId, "stdout", chunk);
     },
-  );
-  stream.process = child;
-  trackWorkspaceProcess(child);
-  child.stdout.on("data", (data: Buffer) => {
-    stream.hasOutput = true;
-    emitProjectServiceLog(streamId, "stdout", data.toString());
-  });
-  child.stderr.on("data", (data: Buffer) => {
-    stream.hasOutput = true;
-    emitProjectServiceLog(streamId, "stderr", data.toString());
-  });
-  child.once("error", (error) => {
+    stream.abort.signal,
+  ).catch((error: unknown) => {
     emitProjectServiceLog(streamId, "stderr", errorMessage(error));
+    return undefined;
   });
-  child.once("exit", (code) => {
-    if (projectServiceLogStreams.get(streamId) !== stream) return;
-    stream.process = undefined;
-    if (stream.stopped || stream.hasOutput) {
-      projectServiceLogStreams.delete(streamId);
-      emitProjectServiceLog(streamId, "exit", String(code ?? ""));
-      return;
-    }
-    void fallbackProjectServiceLog(streamId, stream, code);
-  });
+  if (projectServiceLogStreams.get(streamId) !== stream) return;
+  stream.abort = undefined;
+  if (stream.stopped || stream.hasOutput) {
+    projectServiceLogStreams.delete(streamId);
+    emitProjectServiceLog(streamId, "exit", String(result?.exitCode ?? ""));
+    return;
+  }
+  void fallbackProjectServiceLog(streamId, stream, result?.exitCode ?? null);
 }
 
 async function fallbackProjectServiceLog(
@@ -3407,7 +2294,7 @@ async function stopProjectServiceLogs(streamId: string) {
   stream.stopped = true;
   if (stream.retry) clearTimeout(stream.retry);
   projectServiceLogStreams.delete(streamId);
-  if (stream.process) await stopChildProcess(stream.process);
+  stream.abort?.abort();
   return true;
 }
 
@@ -3444,22 +2331,26 @@ async function projectServiceLogSnapshot(
   tailLines?: number,
   timeoutMs?: number,
 ) {
-  const lineCount = serviceLogTailLines(tailLines);
-  try {
-    const { stdout, stderr } = await containerRuntime.compose(
-      [...composeArgs(worktree), "logs", "--tail", String(lineCount), service],
-      {
-        cwd: worktree,
-        env: await setupEnvironment(worktree),
-        timeoutMs: timeoutMs ?? containerMetadataTimeoutMs,
-      },
-    );
-    if (stdout || stderr)
-      return { available: true, source: "container", stderr, stdout };
-  } catch (error) {
-    return projectServiceLogFallback(worktree, service, error);
-  }
-  return projectServiceLogFallback(worktree, service);
+  const result = await localPreviewLogs(worktree, service, {
+    tail: serviceLogTailLines(tailLines),
+    timeoutMs: timeoutMs ?? 15_000,
+  }).catch((error: unknown) => ({
+    exitCode: 1,
+    stdout: "",
+    stderr: errorMessage(error),
+  }));
+  if (result?.exitCode === 0 && (result.stdout || result.stderr))
+    return {
+      available: true,
+      source: "container",
+      stderr: result.stderr,
+      stdout: result.stdout,
+    };
+  return projectServiceLogFallback(
+    worktree,
+    service,
+    result?.exitCode ? new Error(result.stderr) : undefined,
+  );
 }
 
 async function projectServiceLogFallback(
@@ -3514,57 +2405,30 @@ function servicePriority(service: string) {
   return 5;
 }
 
+// Follows the services' logs into the run log while the preview runs.
 async function startProjectLogStream(worktree: string) {
   await stopProjectLogStream(worktree);
   await appendRunLogSection(worktree, "container logs");
-  const stream = { stopped: false };
+  const stream: ProjectLogStream = { abort: new AbortController() };
   projectLogStreams.set(worktree, stream);
-  await startProjectLogProcess(worktree, stream);
-}
-
-async function startProjectLogProcess(
-  worktree: string,
-  stream: ProjectLogStream,
-) {
-  if (stream.stopped) return;
-  const process = containerRuntime.spawnCompose(
-    [...composeArgs(worktree), "logs", "--tail", "120", "--follow"],
-    {
-      cwd: worktree,
-      env: await setupEnvironment(worktree),
-    },
-  );
-  stream.process = process;
-  trackWorkspaceProcess(process);
-  process.stdout.on("data", (data: Buffer) =>
-    appendRecoveryOutput(worktree, data),
-  );
-  process.stderr.on("data", (data: Buffer) =>
-    appendRecoveryOutput(worktree, data),
-  );
-  process.once("error", (error) => {
-    void appendRunLogSection(worktree, errorMessage(error).trim());
-  });
-  process.once("exit", () => {
-    if (projectLogStreams.get(worktree) !== stream) return;
-    stream.process = undefined;
-    if (stream.stopped) projectLogStreams.delete(worktree);
-    else
-      stream.retry = setTimeout(() => {
-        void startProjectLogProcess(worktree, stream).catch((error) => {
-          void appendRunLogSection(worktree, errorMessage(error).trim());
-        });
-      }, 1_000);
-  });
+  void followLocalPreviewLogs(
+    worktree,
+    undefined,
+    (chunk) => appendRunLog(worktree, chunk),
+    stream.abort.signal,
+  )
+    .catch(() => undefined)
+    .finally(() => {
+      if (projectLogStreams.get(worktree) === stream)
+        projectLogStreams.delete(worktree);
+    });
 }
 
 async function stopProjectLogStream(worktree: string) {
   const stream = projectLogStreams.get(worktree);
   if (!stream) return;
-  stream.stopped = true;
-  if (stream.retry) clearTimeout(stream.retry);
   projectLogStreams.delete(worktree);
-  if (stream.process) await stopChildProcess(stream.process);
+  stream.abort.abort();
 }
 
 async function appendRunLogSection(worktree: string, message: string) {
@@ -3572,39 +2436,25 @@ async function appendRunLogSection(worktree: string, message: string) {
   await appendRuntimeFile(setupLogPath(worktree), `\n[${message}]\n`);
 }
 
-function waitForExit(child: ChildProcessWithoutNullStreams) {
-  if (child.exitCode !== null || child.signalCode !== null)
-    return Promise.resolve();
+// Output arrives in small chunks; writing each one would cost a round trip
+// to the Blame Runtime, so the run log is appended in batches.
+const pendingRunLogs = new Map<string, string>();
+let runLogFlush: Promise<void> | undefined;
 
-  return new Promise<void>((resolve) => {
-    const timer = setTimeout(() => {
-      killChildProcess(child, "SIGKILL");
-      resolve();
-    }, forceKillDelayMs);
-
-    child.once("exit", () => {
-      clearTimeout(timer);
-      resolve();
-    });
-  });
+function appendRunLog(worktree: string, text: string) {
+  pendingRunLogs.set(worktree, `${pendingRunLogs.get(worktree) ?? ""}${text}`);
+  runLogFlush ??= delay(300).then(flushRunLogs);
 }
 
-function killChildProcess(
-  child: ChildProcessWithoutNullStreams,
-  signal: NodeJS.Signals,
-) {
-  if (child.exitCode !== null || child.signalCode !== null) return;
-  if (process.platform !== "win32" && child.pid) {
-    try {
-      process.kill(-child.pid, signal);
-      return;
-    } catch {}
-  }
-  child.kill(signal);
-}
-
-function appendRecoveryOutput(worktree: string, data: Buffer) {
-  void appendRuntimeFile(setupLogPath(worktree), data.toString());
+async function flushRunLogs() {
+  const pending = [...pendingRunLogs];
+  pendingRunLogs.clear();
+  runLogFlush = undefined;
+  await Promise.all(
+    pending.map(([worktree, text]) =>
+      appendRuntimeFile(setupLogPath(worktree), text).catch(() => undefined),
+    ),
+  );
 }
 
 async function appendRecoveryLog(worktree: string, message: string) {
@@ -3618,8 +2468,6 @@ async function timedRecoveryStep<T>(
   action: () => Promise<T> | T,
 ) {
   const start = Date.now();
-  const step = localPreviewStartStep(label);
-  if (step) await recordPreviewStartStep(worktree, step);
   try {
     return await traceWorkspaceStep(label, action);
   } finally {
@@ -3631,7 +2479,8 @@ async function recordPreviewStartStep(worktree: string, step: string) {
   try {
     const state = await readPreviewRuntimeFileState(worktree);
     const lifecycle = state.lifecycle;
-    if (lifecycle?.status !== "pending" || lifecycle.phase !== "starting") return;
+    if (lifecycle?.status !== "pending" || lifecycle.phase !== "starting")
+      return;
     await writePreviewRuntimeState(worktree, {
       ...state,
       lifecycle: { ...lifecycle, step },
@@ -3765,7 +2614,10 @@ async function removeGitWorktree(
   await rmRuntime(worktree);
 }
 
-async function assertRemovableWorktree(repositoryRoot: string, worktree: string) {
+async function assertRemovableWorktree(
+  repositoryRoot: string,
+  worktree: string,
+) {
   if (await isProjectFolder(repositoryRoot, worktree))
     throw new Error(`Refusing to delete the project folder ${worktree}.`);
 }
@@ -3794,12 +2646,6 @@ function isDirectoryNotEmptyError(error: unknown) {
 
 function isPermissionDeniedError(error: unknown) {
   return commandErrorText(error).includes("Permission denied");
-}
-
-function transientRuntimePullError(error: unknown) {
-  return /failed to copy|httpReadSeeker|unexpected EOF|\bEOF\b|TLS handshake timeout|connection reset|i\/o timeout|context deadline exceeded|cloudfront\.docker\.com/i.test(
-    commandErrorText(error),
-  );
 }
 
 function commandErrorText(error: unknown) {
@@ -3847,7 +2693,6 @@ async function buildSetupEnvironment(
     BLAME_HOST_GID: hostGroupId(),
     BLAME_HOST_UID: hostUserId(),
     CI: "true",
-    BLAME_DOCKER_COMPOSE_FILE: projectComposePath(worktree),
     BLAME_INITIALIZATION_DIR: joinWorkspacePath(
       worktree,
       ".blame",
@@ -3953,401 +2798,12 @@ function hostGroupId() {
     : "1000";
 }
 
-function projectComposePath(worktree: string) {
-  return joinWorkspacePath(
-    worktree,
-    ".blame",
-    "initialization",
-    "docker-compose.yml",
-  );
-}
-
-function projectPreviewManifestPath(worktree: string) {
-  return joinWorkspacePath(
-    worktree,
-    ".blame",
-    "initialization",
-    "preview-manifest.json",
-  );
-}
-
-function projectRunConfigurationsPath(worktree: string) {
-  return joinWorkspacePath(
-    worktree,
-    ".blame",
-    "initialization",
-    "run-configurations.json",
-  );
-}
-
-function projectPreviewRuntimeStatePath(worktree: string) {
-  return joinWorkspacePath(
-    worktree,
-    ".blame",
-    "initialization",
-    "preview-runtime-state.json",
-  );
-}
-
 function setupLogPath(worktree: string) {
-  return joinWorkspacePath(worktree, ".blame", "logs", "setup.log");
+  return localPreviewPaths(worktree).setupLog;
 }
 
 function timingLogPath(worktree: string) {
-  return joinWorkspacePath(worktree, ".blame", "logs", "timing.jsonl");
-}
-
-async function composePreviewTarget(worktree: string, composePath: string) {
-  const config = await composeConfig(worktree, composePath);
-  const services = Object.entries(config.services ?? {});
-  const selectedService = await selectedPreviewServiceId(worktree);
-  const labeledTarget = services
-    .map(([service, config]) => labeledPreviewTarget(service, config))
-    .sort((left, right) =>
-      previewTargetSelectionOrder(left, right, selectedService),
-    )
-    .find(Boolean);
-  if (labeledTarget) return labeledTarget;
-  return services
-    .map(([service, config]) => exposedPreviewTarget(service, config))
-    .find(Boolean);
-}
-
-type ComposeBridgeEndpoint = {
-  endpointId: string;
-  port: number;
-  protocol: "http" | "https" | "ws" | "wss";
-  serviceId: string;
-};
-
-function composeBridgeEndpoints(
-  config: ComposeConfig,
-  primary: Awaited<ReturnType<typeof composePreviewTarget>>,
-) {
-  const endpoints = Object.entries(config.services ?? {}).flatMap(
-    ([serviceId, service]) =>
-      declaredComposeBridgeEndpoints(serviceId, service),
-  );
-  if (
-    primary &&
-    !endpoints.some(
-      (endpoint) =>
-        endpoint.serviceId === primary.service &&
-        endpoint.port === primary.port,
-    )
-  ) {
-    const protocol = previewBridgeProtocol(primary.protocol);
-    if (protocol) {
-      endpoints.push({
-        endpointId: "preview",
-        port: primary.port,
-        protocol,
-        serviceId: primary.service,
-      });
-    }
-  }
-  return endpoints;
-}
-
-function declaredComposeBridgeEndpoints(
-  serviceId: string,
-  service: ComposeService,
-) {
-  const labels = serviceLabels(service);
-  return Object.keys(labels).flatMap((key) => {
-    const match = /^blame\.endpoint\.(\d+)\.id$/.exec(key);
-    if (!match) return [];
-    const index = match[1];
-    const port = numberValue(labels[`blame.endpoint.${index}.port`]);
-    const protocol = previewBridgeProtocol(
-      labels[`blame.endpoint.${index}.protocol`] ?? "http",
-    );
-    if (!port || !protocol) return [];
-    return [
-      {
-        endpointId: labels[key],
-        port,
-        protocol,
-        serviceId,
-      } satisfies ComposeBridgeEndpoint,
-    ];
-  });
-}
-
-function previewBridgeProtocol(value: string | undefined) {
-  return ["http", "https", "ws", "wss"].includes(value ?? "")
-    ? (value as ComposeBridgeEndpoint["protocol"])
-    : undefined;
-}
-
-function localPreviewProvider(
-  address: string,
-  protocol: ComposeBridgeEndpoint["protocol"],
-) {
-  const provider = new URL(
-    previewUrl(
-      address,
-      protocol === "https" || protocol === "wss" ? "https" : "http",
-      "/",
-    ),
-  );
-  provider.hostname = "127.0.0.1";
-  return provider;
-}
-
-async function selectedPreviewServiceId(worktree: string) {
-  const [configurations, state] = await Promise.all([
-    readProjectRunConfigurations(worktree),
-    readPreviewRuntimeFileState(worktree),
-  ]);
-  return selectedPreviewRunConfiguration(configurations, state)?.previewService;
-}
-
-function previewTargetSelectionOrder(
-  left: ReturnType<typeof labeledPreviewTarget>,
-  right: ReturnType<typeof labeledPreviewTarget>,
-  selectedService: string | undefined,
-) {
-  if (left?.service === selectedService) return -1;
-  if (right?.service === selectedService) return 1;
-  return 0;
-}
-
-async function composeConfig(
-  worktree: string,
-  composePath: string,
-): Promise<ComposeConfig> {
-  return dedupeComposeCall(`config:${worktree}:${composePath}`, () =>
-    loadComposeConfig(worktree, composePath),
-  );
-}
-
-async function loadComposeConfig(
-  worktree: string,
-  composePath: string,
-): Promise<ComposeConfig> {
-  const { stdout } = await containerRuntime.compose(
-    ["-f", composePath, "--project-directory", worktree, "config"],
-    { cwd: worktree, env: await setupEnvironment(worktree) },
-  );
-  const parsed = parseYaml(stdout) as unknown;
-  if (!parsed || typeof parsed !== "object") return {};
-  return parsed as ComposeConfig;
-}
-
-function labeledPreviewTarget(service: string, config: ComposeService) {
-  const labels = serviceLabels(config);
-  if (labels["blame.preview"] !== "true") return undefined;
-  const port = numberValue(labels["blame.preview.port"]);
-  if (!port) return undefined;
-  return {
-    service,
-    port,
-    protocol: labels["blame.preview.protocol"] || "http",
-    path: labels["blame.preview.path"] || "/",
-  };
-}
-
-function exposedPreviewTarget(service: string, config: ComposeService) {
-  const port = config.ports?.find((port) => numberValue(port.target));
-  const target = numberValue(port?.target);
-  if (!target) return undefined;
-  return {
-    service,
-    port: target,
-    protocol: "http",
-    path: "/",
-  };
-}
-
-function serviceLabels(config: ComposeService) {
-  if (!config.labels) return {};
-  if (!Array.isArray(config.labels)) return config.labels;
-  return Object.fromEntries(
-    config.labels
-      .map((label) => label.split("=", 2))
-      .filter(([key]) => Boolean(key))
-      .map(([key, value]) => [key, value ?? "true"]),
-  );
-}
-
-async function composePublishedAddress(
-  worktree: string,
-  composePath: string,
-  service: string,
-  port: number,
-) {
-  return dedupeComposeCall(
-    `port:${worktree}:${composePath}:${service}:${port}`,
-    () => loadComposePublishedAddress(worktree, composePath, service, port),
-  );
-}
-
-async function loadComposePublishedAddress(
-  worktree: string,
-  composePath: string,
-  service: string,
-  port: number,
-) {
-  try {
-    const { stdout } = await containerRuntime.compose(
-      [
-        "-f",
-        composePath,
-        "--project-directory",
-        worktree,
-        "port",
-        service,
-        String(port),
-      ],
-      { cwd: worktree, env: await setupEnvironment(worktree) },
-    );
-    return stdout.trim().split("\n").find(Boolean);
-  } catch {
-    return undefined;
-  }
-}
-
-function dedupeComposeCall<T>(key: string, action: () => Promise<T>) {
-  const current = composeCallPromises.get(key) as Promise<T> | undefined;
-  if (current) return current;
-  const next = action().finally(() => composeCallPromises.delete(key));
-  composeCallPromises.set(key, next);
-  return next;
-}
-
-async function repairProjectCompose(
-  worktree: string,
-  options: { reallocatePorts?: boolean } = {},
-) {
-  await sanitizeWorkspaceConfigFiles(worktree);
-  await repairComposeFile(worktree, projectComposePath(worktree), options);
-}
-
-async function repairComposeFile(
-  worktree: string,
-  composePath: string,
-  options: { reallocatePorts?: boolean } = {},
-) {
-  if (!(await runtimePathExists(composePath))) return;
-  const compose = await readRuntimeFile(composePath);
-  const dependencyCompose = composeWithCurrentDependencyVolumes(
-    compose,
-    await dependencyVolumeHashForWorktree(worktree, compose, true),
-  );
-  const nextCompose = (await worktreeHasNextProject(worktree))
-    ? commandWithNextWebpackFallback(dependencyCompose)
-    : dependencyCompose;
-  const allocatedCompose = await composeWithRememberedHostPorts(
-    worktree,
-    composeWithNonMutatingNpmInstalls(
-      composeWithoutNumericSuUser(
-        composeWithRuntimePortPlaceholders(
-          dockerComposeWithPortableWindowsPaths(nextCompose),
-          options.reallocatePorts,
-        ),
-      ),
-    ),
-  );
-  validatePreviewComposeBindings(allocatedCompose);
-  const overrides = previewComposeEnvOverrides(allocatedCompose);
-  await logPreviewEnvOverrides(worktree, overrides);
-  const envMounts = await materializedPreviewEnvHostFileMounts(
-    worktree,
-    composePreviewOrigin(allocatedCompose),
-    overrides,
-  );
-  const repairedCompose = dockerComposeWithHostFileMounts(
-    allocatedCompose,
-    worktree,
-    envMounts,
-  );
-  if (repairedCompose !== compose)
-    await writeRuntimeFile(composePath, repairedCompose);
-}
-
-async function worktreeHasNextProject(worktree: string) {
-  const manifest = await readProjectPreviewManifest(worktree).catch(
-    () => undefined,
-  );
-  const detectedStackResult = detectedStackUsesNext(manifest);
-  if (detectedStackResult !== undefined) return detectedStackResult;
-  const paths = await findProjectFilesByName(worktree, "package.json");
-  return projectPackageFilesUseNext(paths);
-}
-
-async function projectPackageFilesUseNext(paths: string[]) {
-  const batchSize = 64;
-  for (let index = 0; index < paths.length; index += batchSize) {
-    const files = await readExistingRuntimeFiles(
-      paths.slice(index, index + batchSize),
-    );
-    if (Object.values(files).some(packageJsonUsesNext)) return true;
-  }
-  return false;
-}
-
-async function prepareProjectCompose(
-  worktree: string,
-  compose: string,
-  symlinkEnvMounts: Awaited<ReturnType<typeof envHostFileMounts>>,
-) {
-  const dependencyKey = await timedRecoveryStep(
-    worktree,
-    "dependency hash",
-    () => dependencyVolumeHashForWorktree(worktree, compose),
-  );
-  const normalizedCompose = await timedRecoveryStep(
-    worktree,
-    "compose normalize",
-    () =>
-      composeWithNonMutatingNpmInstalls(
-        composeWithoutNumericSuUser(
-          dockerComposeForPreview(compose, worktree, dependencyKey),
-        ),
-      ),
-  );
-  const allocatedCompose = await timedRecoveryStep(
-    worktree,
-    "compose allocate ports",
-    () => composeWithRememberedHostPorts(worktree, normalizedCompose),
-  );
-  await timedRecoveryStep(worktree, "compose binding validation", () =>
-    validatePreviewComposeBindings(allocatedCompose),
-  );
-  const overrides = previewComposeEnvOverrides(allocatedCompose);
-  await logPreviewEnvOverrides(worktree, overrides);
-  const envMounts = await timedRecoveryStep(
-    worktree,
-    "preview env host mounts",
-    () =>
-      materializedPreviewEnvHostFileMounts(
-        worktree,
-        composePreviewOrigin(allocatedCompose),
-        overrides,
-      ),
-  );
-  return timedRecoveryStep(worktree, "compose inject host mounts", () =>
-    dockerComposeWithHostFileMounts(allocatedCompose, worktree, [
-      ...symlinkEnvMounts,
-      ...envMounts,
-    ]),
-  );
-}
-
-async function logPreviewEnvOverrides(
-  worktree: string,
-  overrides: Array<{ values: Record<string, string> }>,
-) {
-  const bindings = overrides.reduce(
-    (count, override) => count + Object.keys(override.values).length,
-    0,
-  );
-  if (bindings === 0) return;
-  await appendRecoveryLog(
-    worktree,
-    `preview env overrides prepared: ${bindings} bindings`,
-  );
+  return localPreviewPaths(worktree).timingLog;
 }
 
 const dependencyHashFiles = [
@@ -4360,27 +2816,6 @@ const dependencyHashFiles = [
   "bun.lock",
   "bun.lockb",
 ];
-
-async function dependencyVolumeHashForWorktree(
-  worktree: string,
-  compose: string,
-  requireInputs = false,
-) {
-  const paths = await dependencyInputPaths(worktree);
-  const contents = await readExistingRuntimeFiles(
-    paths.map(({ path }) => path),
-  );
-  const foundInputs = paths.flatMap(({ file, path }) => {
-    const content = contents[path];
-    return typeof content === "string" ? [{ content, file }] : [];
-  });
-  for (const { file } of foundInputs) {
-    await appendRecoveryLog(worktree, `dependency hash input: ${file}`);
-  }
-  // Hashing an already-keyed compose file would rotate an empty cache forever.
-  if (requireInputs && foundInputs.length === 0) return "";
-  return dependencyVolumeHashFromInputs(foundInputs, compose);
-}
 
 async function dependencyInputPaths(worktree: string) {
   const rootPaths = dependencyHashFiles.map((file) => ({
@@ -4403,391 +2838,8 @@ function uniqueDependencyInputPaths(
   );
 }
 
-function composePreviewOrigin(compose: string) {
-  const match = /(?:127\.0\.0\.1|localhost):(\d+):\d+/.exec(compose);
-  return match ? `http://localhost:${match[1]}` : undefined;
-}
-
-// Returns the preview service logs it recorded, for error messages.
-async function appendComposeDiagnostics(worktree: string) {
-  await appendRecoveryLog(worktree, "compose diagnostics");
-  await appendComposeOutput(worktree, ["ps", "-a"]);
-  const target = await composePreviewTarget(
-    worktree,
-    projectComposePath(worktree),
-  );
-  return appendComposeOutput(
-    worktree,
-    target
-      ? ["logs", "--tail", "120", target.service]
-      : ["logs", "--tail", "120"],
-  );
-}
-
-async function appendComposeOutput(worktree: string, args: string[]) {
-  try {
-    const { stdout, stderr } = await containerRuntime.compose(
-      [...composeArgs(worktree), ...args],
-      {
-        cwd: worktree,
-        env: await setupEnvironment(worktree),
-        timeoutMs: containerMetadataTimeoutMs,
-      },
-    );
-    if (stdout) await appendRecoveryLog(worktree, stdout.trimEnd());
-    if (stderr) await appendRecoveryLog(worktree, stderr.trimEnd());
-    return `${stdout}\n${stderr}`;
-  } catch (error) {
-    await appendRecoveryLog(worktree, commandErrorText(error).trim());
-    return "";
-  }
-}
-
-function withPreviewLogExcerpt(message: string, logs: string) {
-  const excerpt = previewFailureLogExcerpt(logs);
-  return excerpt ? `${message}: ${excerpt}` : message;
-}
-
-async function previewContainers(includeStopped: boolean, worktree: string) {
-  try {
-    const { stdout } = await containerRuntime.container(
-      [
-        "ps",
-        ...(includeStopped ? ["-a"] : []),
-        "--filter",
-        "label=blame.preview=true",
-        "--format",
-        "{{.ID}}",
-      ],
-      {
-        cwd: worktree,
-        env: await setupEnvironment(worktree),
-        timeoutMs: containerMetadataTimeoutMs,
-      },
-    );
-    const ids = stdout
-      .split("\n")
-      .map((line) => line.trim())
-      .filter(Boolean);
-    if (ids.length === 0) return [];
-    return containerRuntime.inspect<RuntimeContainer>(ids, {
-      timeoutMs: containerMetadataTimeoutMs,
-    });
-  } catch {
-    return [];
-  }
-}
-
-async function waitForPreview(worktree: string, url: string) {
-  const startedAt = Date.now();
-  const deadline = startedAt + previewResponseTimeoutMs;
-  let attempts = 0;
-  while (Date.now() < deadline) {
-    if (await previewRuntimeStopped(worktree)) return;
-    attempts += 1;
-    if (await previewResponds(url)) {
-      await appendRecoveryLog(
-        worktree,
-        `preview responded after ${attempts} attempt${attempts === 1 ? "" : "s"}`,
-      );
-      return;
-    }
-    await assertPreviewContainerCanStillStart(worktree, startedAt);
-    await delay(previewStartupIntervalMs);
-  }
-  const logs = await appendComposeDiagnostics(worktree);
-  throw new PreviewRuntimeError(
-    "preview_response_timeout",
-    withPreviewLogExcerpt(
-      `Preview did not respond within ${previewResponseTimeoutMs / 1_000} seconds`,
-      logs,
-    ),
-  );
-}
-
-async function runPreviewProbes(worktree: string) {
-  const manifest = await readProjectPreviewManifest(worktree);
-  if (!manifest?.probes?.length) return;
-  const plan = compiledPreviewPlan(manifest);
-  const probes = activeProbes(
-    plan,
-    await activeRunConfigurationServices(worktree, manifest),
-  );
-  let passed = 0;
-  for (const probe of probes) {
-    try {
-      await executePreviewProbe(worktree, plan, probe);
-      passed += 1;
-    } catch (error) {
-      await appendRecoveryLog(worktree, `preview probe ${probe.id} failed`);
-      if (probe.required) throw previewProbeError(error, probe);
-    }
-  }
-  await appendRecoveryLog(
-    worktree,
-    `preview probes passed: ${passed}/${probes.length}`,
-  );
-}
-
-// Local previews read the manifest through the same compiler as cloud
-// previews, so both accept, refuse and probe a manifest the same way.
-function compiledPreviewPlan(manifest: PreviewManifest) {
-  try {
-    return compilePreviewManifest(manifest);
-  } catch (error) {
-    throw new PreviewRuntimeError(
-      "preview_manifest_invalid",
-      `Preview manifest is invalid: ${errorMessageText(error)}`,
-    );
-  }
-}
-
-async function activeRunConfigurationServices(
-  worktree: string,
-  manifest: PreviewManifest,
-) {
-  const [configurations, state] = await Promise.all([
-    readProjectRunConfigurations(worktree),
-    readPreviewRuntimeFileState(worktree),
-  ]);
-  if (!configurations.length) return undefined;
-  const selected = selectedPreviewRunConfiguration(configurations, state);
-  return selected
-    ? new Set(previewRunConfigurationServiceIds(selected, manifest))
-    : new Set<string>();
-}
-
-async function readProjectPreviewManifest(worktree: string) {
-  const path = projectPreviewManifestPath(worktree);
-  if (!(await runtimePathExists(path))) return undefined;
-  try {
-    return parsePreviewManifest(JSON.parse(await readRuntimeFile(path)));
-  } catch (error) {
-    throw new PreviewRuntimeError(
-      "preview_manifest_invalid",
-      `Persisted preview manifest is invalid: ${errorMessageText(error)}`,
-    );
-  }
-}
-
-async function executePreviewProbe(
-  worktree: string,
-  plan: PreviewExecutionPlan,
-  probe: ProbePlan,
-) {
-  const endpoint = probeEndpoint(plan, probe);
-  if (!endpoint) {
-    throw new PreviewRuntimeError(
-      "preview_manifest_invalid",
-      `Preview probe ${probe.id} references an unknown endpoint`,
-    );
-  }
-  if (probe.from === "host") {
-    await executeHostPreviewProbe(worktree, probe, endpoint);
-    return;
-  }
-  const consumer = plan.services.find(({ id }) => id === probe.from);
-  const command = consumer && serviceProbeCommand(consumer, probe, endpoint);
-  if (!command) {
-    throw new PreviewRuntimeError(
-      "preview_probe_unsupported",
-      `Preview probe ${probe.id} has no supported runtime`,
-    );
-  }
-  await containerRuntime.compose(
-    [...composeArgs(worktree), "exec", "-T", probe.from, ...command],
-    { cwd: worktree, env: await setupEnvironment(worktree) },
-  );
-}
-
-async function executeHostPreviewProbe(
-  worktree: string,
-  probe: ProbePlan,
-  endpoint: ServiceEndpointPlan,
-) {
-  const address = await composePublishedAddress(
-    worktree,
-    projectComposePath(worktree),
-    probe.target.serviceId,
-    endpoint.port,
-  );
-  if (!address) throw new Error("Probe target is not published to the host");
-  if (probe.type === "tcp") {
-    await connectToProbeAddress(address, probe.timeoutMs);
-    return;
-  }
-  const response = await fetch(
-    previewUrl(address, endpoint.protocol, probe.target.path),
-    { method: "GET", signal: AbortSignal.timeout(probe.timeoutMs) },
-  );
-  if (probeStatusAccepted(response.status, probe.acceptedStatuses)) return;
-  throw new Error(`Unexpected probe status ${response.status}`);
-}
-
-function connectToProbeAddress(address: string, timeoutMs: number) {
-  const url = new URL(previewUrl(address, "http", "/"));
-  return new Promise<void>((resolve, reject) => {
-    const socket = createConnection(Number(url.port), url.hostname);
-    const timeout = setTimeout(
-      () => socket.destroy(new Error("Probe timed out")),
-      timeoutMs,
-    );
-    socket.once("connect", () => {
-      clearTimeout(timeout);
-      socket.destroy();
-      resolve();
-    });
-    socket.once("error", (error) => {
-      clearTimeout(timeout);
-      reject(error);
-    });
-  });
-}
-
-function previewProbeError(error: unknown, probe: ProbePlan) {
-  if (error instanceof PreviewRuntimeError) return error;
-  return new PreviewRuntimeError(
-    "preview_probe_failed",
-    probeFailureMessage(probe, errorMessageText(error)),
-  );
-}
-
-async function assertPreviewContainerCanStillStart(
-  worktree: string,
-  startedAt: number,
-) {
-  const container = await previewContainerForWorktree(worktree);
-  const status = container?.State?.Status;
-  const health = container?.State?.Health?.Status;
-  const failure = previewContainerFailure({
-    discoveryGraceMs: previewDiscoveryGraceMs,
-    elapsedMs: Date.now() - startedAt,
-    found: Boolean(container),
-    health,
-    status,
-  });
-  if (!failure) return;
-  const logs = await appendComposeDiagnostics(worktree);
-  const state = health || status || "missing";
-  throw new PreviewRuntimeError(
-    failure,
-    withPreviewLogExcerpt(
-      `Preview container cannot become ready (${state})`,
-      logs,
-    ),
-  );
-}
-
 async function projectRuntimeHealthy(worktreeInput: string) {
-  const worktree = resolveRuntimePath(worktreeInput);
-  const composePath = projectComposePath(worktree);
-  if (!(await runtimePathExists(composePath))) return false;
-  const containers = await composeProjectContainers(worktree);
-  const runtimeContainers = containers.filter(
-    (container) => !completedSetupContainer(container),
-  );
-  if (runtimeContainers.length === 0) return false;
-  return runtimeContainers.every(containerCanStillRun);
-}
-
-async function composeProjectContainers(worktree: string) {
-  return dedupeComposeCall(`containers:${worktree}`, () =>
-    loadComposeProjectContainers(worktree),
-  );
-}
-
-async function loadComposeProjectContainers(worktree: string) {
-  try {
-    const { stdout } = await containerRuntime.compose(
-      [...composeArgs(worktree), "ps", "-a", "--format", "json"],
-      {
-        cwd: worktree,
-        env: await setupEnvironment(worktree),
-        timeoutMs: containerMetadataTimeoutMs,
-      },
-    );
-    const ids = composePsContainerIds(stdout);
-    if (ids.length === 0) return [];
-    return containerRuntime.inspect<RuntimeContainer>(ids, {
-      timeoutMs: containerMetadataTimeoutMs,
-    });
-  } catch {
-    return [];
-  }
-}
-
-function composePsContainerIds(stdout: string) {
-  const trimmed = stdout.trim();
-  if (trimmed.startsWith("[")) return composePsEntriesContainerIds(trimmed);
-  return stdout
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .flatMap(composePsEntryContainerId);
-}
-
-function composePsEntriesContainerIds(stdout: string) {
-  try {
-    const parsed = JSON.parse(stdout) as unknown;
-    if (!Array.isArray(parsed)) return [];
-    return parsed.flatMap((entry) =>
-      composePsContainerId(entry as Record<string, unknown>),
-    );
-  } catch {
-    return [];
-  }
-}
-
-function composePsEntryContainerId(line: string) {
-  try {
-    return composePsContainerId(JSON.parse(line) as Record<string, unknown>);
-  } catch {
-    return [];
-  }
-}
-
-function composePsContainerId(parsed: Record<string, unknown>) {
-  const id = parsed.ID ?? parsed.Id ?? parsed.ContainerID;
-  return typeof id === "string" && id ? [id] : [];
-}
-
-function completedSetupContainer(container: RuntimeContainer) {
-  const labels = container.Config?.Labels ?? {};
-  return (
-    container.State?.Status === "exited" &&
-    container.State.ExitCode === 0 &&
-    labels["blame.preview"] !== "true"
-  );
-}
-
-function containerCanStillRun(container: RuntimeContainer) {
-  const status = container.State?.Status;
-  const health = container.State?.Health?.Status;
-  return health !== "unhealthy" && !failedContainerStatus(status);
-}
-
-async function previewContainerForWorktree(worktree: string) {
-  const containers = await previewContainers(true, worktree);
-  const selectedService = await selectedPreviewServiceId(worktree);
-  const labeled = containers.find(
-    (container) =>
-      containerMatchesWorktree(container, worktree) &&
-      (!selectedService ||
-        runtimeContainerService(container) === selectedService),
-  );
-  if (labeled) return labeled;
-  const projectContainers = await composeProjectContainers(worktree);
-  return projectContainers.find(
-    (container) =>
-      !completedSetupContainer(container) &&
-      containerMatchesWorktree(container, worktree) &&
-      (!selectedService ||
-        runtimeContainerService(container) === selectedService),
-  );
-}
-
-function failedContainerStatus(status: string | undefined) {
-  return status === "dead" || status === "exited" || status === "removing";
+  return localPreviewHealthy(resolveRuntimePath(worktreeInput));
 }
 
 async function previewResponds(url: string) {
@@ -4796,6 +2848,7 @@ async function previewResponds(url: string) {
       method: "GET",
       signal: AbortSignal.timeout(previewRequestTimeoutMs),
     });
+    await response.body?.cancel().catch(() => undefined);
     return response.status < 500;
   } catch {
     return false;
@@ -4804,30 +2857,6 @@ async function previewResponds(url: string) {
 
 function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function previewUrl(address: string, protocol: string, path: string) {
-  const normalizedAddress = address
-    .replace(/^(?:0\.0\.0\.0|127\.0\.0\.1):/, "localhost:")
-    .replace(/^\[::\]:/, "localhost:")
-    .replace(/^\[::1\]:/, "localhost:");
-  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-  return `${protocol}://${normalizedAddress}${normalizedPath}`;
-}
-
-function previewOrigin(value: string) {
-  try {
-    return new URL(value).origin;
-  } catch {
-    return undefined;
-  }
-}
-
-function numberValue(value: unknown) {
-  if (typeof value === "number") return value;
-  if (typeof value !== "string") return undefined;
-  const parsed = Number.parseInt(value, 10);
-  return Number.isFinite(parsed) ? parsed : undefined;
 }
 
 function errorMessage(error: unknown) {
