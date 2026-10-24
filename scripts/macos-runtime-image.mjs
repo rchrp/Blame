@@ -66,6 +66,8 @@ async function buildImage(architecture) {
   const runtimeVersion = requiredRuntimeVersion();
   const buildId = `${runtimeVersion}-${architecture}-${process.pid}`;
   const limaHome = join(buildRoot, buildId);
+  // Outside LIMA_HOME: Lima treats every directory there as an instance.
+  const chrootDirectory = join(buildRoot, `${buildId}-chroot`);
   const instanceName = "build";
   const templatePath = join(limaHome, "builder.yaml");
   const outputPath = join(
@@ -84,7 +86,7 @@ async function buildImage(architecture) {
     if (architecture === hostArchitecture() && (await hostCanChroot())) {
       await provisionImageInChroot({
         baseImage: baseImage(manifest, architecture),
-        workDirectory: join(limaHome, "chroot"),
+        workDirectory: chrootDirectory,
         outputImage: temporaryOutputPath,
         provisioner: await readFile(provisionerPath, "utf8"),
         provisionerArgs: [runtimeVersion, await runtimeClineSdkVersion()],
@@ -123,6 +125,7 @@ async function buildImage(architecture) {
     );
     await rm(temporaryOutputPath, { force: true });
     await rm(limaHome, { force: true, recursive: true });
+    await rm(chrootDirectory, { force: true, recursive: true });
   }
 }
 
