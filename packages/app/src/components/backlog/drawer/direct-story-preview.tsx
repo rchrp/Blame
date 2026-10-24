@@ -1,4 +1,5 @@
 import { CircleAlertIcon, MonitorIcon } from "lucide-react"
+import * as React from "react"
 
 import { portOwnerLabel } from "@/components/backlog/board/project-app-port"
 import {
@@ -29,11 +30,13 @@ export function DirectStoryPreview({
   visible: boolean
 }) {
   const runner = useSharedProjectRunner()
+  const [startRequest, setStartRequest] = React.useState(0)
   const selected = runner?.selected
   if (!runner || !selected) return <NoRunConfiguration />
   const status = runner.statusFor(selected.id)
+  // The page waits in a loading state until the started app answers.
   const previewUrl =
-    status === "running"
+    status === "running" || status === "starting"
       ? projectRunConfigurationPreviewUrl(selected)
       : undefined
   const outside = runningOutside(runner, selected.id)
@@ -59,7 +62,12 @@ export function DirectStoryPreview({
             statusFor={runner.statusFor}
             onMenuOpenChange={onMenuOpenChange}
             onSelect={runner.select}
-            onStart={runner.start}
+            // Started here, the app's logs show in this preview, not in
+            // the runner's logs drawer.
+            onStart={(id) => {
+              setStartRequest((request) => request + 1)
+              runner.start(id, { revealLogs: false })
+            }}
             onStop={runner.stop}
           />
         ),
@@ -76,6 +84,8 @@ export function DirectStoryPreview({
           selected: session?.configurationId,
           onSelect: runner.selectSession,
         },
+        runKey: runner.sessionFor(selected.id)?.sessionId,
+        startRequest,
         notice:
           selected.id === runner.previewConfiguration?.id ? (
             <PortNotice runner={runner} />

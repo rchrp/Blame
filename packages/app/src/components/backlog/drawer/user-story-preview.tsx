@@ -3,6 +3,7 @@ import {
   CopyIcon,
   ExternalLinkIcon,
   FocusIcon,
+  LoaderCircleIcon,
   LockIcon,
   MonitorIcon,
   NetworkIcon,
@@ -40,6 +41,7 @@ import { usePreviewSetupRepair } from "@/components/backlog/drawer/preview-setup
 import {
   usePreviewWarmupReady,
   useSetupPreviewReady,
+  useStartedAppAnswered,
 } from "@/components/backlog/drawer/preview-readiness"
 import {
   blameCloudPreviewOrigin,
@@ -124,6 +126,10 @@ export type ProjectRunPreview = {
   // Shown above the logs: the app's port held by another app, or one to
   // confirm.
   notice?: React.ReactNode
+  // Changes with each run of the app, which then waits to answer again.
+  runKey?: string
+  // Grows each time the app is started from this preview: its logs show.
+  startRequest?: number
 }
 
 type PreviewIslandProps = {
@@ -423,6 +429,15 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
   const setupPreviewWaiting = Boolean(
     setupInitializing && source && !setupPreviewReady
   )
+  const startedAppAnswered = useStartedAppAnswered(
+    source,
+    projectRun?.runKey,
+    projectRunMode
+  )
+  const projectRunWaiting = Boolean(
+    projectRunMode && source && !startedAppAnswered
+  )
+  const previewWaiting = setupPreviewWaiting || projectRunWaiting
   const previewState =
     previewLoad.key === previewKey ? previewLoad.state : "loading"
   const previewLocation =
@@ -471,12 +486,10 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
   const selectedLogService = services.includes(selectedLogServiceChoice)
     ? selectedLogServiceChoice
     : (services[0] ?? "")
-  const hasNativePreview = Boolean(
-    previewBrowser && source && !setupPreviewWaiting
-  )
+  const hasNativePreview = Boolean(previewBrowser && source && !previewWaiting)
   const displayedPreviewState = hasNativePreview
     ? nativePreviewStatus(activeNativePreviewState)
-    : setupPreviewWaiting
+    : previewWaiting
       ? "loading"
       : previewState
   const displayedPreviewLocation = hasNativePreview
@@ -657,11 +670,22 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
   )
 
   React.useEffect(() => {
-    if (!source || setupPreviewWaiting) return
+    if (!source || previewWaiting) return
     if (autoSelectedPreviewSourceRef.current === source) return
     autoSelectedPreviewSourceRef.current = source
     setTab("preview")
-  }, [setupPreviewWaiting, source])
+  }, [previewWaiting, source])
+
+  // Started from this preview: its logs show while the app starts, then
+  // the preview once the app answers.
+  const startRequest = projectRun?.startRequest ?? 0
+  const startRequestRef = React.useRef(startRequest)
+  React.useEffect(() => {
+    if (startRequestRef.current === startRequest) return
+    startRequestRef.current = startRequest
+    autoSelectedPreviewSourceRef.current = undefined
+    setTab("setup-log")
+  }, [startRequest])
 
   React.useEffect(() => {
     const justStarted = runtimeStarting && !runtimeStartingRef.current
@@ -680,7 +704,7 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
           <PreviewIsland
             activeTab={activeTab}
             projectRun={projectRun}
-            captureDisabled={setupPreviewWaiting || !previewCapture}
+            captureDisabled={previewWaiting || !previewCapture}
             hasPreview={hasPreviewSurface}
             hasSetupLog={hasSetupLog}
             logService={selectedLogService}
@@ -711,7 +735,9 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
               )}
             >
               {source &&
-                (setupPreviewWaiting ? (
+                (projectRunWaiting ? (
+                  <StartedAppWaitingPanel source={source} />
+                ) : setupPreviewWaiting ? (
                   <PreviewWaitingPanel />
                 ) : previewBrowser ? (
                   <NativePreviewPanel
@@ -846,6 +872,32 @@ function PreviewPanel({
       </div>
     </div>
   )
+}
+
+function StartedAppWaitingPanel({ source }: { source: string }) {
+  return (
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-muted/20 px-4 pt-[72px] pb-4">
+      <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-4 rounded-lg border bg-background p-8 text-center">
+        <LoaderCircleIcon className="size-8 animate-spin text-muted-foreground" />
+        <div className="space-y-1">
+          <h3 className="font-heading text-lg font-semibold">
+            Starting the app
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            The preview opens as soon as {previewHost(source)} answers.
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function previewHost(source: string) {
+  try {
+    return new URL(source).host
+  } catch {
+    return source
+  }
 }
 
 function PreviewWaitingPanel({

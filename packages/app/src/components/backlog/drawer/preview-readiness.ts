@@ -72,9 +72,42 @@ export function useSetupPreviewReady(
   return state.ready
 }
 
-async function previewResponds(source: string) {
+// An app the project's runner just started: its page loads once its server
+// answers, so the preview shows a loading state instead of a connection
+// error while it starts. Each new run (runKey) waits again; once the server
+// answered, later hiccups are the page's own business.
+export function useStartedAppAnswered(
+  source: string | undefined,
+  runKey: string | undefined,
+  enabled: boolean
+) {
+  const key = enabled && source ? `${source}\n${runKey ?? ""}` : ""
+  const [answeredKey, setAnsweredKey] = React.useState("")
+
+  React.useEffect(() => {
+    if (!key || !source) return
+    let cancelled = false
+    let timeout: number | undefined
+    const check = async () => {
+      // A dev server compiling its first page can take a while to answer.
+      const responds = await previewResponds(source, 10_000)
+      if (cancelled) return
+      if (responds) setAnsweredKey(key)
+      else timeout = window.setTimeout(check, 1_000)
+    }
+    void check()
+    return () => {
+      cancelled = true
+      if (timeout) window.clearTimeout(timeout)
+    }
+  }, [key, source])
+
+  return !key || answeredKey === key
+}
+
+async function previewResponds(source: string, timeoutMs = 2500) {
   const controller = new AbortController()
-  const timeout = window.setTimeout(() => controller.abort(), 2500)
+  const timeout = window.setTimeout(() => controller.abort(), timeoutMs)
   try {
     await fetch(source, {
       cache: "no-store",

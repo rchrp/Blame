@@ -57,12 +57,15 @@ export function useProjectRunner(
     selectSession: setActiveSessionId,
     sessionFor: (id: string) => sessionFor(sessions, id),
     setLogsOpen,
-    start: (id: string) =>
+    // revealLogs: false when the caller shows the logs itself (a story's
+    // preview tab) instead of the runner's logs drawer.
+    start: (id: string, options?: ProjectRunnerStartOptions) =>
       void startConfiguration(
         configurations.find((configuration) => configuration.id === id),
         projectPath,
         terminal,
-        runnerActions()
+        runnerActions(),
+        options
       ),
     stop: (id: string) => void stopConfiguration(id, terminal, runnerActions()),
   }
@@ -88,11 +91,14 @@ type RunnerActions = {
   setSessions: React.Dispatch<React.SetStateAction<ProjectRunSession[]>>
 }
 
+export type ProjectRunnerStartOptions = { revealLogs?: boolean }
+
 async function startConfiguration(
   configuration: ProjectRunConfiguration | undefined,
   projectPath: string | undefined,
   terminal: TerminalClient | undefined,
-  actions: RunnerActions
+  actions: RunnerActions,
+  options: ProjectRunnerStartOptions = {}
 ) {
   if (!configuration || !projectPath || !terminal) return
   actions.setPendingOperation({
@@ -102,7 +108,7 @@ async function startConfiguration(
   if (actions.runtimes.has(configuration.id)) {
     await stopConfiguration(configuration.id, terminal, actions, false)
   }
-  openSession(configuration, projectPath, actions)
+  openSession(configuration, projectPath, actions, options.revealLogs ?? true)
   try {
     await launchConfiguration(configuration, projectPath, terminal, actions)
   } catch (error) {
@@ -167,7 +173,8 @@ async function handleStartFailure(
 function openSession(
   configuration: ProjectRunConfiguration,
   projectPath: string,
-  actions: RunnerActions
+  actions: RunnerActions,
+  revealLogs: boolean
 ) {
   const session: ProjectRunSession = {
     configurationId: configuration.id,
@@ -177,7 +184,7 @@ function openSession(
   }
   actions.setSessions((sessions) => replaceSession(sessions, session))
   actions.setActiveSessionId(configuration.id)
-  actions.setLogsOpen(true)
+  if (revealLogs) actions.setLogsOpen(true)
 }
 
 async function stopConfiguration(

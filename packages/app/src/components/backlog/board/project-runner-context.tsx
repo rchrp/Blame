@@ -14,7 +14,10 @@ import {
 } from "@/components/backlog/board/project-run-configuration"
 import { ProjectRunConfigurationPreviewWarmup } from "@/components/backlog/board/project-run-preview-warmup"
 import type { ProjectRunnerControlStatus } from "@/components/backlog/board/project-runner-types"
-import { useProjectRunner } from "@/components/backlog/board/use-project-runner"
+import {
+  type ProjectRunnerStartOptions,
+  useProjectRunner,
+} from "@/components/backlog/board/use-project-runner"
 import { useProjectInitialization } from "@/components/project-initialization/use-project-initialization"
 import {
   usePlatform,
@@ -42,7 +45,7 @@ export type SharedProjectRunner = Omit<
   // The configuration whose app the previews show.
   previewConfiguration?: ProjectRunConfiguration
   projectPath?: string
-  start(id: string): void
+  start(id: string, options?: ProjectRunnerStartOptions): void
   // Blame's own status, or running for the project's app outside Blame.
   statusFor(id: string): ProjectRunnerControlStatus
 }
@@ -101,7 +104,7 @@ export function ProjectRunnerProvider({
   const runnerStart = runner.start
   // Starting an app with a preview also gets its preview page ready.
   const start = React.useCallback(
-    (id: string) => {
+    (id: string, options?: ProjectRunnerStartOptions) => {
       const configuration = configurations.find((item) => item.id === id)
       if (configuration && projectRunConfigurationPreviewUrl(configuration)) {
         setWarmup((current) => ({
@@ -109,7 +112,7 @@ export function ProjectRunnerProvider({
           trigger: (current?.trigger ?? 0) + 1,
         }))
       }
-      runnerStart(id)
+      runnerStart(id, options)
     },
     [configurations, runnerStart]
   )

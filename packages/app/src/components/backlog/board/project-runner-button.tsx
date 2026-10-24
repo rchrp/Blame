@@ -46,7 +46,7 @@ export function ProjectRunnerButton() {
         startBlocked={startBlocked(runner, runner.selected.id)}
         statusFor={runner.statusFor}
         onSelect={runner.select}
-        onStart={runner.start}
+        onStart={(id) => runner.start(id)}
         onStop={runner.stop}
       />
       <RunnerLogsDrawer runner={runner} />
