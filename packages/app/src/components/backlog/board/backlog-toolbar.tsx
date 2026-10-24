@@ -31,12 +31,13 @@ export function BacklogToolbar({
         {onOpenStatusPip && (
           <Button
             type="button"
-            variant="outline"
+            variant="ghost"
+            className="text-muted-foreground"
             disabled={disabled}
             onClick={onOpenStatusPip}
           >
             <PictureInPicture2Icon />
-            Status PiP
+            Picture in Picture
           </Button>
         )}
         {planAction}

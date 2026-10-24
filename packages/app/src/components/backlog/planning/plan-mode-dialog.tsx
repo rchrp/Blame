@@ -86,7 +86,7 @@ const suggestions = [
 ] as const
 
 /**
- * The backlog's "Plan" button and its conversation. The conversation lives
+ * The backlog's "Plan Mode" button and its conversation. The conversation lives
  * here, not in the dialog, so a reply that arrives while it is closed is
  * kept and flagged on the button.
  */
@@ -108,13 +108,13 @@ export function PlanModeLauncher({
     <>
       <Button
         type="button"
-        variant="outline"
+        variant="secondary"
         disabled={disabled}
         onClick={() => setOpen(true)}
         className="relative"
       >
         <LightbulbIcon />
-        Plan
+        Plan Mode
         {plan.pending || unread ? (
           <span
             aria-label={plan.pending ? "Planning" : "New proposal"}
@@ -263,7 +263,7 @@ function PlanModeDialog({
           <div className="grid min-w-0 flex-1 gap-0.5">
             <DialogTitle className="flex items-center gap-2 font-heading text-xl leading-tight font-semibold">
               <LightbulbIcon className="size-4.5 text-muted-foreground" />
-              Plan mode
+              Plan Mode
             </DialogTitle>
             <DialogDescription className="truncate text-xs">
               Describe what you need. Your agent proposes user stories you
