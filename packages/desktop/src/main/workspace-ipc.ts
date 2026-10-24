@@ -1419,9 +1419,10 @@ function startProjectCompose(
 ) {
   const current = previewStarts.get(worktree);
   if (current) return current;
-  const next = startProjectComposeOperation(worktree, options).finally(() =>
-    previewStarts.delete(worktree),
-  );
+  // A cleanup removes unused images and networks: let it finish first.
+  const next = (previewCleanup ?? Promise.resolve())
+    .then(() => startProjectComposeOperation(worktree, options))
+    .finally(() => previewStarts.delete(worktree));
   previewStarts.set(worktree, next);
   return next;
 }
@@ -1535,21 +1536,37 @@ async function removeWorktreePreview(worktree: string) {
 }
 
 let previewCleanupTimer: NodeJS.Timeout | undefined;
+let previewCleanup: Promise<void> | undefined;
 
-/** Cleans the Blame Runtime a minute after the last request. */
+/**
+ * Cleans the Blame Runtime a minute after the last request, once no
+ * preview is starting: an image just pulled for a start is not used by a
+ * container yet, so the cleanup must not run alongside one.
+ */
 export function schedulePreviewCleanup() {
   if (previewCleanupTimer) clearTimeout(previewCleanupTimer);
   previewCleanupTimer = setTimeout(() => {
     previewCleanupTimer = undefined;
+    if (previewStarts.size || setupRuns.size) {
+      schedulePreviewCleanup();
+      return;
+    }
     const worktrees = platformWorktreeRoot(
       process.platform,
       process.env,
       "local-container",
     );
-    void collectPreviewGarbage([
+    previewCleanup = collectPreviewGarbage([
       worktrees,
       joinWorkspacePath(dirnameWorkspacePath(worktrees), "repos"),
-    ]).catch(() => undefined);
+    ])
+      .then(
+        () => undefined,
+        () => undefined,
+      )
+      .finally(() => {
+        previewCleanup = undefined;
+      });
   }, 60_000);
   previewCleanupTimer.unref?.();
 }

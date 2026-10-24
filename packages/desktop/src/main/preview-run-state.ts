@@ -89,8 +89,17 @@ export function previewRunConfigurationStatus(
   const selected =
     runtimeState.desiredStatus === "running" &&
     runtimeState.selectedConfigurationId === configuration.id;
-  if (matching.some(runtimeContainerFailed)) return "error";
-  if (selected && matching.some(({ status }) => status === "exited")) {
+  // A stop is expected unless this configuration should be running and no
+  // start, restart or stop is under way.
+  const stopExpected =
+    !selected || runtimeState.lifecycle?.status === "pending";
+  if (
+    matching.some((container) =>
+      runtimeContainerFailed(container, stopExpected),
+    )
+  )
+    return "error";
+  if (!stopExpected && matching.some(({ status }) => status === "exited")) {
     return "error";
   }
   if (
@@ -159,11 +168,17 @@ function serviceRunning(
   );
 }
 
-function runtimeContainerFailed(container: PreviewRuntimeContainerState) {
-  return (
-    container.health === "unhealthy" ||
-    container.status === "dead" ||
-    container.status === "removing" ||
-    (container.status === "exited" && container.exitCode !== 0)
-  );
+// Exit codes of a container stopped by a signal: Docker stops containers
+// with SIGTERM, then SIGKILL after the grace period.
+const stoppedExitCodes = new Set([0, 130, 137, 143]);
+
+function runtimeContainerFailed(
+  container: PreviewRuntimeContainerState,
+  stopExpected: boolean,
+) {
+  if (container.health === "unhealthy" || container.status === "dead")
+    return true;
+  if (container.status === "removing") return !stopExpected;
+  if (container.status !== "exited") return false;
+  return !(stopExpected && stoppedExitCodes.has(container.exitCode ?? -1));
 }

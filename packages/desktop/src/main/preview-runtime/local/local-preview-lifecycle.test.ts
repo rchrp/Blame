@@ -100,6 +100,28 @@ function selection(
   };
 }
 
+test("reports the step of a starting preview until its phase changes", () => {
+  const starting = {
+    desiredStatus: "running" as const,
+    selectedConfigurationId: "web",
+    lifecycle: {
+      phase: "starting" as const,
+      status: "pending" as const,
+      since: "2026-10-24T10:00:00.000Z",
+      step: "Downloading container images",
+    },
+  };
+  assert.equal(
+    localPreviewLifecycle(starting, "starting", true, undefined).step,
+    "Downloading container images",
+  );
+  assert.equal(
+    localPreviewLifecycle(starting, "running", true, "http://localhost:3000/")
+      .step,
+    undefined,
+  );
+});
+
 test("keeps the start step of a lifecycle valid", () => {
   const lifecycle = {
     phase: "starting",

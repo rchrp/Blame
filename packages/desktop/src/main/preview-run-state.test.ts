@@ -103,6 +103,57 @@ test("treats an intentional clean stop as stopped", () => {
   );
 });
 
+test("treats a container stopped by a signal as stopped, not failed", () => {
+  for (const exitCode of [130, 137, 143]) {
+    assert.equal(
+      previewRunConfigurationStatus(
+        configurations[1],
+        [{ exitCode, service: "app", status: "exited" }],
+        { desiredStatus: "stopped", selectedConfigurationId: "app" },
+      ),
+      "stopped",
+    );
+  }
+});
+
+test("keeps a restarting configuration starting while its services are stopped", () => {
+  assert.equal(
+    previewRunConfigurationStatus(
+      configurations[1],
+      [{ exitCode: 143, service: "app", status: "exited" }],
+      {
+        desiredStatus: "running",
+        selectedConfigurationId: "app",
+        lifecycle: {
+          phase: "starting",
+          status: "pending",
+          since: new Date().toISOString(),
+        },
+      },
+    ),
+    "starting",
+  );
+});
+
+test("reports a crash as an error even while starting", () => {
+  assert.equal(
+    previewRunConfigurationStatus(
+      configurations[1],
+      [{ exitCode: 1, service: "app", status: "exited" }],
+      {
+        desiredStatus: "running",
+        selectedConfigurationId: "app",
+        lifecycle: {
+          phase: "starting",
+          status: "pending",
+          since: new Date().toISOString(),
+        },
+      },
+    ),
+    "error",
+  );
+});
+
 test("reports an unexpected clean exit from the selected service", () => {
   assert.equal(
     previewRunConfigurationStatus(

@@ -219,11 +219,13 @@ function localLifecycle(
   status: PreviewLifecycleState["status"],
   previous?: PreviewLifecycleState,
 ): PreviewLifecycleState {
+  const samePhase = previous?.phase === phase;
   return {
     phase,
     status,
-    since:
-      previous?.phase === phase ? previous.since : new Date().toISOString(),
+    since: samePhase ? previous.since : new Date().toISOString(),
+    // The step a start reports stays visible until its phase changes.
+    ...(samePhase && previous.step ? { step: previous.step } : {}),
   };
 }
 

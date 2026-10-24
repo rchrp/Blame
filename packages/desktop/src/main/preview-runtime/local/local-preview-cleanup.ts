@@ -3,8 +3,9 @@ import { blameRuntimeDockerHost } from "./vm-docker-host.ts";
 
 // Keeps the Blame Runtime small. A preview's containers, network and own
 // volumes go with its worktree; shared node_modules volumes go once no
-// worktree uses them; images nothing has used for two weeks are pruned.
-// Database volumes of existing worktrees are never touched.
+// worktree uses them; images built over two weeks ago that no container
+// uses are pruned. Database volumes of existing worktrees are never
+// touched. The desktop never runs this while a preview starts.
 
 /** Removes everything Docker keeps for one preview project. */
 export async function removePreviewProject(
@@ -78,6 +79,5 @@ for volume in $(docker volume ls -q --filter dangling=true --filter name=blame_n
 done
 docker image prune -f >/dev/null 2>&1 || true
 docker image prune -af --filter until=336h >/dev/null 2>&1 || true
-docker network prune -f --filter label=com.docker.compose.project >/dev/null 2>&1 || true
 [ "$(id -u)" != 0 ] || fstrim -a >/dev/null 2>&1 || true
 `;
