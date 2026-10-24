@@ -150,11 +150,11 @@ function Test-ContainerRuntimeCommand {
   if ($CommandArgs[0] -match "^(compose|container|info|inspect|network|volume)$") {
     return $true
   }
-  $CommandArgs[0] -eq "sh" -and (($CommandArgs -join " ") -match "\bnerdctl\b")
+  $CommandArgs[0] -eq "sh" -and (($CommandArgs -join " ") -match "\bdocker\b")
 }
 
-function Ensure-ContainerdRunning {
-  $command = "if ! pgrep -x containerd >/dev/null 2>&1; then mkdir -p /run/containerd /var/log/blame-runtime; nohup containerd >/var/log/blame-runtime/containerd.log 2>&1 & sleep 2; fi; test -S /run/containerd/containerd.sock"
+function Ensure-DockerRunning {
+  $command = "if ! docker info >/dev/null 2>&1; then mkdir -p /var/log/blame-runtime; setsid nohup dockerd --config-file /etc/docker/daemon.json >>/var/log/blame-runtime/dockerd.log 2>&1 </dev/null & attempt=0; while [ `$attempt -lt 120 ] && ! docker info >/dev/null 2>&1; do attempt=`$((attempt + 1)); sleep 0.25; done; fi; docker info >/dev/null 2>&1"
   $result = Invoke-DistroScript $command
   if ($result.Code -ne 0) {
     throw $result.Output
@@ -219,9 +219,8 @@ NODE
 check agent test -x /usr/local/bin/blame-runtime-agent
 check agent-version sh -lc 'test "$(blame-runtime-agent agent-version 2>/dev/null)" = "__RUNTIME_AGENT_VERSION__"'
 check runtime-version sh -lc 'test "$(cat /etc/blame-runtime-version 2>/dev/null)" = "__RUNTIME_VERSION__"'
-check containerd sh -lc 'command -v containerd >/dev/null 2>&1 && pgrep -x containerd >/dev/null 2>&1 && test -S /run/containerd/containerd.sock'
-check nerdctl sh -lc 'command -v nerdctl >/dev/null 2>&1'
-check nerdctl-compose sh -lc 'nerdctl compose version >/dev/null 2>&1'
+check docker sh -lc 'command -v dockerd >/dev/null 2>&1 && command -v docker >/dev/null 2>&1'
+check docker-compose sh -lc 'docker compose version >/dev/null 2>&1'
 check git sh -lc 'command -v git >/dev/null 2>&1'
 check cline-sdk valid_cline_sdk_install
 check semantic-harness sh -lc 'command -v blame-semantic-harness >/dev/null 2>&1 && test "$(cat /etc/blame-semantic-harness-sha256 2>/dev/null)" = "__SEMANTIC_HARNESS_SHA256__"'
@@ -233,7 +232,7 @@ check package-managers sh -lc 'test "$(/opt/blame/package-managers/pnpm/10.33.2/
   $command = $command -replace "__SEMANTIC_HARNESS_SHA256__", $SemanticHarnessSha256
   $result = Invoke-DistroScript $command
   if ($result.Code -ne 0) {
-    foreach ($name in @("agent", "agent-version", "runtime-version", "containerd", "nerdctl", "nerdctl-compose", "git", "cline-sdk", "semantic-harness", "package-managers")) {
+    foreach ($name in @("agent", "agent-version", "runtime-version", "docker", "docker-compose", "git", "cline-sdk", "semantic-harness", "package-managers")) {
       $Checks.Add((New-Check $name "missing" "Repair BlameRuntime from Blame runtime setup."))
     }
     return
@@ -510,8 +509,9 @@ version_ok &&
   id blame >/dev/null 2>&1 &&
   command -v node >/dev/null 2>&1 &&
   node_major_ok &&
-  command -v nerdctl >/dev/null 2>&1 &&
-  command -v containerd >/dev/null 2>&1 &&
+  command -v docker >/dev/null 2>&1 &&
+  command -v dockerd >/dev/null 2>&1 &&
+  docker compose version >/dev/null 2>&1 &&
   test -x /usr/local/bin/blame-runtime-agent &&
   valid_cline_sdk_install &&
   command -v blame-semantic-harness >/dev/null 2>&1 &&
@@ -544,15 +544,15 @@ function Quote-Argument {
 function Ensure-Runtime {
   $created = Ensure-Distro
   if ($created -and (Test-RootfsSpecPrebaked) -and (Test-ImportedRuntimeReady)) {
-    $containerdReady = $false
+    $dockerReady = $false
     try {
       Write-RuntimeProgress "starting"
-      Ensure-ContainerdRunning
-      $containerdReady = $true
+      Ensure-DockerRunning
+      $dockerReady = $true
     } catch {
-      $containerdReady = $false
+      $dockerReady = $false
     }
-    if ($containerdReady) {
+    if ($dockerReady) {
       Write-RuntimeProgress "checking"
       Get-RuntimeStatus
       return
@@ -612,7 +612,7 @@ function Invoke-RuntimeCommand {
     $user = "root"
   }
   if ($usesContainerRuntime) {
-    Ensure-ContainerdRunning
+    Ensure-DockerRunning
   }
   & wsl.exe -d $DistroName -u $user -- @CommandArgs
   exit $LASTEXITCODE

@@ -176,9 +176,8 @@ check host-home test -d "$host_mount"
 check agent test -x /usr/local/bin/blame-runtime-agent
 check agent-version sh -lc 'test "$(blame-runtime-agent agent-version 2>/dev/null)" = "$1"' sh "$runtime_agent_version"
 check runtime-version sh -lc 'test "$(cat /etc/blame-runtime-version 2>/dev/null)" = "$1"' sh "$runtime_version"
-check containerd sh -lc 'command -v containerd >/dev/null 2>&1 && (pgrep -x containerd >/dev/null 2>&1 || containerd --version >/dev/null 2>&1)'
-check nerdctl sh -lc 'command -v nerdctl >/dev/null 2>&1'
-check nerdctl-compose sh -lc 'nerdctl compose version >/dev/null 2>&1'
+check docker sh -lc 'command -v dockerd >/dev/null 2>&1 && command -v docker >/dev/null 2>&1'
+check docker-compose sh -lc 'docker compose version >/dev/null 2>&1'
 check git sh -lc 'command -v git >/dev/null 2>&1'
 check cline-sdk valid_cline_sdk_install
 check semantic-harness sh -lc 'command -v blame-semantic-harness >/dev/null 2>&1 && test "$(cat /etc/blame-semantic-harness-sha256 2>/dev/null)" = "$1"' sh "$semantic_harness_sha256"
@@ -186,7 +185,7 @@ check package-managers sh -lc 'test "$(/opt/blame/package-managers/pnpm/10.33.2/
 EOF
 )"
   if [ -z "$output" ]; then
-    for name in agent agent-version runtime-version containerd nerdctl nerdctl-compose git cline-sdk semantic-harness package-managers; do
+    for name in agent agent-version runtime-version docker docker-compose git cline-sdk semantic-harness package-managers; do
       append_check "$(new_check "$name" "missing" "$repair_action")"
     done
     return
@@ -454,7 +453,7 @@ invoke_runtime_command() {
       ;;
     sh)
       case " $* " in
-        *" nerdctl "*) user="root" ;;
+        *" docker "*) user="root" ;;
       esac
       ;;
   esac

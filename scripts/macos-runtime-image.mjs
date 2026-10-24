@@ -178,14 +178,12 @@ async function verifyRuntime(bundle, instanceName, environment) {
     "test \"$(/opt/blame/package-managers/npm/11.6.4/bin/npm --version)\" = \"11.6.4\"",
     "test \"$(/opt/blame/package-managers/yarn/1.22.22/bin/yarn --version)\" = \"1.22.22\"",
     `test -z "$(find "$(npm root -g)" -type d \\( -path "*/node_modules/@openai/codex-linux-*" -o -path "*/node_modules/@anthropic-ai/claude-agent-sdk-linux-*" \\) -print -quit)"`,
-    "nerdctl --version",
-    "buildkitd --version",
-    "test -x /usr/local/libexec/cni/bridge",
-    "test -x /usr/local/libexec/cni/firewall",
-    "test -x /usr/local/libexec/cni/host-local",
-    "test -x /usr/local/libexec/cni/loopback",
-    "test -x /usr/local/libexec/cni/portmap",
-    "test -x /usr/local/libexec/cni/tuning",
+    "docker --version",
+    "dockerd --version",
+    "test -x /usr/local/bin/docker-init",
+    "docker compose version",
+    "docker buildx version",
+    "test -s /etc/docker/daemon.json",
     "id blame",
     "! id blamebuilder >/dev/null 2>&1",
   ].join("\n");
@@ -260,7 +258,7 @@ async function provisionImage(bundle, instanceName, environment) {
       "-n",
       "env",
       "BLAME_RUNTIME_BAKE=1",
-      `BLAME_NERDCTL_VERSION=${requiredNerdctlVersion()}`,
+      ...dockerVersionAssignments(),
       `BLAME_NODE_VERSION=${requiredNodeVersion()}`,
       "sh",
       "-s",
@@ -440,8 +438,14 @@ function requiredRuntimeVersion() {
   return requiredEnv("BLAME_RUNTIME_VERSION");
 }
 
-function requiredNerdctlVersion() {
-  return text(process.env.BLAME_NERDCTL_VERSION) ?? "2.1.6";
+// The Docker Engine, Compose and Buildx versions the provisioner installs;
+// it pins a checksum for each.
+function dockerVersionAssignments() {
+  return [
+    `BLAME_DOCKER_VERSION=${text(process.env.BLAME_DOCKER_VERSION) ?? "29.9.1"}`,
+    `BLAME_COMPOSE_VERSION=${text(process.env.BLAME_COMPOSE_VERSION) ?? "5.6.0"}`,
+    `BLAME_BUILDX_VERSION=${text(process.env.BLAME_BUILDX_VERSION) ?? "0.38.0"}`,
+  ];
 }
 
 function requiredNodeVersion() {

@@ -118,7 +118,7 @@ test("keeps managed runtime agent revisions aligned", async () => {
     const manifest = JSON.parse(
       await readFile(path, "utf8"),
     ) as WindowsRuntimeManifest;
-    assert.equal(manifest.runtimeAgentVersion, "8");
+    assert.equal(manifest.runtimeAgentVersion, "9");
   }
 });
 
@@ -395,7 +395,7 @@ case "$1" in
   start) touch "$state/running" ;;
   shell)
     cat >/dev/null
-    for name in host-home agent agent-version runtime-version containerd nerdctl nerdctl-compose git cline-sdk semantic-harness package-managers; do
+    for name in host-home agent agent-version runtime-version docker docker-compose git cline-sdk semantic-harness package-managers; do
       printf '%s\\tavailable\\n' "$name"
     done
     ;;

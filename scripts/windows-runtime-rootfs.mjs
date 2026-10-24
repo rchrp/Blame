@@ -118,8 +118,7 @@ function dockerBuildArgs(image, architecture, runtimeVersion, sdkVersion) {
     `BLAME_RUNTIME_VERSION=${runtimeVersion}`,
     "--build-arg",
     `BLAME_CLINE_SDK_VERSION=${sdkVersion}`,
-    "--build-arg",
-    `BLAME_NERDCTL_VERSION=${requiredNerdctlVersion()}`,
+    ...dockerVersionAssignments().flatMap((value) => ["--build-arg", value]),
     "--build-arg",
     `BLAME_NODE_VERSION=${requiredNodeVersion()}`,
     rootDir,
@@ -173,8 +172,14 @@ function requiredRuntimeVersion() {
   return requiredEnv("BLAME_RUNTIME_VERSION");
 }
 
-function requiredNerdctlVersion() {
-  return text(process.env.BLAME_NERDCTL_VERSION) ?? "2.1.6";
+// The Docker Engine, Compose and Buildx versions the provisioner installs;
+// it pins a checksum for each.
+function dockerVersionAssignments() {
+  return [
+    `BLAME_DOCKER_VERSION=${text(process.env.BLAME_DOCKER_VERSION) ?? "29.9.1"}`,
+    `BLAME_COMPOSE_VERSION=${text(process.env.BLAME_COMPOSE_VERSION) ?? "5.6.0"}`,
+    `BLAME_BUILDX_VERSION=${text(process.env.BLAME_BUILDX_VERSION) ?? "0.38.0"}`,
+  ];
 }
 
 function requiredNodeVersion() {

@@ -92,8 +92,8 @@ export function RuntimeInstallDialog() {
         ) : null}
         {linux ? (
           <p className="text-sm text-muted-foreground">
-            On Linux, Blame uses containerd and nerdctl from your system.
-            Install them, then check again.
+            On Linux, Blame uses Docker Engine and Docker Compose from your
+            system. Install them, then check again.
           </p>
         ) : null}
         <DialogFooter className="gap-2 sm:justify-between">
@@ -141,10 +141,10 @@ export function RuntimeInstallDialog() {
                   type="button"
                   variant="outline"
                   onClick={() =>
-                    platform.openExternalLink?.("https://github.com/containerd/nerdctl")
+                    platform.openExternalLink?.("https://docs.docker.com/engine/install/")
                   }
                 >
-                  <ExternalLinkIcon /> nerdctl
+                  <ExternalLinkIcon /> Docker
                 </Button>
                 <Button type="button" onClick={() => void runtime.refresh()}>
                   <RefreshCwIcon /> Check again

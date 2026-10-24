@@ -61,7 +61,7 @@ test("keeps cloud worktrees native on Linux, macOS, and Windows", async () => {
     assert.equal(report.ok, true, platform);
     assert.equal(
       calls.some((call) =>
-        /blame-lima-runtime|blame-wsl2-runtime|nerdctl|docker/.test(call),
+        /blame-lima-runtime|blame-wsl2-runtime|docker/.test(call),
       ),
       false,
       platform,
@@ -122,11 +122,12 @@ test("uses actionable WSL2 runtime messages from managed status", async () => {
   assert.match(report.issues[0]?.action ?? "", /Enable WSL2/);
 });
 
-test("does not cascade runtime checks when nerdctl is missing", async () => {
+test("does not cascade runtime checks when Docker is missing", async () => {
   const report = await checkHostDependencies(
     { platform: "linux", setupScript: "echo ready" },
-    async (command) => {
-      if (command === "nerdctl") throw new Error("nerdctl missing");
+    async (command, args) => {
+      if (command === "docker" && args[0] === "--version")
+        throw new Error("docker missing");
       return "ok";
     },
   );
@@ -134,15 +135,15 @@ test("does not cascade runtime checks when nerdctl is missing", async () => {
   assert.equal(report.ok, false);
   assert.deepEqual(
     report.issues.map((issue) => issue.name),
-    ["nerdctl"],
+    ["docker"],
   );
 });
 
-test("reports missing nerdctl compose support", async () => {
+test("reports missing Docker Compose support", async () => {
   const report = await checkHostDependencies(
     { platform: "linux", setupScript: "echo ready" },
     async (command, args) => {
-      if (command === "nerdctl" && args.join(" ") === "compose version") {
+      if (command === "docker" && args.join(" ") === "compose version") {
         throw new Error("compose missing");
       }
       return "ok";
@@ -150,47 +151,34 @@ test("reports missing nerdctl compose support", async () => {
   );
 
   assert.equal(report.ok, false);
-  assert.equal(report.issues[0]?.name, "nerdctl-compose");
-  assert.match(report.issues[0]?.action ?? "", /Blame Native Runtime/);
+  assert.equal(report.issues[0]?.name, "docker-compose");
+  assert.match(report.issues[0]?.action ?? "", /Docker Compose plugin/);
 });
 
-test("reports containerd when nerdctl is installed but cannot connect", async () => {
+test("reports Docker when its CLI is installed but cannot connect", async () => {
   const report = await checkHostDependencies(
     { platform: "linux", setupScript: "echo ready" },
     async (command, args) => {
-      if (command === "nerdctl" && args[0] === "info") {
-        throw new Error("containerd socket unavailable");
+      if (command === "docker" && args[0] === "info") {
+        throw new Error("daemon unavailable");
       }
       return "ok";
     },
   );
 
   assert.equal(report.ok, false);
-  assert.equal(report.issues[0]?.name, "containerd");
+  assert.equal(report.issues[0]?.name, "docker");
   assert.equal(report.issues[0]?.status, "unavailable");
 });
 
-test("does not require ctr access when nerdctl can connect", async () => {
-  const report = await checkHostDependencies(
-    { platform: "linux", setupScript: "echo ready" },
-    async (command) => {
-      if (command === "ctr") throw new Error("system containerd unavailable");
-      return "ok";
-    },
-  );
-
-  assert.equal(report.ok, true);
-  assert.deepEqual(report.issues, []);
-});
-
-test("reports inaccessible containerd socket from nerdctl", async () => {
+test("reports an inaccessible Docker socket", async () => {
   const report = await checkHostDependencies(
     { platform: "linux", setupScript: "echo ready" },
     async (command, args) => {
-      if (command === "nerdctl" && args[0] === "info") {
+      if (command === "docker" && args[0] === "info") {
         throw {
           stderr:
-            "transport: Error while dialing: dial unix /run/containerd/containerd.sock: connect: permission denied",
+            "permission denied while trying to connect to the Docker daemon socket at unix:///var/run/docker.sock",
         };
       }
       return "ok";
@@ -198,19 +186,19 @@ test("reports inaccessible containerd socket from nerdctl", async () => {
   );
 
   assert.equal(report.ok, false);
-  assert.equal(report.issues[0]?.name, "containerd");
+  assert.equal(report.issues[0]?.name, "docker");
   assert.match(report.issues[0]?.message ?? "", /cannot access its socket/);
-  assert.match(report.issues[0]?.action ?? "", /containerd-rootless/);
+  assert.match(report.issues[0]?.action ?? "", /docker group/);
 });
 
-test("reports rootless containerd not running", async () => {
+test("reports a stopped Docker daemon", async () => {
   const report = await checkHostDependencies(
     { platform: "linux", setupScript: "echo ready" },
     async (command, args) => {
-      if (command === "nerdctl" && args[0] === "info") {
+      if (command === "docker" && args[0] === "info") {
         throw {
           stderr:
-            "rootless containerd not running? stat /run/user/1000/containerd-rootless: no such file or directory",
+            "Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?",
         };
       }
       return "ok";
@@ -218,9 +206,9 @@ test("reports rootless containerd not running", async () => {
   );
 
   assert.equal(report.ok, false);
-  assert.equal(report.issues[0]?.name, "containerd");
-  assert.match(report.issues[0]?.message ?? "", /Rootless containerd/);
-  assert.match(report.issues[0]?.action ?? "", /containerd-rootless/);
+  assert.equal(report.issues[0]?.name, "docker");
+  assert.match(report.issues[0]?.message ?? "", /not running/);
+  assert.match(report.issues[0]?.action ?? "", /Start Docker Engine/);
 });
 
 test("checks node and corepack when setup script needs package tooling", async () => {
@@ -286,7 +274,7 @@ test("skips the container runtime for work that runs on this machine", async () 
     assert.equal(report.ok, true, platform);
     assert.equal(
       calls.some((call) =>
-        /blame-lima-runtime|blame-wsl2-runtime|nerdctl|docker/.test(call),
+        /blame-lima-runtime|blame-wsl2-runtime|docker/.test(call),
       ),
       false,
       platform,

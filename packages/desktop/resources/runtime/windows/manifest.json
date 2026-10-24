@@ -1,11 +1,13 @@
 {
   "distro": "BlameRuntime",
-  "runtimeVersion": "10",
+  "runtimeVersion": "11",
   "clineSdkVersion": "0.0.95",
-  "runtimeAgentVersion": "8",
+  "runtimeAgentVersion": "9",
   "runtimeMarker": "/etc/blame-runtime-version",
   "runtimeRoot": "/home/blame/.local/share/blame/runtime",
-  "nerdctlVersion": "2.1.6",
+  "dockerVersion": "29.9.1",
+  "composeVersion": "5.6.0",
+  "buildxVersion": "0.38.0",
   "nodeVersion": "22.23.1",
   "rootfs": {
     "amd64": {

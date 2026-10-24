@@ -241,7 +241,7 @@ function managedRuntimePlatform(platform?: string) {
 }
 
 function containerRuntimeDependency(name: HostDependencyIssue["name"]) {
-  return ["containerd", "nerdctl", "nerdctl-compose"].includes(name)
+  return ["docker", "docker-compose"].includes(name)
 }
 
 function runtimeRepairDependency(name: HostDependencyIssue["name"]) {
@@ -265,11 +265,10 @@ function dependencyLabel(issue: HostDependencyIssue) {
   const labels: Record<HostDependencyIssue["name"], string> = {
     "blame-runtime": "Blame Runtime",
     "cline-sdk": "Cline SDK",
-    containerd: "containerd",
     corepack: "Corepack",
+    docker: "Docker Engine",
+    "docker-compose": "Docker Compose",
     git: "Git",
-    nerdctl: "nerdctl",
-    "nerdctl-compose": "nerdctl compose",
     node: "Node.js 22+",
     npm: "npm",
     pnpm: "pnpm",
@@ -296,12 +295,10 @@ function dependencyUrl(issue: HostDependencyIssue) {
   const urls: Record<HostDependencyIssue["name"], string> = {
     "blame-runtime": "https://blame.dev",
     "cline-sdk": "https://blame.dev",
-    containerd: "https://containerd.io/",
     corepack: "https://nodejs.org/en/download",
+    docker: "https://docs.docker.com/engine/install/",
+    "docker-compose": "https://docs.docker.com/compose/install/linux/",
     git: "https://git-scm.com/downloads",
-    nerdctl: "https://github.com/containerd/nerdctl",
-    "nerdctl-compose":
-      "https://github.com/containerd/nerdctl/blob/main/docs/compose.md",
     node: "https://nodejs.org/en/download",
     npm: "https://nodejs.org/en/download",
     pnpm: "https://pnpm.io/installation",

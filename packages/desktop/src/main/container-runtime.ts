@@ -120,7 +120,6 @@ export function containerRuntimeEnvironment(
 ) {
   return {
     BLAME_CONTAINER_RUNTIME: runtimeName(process.platform),
-    CONTAINERD_NAMESPACE: env.CONTAINERD_NAMESPACE ?? "default",
   };
 }
 
@@ -134,7 +133,7 @@ export function runtimeCommand(
     return { command: "blame-lima-runtime", args: commandArgs };
   if (platform === "win32")
     return { command: "blame-wsl2-runtime", args: commandArgs };
-  return { command: "nerdctl", args: commandArgs };
+  return { command: "docker", args: commandArgs };
 }
 
 export function runtimeName(platform: NodeJS.Platform) {
@@ -161,7 +160,7 @@ async function runRuntimeCommand(
     try {
       return await runtimeAgentClient({ env, platform }).exec({
         args: runtimeCommandArgs(command, args),
-        command: "nerdctl",
+        command: "docker",
         cwd: options.cwd ? runtimeCwdPath(options.cwd, platform) : undefined,
         env,
         timeoutMs: options.timeoutMs,
@@ -206,7 +205,7 @@ function spawnRuntimeCommand(
   if (useRuntimeAgent(platform, env)) {
     return runtimeAgentClient({ env, platform }).spawn({
       args: runtimeCommandArgs(command, args),
-      command: "nerdctl",
+      command: "docker",
       cwd: options.cwd ? runtimeCwdPath(options.cwd, platform) : undefined,
       env,
       user: "root",
@@ -237,7 +236,7 @@ function commandWithRuntimeCwd(
     args: [
       "sh",
       "-lc",
-      `${changeDirectory}exec ${environment.length ? `env ${environment.join(" ")} ` : ""}nerdctl ${spec.args.map(shellQuote).join(" ")}`,
+      `${changeDirectory}exec ${environment.length ? `env ${environment.join(" ")} ` : ""}docker ${spec.args.map(shellQuote).join(" ")}`,
     ],
     command: spec.command,
   };
@@ -321,7 +320,6 @@ function runtimeGuestEnvironmentKey(key: string) {
     key === "BLAME_WORKTREE_ROOT" ||
     key === "CI" ||
     key === "COMPOSE_PROJECT_NAME" ||
-    key === "CONTAINERD_NAMESPACE" ||
     key === "npm_config_yes"
   );
 }

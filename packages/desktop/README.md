@@ -32,7 +32,7 @@ Releases are built and published by GitHub Actions from git tags. See [RELEASING
 
 ## Prebuilt Desktop Runtimes
 
-Windows and macOS installers use versioned runtime images so first setup only imports an image instead of installing Node, the Cline SDK, containerd, BuildKit, and nerdctl.
+Windows and macOS installers use versioned runtime images so first setup only imports an image instead of installing Node, the Cline SDK, and Docker Engine with Compose.
 
 The base images keep Cline's cloud providers, including OpenAI Codex OAuth and the Anthropic API. They exclude the native Codex and Claude CLI payloads because those binaries are only required by the dedicated local CLI providers. Enabling either local CLI provider later must include its authentication and executable-path setup.
 

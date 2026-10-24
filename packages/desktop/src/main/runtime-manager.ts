@@ -30,10 +30,9 @@ export type RuntimeState =
 export type RuntimeDependencyName =
   | "blame-runtime"
   | "cline-sdk"
-  | "containerd"
-  | "git"
-  | "nerdctl"
-  | "nerdctl-compose";
+  | "docker"
+  | "docker-compose"
+  | "git";
 
 export type RuntimeDependencyStatus = "missing" | "unavailable" | "unsupported";
 
@@ -284,8 +283,8 @@ async function runtimeDependencyIssues(context: RuntimeManagerContext) {
 }
 
 async function linuxRuntimeIssues(context: RuntimeManagerContext) {
-  const nerdctlIssue = await checkLinuxNerdctl(context);
-  if (nerdctlIssue) return [nerdctlIssue];
+  const dockerIssue = await checkLinuxDocker(context);
+  if (dockerIssue) return [dockerIssue];
   const connectionIssue = await checkRuntimeConnection(context);
   if (connectionIssue) return [connectionIssue];
   const composeIssue = await checkRuntimeTool(context, "compose", ["version"]);
@@ -301,25 +300,25 @@ async function managedRuntimeIssues(context: RuntimeManagerContext) {
   return agentIssue ? [agentIssue] : [];
 }
 
-async function checkLinuxNerdctl(context: RuntimeManagerContext) {
+async function checkLinuxDocker(context: RuntimeManagerContext) {
   try {
-    await observeRuntimeProbe(context, "nerdctl", "binary", () =>
-      context.run("nerdctl", ["--version"], context.env),
+    await observeRuntimeProbe(context, "docker", "binary", () =>
+      context.run("docker", ["--version"], context.env),
     );
     return null;
   } catch (error) {
-    return runtimeIssue("nerdctl", "missing", error);
+    return runtimeIssue("docker", "missing", error);
   }
 }
 
 async function checkRuntimeConnection(context: RuntimeManagerContext) {
   try {
-    await observeRuntimeProbe(context, "containerd", "connection", () =>
+    await observeRuntimeProbe(context, "docker", "connection", () =>
       runRuntimeCommand(context, "info", []),
     );
     return null;
   } catch (error) {
-    return runtimeIssue("containerd", "unavailable", error);
+    return runtimeIssue("docker", "unavailable", error);
   }
 }
 
@@ -329,12 +328,12 @@ async function checkRuntimeTool(
   args: string[],
 ) {
   try {
-    await observeRuntimeProbe(context, "nerdctl-compose", "compose", () =>
+    await observeRuntimeProbe(context, "docker-compose", "compose", () =>
       runRuntimeCommand(context, command, args),
     );
     return null;
   } catch (error) {
-    return runtimeIssue("nerdctl-compose", "missing", error);
+    return runtimeIssue("docker-compose", "missing", error);
   }
 }
 
@@ -499,7 +498,7 @@ function runtimeState(issues: RuntimeDependencyIssue[]): RuntimeState {
   if (issue.runtimeStatus) return issue.runtimeStatus;
   if (issue.status === "unsupported") return "unsupported";
   if (issue.status === "missing") return "missing";
-  if (issue.name === "containerd") return "repairable";
+  if (issue.name === "docker") return "repairable";
   return "broken";
 }
 
@@ -603,10 +602,9 @@ function runtimeDependencyName(
   name: ManagedRuntimeCheckName,
 ): RuntimeDependencyName {
   if (
-    name === "containerd" ||
+    name === "docker" ||
+    name === "docker-compose" ||
     name === "git" ||
-    name === "nerdctl" ||
-    name === "nerdctl-compose" ||
     name === "cline-sdk"
   ) {
     return name;
@@ -674,7 +672,7 @@ function managedRuntimePlatform(platform: NodeJS.Platform) {
 function runtimeBinary(platform: NodeJS.Platform) {
   if (platform === "darwin") return "blame-lima-runtime";
   if (platform === "win32") return "blame-wsl2-runtime";
-  return "nerdctl";
+  return "docker";
 }
 
 async function runCommand(

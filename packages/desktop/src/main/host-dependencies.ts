@@ -15,9 +15,8 @@ export type HostDependencyName =
   | "git"
   | "blame-runtime"
   | "cline-sdk"
-  | "containerd"
-  | "nerdctl"
-  | "nerdctl-compose"
+  | "docker"
+  | "docker-compose"
   | "node"
   | "corepack"
   | "npm"
@@ -192,8 +191,8 @@ function runtimeDependencyIssue(
       status: issue.status,
     };
   }
-  if (issue.name === "containerd") {
-    return containerdUnavailableIssue(context.platform, issue.error);
+  if (issue.name === "docker") {
+    return dockerUnavailableIssue(context.platform, issue.error);
   }
   if (issue.name === "blame-runtime" && issue.status === "missing") {
     return hostDependencyIssue(context.platform, issue.name, "unavailable");
@@ -245,34 +244,34 @@ function hostDependencyIssue(
   };
 }
 
-function containerdUnavailableIssue(
+function dockerUnavailableIssue(
   platform: NodeJS.Platform,
   error: unknown,
 ): HostDependencyIssue {
   const text = commandErrorText(error);
-  if (/rootless containerd not running/i.test(text)) {
+  if (/cannot connect to the docker daemon/i.test(text)) {
     return {
-      action: rootlessContainerdAction(platform),
-      message: "Rootless containerd is not running.",
-      name: "containerd",
+      action: dockerAccessAction(platform),
+      message: "Docker Engine is not running.",
+      name: "docker",
       status: "unavailable",
     };
   }
-  if (/permission denied/i.test(text) && /containerd\.sock/i.test(text)) {
+  if (/permission denied/i.test(text) && /docker\.sock/i.test(text)) {
     return {
-      action: rootlessContainerdAction(platform),
-      message: "containerd is running, but Blame cannot access its socket.",
-      name: "containerd",
+      action: dockerAccessAction(platform),
+      message: "Docker Engine is running, but Blame cannot access its socket.",
+      name: "docker",
       status: "unavailable",
     };
   }
-  return hostDependencyIssue(platform, "containerd", "unavailable");
+  return hostDependencyIssue(platform, "docker", "unavailable");
 }
 
-function rootlessContainerdAction(platform: NodeJS.Platform) {
+function dockerAccessAction(platform: NodeJS.Platform) {
   if (platform === "linux")
-    return "Start a user-accessible runtime with containerd-rootless-setuptool.sh install, then recheck.";
-  return hostDependencyAction(platform, "containerd", "unavailable");
+    return "Start Docker Engine and add your user to the docker group (or set up rootless Docker), then recheck.";
+  return hostDependencyAction(platform, "docker", "unavailable");
 }
 
 function hostDependencyMessage(
@@ -282,8 +281,8 @@ function hostDependencyMessage(
   if (name === "blame-runtime") return "Blame Runtime is not available.";
   if (name === "cline-sdk")
     return "Cline SDK is not installed in Blame Runtime.";
-  if (name === "containerd") return "containerd is not available.";
-  if (name === "nerdctl-compose") return "nerdctl compose is not available.";
+  if (name === "docker") return "Docker Engine is not available.";
+  if (name === "docker-compose") return "Docker Compose is not available.";
   if (name === "node" && status === "unsupported")
     return "Node.js 22 or newer is required for this setup script.";
   return `${hostDependencyLabel(name)} is not available.`;
@@ -308,7 +307,7 @@ function macHostDependencyAction(
   if (name === "cline-sdk")
     return "Repair Blame Lima Runtime from Blame runtime setup.";
   if (containerRuntimeDependency(name))
-    return "Start Blame Lima Runtime and ensure containerd, nerdctl, and nerdctl compose are available.";
+    return "Repair Blame Lima Runtime from Blame runtime setup to restore Docker Engine and Docker Compose.";
   if (name === "corepack")
     return "Install Node.js 22 or newer, then run corepack --version.";
   if (name === "npm")
@@ -335,7 +334,7 @@ function windowsHostDependencyAction(
   if (name === "cline-sdk")
     return "Repair Blame WSL2 Runtime from Blame runtime setup.";
   if (containerRuntimeDependency(name))
-    return "Start Blame WSL2 Runtime and ensure containerd, nerdctl, and nerdctl compose are available.";
+    return "Repair Blame WSL2 Runtime from Blame runtime setup to restore Docker Engine and Docker Compose.";
   if (name === "corepack")
     return "Install Node.js 22 or newer, then run corepack --version.";
   if (name === "npm")
@@ -361,7 +360,7 @@ function linuxHostDependencyAction(
   if (name === "cline-sdk")
     return "Repair Blame Native Runtime from Blame runtime setup.";
   if (containerRuntimeDependency(name))
-    return "Start Blame Native Runtime and ensure containerd, nerdctl, and nerdctl compose are available.";
+    return "Install Docker Engine with the Docker Compose plugin, start it, then recheck.";
   if (name === "corepack")
     return "Install Node.js 22 or newer, then run corepack --version.";
   if (name === "npm")
@@ -383,11 +382,10 @@ function hostDependencyLabel(name: HostDependencyName) {
   const labels: Record<HostDependencyName, string> = {
     "blame-runtime": "Blame Runtime",
     "cline-sdk": "Cline SDK",
-    containerd: "containerd",
     corepack: "Corepack",
+    docker: "Docker Engine",
+    "docker-compose": "Docker Compose",
     git: "Git",
-    nerdctl: "nerdctl",
-    "nerdctl-compose": "nerdctl compose",
     node: "Node.js",
     npm: "npm",
     pnpm: "pnpm",
@@ -399,9 +397,7 @@ function hostDependencyLabel(name: HostDependencyName) {
 }
 
 function containerRuntimeDependency(name: HostDependencyName) {
-  return ["blame-runtime", "containerd", "nerdctl", "nerdctl-compose"].includes(
-    name,
-  );
+  return ["blame-runtime", "docker", "docker-compose"].includes(name);
 }
 
 function scriptWithoutShellComments(setupScript: string) {

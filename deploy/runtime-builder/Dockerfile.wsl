@@ -3,7 +3,9 @@ FROM ${UBUNTU_IMAGE}
 
 ARG BLAME_RUNTIME_VERSION
 ARG BLAME_CLINE_SDK_VERSION
-ARG BLAME_NERDCTL_VERSION=2.1.6
+ARG BLAME_DOCKER_VERSION=29.9.1
+ARG BLAME_COMPOSE_VERSION=5.6.0
+ARG BLAME_BUILDX_VERSION=0.38.0
 ARG BLAME_NODE_VERSION=22.23.1
 
 COPY packages/desktop/resources/runtime/windows/scripts/provision-blame-runtime.sh /tmp/provision-blame-runtime.sh
@@ -11,7 +13,9 @@ COPY deploy/runtime-builder/blame-semantic-harness.tgz /tmp/blame-semantic-harne
 COPY deploy/runtime-builder/wsl.conf /etc/wsl.conf
 
 RUN BLAME_RUNTIME_BAKE=1 \
-    BLAME_NERDCTL_VERSION="${BLAME_NERDCTL_VERSION}" \
+    BLAME_DOCKER_VERSION="${BLAME_DOCKER_VERSION}" \
+    BLAME_COMPOSE_VERSION="${BLAME_COMPOSE_VERSION}" \
+    BLAME_BUILDX_VERSION="${BLAME_BUILDX_VERSION}" \
     BLAME_NODE_VERSION="${BLAME_NODE_VERSION}" \
     sh /tmp/provision-blame-runtime.sh "${BLAME_RUNTIME_VERSION}" "${BLAME_CLINE_SDK_VERSION}" \
     && grep -qx "${BLAME_RUNTIME_VERSION}" /etc/blame-runtime-version \
@@ -21,14 +25,12 @@ RUN BLAME_RUNTIME_BAKE=1 \
     && command -v blame-semantic-harness >/dev/null \
     && test -s /etc/blame-semantic-harness-sha256 \
     && test -z "$(find "$(npm root -g)" -type d \( -path "*/node_modules/@openai/codex-linux-*" -o -path "*/node_modules/@anthropic-ai/claude-agent-sdk-linux-*" \) -print -quit)" \
-    && nerdctl --version \
-    && buildkitd --version \
-    && test -x /usr/local/libexec/cni/bridge \
-    && test -x /usr/local/libexec/cni/firewall \
-    && test -x /usr/local/libexec/cni/host-local \
-    && test -x /usr/local/libexec/cni/loopback \
-    && test -x /usr/local/libexec/cni/portmap \
-    && test -x /usr/local/libexec/cni/tuning \
+    && docker --version | grep -q "Docker version ${BLAME_DOCKER_VERSION}," \
+    && dockerd --version \
+    && test -x /usr/local/bin/docker-init \
+    && test "$(docker compose version --short)" = "${BLAME_COMPOSE_VERSION}" \
+    && docker buildx version | grep -q " v${BLAME_BUILDX_VERSION} " \
+    && test -s /etc/docker/daemon.json \
     && id blame \
     && rm -f /tmp/provision-blame-runtime.sh \
     && apt-get clean \

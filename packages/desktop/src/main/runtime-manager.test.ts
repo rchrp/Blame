@@ -5,7 +5,7 @@ import {
   type RuntimeProgress,
 } from "./runtime-manager.ts";
 
-test("checks Linux runtime with native nerdctl probes", async () => {
+test("checks Linux runtime with native Docker probes", async () => {
   const calls: string[] = [];
   const manager = createRuntimeManager(
     { platform: "linux" },
@@ -20,9 +20,9 @@ test("checks Linux runtime with native nerdctl probes", async () => {
   assert.equal(status.status, "ready");
   assert.deepEqual(status.issues, []);
   assert.deepEqual(calls, [
-    "nerdctl --version",
-    "nerdctl info",
-    "nerdctl compose version",
+    "docker --version",
+    "docker info",
+    "docker compose version",
   ]);
 });
 
@@ -525,9 +525,9 @@ test("keeps Linux lifecycle operations lightweight", async () => {
   await manager.ensureRuntimeReady();
 
   assert.deepEqual(calls, [
-    "nerdctl --version",
-    "nerdctl info",
-    "nerdctl compose version",
+    "docker --version",
+    "docker info",
+    "docker compose version",
   ]);
 });
 

@@ -1,10 +1,12 @@
 set -eu
 
-runtime_version="${1:-9}"
+runtime_version="${1:-11}"
 runtime_root="/home/blame/.local/share/blame/runtime"
 package_manager_root="/opt/blame/package-managers"
 cline_sdk_version="${BLAME_CLINE_SDK_VERSION:-${2:-0.0.95}}"
-nerdctl_version="${BLAME_NERDCTL_VERSION:-2.1.6}"
+docker_version="${BLAME_DOCKER_VERSION:-29.9.1}"
+compose_version="${BLAME_COMPOSE_VERSION:-5.6.0}"
+buildx_version="${BLAME_BUILDX_VERSION:-0.38.0}"
 node_version="${BLAME_NODE_VERSION:-22.23.1}"
 npm_version="${BLAME_NPM_VERSION:-11.6.4}"
 pnpm_version="${BLAME_PNPM_VERSION:-10.33.2}"
@@ -192,45 +194,211 @@ remove_external_cli_payloads() {
     -prune -exec rm -rf {} +
 }
 
+# Docker Engine runs the previews, the same engine and Compose as the cloud
+# sandbox runner. Static binaries keep the image free of apt repositories;
+# every download is checked against a pinned checksum.
 ensure_container_stack() {
-  if nerdctl --version 2>/dev/null | grep -q "nerdctl version ${nerdctl_version}" && command -v buildkitd >/dev/null 2>&1 && [ -x /usr/local/libexec/cni/bridge ]; then
+  if docker_stack_current; then
     return
   fi
   arch="$(runtime_architecture)"
-  archive="nerdctl-full-${nerdctl_version}-linux-${arch}.tar.gz"
-  url="https://github.com/containerd/nerdctl/releases/download/v${nerdctl_version}/${archive}"
+  docker_arch="$(docker_archive_architecture "$arch")"
   temp_dir="$(mktemp -d)"
-  curl -fsSL "$url" -o "$temp_dir/$archive"
-  printf '%s  %s\n' "$(nerdctl_archive_sha256 "$arch")" "$temp_dir/$archive" | sha256sum -c - >/dev/null
-  tar -C /usr/local -xzf "$temp_dir/$archive" \
-    bin/buildctl \
-    bin/buildkitd \
-    bin/containerd \
-    bin/containerd-shim-runc-v2 \
-    bin/nerdctl \
-    bin/runc \
-    bin/tini \
-    libexec/cni/bridge \
-    libexec/cni/firewall \
-    libexec/cni/host-local \
-    libexec/cni/loopback \
-    libexec/cni/portmap \
-    libexec/cni/tuning
+  download_verified \
+    "https://download.docker.com/linux/static/stable/${docker_arch}/docker-${docker_version}.tgz" \
+    "$temp_dir/docker.tgz" "$(docker_artifact_sha256 docker "$arch")"
+  tar -C "$temp_dir" -xzf "$temp_dir/docker.tgz"
+  for binary in docker dockerd docker-init docker-proxy containerd containerd-shim-runc-v2 runc; do
+    install -m 0755 "$temp_dir/docker/$binary" "/usr/local/bin/$binary"
+  done
+  mkdir -p /usr/local/lib/docker/cli-plugins
+  download_verified \
+    "https://github.com/docker/compose/releases/download/v${compose_version}/docker-compose-linux-${docker_arch}" \
+    "$temp_dir/docker-compose" "$(docker_artifact_sha256 compose "$arch")"
+  install -m 0755 "$temp_dir/docker-compose" /usr/local/lib/docker/cli-plugins/docker-compose
+  download_verified \
+    "https://github.com/docker/buildx/releases/download/v${buildx_version}/buildx-v${buildx_version}.linux-${arch}" \
+    "$temp_dir/docker-buildx" "$(docker_artifact_sha256 buildx "$arch")"
+  install -m 0755 "$temp_dir/docker-buildx" /usr/local/lib/docker/cli-plugins/docker-buildx
   rm -rf "$temp_dir"
 }
 
-nerdctl_archive_sha256() {
-  case "$nerdctl_version:$1" in
-    2.1.6:amd64) printf '%s' "c30545867913696210991fe055761ae2e2d36344da2a351bcd1073fb5c71e232" ;;
-    2.1.6:arm64) printf '%s' "2f98346ed3dcaf47cfd6461a5685e582284329a1ece1d952ade881b9fe7491e8" ;;
+docker_stack_current() {
+  docker --version 2>/dev/null | grep -q "Docker version ${docker_version}," &&
+    [ -x /usr/local/bin/dockerd ] &&
+    [ -x /usr/local/bin/docker-init ] &&
+    [ "$(docker compose version --short 2>/dev/null)" = "$compose_version" ] &&
+    docker buildx version 2>/dev/null | grep -q " v${buildx_version} "
+}
+
+download_verified() {
+  curl -fsSL "$1" -o "$2"
+  printf '%s  %s\n' "$3" "$2" | sha256sum -c - >/dev/null
+}
+
+docker_archive_architecture() {
+  case "$1" in
+    amd64) printf '%s' "x86_64" ;;
+    arm64) printf '%s' "aarch64" ;;
+    *) return 1 ;;
+  esac
+}
+
+docker_artifact_sha256() {
+  case "$1" in
+    docker) version="$docker_version" ;;
+    compose) version="$compose_version" ;;
+    buildx) version="$buildx_version" ;;
+    *) return 1 ;;
+  esac
+  case "$1:$version:$2" in
+    docker:29.9.1:amd64) printf '%s' "c158ecc55adb3afb01bbd3539ed3b997d20c26dbdc418080506cc1bf5243ff57" ;;
+    docker:29.9.1:arm64) printf '%s' "3e93cc6d1a686456a3b18eefdde26467a837a7a2b257af22e27cba1dbc1b2018" ;;
+    compose:5.6.0:amd64) printf '%s' "40343e21ca777173e69cff5dbafeb37c6f81f3b0d57d9e597f036e95eb63e76a" ;;
+    compose:5.6.0:arm64) printf '%s' "733ec76717ceb59052a9609b9dadfb523b2df8eab57a54212872d10a58078ea2" ;;
+    buildx:0.38.0:amd64) printf '%s' "4fe4cc38adf48169132749b6ca22a990928db0118e3407584ee553723115d287" ;;
+    buildx:0.38.0:arm64) printf '%s' "38e890e1a162bfdbf32fbe91404991dc4fc28e55b0de901b34374a061bab4d2c" ;;
     *)
-      if [ -z "${BLAME_NERDCTL_SHA256:-}" ]; then
-        printf '%s\n' "BLAME_NERDCTL_SHA256 is required for nerdctl $nerdctl_version on $1." >&2
-        return 1
-      fi
-      printf '%s' "$BLAME_NERDCTL_SHA256"
+      printf '%s\n' "No pinned checksum for $1 $version on $2." >&2
+      return 1
       ;;
   esac
+}
+
+# Logs and the build cache stay bounded; small address pools let many
+# previews run at once; overlay2 keeps a single copy of each image layer.
+ensure_docker_config() {
+  mkdir -p /etc/docker
+  cat >/etc/docker/daemon.json <<'JSON'
+{
+  "builder": { "gc": { "enabled": true, "defaultKeepStorage": "6GB" } },
+  "default-address-pools": [{ "base": "172.20.0.0/14", "size": 24 }],
+  "features": { "containerd-snapshotter": false },
+  "log-driver": "local",
+  "log-opts": { "max-file": "3", "max-size": "10m" },
+  "max-concurrent-downloads": 4,
+  "storage-driver": "overlay2"
+}
+JSON
+}
+
+ensure_docker_running() {
+  if [ "${BLAME_RUNTIME_BAKE:-0}" = "1" ] || docker info >/dev/null 2>&1; then
+    return
+  fi
+  mkdir -p /var/log/blame-runtime
+  setsid nohup dockerd --config-file /etc/docker/daemon.json \
+    >>/var/log/blame-runtime/dockerd.log 2>&1 </dev/null &
+  attempt=0
+  while [ "$attempt" -lt 120 ]; do
+    if docker info >/dev/null 2>&1; then
+      return
+    fi
+    attempt=$((attempt + 1))
+    sleep 0.25
+  done
+  printf '%s\n' "Docker Engine did not start; see /var/log/blame-runtime/dockerd.log." >&2
+  return 1
+}
+
+# Runtime 10 ran previews on a standalone containerd with nerdctl. Stop its
+# containers and drop its network rules before Docker takes over: a stale
+# port mapping would capture a reused preview port.
+stop_legacy_container_stack() {
+  if [ ! -x /usr/local/bin/nerdctl ] && [ ! -d /var/lib/nerdctl ]; then
+    return
+  fi
+  if [ -x /usr/local/bin/nerdctl ] && [ -S /run/containerd/containerd.sock ]; then
+    for namespace in $(nerdctl namespace ls -q 2>/dev/null || true); do
+      containers="$(nerdctl --namespace "$namespace" ps -aq 2>/dev/null || true)"
+      if [ -n "$containers" ]; then
+        nerdctl --namespace "$namespace" rm -f $containers >/dev/null 2>&1 || true
+      fi
+    done
+  fi
+  pkill -x buildkitd 2>/dev/null || true
+  if ! docker info >/dev/null 2>&1; then
+    pkill -x containerd 2>/dev/null || true
+    rm -f /run/containerd/containerd.sock
+  fi
+  ip link delete nerdctl0 2>/dev/null || true
+  for table in nat filter; do
+    rules="$(iptables-save -t "$table" 2>/dev/null || true)"
+    if printf '%s\n' "$rules" | grep -q 'CNI'; then
+      printf '%s\n' "$rules" | grep -v 'CNI' | iptables-restore 2>/dev/null || true
+    fi
+  done
+}
+
+# Data volumes of existing worktrees, such as database directories, move to
+# Docker under the name the new renderer gives them. Dependency installs and
+# caches are not copied: Docker fills them again on the next start.
+migrate_legacy_volumes() {
+  if [ ! -d /var/lib/nerdctl ] || [ "${BLAME_RUNTIME_BAKE:-0}" = "1" ]; then
+    return
+  fi
+  projects="$(legacy_live_projects)"
+  for data in /var/lib/nerdctl/*/volumes/*/*/_data; do
+    [ -d "$data" ] || continue
+    name="$(basename "$(dirname "$data")")"
+    project="$(printf '%s' "$name" | sed -n 's/^\(blame_[0-9a-f]\{12\}\)_.*/\1/p')"
+    volume="${name#"${project}_"}"
+    if [ -z "$project" ] || ! printf '%s\n' "$projects" | grep -qx "$project"; then
+      continue
+    fi
+    case "$volume" in
+      *node_modules* | *_next | *_nuxt | *cache* | *pnpm_store*) continue ;;
+    esac
+    target="${project}_cache-${volume}"
+    if docker volume inspect "$target" >/dev/null 2>&1; then
+      continue
+    fi
+    docker volume create --label blame.preview=true "$target" >/dev/null
+    mountpoint="$(docker volume inspect --format '{{.Mountpoint}}' "$target")"
+    cp -a "$data/." "$mountpoint/"
+    chown "$(stat -c %u:%g "$data")" "$mountpoint"
+    chmod "$(stat -c %a "$data")" "$mountpoint"
+  done
+}
+
+legacy_live_projects() {
+  find "$runtime_root/worktrees" "$runtime_root/repos" -mindepth 1 -maxdepth 3 -name .git 2>/dev/null |
+    while IFS= read -r git_path; do
+      printf 'blame_%s\n' "$(printf '%s' "${git_path%/.git}" | sha1sum | cut -c1-12)"
+    done
+}
+
+remove_legacy_container_stack() {
+  rm -f /usr/local/bin/nerdctl /usr/local/bin/buildctl /usr/local/bin/buildkitd /usr/local/bin/tini
+  rm -rf /usr/local/libexec/cni /etc/cni /var/lib/cni /etc/containerd \
+    /var/lib/nerdctl /var/lib/buildkit /var/lib/containerd
+}
+
+# The VM only runs Blame: hardware, snap and update services cost memory
+# and wake the CPU for nothing. The journal stays small.
+trim_guest_services() {
+  if [ "${BLAME_RUNTIME_BAKE:-0}" = "1" ] || [ ! -d /run/systemd/system ]; then
+    return
+  fi
+  for unit in \
+    snapd.service snapd.socket snapd.seeded.service \
+    ModemManager.service multipathd.service multipathd.socket \
+    udisks2.service unattended-upgrades.service packagekit.service \
+    apt-daily.timer apt-daily-upgrade.timer motd-news.timer \
+    fwupd-refresh.timer man-db.timer; do
+    systemctl disable --now "$unit" >/dev/null 2>&1 || true
+    systemctl mask "$unit" >/dev/null 2>&1 || true
+  done
+  mkdir -p /etc/systemd/journald.conf.d
+  if [ ! -s /etc/systemd/journald.conf.d/blame.conf ]; then
+    printf '[Journal]\nSystemMaxUse=64M\n' >/etc/systemd/journald.conf.d/blame.conf
+    systemctl restart systemd-journald >/dev/null 2>&1 || true
+  fi
+  if dpkg-query -W -f='${Status}' snapd 2>/dev/null | grep -q "install ok installed"; then
+    DEBIAN_FRONTEND=noninteractive apt-get purge -y snapd >/dev/null 2>&1 || true
+    rm -rf /var/lib/snapd /var/cache/snapd /snap
+  fi
+  systemctl enable fstrim.timer >/dev/null 2>&1 || true
 }
 
 ensure_runtime_paths() {
@@ -241,37 +409,6 @@ ensure_runtime_paths() {
     "$runtime_root/logs" \
     "$runtime_root/env"
   chown -R blame:blame /home/blame/.local
-}
-
-ensure_containerd_config() {
-  mkdir -p /etc/containerd /var/lib/containerd /run/containerd
-  if [ ! -s /etc/containerd/config.toml ] && command -v containerd >/dev/null 2>&1; then
-    containerd config default >/etc/containerd/config.toml
-  fi
-}
-
-ensure_containerd_running() {
-  if [ "${BLAME_RUNTIME_BAKE:-0}" = "1" ]; then
-    return
-  fi
-  if pgrep -x containerd >/dev/null 2>&1; then
-    wait_for_containerd
-    return
-  fi
-  mkdir -p /var/log/blame-runtime
-  nohup containerd >/var/log/blame-runtime/containerd.log 2>&1 &
-  wait_for_containerd
-}
-
-wait_for_containerd() {
-  attempt=0
-  while [ "$attempt" -lt 30 ]; do
-    if [ -S /run/containerd/containerd.sock ]; then
-      return
-    fi
-    attempt=$((attempt + 1))
-    sleep 0.1
-  done
 }
 
 ensure_agent() {
@@ -301,7 +438,7 @@ json_worker_count = max(1, min(2, os.cpu_count() or 1))
 large_json_threshold = 64 * 1024
 ignored_env_directories = {".git", ".blame", "build", "coverage", "dist", "node_modules", "out"}
 env_template_suffixes = (".example", ".sample", ".template")
-runtime_agent_version = "8"
+runtime_agent_version = "9"
 
 def serialize_json_line(value):
     return json.dumps(value, separators=(",", ":")) + "\n"
@@ -358,13 +495,26 @@ def version():
     except OSError:
         return "unknown"
 
-def ensure_containerd():
-    if subprocess.run(["pgrep", "-x", "containerd"], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0:
+docker_lock = threading.Lock()
+
+def docker_ready():
+    return subprocess.run(["docker", "info"], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
+
+# Docker Engine starts with the first container command and keeps running.
+def ensure_docker():
+    if os.path.exists("/var/run/docker.sock") and subprocess.run(["pgrep", "-x", "dockerd"], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0:
         return
-    os.makedirs("/run/containerd", exist_ok=True)
-    os.makedirs("/var/log/blame-runtime", exist_ok=True)
-    log = open("/var/log/blame-runtime/containerd.log", "ab")
-    subprocess.Popen(["containerd"], stdin=subprocess.DEVNULL, stdout=log, stderr=log, start_new_session=True)
+    with docker_lock:
+        if docker_ready():
+            return
+        os.makedirs("/var/log/blame-runtime", exist_ok=True)
+        log = open("/var/log/blame-runtime/dockerd.log", "ab")
+        subprocess.Popen(["dockerd", "--config-file", "/etc/docker/daemon.json"], stdin=subprocess.DEVNULL, stdout=log, stderr=log, start_new_session=True)
+        import time
+        for _ in range(120):
+            if docker_ready():
+                return
+            time.sleep(0.25)
 
 def target_user(name):
     if os.geteuid() != 0:
@@ -413,8 +563,8 @@ def command_user(params):
 def prepare_command(params):
     command = str(params.get("command") or "")
     args = [str(value) for value in params.get("args") or []]
-    if command == "nerdctl":
-        ensure_containerd()
+    if command == "docker" or any("docker" in value for value in args):
+        ensure_docker()
     return command, args
 
 def run_exec(params):
@@ -847,9 +997,9 @@ def run_status():
     checks = {
         "version": version(),
         "python": True,
-        "containerd": os.path.exists("/run/containerd/containerd.sock"),
+        "docker": os.path.exists("/var/run/docker.sock"),
         "git": subprocess.run(["sh", "-lc", "command -v git"], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL).returncode == 0,
-        "nerdctl": subprocess.run(["sh", "-lc", "command -v nerdctl"], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL).returncode == 0,
+        "compose": subprocess.run(["docker", "compose", "version"], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0,
     }
     return checks
 
@@ -926,7 +1076,11 @@ ensure_cline_sdk
 remove_external_cli_payloads
 ensure_container_stack
 ensure_runtime_paths
-ensure_containerd_config
-ensure_containerd_running
+ensure_docker_config
+stop_legacy_container_stack
+ensure_docker_running
+migrate_legacy_volumes
+remove_legacy_container_stack
+trim_guest_services
 ensure_agent
 write_marker

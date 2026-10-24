@@ -457,10 +457,9 @@ const runtimeStates = new Set([
 const runtimeDependencies = new Set([
   "blame-runtime",
   "cline-sdk",
-  "containerd",
+  "docker",
+  "docker-compose",
   "git",
-  "nerdctl",
-  "nerdctl-compose",
 ]);
 const dependencyStatuses = new Set(["missing", "unavailable", "unsupported"]);
 

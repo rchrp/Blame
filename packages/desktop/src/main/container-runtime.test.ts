@@ -9,9 +9,9 @@ import {
   runtimeName,
 } from "./container-runtime.ts";
 
-test("routes Linux runtime commands to native nerdctl", () => {
+test("routes Linux runtime commands to native Docker", () => {
   assert.deepEqual(runtimeCommand("linux", "compose", ["ps"]), {
-    command: "nerdctl",
+    command: "docker",
     args: ["compose", "ps"],
   });
 });
@@ -37,12 +37,9 @@ test("routes Windows compose commands through Blame WSL2 Runtime", () => {
   });
 });
 
-test("preserves runtime environment values", () => {
-  const environment = containerRuntimeEnvironment({
-    CONTAINERD_NAMESPACE: "blame",
-  });
+test("names the container runtime of the platform", () => {
+  const environment = containerRuntimeEnvironment({});
 
-  assert.equal(environment.CONTAINERD_NAMESPACE, "blame");
   assert.equal(
     environment.BLAME_CONTAINER_RUNTIME,
     runtimeName(process.platform),
@@ -108,11 +105,11 @@ test("preserves compose identity and workspace paths in Lima fallback commands",
   assert.doesNotMatch(shellCommand, /SECRET_TOKEN/);
 });
 
-test("uses nerdctl inside the guest for root-level Lima fallback commands", () => {
+test("uses Docker inside the guest for root-level Lima fallback commands", () => {
   const command = runtimeCommandWithContext("darwin", "inspect", ["db"], {
     env: {},
   });
 
   assert.equal(command.command, "blame-lima-runtime");
-  assert.match(command.args[2] ?? "", /exec nerdctl 'inspect' 'db'/);
+  assert.match(command.args[2] ?? "", /exec docker 'inspect' 'db'/);
 });
