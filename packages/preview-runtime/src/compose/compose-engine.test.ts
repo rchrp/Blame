@@ -58,6 +58,19 @@ test("writes the Compose file once and prepares owned volumes", async () => {
   assert.equal(host.files.get("/state/story-a/compose.yaml"), rendered.yaml);
 });
 
+test("never writes setup markers into other caches", async () => {
+  const host = new FakeHost();
+  const engine = engineFor(host, "story-a");
+  await engine.prepare(renderCompose(plan(), target("story-a")), owner);
+  await engine.start(plan(), ["web", "db"], fingerprints);
+  const markers = [...host.files.keys()].filter((path) =>
+    path.endsWith(".blame-setup-fingerprints.json"),
+  );
+  assert.deepEqual(markers, [
+    "/var/lib/docker/volumes/blame_node_modules_abc123/_data/.blame-setup-fingerprints.json",
+  ]);
+});
+
 test("starts services with Docker waiting for health", async () => {
   const host = new FakeHost();
   const engine = engineFor(host, "story-a");
@@ -185,7 +198,10 @@ function plan(): PreviewExecutionPlan {
         bindings: [],
       },
     ],
-    caches: [{ name: "blame_node_modules", target: "/workspace/node_modules" }],
+    caches: [
+      { name: "blame_node_modules", target: "/workspace/node_modules" },
+      { name: "postgres_data", target: "/var/lib/postgresql/data" },
+    ],
     probes: [],
     environmentPlan: { cleanupRequired: true, entries: [] },
     networking: {

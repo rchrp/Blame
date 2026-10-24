@@ -40,9 +40,11 @@ export type ComposeTarget = SandboxComposeTarget | LocalComposeTarget;
 export const sandboxProjectName = "blame-preview";
 
 // Volumes the engine creates before Compose runs, so it can give them to the
-// project user. Shared volumes outlive the preview. A setup task records
-// that it ran in the volumes it fills (`setupMarker`), so a recreated volume
-// reruns it and a worktree sharing the volume skips it.
+// project user. Shared volumes outlive the preview. A package install
+// records that it ran in the node_modules volumes it fills (`setupMarker`),
+// so a recreated volume reruns it and a worktree sharing the volume skips
+// it. Other caches stay untouched: one may be a database directory, which
+// must stay empty until its server initializes it.
 export type EngineVolume = {
   name: string;
   owner: "project" | "root";
@@ -82,7 +84,7 @@ function cacheVolume(cache: CachePlan, target: ComposeTarget): MountedVolume {
       target: cache.target,
       owner: "project",
       shared: false,
-      setupMarker: true,
+      setupMarker: cache.target === "/workspace/node_modules",
     };
   }
   if (cache.target === "/workspace/node_modules") {
@@ -102,7 +104,7 @@ function cacheVolume(cache: CachePlan, target: ComposeTarget): MountedVolume {
     target: cache.target,
     owner: "project",
     shared,
-    setupMarker: !shared,
+    setupMarker: false,
   };
 }
 
