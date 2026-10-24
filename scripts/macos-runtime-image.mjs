@@ -97,7 +97,7 @@ async function buildImage(architecture) {
             target: "tmp/blame-semantic-harness.tgz",
           },
         ],
-        setup: builderUserCommand,
+        setup: builderUserCommand(),
         finalizer: finalizeCommands().join("\n"),
       });
     } else {
@@ -317,8 +317,9 @@ async function provisionImage(bundle, instanceName, environment) {
 // provisioning, and finalizeCommands deletes it. The chroot creates it too, so
 // the provisioned blame user still gets UID 1001 and leaves UID 1000 free for
 // the user Lima creates on a user's first boot.
-const builderUserCommand =
-  "useradd --uid 1000 --user-group --create-home --shell /bin/bash blamebuilder";
+function builderUserCommand() {
+  return "useradd --uid 1000 --user-group --create-home --shell /bin/bash blamebuilder";
+}
 
 function bakeEnvironment() {
   return [
