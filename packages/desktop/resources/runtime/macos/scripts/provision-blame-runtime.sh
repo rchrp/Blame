@@ -267,11 +267,29 @@ docker_artifact_sha256() {
 
 # Logs and the build cache stay bounded; small address pools let many
 # previews run at once; overlay2 keeps a single copy of each image layer.
+# Every preview container runs in one slice: together they can use most of
+# the VM's memory, but not all of it, and yield the CPU to the agent and the
+# app's own commands. A changed configuration restarts Docker, which stops
+# running previews; the desktop restarts the ones it wants.
 ensure_docker_config() {
-  mkdir -p /etc/docker
+  mkdir -p /etc/docker /etc/systemd/system
+  cat >/etc/systemd/system/blame-previews.slice <<'UNIT'
+[Unit]
+Description=Blame preview containers
+
+[Slice]
+MemoryHigh=80%
+MemoryMax=90%
+CPUWeight=50
+UNIT
+  if [ -d /run/systemd/system ]; then
+    systemctl daemon-reload >/dev/null 2>&1 || true
+  fi
+  previous="$(cat /etc/docker/daemon.json 2>/dev/null || true)"
   cat >/etc/docker/daemon.json <<'JSON'
 {
-  "builder": { "gc": { "enabled": true, "defaultKeepStorage": "6GB" } },
+  "builder": { "gc": { "enabled": true, "defaultKeepStorage": "3GB" } },
+  "cgroup-parent": "blame-previews.slice",
   "default-address-pools": [{ "base": "172.20.0.0/14", "size": 24 }],
   "features": { "containerd-snapshotter": false },
   "log-driver": "local",
@@ -280,6 +298,18 @@ ensure_docker_config() {
   "storage-driver": "overlay2"
 }
 JSON
+  if [ -n "$previous" ] && [ "$previous" != "$(cat /etc/docker/daemon.json)" ]; then
+    stop_docker
+  fi
+}
+
+stop_docker() {
+  pkill -x dockerd >/dev/null 2>&1 || return 0
+  attempt=0
+  while pgrep -x dockerd >/dev/null 2>&1 && [ "$attempt" -lt 120 ]; do
+    attempt=$((attempt + 1))
+    sleep 0.25
+  done
 }
 
 ensure_docker_running() {
