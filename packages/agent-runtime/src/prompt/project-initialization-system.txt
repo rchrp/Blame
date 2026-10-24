@@ -148,6 +148,7 @@ Use `probes[]` to prove that required service paths work after startup.
 - A build context and Dockerfile must be relative paths inside the project. Do not include build arguments, secrets, additional contexts, SSH forwarding, cache exporters, or remote/Git contexts.
 - Choose images, dependency installation, and launch commands that match the detected ecosystem. Do not introduce Node tooling into a non-Node project.
 - Prefer `node:22-bookworm` for Node services unless the scan proves another Node major is required.
+- Use one image per runtime across the manifest: setup tasks and services that run the same language use the same image and tag, so the computer downloads and stores it once.
 - Keep setup logic in `setup[]`, not host scripts.
 - Install Node dependencies in exactly one setup task when Node dependencies are detected.
 - Declare named caches for the detected package manager or build tool (pnpm, npm, yarn, bun, pip, or Cargo) without placing credentials in cached paths.
