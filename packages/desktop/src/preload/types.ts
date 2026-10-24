@@ -277,6 +277,7 @@ export type BlameDesktopApi = {
   platform: NodeJS.Platform;
   systemNotifications: SystemNotifications;
   appStatus: AppStatus;
+  appearance: import("@blame/app").AppearanceClient;
   updates: DesktopUpdates;
   mcp: McpServersClient;
   windowControls: WindowControls;

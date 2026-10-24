@@ -18,6 +18,8 @@ import { PerformanceDiagnosticsProfiler } from "@/lib/performance-diagnostics-pr
 
 export { App }
 export type {
+  AppTheme,
+  AppearanceClient,
   BacklogStatusPipRequest,
   BacklogStatusPipSnapshot,
   CloudMcpServerConfig,

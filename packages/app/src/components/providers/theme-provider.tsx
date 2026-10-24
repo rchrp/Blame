@@ -1,6 +1,6 @@
 import * as React from "react"
+import { usePlatform, type AppTheme as Theme } from "@/context/platform"
 
-type Theme = "dark" | "light" | "system"
 type ResolvedTheme = "dark" | "light"
 
 type ThemeProviderProps = {
@@ -83,6 +83,7 @@ export function ThemeProvider({
   disableTransitionOnChange = true,
   ...props
 }: ThemeProviderProps) {
+  const { appearance } = usePlatform()
   const [theme, setThemeState] = React.useState<Theme>(() => {
     const storedTheme = localStorage.getItem(storageKey)
     if (isTheme(storedTheme)) {
@@ -120,10 +121,22 @@ export function ThemeProvider({
   )
 
   React.useEffect(() => {
+    let active = true
+
+    // Send the preference, not the resolved color: System must release the
+    // native override before prefers-color-scheme can follow the OS again.
+    void appearance?.setTheme(theme).then(
+      () => {
+        if (active && theme === "system") applyTheme("system")
+      },
+      (error: unknown) => console.error("Unable to sync native theme", error)
+    )
     applyTheme(theme)
 
     if (theme !== "system") {
-      return undefined
+      return () => {
+        active = false
+      }
     }
 
     const mediaQuery = window.matchMedia(COLOR_SCHEME_QUERY)
@@ -134,9 +147,10 @@ export function ThemeProvider({
     mediaQuery.addEventListener("change", handleChange)
 
     return () => {
+      active = false
       mediaQuery.removeEventListener("change", handleChange)
     }
-  }, [theme, applyTheme])
+  }, [theme, applyTheme, appearance])
 
   React.useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {

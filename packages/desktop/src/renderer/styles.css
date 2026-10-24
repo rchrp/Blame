@@ -6,6 +6,11 @@ body,
   overflow: hidden;
 }
 
+/* macOS supplies the sidebar's tint and blur through native vibrancy. */
+html[data-blame-platform="darwin"] {
+  --sidebar: transparent;
+}
+
 [data-window-drag] {
   -webkit-app-region: drag;
 }

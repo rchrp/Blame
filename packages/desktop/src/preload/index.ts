@@ -171,6 +171,9 @@ const api: BlameDesktopApi = {
     },
   },
   platform: process.platform,
+  appearance: {
+    setTheme: (theme) => ipcRenderer.invoke("appearance:set-theme", theme),
+  },
   systemNotifications: {
     show: (input) => ipcRenderer.invoke("notifications:show", input),
     onClick: (callback) => {

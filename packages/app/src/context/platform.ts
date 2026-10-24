@@ -110,6 +110,7 @@ export type Platform = {
   api?: ApiConnection
   previewDevtools?: PreviewDevtoolsSettingsClient
   appStatus?: AppStatusClient
+  appearance?: AppearanceClient
   backlogStatusPip?: BacklogStatusPipClient
   deploy?: DeployClient
   platform?: string
@@ -298,6 +299,12 @@ export type SystemNotificationsClient = {
 export type AppStatusClient = {
   setActivity(input: { running: number }): Promise<void>
   requestAttention(): Promise<void>
+}
+
+export type AppTheme = "light" | "dark" | "system"
+
+export type AppearanceClient = {
+  setTheme(theme: AppTheme): Promise<void>
 }
 
 export type BacklogStatusPipAction =

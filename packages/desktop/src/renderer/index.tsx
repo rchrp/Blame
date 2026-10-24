@@ -2,12 +2,14 @@ import { mountApp } from "@blame/app";
 import "./styles.css";
 
 document.documentElement.dataset.blameDesktop = "true";
+document.documentElement.dataset.blamePlatform = window.blame.platform;
 
 const root = document.getElementById("root");
 if (!(root instanceof HTMLElement)) throw new Error("Root element not found");
 
 mountApp(root, {
   platform: {
+    appearance: window.blame.appearance,
     auth: window.blame.auth,
     agent: window.blame.agent,
     agentScreenshots: window.blame.agentScreenshots,

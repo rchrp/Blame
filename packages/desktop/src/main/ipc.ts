@@ -6,6 +6,7 @@ import {
   type WebContents,
 } from "electron";
 import { localAgentOwnsWorkspace, registerAgentIpcHandlers } from "./agent-ipc";
+import { registerAppearanceIpcHandlers } from "./appearance-ipc";
 import { registerAgentScreenshotIpcHandlers } from "./ipc/agent-screenshots-ipc";
 import { registerPreviewDevtoolsSettingsIpcHandlers } from "./ipc/preview-devtools-settings-ipc";
 import { registerProjectAppIpcHandlers } from "./ipc/project-app-ipc";
@@ -53,6 +54,7 @@ export type DesktopIpcOptions = {
 };
 
 export function registerDesktopIpcHandlers(options: DesktopIpcOptions) {
+  registerAppearanceIpcHandlers({ isAppWindow: options.isAppWindow });
   const previews = new PreviewService(
     localAgentOwnsWorkspace,
     options.packaged,
