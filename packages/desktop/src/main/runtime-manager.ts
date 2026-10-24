@@ -1,4 +1,4 @@
-import { execFile } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import type { RuntimeProgress } from "@blame/app";
 import { withoutTelemetryEnvironment } from "@blame/telemetry";
 import {
@@ -204,6 +204,36 @@ export function resetRuntime(input: RuntimeManagerInput = {}) {
 
 export function uninstallRuntime(input: RuntimeManagerInput = {}) {
   return createRuntimeManager(input).uninstallRuntime();
+}
+
+/**
+ * Stops the Blame Runtime when the app quits, so the VM's memory goes back
+ * to the computer; the next start boots it again. The command outlives the
+ * app, which does not wait for it.
+ */
+export function stopRuntimeInBackground(
+  env: NodeJS.ProcessEnv = process.env,
+  platform: NodeJS.Platform = process.platform,
+) {
+  if (!managedRuntimePlatform(platform)) return;
+  const environment = withoutTelemetryEnvironment(env);
+  const spec = executableRuntimeCommand(
+    runtimeBinary(platform),
+    ["stop"],
+    environment,
+  );
+  try {
+    spawn(spec.command, spec.args, {
+      detached: true,
+      env: environment,
+      stdio: "ignore",
+      windowsHide: true,
+    })
+      .on("error", () => undefined)
+      .unref();
+  } catch {
+    // The runtime keeps running; the next start finds it up.
+  }
 }
 
 async function ensureRuntimeOperation(context: RuntimeManagerContext) {

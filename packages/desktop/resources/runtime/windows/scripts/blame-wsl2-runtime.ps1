@@ -642,6 +642,10 @@ switch ($args[0]) {
   "uninstall" {
     Uninstall-Runtime
   }
+  "stop" {
+    # Ends the distribution's processes when Blame quits.
+    Invoke-WslHost -WslArgs @("--terminate", $DistroName) | Out-Null
+  }
   default {
     Invoke-RuntimeCommand $args
   }

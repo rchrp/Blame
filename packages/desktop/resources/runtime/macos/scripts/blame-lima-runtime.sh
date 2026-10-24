@@ -419,6 +419,15 @@ reset_runtime() {
   ensure_runtime
 }
 
+# The VM keeps every page of memory it ever touched, even once Linux frees
+# it: stopping it when Blame quits gives that memory back to the Mac.
+stop_runtime() {
+  if ! test_lima_available || ! test_vm_present || ! test_vm_running; then
+    return
+  fi
+  with_lima_environment stop "$vm_name"
+}
+
 uninstall_runtime() {
   assert_lima_available
   if test_vm_present; then
@@ -488,6 +497,9 @@ case "$1" in
     ;;
   uninstall)
     uninstall_runtime
+    ;;
+  stop)
+    stop_runtime
     ;;
   *)
     invoke_runtime_command "$@"
