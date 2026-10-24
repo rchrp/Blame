@@ -24,6 +24,7 @@ test("starts the previews of the most recent local stories in review", () => {
     story("working", "2026-10-24T11:00:00Z", { status: "in-progress" }),
     story("cloud", "2026-10-24T12:00:00Z", { workspaceMode: "cloud-mirror" }),
     story("no-worktree", "2026-10-24T13:00:00Z", { worktree: null }),
+    story("none", "2026-10-24T14:00:00Z", { runConfigurationId: null }),
   ]
   assert.deepEqual(
     localPreviewAutoStartStories(stories).map(({ id }) => id),
