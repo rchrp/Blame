@@ -28,6 +28,7 @@ const chrootPath =
  * @param {string[]} options.provisionerArgs
  * @param {string[]} options.environment `NAME=value` assignments
  * @param {{ source: string, target: string }[]} options.files copied in first
+ * @param {string} options.setup shell script run before provisioning
  * @param {string} options.finalizer shell script run after provisioning
  */
 export async function provisionImageInChroot(options) {
@@ -59,6 +60,7 @@ export async function provisionImageInChroot(options) {
     try {
       await mountSystem(root);
       await prepareChroot(root, options.files);
+      await chroot(root, [], options.setup, ["sh", "-s"]);
       await chroot(root, options.environment, options.provisioner, [
         "sh",
         "-s",

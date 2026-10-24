@@ -97,6 +97,7 @@ async function buildImage(architecture) {
             target: "tmp/blame-semantic-harness.tgz",
           },
         ],
+        setup: builderUserCommand,
         finalizer: finalizeCommands().join("\n"),
       });
     } else {
@@ -173,7 +174,12 @@ async function verifyImage(bundle, architecture, image, environment) {
     "utf8",
   );
   try {
-    await startInstance(bundle, instanceName, templatePath, environment);
+    await startInstance(bundle, instanceName, templatePath, environment).catch(
+      async (error) => {
+        await printBootLog(join(environment.LIMA_HOME, instanceName));
+        throw error;
+      },
+    );
     await verifyRuntime(bundle, instanceName, environment);
     console.log(`Verified ${image}`);
   } finally {
@@ -182,6 +188,18 @@ async function verifyImage(bundle, architecture, image, environment) {
       ["delete", "--force", instanceName],
       environment,
     );
+  }
+}
+
+// Lima deletes the instance afterwards: show why the image did not boot.
+async function printBootLog(instanceDirectory) {
+  for (const file of ["serial.log", "serialv.log", "ha.stderr.log"]) {
+    const content = await readFile(join(instanceDirectory, file), "utf8").catch(
+      () => undefined,
+    );
+    if (!content) continue;
+    console.error(`--- last lines of ${file}`);
+    console.error(content.split("\n").slice(-60).join("\n"));
   }
 }
 
@@ -209,6 +227,8 @@ async function verifyRuntime(bundle, instanceName, environment) {
     "docker buildx version",
     "test -s /etc/docker/daemon.json",
     "id blame",
+    // Lima creates its own user with UID 1000 on a user's first boot.
+    'test "$(id -u blame)" = 1001',
     "! id blamebuilder >/dev/null 2>&1",
   ].join("\n");
   await runLimactl(
@@ -292,6 +312,13 @@ async function provisionImage(bundle, instanceName, environment) {
     provisioner,
   );
 }
+
+// The VM builder logs in as this user, created by Lima with UID 1000 before
+// provisioning, and finalizeCommands deletes it. The chroot creates it too, so
+// the provisioned blame user still gets UID 1001 and leaves UID 1000 free for
+// the user Lima creates on a user's first boot.
+const builderUserCommand =
+  "useradd --uid 1000 --user-group --create-home --shell /bin/bash blamebuilder";
 
 function bakeEnvironment() {
   return [
