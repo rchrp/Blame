@@ -535,7 +535,10 @@ function parseContainerRows(value: string) {
         service,
         state,
         exitCode: /^\d+$/.test(exitCode ?? "") ? Number(exitCode) : undefined,
-        health: health || undefined,
+        // A stopped container keeps its last health status, often
+        // unhealthy from the stop itself; like Compose, report health only
+        // while the container runs.
+        health: (state === "running" && health) || undefined,
       },
     ];
   });
