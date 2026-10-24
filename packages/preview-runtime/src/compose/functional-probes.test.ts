@@ -2,8 +2,11 @@ import assert from "node:assert/strict";
 import { once } from "node:events";
 import { createServer } from "node:http";
 import test from "node:test";
-import type { PreviewExecutionPlan, ProbePlan } from "@blame/preview-runtime";
-import { runFunctionalProbes } from "./functional-probes.js";
+import type {
+  PreviewExecutionPlan,
+  ProbePlan,
+} from "../domain/execution-plan.js";
+import { runFunctionalProbes } from "./readiness.js";
 
 test("passes host probes with the shared status rule", async (t) => {
   const port = await statusServer(t);

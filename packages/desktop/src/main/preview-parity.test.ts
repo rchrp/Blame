@@ -2,26 +2,33 @@ import assert from "node:assert/strict";
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
-import {
-  generatePreviewArtifacts,
-  parsePreviewManifest,
-} from "@blame/agent-runtime";
+import { parsePreviewManifest } from "@blame/agent-runtime";
 import { compilePreviewManifest, probeEndpoint } from "@blame/preview-runtime";
+import {
+  publishedEndpointKeys,
+  renderCompose,
+} from "@blame/preview-runtime/compose";
 import { parse as parseYaml } from "yaml";
 
-// Local previews run the docker-compose.yml generated from the manifest;
-// cloud previews run the compiled execution plan. For every manifest of the
-// corpus, both must agree on what runs and how it is wired. The compose file
-// is also kept as a golden file so a generator change shows up in review
-// (UPDATE_PREVIEW_GOLDEN=1 rewrites them).
+// Local and cloud previews render one Compose project from the same plan,
+// with a different target. For every manifest of the corpus, both targets
+// must run the same services and setup, wired and checked the same way;
+// only the workspace source, published ports, cache names and sandbox
+// hardening differ. The local render is kept as a golden file so a renderer
+// change shows up in review (UPDATE_PREVIEW_GOLDEN=1 rewrites them).
 
 const corpus = join(import.meta.dirname, "preview-parity-corpus");
-const localOnlyServices = new Set(["blame-volumes-init"]);
+const sandboxOnlyKeys = new Set([
+  "cap_drop",
+  "pids_limit",
+  "read_only",
+  "security_opt",
+  "tmpfs",
+]);
 
-type ComposeService = {
-  depends_on?: Record<string, unknown>;
+type ComposeService = Record<string, unknown> & {
   environment?: Record<string, string>;
-  labels?: Record<string, string>;
+  volumes?: string[];
 };
 
 for (const file of readdirSync(corpus).filter((name) =>
@@ -31,92 +38,108 @@ for (const file of readdirSync(corpus).filter((name) =>
   const manifest = parsePreviewManifest(
     JSON.parse(readFileSync(join(corpus, file), "utf8")),
   );
-  const dockerCompose = generatePreviewArtifacts(manifest).dockerCompose;
-  const compose = parseYaml(dockerCompose).services as Record<
-    string,
-    ComposeService
-  >;
   const plan = compilePreviewManifest(manifest);
+  const keys = publishedEndpointKeys(plan);
+  const local = renderCompose(plan, {
+    kind: "local",
+    projectName: `blame_${name.replace(/-/g, "_")}`,
+    workspacePath: "/home/blame/.local/share/blame/runtime/worktrees/story",
+    projectUser: "1001:1001",
+    hostPorts: Object.fromEntries(
+      keys.map((key, index) => [key, 50_000 + index]),
+    ),
+    dependencyKey: "0123456789ab",
+  });
+  const sandbox = renderCompose(plan, {
+    kind: "sandbox",
+    projectUser: "1000:1000",
+    proxyCertificatePath: "/etc/pki/proxy-ca.pem",
+    browserBindingUrls: Object.fromEntries(
+      keys.map((key) => [key, `https://${key.replace(":", "-")}.preview.test`]),
+    ),
+  });
+  const localServices = services(local.yaml);
+  const sandboxServices = services(sandbox.yaml);
 
-  test(`${name}: local and cloud run the same services and setup`, () => {
-    const setupIds = Object.keys(compose).filter(
-      (id) => compose[id]?.labels?.["blame.setup"] === "true",
-    );
-    const serviceIds = Object.keys(compose).filter(
-      (id) => !localOnlyServices.has(id) && !setupIds.includes(id),
-    );
-    assert.deepEqual(
-      [...serviceIds].sort(),
-      plan.services.map(({ id }) => id).sort(),
-    );
-    assert.deepEqual(
-      [...setupIds].sort(),
-      plan.setup.map(({ id }) => id).sort(),
-    );
-    // The plan's setup order satisfies every local setup dependency.
-    const order = plan.setup.map(({ id }) => id);
-    for (const id of setupIds) {
-      for (const dependency of dependencies(compose[id])) {
-        if (!setupIds.includes(dependency)) continue;
-        assert.ok(
-          order.indexOf(dependency) < order.indexOf(id),
-          `${dependency} runs before ${id}`,
-        );
+  test(`${name}: both targets run the plan's services and setup`, () => {
+    const expected = [
+      ...plan.setup.map(({ id }) => `setup-${id}`),
+      ...plan.services.map(({ id }) => id),
+    ];
+    assert.deepEqual(Object.keys(localServices), expected);
+    assert.deepEqual(Object.keys(sandboxServices), expected);
+  });
+
+  test(`${name}: both targets wire and check services alike`, () => {
+    for (const [id, service] of Object.entries(sandboxServices)) {
+      const other = localServices[id]!;
+      for (const key of new Set([
+        ...Object.keys(service),
+        ...Object.keys(other),
+      ])) {
+        if (
+          [
+            "environment",
+            "ports",
+            "volumes",
+            "build",
+            "user",
+            "restart",
+          ].includes(key)
+        )
+          continue;
+        if (sandboxOnlyKeys.has(key)) continue;
+        assert.deepEqual(other[key], service[key], `${id} ${key}`);
       }
-    }
-  });
-
-  test(`${name}: local and cloud wire dependencies and environment alike`, () => {
-    for (const item of [...plan.setup, ...plan.services]) {
-      const local = compose[item.id];
       assert.deepEqual(
-        dependencies(local).sort(),
-        [...item.dependsOn].sort(),
-        `${item.id} dependencies`,
-      );
-      assert.deepEqual(
-        local?.environment ?? {},
-        item.environment,
-        `${item.id} environment`,
+        withoutTargetValues(other.environment, plan, id, true),
+        withoutTargetValues(service.environment, plan, id, false),
+        `${id} environment`,
       );
     }
   });
 
-  test(`${name}: local and cloud expose the same endpoints and probes`, () => {
-    for (const service of plan.services) {
-      const labels = compose[service.id]?.labels ?? {};
-      const endpoints = service.endpoints.map((_, index) => ({
-        id: labels[`blame.endpoint.${index}.id`],
-        protocol: labels[`blame.endpoint.${index}.protocol`],
-        port: Number(labels[`blame.endpoint.${index}.port`]),
-      }));
-      assert.deepEqual(
-        endpoints,
-        service.endpoints.map(({ id, protocol, port }) => ({
-          id,
-          protocol,
-          port,
-        })),
-        `${service.id} endpoints`,
-      );
-    }
+  test(`${name}: probes target published endpoints`, () => {
     assert.equal(plan.probes.length, manifest.probes.length);
     for (const probe of plan.probes) {
-      assert.ok(probeEndpoint(plan, probe), `${probe.id} target exists`);
+      const endpoint = probeEndpoint(plan, probe);
+      assert.ok(endpoint, `${probe.id} target exists`);
+      assert.ok(local.targets[`${probe.target.serviceId}:${endpoint.id}`]);
     }
   });
 
   test(`${name}: local compose matches its golden file`, () => {
     const golden = join(corpus, `${name}.compose.yml`);
     if (process.env.UPDATE_PREVIEW_GOLDEN === "1") {
-      writeFileSync(golden, dockerCompose);
+      writeFileSync(golden, local.yaml);
     }
-    assert.equal(dockerCompose, readFileSync(golden, "utf8"));
+    assert.equal(local.yaml, readFileSync(golden, "utf8"));
   });
 }
 
-function dependencies(service: ComposeService | undefined) {
-  return Object.keys(service?.depends_on ?? {}).filter(
-    (id) => !localOnlyServices.has(id),
+function services(yaml: string) {
+  return (parseYaml(yaml) as { services: Record<string, ComposeService> })
+    .services;
+}
+
+// Browser bindings resolve to the target's own origin, and the sandbox
+// trusts its proxy certificate; every other value is the plan's.
+function withoutTargetValues(
+  environment: Record<string, string> | undefined,
+  plan: ReturnType<typeof compilePreviewManifest>,
+  id: string,
+  local: boolean,
+) {
+  const browserKeys = new Set(
+    plan.services
+      .find((service) => service.id === id)
+      ?.bindings.filter(({ exposure }) => exposure === "browser")
+      .map(({ targetKey }) => targetKey) ?? [],
+  );
+  return Object.fromEntries(
+    Object.entries(environment ?? {}).filter(
+      ([key]) =>
+        !browserKeys.has(key) && (local || key !== "NODE_EXTRA_CA_CERTS"),
+    ),
   );
 }

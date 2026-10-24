@@ -49,24 +49,32 @@ export function activeProbes(
 export function probeInternalUrl(
   probe: ProbePlan,
   endpoint: ServiceEndpointPlan,
+  host = probe.target.serviceId,
 ) {
-  return `${endpoint.protocol}://${probe.target.serviceId}:${endpoint.port}${probe.target.path}`;
+  return `${endpoint.protocol}://${host}:${endpoint.port}${probe.target.path}`;
 }
 
 // The command that runs a probe inside the container of `probe.from`, so it
 // goes through the same network path as that service. Undefined when the
-// container has no runtime we know how to script.
+// container has no runtime we know how to script. `host` is where the
+// target answers from that container: the target service name, or
+// 127.0.0.1 when a container healthcheck probes itself.
 export function serviceProbeCommand(
-  service: ServiceLaunchPlan,
+  service: Pick<ServiceLaunchPlan, "container" | "command">,
   probe: ProbePlan,
   endpoint: ServiceEndpointPlan,
+  host = probe.target.serviceId,
 ) {
   const javascriptRuntime = serviceJavascriptRuntime(service);
   if (javascriptRuntime) {
-    return [javascriptRuntime, "-e", javascriptProbeScript(probe, endpoint)];
+    return [
+      javascriptRuntime,
+      "-e",
+      javascriptProbeScript(probe, endpoint, host),
+    ];
   }
   if (serviceUsesPython(service)) {
-    return ["python", "-c", pythonProbeScript(probe, endpoint)];
+    return ["python", "-c", pythonProbeScript(probe, endpoint, host)];
   }
   return undefined;
 }
@@ -77,7 +85,9 @@ export function probeFailureMessage(probe: ProbePlan, reason: string) {
   return `Required preview probe ${probe.id} failed on ${target}${path}: ${reason}`;
 }
 
-function serviceJavascriptRuntime(service: ServiceLaunchPlan) {
+type ProbeOrigin = Pick<ServiceLaunchPlan, "container" | "command">;
+
+function serviceJavascriptRuntime(service: ProbeOrigin) {
   const image = service.container.image ?? "";
   const command = service.command ?? "";
   if (/(?:^|\/)bun(?::|$)/.test(image) || /\bbun\b/.test(command)) {
@@ -92,7 +102,7 @@ function serviceJavascriptRuntime(service: ServiceLaunchPlan) {
   return undefined;
 }
 
-function serviceUsesPython(service: ServiceLaunchPlan) {
+function serviceUsesPython(service: ProbeOrigin) {
   return (
     /(?:^|\/)python(?::|$)/.test(service.container.image ?? "") ||
     /\bpython\b/.test(service.command ?? "")
@@ -104,24 +114,29 @@ function serviceUsesPython(service: ServiceLaunchPlan) {
 function javascriptProbeScript(
   probe: ProbePlan,
   endpoint: ServiceEndpointPlan,
+  host: string,
 ) {
   if (probe.type === "tcp") {
-    return `const s=require("net").connect(${endpoint.port},${JSON.stringify(probe.target.serviceId)},()=>process.exit(0));s.once("error",()=>process.exit(1));s.setTimeout(${probe.timeoutMs},()=>process.exit(1))`;
+    return `const s=require("net").connect(${endpoint.port},${JSON.stringify(host)},()=>process.exit(0));s.once("error",()=>process.exit(1));s.setTimeout(${probe.timeoutMs},()=>process.exit(1))`;
   }
   const accepted = JSON.stringify(probe.acceptedStatuses);
-  const url = JSON.stringify(probeInternalUrl(probe, endpoint));
+  const url = JSON.stringify(probeInternalUrl(probe, endpoint, host));
   return `const a=${accepted};fetch(${url},{signal:AbortSignal.timeout(${probe.timeoutMs})}).then(r=>process.exit((a.length?a.includes(r.status):r.status<500)?0:1)).catch(()=>process.exit(1))`;
 }
 
-function pythonProbeScript(probe: ProbePlan, endpoint: ServiceEndpointPlan) {
+function pythonProbeScript(
+  probe: ProbePlan,
+  endpoint: ServiceEndpointPlan,
+  host: string,
+) {
   const timeout = Math.ceil(probe.timeoutMs / 1_000);
   if (probe.type === "tcp") {
-    return `import socket\nsocket.create_connection((${JSON.stringify(probe.target.serviceId)},${endpoint.port}),${timeout}).close()`;
+    return `import socket\nsocket.create_connection((${JSON.stringify(host)},${endpoint.port}),${timeout}).close()`;
   }
   return [
     "import sys,urllib.request,urllib.error",
     `accepted=${JSON.stringify(probe.acceptedStatuses)}`,
-    `url=${JSON.stringify(probeInternalUrl(probe, endpoint))}`,
+    `url=${JSON.stringify(probeInternalUrl(probe, endpoint, host))}`,
     `timeout=${timeout}`,
     "try:\n status=urllib.request.urlopen(url,timeout=timeout).status\nexcept urllib.error.HTTPError as error:\n status=error.code",
     "sys.exit(0 if (status in accepted if accepted else status < 500) else 1)",

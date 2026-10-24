@@ -12,6 +12,10 @@ import type {
   ServiceLaunchPlan,
 } from "../domain/execution-plan.js";
 import { defaultProbeTimeoutMs } from "../domain/functional-probes.js";
+import {
+  launchEnvironment,
+  normalizedLaunchCommand,
+} from "./command-normalization.js";
 import { PreviewRuntimeError } from "../domain/preview-errors.js";
 import { endpointRouteKey } from "../domain/endpoint-map.js";
 import {
@@ -117,10 +121,12 @@ export function compilePreviewManifest(
       id: task.id,
       container: structuredClone(task.container),
       workingDir: task.workingDir || "/workspace",
-      command: task.command,
+      command: normalizedLaunchCommand(task.command),
       entrypoint: task.entrypoint ? [...task.entrypoint] : undefined,
       runAs: task.runAs ?? "host",
-      environment: { ...(task.environment ?? {}) },
+      environment: launchEnvironment(task.command, {
+        ...(task.environment ?? {}),
+      }),
       dependsOn: [...(task.dependsOn ?? [])],
     })),
     services,
@@ -226,10 +232,12 @@ function compileService(
     kind: service.kind,
     container: structuredClone(service.container),
     workingDir: service.workingDir || "/workspace",
-    command: service.command,
+    command: service.command && normalizedLaunchCommand(service.command),
     entrypoint: service.entrypoint ? [...service.entrypoint] : undefined,
     user: service.user,
-    environment: { ...(service.environment ?? {}) },
+    environment: launchEnvironment(service.command, {
+      ...(service.environment ?? {}),
+    }),
     dependsOn: [
       ...new Set([
         ...(service.dependsOn ?? []).filter((id) => serviceIds.has(id)),

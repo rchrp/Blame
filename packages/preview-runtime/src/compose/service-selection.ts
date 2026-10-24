@@ -1,15 +1,15 @@
 import type {
   PreviewExecutionPlan,
   RuntimeSelection,
-} from "@blame/preview-runtime";
-import { runnerError } from "../protocol/runner-errors.js";
+} from "../domain/execution-plan.js";
+import { ComposeEngineError } from "./docker-host.js";
 
 export function normalizeRuntimeSelection(
   plan: PreviewExecutionPlan,
   requested: RuntimeSelection,
 ): RuntimeSelection {
   if (!requested.configurationId?.trim()) {
-    throw runnerError(
+    throw new ComposeEngineError(
       "INVALID_SELECTION",
       "A preview configuration ID is required.",
     );
@@ -22,7 +22,7 @@ export function normalizeRuntimeSelection(
   );
   const unknown = [...selected].filter((id) => !services.has(id));
   if (unknown.length) {
-    throw runnerError(
+    throw new ComposeEngineError(
       "INVALID_SELECTION",
       `Unknown selected services: ${unknown.join(", ")}.`,
     );
@@ -54,7 +54,7 @@ function assertPrimaryRoute(
       endpointId === primaryRoute.endpointId,
   );
   if (!listener || !selected.has(primaryRoute.serviceId)) {
-    throw runnerError(
+    throw new ComposeEngineError(
       "INVALID_SELECTION",
       "The primary route must identify a published endpoint in the selected service set.",
     );
@@ -89,7 +89,7 @@ function assertLogicalPortsUnambiguous(
     if (!selected.has(listener.serviceId)) continue;
     const owner = ports.get(listener.logicalPort);
     if (owner && owner !== listener.serviceId) {
-      throw runnerError(
+      throw new ComposeEngineError(
         "DUPLICATE_LOGICAL_PORT",
         `Selected services ${owner} and ${listener.serviceId} both publish localhost:${listener.logicalPort}.`,
       );

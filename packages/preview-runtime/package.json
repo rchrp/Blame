@@ -16,16 +16,21 @@
     "./workspace-ignore": {
       "types": "./src/workspace/workspace-ignore.ts",
       "default": "./dist/workspace/workspace-ignore.js"
+    },
+    "./compose": {
+      "types": "./src/compose/index.ts",
+      "default": "./dist/compose/index.js"
     }
   },
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "test": "pnpm build && node --test dist/**/*.test.js"
+    "test": "pnpm build && node --test dist/*.test.js dist/**/*.test.js"
   },
   "dependencies": {
     "@blame/preview-contract": "workspace:*",
-    "ignore": "7.0.5"
+    "ignore": "7.0.5",
+    "yaml": "2.9.0"
   },
   "devDependencies": {
     "@types/node": "^24.12.0",

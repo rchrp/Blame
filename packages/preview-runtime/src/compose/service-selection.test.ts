@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import type { PreviewExecutionPlan } from "@blame/preview-runtime";
+import type { PreviewExecutionPlan } from "../domain/execution-plan.js";
 import {
   normalizeRuntimeSelection,
   selectedSetupTasks,
-} from "./runtime-selection.js";
+} from "./service-selection.js";
 
 const plan = {
   version: 2,

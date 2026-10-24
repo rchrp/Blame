@@ -1,107 +1,160 @@
+name: blame_django_postgres_redis
 services:
-  blame-volumes-init:
-    image: node:22-bookworm-slim
-    command: "sh -lc \"mkdir -p /cache/pip && chown -R 0:0 /cache/pip\""
-    volumes:
-      - "blame_pip_cache:/cache/pip"
-  migrate:
-    image: "python:3.13-bookworm"
-    working_dir: "/workspace"
-    command: "sh -lc 'pip install -r requirements.txt && python manage.py migrate --noinput'"
-    labels:
-      blame.setup: "true"
+  setup-migrate:
+    image: python:3.13-bookworm
+    profiles:
+      - setup
+    command:
+      - /bin/sh
+      - -lc
+      - pip install -r requirements.txt && python manage.py migrate --noinput
+    working_dir: /workspace
     environment:
-      DATABASE_URL: "postgres://blame:blame@postgres:5432/app"
-      DJANGO_SECRET_KEY: "development-only"
-      PIP_CACHE_DIR: "/cache/pip"
+      HOME: /tmp/blame-home
+      XDG_CACHE_HOME: /tmp/blame-home/.cache
+      DATABASE_URL: postgres://blame:blame@postgres:5432/app
+      DJANGO_SECRET_KEY: development-only
+      PIP_CACHE_DIR: /cache/pip
     depends_on:
-      blame-volumes-init:
-        condition: service_completed_successfully
       postgres:
-        condition: service_started
+        condition: service_healthy
     volumes:
-      - "${BLAME_PROJECT_ROOT}:/workspace"
-      - "blame_pip_cache:/cache/pip"
-  postgres:
-    image: "postgres:17"
-    environment:
-      PIP_CACHE_DIR: "/cache/pip"
-      POSTGRES_DB: "app"
-      POSTGRES_PASSWORD: "blame"
-      POSTGRES_USER: "blame"
+      - /home/blame/.local/share/blame/runtime/worktrees/story:/workspace
+      - cache-blame_pip_cache:/cache/pip
+    user: 1001:1001
+    restart: no
+    init: true
+    stop_grace_period: 5s
     labels:
-      blame.service.id: "postgres"
-      blame.service.kind: "dependency"
-      blame.endpoint.0.id: "postgres"
-      blame.endpoint.0.protocol: "tcp"
-      blame.endpoint.0.port: "5432"
-  redis:
-    image: "redis:7"
-    environment:
-      PIP_CACHE_DIR: "/cache/pip"
-    labels:
-      blame.service.id: "redis"
-      blame.service.kind: "dependency"
-      blame.endpoint.0.id: "redis"
-      blame.endpoint.0.protocol: "tcp"
-      blame.endpoint.0.port: "6379"
-  worker:
-    image: "python:3.13-bookworm"
-    working_dir: "/workspace"
-    command: "sh -lc 'celery -A app worker'"
-    environment:
-      BROKER_URL: "redis://redis:6379/0"
-      DATABASE_URL: "postgres://blame:blame@postgres:5432/app"
-      DJANGO_SECRET_KEY: "development-only"
-      PIP_CACHE_DIR: "/cache/pip"
-    labels:
-      blame.service.id: "worker"
-      blame.service.kind: "worker"
-    depends_on:
-      redis:
-        condition: service_started
-      postgres:
-        condition: service_started
-    volumes:
-      - "${BLAME_PROJECT_ROOT}:/workspace"
-      - "blame_pip_cache:/cache/pip"
-  web:
-    image: "python:3.13-bookworm"
-    working_dir: "/workspace"
-    command: "sh -lc 'python manage.py runserver 0.0.0.0:8000'"
-    environment:
-      BROKER_URL: "redis://redis:6379/0"
-      DATABASE_URL: "postgres://blame:blame@postgres:5432/app"
-      DJANGO_SECRET_KEY: "development-only"
-      HOST: "0.0.0.0"
-      PIP_CACHE_DIR: "/cache/pip"
-      PORT: "8000"
-    labels:
-      blame.service.id: "web"
-      blame.service.kind: "preview"
       blame.preview: "true"
-      blame.preview.port: "8000"
-      blame.preview.protocol: "http"
-      blame.preview.path: "/health/"
-      blame.endpoint.0.id: "http"
-      blame.endpoint.0.protocol: "http"
-      blame.endpoint.0.port: "8000"
+  postgres:
+    image: postgres:17
+    environment:
+      HOME: /tmp/blame-home
+      XDG_CACHE_HOME: /tmp/blame-home/.cache
+      POSTGRES_DB: app
+      POSTGRES_PASSWORD: blame
+      POSTGRES_USER: blame
+      PIP_CACHE_DIR: /cache/pip
     ports:
-      - "127.0.0.1::8000"
+      - 127.0.0.1:50000:5432
     healthcheck:
       test:
         - CMD-SHELL
-        - "python -c 'import sys,urllib.request,urllib.error\ntry:\n urllib.request.urlopen(\"http://127.0.0.1:8000/health/\",timeout=4).close()\nexcept urllib.error.HTTPError as error:\n sys.exit(0 if error.code<500 else 1)'"
-      interval: 5s
+        - pg_isready -h 127.0.0.1 -q
+      interval: 10s
       timeout: 5s
-      retries: 12
+      retries: 3
+      start_period: 60s
+      start_interval: 1s
+    restart: on-failure:3
+    init: true
+    stop_grace_period: 5s
+    labels:
+      blame.preview: "true"
+  redis:
+    image: redis:7
+    environment:
+      HOME: /tmp/blame-home
+      XDG_CACHE_HOME: /tmp/blame-home/.cache
+      PIP_CACHE_DIR: /cache/pip
+    ports:
+      - 127.0.0.1:50001:6379
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - redis-cli -h 127.0.0.1 ping || valkey-cli -h 127.0.0.1 ping
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+      start_interval: 1s
+    restart: on-failure:3
+    init: true
+    stop_grace_period: 5s
+    labels:
+      blame.preview: "true"
+  worker:
+    image: python:3.13-bookworm
+    command:
+      - /bin/sh
+      - -lc
+      - celery -A app worker
+    working_dir: /workspace
+    environment:
+      HOME: /tmp/blame-home
+      XDG_CACHE_HOME: /tmp/blame-home/.cache
+      BROKER_URL: redis://redis:6379/0
+      DATABASE_URL: postgres://blame:blame@postgres:5432/app
+      DJANGO_SECRET_KEY: development-only
+      PIP_CACHE_DIR: /cache/pip
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    volumes:
+      - /home/blame/.local/share/blame/runtime/worktrees/story:/workspace
+      - cache-blame_pip_cache:/cache/pip
+    user: 1001:1001
+    restart: on-failure:3
+    init: true
+    stop_grace_period: 5s
+    labels:
+      blame.preview: "true"
+  web:
+    image: python:3.13-bookworm
+    command:
+      - /bin/sh
+      - -lc
+      - python manage.py runserver 0.0.0.0:8000
+    working_dir: /workspace
+    environment:
+      HOME: /tmp/blame-home
+      XDG_CACHE_HOME: /tmp/blame-home/.cache
+      BROKER_URL: redis://redis:6379/0
+      DATABASE_URL: postgres://blame:blame@postgres:5432/app
+      DJANGO_SECRET_KEY: development-only
+      HOST: 0.0.0.0
+      PORT: "8000"
+      PIP_CACHE_DIR: /cache/pip
     depends_on:
       postgres:
-        condition: service_started
+        condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
+    ports:
+      - 127.0.0.1:50002:8000
     volumes:
-      - "${BLAME_PROJECT_ROOT}:/workspace"
-      - "blame_pip_cache:/cache/pip"
+      - /home/blame/.local/share/blame/runtime/worktrees/story:/workspace
+      - cache-blame_pip_cache:/cache/pip
+    user: 1001:1001
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - |-
+          import sys,urllib.request,urllib.error
+          accepted=[]
+          url="http://127.0.0.1:8000/health/"
+          timeout=4
+          try:
+           status=urllib.request.urlopen(url,timeout=timeout).status
+          except urllib.error.HTTPError as error:
+           status=error.code
+          sys.exit(0 if (status in accepted if accepted else status < 500) else 1)
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+      start_interval: 1s
+    restart: on-failure:3
+    init: true
+    stop_grace_period: 5s
+    labels:
+      blame.preview: "true"
 volumes:
-  blame_pip_cache:
+  cache-blame_pip_cache:
+    name: blame_pip_cache
+    external: true

@@ -3,8 +3,8 @@ import { createServer } from "node:http";
 import { once } from "node:events";
 import net from "node:net";
 import test from "node:test";
-import type { PreviewExecutionPlan } from "@blame/preview-runtime";
-import { probeServices } from "./service-probes.js";
+import type { PreviewExecutionPlan } from "../domain/execution-plan.js";
+import { probeServices } from "./readiness.js";
 
 test("retries health checks during the declared readiness window", async () => {
   let attempts = 0;

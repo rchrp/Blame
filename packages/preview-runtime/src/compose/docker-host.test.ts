@@ -1,16 +1,16 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { composeCommandFailureDetail } from "./compose-command-detail.js";
+import { commandFailureDetail } from "./docker-host.js";
 
 test("preserves short Compose command output", () => {
   assert.equal(
-    composeCommandFailureDetail(" warning \n", " result \n"),
+    commandFailureDetail(" warning \n", " result \n"),
     "warning\nresult",
   );
 });
 
 test("preserves the fatal tail after noisy Compose warnings", () => {
-  const detail = composeCommandFailureDetail(
+  const detail = commandFailureDetail(
     `first warning\n${"repeated warning\n".repeat(100)}`,
     "fatal: container creation failed",
   );

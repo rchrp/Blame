@@ -64,7 +64,7 @@ RUN dnf upgrade -y \
       --output /tmp/docker.tar.gz \
     && echo "${DOCKER_SHA256}  /tmp/docker.tar.gz" | sha256sum --check --strict \
     && tar -xzf /tmp/docker.tar.gz -C /tmp \
-    && install -m 0755 /tmp/docker/docker /tmp/docker/docker-proxy /tmp/docker/dockerd /tmp/docker/containerd /tmp/docker/containerd-shim-runc-v2 /tmp/docker/runc /usr/local/bin/ \
+    && install -m 0755 /tmp/docker/docker /tmp/docker/docker-init /tmp/docker/docker-proxy /tmp/docker/dockerd /tmp/docker/containerd /tmp/docker/containerd-shim-runc-v2 /tmp/docker/runc /usr/local/bin/ \
     && mkdir -p /usr/local/lib/docker/cli-plugins \
     && curl --fail --silent --show-error --location \
       "https://github.com/docker/compose/releases/download/v${COMPOSE_VERSION}/docker-compose-linux-x86_64" \

@@ -1,94 +1,117 @@
+name: blame_vite_api_browser_binding
 services:
-  blame-volumes-init:
-    image: node:22-bookworm-slim
-    command: "sh -lc \"mkdir -p /workspace/node_modules /npm/cache && chown -R 0:0 /workspace/node_modules /npm/cache\""
-    volumes:
-      - "blame_node_modules:/workspace/node_modules"
-      - "blame_npm_cache:/npm/cache"
-  install:
-    image: "node:24-bookworm"
-    working_dir: "/workspace"
-    command: "sh -lc 'npm ci'"
-    labels:
-      blame.setup: "true"
+  setup-install:
+    image: node:24-bookworm
+    profiles:
+      - setup
+    command:
+      - /bin/sh
+      - -lc
+      - npm ci
+    working_dir: /workspace
     environment:
-      NPM_CONFIG_CACHE: "/npm/cache"
-    depends_on:
-      blame-volumes-init:
-        condition: service_completed_successfully
+      HOME: /tmp/blame-home
+      XDG_CACHE_HOME: /tmp/blame-home/.cache
+      NPM_CONFIG_CACHE: /npm/cache
+      CI: "true"
     volumes:
-      - "${BLAME_PROJECT_ROOT}:/workspace"
-      - "blame_node_modules:/workspace/node_modules"
-      - "blame_npm_cache:/npm/cache"
+      - /home/blame/.local/share/blame/runtime/worktrees/story:/workspace
+      - cache-blame_node_modules:/workspace/node_modules
+      - cache-blame_npm_cache:/npm/cache
+      - deps-api:/workspace/api/node_modules
+      - deps-web:/workspace/web/node_modules
+    user: 1001:1001
+    restart: no
+    init: true
+    stop_grace_period: 5s
+    labels:
+      blame.preview: "true"
   api:
-    image: "node:24-bookworm"
-    working_dir: "/workspace/api"
-    command: "sh -lc 'npm run dev'"
+    image: node:24-bookworm
+    command:
+      - /bin/sh
+      - -lc
+      - npm run dev
+    working_dir: /workspace/api
     environment:
-      HOST: "0.0.0.0"
-      NPM_CONFIG_CACHE: "/npm/cache"
+      HOME: /tmp/blame-home
+      XDG_CACHE_HOME: /tmp/blame-home/.cache
       PORT: "3333"
-      SESSION_SECRET: "dev"
-    labels:
-      blame.service.id: "api"
-      blame.service.kind: "preview"
-      blame.preview: "true"
-      blame.preview.port: "3333"
-      blame.preview.protocol: "http"
-      blame.preview.path: "/health"
-      blame.endpoint.0.id: "http"
-      blame.endpoint.0.protocol: "http"
-      blame.endpoint.0.port: "3333"
+      SESSION_SECRET: dev
+      HOST: 0.0.0.0
+      NPM_CONFIG_CACHE: /npm/cache
     ports:
-      - "127.0.0.1::3333"
+      - 127.0.0.1:50000:3333
+    volumes:
+      - /home/blame/.local/share/blame/runtime/worktrees/story:/workspace
+      - cache-blame_node_modules:/workspace/node_modules
+      - cache-blame_npm_cache:/npm/cache
+      - deps-api:/workspace/api/node_modules
+    user: 1001:1001
     healthcheck:
       test:
-        - CMD-SHELL
-        - "node -e 'fetch(\"http://127.0.0.1:3333/health\").then(r=>process.exit(r.status<500?0:1)).catch(()=>process.exit(1))'"
-      interval: 5s
+        - CMD
+        - node
+        - -e
+        - const a=[];fetch("http://127.0.0.1:3333/health",{signal:AbortSignal.timeout(4000)}).then(r=>process.exit((a.length?a.includes(r.status):r.status<500)?0:1)).catch(()=>process.exit(1))
+      interval: 10s
       timeout: 5s
-      retries: 6
-    volumes:
-      - "${BLAME_PROJECT_ROOT}:/workspace"
-      - "blame_node_modules:/workspace/node_modules"
-      - "blame_npm_cache:/npm/cache"
+      retries: 3
+      start_period: 30s
+      start_interval: 1s
+    restart: on-failure:3
+    init: true
+    stop_grace_period: 5s
+    labels:
+      blame.preview: "true"
   frontend:
-    image: "node:24-bookworm"
-    working_dir: "/workspace/web"
-    command: "sh -lc 'npm run dev -- --host 0.0.0.0 --port 5173'"
+    image: node:24-bookworm
+    command:
+      - /bin/sh
+      - -lc
+      - npm run dev -- --host 0.0.0.0 --port 5173
+    working_dir: /workspace/web
     environment:
-      HOST: "0.0.0.0"
-      NPM_CONFIG_CACHE: "/npm/cache"
+      HOME: /tmp/blame-home
+      XDG_CACHE_HOME: /tmp/blame-home/.cache
+      HOST: 0.0.0.0
       PORT: "5173"
-      VITE_API_URL: "http://localhost:__BLAME_PREVIEW_PORT_api_3333__"
-    labels:
-      blame.service.id: "frontend"
-      blame.service.kind: "preview"
-      blame.preview: "true"
-      blame.preview.port: "5173"
-      blame.preview.protocol: "http"
-      blame.preview.path: "/"
-      blame.endpoint.0.id: "http"
-      blame.endpoint.0.protocol: "http"
-      blame.endpoint.0.port: "5173"
-      blame.binding.0.key: "VITE_API_URL"
-      blame.binding.0.source.service: "api"
-      blame.binding.0.source.endpoint: "http"
-      blame.binding.0.exposure: "browser"
-      blame.binding.0.format: "url"
+      NPM_CONFIG_CACHE: /npm/cache
+      VITE_API_URL: http://localhost:50000
     ports:
-      - "127.0.0.1::5173"
+      - 127.0.0.1:50001:5173
+    volumes:
+      - /home/blame/.local/share/blame/runtime/worktrees/story:/workspace
+      - cache-blame_node_modules:/workspace/node_modules
+      - cache-blame_npm_cache:/npm/cache
+      - deps-web:/workspace/web/node_modules
+    user: 1001:1001
     healthcheck:
       test:
-        - CMD-SHELL
-        - "node -e 'fetch(\"http://127.0.0.1:5173/\").then(r=>process.exit(r.status<500?0:1)).catch(()=>process.exit(1))'"
-      interval: 5s
+        - CMD
+        - node
+        - -e
+        - const a=[];fetch("http://127.0.0.1:5173/",{signal:AbortSignal.timeout(4000)}).then(r=>process.exit((a.length?a.includes(r.status):r.status<500)?0:1)).catch(()=>process.exit(1))
+      interval: 10s
       timeout: 5s
-      retries: 6
-    volumes:
-      - "${BLAME_PROJECT_ROOT}:/workspace"
-      - "blame_node_modules:/workspace/node_modules"
-      - "blame_npm_cache:/npm/cache"
+      retries: 3
+      start_period: 30s
+      start_interval: 1s
+    restart: on-failure:3
+    init: true
+    stop_grace_period: 5s
+    labels:
+      blame.preview: "true"
 volumes:
-  blame_node_modules:
-  blame_npm_cache:
+  cache-blame_node_modules:
+    name: blame_node_modules_0123456789ab
+    external: true
+  cache-blame_npm_cache:
+    name: blame_npm_cache
+    external: true
+  deps-api:
+    name: blame_node_modules_0123456789ab_api
+    external: true
+  deps-web:
+    name: blame_node_modules_0123456789ab_web
+    external: true

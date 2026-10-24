@@ -1,0 +1,207 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import type { PreviewExecutionPlan } from "../domain/execution-plan.js";
+import { ComposeEngine } from "./compose-engine.js";
+import { renderCompose } from "./compose-renderer.js";
+import type { LocalComposeTarget } from "./compose-target.js";
+import type { CommandResult, DockerHost } from "./docker-host.js";
+
+// A Docker host that records commands and keeps files in memory. Volumes
+// live in one shared map, like the volumes of one Docker daemon.
+class FakeHost implements DockerHost {
+  readonly commands: string[][] = [];
+  readonly files = new Map<string, string>();
+  databaseContainer = "db-1";
+
+  async run(command: string, args: string[]): Promise<CommandResult> {
+    this.commands.push([command, ...args]);
+    if (command === "sh") {
+      const names = [
+        ...args[1]!.matchAll(/docker volume create .* '([^']+)'/g),
+      ].map((match) => match[1]!);
+      return ok(
+        names
+          .map((name) => `${name}\t/var/lib/docker/volumes/${name}/_data\n`)
+          .join(""),
+      );
+    }
+    if (args.includes("ps") && args.includes("--quiet")) {
+      return ok(`${this.databaseContainer}\n`);
+    }
+    return ok("");
+  }
+
+  async readFile(path: string) {
+    return this.files.get(path);
+  }
+
+  async writeFile(path: string, content: string) {
+    this.files.set(path, content);
+  }
+
+  composeRuns() {
+    return this.commands
+      .filter((command) => command.includes("run"))
+      .map((command) => command.at(-1));
+  }
+}
+
+test("writes the Compose file once and prepares owned volumes", async () => {
+  const host = new FakeHost();
+  const engine = engineFor(host, "story-a");
+  const rendered = renderCompose(plan(), target("story-a"));
+  assert.deepEqual(await engine.prepare(rendered, owner), { changed: true });
+  assert.deepEqual(await engine.prepare(rendered, owner), { changed: false });
+  const volumeScript = host.commands.find(([command]) => command === "sh")!;
+  assert.match(volumeScript[2]!, /chown 1001:1001 "\$mp"/);
+  assert.match(volumeScript[2]!, /blame_node_modules_abc123/);
+  assert.equal(host.files.get("/state/story-a/compose.yaml"), rendered.yaml);
+});
+
+test("starts services with Docker waiting for health", async () => {
+  const host = new FakeHost();
+  const engine = engineFor(host, "story-a");
+  await engine.prepare(renderCompose(plan(), target("story-a")), owner);
+  await engine.start(plan(), ["web", "db"], fingerprints);
+  const up = [...host.commands]
+    .reverse()
+    .find((command) => command.includes("up"))!;
+  assert.deepEqual(up.slice(up.indexOf("up")), [
+    "up",
+    "--detach",
+    "--wait",
+    "--wait-timeout",
+    "600",
+    "--remove-orphans",
+    "--no-build",
+    "web",
+    "db",
+  ]);
+  assert.deepEqual(host.composeRuns(), ["setup-install", "setup-migrate"]);
+});
+
+test("a worktree sharing the dependency volume skips the install", async () => {
+  const host = new FakeHost();
+  const first = engineFor(host, "story-a");
+  await first.prepare(renderCompose(plan(), target("story-a")), owner);
+  await first.start(plan(), ["web", "db"], fingerprints);
+  const second = engineFor(host, "story-b");
+  await second.prepare(renderCompose(plan(), target("story-b")), owner);
+  host.commands.length = 0;
+  await second.start(plan(), ["web", "db"], fingerprints);
+  // Its own database still needs the migration.
+  assert.deepEqual(host.composeRuns(), ["setup-migrate"]);
+});
+
+test("reruns a setup task when its dependency is recreated", async () => {
+  const host = new FakeHost();
+  const engine = engineFor(host, "story-a");
+  await engine.prepare(renderCompose(plan(), target("story-a")), owner);
+  await engine.start(plan(), ["web", "db"], fingerprints);
+  host.commands.length = 0;
+  await engine.start(plan(), ["web", "db"], fingerprints);
+  assert.deepEqual(host.composeRuns(), []);
+  host.databaseContainer = "db-2";
+  await engine.start(plan(), ["web", "db"], fingerprints);
+  assert.deepEqual(host.composeRuns(), ["setup-migrate"]);
+});
+
+test("stops without removing containers unless asked", async () => {
+  const host = new FakeHost();
+  const engine = engineFor(host, "story-a");
+  await engine.stop();
+  assert.equal(host.commands.length, 0, "nothing to stop before prepare");
+  await engine.prepare(renderCompose(plan(), target("story-a")), owner);
+  await engine.stop();
+  await engine.stop({ remove: true });
+  const [stop, down] = host.commands.slice(-2);
+  assert.ok(stop!.includes("stop"));
+  assert.ok(down!.includes("down"));
+});
+
+const owner = { uid: 1001, gid: 1001 };
+const fingerprints = { lockfiles: async () => "lock-1" };
+
+function engineFor(host: DockerHost, story: string) {
+  return new ComposeEngine({ host, stateDirectory: `/state/${story}` });
+}
+
+function target(story: string): LocalComposeTarget {
+  return {
+    kind: "local",
+    projectName: `blame_${story.replace("-", "")}`,
+    workspacePath: `/worktrees/${story}`,
+    projectUser: "1001:1001",
+    hostPorts: { "web:http": 51000, "db:sql": 51001 },
+    dependencyKey: "abc123",
+  };
+}
+
+function plan(): PreviewExecutionPlan {
+  const node = { image: "node:24" };
+  return {
+    version: 2,
+    workspaceRoot: "/workspace",
+    setup: [
+      {
+        id: "install",
+        container: node,
+        workingDir: "/workspace",
+        command: "corepack pnpm install",
+        runAs: "host",
+        environment: {},
+        dependsOn: [],
+      },
+      {
+        id: "migrate",
+        container: node,
+        workingDir: "/workspace",
+        command: "corepack pnpm prisma migrate deploy",
+        runAs: "host",
+        environment: {},
+        dependsOn: ["install", "db"],
+      },
+    ],
+    services: [
+      {
+        id: "web",
+        kind: "preview",
+        container: node,
+        workingDir: "/workspace",
+        command: "corepack pnpm dev",
+        environment: {},
+        dependsOn: ["db"],
+        endpoints: [{ id: "http", protocol: "http", port: 3000 }],
+        bindings: [],
+      },
+      {
+        id: "db",
+        kind: "dependency",
+        container: { image: "postgres:17" },
+        workingDir: "/workspace",
+        environment: {},
+        dependsOn: [],
+        endpoints: [{ id: "sql", protocol: "tcp", port: 5432 }],
+        bindings: [],
+      },
+    ],
+    caches: [{ name: "blame_node_modules", target: "/workspace/node_modules" }],
+    probes: [],
+    environmentPlan: { cleanupRequired: true, entries: [] },
+    networking: {
+      gatewayListeners: [],
+      loopbackGroups: [],
+      publishedPortCount: 0,
+      browserBindingCount: 0,
+      requiresSharedLoopback: false,
+      requiresWebSockets: false,
+      integratedPreviewRequired: false,
+      incompatibilityReasons: [],
+    },
+    detectedCompatibility: [],
+  };
+}
+
+function ok(stdout: string): CommandResult {
+  return { exitCode: 0, stdout, stderr: "" };
+}

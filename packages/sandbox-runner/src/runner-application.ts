@@ -28,9 +28,11 @@ import {
 } from "./runtime-state.js";
 import { runtimePaths } from "./runtime-paths.js";
 import { ComposeSupervisor } from "./supervisor/compose-supervisor.js";
-import { normalizeRuntimeSelection } from "./supervisor/runtime-selection.js";
-import { runFunctionalProbes } from "./supervisor/functional-probes.js";
-import { probeServices } from "./supervisor/service-probes.js";
+import {
+  normalizeRuntimeSelection,
+  probeServices,
+  runFunctionalProbes,
+} from "@blame/preview-runtime/compose";
 import { GatewaySupervisor } from "./gateway/gateway-supervisor.js";
 import { importSourceArtifact } from "./workspace/source-importer.js";
 import { liveSourceImportAllowed } from "./workspace/source-import-policy.js";
