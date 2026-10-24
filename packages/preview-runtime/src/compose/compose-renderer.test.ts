@@ -78,6 +78,7 @@ test("renders local services on the worktree with host ports", () => {
   assert.equal(compose.name, "blame_abc123");
   assert.equal(frontend!.cap_drop, undefined);
   assert.equal(frontend!.user, "1001:1001");
+  assert.equal(frontend!.restart, "no");
   assert.deepEqual(frontend!.ports, ["127.0.0.1:51000:3000"]);
   assert.deepEqual(db!.ports, ["127.0.0.1:51002:5432"]);
   assert.deepEqual(rendered.targets["backend:api"], {

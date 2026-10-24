@@ -59,7 +59,7 @@ services:
       retries: 3
       start_period: 30s
       start_interval: 1s
-    restart: on-failure:3
+    restart: no
     init: true
     stop_grace_period: 5s
     labels:
@@ -97,7 +97,7 @@ services:
       retries: 3
       start_period: 30s
       start_interval: 1s
-    restart: on-failure:3
+    restart: no
     init: true
     stop_grace_period: 5s
     labels:

@@ -49,7 +49,7 @@ services:
       retries: 3
       start_period: 60s
       start_interval: 1s
-    restart: on-failure:3
+    restart: no
     init: true
     stop_grace_period: 5s
     labels:
@@ -73,7 +73,7 @@ services:
       retries: 3
       start_period: 60s
       start_interval: 1s
-    restart: on-failure:3
+    restart: no
     init: true
     stop_grace_period: 5s
     labels:
@@ -101,7 +101,7 @@ services:
       - /home/blame/.local/share/blame/runtime/worktrees/story:/workspace
       - cache-blame_pip_cache:/cache/pip
     user: 1001:1001
-    restart: on-failure:3
+    restart: no
     init: true
     stop_grace_period: 5s
     labels:
@@ -153,7 +153,7 @@ services:
       retries: 3
       start_period: 60s
       start_interval: 1s
-    restart: on-failure:3
+    restart: no
     init: true
     stop_grace_period: 5s
     labels:

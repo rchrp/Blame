@@ -174,8 +174,10 @@ function runtimeService(service: ServiceLaunchPlan, context: RenderContext) {
     ),
     user: serviceUser(service, context.target),
     healthcheck: context.healthchecks.get(service.id),
-    restart:
-      context.target.kind === "sandbox" ? "unless-stopped" : "on-failure:3",
+    // Locally the desktop restarts the previews people want running: a
+    // Docker policy would also bring back stopped ones whenever the Blame
+    // Runtime restarts.
+    restart: context.target.kind === "sandbox" ? "unless-stopped" : "no",
   });
 }
 

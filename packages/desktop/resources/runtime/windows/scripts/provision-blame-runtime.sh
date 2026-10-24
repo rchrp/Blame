@@ -385,7 +385,11 @@ trim_guest_services() {
     ModemManager.service multipathd.service multipathd.socket \
     udisks2.service unattended-upgrades.service packagekit.service \
     apt-daily.timer apt-daily-upgrade.timer motd-news.timer \
-    fwupd-refresh.timer man-db.timer; do
+    fwupd.service fwupd-refresh.timer man-db.timer \
+    rsyslog.service syslog.socket \
+    update-notifier-download.timer update-notifier-motd.timer \
+    sysstat-collect.timer sysstat-summary.timer \
+    e2scrub_all.timer dpkg-db-backup.timer; do
     systemctl disable --now "$unit" >/dev/null 2>&1 || true
     systemctl mask "$unit" >/dev/null 2>&1 || true
   done
