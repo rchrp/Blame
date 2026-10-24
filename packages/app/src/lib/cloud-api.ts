@@ -436,8 +436,6 @@ export function createCloudApi(connection: CloudApiConnection) {
       input: {
         clineSessionId?: string | null
         previewManifest: PreviewManifest
-        setupScript: string
-        dockerCompose: string
         runConfigurations: ProjectRunConfiguration[]
         databaseMode?: "existing" | "compose" | null
       }

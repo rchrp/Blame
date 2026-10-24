@@ -13,7 +13,7 @@ Use only the supplied canonical `previewManifest`, diagnostics, discovered proje
 - Preserve the current manifest intent as much as possible.
 - Do not make framework-specific assumptions unsupported by diagnostics.
 - Do not diagnose general application bugs as initialization issues.
-- For repairable initialization, return a corrected `previewManifest`, not dockerCompose or setupScript. Blame validates, normalizes, and generates those artifacts.
+- For repairable initialization, return a corrected `previewManifest`, never a Compose file or a setup script. Blame validates and normalizes the manifest and runs it.
 </scope_contract>
 
 <classification_contract>

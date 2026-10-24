@@ -78,8 +78,6 @@ type InitializationFeedback = {
 type GeneratedProjectInitializationResult = {
   sessionId: string
   previewManifest: PreviewManifest
-  setupScript: string
-  dockerCompose: string
   runConfigurations: ProjectRunConfiguration[]
 }
 
@@ -622,8 +620,6 @@ function openGeneratedProjectWithInitialization(
   return input.openGeneratedProject(input.path, {
     clineSessionId: initialization.sessionId,
     previewManifest: initialization.previewManifest,
-    setupScript: initialization.setupScript,
-    dockerCompose: initialization.dockerCompose,
     runConfigurations: initialization.runConfigurations,
   })
 }

@@ -229,8 +229,6 @@ export function parseProjectInitializationAttempt(
   return {
     sessionId: attempt.sessionId,
     previewManifest: initialization.previewManifest,
-    setupScript: initialization.setupScript,
-    dockerCompose: initialization.dockerCompose,
     runConfigurations: initialization.runConfigurations,
   };
 }

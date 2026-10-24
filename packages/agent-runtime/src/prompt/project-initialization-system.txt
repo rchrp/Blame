@@ -31,7 +31,7 @@ A native or otherwise host-only launch surface is valid with `services: []`, for
 - Prefer explicit scripts, config files, lockfiles, env examples, framework conventions, and scan evidence over guesses.
 - Use lockfile and manifest paths as evidence even when their contents are intentionally omitted. Never request or infer secrets from real environment files.
 - Discovery counts may exceed the bounded path and content samples. Treat omitted files as uncertainty, and use the two fallback tools only when a missing fact changes the runtime result.
-- Treat generated `setupScript` and `dockerCompose` as derived artifacts. The canonical `previewManifest` is the only source of truth.
+- The canonical `previewManifest` is the only source of truth: Blame renders and runs the Compose project from it.
 - Be conservative with confidence. Use `low` or `medium` when scan evidence is partial.
 - Include non-blocking concerns in `previewManifest.risks[]`; do not require manual user steps.
 - A browser preview is optional. Never invent an HTTP server, port, long-running command, or preview surface for a library, CLI, batch, worker, or project without explicit browser-facing evidence.
@@ -187,7 +187,7 @@ Before calling the tool, ensure:
 - `runConfigurations` is valid
 - `previewManifest` is complete
 - no manual user step is required
-- Blame can generate setupScript plus dockerCompose from the manifest
+- Blame can render and run the preview from the manifest
 - no forbidden manifest content is present
 - `previewService`, browser bindings, preview probes, and published ports exist only when a browser-facing service is evidenced
 - every explicit main root development or orchestration command is represented even when specialized nested configurations also exist

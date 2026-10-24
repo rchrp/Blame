@@ -251,8 +251,6 @@ test("reports structured API validation errors", async () => {
         risks: [],
         probes: [],
       },
-      setupScript: "echo setup",
-      dockerCompose: "services: {}",
       runConfigurations: [],
     }),
     (error: unknown) =>
@@ -270,8 +268,6 @@ test("reports structured API validation errors", async () => {
       risks: [],
       probes: [],
     },
-    setupScript: "echo setup",
-    dockerCompose: "services: {}",
     runConfigurations: [],
   })
 })

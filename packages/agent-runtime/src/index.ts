@@ -34,7 +34,6 @@ export {
 } from "./project-host-orchestration.js";
 export { parseRunConfigurations } from "./project-initialization.js";
 export {
-  generatePreviewArtifacts,
   normalizePreviewManifest,
   normalizePreviewManifestWithPreferences,
   parsePreviewManifest,

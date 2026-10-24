@@ -71,16 +71,12 @@ test("returns only canonical repaired initialization state", () => {
 
   assert.equal(result.classification, "repairable_initialization");
   assert.equal(result.previewManifest?.services[0]?.kind, "preview");
-  assert.match(result.setupScript ?? "", /COMPOSE_PROJECT_NAME/);
-  assert.match(result.dockerCompose ?? "", /blame\.preview/);
   assert.equal(result.runConfigurations?.[0]?.previewService, "web");
   assert.deepEqual(Object.keys(result).sort(), [
     "classification",
-    "dockerCompose",
     "previewManifest",
     "reason",
     "runConfigurations",
-    "setupScript",
   ]);
 });
 

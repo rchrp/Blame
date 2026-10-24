@@ -4,7 +4,6 @@ import test from "node:test";
 import {
   parseProjectInitializationPayload,
   projectInitializationPrompt,
-  validateProjectInitializationArtifacts,
 } from "./project-initialization.js";
 import { parsePreviewManifest } from "./preview-manifest.js";
 import type { PreviewManifest, ProjectRunConfiguration } from "./types.js";
@@ -113,11 +112,14 @@ function canonicalResult(): {
   };
 }
 
-test("generates artifacts only from the canonical unversioned manifest", () => {
+test("normalizes the canonical unversioned manifest", () => {
   const result = parseProjectInitializationPayload(canonicalResult());
 
   assert.equal(result.previewManifest?.services[1]?.kind, "preview");
-  assert.match(result.setupScript, /COMPOSE_PROJECT_NAME/);
+  assert.deepEqual(Object.keys(result).sort(), [
+    "previewManifest",
+    "runConfigurations",
+  ]);
   assert.match(
     result.previewManifest?.setup[0]?.command ?? "",
     /corepack enable --install-directory "\$\$COREPACK_HOME\/bin"/,
@@ -126,21 +128,13 @@ test("generates artifacts only from the canonical unversioned manifest", () => {
     result.previewManifest?.services[1]?.command ?? "",
     /export PATH="\$\$COREPACK_HOME\/bin:\$\$PATH"/,
   );
-  assert.match(
-    result.dockerCompose,
-    /corepack enable --install-directory \\"\$\$COREPACK_HOME\/bin\\"/,
+  const app = result.previewManifest.services[1]!;
+  assert.equal(app.environment?.SERVER_API_URL, "http://api:3333");
+  assert.equal(
+    app.environment?.PUBLIC_API_URL,
+    "http://localhost:__BLAME_PREVIEW_PORT_api_3333__/api",
   );
-  assert.match(result.dockerCompose, /blame\.preview: "true"/);
-  assert.match(result.dockerCompose, /"127\.0\.0\.1::3000"/);
-  assert.match(result.dockerCompose, /SERVER_API_URL: "http:\/\/api:3333"/);
-  assert.match(
-    result.dockerCompose,
-    /PUBLIC_API_URL: "http:\/\/localhost:__BLAME_PREVIEW_PORT_api_3333__\/api"/,
-  );
-  assert.match(
-    result.dockerCompose,
-    /app:[\s\S]*api:\n\s+condition: service_healthy/,
-  );
+  assert.ok(app.dependsOn?.includes("api"));
 });
 
 test("waits for long-running setup dependencies without treating them as one-shot tasks", () => {
@@ -176,20 +170,12 @@ test("waits for long-running setup dependencies without treating them as one-sho
     database: { mode: "compose" },
   });
 
-  assert.match(
-    result.dockerCompose,
-    /migrations:[\s\S]*deps:\n\s+condition: service_completed_successfully/,
+  const migrations = result.previewManifest.setup.find(
+    ({ id }) => id === "migrations",
   );
-  assert.match(
-    result.dockerCompose,
-    /migrations:[\s\S]*db:\n\s+condition: service_healthy/,
-  );
-  assert.match(
-    result.dockerCompose,
-    /migrations:[\s\S]*const host=\\?"db\\?"[\s\S]*const port=3306/,
-  );
-  assert.match(result.dockerCompose, /migrations:[\s\S]*DB_HOST: "db"/);
-  assert.match(result.dockerCompose, /migrations:[\s\S]*DB_PORT: "3306"/);
+  assert.deepEqual(migrations?.dependsOn, ["deps", "db"]);
+  assert.equal(migrations?.environment?.DB_HOST, "db");
+  assert.equal(migrations?.environment?.DB_PORT, "3306");
 });
 
 test("normalizes pnpm serve options and browser-only dependencies", () => {
@@ -308,12 +294,9 @@ test("supports a controlled Docker build as the sole container source", () => {
   };
 
   const result = parseProjectInitializationPayload(value);
-  assert.match(
-    result.dockerCompose,
-    /build:\n\s+context: "\$\{BLAME_PROJECT_ROOT\}\/apps\/web"/,
-  );
-  assert.match(result.dockerCompose, /dockerfile: "Dockerfile"/);
-  assert.match(result.dockerCompose, /target: "dev"/);
+  assert.deepEqual(result.previewManifest.services[1]?.container, {
+    build: { context: "apps/web", dockerfile: "Dockerfile", target: "dev" },
+  });
 });
 
 test("allows the same endpoint id on multiple services", () => {
@@ -351,13 +334,16 @@ test("supports persistent workers without browser ports", () => {
   ];
 
   const result = parseProjectInitializationPayload(value);
-  assert.match(result.dockerCompose, /blame\.service\.kind: "worker"/);
-  assert.doesNotMatch(result.dockerCompose, /127\.0\.0\.1::/);
+  assert.equal(result.previewManifest.services[0]?.kind, "worker");
+  assert.deepEqual(result.previewManifest.services[0]?.endpoints, []);
 });
 
 test("uses webpack for Next preview services", () => {
   const result = parseProjectInitializationPayload(canonicalResult());
-  assert.match(result.dockerCompose, /corepack pnpm dev --webpack/);
+  assert.match(
+    result.previewManifest.services[1]?.command ?? "",
+    /corepack pnpm dev --webpack/,
+  );
 });
 
 test("normalizes isolated database passwords before manifest validation", () => {
@@ -393,8 +379,14 @@ test("normalizes isolated database passwords before manifest validation", () => 
     result.previewManifest?.services.at(-1)?.environment?.MYSQL_PASSWORD,
     "blame",
   );
-  assert.match(result.dockerCompose, /MYSQL_ROOT_PASSWORD: "blame"/);
-  assert.doesNotMatch(result.dockerCompose, /copied-password/);
+  assert.equal(
+    result.previewManifest?.services.at(-1)?.environment?.MYSQL_ROOT_PASSWORD,
+    "blame",
+  );
+  assert.doesNotMatch(
+    JSON.stringify(result.previewManifest),
+    /copied-password/,
+  );
 });
 
 test("removes generated database credentials when using the configured database", () => {
@@ -424,7 +416,7 @@ test("removes generated database credentials when using the configured database"
     undefined,
   );
   assert.doesNotMatch(
-    result.dockerCompose,
+    JSON.stringify(result.previewManifest),
     /copied-(?:password|root-password)/,
   );
 });
@@ -453,30 +445,6 @@ test("rejects unsafe commands and invalid run topology", () => {
   assert.throws(
     () => parseProjectInitializationPayload(unknown),
     /previewService must be a configured service|references unknown service missing/,
-  );
-});
-
-test("artifact validation rejects fixed host ports and Docker checks", () => {
-  const manifest = parsePreviewManifest(canonicalResult().previewManifest);
-  assert.throws(
-    () =>
-      validateProjectInitializationArtifacts(
-        "set -euo pipefail",
-        'services:\n  app:\n    image: node:22\n    ports:\n      - "127.0.0.1:4173:3000"',
-        undefined,
-        manifest,
-      ),
-    /runtime allocate host ports/,
-  );
-  assert.throws(
-    () =>
-      validateProjectInitializationArtifacts(
-        "command -v docker >/dev/null || exit 1",
-        'services:\n  app:\n    image: node:22\n    ports:\n      - "127.0.0.1::3000"',
-        undefined,
-        manifest,
-      ),
-    /must not require Docker/,
   );
 });
 
@@ -529,10 +497,6 @@ test("setup tasks wait for the dependency services they connect to", () => {
   assert.deepEqual(migrate?.dependsOn, ["deps", "postgres"]);
   const deps = parsed.previewManifest.setup.find(({ id }) => id === "deps");
   assert.deepEqual(deps?.dependsOn, []);
-  assert.match(
-    parsed.dockerCompose,
-    /db-migrate:[\s\S]*?depends_on:[\s\S]*?postgres:/,
-  );
 });
 
 test("requires the Prisma client before seeding the database", () => {

@@ -561,8 +561,6 @@ export type InitializeProjectInput = {
 export type InitializeProjectResult = {
   sessionId: string;
   previewManifest: PreviewManifest;
-  setupScript: string;
-  dockerCompose: string;
   runConfigurations: ProjectRunConfiguration[];
 };
 
@@ -691,8 +689,6 @@ export type RepairProjectInitializationResult = {
   classification: ProjectInitializationRepairClassification;
   reason: string;
   previewManifest?: PreviewManifest;
-  setupScript?: string;
-  dockerCompose?: string;
   runConfigurations?: ProjectRunConfiguration[];
 };
 

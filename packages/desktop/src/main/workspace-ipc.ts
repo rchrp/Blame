@@ -1,5 +1,4 @@
 import {
-  generatePreviewArtifacts,
   parsePreviewManifest,
   parseRunConfigurations,
   manifestWithProjectPackageManager,
@@ -1128,9 +1127,8 @@ async function prepareProjectPreviewArtifacts(
   validateContainerizedRunConfigurations(runConfigurations, manifest);
   await validateProjectSetup(
     worktree,
-    setupScriptWithoutDockerRuntimeChecks(
-      generatePreviewArtifacts(manifest).setupScript,
-    ),
+    // Containerized previews need no tool on this computer.
+    "",
     env,
     input.hostDependenciesChecked,
     input.runtimeProfile,
@@ -1270,15 +1268,6 @@ async function completeProjectSetupRun(
     emitSetupOutput(runId, worktree, "stderr", errorMessage(error));
     emitSetupOutput(runId, worktree, "exit", "1");
   }
-}
-
-function setupScriptWithoutDockerRuntimeChecks(script: string) {
-  return script
-    .replace(/\n?if\s+!\s+command\s+-v\s+docker\b[\s\S]*?\nfi\s*/g, "\n")
-    .replace(/\n?if\s+!\s+docker\s+compose\s+version\b[\s\S]*?\nfi\s*/g, "\n")
-    .replace(/^\s*command\s+-v\s+docker\b.*$/gm, "")
-    .replace(/^\s*docker\s+compose\s+version\b.*$/gm, "")
-    .replace(/\n{3,}/g, "\n\n");
 }
 
 function finishSetupRun(

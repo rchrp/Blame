@@ -8,9 +8,9 @@ import {
   normalizeLocalPreviewDatabaseEnvironmentValue,
 } from "@blame/preview-contract";
 import {
-  generatePreviewArtifacts,
   parsePreviewManifest,
   normalizePreviewManifestWithPreferences,
+  validatePreviewManifest,
 } from "./preview-manifest.js";
 import { jsonPayload } from "./json-payload.js";
 import {
@@ -18,11 +18,7 @@ import {
   projectPackageManager,
 } from "./preview-package-manager.js";
 import type { ProjectInitializationScan } from "./project-initialization-scan.js";
-import {
-  launchesCompose,
-  requiresDockerRuntime,
-  validateDockerCompose,
-} from "./project-compose-validation.js";
+import { validatePreviewSetup } from "./project-preview-validation.js";
 
 export {
   scanProjectForInitialization,
@@ -35,8 +31,6 @@ const maxCorrectionPayloadLength = 24_000;
 
 type ParsedProjectInitialization = {
   previewManifest: PreviewManifest;
-  setupScript: string;
-  dockerCompose: string;
   runConfigurations: ProjectRunConfiguration[];
 };
 
@@ -361,21 +355,11 @@ export function parseProjectInitializationPayload(
     normalizePreviewManifestWithPreferences(parsedManifest, preferences),
     projectPackageManager(projectRootPackageJson(scan, parsedManifest)),
   );
-  const generated = generatePreviewArtifacts(manifest);
-  const setupScript = generated.setupScript;
-  const dockerCompose = generated.dockerCompose;
+  validatePreviewManifest(manifest);
   const runConfigurations = parseRunConfigurations(parsed.runConfigurations);
-  validateProjectInitializationOutput(
-    setupScript,
-    dockerCompose,
-    runConfigurations,
-    scan,
-    manifest,
-  );
+  validateProjectInitializationOutput(runConfigurations, scan, manifest);
   return {
     previewManifest: manifest,
-    setupScript,
-    dockerCompose,
     runConfigurations,
   };
 }
@@ -607,36 +591,13 @@ function invalidRunConfigurationPreviewUrl(previewUrl: string) {
   return previewUrl.length > 2_048 || /[\r\n]/.test(previewUrl);
 }
 
-export function validateProjectInitializationArtifacts(
-  script: string,
-  compose: string,
-  scan?: ProjectInitializationScan,
-  manifest?: PreviewManifest,
-) {
-  const normalizedScript = script.toLowerCase();
-  const normalizedCompose = compose.toLowerCase();
-  if (launchesCompose(normalizedScript)) {
-    throw new Error(
-      "Initialization result setupScript must not launch compose",
-    );
-  }
-  if (requiresDockerRuntime(normalizedScript)) {
-    throw new Error(
-      "Initialization result setupScript must not require Docker or Docker Compose",
-    );
-  }
-  validateDockerCompose(normalizedCompose, scan, manifest);
-}
-
 export function validateProjectInitializationOutput(
-  script: string,
-  compose: string,
   configurations: ProjectRunConfiguration[],
   scan: ProjectInitializationScan | undefined,
   manifest: PreviewManifest,
 ) {
   validateRunConfigurationTopology(configurations, manifest);
-  validateProjectInitializationArtifacts(script, compose, scan, manifest);
+  validatePreviewSetup(manifest, scan);
 }
 
 function truncateCorrectionPayload(value: string) {

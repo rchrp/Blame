@@ -15,21 +15,14 @@ import type {
 import type { ProjectInitializationPreferences } from "./types.js";
 import { commandWithNextWebpackFallback } from "./next-webpack-fallback.js";
 import {
-  composeYaml,
   containerImage,
   defaultSetupRunAs,
   mysqlImage,
   previewEndpoint,
   runsNodePackageManager,
   serviceEndpoint,
-  setupScript,
   uniqueStrings,
-} from "./preview-compose-yaml.js";
-
-type GeneratedInitializationArtifacts = {
-  dockerCompose: string;
-  setupScript: string;
-};
+} from "./preview-manifest-helpers.js";
 
 export function parsePreviewManifest(value: unknown): PreviewManifest {
   return normalizePreviewManifest(
@@ -98,21 +91,6 @@ function normalizedProbeFrom(probe: unknown, roleIds: Map<string, string>) {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object" && !Array.isArray(value);
-}
-
-export function generatePreviewArtifacts(
-  manifest: PreviewManifest,
-  preferences?: ProjectInitializationPreferences,
-): GeneratedInitializationArtifacts {
-  const normalized = normalizePreviewManifestWithPreferences(
-    manifest,
-    preferences,
-  );
-  validatePreviewManifest(normalized);
-  return {
-    setupScript: setupScript(),
-    dockerCompose: composeYaml(normalized),
-  };
 }
 
 export function validatePreviewManifest(manifest: PreviewManifest) {
