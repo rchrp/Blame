@@ -1741,17 +1741,21 @@ function previewFrameLocation(frame: HTMLIFrameElement, source?: string) {
   }
 }
 
-// A preview restarted outside the run button, for example after a setup
-// repair, loads its URL before the server answers; reload once it recovers.
+// A preview started or restarted while open, for example after a setup
+// repair or when a suspended preview resumes, loads its URL before the
+// server answers; reload once the start or recovery is done.
 function useReloadAfterRecovery(
   status: string | undefined,
   setReloadKey: React.Dispatch<React.SetStateAction<number>>
 ) {
-  const failedSinceReady = React.useRef(status === "error")
+  const unsettledSinceReady = React.useRef(
+    status === "error" || status === "pending"
+  )
   React.useEffect(() => {
-    if (status === "error") failedSinceReady.current = true
-    if (status !== "ready" || !failedSinceReady.current) return
-    failedSinceReady.current = false
+    if (status === "error" || status === "pending")
+      unsettledSinceReady.current = true
+    if (status !== "ready" || !unsettledSinceReady.current) return
+    unsettledSinceReady.current = false
     setReloadKey((current) => current + 1)
   }, [setReloadKey, status])
 }
