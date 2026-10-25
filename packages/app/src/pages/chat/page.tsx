@@ -195,6 +195,9 @@ function QuickChatProjectPage() {
     setDraftCodeAttachments,
     setDraftEditorKey,
     setDraftFileAttachments,
+    addDraftFileAttachments,
+    removeDraftFileAttachment,
+    replaceDraftFileAttachments,
   } = useQuickChatDraft(draftStorageKey)
   const applySuggestion = useComposerShortcuts({
     draftRef,
@@ -1048,17 +1051,9 @@ function QuickChatProjectPage() {
                         current.filter((attachment) => attachment.id !== id)
                       )
                     }
-                    onFileAttachmentRemove={(id) =>
-                      setDraftFileAttachments((current) =>
-                        current.filter((attachment) => attachment.id !== id)
-                      )
-                    }
-                    onFileAttachmentsAdd={(attachments) =>
-                      setDraftFileAttachments((current) => [
-                        ...current,
-                        ...attachments,
-                      ])
-                    }
+                    onFileAttachmentRemove={removeDraftFileAttachment}
+                    onFileAttachmentsReplace={replaceDraftFileAttachments}
+                    onFileAttachmentsAdd={addDraftFileAttachments}
                     onFileLinkClick={(path) =>
                       openProjectPath(project?.path, path, platform.openPath)
                     }

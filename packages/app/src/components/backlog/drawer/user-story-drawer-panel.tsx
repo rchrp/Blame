@@ -1,3 +1,4 @@
+import { replaceFileAttachments } from "./user-story-attachment-files"
 import * as React from "react"
 import { toast } from "sonner"
 import { mergeDraftSummary } from "@/components/backlog/data/user-story-context"
@@ -711,6 +712,7 @@ export function UserStoryDrawerPanel({
                 }
                 onCommentFileAttachmentRemove={removeCommentFileAttachment}
                 onCommentFileAttachmentsAdd={addCommentFileAttachments}
+                onCommentFileAttachmentsReplace={(replacements) => setCommentFileAttachments((current) => replaceFileAttachments(current, replacements))}
                 onCommentSubmit={handleCommentSubmit}
                 onCommentSendNow={handleCommentSendNow}
                 onAgentPause={
@@ -735,6 +737,7 @@ export function UserStoryDrawerPanel({
               }
               onSummaryFileAttachmentRemove={removeSummaryFileAttachment}
               onSummaryFileAttachmentsAdd={addSummaryFileAttachments}
+                onSummaryFileAttachmentsReplace={(replacements) => setSummaryFileAttachments((current) => replaceFileAttachments(current, replacements))}
               onSummaryChange={handleSummaryChange}
               onSummaryOptimize={
                 onOptimizeUserStory ? handleSummaryOptimize : undefined

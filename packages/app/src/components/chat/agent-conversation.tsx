@@ -43,7 +43,10 @@ import {
   MarkdownEditor,
   type PendingFileAttachment,
 } from "@/components/backlog/drawer/markdown-editor"
-import { pendingFileAttachments } from "@/components/backlog/drawer/user-story-attachment-files"
+import {
+  pendingFileAttachments,
+  type FileAttachmentReplacement,
+} from "@/components/backlog/drawer/user-story-attachment-files"
 import type { PendingCodeSelectionAttachment } from "@/components/backlog/shared/comment-attachment-events"
 import type { AgentConversationResponseHeader } from "@/components/chat/agent-conversation-header"
 import { checkpointRunTargets } from "@/components/chat/agent-run-checkpoints"
@@ -394,6 +397,7 @@ export function AgentConversationComposer({
   onCodeSelectionAttachmentRemove,
   onFileAttachmentRemove,
   onFileAttachmentsAdd,
+  onFileAttachmentsReplace,
   onFileLinkClick,
   onMessageChange,
   onMessageSubmit,
@@ -424,6 +428,7 @@ export function AgentConversationComposer({
   message: string
   onCodeSelectionAttachmentRemove?: (id: string) => void
   onFileAttachmentRemove?: (id: string) => void
+  onFileAttachmentsReplace?: (replacements: FileAttachmentReplacement[]) => void
   onFileAttachmentsAdd?: (attachments: UserStoryFileAttachment[]) => void
   onFileLinkClick?: (path: string) => void
   onMessageChange: (message: string) => void
@@ -507,6 +512,7 @@ export function AgentConversationComposer({
           onCodeSelectionAttachmentRemove={onCodeSelectionAttachmentRemove}
           onFileAttachmentRemove={onFileAttachmentRemove}
           onFileAttachmentsAdd={onFileAttachmentsAdd}
+          onFileAttachmentsReplace={onFileAttachmentsReplace}
           onMarkdownChange={onMessageChange}
           onFileLinkClick={onFileLinkClick}
           readOnly={disabled || submitting}

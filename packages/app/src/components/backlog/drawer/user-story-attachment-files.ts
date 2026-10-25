@@ -49,3 +49,19 @@ function fileContent(file: File) {
     reader.readAsDataURL(file)
   })
 }
+
+export type FileAttachmentReplacement = {
+  id: string
+  attachment: UserStoryFileAttachment
+}
+
+// Edited uploads have new IDs: stored attachment objects are immutable.
+export function replaceFileAttachments(
+  current: UserStoryFileAttachment[],
+  replacements: FileAttachmentReplacement[]
+) {
+  const byId = new Map(
+    replacements.map(({ id, attachment }) => [id, attachment])
+  )
+  return current.map((attachment) => byId.get(attachment.id) ?? attachment)
+}
