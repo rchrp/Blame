@@ -394,6 +394,7 @@ export function AgentConversationComposer({
   onCodeSelectionAttachmentRemove,
   onFileAttachmentRemove,
   onFileAttachmentsAdd,
+  onFileAttachmentsReplace,
   onFileLinkClick,
   onMessageChange,
   onMessageSubmit,
@@ -424,6 +425,9 @@ export function AgentConversationComposer({
   message: string
   onCodeSelectionAttachmentRemove?: (id: string) => void
   onFileAttachmentRemove?: (id: string) => void
+  onFileAttachmentsReplace?: (
+    replacements: import("@/components/backlog/drawer/user-story-attachment-files").FileAttachmentReplacement[]
+  ) => void
   onFileAttachmentsAdd?: (attachments: UserStoryFileAttachment[]) => void
   onFileLinkClick?: (path: string) => void
   onMessageChange: (message: string) => void
@@ -507,6 +511,7 @@ export function AgentConversationComposer({
           onCodeSelectionAttachmentRemove={onCodeSelectionAttachmentRemove}
           onFileAttachmentRemove={onFileAttachmentRemove}
           onFileAttachmentsAdd={onFileAttachmentsAdd}
+          onFileAttachmentsReplace={onFileAttachmentsReplace}
           onMarkdownChange={onMessageChange}
           onFileLinkClick={onFileLinkClick}
           readOnly={disabled || submitting}

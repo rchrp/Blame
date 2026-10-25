@@ -1,3 +1,4 @@
+import { replaceFileAttachments } from "@/components/backlog/drawer/user-story-attachment-files"
 import * as React from "react"
 import {
   AlertCircleIcon,
@@ -220,6 +221,11 @@ function PlanModeDialog({
               onFileAttachmentRemove={(id) =>
                 setFileAttachments((current) =>
                   current.filter((attachment) => attachment.id !== id)
+                )
+              }
+              onFileAttachmentsReplace={(replacements) =>
+                setFileAttachments((current) =>
+                  replaceFileAttachments(current, replacements)
                 )
               }
               onFileAttachmentsAdd={(attachments) =>

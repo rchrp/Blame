@@ -21,6 +21,11 @@ import {
 } from "lucide-react"
 import * as React from "react"
 
+import {
+  ImageAttachmentGallery,
+  type AnnotatedAttachment,
+  type ImageAnnotation,
+} from "@/components/attachments/image-attachment-gallery"
 import type { UserStoryFileAttachment } from "@/components/backlog/data/backlog-data"
 import { DevelopmentFileIcon } from "@/components/backlog/development/development-file-icon"
 import { markdownHasInlineFormatting } from "@/components/backlog/drawer/markdown-parser"
@@ -53,12 +58,6 @@ import {
   CommandList,
 } from "@/components/ui/command"
 import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -87,6 +86,7 @@ import {
 } from "./markdown-preview"
 
 type PastedAttachment = {
+  annotation?: ImageAnnotation
   aiContextMarkdown?: string
   id: string
   file: File
@@ -308,8 +308,10 @@ function AttachmentDeleteButton({
 function AttachmentPreview({
   attachment,
   onRemove,
+  onOpenImage,
 }: {
   attachment: PastedAttachment
+  onOpenImage: (id: string) => void
   onRemove?: (attachment: PastedAttachment) => void
 }) {
   if (attachment.previewUrl) {
@@ -317,6 +319,7 @@ function AttachmentPreview({
       <ImageAttachmentPreview
         attachment={{ ...attachment, previewUrl: attachment.previewUrl }}
         onRemove={onRemove}
+        onOpen={() => onOpenImage(attachment.id)}
       />
     )
   }
@@ -327,34 +330,34 @@ function AttachmentPreview({
 function ImageAttachmentPreview({
   attachment,
   onRemove,
+  onOpen,
 }: {
   attachment: PastedAttachment & { previewUrl: string }
   onRemove?: (attachment: PastedAttachment) => void
+  onOpen: () => void
 }) {
   return (
     <div className="group relative">
-      <Dialog>
-        <DialogTrigger asChild>
-          <button
-            type="button"
-            className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-md border bg-muted/30 transition-colors outline-none hover:bg-muted/50 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+      <button
+        type="button"
+        aria-label={`Open ${attachment.file.name}`}
+        onClick={onOpen}
+        className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-md border bg-muted/30 transition-colors outline-none hover:bg-muted/50 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+      >
+        <img
+          alt={attachment.file.name}
+          className="h-full w-full object-cover"
+          src={attachment.previewUrl}
+        />
+        {attachment.annotation && (
+          <span
+            className="absolute right-1 bottom-1 rounded bg-background/90 p-0.5"
+            title="Annotated"
           >
-            <img
-              alt={attachment.file.name}
-              className="h-full w-full object-cover"
-              src={attachment.previewUrl}
-            />
-          </button>
-        </DialogTrigger>
-        <DialogContent className="max-w-[calc(100%-2rem)] p-2 sm:max-w-4xl">
-          <DialogTitle className="sr-only">{attachment.file.name}</DialogTitle>
-          <img
-            alt={attachment.file.name}
-            className="max-h-[80vh] w-full rounded-lg object-contain"
-            src={attachment.previewUrl}
-          />
-        </DialogContent>
-      </Dialog>
+            <PenLineIcon className="size-3" />
+          </span>
+        )}
+      </button>
       {onRemove && (
         <AttachmentDeleteButton attachment={attachment} onRemove={onRemove} />
       )}
@@ -1141,6 +1144,9 @@ export const MarkdownEditor = React.forwardRef<
     mentionDirectory?: string
     onCodeSelectionAttachmentRemove?: (id: string) => void
     onFileAttachmentRemove?: (id: string) => void
+    onFileAttachmentsReplace?: (
+      replacements: { id: string; attachment: UserStoryFileAttachment }[]
+    ) => void
     onFileAttachmentsAdd?: (attachments: UserStoryFileAttachment[]) => void
     onFileLinkClick?: (path: string) => void
     onMarkdownChange?: (markdown: string) => void
@@ -1165,6 +1171,7 @@ export const MarkdownEditor = React.forwardRef<
     onCodeSelectionAttachmentRemove,
     onFileAttachmentRemove,
     onFileAttachmentsAdd,
+    onFileAttachmentsReplace,
     onFileLinkClick,
     onMarkdownChange,
     onOptimize,
@@ -1177,6 +1184,7 @@ export const MarkdownEditor = React.forwardRef<
   ref
 ) {
   const platform = usePlatform()
+  const [galleryId, setGalleryId] = React.useState<string | null>(null)
   const [attachments, setAttachments] = React.useState<PastedAttachment[]>([])
   const [mention, setMention] = React.useState<FileMentionState>({
     active: false,
@@ -1295,7 +1303,7 @@ export const MarkdownEditor = React.forwardRef<
   React.useEffect(
     () => () => {
       attachmentsRef.current.forEach((attachment) => {
-        if (attachment.previewUrl) URL.revokeObjectURL(attachment.previewUrl)
+        revokeAttachmentUrls(attachment)
       })
     },
     []
@@ -1599,8 +1607,44 @@ export const MarkdownEditor = React.forwardRef<
     ])
   }
 
+  async function saveAnnotatedAttachments(changes: AnnotatedAttachment[]) {
+    const replacements = await Promise.all(
+      changes.map(async (change) => ({
+        ...change,
+        attachment: await fileAttachment(change.file),
+      }))
+    )
+    onFileAttachmentsReplace?.(
+      replacements.map(({ id, attachment }) => ({ id, attachment }))
+    )
+    replacements.forEach(({ attachment }) =>
+      handledFileAttachmentIdsRef.current.add(attachment.id)
+    )
+    const byId = new Map(
+      replacements.map((replacement) => [replacement.id, replacement])
+    )
+    const next = attachmentsRef.current.map((existing) => {
+      const replacement = byId.get(existing.id)
+      if (!replacement) return existing
+      if (
+        existing.previewUrl &&
+        existing.previewUrl !== replacement.annotation.source
+      )
+        URL.revokeObjectURL(existing.previewUrl)
+      return {
+        id: replacement.attachment.id,
+        file: replacement.file,
+        previewUrl: URL.createObjectURL(replacement.file),
+        source: "file" as const,
+        annotation: replacement.annotation,
+      }
+    })
+    attachmentsRef.current = next
+    setAttachments(next)
+  }
+
   function removeAttachment(attachment: PastedAttachment) {
-    if (attachment.previewUrl) URL.revokeObjectURL(attachment.previewUrl)
+    revokeAttachmentUrls(attachment)
     if (attachment.source === "code")
       onCodeSelectionAttachmentRemove?.(attachment.id)
     if (attachment.source === "file") onFileAttachmentRemove?.(attachment.id)
@@ -1947,6 +1991,7 @@ export const MarkdownEditor = React.forwardRef<
                     <AttachmentPreview
                       key={attachment.id}
                       attachment={attachment}
+                      onOpenImage={setGalleryId}
                       onRemove={removeAttachment}
                     />
                   ))}
@@ -2039,12 +2084,32 @@ export const MarkdownEditor = React.forwardRef<
                 <AttachmentPreview
                   key={attachment.id}
                   attachment={attachment}
+                  onOpenImage={setGalleryId}
                 />
               ))}
             </div>
           )}
         </div>
       </PopoverAnchor>
+      {galleryId && attachments.some((attachment) => attachment.previewUrl) && (
+        <ImageAttachmentGallery
+          initialId={galleryId}
+          images={attachments
+            .filter((attachment) => attachment.previewUrl)
+            .map((attachment) => ({
+              id: attachment.id,
+              name: attachment.file.name,
+              source: attachment.previewUrl!,
+              annotation: attachment.annotation,
+            }))}
+          onClose={() => setGalleryId(null)}
+          onSave={
+            !readOnly && (!onFileAttachmentsAdd || onFileAttachmentsReplace)
+              ? saveAnnotatedAttachments
+              : undefined
+          }
+        />
+      )}
       <PopoverContent
         align="start"
         className="w-[min(36rem,calc(100vw-2rem))] p-0"
@@ -2189,4 +2254,13 @@ async function persistentFileAttachment(
   } catch {
     return persistedAttachment
   }
+}
+
+function revokeAttachmentUrls(attachment: PastedAttachment) {
+  if (attachment.previewUrl) URL.revokeObjectURL(attachment.previewUrl)
+  if (
+    attachment.annotation?.source &&
+    attachment.annotation.source !== attachment.previewUrl
+  )
+    URL.revokeObjectURL(attachment.annotation.source)
 }

@@ -1,3 +1,4 @@
+import { replaceFileAttachments } from "@/components/backlog/drawer/user-story-attachment-files"
 import * as React from "react"
 import { ArrowLeftIcon, LightbulbIcon, RotateCcwIcon } from "lucide-react"
 import type { UserStoryFileAttachment } from "@/components/backlog/data/backlog-data"
@@ -84,6 +85,11 @@ export function NewProjectAssistant({ wizard }: { wizard: NewProjectWizard }) {
           <AgentConversationComposer
             agentRunning={plan.pending}
             fileAttachments={pendingFileAttachments(files)}
+            onFileAttachmentsReplace={(replacements) =>
+              setFiles((current) =>
+                replaceFileAttachments(current, replacements)
+              )
+            }
             onFileAttachmentsAdd={(next) =>
               setFiles((current) => [...current, ...next])
             }

@@ -1,3 +1,4 @@
+import { replaceFileAttachments } from "@/components/backlog/drawer/user-story-attachment-files"
 import * as React from "react"
 import { createDebouncedUpdateQueue } from "@/lib/debounced-update-queue"
 import type { AgentEvent } from "@blame/agent-runtime"
@@ -1051,6 +1052,11 @@ function QuickChatProjectPage() {
                     onFileAttachmentRemove={(id) =>
                       setDraftFileAttachments((current) =>
                         current.filter((attachment) => attachment.id !== id)
+                      )
+                    }
+                    onFileAttachmentsReplace={(replacements) =>
+                      setDraftFileAttachments((current) =>
+                        replaceFileAttachments(current, replacements)
                       )
                     }
                     onFileAttachmentsAdd={(attachments) =>

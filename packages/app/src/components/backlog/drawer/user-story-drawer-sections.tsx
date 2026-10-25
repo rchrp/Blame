@@ -1,3 +1,4 @@
+import type { FileAttachmentReplacement } from "./user-story-attachment-files"
 import * as React from "react"
 
 import type {
@@ -65,6 +66,9 @@ type UserStoryCommentComposerProps = {
   onCommentChange: (comment: string) => void
   onCommentCodeSelectionAttachmentRemove: (id: string) => void
   onCommentFileAttachmentRemove: (id: string) => void
+  onCommentFileAttachmentsReplace: (
+    replacements: FileAttachmentReplacement[]
+  ) => void
   onCommentFileAttachmentsAdd: (attachments: UserStoryFileAttachment[]) => void
   onCommentSubmit: () => void
   onCommentSendNow?: () => void
@@ -87,6 +91,7 @@ export const UserStoryContent = React.memo(function UserStoryContent({
   onSummaryCodeSelectionAttachmentRemove,
   onSummaryFileAttachmentRemove,
   onSummaryFileAttachmentsAdd,
+  onSummaryFileAttachmentsReplace,
   onSummaryOptimize,
   onFileLinkClick,
   onChangedFileClick,
@@ -111,6 +116,9 @@ export const UserStoryContent = React.memo(function UserStoryContent({
   onSummaryChange?: (summary: string) => void
   onSummaryCodeSelectionAttachmentRemove: (id: string) => void
   onSummaryFileAttachmentRemove: (id: string) => void
+  onSummaryFileAttachmentsReplace: (
+    replacements: FileAttachmentReplacement[]
+  ) => void
   onSummaryFileAttachmentsAdd: (attachments: UserStoryFileAttachment[]) => void
   onSummaryOptimize?: (summary: string) => Promise<string>
   onFileLinkClick?: (path: string) => void
@@ -159,6 +167,7 @@ export const UserStoryContent = React.memo(function UserStoryContent({
           }
           onFileAttachmentRemove={onSummaryFileAttachmentRemove}
           onFileAttachmentsAdd={onSummaryFileAttachmentsAdd}
+          onFileAttachmentsReplace={onSummaryFileAttachmentsReplace}
           onFileLinkClick={onFileLinkClick}
           onMarkdownChange={onSummaryChange}
           onOptimize={onSummaryOptimize}
@@ -254,6 +263,7 @@ function UserStoryCommentComposer({
   onCommentCodeSelectionAttachmentRemove,
   onCommentFileAttachmentRemove,
   onCommentFileAttachmentsAdd,
+  onCommentFileAttachmentsReplace,
   onCommentSubmit,
   onCommentSendNow,
   onAgentPause,
@@ -297,6 +307,7 @@ function UserStoryCommentComposer({
       onCodeSelectionAttachmentRemove={onCommentCodeSelectionAttachmentRemove}
       onFileAttachmentRemove={onCommentFileAttachmentRemove}
       onFileAttachmentsAdd={onCommentFileAttachmentsAdd}
+      onFileAttachmentsReplace={onCommentFileAttachmentsReplace}
       onFileLinkClick={onFileLinkClick}
       onMessageChange={onCommentChange}
       onMessageSubmit={onCommentSubmit}
