@@ -6,6 +6,7 @@ import { storyHistoryToolNames } from "./story-history-tools.js";
 export { blockedCommandParts } from "./harness/command-policy.js";
 
 export const readTools: string[] = [
+  "read_attachment",
   "finish_task",
   "consult_specialist",
   "fetch_web_content",

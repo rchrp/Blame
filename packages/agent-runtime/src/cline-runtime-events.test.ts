@@ -249,11 +249,13 @@ test("deferred VM development prompts store attachments and journal remotely bef
     });
     assert.match(sentPrompt, /Build the carousel/);
     assert.equal(stored.length, 2);
-    assert.deepEqual(sentFiles, [stored[1]!.path]);
+    assert.deepEqual(sentFiles, []);
+    assert.ok(sentPrompt.includes(stored[1]!.path));
+    assert.match(sentPrompt, /read_attachment/);
     assert.ok(stored.every(({ path }) =>
       path.startsWith(join(remoteRoot, ".blame", "attachments")),
     ));
-    assert.deepEqual(await readFile(sentFiles[0]!), binary);
+    assert.deepEqual(await readFile(stored[1]!.path), binary);
     assert.equal(
       await readFile(join(root, "unmounted"), "utf8"),
       "VM path is unavailable on the host",
@@ -2131,9 +2133,9 @@ test("keeps development feedback attachments out of the prompt", async () => {
     assert.equal(input.userFiles[0]?.startsWith(attachmentDirectory), true);
     assert.doesNotMatch(input.prompt, /data:image\/png;base64,/);
     assert.doesNotMatch(input.prompt, /aGVsbG8=/);
-    assert.equal(input.prompt.includes(attachmentDirectory), false);
+    assert.equal(input.prompt.includes(attachmentDirectory), true);
     assert.match(input.prompt, /Images attached for model vision: 1/);
-    assert.match(input.prompt, /Files attached for Cline context: 1/);
+    assert.match(input.prompt, /Original attached files .*read_attachment/);
   } finally {
     await rm(attachmentDirectory, { force: true, recursive: true });
   }
