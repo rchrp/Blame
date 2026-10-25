@@ -298,7 +298,7 @@ stop_docker() {
 }
 
 ensure_docker_running() {
-  if [ "${BLAME_RUNTIME_BAKE:-0}" = "1" ] || docker info >/dev/null 2>&1; then
+  if [ "${BLAME_RUNTIME_BAKE:-0}" = "1" ]; then
     return
   fi
   blame-runtime-agent docker-ensure

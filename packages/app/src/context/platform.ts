@@ -201,6 +201,8 @@ export type RuntimeStatusReport = {
   status: "ready" | "missing" | "repairable" | "unsupported" | "broken"
   // Installed, only out of date: a routine update.
   updateRequired?: boolean
+  // Installed VM is stopped and only needs to be started.
+  startRequired?: boolean
 }
 
 export type TelemetryClient = {

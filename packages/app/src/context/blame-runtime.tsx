@@ -101,7 +101,9 @@ export function BlameRuntimeProvider({
     (operation: RuntimeOperation): Promise<boolean> => {
       if (running.current) return running.current
       const action =
-        operation === "reset" ? workspace?.resetRuntime : workspace?.ensureRuntimeReady
+        operation === "reset" ? workspace?.resetRuntime
+          : operation === "repair" ? workspace?.repairRuntime ?? workspace?.ensureRuntimeReady
+            : workspace?.ensureRuntimeReady
       if (!action) return Promise.resolve(false)
       const title = runtimeOperationTitle(operation)
       const show = (next?: RuntimeProgress) =>
@@ -187,7 +189,7 @@ export function BlameRuntimeProvider({
       phase,
     })
     if (!operation) return
-    if (operation === "repair") autoRepairTried.current = true
+    if (operation === "repair" || operation === "start") autoRepairTried.current = true
     void run(operation)
   }, [canInstall, localRunsActive, phase, run])
 

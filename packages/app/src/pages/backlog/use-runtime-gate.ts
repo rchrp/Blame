@@ -84,6 +84,7 @@ function localStoryRunning(story: UserStory) {
 }
 
 function runtimeWaitingLabel(phase: string) {
+  if (phase === "stopped" || phase === "starting") return "Waiting for Blame Runtime to start"
   if (phase === "checking") return "Checking Blame Runtime"
   if (phase === "installing") return "Waiting for Blame Runtime to install"
   if (phase === "repairing") return "Waiting for Blame Runtime repair"

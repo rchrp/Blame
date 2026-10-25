@@ -6,6 +6,8 @@ import {
   runtimeBlocksNewRuns,
   runtimePhaseFromReport,
   runtimeProgressText,
+  runtimeBusy,
+  runtimeOperationTitle,
 } from "./blame-runtime-state.ts"
 
 const report = (
@@ -20,6 +22,15 @@ test("reads the runtime report as one phase", () => {
   assert.equal(runtimePhaseFromReport(report("repairable")), "needs-repair")
   assert.equal(runtimePhaseFromReport(report("broken")), "needs-repair")
   assert.equal(runtimePhaseFromReport(report("unsupported")), "unsupported")
+  assert.equal(runtimePhaseFromReport({ ...report("repairable"), startRequired: true }), "stopped")
+})
+
+test("starts a stopped VM without labelling it as a repair", () => {
+  assert.equal(automaticRuntimeOperation({ autoRepairTried: true, canInstall: true, localRunsActive: 0, phase: "stopped" }), "start")
+  assert.equal(runtimeOperationTitle("start"), "Starting Blame Runtime")
+  assert.equal(runtimeBlocksNewRuns("stopped"), true)
+  assert.equal(runtimeBlocksNewRuns("starting"), true)
+  assert.equal(runtimeBusy("starting"), true)
 })
 
 test("updates only once no local story is running", () => {

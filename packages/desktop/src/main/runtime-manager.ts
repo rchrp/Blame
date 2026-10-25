@@ -45,6 +45,8 @@ export type RuntimeDependencyIssue = {
   // The runtime is installed and only its provisioning is out of date: a
   // routine update, not a breakdown.
   update?: boolean;
+  // Installed VM is stopped; starting it is not a repair.
+  start?: boolean;
 };
 
 type ManagedRuntimeCheckName =
@@ -87,6 +89,7 @@ export type RuntimeStatusReport = {
   status: RuntimeState;
   // True when every problem is an outdated version of an installed runtime.
   updateRequired: boolean;
+  startRequired?: boolean;
 };
 
 export type RuntimeManagerInput = {
@@ -519,6 +522,9 @@ function runtimeStatusReport(
     runtime: runtimeName(platform),
     status: runtimeState(issues),
     updateRequired: issues.length > 0 && issues.every((issue) => issue.update),
+    ...(issues.length > 0 && issues.every((issue) => issue.start)
+      ? { startRequired: true }
+      : {}),
   };
 }
 
@@ -558,7 +564,8 @@ function managedRuntimeStatusIssueFromOutput(output: string) {
     const status = parseRuntimeState(output);
     return status === "ready" ? null : managedRuntimeStatusIssue(status);
   }
-  const failing = report.checks?.filter((item) => item.status !== "available") ?? [];
+  const failing =
+    report.checks?.filter((item) => item.status !== "available") ?? [];
   const check = failing[0];
   if (!check) {
     const status = report.status ?? "ready";
@@ -571,6 +578,11 @@ function managedRuntimeStatusIssueFromOutput(output: string) {
     report.status ?? "broken",
     report.action,
   );
+  if (
+    failing.every((item) => item.name === "vm" && item.status === "unavailable")
+  ) {
+    return { ...issue, start: true };
+  }
   return failing.every((item) => updateChecks.has(item.name))
     ? { ...issue, update: true }
     : issue;

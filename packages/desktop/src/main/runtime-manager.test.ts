@@ -311,7 +311,7 @@ test("reports missing Blame Lima VM as managed runtime missing", async () => {
   assert.match(status.issues[0]?.action ?? "", /BlameRuntime Lima VM/);
 });
 
-test("reports stopped Blame Lima VM as repairable", async () => {
+test("distinguishes a stopped Blame Lima VM from a repair or update", async () => {
   const manager = createRuntimeManager(
     { platform: "darwin" },
     async (_command, args) => {
@@ -336,6 +336,8 @@ test("reports stopped Blame Lima VM as repairable", async () => {
   assert.equal(status.status, "repairable");
   assert.equal(status.issues[0]?.name, "blame-runtime");
   assert.equal(status.issues[0]?.status, "unavailable");
+  assert.equal(status.startRequired, true);
+  assert.equal(status.updateRequired, false);
 });
 
 test("reports missing Lima host mount as runtime repair action", async () => {

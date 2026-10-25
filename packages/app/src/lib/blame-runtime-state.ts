@@ -6,6 +6,8 @@ export type RuntimePhase =
   | "unavailable"
   | "checking"
   | "ready"
+  | "stopped"
+  | "starting"
   // Not installed yet.
   | "missing"
   // Installed but out of date; updates as soon as no local story runs.
@@ -18,11 +20,12 @@ export type RuntimePhase =
   // This machine cannot run it (old Windows without WSL 2, for example).
   | "unsupported"
 
-export type RuntimeOperation = "install" | "update" | "repair" | "reset"
+export type RuntimeOperation = "start" | "install" | "update" | "repair" | "reset"
 
 export function runtimePhaseFromReport(report: RuntimeStatusReport): RuntimePhase {
   if (report.status === "ready") return "ready"
   if (report.status === "unsupported") return "unsupported"
+  if (report.startRequired) return "stopped"
   if (report.updateRequired) return "update-pending"
   if (report.status === "missing") return "missing"
   return "needs-repair"
@@ -36,6 +39,7 @@ export function automaticRuntimeOperation(input: {
   phase: RuntimePhase
 }): RuntimeOperation | undefined {
   if (!input.canInstall) return undefined
+  if (input.phase === "stopped") return "start"
   // Updating restarts the runtime: wait until no local story is using it.
   if (input.phase === "update-pending")
     return input.localRunsActive === 0 ? "update" : undefined
@@ -47,6 +51,8 @@ export function automaticRuntimeOperation(input: {
 export function runtimeBlocksNewRuns(phase: RuntimePhase) {
   return (
     phase === "checking" ||
+    phase === "stopped" ||
+    phase === "starting" ||
     phase === "update-pending" ||
     phase === "installing" ||
     phase === "updating" ||
@@ -55,16 +61,18 @@ export function runtimeBlocksNewRuns(phase: RuntimePhase) {
 }
 
 export function runtimeBusy(phase: RuntimePhase) {
-  return phase === "installing" || phase === "updating" || phase === "repairing"
+  return phase === "starting" || phase === "installing" || phase === "updating" || phase === "repairing"
 }
 
 export function runtimeOperationPhase(operation: RuntimeOperation): RuntimePhase {
+  if (operation === "start") return "starting"
   if (operation === "install") return "installing"
   if (operation === "update") return "updating"
   return "repairing"
 }
 
 export function runtimeOperationTitle(operation: RuntimeOperation) {
+  if (operation === "start") return "Starting Blame Runtime"
   if (operation === "install") return "Installing Blame Runtime"
   if (operation === "update") return "Updating Blame Runtime"
   if (operation === "reset") return "Resetting Blame Runtime"
@@ -72,6 +80,7 @@ export function runtimeOperationTitle(operation: RuntimeOperation) {
 }
 
 export function runtimeOperationDoneTitle(operation: RuntimeOperation) {
+  if (operation === "start") return "Blame Runtime is ready"
   if (operation === "update") return "Blame Runtime is up to date"
   if (operation === "install") return "Blame Runtime is installed"
   return "Blame Runtime is working again"
@@ -79,6 +88,7 @@ export function runtimeOperationDoneTitle(operation: RuntimeOperation) {
 
 export function runtimeOperationFailedTitle(operation: RuntimeOperation) {
   const verbs: Record<RuntimeOperation, string> = {
+    start: "started",
     install: "installed",
     repair: "repaired",
     reset: "reset",
@@ -105,6 +115,8 @@ export function runtimePhaseLabel(phase: RuntimePhase) {
     unavailable: "Not available here",
     checking: "Checking…",
     ready: "Ready",
+    stopped: "Stopped",
+    starting: "Starting…",
     missing: "Not installed",
     "update-pending": "Update waiting for running stories",
     installing: "Installing…",

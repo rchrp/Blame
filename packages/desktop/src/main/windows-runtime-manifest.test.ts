@@ -309,6 +309,12 @@ async function createFakeLimaBundle(bundleRoot: string) {
 
 async function createFakeMacosRuntimeTools(toolsRoot: string) {
   await mkdir(toolsRoot, { recursive: true });
+  // Linux CI stubs the macOS PID lock for these single-process fixtures.
+  if (process.platform !== "darwin") {
+    await writeFile(path.join(toolsRoot, "shlock"), "#!/bin/sh\nexit 0\n", {
+      mode: 0o755,
+    });
+  }
   await writeFile(path.join(toolsRoot, "limactl"), fakeLimactlSource, {
     mode: 0o755,
   });
@@ -329,7 +335,11 @@ async function runFakeMacosRuntimeSetup(
   toolsRoot: string,
   stateRoot: string,
   cacheKey: string,
-  options: { includePayload?: boolean } = {},
+  options: {
+    includePayload?: boolean;
+    command?: string;
+    env?: Record<string, string>;
+  } = {},
 ) {
   await createFakeMacosRuntimeTools(toolsRoot);
   const runtimeRoot = path.join(testRoot, "runtime");
@@ -354,17 +364,18 @@ async function runFakeMacosRuntimeSetup(
   }
   const { stdout } = await execFileAsync(
     path.join(runtimeRoot, "scripts/blame-lima-runtime.sh"),
-    ["ensure"],
+    [options.command ?? "ensure"],
     {
       env: {
         ...process.env,
         BLAME_LIMA_BIN: path.join(toolsRoot, "limactl"),
         BLAME_TEST_CACHE_KEY: cacheKey,
         BLAME_TEST_LIMA_STATE: stateRoot,
+        ...options.env,
         HOME: testRoot,
         PATH: `${toolsRoot}:${process.env.PATH}`,
       },
-      timeout: 10_000,
+      timeout: 20_000,
     },
   );
   return stdout;
@@ -383,6 +394,7 @@ case "$1" in
     fi
     ;;
   create)
+    if [ "\${BLAME_TEST_CREATE_FAIL:-0}" = "1" ]; then exit 42; fi
     cache="$HOME/Library/Caches/lima/download/by-url-sha256/$BLAME_TEST_CACHE_KEY"
     mkdir -p "$state" "$cache"
     head -c 50 /dev/zero >"$cache/data.tmp.1.1"
@@ -394,10 +406,39 @@ case "$1" in
     ;;
   start) touch "$state/running" ;;
   shell)
-    cat >/dev/null
-    for name in host-home agent agent-version runtime-version docker docker-compose git cline-sdk semantic-harness package-managers; do
-      printf '%s\\tavailable\\n' "$name"
-    done
+    if [ "$3" = "true" ]; then exit 0; fi
+    if [ "$5" = "blame-runtime-agent" ]; then
+      printf 'docker-start\\n' >>"$state/events"
+      exit 0
+    fi
+    if [ "$6" = "-c" ]; then
+      count=$(cat "$state/copies" 2>/dev/null || echo 0)
+      count=$((count + 1))
+      printf '%s' "$count" >"$state/copies"
+      cat >"$state/payload"
+      if [ "$count" -le "\${BLAME_TEST_COPY_FAILURES:-0}" ]; then
+        printf 'Connection closed\\n' >&2
+        exit 255
+      fi
+      exit 0
+    fi
+    content=$(cat)
+    case "$content" in
+      *'host_mount="$1"'*)
+        for name in host-home agent agent-version runtime-version docker docker-compose git cline-sdk semantic-harness package-managers; do
+          status=available
+          if [ "$name" = "semantic-harness" ] && [ ! -f "$state/provisioned" ]; then status=missing; fi
+          printf '%s\\t%s\\n' "$name" "$status"
+        done
+        ;;
+      *)
+        mkdir "$state/provision-active"
+        sleep "\${BLAME_TEST_PROVISION_DELAY:-0}"
+        touch "$state/provisioned"
+        printf 'provision\\n' >>"$state/events"
+        rmdir "$state/provision-active"
+        ;;
+    esac
     ;;
 esac
 `;
@@ -428,3 +469,131 @@ function normalizePackageVersion(value: unknown) {
     ? value.trim().match(/\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?/)?.[0]
     : undefined;
 }
+
+test(
+  "serializes Lima repairs and recovers a dead lifecycle lock owner",
+  { skip: process.platform !== "darwin" },
+  async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "blame-lima-lock-"));
+    const state = path.join(root, "state");
+    const tools = path.join(root, "tools");
+    const cacheKey = "a".repeat(64);
+    try {
+      await runFakeMacosRuntimeSetup(root, tools, state, cacheKey);
+      const lock = path.join(
+        root,
+        "Library/Application Support/Blame/runtime/lima/.blame-lifecycle.lock",
+      );
+      await writeFile(lock, "2147483647\n");
+      const repair = () =>
+        execFileAsync(
+          path.join(root, "runtime/scripts/blame-lima-runtime.sh"),
+          ["repair"],
+          {
+            env: {
+              ...process.env,
+              HOME: root,
+              PATH: `${tools}:${process.env.PATH}`,
+              BLAME_LIMA_BIN: path.join(tools, "limactl"),
+              BLAME_TEST_CACHE_KEY: cacheKey,
+              BLAME_TEST_LIMA_STATE: state,
+              BLAME_TEST_PROVISION_DELAY: "0.4",
+            },
+            timeout: 15_000,
+          },
+        );
+      await Promise.all([repair(), repair()]);
+      assert.equal(await readFile(path.join(state, "copies"), "utf8"), "3");
+      assert.equal(
+        await readFile(path.join(state, "events"), "utf8"),
+        "provision\nprovision\nprovision\n",
+      );
+      await assert.rejects(access(lock));
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  },
+);
+
+test("boots an up-to-date Lima VM without transferring or provisioning again", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "blame-lima-restart-"));
+  const state = path.join(root, "state");
+  const run = (command = "ensure") =>
+    runFakeMacosRuntimeSetup(
+      root,
+      path.join(root, "tools"),
+      state,
+      "a".repeat(64),
+      { command },
+    );
+  try {
+    await run();
+    await rm(path.join(state, "running"));
+    const output = await run();
+    assert.deepEqual(uniquePhases(runtimeProgressFromOutput(output)), [
+      "starting",
+      "checking",
+    ]);
+    assert.equal(await readFile(path.join(state, "copies"), "utf8"), "1");
+    assert.equal(
+      await readFile(path.join(state, "events"), "utf8"),
+      "provision\ndocker-start\n",
+    );
+    await run("repair");
+    assert.equal(await readFile(path.join(state, "copies"), "utf8"), "2");
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("retries an interrupted Lima payload transfer before provisioning", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "blame-lima-copy-"));
+  const state = path.join(root, "state");
+  try {
+    await runFakeMacosRuntimeSetup(
+      root,
+      path.join(root, "tools"),
+      state,
+      "a".repeat(64),
+      { env: { BLAME_TEST_COPY_FAILURES: "1" } },
+    );
+    assert.equal(await readFile(path.join(state, "copies"), "utf8"), "2");
+    assert.equal(
+      await readFile(path.join(state, "events"), "utf8"),
+      "provision\n",
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("does not provision after repeated transfer failures or hide a failed VM creation", async () => {
+  const scenarios: Record<string, string>[] = [
+    { BLAME_TEST_COPY_FAILURES: "3" },
+    { BLAME_TEST_CREATE_FAIL: "1" },
+  ];
+  for (const env of scenarios) {
+    const root = await mkdtemp(path.join(tmpdir(), "blame-lima-failure-"));
+    const state = path.join(root, "state");
+    try {
+      await assert.rejects(
+        runFakeMacosRuntimeSetup(
+          root,
+          path.join(root, "tools"),
+          state,
+          "a".repeat(64),
+          { env },
+        ),
+        (error: unknown) => {
+          const failure = error as { code: number; stderr: string };
+          if (env.BLAME_TEST_CREATE_FAIL) assert.equal(failure.code, 42);
+          else assert.match(failure.stderr, /after 3 attempts/);
+          return true;
+        },
+      );
+      await assert.rejects(access(path.join(state, "provisioned")));
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  }
+});
