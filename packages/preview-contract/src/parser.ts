@@ -474,7 +474,9 @@ function validateBinding(
       `previewManifest binding references unknown endpoint ${binding.source.endpoint}`,
     );
   if (binding.format === "url" && endpoint.protocol === "tcp") {
-    throw new Error("previewManifest URL binding requires an HTTP endpoint");
+    throw new Error(
+      `previewManifest URL binding ${consumer.id}.${binding.target.key} targets TCP endpoint ${source.id}.${endpoint.id}. URL bindings require an HTTP endpoint. For TCP use format host, port or host-port. For a database connection URI, remove this binding, put the complete database URI in the consumer environment and add ${source.id} to dependsOn.`,
+    );
   }
   if (consumer.id === source.id && binding.exposure === "server") {
     throw new Error(

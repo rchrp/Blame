@@ -1,10 +1,9 @@
-import { execFile, spawn } from "node:child_process";
+import { execFile } from "node:child_process";
 import { existsSync } from "node:fs";
 import {
   appendFile,
   mkdir,
   readFile,
-  readdir,
   rename,
   writeFile,
 } from "node:fs/promises";
@@ -12,8 +11,14 @@ import { basename, join, relative, resolve } from "node:path";
 import { promisify } from "node:util";
 import type { ApiConnection, ReasoningSelection } from "@blame/agent-runtime";
 import { withoutTelemetryEnvironment } from "@blame/telemetry";
-import { setupPath } from "./host-tool-path.ts";
+import { projectNameError } from "@blame/agent-runtime/project-name";
+import {
+  installGeneratedProjectDependencies,
+  type ProjectCreationEvent,
+  type ProjectCommandRunner,
+} from "./project-creation-dependencies.ts";
 import { sanitizeWorkspaceConfigFiles } from "./workspace-config-sanitizer.ts";
+import { generatedProjectBuildDependencies } from "./project-creation-pnpm-builds.ts";
 import {
   blamePreview,
   dockerCompose,
@@ -37,6 +42,9 @@ const generatedProjectGitignoreEntries = [
   ".pnpm-store/",
   "node_modules/",
   "**/node_modules/",
+  ".venv/",
+  "**/.venv/",
+  "__pycache__/",
   "**/.nuxt/",
   "**/.next/",
   ".env",
@@ -196,11 +204,6 @@ export type ProjectCreationRecipe = {
   overlays: Array<{ path: string; content: string }>;
 };
 
-type ProjectCreationEvent = {
-  type: "stdout" | "stderr" | "exit";
-  data: string;
-};
-
 type ProjectCreationWindow = {
   webContents: {
     send(channel: string, event: ProjectCreationEvent): void;
@@ -209,6 +212,8 @@ type ProjectCreationWindow = {
 
 let projectCreationWindowsProvider = () => [] as ProjectCreationWindow[];
 let newProjectAgentRuntime: NewProjectAgentRuntime | undefined;
+// A failed installation can be retried in this wizard without regenerating files.
+const generatedProjects = new Map<string, { key: string; target: string }>();
 
 export function setProjectCreationWindowsProvider(
   provider: () => ProjectCreationWindow[],
@@ -222,37 +227,61 @@ export function setNewProjectAgentRuntime(
   newProjectAgentRuntime = runtime;
 }
 
-export async function createProject(input: CreateProjectInput) {
-  const target = await validateProjectTarget(
-    input.parentPath,
-    input.projectName,
-  );
+export async function createProject(
+  input: CreateProjectInput,
+  options: { runCommand?: ProjectCommandRunner } = {},
+) {
+  const key = JSON.stringify([
+    input.parentPath.trim(),
+    input.projectName.trim(),
+    input.configuration,
+  ]);
+  const previous = generatedProjects.get(input.runId);
+  const resume = previous?.key === key ? previous : undefined;
+  const target =
+    resume?.target ??
+    (await validateProjectTarget(input.parentPath, input.projectName));
   const emit = projectCreationEmitter(input.runId);
 
   if (!newProjectAgentRuntime) {
     throw new Error("New project agent runtime is not available.");
   }
 
-  await mkdir(target, { recursive: true });
-  emit({ type: "stdout", data: `Preparing empty project folder: ${target}\n` });
-  emit({ type: "stdout", data: "Starting AI project generation agent...\n" });
+  if (!resume) {
+    await mkdir(target);
+    emit({
+      type: "stdout",
+      data: `Preparing empty project folder: ${target}\n`,
+    });
+    emit({ type: "stdout", data: "Starting AI project generation agent...\n" });
 
-  await newProjectAgentRuntime.generate({
-    apiConnection: input.apiConnection,
-    configuration: input.configuration,
-    credentialLabel: input.credentialLabel,
-    cwd: target,
-    modelId: input.modelId,
-    projectName: basename(target),
-    providerId: input.providerId,
-    reasoningEffort: input.reasoningEffort,
-    sessionId: input.runId,
-    workspaceRoot: target,
-  });
+    await newProjectAgentRuntime.generate({
+      apiConnection: input.apiConnection,
+      configuration: input.configuration,
+      credentialLabel: input.credentialLabel,
+      cwd: target,
+      modelId: input.modelId,
+      projectName: basename(target),
+      providerId: input.providerId,
+      reasoningEffort: input.reasoningEffort,
+      sessionId: input.runId,
+      workspaceRoot: target,
+    });
+    if (generatedProjects.size >= 20)
+      generatedProjects.delete(generatedProjects.keys().next().value!);
+    generatedProjects.set(input.runId, { key, target });
+  }
 
   await sanitizeWorkspaceConfigFiles(target);
+  await installGeneratedProjectDependencies(
+    target,
+    input.configuration,
+    emit,
+    options.runCommand,
+  );
 
   await initializeGeneratedRepository(target, emit);
+  generatedProjects.delete(input.runId);
 
   emit({ type: "exit", data: "0" });
   return {
@@ -315,13 +344,12 @@ export async function validateProjectTarget(
   projectName: string,
 ) {
   const name = projectName.trim();
-  if (!/^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(name)) {
-    throw new Error(
-      "Project name can contain letters, numbers, dots, dashes and underscores.",
-    );
-  }
+  const nameError = projectNameError(projectName);
+  if (nameError) throw new Error(nameError);
+  if (!parentPath.trim())
+    throw new Error("Choose a location for your project.");
 
-  const parent = resolve(parentPath);
+  const parent = resolve(parentPath.trim());
   const target = resolve(parent, name);
   const pathInsideParent = relative(parent, target);
   if (!pathInsideParent || pathInsideParent.startsWith("..")) {
@@ -330,8 +358,10 @@ export async function validateProjectTarget(
     );
   }
 
-  if (existsSync(target) && (await readdir(target)).length > 0) {
-    throw new Error("Project directory already exists and is not empty.");
+  if (existsSync(target)) {
+    throw new Error(
+      "A file or folder already exists here. Choose another name or location.",
+    );
   }
 
   await mkdir(parent, { recursive: true });
@@ -738,13 +768,7 @@ async function updatePackageJson(
 
 function pnpmOnlyBuiltDependencies(configuration: NewProjectConfiguration) {
   if (configuration.packageManager !== "pnpm") return [];
-  return [
-    "unrs-resolver",
-    ...(configuration.frontend === "next" ? ["sharp"] : []),
-    ...(configuration.orm === "prisma" ? ["@prisma/engines", "prisma"] : []),
-    ...(configuration.database === "sqlite" ? ["better-sqlite3"] : []),
-    ...(configuration.advancedOptions.includes("auth") ? ["msw"] : []),
-  ].sort();
+  return generatedProjectBuildDependencies(configuration);
 }
 
 async function updateTypeScriptAliases(
@@ -937,44 +961,6 @@ function scaffoldProjectName(target: string) {
     .replace(/[^a-zA-Z0-9._-]+/g, "-")
     .replace(/^[._-]+|[._-]+$/g, "")
     .toLowerCase();
-}
-
-function runCommand(
-  recipe: CommandRecipe,
-  emit: (event: ProjectCreationEvent) => void,
-) {
-  emit({
-    type: "stdout",
-    data: `$ ${recipe.command} ${recipe.args.join(" ")}\n`,
-  });
-
-  return new Promise<void>((resolveCommand, reject) => {
-    const child = spawn(recipe.command, recipe.args, {
-      cwd: recipe.cwd,
-      env: {
-        ...withoutTelemetryEnvironment(process.env),
-        CI: "true",
-        PATH: setupPath(),
-        npm_config_yes: "true",
-      },
-      shell: process.platform === "win32",
-    });
-    child.stdin.end();
-
-    child.stdout.on("data", (data: Buffer) =>
-      emit({ type: "stdout", data: data.toString() }),
-    );
-    child.stderr.on("data", (data: Buffer) =>
-      emit({ type: "stderr", data: data.toString() }),
-    );
-    child.on("error", (error) => reject(error));
-    child.on("exit", (code) => {
-      if (code === 0) return resolveCommand();
-      reject(
-        new Error(`${recipe.command} exited with code ${code ?? "unknown"}.`),
-      );
-    });
-  });
 }
 
 function projectCreationEmitter(runId: string) {

@@ -123,7 +123,7 @@ Every run configuration must classify and group a runnable project surface:
 </container_run_configuration_contract>
 
 <binding_contract>
-Use `bindings[]` on a consuming service for every runtime address derived from another service or from the allocated browser origin.
+Use `bindings[]` on a consuming service for runtime addresses supported by the binding formats below.
 
 - `target.type` must be `environment` and `target.key` must use the exact variable name read by project code.
 - `source.service` and `source.endpoint` must reference a declared service endpoint.
@@ -131,6 +131,9 @@ Use `bindings[]` on a consuming service for every runtime address derived from a
 - Use `exposure: "browser"` only for values embedded in browser code. Blame publishes that source endpoint on loopback and compiles the value after allocating the host port.
 - Treat framework server routes, SSR code, and server-side proxies as container consumers. For example, a Nuxt frontend that proxies relative `/api` requests needs a server binding such as `NUXT_API_BASE_URL` even when it also exposes `NUXT_PUBLIC_API_BASE_URL` to browser code.
 - Use `format` to request `url`, `host`, `port`, or `host-port`; default to `url`.
+- `url` produces only HTTP/HTTPS URLs and requires an `http` or `https` endpoint. Never use it for a `tcp` endpoint, even if the variable is named `DATABASE_URL` or `REDIS_URL`.
+- For TCP consumers with separate host/port variables, use server bindings with `host`, `port`, or `host-port` as appropriate.
+- Database connection URIs (postgresql://, mysql://, mongodb://, redis://, etc.) cannot be represented by URL bindings. Put the complete URI in the consuming service's `environment`, referencing the dependency service id and container port, and add that service id to `dependsOn`. For example, use `DATABASE_URL: "postgresql://blame:blame@database:5432/blame"` with `dependsOn: ["database"]` for an isolated PostgreSQL service configured with those credentials. Setup tasks connecting to it need the same environment and dependency. Do not replace a database URI with a bare host or host-port binding.
 - Never encode a topology-derived address directly in `environment` when it can be represented as a binding.
 </binding_contract>
 
@@ -158,7 +161,7 @@ Use `probes[]` to prove that required service paths work after startup.
 - For Nuxt, use the development command for source-mounted previews unless the setup lifecycle builds first.
 - Use exact environment variable names found in scripts, config, validators, and env examples.
 - Never copy real credentials or placeholder credentials from environment files into the manifest. When the user requests an isolated database, use only the fixed public throwaway value `blame` for database password variables and embedded database URL passwords, consistently across the database, setup tasks, and consumers.
-- Represent inter-service and browser-origin addresses with typed bindings instead of literal localhost or internal DNS values.
+- Represent inter-service and browser-origin addresses with typed bindings when supported; complete database URIs use environment and dependsOn as described in the binding contract.
 - Distinguish variables read by server-side framework code from variables embedded in browser bundles; declare both when the project uses both.
 - Include database migration setup tasks when migrations are detected and required.
 - Setup tasks that run project code, such as seeds, need generated artifacts first: generate ORM clients (for example `prisma generate`) in setup before seeding, and make every setup task that connects to a database depend on that database service.

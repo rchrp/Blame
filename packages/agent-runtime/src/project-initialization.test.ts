@@ -389,6 +389,82 @@ test("normalizes isolated database passwords before manifest validation", () => 
   );
 });
 
+test("explains how to repair a database URL binding without changing TCP to HTTP", () => {
+  const value = canonicalResult();
+  value.previewManifest.services.push({
+    id: "database",
+    kind: "dependency",
+    container: { image: "postgres:17" },
+    environment: {
+      POSTGRES_USER: "blame",
+      POSTGRES_PASSWORD: "blame",
+      POSTGRES_DB: "blame",
+    },
+    endpoints: [{ id: "postgres", protocol: "tcp", port: 5432 }],
+  });
+  const app = value.previewManifest.services[1]!;
+  app.bindings!.push({
+    target: { type: "environment", key: "DATABASE_URL" },
+    source: { service: "database", endpoint: "postgres" },
+    exposure: "server",
+  });
+  assert.throws(
+    () => parseProjectInitializationPayload(value),
+    /app\.DATABASE_URL.*database\.postgres.*complete database URI.*dependsOn/,
+  );
+
+  app.bindings = app.bindings!.filter(
+    ({ target }) => target.key !== "DATABASE_URL",
+  );
+  app.environment = {
+    DATABASE_URL: "postgresql://blame:blame@database:5432/blame",
+  };
+  app.dependsOn = ["api", "database"];
+  const parsed = parseProjectInitializationPayload(value);
+  assert.equal(
+    parsed.previewManifest.services[1]!.environment!.DATABASE_URL,
+    app.environment.DATABASE_URL,
+  );
+  assert.ok(
+    parsed.previewManifest.services[1]!.dependsOn!.includes("database"),
+  );
+  assert.equal(
+    parsed.previewManifest.services.at(-1)!.endpoints[0]!.protocol,
+    "tcp",
+  );
+});
+
+test("accepts separate TCP host and port bindings", () => {
+  const value = canonicalResult();
+  value.previewManifest.services.push({
+    id: "cache",
+    kind: "dependency",
+    container: { image: "redis:7" },
+    endpoints: [{ id: "redis", protocol: "tcp", port: 6379 }],
+  });
+  const app = value.previewManifest.services[1]!;
+  app.bindings!.push(
+    ...(["host", "port"] as const).map((format) => ({
+      target: {
+        type: "environment" as const,
+        key: `CACHE_${format.toUpperCase()}`,
+      },
+      source: { service: "cache", endpoint: "redis" },
+      exposure: "server" as const,
+      format,
+    })),
+  );
+  const parsed = parseProjectInitializationPayload(value);
+  assert.equal(
+    parsed.previewManifest.services[1]!.environment!.CACHE_HOST,
+    "cache",
+  );
+  assert.equal(
+    parsed.previewManifest.services[1]!.environment!.CACHE_PORT,
+    "6379",
+  );
+});
+
 test("removes generated database credentials when using the configured database", () => {
   const value = canonicalResult();
   value.previewManifest.services[1]!.environment = {

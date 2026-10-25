@@ -443,8 +443,8 @@ export function newProjectGenerationPrompt(
     "- Do not downgrade or upgrade framework versions after the CLI creates the starter.",
     "- Keep framework config file extensions compatible with the installed framework version.",
     "- Do not chase build, lint, peer dependency, or framework warnings during project creation.",
-    "- Do not read files at the end to verify coherence. Stop after dependency installation and final required file writes.",
-    "- After all scaffold and installation commands, create or update the root .gitignore without replacing existing entries. It must exclude dependencies, framework build output, Blame runtime artifacts, and runtime .env files while keeping .env templates trackable.",
+    "- Stop after scaffolding and final required file writes. Blame installs dependencies after you finish.",
+    "- After all scaffold commands, create or update the root .gitignore without replacing existing entries. It must exclude dependencies, framework build output, Blame runtime artifacts, and runtime .env files while keeping .env templates trackable.",
     "",
     "Wizard brief (normalized JSON):",
     JSON.stringify(
@@ -474,12 +474,12 @@ export function newProjectGenerationPrompt(
     "- Do not use sudo and do not require global installs.",
     "",
     "Verification before completion:",
-    "- Install dependencies once using the selected package manager/runtime.",
+    "- Blame installs dependencies using the selected package manager/runtime after you finish. Use scaffold skip-install flags when available; do not run a separate install or approve-builds command.",
+    "- Declare the selected package manager in package.json. For a monorepo, create a root workspace manifest.",
     "- Do not run build, lint, test, dev servers, preview commands, or long-running processes.",
-    "- Do not inspect generated source files after installation unless dependency installation failed and the exact file must be fixed.",
     "- Read and finalize the root .gitignore after commands have completed.",
-    "- Fix only errors that prevent the framework starter from being created or dependencies from being installed.",
-    "- Finish with a concise summary of scaffolded files, dependency installation result, and any caveats.",
+    "- Fix only errors that prevent the framework starter from being created or dependencies from being installable.",
+    "- Finish with a concise summary of scaffolded files, dependency manifests, and any caveats.",
   ].join("\n");
 }
 

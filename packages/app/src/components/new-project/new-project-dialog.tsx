@@ -83,7 +83,10 @@ export function NewProjectWizardDialog({
 function WizardDialogSurface({ wizard }: { wizard: NewProjectWizard }) {
   return (
     <DialogContent
-      className="flex max-h-[min(88svh,52rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl"
+      className={cn(
+        "flex max-h-[min(88svh,52rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl",
+        wizard.step === "location" && "sm:max-w-xl"
+      )}
       showCloseButton={!wizard.creating}
       onInteractOutside={(event) => event.preventDefault()}
       onEscapeKeyDown={(event) => {
@@ -102,7 +105,9 @@ function WizardBody({ wizard }: { wizard: NewProjectWizard }) {
       <DialogHeader className="shrink-0 border-b px-5 py-4 pr-12">
         <DialogTitle>New Project</DialogTitle>
         <DialogDescription>
-          Generate a codebase ready for Blame workflows.
+          {wizard.step === "location"
+            ? "Name your project and choose where to save it."
+            : "Generate a codebase ready for Blame workflows."}
         </DialogDescription>
       </DialogHeader>
       <div className="grid min-h-0 flex-1 gap-5 overflow-y-auto overscroll-contain px-5 py-5">
@@ -119,7 +124,7 @@ function WizardBody({ wizard }: { wizard: NewProjectWizard }) {
 }
 
 function StepProgress({ wizard }: { wizard: NewProjectWizard }) {
-  if (wizard.step === "progress") return null
+  if (wizard.step === "progress" || wizard.step === "location") return null
   return (
     <nav aria-label="Project creation steps">
       <p className="text-xs text-muted-foreground">
@@ -183,77 +188,104 @@ function StepContent({ wizard }: { wizard: NewProjectWizard }) {
 }
 
 function LocationStep({ wizard }: { wizard: NewProjectWizard }) {
+  const [nameTouched, setNameTouched] = React.useState(false)
+  const nameError =
+    nameTouched || wizard.projectName.length > 0 ? wizard.nameError : undefined
   return (
-    <StepFrame
-      title="Location"
-      description="Choose where Blame should create the project."
+    <section
+      aria-label="Project name and location"
+      className="grid gap-6 py-2"
+      onKeyDown={(event) => {
+        if (event.key === "Enter" && event.target instanceof HTMLInputElement) {
+          event.preventDefault()
+          wizard.goNext()
+        }
+      }}
     >
-      <div className="grid gap-4 rounded-xl border bg-background/45 p-4">
-        <Field>
-          <FieldLabel htmlFor="new-project-parent">Parent folder</FieldLabel>
-          <FieldDescription>
-            Pick the folder that will contain the generated project.
-          </FieldDescription>
-          <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
-            <Input
-              id="new-project-parent"
-              className="h-9 bg-background/70"
-              value={wizard.parentPath}
-              placeholder="/path/to/projects"
-              onChange={(event) =>
-                wizard.setParentPath(event.currentTarget.value)
-              }
-            />
-            <Button
-              type="button"
-              variant="outline"
-              className="h-9"
-              onClick={() => void wizard.chooseParentPath()}
-            >
-              <FolderIcon />
-              Browse
-            </Button>
-          </div>
-        </Field>
-        <Field>
-          <FieldLabel htmlFor="new-project-name">Project name</FieldLabel>
-          <FieldDescription>
-            Use a short, readable folder name for the new codebase.
-          </FieldDescription>
+      <Field data-invalid={Boolean(nameError)}>
+        <FieldLabel htmlFor="new-project-name">Project name</FieldLabel>
+        <Input
+          id="new-project-name"
+          autoFocus
+          autoComplete="off"
+          spellCheck={false}
+          className="h-10"
+          value={wizard.projectName}
+          placeholder="my-project"
+          aria-invalid={Boolean(nameError)}
+          aria-describedby={nameError ? "new-project-name-error" : undefined}
+          onBlur={() => setNameTouched(true)}
+          onChange={(event) => wizard.setProjectName(event.currentTarget.value)}
+        />
+        {nameError && (
+          <p
+            id="new-project-name-error"
+            role="alert"
+            className="text-sm text-destructive"
+          >
+            {nameError}
+          </p>
+        )}
+      </Field>
+      <Field data-invalid={Boolean(wizard.targetError)}>
+        <FieldLabel htmlFor="new-project-parent">Location</FieldLabel>
+        <div className="flex gap-2">
           <Input
-            id="new-project-name"
-            className="h-9 bg-background/70"
-            value={wizard.projectName}
-            placeholder="my-blame-project"
+            id="new-project-parent"
+            className="h-10 min-w-0 flex-1"
+            value={wizard.parentPath}
+            placeholder="Choose a parent folder"
+            autoComplete="off"
+            spellCheck={false}
+            aria-describedby="new-project-path"
+            aria-invalid={Boolean(wizard.targetError)}
             onChange={(event) =>
-              wizard.setProjectName(event.currentTarget.value)
+              wizard.setParentPath(event.currentTarget.value)
             }
           />
-        </Field>
+          <Button
+            type="button"
+            variant="outline"
+            className="h-10 shrink-0"
+            onClick={() => void wizard.chooseParentPath()}
+          >
+            <FolderIcon />
+            Browse
+          </Button>
+        </div>
         <ProjectPathPreview wizard={wizard} />
-      </div>
+      </Field>
       {!wizard.createProjectAvailable ? (
-        <p className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+        <p className="text-sm text-muted-foreground">
           Project generation requires the desktop app and a connected AI model.
         </p>
       ) : null}
-    </StepFrame>
+    </section>
   )
 }
 
 function ProjectPathPreview({ wizard }: { wizard: NewProjectWizard }) {
-  const parentPath = wizard.parentPath.trim() || "/path/to/projects"
-  const projectName = wizard.projectName.trim() || "my-blame-project"
-
   return (
-    <div className="grid gap-1 rounded-lg bg-muted/35 p-3">
-      <span className="text-xs font-medium text-foreground/70">
-        Project path
-      </span>
-      <span className="truncate font-mono text-xs text-foreground/60">
-        {parentPath}/{projectName}
-      </span>
-    </div>
+    <FieldDescription id="new-project-path" className="break-all">
+      {wizard.projectPath && !wizard.nameError ? (
+        <>
+          {wizard.targetError ? "Project folder: " : "Create in "}
+          <span className="text-foreground">{wizard.projectPath}</span>
+          {wizard.checkingTarget && (
+            <span role="status" className="mt-1 block">
+              Checking folder…
+            </span>
+          )}
+          {wizard.targetError && (
+            <span role="alert" className="mt-1 block text-destructive">
+              {wizard.targetError}
+            </span>
+          )}
+        </>
+      ) : (
+        "A new folder will be created here for your project."
+      )}
+    </FieldDescription>
   )
 }
 
@@ -458,26 +490,42 @@ function ProgressFooter({ wizard }: { wizard: NewProjectWizard }) {
       </p>
     )
   return (
-    <Button
-      type="button"
-      variant="outline"
-      onClick={() => wizard.setStep("summary")}
-    >
-      Back to summary
-    </Button>
+    <>
+      <Button
+        type="button"
+        variant="outline"
+        onClick={() => wizard.setStep("summary")}
+      >
+        Back to summary
+      </Button>
+      <Button
+        type="button"
+        disabled={!wizard.createProjectAvailable}
+        onClick={() => void wizard.createProject()}
+      >
+        Try again
+      </Button>
+    </>
   )
 }
 
 function WizardNavigation({ wizard }: { wizard: NewProjectWizard }) {
   return (
     <>
+      {wizard.step === "location" && (
+        <span className="mr-auto self-center text-xs text-muted-foreground">
+          Step 1 of {wizard.steps.length}
+        </span>
+      )}
       <Button
         type="button"
         variant="outline"
-        disabled={!wizard.canGoBack}
-        onClick={wizard.goBack}
+        disabled={wizard.step !== "location" && !wizard.canGoBack}
+        onClick={() =>
+          wizard.step === "location" ? wizard.setOpen(false) : wizard.goBack()
+        }
       >
-        Back
+        {wizard.step === "location" ? "Cancel" : "Back"}
       </Button>
       {wizard.step === "summary" ? (
         <CreateProjectButton wizard={wizard} />

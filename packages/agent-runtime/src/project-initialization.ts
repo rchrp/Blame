@@ -185,7 +185,11 @@ export const projectInitializationResultSchema = {
                       },
                     },
                     exposure: { enum: ["server", "browser"] },
-                    format: { enum: ["url", "host", "port", "host-port"] },
+                    format: {
+                      enum: ["url", "host", "port", "host-port"],
+                      description:
+                        "url (the default) is only for HTTP/HTTPS endpoints. TCP endpoints require host, port or host-port. Complete database URIs belong in environment with dependsOn, not in bindings.",
+                    },
                     path: { type: "string" },
                   },
                 },

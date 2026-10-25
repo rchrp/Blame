@@ -43,6 +43,7 @@ For `repairable_initialization`:
 - probe `from` must be `host` or an exact service id; when a service kind has one instance, Blame also accepts that kind as an unambiguous alias
 - declare typed endpoints and bindings for every topology-derived runtime address
 - put each binding inside its consuming service; never add `bindings` at the `previewManifest` root
+- `format: "url"` (also the default when omitted) requires HTTP/HTTPS, never TCP. For TCP use host, port or host-port bindings only when the app reads that format. Put complete database connection URIs in the consumer environment using the dependency service id and container port, with an explicit dependsOn, instead of a URL binding. Preserve the protocol, database name and permitted isolated credentials; never replace a database URI with a bare host-port value.
 - declare server bindings used by SSR and framework proxy routes; a public browser binding alone cannot connect a Nuxt/Nitro server to its backend
 - add a required functional probe for each evidenced frontend-to-backend proxy boundary
 - setup work must live in `previewManifest.setup[]`

@@ -850,6 +850,8 @@ test("rejects a successful project generation session that created no project", 
     ]);
     assert.equal(fixture.start()?.toolPolicies?.skills?.enabled, false);
     assert.equal(fixture.start()?.toolPolicies?.run_commands?.enabled, true);
+    assert.match(String(fixture.start()?.prompt), /Blame installs dependencies/);
+    assert.doesNotMatch(String(fixture.start()?.prompt), /Install dependencies once/);
   } finally {
     await fixture.restore();
     await rm(workspace, { force: true, recursive: true });

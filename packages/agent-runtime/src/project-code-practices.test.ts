@@ -31,7 +31,10 @@ const practices = [
 ];
 
 test("parses every required project code practice", () => {
-  const result = parseProjectCodePracticesResult({ practices });
+  const result = parseProjectCodePracticesResult({
+    projectState: "established",
+    practices,
+  });
 
   assert.deepEqual(
     result.map(({ practice }) => practice),
@@ -46,7 +49,11 @@ test("parses every required project code practice", () => {
 
 test("rejects incomplete project code practice results", () => {
   assert.throws(
-    () => parseProjectCodePracticesResult({ practices: practices.slice(0, 3) }),
+    () =>
+      parseProjectCodePracticesResult({
+        projectState: "established",
+        practices: practices.slice(0, 3),
+      }),
     /exactly four/,
   );
 });
@@ -55,6 +62,7 @@ test("rejects extra project code practice results", () => {
   assert.throws(
     () =>
       parseProjectCodePracticesResult({
+        projectState: "established",
         practices: [...practices, practices[0]],
       }),
     /exactly four/,
@@ -63,7 +71,7 @@ test("rejects extra project code practice results", () => {
 
 test("detects the commit convention when conventional commits are the majority", () => {
   const result = resolveProjectCodePracticesResult(
-    { practices },
+    { projectState: "established", practices },
     commitEvidence(36, 40),
   );
   const convention = result.find(
@@ -79,7 +87,7 @@ test("detects the commit convention when conventional commits are the majority",
 
 test("does not detect the commit convention without a strict majority", () => {
   const result = resolveProjectCodePracticesResult(
-    { practices },
+    { projectState: "established", practices },
     commitEvidence(20, 40),
   );
   const convention = result.find(
@@ -87,6 +95,68 @@ test("does not detect the commit convention without a strict majority", () => {
   );
 
   assert.equal(convention?.detected, false);
+});
+
+for (const evaluatedCount of [0, 1]) {
+  test(`preserves the analyst's starter defaults with ${evaluatedCount} non-conventional scaffold commits`, () => {
+    const starterPractices = practices.map(({ practice }) => ({
+      practice,
+      detected: true,
+      comment:
+        "Only template code is present; adopt the professional standard for future work.",
+    }));
+    const result = resolveProjectCodePracticesResult(
+      JSON.stringify({ projectState: "starter", practices: starterPractices }),
+      commitEvidence(0, evaluatedCount),
+    );
+
+    assert.equal(result.length, 4);
+    assert.ok(result.every(({ detected }) => detected));
+    assert.ok(
+      result.every(({ comment }) => comment === starterPractices[0]!.comment),
+    );
+  });
+}
+
+test("does not infer a starter from a short commit history", () => {
+  const result = resolveProjectCodePracticesResult(
+    { projectState: "established", practices },
+    commitEvidence(0, 1),
+  );
+  assert.equal(
+    result.find(({ practice }) => practice === "commit_message_convention")
+      ?.detected,
+    false,
+  );
+  assert.equal(
+    result.find(({ practice }) => practice === "layered_architecture")
+      ?.detected,
+    false,
+  );
+});
+
+test("requests a corrected analysis when starter practices contradict its defaults", () => {
+  assert.throws(
+    () =>
+      resolveProjectCodePracticesResult(
+        { projectState: "starter", practices },
+        commitEvidence(0, 0),
+      ),
+    /starter project.*detected: true for all four/,
+  );
+});
+
+test("requires the analyst to classify the project state", () => {
+  for (const projectState of [undefined, "new-project", true]) {
+    assert.throws(
+      () =>
+        resolveProjectCodePracticesResult(
+          { projectState, practices },
+          commitEvidence(0, 1),
+        ),
+      /projectState must be starter or established/,
+    );
+  }
 });
 
 test("scans nested manifests, configurations, tests, and source evidence", async (context) => {
@@ -146,7 +216,9 @@ function commitEvidence(conventionalCount: number, evaluatedCount: number) {
   return {
     conventionalCount,
     evaluatedCount,
-    conventionalRatio: conventionalCount / evaluatedCount,
+    conventionalRatio: evaluatedCount
+      ? conventionalCount / evaluatedCount
+      : null,
     messages: [],
     nonConventionalMessages: [],
   };

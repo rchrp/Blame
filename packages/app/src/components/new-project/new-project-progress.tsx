@@ -107,7 +107,7 @@ function CreationProgressHeader({
       }
       description={
         failed
-          ? "Review the details below, then return to the summary to try again."
+          ? "Review the details below, then try again or adjust your choices in the summary."
           : "Blame is generating and checking your codebase."
       }
       status={failed ? "failed" : status === "done" ? "completed" : "running"}

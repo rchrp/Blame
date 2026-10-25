@@ -20,8 +20,13 @@ type CodePracticesCorrection = {
 export const projectCodePracticesResultSchema = {
   type: "object",
   additionalProperties: false,
-  required: ["practices"],
+  required: ["projectState", "practices"],
   properties: {
+    projectState: {
+      enum: ["starter", "established"],
+      description:
+        "Classify the evidence, not the creation flow: starter means empty or only scaffold/template code with no substantive application behavior; otherwise use established.",
+    },
     practices: {
       type: "array",
       minItems: 4,
@@ -43,6 +48,7 @@ export const projectCodePracticesResultSchema = {
 export function projectCodePracticesPrompt(scan: ProjectCodePracticesScan) {
   return [
     "Analyze the code practices from the comprehensive project evidence below.",
+    "First classify the project as starter or established from its contents. For an empty or boilerplate-only starter, adopt all four professional practices with detected: true and explain the defaults in the comments.",
     "Call submit_project_code_practices exactly once with the complete result.",
     "Do not answer with JSON text.",
     `Project evidence: ${JSON.stringify(scan)}`,
@@ -69,6 +75,14 @@ export function parseProjectCodePracticesResult(
   if (!isRecord(parsed) || !Array.isArray(parsed.practices)) {
     throw new Error("Code practice analysis result is missing practices");
   }
+  if (
+    parsed.projectState !== "starter" &&
+    parsed.projectState !== "established"
+  ) {
+    throw new Error(
+      "Code practice analysis projectState must be starter or established",
+    );
+  }
   const practices = parsed.practices;
   if (practices.length !== requiredPractices.length) {
     throw new Error(
@@ -84,7 +98,17 @@ export function resolveProjectCodePracticesResult(
   value: unknown,
   commits: ProjectCodePracticesScan["commits"],
 ) {
-  const practices = parseProjectCodePracticesResult(value);
+  const parsed = typeof value === "string" ? parseText(value) : value;
+  const practices = parseProjectCodePracticesResult(parsed);
+  if (isRecord(parsed) && parsed.projectState === "starter") {
+    if (practices.some(({ detected }) => !detected)) {
+      throw new Error(
+        "For a starter project, return detected: true for all four practices and explain that they are professional defaults for future work.",
+      );
+    }
+    // Scaffold commits do not establish a convention; retain the analyst's defaults.
+    return practices;
+  }
   if (!commits.evaluatedCount) return practices;
   return practices.map((practice) =>
     practice.practice === "commit_message_convention"

@@ -5,9 +5,14 @@ import type {
   ProjectRunConfiguration,
 } from "@blame/agent-runtime"
 import { toast } from "sonner"
+import { projectNameError } from "@blame/agent-runtime/project-name"
 
 import { useModelSelection } from "@/components/model/model-selection"
 import { newProjectHostDependencyScript } from "@/components/new-project/new-project-host-dependencies"
+import {
+  newProjectPath,
+  useNewProjectLocation,
+} from "./use-new-project-location"
 import {
   defaultNewProjectConfiguration,
   normalizeNewProjectConfiguration,
@@ -94,6 +99,11 @@ export function useNewProjectWizard(input: {
   const [step, setStep] = React.useState<NewProjectStep>("location")
   const [parentPath, setParentPath] = React.useState("")
   const [projectName, setProjectName] = React.useState("")
+  const [ownedTargetKey, setOwnedTargetKey] = React.useState<string>()
+  const nameError = projectNameError(projectName)
+  const creation = React.useRef<{ key: string; runId: string; path?: string }>(
+    undefined
+  )
   const [creating, setCreating] = React.useState(false)
   const [error, setError] = React.useState<string>()
   const [logs, setLogs] = React.useState<ProjectCreationLog[]>([])
@@ -107,9 +117,24 @@ export function useNewProjectWizard(input: {
     () => normalizeNewProjectConfiguration(configuration),
     [configuration]
   )
+  const creationKey = JSON.stringify([
+    parentPath.trim(),
+    projectName.trim(),
+    normalizedConfiguration,
+  ])
+  const projectPath = newProjectPath(parentPath, projectName)
+  const location = useNewProjectLocation({
+    enabled: input.open && step === "location" && !nameError && !creating,
+    path: projectPath,
+    pathExists: platform.workspace?.pathExists,
+    ownedByCurrentAttempt: ownedTargetKey === creationKey,
+  })
   const currentStepIndex = Math.max(steps.indexOf(step), 0)
   const canGoBack = !creating && currentStepIndex > 0
-  const canGoNext = !creating && nextStepAllowed(step, parentPath, projectName)
+  const canGoNext =
+    !creating &&
+    nextStepAllowed(step, parentPath, projectName) &&
+    (step !== "location" || location.available)
   const createProjectAvailable = Boolean(
     platform.workspace?.createProject &&
     platform.agent &&
@@ -125,6 +150,8 @@ export function useNewProjectWizard(input: {
     setLogs([])
     setStatus("idle")
     setConfiguration(defaultNewProjectConfiguration)
+    creation.current = undefined
+    setOwnedTargetKey(undefined)
   }, [])
 
   async function chooseParentPath() {
@@ -196,11 +223,17 @@ export function useNewProjectWizard(input: {
   }
 
   function goNext() {
+    if (!canGoNext) return
     const nextStep = steps[currentStepIndex + 1]
     if (nextStep) setStep(nextStep)
   }
 
   async function createProject() {
+    if (nameError || !parentPath.trim()) {
+      setStep("location")
+      setError(nameError ?? "Choose a location for your project.")
+      return
+    }
     const workspace = platform.workspace
     if (!workspace?.createProject) {
       setError("Project creation is available only in the desktop app.")
@@ -258,14 +291,27 @@ export function useNewProjectWizard(input: {
   async function runProjectCreation() {
     const workspace = platform.workspace
     if (!workspace?.createProject) return
-    setLogs([])
     setStep("progress")
     setStatus("preparing")
 
-    const runId = crypto.randomUUID()
+    const key = creationKey
+    if (creation.current?.key !== key) {
+      creation.current = { key, runId: crypto.randomUUID() }
+      setLogs([])
+    }
+    const attempt = creation.current
+    const runId = attempt.runId
     const unsubscribe = workspace.onProjectCreationEvent?.(runId, (event) => {
-      setLogs((current) => appendProjectCreationLog(current, event))
-      setStatus(statusFromProjectCreationEvent(event))
+      if (
+        event.type === "stdout" &&
+        event.data.startsWith("Preparing empty project folder:")
+      ) {
+        setOwnedTargetKey(key)
+      }
+      if (event.type !== "exit") {
+        setLogs((current) => appendProjectCreationLog(current, event))
+      }
+      setStatus((current) => statusFromProjectCreationEvent(event, current))
     })
     const unsubscribeAgent = platform.agent?.sessions.onEvent(
       runId,
@@ -287,17 +333,21 @@ export function useNewProjectWizard(input: {
       if (auth.status !== "authenticated" || !currentModel || !agent) {
         throw new Error("AI model selection is required to create a project.")
       }
-      const createdProject = await workspace.createProject({
-        apiConnection: auth.apiConnection,
-        configuration: normalizedConfiguration,
-        credentialLabel: currentModel.credentialLabel,
-        modelId: currentModel.id,
-        parentPath,
-        projectName,
-        providerId: currentModel.provider.id,
-        reasoningEffort: modelSelection.currentVariant,
-        runId,
-      })
+      const createdProject = attempt.path
+        ? { path: attempt.path }
+        : await workspace.createProject({
+            apiConnection: auth.apiConnection,
+            configuration: normalizedConfiguration,
+            credentialLabel: currentModel.credentialLabel,
+            modelId: currentModel.id,
+            parentPath,
+            projectName,
+            providerId: currentModel.provider.id,
+            reasoningEffort: modelSelection.currentVariant,
+            runId,
+          })
+      attempt.path = createdProject.path
+      setOwnedTargetKey(key)
       setStatus("verifying")
       setLogs((current) =>
         appendProjectCreationLog(current, {
@@ -370,6 +420,7 @@ export function useNewProjectWizard(input: {
   return {
     canGoBack,
     canGoNext,
+    checkingTarget: location.checking,
     chooseParentPath,
     configuration: normalizedConfiguration,
     createProject,
@@ -389,8 +440,10 @@ export function useNewProjectWizard(input: {
       report: hostDependenciesDialog?.report,
     },
     logs,
+    nameError,
     parentPath,
     projectName,
+    projectPath,
     setBackend,
     setCodeQuality,
     setDatabase,
@@ -407,6 +460,7 @@ export function useNewProjectWizard(input: {
     step,
     steps,
     status,
+    targetError: location.error,
     toggleAdvancedOption,
   }
 }
@@ -423,7 +477,7 @@ function nextStepAllowed(
   projectName: string
 ) {
   if (step !== "location") return true
-  return Boolean(parentPath.trim() && projectName.trim())
+  return Boolean(parentPath.trim() && !projectNameError(projectName))
 }
 
 function defaultUi(frontend: FrontendFramework): UiLibrary {
@@ -435,17 +489,20 @@ function defaultUi(frontend: FrontendFramework): UiLibrary {
 }
 
 function statusFromProjectCreationEvent(
-  event: ProjectCreationLog
+  event: ProjectCreationLog,
+  current: ProjectCreationStatus
 ): ProjectCreationStatus {
-  if (event.type === "exit") return "done"
-  if (/preparing/i.test(event.data)) return "preparing"
-  if (/install|dependencies/i.test(event.data)) return "installing"
-  if (/verify|build|lint|test|preview/i.test(event.data)) return "verifying"
-  return "generating"
+  if (event.type === "exit" || event.data === "$ git init\n") return "verifying"
+  if (event.data.startsWith("Preparing empty project folder:"))
+    return "preparing"
+  if (event.data === "Starting AI project generation agent...\n")
+    return "generating"
+  if (event.data === "Installing project dependencies...\n") return "installing"
+  return current
 }
 
 function statusFromAgentEvent(event: AgentEvent): ProjectCreationStatus {
-  if (event.type === "done") return "done"
+  if (event.type === "done") return "generating"
   if (event.type === "error") return "error"
   const text = eventText(event.payload)
   if (/install|dependencies/i.test(text)) return "installing"

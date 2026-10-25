@@ -61,8 +61,21 @@ test("rejects non-empty target directories", async () => {
 
   await assert.rejects(
     () => validateProjectTarget(parent, "taken"),
-    /not empty/,
+    /already exists/,
   );
+});
+
+test("rejects existing empty folders and files too", async () => {
+  const parent = await mkdtemp(join(tmpdir(), "blame-existing-project-"));
+  await mkdir(join(parent, "empty"));
+  await writeFile(join(parent, "file"), "keep this file");
+  for (const name of ["empty", "file"]) {
+    await assert.rejects(
+      validateProjectTarget(parent, name),
+      /already exists.*another name or location/,
+    );
+  }
+  assert.equal(await readFile(join(parent, "file"), "utf8"), "keep this file");
 });
 
 test("accepts valid parent and project name", async () => {
@@ -95,24 +108,90 @@ test("creates an empty target directory and delegates generation to the AI agent
   });
 
   try {
-    const result = await createProject({
-      apiConnection: { url: "http://localhost" },
-      configuration: baseConfiguration,
-      modelId: "model",
-      parentPath: parent,
-      projectName: "agent-app",
-      providerId: "provider",
-      runId: "agent-run",
-    });
+    const commands: string[] = [];
+    const result = await createProject(
+      {
+        apiConnection: { url: "http://localhost" },
+        configuration: baseConfiguration,
+        modelId: "model",
+        parentPath: parent,
+        projectName: "agent-app",
+        providerId: "provider",
+        runId: "agent-run",
+      },
+      {
+        async runCommand(command) {
+          commands.push(command.command);
+          await writeFile(
+            join(command.cwd, "pnpm-lock.yaml"),
+            "lockfileVersion: '9.0'\n",
+          );
+        },
+      },
+    );
 
     assert.equal(receivedCwd, join(parent, "agent-app"));
     assert.equal(receivedConfiguration, baseConfiguration);
     assert.equal(result.path, join(parent, "agent-app"));
+    assert.deepEqual(commands, ["pnpm"]);
+    assert.match(
+      (await runGit(result.path, ["ls-files"])).stdout,
+      /pnpm-lock.yaml/,
+    );
     const gitRoot = await runGit(result.path, ["rev-parse", "--show-toplevel"]);
     assert.equal(gitRoot.stdout.trim(), await realpath(result.path));
   } finally {
     setNewProjectAgentRuntime(undefined);
   }
+});
+
+test("retries a failed dependency installation without regenerating the project", async () => {
+  const parent = await mkdtemp(join(tmpdir(), "blame-retry-project-"));
+  let generations = 0;
+  let installs = 0;
+  setNewProjectAgentRuntime({
+    async generate(input) {
+      generations += 1;
+      await writeFile(join(input.cwd, "package.json"), '{"name":"retry-app"}');
+      return { path: input.cwd, sessionId: input.sessionId! };
+    },
+  });
+  const input = {
+    apiConnection: { url: "http://localhost" },
+    configuration: baseConfiguration,
+    modelId: "model",
+    parentPath: parent,
+    projectName: "retry-app",
+    providerId: "provider",
+    runId: "install-retry-run",
+  };
+  const options = {
+    async runCommand() {
+      installs += 1;
+      if (installs === 1) throw new Error("registry unavailable");
+    },
+  };
+  try {
+    await assert.rejects(
+      createProject(input, options),
+      /Dependency installation failed.*registry unavailable.*try again/,
+    );
+    await assert.rejects(stat(join(parent, "retry-app", ".git")), /ENOENT/);
+    const result = await createProject(input, options);
+    assert.equal(generations, 1);
+    assert.equal(installs, 2);
+    assert.equal((await stat(join(result.path, ".git"))).isDirectory(), true);
+  } finally {
+    setNewProjectAgentRuntime(undefined);
+  }
+});
+
+test("rejects spaces in project names before running the agent", async () => {
+  const parent = await mkdtemp(join(tmpdir(), "blame-invalid-project-"));
+  await assert.rejects(
+    validateProjectTarget(parent, "my app"),
+    /Replace spaces with dashes/,
+  );
 });
 
 test("initializes generated projects as independent git repositories", async () => {
@@ -208,7 +287,9 @@ test("pins package manager in generated package manifest", async () => {
   );
   assert.equal(parsed.packageManager, "pnpm@10.33.2");
   assert.deepEqual(parsed.pnpm.onlyBuiltDependencies, [
+    "@prisma/client",
     "@prisma/engines",
+    "esbuild",
     "prisma",
     "sharp",
     "unrs-resolver",
