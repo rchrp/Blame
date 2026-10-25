@@ -4,6 +4,7 @@ import { createRequire } from "node:module"
 import { fileURLToPath } from "node:url"
 import tailwindcss from "@tailwindcss/vite"
 import react from "@vitejs/plugin-react"
+import pdfAssets from "./vite-pdf-assets.js"
 
 const require = createRequire(import.meta.url)
 const root = fileURLToPath(new URL(".", import.meta.url))
@@ -17,6 +18,7 @@ const reactRuntime = {
 }
 
 export default [
+  pdfAssets(),
   {
     name: "blame-app:config",
     config() {

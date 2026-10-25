@@ -135,6 +135,7 @@ export type Platform = {
   openMicrophoneSettings?(): Promise<void>
   openExternalLink?(url: string): void
   openPath?(path: string): Promise<string>
+  openAttachment?(input: { name: string; content: Uint8Array }): Promise<void>
 }
 
 export type DeployProgress = {

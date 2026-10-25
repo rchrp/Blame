@@ -37,5 +37,6 @@ mountApp(root, {
     requestMicrophoneAccess: () => window.blame.requestMicrophoneAccess(),
     openMicrophoneSettings: () => window.blame.openMicrophoneSettings(),
     openPath: (path) => window.blame.openPath(path),
+    openAttachment: (input) => window.blame.openAttachment(input),
   },
 });

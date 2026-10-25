@@ -5,6 +5,7 @@ import {
   type BrowserWindow,
   type WebContents,
 } from "electron";
+import { openAttachment } from "./attachment-open";
 import { localAgentOwnsWorkspace, registerAgentIpcHandlers } from "./agent-ipc";
 import { registerAppearanceIpcHandlers } from "./appearance-ipc";
 import { registerAgentScreenshotIpcHandlers } from "./ipc/agent-screenshots-ipc";
@@ -61,6 +62,10 @@ export function registerDesktopIpcHandlers(options: DesktopIpcOptions) {
   );
   const deploy = new DeployService(options.packaged);
   options.registerCoreHandlers();
+  ipcMain.handle("shell:open-attachment", (event, input: unknown) => {
+    if (!options.isAppWindow(event.sender)) throw new Error("Untrusted attachment request");
+    return openAttachment(input);
+  });
   ipcMain.handle("media:request-microphone", () => requestMicrophoneAccess());
   ipcMain.handle("media:open-microphone-settings", () =>
     openMicrophoneSettings(),

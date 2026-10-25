@@ -16,7 +16,6 @@ import {
   Redo2Icon,
   PenLineIcon,
   StrikethroughIcon,
-  Trash2Icon,
   Undo2Icon,
 } from "lucide-react"
 import * as React from "react"
@@ -24,8 +23,11 @@ import * as React from "react"
 import {
   ImageAttachmentGallery,
   type AnnotatedAttachment,
-  type ImageAnnotation,
 } from "@/components/attachments/image-attachment-gallery"
+import { AttachmentPreview } from "@/components/attachments/attachment-preview"
+import { DocumentAttachmentGallery } from "@/components/attachments/document-attachment-gallery"
+import type { ComposerAttachment as PastedAttachment } from "@/components/attachments/attachment-types"
+import { attachmentFormat } from "@/components/attachments/attachment-format"
 import type { UserStoryFileAttachment } from "@/components/backlog/data/backlog-data"
 import { DevelopmentFileIcon } from "@/components/backlog/development/development-file-icon"
 import { markdownHasInlineFormatting } from "@/components/backlog/drawer/markdown-parser"
@@ -87,18 +89,6 @@ import {
   markdownLineIndent,
   MarkdownPreview,
 } from "./markdown-preview"
-
-type PastedAttachment = {
-  annotation?: ImageAnnotation
-  aiContextMarkdown?: string
-  id: string
-  file: File
-  previewUrl?: string
-  source: "code" | "file"
-  storedAttachment?: UserStoryFileAttachment
-  subtitle?: string
-  title?: string
-}
 
 export type PendingFileAttachment = {
   aiContextMarkdown?: string
@@ -285,114 +275,6 @@ function directoryName(path: string) {
   const normalized = path.replaceAll("\\", "/").replace(/\/+$/, "")
   const index = normalized.lastIndexOf("/")
   return index === -1 ? "" : `${normalized.slice(0, index)}/`
-}
-
-function AttachmentDeleteButton({
-  attachment,
-  onRemove,
-}: {
-  attachment: PastedAttachment
-  onRemove: (attachment: PastedAttachment) => void
-}) {
-  return (
-    <Button
-      type="button"
-      aria-label={`Remove ${attachment.file.name}`}
-      className="absolute -top-2 -right-2 size-6 opacity-0 shadow-sm group-hover:opacity-100 focus-visible:opacity-100"
-      size="icon-xs"
-      variant="destructive"
-      onClick={() => onRemove(attachment)}
-    >
-      <Trash2Icon className="size-3" />
-    </Button>
-  )
-}
-
-function AttachmentPreview({
-  attachment,
-  onRemove,
-  onOpenImage,
-}: {
-  attachment: PastedAttachment
-  onOpenImage: (id: string) => void
-  onRemove?: (attachment: PastedAttachment) => void
-}) {
-  if (attachment.previewUrl) {
-    return (
-      <ImageAttachmentPreview
-        attachment={{ ...attachment, previewUrl: attachment.previewUrl }}
-        onRemove={onRemove}
-        onOpen={() => onOpenImage(attachment.id)}
-      />
-    )
-  }
-
-  return <FileAttachmentPreview attachment={attachment} onRemove={onRemove} />
-}
-
-function ImageAttachmentPreview({
-  attachment,
-  onRemove,
-  onOpen,
-}: {
-  attachment: PastedAttachment & { previewUrl: string }
-  onRemove?: (attachment: PastedAttachment) => void
-  onOpen: () => void
-}) {
-  return (
-    <div className="group relative">
-      <button
-        type="button"
-        data-image-attachment-id={attachment.id}
-        aria-label={`Open ${attachment.file.name}`}
-        onClick={onOpen}
-        className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-md border bg-muted/30 transition-colors outline-none hover:bg-muted/50 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-      >
-        <img
-          alt={attachment.file.name}
-          className="h-full w-full object-cover"
-          src={attachment.previewUrl}
-        />
-        {attachment.annotation && (
-          <span
-            className="absolute right-1 bottom-1 rounded bg-background/90 p-0.5"
-            title="Annotated"
-          >
-            <PenLineIcon className="size-3" />
-          </span>
-        )}
-      </button>
-      {onRemove && (
-        <AttachmentDeleteButton attachment={attachment} onRemove={onRemove} />
-      )}
-    </div>
-  )
-}
-
-function FileAttachmentPreview({
-  attachment,
-  onRemove,
-}: {
-  attachment: PastedAttachment
-  onRemove?: (attachment: PastedAttachment) => void
-}) {
-  return (
-    <div className="group relative">
-      <div className="flex h-16 w-16 items-center justify-center rounded-md border bg-muted/30 px-2 text-center text-[0.625rem] leading-tight text-muted-foreground">
-        <span className="line-clamp-3 break-all">
-          {attachment.title ?? attachment.file.name}
-          {attachment.subtitle && (
-            <span className="mt-1 block text-[0.55rem] text-muted-foreground/80">
-              {attachment.subtitle}
-            </span>
-          )}
-        </span>
-      </div>
-      {onRemove && (
-        <AttachmentDeleteButton attachment={attachment} onRemove={onRemove} />
-      )}
-    </div>
-  )
 }
 
 type MarkdownAction =
@@ -1189,6 +1071,7 @@ export const MarkdownEditor = React.forwardRef<
 ) {
   const platform = usePlatform()
   const [galleryId, setGalleryId] = React.useState<string | null>(null)
+  const [documentId, setDocumentId] = React.useState<string | null>(null)
   const [attachments, setAttachments] = React.useState<PastedAttachment[]>([])
   const [mention, setMention] = React.useState<FileMentionState>({
     active: false,
@@ -2007,12 +1890,13 @@ export const MarkdownEditor = React.forwardRef<
                 renderKey={editorRenderKey}
               />
               {attachments.length > 0 && (
-                <div className="mx-1 flex flex-wrap items-center gap-3 px-3 py-3">
+                <div className="mx-1 flex items-center gap-3 overflow-x-auto overscroll-x-contain px-3 py-3">
                   {attachments.map((attachment) => (
                     <AttachmentPreview
                       key={attachment.id}
                       attachment={attachment}
                       onOpenImage={setGalleryId}
+                      onOpenDocument={setDocumentId}
                       onRemove={removeAttachment}
                     />
                   ))}
@@ -2100,18 +1984,38 @@ export const MarkdownEditor = React.forwardRef<
           )}
 
           {readOnly && attachments.length > 0 && (
-            <div className="flex flex-wrap items-center gap-3 border-t border-border/70 px-3 py-3">
+            <div className="flex items-center gap-3 overflow-x-auto overscroll-x-contain border-t border-border/70 px-3 py-3">
               {attachments.map((attachment) => (
                 <AttachmentPreview
                   key={attachment.id}
                   attachment={attachment}
                   onOpenImage={setGalleryId}
+                  onOpenDocument={setDocumentId}
                 />
               ))}
             </div>
           )}
         </div>
       </PopoverAnchor>
+      {documentId && (
+        <DocumentAttachmentGallery
+          initialId={documentId}
+          attachments={attachments.filter(
+            (item) =>
+              !item.previewUrl &&
+              !["audio", "video"].includes(attachmentFormat(item.file))
+          )}
+          onClose={() => setDocumentId(null)}
+          onRestoreFocus={(id) => {
+            const target = Array.from(
+              rootRef.current?.querySelectorAll<HTMLButtonElement>(
+                "[data-document-attachment-id]"
+              ) ?? []
+            ).find((button) => button.dataset.documentAttachmentId === id)
+            ;(target ?? editorRef.current)?.focus()
+          }}
+        />
+      )}
       {galleryId && attachments.some((attachment) => attachment.previewUrl) && (
         <ImageAttachmentGallery
           initialId={galleryId}

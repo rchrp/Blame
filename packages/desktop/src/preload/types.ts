@@ -272,6 +272,7 @@ export type BlameDesktopApi = {
   openMicrophoneSettings(): Promise<void>;
   openExternalLink(url: string): void;
   openPath(path: string): Promise<string>;
+  openAttachment(input: { name: string; content: Uint8Array }): Promise<void>;
   backlogStatusPip: BacklogStatusPip;
   platform: NodeJS.Platform;
   systemNotifications: SystemNotifications;
