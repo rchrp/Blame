@@ -2,7 +2,11 @@
 // story page and the background queue both follow runs; this registry keeps
 // them from persisting the same events twice, and lets a new run close the
 // streams of the run it replaces.
-type RunStream = { close: () => void; storyId: string }
+type RunStream = {
+  close: () => void
+  flush?: () => Promise<unknown>
+  storyId: string
+}
 
 const streams = new Map<string, RunStream>()
 
@@ -15,10 +19,11 @@ export function runStreamOpen(runId: string) {
 export function registerRunStream(
   runId: string,
   storyId: string,
-  close: () => void
+  close: () => void,
+  flush?: () => Promise<unknown>
 ) {
   if (streams.has(runId)) return false
-  streams.set(runId, { close, storyId })
+  streams.set(runId, { close, flush, storyId })
   return true
 }
 
@@ -36,4 +41,14 @@ export function closeStoryRunStreams(storyId: string, exceptRunId?: string) {
     streams.delete(runId)
     stream.close()
   }
+}
+
+// After aborting the runtime, stop listening and persist the remaining text
+// before reading the run's confirmed sequence for a cancellation event.
+export async function settleStoryRunStreams(storyId: string) {
+  const closing = [...streams.values()].filter(
+    (stream) => stream.storyId === storyId
+  )
+  closeStoryRunStreams(storyId)
+  await Promise.all(closing.map((stream) => stream.flush?.()))
 }

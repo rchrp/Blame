@@ -741,7 +741,7 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
         forgetRunStream(run.id, close)
         void coordinator.disconnect().catch(reportAgentPersistenceError)
       }
-      registerRunStream(run.id, story.id, close)
+      registerRunStream(run.id, story.id, close, () => coordinator.flush())
       unsubscribe = subscribeAgentEvents(
         platform,
         sessionId,

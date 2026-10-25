@@ -6,6 +6,13 @@ import type {
   UserStoryAgentRun,
   UserStoryAgentRunFinalization,
 } from "../../components/backlog/data/backlog-data.ts"
+import {
+  closeStoryRunStreams,
+  registerRunStream,
+  runStreamOpen,
+} from "../../components/backlog/data/agent-run-streams.ts"
+import { AgentStreamCoordinator } from "../../components/backlog/data/agent-stream-coordinator.ts"
+import { AgentStreamStore } from "../../components/backlog/data/agent-stream-store.ts"
 import { finalizeStoppedRun } from "./story-agent-control.ts"
 
 for (const message of ["Interrupted by your comment.", "Paused by you."]) {
@@ -103,6 +110,64 @@ test("uses legacy identity fallbacks when the run has no execution or session", 
     current,
     "Paused by you."
   )
+})
+
+test("saves buffered response text before choosing the stop event sequence", async () => {
+  const run = runningRun()
+  const current = storyWith(run)
+  const operations: string[] = []
+  const coordinator = new AgentStreamCoordinator({
+    executionId: run.executionId!,
+    initialState: {},
+    lastSequenceNumber: run.lastSequenceNumber,
+    runId: run.id,
+    sessionId: run.clineSessionId!,
+    store: new AgentStreamStore(),
+    async persist(snapshot) {
+      operations.push("snapshot")
+      run.lastSequenceNumber = snapshot.persistenceEvent.sequenceNumber
+      run.activities = snapshot.update.agentActivities
+    },
+  })
+  registerRunStream(
+    run.id,
+    current.id,
+    () => {
+      void coordinator.disconnect()
+    },
+    () => coordinator.flush()
+  )
+  await coordinator.push({
+    payload: { text: "A response interrupted while streaming" },
+    sequenceNumber: 20,
+    type: "text",
+  })
+  try {
+    await finalizeStoppedRun(
+      {
+        async loadDetail() {
+          operations.push("detail")
+          return current
+        },
+        async finalizeAgentRun(_story, _run, input) {
+          operations.push("cancelled")
+          assert.equal(input.persistenceEvent?.sequenceNumber, 21)
+          assert.equal(
+            run.activities?.at(-1)?.detail,
+            "A response interrupted while streaming"
+          )
+          return current
+        },
+      },
+      current,
+      "Interrupted by your comment."
+    )
+    assert.equal(runStreamOpen(run.id), false)
+    assert.deepEqual(operations, ["snapshot", "detail", "cancelled"])
+  } finally {
+    closeStoryRunStreams(current.id)
+    await coordinator.disconnect()
+  }
 })
 
 function runningRun(): UserStoryAgentRun {

@@ -4,6 +4,7 @@ import type {
   UserStoryAgentRunFinalization,
 } from "@/components/backlog/data/backlog-data"
 import { agentPersistenceEvent } from "../../components/backlog/data/agent-stream-coordinator.ts"
+import { settleStoryRunStreams } from "../../components/backlog/data/agent-run-streams.ts"
 import { runningAgentRunsForStory } from "./agent-run-liveness.ts"
 
 type BacklogRuns = {
@@ -24,6 +25,7 @@ export async function finalizeStoppedRun(
   story: UserStory,
   message: string
 ): Promise<UserStory | undefined> {
+  await settleStoryRunStreams(story.id)
   const current = await backlog.loadDetail(story)
   const run =
     runningAgentRunsForStory(current).find(

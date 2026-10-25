@@ -1044,7 +1044,7 @@ export function useBacklogRotation(
       forgetRunStream(run.id, close)
       void coordinator.disconnect().catch(reportAgentPersistenceError)
     }
-    registerRunStream(run.id, story.id, close)
+    registerRunStream(run.id, story.id, close, () => coordinator.flush())
     unsubscribeSession = subscribeAgentEvents(
       platform,
       sessionId,
