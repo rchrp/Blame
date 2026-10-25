@@ -44,6 +44,7 @@ import { DrawerActions } from "@/components/backlog/drawer/user-story-drawer-act
 import {
   drawerActions,
   hasDevelopmentTab,
+  isEditable,
   normalizeDevelopmentTab,
 } from "@/components/backlog/drawer/user-story-drawer-helpers"
 import {
@@ -206,6 +207,7 @@ export function UserStoryDrawerPanel({
     [draftStorageKey]
   )
   const hasDevelopment = hasDevelopmentTab(status)
+  const summaryEditable = isEditable(mode, status, userStory)
   // Direct stories run in the project folder without a managed preview.
   const hasPreview = status === "in-progress" || status === "in-review"
   // A story working in the project folder previews the project's own app.
@@ -382,7 +384,8 @@ export function UserStoryDrawerPanel({
   React.useEffect(() => {
     if (!focusComment) return
     const frame = requestAnimationFrame(() => {
-      commentRef.current
+      const target = commentRef.current ?? summaryRef.current
+      target
         ?.querySelector<HTMLElement>("[data-markdown-editor-input='true']")
         ?.focus()
     })
@@ -427,7 +430,7 @@ export function UserStoryDrawerPanel({
 
   React.useEffect(() => {
     const addCodeSelectionAttachment = (event: Event) => {
-      const targetSummary = status === "backlog" || status === "ready"
+      const targetSummary = summaryEditable || status === "ready"
       const updateAttachments = targetSummary
         ? setSummaryCodeSelectionAttachments
         : setCommentCodeSelectionAttachments
@@ -456,7 +459,7 @@ export function UserStoryDrawerPanel({
         addCodeSelectionAttachment
       )
     }
-  }, [status])
+  }, [status, summaryEditable])
 
   const pendingSummaryFileAttachments = React.useMemo(
     () => pendingFileAttachments(summaryFileAttachments),

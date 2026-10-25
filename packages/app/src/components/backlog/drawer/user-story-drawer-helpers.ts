@@ -1,4 +1,7 @@
-import type { BacklogColumnId } from "@/components/backlog/data/backlog-data"
+import type {
+  BacklogColumnId,
+  UserStory,
+} from "@/components/backlog/data/backlog-data"
 import type {
   DrawerAction,
   UserStoryDevelopmentTab,
@@ -50,8 +53,16 @@ export function hasDevelopmentTab(status: BacklogColumnId) {
   )
 }
 
-export function isEditable(mode: UserStoryDrawerMode, status: BacklogColumnId) {
-  return mode === "create" || status === "backlog"
+export function hasConversation(userStory: UserStory | undefined) {
+  return Boolean(userStory?.comments?.length || userStory?.agentRuns?.length)
+}
+
+export function isEditable(
+  mode: UserStoryDrawerMode,
+  status: BacklogColumnId,
+  userStory: UserStory | undefined
+) {
+  return mode === "create" || (status === "backlog" && !hasConversation(userStory))
 }
 
 export function normalizeDevelopmentTab(

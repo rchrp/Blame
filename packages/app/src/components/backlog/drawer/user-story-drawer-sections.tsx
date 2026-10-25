@@ -21,6 +21,7 @@ import type { SpeechTarget } from "@/components/backlog/drawer/speech-session-st
 import type { StoryRunMode } from "@/lib/runtime-preference"
 import {
   commentButtonLabel,
+  hasConversation,
   isEditable,
 } from "@/components/backlog/drawer/user-story-drawer-helpers"
 import {
@@ -123,7 +124,7 @@ export const UserStoryContent = React.memo(function UserStoryContent({
 }) {
   const project = useProjects().activeProject
   const mentionDirectory = useFileMentionDirectory(status, userStory)
-  const editable = isEditable(mode, status)
+  const editable = isEditable(mode, status, userStory)
   const stableLoadChangedFileDiffs = useLatestCallback(
     (sessionId: string, checkpointRunCount: number, diffEndRef: string) =>
       loadChangedFileDiffs?.(sessionId, checkpointRunCount, diffEndRef) ??
@@ -211,7 +212,10 @@ export const UserStoryFixedSection = React.memo(function UserStoryFixedSection({
   mode,
   ...commentComposerProps
 }: UserStoryFixedSectionProps) {
-  const commentComposerVisible = mode !== "create"
+  const commentComposerVisible =
+    mode !== "create" &&
+    (commentComposerProps.status !== "backlog" ||
+      hasConversation(commentComposerProps.userStory))
 
   if (!commentComposerVisible && !actions) return null
 
