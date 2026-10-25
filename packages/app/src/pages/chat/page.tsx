@@ -1074,7 +1074,7 @@ function QuickChatProjectPage() {
                     submitLabel={agentRunning ? "Queue message" : "Send"}
                     toolbarEnd={
                       <div className="w-[28rem] max-w-full min-w-0">
-                        <ModelSelector role="agent" />
+                        <ModelSelector role="agent" warnOnModelChange={!emptyConversation} />
                       </div>
                     }
                     turnMetrics={turnMetrics}

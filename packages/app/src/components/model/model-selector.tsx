@@ -66,12 +66,14 @@ export function ModelSelector({
   modelTriggerClassName,
   role,
   scope,
+  warnOnModelChange,
 }: {
   modelTriggerClassName?: string
   role?: ModelPreferenceRole
   scope?: ModelSelectionScope
+  warnOnModelChange?: boolean
 }) {
-  const selection = useModelSelection({ role, scope })
+  const selection = useModelSelection({ role, scope, warnOnModelChange })
   const [dialog, setDialog] = React.useState<ModelDialog>()
 
   return (

@@ -1,4 +1,5 @@
 import * as React from "react"
+import { toast } from "sonner"
 import {
   type CloudAiModelPreference,
   type SaveAiPreferencesInput,
@@ -96,6 +97,7 @@ export type ModelSelectionScope = {
 type ModelSelectionOptions = {
   role?: ModelPreferenceRole
   scope?: ModelSelectionScope
+  warnOnModelChange?: boolean
 }
 
 export function useModelSelection(options: ModelSelectionOptions = {}) {
@@ -133,6 +135,21 @@ export function useModelSelection(options: ModelSelectionOptions = {}) {
     ? persistedPreference
     : (optimisticPreference ?? persistedPreference)
   const savePreference = (nextPreference: CloudAiModelPreference) => {
+    if (
+      options.warnOnModelChange &&
+      currentModel &&
+      (nextPreference.providerId !== currentModel.provider.id ||
+        nextPreference.modelId !== currentModel.id)
+    ) {
+      toast.warning("Switching models may increase usage", {
+        id: "model-change-cache-warning",
+        description:
+          "The new model cannot reuse this conversation's cached input tokens. They will need to be processed again.",
+        duration: 10_000,
+        closeButton: true,
+        position: "bottom-right",
+      })
+    }
     if (scope) {
       scope.onChange(nextPreference)
       return Promise.resolve()

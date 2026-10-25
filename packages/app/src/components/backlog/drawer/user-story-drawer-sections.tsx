@@ -332,7 +332,16 @@ const StoryCommentModelSelector = React.memo(function StoryCommentModelSelector(
   )
   return (
     <div className="w-80 max-w-full min-w-0">
-      <ModelSelector modelTriggerClassName="max-w-none" role="agent" scope={scope} />
+      <ModelSelector
+        modelTriggerClassName="max-w-none"
+        role="agent"
+        scope={scope}
+        warnOnModelChange={Boolean(
+          userStory.agentModelId ||
+            userStory.agentRuns?.length ||
+            userStory.clineSessionId
+        )}
+      />
     </div>
   )
 })
