@@ -64,3 +64,9 @@
   background: #bfdbfe;
   color: #0f172a;
 }
+
+/* Documents stay on white paper even when the surrounding app is dark. */
+.attachment-document a,
+.attachment-document a svg {
+  color: #1d4ed8;
+}

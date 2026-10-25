@@ -63,6 +63,7 @@ export function DocumentAttachmentGallery({
         onKeyDown={(event) => {
           if (
             event.altKey ||
+            event.shiftKey ||
             event.ctrlKey ||
             event.metaKey ||
             /INPUT|SELECT|TEXTAREA/.test((event.target as HTMLElement).tagName)
@@ -91,7 +92,7 @@ export function DocumentAttachmentGallery({
           onClose={onClose}
         />
         {attachments.length > 1 && (
-          <div className="pointer-events-none absolute inset-x-2 top-1/2 flex -translate-y-1/2 justify-between sm:inset-x-3">
+          <div className="pointer-events-none mt-2 flex items-center justify-center gap-3 sm:absolute sm:inset-x-3 sm:top-1/2 sm:mt-0 sm:-translate-y-1/2 sm:justify-between">
             <Button
               className="pointer-events-auto rounded-full bg-popover/90 shadow-md backdrop-blur-xl"
               variant="secondary"
@@ -102,6 +103,9 @@ export function DocumentAttachmentGallery({
             >
               <ChevronLeftIcon />
             </Button>
+            <span className="text-xs text-muted-foreground tabular-nums sm:hidden">
+              {index + 1} / {attachments.length}
+            </span>
             <Button
               className="pointer-events-auto rounded-full bg-popover/90 shadow-md backdrop-blur-xl"
               variant="secondary"
@@ -117,7 +121,7 @@ export function DocumentAttachmentGallery({
         {attachments.length > 1 && (
           <span
             aria-live="polite"
-            className="pointer-events-none mt-2 text-center text-xs text-muted-foreground tabular-nums"
+            className="pointer-events-none mt-2 hidden text-center text-xs text-muted-foreground tabular-nums sm:block"
           >
             {index + 1} / {attachments.length}
           </span>

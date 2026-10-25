@@ -24,7 +24,13 @@ export function useAttachmentActions(attachment: ComposerAttachment) {
       await action()
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Unable to open this file"
+        error instanceof Error ? error.message : "Unable to open this file",
+        {
+          action: {
+            label: "Download",
+            onClick: () => void downloadAttachment(attachment),
+          },
+        }
       )
     } finally {
       setBusy(false)

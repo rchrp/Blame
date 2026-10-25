@@ -63,7 +63,20 @@ async function createPreview(
     return { kind: "pdf", thumbnail: await pdfThumbnail(file) }
   }
   const result = await parseDocument(file)
-  if (result.kind === "html") result.html = sanitizeDocumentHtml(result.html)
+  if (result.kind === "html") {
+    result.html = sanitizeDocumentHtml(result.html)
+    const excerpt = document.createElement("div")
+    excerpt.innerHTML = result.html
+    let remaining = 150
+    const trim = (node: Node) => {
+      for (const child of Array.from(node.childNodes)) {
+        if (--remaining < 0) child.remove()
+        else trim(child)
+      }
+    }
+    trim(excerpt)
+    result.thumbnailHtml = excerpt.innerHTML
+  }
   return result
 }
 

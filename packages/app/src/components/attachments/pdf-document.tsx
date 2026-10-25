@@ -130,7 +130,7 @@ export default function PdfDocument({
             <button
               type="button"
               className="min-w-10 rounded px-1 py-2 text-xs tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              title="Fit page width"
+              title="Fit page"
               onClick={() => setZoom(1)}
             >
               {Math.round(zoom * 100)}%
@@ -162,18 +162,23 @@ function PdfCanvas({
   zoom: number
 }) {
   const container = useRef<HTMLDivElement>(null)
-  const [width, setWidth] = useState(800)
+  const [size, setSize] = useState({ width: 800, height: 700 })
   const [error, setError] = useState("")
+  const [text, setText] = useState("")
   useEffect(() => {
     const observer = new ResizeObserver((entries) =>
-      setWidth(entries[0].contentRect.width)
+      setSize({
+        width: entries[0].contentRect.width,
+        height: entries[0].contentRect.height,
+      })
     )
-    if (container.current) observer.observe(container.current)
+    if (container.current?.parentElement)
+      observer.observe(container.current.parentElement)
     return () => observer.disconnect()
   }, [])
   useEffect(() => {
     const host = container.current
-    if (!host || width <= 0) return
+    if (!host || size.width <= 0 || size.height <= 0) return
     let cancelled = false
     let render: RenderTask | undefined
     const canvas = document.createElement("canvas")
@@ -181,8 +186,27 @@ function PdfCanvas({
       .getPage(pageNumber)
       .then(async (page) => {
         if (cancelled) return
+        void page
+          .getTextContent()
+          .then((content) => {
+            if (!cancelled)
+              setText(
+                content.items
+                  .map((item) => ("str" in item ? item.str : ""))
+                  .join(" ")
+                  .slice(0, 50_000)
+              )
+          })
+          .catch(() => {
+            if (!cancelled) setText("")
+          })
         const natural = page.getViewport({ scale: 1 })
-        const cssWidth = Math.min(width, 1100) * zoom
+        const cssWidth =
+          Math.min(
+            size.width,
+            1100,
+            (size.height * natural.width) / natural.height
+          ) * zoom
         const density = Math.min(window.devicePixelRatio || 1, 2)
         const scale = Math.min(
           (cssWidth * density) / natural.width,
@@ -212,7 +236,7 @@ function PdfCanvas({
       render?.cancel()
       canvas.remove()
     }
-  }, [pdf, pageNumber, width, zoom])
+  }, [pdf, pageNumber, size, zoom])
   return (
     <>
       {error && (
@@ -221,6 +245,7 @@ function PdfCanvas({
         </p>
       )}
       <div ref={container} className="min-h-32 w-full" />
+      <p className="sr-only">{text}</p>
     </>
   )
 }

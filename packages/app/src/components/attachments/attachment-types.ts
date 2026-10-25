@@ -15,7 +15,7 @@ export type ComposerAttachment = {
 
 export type DocumentPreview =
   | { kind: "pdf"; thumbnail: string }
-  | { kind: "html"; html: string; truncated: boolean }
+  | { kind: "html"; html: string; thumbnailHtml?: string; truncated: boolean }
   | { kind: "markdown" | "text"; text: string; truncated: boolean }
   | { kind: "spreadsheet"; sheets: PreviewSheet[]; truncated: boolean }
 

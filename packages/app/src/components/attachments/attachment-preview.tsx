@@ -92,15 +92,7 @@ export function AttachmentPreview({
               aria-hidden="true"
               className="relative min-h-0 w-full flex-1 overflow-hidden bg-muted/40"
             >
-              {preview.data ? (
-                <div
-                  inert
-                  className="pointer-events-none absolute inset-x-0 top-0 origin-top-left bg-white"
-                  style={{ width: "200%", transform: "scale(.5)" }}
-                >
-                  <DocumentContent data={preview.data} thumbnail />
-                </div>
-              ) : (
+              {!preview.data && (
                 <div className="flex h-full flex-col items-center justify-center gap-2">
                   {previewable && !preview.error ? (
                     <LoaderCircleIcon className="size-5 animate-spin text-muted-foreground motion-reduce:animate-none" />
@@ -131,6 +123,20 @@ export function AttachmentPreview({
           </>
         )}
       </button>
+      {!isImage && preview.data && (
+        <div
+          inert
+          aria-hidden="true"
+          className="pointer-events-none absolute top-px left-px h-[118px] w-[222px] overflow-hidden rounded-t-[11px] bg-white"
+        >
+          <div
+            className="origin-top-left"
+            style={{ width: "200%", height: "200%", transform: "scale(.5)" }}
+          >
+            <DocumentContent data={preview.data} thumbnail />
+          </div>
+        </div>
+      )}
       {onRemove && (
         <button
           type="button"

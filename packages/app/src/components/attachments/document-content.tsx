@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { usePlatform } from "@/context/platform"
 import { MarkdownPreview } from "@/components/backlog/drawer/markdown-preview"
 import type { DocumentPreview, PreviewSheet } from "./attachment-types"
 import "./document-preview.css"
@@ -10,6 +11,7 @@ export function DocumentContent({
   data: DocumentPreview
   thumbnail?: boolean
 }) {
+  const platform = usePlatform()
   if (data.kind === "pdf")
     return <img alt="" src={data.thumbnail} className="h-auto w-full" />
   if (data.kind === "spreadsheet")
@@ -18,12 +20,26 @@ export function DocumentContent({
     return (
       <div
         className="attachment-document p-6 sm:p-10"
-        dangerouslySetInnerHTML={{ __html: data.html }}
+        dangerouslySetInnerHTML={{
+          __html: thumbnail ? (data.thumbnailHtml ?? data.html) : data.html,
+        }}
       />
     )
   if (data.kind === "markdown")
     return (
-      <div className="attachment-document p-6 sm:p-10">
+      <div
+        className="attachment-document p-6 sm:p-10"
+        onClickCapture={(event) => {
+          const link = (event.target as HTMLElement).closest("a")
+          if (!link) return
+          event.preventDefault()
+          event.stopPropagation()
+          const href = link.getAttribute("href") ?? ""
+          if (!/^https?:\/\//i.test(href)) return
+          if (platform.openExternalLink) platform.openExternalLink(href)
+          else window.open(href, "_blank", "noopener,noreferrer")
+        }}
+      >
         <MarkdownPreview
           markdown={thumbnail ? data.text.slice(0, 3000) : data.text}
           placeholder="Empty document"
