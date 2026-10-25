@@ -12,12 +12,22 @@ import { createServer, type Server } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { parsePreviewManifest } from "@blame/agent-runtime";
+import {
+  parsePreviewManifest,
+  type ProjectRunConfiguration,
+} from "@blame/agent-runtime";
 import { compilePreviewManifest } from "@blame/preview-runtime";
 import type { CommandResult, DockerHost } from "@blame/preview-runtime/compose";
 import { parse as parseYaml } from "yaml";
 import { allocatePreviewHostPorts } from "./local-preview-ports.ts";
 import { renderLocalPreview } from "./local-preview-render.ts";
+import {
+  localPreviewPaths,
+  readLocalPreviewManifest,
+  readLocalRunConfigurations,
+  readLocalRuntimeState,
+  writeLocalPreviewInitialization,
+} from "./local-preview-files.ts";
 import {
   localPreviewUrl,
   startLocalPreview,
@@ -76,6 +86,68 @@ const manifest = {
   risks: [],
   probes: [],
 };
+
+const runConfigurations: ProjectRunConfiguration[] = [
+  {
+    id: "web",
+    name: "Web",
+    command: "npm run dev",
+    cwd: ".",
+    category: "web",
+    default: true,
+    previewService: "web",
+    services: ["web"],
+    scopes: ["web"],
+  },
+];
+
+for (const partial of [false, true]) {
+  test(`prepares native story preview files ${partial ? "after a failed attempt left only logs" : "in a fresh worktree"}`, async (t) => {
+    const worktree = await worktreeFixture(t);
+    const paths = localPreviewPaths(worktree);
+    if (partial) {
+      await mkdir(join(worktree, ".blame/logs"), { recursive: true });
+      await writeFile(paths.setupLog, "Previous attempt failed");
+    }
+    await assert.rejects(stat(join(worktree, ".blame/initialization")), {
+      code: "ENOENT",
+    });
+
+    const parsed = parsePreviewManifest(manifest);
+    await writeLocalPreviewInitialization(
+      worktree,
+      parsed,
+      runConfigurations,
+      "web",
+    );
+
+    assert.deepEqual(await readLocalPreviewManifest(worktree), parsed);
+    assert.deepEqual(
+      await readLocalRunConfigurations(worktree),
+      runConfigurations,
+    );
+    assert.deepEqual(await readLocalRuntimeState(worktree), {
+      desiredStatus: "running",
+      selectedConfigurationId: "web",
+    });
+    assert.equal(await readFile(paths.setupLog, "utf8"), "");
+    assert.ok(
+      compilePreviewManifest((await readLocalPreviewManifest(worktree))!),
+    );
+
+    // Re-preparing an existing worktree replaces the manifest and resets selection.
+    const updated = {
+      ...parsed,
+      project: { ...parsed.project, detectedStack: ["node", "typescript"] },
+    };
+    await writeLocalPreviewInitialization(worktree, updated, runConfigurations);
+    assert.deepEqual(await readLocalPreviewManifest(worktree), updated);
+    assert.deepEqual(await readLocalRuntimeState(worktree), {
+      desiredStatus: "stopped",
+      selectedConfigurationId: "web",
+    });
+  });
+}
 
 test("keeps the ports of the previous start while they are free or ours", async (t) => {
   const worktree = await worktreeFixture(t);
@@ -240,19 +312,7 @@ async function writeLocalFiles(
   );
   await writeFile(
     join(directory, "run-configurations.json"),
-    JSON.stringify([
-      {
-        id: "web",
-        name: "Web",
-        command: "npm run dev",
-        cwd: ".",
-        category: "web",
-        default: true,
-        previewService: "web",
-        services: ["web"],
-        scopes: ["web"],
-      },
-    ]),
+    JSON.stringify(runConfigurations),
   );
   await writeFile(
     join(directory, "preview-runtime-state.json"),

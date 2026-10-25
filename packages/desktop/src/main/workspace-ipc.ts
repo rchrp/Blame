@@ -60,7 +60,6 @@ import { previewComposeProjectName } from "./preview-readiness";
 import { PreviewRecoveryCircuit } from "./preview-recovery-circuit";
 import { stalePreviewSetupReason } from "./preview-setup-preflight.ts";
 import {
-  initialPreviewRuntimeSelection,
   previewRunConfigurationServiceIds,
   previewRunConfigurationStatus,
   selectedPreviewRunConfiguration,
@@ -114,6 +113,7 @@ import {
   readLocalPreviewManifest,
   readLocalRunConfigurations,
   readLocalRuntimeState,
+  writeLocalPreviewInitialization,
   writeLocalRuntimeState,
 } from "./preview-runtime/local/local-preview-files.ts";
 import {
@@ -169,7 +169,6 @@ import {
   pathExists as runtimePathExists,
   storyBranch,
   worktreePath,
-  writeFile as writeRuntimeFile,
   writeFileAtomic as writeRuntimeFileAtomic,
 } from "./workspace-runtime";
 import {
@@ -1146,7 +1145,7 @@ async function prepareProjectPreviewArtifacts(
     input.runtimeProfile,
   );
   await timedRecoveryStep(worktree, "initialization files", () =>
-    writeProjectPreviewFiles(
+    writeLocalPreviewInitialization(
       worktree,
       manifest,
       runConfigurations,
@@ -1154,37 +1153,6 @@ async function prepareProjectPreviewArtifacts(
     ),
   );
   return { env, worktree };
-}
-
-async function writeProjectPreviewFiles(
-  worktree: string,
-  manifest: PreviewManifest,
-  runConfigurations: ProjectRunConfiguration[],
-  runConfigurationId?: string | null,
-) {
-  const paths = localPreviewPaths(worktree);
-  const initialization = joinWorkspacePath(
-    worktree,
-    ".blame",
-    "initialization",
-  );
-  await mkdirRuntime(dirnameWorkspacePath(paths.setupLog));
-  await writeRuntimeFile(paths.setupLog, "");
-  await writeRuntimeFile(
-    paths.manifest,
-    `${JSON.stringify(manifest, null, 2)}\n`,
-  );
-  await writeRuntimeJson(paths.runConfigurations, runConfigurations);
-  await writeRuntimeJson(
-    paths.runtimeState,
-    initialPreviewRuntimeSelection(runConfigurations, runConfigurationId),
-  );
-  // Files of the previous local engine.
-  await Promise.all(
-    ["docker-compose.yml", "setup.sh"].map((file) =>
-      rmRuntime(joinWorkspacePath(initialization, file)).catch(() => undefined),
-    ),
-  );
 }
 
 async function validateProjectSetup(

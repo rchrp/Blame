@@ -8,11 +8,18 @@ import {
   compilePreviewManifest,
   type PreviewExecutionPlan,
 } from "@blame/preview-runtime";
-import type { PreviewRuntimeSelectionState } from "../../preview-run-state.ts";
 import {
+  initialPreviewRuntimeSelection,
+  type PreviewRuntimeSelectionState,
+} from "../../preview-run-state.ts";
+import {
+  dirnameWorkspacePath,
   joinWorkspacePath,
+  mkdir,
   pathExists,
   readFile,
+  rm,
+  writeFile,
   writeFileAtomic,
 } from "../../workspace-runtime.ts";
 import { parseLocalPreviewRuntimeSelectionState } from "./local-preview-lifecycle.ts";
@@ -60,6 +67,38 @@ export function localPreviewPaths(worktree: string) {
     setupLog: joinWorkspacePath(worktree, ".blame", "logs", "setup.log"),
     timingLog: joinWorkspacePath(worktree, ".blame", "logs", "timing.jsonl"),
   };
+}
+
+export async function writeLocalPreviewInitialization(
+  worktree: string,
+  manifest: PreviewManifest,
+  runConfigurations: ProjectRunConfiguration[],
+  runConfigurationId?: string | null,
+) {
+  const paths = localPreviewPaths(worktree);
+  const initialization = dirnameWorkspacePath(paths.manifest);
+  // Native/cloud worktrees start without .blame; native writes need their parent.
+  await mkdir(initialization);
+  await mkdir(dirnameWorkspacePath(paths.setupLog));
+  await writeFile(paths.setupLog, "");
+  await writeFileAtomic(
+    paths.manifest,
+    `${JSON.stringify(manifest, null, 2)}\n`,
+  );
+  await writeFileAtomic(
+    paths.runConfigurations,
+    `${JSON.stringify(runConfigurations, null, 2)}\n`,
+  );
+  await writeLocalRuntimeState(
+    worktree,
+    initialPreviewRuntimeSelection(runConfigurations, runConfigurationId),
+  );
+  // Files of the previous local engine.
+  await Promise.all(
+    ["docker-compose.yml", "setup.sh"].map((file) =>
+      rm(joinWorkspacePath(initialization, file)).catch(() => undefined),
+    ),
+  );
 }
 
 export async function readLocalPreviewManifest(worktree: string) {
