@@ -2,7 +2,6 @@ import type FileAttachment from '#models/file_attachment'
 
 export type FileAttachmentReference = {
   id: string
-  aiContextMarkdown?: string
   content?: string
   downloadUrl?: string
   name: string
@@ -12,7 +11,6 @@ export type FileAttachmentReference = {
 
 export function fileAttachmentReference(attachment: FileAttachment): FileAttachmentReference {
   return {
-    ...(attachment.aiContextMarkdown ? { aiContextMarkdown: attachment.aiContextMarkdown } : {}),
     ...(attachment.downloadUrl ? { downloadUrl: attachment.downloadUrl } : {}),
     id: attachment.id,
     name: attachment.name,
