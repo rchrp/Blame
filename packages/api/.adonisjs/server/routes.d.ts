@@ -80,6 +80,7 @@ export type ScannedRoutes = {
     'speech.speech_transcription.store': { paramsTuple?: []; params?: {} }
     'attachments.file_attachments.create_upload': { paramsTuple?: []; params?: {} }
     'attachments.file_attachments.complete': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'attachments.file_attachments.upload_content': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'attachments.file_attachments.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'projects.quick_chats.quick_chats.index': { paramsTuple?: []; params?: {} }
     'projects.quick_chats.quick_chats.store': { paramsTuple?: []; params?: {} }
@@ -239,6 +240,7 @@ export type ScannedRoutes = {
     'speech.speech_transcription.store': { paramsTuple?: []; params?: {} }
     'attachments.file_attachments.create_upload': { paramsTuple?: []; params?: {} }
     'attachments.file_attachments.complete': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'attachments.file_attachments.upload_content': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'projects.quick_chats.quick_chats.store': { paramsTuple?: []; params?: {} }
     'projects.quick_chats.quick_chat_messages.store': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'projects.quick_chats.quick_chat_messages.undo': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'messageId': ParamValue} }

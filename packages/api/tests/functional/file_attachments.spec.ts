@@ -23,6 +23,47 @@ test.group('file attachments', (group) => {
   })
   group.each.setup(() => testUtils.db().truncate())
 
+  test('recovers a blocked browser PUT with identical bytes and owner authorization', async ({
+    client,
+    assert,
+  }) => {
+    const user = await createUser()
+    const stranger = await createUser()
+    const id = crypto.randomUUID()
+    const upload = await client.post('/api/v1/attachments/uploads').loginAs(user).json({
+      id,
+      checksumSha256,
+      name: 'hello.txt',
+      size: content.length,
+      type: 'text/plain',
+    })
+    upload.assertStatus(200)
+    const endpoint = `/api/v1/attachments/${id}/content`
+    const body = { content: content.toString('base64') }
+    const unauthorized = await client.post(endpoint).loginAs(stranger).json(body)
+    unauthorized.assertStatus(404)
+    for (const invalid of ['Wrong', 'Too long']) {
+      const rejected = await client
+        .post(endpoint)
+        .loginAs(user)
+        .json({ content: Buffer.from(invalid).toString('base64') })
+      rejected.assertStatus(409)
+    }
+    const pending = await FileAttachment.findOrFail(id)
+    assert.equal(pending.status, 'pending')
+    for (let retry = 0; retry < 2; retry++) {
+      const response = await client.post(endpoint).loginAs(user).json(body)
+      response.assertStatus(200)
+      assert.equal((response.body() as unknown as { id: string }).id, id)
+    }
+    await pending.refresh()
+    assert.equal(pending.status, 'ready')
+    assert.deepEqual(
+      Buffer.from(await attachmentObjectStorage().content(`${user.id}/${id}`)),
+      content
+    )
+  })
+
   test('uploads, attaches, authorizes and exports an object', async ({ client, assert }) => {
     const user = await createUser()
     const stranger = await createUser()

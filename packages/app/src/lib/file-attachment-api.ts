@@ -79,8 +79,23 @@ async function uploadFileAttachment(
       method: "POST",
     }
   )
-  if (created.upload) await putAttachment(created.upload, content)
   if (!created.upload) return created.attachment
+  try {
+    await putAttachment(created.upload, content)
+  } catch (error) {
+    // A browser cannot distinguish a failed CORS preflight from a network
+    // failure. Retry the same, checksum-bound upload through our API once.
+    if (
+      !(error instanceof TypeError) &&
+      !(error instanceof DOMException && error.name === "TimeoutError")
+    )
+      throw error
+    return request<UserStoryFileAttachment>(
+      connection,
+      `/attachments/${encodeURIComponent(attachment.id)}/content`,
+      { method: "POST", body: JSON.stringify({ content: attachment.content }) }
+    )
+  }
   return request<UserStoryFileAttachment>(
     connection,
     `/attachments/${encodeURIComponent(attachment.id)}/complete`,
@@ -96,6 +111,8 @@ async function putAttachment(
     body: new Blob([content]),
     headers: target.headers,
     method: "PUT",
+    credentials: "omit",
+    signal: AbortSignal.timeout(60_000),
   })
   if (!response.ok) {
     throw new Error(`Attachment upload failed with status ${response.status}`)

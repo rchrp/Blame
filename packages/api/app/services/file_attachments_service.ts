@@ -68,6 +68,24 @@ export default class FileAttachmentsService {
     return this.deliver(attachment)
   }
 
+  async uploadContent(userId: string, id: string, encodedContent: string) {
+    const attachment = await this.findForUser(userId, id)
+    const content = decodeBase64(encodedContent)
+    if (
+      content.byteLength > this.config.maxBytes ||
+      content.byteLength !== attachment.size ||
+      sha256(content) !== attachment.checksumSha256
+    ) {
+      throw invalidAttachment('Attachment bytes do not match the pending upload', 409)
+    }
+    // The direct PUT may have succeeded even if its response was blocked.
+    // Retrying never changes the identity, owner, or original checksum.
+    if (attachment.status !== 'ready') {
+      await this.storage.put(attachment.objectKey, content, objectMetadata(attachment))
+    }
+    return this.completeUpload(userId, id)
+  }
+
   async deliverForUser(userId: string, id: string) {
     return this.deliver(await this.findReadyForUser(userId, id))
   }

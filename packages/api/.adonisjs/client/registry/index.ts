@@ -462,6 +462,12 @@ const routes = {
     tokens: [{"old":"/api/v1/attachments/:id/complete","type":0,"val":"api","end":""},{"old":"/api/v1/attachments/:id/complete","type":0,"val":"v1","end":""},{"old":"/api/v1/attachments/:id/complete","type":0,"val":"attachments","end":""},{"old":"/api/v1/attachments/:id/complete","type":1,"val":"id","end":""},{"old":"/api/v1/attachments/:id/complete","type":0,"val":"complete","end":""}],
     types: placeholder as Registry['attachments.file_attachments.complete']['types'],
   },
+  'attachments.file_attachments.upload_content': {
+    methods: ["POST"],
+    pattern: '/api/v1/attachments/:id/content',
+    tokens: [{"old":"/api/v1/attachments/:id/content","type":0,"val":"api","end":""},{"old":"/api/v1/attachments/:id/content","type":0,"val":"v1","end":""},{"old":"/api/v1/attachments/:id/content","type":0,"val":"attachments","end":""},{"old":"/api/v1/attachments/:id/content","type":1,"val":"id","end":""},{"old":"/api/v1/attachments/:id/content","type":0,"val":"content","end":""}],
+    types: placeholder as Registry['attachments.file_attachments.upload_content']['types'],
+  },
   'attachments.file_attachments.show': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/attachments/:id',
