@@ -373,9 +373,44 @@ create_vm() {
   if wait "$create_process_id"; then
     write_runtime_progress "installing"
     return
+  else
+    return "$?"
   fi
-  create_exit_code=$?
-  return "$create_exit_code"
+}
+
+# macOS shlock claims a PID file atomically and recovers dead owners. This
+# also orders a detached stop from the previous app against the next start.
+lock_lifecycle() {
+  mkdir -p "$lima_state_home"
+  lifecycle_lock="$lima_state_home/.blame-lifecycle.lock"
+  command -v shlock >/dev/null 2>&1 || {
+    printf '%s\n' "The macOS shlock utility is required to manage Blame Runtime." >&2
+    exit 1
+  }
+  lock_attempt=0
+  until shlock -p "$$" -f "$lifecycle_lock"; do
+    lock_attempt=$((lock_attempt + 1))
+    if [ "$lock_attempt" -ge 1800 ]; then
+      printf '%s\n' "Timed out waiting for another Blame Runtime operation." >&2
+      exit 1
+    fi
+    sleep 1
+  done
+  trap 'rm -f "$lifecycle_lock"' EXIT
+  trap 'exit 130' INT
+  trap 'exit 143' TERM
+}
+
+wait_for_guest() {
+  guest_attempt=0
+  until with_lima_environment shell "$vm_name" true; do
+    guest_attempt=$((guest_attempt + 1))
+    if [ "$guest_attempt" -ge 30 ]; then
+      printf '%s\n' "Blame Runtime started but its SSH connection is not ready." >&2
+      return 1
+    fi
+    sleep 1
+  done
 }
 
 ensure_vm() {
@@ -389,24 +424,62 @@ ensure_vm() {
     write_runtime_progress "starting"
     with_lima_environment start "$vm_name"
   fi
+  wait_for_guest
 }
 
-invoke_provisioner() {
-  provisioner="$runtime_home/scripts/provision-blame-runtime.sh"
+require_payload() {
   if [ ! -f "$semantic_harness_payload" ]; then
     printf '%s\n' "Blame semantic harness runtime payload is missing." >&2
     exit 1
   fi
+}
+
+copy_payload() {
+  # Use the same SSH transport as commands instead of scp's separate SFTP
+  # session. Publish only a complete, checksum-verified upload; retrying a
+  # disconnected transfer cannot leave a partial archive for provisioning.
+  copy_attempt=0
+  while :; do
+    if with_lima_environment shell "$vm_name" sudo -n sh -c '
+      set -eu
+      payload=$(mktemp /tmp/blame-semantic-harness.XXXXXX)
+      trap '\''rm -f "$payload"'\'' EXIT
+      cat >"$payload"
+      printf "%s  %s\n" "$1" "$payload" | sha256sum -c - >/dev/null
+      chmod 644 "$payload"
+      mv -f "$payload" /tmp/blame-semantic-harness.tgz
+    ' sh "$semantic_harness_sha256" <"$semantic_harness_payload"; then
+      return
+    fi
+    copy_attempt=$((copy_attempt + 1))
+    if [ "$copy_attempt" -ge 3 ]; then
+      printf '%s\n' "Could not transfer the Blame Runtime payload after 3 attempts." >&2
+      return 1
+    fi
+    sleep 1
+    wait_for_guest
+  done
+}
+
+invoke_provisioner() {
+  provisioner="$runtime_home/scripts/provision-blame-runtime.sh"
+  require_payload
   write_runtime_progress "configuring"
-  with_lima_environment copy \
-    "$semantic_harness_payload" \
-    "$vm_name:/tmp/blame-semantic-harness.tgz"
+  copy_payload
   with_lima_environment shell "$vm_name" sudo -n sh -s -- "$runtime_version" "$cline_sdk_version" <"$provisioner"
 }
 
 ensure_runtime() {
   ensure_vm
-  invoke_provisioner
+  require_payload
+  current_status="$(runtime_status)"
+  if [ "${1:-ensure}" = "repair" ] || ! printf '%s' "$current_status" | grep -q '"status":"ready"'; then
+    invoke_provisioner
+  else
+    # A stopped, current VM needs a boot, not a reinstall.
+    write_runtime_progress "starting"
+    with_lima_environment shell "$vm_name" sudo -n blame-runtime-agent docker-ensure
+  fi
   write_runtime_progress "checking"
   runtime_status
 }
@@ -480,6 +553,10 @@ if [ "$#" -eq 0 ]; then
 fi
 
 case "$1" in
+  ensure | repair | reset | uninstall | stop) lock_lifecycle ;;
+esac
+
+case "$1" in
   --version)
     printf '%s\n' "blame-lima-runtime $runtime_version"
     ;;
@@ -490,7 +567,7 @@ case "$1" in
     ensure_runtime
     ;;
   repair)
-    ensure_runtime
+    ensure_runtime repair
     ;;
   reset)
     reset_runtime

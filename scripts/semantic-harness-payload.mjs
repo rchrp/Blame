@@ -70,7 +70,13 @@ export async function buildSemanticHarnessPayload({ outputPaths, runtimeVersion 
 async function copyRuntimeSdk(staging) {
   const coreRoot = await runtimeCorePackagePath();
   await access(join(coreRoot, "dist/blame-patch.json"));
-  await cp(coreRoot, join(staging, "vendor/cline-core"), { recursive: true });
+  // pnpm's generated .bin launchers embed absolute build-machine paths.
+  // Dependencies are installed from the payload manifest, so shipping this
+  // local node_modules tree only makes otherwise identical payloads differ.
+  await cp(coreRoot, join(staging, "vendor/cline-core"), {
+    recursive: true,
+    filter: (source) => source !== join(coreRoot, "node_modules"),
+  });
   return JSON.parse(await readFile(join(coreRoot, "package.json"), "utf8"));
 }
 

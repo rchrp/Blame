@@ -593,3 +593,14 @@ test("ensureRuntimeGitUserIdentity: falls back to defaults if host reads fail", 
     process.env.USERNAME = originalUsername;
   }
 });
+
+test("resolves Windows worktrees in the selected development distribution", () => {
+  assert.equal(
+    runtimeHostPath(
+      "/home/blame/.local/share/blame/runtime/worktrees/Test/story",
+      "win32",
+      { BLAME_WSL_DISTRO: "BlameRuntimeDev" },
+    ),
+    String.raw`\\wsl.localhost\BlameRuntimeDev\home\blame\.local\share\blame\runtime\worktrees\Test\story`,
+  );
+});

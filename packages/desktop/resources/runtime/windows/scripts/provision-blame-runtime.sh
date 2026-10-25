@@ -298,22 +298,10 @@ stop_docker() {
 }
 
 ensure_docker_running() {
-  if [ "${BLAME_RUNTIME_BAKE:-0}" = "1" ] || docker info >/dev/null 2>&1; then
+  if [ "${BLAME_RUNTIME_BAKE:-0}" = "1" ]; then
     return
   fi
-  mkdir -p /var/log/blame-runtime
-  setsid nohup dockerd --config-file /etc/docker/daemon.json \
-    >>/var/log/blame-runtime/dockerd.log 2>&1 </dev/null &
-  attempt=0
-  while [ "$attempt" -lt 120 ]; do
-    if docker info >/dev/null 2>&1; then
-      return
-    fi
-    attempt=$((attempt + 1))
-    sleep 0.25
-  done
-  printf '%s\n' "Docker Engine did not start; see /var/log/blame-runtime/dockerd.log." >&2
-  return 1
+  blame-runtime-agent docker-ensure
 }
 
 # Runtime 10 ran previews on a standalone containerd with nerdctl. Stop its
@@ -469,7 +457,7 @@ json_worker_count = max(1, min(2, os.cpu_count() or 1))
 large_json_threshold = 64 * 1024
 ignored_env_directories = {".git", ".blame", "build", "coverage", "dist", "node_modules", "out"}
 env_template_suffixes = (".example", ".sample", ".template")
-runtime_agent_version = "9"
+runtime_agent_version = "10"
 
 def serialize_json_line(value):
     return json.dumps(value, separators=(",", ":")) + "\n"
@@ -529,23 +517,47 @@ def version():
 docker_lock = threading.Lock()
 
 def docker_ready():
-    return subprocess.run(["docker", "info"], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
+    try:
+        return subprocess.run(["docker", "info"], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=2).returncode == 0
+    except subprocess.TimeoutExpired:
+        return False
 
-# Docker Engine starts with the first container command and keeps running.
+# Provisioning and every agent process share this lock. A thread-only lock
+# allowed two dockerd processes to race while opening the volume database.
 def ensure_docker():
-    if os.path.exists("/var/run/docker.sock") and subprocess.run(["pgrep", "-x", "dockerd"], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0:
+    import fcntl
+    import time
+    if docker_ready():
         return
-    with docker_lock:
-        if docker_ready():
-            return
-        os.makedirs("/var/log/blame-runtime", exist_ok=True)
-        log = open("/var/log/blame-runtime/dockerd.log", "ab")
-        subprocess.Popen(["dockerd", "--config-file", "/etc/docker/daemon.json"], stdin=subprocess.DEVNULL, stdout=log, stderr=log, start_new_session=True)
-        import time
-        for _ in range(120):
+    deadline = time.monotonic() + 90
+    os.makedirs("/var/log/blame-runtime", exist_ok=True)
+    os.makedirs("/run/lock", exist_ok=True)
+    with docker_lock, open("/run/lock/blame-docker.lock", "a") as lock:
+        while True:
+            try:
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except BlockingIOError:
+                if time.monotonic() >= deadline:
+                    raise RuntimeError("Timed out waiting for Docker Engine startup.")
+                time.sleep(0.25)
+        launched = None
+        starts = 0
+        while time.monotonic() < deadline:
             if docker_ready():
                 return
+            # Reap our failed child before checking for an existing daemon.
+            if launched is not None:
+                launched.poll()
+            running = (launched is not None and launched.returncode is None) or subprocess.run(["pgrep", "-x", "dockerd"], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
+            if not running:
+                if starts >= 3:
+                    break
+                with open("/var/log/blame-runtime/dockerd.log", "ab") as log:
+                    launched = subprocess.Popen(["dockerd", "--config-file", "/etc/docker/daemon.json"], stdin=subprocess.DEVNULL, stdout=log, stderr=log, start_new_session=True)
+                starts += 1
             time.sleep(0.25)
+    raise RuntimeError("Docker Engine did not start; see /var/log/blame-runtime/dockerd.log.")
 
 def target_user(name):
     if os.geteuid() != 0:
@@ -1092,6 +1104,8 @@ def main():
         command = sys.argv[1] if len(sys.argv) > 1 else "status"
         if command == "status":
             print("ready")
+        elif command == "docker-ensure":
+            ensure_docker()
         elif command == "agent-version":
             print(runtime_agent_version)
         elif command == "version":
@@ -1103,6 +1117,7 @@ def main():
         else:
             os.execvp(command, sys.argv[1:])
     except Exception as e:
+        print(str(e), file=sys.stderr)
         log_error(f"Error in main: {e}\n{traceback.format_exc()}")
         sys.exit(1)
 
@@ -1127,9 +1142,9 @@ ensure_container_stack
 ensure_runtime_paths
 ensure_docker_config
 stop_legacy_container_stack
+ensure_agent
 ensure_docker_running
 migrate_legacy_volumes
 remove_legacy_container_stack
 trim_guest_services
-ensure_agent
 write_marker

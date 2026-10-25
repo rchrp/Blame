@@ -1,3 +1,4 @@
+import { runtimeDistroName } from "./desktop-runtime-environment.ts";
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import type { LightWorkspaceExecutionRequest } from "@blame/agent-runtime";
@@ -457,7 +458,7 @@ function agentCommand(platform: NodeJS.Platform, env?: NodeJS.ProcessEnv) {
     return {
       args: [
         "-d",
-        "BlameRuntime",
+        runtimeDistroName(sanitizedEnv),
         "-u",
         "root",
         "--",

@@ -107,6 +107,7 @@ async function withPayload(action) {
     await buildSemanticHarnessPayload({ outputPaths: [archive], runtimeVersion: "payload-test" });
     await extractArchive(archive, installRoot);
     const packageRoot = join(installRoot, "package");
+    await assert.rejects(access(join(packageRoot, "vendor/cline-core/node_modules")));
     await linkRuntimeDependencies(packageRoot);
     await mkdir(workspaceRoot);
     await writeFile(join(workspaceRoot, "package.json"), '{"scripts":{}}\n');
@@ -182,6 +183,17 @@ test("standalone payload returns image media with the forwarded model capability
     assert.equal(result.status, "ok", JSON.stringify(result));
     assert.deepEqual(result.content, [{ type: "image", mediaType: "image/png", data: pixel.toString("base64") }]);
   });
+});
+
+test("rebuilding an unchanged payload preserves its update fingerprint", async () => {
+  const temporary = await mkdtemp(join(tmpdir(), "semantic-payload-stable-"));
+  try {
+    const first = join(temporary, "first.tgz");
+    const second = join(temporary, "second.tgz");
+    await buildSemanticHarnessPayload({ outputPaths: [first], runtimeVersion: "stable-test" });
+    await buildSemanticHarnessPayload({ outputPaths: [second], runtimeVersion: "stable-test" });
+    assert.deepEqual(await readFile(first), await readFile(second));
+  } finally { await rm(temporary, { recursive: true, force: true }); }
 });
 
 test("standalone payload ships the patched SDK used by the managed hub", async () => {

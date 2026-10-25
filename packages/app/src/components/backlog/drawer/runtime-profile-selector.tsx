@@ -293,7 +293,7 @@ function runtimeNote(phase?: RuntimePhase, progress?: RuntimeProgress) {
   if (phase === "missing") return "Needs Blame Runtime, a one-time install."
   if (phase === "needs-repair") return "Blame Runtime needs a repair."
   if (phase === "unsupported") return "Not available on this computer."
-  if (phase === "installing" || phase === "updating" || phase === "repairing")
+  if (phase === "starting" || phase === "installing" || phase === "updating" || phase === "repairing")
     return `Blame Runtime: ${runtimeProgressText(progress).toLowerCase()}`
   return undefined
 }

@@ -1,3 +1,4 @@
+import { runtimeDistroName } from "./desktop-runtime-environment.ts";
 import {
   execFile,
   spawn,
@@ -161,10 +162,11 @@ export function runtimeAccessiblePath(
 export function runtimeHostPath(
   path: string,
   platform: NodeJS.Platform = process.platform,
+  env: NodeJS.ProcessEnv = process.env,
 ) {
   if (platform !== "win32" || !runtimeManagedPath(path, platform)) return path;
   const normalized = normalizedRuntimePath(path).replace(/^\/+/, "");
-  return `\\\\wsl.localhost\\BlameRuntime\\${normalized.replace(/\//g, "\\")}`;
+  return `\\\\wsl.localhost\\${runtimeDistroName(env)}\\${normalized.replace(/\//g, "\\")}`;
 }
 
 export function runtimeCommand(
