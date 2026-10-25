@@ -44,7 +44,10 @@ import {
 } from "@/components/backlog/drawer/markdown-wysiwyg-parser"
 import { SpeechToTextControl } from "@/components/backlog/drawer/speech-to-text-provider"
 import type { SpeechTarget } from "@/components/backlog/drawer/speech-session-store"
-import { fileAttachment } from "@/components/backlog/drawer/user-story-attachment-files"
+import {
+  fileAttachment,
+  type FileAttachmentReplacement,
+} from "@/components/backlog/drawer/user-story-attachment-files"
 import {
   codeSelectionLineLabel,
   type PendingCodeSelectionAttachment,
@@ -340,6 +343,7 @@ function ImageAttachmentPreview({
     <div className="group relative">
       <button
         type="button"
+        data-image-attachment-id={attachment.id}
         aria-label={`Open ${attachment.file.name}`}
         onClick={onOpen}
         className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-md border bg-muted/30 transition-colors outline-none hover:bg-muted/50 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
@@ -1145,7 +1149,7 @@ export const MarkdownEditor = React.forwardRef<
     onCodeSelectionAttachmentRemove?: (id: string) => void
     onFileAttachmentRemove?: (id: string) => void
     onFileAttachmentsReplace?: (
-      replacements: { id: string; attachment: UserStoryFileAttachment }[]
+      replacements: FileAttachmentReplacement[]
     ) => void
     onFileAttachmentsAdd?: (attachments: UserStoryFileAttachment[]) => void
     onFileLinkClick?: (path: string) => void
@@ -1197,6 +1201,10 @@ export const MarkdownEditor = React.forwardRef<
   >([])
   const [activeMentionIndex, setActiveMentionIndex] = React.useState(0)
   const attachmentsRef = React.useRef<PastedAttachment[]>([])
+  const pendingAttachmentWritesRef = React.useRef(
+    new Map<string, Promise<void>>()
+  )
+  const galleryFocusIdRef = React.useRef<string | null>(null)
   const fileDragDepthRef = React.useRef(0)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
   const handledCodeSelectionIdsRef = React.useRef(new Set<string>())
@@ -1584,18 +1592,23 @@ export const MarkdownEditor = React.forwardRef<
           aiContextAttachmentSupported(attachment.file)
         )
     )
-    try {
-      onFileAttachmentsAdd(
-        await Promise.all(
-          nextAttachments.map((attachment) =>
-            persistentFileAttachment(attachment, {
-              optimize: optimizeAttachmentsForAiContext,
-              workspace: platform.workspace,
-            })
-          )
-        )
+    const write = Promise.all(
+      nextAttachments.map((attachment) =>
+        persistentFileAttachment(attachment, {
+          optimize: optimizeAttachmentsForAiContext,
+          workspace: platform.workspace,
+        })
       )
+    ).then(onFileAttachmentsAdd)
+    nextAttachments.forEach(({ id }) =>
+      pendingAttachmentWritesRef.current.set(id, write)
+    )
+    try {
+      await write
     } finally {
+      nextAttachments.forEach(({ id }) =>
+        pendingAttachmentWritesRef.current.delete(id)
+      )
       setOptimizingAttachments(false)
     }
   }
@@ -1608,6 +1621,11 @@ export const MarkdownEditor = React.forwardRef<
   }
 
   async function saveAnnotatedAttachments(changes: AnnotatedAttachment[]) {
+    // A mixed image/document batch may still be optimizing. Publish it first so
+    // the parent replaces the original instead of appending it after our edit.
+    await Promise.all(
+      changes.map(({ id }) => pendingAttachmentWritesRef.current.get(id))
+    )
     const replacements = await Promise.all(
       changes.map(async (change) => ({
         ...change,
@@ -1639,6 +1657,9 @@ export const MarkdownEditor = React.forwardRef<
         annotation: replacement.annotation,
       }
     })
+    galleryFocusIdRef.current =
+      replacements.find(({ id }) => id === galleryId)?.attachment.id ??
+      galleryId
     attachmentsRef.current = next
     setAttachments(next)
   }
@@ -2103,6 +2124,16 @@ export const MarkdownEditor = React.forwardRef<
               annotation: attachment.annotation,
             }))}
           onClose={() => setGalleryId(null)}
+          onRestoreFocus={() => {
+            const id = galleryFocusIdRef.current ?? galleryId
+            galleryFocusIdRef.current = null
+            const target = Array.from(
+              rootRef.current?.querySelectorAll<HTMLButtonElement>(
+                "[data-image-attachment-id]"
+              ) ?? []
+            ).find((button) => button.dataset.imageAttachmentId === id)
+            ;(target ?? editorRef.current)?.focus()
+          }}
           onSave={
             !readOnly && (!onFileAttachmentsAdd || onFileAttachmentsReplace)
               ? saveAnnotatedAttachments

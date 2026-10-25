@@ -2,6 +2,7 @@ import {
   annotationBounds,
   arrowHead,
   textSize,
+  moveAnnotation,
   type Annotation,
 } from "./annotation-model"
 
@@ -65,13 +66,32 @@ export function loadAnnotationImage(source: string): Promise<HTMLImageElement> {
     const image = new Image()
     // Stored attachments use CORS-enabled download URLs. Failure is recoverable in the viewer.
     image.crossOrigin = "anonymous"
-    image.onload = () => resolve(image)
-    image.onerror = () =>
+    const timeout = window.setTimeout(() => {
+      image.src = ""
+      reject(
+        new Error(
+          "Loading the image timed out. Check your connection and try again."
+        )
+      )
+    }, 15000)
+    image.onload = () => {
+      window.clearTimeout(timeout)
+      if (!image.naturalWidth || !image.naturalHeight)
+        reject(
+          new Error(
+            "This image has no visible dimensions. Try a different image."
+          )
+        )
+      else resolve(image)
+    }
+    image.onerror = () => {
+      window.clearTimeout(timeout)
       reject(
         new Error(
           "This image could not be loaded. Close the viewer and try again."
         )
       )
+    }
     image.src = source
   })
 }
@@ -114,4 +134,44 @@ export async function renderAnnotatedImage(
     canvas.width = 0
     canvas.height = 0
   }
+}
+
+// Wrap and measure with the export font, then keep the complete label on-image.
+export function layoutTextAnnotation(
+  mark: Annotation,
+  imageHeight: number
+): Annotation {
+  const context = document.createElement("canvas").getContext("2d")
+  if (!context) throw new Error("Text editing is unavailable in this browser.")
+  context.font = `600 ${textSize(mark)}px sans-serif`
+  const lines: string[] = []
+  for (const paragraph of (mark.text ?? "").split("\n")) {
+    let line = ""
+    for (const character of paragraph) {
+      if (context.measureText(line + character).width > 960 && line) {
+        const space = line.lastIndexOf(" ")
+        if (space > 0) {
+          lines.push(line.slice(0, space))
+          line = line.slice(space + 1)
+        } else {
+          lines.push(line)
+          line = ""
+        }
+      }
+      line += character
+    }
+    lines.push(line)
+  }
+  const next = {
+    ...mark,
+    text: lines.join("\n"),
+    textWidth:
+      Math.max(...lines.map((line) => context.measureText(line).width)) /
+      textSize(mark),
+  }
+  if (annotationBounds(next).height > imageHeight)
+    throw new Error(
+      "This text is too long for the image. Shorten it or use a thinner stroke size."
+    )
+  return moveAnnotation(next, { x: 0, y: 0 }, imageHeight)
 }

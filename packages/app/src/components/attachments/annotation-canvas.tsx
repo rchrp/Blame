@@ -43,8 +43,8 @@ export function AnnotationCanvas({
   disabled: boolean
   onChange: (marks: Annotation[]) => void
   onSelect: (id: string | null) => void
-  onReady: (ready: boolean) => void
-  onText: (point: Point, mark?: Annotation) => void
+  onReady: (ready: boolean, imageHeight?: number) => void
+  onText: (point: Point, imageHeight: number, mark?: Annotation) => void
 }) {
   const container = React.useRef<HTMLDivElement>(null)
   const canvas = React.useRef<HTMLCanvasElement>(null)
@@ -63,7 +63,7 @@ export function AnnotationCanvas({
         if (canceled) return
         setImage(loaded)
         setError(null)
-        readyCallback(true)
+        readyCallback(true, (1000 * loaded.naturalHeight) / loaded.naturalWidth)
       })
       .catch((reason: Error) => {
         if (!canceled) setError(reason.message)
@@ -135,7 +135,7 @@ export function AnnotationCanvas({
     const p = point(event)
     const hit = annotationAt(marks, p, (8 * 1000) / displayWidth)
     if (tool === "text") {
-      onText(p)
+      onText(p, spaceHeight)
       return
     }
     event.currentTarget.setPointerCapture(event.pointerId)
@@ -287,12 +287,12 @@ export function AnnotationCanvas({
                 spaceHeight
               )
               const hit = annotationAt(marks, p)
-              if (hit?.kind === "text") onText(hit.points[0], hit)
+              if (hit?.kind === "text") onText(hit.points[0], spaceHeight, hit)
             }}
             onKeyDown={(event) => {
               if (tool === "text" && event.key === "Enter" && !disabled) {
                 event.preventDefault()
-                onText({ x: 100, y: spaceHeight / 2 })
+                onText({ x: 100, y: spaceHeight / 2 }, spaceHeight)
               }
             }}
           />

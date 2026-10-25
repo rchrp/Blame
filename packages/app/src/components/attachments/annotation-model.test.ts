@@ -2,6 +2,8 @@ import assert from "node:assert/strict"
 import test from "node:test"
 import {
   annotationAt,
+  annotationBounds,
+  arrowHead,
   annotatedFileName,
   commitAnnotations,
   createHistory,
@@ -82,4 +84,41 @@ test("export creates PNG filenames without stacking suffixes", () => {
     annotatedFileName("screen-annotated.png"),
     "screen-annotated.png"
   )
+})
+
+test("thick arrowheads are selectable outside the shaft bounds", () => {
+  const arrow: Annotation = {
+    ...line,
+    kind: "arrow",
+    width: 10,
+    points: [
+      { x: 100, y: 100 },
+      { x: 400, y: 100 },
+    ],
+  }
+  const head = arrowHead(arrow)[0]
+  assert.equal(hitAnnotation(arrow, head, 0), true)
+  assert.ok(annotationBounds(arrow).height > 30)
+})
+
+test("measured text remains inside the image when moved", () => {
+  const label: Annotation = {
+    ...line,
+    kind: "text",
+    text: "Label",
+    textWidth: 3,
+    points: [{ x: 990, y: 590 }],
+  }
+  const moved = moveAnnotation(label, { x: 0, y: 0 }, 600)
+  const bounds = annotationBounds(moved)
+  assert.ok(bounds.x + bounds.width <= 1000)
+  assert.ok(bounds.y + bounds.height <= 600)
+})
+
+test("undo history is bounded without discarding the current drawing", () => {
+  let history = createHistory()
+  for (let i = 0; i < 150; i++)
+    history = commitAnnotations(history, [{ ...line, id: String(i) }])
+  assert.equal(history.past.length, 100)
+  assert.equal(history.present[0].id, "149")
 })

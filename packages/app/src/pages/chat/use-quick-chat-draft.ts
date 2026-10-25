@@ -1,4 +1,8 @@
 import * as React from "react"
+import {
+  replaceFileAttachments,
+  type FileAttachmentReplacement,
+} from "@/components/backlog/drawer/user-story-attachment-files"
 import type { UserStoryFileAttachment } from "@/components/backlog/data/backlog-data"
 import {
   codeSelectionAttachmentEvent,
@@ -60,6 +64,26 @@ export function useQuickChatDraft(storageKey: string) {
       window.removeEventListener(codeSelectionAttachmentEvent, addAttachment)
   }, [])
 
+  const addDraftFileAttachments = React.useCallback(
+    (attachments: UserStoryFileAttachment[]) => {
+      setDraftFileAttachments((current) => [...current, ...attachments])
+    },
+    []
+  )
+  const removeDraftFileAttachment = React.useCallback((id: string) => {
+    setDraftFileAttachments((current) =>
+      current.filter((attachment) => attachment.id !== id)
+    )
+  }, [])
+  const replaceDraftFileAttachments = React.useCallback(
+    (replacements: FileAttachmentReplacement[]) => {
+      setDraftFileAttachments((current) =>
+        replaceFileAttachments(current, replacements)
+      )
+    },
+    []
+  )
+
   function draftHasContent() {
     return Boolean(
       draft.trim() || draftCodeAttachments.length || draftFileAttachments.length
@@ -75,6 +99,9 @@ export function useQuickChatDraft(storageKey: string) {
   }
 
   return {
+    addDraftFileAttachments,
+    removeDraftFileAttachment,
+    replaceDraftFileAttachments,
     clearDraft,
     draft,
     draftCodeAttachments,

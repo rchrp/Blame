@@ -14,6 +14,8 @@ export type Annotation = {
   width: number
   points: Point[]
   text?: string
+  // Measured in em so changing stroke/text size keeps accurate bounds.
+  textWidth?: number
 }
 export type AnnotationHistory = {
   past: Annotation[][]
@@ -74,8 +76,10 @@ export function imagePoint(
   }
 }
 export function annotationBounds(mark: Annotation) {
-  const xs = mark.points.map((p) => p.x)
-  const ys = mark.points.map((p) => p.y)
+  const points =
+    mark.kind === "arrow" ? [...mark.points, ...arrowHead(mark)] : mark.points
+  const xs = points.map((p) => p.x)
+  const ys = points.map((p) => p.y)
   const x = Math.min(...xs),
     y = Math.min(...ys)
   if (mark.kind === "text") {
@@ -84,9 +88,9 @@ export function annotationBounds(mark: Annotation) {
       x,
       y,
       width:
-        Math.max(...lines.map((line) => line.length), 1) *
-        textSize(mark) *
-        0.65,
+        (mark.textWidth ??
+          Math.max(...lines.map((line) => line.length), 1) * 0.65) *
+        textSize(mark),
       height: lines.length * textSize(mark) * 1.25,
     }
   }

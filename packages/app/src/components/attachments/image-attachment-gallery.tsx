@@ -26,7 +26,10 @@ import {
   type AnnotationTool,
   type Point,
 } from "./annotation-model"
-import { renderAnnotatedImage } from "./annotation-renderer"
+import {
+  layoutTextAnnotation,
+  renderAnnotatedImage,
+} from "./annotation-renderer"
 
 export type ImageAnnotation = { source: string; marks: Annotation[] }
 export type GalleryImage = {
@@ -40,18 +43,26 @@ export type AnnotatedAttachment = {
   file: File
   annotation: ImageAnnotation
 }
-type TextDraft = { point: Point; value: string; mark?: Annotation }
+type TextDraft = {
+  point: Point
+  imageHeight: number
+  value: string
+  mark?: Annotation
+  error?: string
+}
 
 // A session owns all image histories. Switching slides never commits or loses edits.
 export function ImageAttachmentGallery({
   images,
   initialId,
   onClose,
+  onRestoreFocus,
   onSave,
 }: {
   images: GalleryImage[]
   initialId: string
   onClose: () => void
+  onRestoreFocus?: () => void
   onSave?: (changes: AnnotatedAttachment[]) => Promise<void>
 }) {
   const [index, setIndex] = React.useState(() =>
@@ -72,11 +83,13 @@ export function ImageAttachmentGallery({
   const [width, setWidth] = React.useState(3)
   const [editing, setEditing] = React.useState(false)
   const [ready, setReady] = React.useState(false)
+  const [imageHeight, setImageHeight] = React.useState(1000)
   const [selected, setSelected] = React.useState<string | null>(null)
   const [textDraft, setTextDraft] = React.useState<TextDraft | null>(null)
   const [confirmDiscard, setConfirmDiscard] = React.useState(false)
   const [saving, setSaving] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
+  const discardReturnFocus = React.useRef<HTMLElement | null>(null)
   const opener = React.useRef(document.activeElement as HTMLElement | null)
   const current = images[Math.min(index, images.length - 1)]
   const history =
@@ -105,8 +118,14 @@ export function ImageAttachmentGallery({
       setTextDraft(null)
       return
     }
-    if (changed.length) setConfirmDiscard(true)
-    else onClose()
+    if (changed.length) {
+      discardReturnFocus.current = document.activeElement as HTMLElement | null
+      setConfirmDiscard(true)
+    } else onClose()
+  }
+  function keepEditing() {
+    setConfirmDiscard(false)
+    requestAnimationFrame(() => discardReturnFocus.current?.focus())
   }
   function undo() {
     update(undoAnnotations(history))
@@ -128,15 +147,29 @@ export function ImageAttachmentGallery({
   function changeStyle(style: Partial<Pick<Annotation, "color" | "width">>) {
     if (style.color) setColor(style.color)
     if (style.width) setWidth(style.width)
-    if (selected)
-      update(
-        commitAnnotations(
-          history,
-          history.present.map((mark) =>
-            mark.id === selected ? { ...mark, ...style } : mark
+    if (selected) {
+      try {
+        update(
+          commitAnnotations(
+            history,
+            history.present.map((mark) => {
+              if (mark.id !== selected) return mark
+              const next = { ...mark, ...style }
+              return next.kind === "text"
+                ? layoutTextAnnotation(next, imageHeight)
+                : next
+            })
           )
         )
-      )
+        setError(null)
+      } catch (reason) {
+        setError(
+          reason instanceof Error
+            ? reason.message
+            : "The annotation could not be updated."
+        )
+      }
+    }
   }
   async function save() {
     if (!onSave || saving) return
@@ -229,13 +262,14 @@ export function ImageAttachmentGallery({
         onKeyDown={keyDown}
         onEscapeKeyDown={(event) => {
           event.preventDefault()
-          if (confirmDiscard) setConfirmDiscard(false)
+          if (confirmDiscard) keepEditing()
           else requestClose()
         }}
         onInteractOutside={(event) => event.preventDefault()}
         onCloseAutoFocus={(event) => {
           event.preventDefault()
-          opener.current?.focus()
+          if (onRestoreFocus) onRestoreFocus()
+          else opener.current?.focus()
         }}
       >
         <header className="flex shrink-0 items-center gap-3 border-b px-3 py-2.5 sm:px-5">
@@ -315,7 +349,8 @@ export function ImageAttachmentGallery({
               <Button
                 type="button"
                 variant="secondary"
-                onClick={() => setConfirmDiscard(false)}
+                autoFocus
+                onClick={keepEditing}
               >
                 Keep editing
               </Button>
@@ -336,11 +371,19 @@ export function ImageAttachmentGallery({
             width={width}
             selected={selected}
             disabled={!editing || locked}
-            onReady={setReady}
+            onReady={(loaded, height) => {
+              setReady(loaded)
+              if (height) setImageHeight(height)
+            }}
             onSelect={setSelected}
             onChange={(marks) => update(commitAnnotations(history, marks))}
-            onText={(point, mark) =>
-              setTextDraft({ point, value: mark?.text ?? "", mark })
+            onText={(point, imageHeight, mark) =>
+              setTextDraft({
+                point,
+                imageHeight,
+                value: mark?.text ?? "",
+                mark,
+              })
             }
           />
           {images.length > 1 && (
@@ -378,13 +421,25 @@ export function ImageAttachmentGallery({
                   event.preventDefault()
                   event.stopPropagation()
                   if (!textDraft.value.trim()) return
-                  const mark: Annotation = {
+                  let mark: Annotation = {
                     id: textDraft.mark?.id ?? crypto.randomUUID(),
                     kind: "text",
                     color: textDraft.mark?.color ?? color,
                     width: textDraft.mark?.width ?? width,
                     points: [textDraft.point],
                     text: textDraft.value.trim(),
+                  }
+                  try {
+                    mark = layoutTextAnnotation(mark, textDraft.imageHeight)
+                  } catch (reason) {
+                    setTextDraft({
+                      ...textDraft,
+                      error:
+                        reason instanceof Error
+                          ? reason.message
+                          : "The text could not be added.",
+                    })
+                    return
                   }
                   const next = textDraft.mark
                     ? history.present.map((existing) =>
@@ -424,6 +479,11 @@ export function ImageAttachmentGallery({
                   }}
                   className="w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 />
+                {textDraft.error && (
+                  <p role="alert" className="text-sm text-destructive">
+                    {textDraft.error}
+                  </p>
+                )}
                 <div className="flex justify-end gap-2">
                   <Button
                     type="button"

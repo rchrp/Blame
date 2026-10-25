@@ -1,4 +1,3 @@
-import { replaceFileAttachments } from "@/components/backlog/drawer/user-story-attachment-files"
 import * as React from "react"
 import { createDebouncedUpdateQueue } from "@/lib/debounced-update-queue"
 import type { AgentEvent } from "@blame/agent-runtime"
@@ -196,6 +195,9 @@ function QuickChatProjectPage() {
     setDraftCodeAttachments,
     setDraftEditorKey,
     setDraftFileAttachments,
+    addDraftFileAttachments,
+    removeDraftFileAttachment,
+    replaceDraftFileAttachments,
   } = useQuickChatDraft(draftStorageKey)
   const applySuggestion = useComposerShortcuts({
     draftRef,
@@ -1049,22 +1051,9 @@ function QuickChatProjectPage() {
                         current.filter((attachment) => attachment.id !== id)
                       )
                     }
-                    onFileAttachmentRemove={(id) =>
-                      setDraftFileAttachments((current) =>
-                        current.filter((attachment) => attachment.id !== id)
-                      )
-                    }
-                    onFileAttachmentsReplace={(replacements) =>
-                      setDraftFileAttachments((current) =>
-                        replaceFileAttachments(current, replacements)
-                      )
-                    }
-                    onFileAttachmentsAdd={(attachments) =>
-                      setDraftFileAttachments((current) => [
-                        ...current,
-                        ...attachments,
-                      ])
-                    }
+                    onFileAttachmentRemove={removeDraftFileAttachment}
+                    onFileAttachmentsReplace={replaceDraftFileAttachments}
+                    onFileAttachmentsAdd={addDraftFileAttachments}
                     onFileLinkClick={(path) =>
                       openProjectPath(project?.path, path, platform.openPath)
                     }
