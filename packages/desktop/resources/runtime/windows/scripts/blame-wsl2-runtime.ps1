@@ -154,7 +154,7 @@ function Test-ContainerRuntimeCommand {
 }
 
 function Ensure-DockerRunning {
-  $command = "if ! docker info >/dev/null 2>&1; then mkdir -p /var/log/blame-runtime; setsid nohup dockerd --config-file /etc/docker/daemon.json >>/var/log/blame-runtime/dockerd.log 2>&1 </dev/null & attempt=0; while [ `$attempt -lt 120 ] && ! docker info >/dev/null 2>&1; do attempt=`$((attempt + 1)); sleep 0.25; done; fi; docker info >/dev/null 2>&1"
+  $command = "blame-runtime-agent docker-ensure"
   $result = Invoke-DistroScript $command
   if ($result.Code -ne 0) {
     throw $result.Output
