@@ -1,5 +1,6 @@
 import * as React from "react"
 import {
+  CheckIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   LoaderCircleIcon,
@@ -7,6 +8,7 @@ import {
   XIcon,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { TooltipProvider } from "@/components/ui/tooltip"
 import {
   Dialog,
   DialogContent,
@@ -14,7 +16,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { AnnotationCanvas } from "./annotation-canvas"
-import { AnnotationToolbar, toolShortcuts } from "./annotation-toolbar"
+import {
+  AnnotationButton,
+  AnnotationToolbar,
+  toolShortcuts,
+} from "./annotation-toolbar"
 import {
   annotatedFileName,
   commitAnnotations,
@@ -258,7 +264,8 @@ export function ImageAttachmentGallery({
     >
       <DialogContent
         showCloseButton={false}
-        className="flex h-[calc(100dvh-1rem)] max-h-[1000px] w-[calc(100%-1rem)] max-w-none flex-col gap-0 overflow-hidden p-0 sm:h-[calc(100dvh-3rem)] sm:w-[calc(100%-3rem)] sm:max-w-[1440px]"
+        overlayClassName="bg-background/55 backdrop-blur-xl supports-backdrop-filter:backdrop-blur-xl"
+        className="flex h-dvh w-full max-w-none flex-col gap-0 overflow-hidden rounded-none bg-transparent p-3 ring-0 sm:max-w-none sm:p-6 data-open:zoom-in-100 data-closed:zoom-out-100"
         onKeyDown={keyDown}
         onEscapeKeyDown={(event) => {
           event.preventDefault()
@@ -272,65 +279,16 @@ export function ImageAttachmentGallery({
           else opener.current?.focus()
         }}
       >
-        <header className="flex shrink-0 items-center gap-3 border-b px-3 py-2.5 sm:px-5">
-          <div className="min-w-0 flex-1">
-            <DialogTitle
-              className="truncate text-sm leading-5"
-              title={current.name}
-            >
-              {current.name}
-            </DialogTitle>
-            <DialogDescription className="mt-0.5 text-xs">
-              {editing
-                ? "Annotate your image, then apply your changes."
-                : "Image attachment"}
-            </DialogDescription>
-          </div>
-          {images.length > 1 && (
-            <span
-              className="shrink-0 text-xs text-muted-foreground tabular-nums"
-              aria-live="polite"
-            >
-              {index + 1} / {images.length}
-            </span>
-          )}
-          {onSave && !editing && (
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={!ready}
-              onClick={() => setEditing(true)}
-            >
-              <PencilIcon />
-              Annotate
-            </Button>
-          )}
-          {onSave && editing && (
-            <Button
-              type="button"
-              disabled={!changed.length || locked}
-              onClick={() => void save()}
-            >
-              {saving ? <LoaderCircleIcon className="animate-spin" /> : null}
-              {saving ? "Saving…" : "Apply changes"}
-            </Button>
-          )}
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="size-10"
-            aria-label="Close image viewer"
-            disabled={saving}
-            onClick={requestClose}
-          >
-            <XIcon />
-          </Button>
-        </header>
+        <DialogTitle className="sr-only">Image attachments</DialogTitle>
+        <DialogDescription className="sr-only">
+          {editing
+            ? "Annotate your image, then save your changes."
+            : "Browse image attachments."}
+        </DialogDescription>
         {error && (
           <div
             role="alert"
-            className="shrink-0 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+            className="mx-auto mb-3 max-w-xl shrink-0 rounded-xl bg-popover/90 px-4 py-3 text-sm text-destructive shadow-lg backdrop-blur-xl"
           >
             {error}
           </div>
@@ -340,7 +298,7 @@ export function ImageAttachmentGallery({
             role="alertdialog"
             aria-label="Discard annotations?"
             aria-describedby="discard-annotations-description"
-            className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b bg-muted px-4 py-3"
+            className="mx-auto mb-3 flex max-w-xl shrink-0 flex-wrap items-center justify-between gap-3 rounded-xl bg-popover/90 px-4 py-3 shadow-lg backdrop-blur-xl"
           >
             <p id="discard-annotations-description" className="text-sm">
               Discard your unsaved annotations?
@@ -360,7 +318,7 @@ export function ImageAttachmentGallery({
             </div>
           </div>
         )}
-        <div className="relative min-h-0 flex-1 bg-muted/40 p-3 sm:px-16 sm:py-6">
+        <div className="relative min-h-0 flex-1 px-0 pt-0 pb-5 sm:px-12">
           <AnnotationCanvas
             key={current.id}
             source={current.annotation?.source ?? current.source}
@@ -394,7 +352,7 @@ export function ImageAttachmentGallery({
                 size="icon"
                 aria-label="Previous image (Left arrow)"
                 disabled={index === 0 || locked}
-                className="absolute top-1/2 left-1 size-10 -translate-y-1/2 shadow-md sm:left-3"
+                className="absolute top-1/2 left-1 size-10 -translate-y-1/2 bg-popover/80 shadow-md backdrop-blur-xl sm:left-0"
                 onClick={() => step(-1)}
               >
                 <ChevronLeftIcon />
@@ -405,7 +363,7 @@ export function ImageAttachmentGallery({
                 size="icon"
                 aria-label="Next image (Right arrow)"
                 disabled={index === images.length - 1 || locked}
-                className="absolute top-1/2 right-1 size-10 -translate-y-1/2 shadow-md sm:right-3"
+                className="absolute top-1/2 right-1 size-10 -translate-y-1/2 bg-popover/80 shadow-md backdrop-blur-xl sm:right-0"
                 onClick={() => step(1)}
               >
                 <ChevronRightIcon />
@@ -500,31 +458,86 @@ export function ImageAttachmentGallery({
             </div>
           )}
         </div>
-        <footer className="flex shrink-0 flex-col items-center gap-2 border-t bg-muted/40 px-2 py-3 sm:px-4">
-          {editing && onSave && (
-            <AnnotationToolbar
-              tool={tool}
-              color={color}
-              width={width}
-              onTool={(value) => {
-                setTool(value)
-                setSelected(null)
-              }}
-              onColor={(value) => changeStyle({ color: value })}
-              onWidth={(value) => changeStyle({ width: value })}
-              onUndo={undo}
-              onRedo={redo}
-              onDelete={removeSelected}
-              canUndo={history.past.length > 0}
-              canRedo={history.future.length > 0}
-              selected={Boolean(selected)}
-              disabled={!ready || locked}
-            />
+        <div className="flex shrink-0 flex-col items-center gap-2 pb-[env(safe-area-inset-bottom)]">
+          <div className="flex max-w-full items-end justify-center gap-3">
+            {onSave && !editing && (
+              <div className="rounded-xl bg-popover/80 p-1.5 shadow-lg backdrop-blur-xl">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="h-10"
+                  disabled={!ready}
+                  onClick={() => setEditing(true)}
+                >
+                  <PencilIcon />
+                  Annotate
+                </Button>
+              </div>
+            )}
+            {editing && onSave && (
+              <AnnotationToolbar
+                tool={tool}
+                color={color}
+                width={width}
+                onTool={(value) => {
+                  setTool(value)
+                  setSelected(null)
+                }}
+                onColor={(value) => changeStyle({ color: value })}
+                onWidth={(value) => changeStyle({ width: value })}
+                onUndo={undo}
+                onRedo={redo}
+                onDelete={removeSelected}
+                canUndo={history.past.length > 0}
+                canRedo={history.future.length > 0}
+                selected={Boolean(selected)}
+                disabled={!ready || locked}
+              />
+            )}
+            <TooltipProvider>
+              <div
+                role="group"
+                aria-label="Image actions"
+                className="flex shrink-0 items-center gap-0.5 rounded-xl bg-popover/80 p-1.5 shadow-lg backdrop-blur-xl"
+              >
+                {onSave && editing && (
+                  <AnnotationButton
+                    label={
+                      saving
+                        ? "Saving annotations…"
+                        : "Save annotations (⌘/Ctrl S)"
+                    }
+                    disabled={!changed.length || locked}
+                    className="text-primary"
+                    onClick={() => void save()}
+                  >
+                    {saving ? (
+                      <LoaderCircleIcon className="animate-spin" />
+                    ) : (
+                      <CheckIcon />
+                    )}
+                  </AnnotationButton>
+                )}
+                <AnnotationButton
+                  label="Close image viewer"
+                  disabled={saving}
+                  onClick={requestClose}
+                >
+                  <XIcon />
+                </AnnotationButton>
+              </div>
+            </TooltipProvider>
+          </div>
+          {images.length > 1 && (
+            <span
+              className="text-xs text-foreground/70 tabular-nums"
+              aria-live="polite"
+              aria-label={`Image ${index + 1} of ${images.length}`}
+            >
+              {index + 1} / {images.length}
+            </span>
           )}
-          <p
-            aria-live="polite"
-            className="text-center text-xs text-muted-foreground"
-          >
+          <p aria-live="polite" className="sr-only">
             {changed.length
               ? `${changed.length} image${changed.length > 1 ? "s" : ""} with unsaved annotations`
               : editing
@@ -539,7 +552,7 @@ export function ImageAttachmentGallery({
                   ? "Use ← and → to browse images. Esc to close."
                   : "Esc to close."}
           </p>
-        </footer>
+        </div>
       </DialogContent>
     </Dialog>
   )

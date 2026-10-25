@@ -1,6 +1,6 @@
 # Image attachments and annotations
 
-The shared Markdown composer opens image thumbnails in a gallery. Editable composers can annotate and apply changes; read-only consumers omit `onSave`. This extends the existing app UI: Radix dialog, shared buttons/popovers/tooltips, semantic app colors, Lucide icons, and a compact toolbar that wraps on narrow screens. There are no generated visual assets or additional design-system tokens.
+The shared Markdown composer opens image thumbnails in a gallery. Editable composers can annotate and apply changes; read-only consumers omit `onSave`. This extends the existing app UI: Radix dialog, shared buttons/popovers/tooltips, semantic app colors, and Lucide icons. The gallery fills the viewport over a translucent blurred backdrop, without a visible header, filename, or footer divider. Annotation tools float at the bottom, with Save and Close in a detached action group to their right; tools wrap on narrow screens. The dialog title and editing hints remain available to assistive technology. There are no generated visual assets or additional design-system tokens.
 
 ## Ownership
 

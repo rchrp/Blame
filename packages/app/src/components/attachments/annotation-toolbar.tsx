@@ -117,7 +117,7 @@ export function AnnotationToolbar({
       <div
         role="group"
         aria-label="Annotation tools"
-        className="flex max-w-full flex-wrap items-center justify-center gap-0.5 rounded-xl bg-popover p-1.5 shadow-lg"
+        className="flex max-w-full min-w-0 flex-wrap items-center justify-center gap-0.5 rounded-xl bg-popover/80 p-1.5 shadow-lg backdrop-blur-xl"
       >
         {tools.map(({ tool: value, label, key, icon: Icon }) => (
           <AnnotationButton
