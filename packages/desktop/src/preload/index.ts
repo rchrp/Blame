@@ -122,6 +122,7 @@ const api: BlameDesktopApi = {
     ipcRenderer.invoke("media:open-microphone-settings"),
   openExternalLink: (url) => ipcRenderer.send("shell:open-external", url),
   openPath: (path) => ipcRenderer.invoke("shell:open-path", path),
+  openAttachment: (input) => ipcRenderer.invoke("shell:open-attachment", input),
   backlogStatusPip: {
     onRequest: (callback) => {
       const handler = (
@@ -349,8 +350,6 @@ const api: BlameDesktopApi = {
   },
   workspace: {
     pathExists: (input) => ipcRenderer.invoke("workspace:path-exists", input),
-    optimizeAttachmentForAiContext: (input) =>
-      ipcRenderer.invoke("workspace:optimize-attachment-for-ai-context", input),
     listDirectory: (input) =>
       ipcRenderer.invoke("workspace:list-directory", input),
     readFile: (input) => ipcRenderer.invoke("workspace:read-file", input),

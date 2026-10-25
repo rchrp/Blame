@@ -1,0 +1,72 @@
+.attachment-document {
+  color: #1e293b;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 15px;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+  user-select: text;
+  --foreground: #1e293b;
+  --muted-foreground: #475569;
+  --muted: #f1f5f9;
+  --border: #cbd5e1;
+}
+.attachment-document :is(h1, h2, h3, h4) {
+  margin: 1.25em 0 0.5em;
+  font-weight: 700;
+  line-height: 1.25;
+}
+.attachment-document :is(h1, h2, h3, h4):first-child {
+  margin-top: 0;
+}
+.attachment-document h1 {
+  font-size: 1.8em;
+}
+.attachment-document h2 {
+  font-size: 1.4em;
+}
+.attachment-document h3 {
+  font-size: 1.15em;
+}
+.attachment-document p {
+  margin: 0.65em 0;
+}
+.attachment-document :is(ul, ol) {
+  padding-left: 1.6em;
+}
+.attachment-document ul {
+  list-style: disc;
+}
+.attachment-document ol {
+  list-style: decimal;
+}
+.attachment-document img {
+  max-width: 100%;
+  height: auto;
+  margin-block: 1em;
+}
+.attachment-document table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.attachment-document :is(td, th) {
+  border: 1px solid #cbd5e1;
+  padding: 0.4em 0.6em;
+}
+.attachment-document pre {
+  overflow: auto;
+}
+.attachment-document blockquote {
+  margin: 1em;
+  padding-left: 1em;
+  border-left: 1px solid #94a3b8;
+}
+.attachment-document ::selection {
+  background: #bfdbfe;
+  color: #0f172a;
+}
+
+/* Documents stay on white paper even when the surrounding app is dark. */
+.attachment-document a,
+.attachment-document a svg {
+  color: #1d4ed8;
+}

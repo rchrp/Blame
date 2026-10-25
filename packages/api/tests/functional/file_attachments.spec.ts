@@ -28,17 +28,23 @@ test.group('file attachments', (group) => {
     const stranger = await createUser()
     const project = await createProject(user.id)
     const id = crypto.randomUUID()
-    const createResponse = await client.post('/api/v1/attachments/uploads').loginAs(user).json({
+    const legacyUpload = {
+      aiContextMarkdown: 'Ignored metadata from an older client',
       checksumSha256,
       id,
       name: 'hello.txt',
       size: content.byteLength,
       type: 'text/plain',
-    })
+    }
+    const createResponse = await client
+      .post('/api/v1/attachments/uploads')
+      .loginAs(user)
+      .json(legacyUpload)
 
     createResponse.assertStatus(200)
     const createdUpload = createResponse.body() as unknown as UploadBody
     assert.equal(createdUpload.attachment.id, id)
+    assert.notProperty(createdUpload.attachment, 'aiContextMarkdown')
     assert.match(createdUpload.upload?.url ?? '', /^memory:/)
     await attachmentObjectStorage().put(`${user.id}/${id}`, content, {
       checksumSha256,

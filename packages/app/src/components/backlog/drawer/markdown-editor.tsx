@@ -2,9 +2,7 @@ import {
   BoldIcon,
   CodeIcon,
   EllipsisIcon,
-  ExternalLinkIcon,
   Heading2Icon,
-  InfoIcon,
   ItalicIcon,
   LinkIcon,
   ListChecksIcon,
@@ -16,7 +14,6 @@ import {
   Redo2Icon,
   PenLineIcon,
   StrikethroughIcon,
-  Trash2Icon,
   Undo2Icon,
 } from "lucide-react"
 import * as React from "react"
@@ -24,8 +21,11 @@ import * as React from "react"
 import {
   ImageAttachmentGallery,
   type AnnotatedAttachment,
-  type ImageAnnotation,
 } from "@/components/attachments/image-attachment-gallery"
+import { AttachmentPreview } from "@/components/attachments/attachment-preview"
+import { DocumentAttachmentGallery } from "@/components/attachments/document-attachment-gallery"
+import type { ComposerAttachment as PastedAttachment } from "@/components/attachments/attachment-types"
+import { attachmentFormat } from "@/components/attachments/attachment-format"
 import type { UserStoryFileAttachment } from "@/components/backlog/data/backlog-data"
 import { DevelopmentFileIcon } from "@/components/backlog/development/development-file-icon"
 import { markdownHasInlineFormatting } from "@/components/backlog/drawer/markdown-parser"
@@ -68,7 +68,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover"
 import { Separator } from "@/components/ui/separator"
-import { Switch } from "@/components/ui/switch"
 import {
   Tooltip,
   TooltipContent,
@@ -88,20 +87,7 @@ import {
   MarkdownPreview,
 } from "./markdown-preview"
 
-type PastedAttachment = {
-  annotation?: ImageAnnotation
-  aiContextMarkdown?: string
-  id: string
-  file: File
-  previewUrl?: string
-  source: "code" | "file"
-  storedAttachment?: UserStoryFileAttachment
-  subtitle?: string
-  title?: string
-}
-
 export type PendingFileAttachment = {
-  aiContextMarkdown?: string
   file: File
   id: string
   previewUrl?: string
@@ -156,16 +142,6 @@ function draggedAttachments(event: React.DragEvent<HTMLDivElement>) {
 
 function isFileDrag(dataTransfer: DataTransfer) {
   return Array.from(dataTransfer.types).includes("Files")
-}
-
-function aiContextAttachmentSupported(file: File) {
-  return supportedAiContextAttachmentExtensions().some((extension) =>
-    file.name.toLowerCase().endsWith(extension)
-  )
-}
-
-function supportedAiContextAttachmentExtensions() {
-  return [".pdf", ".doc", ".docx", ".ppt", ".pptx", ".xls", ".xlsx"]
 }
 
 function fileMentionState(value: string, cursor: number): FileMentionState {
@@ -285,114 +261,6 @@ function directoryName(path: string) {
   const normalized = path.replaceAll("\\", "/").replace(/\/+$/, "")
   const index = normalized.lastIndexOf("/")
   return index === -1 ? "" : `${normalized.slice(0, index)}/`
-}
-
-function AttachmentDeleteButton({
-  attachment,
-  onRemove,
-}: {
-  attachment: PastedAttachment
-  onRemove: (attachment: PastedAttachment) => void
-}) {
-  return (
-    <Button
-      type="button"
-      aria-label={`Remove ${attachment.file.name}`}
-      className="absolute -top-2 -right-2 size-6 opacity-0 shadow-sm group-hover:opacity-100 focus-visible:opacity-100"
-      size="icon-xs"
-      variant="destructive"
-      onClick={() => onRemove(attachment)}
-    >
-      <Trash2Icon className="size-3" />
-    </Button>
-  )
-}
-
-function AttachmentPreview({
-  attachment,
-  onRemove,
-  onOpenImage,
-}: {
-  attachment: PastedAttachment
-  onOpenImage: (id: string) => void
-  onRemove?: (attachment: PastedAttachment) => void
-}) {
-  if (attachment.previewUrl) {
-    return (
-      <ImageAttachmentPreview
-        attachment={{ ...attachment, previewUrl: attachment.previewUrl }}
-        onRemove={onRemove}
-        onOpen={() => onOpenImage(attachment.id)}
-      />
-    )
-  }
-
-  return <FileAttachmentPreview attachment={attachment} onRemove={onRemove} />
-}
-
-function ImageAttachmentPreview({
-  attachment,
-  onRemove,
-  onOpen,
-}: {
-  attachment: PastedAttachment & { previewUrl: string }
-  onRemove?: (attachment: PastedAttachment) => void
-  onOpen: () => void
-}) {
-  return (
-    <div className="group relative">
-      <button
-        type="button"
-        data-image-attachment-id={attachment.id}
-        aria-label={`Open ${attachment.file.name}`}
-        onClick={onOpen}
-        className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-md border bg-muted/30 transition-colors outline-none hover:bg-muted/50 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-      >
-        <img
-          alt={attachment.file.name}
-          className="h-full w-full object-cover"
-          src={attachment.previewUrl}
-        />
-        {attachment.annotation && (
-          <span
-            className="absolute right-1 bottom-1 rounded bg-background/90 p-0.5"
-            title="Annotated"
-          >
-            <PenLineIcon className="size-3" />
-          </span>
-        )}
-      </button>
-      {onRemove && (
-        <AttachmentDeleteButton attachment={attachment} onRemove={onRemove} />
-      )}
-    </div>
-  )
-}
-
-function FileAttachmentPreview({
-  attachment,
-  onRemove,
-}: {
-  attachment: PastedAttachment
-  onRemove?: (attachment: PastedAttachment) => void
-}) {
-  return (
-    <div className="group relative">
-      <div className="flex h-16 w-16 items-center justify-center rounded-md border bg-muted/30 px-2 text-center text-[0.625rem] leading-tight text-muted-foreground">
-        <span className="line-clamp-3 break-all">
-          {attachment.title ?? attachment.file.name}
-          {attachment.subtitle && (
-            <span className="mt-1 block text-[0.55rem] text-muted-foreground/80">
-              {attachment.subtitle}
-            </span>
-          )}
-        </span>
-      </div>
-      {onRemove && (
-        <AttachmentDeleteButton attachment={attachment} onRemove={onRemove} />
-      )}
-    </div>
-  )
 }
 
 type MarkdownAction =
@@ -1189,6 +1057,7 @@ export const MarkdownEditor = React.forwardRef<
 ) {
   const platform = usePlatform()
   const [galleryId, setGalleryId] = React.useState<string | null>(null)
+  const [documentId, setDocumentId] = React.useState<string | null>(null)
   const [attachments, setAttachments] = React.useState<PastedAttachment[]>([])
   const [mention, setMention] = React.useState<FileMentionState>({
     active: false,
@@ -1233,11 +1102,7 @@ export const MarkdownEditor = React.forwardRef<
   const [activeSelection, setActiveSelection] =
     React.useState<MarkdownSelection | null>(null)
   const [optimizing, setOptimizing] = React.useState(false)
-  const [optimizingAttachments, setOptimizingAttachments] =
-    React.useState(false)
   const [fileDropActive, setFileDropActive] = React.useState(false)
-  const [optimizeAttachmentsForAiContext, setOptimizeAttachmentsForAiContext] =
-    React.useState(true)
   const setEditorElement = React.useCallback(
     (element: HTMLDivElement | null) => {
       const currentEditor = editorRef.current
@@ -1263,12 +1128,6 @@ export const MarkdownEditor = React.forwardRef<
   const editorRenderKey = String(editorRenderVersionRef.current)
   const mentionOpen =
     mention.active && Boolean(mentionDirectory && platform.workspace)
-  const optimizableAttachmentsVisible = attachments.some(
-    (attachment) =>
-      attachment.source === "file" &&
-      aiContextAttachmentSupported(attachment.file)
-  )
-
   React.useEffect(() => {
     attachmentsRef.current = attachments
   }, [attachments])
@@ -1586,19 +1445,8 @@ export const MarkdownEditor = React.forwardRef<
     nextAttachments.forEach((attachment) => {
       handledFileAttachmentIdsRef.current.add(attachment.id)
     })
-    setOptimizingAttachments(
-      optimizeAttachmentsForAiContext &&
-        nextAttachments.some((attachment) =>
-          aiContextAttachmentSupported(attachment.file)
-        )
-    )
     const write = Promise.all(
-      nextAttachments.map((attachment) =>
-        persistentFileAttachment(attachment, {
-          optimize: optimizeAttachmentsForAiContext,
-          workspace: platform.workspace,
-        })
-      )
+      nextAttachments.map(persistentFileAttachment)
     ).then(onFileAttachmentsAdd)
     nextAttachments.forEach(({ id }) =>
       pendingAttachmentWritesRef.current.set(id, write)
@@ -1609,7 +1457,6 @@ export const MarkdownEditor = React.forwardRef<
       nextAttachments.forEach(({ id }) =>
         pendingAttachmentWritesRef.current.delete(id)
       )
-      setOptimizingAttachments(false)
     }
   }
 
@@ -1621,7 +1468,7 @@ export const MarkdownEditor = React.forwardRef<
   }
 
   async function saveAnnotatedAttachments(changes: AnnotatedAttachment[]) {
-    // A mixed image/document batch may still be optimizing. Publish it first so
+    // Original file bytes may still be encoding. Publish them first so
     // the parent replaces the original instead of appending it after our edit.
     await Promise.all(
       changes.map(({ id }) => pendingAttachmentWritesRef.current.get(id))
@@ -1979,7 +1826,7 @@ export const MarkdownEditor = React.forwardRef<
                     sessionKey={speechSessionKey}
                     currentText={() => currentValueRef.current}
                     target={speechTarget}
-                    disabled={optimizing || optimizingAttachments}
+                    disabled={optimizing}
                     onStartRecording={rememberSpeechSelection}
                     onTranscription={insertSpeechTranscription}
                   />
@@ -2007,61 +1854,16 @@ export const MarkdownEditor = React.forwardRef<
                 renderKey={editorRenderKey}
               />
               {attachments.length > 0 && (
-                <div className="mx-1 flex flex-wrap items-center gap-3 px-3 py-3">
+                <div className="mx-1 flex items-center gap-3 overflow-x-auto overscroll-x-contain px-3 py-3">
                   {attachments.map((attachment) => (
                     <AttachmentPreview
                       key={attachment.id}
                       attachment={attachment}
                       onOpenImage={setGalleryId}
+                      onOpenDocument={setDocumentId}
                       onRemove={removeAttachment}
                     />
                   ))}
-                </div>
-              )}
-              {optimizableAttachmentsVisible && (
-                <div className="mx-1 flex flex-wrap items-center justify-between gap-3 border-t border-border/60 px-3 py-2">
-                  <div className="flex min-w-0 items-center gap-2 text-sm">
-                    <Switch
-                      checked={optimizeAttachmentsForAiContext}
-                      disabled={optimizingAttachments}
-                      onCheckedChange={setOptimizeAttachmentsForAiContext}
-                    />
-                    <span className="text-foreground">
-                      Optimize attachments for AI context
-                    </span>
-                    {optimizingAttachments && (
-                      <LoaderCircleIcon className="size-3.5 animate-spin text-muted-foreground" />
-                    )}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          type="button"
-                          className="inline-flex size-5 items-center justify-center rounded-full text-muted-foreground hover:text-foreground"
-                          aria-label="Attachment optimization details"
-                        >
-                          <InfoIcon className="size-3.5" />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent
-                        className="max-w-72 text-pretty"
-                        sideOffset={6}
-                      >
-                        <span>
-                          Converts supported PDF, Word, PowerPoint, and Excel
-                          files to Markdown before sending them to the agent.
-                        </span>{" "}
-                        <a
-                          className="inline-flex items-center gap-1 underline underline-offset-2"
-                          href="https://github.com/microsoft/markitdown"
-                          rel="noreferrer"
-                          target="_blank"
-                        >
-                          Microsoft MarkItDown
-                          <ExternalLinkIcon className="size-3" />
-                        </a>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
                 </div>
               )}
               <div className="flex flex-wrap items-center justify-between gap-2 px-1 py-1.5">
@@ -2100,18 +1902,38 @@ export const MarkdownEditor = React.forwardRef<
           )}
 
           {readOnly && attachments.length > 0 && (
-            <div className="flex flex-wrap items-center gap-3 border-t border-border/70 px-3 py-3">
+            <div className="flex items-center gap-3 overflow-x-auto overscroll-x-contain border-t border-border/70 px-3 py-3">
               {attachments.map((attachment) => (
                 <AttachmentPreview
                   key={attachment.id}
                   attachment={attachment}
                   onOpenImage={setGalleryId}
+                  onOpenDocument={setDocumentId}
                 />
               ))}
             </div>
           )}
         </div>
       </PopoverAnchor>
+      {documentId && (
+        <DocumentAttachmentGallery
+          initialId={documentId}
+          attachments={attachments.filter(
+            (item) =>
+              !item.previewUrl &&
+              !["audio", "video"].includes(attachmentFormat(item.file))
+          )}
+          onClose={() => setDocumentId(null)}
+          onRestoreFocus={(id) => {
+            const target = Array.from(
+              rootRef.current?.querySelectorAll<HTMLButtonElement>(
+                "[data-document-attachment-id]"
+              ) ?? []
+            ).find((button) => button.dataset.documentAttachmentId === id)
+            ;(target ?? editorRef.current)?.focus()
+          }}
+        />
+      )}
       {galleryId && attachments.some((attachment) => attachment.previewUrl) && (
         <ImageAttachmentGallery
           initialId={galleryId}
@@ -2241,7 +2063,6 @@ function pendingFileAttachment(
   attachment: PendingFileAttachment
 ): PastedAttachment {
   return {
-    aiContextMarkdown: attachment.aiContextMarkdown,
     id: attachment.id,
     file: attachment.file,
     previewUrl:
@@ -2255,36 +2076,10 @@ function pendingFileAttachment(
 }
 
 async function persistentFileAttachment(
-  attachment: PastedAttachment,
-  options: {
-    optimize: boolean
-    workspace: ReturnType<typeof usePlatform>["workspace"]
-  }
+  attachment: PastedAttachment
 ): Promise<UserStoryFileAttachment> {
   if (attachment.storedAttachment) return attachment.storedAttachment
-  const persistedAttachment = {
-    ...(await fileAttachment(attachment.file, attachment.aiContextMarkdown)),
-    id: attachment.id,
-  }
-  if (
-    persistedAttachment.aiContextMarkdown ||
-    !options.optimize ||
-    !options.workspace ||
-    !aiContextAttachmentSupported(attachment.file)
-  ) {
-    return persistedAttachment
-  }
-  try {
-    const result = await options.workspace.optimizeAttachmentForAiContext({
-      content: persistedAttachment.content,
-      name: persistedAttachment.name,
-      type: persistedAttachment.type,
-    })
-    if (!result.markdown.trim()) return persistedAttachment
-    return { ...persistedAttachment, aiContextMarkdown: result.markdown }
-  } catch {
-    return persistedAttachment
-  }
+  return { ...(await fileAttachment(attachment.file)), id: attachment.id }
 }
 
 function revokeAttachmentUrls(attachment: PastedAttachment) {

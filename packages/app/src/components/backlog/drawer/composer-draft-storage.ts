@@ -2,7 +2,10 @@ import type {
   UserStoryCodeSelectionAttachment,
   UserStoryFileAttachment,
 } from "@/components/backlog/data/backlog-data"
-import { isFileAttachmentReference } from "../../../lib/file-attachment-api.ts"
+import {
+  isFileAttachmentReference,
+  originalFileAttachment,
+} from "../../../lib/file-attachment-api.ts"
 
 export type ComposerDraft = {
   codeSelectionAttachments: UserStoryCodeSelectionAttachment[]
@@ -26,7 +29,12 @@ export function readComposerDraft(
     const value = storage.getItem(key)
     if (!value) return undefined
     const parsed: unknown = JSON.parse(value)
-    return isComposerDraft(parsed) ? parsed : undefined
+    return isComposerDraft(parsed)
+      ? {
+          ...parsed,
+          fileAttachments: parsed.fileAttachments.map(originalFileAttachment),
+        }
+      : undefined
   } catch {
     return undefined
   }
@@ -45,7 +53,13 @@ export function writeComposerDraft(
     storage.removeItem(key)
     return
   }
-  storage.setItem(key, JSON.stringify(draft))
+  storage.setItem(
+    key,
+    JSON.stringify({
+      ...draft,
+      fileAttachments: draft.fileAttachments.map(originalFileAttachment),
+    })
+  )
 }
 
 // A dictation finished while its editor was closed lands in the draft.

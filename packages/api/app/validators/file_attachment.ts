@@ -2,7 +2,6 @@ import vine from '@vinejs/vine'
 
 export const createFileAttachmentUploadValidator = vine.compile(
   vine.object({
-    aiContextMarkdown: vine.string().maxLength(262144).optional(),
     checksumSha256: vine
       .string()
       .trim()

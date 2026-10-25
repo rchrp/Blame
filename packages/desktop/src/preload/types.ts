@@ -272,6 +272,7 @@ export type BlameDesktopApi = {
   openMicrophoneSettings(): Promise<void>;
   openExternalLink(url: string): void;
   openPath(path: string): Promise<string>;
+  openAttachment(input: { name: string; content: Uint8Array }): Promise<void>;
   backlogStatusPip: BacklogStatusPip;
   platform: NodeJS.Platform;
   systemNotifications: SystemNotifications;
@@ -363,11 +364,6 @@ export type BlameDesktopApi = {
   securityAudits: SecurityAuditClient;
   workspace: {
     pathExists(input: { path: string }): Promise<boolean>;
-    optimizeAttachmentForAiContext(input: {
-      content: string;
-      name: string;
-      type: string;
-    }): Promise<{ markdown: string }>;
     listDirectory(input: {
       root: string;
       path?: string;

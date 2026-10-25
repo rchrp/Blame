@@ -26,9 +26,6 @@ export default class FileAttachment extends BaseModel {
   declare checksumSha256: string
 
   @column()
-  declare aiContextMarkdown: string | null
-
-  @column()
   declare status: FileAttachmentStatus
 
   @column.dateTime()

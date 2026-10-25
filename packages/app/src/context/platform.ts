@@ -1,3 +1,4 @@
+import type { CloudAuthRequestClient } from "./platform-cloud-auth"
 import * as React from "react"
 import type {
   AgentEvent,
@@ -68,24 +69,13 @@ import type {
   ProjectDeployment,
 } from "@blame/deploy-contract"
 
+export type {
+  CloudAuthRequestInput,
+  CloudAuthRequestResponse,
+  CloudAuthRequestClient,
+} from "./platform-cloud-auth"
+
 type PickerPaths = string | string[] | null
-
-export type CloudAuthRequestInput = {
-  body?: string
-  headers: Record<string, string>
-  method: string
-  url: string
-}
-
-export type CloudAuthRequestResponse = {
-  body: string
-  headers: Record<string, string>
-  status: number
-}
-
-export type CloudAuthRequestClient = {
-  request(input: CloudAuthRequestInput): Promise<CloudAuthRequestResponse>
-}
 
 export type OpenDirectoryPickerOptions = {
   title?: string
@@ -135,6 +125,7 @@ export type Platform = {
   openMicrophoneSettings?(): Promise<void>
   openExternalLink?(url: string): void
   openPath?(path: string): Promise<string>
+  openAttachment?(input: { name: string; content: Uint8Array }): Promise<void>
 }
 
 export type DeployProgress = {
@@ -774,11 +765,6 @@ export type PreviewRuntimeClient = {
 
 export type WorkspaceClient = {
   pathExists(input: { path: string }): Promise<boolean>
-  optimizeAttachmentForAiContext(input: {
-    content: string
-    name: string
-    type: string
-  }): Promise<{ markdown: string }>
   listDirectory(input: {
     root: string
     path?: string

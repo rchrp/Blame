@@ -48,10 +48,6 @@ import {
   generateNewProjectWithAgent,
   releaseAgentWorkspaceSessions,
 } from "./agent-ipc";
-import {
-  optimizeAttachmentForAiContext,
-  type OptimizeAttachmentForAiContextInput,
-} from "./attachment-ai-context";
 import { containerRuntimeEnvironment } from "./container-runtime";
 import {
   assertHostDependencies,
@@ -445,11 +441,6 @@ export function registerWorkspaceIpcHandlers(
   startIdlePreviewSuspension();
   ipcMain.handle("workspace:path-exists", (_event, input: { path: string }) =>
     pathExists(input.path),
-  );
-  ipcMain.handle(
-    "workspace:optimize-attachment-for-ai-context",
-    (_event, input: OptimizeAttachmentForAiContextInput) =>
-      optimizeAttachmentForAiContext(input),
   );
   ipcMain.handle(
     "workspace:list-directory",

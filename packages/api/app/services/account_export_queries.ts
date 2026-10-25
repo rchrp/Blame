@@ -207,7 +207,6 @@ const fileAttachmentColumns = [
   'mime_type',
   'size',
   'checksum_sha256',
-  'ai_context_markdown',
   'created_at',
   'updated_at',
 ]

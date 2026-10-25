@@ -225,7 +225,6 @@ export default class FileAttachmentsService {
   private assertExisting(userId: string, attachment: FileAttachment, input: CreateUploadInput) {
     if (
       attachment.userId !== userId ||
-      attachment.aiContextMarkdown !== (input.aiContextMarkdown ?? null) ||
       attachment.checksumSha256 !== input.checksumSha256 ||
       attachment.name !== input.name ||
       attachment.mimeType !== normalizedType(input.type) ||
@@ -238,7 +237,6 @@ export default class FileAttachmentsService {
 
   private pendingRecord(userId: string, input: CreateUploadInput) {
     return {
-      aiContextMarkdown: input.aiContextMarkdown ?? null,
       checksumSha256: input.checksumSha256,
       detachedAt: null,
       id: input.id,
@@ -281,7 +279,6 @@ export default class FileAttachmentsService {
 
   private reference(attachment: FileAttachment): FileAttachmentReference {
     return {
-      ...(attachment.aiContextMarkdown ? { aiContextMarkdown: attachment.aiContextMarkdown } : {}),
       ...(attachment.downloadUrl ? { downloadUrl: attachment.downloadUrl } : {}),
       id: attachment.id,
       name: attachment.name,

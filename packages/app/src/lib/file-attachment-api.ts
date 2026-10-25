@@ -12,6 +12,25 @@ type UploadResponse = {
   upload: UploadTarget | null
 }
 
+// Persist and forward only the attachment contract, including when restoring
+// older drafts that may contain fields no longer used by the application.
+export function originalFileAttachment(
+  attachment: UserStoryFileAttachment
+): UserStoryFileAttachment {
+  return {
+    id: attachment.id,
+    name: attachment.name,
+    type: attachment.type,
+    size: attachment.size,
+    ...(attachment.content !== undefined
+      ? { content: attachment.content }
+      : {}),
+    ...(attachment.downloadUrl !== undefined
+      ? { downloadUrl: attachment.downloadUrl }
+      : {}),
+  }
+}
+
 export async function uploadFileAttachments(
   connection: ApiConnection,
   attachments: UserStoryFileAttachment[] | null | undefined
@@ -30,7 +49,6 @@ export function isFileAttachmentReference(
   if (!isRecord(value)) return false
   return (
     typeof value.id === "string" &&
-    optionalString(value.aiContextMarkdown) &&
     optionalString(value.content) &&
     optionalString(value.downloadUrl) &&
     typeof value.name === "string" &&
@@ -43,7 +61,8 @@ async function uploadFileAttachment(
   connection: ApiConnection,
   attachment: UserStoryFileAttachment
 ) {
-  if (attachment.content === undefined) return attachment
+  if (attachment.content === undefined)
+    return originalFileAttachment(attachment)
   const content = decodeBase64(attachment.content)
   const checksumSha256 = await sha256(content)
   const created = await request<UploadResponse>(
@@ -51,7 +70,6 @@ async function uploadFileAttachment(
     "/attachments/uploads",
     {
       body: JSON.stringify({
-        aiContextMarkdown: attachment.aiContextMarkdown,
         checksumSha256,
         id: attachment.id,
         name: attachment.name,

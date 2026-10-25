@@ -1,11 +1,9 @@
 import type { UserStoryFileAttachment } from "@/components/backlog/data/backlog-data"
 
 export async function fileAttachment(
-  file: File,
-  aiContextMarkdown?: string
+  file: File
 ): Promise<UserStoryFileAttachment & { content: string }> {
   return {
-    ...(aiContextMarkdown ? { aiContextMarkdown } : {}),
     content: await fileContent(file),
     id: crypto.randomUUID(),
     name: file.name,
@@ -16,7 +14,6 @@ export async function fileAttachment(
 
 export function pendingFileAttachments(attachments: UserStoryFileAttachment[]) {
   return attachments.map((attachment) => ({
-    aiContextMarkdown: attachment.aiContextMarkdown,
     file: fileFromAttachment(attachment),
     id: attachment.id,
     previewUrl: attachment.type.startsWith("image/")
