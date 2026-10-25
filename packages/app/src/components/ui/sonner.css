@@ -1,0 +1,41 @@
+/* Keep status color on the icon, with a quiet echo in the toast surface. */
+[data-sonner-toaster] {
+  --toast-success: var(--color-emerald-600);
+  --toast-info: var(--color-blue-600);
+  --toast-warning: var(--color-amber-600);
+  --toast-error: var(--destructive);
+}
+
+[data-sonner-toaster][data-sonner-theme="dark"] {
+  --toast-success: var(--color-emerald-400);
+  --toast-info: var(--color-blue-400);
+  --toast-warning: var(--color-amber-400);
+}
+
+.cn-toast[data-type="success"] {
+  --toast-accent: var(--toast-success);
+}
+
+.cn-toast[data-type="info"] {
+  --toast-accent: var(--toast-info);
+}
+
+.cn-toast[data-type="warning"] {
+  --toast-accent: var(--toast-warning);
+}
+
+.cn-toast[data-type="error"] {
+  --toast-accent: var(--toast-error);
+}
+
+[data-sonner-toaster] .cn-toast[data-styled="true"] {
+  background: color-mix(
+    in oklab,
+    var(--toast-accent, var(--normal-bg)) 5%,
+    var(--normal-bg)
+  );
+}
+
+[data-sonner-toaster] .cn-toast [data-icon] {
+  color: var(--toast-accent, var(--normal-text));
+}
