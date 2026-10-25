@@ -3,7 +3,8 @@ import type {
   UserStoryAgentRun,
   UserStoryAgentRunFinalization,
 } from "@/components/backlog/data/backlog-data"
-import { runningAgentRunsForStory } from "./agent-run-liveness"
+import { agentPersistenceEvent } from "../../components/backlog/data/agent-stream-coordinator.ts"
+import { runningAgentRunsForStory } from "./agent-run-liveness.ts"
 
 type BacklogRuns = {
   finalizeAgentRun(
@@ -29,12 +30,22 @@ export async function finalizeStoppedRun(
       (item) => item.id === current.activeAgentRunId
     ) ?? runningAgentRunsForStory(current).at(-1)
   if (!run) return undefined
+  const completedAt = new Date().toISOString()
   return backlog.finalizeAgentRun(current, run, {
     activities: [],
     agentLastError: null,
     agentLastEvent: message,
-    completedAt: new Date().toISOString(),
+    completedAt,
     outcome: "paused",
+    persistenceEvent: agentPersistenceEvent(
+      { createdAt: completedAt, payload: { reason: "aborted" }, type: "done" },
+      {
+        executionId: run.executionId ?? run.id,
+        lastSequenceNumber: run.lastSequenceNumber,
+        runId: run.id,
+        sessionId: run.clineSessionId ?? current.clineSessionId ?? run.id,
+      }
+    ),
     status: "cancelled",
   })
 }
