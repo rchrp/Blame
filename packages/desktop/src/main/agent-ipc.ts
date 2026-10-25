@@ -322,6 +322,9 @@ function registerAnalysisWorkflowIpcHandlers(
 function registerDeliveryWorkflowIpcHandlers(
   beforeDelivery?: (worktree: string) => Promise<void>,
 ) {
+  ipcMain.handle("agent:new-projects:plan", (_event, input) =>
+    agentRuntime().run("newProjects.plan", input),
+  );
   ipcMain.handle("agent:new-projects:generate", (_event, input) =>
     agentRuntime().run("newProjects.generate", input),
   );

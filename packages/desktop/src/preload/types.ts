@@ -1,5 +1,6 @@
 import type {
   AgentEvent,
+  NewProjectsClient,
   AgentUsageSummary,
   CompactSessionInput,
   CompactSessionResult,
@@ -27,7 +28,6 @@ import type {
   SubscriptionUsage,
   SubscriptionUsageInput,
   LoginOAuthProviderInput,
-  NewProjectGenerationResult,
   OptimizeUserStoryPromptInput,
   OptimizeUserStoryPromptResult,
   ApplyPreviewInitializationInput,
@@ -46,7 +46,6 @@ import type {
   SendDevelopmentSessionInput,
   SendSessionInput,
   StartDevelopmentSessionInput,
-  StartNewProjectGenerationInput,
   StartSessionInput,
 } from "@blame/agent-runtime";
 import type {
@@ -619,11 +618,7 @@ export type BlameDesktopApi = {
         input: AnalyzeProjectCodePracticesInput,
       ): Promise<AnalyzeProjectCodePracticesResult>;
     };
-    newProjects: {
-      generate(
-        input: StartNewProjectGenerationInput,
-      ): Promise<NewProjectGenerationResult>;
-    };
+    newProjects: NewProjectsClient;
     promptOptimizer: {
       optimizeUserStory(
         input: OptimizeUserStoryPromptInput,

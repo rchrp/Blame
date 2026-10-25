@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "gradient-text",
+        "value": "*",
+        "files": [
+          "packages/app/src/index.css"
+        ],
+        "createdAt": "2026-10-25T15:22:59.873Z",
+        "reason": "Agent: PreviewAddressOrigin intentionally distinguishes Blame Cloud URL protocol and domain from local URLs with this existing gradient. Preserve that established identity during the requested project-mode border color refinement."
+      }
+    ]
+  }
+}

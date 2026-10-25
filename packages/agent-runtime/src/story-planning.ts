@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import type { ClineCore, CoreSessionConfig } from "@cline/sdk";
 
-import type { AgentTelemetry } from "./agent-telemetry.js";
+import type { PlanningHost } from "./planning-host.js";
 
 import {
   initializationFallbackReadTools,
@@ -19,7 +19,6 @@ import {
   type StoryHistoryOptions,
 } from "./story-history-tools.js";
 import type {
-  AgentBackendConfig,
   PlannedUserStory,
   PlanUserStoriesInput,
   PlanUserStoriesResult,
@@ -31,17 +30,7 @@ type AgentTool = NonNullable<CoreSessionConfig["extraTools"]>[number];
 type PlanningCredential = { apiKey: string; baseUrl: string | null };
 type PlanReply = Omit<PlanUserStoriesResult, "sessionId">;
 
-/** What the runtime lends a planning turn. */
-export type StoryPlanningHost = {
-  core(backend?: AgentBackendConfig): Promise<ClineCore>;
-  credential(
-    input: PlanUserStoriesInput,
-  ): Promise<PlanningCredential & { authMethod?: string }>;
-  git?: (cwd: string, args: string[]) => Promise<string>;
-  subscribe(sessionId: string, backend?: AgentBackendConfig): Promise<void>;
-  telemetry: Pick<AgentTelemetry, "runOperation">;
-  unsubscribe(sessionId: string): Promise<void>;
-};
+export type StoryPlanningHost = PlanningHost;
 
 // The planning agent: one non-interactive run per message of the person.
 // The conversation travels as a compact transcript plus the agent's own

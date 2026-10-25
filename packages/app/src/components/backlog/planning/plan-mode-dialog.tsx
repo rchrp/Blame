@@ -12,7 +12,6 @@ import {
   RotateCcwIcon,
   SearchCheckIcon,
   WrenchIcon,
-  XIcon,
 } from "lucide-react"
 
 import { MarkdownPreview } from "@/components/backlog/drawer/markdown-preview"
@@ -22,20 +21,8 @@ import type { PendingCodeSelectionAttachment } from "@/components/backlog/shared
 import { AgentConversationComposer } from "@/components/chat/agent-conversation"
 import { ModelSelector } from "@/components/model/model-selector"
 import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import {
-  MessageScroller,
-  MessageScrollerButton,
-  MessageScrollerContent,
-  MessageScrollerProvider,
-  MessageScrollerViewport,
-} from "@/components/ui/message-scroller"
+import { Dialog } from "@/components/ui/dialog"
+import { PlanningConversation } from "@/components/chat/planning-conversation"
 import { cn } from "@/lib/utils"
 
 import {
@@ -50,22 +37,6 @@ import { PlanStoryCarousel } from "./plan-story-carousel"
 import { usePlanMode, type PlanMode, type PlanPending } from "./use-plan-mode"
 
 const composerInputSelector = "[data-markdown-editor-input='true']"
-const headerSoftBlurMask = {
-  maskImage:
-    "linear-gradient(to bottom, black 0%, black 60%, transparent 100%)",
-  WebkitMaskImage:
-    "linear-gradient(to bottom, black 0%, black 60%, transparent 100%)",
-} satisfies React.CSSProperties
-const headerStrongBlurMask = {
-  maskImage: "linear-gradient(to bottom, black 0%, transparent 72%)",
-  WebkitMaskImage: "linear-gradient(to bottom, black 0%, transparent 72%)",
-} satisfies React.CSSProperties
-const footerBlurMask = {
-  maskImage: "linear-gradient(to top, black 0%, black 60%, transparent 100%)",
-  WebkitMaskImage:
-    "linear-gradient(to top, black 0%, black 60%, transparent 100%)",
-} satisfies React.CSSProperties
-
 const suggestions = [
   {
     icon: LayersIcon,
@@ -158,8 +129,6 @@ function PlanModeDialog({
   const [fileAttachments, setFileAttachments] = React.useState<
     UserStoryFileAttachment[]
   >([])
-  const footerRef = React.useRef<HTMLElement>(null)
-  const footerHeight = useElementHeight(footerRef, open)
   const messages = plan.thread.messages
   const empty = !messages.length
   const latestProposal = latestProposalId(messages)
@@ -192,118 +161,40 @@ function PlanModeDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        showCloseButton={false}
-        className="block h-[min(54rem,calc(100svh-3rem))] overflow-hidden p-0 sm:max-w-3xl"
+      <PlanningConversation
+        open={open}
+        empty={empty}
+        label="Planning conversation"
+        title={
+          <>
+            <LightbulbIcon className="size-4.5 text-muted-foreground" />
+            Plan Mode
+          </>
+        }
+        description="Describe what you need. Your agent proposes user stories you review and add to the backlog."
         onOpenAutoFocus={(event) => {
           event.preventDefault()
           focusComposer()
         }}
-      >
-        <MessageScrollerProvider>
-          <MessageScroller className="h-full">
-            <MessageScrollerViewport aria-label="Planning conversation">
-              <MessageScrollerContent
-                className={cn(
-                  "mx-auto grid w-full max-w-2xl gap-6 px-6 pt-24",
-                  empty ? "content-center" : "content-start"
-                )}
-                style={{ paddingBottom: footerHeight + 24 }}
+        actions={
+          <>
+            {!empty ? (
+              <Button
+                className="border bg-background/90 shadow-sm"
+                size="sm"
+                type="button"
+                variant="outline"
+                onClick={plan.reset}
+                title="Start a new plan. Stories already added stay in the backlog."
               >
-                {empty ? (
-                  <PlanEmptyState
-                    onSuggestion={
-                      plan.unavailableReason ? undefined : applySuggestion
-                    }
-                  />
-                ) : null}
-                {messages.map((message) =>
-                  message.role === "user" ? (
-                    <UserMessage
-                      key={message.id}
-                      message={message}
-                      onRetry={
-                        message.failed && !plan.pending
-                          ? () => plan.retry(message.id)
-                          : undefined
-                      }
-                    />
-                  ) : (
-                    <AssistantMessage
-                      key={message.id}
-                      latest={message.id === latestProposal}
-                      message={message}
-                      onOpenStory={onOpenStory}
-                      plan={plan}
-                    />
-                  )
-                )}
-                {plan.pending ? (
-                  <PlanningIndicator pending={plan.pending} />
-                ) : null}
-              </MessageScrollerContent>
-            </MessageScrollerViewport>
-            <MessageScrollerButton
-              className="right-6 z-30"
-              style={{ bottom: footerHeight + 16 }}
-            />
-          </MessageScroller>
-        </MessageScrollerProvider>
-        {/* Header and composer float over the conversation, which fades
-            under them the way it does in the story drawer. */}
-        <header className="absolute inset-x-0 top-0 isolate z-20 flex items-center gap-3 px-6 pt-5 pb-8">
-          <div
-            className="absolute inset-0 -z-10 bg-popover/20 backdrop-blur-sm"
-            style={headerSoftBlurMask}
-          />
-          <div
-            className="absolute inset-0 -z-10 bg-popover/20 backdrop-blur-2xl backdrop-saturate-150"
-            style={headerStrongBlurMask}
-          />
-          <div className="grid min-w-0 flex-1 gap-0.5">
-            <DialogTitle className="flex items-center gap-2 font-heading text-xl leading-tight font-semibold">
-              <LightbulbIcon className="size-4.5 text-muted-foreground" />
-              Plan Mode
-            </DialogTitle>
-            <DialogDescription className="truncate text-xs">
-              Describe what you need. Your agent proposes user stories you
-              review and add to the backlog.
-            </DialogDescription>
-          </div>
-          {!empty ? (
-            <Button
-              className="border bg-background/90 shadow-sm"
-              size="sm"
-              type="button"
-              variant="outline"
-              onClick={plan.reset}
-              title="Start a new plan. Stories already added stay in the backlog."
-            >
-              <RotateCcwIcon />
-              New plan
-            </Button>
-          ) : null}
-          <DialogClose asChild>
-            <Button
-              className="border bg-background/90 shadow-sm"
-              size="icon-sm"
-              type="button"
-              variant="outline"
-            >
-              <XIcon />
-              <span className="sr-only">Close</span>
-            </Button>
-          </DialogClose>
-        </header>
-        <footer
-          ref={footerRef}
-          className="absolute inset-x-0 bottom-0 z-20 px-6 pt-6 pb-5"
-        >
-          <div
-            className="pointer-events-none absolute inset-0 bg-background/40 backdrop-blur-xl"
-            style={footerBlurMask}
-          />
-          <div className="relative mx-auto grid w-full max-w-2xl gap-2">
+                <RotateCcwIcon />
+                New plan
+              </Button>
+            ) : null}
+          </>
+        }
+        footer={
+          <>
             {plan.unavailableReason ? (
               <p className="flex items-center gap-2 text-xs text-muted-foreground">
                 <AlertCircleIcon className="size-3.5" />
@@ -345,14 +236,42 @@ function PlanModeDialog({
               speechTarget={{ draftKey: "plan-mode", label: "your plan" }}
               submitLabel="Send"
               toolbarEnd={
-                <div className="w-[22rem] max-w-full min-w-0">
+                <div className="w-44 max-w-full min-w-0 sm:w-[22rem]">
                   <ModelSelector role="agent" />
                 </div>
               }
             />
-          </div>
-        </footer>
-      </DialogContent>
+          </>
+        }
+      >
+        {empty ? (
+          <PlanEmptyState
+            onSuggestion={plan.unavailableReason ? undefined : applySuggestion}
+          />
+        ) : null}
+        {messages.map((message) =>
+          message.role === "user" ? (
+            <UserMessage
+              key={message.id}
+              message={message}
+              onRetry={
+                message.failed && !plan.pending
+                  ? () => plan.retry(message.id)
+                  : undefined
+              }
+            />
+          ) : (
+            <AssistantMessage
+              key={message.id}
+              latest={message.id === latestProposal}
+              message={message}
+              onOpenStory={onOpenStory}
+              plan={plan}
+            />
+          )
+        )}
+        {plan.pending ? <PlanningIndicator pending={plan.pending} /> : null}
+      </PlanningConversation>
     </Dialog>
   )
 }
@@ -584,25 +503,4 @@ function PlanningIndicator({ pending }: { pending: PlanPending }) {
       </div>
     </div>
   )
-}
-
-// The floating composer's height, so the conversation can scroll clear of it.
-function useElementHeight(
-  ref: React.RefObject<HTMLElement | null>,
-  active: boolean
-) {
-  const [height, setHeight] = React.useState(160)
-  React.useLayoutEffect(() => {
-    const element = ref.current
-    if (!element || !active) return
-    const update = () => {
-      const next = Math.ceil(element.getBoundingClientRect().height)
-      setHeight((current) => (current === next ? current : next))
-    }
-    update()
-    const observer = new ResizeObserver(update)
-    observer.observe(element)
-    return () => observer.disconnect()
-  }, [active, ref])
-  return height
 }

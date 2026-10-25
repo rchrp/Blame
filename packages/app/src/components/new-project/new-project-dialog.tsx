@@ -7,7 +7,6 @@ import {
   codeQualityOptions,
   databaseOptions,
   frontendOptions,
-  optionLabel,
   ormOptions,
   packageManagerOptions,
   platformOptions,
@@ -22,6 +21,9 @@ import {
   type NewProjectStep,
   type NewProjectWizard,
 } from "@/components/new-project/use-new-project-wizard"
+import { NewProjectModeOptions } from "./new-project-mode-options"
+import { NewProjectSummary } from "./new-project-summary"
+import { NewProjectAssistant } from "./new-project-assistant"
 import { NewProjectProgress } from "./new-project-progress"
 import { HostDependenciesDialog } from "@/pages/backlog/host-dependencies-dialog"
 import { Badge } from "@/components/ui/badge"
@@ -81,11 +83,13 @@ export function NewProjectWizardDialog({
 }
 
 function WizardDialogSurface({ wizard }: { wizard: NewProjectWizard }) {
+  if (wizard.step === "assistant")
+    return <NewProjectAssistant wizard={wizard} />
   return (
     <DialogContent
       className={cn(
         "flex max-h-[min(88svh,52rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl",
-        wizard.step === "location" && "sm:max-w-xl"
+        (wizard.step === "location" || wizard.step === "mode") && "sm:max-w-xl"
       )}
       showCloseButton={!wizard.creating}
       onInteractOutside={(event) => event.preventDefault()}
@@ -124,14 +128,14 @@ function WizardBody({ wizard }: { wizard: NewProjectWizard }) {
 }
 
 function StepProgress({ wizard }: { wizard: NewProjectWizard }) {
-  if (wizard.step === "progress" || wizard.step === "location") return null
+  if (["progress", "location", "mode"].includes(wizard.step)) return null
   return (
     <nav aria-label="Project creation steps">
       <p className="text-xs text-muted-foreground">
         Step {wizard.currentStepIndex + 1} of {wizard.steps.length} ·{" "}
         {stepLabel(wizard.step)}
       </p>
-      <div className="grid grid-cols-9 gap-1">
+      <div className="grid auto-cols-fr grid-flow-col gap-1">
         {wizard.steps.map((step, index) => (
           <WizardStepMarker
             key={step}
@@ -176,6 +180,7 @@ function WizardStepMarker({
 
 function StepContent({ wizard }: { wizard: NewProjectWizard }) {
   if (wizard.step === "location") return <LocationStep wizard={wizard} />
+  if (wizard.step === "mode") return <ModeStep wizard={wizard} />
   if (wizard.step === "platform") return <PlatformStep wizard={wizard} />
   if (wizard.step === "frontend") return <FrontendStep wizard={wizard} />
   if (wizard.step === "styling") return <StylingStep wizard={wizard} />
@@ -286,6 +291,17 @@ function ProjectPathPreview({ wizard }: { wizard: NewProjectWizard }) {
         "A new folder will be created here for your project."
       )}
     </FieldDescription>
+  )
+}
+
+function ModeStep({ wizard }: { wizard: NewProjectWizard }) {
+  return (
+    <StepFrame
+      title="How would you like to choose your stack?"
+      description="Configure it step by step, or describe your project and let your agent guide you."
+    >
+      <NewProjectModeOptions onChooseMode={wizard.chooseMode} />
+    </StepFrame>
   )
 }
 
@@ -442,27 +458,25 @@ function AdvancedStep({ wizard }: { wizard: NewProjectWizard }) {
 }
 
 function SummaryStep({ wizard }: { wizard: NewProjectWizard }) {
-  const items = summaryItems(wizard)
-
   return (
     <StepFrame
       title="Ready to create your project?"
       description="Review your stack. Blame will generate the codebase, install dependencies, and verify the project."
     >
-      <dl className="grid min-w-0 gap-x-8 sm:grid-cols-2">
-        {items.map((item) => (
-          <div
-            key={item.label}
-            className={cn(
-              "min-w-0 border-b py-3",
-              item.label === "Path" && "sm:col-span-2"
-            )}
-          >
-            <dt className="text-xs text-muted-foreground">{item.label}</dt>
-            <dd className="mt-1 text-sm font-medium break-all">{item.value}</dd>
-          </div>
-        ))}
-      </dl>
+      <NewProjectSummary
+        configuration={wizard.configuration}
+        path={wizard.projectPath}
+      />
+      {wizard.mode === "ai" && (
+        <Button
+          type="button"
+          variant="outline"
+          className="justify-self-start"
+          onClick={() => wizard.chooseMode("manual")}
+        >
+          Adjust manually
+        </Button>
+      )}
     </StepFrame>
   )
 }
@@ -514,7 +528,7 @@ function WizardNavigation({ wizard }: { wizard: NewProjectWizard }) {
     <>
       {wizard.step === "location" && (
         <span className="mr-auto self-center text-xs text-muted-foreground">
-          Step 1 of {wizard.steps.length}
+          Project name and location
         </span>
       )}
       <Button
@@ -527,7 +541,7 @@ function WizardNavigation({ wizard }: { wizard: NewProjectWizard }) {
       >
         {wizard.step === "location" ? "Cancel" : "Back"}
       </Button>
-      {wizard.step === "summary" ? (
+      {wizard.step === "mode" ? null : wizard.step === "summary" ? (
         <CreateProjectButton wizard={wizard} />
       ) : (
         <Button
@@ -637,62 +651,10 @@ function StepFrame({
   )
 }
 
-function summaryItems(wizard: NewProjectWizard) {
-  const configuration = wizard.configuration
-  return [
-    { label: "Path", value: `${wizard.parentPath}/${wizard.projectName}` },
-    {
-      label: "Frontend",
-      value: optionLabel(frontendOptions, configuration.frontend),
-    },
-    {
-      label: "Styling",
-      value: optionLabel(stylingOptions, configuration.styling),
-    },
-    {
-      label: "UI library",
-      value: optionLabel(
-        uiLibraryOptions(configuration.frontend),
-        configuration.uiLibrary
-      ),
-    },
-    {
-      label: "Backend",
-      value: optionLabel(
-        backendOptions(configuration.frontend),
-        configuration.backend
-      ),
-    },
-    {
-      label: "Database",
-      value: optionLabel(databaseOptions, configuration.database),
-    },
-    {
-      label: "ORM",
-      value: optionLabel(
-        ormOptions(configuration.backend, configuration.database),
-        configuration.orm
-      ),
-    },
-    {
-      label: "Package manager",
-      value: optionLabel(
-        packageManagerOptions(configuration.backend),
-        configuration.packageManager
-      ),
-    },
-    {
-      label: "Code quality",
-      value: optionLabel(
-        codeQualityOptions(configuration.frontend, configuration.backend),
-        configuration.codeQuality
-      ),
-    },
-  ]
-}
-
 function stepLabel(step: NewProjectStep) {
   if (step === "location") return "Location"
+  if (step === "mode") return "Setup mode"
+  if (step === "assistant") return "Let AI choose for you"
   if (step === "platform") return "Platform"
   if (step === "frontend") return "Frontend"
   if (step === "styling") return "Styling"

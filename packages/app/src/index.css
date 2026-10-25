@@ -9,6 +9,19 @@
 
 @custom-variant dark (&:is(.dark *):not(:is(.light, .light *)));
 
+/* The corner light can travel around a control without moving its content. */
+@property --corner-x {
+  syntax: "<percentage>";
+  inherits: true;
+  initial-value: 0%;
+}
+
+@property --corner-y {
+  syntax: "<percentage>";
+  inherits: true;
+  initial-value: 0%;
+}
+
 :root,
 .light {
   --background: oklch(1 0 0 / 93%);
@@ -522,7 +535,8 @@
     pointer-events: none;
     border-radius: inherit;
     background: radial-gradient(
-      ellipse var(--corner-w, 50%) var(--corner-h, 90%) at top left,
+      ellipse var(--corner-w, 50%) var(--corner-h, 90%) at var(--corner-x, 0%)
+        var(--corner-y, 0%),
       var(--story-status-color) 0%,
       var(--story-status-glow-color) 42%,
       transparent 78%
@@ -537,6 +551,57 @@
     padding: 4px;
     filter: blur(6px);
     opacity: 0.75;
+  }
+
+  /* Same two-layer corner light as the story drawer; idle until interaction. */
+  .project-mode-option {
+    --story-status-color: oklch(0.72 0.16 250);
+    --story-status-glow-color: oklch(0.66 0.18 250 / 28%);
+  }
+
+  .project-mode-option[data-mode="manual"] {
+    --story-status-color: oklch(0.78 0.17 55);
+    --story-status-glow-color: oklch(0.72 0.19 55 / 28%);
+  }
+
+  .project-mode-option:focus-visible .project-mode-border {
+    animation: project-mode-border-orbit 2.4s linear;
+  }
+
+  @media (hover: hover) {
+    .project-mode-option:hover .project-mode-border {
+      animation: project-mode-border-orbit 2.4s linear;
+    }
+  }
+
+  @keyframes project-mode-border-orbit {
+    0%,
+    100% {
+      --corner-x: 0%;
+      --corner-y: 0%;
+    }
+    35% {
+      --corner-x: 100%;
+      --corner-y: 0%;
+    }
+    50% {
+      --corner-x: 100%;
+      --corner-y: 100%;
+    }
+    85% {
+      --corner-x: 0%;
+      --corner-y: 100%;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .project-mode-option:is(:hover, :focus-visible) .project-mode-border {
+      animation: none;
+      --corner-x: 50%;
+      --corner-y: 50%;
+      --corner-w: 150%;
+      --corner-h: 300%;
+    }
   }
 
   .user-story-state-effect {

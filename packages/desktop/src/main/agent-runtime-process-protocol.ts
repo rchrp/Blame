@@ -32,6 +32,7 @@ export const agentRuntimeMethods = [
   "securityAudits.cancel",
   "securityAudits.finish",
   "newProjects.generate",
+  "newProjects.plan",
   "promptOptimizer.optimizeUserStory",
   "promptOptimizer.generateTitle",
   "planning.reply",

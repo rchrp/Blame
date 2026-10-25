@@ -247,6 +247,8 @@ import { developmentSpecialistConsultEnabled } from "./specialist-agents.js";
 import { taskComplexityBucket } from "./telemetry-cohorts.js";
 import { generateTitle } from "./title-generation.js";
 import { sessionStoryHistoryTools } from "./story-history-tools.js";
+import { runNewProjectPlanning } from "./new-project-planning.js";
+import type { PlanningHost, RuntimeCredentialInput } from "./planning-host.js";
 import { runStoryPlanning } from "./story-planning.js";
 import type {
   AgentApprovalRequest,
@@ -274,7 +276,6 @@ import type {
   InitializeProjectInput,
   InitializeProjectResult,
   ConnectClaudeCodeInput,
-  ReasoningSelection,
   SubscriptionUsageInput,
   LoginOAuthProviderInput,
   MapSecurityAuditInput,
@@ -282,6 +283,7 @@ import type {
   OAuthCredentials,
   OptimizeUserStoryPromptInput,
   PlanUserStoriesInput,
+  PlanNewProjectInput,
   OptimizeUserStoryPromptResult,
   RepairProjectInitializationInput,
   RepairProjectInitializationResult,
@@ -366,15 +368,6 @@ type ToolApprovalResult = {
   approved: boolean;
   /** Model-facing reason; Cline appends its rejection guidance. */
   reason?: string;
-};
-
-type RuntimeCredentialInput = {
-  apiConnection: ApiConnection;
-  backend?: AgentBackendConfig;
-  reasoningEffort?: ReasoningSelection;
-  providerId: string;
-  modelId?: string;
-  credentialLabel?: string;
 };
 
 type ClineSdk = typeof import("@cline/sdk");
@@ -586,6 +579,8 @@ export class BlameAgentRuntime {
   };
 
   newProjects = {
+    plan: (input: PlanNewProjectInput) =>
+      runNewProjectPlanning(input, this.planningHost()),
     generate: (input: StartNewProjectGenerationInput) =>
       this.generateNewProject(input),
   };
@@ -598,15 +593,19 @@ export class BlameAgentRuntime {
 
   planning = {
     reply: (input: PlanUserStoriesInput) =>
-      runStoryPlanning(input, {
-        core: (backend) => this.core(backend),
-        credential: (value) => this.runtimeCredential(value),
-        git: this.options.git,
-        subscribe: (id, backend) => this.subscribeSession(id, backend),
-        telemetry: this.agentTelemetry,
-        unsubscribe: (id) => this.unsubscribeSession(id),
-      }),
+      runStoryPlanning(input, this.planningHost()),
   };
+
+  private planningHost(): PlanningHost {
+    return {
+      core: (backend) => this.core(backend),
+      credential: (input) => this.runtimeCredential(input),
+      git: this.options.git,
+      subscribe: (id, backend) => this.subscribeSession(id, backend),
+      telemetry: this.agentTelemetry,
+      unsubscribe: (id) => this.unsubscribeSession(id),
+    };
+  }
 
   approveAndMerge = (input: ApproveAndMergeInput) =>
     this.approveAndMergeStory(input);

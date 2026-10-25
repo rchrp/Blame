@@ -1,6 +1,7 @@
 import * as React from "react"
 import type {
   AgentEvent,
+  NewProjectsClient,
   AgentUsageSummary,
   CompactSessionInput,
   CompactSessionResult,
@@ -28,7 +29,6 @@ import type {
   SubscriptionUsage,
   SubscriptionUsageInput,
   LoginOAuthProviderInput,
-  NewProjectGenerationResult,
   OptimizeUserStoryPromptInput,
   OptimizeUserStoryPromptResult,
   ApplyPreviewInitializationInput,
@@ -49,7 +49,6 @@ import type {
   SendDevelopmentSessionInput,
   SendSessionInput,
   StartDevelopmentSessionInput,
-  StartNewProjectGenerationInput,
   StartSessionInput,
   ReasoningSelection,
 } from "@blame/agent-runtime"
@@ -492,18 +491,13 @@ export type AgentClient = {
       input: AnalyzeProjectCodePracticesInput
     ): Promise<AnalyzeProjectCodePracticesResult>
   }
-  newProjects: {
-    generate(
-      input: StartNewProjectGenerationInput
-    ): Promise<NewProjectGenerationResult>
-  }
+  newProjects: NewProjectsClient
   promptOptimizer: {
     optimizeUserStory(
       input: OptimizeUserStoryPromptInput
     ): Promise<OptimizeUserStoryPromptResult>
     generateTitle(input: GenerateTitleInput): Promise<GenerateTitleResult>
   }
-  // Desktop only: the agent that turns a conversation into user stories.
   planning?: {
     reply(input: PlanUserStoriesInput): Promise<PlanUserStoriesResult>
   }

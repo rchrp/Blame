@@ -1138,7 +1138,9 @@ function compactionFixtureResult(
   };
 }
 
-function newProjectGenerationInput(workspace: string) {
+function newProjectGenerationInput(
+  workspace: string,
+): import("./types.js").StartNewProjectGenerationInput {
   return {
     apiConnection: { url: "https://api.example" },
     configuration: {

@@ -1,3 +1,14 @@
+import type {
+  FrontendFramework,
+  UiLibrary,
+  BackendFramework,
+  DatabaseOption,
+  OrmOption,
+  PackageManager,
+  CodeQualityOption,
+  AdvancedProjectOption,
+  NewProjectConfiguration,
+} from "@blame/agent-runtime/new-project-options";
 import { execFile } from "node:child_process";
 import { existsSync } from "node:fs";
 import {
@@ -54,112 +65,19 @@ const generatedProjectGitignoreEntries = [
   "!.env.template",
 ];
 
-export type ProjectPlatform =
-  | "web"
-  | "backend"
-  | "desktop"
-  | "mobile"
-  | "cli"
-  | "package";
-
-export type FrontendFramework =
-  | "next"
-  | "react-vite"
-  | "nuxt"
-  | "vue-vite"
-  | "sveltekit"
-  | "none";
-
-export type StylingOption =
-  | "tailwind"
-  | "css-modules"
-  | "sass"
-  | "vanilla-css"
-  | "none";
-
-export type UiLibrary =
-  | "shadcn"
-  | "radix"
-  | "mantine"
-  | "mui"
-  | "ant-design"
-  | "daisyui"
-  | "nuxt-ui"
-  | "primevue"
-  | "vuetify"
-  | "naive-ui"
-  | "shadcn-svelte"
-  | "skeleton"
-  | "melt-ui"
-  | "flowbite-svelte"
-  | "none";
-
-export type BackendFramework =
-  | "next-api"
-  | "nest"
-  | "hono"
-  | "fastify"
-  | "fastapi"
-  | "nitro"
-  | "none";
-
-export type DatabaseOption =
-  | "postgresql"
-  | "mysql"
-  | "sqlite"
-  | "mongodb"
-  | "none";
-
-export type OrmOption =
-  | "prisma"
-  | "drizzle"
-  | "kysely"
-  | "sqlalchemy"
-  | "sqlmodel"
-  | "none";
-
-export type PackageManager =
-  | "pnpm"
-  | "npm"
-  | "yarn"
-  | "bun"
-  | "uv"
-  | "poetry"
-  | "pip";
-
-export type CodeQualityOption =
-  | "biome"
-  | "eslint-prettier"
-  | "eslint"
-  | "prettier"
-  | "none";
-
-export type AdvancedProjectOption =
-  | "docker"
-  | "dockerCompose"
-  | "monorepo"
-  | "auth"
-  | "unitTests"
-  | "e2eTests"
-  | "githubActions"
-  | "envExample"
-  | "readme"
-  | "typescriptAlias"
-  | "standardScripts"
-  | "blamePreview";
-
-export type NewProjectConfiguration = {
-  platform: ProjectPlatform;
-  frontend: FrontendFramework;
-  styling: StylingOption;
-  uiLibrary: UiLibrary;
-  backend: BackendFramework;
-  database: DatabaseOption;
-  orm: OrmOption;
-  packageManager: PackageManager;
-  codeQuality: CodeQualityOption;
-  advancedOptions: AdvancedProjectOption[];
-};
+export type {
+  ProjectPlatform,
+  FrontendFramework,
+  StylingOption,
+  UiLibrary,
+  BackendFramework,
+  DatabaseOption,
+  OrmOption,
+  PackageManager,
+  CodeQualityOption,
+  AdvancedProjectOption,
+  NewProjectConfiguration,
+} from "@blame/agent-runtime/new-project-options";
 
 export type CreateProjectInput = {
   apiConnection: ApiConnection;

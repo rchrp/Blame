@@ -563,6 +563,7 @@ const api: BlameDesktopApi = {
       run: (input) => ipcRenderer.invoke("agent:code-practices:run", input),
     },
     newProjects: {
+      plan: (input) => ipcRenderer.invoke("agent:new-projects:plan", input),
       generate: (input) =>
         ipcRenderer.invoke("agent:new-projects:generate", input),
     },

@@ -219,7 +219,8 @@ export type LoginOAuthProviderInput = {
   baseUrl?: string | null;
 };
 
-export type RequiredProjectCheck = import("./harness/light-contracts.js").RequiredProjectCheck;
+export type RequiredProjectCheck =
+  import("./harness/light-contracts.js").RequiredProjectCheck;
 
 export type StartSessionInput = {
   requiredChecks?: RequiredProjectCheck[];
@@ -692,39 +693,15 @@ export type RepairProjectInitializationResult = {
   runConfigurations?: ProjectRunConfiguration[];
 };
 
-export type NewProjectGenerationConfiguration = {
-  platform: string;
-  frontend: string;
-  styling: string;
-  uiLibrary: string;
-  backend: string;
-  database: string;
-  orm: string;
-  packageManager: string;
-  codeQuality: string;
-  advancedOptions: string[];
-};
-
-export type StartNewProjectGenerationInput = {
-  apiConnection: ApiConnection;
-  providerId: string;
-  modelId: string;
-  reasoningEffort?: ReasoningSelection;
-  credentialLabel?: string;
-  configuration: NewProjectGenerationConfiguration;
-  cwd: string;
-  workspaceRoot: string;
-  projectName: string;
-  sessionId?: string;
-  backend?: AgentBackendConfig;
-  executionId?: string;
-  storyId?: string;
-};
-
-export type NewProjectGenerationResult = {
-  path: string;
-  sessionId: string;
-};
+export type {
+  NewProjectGenerationConfiguration,
+  StartNewProjectGenerationInput,
+  NewProjectPlanMessage,
+  PlanNewProjectInput,
+  PlanNewProjectResult,
+  NewProjectGenerationResult,
+  NewProjectsClient,
+} from "./new-project-types.js";
 
 export type OptimizeUserStoryPromptInput = {
   apiConnection: ApiConnection;

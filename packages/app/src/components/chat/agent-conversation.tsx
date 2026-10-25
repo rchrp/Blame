@@ -380,14 +380,14 @@ function AgentConversationTurn({
 export function AgentConversationComposer({
   agentRunning = false,
   cancelingAgent = false,
-  codeSelectionAttachments,
+  codeSelectionAttachments = [],
   disabled,
   submitting = false,
   speechSessionKey,
   speechTarget,
   editorKey,
   editorRef,
-  fileAttachments,
+  fileAttachments = [],
   mentionDirectory,
   message,
   minHeight = "min-h-24",
@@ -411,20 +411,20 @@ export function AgentConversationComposer({
   queueWhileRunning?: boolean
   agentRunning?: boolean
   cancelingAgent?: boolean
-  codeSelectionAttachments: PendingCodeSelectionAttachment[]
+  codeSelectionAttachments?: PendingCodeSelectionAttachment[]
   disabled?: boolean
   submitting?: boolean
   speechSessionKey?: string
   speechTarget?: SpeechTarget
   editorKey: number
   editorRef: React.RefObject<HTMLDivElement | null>
-  fileAttachments: PendingFileAttachment[]
+  fileAttachments?: PendingFileAttachment[]
   mentionDirectory?: string
   minHeight?: string
   message: string
-  onCodeSelectionAttachmentRemove: (id: string) => void
-  onFileAttachmentRemove: (id: string) => void
-  onFileAttachmentsAdd: (attachments: UserStoryFileAttachment[]) => void
+  onCodeSelectionAttachmentRemove?: (id: string) => void
+  onFileAttachmentRemove?: (id: string) => void
+  onFileAttachmentsAdd?: (attachments: UserStoryFileAttachment[]) => void
   onFileLinkClick?: (path: string) => void
   onMessageChange: (message: string) => void
   onMessageSubmit: () => void
@@ -468,7 +468,7 @@ export function AgentConversationComposer({
       : submitLabel
 
   return (
-    <section aria-busy={submitting} className="grid gap-3">
+    <section aria-busy={submitting} className="grid min-w-0 grid-cols-1 gap-3">
       {title ? (
         <div className="flex items-center gap-4 text-xl font-medium">
           <span className="flex size-11 items-center justify-center rounded-full border bg-muted text-muted-foreground shadow-sm">
@@ -478,7 +478,7 @@ export function AgentConversationComposer({
         </div>
       ) : null}
       <div
-        className={cn("relative", turnTabNotchClass)}
+        className={cn("relative min-w-0", turnTabNotchClass)}
         onKeyDownCapture={(event) => {
           if (
             !sendWhileRunning ||

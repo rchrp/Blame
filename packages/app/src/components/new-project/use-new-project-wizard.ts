@@ -16,6 +16,7 @@ import {
 import {
   defaultNewProjectConfiguration,
   normalizeNewProjectConfiguration,
+  recommendedUiLibrary,
   type AdvancedProjectOption,
   type BackendFramework,
   type CodeQualityOption,
@@ -34,17 +35,13 @@ import { useProjects } from "@/context/projects"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { CloudApiError } from "@/lib/cloud-api"
 
-export type NewProjectStep =
-  | "location"
-  | "platform"
-  | "frontend"
-  | "styling"
-  | "backend"
-  | "data"
-  | "quality"
-  | "advanced"
-  | "summary"
-  | "progress"
+import {
+  newProjectSteps,
+  type NewProjectMode,
+  type NewProjectStep,
+} from "./new-project-flow"
+import { useNewProjectPlanning } from "./use-new-project-planning"
+export type { NewProjectStep } from "./new-project-flow"
 
 export type ProjectCreationLog = {
   type: "stdout" | "stderr" | "exit" | "agent"
@@ -62,17 +59,6 @@ export type ProjectCreationStatus =
   | "done"
   | "error"
 
-const steps: NewProjectStep[] = [
-  "location",
-  "platform",
-  "frontend",
-  "styling",
-  "backend",
-  "data",
-  "quality",
-  "advanced",
-  "summary",
-]
 const maxInitializationCompletionAttempts = 3
 
 type InitializationFeedback = {
@@ -96,9 +82,17 @@ export function useNewProjectWizard(input: {
   const projects = useProjects()
   const auth = useCloudAuth()
   const modelSelection = useModelSelection({ role: "alternative" })
-  const [step, setStep] = React.useState<NewProjectStep>("location")
+  const [mode, setMode] = React.useState<NewProjectMode>()
+  const steps = newProjectSteps(mode)
+  const [step, setStepState] = React.useState<NewProjectStep>("location")
   const [parentPath, setParentPath] = React.useState("")
   const [projectName, setProjectName] = React.useState("")
+  const planning = useNewProjectPlanning({
+    open: input.open,
+    parentPath,
+    projectName,
+    selection: modelSelection,
+  })
   const [ownedTargetKey, setOwnedTargetKey] = React.useState<string>()
   const nameError = projectNameError(projectName)
   const creation = React.useRef<{ key: string; runId: string; path?: string }>(
@@ -134,15 +128,20 @@ export function useNewProjectWizard(input: {
   const canGoNext =
     !creating &&
     nextStepAllowed(step, parentPath, projectName) &&
-    (step !== "location" || location.available)
+    (step !== "location" || location.available) &&
+    step !== "mode" &&
+    (step !== "assistant" || Boolean(planning.proposal))
   const createProjectAvailable = Boolean(
     platform.workspace?.createProject &&
     platform.agent &&
     modelSelection.currentModel
   )
 
+  const resetPlanning = planning.reset
   const reset = React.useCallback(() => {
-    setStep("location")
+    setStepState("location")
+    setMode(undefined)
+    resetPlanning()
     setParentPath("")
     setProjectName("")
     setCreating(false)
@@ -152,7 +151,19 @@ export function useNewProjectWizard(input: {
     setConfiguration(defaultNewProjectConfiguration)
     creation.current = undefined
     setOwnedTargetKey(undefined)
-  }, [])
+  }, [resetPlanning])
+
+  function setStep(next: NewProjectStep) {
+    if (creating) return
+    if (next !== "assistant") planning.stop()
+    setError(undefined)
+    setStepState(next)
+  }
+
+  function chooseMode(next: NewProjectMode) {
+    setMode(next)
+    setStep(next === "ai" ? "assistant" : "platform")
+  }
 
   async function chooseParentPath() {
     const result = await platform.openDirectoryPickerDialog?.({
@@ -175,7 +186,10 @@ export function useNewProjectWizard(input: {
   }
 
   function setFrontend(value: FrontendFramework) {
-    updateConfiguration({ frontend: value, uiLibrary: defaultUi(value) })
+    updateConfiguration({
+      frontend: value,
+      uiLibrary: recommendedUiLibrary(value),
+    })
   }
 
   function setStyling(value: StylingOption) {
@@ -224,6 +238,9 @@ export function useNewProjectWizard(input: {
 
   function goNext() {
     if (!canGoNext) return
+    if (step === "assistant" && planning.proposal) {
+      setConfiguration(planning.proposal)
+    }
     const nextStep = steps[currentStepIndex + 1]
     if (nextStep) setStep(nextStep)
   }
@@ -291,7 +308,7 @@ export function useNewProjectWizard(input: {
   async function runProjectCreation() {
     const workspace = platform.workspace
     if (!workspace?.createProject) return
-    setStep("progress")
+    setStepState("progress")
     setStatus("preparing")
 
     const key = creationKey
@@ -422,6 +439,9 @@ export function useNewProjectWizard(input: {
     canGoNext,
     checkingTarget: location.checking,
     chooseParentPath,
+    chooseMode,
+    mode,
+    planning,
     configuration: normalizedConfiguration,
     createProject,
     createProjectAvailable,
@@ -478,14 +498,6 @@ function nextStepAllowed(
 ) {
   if (step !== "location") return true
   return Boolean(parentPath.trim() && !projectNameError(projectName))
-}
-
-function defaultUi(frontend: FrontendFramework): UiLibrary {
-  if (frontend === "nuxt") return "nuxt-ui"
-  if (frontend === "vue-vite") return "primevue"
-  if (frontend === "sveltekit") return "shadcn-svelte"
-  if (frontend === "next" || frontend === "react-vite") return "shadcn"
-  return "none"
 }
 
 function statusFromProjectCreationEvent(
