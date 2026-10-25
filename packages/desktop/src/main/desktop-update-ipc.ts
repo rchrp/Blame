@@ -47,6 +47,7 @@ let configured = false;
 let channelLoaded: Promise<void> | undefined;
 // Set once the beta channel replaced the feed built into the app.
 let customFeed = false;
+let installation: Promise<void> | undefined;
 
 export function registerDesktopUpdateIpcHandlers(
   options: DesktopUpdateOptions,
@@ -89,7 +90,7 @@ function configureUpdater() {
   if (!isUpdaterSupported()) return;
 
   autoUpdater.autoDownload = false;
-  autoUpdater.autoInstallOnAppQuit = false;
+  autoUpdater.autoInstallOnAppQuit = true;
 
   autoUpdater.on("checking-for-update", () => {
     setStatus({ ...baseStatus(), phase: "checking" });
@@ -112,6 +113,7 @@ function configureUpdater() {
   });
 
   autoUpdater.on("error", (error) => {
+    installation = undefined;
     setStatus({ ...baseStatus(), error: errorMessage(error), phase: "error" });
   });
 }
@@ -121,7 +123,12 @@ async function checkForUpdates() {
     setStatus(unsupportedStatus());
     return;
   }
-  if (status.phase === "checking" || status.phase === "downloading") return;
+  if (
+    status.phase === "checking" ||
+    status.phase === "downloading" ||
+    status.phase === "downloaded"
+  )
+    return;
 
   setStatus({ ...baseStatus(), phase: "checking" });
   try {
@@ -196,9 +203,16 @@ function channelFile() {
 }
 
 async function installUpdate(options: DesktopUpdateOptions) {
+  if (installation) return installation;
   if (status.phase !== "downloaded") return;
-  await options.beforeInstall();
-  autoUpdater.quitAndInstall(false, true);
+  installation = (async () => {
+    await options.beforeInstall();
+    autoUpdater.quitAndInstall(false, true);
+  })().catch((error) => {
+    installation = undefined;
+    throw error;
+  });
+  return installation;
 }
 
 function initialStatus(): DesktopUpdateStatus {

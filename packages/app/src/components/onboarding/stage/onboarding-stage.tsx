@@ -4,7 +4,6 @@ import type { HeroSceneController } from "@blame/hero-scene"
 
 import { CompactWindowChrome } from "@/components/layout/compact-window-chrome"
 import { SceneBackdrop } from "@/components/onboarding/stage/scene-backdrop"
-import { Toaster } from "@/components/ui/sonner"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { screenVariants } from "@/lib/motion"
 
@@ -113,7 +112,6 @@ export function OnboardingStage({
               </motion.div>
             </AnimatePresence>
           </LayoutGroup>
-          <Toaster />
         </main>
       </TooltipProvider>
     </OnboardingStageContext.Provider>

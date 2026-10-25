@@ -36,8 +36,6 @@ import { RuntimeSetupScreen } from "@/components/onboarding/runtime-setup-screen
 import { useBlameRuntime } from "@/context/blame-runtime"
 import { ProjectInitializationRunner } from "@/components/project-initialization/project-initialization-runner"
 import { ProjectCodePracticesRunner } from "@/components/practices/project-code-practices-runner"
-import { UpdateStartupNotifier } from "@/components/updates/update-startup-notifier"
-import { Toaster } from "@/components/ui/sonner"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { usePlatform } from "@/context/platform"
@@ -143,7 +141,6 @@ export function App() {
     return (
       <TooltipProvider>
         <AccountClosureReceiptPage receipt={closureReceipt} />
-        <Toaster />
       </TooltipProvider>
     )
   }
@@ -151,7 +148,6 @@ export function App() {
     return (
       <TooltipProvider>
         <BacklogStatusPipPage />
-        <Toaster />
       </TooltipProvider>
     )
   }
@@ -179,7 +175,6 @@ export function App() {
         <QuickChatStoreProvider>
           <ProjectInitializationRunner />
           <ProjectCodePracticesRunner />
-          <UpdateStartupNotifier />
           <AppLayout
             pathname={pathname}
             persistent={<BacklogPage active={backlogActive} />}
@@ -190,7 +185,6 @@ export function App() {
             {backlogActive ? null : activeRoute.element}
           </AppLayout>
           <SettingsDialog open={settingsOpen} onOpenChange={closeSettings} />
-          <Toaster />
         </QuickChatStoreProvider>
       </BacklogStoreProvider>
     </TooltipProvider>

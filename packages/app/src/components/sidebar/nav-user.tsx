@@ -1,5 +1,6 @@
 import { UserAvatar } from "@/components/shared/user-avatar"
 import { Badge } from "@/components/ui/badge"
+import { SidebarUpdateButton } from "@/components/updates/sidebar-update-button"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -51,12 +52,12 @@ export function NavUser({
 
   return (
     <SidebarMenu>
-      <SidebarMenuItem>
+      <SidebarMenuItem className="flex min-w-0 items-center gap-1">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              className="min-w-0 flex-1 data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <UserAvatar
                 email={user.email}
@@ -121,15 +122,12 @@ export function NavUser({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        <SidebarUpdateButton />
       </SidebarMenuItem>
     </SidebarMenu>
   )
 }
 
 function PremiumBadge() {
-  return (
-    <Badge className="h-4 px-1.5 text-[10px] leading-none">
-      Premium
-    </Badge>
-  )
+  return <Badge className="h-4 px-1.5 text-[10px] leading-none">Premium</Badge>
 }

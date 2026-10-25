@@ -6,6 +6,9 @@ import { createRoot, type Root } from "react-dom/client"
 import "./index.css"
 import App from "./App"
 import { ThemeProvider } from "@/components/providers/theme-provider"
+import { Toaster } from "@/components/ui/sonner"
+import { DesktopUpdatesProvider } from "@/components/updates/desktop-updates-provider"
+import { UpdateNotifications } from "@/components/updates/update-notifications"
 import { RuntimeInstallDialog } from "@/components/runtime/runtime-install-dialog"
 import { BlameRuntimeProvider } from "@/context/blame-runtime"
 import { CloudAuthProvider } from "@/context/cloud-auth-provider"
@@ -63,8 +66,12 @@ export function mountApp(element: HTMLElement, options?: MountAppOptions) {
                   <PerformanceDiagnosticsProfiler id="app">
                     <SpeechToTextProvider>
                       <BlameRuntimeProvider enabled={!secondaryWindow()}>
-                        <App />
-                        <RuntimeInstallDialog />
+                        <DesktopUpdatesProvider enabled={!secondaryWindow()}>
+                          <App />
+                          <RuntimeInstallDialog />
+                          <Toaster />
+                          <UpdateNotifications />
+                        </DesktopUpdatesProvider>
                       </BlameRuntimeProvider>
                     </SpeechToTextProvider>
                   </PerformanceDiagnosticsProfiler>
