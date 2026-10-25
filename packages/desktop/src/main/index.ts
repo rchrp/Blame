@@ -22,6 +22,7 @@ import {
   shutdownAgentRuntime,
 } from "./agent-ipc";
 import { desktopAppIdentity } from "./desktop-app-identity";
+import { desktopRuntimeEnvironment } from "./desktop-runtime-environment";
 import { DesktopAuthCallbackDeliveryQueue } from "./desktop-auth-callback-delivery";
 import {
   desktopAuthCallback,
@@ -83,6 +84,12 @@ try {
 } catch {}
 
 const appIdentity = desktopAppIdentity(app.isPackaged);
+Object.assign(process.env, desktopRuntimeEnvironment({
+  env: process.env,
+  home: homedir(),
+  isPackaged: app.isPackaged,
+  platform: process.platform,
+}));
 const billingDeepLink = "blame://billing/refresh";
 app.setName(appIdentity.name);
 app.setAppUserModelId(appIdentity.appId);

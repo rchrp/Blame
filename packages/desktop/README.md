@@ -2,6 +2,21 @@
 
 Electron shell for the Blame app and Cline SDK runtime IPC.
 
+## Development runtime
+
+Unpackaged apps (including `dev` and `preview`) use a separate runtime from the
+installed app. On macOS, Lima state lives in
+`~/Library/Application Support/Blame Dev/runtime/lima`; the production state
+stays in `~/Library/Application Support/Blame/runtime/lima`. On Windows, the
+development distribution is `BlameRuntimeDev`, while production uses `BlameRuntime`.
+An explicit `LIMA_HOME` or `BLAME_WSL_DISTRO` overrides these defaults.
+
+The first development launch after this separation needs its own runtime setup.
+Existing VM worktrees and volumes remain in the production runtime; they are not
+deleted or automatically moved. Use the production app to access them. Different
+development and release payloads no longer replace each other, and quitting one
+app no longer stops the other's VM.
+
 ## Packaging
 
 Build the desktop app before packaging installers:

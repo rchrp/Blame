@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Stop"
 
-$DistroName = "BlameRuntime"
+$DistroName = if ($env:BLAME_WSL_DISTRO) { $env:BLAME_WSL_DISTRO } else { "BlameRuntime" }
 $RuntimeHome = Split-Path -Parent $PSScriptRoot
 $ManifestPath = Join-Path $RuntimeHome "manifest.json"
 $Manifest = Get-Content $ManifestPath -Raw | ConvertFrom-Json
