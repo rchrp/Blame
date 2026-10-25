@@ -995,9 +995,9 @@
   }
 }
 
-/* Runtime install/update progress, lit like a story an agent works on. */
+/* Shared progress for runtime maintenance and desktop updates. */
 /* Without a percentage, a segment travels back and forth inside the track. */
-@keyframes runtime-progress-indeterminate {
+@keyframes notification-progress-indeterminate {
   from {
     left: 0;
   }
@@ -1008,7 +1008,7 @@
 }
 
 @layer components {
-  .runtime-progress-track {
+  .notification-progress-track {
     position: relative;
     height: 0.375rem;
     width: 100%;
@@ -1017,16 +1017,16 @@
   }
 
   /* The notification's text column fills the toast so the bar spans it. */
-  .runtime-progress-toast [data-content] {
+  .progress-notification-toast [data-content] {
     flex: 1;
     min-width: 0;
   }
 
-  .runtime-progress-toast [data-description] {
+  .progress-notification-toast [data-description] {
     width: 100%;
   }
 
-  .runtime-progress-fill {
+  .notification-progress-fill {
     position: relative;
     height: 100%;
     border-radius: 999px;
@@ -1037,15 +1037,15 @@
     transition: width 500ms cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  .runtime-progress-fill[data-indeterminate] {
+  .notification-progress-fill[data-indeterminate] {
     position: absolute;
     top: 0;
     width: 35%;
-    animation: runtime-progress-indeterminate 1.2s cubic-bezier(0.65, 0, 0.35, 1) infinite alternate;
+    animation: notification-progress-indeterminate 1.2s cubic-bezier(0.65, 0, 0.35, 1) infinite alternate;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .runtime-progress-fill[data-indeterminate] {
+    .notification-progress-fill[data-indeterminate] {
       left: 0;
       width: 100%;
       opacity: 0.6;

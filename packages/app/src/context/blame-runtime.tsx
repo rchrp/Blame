@@ -106,7 +106,7 @@ export function BlameRuntimeProvider({
       const title = runtimeOperationTitle(operation)
       const show = (next?: RuntimeProgress) =>
         toast.loading(title, {
-          className: "runtime-progress-toast",
+          className: "progress-notification-toast",
           description: <RuntimeProgressBody progress={next} />,
           duration: Infinity,
           id: toastId,
