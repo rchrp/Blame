@@ -30,7 +30,7 @@ inside the horizontally scrolling attachment row.
 | CSV / TSV | Table, including quoted delimiters and multiline cells |
 | Markdown | Existing Markdown renderer |
 | LaTeX / text / source files | Readable source; no TeX compilation or code execution |
-| Legacy DOC / XLS / PPT and other formats | Existing extracted Markdown when available; otherwise open/download original |
+| Legacy DOC / XLS / PPT and other formats | Open/download original |
 | Audio / video | OS default application on desktop; download on the web |
 
 Libraries are [PDF.js](https://github.com/mozilla/pdf.js),
@@ -94,7 +94,7 @@ Select/erase hit visible strokes, with the topmost matching annotation winning. 
 
 Applying produces a flattened `image/png` file named `*-annotated.png`, without stacking the suffix. The flattened PNG is the durable attachment stored in drafts and uploaded through the existing file pipeline. Original sources, editable marks, and undo history are not serialized. After a composer remount or draft restore, previous marks are baked into the image; new marks can be added, but previous marks cannot be individually selected or removed.
 
-Every applied image receives a new attachment/upload ID because stored attachments are immutable. Replacement maps the old ID to the new attachment while preserving list order. Do not reuse the old upload identity or append the edited file beside it. The composer first awaits pending attachment conversions for the affected IDs (including a shared image/document optimization batch), then converts every replacement, then publishes one replacement batch and updates local previews. Export/conversion failure leaves the existing attachments and editable marks available for retry; a late original conversion cannot append the original after a successful replacement.
+Every applied image receives a new attachment/upload ID because stored attachments are immutable. Replacement maps the old ID to the new attachment while preserving list order. Do not reuse the old upload identity or append the edited file beside it. The composer first awaits pending file encoding for the affected IDs, then converts every replacement, then publishes one replacement batch and updates local previews. Export/conversion failure leaves the existing attachments and editable marks available for retry; a late original conversion cannot append the original after a successful replacement.
 
 The original object URL is retained for further editing while the composer is mounted. Superseded flattened preview URLs are revoked; removal/unmount also releases retained original URLs. A persistent composer must provide `onFileAttachmentsReplace` alongside `onFileAttachmentsAdd` to enable annotation editing.
 
@@ -121,7 +121,7 @@ Run `pnpm --filter @blame/app test:attachments` for geometry/history, replacemen
 1. Attach two images, open a thumbnail, and browse with buttons and arrow keys. Check read-only viewing, loading/error retry, Escape, and focus return.
 2. Add each mark type, edit text by double-clicking with Select, change the selected mark's color/width, move, erase, delete, undo, and redo. Resize the window and verify alignment remains on the image. Check portrait images and long text near image edges.
 3. Edit both images, navigate back, then test Keep editing and Discard changes. Apply both and reopen them in the same composer to verify retained editable marks.
-4. Restore the saved draft in a fresh composer and submit/upload it. Verify the flattened PNG pixels and new attachment ID, then confirm the restored image supports new annotations. Repeat with an image added alongside a document whose optimization is still pending; there must be one edited image and no late original duplicate.
+4. Restore the saved draft in a fresh composer and submit/upload it. Verify the flattened PNG pixels and new attachment ID, then confirm the restored image supports new annotations. Repeat with an image added alongside a large document whose encoding is still pending; there must be one edited image and no late original duplicate.
 5. Check desktop and 390px widths, keyboard focus, tooltip labels, color/width popovers, and the wrapping toolbar. Desktop and 390px layouts were visually reviewed during implementation; screenshot review does not establish upload or assistive-technology coverage.
 
 Export is limited to 32 megapixels and a maximum side of 16,384 pixels. Remote images need a CORS-enabled source for canvas export; loading times out after 15 seconds. PNG export flattens animated input to a still image. Load/export failures display recoverable errors in the gallery and need browser-level checks beyond the model tests.

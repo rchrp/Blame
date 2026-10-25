@@ -39,15 +39,6 @@ async function createPreview(
 ): Promise<DocumentPreview> {
   const ext = attachmentExtension(attachment.file.name)
   if (!hasDocumentPreview(attachment.file)) {
-    const text =
-      attachment.aiContextMarkdown ??
-      attachment.storedAttachment?.aiContextMarkdown
-    if (text)
-      return {
-        kind: "markdown",
-        text: text.slice(0, previewLimits.text),
-        truncated: text.length > previewLimits.text,
-      }
     throw new Error(
       "No preview is available for this format. Open or download the original."
     )

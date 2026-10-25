@@ -57,6 +57,33 @@ test("round trips markdown and attachments", () => {
   assert.deepEqual(readComposerDraft(storage, "draft"), draft)
 })
 
+test("restores and rewrites older attachments using only original file fields", () => {
+  const older = {
+    ...draft,
+    fileAttachments: draft.fileAttachments.map((file) => ({
+      ...file,
+      aiContextMarkdown: "obsolete derived text",
+    })),
+  }
+  const restored = readComposerDraft(
+    { getItem: () => JSON.stringify(older) },
+    "draft"
+  )
+  assert.deepEqual(restored, draft)
+  let stored = ""
+  writeComposerDraft(
+    {
+      removeItem: () => {},
+      setItem: (_key, value) => {
+        stored = value
+      },
+    },
+    "draft",
+    older
+  )
+  assert.deepEqual(JSON.parse(stored), draft)
+})
+
 test("removes empty drafts and ignores invalid stored data", () => {
   let removed = false
   writeComposerDraft(

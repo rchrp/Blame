@@ -765,11 +765,6 @@ export type PreviewRuntimeClient = {
 
 export type WorkspaceClient = {
   pathExists(input: { path: string }): Promise<boolean>
-  optimizeAttachmentForAiContext(input: {
-    content: string
-    name: string
-    type: string
-  }): Promise<{ markdown: string }>
   listDirectory(input: {
     root: string
     path?: string

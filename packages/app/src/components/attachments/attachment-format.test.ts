@@ -31,20 +31,6 @@ test("does not parse legacy binary documents, audio or executables as text", () 
     assert.equal(hasDocumentPreview({ name, type: "" }), false)
   }
   assert.equal(
-    hasDocumentPreview(
-      { name: "legacy.doc", type: "" },
-      "Existing extracted content"
-    ),
-    true
-  )
-  assert.equal(
-    hasDocumentPreview(
-      { name: "recording.wav", type: "audio/wav" },
-      "Transcript"
-    ),
-    false
-  )
-  assert.equal(
     hasDocumentPreview({ name: "document.html", type: "text/html" }),
     true
   )

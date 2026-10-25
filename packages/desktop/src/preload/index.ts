@@ -350,8 +350,6 @@ const api: BlameDesktopApi = {
   },
   workspace: {
     pathExists: (input) => ipcRenderer.invoke("workspace:path-exists", input),
-    optimizeAttachmentForAiContext: (input) =>
-      ipcRenderer.invoke("workspace:optimize-attachment-for-ai-context", input),
     listDirectory: (input) =>
       ipcRenderer.invoke("workspace:list-directory", input),
     readFile: (input) => ipcRenderer.invoke("workspace:read-file", input),

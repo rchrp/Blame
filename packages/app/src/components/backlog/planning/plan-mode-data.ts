@@ -230,7 +230,6 @@ type CodeContext = {
   startLine: number
 }
 type FileContext = {
-  aiContextMarkdown?: string
   content?: string
   name: string
   type: string
@@ -249,7 +248,7 @@ export function planAttachmentContext(
         `<code path="${item.path}" lines="${item.startLine}-${item.endLine}">\n${item.content}\n</code>`
     ),
     ...files.map((file) => {
-      const text = file.aiContextMarkdown ?? textContent(file)
+      const text = textContent(file)
       return text
         ? `<file name="${file.name}">\n${text.slice(0, maxAttachmentCharacters)}\n</file>`
         : `<file name="${file.name}" type="${file.type}">Not readable as text.</file>`

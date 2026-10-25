@@ -138,11 +138,7 @@ function DocumentView({
   attachment: ComposerAttachment
   onClose: () => void
 }) {
-  const previewable = hasDocumentPreview(
-    attachment.file,
-    attachment.aiContextMarkdown ??
-      attachment.storedAttachment?.aiContextMarkdown
-  )
+  const previewable = hasDocumentPreview(attachment.file)
   const isPdf = attachmentFormat(attachment.file) === "pdf"
   const { data, error, retry } = useDocumentPreview(
     attachment,

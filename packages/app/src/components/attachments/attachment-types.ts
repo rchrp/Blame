@@ -3,7 +3,6 @@ import type { ImageAnnotation } from "./image-attachment-gallery"
 
 export type ComposerAttachment = {
   annotation?: ImageAnnotation
-  aiContextMarkdown?: string
   id: string
   file: File
   previewUrl?: string

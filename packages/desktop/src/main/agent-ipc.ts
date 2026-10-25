@@ -11,7 +11,6 @@ import type { AddressInfo } from "node:net";
 import log from "electron-log";
 import { excludeComponentPreviewFiles } from "./component-preview-exclude";
 import { releaseAgentPreviewSession } from "./preview-browser-ipc";
-import { optimizeDevelopmentAttachments } from "./attachment-ai-context";
 import {
   refreshRuntimeBackendConnection,
   resolveAgentWorkspaceInput,
@@ -167,15 +166,13 @@ function registerSessionStartIpcHandlers(
     return startWorkspaceSession("sessions.start", prepared, workspace);
   });
   ipcMain.handle("agent:sessions:start-development", async (_event, input) => {
-    const prepared = await optimizeDevelopmentAttachments(
-      await agentWorkspaceInput({
-        ...input,
-        sessionId:
-          typeof input.sessionId === "string" && input.sessionId.trim()
-            ? input.sessionId
-            : `${Date.now()}_${randomUUID().replaceAll("-", "").slice(0, 5)}`,
-      }),
-    );
+    const prepared = await agentWorkspaceInput({
+      ...input,
+      sessionId:
+        typeof input.sessionId === "string" && input.sessionId.trim()
+          ? input.sessionId
+          : `${Date.now()}_${randomUUID().replaceAll("-", "").slice(0, 5)}`,
+    });
     const workspace = agentWorkspacePath(prepared);
     if (workspace && beforeWorkspaceWrite)
       await beforeWorkspaceWrite(workspace);
@@ -223,7 +220,7 @@ function registerSessionControlIpcHandlers(
     return runWorkspaceSession(
       "sessions.sendDevelopment",
       input.sessionId,
-      await optimizeDevelopmentAttachments(input),
+      input,
     );
   });
   ipcMain.handle("agent:sessions:live", (_event, sessionId) =>

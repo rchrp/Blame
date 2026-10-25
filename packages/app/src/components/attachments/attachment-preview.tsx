@@ -23,13 +23,7 @@ export function AttachmentPreview({
   const [visible, setVisible] = useState(false)
   const format = attachmentFormat(attachment.file)
   const isImage = Boolean(attachment.previewUrl)
-  const previewable =
-    !isImage &&
-    hasDocumentPreview(
-      attachment.file,
-      attachment.aiContextMarkdown ??
-        attachment.storedAttachment?.aiContextMarkdown
-    )
+  const previewable = !isImage && hasDocumentPreview(attachment.file)
   const preview = useDocumentPreview(attachment, visible && previewable)
   const actions = useAttachmentActions(attachment)
   const external = format === "audio" || format === "video"

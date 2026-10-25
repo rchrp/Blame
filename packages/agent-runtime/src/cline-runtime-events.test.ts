@@ -225,7 +225,6 @@ test("deferred VM development prompts store attachments and journal remotely bef
         {
           name: "context-from-us-001.md",
           content: Buffer.from(context).toString("base64"),
-          aiContextMarkdown: context,
           size: Buffer.byteLength(context),
           type: "text/markdown",
         },

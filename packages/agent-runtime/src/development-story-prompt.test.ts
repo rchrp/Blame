@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 import {
   developmentUserInput,
@@ -9,6 +12,27 @@ import {
 const storyPrompt = async (title: string) =>
   (await developmentUserInput({ summary: "salut ca va ?", title }, "/tmp"))
     .prompt;
+
+test("passes original file bytes to the agent and ignores retired derived metadata", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "blame-original-attachment-"));
+  const bytes = Buffer.from([0, 255, 128, 10, 42]);
+  const attachment = {
+    name: "report.pdf",
+    content: bytes.toString("base64"),
+    size: bytes.length,
+    type: "application/pdf",
+    aiContextMarkdown: "Retired converted content must not enter the prompt",
+  };
+  try {
+    const input = await developmentUserInput({ summary: "Read the report", title: "Review", fileAttachments: [attachment] }, directory);
+    assert.match(input.prompt, /report\.pdf \(application\/pdf, 5 bytes\)/);
+    assert.ok(!input.prompt.includes(attachment.aiContextMarkdown));
+    assert.equal(input.userFiles.length, 1);
+    assert.deepEqual(await readFile(input.userFiles[0]!), bytes);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
 
 test("names the backlog item when the story has a title", async () => {
   const prompt = await storyPrompt("Say Hello");

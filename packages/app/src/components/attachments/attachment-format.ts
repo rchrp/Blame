@@ -77,14 +77,10 @@ export function attachmentFormat(file: {
   return "file"
 }
 
-export function hasDocumentPreview(
-  file: { name: string; type: string },
-  markdown?: string
-) {
+export function hasDocumentPreview(file: { name: string; type: string }) {
   const format = attachmentFormat(file)
   if (format === "audio" || format === "video") return false
   return (
-    Boolean(markdown) ||
     ["pdf", "csv", "markdown", "latex", "text"].includes(format) ||
     ["docx", "xlsx"].includes(attachmentExtension(file.name))
   )

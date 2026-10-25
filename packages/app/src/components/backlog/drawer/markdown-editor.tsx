@@ -2,9 +2,7 @@ import {
   BoldIcon,
   CodeIcon,
   EllipsisIcon,
-  ExternalLinkIcon,
   Heading2Icon,
-  InfoIcon,
   ItalicIcon,
   LinkIcon,
   ListChecksIcon,
@@ -70,7 +68,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover"
 import { Separator } from "@/components/ui/separator"
-import { Switch } from "@/components/ui/switch"
 import {
   Tooltip,
   TooltipContent,
@@ -91,7 +88,6 @@ import {
 } from "./markdown-preview"
 
 export type PendingFileAttachment = {
-  aiContextMarkdown?: string
   file: File
   id: string
   previewUrl?: string
@@ -146,16 +142,6 @@ function draggedAttachments(event: React.DragEvent<HTMLDivElement>) {
 
 function isFileDrag(dataTransfer: DataTransfer) {
   return Array.from(dataTransfer.types).includes("Files")
-}
-
-function aiContextAttachmentSupported(file: File) {
-  return supportedAiContextAttachmentExtensions().some((extension) =>
-    file.name.toLowerCase().endsWith(extension)
-  )
-}
-
-function supportedAiContextAttachmentExtensions() {
-  return [".pdf", ".doc", ".docx", ".ppt", ".pptx", ".xls", ".xlsx"]
 }
 
 function fileMentionState(value: string, cursor: number): FileMentionState {
@@ -1116,11 +1102,7 @@ export const MarkdownEditor = React.forwardRef<
   const [activeSelection, setActiveSelection] =
     React.useState<MarkdownSelection | null>(null)
   const [optimizing, setOptimizing] = React.useState(false)
-  const [optimizingAttachments, setOptimizingAttachments] =
-    React.useState(false)
   const [fileDropActive, setFileDropActive] = React.useState(false)
-  const [optimizeAttachmentsForAiContext, setOptimizeAttachmentsForAiContext] =
-    React.useState(true)
   const setEditorElement = React.useCallback(
     (element: HTMLDivElement | null) => {
       const currentEditor = editorRef.current
@@ -1146,12 +1128,6 @@ export const MarkdownEditor = React.forwardRef<
   const editorRenderKey = String(editorRenderVersionRef.current)
   const mentionOpen =
     mention.active && Boolean(mentionDirectory && platform.workspace)
-  const optimizableAttachmentsVisible = attachments.some(
-    (attachment) =>
-      attachment.source === "file" &&
-      aiContextAttachmentSupported(attachment.file)
-  )
-
   React.useEffect(() => {
     attachmentsRef.current = attachments
   }, [attachments])
@@ -1469,19 +1445,8 @@ export const MarkdownEditor = React.forwardRef<
     nextAttachments.forEach((attachment) => {
       handledFileAttachmentIdsRef.current.add(attachment.id)
     })
-    setOptimizingAttachments(
-      optimizeAttachmentsForAiContext &&
-        nextAttachments.some((attachment) =>
-          aiContextAttachmentSupported(attachment.file)
-        )
-    )
     const write = Promise.all(
-      nextAttachments.map((attachment) =>
-        persistentFileAttachment(attachment, {
-          optimize: optimizeAttachmentsForAiContext,
-          workspace: platform.workspace,
-        })
-      )
+      nextAttachments.map(persistentFileAttachment)
     ).then(onFileAttachmentsAdd)
     nextAttachments.forEach(({ id }) =>
       pendingAttachmentWritesRef.current.set(id, write)
@@ -1492,7 +1457,6 @@ export const MarkdownEditor = React.forwardRef<
       nextAttachments.forEach(({ id }) =>
         pendingAttachmentWritesRef.current.delete(id)
       )
-      setOptimizingAttachments(false)
     }
   }
 
@@ -1504,7 +1468,7 @@ export const MarkdownEditor = React.forwardRef<
   }
 
   async function saveAnnotatedAttachments(changes: AnnotatedAttachment[]) {
-    // A mixed image/document batch may still be optimizing. Publish it first so
+    // Original file bytes may still be encoding. Publish them first so
     // the parent replaces the original instead of appending it after our edit.
     await Promise.all(
       changes.map(({ id }) => pendingAttachmentWritesRef.current.get(id))
@@ -1862,7 +1826,7 @@ export const MarkdownEditor = React.forwardRef<
                     sessionKey={speechSessionKey}
                     currentText={() => currentValueRef.current}
                     target={speechTarget}
-                    disabled={optimizing || optimizingAttachments}
+                    disabled={optimizing}
                     onStartRecording={rememberSpeechSelection}
                     onTranscription={insertSpeechTranscription}
                   />
@@ -1900,52 +1864,6 @@ export const MarkdownEditor = React.forwardRef<
                       onRemove={removeAttachment}
                     />
                   ))}
-                </div>
-              )}
-              {optimizableAttachmentsVisible && (
-                <div className="mx-1 flex flex-wrap items-center justify-between gap-3 border-t border-border/60 px-3 py-2">
-                  <div className="flex min-w-0 items-center gap-2 text-sm">
-                    <Switch
-                      checked={optimizeAttachmentsForAiContext}
-                      disabled={optimizingAttachments}
-                      onCheckedChange={setOptimizeAttachmentsForAiContext}
-                    />
-                    <span className="text-foreground">
-                      Optimize attachments for AI context
-                    </span>
-                    {optimizingAttachments && (
-                      <LoaderCircleIcon className="size-3.5 animate-spin text-muted-foreground" />
-                    )}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          type="button"
-                          className="inline-flex size-5 items-center justify-center rounded-full text-muted-foreground hover:text-foreground"
-                          aria-label="Attachment optimization details"
-                        >
-                          <InfoIcon className="size-3.5" />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent
-                        className="max-w-72 text-pretty"
-                        sideOffset={6}
-                      >
-                        <span>
-                          Converts supported PDF, Word, PowerPoint, and Excel
-                          files to Markdown before sending them to the agent.
-                        </span>{" "}
-                        <a
-                          className="inline-flex items-center gap-1 underline underline-offset-2"
-                          href="https://github.com/microsoft/markitdown"
-                          rel="noreferrer"
-                          target="_blank"
-                        >
-                          Microsoft MarkItDown
-                          <ExternalLinkIcon className="size-3" />
-                        </a>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
                 </div>
               )}
               <div className="flex flex-wrap items-center justify-between gap-2 px-1 py-1.5">
@@ -2145,7 +2063,6 @@ function pendingFileAttachment(
   attachment: PendingFileAttachment
 ): PastedAttachment {
   return {
-    aiContextMarkdown: attachment.aiContextMarkdown,
     id: attachment.id,
     file: attachment.file,
     previewUrl:
@@ -2159,36 +2076,10 @@ function pendingFileAttachment(
 }
 
 async function persistentFileAttachment(
-  attachment: PastedAttachment,
-  options: {
-    optimize: boolean
-    workspace: ReturnType<typeof usePlatform>["workspace"]
-  }
+  attachment: PastedAttachment
 ): Promise<UserStoryFileAttachment> {
   if (attachment.storedAttachment) return attachment.storedAttachment
-  const persistedAttachment = {
-    ...(await fileAttachment(attachment.file, attachment.aiContextMarkdown)),
-    id: attachment.id,
-  }
-  if (
-    persistedAttachment.aiContextMarkdown ||
-    !options.optimize ||
-    !options.workspace ||
-    !aiContextAttachmentSupported(attachment.file)
-  ) {
-    return persistedAttachment
-  }
-  try {
-    const result = await options.workspace.optimizeAttachmentForAiContext({
-      content: persistedAttachment.content,
-      name: persistedAttachment.name,
-      type: persistedAttachment.type,
-    })
-    if (!result.markdown.trim()) return persistedAttachment
-    return { ...persistedAttachment, aiContextMarkdown: result.markdown }
-  } catch {
-    return persistedAttachment
-  }
+  return { ...(await fileAttachment(attachment.file)), id: attachment.id }
 }
 
 function revokeAttachmentUrls(attachment: PastedAttachment) {
