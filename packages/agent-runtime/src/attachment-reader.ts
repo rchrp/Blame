@@ -1,7 +1,7 @@
 import { readFile, realpath, stat } from "node:fs/promises";
 import { extname, isAbsolute, join, relative, resolve, sep } from "node:path";
-import { fileURLToPath } from "node:url";
 import { z } from "zod";
+import { readPdfAttachment } from "./attachment-pdf.js";
 import type { LightToolResult } from "./harness/light-contracts.js";
 
 export const attachmentReadSchema = z.object({
@@ -47,6 +47,7 @@ export async function readAttachment(
       bytes,
       extname(path).toLowerCase(),
       input,
+      signal,
     );
     signal?.throwIfAborted();
     const offset = input.offset ?? 0;
@@ -76,6 +77,7 @@ async function documentText(
   bytes: Buffer,
   extension: string,
   input: AttachmentReadInput,
+  signal?: AbortSignal,
 ): Promise<{
   text: string;
   format: string;
@@ -85,7 +87,8 @@ async function documentText(
   sheets?: string[];
   notice?: string;
 }> {
-  if (extension === ".pdf") return pdfText(bytes, input.page ?? 1);
+  if (extension === ".pdf")
+    return readPdfAttachment(bytes, input.page ?? 1, signal);
   if (extension === ".docx") {
     const { extractRawText } = await import("mammoth");
     const result = await extractRawText({ buffer: bytes });
@@ -129,45 +132,4 @@ async function documentText(
     );
   }
   return { format: "text", text };
-}
-
-async function pdfText(bytes: Buffer, page: number) {
-  const { getDocument } = await import("pdfjs-dist/legacy/build/pdf.mjs");
-  const assets = new URL(
-    "../../",
-    import.meta.resolve("pdfjs-dist/legacy/build/pdf.mjs"),
-  );
-  const loading = getDocument({
-    data: new Uint8Array(bytes),
-    useSystemFonts: false,
-    standardFontDataUrl: fileURLToPath(new URL("standard_fonts/", assets)),
-    cMapUrl: fileURLToPath(new URL("cmaps/", assets)),
-    cMapPacked: true,
-    wasmUrl: fileURLToPath(new URL("wasm/", assets)),
-  });
-  try {
-    const pdf = await loading.promise;
-    if (page > pdf.numPages)
-      throw new Error(`Page must be between 1 and ${pdf.numPages}.`);
-    const content = await (await pdf.getPage(page)).getTextContent();
-    const text = content.items
-      .map((item) =>
-        "str" in item ? item.str + (item.hasEOL ? "\n" : " ") : "",
-      )
-      .join("");
-    return {
-      format: "pdf",
-      page,
-      pages: pdf.numPages,
-      text,
-      ...(!text.trim()
-        ? {
-            notice:
-              "This page has no selectable text. It may be a scan; do not infer its contents from the filename.",
-          }
-        : {}),
-    };
-  } finally {
-    await loading.destroy();
-  }
 }

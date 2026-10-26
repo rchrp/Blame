@@ -6,6 +6,7 @@ import test from "node:test";
 import type { AgentToolContext } from "@cline/sdk";
 import { attachmentTools } from "./attachment-tools.js";
 import { readAttachment } from "./attachment-reader.js";
+import { readPdfAttachment } from "./attachment-pdf.js";
 import { storeWorkspaceAttachment } from "./development-attachments.js";
 import { executeLightWorkspaceRequest } from "./harness/light-executor.js";
 import {
@@ -141,12 +142,23 @@ test("bounds text results and rejects unsupported files, traversal and symlink e
   });
 });
 
+test("cancels a PDF worker without breaking subsequent reads", async () => {
+  const bytes = await readFile(new URL("report.pdf", fixtures));
+  const controller = new AbortController();
+  const pending = readPdfAttachment(bytes, 1, controller.signal);
+  controller.abort();
+  await assert.rejects(pending, /cancelled/);
+  const result = await readPdfAttachment(bytes, 1);
+  assert.match(result.text, /revenue is 42 EUR/);
+});
+
 function store(root: string, name: string, bytes: Buffer) {
   return storeWorkspaceAttachment(root, {
     name,
     contentBase64: bytes.toString("base64"),
   });
 }
+
 async function fixture(action: (root: string) => Promise<void>) {
   const root = await mkdtemp(join(tmpdir(), "blame-attachment-reader-"));
   try {
