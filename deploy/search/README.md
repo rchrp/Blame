@@ -42,6 +42,10 @@ Without a separate build server, this image can also be built on the deployment
 server; in a Swarm cluster, make the image available to its eligible runtime nodes.
 Enable automatic deployments on pushes affecting
 `deploy/search/**`; settings changes then follow the normal GitHub workflow.
+The current installation also has a repository `push` webhook pointing to this
+application's **Deployments → Webhook URL**, because the existing GitHub App was
+not delivering pushes to the new service. Keep that URL in GitHub's webhook
+settings, not in this repository. Branch and watch-path filters still apply.
 
 Keep the application on `dokploy-network`, as the existing Backend is. Add a named
 volume for `/var/cache/searxng` if search cache should survive deployments; do not
