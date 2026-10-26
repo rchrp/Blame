@@ -15,7 +15,7 @@ $ClineSdkVersion = if ($env:BLAME_CLINE_SDK_VERSION) {
 } elseif ($Manifest.PSObject.Properties["clineSdkVersion"]) {
   [string]$Manifest.clineSdkVersion
 } else {
-  "0.0.95"
+  "0.2.0"
 }
 $SemanticHarnessPayload = Join-Path $RuntimeHome "payloads\blame-semantic-harness.tgz"
 $SemanticHarnessSha256 = if (Test-Path $SemanticHarnessPayload) {

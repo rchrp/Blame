@@ -14,9 +14,6 @@ overrides:
   brace-expansion@>=5.0.0 <5.0.9: 5.0.9
 
 patchedDependencies:
-  '@cline/core@0.0.95':
-    hash: e64cb420927a0949f656538f9c67038169fa995eaf22041dd71460e9d241cdcf
-    path: patches/@cline__core@0.0.95.patch
   app-builder-lib@26.8.1:
     hash: b01e9cad7d5cb7de17c9fa0e732aacaa0ca8e18d7d69796ec296ef2c152522fb
     path: patches/app-builder-lib@26.8.1.patch
@@ -77,14 +74,14 @@ importers:
         specifier: workspace:*
         version: link:../telemetry
       '@cline/llms':
-        specifier: 0.0.95
-        version: 0.0.95(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.220.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.9.0(@opentelemetry/api@1.9.1))
+        specifier: 0.2.0
+        version: 0.2.0(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.220.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.9.0(@opentelemetry/api@1.9.1))
       '@cline/sdk':
-        specifier: 0.0.95
-        version: 0.0.95(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))
+        specifier: 0.2.0
+        version: 0.2.0(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))
       '@cline/shared':
-        specifier: 0.0.95
-        version: 0.0.95
+        specifier: 0.2.0
+        version: 0.2.0
       '@mozilla/readability':
         specifier: ^0.6.0
         version: 0.6.0
@@ -228,8 +225,8 @@ importers:
         specifier: workspace:*
         version: link:../telemetry
       '@cline/llms':
-        specifier: 0.0.95
-        version: 0.0.95(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.220.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.9.0(@opentelemetry/api@1.9.1))
+        specifier: 0.2.0
+        version: 0.2.0(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.220.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.9.0(@opentelemetry/api@1.9.1))
       '@japa/api-client':
         specifier: ^3.2.1
         version: 3.2.1(@japa/assert@4.2.0(@japa/runner@5.3.0))(@japa/runner@5.3.0)
@@ -587,7 +584,7 @@ importers:
         version: link:../telemetry
       '@modelcontextprotocol/sdk':
         specifier: ^1.30.0
-        version: 1.30.0(zod@4.4.3)
+        version: 1.30.0(zod@4.6.7)
       chrome-devtools-mcp:
         specifier: 1.8.0
         version: 1.8.0
@@ -671,8 +668,8 @@ importers:
   packages/model-catalog:
     devDependencies:
       '@cline/shared':
-        specifier: 0.0.95
-        version: 0.0.95
+        specifier: 0.2.0
+        version: 0.2.0
       '@types/node':
         specifier: ^24.12.0
         version: 24.12.4
@@ -1785,12 +1782,12 @@ packages:
   '@chevrotain/utils@11.2.0':
     resolution: {integrity: sha512-+7whECg4yNWHottjvr2To2BRxL4XJVjIyyv5J4+bJ0iMOVU8j/8n1qPDLZS/90W/BObDR8VNL46lFbzY/Hosmw==}
 
-  '@cline/agents@0.0.95':
-    resolution: {integrity: sha512-xfoOg+lwREJFzzWBM4oTTUR51Mh1f7wGQ+LWwHOCEgcmnPPLAXjA/Y6BD8CapNRH7Sh07c1akdKpt98gjAnbIQ==}
+  '@cline/agents@0.2.0':
+    resolution: {integrity: sha512-rEOMepQI+9mNtd97CexpIvLzeaUNSTwbcgOjCHHUoPM/rZve/uxKsu98wzzSqfl3NoV6BcF1FJe9srT5VH7u9w==}
     engines: {node: '>=22'}
 
-  '@cline/core@0.0.95':
-    resolution: {integrity: sha512-KdsHB7NX/GYs1BuL+MtOcKd6f7Sfu875hRwkfCBWvvOvQL/e53QF1JgVV1kepxMLD7i822k5Ys1ujpMUCU3UHA==}
+  '@cline/core@0.2.0':
+    resolution: {integrity: sha512-0TmQT9Tof/NtcPQloS2Xt0G0Z6tUHCIRr1wEgLEWt7yMidQ+DYeocEGqMSwE1L7p9oaDKEP5hMwt/pRVWBboYw==}
     engines: {node: '>=22'}
     peerDependencies:
       posthog-node: ^5.8.0
@@ -1798,8 +1795,8 @@ packages:
       posthog-node:
         optional: true
 
-  '@cline/llms@0.0.95':
-    resolution: {integrity: sha512-gEnjBOK6u37PlLcXOrgTyzNs+LXFWPa8fqjOCn5StsXPvAMahGLmAJjQuMsVDJhC1e5aagMwwcS5Kkfp1IiBZw==}
+  '@cline/llms@0.2.0':
+    resolution: {integrity: sha512-ygAvs8LtXLH2F+e+JOKJil4p6mKRks98wHMWFKkyXilRtSK1NjRStXHQLVq0nK/9tLMbQ9oxc5ot4TK07xFlZw==}
     engines: {node: '>=22'}
     peerDependencies:
       '@aws-sdk/client-bedrock-runtime': ^3.0.0
@@ -1813,12 +1810,12 @@ packages:
       ai-sdk-provider-codex-cli:
         optional: true
 
-  '@cline/sdk@0.0.95':
-    resolution: {integrity: sha512-Fo3Tvn0ZBSnyjo9NLKnLmWM1uIa1rOyujs/ts26jk8/A9aKyOq+ETNHNUPFVdpaLNGGHpLPIl/0gzVCiHHSVuA==}
+  '@cline/sdk@0.2.0':
+    resolution: {integrity: sha512-QQkX72+O5kppf9iPjG2in/ErGDT5nE/yC6IhKlY2SEY9UMOon65F6poAeQJj9CRxjvCfttkeqEiX47J+l83sag==}
     engines: {node: '>=22'}
 
-  '@cline/shared@0.0.95':
-    resolution: {integrity: sha512-j/IRuziLbmv67UNaG6mmzcnYn3dd3UA0N5n56WISfNPeapYUHsnHrwAgSarH8pjPzqzoSTEFQc87tPap1gWlnA==}
+  '@cline/shared@0.2.0':
+    resolution: {integrity: sha512-kQMxk7FkZGo2e7K3XO4HbRtKrKqpT8TJdzxXqSAFiOPirtI2R1w/b+EEqmtDGsygNTMacI6S/2BGlkpyKXL48Q==}
     engines: {node: '>=22'}
 
   '@colors/colors@1.5.0':
@@ -2813,11 +2810,11 @@ packages:
     resolution: {integrity: sha512-WCnTd1q2EpbKKa96NzL16kVxJXVLRj1VqbswNAn17hYSuMlNKKhPGNbAosB32QZVFcoe9fv4Ebh1HtjyAT/viw==}
     engines: {node: '>=18.16.0'}
 
-  '@jerome-benoit/sap-ai-provider@4.8.0':
-    resolution: {integrity: sha512-rJvAW9eDFj+IFTJQ+UK0CrPyq78BG+PF6AgmHE5C0bHAalJewT119rryHqttITVpCNuX49k2ajBSax8r0+SXcg==}
-    engines: {node: '>=20'}
+  '@jerome-benoit/sap-ai-provider@5.0.3':
+    resolution: {integrity: sha512-rE1z1wLgVNhcBMPjnz+2Q9D6rFDN01ZvIYSsU0kvkbYHVVFtyOjEVcd+j0wyKyL9Ync3ZGQW9zBIWj2e1MoX0g==}
+    engines: {node: '>=22.12.0'}
     peerDependencies:
-      ai: ^5.0.0 || ^6.0.0
+      ai: ^5.0.0 || ^6.0.0 || ^7.0.0
 
   '@jest/diff-sequences@30.4.0':
     resolution: {integrity: sha512-zOpzlfUs45l6u7jm39qr87JCHUDsaeCtvL+kQe/Vn9jSnRB4/5IPXISm0h9I1vZW/o00Kn4UTJ2MOlhnUGwv3g==}
@@ -3456,6 +3453,7 @@ packages:
   '@opentelemetry/sdk-trace-base@2.6.1':
     resolution: {integrity: sha512-r86ut4T1e8vNwB35CqCcKd45yzqH6/6Wzvpk2/cZB8PsPLlZFTvrh8yfOS3CYZYcUmAx4hHTZJ8AO8Dj8nrdhw==}
     engines: {node: ^18.19.0 || >=20.6.0}
+    deprecated: Use @opentelemetry/sdk-trace package
     peerDependencies:
       '@opentelemetry/api': '>=1.3.0 <1.10.0'
 
@@ -3468,6 +3466,7 @@ packages:
   '@opentelemetry/sdk-trace-node@2.9.0':
     resolution: {integrity: sha512-ec9a7ps37huy5itYk0MalaZdSLlM6AXWp/FhtEjgMpp5leEGojBDvAl/UWttQnkMZOvFHKzRESn8TD3yKTF5nQ==}
     engines: {node: ^18.19.0 || >=20.6.0}
+    deprecated: Use @opentelemetry/sdk-trace package
     peerDependencies:
       '@opentelemetry/api': '>=1.0.0 <1.10.0'
 
@@ -4532,35 +4531,35 @@ packages:
   '@rtsao/scc@1.1.0':
     resolution: {integrity: sha512-zt6OdqaDoOnJ1ZYsCYGt9YmWzDXl4vQdKTyJev62gFhRGKdx7mcT54V9KIjg+d2wi9EXsPvAPKe7i7WjfVWB8g==}
 
-  '@sap-ai-sdk/ai-api@2.13.0':
-    resolution: {integrity: sha512-yYmk19ww2cZnYZCA5UGSWGKlpB2RnyDgxjNvi43ZwYHRm5ejWuM8m4gU/qj+FIwmhnDHp6BG2ClWfLTH/hOoJw==}
+  '@sap-ai-sdk/ai-api@2.17.0':
+    resolution: {integrity: sha512-gX9uEf5KU2QysVNCX+nllVt/fM/aF1uUjiNmT3K+X7LUVV5rPVkDvUScSr+ZNvNRs4BgFkl2t8UoithE6zFfBg==}
 
-  '@sap-ai-sdk/core@2.13.0':
-    resolution: {integrity: sha512-tGx/XJxGsdEBQknwIpZc5/gpxDUmRwP3E68WgoI6/oj39+YecgWYynGnG6XIr+MTGo23RwXFEw518q9HuPWk/Q==}
+  '@sap-ai-sdk/core@2.17.0':
+    resolution: {integrity: sha512-0eS12ogU5j2jqt+imISqFLntvyjQgkxqkX4vzHVEa1MGibpBJfAOgT+zpwC/F2ZZ5KMEm1r+5q4a+ziemqANUA==}
 
-  '@sap-ai-sdk/foundation-models@2.13.0':
-    resolution: {integrity: sha512-lPT2fWXkKSN+lsUAGy6H3gTgkWbjb8uT7ccfxCuQyx1Fjmts+1pBSvOxFyWYqvMglF58gO0i1HKwdkLsG2b+Cg==}
+  '@sap-ai-sdk/foundation-models@2.17.0':
+    resolution: {integrity: sha512-2n7F/5Ke09yUwlFuYL+GLMT+XqfypArDp9PSvekuK3Fm4jwVXyoudHimAPRnozYFJEs/6HCLjXWDIR/co8w+hQ==}
 
-  '@sap-ai-sdk/orchestration@2.13.0':
-    resolution: {integrity: sha512-gM8QQA4DXXICBuECvNTzcD40AU6MQrPGeagesDzUwgr2Nc5AWbyQylnTvXqb7JvlClQZvBSkBhYARI6oYXoiIA==}
+  '@sap-ai-sdk/orchestration@2.17.0':
+    resolution: {integrity: sha512-wN+5ZIQTB1MLEiNLUXBHm2KqkkiPn2Ji6q3hRw1KstUmUWi637+8/x/hPYgEo38VgSKOarwLN9SDkJ09mRckng==}
 
-  '@sap-ai-sdk/prompt-registry@2.13.0':
-    resolution: {integrity: sha512-J74gi/bZFVztVlCCpfrD95/XblPBspema7QmS+w6UEFN1AVEJJluYjRqVsqwHMH5OfXmBvuNXQMpk0Ex2/IjRg==}
+  '@sap-ai-sdk/prompt-registry@2.17.0':
+    resolution: {integrity: sha512-2sjT94d1M/Lim0ar/f0kfY41oBcv9utMl829qYjagU4HZt/a4XPn5jVXTjx1cimAcG7qT536C41ABg9yKVFYmQ==}
 
-  '@sap-cloud-sdk/connectivity@4.7.0':
-    resolution: {integrity: sha512-+EgdTpGi3ZomPuv/ab+bWQIxUfJvownW2MzdYSvX7hkEkmKJfod0O6ja2OqC+OJBLm1TE0JpbJ6AcCkqeZYuOg==}
+  '@sap-cloud-sdk/connectivity@4.9.1':
+    resolution: {integrity: sha512-0deJBmdUd1LD1O3CX/wqYjTEKmnrnLsxnrSE8CyGtzbyomjjL1ePEXB3g6QUpQKmClVyOgJG/IbpyJFGGXXL5A==}
 
-  '@sap-cloud-sdk/http-client@4.7.0':
-    resolution: {integrity: sha512-7+S6ru7SrnyKA2MGimX09oix0EVwmPGcCAz0TRwFZVnglU+VTRmZ8QdcwcVTR26E9YhkR4OVl6EK7jb2Z0OxfQ==}
+  '@sap-cloud-sdk/http-client@4.9.1':
+    resolution: {integrity: sha512-bsF8T/syitm+GI8eInOB1AfvHsTYJ8Qvg5dfGt5SGXEQjqV2amFEulPp7edNTzCLo0+BBbBa/jhvqLCvXSoV6A==}
 
-  '@sap-cloud-sdk/openapi@4.7.0':
-    resolution: {integrity: sha512-OKTEGVScCRsfgL9Lk/bEKcGnyfq0GgruXuZfsxoMbTqbe2f9X/fgHgXIWQEkTuXQplkrSDiNFRyvl0n/ON9Ycg==}
+  '@sap-cloud-sdk/openapi@4.9.1':
+    resolution: {integrity: sha512-o46XbWWjo4piTPsLWPE9yuGCNS8jIj1GfZSJpaHdWDO6ZF+CqaUwF21UtGTg0SJggoe6AsJlhVObL7QA6urcJg==}
 
-  '@sap-cloud-sdk/resilience@4.7.0':
-    resolution: {integrity: sha512-L6PV49nNyZHnTNFbvaufadm+qOhaammXLXkDQmD7WIzMjhiYMqa/obK3NJoohe/kZ7q73jPB2vdLsAqopqTh0A==}
+  '@sap-cloud-sdk/resilience@4.9.1':
+    resolution: {integrity: sha512-14Hdd2VqEd3BarikR/ChZjquQuelC+CP69HKdMycADmmsuQEwaJkSXURW8cDl19bfx8Re1ldM/4Ig0gbCY4x/A==}
 
-  '@sap-cloud-sdk/util@4.7.0':
-    resolution: {integrity: sha512-nWJXMdM0Pcx/ipM2+5BvSciQKyCc0LAAO+acCOAQp65SA4HEQ2Odp9yxidY4ijW42TVp3fSMBvGwVjbWWx9Uew==}
+  '@sap-cloud-sdk/util@4.9.1':
+    resolution: {integrity: sha512-1tuv+c6o2Y8/1F3UEdqiv3TPWzZDpCjxuDpAFtFBM8C+weum8ixgwc2YXEWvBzWvtSEl7C5L/o8jBqiuhcXF4w==}
 
   '@sap/xsenv@6.2.1':
     resolution: {integrity: sha512-R1p7VdD3N3jvdkL8av4vLqF+cTQihTz9mCqqF+oa9rVZvgLaCb4ODyZ1dln5/fBgg1OSuch0ESxu3AqZrXVknw==}
@@ -9005,9 +9004,9 @@ packages:
     resolution: {integrity: sha512-smsWv2LzFjP03xmvFoJ331ss6h+jixfA4UUV/Bsiyuu4YJPfN+FIQGOIiv4w9/+MoHkfkJ22UIaQWRVFRfH6Vw==}
     engines: {node: '>=20'}
 
-  opossum@9.0.0:
-    resolution: {integrity: sha512-K76U0QkxOfUZamneQuzz+AP0fyfTJcCplZ2oZL93nxeupuJbN4s6uFNbmVCt4eWqqGqRnnowdFuBicJ1fLMVxw==}
-    engines: {node: ^24 || ^22 || ^20}
+  opossum@10.0.0:
+    resolution: {integrity: sha512-sghtqL8Usj+et06Zui0nyn0R6FFsl7cyuoU+d7MctYU0nbS7Htzjleh+tWohFqk1Rp1srrFwbFa8Vxd0O64w6A==}
+    engines: {node: ^26 || ^24 || ^22}
 
   option@0.2.4:
     resolution: {integrity: sha512-pkEqbDyl8ou5cpq+VsnQbe/WlEy5qS7xPzMS1U55OCG9KPvwFD46zDbxQIj3egJSFc3D+XhYOPUzz49zQAVy7A==}
@@ -10804,6 +10803,9 @@ packages:
   zod@4.4.3:
     resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
 
+  zod@4.6.7:
+    resolution: {integrity: sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg==}
+
   zwitch@2.0.4:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
 
@@ -11217,6 +11219,15 @@ snapshots:
       eventsource-parser: 3.0.8
       undici: 7.29.0
       zod: 4.4.3
+
+  '@ai-sdk/provider-utils@5.0.63(zod@4.6.7)':
+    dependencies:
+      '@ai-sdk/provider': 4.0.30
+      '@standard-schema/spec': 1.1.0
+      '@workflow/serde': 4.1.0
+      eventsource-parser: 3.0.8
+      undici: 7.29.0
+      zod: 4.6.7
 
   '@ai-sdk/provider@2.0.3':
     dependencies:
@@ -11877,10 +11888,10 @@ snapshots:
 
   '@chevrotain/utils@11.2.0': {}
 
-  '@cline/agents@0.0.95(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.214.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.9.0(@opentelemetry/api@1.9.1))':
+  '@cline/agents@0.2.0(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.214.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.9.0(@opentelemetry/api@1.9.1))':
     dependencies:
-      '@cline/llms': 0.0.95(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.214.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.9.0(@opentelemetry/api@1.9.1))
-      '@cline/shared': 0.0.95
+      '@cline/llms': 0.2.0(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.214.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.9.0(@opentelemetry/api@1.9.1))
+      '@cline/shared': 0.2.0
       nanoid: 5.1.11
     transitivePeerDependencies:
       - '@aws-sdk/client-bedrock-runtime'
@@ -11892,11 +11903,11 @@ snapshots:
       - debug
       - supports-color
 
-  '@cline/core@0.0.95(patch_hash=e64cb420927a0949f656538f9c67038169fa995eaf22041dd71460e9d241cdcf)(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))':
+  '@cline/core@0.2.0(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))':
     dependencies:
-      '@cline/agents': 0.0.95(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.214.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.9.0(@opentelemetry/api@1.9.1))
-      '@cline/llms': 0.0.95(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.214.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.9.0(@opentelemetry/api@1.9.1))
-      '@cline/shared': 0.0.95
+      '@cline/agents': 0.2.0(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.214.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.9.0(@opentelemetry/api@1.9.1))
+      '@cline/llms': 0.2.0(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.214.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.9.0(@opentelemetry/api@1.9.1))
+      '@cline/shared': 0.2.0
       '@modelcontextprotocol/sdk': 1.30.0(zod@4.4.3)
       '@opentelemetry/api': 1.9.1
       '@opentelemetry/api-logs': 0.214.0
@@ -11930,7 +11941,7 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@cline/llms@0.0.95(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.214.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.9.0(@opentelemetry/api@1.9.1))':
+  '@cline/llms@0.2.0(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.214.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.9.0(@opentelemetry/api@1.9.1))':
     dependencies:
       '@ai-sdk/amazon-bedrock': 5.0.119(zod@4.4.3)
       '@ai-sdk/anthropic': 4.0.83(zod@4.4.3)
@@ -11944,8 +11955,8 @@ snapshots:
       '@ai-sdk/provider': 4.0.30
       '@ai-sdk/provider-utils': 5.0.63(zod@4.4.3)
       '@aws-sdk/credential-providers': 3.1048.0
-      '@cline/shared': 0.0.95
-      '@jerome-benoit/sap-ai-provider': 4.8.0(ai@7.0.145(zod@4.4.3))
+      '@cline/shared': 0.2.0
+      '@jerome-benoit/sap-ai-provider': 5.0.3(ai@7.0.145(zod@4.4.3))
       '@langfuse/core': 5.10.1(@opentelemetry/api@1.9.1)
       '@langfuse/otel': 5.10.1(@opentelemetry/api@1.9.1)(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.214.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.9.0(@opentelemetry/api@1.9.1))
       '@langfuse/tracing': 5.10.1(@opentelemetry/api@1.9.1)
@@ -11968,7 +11979,7 @@ snapshots:
       - debug
       - supports-color
 
-  '@cline/llms@0.0.95(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.220.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.9.0(@opentelemetry/api@1.9.1))':
+  '@cline/llms@0.2.0(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.220.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.9.0(@opentelemetry/api@1.9.1))':
     dependencies:
       '@ai-sdk/amazon-bedrock': 5.0.119(zod@4.4.3)
       '@ai-sdk/anthropic': 4.0.83(zod@4.4.3)
@@ -11982,8 +11993,8 @@ snapshots:
       '@ai-sdk/provider': 4.0.30
       '@ai-sdk/provider-utils': 5.0.63(zod@4.4.3)
       '@aws-sdk/credential-providers': 3.1048.0
-      '@cline/shared': 0.0.95
-      '@jerome-benoit/sap-ai-provider': 4.8.0(ai@7.0.145(zod@4.4.3))
+      '@cline/shared': 0.2.0
+      '@jerome-benoit/sap-ai-provider': 5.0.3(ai@7.0.145(zod@4.4.3))
       '@langfuse/core': 5.10.1(@opentelemetry/api@1.9.1)
       '@langfuse/otel': 5.10.1(@opentelemetry/api@1.9.1)(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.220.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.9.0(@opentelemetry/api@1.9.1))
       '@langfuse/tracing': 5.10.1(@opentelemetry/api@1.9.1)
@@ -12006,9 +12017,9 @@ snapshots:
       - debug
       - supports-color
 
-  '@cline/sdk@0.0.95(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))':
+  '@cline/sdk@0.2.0(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))':
     dependencies:
-      '@cline/core': 0.0.95(patch_hash=e64cb420927a0949f656538f9c67038169fa995eaf22041dd71460e9d241cdcf)(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))
+      '@cline/core': 0.2.0(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))
     transitivePeerDependencies:
       - '@aws-sdk/client-bedrock-runtime'
       - '@cfworker/json-schema'
@@ -12021,7 +12032,7 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@cline/shared@0.0.95':
+  '@cline/shared@0.2.0':
     dependencies:
       aws4fetch: 1.0.20
       jsonrepair: 3.14.0
@@ -12806,14 +12817,18 @@ snapshots:
       supports-color: 10.2.2
       timekeeper: 2.3.1
 
-  '@jerome-benoit/sap-ai-provider@4.8.0(ai@7.0.145(zod@4.4.3))':
+  '@jerome-benoit/sap-ai-provider@5.0.3(ai@7.0.145(zod@4.4.3))':
     dependencies:
-      '@ai-sdk/provider': 3.0.14
-      '@ai-sdk/provider-utils': 4.0.41(zod@4.4.3)
-      '@sap-ai-sdk/foundation-models': 2.13.0
-      '@sap-ai-sdk/orchestration': 2.13.0
+      '@ai-sdk/provider': 4.0.30
+      '@ai-sdk/provider-utils': 5.0.63(zod@4.6.7)
+      '@sap-ai-sdk/ai-api': 2.17.0
+      '@sap-ai-sdk/core': 2.17.0
+      '@sap-ai-sdk/foundation-models': 2.17.0
+      '@sap-ai-sdk/orchestration': 2.17.0
+      '@sap-cloud-sdk/connectivity': 4.9.1
+      '@sap-cloud-sdk/util': 4.9.1
       ai: 7.0.145(zod@4.4.3)
-      zod: 4.4.3
+      zod: 4.6.7
     transitivePeerDependencies:
       - debug
       - supports-color
@@ -12949,6 +12964,28 @@ snapshots:
       raw-body: 3.0.2
       zod: 4.4.3
       zod-to-json-schema: 3.25.2(zod@4.4.3)
+    transitivePeerDependencies:
+      - supports-color
+
+  '@modelcontextprotocol/sdk@1.30.0(zod@4.6.7)':
+    dependencies:
+      '@hono/node-server': 1.19.14(hono@4.12.19)
+      ajv: 8.20.0
+      ajv-formats: 3.0.1(ajv@8.20.0)
+      content-type: 1.0.5
+      cors: 2.8.6
+      cross-spawn: 7.0.6
+      eventsource: 3.0.7
+      eventsource-parser: 3.0.8
+      express: 5.2.1
+      express-rate-limit: 8.5.2(express@5.2.1)
+      hono: 4.12.19
+      jose: 6.2.3
+      json-schema-typed: 8.0.2
+      pkce-challenge: 5.0.1
+      raw-body: 3.0.2
+      zod: 4.6.7
+      zod-to-json-schema: 3.25.2(zod@4.6.7)
     transitivePeerDependencies:
       - supports-color
 
@@ -14880,59 +14917,59 @@ snapshots:
 
   '@rtsao/scc@1.1.0': {}
 
-  '@sap-ai-sdk/ai-api@2.13.0':
+  '@sap-ai-sdk/ai-api@2.17.0':
     dependencies:
-      '@sap-ai-sdk/core': 2.13.0
-      '@sap-cloud-sdk/connectivity': 4.7.0
-      '@sap-cloud-sdk/util': 4.7.0
+      '@sap-ai-sdk/core': 2.17.0
+      '@sap-cloud-sdk/connectivity': 4.9.1
+      '@sap-cloud-sdk/util': 4.9.1
     transitivePeerDependencies:
       - debug
       - supports-color
 
-  '@sap-ai-sdk/core@2.13.0':
+  '@sap-ai-sdk/core@2.17.0':
     dependencies:
-      '@sap-cloud-sdk/connectivity': 4.7.0
-      '@sap-cloud-sdk/http-client': 4.7.0
-      '@sap-cloud-sdk/openapi': 4.7.0
-      '@sap-cloud-sdk/util': 4.7.0
+      '@sap-cloud-sdk/connectivity': 4.9.1
+      '@sap-cloud-sdk/http-client': 4.9.1
+      '@sap-cloud-sdk/openapi': 4.9.1
+      '@sap-cloud-sdk/util': 4.9.1
     transitivePeerDependencies:
       - debug
       - supports-color
 
-  '@sap-ai-sdk/foundation-models@2.13.0':
+  '@sap-ai-sdk/foundation-models@2.17.0':
     dependencies:
-      '@sap-ai-sdk/ai-api': 2.13.0
-      '@sap-ai-sdk/core': 2.13.0
-      '@sap-cloud-sdk/connectivity': 4.7.0
-      '@sap-cloud-sdk/http-client': 4.7.0
-      '@sap-cloud-sdk/util': 4.7.0
+      '@sap-ai-sdk/ai-api': 2.17.0
+      '@sap-ai-sdk/core': 2.17.0
+      '@sap-cloud-sdk/connectivity': 4.9.1
+      '@sap-cloud-sdk/http-client': 4.9.1
+      '@sap-cloud-sdk/util': 4.9.1
     transitivePeerDependencies:
       - debug
       - supports-color
 
-  '@sap-ai-sdk/orchestration@2.13.0':
+  '@sap-ai-sdk/orchestration@2.17.0':
     dependencies:
-      '@sap-ai-sdk/ai-api': 2.13.0
-      '@sap-ai-sdk/core': 2.13.0
-      '@sap-ai-sdk/prompt-registry': 2.13.0
-      '@sap-cloud-sdk/util': 4.7.0
+      '@sap-ai-sdk/ai-api': 2.17.0
+      '@sap-ai-sdk/core': 2.17.0
+      '@sap-ai-sdk/prompt-registry': 2.17.0
+      '@sap-cloud-sdk/util': 4.9.1
       yaml: 2.9.0
     transitivePeerDependencies:
       - debug
       - supports-color
 
-  '@sap-ai-sdk/prompt-registry@2.13.0':
+  '@sap-ai-sdk/prompt-registry@2.17.0':
     dependencies:
-      '@sap-ai-sdk/core': 2.13.0
-      zod: 4.4.3
+      '@sap-ai-sdk/core': 2.17.0
+      zod: 4.6.7
     transitivePeerDependencies:
       - debug
       - supports-color
 
-  '@sap-cloud-sdk/connectivity@4.7.0':
+  '@sap-cloud-sdk/connectivity@4.9.1':
     dependencies:
-      '@sap-cloud-sdk/resilience': 4.7.0
-      '@sap-cloud-sdk/util': 4.7.0
+      '@sap-cloud-sdk/resilience': 4.9.1
+      '@sap-cloud-sdk/util': 4.9.1
       '@sap/xsenv': 6.2.1
       '@sap/xssec': 4.13.0
       async-retry: 1.3.3
@@ -14944,38 +14981,38 @@ snapshots:
       - debug
       - supports-color
 
-  '@sap-cloud-sdk/http-client@4.7.0':
+  '@sap-cloud-sdk/http-client@4.9.1':
     dependencies:
-      '@sap-cloud-sdk/connectivity': 4.7.0
-      '@sap-cloud-sdk/resilience': 4.7.0
-      '@sap-cloud-sdk/util': 4.7.0
+      '@sap-cloud-sdk/connectivity': 4.9.1
+      '@sap-cloud-sdk/resilience': 4.9.1
+      '@sap-cloud-sdk/util': 4.9.1
       axios: 1.17.0
     transitivePeerDependencies:
       - debug
       - supports-color
 
-  '@sap-cloud-sdk/openapi@4.7.0':
+  '@sap-cloud-sdk/openapi@4.9.1':
     dependencies:
-      '@sap-cloud-sdk/connectivity': 4.7.0
-      '@sap-cloud-sdk/http-client': 4.7.0
-      '@sap-cloud-sdk/resilience': 4.7.0
-      '@sap-cloud-sdk/util': 4.7.0
+      '@sap-cloud-sdk/connectivity': 4.9.1
+      '@sap-cloud-sdk/http-client': 4.9.1
+      '@sap-cloud-sdk/resilience': 4.9.1
+      '@sap-cloud-sdk/util': 4.9.1
       axios: 1.17.0
     transitivePeerDependencies:
       - debug
       - supports-color
 
-  '@sap-cloud-sdk/resilience@4.7.0':
+  '@sap-cloud-sdk/resilience@4.9.1':
     dependencies:
-      '@sap-cloud-sdk/util': 4.7.0
+      '@sap-cloud-sdk/util': 4.9.1
       async-retry: 1.3.3
       axios: 1.17.0
-      opossum: 9.0.0
+      opossum: 10.0.0
     transitivePeerDependencies:
       - debug
       - supports-color
 
-  '@sap-cloud-sdk/util@4.7.0':
+  '@sap-cloud-sdk/util@4.9.1':
     dependencies:
       axios: 1.17.0
       logform: 2.7.0
@@ -19778,7 +19815,7 @@ snapshots:
       powershell-utils: 0.1.0
       wsl-utils: 0.3.1
 
-  opossum@9.0.0: {}
+  opossum@10.0.0: {}
 
   option@0.2.4: {}
 
@@ -21854,6 +21891,10 @@ snapshots:
     dependencies:
       zod: 4.4.3
 
+  zod-to-json-schema@3.25.2(zod@4.6.7):
+    dependencies:
+      zod: 4.6.7
+
   zod-validation-error@4.0.2(zod@4.4.3):
     dependencies:
       zod: 4.4.3
@@ -21861,5 +21902,7 @@ snapshots:
   zod@3.25.76: {}
 
   zod@4.4.3: {}
+
+  zod@4.6.7: {}
 
   zwitch@2.0.4: {}

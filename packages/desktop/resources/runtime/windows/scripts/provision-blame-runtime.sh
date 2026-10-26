@@ -3,7 +3,7 @@ set -eu
 runtime_version="${1:-11}"
 runtime_root="/home/blame/.local/share/blame/runtime"
 package_manager_root="/opt/blame/package-managers"
-cline_sdk_version="${BLAME_CLINE_SDK_VERSION:-${2:-0.0.95}}"
+cline_sdk_version="${BLAME_CLINE_SDK_VERSION:-${2:-0.2.0}}"
 docker_version="${BLAME_DOCKER_VERSION:-29.9.1}"
 compose_version="${BLAME_COMPOSE_VERSION:-5.6.0}"
 buildx_version="${BLAME_BUILDX_VERSION:-0.38.0}"
