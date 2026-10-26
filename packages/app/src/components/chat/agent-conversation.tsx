@@ -85,6 +85,8 @@ import {
   ScreenshotGroupProvider,
 } from "./screenshots/agent-screenshot-context"
 import { ResponseImageCarousel } from "./screenshots/response-image-carousel"
+import { WebResearchProvider } from "./web-research/web-research-context"
+import { SourcesSummary } from "./web-research/web-sources"
 import type { ScreenshotOwner } from "@/lib/agent-screenshot-sync"
 
 // Where a conversation's screenshots are fetched from, and cached under.
@@ -246,39 +248,41 @@ export function AgentConversationTimeline({
 
   return (
     <AgentScreenshotOwnerProvider owner={screenshotOwner}>
-      <div
-        className="grid gap-10"
-        aria-busy={runs.some((run) => run.status === "running")}
-      >
-        {runs.map((run, index) => (
-          <AgentConversationTurn
-            key={run.id}
-            checkpointRunCount={checkpointTargets[index]?.checkpointRunCount}
-            loadChangedFileDiffs={loadChangedFileDiffs}
-            comment={runComment(run, commentsById)}
-            highlightFinalResponse={run.id === highlightedFinalResponseRunId}
-            lastVisibleMessage={lastVisibleMessage}
-            onFileLinkClick={onFileLinkClick}
-            onChangedFileClick={onChangedFileClick}
-            onLoadActivityDetail={(activity) =>
-              loadActivityDetail(run, activity)
-            }
-            onUserMessageUndo={onUserMessageUndo}
-            modelSwitch={modelSwitched(runs[index - 1], run)}
-            responseHeader={responseHeaderForRun?.(run) ?? responseHeader}
-            run={run}
-          />
-        ))}
-        {unsentComments.map((comment) => (
-          <RunCommentItem
-            key={comment.id}
-            alwaysVisible
-            comment={comment}
-            onFileLinkClick={onFileLinkClick}
-          />
-        ))}
-        {queued}
-      </div>
+      <WebResearchProvider runs={runs} loadDetail={loadActivityDetail}>
+        <div
+          className="grid gap-10"
+          aria-busy={runs.some((run) => run.status === "running")}
+        >
+          {runs.map((run, index) => (
+            <AgentConversationTurn
+              key={run.id}
+              checkpointRunCount={checkpointTargets[index]?.checkpointRunCount}
+              loadChangedFileDiffs={loadChangedFileDiffs}
+              comment={runComment(run, commentsById)}
+              highlightFinalResponse={run.id === highlightedFinalResponseRunId}
+              lastVisibleMessage={lastVisibleMessage}
+              onFileLinkClick={onFileLinkClick}
+              onChangedFileClick={onChangedFileClick}
+              onLoadActivityDetail={(activity) =>
+                loadActivityDetail(run, activity)
+              }
+              onUserMessageUndo={onUserMessageUndo}
+              modelSwitch={modelSwitched(runs[index - 1], run)}
+              responseHeader={responseHeaderForRun?.(run) ?? responseHeader}
+              run={run}
+            />
+          ))}
+          {unsentComments.map((comment) => (
+            <RunCommentItem
+              key={comment.id}
+              alwaysVisible
+              comment={comment}
+              onFileLinkClick={onFileLinkClick}
+            />
+          ))}
+          {queued}
+        </div>
+      </WebResearchProvider>
     </AgentScreenshotOwnerProvider>
   )
 }
@@ -1178,6 +1182,7 @@ function AgentStreamMessage({
       highlight={highlightFinalResponse && activity.messageKind === "final"}
       images={activity.messageKind === "final" ? activity.images : undefined}
       markdown={activity.detail}
+      sourceRunId={activity.messageKind === "final" ? run.id : undefined}
       onFileLinkClick={onFileLinkClick}
       showFeedback={activity.messageKind === "final"}
       streaming={run.status === "running" && activity.status === "running"}
@@ -1444,6 +1449,7 @@ function AgentMarkdownTimelineItem({
   onFileLinkClick,
   showFeedback,
   streaming,
+  sourceRunId,
 }: {
   alwaysVisible: boolean
   avatar?: React.ReactNode
@@ -1457,6 +1463,7 @@ function AgentMarkdownTimelineItem({
   onFileLinkClick?: (path: string) => void
   showFeedback?: boolean
   streaming?: boolean
+  sourceRunId?: string
 }) {
   const responseRef = useAnimatedBorderEffect(
     highlight ? "agent-response" : undefined,
@@ -1558,6 +1565,9 @@ function AgentMarkdownTimelineItem({
             </Button>
           ) : null}
         </div>
+        {sourceRunId ? (
+          <SourcesSummary runId={sourceRunId} markdown={markdown} />
+        ) : null}
         <MarkdownMessageActions
           alwaysVisible={alwaysVisible}
           createdAt={createdAt}

@@ -1,4 +1,5 @@
 import { describeEdit, describeRead, describeSearch } from "./describe-code.ts"
+import { describeWebResearch } from "./describe-web-research.ts"
 import {
   describeCommand,
   describeFinish,
@@ -49,6 +50,8 @@ const describers: Record<string, (source: ToolCallSource) => ToolCallView> = {
   inspect_run: describeCommand,
   validate_change: describeCommand,
   fetch_web_content: describeWeb,
+  search_web: describeWebResearch,
+  read_web_page: describeWebResearch,
   skills: describeSkill,
   ask_question: describeQuestion,
   ask_followup_question: describeQuestion,

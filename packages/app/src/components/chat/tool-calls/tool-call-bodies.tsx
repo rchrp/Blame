@@ -1,4 +1,5 @@
 import * as React from "react"
+import { WebSourcesBody } from "../web-research/web-sources"
 import {
   CheckIcon,
   CircleAlertIcon,
@@ -31,6 +32,8 @@ export function ToolCallBodyView({
   body: ToolCallBody
   onOpenFile?: (path: string) => void
 }) {
+  if (body.type === "web-sources")
+    return <WebSourcesBody sources={body.sources} reading={body.reading} />
   if (body.type === "code")
     return <CodeBody {...body} onOpenFile={onOpenFile} />
   if (body.type === "diff")

@@ -1,4 +1,6 @@
 import * as React from "react"
+import { SourceStack } from "../web-research/web-sources"
+import { useWebResearch } from "../web-research/web-research-context"
 import {
   CircleCheckBigIcon,
   FilePenLineIcon,
@@ -76,16 +78,22 @@ export function ToolCallItem({
   value: string
 }) {
   const [fullDetail, setFullDetail] = React.useState<string>()
+  const { details, rememberDetail } = useWebResearch()
+  const researchDetail = details.get(
+    (activity as ToolCallActivity & { id?: string }).id ?? ""
+  )
   const [loading, setLoading] = React.useState(false)
   const view = React.useMemo(
     () =>
       describeToolCall(
         toolCallSource(
-          fullDetail ? { ...activity, detail: fullDetail } : activity,
+          fullDetail || researchDetail
+            ? { ...activity, detail: fullDetail ?? researchDetail! }
+            : activity,
           running
         )
       ),
-    [activity, fullDetail, running]
+    [activity, fullDetail, researchDetail, running]
   )
   const Icon = familyIcons[view.family]
   const expandable = view.bodies.length > 0 || hasFullDetail
@@ -94,7 +102,10 @@ export function ToolCallItem({
   async function loadDetail() {
     setLoading(true)
     try {
-      setFullDetail(await onLoadDetail())
+      const detail = await onLoadDetail()
+      setFullDetail(detail)
+      const id = (activity as ToolCallActivity & { id?: string }).id
+      if (view.family === "web" && id) rememberDetail(id, detail)
     } finally {
       setLoading(false)
     }
@@ -124,12 +135,12 @@ export function ToolCallItem({
         <div className="min-w-0">
           <AccordionTrigger
             className={cn(
-              "min-h-8 items-center gap-2 py-0 hover:no-underline",
+              "min-h-8 min-w-0 items-center gap-2 py-0 hover:no-underline",
               !expandable &&
                 "cursor-default disabled:opacity-100 **:data-[slot=accordion-trigger-icon]:hidden"
             )}
           >
-            <span className="flex min-w-0 flex-1 items-baseline gap-1.5 font-normal">
+            <span className="flex min-w-0 flex-1 flex-wrap items-baseline gap-1.5 font-normal">
               <span
                 className={cn(
                   "shrink-0 text-muted-foreground",
@@ -141,12 +152,17 @@ export function ToolCallItem({
               {view.target ? (
                 <span
                   className={cn(
-                    "min-w-0 truncate text-foreground",
+                    "max-w-full min-w-0 truncate text-foreground",
                     view.target.mono && "font-mono text-[12.5px]"
                   )}
                   title={view.target.title ?? view.target.text}
                 >
                   {view.target.text}
+                </span>
+              ) : null}
+              {view.webSources?.length ? (
+                <span className="self-center">
+                  <SourceStack sources={view.webSources} />
                 </span>
               ) : null}
               {view.chips.length ? (

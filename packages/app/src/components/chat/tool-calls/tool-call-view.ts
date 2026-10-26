@@ -4,6 +4,8 @@
 // ("Edited sync-service.ts +12 −3"). Opening it shows bodies picked for that
 // tool: a diff for edits, a terminal for commands, hits for searches.
 
+import type { WebSource } from "@blame/agent-runtime/web-research"
+
 export type ToolCallFamily =
   | "agent"
   | "command"
@@ -65,6 +67,7 @@ export type TestCounts = {
 }
 
 export type ToolCallBody =
+  | { type: "web-sources"; sources: WebSource[]; reading?: boolean }
   | {
       type: "code"
       path?: string
@@ -111,6 +114,7 @@ export type ScreenshotRef = {
 }
 
 export type ToolCallView = {
+  webSources?: WebSource[]
   family: ToolCallFamily
   // "Read", "Edited", "Ran"… or the present tense while running.
   verb: string

@@ -46,3 +46,37 @@ Source metadata and citations travel in the existing conversation activity
 artifacts; existing ownership checks protect their retrieval. Citation links use
 `[Source name](#source-web_<id>)`; the chat resolves only ids present in its stored
 tool results. Publication dates remain absent when the source does not provide one.
+
+## Runtime and UI contract
+
+Provider-native search is disabled both in tool policies and at the provider
+transport boundary (OpenAI, Anthropic, Gemini/Vertex and compatible functions).
+Claude Code remains a model-only bridge, with Blame tools forwarded through MCP.
+Search results use stable URL-based ids; reading a redirect preserves the original
+id and records its final URL. The source drawer separates found, consulted and
+cited sources. A snippet can be cited without being presented as a consulted page.
+
+The local reader accepts public HTTP(S) text pages on standard ports, limits HTML
+to 5 MB and extracted text to 50,000 characters, and revalidates every redirect.
+Sparse HTML triggers Electron in auto mode; `browser` forces rendering and `http`
+skips it. Electron uses a separate, temporary session without application cookies,
+Node access, downloads or permissions. A DNS-pinned proxy also protects browser
+subrequests from private network access. Rendering is limited to two pages at once.
+HTTP errors, unsupported files and unavailable browser rendering remain explicit
+failures or partial reads. The reader cannot unlock paywalls or sign in to sites.
+
+Regression checks:
+
+```sh
+pnpm --filter @blame/api exec node ace test unit --files='tests/unit/web_search.spec.ts'
+pnpm --filter @blame/agent-runtime build
+node --test packages/agent-runtime/dist/web-research.test.js
+node --test --experimental-strip-types packages/desktop/src/main/web-research-proxy.test.ts
+pnpm --filter @blame/desktop test:web-research
+node --test --experimental-strip-types packages/app/src/components/chat/web-research/web-research-data.test.ts
+```
+
+Run these commands from the repository root. The Electron smoke test intercepts
+its HTTPS fixture to verify actual JavaScript hydration, Readability extraction,
+sandboxing, session isolation and cleanup without depending on a public site.
+The proxy tests separately exercise network restrictions and cancellation.

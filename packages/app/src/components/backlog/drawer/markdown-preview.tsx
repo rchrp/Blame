@@ -1,4 +1,5 @@
 import * as React from "react"
+import { SourceCitation } from "@/components/chat/web-research/web-sources"
 
 import { Checkbox } from "@/components/ui/checkbox"
 
@@ -609,6 +610,9 @@ function markdownLinkToken(
   reveals: MarkdownStreamReveal[],
   sourceStart: number
 ) {
+  const citation = href.match(/^#source-(web_[a-f0-9]{24})$/)
+  if (citation)
+    return <SourceCitation key={index} id={citation[1]!} label={label} />
   const fileLink = isFileLink(href)
   return (
     <a
