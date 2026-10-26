@@ -1,0 +1,17 @@
+name: Validate Windows workspace fixes
+on:
+  push:
+    branches: [codex/windows-workspace-regressions]
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+        with:
+          node-version: 24
+          save-cache: "false"
+      - run: pnpm --filter @blame/desktop build:workspace-dependencies
+      - run: pnpm --filter @blame/desktop test:windows-workspaces
