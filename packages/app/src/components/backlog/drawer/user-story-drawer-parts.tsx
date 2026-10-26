@@ -78,19 +78,27 @@ export function DrawerBody({
   children,
   fixedSection,
   headerTabsVisible,
+  headerStacked = false,
   resetKey,
   sidebarOpen,
 }: {
   children: React.ReactNode
   fixedSection?: React.ReactNode
   headerTabsVisible: boolean
+  headerStacked?: boolean
   resetKey: string
   sidebarOpen: boolean
 }) {
   const fixedSectionRef = React.useRef<HTMLDivElement>(null)
   const [fixedSectionHeight, setFixedSectionHeight] = React.useState(0)
   const fixedSectionVisible = Boolean(fixedSection)
-  const topPaddingClassName = headerTabsVisible ? "pt-36" : "pt-28"
+  const topPaddingClassName = headerTabsVisible
+    ? headerStacked
+      ? "pt-50 sm:pt-36"
+      : "pt-36"
+    : headerStacked
+      ? "pt-42 sm:pt-28"
+      : "pt-28"
   // While the stats panel is expanded, the thread and the composer keep
   // clear of it, with the same gap as on the left (px-8). The action
   // buttons still span the whole width, on the right.

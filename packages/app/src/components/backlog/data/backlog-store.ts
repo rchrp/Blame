@@ -1,4 +1,5 @@
 import * as React from "react"
+import { saveStoryContextLimit } from "./story-context-limit"
 import { toast } from "sonner"
 
 import { createBacklogApi } from "@/components/backlog/data/backlog-api"
@@ -130,11 +131,13 @@ function useBacklogStoreValue() {
   }, [load])
 
   const create = React.useCallback(
-    async (input: Omit<UserStoryDraft, "projectId">) => {
+    async (input: Omit<UserStoryDraft, "projectId">, contextLimit?: number) => {
       if (!projectId)
         throw new Error("Open a project before creating a user story.")
       const creation = await api.create({ ...input, projectId })
       const story = creation.story
+      // Publish the budget before the ready queue can start this story.
+      if (contextLimit) saveStoryContextLimit(story.id, contextLimit)
       setState((current) => ({
         ...current,
         detailedStoryIds: storyStateIds(

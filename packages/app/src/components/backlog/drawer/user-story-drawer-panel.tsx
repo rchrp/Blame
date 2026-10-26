@@ -1,3 +1,7 @@
+import {
+  saveStoryContextLimit,
+  storyContextLimit,
+} from "@/components/backlog/data/story-context-limit"
 import { replaceFileAttachments } from "./user-story-attachment-files"
 import * as React from "react"
 import { toast } from "sonner"
@@ -160,7 +164,8 @@ export function UserStoryDrawerPanel({
   onCancel: () => void
   onApproveAndMerge: (story: UserStory) => Promise<UserStory>
   onCreateUserStory: (
-    input: Omit<UserStoryDraft, "projectId">
+    input: Omit<UserStoryDraft, "projectId">,
+    contextLimit?: number
   ) => Promise<UserStory>
   onCreateUserStoryComment: (
     story: UserStory,
@@ -213,8 +218,10 @@ export function UserStoryDrawerPanel({
   const hasPreview = status === "in-progress" || status === "in-review"
   // A story working in the project folder previews the project's own app.
   const directPreview = userStory?.workspaceMode === "direct"
-  const sidebarAvailable = Boolean(
-    mode !== "create" && (userStory?.clineSessionId || userStory?.agentUsage)
+  const statsExpandable = Boolean(
+    mode !== "create" &&
+      status !== "backlog" &&
+      (status === "in-progress" || userStory?.clineSessionId || userStory?.agentUsage)
   )
   // Opening a story on its default tab brings back the tab it was left on.
   const [rememberedTabs] = React.useState(() =>
@@ -309,6 +316,8 @@ export function UserStoryDrawerPanel({
     true,
     isBoolean
   )
+  const statsShownExpanded = statsExpandable && statsExpanded
+  const contextLimitKey = userStory?.id ?? draftStorageKey
   const titleDraftKey = `${draftStorageKey}:title`
   const [title, setTitle] = React.useState(
     mode === "create"
@@ -604,7 +613,7 @@ export function UserStoryDrawerPanel({
     >
       <DrawerResizeHandle onWidthChange={drawerWidth.setWidth} />
       {mode !== "create" ? <StoryStatusGlow status={status} /> : null}
-      {tab === "user-story" && sidebarAvailable && (
+      {tab === "user-story" && statsExpandable && (
         <Button
           type="button"
           className="absolute top-6 right-16 z-30 border bg-background/90 shadow-sm"
@@ -642,8 +651,9 @@ export function UserStoryDrawerPanel({
             // Lined up with the story's thread (px-8), clear of the panel.
             tab === "user-story" && "pl-8",
             tab === "user-story" &&
-              sidebarAvailable &&
-              (statsExpanded ? "lg:pr-[23rem]" : "pr-[14.5rem]")
+              (statsShownExpanded
+                ? "lg:pr-[23rem]"
+                : "pt-20 sm:pt-6 sm:pr-[20rem]")
           )}
         >
           <div
@@ -726,7 +736,8 @@ export function UserStoryDrawerPanel({
               />
             }
             headerTabsVisible={hasDevelopment}
-            sidebarOpen={sidebarAvailable && statsExpanded}
+            headerStacked={!statsShownExpanded}
+            sidebarOpen={statsShownExpanded}
           >
             <UserStoryContent
               loadChangedFileDiffs={loadChangedFileDiffs}
@@ -804,10 +815,13 @@ export function UserStoryDrawerPanel({
           </TabsContent>
         )}
       </Tabs>
-      {tab === "user-story" && sidebarAvailable && (
+      {tab === "user-story" && (
         <StoryStatsIsland
           diffStats={diffStats}
-          expanded={statsExpanded}
+          contextLimitKey={contextLimitKey}
+          expanded={statsShownExpanded}
+          preparing={!statsExpandable}
+          useEditorModel={summaryEditable}
           userStory={userStory}
           onExpand={() => setStatsExpanded(true)}
         />
@@ -835,16 +849,20 @@ export function UserStoryDrawerPanel({
     setPendingAction(action)
     try {
       if (mode === "create") {
-        await onCreateUserStory({
-          ...createInput(
-            action,
-            title,
-            summaryValueRef.current,
-            summaryCodeSelectionAttachments,
-            summaryFileAttachments
-          ),
-          runMode: runMode ?? readStoryRunMode(),
-        })
+        await onCreateUserStory(
+          {
+            ...createInput(
+              action,
+              title,
+              summaryValueRef.current,
+              summaryCodeSelectionAttachments,
+              summaryFileAttachments
+            ),
+            runMode: runMode ?? readStoryRunMode(),
+          },
+          storyContextLimit(contextLimitKey)
+        )
+        saveStoryContextLimit(contextLimitKey, undefined)
         clearComposerDraft()
       }
       if (mode !== "create" && userStory) {

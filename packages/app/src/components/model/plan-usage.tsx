@@ -23,39 +23,41 @@ export function hasPlanUsage(providerId: string | undefined) {
 export function usePlanUsage(
   selection: ModelSelection,
   providerId: string | undefined,
-  refreshKey?: unknown
+  refreshKey?: unknown,
+  preferredCredentialLabel?: string
 ) {
   const read = selection.agent?.providers.subscriptionUsage
-  const credentialLabel = selection.credentials.find(
-    (credential) => credential.providerId === providerId
-  )?.label
+  const credentialLabel =
+    preferredCredentialLabel ??
+    (providerId ? selection.selectedAccountLabel(providerId) : undefined)
+  const apiConnection = selection.apiConnection
   const connected = !!providerId && selection.connectedProviderIDs.has(providerId)
   const enabled = !!read && connected && hasPlanUsage(providerId)
-  const [usage, setUsage] = React.useState<SubscriptionUsage | null>()
-  const [failed, setFailed] = React.useState(false)
-  const inFlight = React.useRef(false)
-
-  const refresh = React.useCallback(async () => {
-    if (!enabled || !providerId || inFlight.current) return
-    inFlight.current = true
-    try {
-      setUsage(
-        await read({
-          apiConnection: selection.apiConnection,
-          providerId,
-          credentialLabel,
-        })
-      )
-      setFailed(false)
-    } catch {
-      setFailed(true)
-    } finally {
-      inFlight.current = false
-    }
-  }, [credentialLabel, enabled, providerId, read, selection.apiConnection])
+  const [result, setResult] = React.useState<{
+    apiConnection: typeof apiConnection
+    credentialLabel?: string
+    failed: boolean
+    providerId: string
+    usage?: SubscriptionUsage | null
+  }>()
 
   React.useEffect(() => {
-    if (!enabled) return
+    if (!enabled || !providerId) return
+    let active = true
+    let inFlight = false
+    const refresh = async () => {
+      if (inFlight) return
+      inFlight = true
+      const identity = { apiConnection, credentialLabel, providerId }
+      try {
+        const usage = await read(identity)
+        if (active) setResult({ ...identity, failed: false, usage })
+      } catch {
+        if (active) setResult({ ...identity, failed: true })
+      } finally {
+        inFlight = false
+      }
+    }
     const run = () => {
       if (document.visibilityState === "visible") void refresh()
     }
@@ -63,13 +65,23 @@ export function usePlanUsage(
     const timer = window.setInterval(run, refreshMs)
     window.addEventListener("focus", run)
     return () => {
+      active = false
       window.clearTimeout(first)
       window.clearInterval(timer)
       window.removeEventListener("focus", run)
     }
-  }, [enabled, refresh, refreshKey])
+  }, [apiConnection, credentialLabel, enabled, providerId, read, refreshKey])
 
-  return { enabled, failed, usage }
+  // A slow response from the previous provider/account must never be shown
+  // beside the newly selected model.
+  const current =
+    enabled &&
+    result?.apiConnection === apiConnection &&
+    result?.providerId === providerId &&
+    result?.credentialLabel === credentialLabel
+      ? result
+      : undefined
+  return { enabled, failed: current?.failed ?? false, usage: current?.usage }
 }
 
 /** One bar per plan window, each with its reset time. */

@@ -1427,8 +1427,8 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
     selectBacklogStory(undefined)
   })
   const createDrawerStory = useLatestCallback(
-    async (input: Omit<UserStoryDraft, "projectId">) => {
-      const story = await backlog.create(input)
+    async (input: Omit<UserStoryDraft, "projectId">, contextLimit?: number) => {
+      const story = await backlog.create(input, contextLimit)
       void generateQueuedStoryTitle(story)
       // The drawer stays open on the new story.
       setDrawerTarget({

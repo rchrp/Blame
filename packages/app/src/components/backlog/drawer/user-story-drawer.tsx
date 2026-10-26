@@ -38,7 +38,8 @@ export type UserStoryDrawerProps = {
   initialDevelopmentTab?: UserStoryDevelopmentTab
   focusComment?: boolean
   onCreateUserStory: (
-    input: Omit<UserStoryDraft, "projectId">
+    input: Omit<UserStoryDraft, "projectId">,
+    contextLimit?: number
   ) => Promise<UserStory>
   onCreateUserStoryComment: (
     story: UserStory,

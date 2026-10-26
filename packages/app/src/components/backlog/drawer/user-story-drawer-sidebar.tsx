@@ -60,17 +60,23 @@ import { cn } from "@/lib/utils"
 // The story's agent at a glance, floating at the top right of the drawer:
 // the full panel, or a small pill with the context donut.
 export function StoryStatsIsland({
+  contextLimitKey,
   diffStats,
   expanded,
   onExpand,
+  preparing = false,
+  useEditorModel = false,
   userStory,
 }: {
+  contextLimitKey?: string
   diffStats?: UserStoryDiffStats
   expanded: boolean
   onExpand(): void
+  preparing?: boolean
+  useEditorModel?: boolean
   userStory?: UserStory
 }) {
-  const stats = useStoryStats(userStory)
+  const stats = useStoryStats(userStory, contextLimitKey, useEditorModel)
   const reduceMotion = useReducedMotion()
   // The full face stays mounted so the island always knows its height and
   // can move between two known sizes.
@@ -94,7 +100,7 @@ export function StoryStatsIsland({
       animate={
         expanded
           ? { height: fullHeight ?? "auto", width: expandedWidth }
-          : { height: compactHeight, width: pillWidth(stats) }
+          : { height: compactHeight, width: pillWidth(stats, preparing) }
       }
       transition={islandTransition(expanded, reduceMotion)}
     >
@@ -118,9 +124,16 @@ export function StoryStatsIsland({
       <IslandFace
         className="absolute top-0 right-0"
         revealDelay={0.5}
-        shown={!expanded}
+        shown={!expanded && !preparing}
       >
         <CompactStats diffStats={diffStats} stats={stats} onExpand={onExpand} />
+      </IslandFace>
+      <IslandFace
+        className="absolute top-0 right-0"
+        revealDelay={0.5}
+        shown={preparing}
+      >
+        <PreparationStats stats={stats} />
       </IslandFace>
     </motion.div>
   )
@@ -131,8 +144,8 @@ const compactWidth = 192
 // Room for the plan usage donut and its two percentages.
 const planUsageWidth = 92
 
-function pillWidth(stats: StoryStats) {
-  return compactWidth + (stats.planUsage ? planUsageWidth : 0)
+function pillWidth(stats: StoryStats, preparing = false) {
+  return (preparing ? 168 : compactWidth) + (stats.planUsage ? planUsageWidth : 0)
 }
 const compactHeight = 48
 
@@ -219,23 +232,79 @@ function Pop({
 
 type StoryStats = ReturnType<typeof useStoryStats>
 
-function useStoryStats(userStory?: UserStory) {
+function useStoryStats(
+  userStory: UserStory | undefined,
+  contextLimitKey: string | undefined,
+  useEditorModel: boolean
+) {
   const sessionUsage = useSessionUsage(
     userStory?.agentUsage ? undefined : userStory?.clineSessionId
   )
-  const budget = useStoryContextBudget(userStory)
+  const selection = useModelSelection()
+  const choiceOfModel = useStoryModelChoice(useEditorModel ? undefined : userStory)
+  const provider = choiceOfModel
+    ? selection.allProviders.find((item) => item.id === choiceOfModel.providerId)
+    : selection.currentModel?.provider
+  const model = choiceOfModel
+    ? provider?.models[choiceOfModel.modelId]
+    : selection.currentModel
+  const budget = useStoryContextBudget(
+    contextLimitKey ?? userStory?.id,
+    model,
+    selection.allProviders
+  )
   const compaction = useStoryContextCompaction(userStory)
   const totals =
     usageTotalsFromAgentUsage(userStory?.agentUsage) ?? sessionUsage.totals
   const context = storyContextUsage(userStory?.agentUsage, budget.limit)
-  const selection = useModelSelection()
   const plan = usePlanUsage(
     selection,
-    userStory?.agentProviderId ?? undefined,
-    userStory?.agentUsage
+    provider?.id,
+    userStory?.agentUsage,
+    choiceOfModel?.credentialLabel ?? undefined
   )
   const planUsage = (plan.enabled && plan.usage) || undefined
   return { budget, compaction, context, planUsage, totals }
+}
+
+// Before execution there is no context usage or run total to display.
+// Keep the plan usage and the next run's context budget beside Close.
+function PreparationStats({ stats }: { stats: StoryStats }) {
+  const { budget, planUsage } = stats
+  return (
+    <div
+      className="flex items-center gap-2 pl-3"
+      style={{ height: compactHeight, width: pillWidth(stats, true) }}
+    >
+      {planUsage ? (
+        <Pop>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span
+                tabIndex={0}
+                aria-label={`Plan usage: ${planUsageSummary(planUsage)}`}
+                className="flex items-center gap-2 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+              >
+                <PlanUsageDonut usage={planUsage} />
+                <PlanUsagePercents usage={planUsage} />
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              <PlanUsageBars usage={planUsage} />
+            </TooltipContent>
+          </Tooltip>
+        </Pop>
+      ) : null}
+      <Pop className="grid min-w-0 flex-1 gap-0.5">
+        <span className="text-[10px] text-muted-foreground">Max context</span>
+        <ContextLimitSelect budget={budget} />
+        {!budget.limit ? (
+          <span className="text-xs text-muted-foreground">—</span>
+        ) : null}
+      </Pop>
+      <span aria-hidden className="w-12 shrink-0" />
+    </div>
+  )
 }
 
 function DrawerSidebar({
@@ -541,23 +610,21 @@ type StoryContextBudget = {
 
 // The context budget of the story's next turns: the model it will use, the
 // provider's own input limit, and the cap picked for it.
-function useStoryContextBudget(userStory?: UserStory): StoryContextBudget {
-  const selection = useModelSelection()
-  const choiceOfModel = useStoryModelChoice(userStory)
-  const choice = useStoryContextLimit(userStory?.id)
-  const provider = selection.allProviders.find(
-    (item) => item.id === choiceOfModel?.providerId
-  )
-  const model = provider?.models[choiceOfModel?.modelId ?? ""]
+function useStoryContextBudget(
+  storyId: string | undefined,
+  model: Parameters<typeof modelInputLimit>[0],
+  providers: Parameters<typeof modelInputLimit>[1]
+): StoryContextBudget {
+  const choice = useStoryContextLimit(storyId)
   const providerLimit = providerInputLimit(model)
-  const modelLimit = modelInputLimit(model, selection.allProviders)
+  const modelLimit = modelInputLimit(model, providers)
   const limit = effectiveContextLimit(choice, modelLimit) ?? providerLimit
   return {
     choice,
     experimental: Boolean(limit && providerLimit && limit > providerLimit),
     limit,
     options: contextLimitOptions(providerLimit, modelLimit),
-    storyId: userStory?.id,
+    storyId,
   }
 }
 
