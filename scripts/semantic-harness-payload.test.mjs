@@ -72,6 +72,17 @@ test("standalone payload executes navigation and command dependencies", async ()
     assert.equal(attachment.status, "ok", JSON.stringify(attachment));
     assert.ok(attachment.data.path.startsWith(join(workspaceRoot, ".blame", "attachments")));
     assert.deepEqual(await readFile(attachment.data.path), content);
+    await access(join(packageRoot, "attachment-pdf-worker.js"));
+    const pdf = await readFile(join(agentRuntimeDir, "src/fixtures/attachments/report.pdf"));
+    const storedPdf = await executeRunner(packageRoot, workspaceRoot, {
+      tool: "store_attachment", input: { name: "report.pdf", contentBase64: pdf.toString("base64") },
+    });
+    assert.equal(storedPdf.status, "ok", JSON.stringify(storedPdf));
+    const page = await executeRunner(packageRoot, workspaceRoot, {
+      tool: "read_attachment", input: { path: storedPdf.data.path, page: 2 },
+    });
+    assert.equal(page.status, "ok", JSON.stringify(page));
+    assert.match(page.data.text, /deadline is Friday/);
   });
 });
 
