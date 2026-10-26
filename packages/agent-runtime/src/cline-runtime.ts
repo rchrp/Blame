@@ -300,10 +300,7 @@ import type {
   ValidateSecurityAuditInput,
 } from "./types.js";
 import { BlameUserInstructionServices, skillScopeSystemPrompt } from "./user-instruction-services.js";
-import {
-  createTextWebFetchExecutor,
-  describeTextWebFetch,
-} from "./web-fetch.js";
+import { webResearchTools, webResearchGuidance } from './web-research-tools.js';
 import {
   advanceTargetBranch,
   assertGitRepository,
@@ -953,12 +950,13 @@ export class BlameAgentRuntime {
           })
         : undefined;
       const extraTools = [
+        ...webResearchTools(input.apiConnection, this.options.renderWebPage),
         ...(standardTools ?? []),
         ...(specialistTool ? [specialistTool] : []),
         ...sessionStoryHistoryTools(input, this.options.git),
       ];
       const systemPrompt =
-        (input.systemPrompt ?? loadPrompt("default-agent-system")) +
+        (input.systemPrompt ?? loadPrompt("default-agent-system")) + webResearchGuidance +
         (input.nativeCompletion && !input.clineDefaultTools
           ? skillScopeSystemPrompt(userInstructionService)
           : "");
@@ -991,13 +989,6 @@ export class BlameAgentRuntime {
             })
           : undefined;
       const startInput = {
-        ...(!input.clineDefaultTools
-          ? {
-              capabilities: {
-                toolExecutors: { webFetch: createTextWebFetchExecutor() },
-              },
-            }
-          : {}),
         ...(autoSendPrompt
           ? {
               prompt: appendInitialTaskBriefing(input.prompt, taskBriefing),
@@ -1050,9 +1041,6 @@ export class BlameAgentRuntime {
           }),
         },
         localRuntime: {
-          ...(!input.clineDefaultTools
-            ? { hooks: { beforeModel: describeTextWebFetch } }
-            : {}),
           ...(configExtensions ? { configExtensions } : {}),
           ...(userInstructionService ? { userInstructionService } : {}),
           ...(pluginPaths ? { pluginPaths } : {}),
@@ -2400,7 +2388,8 @@ export class BlameAgentRuntime {
           () =>
             cline.start({
               prompt: newProjectGenerationPrompt(input),
-              config,
+              config: { ...config, systemPrompt: `${config.systemPrompt ?? ''}${webResearchGuidance}`,
+                extraTools: webResearchTools(input.apiConnection, this.options.renderWebPage) },
               interactive: false,
               localRuntime: { configExtensions: ["rules"] },
               source: "blame-new-project-generation",

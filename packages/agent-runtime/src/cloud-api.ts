@@ -19,6 +19,13 @@ type ApiResponse<T> = {
   data: T;
 };
 
+export function searchWeb(connection: ApiConnection, input: { query: string; limit?: number; language?: string }, signal?: AbortSignal) {
+  return request<import('./web-research-types.js').WebSearchResult>(connection, '/web/search', {
+    method: 'POST', body: JSON.stringify(input),
+    signal: AbortSignal.any([AbortSignal.timeout(20_000), ...(signal ? [signal] : [])]),
+  });
+}
+
 type ResolvedCredential = {
   id: string;
   providerId: string;

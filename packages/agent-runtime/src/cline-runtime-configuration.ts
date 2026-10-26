@@ -64,6 +64,8 @@ export function toolPolicies(
   additionalAutoApprovedTools: string[] = [],
 ) {
   return Object.fromEntries([
+    ["web_search", { enabled: false, autoApprove: false }],
+    ["fetch_web_content", { enabled: false, autoApprove: false }],
     ...legacyDirectWorkspaceTools.map((name) => [
       name,
       { enabled: false, autoApprove: false },
@@ -77,6 +79,8 @@ export function toolPolicies(
 export function clineDefaultToolPolicies() {
   return Object.fromEntries([
     ["*", { autoApprove: true }],
+    ["web_search", { enabled: false, autoApprove: false }],
+    ["fetch_web_content", { enabled: false, autoApprove: false }],
     ...legacyDirectWorkspaceTools.map((name) => [
       name,
       { enabled: true, autoApprove: true },
@@ -87,6 +91,10 @@ export function clineDefaultToolPolicies() {
 
 export function newProjectGenerationToolPolicies() {
   return Object.fromEntries([
+    ["web_search", { enabled: false, autoApprove: false }],
+    ["fetch_web_content", { enabled: false, autoApprove: false }],
+    ["search_web", { enabled: true, autoApprove: true }],
+    ["read_web_page", { enabled: true, autoApprove: true }],
     ...legacyDirectWorkspaceTools.map((name) => [
       name,
       { enabled: true, autoApprove: true },
@@ -337,6 +345,8 @@ export function extensionContext(input: StartSessionInput) {
 
 export function initializationToolPolicies() {
   return Object.fromEntries([
+    ["fetch_web_content", { enabled: false, autoApprove: false }],
+    ["web_search", { enabled: false, autoApprove: false }],
     ["submit_project_initialization", { autoApprove: true }],
     ["submit_project_initialization_repair", { autoApprove: true }],
     ...legacyDirectWorkspaceTools.map((name) => [

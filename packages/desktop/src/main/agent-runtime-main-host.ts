@@ -53,6 +53,10 @@ async function handleAgentHostRequest(
   devtools: PreviewDevtoolsMcpService,
   previews: PreviewService,
 ) {
+  if (method === 'renderWebPage') {
+    const { renderResearchPage } = await import('./web-research-browser.ts');
+    return renderResearchPage(String(recordInput(input).url ?? ''), signal);
+  }
   if (method === "git") return agentGit(input);
   if (method === "openExternalUrl") return openAgentExternalUrl(input);
   if (method === "previewDevtools") {

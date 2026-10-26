@@ -1,3 +1,5 @@
+import { withoutNativeWebSearch } from './web-research-policy.js';
+
 const schemaContainerKeys = new Set([
   "inputSchema",
   "input_schema",
@@ -34,8 +36,8 @@ export function createProviderCompatibleFetch(
   const maximum = options.requestMaxOutputTokens;
   if (maximum !== undefined && (!Number.isSafeInteger(maximum) || maximum < 1))
     throw new Error("The per-request output limit must be a positive safe integer.");
-  return (input, init) => {
-    const compatible = compatibleRequestInit(input, init);
+  return async (input, init) => {
+    const compatible = await compatibleRequestInit(input, init);
     if (maximum === undefined || !isCodexResponsesRequest(input))
       return request(input, compatible);
     return codexOutputLimit(input, compatible, maximum).then((limited) => request(input, limited));
@@ -110,17 +112,24 @@ export function normalizeJsonSchema(
   );
 }
 
-function compatibleRequestInit(
+async function compatibleRequestInit(
   input: Parameters<typeof fetch>[0],
   init?: RequestInit,
 ) {
-  if (typeof init?.body !== "string") return init;
+  const original = input instanceof Request ? input : undefined;
+  const method = (init?.method ?? original?.method ?? 'GET').toUpperCase();
+  const originalBody = typeof init?.body === 'string' ? init.body
+    : init?.body == null && original && method === 'POST' ? await original.clone().text() : undefined;
+  if (originalBody === undefined) return init;
   const body = compatibleJsonBody(
-    init.body,
+    originalBody,
     { simplifyLocalGrammar: isLocalProviderRequest(input) },
     isResponsesRequest(input),
   );
-  return body === init.body ? init : { ...init, body };
+  if (body === originalBody) return init;
+  const headers = new Headers(init?.headers ?? original?.headers);
+  headers.delete('content-length');
+  return { ...init, headers, body };
 }
 
 function compatibleJsonBody(
@@ -129,7 +138,7 @@ function compatibleJsonBody(
   responsesRequest: boolean,
 ) {
   try {
-    const payload = normalizeProviderPayload(JSON.parse(body), options);
+    const payload = withoutNativeWebSearch(normalizeProviderPayload(JSON.parse(body), options));
     return JSON.stringify(
       responsesRequest ? compatibleResponsesPayload(payload) : payload,
     );

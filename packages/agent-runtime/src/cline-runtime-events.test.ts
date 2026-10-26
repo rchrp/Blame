@@ -101,7 +101,7 @@ test("starts a Cline baseline without Blame harness tools", async () => {
     });
     assert.equal(capturedStart?.prompt, "Change the greeting");
     assert.match(capturedStart?.config.systemPrompt ?? "", /You are Cline/u);
-    assert.equal(capturedStart?.config.extraTools, undefined);
+    assert.deepEqual(capturedStart?.config.extraTools?.map((tool: { name: string }) => tool.name), ["search_web", "read_web_page"]);
     assert.equal(capturedStart?.capabilities?.toolExecutors?.webFetch, undefined);
     assert.equal(capturedStart?.localRuntime?.hooks?.beforeModel, undefined);
     assert.deepEqual(capturedStart?.localRuntime?.configExtensions, []);
@@ -552,8 +552,12 @@ test("starts development sessions with native skills and private specialist cons
     });
 
     assert.ok(capturedStart);
-    assert.equal(typeof capturedStart.capabilities?.toolExecutors?.webFetch, "function");
-    assert.equal(typeof capturedStart.localRuntime?.hooks?.beforeModel, "function");
+    assert.equal(capturedStart.capabilities?.toolExecutors?.webFetch, undefined);
+    assert.deepEqual(capturedStart.toolPolicies?.web_search, { enabled: false, autoApprove: false });
+    assert.deepEqual(capturedStart.toolPolicies?.fetch_web_content, { enabled: false, autoApprove: false });
+    assert.ok(capturedStart.config.extraTools?.some((tool: { name: string }) => tool.name === "search_web"));
+    assert.ok(capturedStart.config.extraTools?.some((tool: { name: string }) => tool.name === "read_web_page"));
+    assert.equal(capturedStart.localRuntime?.hooks?.beforeModel, undefined);
     assert.equal(capturedStart.config.maxIterations, 64);
     assert.equal(capturedStart.config.enableSpawnAgent, false);
     assert.ok(capturedStart.localRuntime?.configExtensions?.includes("skills"));

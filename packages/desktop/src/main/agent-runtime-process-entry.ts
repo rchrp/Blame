@@ -62,6 +62,7 @@ function createAgentRuntime(hostClient: AgentRuntimeHostClient) {
     },
     {
       git: (cwd, args) => hostClient.request<string>("git", { args, cwd }),
+      renderWebPage: (input) => hostRequest<{ url: string; html: string }>(hostClient, 'renderWebPage', input),
       openExternalUrl: (url) => {
         void hostClient
           .request("openExternalUrl", { url })

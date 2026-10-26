@@ -1,4 +1,6 @@
-use_default_settings: true
+use_default_settings:
+  engines:
+    keep_only: [google, duckduckgo, brave]
 server:
   secret_key: "@SEARXNG_SECRET@"
   limiter: false

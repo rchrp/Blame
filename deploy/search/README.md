@@ -34,7 +34,8 @@ curl -fsS 'http://127.0.0.1:8888/search?q=Mozilla+Readability&format=json'
 Then use `search_web` in a Blame conversation. The response contains the returned
 result count, source metadata, and any unavailable engines. A partial response is
 displayed as partial, and zero returned sources is not presented as a successful
-page read. Search queries and page content are not written to server logs.
+page read. The Blame endpoint does not log search queries or page content. SearXNG engine
+diagnostics may contain queries; restrict access to those logs and their retention.
 
 Google and other upstream engines may rate-limit or block the instance. Review
 `docker compose logs searxng` and adjust the enabled engines when necessary. The

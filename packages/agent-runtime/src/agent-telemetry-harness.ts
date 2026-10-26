@@ -145,6 +145,8 @@ function externalReadTool(name: string) {
   return [
     "consult_specialist",
     "fetch_web_content",
+    "search_web",
+    "read_web_page",
     "get_preview_container_logs",
     "get_preview_devtools",
   ].includes(name);

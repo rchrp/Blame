@@ -45,6 +45,7 @@ export const agentRuntimeMethods = [
 ] as const;
 
 export const agentHostMethods = [
+  "renderWebPage",
   "git",
   "openExternalUrl",
   "previewDevtools",

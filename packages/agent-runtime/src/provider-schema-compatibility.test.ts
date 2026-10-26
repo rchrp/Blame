@@ -215,14 +215,14 @@ test("preserves optional Responses arguments with explicit non-strict tools", as
   assert.equal("strict" in tool, false);
 });
 
-test("preserves explicit strict settings, builtins and nested function data", async () => {
+test("preserves explicit strict settings, non-search builtins and nested function data", async () => {
   const tools = [
     ...[true, false, null].map((strict) => ({
       type: "function",
       name: "read",
       strict,
     })),
-    { type: "web_search_preview" },
+    { type: "image_generation" },
     { type: "function", function: { name: "chat_tool", parameters: {} } },
     null,
   ];
