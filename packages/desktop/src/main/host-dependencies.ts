@@ -2,6 +2,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { withoutTelemetryEnvironment } from "@blame/telemetry";
 import type { RuntimeProfileId } from "@blame/preview-runtime";
+import type { WorkspaceMode } from "./workspace-mode.ts";
 import {
   createRuntimeManager,
   type RuntimeDependencyIssue,
@@ -46,6 +47,7 @@ export type HostDependencyCheckInput = {
   includeRuntime?: boolean;
   platform?: NodeJS.Platform;
   runtimeProfile?: RuntimeProfileId;
+  workspaceMode?: WorkspaceMode;
   setupScript: string;
 };
 
@@ -60,6 +62,7 @@ type CheckContext = {
   includeRuntime?: boolean;
   platform: NodeJS.Platform;
   runtimeProfile?: RuntimeProfileId;
+  workspaceMode?: WorkspaceMode;
   run: CommandRunner;
 };
 
@@ -88,6 +91,7 @@ export async function checkHostDependencies(
     includeRuntime: input.includeRuntime,
     platform: input.platform ?? process.platform,
     runtimeProfile: input.runtimeProfile,
+    workspaceMode: input.workspaceMode,
     run,
   };
   const issues = await hostDependencyIssues(input.setupScript, context);
@@ -176,6 +180,14 @@ async function containerRuntimeIssues(context: CheckContext) {
 }
 
 async function checkGit(context: CheckContext) {
+  // Managed runtime status already checks Git inside WSL/Lima. Host Git is
+  // only required for native work (including opening/creating projects).
+  if (
+    (context.workspaceMode === "local-container" ||
+      (!context.workspaceMode && contextRequiresContainerRuntime(context))) &&
+    (context.platform === "win32" || context.platform === "darwin")
+  )
+    return null;
   return missingToolIssue(context, "git", ["--version"], "git");
 }
 

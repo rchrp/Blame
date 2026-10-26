@@ -10,8 +10,13 @@ import {
   ignoredGitDiffPathspecs,
   isIgnoredWorkspaceDiffPath,
 } from "./workspace-diff-policy.ts";
-import { run as runRuntime, runtimeManagedPath } from "./workspace-runtime.ts";
+import {
+  resolveWorkspacePath,
+  run as runRuntime,
+  runtimeManagedPath,
+} from "./workspace-runtime.ts";
 import { runRuntimeGit } from "./workspace-runtime-git.ts";
+import type { WorkspaceExecution } from "./workspace-mode.ts";
 
 const execFileAsync = promisify(execFile);
 const maxBuffer = 50 * 1024 * 1024;
@@ -257,27 +262,42 @@ export async function readGitFile(input: GitFileInput) {
   throw lastError;
 }
 
-export async function ensureGitRepository(root: string) {
-  const cwd = resolve(root);
+export async function ensureGitRepository(
+  root: string,
+  execution?: WorkspaceExecution,
+) {
+  const git = repositoryGitRunner(execution);
+  const cwd = resolveWorkspacePath(root);
   let changed = false;
 
-  if (!(await isGitRepository(cwd))) {
-    await runGit(cwd, ["init"]);
+  if (!(await isGitRepository(cwd, execution))) {
+    await git(cwd, ["init"]);
     changed = true;
   }
 
-  if (!(await hasGitHead(cwd))) {
-    await createInitialGitCommit(cwd);
+  if (!(await hasGitHead(cwd, git))) {
+    await createInitialGitCommit(cwd, git);
     changed = true;
   }
 
   return changed;
 }
 
-export async function isGitRepository(root: string) {
-  const cwd = resolve(root);
+export async function isGitRepository(
+  root: string,
+  execution?: WorkspaceExecution,
+) {
+  const git = repositoryGitRunner(execution);
+  const cwd = resolveWorkspacePath(root);
   try {
-    const { stdout } = await runGit(cwd, ["rev-parse", "--show-toplevel"]);
+    // The host path (C:\\...) and Git's WSL path (/mnt/c/...) cannot be
+    // compared directly. Git's prefix is empty only at the repository root,
+    // including when that root was reached through a symlink.
+    if (execution === "virtualized") {
+      const { stdout } = await git(cwd, ["rev-parse", "--show-prefix"]);
+      return stdout.trim() === "";
+    }
+    const { stdout } = await git(cwd, ["rev-parse", "--show-toplevel"]);
     const [gitRoot, workspaceRoot] = await Promise.all([
       canonicalWorkspacePath(stdout.trim()),
       canonicalWorkspacePath(cwd),
@@ -286,6 +306,12 @@ export async function isGitRepository(root: string) {
   } catch {
     return false;
   }
+}
+
+function repositoryGitRunner(execution?: WorkspaceExecution): GitRunner {
+  return execution
+    ? (cwd, args) => runRuntimeGit(cwd, args, execution)
+    : runGit;
 }
 
 async function canonicalWorkspacePath(path: string) {
@@ -515,18 +541,18 @@ function deprioritizeProcess(pid: number | undefined) {
   ionice.unref();
 }
 
-async function hasGitHead(cwd: string) {
+async function hasGitHead(cwd: string, git: GitRunner) {
   try {
-    await runGit(cwd, ["rev-parse", "--verify", "HEAD"]);
+    await git(cwd, ["rev-parse", "--verify", "HEAD"]);
     return true;
   } catch {
     return false;
   }
 }
 
-async function createInitialGitCommit(cwd: string) {
-  await runGit(cwd, ["add", "-A", "--", "."]);
-  await runGit(cwd, [
+async function createInitialGitCommit(cwd: string, git: GitRunner) {
+  await git(cwd, ["add", "-A", "--", "."]);
+  await git(cwd, [
     "-c",
     "user.name=Blame",
     "-c",

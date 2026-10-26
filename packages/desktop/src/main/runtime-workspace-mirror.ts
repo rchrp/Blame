@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir, readdir, rm, stat } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { projectScanResource } from "./project-scan-resource.ts";
 import {
   run,
   runtimeHostPath,
@@ -17,28 +18,35 @@ import {
 const maximumMirroredFileBytes = 256 * 1024;
 const maximumMirroredFiles = 20_000;
 
-export type ProjectScanRoot = { root: string; release(): Promise<void> };
+export type ProjectScanRoot = ReturnType<typeof projectScanResource>;
 
 export async function projectScanRoot(
   workspace: string,
   platform: NodeJS.Platform = process.platform,
+  dependencies = { homedir, run },
 ): Promise<ProjectScanRoot> {
   if (!runtimeManagedPath(workspace, platform)) {
-    return { root: workspace, release: async () => undefined };
+    return projectScanResource({ root: workspace, temporary: false });
   }
   if (platform !== "darwin") {
-    return {
+    return projectScanResource({
       root: runtimeHostPath(workspace, platform),
-      release: async () => undefined,
-    };
+      temporary: false,
+    });
   }
-  const mirrors = join(homedir(), "Library", "Caches", "Blame", "scan-mirrors");
+  const mirrors = join(
+    dependencies.homedir(),
+    "Library",
+    "Caches",
+    "Blame",
+    "scan-mirrors",
+  );
   await removeAbandonedMirrors(mirrors);
   const root = join(mirrors, randomUUID());
   await mkdir(root, { recursive: true, mode: 0o700 });
-  const release = () => rm(root, { recursive: true, force: true });
+  const resource = projectScanResource({ root, temporary: true });
   try {
-    await run(
+    await dependencies.run(
       "bash",
       [
         "-c",
@@ -52,10 +60,10 @@ export async function projectScanRoot(
       { cwd: workspace, maxBuffer: 1024 * 1024 },
     );
   } catch (error) {
-    await release();
+    await resource.release();
     throw error;
   }
-  return { root, release };
+  return resource;
 }
 
 // Copies left by a process that stopped before releasing them.

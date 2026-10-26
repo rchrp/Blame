@@ -1,5 +1,6 @@
 import * as React from "react"
 import { XIcon } from "lucide-react"
+import { toast } from "sonner"
 
 import {
   quickChatSelectedEvent,
@@ -25,9 +26,9 @@ export function QuickChatHistory({ pathname }: { pathname: string }) {
     projectId: quickChats.projectId,
   })
   // Conversations deleted but still undoable: hidden until the toast closes.
-  const [pendingDeletes, setPendingDeletes] = React.useState<ReadonlySet<string>>(
-    () => new Set()
-  )
+  const [pendingDeletes, setPendingDeletes] = React.useState<
+    ReadonlySet<string>
+  >(() => new Set())
   const chats = React.useMemo(
     () =>
       [...quickChats.chats]
@@ -57,16 +58,28 @@ export function QuickChatHistory({ pathname }: { pathname: string }) {
     })
   }
 
-  function deleteChat(chat: QuickChat) {
+  async function deleteChat(chat: QuickChat) {
     const wasActive = quickChats.activeId === chat.id
     setPending(chat.id, true)
+    try {
+      await quickChats.prepareRemove(chat)
+    } catch (error) {
+      setPending(chat.id, false)
+      toast.error("Unable to stop and delete chat", {
+        description:
+          error instanceof Error ? error.message : "Please try again.",
+        position: "bottom-right",
+      })
+      return
+    }
     if (wasActive) {
-      quickChats.setActiveId(undefined)
+      quickChats.clearActiveId(chat.id)
       window.dispatchEvent(new Event(quickChatSelectedEvent))
     }
     undoable({
       message: `Deleted “${chat.title}”`,
       undo: () => {
+        quickChats.agentOperations.allowStarts(chat.id)
         setPending(chat.id, false)
         if (wasActive) {
           quickChats.setActiveId(chat.id)
@@ -95,9 +108,7 @@ export function QuickChatHistory({ pathname }: { pathname: string }) {
             <SidebarMenuButton
               asChild
               className="h-8 pr-12 pl-2 text-sm"
-              isActive={
-                pathname === "/chat" && quickChats.activeId === chat.id
-              }
+              isActive={pathname === "/chat" && quickChats.activeId === chat.id}
               tooltip={chat.title}
             >
               <AppLink
@@ -120,7 +131,7 @@ export function QuickChatHistory({ pathname }: { pathname: string }) {
             <button
               aria-label={`Delete ${chat.title}`}
               className="absolute top-1/2 right-1 flex size-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity outline-none group-focus-within/chat:opacity-100 group-hover/chat:opacity-100 hover:bg-destructive/10 hover:text-destructive focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-sidebar-ring"
-              onClick={() => deleteChat(chat)}
+              onClick={() => void deleteChat(chat)}
               title={`Delete ${chat.title}`}
               type="button"
             >

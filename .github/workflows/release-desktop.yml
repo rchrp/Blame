@@ -95,6 +95,10 @@ jobs:
       - name: Test package integrity on target OS
         run: pnpm --filter @blame/desktop test:package
 
+      - name: Test Windows runtime process handling
+        if: runner.os == 'Windows'
+        run: node --test scripts/windows-runtime.test.mjs
+
       - name: Build signed macOS installers
         if: runner.os == 'macOS'
         run: node scripts/desktop-release.mjs build ${{ matrix.args }}

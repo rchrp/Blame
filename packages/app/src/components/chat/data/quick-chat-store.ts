@@ -21,6 +21,11 @@ import type { UserStoryAgentActivity } from "@/components/backlog/data/backlog-d
 import { useCloudAuth } from "@/context/cloud-auth"
 import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
+import {
+  QuickChatAgentOperations,
+  stopQuickChatAgent,
+} from "./quick-chat-agent-control"
+import { dropQueuedComments } from "@/pages/backlog/comment-queue"
 
 type QuickChatState = {
   activeId?: string
@@ -72,6 +77,11 @@ function useQuickChatStoreValue() {
   const detailRequests = React.useRef(new Map<string, Promise<QuickChat>>())
   const loadRequestId = React.useRef(0)
   const updateQueues = React.useRef(new Map<string, Promise<unknown>>())
+  const [agentOperations] = React.useState(() => new QuickChatAgentOperations())
+  const busyChatIds = React.useSyncExternalStore(
+    agentOperations.subscribe,
+    agentOperations.snapshot
+  )
   const projectId = projects.activeProject?.id
   const projectPath = projects.activeProject?.path
   const api = React.useMemo(
@@ -346,13 +356,49 @@ function useQuickChatStoreValue() {
     []
   )
 
+  const stopAgent = React.useCallback(
+    (chat: QuickChat) =>
+      agentOperations.stop(chat.id, async () => {
+        await updateQueues.current.get(chat.id)?.catch(() => undefined)
+        return stopQuickChatAgent(chat, {
+          abort: platform.agent
+            ? (sessionId) => platform.agent!.sessions.abort(sessionId)
+            : undefined,
+          loadDetail,
+          finalizeAgentRun,
+          update,
+        })
+      }),
+    [agentOperations, platform.agent, loadDetail, finalizeAgentRun, update]
+  )
+
+  const prepareRemove = React.useCallback(
+    async (chat: QuickChat) => {
+      agentOperations.preventStarts(chat.id)
+      try {
+        return await stopAgent(chat)
+      } catch (error) {
+        agentOperations.allowStarts(chat.id)
+        throw error
+      }
+    },
+    [agentOperations, stopAgent]
+  )
+
   const remove = React.useCallback(
     async (chat: QuickChat) => {
-      await api.delete(chat.id)
+      const stopped = await prepareRemove(chat)
+      try {
+        await api.delete(chat.id)
+      } catch (error) {
+        agentOperations.allowStarts(chat.id)
+        throw error
+      }
+      dropQueuedComments(`chat:${chat.id}`)
       // Chats share a preview scope: their screenshots go by session.
       const sessionIds = [
-        chat.clineSessionId,
-        ...(chat.agentRuns ?? []).map((run) => run.clineSessionId),
+        stopped.clineSessionId,
+        ...(stopped.agentRuns ?? []).map((run) => run.clineSessionId),
       ].filter((value): value is string => Boolean(value))
       if (sessionIds.length)
         void platform.agentScreenshots
@@ -369,21 +415,34 @@ function useQuickChatStoreValue() {
         ),
         detailedChatIds: chatStateIds(current.detailedChatIds, chat.id, false),
       }))
+      agentOperations.allowStarts(chat.id)
     },
-    [api, platform.agentScreenshots]
+    [agentOperations, api, platform.agentScreenshots, prepareRemove]
   )
 
   const setActiveId = React.useCallback((activeId: string | undefined) => {
     setState((current) => ({ ...current, activeId }))
   }, [])
 
+  const clearActiveId = React.useCallback((chatId: string) => {
+    setState((current) =>
+      current.activeId === chatId
+        ? { ...current, activeId: undefined }
+        : current
+    )
+  }, [])
+
   return {
     ...state,
+    agentOperations,
+    busyChatIds,
+    stopAgent,
     activeChat: state.chats.find((chat) => chat.id === state.activeId),
     agentRunActivityDetail,
     chatDetailsLoaded: (chat?: Pick<QuickChat, "id">) =>
       Boolean(chat && state.detailedChatIds?.has(chat.id)),
     create,
+    clearActiveId,
     createAgentRun,
     createMessage,
     finalizeAgentRun,
@@ -391,6 +450,7 @@ function useQuickChatStoreValue() {
     loadDetail,
     projectId,
     projectPath,
+    prepareRemove,
     remove,
     setActiveId,
     undoMessage,

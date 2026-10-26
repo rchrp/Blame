@@ -5,7 +5,140 @@ SearXNG instance. All model providers use the same `search_web` tool. Page readi
 runs locally in the desktop runtime, using Mozilla Readability and an isolated
 Electron browser for JavaScript pages. No provider search keys are needed.
 
-## Start SearXNG
+## Engine rotation and fallback
+
+The private instance enables **Google CSE, Brave, Bing, Qwant, DuckDuckGo and
+Yahoo**. The regular `google` engine is removed. All are SearXNG's built-in web
+engines; no paid API integration or provider-native fallback is enabled.
+
+Blame selects **two distinct available engines per attempt** with weighted
+rotation, including while every engine is healthy. If that pair returns no usable
+sources, it tries another pair, without querying an engine twice for the same
+search. It stops as soon as sources arrive, even if one engine failed. At most six
+engines are attempted, with a **15-second total budget**, a 5-second upstream
+search limit and a 6-second HTTP limit per attempt (shortened near the deadline).
+An ordinary empty result can also use fallback, but does not penalize the engine.
+
+| Engine | Traffic priority | Engine timeout | Result-ranking weight |
+| --- | ---: | ---: | ---: |
+| Brave | 3 | 4 s | 1.1 |
+| Google CSE | 3 | 5 s | 1.2 |
+| Bing | 2 | 4 s | 1.0 |
+| Qwant | 2 | 4 s | 1.0 |
+| DuckDuckGo | 2 | 4 s | 1.0 |
+| Yahoo | 1 | 3 s | 0.8 |
+
+Traffic priorities are relative rotation weights, not guaranteed percentages or a
+fixed fallback order. They live in
+[`web_search_engine_pool.ts`](../../packages/api/app/services/web_search_engine_pool.ts).
+Timeouts and ranking weights live in [`settings.yml`](./settings.yml).
+SearXNG uses the largest configured timeout in a selected pair as that attempt's
+shared time budget, capped at 5 seconds; Blame only overrides it to shorten the
+last attempt when the total deadline is near.
+SearXNG's [`weight` setting](https://docs.searxng.org/admin/settings/settings_engines.html)
+affects result order, **not request frequency**. The shared API service explicitly
+sends the selected `engines` and omits `categories`, which would add all engines in
+that category. SearXNG control tokens (`!`, `!!`, `:`, `<`) in query words are quoted
+so they cannot override selection, language or time budgets; ordinary `site:` and
+phrase searches remain available. The returned query stays unchanged for display.
+
+Each engine accepts at most **two simultaneous attempts per API process**. After
+an error, Blame excludes it for 30, 60, then 120 seconds for repeated temporary
+failures; **1 hour for rate limiting**; **24 hours for CAPTCHA/access denial**.
+After the pause, only one recovery attempt may run until it succeeds. A late
+success from an older request cannot cancel a more recent block. SearXNG's native
+[engine suspensions](https://docs.searxng.org/admin/settings/settings_search.html)
+remain active as a second layer, including its longer Cloudflare/reCAPTCHA pauses.
+[Network retries](https://docs.searxng.org/admin/settings/settings_outgoing.html)
+are disabled because retrying from the same server IP increases pressure without
+changing the route. SearXNG HTTP/protocol failures instead pause API access for
+5 seconds; they are not attributed to individual engines.
+
+Known paused engines remain in `unavailableEngines`, so partial-result reporting
+continues through the existing source UI. No usable sources and all engines
+blocked/busy produces HTTP 503 with `Retry-After`; a healthy engine returning no
+hits remains an empty result. The API retains its authenticated per-account rate
+limits. Pool state is shared across requests **within one API process**, resets on
+restart and is not coordinated across replicas. The current Backend has one
+replica; before scaling it, move rotation, concurrency and cooldown state into a
+shared store or enforce equivalent limits at the search gateway.
+
+Deploy the updated Search image before the API: an older SearXNG configuration
+does not know the new engine names. Direct calls to the private `/search` endpoint
+are diagnostics and bypass Blame's rotation; normal clients must use the
+authenticated Blame endpoint. Scraped engines can still block this server IP, so
+the fallback pool improves resilience without guaranteeing availability.
+
+## Dokploy: GitHub application + Dockerfile
+
+Deploy SearXNG as an **Application** connected to the Blame GitHub repository,
+using [`Dockerfile`](./Dockerfile), like the other Blame packages. Configuration
+is copied into the image from [`settings.yml`](./settings.yml); no Docker Compose
+service or manual File Mount is needed for Dokploy.
+
+Use the existing Blame project/environment and deployment server:
+
+| Setting | Value |
+| --- | --- |
+| Application name | Web Search |
+| Source | GitHub, `rchrp/Blame`, the same GitHub connection as Backend |
+| Branch | `main` |
+| Trigger | Push |
+| Build path | `/` |
+| Build type | Dockerfile |
+| Dockerfile | `deploy/search/Dockerfile` |
+| Docker context | `./` (repository root) |
+| Build stage | `production` |
+| Watch paths | `deploy/search/**` |
+| Build server / registry | Same as Backend |
+| Swarm placement | `node.labels.workload==apps`, same as Backend |
+| Container port | `8080` (internal only) |
+| Domains / published ports | None |
+| Runtime environment | `SEARXNG_SECRET=<random secret>` |
+
+Generate the secret with `openssl rand -hex 32` and save it in Dokploy Environment,
+not in Git or build arguments. The image pins a tested upstream version/digest and
+includes a health check. Its Dockerfile-specific ignore file restricts the build
+context to this service's files. Reuse Backend's build server and registry when
+building on a separate server. The image overrides the upstream repository label
+with `rchrp/Blame`, so GHCR associates the package with the correct repository.
+Without a separate build server, this image can also be built on the deployment
+server; in a Swarm cluster, make the image available to its eligible runtime nodes.
+Enable automatic deployments on pushes affecting
+`deploy/search/**`; settings changes then follow the normal GitHub workflow.
+The current installation also has a repository `push` webhook pointing to this
+application's **Deployments → Webhook URL**, because the existing GitHub App was
+not delivering pushes to the new service. Keep that URL in GitHub's webhook
+settings, not in this repository. Branch and watch-path filters still apply.
+
+Keep the application on `dokploy-network`, as the existing Backend is. Add a named
+volume for `/var/cache/searxng` if search cache should survive deployments; do not
+mount `/etc/searxng`, because that would hide the versioned settings in the image.
+Deploy Web Search, wait for it to become healthy, then add to Backend Environment
+and redeploy Backend:
+
+```dotenv
+SEARXNG_URL=http://blame-searxng-b8mbdj:8080
+```
+
+The current Web Search **appName** is `blame-searxng-b8mbdj`, also its Docker
+service DNS name. For another installation, replace it with that application's
+actual appName returned by Dokploy; the display name may differ. `127.0.0.1` inside Backend refers to
+Backend itself. There is no public SearXNG domain or port `8888` to configure.
+Other services on `dokploy-network` can also reach this internal endpoint; the
+network is not exclusive to Backend.
+
+To check connectivity, run this in the **Backend container terminal**:
+
+```sh
+node -e 'fetch(process.env.SEARXNG_URL + "/search?q=Mozilla+Readability&format=json").then(async r => { if (!r.ok) throw new Error("HTTP " + r.status); const d = await r.json(); console.log({results: d.results.length, unavailable: d.unresponsive_engines}); }).catch(e => { console.error(e.message); process.exitCode = 1; })'
+```
+
+Then ask the Blame agent to search the web to verify the authenticated API path
+and source display together. See [Dokploy Dockerfile build settings](https://docs.dokploy.com/docs/core/applications/build-type)
+and [application environment and volumes](https://docs.dokploy.com/docs/core/applications/advanced).
+
+## Local Docker / standalone server
 
 From this directory, put a random `SEARXNG_SECRET` in a local `.env` file (for
 example, generate it with `openssl rand -hex 32`), then run `docker compose up -d`.
@@ -13,7 +146,7 @@ Set `SEARXNG_VERSION` to a tested image tag or digest for production; the defaul
 follows the upstream image. The JSON API is enabled in `settings.yml`.
 
 Set `SEARXNG_URL=http://127.0.0.1:8888` in the API environment and restart the API.
-If the API is containerized, connect both services to a private Docker network
+For a containerized API outside Dokploy, connect both services to a private Docker network
 and use `http://searxng:8080` instead. Do not expose SearXNG directly to clients.
 The compose file binds only the host loopback interface.
 

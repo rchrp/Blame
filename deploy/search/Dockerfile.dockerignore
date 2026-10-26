@@ -1,0 +1,6 @@
+# This service only needs its versioned SearXNG settings, never app credentials.
+**
+!deploy/
+!deploy/search/
+!deploy/search/Dockerfile
+!deploy/search/settings.yml

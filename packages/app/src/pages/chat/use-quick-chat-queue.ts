@@ -11,10 +11,10 @@ import { useLatestCallback } from "@/lib/use-latest-callback"
 import {
   onQueuedDeliveryRequest,
   queueComment,
-  queuedComments,
   requestQueuedDelivery,
-  takeQueuedComments,
+  useQueuedComments,
 } from "@/pages/backlog/comment-queue"
+import { QuickChatQueueDelivery } from "./quick-chat-queue-delivery"
 
 type QueuedMessage = {
   body: string
@@ -27,37 +27,48 @@ type QueuedMessage = {
 // first, so it reads that message right away.
 export function useQuickChatQueue({
   agentRunning,
+  busy,
   cancelAgent,
   chatId,
+  onError,
+  paused,
   send,
 }: {
   agentRunning: boolean
-  cancelAgent(): Promise<void>
+  busy: boolean
+  paused: boolean
+  cancelAgent(chatId: string): Promise<unknown>
   chatId?: string
-  send(message: QueuedMessage): Promise<void>
+  onError(error: unknown): void
+  send(chatId: string, message: QueuedMessage): Promise<void>
 }) {
   const key = chatId ? `chat:${chatId}` : undefined
-  // The message picked with "Send now": it goes out alone once the agent
-  // has stopped, the others keep waiting for the next turn to end.
-  const sendNow = React.useRef<string | undefined>(undefined)
-  const deliver = useLatestCallback(async () => {
-    if (!key) return
-    const picked = sendNow.current
-    sendNow.current = undefined
-    const merged = takeQueuedComments(key, picked)
-    if (merged) await send(merged)
+  const queued = useQueuedComments(key)
+  const [delivery] = React.useState(() => new QuickChatQueueDelivery())
+  const deliver = useLatestCallback(async (commentId?: string) => {
+    if (!chatId) return
+    try {
+      await delivery.deliver({
+        chatId,
+        commentId,
+        automatic: !commentId,
+        stop: commentId && agentRunning ? cancelAgent : undefined,
+        send,
+      })
+    } catch (error) {
+      onError(error)
+    }
   })
 
   React.useEffect(() => {
-    if (key && !agentRunning && queuedComments(key).length) void deliver()
-  }, [agentRunning, deliver, key])
+    if (key && !agentRunning && !busy && !paused && queued.length)
+      void deliver()
+  }, [agentRunning, busy, deliver, key, paused, queued])
 
   const stopAndDeliver = useLatestCallback(
     async (requested: string, commentId: string) => {
       if (requested !== key) return
-      sendNow.current = commentId
-      if (agentRunning) await cancelAgent()
-      else await deliver()
+      await deliver(commentId)
     }
   )
   React.useEffect(
