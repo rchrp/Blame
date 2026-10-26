@@ -193,6 +193,7 @@ export interface ApiDefinition {
     fileAttachments: {
       createUpload: typeof routes['attachments.file_attachments.create_upload']
       complete: typeof routes['attachments.file_attachments.complete']
+      uploadContent: typeof routes['attachments.file_attachments.upload_content']
       show: typeof routes['attachments.file_attachments.show']
     }
   }

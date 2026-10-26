@@ -919,6 +919,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/file_attachments_controller').default['complete']>>>
     }
   }
+  'attachments.file_attachments.upload_content': {
+    methods: ["POST"]
+    pattern: '/api/v1/attachments/:id/content'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/file_attachment').uploadFileAttachmentContentValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/file_attachment').uploadFileAttachmentContentValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/file_attachments_controller').default['uploadContent']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/file_attachments_controller').default['uploadContent']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
   'attachments.file_attachments.show': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/attachments/:id'

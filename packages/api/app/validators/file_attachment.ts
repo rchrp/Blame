@@ -1,5 +1,9 @@
 import vine from '@vinejs/vine'
 
+export const uploadFileAttachmentContentValidator = vine.compile(
+  vine.object({ content: vine.string().maxLength(14_000_000).nullable() })
+)
+
 export const createFileAttachmentUploadValidator = vine.compile(
   vine.object({
     checksumSha256: vine

@@ -225,6 +225,9 @@ router
           .post('/uploads', [FileAttachmentsController, 'createUpload'])
           .use(middleware.premium({ feature: 'cloud_storage' }))
         router.post('/:id/complete', [FileAttachmentsController, 'complete'])
+        router
+          .post('/:id/content', [FileAttachmentsController, 'uploadContent'])
+          .use(middleware.premium({ feature: 'cloud_storage' }))
         router.get('/:id', [FileAttachmentsController, 'show'])
       })
       .prefix('attachments')

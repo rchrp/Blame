@@ -2,7 +2,6 @@ import { randomUUID } from "node:crypto";
 import { access, readFile } from "node:fs/promises";
 import {
   basename,
-  dirname,
   isAbsolute,
   join,
   relative,
@@ -1319,7 +1318,7 @@ export class BlameAgentRuntime {
         sessionId: input.sessionId,
         executionId: input.executionId,
         storyId: input.storyId,
-        ...developmentInput,
+        userImages: developmentInput.userImages,
         prompt: appendInitialTaskBriefing(developmentInput.prompt, briefing),
       },
       input.feedbackOnly ? "feedback" : undefined,
@@ -3893,7 +3892,7 @@ export class BlameAgentRuntime {
       : undefined;
     const developmentInput = await developmentUserInput(
       input,
-      newAttachmentDirectory(input.cwd),
+      newAttachmentDirectory(input.workspaceRoot),
       this.developmentAttachmentStorage(input),
     );
     const iterationBudget =
@@ -3920,7 +3919,6 @@ export class BlameAgentRuntime {
       prompt: developmentInput.prompt,
       taskObjective: developmentInput.prompt,
       requiredChecks: input.requiredChecks,
-      userFiles: developmentInput.userFiles,
       userImages: developmentInput.userImages,
       pluginPaths: input.pluginPaths,
       cwd: input.cwd,
@@ -4066,14 +4064,8 @@ export class BlameAgentRuntime {
   }
 
   private attachmentDirectory(sessionId: string) {
-    const logFile = this.sessionLogFiles.get(sessionId);
-    if (!logFile) return newAttachmentDirectory(process.cwd());
-    return join(
-      dirname(dirname(logFile)),
-      "attachments",
-      sessionId,
-      randomUUID(),
-    );
+    const config = this.sessionStartInputs.get(sessionId)?.config;
+    return newAttachmentDirectory(config?.workspaceRoot ?? config?.cwd ?? process.cwd());
   }
 
   private developmentAttachmentStorage(input: StartDevelopmentSessionInput) {
@@ -4084,12 +4076,13 @@ export class BlameAgentRuntime {
         workspaceMode: input.workspaceMode,
       },
     );
-    return executor ? { executor, workspaceRoot: input.cwd } : undefined;
+    return executor ? { executor, workspaceRoot: input.workspaceRoot } : undefined;
   }
 
   private sessionAttachmentStorage(sessionId: string) {
     const executor = this.sessionJournalExecutors.get(sessionId);
-    const workspaceRoot = this.sessionStartInputs.get(sessionId)?.config.cwd;
+    const config = this.sessionStartInputs.get(sessionId)?.config;
+    const workspaceRoot = config?.workspaceRoot ?? config?.cwd;
     return executor && workspaceRoot ? { executor, workspaceRoot } : undefined;
   }
 

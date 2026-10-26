@@ -69,3 +69,53 @@ function attachmentReference() {
     type: "text/plain",
   }
 }
+
+test("retries a blocked direct upload through the authenticated API with the same bytes", async () => {
+  const calls: string[] = []
+  globalThis.fetch = async (input, init) => {
+    const url = String(input)
+    calls.push(url)
+    if (url.endsWith("/uploads"))
+      return Response.json({
+        attachment: attachmentReference(),
+        upload: { url: "https://storage.example/upload", headers: {} },
+      })
+    if (url.startsWith("https://storage.example"))
+      throw new TypeError("Failed to fetch")
+    assert.ok(url.endsWith("/attachment-id/content"))
+    assert.equal(
+      new Headers(init?.headers).get("Authorization"),
+      "Bearer token"
+    )
+    assert.deepEqual(JSON.parse(String(init?.body)), { content: "SGVsbG8=" })
+    return Response.json({
+      ...attachmentReference(),
+      downloadUrl: "https://storage.example/download",
+    })
+  }
+  const [uploaded] = await uploadFileAttachments(
+    { token: "token", url: "https://api.example/api/v1" },
+    [{ ...attachmentReference(), content: "SGVsbG8=" }]
+  )
+  assert.equal(uploaded.id, "attachment-id")
+  assert.equal(uploaded.content, undefined)
+  assert.equal(calls.length, 3)
+})
+
+test("does not mask a storage HTTP rejection or report an upload as complete", async () => {
+  let calls = 0
+  globalThis.fetch = async () =>
+    ++calls === 1
+      ? Response.json({
+          attachment: attachmentReference(),
+          upload: { url: "https://storage.example/upload", headers: {} },
+        })
+      : new Response(null, { status: 403 })
+  await assert.rejects(
+    uploadFileAttachments({ url: "https://api.example/api/v1" }, [
+      { ...attachmentReference(), content: "SGVsbG8=" },
+    ]),
+    /status 403/
+  )
+  assert.equal(calls, 2)
+})

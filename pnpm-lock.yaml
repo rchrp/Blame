@@ -103,15 +103,24 @@ importers:
       jsonc-parser:
         specifier: 3.3.1
         version: 3.3.1
+      mammoth:
+        specifier: 1.13.0
+        version: 1.13.0
       npm:
         specifier: 11.6.4
         version: 11.6.4
+      pdfjs-dist:
+        specifier: 6.4.299
+        version: 6.4.299
       pnpm:
         specifier: 10.33.2
         version: 10.33.2
       proper-lockfile:
         specifier: 4.1.2
         version: 4.1.2
+      read-excel-file:
+        specifier: 9.3.12
+        version: 9.3.12
       typescript:
         specifier: ~5.9.3
         version: 5.9.3

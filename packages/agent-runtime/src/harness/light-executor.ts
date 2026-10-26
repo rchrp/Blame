@@ -13,6 +13,7 @@ import { LightWorkspace } from "./light-workspace.js";
 import { contextGeneration } from "./light-read-results.js";
 import { SessionJournal } from "./session-journal.js";
 import { storeWorkspaceAttachment } from "../development-attachments.js";
+import { readAttachment } from "../attachment-reader.js";
 
 export const lightWorkspaceToolNames = [
   "search_code",
@@ -23,6 +24,7 @@ export const lightWorkspaceToolNames = [
   "initial_task_briefing",
   "session_journal",
   "store_attachment",
+  "read_attachment",
 ] as const;
 
 export type LightWorkspaceToolName = (typeof lightWorkspaceToolNames)[number];
@@ -113,6 +115,8 @@ async function executeWithWorkspace(
 ): Promise<LightToolResult<unknown>> {
   const context = agentContext(request.toolContext, signal);
   switch (request.tool) {
+    case "read_attachment":
+      return readAttachment(request.workspaceRoot, request.input, signal);
     case "search_code":
       return workspace.searchCode(
         request.input as LightSearchCodeInput,

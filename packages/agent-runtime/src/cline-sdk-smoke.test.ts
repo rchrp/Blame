@@ -1,7 +1,7 @@
 // Smoke test for Cline SDK upgrades: drives one real local session through
 // Blame's production configuration against an offline OpenAI-compatible server.
 import assert from "node:assert/strict";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { createServer, type IncomingMessage } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -19,6 +19,8 @@ const { createProviderCompatibleFetch } = await import(
 );
 const { listClineProviders } = await import("./provider-catalog.js");
 const { toolPolicies } = await import("./cline-runtime-configuration.js");
+const { attachmentTools } = await import("./attachment-tools.js");
+const { developmentUserInput, newAttachmentDirectory } = await import("./cline-runtime-prompts.js");
 
 test.after(() => rm(sandbox, { force: true, recursive: true }));
 
@@ -112,6 +114,52 @@ function streamedCompletion(parts: string[]) {
     { ...base, choices: [], usage: { prompt_tokens: 12, completion_tokens: 2, total_tokens: 14 } },
   ];
 }
+
+test("an attached PDF reaches the model through the real SDK read tool", async () => {
+  const workspace = await mkdtemp(join(sandbox, "attachment-workspace-"));
+  const bytes = await readFile(new URL("../src/fixtures/attachments/report.pdf", import.meta.url));
+  const input = await developmentUserInput({
+    title: "Read the report", summary: "What is the revenue?",
+    fileAttachments: [{ name: "report.pdf", type: "application/pdf", size: bytes.length, content: bytes.toString("base64") }],
+  }, newAttachmentDirectory(workspace));
+  const requests: Record<string, unknown>[] = [];
+  const server = createServer(async (request, response) => {
+    requests.push(JSON.parse(await readBody(request)));
+    response.writeHead(200, { "content-type": "text/event-stream" });
+    const chunks = requests.length === 1 ? [
+      { id: "attachment", object: "chat.completion.chunk", choices: [{ index: 0, delta: { role: "assistant", tool_calls: [{ index: 0, id: "read-attachment", type: "function", function: { name: "read_attachment", arguments: JSON.stringify({ path: input.userFiles[0] }) } }] }, finish_reason: null }] },
+      { id: "attachment", object: "chat.completion.chunk", choices: [{ index: 0, delta: {}, finish_reason: "tool_calls" }] },
+    ] : streamedCompletion(["42 EUR"]);
+    for (const chunk of chunks) response.write(`data: ${JSON.stringify(chunk)}\n\n`);
+    response.end("data: [DONE]\n\n");
+  });
+  await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
+  const address = server.address();
+  assert.ok(address && typeof address === "object");
+  const core = await ClineCore.create({ backendMode: "local", clientName: "attachment-smoke", fetch: createProviderCompatibleFetch(globalThis.fetch), toolPolicies: toolPolicies(false) });
+  try {
+    const started = await core.start({
+      prompt: input.prompt,
+      config: appendProductionConfig({
+        sessionId: "attachment-smoke", providerId: "openai-compatible", modelId: "smoke-model", apiKey: "offline",
+        baseUrl: `http://127.0.0.1:${address.port}/v1`, cwd: workspace, workspaceRoot: workspace,
+        checkpoint: { enabled: false }, enableAgentTeams: false, enableSpawnAgent: false,
+        enableTools: true, extraTools: attachmentTools(workspace), maxIterations: 3, mode: "act", systemPrompt: "Read the attachment and answer.",
+      }),
+      interactive: false, source: "attachment-smoke",
+    });
+    assert.equal(started.result?.text, "42 EUR");
+    assert.equal(requests.length, 2);
+    assert.doesNotMatch(JSON.stringify(requests[0]), /Error fetching content|Cannot read binary/);
+    const messages = requests[1]!.messages as Array<{ role: string; content: unknown }>;
+    const result = messages.find(message => message.role === "tool");
+    assert.ok(result, "No document tool result was forwarded to the model");
+    assert.match(JSON.stringify(result.content), /revenue is 42 EUR/);
+  } finally {
+    await core.delete("attachment-smoke").catch(() => undefined);
+    await new Promise(resolve => server.close(resolve));
+  }
+});
 
 async function readBody(request: IncomingMessage) {
   let body = "";

@@ -14,6 +14,18 @@ aws --endpoint-url "$ATTACHMENTS_S3_ENDPOINT" s3api put-bucket-cors \
 
 The wildcard origin is required by packaged desktop renderers whose origin is not a stable HTTPS origin. Upload URLs are short-lived, object-specific, and signed. Browser clients never receive the S3 credentials.
 
+The policy must allow **all** headers in the signed PUT, including
+`x-amz-checksum-sha256` and `x-amz-server-side-encryption`. A policy allowing only
+`content-type` and `x-amz-meta-checksum-sha256` rejects the browser preflight and
+surfaces as `Failed to fetch`, even when local previews work. Check OPTIONS with
+the complete header list after changing the signing configuration.
+
+If a direct PUT fails at the network/CORS layer, clients retry once through the
+authenticated `POST /attachments/:id/content` API. It accepts only the original
+bytes for an upload already owned by the user, verifies its size and SHA-256,
+and uses the same encrypted object storage. No attachment content is kept in
+the database. Correct bucket CORS remains preferable to avoid proxying bytes.
+
 Keep public access disabled. Do not apply the backup bucket's 80-day expiration policy to this bucket. The hourly `accounts:purge-closed` operation removes unattached objects after the configured grace period. Bucket lifecycle rules may independently abort incomplete multipart uploads, but must not expire attached objects.
 
 Deploy in this order:

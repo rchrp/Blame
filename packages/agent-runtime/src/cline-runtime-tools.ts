@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { attachmentTools } from "./attachment-tools.js";
 
 import type { ClineCore, CoreCompactionConfig } from "@cline/sdk";
 
@@ -128,6 +129,7 @@ export function runtimeTools(
 ) {
   void initialTaskBriefing;
   const tools = [
+    ...attachmentTools(worktree, executor),
     ...lightSemanticHarnessTools(worktree, {
       executor,
       taskContract,
@@ -184,6 +186,7 @@ export function readOnlyRuntimeTools(
   initialTaskBriefing?: string,
 ) {
   const allowedTools = new Set([
+    "read_attachment",
     ...lightReadToolNames,
     "get_preview_devtools",
     "get_preview_container_logs",
