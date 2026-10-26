@@ -5,6 +5,70 @@ SearXNG instance. All model providers use the same `search_web` tool. Page readi
 runs locally in the desktop runtime, using Mozilla Readability and an isolated
 Electron browser for JavaScript pages. No provider search keys are needed.
 
+## Engine rotation and fallback
+
+The private instance enables **Google CSE, Brave, Bing, Qwant, DuckDuckGo and
+Yahoo**. The regular `google` engine is removed. All are SearXNG's built-in web
+engines; no paid API integration or provider-native fallback is enabled.
+
+Blame selects **two distinct available engines per attempt** with weighted
+rotation, including while every engine is healthy. If that pair returns no usable
+sources, it tries another pair, without querying an engine twice for the same
+search. It stops as soon as sources arrive, even if one engine failed. At most six
+engines are attempted, with a **15-second total budget**, a 5-second upstream
+search limit and a 6-second HTTP limit per attempt (shortened near the deadline).
+An ordinary empty result can also use fallback, but does not penalize the engine.
+
+| Engine | Traffic priority | Engine timeout | Result-ranking weight |
+| --- | ---: | ---: | ---: |
+| Brave | 3 | 4 s | 1.1 |
+| Google CSE | 3 | 5 s | 1.2 |
+| Bing | 2 | 4 s | 1.0 |
+| Qwant | 2 | 4 s | 1.0 |
+| DuckDuckGo | 2 | 4 s | 1.0 |
+| Yahoo | 1 | 3 s | 0.8 |
+
+Traffic priorities are relative rotation weights, not guaranteed percentages or a
+fixed fallback order. They live in
+[`web_search_engine_pool.ts`](../../packages/api/app/services/web_search_engine_pool.ts).
+Timeouts and ranking weights live in [`settings.yml`](./settings.yml).
+SearXNG uses the largest configured timeout in a selected pair as that attempt's
+shared time budget, capped at 5 seconds; Blame only overrides it to shorten the
+last attempt when the total deadline is near.
+SearXNG's [`weight` setting](https://docs.searxng.org/admin/settings/settings_engines.html)
+affects result order, **not request frequency**. The shared API service explicitly
+sends the selected `engines` and omits `categories`, which would add all engines in
+that category. SearXNG control tokens (`!`, `!!`, `:`, `<`) in query words are quoted
+so they cannot override selection, language or time budgets; ordinary `site:` and
+phrase searches remain available. The returned query stays unchanged for display.
+
+Each engine accepts at most **two simultaneous attempts per API process**. After
+an error, Blame excludes it for 30, 60, then 120 seconds for repeated temporary
+failures; **1 hour for rate limiting**; **24 hours for CAPTCHA/access denial**.
+After the pause, only one recovery attempt may run until it succeeds. A late
+success from an older request cannot cancel a more recent block. SearXNG's native
+[engine suspensions](https://docs.searxng.org/admin/settings/settings_search.html)
+remain active as a second layer, including its longer Cloudflare/reCAPTCHA pauses.
+[Network retries](https://docs.searxng.org/admin/settings/settings_outgoing.html)
+are disabled because retrying from the same server IP increases pressure without
+changing the route. SearXNG HTTP/protocol failures instead pause API access for
+5 seconds; they are not attributed to individual engines.
+
+Known paused engines remain in `unavailableEngines`, so partial-result reporting
+continues through the existing source UI. No usable sources and all engines
+blocked/busy produces HTTP 503 with `Retry-After`; a healthy engine returning no
+hits remains an empty result. The API retains its authenticated per-account rate
+limits. Pool state is shared across requests **within one API process**, resets on
+restart and is not coordinated across replicas. The current Backend has one
+replica; before scaling it, move rotation, concurrency and cooldown state into a
+shared store or enforce equivalent limits at the search gateway.
+
+Deploy the updated Search image before the API: an older SearXNG configuration
+does not know the new engine names. Direct calls to the private `/search` endpoint
+are diagnostics and bypass Blame's rotation; normal clients must use the
+authenticated Blame endpoint. Scraped engines can still block this server IP, so
+the fallback pool improves resilience without guaranteeing availability.
+
 ## Dokploy: GitHub application + Dockerfile
 
 Deploy SearXNG as an **Application** connected to the Blame GitHub repository,
