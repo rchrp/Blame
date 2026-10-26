@@ -20,6 +20,7 @@ const { createProviderCompatibleFetch } = await import(
 const { listClineProviders } = await import("./provider-catalog.js");
 const { toolPolicies } = await import("./cline-runtime-configuration.js");
 const { attachmentTools } = await import("./attachment-tools.js");
+const { reasoningConfig } = await import("./reasoning.js");
 const { developmentUserInput, newAttachmentDirectory } = await import("./cline-runtime-prompts.js");
 
 test.after(() => rm(sandbox, { force: true, recursive: true }));
@@ -83,6 +84,7 @@ test("a Blame-configured Cline session completes a streamed turn", async () => {
         maxIterations: 1,
         mode: "act",
         systemPrompt: "Reply with pong.",
+        ...reasoningConfig("max"),
       }),
       interactive: false,
       source: "blame-smoke",
@@ -97,11 +99,68 @@ test("a Blame-configured Cline session completes a streamed turn", async () => {
     assert.equal(requests[0]!.url, "/v1/chat/completions");
     assert.equal(requests[0]!.body.model, "smoke-model");
     assert.equal(requests[0]!.body.stream, true);
+    assert.equal(requests[0]!.body.reasoning_effort, "max");
   } finally {
     await core.delete("blame-cline-smoke").catch(() => undefined);
     await new Promise((resolve) => server.close(resolve));
   }
 });
+
+test("reattaching during a streamed turn preserves the live run and rejects a second prompt", { timeout: 15_000 }, async () => {
+  const received = deferred();
+  const finish = deferred();
+  let requests = 0;
+  const server = createServer(async (request, response) => {
+    await readBody(request);
+    requests += 1;
+    response.writeHead(200, { "content-type": "text/event-stream" });
+    response.flushHeaders();
+    received.resolve();
+    await finish.promise;
+    for (const chunk of streamedCompletion(["pong"])) response.write(`data: ${JSON.stringify(chunk)}\n\n`);
+    response.end("data: [DONE]\n\n");
+  });
+  await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
+  const address = server.address();
+  assert.ok(address && typeof address === "object");
+  const workspace = await mkdtemp(join(sandbox, "reattach-workspace-"));
+  const core = await ClineCore.create({ backendMode: "local", clientName: "reattach-smoke", fetch: createProviderCompatibleFetch(globalThis.fetch) });
+  const config = appendProductionConfig({
+    sessionId: "reattach-smoke", providerId: "openai-compatible", modelId: "smoke-model", apiKey: "offline",
+    baseUrl: `http://127.0.0.1:${address.port}/v1`, cwd: workspace, workspaceRoot: workspace,
+    checkpoint: { enabled: false }, enableTools: false, enableAgentTeams: false, enableSpawnAgent: false,
+    maxIterations: 1, mode: "act", systemPrompt: "Reply with pong.",
+  });
+  const running = core.start({ config, prompt: "ping", interactive: false });
+  // Observe startup failures while waiting for the offline server.
+  void running.catch(received.reject);
+  try {
+    await received.promise;
+    const attached = await core.start({ config, interactive: true });
+    assert.equal(attached.sessionId, config.sessionId);
+    await assert.rejects(core.start({ config, prompt: "second prompt", interactive: false }), /already has a run in progress/);
+    finish.resolve();
+    assert.equal((await running).result?.text, "pong");
+    assert.equal(requests, 1, "reattaching must not launch another model request");
+    const messages = await core.readMessages(config.sessionId!);
+    assert.match(JSON.stringify(messages), /pong/);
+    assert.doesNotMatch(JSON.stringify(messages), /second prompt/);
+  } finally {
+    finish.resolve();
+    await core.stop(config.sessionId!).catch(() => undefined);
+    await running.catch(() => undefined);
+    await core.delete(config.sessionId!).catch(() => undefined);
+    server.closeAllConnections();
+    await new Promise(resolve => server.close(resolve));
+  }
+});
+
+function deferred() {
+  let resolve!: () => void;
+  let reject!: (reason: unknown) => void;
+  const promise = new Promise<void>((yes, no) => { resolve = yes; reject = no; });
+  return { promise, resolve, reject };
+}
 
 function streamedCompletion(parts: string[]) {
   const base = { id: "smoke", object: "chat.completion.chunk", created: 0, model: "smoke-model" };

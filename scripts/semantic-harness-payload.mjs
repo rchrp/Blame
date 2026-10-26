@@ -34,6 +34,9 @@ const dependencyNames = [
   "@ast-grep/napi",
   "@cline/sdk",
   "@vscode/ripgrep",
+  // Fresh npm installs select the AWS SDK's bowser 2.15.0, whose tarball
+  // currently returns 404. Ship the exact version from our package manifest.
+  "bowser",
   "diff",
   "@xmldom/xmldom",
   "execa",

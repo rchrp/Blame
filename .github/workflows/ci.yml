@@ -75,6 +75,9 @@ jobs:
       - run: pnpm --filter @blame/preview-runtime test
       - run: pnpm --filter @blame/sandbox-runner test
       - run: pnpm --filter @blame/preview-edge test
+      # App tests import the compiled runtime; the separate agent job has its
+      # own checkout, and typecheck does not emit JavaScript here.
+      - run: pnpm exec turbo run build --filter="@blame/agent-runtime..."
       - run: pnpm --filter @blame/app test
       - run: pnpm --filter @blame/desktop test
       - run: pnpm --filter @blame/desktop test:performance
@@ -84,3 +87,4 @@ jobs:
       - run: pnpm test:release
       - run: pnpm --filter @blame/api build
       - run: pnpm --filter @blame/api exec node ace.js test --files='tests/unit/preview_runtime_security.spec.ts'
+      - run: pnpm --filter @blame/api exec node ace.js test --files='tests/unit/cline_catalog_worker.spec.ts'

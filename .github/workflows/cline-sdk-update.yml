@@ -83,6 +83,10 @@ jobs:
           LATEST: ${{ steps.check.outputs.latest }}
           STALE_PATCHES: ${{ steps.patch.outputs.stale_patches }}
         run: |
+          # A partially failed patch-commit can still update patchedDependencies.
+          # Always reconcile the lockfile before publishing the draft or PR.
+          pnpm install --no-frozen-lockfile
+          pnpm install --frozen-lockfile --ignore-scripts
           title="chore(deps): update Cline SDK from $CURRENT to $LATEST"
           node scripts/cline-sdk-update.mjs notes "$CURRENT" "$LATEST" > "$RUNNER_TEMP/body.md"
           git config user.name "github-actions[bot]"

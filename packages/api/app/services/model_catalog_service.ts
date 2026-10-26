@@ -28,7 +28,7 @@ import { createHash } from 'node:crypto'
 import { DateTime } from 'luxon'
 
 const snapshotId = 'global'
-const catalogPolicyVersion = 5
+const catalogPolicyVersion = 6
 // Claude Code runs through the desktop's local bridge; the Codex CLI provider
 // is not wired and OpenAI Codex OAuth already covers that subscription.
 const externalCliProviderIds = new Set(['openai-codex-cli'])

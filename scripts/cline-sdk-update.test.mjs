@@ -3,7 +3,8 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import test from "node:test"
-import { execFileSync } from "node:child_process"
+import { execFileSync, spawn } from "node:child_process"
+import { once } from "node:events"
 import { fileURLToPath } from "node:url"
 import {
   applyVersion,
@@ -12,6 +13,7 @@ import {
   latestRelease,
   patchDependency,
   pinnedVersionFiles,
+  regeneratePatches,
   versionPattern,
 } from "./cline-sdk-update.mjs"
 
@@ -116,4 +118,68 @@ test("every runtime file pinning the installed SDK version is updated by apply",
 test("patch paths map back to their dependency", () => {
   assert.equal(patchDependency("patches/@cline__core@0.0.82.patch"), "@cline/core")
   assert.equal(patchDependency("patches/app-builder-lib@26.8.1.patch"), "app-builder-lib")
+})
+
+test("patch regeneration in CI updates the lockfile and removes the stale patch", async () => {
+  const root = await mkdtemp(join(tmpdir(), "cline-patch-ci-"))
+  const previousCI = process.env.CI
+  const previousRegistry = process.env.npm_config_registry
+  process.env.CI = "true"
+  let registry
+  try {
+    // pnpm patch fetches by name/version, so serve a tiny registry in another
+    // process while the synchronous updater runs. No public npm requests.
+    const version = "0.0.0-blame-fixture"
+    const source = join(root, "source")
+    await mkdir(source)
+    await writeFile(join(source, "package.json"), JSON.stringify({ name: "@cline/core", version, main: "index.js" }))
+    await writeFile(join(source, "index.js"), "module.exports = 'original'\n")
+    execFileSync("npm", ["pack", "--ignore-scripts", "--pack-destination", root], { cwd: source, stdio: "pipe" })
+    await writeFile(join(root, "registry.mjs"), `
+      import { createServer } from 'node:http';
+      import { readFileSync } from 'node:fs';
+      const tarball = readFileSync(new URL('./cline-core-${version}.tgz', import.meta.url));
+      const server = createServer((request, response) => {
+        if (request.url.endsWith('.tgz')) return response.end(tarball);
+        response.setHeader('content-type', 'application/json');
+        response.end(JSON.stringify({ name: '@cline/core', 'dist-tags': { latest: '${version}' }, versions: {
+          '${version}': { name: '@cline/core', version: '${version}', dist: { tarball: 'http://127.0.0.1:' + server.address().port + '/core.tgz' } }
+        } }));
+      });
+      server.listen(0, '127.0.0.1', () => process.send(server.address().port));
+    `)
+    registry = spawn(process.execPath, [join(root, "registry.mjs")], { stdio: ["ignore", "ignore", "inherit", "ipc"] })
+    const [port] = await once(registry, "message")
+    // pnpm run exports npm_config_registry, which takes precedence over .npmrc.
+    process.env.npm_config_registry = `http://127.0.0.1:${port}`
+    await writeFile(join(root, ".npmrc"), `registry=${process.env.npm_config_registry}\nstore-dir=${join(root, "store")}\ncache-dir=${join(root, "cache")}\n`)
+    await writeFile(join(root, "package.json"), JSON.stringify({
+      private: true, packageManager: "pnpm@10.33.2",
+      dependencies: { "@cline/core": version },
+    }))
+    await writeFile(join(root, "pnpm-workspace.yaml"), "packages: []\n")
+    await mkdir(join(root, "scripts"))
+    await writeFile(join(root, "scripts/patch-cline-core.mjs"),
+      "import { writeFile } from 'node:fs/promises';\nimport { join } from 'node:path';\nawait writeFile(join(process.argv[2], 'index.js'), \"module.exports = 'patched'\\n\");\n")
+    await mkdir(join(root, "patches"))
+    const stale = "patches/@cline__core@0.0.95.patch"
+    await writeFile(join(root, stale), "previous patch")
+    execFileSync("pnpm", ["install", "--no-frozen-lockfile", "--ignore-scripts"], { cwd: root, stdio: "pipe" })
+
+    assert.deepEqual(await regeneratePatches([stale], version, root), [])
+    await assert.rejects(readFile(join(root, stale)), { code: "ENOENT" })
+    execFileSync("pnpm", ["install", "--frozen-lockfile", "--ignore-scripts"], { cwd: root, stdio: "pipe" })
+    assert.equal(await readFile(join(root, "node_modules/@cline/core/index.js"), "utf8"), "module.exports = 'patched'\n")
+  } finally {
+    if (registry) {
+      const exited = once(registry, "exit")
+      registry.kill()
+      await exited
+    }
+    if (previousCI === undefined) delete process.env.CI
+    else process.env.CI = previousCI
+    if (previousRegistry === undefined) delete process.env.npm_config_registry
+    else process.env.npm_config_registry = previousRegistry
+    await rm(root, { force: true, recursive: true })
+  }
 })
