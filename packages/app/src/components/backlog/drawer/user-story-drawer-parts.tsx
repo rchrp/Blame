@@ -101,7 +101,8 @@ export function DrawerBody({
   const fixedSectionClassName =
     "pointer-events-none absolute right-0 bottom-0 left-0 z-20"
   const fixedSectionContentClassName = "w-full px-8"
-  const bottomInset = Math.max(fixedSectionHeight, 24)
+  // Leave room for the composer’s raised turn metrics above its border.
+  const bottomInset = Math.max(fixedSectionHeight + 16, 24)
 
   React.useLayoutEffect(() => {
     const section = fixedSectionRef.current
