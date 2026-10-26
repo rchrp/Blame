@@ -17,16 +17,17 @@ Use the existing Blame project/environment and deployment server:
 | Setting | Value |
 | --- | --- |
 | Application name | Web Search |
-| Source | GitHub, the same Blame repository/connection as Backend |
+| Source | GitHub, `rchrp/Blame`, the same GitHub connection as Backend |
 | Branch | `main` |
+| Trigger | Push |
 | Build path | `/` |
 | Build type | Dockerfile |
 | Dockerfile | `deploy/search/Dockerfile` |
 | Docker context | `./` (repository root) |
 | Build stage | `production` |
 | Watch paths | `deploy/search/**` |
-| Build server | Default Dokploy server (no separate build server) |
-| Build registry | None |
+| Build server / registry | Same as Backend |
+| Swarm placement | `node.labels.workload==apps`, same as Backend |
 | Container port | `8080` (internal only) |
 | Domains / published ports | None |
 | Runtime environment | `SEARXNG_SECRET=<random secret>` |
@@ -34,9 +35,11 @@ Use the existing Blame project/environment and deployment server:
 Generate the secret with `openssl rand -hex 32` and save it in Dokploy Environment,
 not in Git or build arguments. The image pins a tested upstream version/digest and
 includes a health check. Its Dockerfile-specific ignore file restricts the build
-context to this service's files. This lightweight image is built directly on the
-deployment server, so it does not need a private image registry. A separate build
-server is also supported if its registry permits publishing the new image name.
+context to this service's files. Reuse Backend's build server and registry when
+building on a separate server. The image overrides the upstream repository label
+with `rchrp/Blame`, so GHCR associates the package with the correct repository.
+Without a separate build server, this image can also be built on the deployment
+server; in a Swarm cluster, make the image available to its eligible runtime nodes.
 Enable automatic deployments on pushes affecting
 `deploy/search/**`; settings changes then follow the normal GitHub workflow.
 
