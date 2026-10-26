@@ -40,7 +40,10 @@ function Invoke-WslHost {
   # under ErrorActionPreference=Stop, including successful WSL warnings.
   # Process also avoids PowerShell 5.1's lossy native argument serialization.
   $process = [System.Diagnostics.Process]::new()
-  $process.StartInfo.FileName = (Get-Command wsl.exe -CommandType Application -ErrorAction Stop).Source
+  # Filtering by Application can return multiple PATH matches. Select one
+  # before assigning FileName, otherwise PowerShell joins the paths with spaces.
+  $wslCommand = Get-Command wsl.exe -CommandType Application -ErrorAction Stop | Select-Object -First 1
+  $process.StartInfo.FileName = $wslCommand.Path
   $process.StartInfo.Arguments = Join-Arguments $WslArgs
   $process.StartInfo.RedirectStandardInput = $PSBoundParameters.ContainsKey("InputContent")
   $process.StartInfo.RedirectStandardOutput = -not $InheritOutput
