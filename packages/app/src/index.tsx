@@ -1,4 +1,5 @@
 import { SpeechToTextProvider } from "@/components/backlog/drawer/speech-to-text-provider"
+import { ModelProviderScope } from "@/components/model/model-selection"
 import { MotionConfig } from "motion/react"
 import { StrictMode } from "react"
 import { createRoot, type Root } from "react-dom/client"
@@ -53,23 +54,25 @@ export function mountApp(element: HTMLElement, options?: MountAppOptions) {
     <StrictMode>
       <PlatformProvider value={options?.platform}>
         <CloudAuthProvider>
-          <ServerProvider>
-            <ProjectProvider>
-              <ThemeProvider>
-                {/* Every animation follows the system "reduce motion" setting. */}
-                <MotionConfig reducedMotion="user">
-                  <PerformanceDiagnosticsProfiler id="app">
-                    <SpeechToTextProvider>
-                      <BlameRuntimeProvider enabled={!secondaryWindow()}>
-                        <App />
-                        <RuntimeInstallDialog />
-                      </BlameRuntimeProvider>
-                    </SpeechToTextProvider>
-                  </PerformanceDiagnosticsProfiler>
-                </MotionConfig>
-              </ThemeProvider>
-            </ProjectProvider>
-          </ServerProvider>
+          <ModelProviderScope>
+            <ServerProvider>
+              <ProjectProvider>
+                <ThemeProvider>
+                  {/* Every animation follows the system "reduce motion" setting. */}
+                  <MotionConfig reducedMotion="user">
+                    <PerformanceDiagnosticsProfiler id="app">
+                      <SpeechToTextProvider>
+                        <BlameRuntimeProvider enabled={!secondaryWindow()}>
+                          <App />
+                          <RuntimeInstallDialog />
+                        </BlameRuntimeProvider>
+                      </SpeechToTextProvider>
+                    </PerformanceDiagnosticsProfiler>
+                  </MotionConfig>
+                </ThemeProvider>
+              </ProjectProvider>
+            </ServerProvider>
+          </ModelProviderScope>
         </CloudAuthProvider>
       </PlatformProvider>
     </StrictMode>

@@ -7,7 +7,10 @@ import {
   SlidersHorizontalIcon,
 } from "lucide-react"
 import * as React from "react"
-import type { BlameProvider as Provider, ProviderCredentialSummary } from "@blame/agent-runtime"
+import type {
+  BlameProvider as Provider,
+  ProviderCredentialSummary,
+} from "@blame/agent-runtime"
 
 import {
   ConnectProviderDialog,
@@ -130,7 +133,13 @@ function ModelPicker({
   })
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover
+      open={open}
+      onOpenChange={(value) => {
+        setOpen(value)
+        if (value) void selection.refreshProvidersIfStale()
+      }}
+    >
       <PopoverAnchor asChild>
         <div className="flex w-full min-w-0 items-center justify-end gap-2">
           <ModelPickerTrigger
@@ -197,7 +206,7 @@ function ModelPickerTrigger({
               "h-8 w-0 max-w-52 min-w-0 flex-1 justify-center rounded-xl border-0 bg-muted/70 px-3 shadow-none hover:bg-muted aria-expanded:bg-muted",
               className
             )}
-            disabled={!selection.serverReady || selection.loading}
+            disabled={!selection.serverReady}
             onWheel={onWheel}
           >
             <ModelSummary model={selection.currentModel} />
@@ -311,6 +320,22 @@ function ModelPickerMode({
   providerID,
   selection,
 }: Pick<ModelPickerPanelProps, "advanced" | "providerID" | "selection">) {
+  if (!selection.models.length) {
+    return (
+      <div className="space-y-2 py-6 text-center text-sm text-muted-foreground">
+        <p role="status">{selection.emptyMessage}</p>
+        {!selection.loading ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => void selection.refreshProviders()}
+          >
+            Retry
+          </Button>
+        ) : null}
+      </div>
+    )
+  }
   if (advanced) {
     return <AdvancedModelPicker providerID={providerID} selection={selection} />
   }
@@ -656,7 +681,11 @@ function SmartModelSlider({ providerID, selection }: SmartModelSliderProps) {
 
   return (
     <div className="space-y-3">
-      <SliderLabels boundary={boundary} hasUnbenchmarked={hasUnbenchmarked} />
+      <SliderLabels
+        boundary={boundary}
+        hasUnbenchmarked={hasUnbenchmarked}
+        rankingMetric={selection.recommendations?.rankingMetric}
+      />
       <SmartSliderInput
         key={resolvedSliderState.inputRevision}
         position={position}
@@ -813,9 +842,11 @@ function sliderFillStyle(position: number): SliderFillStyle {
 function SliderLabels({
   boundary,
   hasUnbenchmarked,
+  rankingMetric,
 }: {
   boundary: number
   hasUnbenchmarked: boolean
+  rankingMetric?: "intelligenceIndex"
 }) {
   return (
     <div className="relative h-7 text-sm text-muted-foreground">
@@ -838,6 +869,9 @@ function SliderLabels({
           >
             Models that cost more while scoring lower than another model are
             omitted. They remain available in Manual selection.
+            {rankingMetric === "intelligenceIndex"
+              ? " Scores use the Artificial Analysis Intelligence Index. Costs estimate your token mix at API rates; subscription limits and thinking modes are not ranked separately."
+              : null}
           </TooltipContent>
         </Tooltip>
       </span>
@@ -854,7 +888,7 @@ function SliderLabels({
       {hasUnbenchmarked ? (
         <span className="absolute -top-1 right-0 flex flex-col text-right leading-4">
           <span>New</span>
-          <span>No benchmark</span>
+          <span>Not ranked</span>
         </span>
       ) : null}
     </div>

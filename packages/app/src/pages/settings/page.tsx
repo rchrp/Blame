@@ -19,7 +19,10 @@ import {
   ProviderSelectDialog,
 } from "@/components/model/connect-provider-dialog"
 import { ModelSelector, ProviderMark } from "@/components/model/model-selector"
-import { ModelProviderScope, type ModelSelection, useModelSelection } from "@/components/model/model-selection"
+import {
+  type ModelSelection,
+  useModelSelection,
+} from "@/components/model/model-selection"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { TooltipProvider } from "@/components/ui/tooltip"
@@ -246,11 +249,7 @@ function SettingsSectionContent({ section }: { section: SettingsSectionId }) {
   if (section === "mcp") return <McpSettingsPanel />
   if (section === "desktop") return <DesktopSettingsPanel />
   if (section === "account") return <AccountSettingsPanel />
-  return (
-    <ModelProviderScope>
-      <AiSettingsPanel />
-    </ModelProviderScope>
-  )
+  return <AiSettingsPanel />
 }
 
 function GeneralSettingsPanel() {

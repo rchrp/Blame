@@ -13,6 +13,10 @@ import type {
   ProviderListResponse,
   ReasoningSelection,
 } from "@blame/agent-runtime"
+import {
+  createProviderCatalogResource,
+  emptyProviderCatalog,
+} from "./provider-catalog-resource"
 
 const storageKey = "blame.app.drawer-model-selection.v1"
 
@@ -176,6 +180,7 @@ export function useModelSelection(options: ModelSelectionOptions = {}) {
     models: visibleModels,
     recommendations: providerState.providers?.recommendations,
     refreshProviders: providerState.refresh,
+    refreshProvidersIfStale: providerState.refreshIfStale,
     serverReady: providerState.serverReady,
     variantOptions: getVariantOptions(currentModel),
     role,
@@ -267,50 +272,43 @@ function useLocalProviderState(enabled = true) {
   const auth = useCloudAuth()
   const platform = usePlatform()
   const directory = globalModelSelectionKey
-  const [providers, setProviders] = React.useState<ProviderListResponse>()
-  const [loading, setLoading] = React.useState(false)
-  const [failed, setFailed] = React.useState(false)
   const agent = platform.agent
-
-  const refresh = React.useCallback(() => {
-    if (!agent || auth.status !== "authenticated") {
-      setProviders(undefined)
-      return Promise.resolve()
-    }
-
-    setLoading(true)
-    setFailed(false)
-    return agent.providers
-      .list(auth.apiConnection)
-      .then((response) => {
-        const normalized = normalizeProviderList(response)
-        rememberModelNames(normalized)
-        setProviders(normalized)
-      })
-      .catch((error) => {
-        console.error("[renderer] providers:list failed", error)
-        setFailed(true)
-      })
-      .finally(() => {
-        setLoading(false)
-      })
-  }, [agent, auth.apiConnection, auth.status])
+  const resource = React.useMemo(() => {
+    if (!enabled || !agent || auth.status !== "authenticated") return undefined
+    return createProviderCatalogResource(async () => {
+      const normalized = normalizeProviderList(
+        await agent.providers.list(auth.apiConnection)
+      )!
+      rememberModelNames(normalized)
+      return normalized
+    })
+  }, [enabled, agent, auth.apiConnection, auth.status])
+  const snapshot = React.useSyncExternalStore(
+    resource?.subscribe ?? emptySubscribe,
+    resource?.getSnapshot ?? emptySnapshot,
+    emptySnapshot
+  )
 
   React.useEffect(() => {
-    if (!enabled) return
-    const timeout = window.setTimeout(() => {
-      void refresh().then(() => undefined)
-    })
-    return () => window.clearTimeout(timeout)
-  }, [enabled, refresh])
+    if (!resource) return
+    const refreshVisible = () => {
+      if (document.visibilityState === "visible") void resource.refreshIfStale()
+    }
+    void resource.refreshIfStale()
+    window.addEventListener("focus", refreshVisible)
+    document.addEventListener("visibilitychange", refreshVisible)
+    return () => {
+      window.removeEventListener("focus", refreshVisible)
+      document.removeEventListener("visibilitychange", refreshVisible)
+    }
+  }, [resource])
 
   return {
     apiConnection: auth.apiConnection,
     directory,
-    failed,
-    loading,
-    providers,
-    refresh,
+    ...snapshot,
+    refresh: resource?.refresh ?? emptyRefresh,
+    refreshIfStale: resource?.refreshIfStale ?? emptyRefresh,
     aiPreferences:
       auth.status === "authenticated" ? auth.aiPreferences : undefined,
     saveAiPreferences:
@@ -319,6 +317,10 @@ function useLocalProviderState(enabled = true) {
     serverReady: !!agent,
   }
 }
+
+const emptySnapshot = () => emptyProviderCatalog
+const emptySubscribe = () => () => {}
+const emptyRefresh = () => Promise.resolve()
 
 // Display names of the models seen in the last provider list, for places
 // that show a model without loading the providers themselves (story cards).
@@ -797,7 +799,10 @@ export function modelForPreference(
       })
     )
   if (!model) return undefined
-  return { model, variant: getCurrentVariant(model, preference.reasoningEffort) }
+  return {
+    model,
+    variant: getCurrentVariant(model, preference.reasoningEffort),
+  }
 }
 
 function findModel(models: SelectableModel[], key: ModelKey | undefined) {
