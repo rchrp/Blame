@@ -5,48 +5,53 @@ SearXNG instance. All model providers use the same `search_web` tool. Page readi
 runs locally in the desktop runtime, using Mozilla Readability and an isolated
 Electron browser for JavaScript pages. No provider search keys are needed.
 
-## Dokploy
+## Dokploy: GitHub application + Dockerfile
 
-Use [`docker-compose.dokploy.yml`](./docker-compose.dokploy.yml) as a standalone
-Docker Compose deployment. It joins the existing `dokploy-network`, uses the
-internal service name `blame-searxng`, and publishes no host ports or Traefik route.
-The API must share that network. In this installation, the existing `Backend`
-application already does.
+Deploy SearXNG as an **Application** connected to the Blame GitHub repository,
+using [`Dockerfile`](./Dockerfile), like the other Blame packages. Configuration
+is copied into the image from [`settings.yml`](./settings.yml); no Docker Compose
+service or manual File Mount is needed for Dokploy.
 
-1. In the same Dokploy project/environment and on the same server as the API,
-   create a **Docker Compose** service named **Web Search**. Select **Docker
-   Compose**, not Docker Stack, and use the **Raw** source. Paste the contents of
-   `docker-compose.dokploy.yml` into its Compose editor.
-2. In **Environment**, add `SEARXNG_SECRET=<random secret>` (generate one with
-   `openssl rand -hex 32`). Set `SEARXNG_VERSION` to a tested SearXNG tag for
-   production; the default follows `latest`. Save the environment.
-3. In **Advanced > Mounts**, create a **File Mount** named
-   `searxng-settings.yml`, with the contents of [`settings.yml`](./settings.yml).
-   The Compose file mounts `../files/searxng-settings.yml` read-only at
-   `/etc/searxng/settings.yml`. Use Dokploy's **Preview Compose** to check this
-   mount and the shared `dokploy-network` before deploying.
-4. Leave **Domains** empty and **Isolated Deployments** disabled for this Compose
-   service, so it uses the explicitly declared shared network. Deploy **Web
-   Search** and verify its logs show a running service.
-5. In **Backend > Environment**, add the following without replacing the other
-   variables, then redeploy **Backend**:
+Use the existing Blame project/environment and deployment server:
 
-   ```dotenv
-   SEARXNG_URL=http://blame-searxng:8080
-   ```
+| Setting | Value |
+| --- | --- |
+| Application name | Web Search |
+| Source | GitHub, the same Blame repository/connection as Backend |
+| Branch | `main` |
+| Build path | `/` |
+| Build type | Dockerfile |
+| Dockerfile | `deploy/search/Dockerfile` |
+| Docker context | `./` (repository root) |
+| Build stage | `production` |
+| Watch paths | `deploy/search/**` |
+| Container port | `8080` (internal only) |
+| Domains / published ports | None |
+| Runtime environment | `SEARXNG_SECRET=<random secret>` |
 
-`127.0.0.1` inside the API container refers to the API container itself. Use the
-service URL above for Dokploy. No public SearXNG domain or port `8888` is required.
-The shared network is internal to Docker but also reachable by other services on
-`dokploy-network`; it is not exclusive to the API. A dedicated network can replace
-it if both services are configured to join that network.
+Generate the secret with `openssl rand -hex 32` and save it in Dokploy Environment,
+not in Git or build arguments. The image pins a tested upstream version/digest and
+includes a health check. Its Dockerfile-specific ignore file restricts the build
+context to this service's files. Reuse Backend's build server and registry when
+building on a separate server. Enable automatic deployments on pushes affecting
+`deploy/search/**`; settings changes then follow the normal GitHub workflow.
 
-Keep the configuration in Dokploy's File Mounts: a bind mount into a Git checkout
-can become empty when Dokploy reclones the repository during automatic deployment.
-After changing `settings.yml` in this repository, update its Dokploy File Mount
-and redeploy Web Search. References: [Dokploy Compose configuration and
-mounts](https://docs.dokploy.com/docs/core/docker-compose), [network and domain
-handling](https://docs.dokploy.com/docs/core/docker-compose/domains).
+Keep the application on `dokploy-network`, as the existing Backend is. Add a named
+volume for `/var/cache/searxng` if search cache should survive deployments; do not
+mount `/etc/searxng`, because that would hide the versioned settings in the image.
+Deploy Web Search, wait for it to become healthy, then add to Backend Environment
+and redeploy Backend:
+
+```dotenv
+SEARXNG_URL=http://blame-searxng-b8mbdj:8080
+```
+
+The current Web Search **appName** is `blame-searxng-b8mbdj`, also its Docker
+service DNS name. For another installation, replace it with that application's
+actual appName returned by Dokploy; the display name may differ. `127.0.0.1` inside Backend refers to
+Backend itself. There is no public SearXNG domain or port `8888` to configure.
+Other services on `dokploy-network` can also reach this internal endpoint; the
+network is not exclusive to Backend.
 
 To check connectivity, run this in the **Backend container terminal**:
 
@@ -55,7 +60,8 @@ node -e 'fetch(process.env.SEARXNG_URL + "/search?q=Mozilla+Readability&format=j
 ```
 
 Then ask the Blame agent to search the web to verify the authenticated API path
-and source display together.
+and source display together. See [Dokploy Dockerfile build settings](https://docs.dokploy.com/docs/core/applications/build-type)
+and [application environment and volumes](https://docs.dokploy.com/docs/core/applications/advanced).
 
 ## Local Docker / standalone server
 
