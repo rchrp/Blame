@@ -339,7 +339,11 @@ function CompactStats({
                 <motion.span className="flex" variants={popVariants}>
                   <PlanUsagePercents usage={planUsage} />
                 </motion.span>
-                <span aria-hidden className="mx-0.5 h-6 w-px shrink-0 bg-foreground/10" />
+                <motion.span
+                  aria-hidden
+                  className="mx-0.5 h-6 w-px shrink-0 bg-foreground/10"
+                  variants={popVariants}
+                />
               </>
             ) : null}
             <motion.span className="flex" variants={popVariants}>
