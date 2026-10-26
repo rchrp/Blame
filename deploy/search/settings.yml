@@ -1,6 +1,6 @@
 use_default_settings:
   engines:
-    keep_only: [google, duckduckgo, brave]
+    keep_only: [google cse, brave, bing, qwant, duckduckgo, yahoo]
 server:
   secret_key: "@SEARXNG_SECRET@"
   limiter: false
@@ -8,13 +8,45 @@ server:
 search:
   formats: [json]
   safe_search: 0
+  # Native suspension complements the API's rotation and circuit breakers.
+  ban_time_on_fail: 30
+  max_ban_time_on_fail: 120
+  suspended_times:
+    SearxEngineAccessDenied: 86400
+    SearxEngineCaptcha: 86400
+    SearxEngineTooManyRequests: 3600
+    cf_SearxEngineCaptcha: 1296000
+    cf_SearxEngineAccessDenied: 86400
+    recaptcha_SearxEngineCaptcha: 604800
 outgoing:
   request_timeout: 5.0
-  max_request_timeout: 10.0
+  max_request_timeout: 5.0
+  # Retrying from the same IP only adds pressure to a blocked engine.
+  retries: 0
 engines:
-  - name: google
+  # weight affects result ranking, NOT traffic. API selection weights live in
+  # packages/api/app/services/web_search_engine_pool.ts.
+  - name: google cse
     disabled: false
-  - name: duckduckgo
-    disabled: false
+    timeout: 5.0
+    weight: 1.2
   - name: brave
     disabled: false
+    timeout: 4.0
+    weight: 1.1
+  - name: bing
+    disabled: false
+    timeout: 4.0
+    weight: 1.0
+  - name: qwant
+    disabled: false
+    timeout: 4.0
+    weight: 1.0
+  - name: duckduckgo
+    disabled: false
+    timeout: 4.0
+    weight: 1.0
+  - name: yahoo
+    disabled: false
+    timeout: 3.0
+    weight: 0.8
