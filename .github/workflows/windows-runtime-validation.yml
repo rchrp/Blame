@@ -1,0 +1,43 @@
+name: Validate Windows runtime and installer
+
+on:
+  push:
+    branches: [codex/windows-runtime-validation]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-runtime-validation
+  cancel-in-progress: true
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    env:
+      BLAME_DOWNLOAD_BASE_URL: https://download.blame.so/latest
+      BLAME_REQUIRE_PREBUILT_RUNTIME: true
+      BLAME_VERSION: 1.1.46-validation.1
+      BLAME_HOMEPAGE: ${{ vars.BLAME_HOMEPAGE }}
+      BLAME_MAINTAINER_EMAIL: ${{ vars.BLAME_MAINTAINER_EMAIL }}
+      BLAME_MAINTAINER_NAME: ${{ vars.BLAME_MAINTAINER_NAME }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Test Windows PowerShell runtime
+        run: node --test scripts/windows-runtime.test.mjs
+      - uses: ./.github/actions/setup
+        with:
+          save-cache: "false"
+      - name: Test package integrity
+        run: pnpm --filter @blame/desktop test:package
+      - name: Build Windows installer
+        run: node scripts/desktop-release.mjs build --win --x64
+      - uses: actions/upload-artifact@v7
+        with:
+          name: windows-runtime-validation
+          retention-days: 3
+          if-no-files-found: error
+          path: packages/desktop/dist/*.exe
