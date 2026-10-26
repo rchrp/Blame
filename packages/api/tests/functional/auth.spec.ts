@@ -14,8 +14,10 @@ type SignupBody = {
 
 const uuidV7Pattern = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
 
+// The Better Auth data migration deliberately cannot roll back. Keep the schema
+// and truncate test data between groups instead of resetting migrations.
 test.group('Better Auth response forwarding', (group) => {
-  group.setup(() => testUtils.db().migrate())
+  group.setup(() => testUtils.db().truncate())
 
   test('forwards empty redirects', async ({ client, assert }) => {
     const response = await client
@@ -56,7 +58,7 @@ test.group('Better Auth response forwarding', (group) => {
 })
 
 test.group('auth', (group) => {
-  group.setup(() => testUtils.db().migrate())
+  group.setup(() => testUtils.db().truncate())
   group.each.setup(() => testUtils.db().truncate())
 
   test('accepts Better Auth bearer tokens on protected routes', async ({ client, assert }) => {
