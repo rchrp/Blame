@@ -100,7 +100,7 @@ export function StoryStatsIsland({
       animate={
         expanded
           ? { height: fullHeight ?? "auto", width: expandedWidth }
-          : { height: compactHeight, width: pillWidth(stats, preparing) }
+          : { height: compactHeight, width: pillWidth(stats) }
       }
       transition={islandTransition(expanded, reduceMotion)}
     >
@@ -144,8 +144,8 @@ const compactWidth = 192
 // Room for the plan usage donut and its two percentages.
 const planUsageWidth = 92
 
-function pillWidth(stats: StoryStats, preparing = false) {
-  return (preparing ? 168 : compactWidth) + (stats.planUsage ? planUsageWidth : 0)
+function pillWidth(stats: StoryStats) {
+  return compactWidth + (stats.planUsage ? planUsageWidth : 0)
 }
 const compactHeight = 48
 
@@ -273,11 +273,11 @@ function PreparationStats({ stats }: { stats: StoryStats }) {
   const { budget, planUsage } = stats
   return (
     <div
-      className="flex items-center gap-2 pl-3"
-      style={{ height: compactHeight, width: pillWidth(stats, true) }}
+      className="flex items-center gap-2 pl-2.5"
+      style={{ height: compactHeight, width: pillWidth(stats) }}
     >
       {planUsage ? (
-        <Pop>
+        <Pop className="flex shrink-0 items-center gap-2">
           <Tooltip>
             <TooltipTrigger asChild>
               <span
@@ -293,11 +293,11 @@ function PreparationStats({ stats }: { stats: StoryStats }) {
               <PlanUsageBars usage={planUsage} />
             </TooltipContent>
           </Tooltip>
+          <span aria-hidden className="mx-0.5 h-6 w-px shrink-0 bg-foreground/10" />
         </Pop>
       ) : null}
-      <Pop className="grid min-w-0 flex-1 gap-0.5">
-        <span className="text-[10px] text-muted-foreground">Max context</span>
-        <ContextLimitSelect budget={budget} />
+      <Pop className="flex min-w-0 flex-1 items-center">
+        <ContextLimitSelect budget={budget} compact />
         {!budget.limit ? (
           <span className="text-xs text-muted-foreground">—</span>
         ) : null}
@@ -416,7 +416,10 @@ function CompactStats({
               </>
             ) : null}
             <motion.span className="flex" variants={popVariants}>
-              <ContextDonut context={context} />
+              <ContextDonut
+                ratio={context?.ratio}
+                cachedRatio={context ? context.cached / context.limit : 0}
+              />
             </motion.span>
             <motion.span
               className="grid gap-0.5 text-left leading-none tabular-nums"
@@ -454,13 +457,21 @@ function CompactStats({
 }
 
 // The context grid, as a ring: reused, then new, over the free part.
-function ContextDonut({ context }: { context?: StoryContextUsage }) {
+function ContextDonut({
+  ratio = 0,
+  cachedRatio = 0,
+  showPressure = true,
+}: {
+  ratio?: number
+  cachedRatio?: number
+  showPressure?: boolean
+}) {
   const size = 28
   const stroke = 4
   const radius = (size - stroke) / 2
   const length = 2 * Math.PI * radius
-  const used = context?.ratio ?? 0
-  const cached = context ? Math.min(context.cached / context.limit, used) : 0
+  const used = Math.max(0, Math.min(ratio, 1))
+  const cached = Math.max(0, Math.min(cachedRatio, used))
   const ring = (fraction: number, className: string) => (
     <circle
       className={cn(
@@ -483,7 +494,9 @@ function ContextDonut({ context }: { context?: StoryContextUsage }) {
     >
       {ring(
         1,
-        used >= 0.8 ? "stroke-amber-500/25" : "stroke-foreground/[0.09]"
+        showPressure && used >= 0.8
+          ? "stroke-amber-500/25"
+          : "stroke-foreground/[0.09]"
       )}
       {ring(used, "stroke-violet-400")}
       {ring(cached, "stroke-blue-500")}
@@ -604,6 +617,7 @@ type StoryContextBudget = {
   experimental: boolean
   // The budget the agent works in: the cap, or the provider's limit.
   limit?: number
+  maximum?: number
   options: ContextLimitOption[]
   storyId?: string
 }
@@ -623,6 +637,7 @@ function useStoryContextBudget(
     choice,
     experimental: Boolean(limit && providerLimit && limit > providerLimit),
     limit,
+    maximum: modelLimit,
     options: contextLimitOptions(providerLimit, modelLimit),
     storyId,
   }
@@ -631,11 +646,35 @@ function useStoryContextBudget(
 const providerDefault = "provider"
 
 // The cap, picked where it is read: next to the context it limits.
-function ContextLimitSelect({ budget }: { budget: StoryContextBudget }) {
+function ContextLimitSelect({
+  budget,
+  compact = false,
+}: {
+  budget: StoryContextBudget
+  compact?: boolean
+}) {
   const storyId = budget.storyId
   if (!budget.limit) return null
+  const maximum = budget.maximum ?? budget.limit
+  const value = compact ? (
+    <>
+      <ContextDonut ratio={budget.limit / maximum} showPressure={false} />
+      <span className="grid gap-0.5 text-left leading-none tabular-nums">
+        <span className="text-sm font-semibold text-foreground">
+          {compactTokens(budget.limit)}
+        </span>
+        <span className="text-[10px] font-medium text-muted-foreground">
+          / {compactTokens(maximum)}
+        </span>
+      </span>
+    </>
+  ) : (
+    compactTokens(budget.limit)
+  )
   if (!storyId || budget.options.length < 2)
-    return <span>{compactTokens(budget.limit)}</span>
+    return (
+      <span className={cn(compact && "flex items-center gap-2")}>{value}</span>
+    )
   const selected =
     budget.options.find((option) => option.value === budget.choice) ??
     budget.options.find((option) => option.value === undefined)
@@ -653,10 +692,19 @@ function ContextLimitSelect({ budget }: { budget: StoryContextBudget }) {
     >
       <SelectTrigger
         aria-label="Maximum context"
-        className="h-auto gap-0.5 border-0 bg-transparent p-0 text-xs text-muted-foreground shadow-none hover:text-foreground focus-visible:ring-0 dark:bg-transparent dark:hover:bg-transparent [&_svg:not([class*='size-'])]:size-3"
+        title={
+          compact
+            ? `Context budget: ${compactTokens(budget.limit)} of ${compactTokens(maximum)} maximum`
+            : undefined
+        }
+        className={cn(
+          "h-auto gap-0.5 border-0 bg-transparent p-0 text-xs text-muted-foreground shadow-none hover:text-foreground focus-visible:ring-0 dark:bg-transparent dark:hover:bg-transparent [&_svg:not([class*='size-'])]:size-3",
+          compact &&
+            "gap-2 rounded-md focus-visible:ring-2 focus-visible:ring-ring/50"
+        )}
         size="sm"
       >
-        {compactTokens(budget.limit)}
+        {value}
       </SelectTrigger>
       <SelectContent align="end" className="min-w-48" position="popper">
         <SelectGroup>
