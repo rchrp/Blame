@@ -13,6 +13,16 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  windows-runtime:
+    name: Windows PowerShell runtime tests
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - run: node --test scripts/windows-runtime.test.mjs
+
   line-budgets:
     name: Line budgets
     runs-on: ubuntu-latest

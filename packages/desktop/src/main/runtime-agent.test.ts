@@ -54,7 +54,7 @@ class FakeAgentProcess extends EventEmitter {
 
 test("runtime agent client sends exec requests over one WSL process", async () => {
   const processes: FakeAgentProcess[] = [];
-  const spawnProcess = fakeSpawn(processes, (request, process) => {
+  const spawnAgent = fakeSpawn(processes, (request, process) => {
     process.stdout.write(
       `${JSON.stringify({
         id: request.id,
@@ -66,7 +66,19 @@ test("runtime agent client sends exec requests over one WSL process", async () =
   const client = new RuntimeAgentClient({
     env: { PATH: "/bin" },
     platform: "win32",
-    spawnProcess,
+    spawnProcess: ((command, args, options) => {
+      assert.equal(command, "wsl.exe");
+      assert.deepEqual(args, [
+        "-d",
+        "BlameRuntime",
+        "-u",
+        "root",
+        "--exec",
+        "blame-runtime-agent",
+        "serve",
+      ]);
+      return spawnAgent(command, args, options);
+    }) as typeof spawn,
   });
 
   const result = await client.exec({

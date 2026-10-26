@@ -3,7 +3,7 @@ $ErrorActionPreference = "Stop"
 $DistroName = if ($env:BLAME_WSL_DISTRO) { $env:BLAME_WSL_DISTRO } else { "BlameRuntime" }
 $RuntimeHome = Split-Path -Parent $PSScriptRoot
 $ManifestPath = Join-Path $RuntimeHome "manifest.json"
-$Manifest = Get-Content $ManifestPath -Raw | ConvertFrom-Json
+$Manifest = Get-Content -LiteralPath $ManifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
 $RuntimeVersion = [string]$Manifest.runtimeVersion
 $RuntimeAgentVersion = if ($Manifest.PSObject.Properties["runtimeAgentVersion"]) {
   [string]$Manifest.runtimeAgentVersion
@@ -18,8 +18,8 @@ $ClineSdkVersion = if ($env:BLAME_CLINE_SDK_VERSION) {
   "0.0.95"
 }
 $SemanticHarnessPayload = Join-Path $RuntimeHome "payloads\blame-semantic-harness.tgz"
-$SemanticHarnessSha256 = if (Test-Path $SemanticHarnessPayload) {
-  (Get-FileHash -Algorithm SHA256 -Path $SemanticHarnessPayload).Hash.ToLowerInvariant()
+$SemanticHarnessSha256 = if (Test-Path -LiteralPath $SemanticHarnessPayload) {
+  (Get-FileHash -Algorithm SHA256 -LiteralPath $SemanticHarnessPayload).Hash.ToLowerInvariant()
 } else {
   ""
 }
@@ -30,37 +30,67 @@ $RootfsAction = "Blame could not download the BlameRuntime WSL2 rootfs. Check th
 Add-Type -AssemblyName System.Net.Http
 
 function Invoke-WslHost {
-  param([string[]]$WslArgs)
-  $output = & wsl.exe @WslArgs 2>&1
-  [pscustomobject]@{
-    Code = $LASTEXITCODE
-    Output = ($output -join "`n")
+  param([string[]]$WslArgs, [string]$InputContent, [switch]$InheritOutput)
+  # Windows PowerShell turns redirected native stderr into terminating errors
+  # under ErrorActionPreference=Stop, including successful WSL warnings.
+  # Process also avoids PowerShell 5.1's lossy native argument serialization.
+  $process = [System.Diagnostics.Process]::new()
+  $process.StartInfo.FileName = (Get-Command wsl.exe -CommandType Application -ErrorAction Stop).Source
+  $process.StartInfo.Arguments = Join-Arguments $WslArgs
+  $process.StartInfo.RedirectStandardInput = $PSBoundParameters.ContainsKey("InputContent")
+  $process.StartInfo.RedirectStandardOutput = -not $InheritOutput
+  $process.StartInfo.RedirectStandardError = -not $InheritOutput
+  $process.StartInfo.UseShellExecute = $false
+  $process.StartInfo.EnvironmentVariables["WSL_UTF8"] = "1"
+  if (-not $InheritOutput) {
+    $process.StartInfo.StandardOutputEncoding = [System.Text.Encoding]::UTF8
+    $process.StartInfo.StandardErrorEncoding = [System.Text.Encoding]::UTF8
+  }
+  try {
+    $process.Start() | Out-Null
+    if (-not $InheritOutput) {
+      # Drain both streams concurrently, before writing potentially large scripts.
+      $standardOutputTask = $process.StandardOutput.ReadToEndAsync()
+      $standardErrorTask = $process.StandardError.ReadToEndAsync()
+    }
+    $inputFailure = $null
+    if ($process.StartInfo.RedirectStandardInput) {
+      try {
+        # Explicit UTF-8 without a BOM, independent of the Windows code page.
+        $bytes = [System.Text.Encoding]::UTF8.GetBytes((ConvertTo-UnixLineEndings $InputContent))
+        $process.StandardInput.BaseStream.Write($bytes, 0, $bytes.Length)
+      } catch {
+        # WSL can reject the launch before reading stdin. Keep its diagnostic
+        # and exit code instead of replacing them with a broken-pipe exception.
+        $inputFailure = $_
+      } finally {
+        try { $process.StandardInput.Close() } catch {
+          if (-not $inputFailure) { $inputFailure = $_ }
+        }
+      }
+    }
+    $process.WaitForExit()
+    $stdout = ""
+    $stderr = ""
+    if (-not $InheritOutput) {
+      $stdout = $standardOutputTask.GetAwaiter().GetResult()
+      $stderr = $standardErrorTask.GetAwaiter().GetResult()
+    }
+    if ($inputFailure -and $process.ExitCode -eq 0) { throw $inputFailure }
+    [pscustomobject]@{
+      Code = $process.ExitCode
+      Stdout = $stdout
+      Stderr = $stderr
+      Output = ((@($stdout, $stderr) | Where-Object { $_ }) -join "`n").TrimEnd()
+    }
+  } finally {
+    $process.Dispose()
   }
 }
 
 function Invoke-DistroScript {
   param([string]$Content)
-  $process = [System.Diagnostics.Process]::new()
-  $process.StartInfo.FileName = "wsl.exe"
-  $process.StartInfo.Arguments = Join-Arguments @("-d", $DistroName, "-u", "root", "--", "sh", "-s")
-  $process.StartInfo.RedirectStandardInput = $true
-  $process.StartInfo.RedirectStandardOutput = $true
-  $process.StartInfo.RedirectStandardError = $true
-  $process.StartInfo.UseShellExecute = $false
-  $process.Start() | Out-Null
-  $standardOutputTask = $process.StandardOutput.ReadToEndAsync()
-  $standardErrorTask = $process.StandardError.ReadToEndAsync()
-  $process.StandardInput.Write((ConvertTo-UnixLineEndings $Content))
-  $process.StandardInput.Close()
-  $process.WaitForExit()
-  $outputParts = @(
-    $standardOutputTask.GetAwaiter().GetResult()
-    $standardErrorTask.GetAwaiter().GetResult()
-  ) | Where-Object { $_ }
-  [pscustomobject]@{
-    Code = $process.ExitCode
-    Output = ($outputParts -join "`n").TrimEnd()
-  }
+  Invoke-WslHost -WslArgs @("-d", $DistroName, "-u", "root", "--exec", "sh", "-s") -InputContent $Content
 }
 
 function ConvertTo-UnixLineEndings {
@@ -119,10 +149,16 @@ function Get-OptionalProperty {
 
 function Get-WslListText {
   $result = Invoke-WslHost -WslArgs @("--list", "--verbose")
-  ($result.Output -replace "`0", "")
+  if ($result.Code -ne 0) {
+    throw $result.Output
+  }
+  ($result.Stdout -replace "`0", "")
 }
 
 function Test-WslAvailable {
+  if (-not (Get-Command wsl.exe -CommandType Application -ErrorAction SilentlyContinue)) {
+    return $false
+  }
   $result = Invoke-WslHost -WslArgs @("--status")
   $result.Code -eq 0
 }
@@ -231,24 +267,19 @@ check package-managers sh -lc 'test "$(/opt/blame/package-managers/pnpm/10.33.2/
   $command = $command -replace "__RUNTIME_VERSION__", $RuntimeVersion
   $command = $command -replace "__SEMANTIC_HARNESS_SHA256__", $SemanticHarnessSha256
   $result = Invoke-DistroScript $command
-  if ($result.Code -ne 0) {
-    foreach ($name in @("agent", "agent-version", "runtime-version", "docker", "docker-compose", "git", "cline-sdk", "semantic-harness", "package-managers")) {
-      $Checks.Add((New-Check $name "missing" "Repair BlameRuntime from Blame runtime setup."))
+  $reported = @{}
+  if ($result.Code -eq 0) {
+    foreach ($line in ($result.Stdout -split "`n")) {
+      $parts = $line.TrimEnd("`r") -split "`t", 2
+      if ($parts.Count -eq 2) { $reported[$parts[0]] = $parts[1] }
     }
-    return
   }
-  foreach ($line in ($result.Output -split "`n")) {
-    if (-not $line.Trim()) {
-      continue
-    }
-    $parts = $line -split "`t", 2
-    if ($parts.Count -ne 2) {
-      continue
-    }
-    if ($parts[1] -eq "available") {
-      $Checks.Add((New-Check $parts[0] "available"))
+  # Missing/truncated probe output must never turn a broken distro into ready.
+  foreach ($name in @("agent", "agent-version", "runtime-version", "docker", "docker-compose", "git", "cline-sdk", "semantic-harness", "package-managers")) {
+    if ($reported[$name] -eq "available") {
+      $Checks.Add((New-Check $name "available"))
     } else {
-      $Checks.Add((New-Check $parts[0] "missing" "Repair BlameRuntime from Blame runtime setup."))
+      $Checks.Add((New-Check $name "missing" "Repair BlameRuntime from Blame runtime setup."))
     }
   }
 }
@@ -280,17 +311,17 @@ function Assert-WslReady {
 
 function Get-RootfsPath {
   $spec = Get-RootfsSpec
-  if ($env:BLAME_WSL2_ROOTFS -and (Test-Path $env:BLAME_WSL2_ROOTFS)) {
+  if ($env:BLAME_WSL2_ROOTFS -and (Test-Path -LiteralPath $env:BLAME_WSL2_ROOTFS)) {
     Confirm-RootfsChecksum $env:BLAME_WSL2_ROOTFS $spec
     return $env:BLAME_WSL2_ROOTFS
   }
   $packagedRootfs = Join-Path $RuntimeHome "rootfs\BlameRuntime-rootfs.tar"
-  if (Test-Path $packagedRootfs) {
+  if (Test-Path -LiteralPath $packagedRootfs) {
     Confirm-RootfsChecksum $packagedRootfs $spec
     return $packagedRootfs
   }
   $packagedCompressedRootfs = Join-Path $RuntimeHome "rootfs\BlameRuntime-rootfs.tar.gz"
-  if (Test-Path $packagedCompressedRootfs) {
+  if (Test-Path -LiteralPath $packagedCompressedRootfs) {
     Confirm-RootfsChecksum $packagedCompressedRootfs $spec
     return $packagedCompressedRootfs
   }
@@ -302,27 +333,27 @@ function Get-CachedRootfsPath {
   $cacheRoot = Get-CacheRoot
   $fileName = Split-Path $Spec.url -Leaf
   $rootfs = Join-Path $cacheRoot $fileName
-  if (Test-Path $rootfs) {
+  if (Test-Path -LiteralPath $rootfs) {
     try {
       Confirm-RootfsChecksum $rootfs $Spec
       return $rootfs
     } catch {
-      Remove-Item -Force $rootfs
+      Remove-Item -Force -LiteralPath $rootfs
     }
   }
   New-Item -ItemType Directory -Force -Path $cacheRoot | Out-Null
   $download = "$rootfs.download"
-  if (Test-Path $download) {
-    Remove-Item -Force $download
+  if (Test-Path -LiteralPath $download) {
+    Remove-Item -Force -LiteralPath $download
   }
   try {
     Invoke-RootfsDownload $Spec.url $download
     Confirm-RootfsChecksum $download $Spec
-    Move-Item -Force $download $rootfs
+    Move-Item -Force -LiteralPath $download -Destination $rootfs
     return $rootfs
   } catch {
-    if (Test-Path $download) {
-      Remove-Item -Force $download
+    if (Test-Path -LiteralPath $download) {
+      Remove-Item -Force -LiteralPath $download
     }
     throw $RootfsAction
   }
@@ -377,7 +408,7 @@ function Assert-RootfsChecksum {
   if (-not $sha256) {
     return
   }
-  $actual = (Get-FileHash -Algorithm SHA256 -Path $Path).Hash.ToLowerInvariant()
+  $actual = (Get-FileHash -Algorithm SHA256 -LiteralPath $Path).Hash.ToLowerInvariant()
   if ($actual -ne ([string]$sha256).ToLowerInvariant()) {
     throw "BlameRuntime rootfs checksum mismatch."
   }
@@ -396,12 +427,6 @@ function Get-RootfsSpec {
     throw "BlameRuntime does not provide a WSL2 rootfs for $architecture."
   }
   $spec
-}
-
-function Test-RootfsSpecPrebaked {
-  $spec = Get-RootfsSpec
-  $kind = Get-OptionalProperty $spec "kind"
-  [string]$kind -eq "blame-prebaked"
 }
 
 function Get-RuntimeArchitecture {
@@ -442,35 +467,25 @@ function Ensure-Distro {
 function Invoke-Provisioner {
   Write-RuntimeProgress "configuring"
   $script = Join-Path $PSScriptRoot "provision-blame-runtime.sh"
-  if (-not (Test-Path $SemanticHarnessPayload)) {
+  if (-not (Test-Path -LiteralPath $SemanticHarnessPayload)) {
     throw "Blame semantic harness runtime payload is missing."
   }
-  $resolvedPayload = (Resolve-Path $SemanticHarnessPayload).Path
-  $translated = Invoke-WslHost -WslArgs @("-d", $DistroName, "-u", "root", "--", "wslpath", "-u", $resolvedPayload)
+  $resolvedPayload = (Resolve-Path -LiteralPath $SemanticHarnessPayload).Path
+  $translated = Invoke-WslHost -WslArgs @("-d", $DistroName, "-u", "root", "--exec", "wslpath", "-u", $resolvedPayload)
   if ($translated.Code -ne 0) {
     throw $translated.Output
   }
-  $wslPayload = ($translated.Output -join "`n").Trim()
+  $wslPayload = $translated.Stdout.TrimEnd("`r", "`n")
   if (-not $wslPayload) {
     throw "Could not translate the Blame semantic harness payload path for WSL2."
   }
-  $copy = Invoke-WslHost -WslArgs @("-d", $DistroName, "-u", "root", "--", "cp", "--", $wslPayload, "/tmp/blame-semantic-harness.tgz")
+  $copy = Invoke-WslHost -WslArgs @("-d", $DistroName, "-u", "root", "--exec", "cp", "--", $wslPayload, "/tmp/blame-semantic-harness.tgz")
   if ($copy.Code -ne 0) {
     throw $copy.Output
   }
-  $content = Get-Content $script -Raw
-  $process = [System.Diagnostics.Process]::new()
-  $process.StartInfo.FileName = "wsl.exe"
-  $process.StartInfo.Arguments = Join-Arguments @("-d", $DistroName, "-u", "root", "--", "sh", "-s", "--", $RuntimeVersion, $ClineSdkVersion)
-  $process.StartInfo.RedirectStandardInput = $true
-  $process.StartInfo.RedirectStandardOutput = $false
-  $process.StartInfo.RedirectStandardError = $false
-  $process.StartInfo.UseShellExecute = $false
-  $process.Start() | Out-Null
-  $process.StandardInput.Write((ConvertTo-UnixLineEndings $content))
-  $process.StandardInput.Close()
-  $process.WaitForExit()
-  if ($process.ExitCode -ne 0) {
+  $content = Get-Content -LiteralPath $script -Raw -Encoding UTF8
+  $result = Invoke-WslHost -WslArgs @("-d", $DistroName, "-u", "root", "--exec", "sh", "-s", "--", $RuntimeVersion, $ClineSdkVersion) -InputContent $content -InheritOutput
+  if ($result.Code -ne 0) {
     throw "BlameRuntime provisioning failed."
   }
 }
@@ -535,15 +550,19 @@ function Join-Arguments {
 
 function Quote-Argument {
   param([string]$Value)
-  if ($Value -notmatch '[\s"]') {
+  if ($Value.Length -gt 0 -and $Value -notmatch '[\s"]') {
     return $Value
   }
-  '"' + ($Value -replace '"', '\"') + '"'
+  # Windows argv parsing doubles backslashes before quotes and before the
+  # closing quote; empty strings must also remain individual arguments.
+  '"' + ($Value -replace '(\\*)"', '$1$1\"' -replace '(\\+)$', '$1$1') + '"'
 }
 
 function Ensure-Runtime {
-  $created = Ensure-Distro
-  if ($created -and (Test-RootfsSpecPrebaked) -and (Test-ImportedRuntimeReady)) {
+  Ensure-Distro | Out-Null
+  # An existing, up-to-date distro needs Docker started, not provisioning again.
+  # Repair-Runtime remains the explicit way to force provisioning.
+  if (Test-ImportedRuntimeReady) {
     $dockerReady = $false
     try {
       Write-RuntimeProgress "starting"
@@ -573,7 +592,8 @@ function Repair-Runtime {
 function Reset-Runtime {
   Assert-WslReady
   if (Test-DistroPresent) {
-    Invoke-WslHost -WslArgs @("--unregister", $DistroName) | Out-Null
+    $result = Invoke-WslHost -WslArgs @("--unregister", $DistroName)
+    if ($result.Code -ne 0) { throw $result.Output }
   }
   Ensure-Runtime
 }
@@ -581,7 +601,8 @@ function Reset-Runtime {
 function Uninstall-Runtime {
   Assert-WslReady
   if (Test-DistroPresent) {
-    Invoke-WslHost -WslArgs @("--unregister", $DistroName) | Out-Null
+    $result = Invoke-WslHost -WslArgs @("--unregister", $DistroName)
+    if ($result.Code -ne 0) { throw $result.Output }
   }
   Get-RuntimeStatus
 }
@@ -614,8 +635,8 @@ function Invoke-RuntimeCommand {
   if ($usesContainerRuntime) {
     Ensure-DockerRunning
   }
-  & wsl.exe -d $DistroName -u $user -- @CommandArgs
-  exit $LASTEXITCODE
+  $result = Invoke-WslHost -WslArgs (@("-d", $DistroName, "-u", $user, "--exec") + $CommandArgs) -InheritOutput
+  exit $result.Code
 }
 
 if ($args.Count -eq 0) {

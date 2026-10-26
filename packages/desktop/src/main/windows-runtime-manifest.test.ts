@@ -69,7 +69,10 @@ test("pipes multiline Windows runtime probes through WSL standard input", async 
 
   assert.match(source, /function Invoke-DistroScript/);
   assert.match(source, /function ConvertTo-UnixLineEndings/);
-  assert.match(source, /RedirectStandardInput = \$true/);
+  assert.match(
+    source,
+    /RedirectStandardInput = \$PSBoundParameters.ContainsKey\("InputContent"\)/,
+  );
   assert.match(source, /Write-Host "BLAME_RUNTIME_PROGRESS /);
   assert.doesNotMatch(source, /\$result = Invoke-Distro \$command/);
 });

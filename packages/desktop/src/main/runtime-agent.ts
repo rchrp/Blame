@@ -461,7 +461,7 @@ function agentCommand(platform: NodeJS.Platform, env?: NodeJS.ProcessEnv) {
         runtimeDistroName(sanitizedEnv),
         "-u",
         "root",
-        "--",
+        "--exec",
         "blame-runtime-agent",
         "serve",
       ],
