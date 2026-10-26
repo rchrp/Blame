@@ -2,9 +2,21 @@ param([string]$RuntimeScript, [string]$FixtureRoot, [string]$NativeFixture)
 $ErrorActionPreference = "Stop"
 
 function Assert-Equal($Actual, $Expected, [string]$Message) {
-  $actualJson = ConvertTo-Json -InputObject $Actual -Depth 8 -Compress
-  $expectedJson = ConvertTo-Json -InputObject $Expected -Depth 8 -Compress
-  if ($actualJson -cne $expectedJson) { throw "${Message}: expected $expectedJson; got $actualJson" }
+  # PS 5.1 adds ETS properties to some pipeline arrays; ConvertTo-Json then
+  # wraps them as { value, Count }. Compare array elements instead of metadata.
+  if ($Expected -is [array]) {
+    $actualItems = @($Actual)
+    if ($actualItems.Count -ne $Expected.Count) {
+      throw "${Message}: expected $($Expected.Count) items; got $($actualItems.Count)"
+    }
+    for ($index = 0; $index -lt $Expected.Count; $index++) {
+      Assert-Equal $actualItems[$index] $Expected[$index] "$Message at index $index"
+    }
+    return
+  }
+  if ($Actual -is [array] -or $Actual -cne $Expected) {
+    throw "${Message}: expected <$Expected>; got <$Actual>"
+  }
 }
 function Assert-Throws([scriptblock]$Action, [string]$Message) {
   $threw = $false
