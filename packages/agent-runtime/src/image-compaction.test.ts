@@ -12,12 +12,12 @@ function imageMessages(): Message[] {
   ]).flat()];
 }
 
-async function compact(messages: Message[], config: CoreCompactionConfig, maxInputTokens = 922_000) {
+async function compact(messages: Message[], config: CoreCompactionConfig, maxInputTokens: number | null = 922_000) {
   const prepare = createContextCompactionPrepareTurn({ compaction: config, providerId: "anthropic", modelId: "fixture" });
   assert.ok(prepare);
   return prepare({ abortSignal: new AbortController().signal, agentId: "fixture", conversationId: "fixture",
     parentAgentId: null, iteration: 1, messages, apiMessages: messages, systemPrompt: "", tools: [],
-    model: { id: "fixture", provider: "anthropic", info: { maxInputTokens, contextWindow: maxInputTokens + 128_000 } },
+    model: { id: "fixture", provider: "anthropic", info: maxInputTokens === null ? undefined : { maxInputTokens, contextWindow: maxInputTokens + 128_000 } },
   });
 }
 
@@ -59,6 +59,12 @@ test("image transport bytes no longer compact a small visual context", async () 
 
 test("the image token bound still triggers compaction in a constrained window", async () => {
   assert.ok(await compact(imageMessages(), configured(), 100_000));
+});
+
+test("the image patch preserves Cline's opt-out from auto-compaction for unknown model limits", async () => {
+  const messages = imageMessages();
+  // A deliberately huge image estimate would exceed the old guessed budget.
+  assert.equal(await compact(messages, { ...configured(), imageTokenLimit: 1_000_000 }, null), undefined);
 });
 
 test("long text compaction matches the native control", async () => {

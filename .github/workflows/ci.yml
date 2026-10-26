@@ -84,3 +84,4 @@ jobs:
       - run: pnpm test:release
       - run: pnpm --filter @blame/api build
       - run: pnpm --filter @blame/api exec node ace.js test --files='tests/unit/preview_runtime_security.spec.ts'
+      - run: pnpm --filter @blame/api exec node ace.js test --files='tests/unit/cline_catalog_worker.spec.ts'

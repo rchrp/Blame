@@ -14,6 +14,9 @@ overrides:
   brace-expansion@>=5.0.0 <5.0.9: 5.0.9
 
 patchedDependencies:
+  '@cline/core@0.2.0':
+    hash: 10c3e9704d3c53fc031afbcc370053a9b5b55896536a6016dc91cefc6d11d8c0
+    path: patches/@cline__core@0.2.0.patch
   app-builder-lib@26.8.1:
     hash: b01e9cad7d5cb7de17c9fa0e732aacaa0ca8e18d7d69796ec296ef2c152522fb
     path: patches/app-builder-lib@26.8.1.patch
@@ -11903,7 +11906,7 @@ snapshots:
       - debug
       - supports-color
 
-  '@cline/core@0.2.0(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))':
+  '@cline/core@0.2.0(patch_hash=10c3e9704d3c53fc031afbcc370053a9b5b55896536a6016dc91cefc6d11d8c0)(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))':
     dependencies:
       '@cline/agents': 0.2.0(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.214.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.9.0(@opentelemetry/api@1.9.1))
       '@cline/llms': 0.2.0(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.214.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.9.0(@opentelemetry/api@1.9.1))
@@ -12019,7 +12022,7 @@ snapshots:
 
   '@cline/sdk@0.2.0(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))':
     dependencies:
-      '@cline/core': 0.2.0(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))
+      '@cline/core': 0.2.0(patch_hash=10c3e9704d3c53fc031afbcc370053a9b5b55896536a6016dc91cefc6d11d8c0)(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))
     transitivePeerDependencies:
       - '@aws-sdk/client-bedrock-runtime'
       - '@cfworker/json-schema'
