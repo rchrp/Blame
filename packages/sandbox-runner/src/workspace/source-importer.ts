@@ -258,6 +258,7 @@ async function extractArchive(content: Uint8Array, root: string, delta = false) 
           const chunks: Buffer[] = [];
           let entryBytes = 0;
           for await (const chunk of stream) {
+            if (!Buffer.isBuffer(chunk)) throw new Error("Archive stream emitted non-binary data.");
             entryBytes += Buffer.byteLength(chunk);
             expandedBytes += Buffer.byteLength(chunk);
             if (entryBytes > maximumEntryBytes || expandedBytes > maximumExpandedBytes) {

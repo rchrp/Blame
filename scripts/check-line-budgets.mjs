@@ -58,6 +58,7 @@ async function sourceFiles(directory) {
         "build",
         "generated",
         ".adonisjs",
+        ".next",
         "node_modules",
       ].includes(entry.name)) result.push(...await sourceFiles(path))
     } else if ([".ts", ".tsx"].includes(extname(path)) && !/\.(?:test|spec)\.[^.]+$/.test(path)) {

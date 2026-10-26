@@ -63,14 +63,16 @@ async function archive(entries: ArchiveEntry[]) {
   const stream = pack()
   const reading = (async () => {
     const chunks: Buffer[] = []
-    for await (const chunk of stream) chunks.push(Buffer.from(chunk))
+    for await (const chunk of stream) {
+      if (!Buffer.isBuffer(chunk)) throw new Error('Archive stream emitted non-binary data')
+      chunks.push(Buffer.from(chunk))
+    }
     return Buffer.concat(chunks)
   })()
   for (const entry of entries) {
-    stream.entry(
-      { name: entry.name, type: entry.type, linkname: entry.linkname },
-      entry.type === 'symlink' ? undefined : (entry.content ?? '')
-    )
+    const header = { name: entry.name, type: entry.type, linkname: entry.linkname }
+    if (entry.type === 'symlink') stream.entry(header)
+    else stream.entry(header, entry.content ?? '')
   }
   stream.finalize()
   return reading
