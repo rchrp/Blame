@@ -94,6 +94,9 @@ importers:
       '@xmldom/xmldom':
         specifier: 0.9.10
         version: 0.9.10
+      bowser:
+        specifier: 2.14.1
+        version: 2.14.1
       diff:
         specifier: 9.0.0
         version: 9.0.0

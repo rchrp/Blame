@@ -60,6 +60,7 @@
     "@mozilla/readability": "^0.6.0",
     "@vscode/ripgrep": "1.18.0",
     "@xmldom/xmldom": "0.9.10",
+    "bowser": "2.14.1",
     "diff": "9.0.0",
     "execa": "9.6.1",
     "fast-glob": "3.3.3",

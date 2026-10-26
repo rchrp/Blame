@@ -34,6 +34,9 @@ const dependencyNames = [
   "@ast-grep/napi",
   "@cline/sdk",
   "@vscode/ripgrep",
+  // Fresh npm installs select the AWS SDK's bowser 2.15.0, whose tarball
+  // currently returns 404. Ship the exact version from our package manifest.
+  "bowser",
   "diff",
   "@xmldom/xmldom",
   "execa",
@@ -104,14 +107,7 @@ async function writePayloadManifest(staging, runtimeFiles, coreManifest, runtime
     bin: { "blame-semantic-harness": "harness/semantic-harness-runner.js" },
     engines: { node: ">=22" },
     files: [...runtimeFiles, "vendor/cline-core", "runtime-sdk-check.mjs"],
-    dependencies: {
-      ...coreManifest.dependencies,
-      ...dependencies,
-      // Fresh npm installs do not use our pnpm lockfile. The AWS SDK's range
-      // selects bowser 2.15.0, whose published tarball currently returns 404.
-      // Keep the workspace-tested version until a downloadable release exists.
-      bowser: "2.14.1",
-    },
+    dependencies: { ...coreManifest.dependencies, ...dependencies },
   };
   await writeFile(join(staging, "package.json"), `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
 }
