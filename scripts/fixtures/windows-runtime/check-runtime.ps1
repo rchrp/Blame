@@ -2,9 +2,21 @@ param([string]$RuntimeScript, [string]$FixtureRoot, [string]$NativeFixture)
 $ErrorActionPreference = "Stop"
 
 function Assert-Equal($Actual, $Expected, [string]$Message) {
-  $actualJson = ConvertTo-Json -InputObject $Actual -Depth 8 -Compress
-  $expectedJson = ConvertTo-Json -InputObject $Expected -Depth 8 -Compress
-  if ($actualJson -cne $expectedJson) { throw "${Message}: expected $expectedJson; got $actualJson" }
+  # PS 5.1 adds ETS properties to some pipeline arrays; ConvertTo-Json then
+  # wraps them as { value, Count }. Compare array elements instead of metadata.
+  if ($Expected -is [array]) {
+    $actualItems = @($Actual)
+    if ($actualItems.Count -ne $Expected.Count) {
+      throw "${Message}: expected $($Expected.Count) items; got $($actualItems.Count)"
+    }
+    for ($index = 0; $index -lt $Expected.Count; $index++) {
+      Assert-Equal $actualItems[$index] $Expected[$index] "$Message at index $index"
+    }
+    return
+  }
+  if ($Actual -is [array] -or $Actual -cne $Expected) {
+    throw "${Message}: expected <$Expected>; got <$Actual>"
+  }
 }
 function Assert-Throws([scriptblock]$Action, [string]$Message) {
   $threw = $false
@@ -16,7 +28,12 @@ if ($env:OS -eq "Windows_NT") {
   # CI uses Windows PowerShell 5.1, the same engine as the packaged desktop.
   Add-Type -Path $NativeFixture -OutputAssembly (Join-Path $FixtureRoot "wsl.exe") -OutputType ConsoleApplication
 }
-$env:PATH = $FixtureRoot + [System.IO.Path]::PathSeparator + $env:PATH
+# Windows runners also have a real wsl.exe. Reproduce duplicate PATH matches
+# on every host, since Get-Command -CommandType Application returns them all.
+$secondFixtureRoot = Join-Path $FixtureRoot "second-wsl"
+[System.IO.Directory]::CreateDirectory($secondFixtureRoot) | Out-Null
+Copy-Item -LiteralPath (Join-Path $FixtureRoot "wsl.exe") -Destination (Join-Path $secondFixtureRoot "wsl.exe")
+$env:PATH = $FixtureRoot + [System.IO.Path]::PathSeparator + $secondFixtureRoot + [System.IO.Path]::PathSeparator + $env:PATH
 $env:BLAME_TEST_WSL_LOG = Join-Path $FixtureRoot "calls.jsonl"
 $env:BLAME_TEST_WSL_INPUT = Join-Path $FixtureRoot "stdin.txt"
 $env:BLAME_TEST_WSL_PATH = "/mnt/c/Users/Ren$([char]0xe9) O'Neil [test]/" + '$cash & tools/payload.tgz'
