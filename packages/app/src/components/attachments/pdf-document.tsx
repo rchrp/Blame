@@ -58,6 +58,7 @@ export default function PdfDocument({
   return (
     <>
       <div
+        data-gallery-backdrop
         className="min-h-0 flex-1 overflow-auto overscroll-contain"
         onKeyDown={(event) => {
           if (event.key === "PageDown" && pdf) {
@@ -91,7 +92,7 @@ export default function PdfDocument({
           </div>
         )}
       </div>
-      <div className="flex flex-wrap items-center justify-center gap-2 pt-3">
+      <div data-gallery-backdrop className="flex flex-wrap items-center justify-center gap-2 pt-3">
         {pdf && (
           <div className="flex items-center gap-1 rounded-xl bg-popover/85 p-1.5 shadow-lg backdrop-blur-xl">
             <Button
@@ -244,7 +245,7 @@ function PdfCanvas({
           {error}
         </p>
       )}
-      <div ref={container} className="min-h-32 w-full" />
+      <div data-gallery-backdrop ref={container} className="min-h-32 w-full" />
       <p className="sr-only">{text}</p>
     </>
   )

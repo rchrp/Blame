@@ -1,4 +1,5 @@
 import * as React from "react"
+import { useGalleryBackdrop } from "./use-gallery-backdrop"
 import {
   CheckIcon,
   ChevronLeftIcon,
@@ -105,6 +106,7 @@ export function ImageAttachmentGallery({
       JSON.stringify(histories[image.id]?.present ?? []) !==
       JSON.stringify(image.annotation?.marks ?? [])
   )
+  const backdrop = useGalleryBackdrop(requestClose)
   const locked = saving || Boolean(textDraft) || confirmDiscard
   function update(next: AnnotationHistory) {
     setHistories((all) => ({ ...all, [current.id]: next }))
@@ -263,6 +265,7 @@ export function ImageAttachmentGallery({
       }}
     >
       <DialogContent
+        {...backdrop}
         showCloseButton={false}
         overlayClassName="bg-background/55 backdrop-blur-xl supports-backdrop-filter:backdrop-blur-xl"
         className="flex h-dvh w-full max-w-none flex-col gap-0 overflow-hidden rounded-none bg-transparent p-3 ring-0 sm:max-w-none sm:p-6 data-open:zoom-in-100 data-closed:zoom-out-100"
@@ -318,7 +321,7 @@ export function ImageAttachmentGallery({
             </div>
           </div>
         )}
-        <div className="relative min-h-0 flex-1 px-0 pt-0 pb-5 sm:px-12">
+        <div data-gallery-backdrop className="relative min-h-0 flex-1 px-0 pt-0 pb-5 sm:px-12">
           <AnnotationCanvas
             key={current.id}
             source={current.annotation?.source ?? current.source}
@@ -458,8 +461,8 @@ export function ImageAttachmentGallery({
             </div>
           )}
         </div>
-        <div className="flex shrink-0 flex-col items-center gap-2 pb-[env(safe-area-inset-bottom)]">
-          <div className="flex max-w-full items-end justify-center gap-3">
+        <div data-gallery-backdrop className="flex shrink-0 flex-col items-center gap-2 pb-[env(safe-area-inset-bottom)]">
+          <div data-gallery-backdrop className="flex max-w-full items-end justify-center gap-3">
             {onSave && !editing && (
               <div className="rounded-xl bg-popover/80 p-1.5 shadow-lg backdrop-blur-xl">
                 <Button

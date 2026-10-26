@@ -222,6 +222,7 @@ export function AnnotationCanvas({
   }
   return (
     <div
+      data-gallery-backdrop
       ref={container}
       className="flex size-full min-h-0 items-center justify-center"
     >

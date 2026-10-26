@@ -21,6 +21,8 @@ import { DocumentContent } from "./document-content"
 import { useDocumentPreview } from "./use-document-preview"
 import { useAttachmentActions } from "./use-attachment-actions"
 
+import { useGalleryBackdrop } from "./use-gallery-backdrop"
+
 const PdfDocument = lazy(() => import("./pdf-document"))
 
 export function DocumentAttachmentGallery({
@@ -34,6 +36,7 @@ export function DocumentAttachmentGallery({
   onClose: () => void
   onRestoreFocus: (id: string) => void
 }) {
+  const backdrop = useGalleryBackdrop(onClose)
   const [id, setId] = useState(initialId)
   const index = Math.max(
     0,
@@ -53,6 +56,7 @@ export function DocumentAttachmentGallery({
       }}
     >
       <DialogContent
+        {...backdrop}
         showCloseButton={false}
         overlayClassName="bg-background/55 backdrop-blur-xl supports-backdrop-filter:backdrop-blur-xl"
         className="fixed inset-0 flex h-dvh w-screen max-w-none translate-x-0 translate-y-0 flex-col gap-0 rounded-none bg-transparent px-3 py-4 ring-0 sm:max-w-none sm:px-16 sm:py-6"
@@ -188,7 +192,7 @@ function DocumentView({
     )
   return (
     <>
-      <div className="min-h-0 flex-1 overflow-auto overscroll-contain">
+      <div data-gallery-backdrop className="min-h-0 flex-1 overflow-auto overscroll-contain">
         {data ? (
           <div className="mx-auto min-h-full w-full max-w-4xl bg-white shadow-lg">
             <DocumentContent data={data} />
@@ -224,7 +228,7 @@ function DocumentView({
           <LoadingPreview />
         )}
       </div>
-      <div className="flex justify-center pt-3">{controls}</div>
+      <div data-gallery-backdrop className="flex justify-center pt-3">{controls}</div>
     </>
   )
 }
