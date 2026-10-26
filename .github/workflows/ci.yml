@@ -16,6 +16,7 @@ jobs:
   api-auth:
     name: API authentication and unit tests
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     services:
       mysql:
         image: mysql:8.4
