@@ -55,6 +55,7 @@ import {
 } from "./host-dependencies";
 import { setupPath } from "./host-tool-path";
 import { isProjectFolder } from "./worktree-safety";
+import { inspectWorktreeRemoval } from "./worktree-removal.ts";
 import type { DesktopBridgeGrant } from "./preview-browser/preview-bridge-grant";
 import { previewComposeProjectName } from "./preview-readiness";
 import { PreviewRecoveryCircuit } from "./preview-recovery-circuit";
@@ -1499,21 +1500,20 @@ async function stopProjectSetup(input: StopProjectSetupInput) {
 async function removeWorktree(input: RemoveWorktreeInput) {
   const repositoryRoot = resolveRuntimePath(input.repositoryRoot);
   const worktree = resolveRuntimePath(input.worktree);
-  const mode = input.workspaceMode ?? "local-container";
-  if (mode === "local-container")
-    await ensureRuntimeGitSafeDirectory(repositoryRoot);
-  await assertGitRepository(repositoryRoot);
+  const { mode, state } = await inspectWorktreeRemoval({
+    repositoryRoot,
+    worktree,
+    workspaceMode: input.workspaceMode,
+  });
   // Direct mode runs in the project folder: stop what runs there, never
   // delete it.
-  if (mode === "direct" || (await isProjectFolder(repositoryRoot, worktree))) {
+  if (state === "project") {
     await stopSetupRunsForWorktree(worktree);
     await stopProjectLogStream(worktree);
     await releaseAgentWorkspaceSessions(worktree);
     return true;
   }
-  const registered = await worktreeRegistered(repositoryRoot, worktree, mode);
-  const worktreeExists = await runtimePathExists(worktree);
-  if (!registered && !worktreeExists) {
+  if (state === "missing") {
     if (mode === "local-container") await removeWorktreePreview(worktree);
     removedWorktrees.add(worktree);
     return true;
@@ -1525,7 +1525,8 @@ async function removeWorktree(input: RemoveWorktreeInput) {
     await releaseAgentWorkspaceSessions(worktree);
     previewRecoveries.delete(worktree);
     if (mode === "local-container") await removeWorktreePreview(worktree);
-    if (registered) await removeGitWorktree(repositoryRoot, worktree, mode);
+    if (state === "registered")
+      await removeGitWorktree(repositoryRoot, worktree, mode);
     else await rmRuntime(worktree);
     removedWorktrees.add(worktree);
     return true;
