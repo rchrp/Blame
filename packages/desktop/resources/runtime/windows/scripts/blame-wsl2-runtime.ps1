@@ -1,5 +1,10 @@
 $ErrorActionPreference = "Stop"
 
+# PowerShell 7 -> Node/Electron -> powershell.exe inherits PS7's PSModulePath.
+# Pin utilities to this engine so autoloading cannot select an incompatible
+# Microsoft.PowerShell.Utility (notably losing Get-FileHash under PS 5.1).
+Import-Module "$PSHOME/Modules/Microsoft.PowerShell.Utility/Microsoft.PowerShell.Utility.psd1" -Force
+
 $DistroName = if ($env:BLAME_WSL_DISTRO) { $env:BLAME_WSL_DISTRO } else { "BlameRuntime" }
 $RuntimeHome = Split-Path -Parent $PSScriptRoot
 $ManifestPath = Join-Path $RuntimeHome "manifest.json"

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import {
   chmod,
   copyFile,
@@ -59,6 +60,45 @@ test(
         join(runtime, "payloads/blame-semantic-harness.tgz"),
         "fixture",
       );
+      const shadowModuleRoot = join(temporary, "foreign-modules");
+      const shadowModule = join(
+        shadowModuleRoot,
+        "Microsoft.PowerShell.Utility",
+      );
+      await mkdir(shadowModule, { recursive: true });
+      await writeFile(
+        join(shadowModule, "Microsoft.PowerShell.Utility.psd1"),
+        `@{
+  RootModule = 'Microsoft.PowerShell.Utility.psm1'
+  ModuleVersion = '99.0.0'
+  FunctionsToExport = @('Get-FileHash', 'ConvertFrom-Json')
+  CmdletsToExport = @()
+  AliasesToExport = @()
+}`,
+      );
+      await writeFile(
+        join(shadowModule, "Microsoft.PowerShell.Utility.psm1"),
+        "throw 'An incompatible inherited Utility module was selected.'\n",
+      );
+      const modules = spawnSync(
+        powershell,
+        [
+          "-NoProfile",
+          "-ExecutionPolicy",
+          "Bypass",
+          "-File",
+          join(fixture, "check-module-loading.ps1"),
+          "-RuntimeScript",
+          runtimeScript,
+          "-ShadowModuleRoot",
+          shadowModuleRoot,
+          "-ExpectedHash",
+          createHash("sha256").update("fixture").digest("hex"),
+        ],
+        { cwd: temporary, encoding: "utf8", timeout: 30_000 },
+      );
+      assert.equal(modules.status, 0, modules.stderr + modules.stdout);
+      assert.match(modules.stdout, /Runtime module isolation checks passed/);
       if (process.platform !== "win32") {
         const shellQuote = (s) => `'${s.replaceAll("'", "'\\''")}'`;
         const executable = join(temporary, "wsl.exe");
