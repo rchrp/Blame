@@ -5,7 +5,59 @@ SearXNG instance. All model providers use the same `search_web` tool. Page readi
 runs locally in the desktop runtime, using Mozilla Readability and an isolated
 Electron browser for JavaScript pages. No provider search keys are needed.
 
-## Start SearXNG
+## Dokploy
+
+Use [`docker-compose.dokploy.yml`](./docker-compose.dokploy.yml) as a standalone
+Docker Compose deployment. It joins the existing `dokploy-network`, uses the
+internal service name `blame-searxng`, and publishes no host ports or Traefik route.
+The API must share that network. In this installation, the existing `Backend`
+application already does.
+
+1. In the same Dokploy project/environment and on the same server as the API,
+   create a **Docker Compose** service named **Web Search**. Select **Docker
+   Compose**, not Docker Stack, and use the **Raw** source. Paste the contents of
+   `docker-compose.dokploy.yml` into its Compose editor.
+2. In **Environment**, add `SEARXNG_SECRET=<random secret>` (generate one with
+   `openssl rand -hex 32`). Set `SEARXNG_VERSION` to a tested SearXNG tag for
+   production; the default follows `latest`. Save the environment.
+3. In **Advanced > Mounts**, create a **File Mount** named
+   `searxng-settings.yml`, with the contents of [`settings.yml`](./settings.yml).
+   The Compose file mounts `../files/searxng-settings.yml` read-only at
+   `/etc/searxng/settings.yml`. Use Dokploy's **Preview Compose** to check this
+   mount and the shared `dokploy-network` before deploying.
+4. Leave **Domains** empty and **Isolated Deployments** disabled for this Compose
+   service, so it uses the explicitly declared shared network. Deploy **Web
+   Search** and verify its logs show a running service.
+5. In **Backend > Environment**, add the following without replacing the other
+   variables, then redeploy **Backend**:
+
+   ```dotenv
+   SEARXNG_URL=http://blame-searxng:8080
+   ```
+
+`127.0.0.1` inside the API container refers to the API container itself. Use the
+service URL above for Dokploy. No public SearXNG domain or port `8888` is required.
+The shared network is internal to Docker but also reachable by other services on
+`dokploy-network`; it is not exclusive to the API. A dedicated network can replace
+it if both services are configured to join that network.
+
+Keep the configuration in Dokploy's File Mounts: a bind mount into a Git checkout
+can become empty when Dokploy reclones the repository during automatic deployment.
+After changing `settings.yml` in this repository, update its Dokploy File Mount
+and redeploy Web Search. References: [Dokploy Compose configuration and
+mounts](https://docs.dokploy.com/docs/core/docker-compose), [network and domain
+handling](https://docs.dokploy.com/docs/core/docker-compose/domains).
+
+To check connectivity, run this in the **Backend container terminal**:
+
+```sh
+node -e 'fetch(process.env.SEARXNG_URL + "/search?q=Mozilla+Readability&format=json").then(async r => { if (!r.ok) throw new Error("HTTP " + r.status); const d = await r.json(); console.log({results: d.results.length, unavailable: d.unresponsive_engines}); }).catch(e => { console.error(e.message); process.exitCode = 1; })'
+```
+
+Then ask the Blame agent to search the web to verify the authenticated API path
+and source display together.
+
+## Local Docker / standalone server
 
 From this directory, put a random `SEARXNG_SECRET` in a local `.env` file (for
 example, generate it with `openssl rand -hex 32`), then run `docker compose up -d`.
@@ -13,7 +65,7 @@ Set `SEARXNG_VERSION` to a tested image tag or digest for production; the defaul
 follows the upstream image. The JSON API is enabled in `settings.yml`.
 
 Set `SEARXNG_URL=http://127.0.0.1:8888` in the API environment and restart the API.
-If the API is containerized, connect both services to a private Docker network
+For a containerized API outside Dokploy, connect both services to a private Docker network
 and use `http://searxng:8080` instead. Do not expose SearXNG directly to clients.
 The compose file binds only the host loopback interface.
 

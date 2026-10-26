@@ -1,0 +1,31 @@
+# Use as a standalone Docker Compose service in Dokploy, not as an override.
+# Add settings.yml through Dokploy Advanced > Mounts as searxng-settings.yml.
+services:
+  blame-searxng:
+    image: docker.io/searxng/searxng:${SEARXNG_VERSION:-latest}
+    restart: unless-stopped
+    environment:
+      SEARXNG_SECRET: ${SEARXNG_SECRET:?Set a random secret for the search service}
+    volumes:
+      - type: bind
+        source: ../files/searxng-settings.yml
+        target: /etc/searxng/settings.yml
+        read_only: true
+        bind:
+          create_host_path: false
+      - search-data:/var/cache/searxng
+    networks:
+      dokploy-network:
+        aliases:
+          - blame-searxng
+    labels:
+      traefik.enable: "false"
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+
+networks:
+  dokploy-network:
+    external: true
+
+volumes:
+  search-data:
