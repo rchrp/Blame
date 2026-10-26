@@ -6,6 +6,12 @@ import type { ApiDefinition } from './tree.d.ts'
 const placeholder: any = {}
 
 const routes = {
+  'web_search.search': {
+    methods: ["POST"],
+    pattern: '/api/v1/web/search',
+    tokens: [{"old":"/api/v1/web/search","type":0,"val":"api","end":""},{"old":"/api/v1/web/search","type":0,"val":"v1","end":""},{"old":"/api/v1/web/search","type":0,"val":"web","end":""},{"old":"/api/v1/web/search","type":0,"val":"search","end":""}],
+    types: placeholder as Registry['web_search.search']['types'],
+  },
   'stripe_webhooks': {
     methods: ["POST"],
     pattern: '/api/v1/webhooks/stripe',

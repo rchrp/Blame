@@ -2,6 +2,9 @@
 import type { routes } from './index.ts'
 
 export interface ApiDefinition {
+  webSearch: {
+    search: typeof routes['web_search.search']
+  }
   stripeWebhooks: typeof routes['stripe_webhooks']
   accountPrivacy: {
     status: typeof routes['account_privacy.status']

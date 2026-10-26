@@ -7,6 +7,18 @@ import type { InferInput, SimpleError } from '@vinejs/vine/types'
 export type ParamValue = string | number | bigint | boolean
 
 export interface Registry {
+  'web_search.search': {
+    methods: ["POST"]
+    pattern: '/api/v1/web/search'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/web_search').webSearchValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/web_search').webSearchValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/web_search_controller').default['search']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/web_search_controller').default['search']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
   'stripe_webhooks': {
     methods: ["POST"]
     pattern: '/api/v1/webhooks/stripe'

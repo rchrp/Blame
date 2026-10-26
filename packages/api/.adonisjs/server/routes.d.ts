@@ -4,6 +4,7 @@ type ParamValue = string | number | bigint | boolean
 
 export type ScannedRoutes = {
   ALL: {
+    'web_search.search': { paramsTuple?: []; params?: {} }
     'stripe_webhooks': { paramsTuple?: []; params?: {} }
     'account_privacy.status': { paramsTuple?: []; params?: {} }
     'consumer_contracts.withdraw': { paramsTuple?: []; params?: {} }
@@ -201,6 +202,7 @@ export type ScannedRoutes = {
     'projects.user_stories.user_story_agent_runs.activity_detail': { paramsTuple: [ParamValue,ParamValue,ParamValue]; params: {'id': ParamValue,'runId': ParamValue,'activityId': ParamValue} }
   }
   POST: {
+    'web_search.search': { paramsTuple?: []; params?: {} }
     'stripe_webhooks': { paramsTuple?: []; params?: {} }
     'account_privacy.status': { paramsTuple?: []; params?: {} }
     'consumer_contracts.withdraw': { paramsTuple?: []; params?: {} }

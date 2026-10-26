@@ -40,6 +40,7 @@ const BetterAuthController = () => import('#controllers/better_auth_controller')
 const DesktopAuthController = () => import('#controllers/desktop_auth_controller')
 const FileAttachmentsController = () => import('#controllers/file_attachments_controller')
 const SpeechTranscriptionController = () => import('#controllers/speech_transcription_controller')
+const WebSearchController = () => import('#controllers/web_search_controller')
 const PreviewSessionsController = () => import('#controllers/preview_sessions_controller')
 const PreviewEdgeInternalController = () => import('#controllers/preview_edge_internal_controller')
 const VercelConnectionsController = () => import('#controllers/vercel_connections_controller')
@@ -52,6 +53,7 @@ router.get('/', () => {
 
 router
   .group(() => {
+    router.post('web/search', [WebSearchController, 'search']).use(middleware.auth())
     router.post('webhooks/stripe', [StripeWebhooksController, 'handle'])
     router.post('account/closure-status', [AccountPrivacyController, 'status'])
     router.post('consumer-contract/withdrawal', [ConsumerContractsController, 'withdraw'])

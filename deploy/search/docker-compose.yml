@@ -1,0 +1,16 @@
+services:
+  searxng:
+    image: docker.io/searxng/searxng:${SEARXNG_VERSION:-latest}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8888:8080"
+    environment:
+      SEARXNG_SECRET: ${SEARXNG_SECRET:?Set a random secret for the search service}
+    volumes:
+      - ./settings.yml:/etc/searxng/settings.yml:ro
+      - search-data:/var/cache/searxng
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+
+volumes:
+  search-data:

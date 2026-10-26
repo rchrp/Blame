@@ -38,4 +38,5 @@ export const controllers = {
   UserStoryAgentRuns: () => import('#controllers/user_story_agent_runs_controller'),
   UserStoryComments: () => import('#controllers/user_story_comments_controller'),
   VercelConnections: () => import('#controllers/vercel_connections_controller'),
+  WebSearch: () => import('#controllers/web_search_controller'),
 }
