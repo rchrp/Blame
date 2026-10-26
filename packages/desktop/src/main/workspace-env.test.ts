@@ -21,7 +21,40 @@ import {
   linkEnvFile,
   mergeEnvValues,
   syncProjectEnvFiles,
+  relativeWorkspacePath,
 } from "./workspace-env.ts";
+import { joinWorkspacePath } from "./workspace-runtime.ts";
+
+test("copies nested Windows env files into Linux directories, not backslash filenames", () => {
+  const root = String.raw`C:\Users\René O'Neil\Mon projet`;
+  const worktree =
+    "/home/blame/.local/share/blame/runtime/worktrees/Mon projet/story-1";
+  for (const path of [".env", "apps/api/.env", "apps/web/.env.local"]) {
+    const source = `${root}\\${path.replaceAll("/", "\\")}`;
+    const relative = relativeWorkspacePath(root, source, "win32");
+    assert.equal(joinWorkspacePath(worktree, relative), `${worktree}/${path}`);
+  }
+});
+
+test("syncs nested host env files to their corresponding runtime paths", async (t) => {
+  const root = await mkdtemp(join(tmpdir(), "blame-env-runtime-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  await mkdir(join(root, "apps", "api"), { recursive: true });
+  await writeFile(join(root, "apps", "api", ".env"), "DATABASE_URL=fixture\n");
+  const worktree =
+    "/home/blame/.local/share/blame/runtime/worktrees/app/story-1";
+  const copied = new Map<string, string>();
+  await syncProjectEnvFiles(root, worktree, {
+    isManaged: () => true,
+    write: async (destination, source) => {
+      copied.set(destination, await readFile(source, "utf8"));
+    },
+  });
+  assert.deepEqual(
+    [...copied],
+    [[`${worktree}/apps/api/.env`, "DATABASE_URL=fixture\n"]],
+  );
+});
 
 test("links runtime env files from repository root and fills blank main values", async () => {
   const root = await mkdtemp(join(tmpdir(), "blame-env-source-"));

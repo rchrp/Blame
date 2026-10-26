@@ -23,6 +23,17 @@ jobs:
           node-version: 24
       - run: node --test scripts/windows-runtime.test.mjs
 
+  windows-workspaces:
+    name: Windows workspace regressions
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+        with:
+          node-version: 24
+      - run: pnpm --filter @blame/desktop build:workspace-dependencies
+      - run: pnpm --filter @blame/desktop test:windows-workspaces
+
   line-budgets:
     name: Line budgets
     runs-on: ubuntu-latest

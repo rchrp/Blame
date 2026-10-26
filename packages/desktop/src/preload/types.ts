@@ -458,6 +458,7 @@ export type BlameDesktopApi = {
     checkHostDependencies(input: {
       includeRuntime?: boolean;
       runtimeProfile?: RuntimeProfileId;
+      workspaceMode?: "local-container" | "cloud-mirror" | "direct";
       setupScript?: string;
       worktree?: string;
     }): Promise<HostDependencyReport>;

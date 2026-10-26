@@ -92,8 +92,8 @@ async function handleAgentHostRequest(
 async function agentProjectScanRoot(input: unknown) {
   const workspace = String(recordInput(input).workspace ?? "");
   const { projectScanRoot } = await import("./runtime-workspace-mirror.ts");
-  const { root } = await projectScanRoot(workspace);
-  return { root, temporary: root !== workspace };
+  const { root, temporary } = await projectScanRoot(workspace);
+  return { root, temporary };
 }
 
 // A story working in the project folder checks or starts the project's

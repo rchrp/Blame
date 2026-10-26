@@ -1,4 +1,7 @@
-import { rm } from "node:fs/promises";
+import {
+  projectScanResource,
+  type ProjectScanLocation,
+} from "./project-scan-resource.ts";
 import {
   BlameAgentRuntime,
   type AgentEvent,
@@ -95,16 +98,12 @@ function createAgentRuntime(hostClient: AgentRuntimeHostClient) {
       projectApp: (input) => hostRequest(hostClient, "projectApp", input),
       projectScanRoot: async (workspace) => {
         const request = { workspace, signal: undefined };
-        const { root, temporary } = await hostRequest<{
-          root: string;
-          temporary: boolean;
-        }>(hostClient, "projectScanRoot", request);
-        return {
-          root,
-          release: async () => {
-            if (temporary) await rm(root, { recursive: true, force: true });
-          },
-        };
+        const location = await hostRequest<ProjectScanLocation>(
+          hostClient,
+          "projectScanRoot",
+          request,
+        );
+        return projectScanResource(location);
       },
       ...(process.platform === "darwin" || process.platform === "win32"
         ? {

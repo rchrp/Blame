@@ -861,9 +861,10 @@ export type WorkspaceClient = {
     title: string
   }): Promise<WorktreeResult>
   checkHostDependencies(input: {
-    // False for work that runs straight on this machine: host tools only.
+    // Skip runtime checks when already handled by the runtime gate.
     includeRuntime?: boolean
     runtimeProfile?: RuntimeProfileId
+    workspaceMode?: "local-container" | "cloud-mirror" | "direct"
     setupScript?: string
     worktree?: string
   }): Promise<HostDependencyReport>

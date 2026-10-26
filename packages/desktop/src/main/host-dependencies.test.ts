@@ -72,7 +72,7 @@ test("keeps cloud worktrees native on Linux, macOS, and Windows", async () => {
 
 test("reports missing git before setup execution", async () => {
   const report = await checkHostDependencies(
-    { platform: "darwin", setupScript: "echo ready" },
+    { platform: "darwin", includeRuntime: false, setupScript: "echo ready" },
     async (command) => {
       if (command === "git") throw new Error("missing");
       return "ok";
@@ -82,6 +82,52 @@ test("reports missing git before setup execution", async () => {
   assert.equal(report.ok, false);
   assert.equal(report.issues[0]?.name, "git");
   assert.match(report.issues[0]?.action ?? "", /Xcode|brew/);
+});
+
+test("local stories use runtime Git even when the runtime gate already checked it", async () => {
+  for (const platform of ["win32", "darwin"] as const) {
+    for (const includeRuntime of [true, false]) {
+      const calls: string[] = [];
+      const report = await checkHostDependencies(
+        {
+          platform,
+          includeRuntime,
+          workspaceMode: "local-container",
+          runtimeProfile: "local-container",
+          setupScript: "",
+        },
+        async (command) => {
+          calls.push(command);
+          if (command === "git") throw new Error("No host Git");
+          return JSON.stringify({
+            status: "ready",
+            checks: [{ name: "git", status: "available" }],
+          });
+        },
+      );
+      assert.equal(report.ok, true);
+      assert.equal(calls.includes("git"), false);
+    }
+  }
+});
+
+test("native stories still require host Git", async () => {
+  for (const workspaceMode of ["direct", "cloud-mirror"] as const) {
+    const report = await checkHostDependencies(
+      {
+        platform: "win32",
+        includeRuntime: false,
+        workspaceMode,
+        runtimeProfile: "local-container",
+        setupScript: "",
+      },
+      async () => {
+        throw new Error("No host Git");
+      },
+    );
+    assert.equal(report.ok, false);
+    assert.equal(report.issues[0]?.name, "git");
+  }
 });
 
 test("reports unavailable Blame runtime on Windows", async () => {

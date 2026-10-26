@@ -295,6 +295,7 @@ type ApplyProjectPreviewInitializationInput = ApplyPreviewInitializationInput;
 type CheckHostDependenciesInput = {
   includeRuntime?: boolean;
   runtimeProfile?: RuntimeProfileId;
+  workspaceMode?: WorkspaceMode;
   setupScript?: string;
   worktree?: string;
 };
@@ -581,6 +582,7 @@ export function registerWorkspaceIpcHandlers(
         ),
         includeRuntime: input.includeRuntime,
         runtimeProfile: input.runtimeProfile,
+        workspaceMode: input.workspaceMode,
         setupScript: input.setupScript ?? "",
       }),
   );
@@ -782,7 +784,7 @@ async function prepareWorktreeCreation(context: WorktreeCreationContext) {
     );
   }
   await timedWorktreeCreateStep(timings, "git repository ensure", () =>
-    ensureWorkspaceGitRepository(repositoryRoot),
+    ensureWorkspaceGitRepository(repositoryRoot, mode),
   );
   await timedWorktreeCreateStep(timings, "worktree parent mkdir", () =>
     mkdirRuntime(dirnameWorkspacePath(worktree)),
@@ -849,7 +851,7 @@ async function completeWorktreeCreation(context: WorktreeCreationContext) {
 // Direct mode: the project folder on its current branch, untouched.
 async function directWorkspace(input: CreateWorktreeInput) {
   const repositoryRoot = resolveRuntimePath(input.repositoryRoot);
-  await ensureWorkspaceGitRepository(repositoryRoot);
+  await ensureWorkspaceGitRepository(repositoryRoot, "direct");
   const branch = String(
     await runRuntimeGit(
       repositoryRoot,
@@ -2619,11 +2621,16 @@ async function assertGitRepository(cwd: string) {
   await runRuntimeGit(cwd, ["rev-parse", "--show-toplevel"]);
 }
 
-async function ensureWorkspaceGitRepository(root: string) {
-  if (!runtimeManagedPath(root)) return ensureGitRepository(root);
-  if (await isWorkspaceGitRepository(root)) return false;
-  await runRuntime("git", ["init"], { cwd: root });
-  return true;
+async function ensureWorkspaceGitRepository(
+  root: string,
+  mode?: WorkspaceMode,
+) {
+  return ensureGitRepository(
+    root,
+    mode
+      ? workspaceExecution(mode)
+      : runtimeManagedPath(root) ? "virtualized" : undefined,
+  );
 }
 
 async function isWorkspaceGitRepository(root: string) {

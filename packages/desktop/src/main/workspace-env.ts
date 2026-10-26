@@ -11,7 +11,15 @@ import {
   symlink,
   writeFile,
 } from "node:fs/promises";
-import { basename, dirname, join, posix, relative, resolve } from "node:path";
+import {
+  basename,
+  dirname,
+  join,
+  posix,
+  relative,
+  resolve,
+  win32,
+} from "node:path";
 import {
   dirnameWorkspacePath,
   joinWorkspacePath,
@@ -70,10 +78,16 @@ const publicOriginEnvironmentKeys = new Set([
 export async function syncProjectEnvFiles(
   repositoryRoot: string,
   worktree: string,
+  runtimeFiles = {
+    isManaged: runtimeManagedPath,
+    write: writeRuntimeEnvFile,
+  },
 ) {
   const files = await prepareProjectEnvFiles(repositoryRoot);
   return Promise.all(
-    files.map((path) => linkWorktreeEnvFile(repositoryRoot, worktree, path)),
+    files.map((path) =>
+      linkWorktreeEnvFile(repositoryRoot, worktree, path, runtimeFiles),
+    ),
   );
 }
 
@@ -81,13 +95,17 @@ async function linkWorktreeEnvFile(
   repositoryRoot: string,
   worktree: string,
   sourcePath: string,
+  runtimeFiles: {
+    isManaged: typeof runtimeManagedPath;
+    write: typeof writeRuntimeEnvFile;
+  },
 ): Promise<SyncedEnvFile> {
   const destinationPath = joinWorkspacePath(
     worktree,
-    relative(repositoryRoot, sourcePath),
+    relativeWorkspacePath(repositoryRoot, sourcePath),
   );
-  if (runtimeManagedPath(worktree)) {
-    await writeRuntimeEnvFile(destinationPath, sourcePath);
+  if (runtimeFiles.isManaged(worktree)) {
+    await runtimeFiles.write(destinationPath, sourcePath);
     return { destinationPath, linkedAs: "runtime-copy", sourcePath };
   }
   if (await sameFile(sourcePath, destinationPath))
@@ -512,9 +530,14 @@ async function collectProjectEnvFiles(
   );
 }
 
-function relativeWorkspacePath(root: string, path: string) {
-  if (runtimeManagedPath(root)) return posix.relative(root, path);
-  return relative(root, path).replace(/\\/g, "/");
+export function relativeWorkspacePath(
+  root: string,
+  path: string,
+  platform: NodeJS.Platform = process.platform,
+) {
+  if (runtimeManagedPath(root, platform)) return posix.relative(root, path);
+  const paths = platform === "win32" ? win32 : posix;
+  return paths.relative(root, path).replace(/\\/g, "/");
 }
 
 async function readWorkspaceEnvFile(path: string) {

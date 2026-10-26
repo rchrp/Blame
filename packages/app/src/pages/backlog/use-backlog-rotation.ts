@@ -269,6 +269,9 @@ export function useBacklogRotation(
     const dependencies = await workspace.checkHostDependencies({
       includeRuntime: direct ? false : runtimeGate.hostCheckIncludesRuntime,
       runtimeProfile: previewProfile,
+      workspaceMode: direct
+        ? "direct"
+        : storyMode === "local-container" ? "local-container" : "cloud-mirror",
     })
     if (!dependencies.ok) {
       reportHostDependencyBlocker(
@@ -541,6 +544,9 @@ export function useBacklogRotation(
       checking: false,
       report,
       runtimeProfile,
+      workspaceMode: storyRunMode(story) === "direct"
+        ? "direct"
+        : runtimeProfile === "local-container" ? "local-container" : "cloud-mirror",
       storyId: story.id,
       storyTitle: story.title,
     })
@@ -552,8 +558,11 @@ export function useBacklogRotation(
     setHostDependenciesDialog({ ...current, checking: true })
     try {
       const report = await platform.workspace.checkHostDependencies({
-        includeRuntime: runtimeGate.hostCheckIncludesRuntime,
+        includeRuntime: current.workspaceMode === "direct"
+          ? false
+          : runtimeGate.hostCheckIncludesRuntime,
         runtimeProfile: current.runtimeProfile,
+        workspaceMode: current.workspaceMode,
       })
       if (report.ok) {
         blockedStories.current.delete(current.storyId)

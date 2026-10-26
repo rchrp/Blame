@@ -49,6 +49,7 @@ export type HostDependenciesDialogState = {
   checking: boolean
   report: HostDependencyReport
   runtimeProfile: ReturnType<typeof useRuntimePreference>["profile"]
+  workspaceMode: "local-container" | "cloud-mirror" | "direct"
   storyId: string
   storyTitle: string
 }
