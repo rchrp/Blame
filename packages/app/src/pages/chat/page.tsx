@@ -22,6 +22,14 @@ import {
 } from "@/components/backlog/data/agent-stream-coordinator"
 import { agentStreamStore } from "@/components/backlog/data/agent-stream-store"
 import {
+  forgetRunStream,
+  registerRunStream,
+} from "@/components/backlog/data/agent-run-streams"
+import {
+  quickChatAgentRunning,
+  quickChatStreamKey,
+} from "@/components/chat/data/quick-chat-agent-control"
+import {
   pendingAgentRunSnapshots,
   persistAgentSnapshot,
 } from "@/components/backlog/data/agent-snapshot-outbox"
@@ -89,7 +97,10 @@ import { useProjectInitialization } from "@/components/project-initialization/us
 import { projectCodePractices } from "@/lib/project-code-practices"
 import { showSystemNotification } from "@/lib/system-notifications"
 import { QueuedComments } from "@/components/backlog/drawer/queued-comments"
-import { generatedQuickChatTitle, useQuickChatQueue } from "@/pages/chat/use-quick-chat-queue"
+import {
+  generatedQuickChatTitle,
+  useQuickChatQueue,
+} from "@/pages/chat/use-quick-chat-queue"
 import {
   chatWithMessage,
   errorMessage,
@@ -115,10 +126,6 @@ import { QuickChatStatus } from "./quick-chat-status"
 
 const agentEventPersistDelayMs = 1_500
 const agentCompletionRecoveryIntervalMs = 10_000
-const stoppedAgentEvent = {
-  payload: { reason: "aborted", text: "Agent stopped." },
-  type: "done",
-} satisfies AgentEvent
 const bottomBlurMask = {
   maskImage: "linear-gradient(to top, black 0%, black 60%, transparent 100%)",
   WebkitMaskImage:
@@ -227,7 +234,7 @@ function QuickChatProjectPage() {
     [activeConversation?.workspace, platform]
   )
   const mentionDirectory = project?.path
-  const agentRunning = activeConversation?.agentStatus === "Running"
+  const agentRunning = quickChatAgentRunning(activeConversation)
   const latestTurn = latestLinkedAgentTurn(
     activeConversation?.messages ?? [],
     activeConversation?.agentRuns ?? [],
@@ -262,6 +269,7 @@ function QuickChatProjectPage() {
   React.useEffect(() => {
     resumeQuickChatStreamsRef.current = (chats) => {
       chats.forEach((chat) => {
+        if (quickChatsRef.current.busyChatIds.has(chat.id)) return
         chat.agentRuns?.forEach((run) => {
           const sessionId = run.clineSessionId ?? chat.clineSessionId
           if (run.status !== "running" || !sessionId) return
@@ -297,6 +305,7 @@ function QuickChatProjectPage() {
       return
     const recover = async () => {
       const current = currentChat(activeConversation)
+      if (quickChatsRef.current.busyChatIds.has(current.id)) return
       const run = recoverableQuickChatAgentRun(current)
       const workspace = platform.workspace
       const sessionId = run?.clineSessionId ?? current.clineSessionId
@@ -576,13 +585,29 @@ function QuickChatProjectPage() {
   }
 
   async function submitDraft(sendNow = false) {
-    if (!draftHasContent() || sending) return
+    if (!draftHasContent()) return
     // The agent is working: the message waits for it (or "Send now").
     if (agentRunning && messageQueue.key) {
-      const body = quickChatMessageBody(draft, draftCodeAttachments, draftFileAttachments)
-      messageQueue.queue({ body, codeSelectionAttachments: draftCodeAttachments, fileAttachments: draftFileAttachments }, sendNow)
+      const body = quickChatMessageBody(
+        draft,
+        draftCodeAttachments,
+        draftFileAttachments
+      )
+      messageQueue.queue(
+        {
+          body,
+          codeSelectionAttachments: draftCodeAttachments,
+          fileAttachments: draftFileAttachments,
+        },
+        sendNow
+      )
       return clearDraft()
     }
+    if (
+      sending ||
+      (activeConversation && quickChats.busyChatIds.has(activeConversation.id))
+    )
+      return
     const validationError = quickChatSendValidationError({
       auth,
       model: selection.currentModel,
@@ -603,14 +628,21 @@ function QuickChatProjectPage() {
     setSending(true)
     try {
       const chat = await activeOrCreatedConversation(messageBody)
-      const message = await quickChats.createMessage(chat, {
-        body: messageBody,
-        codeSelectionAttachments: codeAttachments,
-        fileAttachments,
+      await quickChats.agentOperations.start(chat.id, async () => {
+        const message = await quickChats.createMessage(chat, {
+          body: messageBody,
+          codeSelectionAttachments: codeAttachments,
+          fileAttachments,
+        })
+        clearDraft()
+        replaceChatRef(chatWithMessage(currentChat(chat), message))
+        await runAgentForMessage(
+          chat,
+          message,
+          codeAttachments,
+          fileAttachments
+        )
       })
-      clearDraft()
-      replaceChatRef(chatWithMessage(currentChat(chat), message))
-      await runAgentForMessage(chat, message, codeAttachments, fileAttachments)
     } catch (error) {
       showQuickChatError("Quick chat failed", errorMessage(error))
     } finally {
@@ -620,44 +652,57 @@ function QuickChatProjectPage() {
 
   const messageQueue = useQuickChatQueue({
     agentRunning,
-    cancelAgent: () => cancelAgent(),
+    busy: Boolean(
+      activeConversation && quickChats.busyChatIds.has(activeConversation.id)
+    ),
+    paused: activeConversation?.agentStatus === "Paused",
+    cancelAgent: async (chatId) => {
+      const chat = chatsRef.current.find((item) => item.id === chatId)
+      if (!chat) throw new Error("Quick chat is no longer available.")
+      await quickChats.stopAgent(chat)
+    },
     chatId: activeConversation?.id,
-    send: (queued) => sendQueuedMessage(queued).catch((error: unknown) =>
-      showQuickChatError("Couldn't send your queued message", errorMessage(error))),
+    onError: (error) =>
+      showQuickChatError(
+        "Couldn't send your queued message",
+        errorMessage(error)
+      ),
+    send: sendQueuedMessage,
   })
-  async function sendQueuedMessage(queued: Parameters<typeof quickChats.createMessage>[1]) {
-    if (!activeConversation) return
-    const chat = currentChat(await detailedConversation(activeConversation))
-    const message = await quickChats.createMessage(chat, queued)
-    replaceChatRef(chatWithMessage(currentChat(chat), message))
-    await runAgentForMessage(chat, message, queued.codeSelectionAttachments ?? [], queued.fileAttachments ?? [])
+  async function sendQueuedMessage(
+    chatId: string,
+    queued: Parameters<typeof quickChats.createMessage>[1]
+  ) {
+    const conversation = chatsRef.current.find((item) => item.id === chatId)
+    if (!conversation) throw new Error("Quick chat is no longer available.")
+    const validationError = quickChatSendValidationError({
+      auth,
+      model: selection.currentModel,
+      platform,
+      projectPath: project?.path,
+    })
+    if (validationError) throw new Error(validationError)
+    await quickChats.agentOperations.start(chatId, async () => {
+      const chat = currentChat(await detailedConversation(conversation))
+      const message = await quickChats.createMessage(chat, queued)
+      replaceChatRef(chatWithMessage(currentChat(chat), message))
+      await runAgentForMessage(
+        chat,
+        message,
+        queued.codeSelectionAttachments ?? [],
+        queued.fileAttachments ?? []
+      )
+    })
   }
 
   async function cancelAgent() {
     const conversation = activeConversation
       ? currentChat(activeConversation)
       : undefined
-    const run = conversation?.agentRuns?.findLast(
-      (currentRun) => currentRun.status === "running"
-    )
-    const sessionId = run?.clineSessionId ?? conversation?.clineSessionId
-    if (
-      !conversation ||
-      !agentRunning ||
-      !sessionId ||
-      !platform.agent ||
-      cancelingAgent
-    )
-      return
+    if (!conversation || !agentRunning || cancelingAgent) return
     setCancelingAgent(true)
     try {
-      await platform.agent.sessions.abort(sessionId)
-      const coordinator = agentStreamCoordinators.current.get(sessionId)
-      if (!coordinator) throw new Error("Agent stream is not available")
-      await settleQuickChatAgentStream(
-        sessionId,
-        coordinator.terminate(stoppedAgentEvent)
-      )
+      replaceChatRef(await quickChats.stopAgent(conversation))
       toast.success("Agent stopped.", {
         position: "bottom-right",
       })
@@ -688,7 +733,8 @@ function QuickChatProjectPage() {
       projectPath: project?.path,
       selection,
     })
-    if (title) replaceChatRef(await quickChats.update(currentChat(chat), { title }))
+    if (title)
+      replaceChatRef(await quickChats.update(currentChat(chat), { title }))
   }
 
   async function detailedConversation(conversation: QuickChat) {
@@ -773,7 +819,9 @@ function QuickChatProjectPage() {
     })
     replaceChatRef(updatedChat)
     subscribeQuickChatAgentEvents(updatedChat, activeRun, session.sessionId)
-    await sendQuickChatPrompt({
+    // sendDevelopment resolves when the whole response ends. Only session
+    // startup belongs to the submission; keep the composer live during it.
+    void sendQuickChatPrompt({
       codeAttachments,
       executionId,
       fileAttachments,
@@ -784,7 +832,7 @@ function QuickChatProjectPage() {
       summary,
       title,
       chat: updatedChat,
-    })
+    }).catch(reportAgentPersistenceError)
   }
 
   async function startQuickChatDevelopmentSession(
@@ -843,7 +891,7 @@ function QuickChatProjectPage() {
       sessionId,
     })
     agentStreamCoordinators.current.set(sessionId, coordinator)
-    const unsubscribe = subscribeAgentEvents(
+    const unsubscribeEvents = subscribeAgentEvents(
       platform,
       sessionId,
       (event) => {
@@ -865,6 +913,16 @@ function QuickChatProjectPage() {
       run.executionId ?? undefined,
       run.lastSequenceNumber ?? 0
     )
+    const unsubscribe = () => {
+      forgetRunStream(run.id, close)
+      unsubscribeEvents()
+    }
+    const close = () => unsubscribeQuickChatAgentEvents(sessionId, unsubscribe)
+    registerRunStream(run.id, quickChatStreamKey(chat.id), close, async () => {
+      await coordinator.disconnect()
+      const pending = pendingAgentUpdates.current.take(chat.id)
+      if (pending) await persistQueuedAgentUpdate(chat, pending)
+    })
     agentEventUnsubscribers.current.set(sessionId, unsubscribe)
     return unsubscribe
   }
@@ -887,6 +945,7 @@ function QuickChatProjectPage() {
     persisted: Promise<unknown>,
     expected?: () => void
   ) {
+    expected ??= agentEventUnsubscribers.current.get(sessionId)
     return persisted.then(
       (result) => {
         unsubscribeQuickChatAgentEvents(sessionId, expected)
@@ -905,12 +964,18 @@ function QuickChatProjectPage() {
   }
 
   async function sendQuickChatPrompt(input: QuickChatPromptInput) {
+    const coordinator = agentStreamCoordinators.current.get(input.sessionId)
     try {
       await platform.agent!.sessions.sendDevelopment(quickChatSendInput(input))
     } catch (error) {
       const message = errorMessage(error)
-      const coordinator = agentStreamCoordinators.current.get(input.sessionId)
-      if (!coordinator) throw error
+      // A late result from an aborted turn must not terminate its successor,
+      // which may reuse exactly the same runtime session.
+      if (
+        !coordinator ||
+        agentStreamCoordinators.current.get(input.sessionId) !== coordinator
+      )
+        return
       await settleQuickChatAgentStream(
         input.sessionId,
         coordinator.terminate({
@@ -973,7 +1038,10 @@ function QuickChatProjectPage() {
                     {activeConversationLoaded &&
                     activeConversation?.agentRuns?.length ? (
                       <AgentConversationTimeline
-                        screenshotOwner={screenshotOwnerFor("quickChat", activeConversation.id)}
+                        screenshotOwner={screenshotOwnerFor(
+                          "quickChat",
+                          activeConversation.id
+                        )}
                         comments={activeConversation.messages ?? []}
                         loadChangedFileDiffs={loadChangedFileDiffs}
                         onChangedFileClick={(path) =>
@@ -999,7 +1067,15 @@ function QuickChatProjectPage() {
                         }
                         onUserMessageUndo={undoQuickChatMessage}
                         responseHeader={responseHeader}
-                        queued={<QueuedComments author={activeConversation.messages?.at(-1)?.author ?? "You"} storyId={messageQueue.key} />}
+                        queued={
+                          <QueuedComments
+                            author={
+                              activeConversation.messages?.at(-1)?.author ??
+                              "You"
+                            }
+                            storyId={messageQueue.key}
+                          />
+                        }
                         runs={activeConversation.agentRuns}
                       />
                     ) : null}
@@ -1037,7 +1113,8 @@ function QuickChatProjectPage() {
                     agentRunning={agentRunning}
                     cancelingAgent={cancelingAgent}
                     codeSelectionAttachments={draftCodeAttachments}
-                    disabled={sending || !project}
+                    disabled={!project || !activeConversationLoaded}
+                    submitting={sending && !agentRunning}
                     queueWhileRunning
                     editorKey={draftEditorKey}
                     editorRef={draftRef}
@@ -1069,7 +1146,10 @@ function QuickChatProjectPage() {
                     submitLabel={agentRunning ? "Queue message" : "Send"}
                     toolbarEnd={
                       <div className="w-[28rem] max-w-full min-w-0">
-                        <ModelSelector role="agent" warnOnModelChange={!emptyConversation} />
+                        <ModelSelector
+                          role="agent"
+                          warnOnModelChange={!emptyConversation}
+                        />
                       </div>
                     }
                     turnMetrics={turnMetrics}
