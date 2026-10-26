@@ -25,6 +25,8 @@ Use the existing Blame project/environment and deployment server:
 | Docker context | `./` (repository root) |
 | Build stage | `production` |
 | Watch paths | `deploy/search/**` |
+| Build server | Default Dokploy server (no separate build server) |
+| Build registry | None |
 | Container port | `8080` (internal only) |
 | Domains / published ports | None |
 | Runtime environment | `SEARXNG_SECRET=<random secret>` |
@@ -32,8 +34,10 @@ Use the existing Blame project/environment and deployment server:
 Generate the secret with `openssl rand -hex 32` and save it in Dokploy Environment,
 not in Git or build arguments. The image pins a tested upstream version/digest and
 includes a health check. Its Dockerfile-specific ignore file restricts the build
-context to this service's files. Reuse Backend's build server and registry when
-building on a separate server. Enable automatic deployments on pushes affecting
+context to this service's files. This lightweight image is built directly on the
+deployment server, so it does not need a private image registry. A separate build
+server is also supported if its registry permits publishing the new image name.
+Enable automatic deployments on pushes affecting
 `deploy/search/**`; settings changes then follow the normal GitHub workflow.
 
 Keep the application on `dokploy-network`, as the existing Backend is. Add a named
