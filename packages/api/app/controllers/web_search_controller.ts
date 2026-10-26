@@ -4,6 +4,8 @@ import { webSearchValidator } from '#validators/web_search'
 import type { HttpContext } from '@adonisjs/core/http'
 
 const windows = new Map<string, { start: number; count: number; active: number }>()
+// Keep rotation and engine cooldowns across requests and controller instances.
+const webSearch = new WebSearchService(env.get('SEARXNG_URL'))
 let active = 0
 
 export default class WebSearchController {
@@ -27,10 +29,12 @@ export default class WebSearchController {
     active++
     windows.set(userId, window)
     try {
-      return await new WebSearchService(env.get('SEARXNG_URL')).search(input)
+      return await webSearch.search(input)
     } catch (error) {
-      if (error instanceof WebSearchError)
+      if (error instanceof WebSearchError) {
+        if (error.retryAfter) response.header('Retry-After', String(error.retryAfter))
         return response.status(error.status).send({ message: error.message })
+      }
       throw error
     } finally {
       window.active--
