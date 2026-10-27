@@ -27,6 +27,8 @@ catalog:
 
 overrides:
   "brace-expansion@>=5.0.0 <5.0.9": 5.0.9
+  # Electron 45 needs an ABI registry newer than rebuild's existing lock entry.
+  "@electron/rebuild>node-abi": 4.40.0
 
 patchedDependencies:
   '@cline/core@0.2.0': patches/@cline__core@0.2.0.patch

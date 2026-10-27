@@ -56,6 +56,9 @@ function spawnWorkspaceProcess(executable: string, args: string[], cwd: string, 
     windowsHide: true,
   };
   if (process.platform !== "win32") return spawn(executable, args, options);
+  // cmd.exe consumes a command line, not the C-runtime argv quoting used for executables.
+  if (/(?:^|[\\/])cmd(?:\.exe)?$/iu.test(executable))
+    return spawn(executable, args, { ...options, windowsVerbatimArguments: true });
   const child = execa(executable, args, {
     ...options,
     buffer: false,

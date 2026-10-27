@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import test from "node:test";
 import { promisify } from "node:util";
@@ -148,6 +149,9 @@ test("installs and actually runs a previously blocked Prisma build script", asyn
   );
   await writeFile(join(cwd, "pnpm-workspace.yaml"), "strictDepBuilds: true\n");
   const logs: string[] = [];
+  // This fixture exercises pnpm 10 policy offline, independently of the host CLI.
+  const runtimeRequire = createRequire(new URL("../../../agent-runtime/package.json", import.meta.url));
+  const pnpm10 = join(dirname(runtimeRequire.resolve("pnpm-legacy")), "bin/pnpm.cjs");
   const run = (
     command: Parameters<typeof runProjectCommand>[0],
     emit: Parameters<typeof runProjectCommand>[1],
@@ -155,7 +159,9 @@ test("installs and actually runs a previously blocked Prisma build script", asyn
     runProjectCommand(
       {
         ...command,
+        command: process.execPath,
         args: [
+          pnpm10,
           ...command.args,
           "--offline",
           "--store-dir",

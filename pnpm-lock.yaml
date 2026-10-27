@@ -170,6 +170,7 @@ catalogs:
 
 overrides:
   brace-expansion@>=5.0.0 <5.0.9: 5.0.9
+  '@electron/rebuild>node-abi': 4.40.0
 
 patchedDependencies:
   '@cline/core@0.2.0': 10c3e9704d3c53fc031afbcc370053a9b5b55896536a6016dc91cefc6d11d8c0
@@ -8909,8 +8910,8 @@ packages:
       sass:
         optional: true
 
-  node-abi@4.31.0:
-    resolution: {integrity: sha512-Erq5w/t3syw3s4sDsUaX4QttIdBPsGKTT1DTRsCkTonGggczhlDKm/wDX3o+HPJpQ41EjXCbcmXf0tgr5YZJXw==}
+  node-abi@4.40.0:
+    resolution: {integrity: sha512-GuvqvtrOk+AC27RidBxBsMzVNkwNl7PjHgc4NXbmdvSVLgIUjpaqcG1FjNRYnt2Yn9Ytq+Ln37XsBaglUcte/w==}
     engines: {node: '>=22.12.0'}
 
   node-addon-api@7.1.1:
@@ -12524,7 +12525,7 @@ snapshots:
     dependencies:
       '@malept/cross-spawn-promise': 2.0.0
       debug: 4.4.3(supports-color@10.2.2)
-      node-abi: 4.31.0
+      node-abi: 4.40.0
       node-api-version: 0.2.1
       node-gyp: 12.3.0
       read-binary-file-arch: 1.0.6(supports-color@10.2.2)
@@ -19479,9 +19480,9 @@ snapshots:
       - babel-plugin-macros
     optional: true
 
-  node-abi@4.31.0:
+  node-abi@4.40.0:
     dependencies:
-      semver: 7.8.5
+      semver: 7.7.4
 
   node-addon-api@7.1.1: {}
 

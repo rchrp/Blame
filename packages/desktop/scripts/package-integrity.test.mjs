@@ -123,7 +123,7 @@ test("detects a dependency lost between deployment and packaging", async () => {
   });
 });
 
-for (const compilerPackage of ["typescript", "@typescript/typescript6"]) {
+for (const compilerPackage of ["typescript", "@typescript/typescript6", "@typescript/old"]) {
 test(`requires the default libraries of packaged ${compilerPackage}`, async () => {
   await fixture(async ({ dist, file, pack }) => {
     for (const name of ["harness-core", "model-catalog"])
@@ -143,6 +143,23 @@ test(`requires the default libraries of packaged ${compilerPackage}`, async () =
   });
 });
 }
+
+test("resolves the TypeScript compatibility wrapper and checks its implementation libraries", async () => {
+  await fixture(async ({ dist, file, pack }) => {
+    for (const name of ["harness-core", "model-catalog"])
+      await file(`node_modules/@blame/${name}/dist/index.js`);
+    await file("node_modules/typescript/lib/typescript.js", 'module.exports = require("@typescript/old");\n');
+    await pack();
+    await assert.rejects(verifyPackagedWorkspaceRuntime(dist), /missing the TypeScript compatibility implementation/);
+    await file("node_modules/@typescript/old/lib/typescript.js");
+    await pack();
+    await assert.rejects(verifyPackagedWorkspaceRuntime(dist), /missing TypeScript default library/);
+    for (const library of ["lib.d.ts", "lib.es5.d.ts", "lib.dom.d.ts"])
+      await file(`node_modules/@typescript/old/lib/${library}`);
+    await pack();
+    await verifyPackagedWorkspaceRuntime(dist);
+  });
+});
 
 test("refuses success when no packaged application was produced", async () => {
   await fixture(async ({ dist }) => {

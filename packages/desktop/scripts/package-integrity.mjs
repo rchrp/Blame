@@ -126,9 +126,21 @@ export function verifyAsarTypeScriptLibraries(archive) {
     asar.listPackage(archive).map((entry) => entry.split(sep).join("/")),
   );
   const compilers = [...entries].filter((entry) =>
-    /(?:^|\/)node_modules\/(?:typescript|@typescript\/typescript6)\/lib\/typescript\.js$/.test(entry),
+    /(?:^|\/)node_modules\/(?:typescript|@typescript\/(?:typescript6|old))\/lib\/typescript\.js$/.test(entry),
   );
   for (const compiler of compilers) {
+    // The official TypeScript 6 compatibility package forwards to @typescript/old.
+    const source = asar.extractFile(archive, normalize(compiler.replace(/^\//, ""))).toString("utf8");
+    if (/^\s*module\.exports\s*=\s*require\(["']@typescript\/old["']\);?\s*$/.test(source)) {
+      let parent = posix.dirname(posix.dirname(compiler));
+      while (!entries.has(posix.join(parent, "node_modules/@typescript/old/lib/typescript.js"))) {
+        const ancestor = posix.dirname(parent);
+        if (ancestor === parent)
+          throw new Error(`Desktop package is missing the TypeScript compatibility implementation: ${compiler}`);
+        parent = ancestor;
+      }
+      continue;
+    }
     const directory = posix.dirname(compiler);
     for (const library of requiredTypeScriptLibraries) {
       if (!entries.has(posix.join(directory, library)))

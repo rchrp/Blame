@@ -253,7 +253,7 @@ async function executableArchitecture(executable: string) {
 // runtime's TypeScript language service needs the compiler's default
 // libraries: without lib.*.d.ts, built-in types such as Array or Promise do
 // not resolve and semantic references miss most uses.
-const typeScriptDefaultLibrary = /[\\/](?:typescript|@typescript[\\/]typescript6)[\\/]lib[\\/]lib(?:\.[^\\/]+)?\.d\.ts$/
+const typeScriptDefaultLibrary = /[\\/](?:typescript|@typescript[\\/](?:typescript6|old))[\\/]lib[\\/]lib(?:\.[^\\/]+)?\.d\.ts$/
 
 const config: Configuration = {
   afterPack: finalizePackage,
