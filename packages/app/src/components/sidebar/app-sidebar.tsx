@@ -67,6 +67,11 @@ const data = {
   ],
   project: [
     {
+      title: "Initialization",
+      url: "/initialization",
+      icon: <BoxesIcon />,
+    },
+    {
       title: "Code Practices",
       url: "/practices",
       icon: <ClipboardCheckIcon />,
@@ -80,11 +85,6 @@ const data = {
       title: "Deploy",
       url: "/deploy",
       icon: <CloudUploadIcon />,
-    },
-    {
-      title: "Initialization",
-      url: "/initialization",
-      icon: <BoxesIcon />,
     },
   ],
 }
