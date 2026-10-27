@@ -30,14 +30,6 @@ export const lightReadCodeInputSchema = z
   })
   .strict();
 
-export const lightReadCodeRequestSchema = z.union([
-  lightReadCodeInputSchema,
-  z.object({ reads: z.array(lightReadCodeInputSchema).min(2).max(4) }).strict()
-    .refine(value => JSON.stringify(value).length <= 2_048, "Batch inputs are limited to 2048 characters; use observed aliases or individual reads."),
-]);
-
-export type LightReadCodeRequest = z.infer<typeof lightReadCodeRequestSchema>;
-
 const symbolEdit = z
   .object({
     kind: z.literal("symbol"),

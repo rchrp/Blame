@@ -126,17 +126,6 @@ export class LightAliasRegistry {
     return [...this.aliases.values()].map((entry) => ({ ...entry }));
   }
 
-  checkpoint() {
-    return structuredClone({ entries: this.entries(), observations: this.observations, sequence: this.sequence });
-  }
-
-  restore(checkpoint: ReturnType<LightAliasRegistry["checkpoint"]>) {
-    this.hydrate(checkpoint.entries);
-    this.observations.clear();
-    for (const [key, value] of checkpoint.observations) this.observations.set(key, value);
-    this.sequence = checkpoint.sequence;
-  }
-
   observe(path: string, content: Buffer, intervals: Array<[number, number]>) {
     const hash = sha256(content);
     this.rememberObservation(path, hash, intervals);

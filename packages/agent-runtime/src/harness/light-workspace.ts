@@ -12,7 +12,6 @@ import { capabilityForPath } from "./light-capabilities.js";
 import type {
   LightEditCodeInput,
   LightReadCodeInput,
-  LightReadCodeRequest,
   LightRunTaskInput,
   LightSearchCodeInput,
   LightTaskContract,
@@ -60,7 +59,6 @@ import { ReadCoverage, type ByteInterval } from "./read-coverage.js";
 import { SessionJournal } from "./session-journal.js";
 import { currentValidationReport, validationStateAfterEdit } from "./light-validation-report.js";
 import { sha256 } from "./light-identity.js";
-import { batchRead } from "./light-batch-read.js";
 import {
   assertMutableWorkspacePath,
   WorkspaceFiles,
@@ -307,32 +305,14 @@ export class LightWorkspace {
   }
 
   async readCode(
-    input: LightReadCodeRequest,
+    input: LightReadCodeInput,
     context: ReadContext,
   ): Promise<LightToolResult<unknown>> {
-    if (!("reads" in input)) return this.readSingleCode(input, context);
     try {
       await this.ready;
-      return await this.commits.exclusive(() => batchRead(input.reads, {
-        checkpoint: () => ({ aliases: this.aliases.checkpoint(), coverage: this.coverage.snapshot() }),
-        restore: async state => {
-          this.aliases.restore(state.aliases); this.coverage.hydrate(state.coverage);
-          await this.journal.recordAliases(this.aliases.entries());
-          await this.journal.recordCoverage(this.coverage.snapshot());
-        },
-        revision: async () => (await this.files.snapshot(context.signal)).revision.source_revision_id,
-        read: item => this.readSingleCode(item, context, true),
-        observed: (item, result) => this.recordObservationAudit("read_code", item.view ?? "auto", result),
-        signal: context.signal,
-      }));
-    } catch (error) { return inputBlocked(error); }
-  }
-
-  private async readSingleCode(input: LightReadCodeInput, context: ReadContext, locked = false): Promise<LightToolResult<unknown>> {
-    try {
-      await this.ready;
-      let result = locked ? await this.readCurrentWorkspace(input, context)
-        : await this.commits.exclusive(() => this.readCurrentWorkspace(input, context));
+      let result = await this.commits.exclusive(() =>
+        this.readCurrentWorkspace(input, context),
+      );
       if (process.env.BLAME_AGENT_SYMBOLIC_ANALYSIS === "true" && process.env.BLAME_AGENT_SYMBOLIC_HINTS !== "false" && result.status === "ok") {
         const data = recordValue(result.data), path = stringValue(data.path);
         if (path && data.view === "raw" && data.complete === true && typeof data.content === "string") {
@@ -341,7 +321,7 @@ export class LightWorkspace {
           if (hints.length) result = { ...result, data: { ...data, symbolicAnalysis: hints } };
         }
       }
-      if (!locked) await this.recordObservationAudit("read_code", input.view ?? "auto", result);
+      await this.recordObservationAudit("read_code", input.view ?? "auto", result);
       return result;
     } catch (error) {
       return inputBlocked(error);

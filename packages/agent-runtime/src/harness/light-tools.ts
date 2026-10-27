@@ -5,7 +5,6 @@ import type { PreviewDependencyRefreshResult } from "../preview-harness-tools.js
 import {
   lightEditCodeInputSchema,
   lightReadCodeInputSchema,
-  lightReadCodeRequestSchema,
   lightDefaultRunTaskInputSchema,
   lightRunTaskInputSchema,
   lightSearchCodeInputSchema,
@@ -108,12 +107,11 @@ function searchCodeTool(workspace: LightWorkspacePort) {
 }
 
 function readCodeTool(workspace: LightWorkspacePort) {
-  const grouped = process.env.BLAME_AGENT_BATCH_READS === "true";
   return harnessTool({
     name: "read_code",
-    description: (grouped ? 'For 2-4 already-known independent targets, one call may use {"reads":[{"target":"a.ts#first"},{"target":"b.ts#second","view":"signature"}]}. Each item keeps ordinary read semantics; check statuses and remainingReads, and do not guess aliases or chain dependent reads in a batch. ' : "") +
+    description:
       "Read a text file or local image, compact directory, sN alias, path#qualifiedName, @changes, @checks, or @capabilities. @checks lists current-source check observations without running them; unknown counts stay null. A line range selects those lines; otherwise omit view for automatic raw/outline routing. Truncated reads propose nextRead and outline routes without granting unseen coverage. Use view signature on a symbol to inspect its declaration header without its body; read the symbol body before behavioral edits or rename. Symbol outlines list contained declarations. Results expose editTargets and containedBy relationships. Generated outputs and ordinary node_modules reads are excluded. For installed dependency types, use view declaration with localFile#importBinding or localFile#importBinding.exportedMember: the configured JS/TS compiler resolves a bounded read-only declaration with package/version identity. This grants no edit coverage and does not establish dependency runtime behavior; follow nextRead for continuation.",
-    schema: grouped ? lightReadCodeRequestSchema : lightReadCodeInputSchema,
+    schema: lightReadCodeInputSchema,
     execute: (input, context) => workspace.readCode(input, context),
   });
 }
