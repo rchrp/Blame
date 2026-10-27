@@ -117,8 +117,8 @@
   "accounting": "Separate current cohort; SDK USD estimates, nullable per-request cache and reasoning fields, all failures/timeouts retained. Add this cohort to overall observed spending without adding scheduling reserves as charges.",
   "provider": "openai-codex",
   "effort": "high",
-  "sourceHead": "f06e6162bb87d958c0fa735cc8e3b42f6b8caf3e",
-  "boundAtUTC": "2026-10-27T16:24:30.893817+00:00",
+  "sourceHead": "6d567ff41cdcd4d400e8bce5257c55662762a2b0",
+  "boundAtUTC": "2026-10-27T16:25:40.174100+00:00",
   "observationBoundary": {
     "atUTC": "2026-10-27T16:21:40.636951+00:00",
     "externalF72ModelRequests": 0,
@@ -1172,7 +1172,7 @@
   },
   "boundScripts": {
     "archive-inputs.mjs": "fbd0e3eb47ce017d87b8375d906db2c146a320ac9871d9728a2d1596eec43b69",
-    "campaign.mjs": "0e0e2d37085c7938c93c7fc2e2b2bb3dd08f31d904f9ace45cc38161f25aadcf",
+    "campaign.mjs": "f520e5626dbfadd46ba49c7df157b14a70e15c189c2c15b4ca10de60bc9d616b",
     "controls.mjs": "4861ec3226dc7af0beefd0e086250ea70ec8bd7f6f21ff94e888850bca3e40ff",
     "declaration-metadata.mjs": "90eab22436c42972fc35ecea49d280c1da7a0e397abf102e917003e72019ddbb",
     "evidence.mjs": "1790484a3ef8905db94ed37fb943111a6d05d631e114815667f5b3bb1dc16a46",
@@ -1202,6 +1202,12 @@
       "previousSourceHead": "ebb0e6fcc5dcf40d2edc788c96c0ce3f59607182",
       "newSourceHead": "f06e6162bb87d958c0fa735cc8e3b42f6b8caf3e",
       "reason": "Include the already byte-bound post-hoc inspection audit in the source commit. Runtime, model, tools, prompts, task, oracle, budgets and bound script bytes are unchanged."
+    },
+    {
+      "externalModelRequests": 0,
+      "previousProtocolSha256": "36488d527e68b7ec2b95cb4d7f0a6c894aa7af6a7cb5855812efbe548789be3f",
+      "newSourceHead": "6d567ff41cdcd4d400e8bce5257c55662762a2b0",
+      "reason": "Correct pre-dispatch freeze report publication; coordinator run/analysis, runtime, model, prompts, tasks, oracles and budgets unchanged."
     }
   ]
 }

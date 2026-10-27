@@ -1,0 +1,8 @@
+{
+  "externalModelRequests": 0,
+  "errorCode": "EEXIST",
+  "path": "oracle-controls.json",
+  "phase": "After writing model-protocol.json; before any campaign run",
+  "cause": "The identical local oracle report was already committed when the freezer tried an exclusive copy.",
+  "resolution": "The freezer now verifies a prepublished equal report and publishes the model protocol last. No runtime, model, prompt, task, source patch, budget or grader endpoint changes."
+}
