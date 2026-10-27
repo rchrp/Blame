@@ -104,7 +104,13 @@ export async function validateSourceDeltaArtifact(
             throw new Error('Source delta manifest is too large.')
           }
           const chunks: Buffer[] = []
-          stream.on('data', (chunk) => chunks.push(Buffer.from(chunk)))
+          stream.on('data', (chunk) => {
+            if (!Buffer.isBuffer(chunk)) {
+              parser.destroy(new Error('Source delta contains non-binary data.'))
+              return
+            }
+            chunks.push(Buffer.from(chunk))
+          })
           stream.on('error', reject)
           stream.on('end', () => {
             try {

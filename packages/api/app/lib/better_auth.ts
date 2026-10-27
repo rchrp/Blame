@@ -7,6 +7,7 @@ import {
 } from '#services/auth_email_service'
 import env from '#start/env'
 import hash from '@adonisjs/core/services/hash'
+import app from '@adonisjs/core/services/app'
 import { passkey } from '@better-auth/passkey'
 import db from '@adonisjs/lucid/services/db'
 import { betterAuth } from 'better-auth'
@@ -18,20 +19,24 @@ const baseURL = env.get('BETTER_AUTH_URL', env.get('APP_URL')).replace(/\/$/, ''
 const betterAuthSecret = env.get('BETTER_AUTH_SECRET')?.release() ?? env.get('APP_KEY').release()
 const socialProviders = configuredSocialProviders()
 
+const authDatabase = createPool({
+  host: env.get('DB_HOST'),
+  port: env.get('DB_PORT'),
+  user: env.get('DB_USER'),
+  password: env.get('DB_PASSWORD'),
+  database: env.get('DB_DATABASE'),
+  timezone: 'Z',
+  connectionLimit: 10,
+})
+
+app.terminating(() => authDatabase.end())
+
 export const auth = betterAuth({
   appName: 'Blame',
   baseURL,
   basePath: '/api/v1/auth',
   secret: betterAuthSecret,
-  database: createPool({
-    host: env.get('DB_HOST'),
-    port: env.get('DB_PORT'),
-    user: env.get('DB_USER'),
-    password: env.get('DB_PASSWORD'),
-    database: env.get('DB_DATABASE'),
-    timezone: 'Z',
-    connectionLimit: 10,
-  }),
+  database: authDatabase,
   advanced: {
     database: { generateId: () => uuidV7() },
     useSecureCookies: baseURL.startsWith('https://'),
@@ -144,7 +149,6 @@ export const auth = betterAuth({
   },
   socialProviders,
   plugins: [
-    bearer({ requireSignature: true }),
     deviceAuthorization({
       expiresIn: '10m',
       interval: '5s',
@@ -198,6 +202,8 @@ export const auth = betterAuth({
       origin: [new URL(siteUrl).origin, new URL(baseURL).origin],
       authenticatorSelection: { userVerification: 'required', residentKey: 'preferred' },
     }),
+    // Read the final session cookie after 2FA removes provisional sessions.
+    bearer({ requireSignature: true }),
   ],
   rateLimit: {
     enabled: true,

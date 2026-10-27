@@ -51,6 +51,7 @@ export default class extends BaseSchema {
 
   async down() {
     this.schema.alterTable('preview_sessions', (table) => {
+      table.dropForeign(['baseline_id'])
       table.dropIndex(['baseline_id'])
       table.dropColumn('baseline_id')
     })

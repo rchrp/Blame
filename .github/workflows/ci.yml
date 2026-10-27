@@ -13,6 +13,39 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  api-auth:
+    name: API authentication and unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: blame_ci
+          MYSQL_ROOT_HOST: "%"
+          MYSQL_DATABASE: opencode_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -pblame_ci"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: blame_ci
+      DB_DATABASE: opencode_test
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+        with:
+          node-version: 24
+      - run: pnpm exec turbo run build --filter="@blame/api^..."
+      - run: pnpm --filter @blame/api exec node ace.js test unit
+      - run: pnpm --filter @blame/api exec node ace.js test --files='tests/functional/auth.spec.ts'
+
   windows-runtime:
     name: Windows PowerShell runtime tests
     runs-on: windows-latest
