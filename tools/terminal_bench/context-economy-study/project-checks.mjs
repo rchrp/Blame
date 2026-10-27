@@ -14,8 +14,11 @@ else if(action==='delivered'){
  args=['node_modules/vitest/vitest.mjs','run','--configLoader','native','--config','.study/vitest.config.mjs',...runtime];
 }else if(action==='delivered-types'){
  if(!newTests.length){process.stderr.write('No new test/type regression was delivered.\n');process.exit(1);}
- const base=JSON.parse(await readFile('.study/source-tsconfig.json'));delete base.include;delete base.exclude;base.files=newTests.map(p=>'../'+p);
- await writeFile('.study/reports/delivered-tsconfig.json',JSON.stringify({...base,compilerOptions:{...base.compilerOptions,paths:Object.fromEntries(Object.entries(base.compilerOptions.paths).map(([k,v])=>[k,v.map(p=>'../'+p)]))},files:newTests.map(p=>'../../'+p)}));
+ const base=JSON.parse(await readFile('.study/source-tsconfig.json'));delete base.include;delete base.exclude;
+ const typeInputs=[...newTests];
+ // Preserve the original React package's ambient matcher declarations.
+ if(newTests.some(p=>p.startsWith('packages/react-query/src/')))typeInputs.push('packages/react-query/test-setup.ts');
+ await writeFile('.study/reports/delivered-tsconfig.json',JSON.stringify({...base,compilerOptions:{...base.compilerOptions,paths:Object.fromEntries(Object.entries(base.compilerOptions.paths).map(([k,v])=>[k,v.map(p=>'../'+p)]))},files:typeInputs.map(p=>'../../'+p)}));
  args=['node_modules/typescript/bin/tsc','--noEmit','-p','.study/reports/delivered-tsconfig.json'];
 }else throw Error('Unknown check');
 const r=spawnSync(process.execPath,args,{stdio:'inherit',env:process.env});process.exit(r.status??1);

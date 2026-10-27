@@ -1,0 +1,89 @@
+{
+  "complete": true,
+  "externalModelRequests": 0,
+  "node": "v24.19.0",
+  "originalAdapterSha256": "28760dddc76a07c1ea5123738a404a1d6e708c10a3fdf86f0c01e90490c657c0",
+  "correctedAdapterSha256": "94757a4db4bf65130d2cc45effda97d799166963ba3d19e5408c1ba7619bbace",
+  "unchangedUpstreamSetupSha256": "337c979f3a6c40729fcccb7c005667bb7ba3825f23e65e5f4df383eead651bfd",
+  "rows": [
+    {
+      "name": "react-matcher",
+      "runs": [
+        {
+          "adapter": "original",
+          "exitCode": 2,
+          "signal": null,
+          "stdout": "packages/react-query/src/__tests__/ambient-control.test.tsx(1,93): error TS2339: Property 'toBeInTheDocument' does not exist on type 'Assertion<void, HTMLDivElement>'.\n",
+          "stderr": ""
+        },
+        {
+          "adapter": "corrected",
+          "exitCode": 0,
+          "signal": null,
+          "stdout": "",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "react-real-type-error",
+      "runs": [
+        {
+          "adapter": "original",
+          "exitCode": 2,
+          "signal": null,
+          "stdout": "packages/react-query/src/__tests__/ambient-control.test.tsx(1,93): error TS2339: Property 'toBeInTheDocument' does not exist on type 'Assertion<void, HTMLDivElement>'.\npackages/react-query/src/__tests__/ambient-control.test.tsx(1,120): error TS2322: Type 'number' is not assignable to type 'string'.\n",
+          "stderr": ""
+        },
+        {
+          "adapter": "corrected",
+          "exitCode": 2,
+          "signal": null,
+          "stdout": "packages/react-query/src/__tests__/ambient-control.test.tsx(1,120): error TS2322: Type 'number' is not assignable to type 'string'.\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "core-only",
+      "runs": [
+        {
+          "adapter": "original",
+          "exitCode": 2,
+          "signal": null,
+          "stdout": "packages/query-core/src/__tests__/ambient-control.test.ts(1,93): error TS2339: Property 'toBeInTheDocument' does not exist on type 'Assertion<void, HTMLDivElement>'.\n",
+          "stderr": ""
+        },
+        {
+          "adapter": "corrected",
+          "exitCode": 2,
+          "signal": null,
+          "stdout": "packages/query-core/src/__tests__/ambient-control.test.ts(1,93): error TS2339: Property 'toBeInTheDocument' does not exist on type 'Assertion<void, HTMLDivElement>'.\n",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "name": "no-new-tests",
+      "runs": [
+        {
+          "adapter": "original",
+          "exitCode": 1,
+          "signal": null,
+          "stdout": "",
+          "stderr": "No new test/type regression was delivered.\n"
+        },
+        {
+          "adapter": "corrected",
+          "exitCode": 1,
+          "signal": null,
+          "stdout": "",
+          "stderr": "No new test/type regression was delivered.\n"
+        }
+      ]
+    }
+  ],
+  "boundary": "Only synthetic compiler fixtures and grader adapter differ. Eight actual compiler/selection runs preserve real type errors, core-only environment and missing-test refusal. No model patch, frozen task input, historical result or required execution evidence changes. Future campaigns require a new input/adaptor version.",
+  "logSha256": "837217f03a004c0af204c011f288c1dd1e1de4705bb86aceb450a69a739e0142",
+  "decision": "Keep the generator correction for future inputs only; retain all original source/task/score artifacts and the separately labelled shadow sensitivity."
+}

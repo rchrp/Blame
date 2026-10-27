@@ -2165,6 +2165,16 @@ physical dependency copy; shared pinned images are untouched. The standard
 suite's 13 skips include these five separately exercised cases and eight remaining
 external-runtime/platform controls.
 
+\paragraph{F73: future grader correction, local evidence only.}
+The input-adapter generator now includes the unchanged upstream React setup when
+new React tests are selected. Eight old/corrected compiler and selection controls
+confirm matcher recovery, preservation of a real TS2322 error, unchanged core-only
+ambient scope, and continued rejection of missing delivered tests. This fixes a
+grader defect, not an agent source defect. Historical input bytes, model outcomes
+and required-execution proofs stay frozen; future campaigns require a new input
+version. Evidence:
+\filepath{docs/experiments/light-harness-react-test-environment-f73-2026-10-27}.
+
 \section{Next empirical priorities}
 Confirm process-observation and efficiency effects on unseen issues and another
 project, with the original test environment faithfully represented. Then investigate

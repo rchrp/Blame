@@ -1,0 +1,14 @@
+{
+  "registeredAtUTC": "2026-10-27T17:33:04.282576+00:00",
+  "kind": "Local future-input grader correction only, after all 46 model assignments; no new model call or historical score change",
+  "sourceHead": "a977f9e5edc5e9753385bb5adb56686ca1351db0",
+  "oldTemplateSha256": "28760dddc76a07c1ea5123738a404a1d6e708c10a3fdf86f0c01e90490c657c0",
+  "evidence": "Uniform20-patch shadow audit cures only F70 first reference TS2339 by including unchanged upstream React test-setup.ts. All primary scores and all F72 outcomes are preserved.",
+  "controlsBeforeImplementation": [
+    "React matcher fixture: original adapter rejects missing ambient matcher; corrected adapter includes original package setup and compiles.",
+    "React fixture with an actual TS2322 error remains rejected; missing matcher error alone disappears.",
+    "Core-only matcher fixture remains rejected; no React ambient setup is injected.",
+    "No newly delivered tests remains rejected."
+  ],
+  "scope": "Only the generator used for future supplied inputs changes. Existing input bundles/check commands, patches, model protocols and primary results stay immutable; the shadow audit remains source-only."
+}
