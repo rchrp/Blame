@@ -14,6 +14,7 @@ import { finished } from "node:stream/promises";
 import test from "node:test";
 import {
   verifyAsarWorkspaceRuntime,
+  verifyAsarGeneratedJavaScript,
   verifyPackagedWorkspaceRuntime,
   verifyStagedWorkspaceRuntime,
 } from "./package-integrity.mjs";
@@ -84,6 +85,15 @@ test("rejects source-only transitive workspace packages in staging and the final
       verifyAsarWorkspaceRuntime(archive),
       /missing runtime entrypoint.*dist\/index.js/,
     );
+  });
+});
+
+test("rejects a duplicate require declaration inside the final ASAR", async () => {
+  await fixture(async ({ archive, file, pack }) => {
+    await file("out/main/chunks/devtools.js", "const require = () => {}; var require = () => {};");
+    await pack();
+    assert.throws(() => verifyAsarGeneratedJavaScript(archive),
+      /devtools\.js:[\s\S]*Identifier 'require' has already been declared/);
   });
 });
 

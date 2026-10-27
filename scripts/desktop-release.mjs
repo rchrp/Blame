@@ -38,6 +38,7 @@ async function build(platformArgs) {
   process.env.BLAME_DOWNLOAD_BASE_URL ||= "https://download.blame.so/latest";
   const packageArgs = platformArgs.length ? platformArgs : hostPlatformArgs();
   await run("pnpm", ["--filter", "@blame/desktop", "build"], rootDir);
+  await run("pnpm", ["--filter", "@blame/desktop", "test:startup"], rootDir);
   if (isDualArchitectureMacosBuild(packageArgs)) {
     await buildMacosArchitectures(packageArgs);
     return;

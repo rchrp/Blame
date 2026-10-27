@@ -3,6 +3,7 @@ import { createRequire } from "node:module";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { join, normalize, posix, relative, sep } from "node:path";
+import { checkJavaScript } from "./check-generated-javascript.mjs";
 
 function runtimeTargets(manifest) {
   const paths = new Set();
@@ -167,6 +168,20 @@ async function verifyUnpackedNpm(archive) {
   }
 }
 
+export function verifyAsarGeneratedJavaScript(archive) {
+  const asar = asarTools();
+  let count = 0;
+  for (const entry of asar.listPackage(archive)) {
+    const path = entry.split(sep).join("/").replace(/^\//, "");
+    if (!/^out\/(?:main|preload)\/.*\.[cm]?js$/.test(path)) continue;
+    checkJavaScript(asar.extractFile(archive, normalize(path)).toString("utf8"),
+      `${archive}/${path}`, path.startsWith("out/preload/") ? "commonjs" : "module");
+    count++;
+  }
+  if (!count) throw new Error(`No generated main/preload JavaScript in ${archive}`);
+  return count;
+}
+
 /** Run after electron-builder, before installers can be copied or uploaded. */
 export async function verifyPackagedWorkspaceRuntime(dist) {
   const archives = [];
@@ -189,11 +204,12 @@ export async function verifyPackagedWorkspaceRuntime(dist) {
   if (!archives.length)
     throw new Error(`No packaged app.asar found in ${dist}`);
   for (const archive of archives) {
+    const generatedFiles = verifyAsarGeneratedJavaScript(archive);
     const count = await verifyAsarWorkspaceRuntime(archive);
     const compilers = verifyAsarTypeScriptLibraries(archive);
     await verifyUnpackedNpm(archive);
     console.log(
-      `Verified ${count} workspace packages and the default libraries of ${compilers} TypeScript compiler(s) in ${archive}`,
+      `Verified ${generatedFiles} generated files, ${count} workspace packages and the default libraries of ${compilers} TypeScript compiler(s) in ${archive}`,
     );
   }
 }
