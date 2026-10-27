@@ -68,6 +68,7 @@ jobs:
           node-version: 24
       - run: pnpm --filter @blame/desktop build:workspace-dependencies
       - run: pnpm --filter @blame/desktop test:windows-workspaces
+      - run: pnpm --filter @blame/desktop test:package
       - run: pnpm --filter @blame/agent-runtime exec node --test dist/harness/workspace-command-process.test.js dist/harness/package-manager-runtime.test.js
 
   line-budgets:
