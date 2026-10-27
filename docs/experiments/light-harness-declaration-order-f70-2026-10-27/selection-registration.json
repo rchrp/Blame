@@ -38,7 +38,7 @@
             "packages/query-core/src",
             "packages/react-query/src"
           ],
-          "request": "In query-core QueryClient.isFetching and the React useIsFetching hook, disallow fetchStatus in the public filter argument: these APIs already count fetching queries. Preserve all other filter fields, their generic inference and return types, and leave fetchStatus supported by general query-cache filtering. Keep runtime behavior unchanged. Scope this change to query-core and react-query, preserving the other framework adapters. Add regression coverage in new files under the existing __tests__ directories; preserve supplied tests.",
+          "request": "In query-core QueryClient.isFetching and the React useIsFetching hook, disallow fetchStatus in the public filter argument: these APIs already count fetching queries. Preserve all other filter fields, their generic inference and return types, and leave fetchStatus supported by general query-cache filtering. Keep runtime behavior unchanged. Scope this change to query-core and react-query, preserving the other framework adapters. Add regression coverage in new files under the existing __tests__ directories; preserve supplied tests. Preserve the existing QueryClient.isFetching generic entry point: an explicit compatible QueryFilters type argument must remain accepted, as must typed predicate inference.",
           "base": "02ac821eb2315b8104b1446d13f9bdfac74d8f34"
         }
       ],
@@ -80,13 +80,23 @@
     "observedStudyStopUsd": 18
   },
   "order": "Panel, repeat, task; arms rotate by repeat+task; sequential one new model per process; no uncertain retry.",
-  "quality": "Same immutable required scripts, original test protection, official patches and independent probes as F69. Report any post-hoc compatibility sensitivities separately. Executed, passed, formally admitted and accepted are distinct.",
+  "quality": "Same immutable required scripts, original test protection, official patches and independent probes as F69. Report any post-hoc compatibility sensitivities separately. Executed, passed, formally admitted and accepted are distinct. F70 clarifies public generic-argument compatibility in the shared task prompt and adds a pre-dispatch independent compiler endpoint for it; do not compare its success counts directly with F69.",
   "resources": "All assignments retained, null costs/tokens are unknown. Input+output tokens, cache subset separately, SDK estimates not invoices, raw durations plus HTTP/tool attribution. Pair/task omission on jointly audited successes; panels/version baselines stay separate.",
   "gates": [
     "Complete and preserve the prior 28 assignments before any production build for this treatment.",
     "Verify file- and byte-budget controls, explicit test scopes, filename affinity, source mutation checks and unchanged schemas/first prompts.",
     "Use cache-free pinned dependency images; independent graders get writable physical copies, never mutate worker baselines.",
-    "Freeze complete executable, dependency, input, oracle, observer and prompt/settings bindings and push before external dispatch."
+    "Freeze complete executable, dependency, input, oracle, observer and prompt/settings bindings and push before external dispatch.",
+    "The original source must pass the compatibility endpoint; the upstream nongeneric positive control must fail it; a separate generic-preserving positive control must pass every endpoint before dispatch."
   ],
-  "accounting": "Separate current cohort; SDK USD estimates, nullable per-request cache and reasoning fields, all failures/timeouts retained. Add this cohort to overall observed spending without adding scheduling reserves as charges."
+  "accounting": "Separate current cohort; SDK USD estimates, nullable per-request cache and reasoning fields, all failures/timeouts retained. Add this cohort to overall observed spending without adding scheduling reserves as charges.",
+  "preDispatchAmendments": [
+    {
+      "atUTC": "2026-10-27T04:24:14.980Z",
+      "externalF70ModelRequests": 0,
+      "parentRequestSha256": "bb843f65f53e9d78f0778d970fc5a4115b439ebf923f9a9d346508b1e7484f12",
+      "clarifiedRequestSha256": "6dff2483f6055e5148b58015dc1c3f25badbd3dc0cf4c38ba2dd704e14024b90",
+      "reason": "Make the generic API preservation criterion explicit for every F70 comparator before dispatch. This is a new task specification/audit version, not a repair or relabelling of an F69 outcome."
+    }
+  ]
 }
