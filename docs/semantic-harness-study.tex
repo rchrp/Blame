@@ -36,7 +36,10 @@ Cache/invoice limits and unknown F52
 consumption remain explicit; Z3 stays optional and is disabled in the new panels.
 F65 resolves a formatter-observer blind spot and demonstrates actual SDK clipping
 with loopback controls: exact scope metadata survives in 4/4 corrected cases
-versus 2/4 raw cases. This is transport reliability, not model-use evidence.
+versus 2/4 raw cases. F66 finds no batch use in four trials and rejects that
+prototype. F67 observes failed-compiler-first order in 4/4 corrected runs versus
+0/4 reference, at equal bounded correctness but 4.6\% more tokens.
+This is transport/repair reliability, not a general efficiency result.
 Finite experiments cannot establish exhausted improvement margin.
 \end{abstract}
 
@@ -78,9 +81,9 @@ truncation flag and non-exhaustiveness warning. Production retains the bounded l
 \code{read_code} & Files, ranges, symbols, signatures/outlines, changes and check
 journals. Small automatic reads can expose a complete file; large files route
 to outlines. Signature reads omit implementations and cannot authorize unseen
-body edits. An opt-in bounded batch accepts two to four independent reads,
-with one aggregate output cap and explicit remaining targets; omitted or rolled
-back reads grant no coverage. Only actually emitted bytes establish consumer/context-specific
+body edits. The SDK can execute several read calls within one model iteration.
+The unused F66 batch prototype was removed after evaluation.
+Only actually emitted bytes establish consumer/context-specific
 observation. Truncation provides bounded continuation routes. A confirmed missing
 literal path can now return at most five exact-basename indexed candidates,
 with explicit next reads. It never selects a target or grants edit coverage;
@@ -1818,95 +1821,143 @@ with no new unreported-request reserves. Cumulative observed estimates are
 USD11.40055596 plus unchanged historical reserves USD17.14. Aggregate cache is
 included in input; per-request attribution and invoices remain incomplete.
 
-\section{Feedback delivery: F65 local controls}
-\paragraph{Diagnosis and implemented correction.}
-All 32 F64 scope offers are top-level structured fields in saved tool results;
-nested placement was not their cause. The presenter emits a metadata JSON line
-followed by fenced diagnostic text. The old observer parsed the entire string
-as JSON and missed all 32 locally replayed shapes; the corrected observer matches
-all 32 exact hashes. This replays archived result shapes through the presenter,
-not original provider bodies. F64 exposure and scores remain unchanged.
+\section{Feedback delivery and isolated follow-ups: F65--F67}
+\paragraph{F65 diagnosis, implementation and local evidence.}
+All 32 F64 scope offers are top-level fields in saved tool results; nested
+placement was not their cause. The presenter emits a metadata JSON line and
+fenced diagnostic text. Whole-string JSON parsing missed 32/32 locally replayed
+shapes; the corrected observer matches all 32 exact hashes. Original provider
+bodies remain unavailable: F64 exposure and scores are unchanged.
+Full SDK0.2.0 OpenAI-compatible loopback controls additionally expose real
+8,000-character clipping before custom projection. Across projection on/off and
+normal/long output, exact receipts survive 2/4 raw cases and 4/4 corrected cases.
+Large \code{run_task} results now separate structured metadata from diagnostic
+text in typed SDK parts; the projector and app decode this envelope. Oversized
+metadata can still be unavailable. Long-output forwarding grows from about 8,506
+to 13,772 characters; preserved evidence is not demonstrated token efficiency.
+No compiler scope, case count or admission claim is strengthened by transport.
 
-Separately, full Cline SDK0.2.0/provider loopback controls expose genuine clipping:
-the SDK's default 8,000-character result limit precedes custom context projection.
-Across projection on/off and normal/long output, raw exact receipts survive 2/4
-cases. Large \code{run_task} results now put structured metadata in the first typed
-text part and detached diagnostics in later parts; all four corrected cases retain
-the exact receipt. The production projector and app decode the envelope, while
-the observer ignores detached diagnostic JSON, source/user text and unknown call
-identities. Malformed or independently oversized metadata remains unknown.
-Long-output forwarding grows from approximately 8,506 to 13,772 characters:
-retaining evidence is not demonstrated token efficiency. No validation claim,
-compiler scope or test count is strengthened by transport.
+The final pre-migration prototype suite passes 1,188 runtime tests with 13 skips;
+app tests pass 396/396 and runner 37/37. A stale preview-contract build caused one
+initial failure; rebuilding dependencies resolves it without test relaxation.
+Nine final receipt/source/native/evidence controls pass. A post-dispatch negative
+control extends detached-JSON rejection to typed \code{input_text} envelopes;
+it fails before the one-line observer correction. Raw receipts are untouched.
+None of 134 inspected command diagnostics contains the scope literal needed for
+that false positive. Independently, all 31 unique live scope offers match an exact
+hash and call identity at the fetch boundary. This proves neither attention nor
+use; no historical request reconstruction or score correction is claimed.
 
-\paragraph{Local validation and separate experimental mechanisms.}
-The final runtime suite passes 1,188 tests, with 13 declared skips and no failures;
-app tests pass 396/396, runner 37/37, and eight receipt/native-invocation/source
-observer controls pass. App typecheck, affected-runtime lint and line budgets pass.
-An initial runtime failure came from stale preview-contract output; rebuilding
-transitive dependencies resolves it, with no source-test relaxation.
-Batch reads remain opt-in under \code{BLAME_AGENT_BATCH_READS=true}. Local controls
-cover independent aliases/status, cancellation/source-change rollback and omitted
-read coverage. The aggregate response is capped at 6,000 characters (or a smaller
-configured SDK result limit). No sixth primitive or automatic target selection
-is added. Literal compiler priority accepts only recognized plain
-\code{tsc --noEmit} or the local TypeScript Node entry, optionally with a literal
-project path; emit-enabled, expanded and compound commands remain excluded.
-It reports invocation-only evidence. Real compiler-error controls verify ordering
-before an already-green project check and retention of final requirements.
+\paragraph{Frozen protocol and interruption.}
+Selection \texttt{71905418} precedes outcomes. Each panel selects two new requests,
+two repeats and three arms: F66 tests individual/grouped reads/Cline on the same
+complete pinned RxJS project reused from F64; F67 tests literal compiler priority
+off/on/Cline on new small fixtures with a seeded error. Both Light arms share F65.
+SDK0.2.0 native tools have no historical research search patch. The common runtime
+is frozen at \texttt{80e3e881}; schemas, prompts, SDK/core/provider bytes, Git input
+identities, absolute workspace, copied dependencies, offline npm caches, model
+\code{openai-codex/gpt-5.6-luna/high} and budgets are bound before dispatch.
+Analysis/hints are disabled. Limits are 35 iterations, 600 seconds, 8,192 output
+tokens and USD1 SDK cost per trial, with an explicit scheduling reserve.
+Four required final invocations and five independent immutable endpoints remain.
+Four positive controls pass all endpoints; four behavioral mutants are rejected.
 
-\paragraph{Pre-outcome model protocol.}
-Selection \texttt{71905418} precedes outcomes. F66 compares individual reads,
-batched reads and integrated Cline on two new constructed RxJS operators, each
-repeated twice (12 assignments). The pinned complete project is reused from F64;
-this is not a new-project or representative-issue confirmation. F67 separately
-compares direct-compiler priority off/on and Cline on two new small typed fixtures
-with a seeded compiler error and explicit reproduction instruction (12 assignments).
-Both Light arms share F65 transport. Symbolic analysis/hints are disabled.
-Each assignment uses the same task Git HEAD, absolute workspace path, isolated
-copied dependencies, empty offline npm cache and four required final invocations.
-Inputs, executable SDK/core/provider bytes, runtime/runner, schemas, prompts,
-model/effort, environment and rotated sequential order are bound before dispatch.
-SDK0.2.0 native built-ins are unmodified by historical research search patches;
-this cohort must remain separate from SDK0.0.82 results.
-The model is \code{openai-codex/gpt-5.6-luna/high}; per-trial bounds are 35 iterations,
-600 seconds, 8,192 output tokens and USD1 SDK estimated cost, with USD0.50 missing-cost
-scheduling reserve and a USD30 observed new-study stop. These are not invoice caps.
-All failures, timeouts and missing receipts remain. Independent immutable-input
-replays test regression, source compilation, delivered tests, test compilation
-and finite public behavior/type probes. Four correct controls pass all five;
-four behavioral mutants fail. Source fingerprints and literal native invocation
-observations do not establish compiler membership or exhaustive environment proof.
-Observer overhead is reported separately. No solution recovery or trial replacement
-is allowed. Artifacts and frozen protocol:
+The original coordinator receives SIGKILL during assignment nine after eight
+checkpoints. Kernel evidence confirms the signal, not its sender or the model's
+exit. That trial's final source, aggregate usage and duration remain unknown;
+eight usage observations and the partial patch are retained. A pre-outcome
+continuation binds the same executable bytes and the original fifteen remaining
+assignments, one new trial per process. There is no retry, replacement or solution
+recovery. All 24 assignments are accounted for; 23 complete. All 23 unchanged model
+patches reconstruct exact final-source hashes from the published original-input
+Git bundle and reproduce all five endpoint outcomes. The incomplete trial stays
+in assigned denominators and is excluded explicitly from matched success pairs.
+
+\begin{center}\small
+\begin{tabular}{lrrrrrr}\toprule
+Arm & Complete & Source & Strict a/m & Tokens & SDK USD & Seconds \\\midrule
+F66 reference & 3/4 & $3+?$ & 2/2 & unknown & unknown & unknown \\
+F66 batch prototype & 4/4 & 4/4 & 2/2 & 1,980,624 & .117260 & 448.0 \\
+F66 integrated Cline & 4/4 & 4/4 & 1/3 & 2,138,292 & .146845 & 498.7 \\
+F67 reference & 4/4 & 4/4 & 4/4 & 255,241 & .036620 & 421.7 \\
+F67 compiler priority & 4/4 & 4/4 & 4/4 & 267,003 & .033777 & 156.7 \\
+F67 integrated Cline & 4/4 & 4/4 & 2/4 & 248,900 & .042747 & 222.7 \\\bottomrule
+\end{tabular}
+\end{center}
+Strict a/m gives automatic/manual-audit counts, each out of four. Source $3+?$
+means three passing and one unknown. The conservative frozen native observer
+excludes loops, \code{cd} wrappers and edits followed by checks within one call.
+Post-hoc inspection accepts five such cases from exact child-status and source-order
+evidence; their original automatic scores remain intact. A shell's final zero
+alone is never used. Strict layout still fails for the reference's first map test,
+both batch take tests and Cline's second take test: tests work but are below a
+subdirectory instead of the requested \code{src/*.test.ts}. These are delivery
+failures, not demonstrated production-behavior regressions. All terminated patches
+pass finite independent behavior, public-type, regression and delivered-test checks.
+
+\paragraph{F66 adverse result and decision.}
+The bounded prototype preserves per-target status/aliases, signatures, aggregate
+6,000-character limits and rollback of omitted observations. However, none of four
+models uses it. The reference already issues multiple reads in a single model
+iteration (seven such iterations in its first map trial); a new batch syntax does
+not necessarily remove HTTP round trips. The prototype makes 63 requests versus
+Cline's 47. On all four source-correct pairs it uses 7.4\% fewer tokens and 20.1\%
+lower SDK estimates, at lower strict quality. On only two jointly strict Cline
+pairs, tokens instead rise 22.0\% and duration 14.3\%; no jointly strict reference
+pair remains. Reject a marginal efficiency claim and remove the unused production
+prototype. Its tested source and compiled executable remain archived for replay.
+
+\paragraph{F67 implemented behavior, measurements and decision.}
+Recognized literal \code{tsc --noEmit} and local TypeScript Node-entry commands,
+optionally with a literal project path, can lead repair and refresh before green
+project checks. Evidence stays invocation-only; every final required selection is
+retained. Compound/expanded/emit-enabled commands are excluded. Local controls
+verify ordering, exclusion and stopping before green checks when repair still fails.
+The frozen raw next-command counter includes inspections; a separate event-order
+audit excludes those and counts one opportunity per actual failed compiler.
+The exact compiler finishes before required checks start in 4/4 corrected runs
+versus 0/4 reference. Success is equal, not improved.
+
+At that bounded quality, candidate/reference tokens rise 4.6\%, SDK estimates fall
+7.8\% and raw duration falls 62.8\%; both make 32 requests. The reference's first
+quota stream alone lasts 237.1 seconds before any tool: it cannot be evidence of
+later repair advice. Omitting that pair leaves 11.0\% lower duration. Omitting one
+task changes token effects from $-14.7$\% to $+34.0$\%, and SDK cost from $-16.5$\%
+to $+3.0$\%. Versus Cline, tokens rise 7.3\%, SDK estimates fall 21.0\% and duration
+falls 29.6\%. Retain accurate compiler priority; task-success improvement and robust
+general efficiency remain unestablished. Repeated repair advice and navigation
+turns are concrete follow-up candidates, not proven causes of token differences.
+
+\paragraph{Accounting and current integration boundary.}
+All 23 completed token/cost aggregates reconcile with their usage observations;
+per-request cache attribution remains incomplete. Cache is an input subset,
+never added to input-plus-output. Completed SDK estimates total USD0.46597056;
+partial observed cost USD0.01469516 gives USD0.48066572 observed, with USD1.50 new
+unknown-trial scheduling reserve, not an invoice bound. Historical observed
+estimates become USD11.88122168 with USD18.64 retained reservations. Complete
+global consumption, hidden retries, invoices and EUR conversion remain unknown.
+Passive HTTP/tool interval unions and source-observer overhead are retained;
+queue, reasoning, generation and transport causes are not separately identified.
+The new USD30 scheduling stop is separate from old cohorts. Current main's later
+dependency/runtime migration is integrated and verified separately. The final
+suite passes 1,189 runtime tests with 13 skips, 396 app tests, 37 runner tests and
+nine research controls; app typecheck, affected lint and line budgets pass. Two
+new fixture failures after migration came from a missing CLI in the compatibility
+package; fixtures now use the existing real-compiler setup and assert TS2322.
+No production behavior or benchmark result was changed by that fixture repair.
+The full SDK loopback contrast remains 2/4 versus 4/4 on the integrated stack.
+Model results remain on the frozen pre-migration executable, not a new-stack comparison.
+Source, controls, exact patches, byte bindings, negative evidence and replay inputs:
 \filepath{docs/experiments/light-harness-feedback-delivery-f65-2026-10-27}.
 
-\section{Remaining empirical questions}
-\begin{enumerate}
-\item Establish scope-feedback visibility through the complete SDK message path,
-including result formatting, nested wrappers, parallel results and truncation.
-Compare exact source-bound receipts at tool execution and the provider boundary
-with local no-network controls before model trials. Never parse arbitrary
-user/source JSON as proof. Risk: false exposure, hidden diagnostics or invalid
-JSON after truncation. F64's ledger offers alone establish no mediation.
-\item Isolate grouped independent semantic reads on new preselected cross-file
-requests. F64 shows repeated broad searches, nonexistent-file reads and more
-candidate HTTP calls than Cline despite fewer tokens. Compare individual versus
-batched reads while preserving symbol identities, signatures, context bounds and
-atomic edit guards. Keep compiler declaration routing separate; offered routes
-are not selected identities. Measure strict/source success, requests, cache,
-tokens and tool/request duration. Risk: excess context or wrong aliases.
-\item Test exact failed-compiler repair before rerunning green checks. F64 includes
-new-test expectation/type errors, unavailable optional tooling and successful
-shell wrappers hiding earlier compiler failures. Verify child outcomes and the
-final source epoch independently; still execute every required invocation after
-the final edit. Compare failed-check-first advice alone, retaining all failures,
-optional-check freshness and user criteria. Risk: skipped required checks or
-stale validation. Keep Z3 optional: relevant property translation and replayed
-witnesses precede claims about model reasoning or efficiency.
-\end{enumerate}
-Freeze new inputs, schemas, prompts, model/effort, environments and budgets before
-outcomes. Separate known diagnostics, new tasks, new projects, local controls,
-post-hoc sensitivities and historical cohorts. Retain negative trials and missing
-consumption; no finite panel establishes that all improvement margin is gone.
+\section{Next empirical priorities}
+Reduce observed discovery/edit detours rather than adding an unused batch API.
+Measure concise, source-bound repair advice against repeated full plans, preserving
+visibility after source changes or compaction. Confirm compiler-first recovery on
+new cases where an initial repair still fails, then natural multi-file issues in
+another project; the present seeded fixtures have a correctness ceiling.
+Prespecify tasks, compare one mechanism at a time, retain unknown consumption and
+separate native observer limitations from actual check failures. Keep optional Z3
+witness translation/replay independent. No finite panel establishes that remaining
+improvement margin is exhausted.
 \end{document}

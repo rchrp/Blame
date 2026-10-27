@@ -1,0 +1,46 @@
+{
+  "externalModelRequests": 0,
+  "sdkVersion": "0.2.0",
+  "report": [
+    {
+      "projection": false,
+      "largeOutput": false,
+      "localHttpRequests": 2,
+      "offers": 1,
+      "recognized": 1,
+      "oldObserver": 1,
+      "exactReceiptPreserved": true,
+      "toolChars": 5021
+    },
+    {
+      "projection": false,
+      "largeOutput": true,
+      "localHttpRequests": 2,
+      "offers": 1,
+      "recognized": 1,
+      "oldObserver": 1,
+      "exactReceiptPreserved": true,
+      "toolChars": 13775
+    },
+    {
+      "projection": true,
+      "largeOutput": false,
+      "localHttpRequests": 2,
+      "offers": 1,
+      "recognized": 1,
+      "oldObserver": 0,
+      "exactReceiptPreserved": true,
+      "toolChars": 5020
+    },
+    {
+      "projection": true,
+      "largeOutput": true,
+      "localHttpRequests": 2,
+      "offers": 1,
+      "recognized": 1,
+      "oldObserver": 1,
+      "exactReceiptPreserved": true,
+      "toolChars": 13775
+    }
+  ]
+}
