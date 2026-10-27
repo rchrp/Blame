@@ -1,5 +1,6 @@
 import assert from "node:assert/strict"
 import test from "node:test"
+import { feedbackEnvelope } from "@blame/agent-runtime/tool-result-envelope"
 
 import { describeToolCall, toolCallSource } from "./describe-tool-call.ts"
 
@@ -33,6 +34,11 @@ function row(result: ReturnType<typeof view>) {
     .filter(Boolean)
     .join(" ")
 }
+
+test("large command feedback retains command outcome and terminal text in multipart results", () => {
+  const output = { status: "ok", data: { command: "npm test", exitCode: 1, output: "failure diagnostic\n".repeat(700) } }
+  assert.deepEqual(view("run_task", { kind: "project", task: "test" }, feedbackEnvelope(output)), view("run_task", { kind: "project", task: "test" }, output))
+})
 
 test("edits name the file and its line counts", () => {
   const result = view(

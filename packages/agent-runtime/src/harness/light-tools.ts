@@ -18,6 +18,7 @@ import type {
 } from "./light-executor.js";
 import { lightToolContext } from "./light-executor.js";
 import { LightWorkspace } from "./light-workspace.js";
+import { feedbackEnvelope } from "../tool-result-envelope.js";
 
 export const lightReadToolNames = ["search_code", "read_code"] as const;
 export const lightWriteToolNames = ["edit_code", "run_task"] as const;
@@ -168,7 +169,8 @@ function harnessTool<TSchema extends z.ZodTypeAny>(
     async execute(value: unknown, context: AgentToolContext) {
       const parsed = definition.schema.safeParse(value);
       if (!parsed.success) return invalidInput(parsed.error);
-      return modelToolResponse(await definition.execute(parsed.data, context));
+      const response = modelToolResponse(await definition.execute(parsed.data, context));
+      return definition.name === "run_task" ? feedbackEnvelope(response) : response;
     },
   });
 }

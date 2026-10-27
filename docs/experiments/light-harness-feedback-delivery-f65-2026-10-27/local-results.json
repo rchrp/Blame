@@ -1,0 +1,29 @@
+{
+  "phase": "F65",
+  "externalModelRequests": 0,
+  "historicalOutcomeChanges": false,
+  "findings": [
+    {
+      "mechanism": "observer missed mixed JSON/fenced output",
+      "f64LedgerOffers": 32,
+      "legacyRecognizedInLocalShapeReplay": 0,
+      "correctedRecognizedInLocalShapeReplay": 32,
+      "boundary": "Replay of saved tool shapes through the presenter; original provider request bodies are not reconstructed."
+    },
+    {
+      "mechanism": "SDK 8000-character tool-result clipping precedes custom context presentation",
+      "sdk": "0.2.0",
+      "fullLoopCases": 4,
+      "beforeExactReceipts": 2,
+      "afterExactReceipts": 4,
+      "treatment": "Separate structured metadata and diagnostics into typed SDK text parts; no validation claims are altered."
+    }
+  ],
+  "limits": [
+    "Local exact receipt transport is not model use or task success.",
+    "Detached diagnostic text is excluded from evidence parsing.",
+    "Metadata larger than an individual SDK text-part budget can still be unavailable; malformed or clipped metadata is unknown.",
+    "The long-output case forwards more bytes after retaining metadata; no token/cost improvement is claimed.",
+    "Batch reads and literal compiler repair are separate factors; task selection predates model dispatch."
+  ]
+}

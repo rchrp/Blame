@@ -1,0 +1,237 @@
+{
+  "kind": "local_shape_replay_not_historical_network_reconstruction",
+  "externalModelRequests": 0,
+  "trials": [
+    {
+      "trial": "1-filter-map-candidate",
+      "ledgerSha256": "437d9ae52fd77223aafe4d974a5a008ff98c0e96da8b8a8d7a2fbf65512c3310",
+      "offers": [
+        {
+          "scopeSha256": "aa7c69888671270bfc25fe257b37da0f4e6b5b20b887e553635f377fb30988aa",
+          "oldObserverRecognized": 0,
+          "formattedRecognized": 1,
+          "exact": true
+        },
+        {
+          "scopeSha256": "816a8b0bc140d04bf667469d3be38e75a7b07aa58ee0ede1885ed39250579acd",
+          "oldObserverRecognized": 0,
+          "formattedRecognized": 1,
+          "exact": true
+        },
+        {
+          "scopeSha256": "aa7c69888671270bfc25fe257b37da0f4e6b5b20b887e553635f377fb30988aa",
+          "oldObserverRecognized": 0,
+          "formattedRecognized": 1,
+          "exact": true
+        },
+        {
+          "scopeSha256": "816a8b0bc140d04bf667469d3be38e75a7b07aa58ee0ede1885ed39250579acd",
+          "oldObserverRecognized": 0,
+          "formattedRecognized": 1,
+          "exact": true
+        },
+        {
+          "scopeSha256": "aa7c69888671270bfc25fe257b37da0f4e6b5b20b887e553635f377fb30988aa",
+          "oldObserverRecognized": 0,
+          "formattedRecognized": 1,
+          "exact": true
+        },
+        {
+          "scopeSha256": "816a8b0bc140d04bf667469d3be38e75a7b07aa58ee0ede1885ed39250579acd",
+          "oldObserverRecognized": 0,
+          "formattedRecognized": 1,
+          "exact": true
+        },
+        {
+          "scopeSha256": "aa7c69888671270bfc25fe257b37da0f4e6b5b20b887e553635f377fb30988aa",
+          "oldObserverRecognized": 0,
+          "formattedRecognized": 1,
+          "exact": true
+        },
+        {
+          "scopeSha256": "816a8b0bc140d04bf667469d3be38e75a7b07aa58ee0ede1885ed39250579acd",
+          "oldObserverRecognized": 0,
+          "formattedRecognized": 1,
+          "exact": true
+        }
+      ]
+    },
+    {
+      "trial": "1-map-with-previous-candidate",
+      "ledgerSha256": "aafe1d3e56c45940ed6d013af90bbcdcc83fdfa00a52f786eaa3b44cf9be32df",
+      "offers": [
+        {
+          "scopeSha256": "2ab86dbdf472f871ef2a2971b65577ae1f20551916bed87e8c0af180a3a9f173",
+          "oldObserverRecognized": 0,
+          "formattedRecognized": 1,
+          "exact": true
+        },
+        {
+          "scopeSha256": "9e9414da482dc81a3cd8cd53076b680ada77d15257a0420ab1a41f4997007321",
+          "oldObserverRecognized": 0,
+          "formattedRecognized": 1,
+          "exact": true
+        },
+        {
+          "scopeSha256": "2ab86dbdf472f871ef2a2971b65577ae1f20551916bed87e8c0af180a3a9f173",
+          "oldObserverRecognized": 0,
+          "formattedRecognized": 1,
+          "exact": true
+        },
+        {
+          "scopeSha256": "9e9414da482dc81a3cd8cd53076b680ada77d15257a0420ab1a41f4997007321",
+          "oldObserverRecognized": 0,
+          "formattedRecognized": 1,
+          "exact": true
+        },
+        {
+          "scopeSha256": "2ab86dbdf472f871ef2a2971b65577ae1f20551916bed87e8c0af180a3a9f173",
+          "oldObserverRecognized": 0,
+          "formattedRecognized": 1,
+          "exact": true
+        },
+        {
+          "scopeSha256": "9e9414da482dc81a3cd8cd53076b680ada77d15257a0420ab1a41f4997007321",
+          "oldObserverRecognized": 0,
+          "formattedRecognized": 1,
+          "exact": true
+        }
+      ]
+    },
+    {
+      "trial": "1-tap-first-candidate",
+      "ledgerSha256": "542f34dbaaa087c5ef039e4ffc29c4ecae046ac4e7970108ec34fe9b798b7ffd",
+      "offers": [
+        {
+          "scopeSha256": "b3388005a1d648c3be58b03a318a0040175d6462de843cabe51ae5adb3632f77",
+          "oldObserverRecognized": 0,
+          "formattedRecognized": 1,
+          "exact": true
+        },
+        {
+          "scopeSha256": "f9db929a17930d35eba166bc6ea617b7ce93365554c79ca986b3632f4f275779",
+          "oldObserverRecognized": 0,
+          "formattedRecognized": 1,
+          "exact": true
+        },
+        {
+          "scopeSha256": "b3388005a1d648c3be58b03a318a0040175d6462de843cabe51ae5adb3632f77",
+          "oldObserverRecognized": 0,
+          "formattedRecognized": 1,
+          "exact": true
+        },
+        {
+          "scopeSha256": "f9db929a17930d35eba166bc6ea617b7ce93365554c79ca986b3632f4f275779",
+          "oldObserverRecognized": 0,
+          "formattedRecognized": 1,
+          "exact": true
+        }
+      ]
+    },
+    {
+      "trial": "2-filter-map-candidate",
+      "ledgerSha256": "217d5f98426ae1f776ab2a2340387667df15ffed3cc8fa578d763cdab8d6d74e",
+      "offers": [
+        {
+          "scopeSha256": "aa7c69888671270bfc25fe257b37da0f4e6b5b20b887e553635f377fb30988aa",
+          "oldObserverRecognized": 0,
+          "formattedRecognized": 1,
+          "exact": true
+        },
+        {
+          "scopeSha256": "adc9f8bf16b9778eda7cf05b2a2d16b0b8a9b160d117d661e1203dde1a4c16d8",
+          "oldObserverRecognized": 0,
+          "formattedRecognized": 1,
+          "exact": true
+        },
+        {
+          "scopeSha256": "aa7c69888671270bfc25fe257b37da0f4e6b5b20b887e553635f377fb30988aa",
+          "oldObserverRecognized": 0,
+          "formattedRecognized": 1,
+          "exact": true
+        },
+        {
+          "scopeSha256": "adc9f8bf16b9778eda7cf05b2a2d16b0b8a9b160d117d661e1203dde1a4c16d8",
+          "oldObserverRecognized": 0,
+          "formattedRecognized": 1,
+          "exact": true
+        },
+        {
+          "scopeSha256": "aa7c69888671270bfc25fe257b37da0f4e6b5b20b887e553635f377fb30988aa",
+          "oldObserverRecognized": 0,
+          "formattedRecognized": 1,
+          "exact": true
+        },
+        {
+          "scopeSha256": "adc9f8bf16b9778eda7cf05b2a2d16b0b8a9b160d117d661e1203dde1a4c16d8",
+          "oldObserverRecognized": 0,
+          "formattedRecognized": 1,
+          "exact": true
+        },
+        {
+          "scopeSha256": "aa7c69888671270bfc25fe257b37da0f4e6b5b20b887e553635f377fb30988aa",
+          "oldObserverRecognized": 0,
+          "formattedRecognized": 1,
+          "exact": true
+        },
+        {
+          "scopeSha256": "adc9f8bf16b9778eda7cf05b2a2d16b0b8a9b160d117d661e1203dde1a4c16d8",
+          "oldObserverRecognized": 0,
+          "formattedRecognized": 1,
+          "exact": true
+        }
+      ]
+    },
+    {
+      "trial": "2-map-with-previous-candidate",
+      "ledgerSha256": "874d44ede31a0b0e9f4fd458b40ae405741ce176398dc614674359201c2b3290",
+      "offers": [
+        {
+          "scopeSha256": "2ab86dbdf472f871ef2a2971b65577ae1f20551916bed87e8c0af180a3a9f173",
+          "oldObserverRecognized": 0,
+          "formattedRecognized": 1,
+          "exact": true
+        },
+        {
+          "scopeSha256": "9e9414da482dc81a3cd8cd53076b680ada77d15257a0420ab1a41f4997007321",
+          "oldObserverRecognized": 0,
+          "formattedRecognized": 1,
+          "exact": true
+        },
+        {
+          "scopeSha256": "2ab86dbdf472f871ef2a2971b65577ae1f20551916bed87e8c0af180a3a9f173",
+          "oldObserverRecognized": 0,
+          "formattedRecognized": 1,
+          "exact": true
+        },
+        {
+          "scopeSha256": "9e9414da482dc81a3cd8cd53076b680ada77d15257a0420ab1a41f4997007321",
+          "oldObserverRecognized": 0,
+          "formattedRecognized": 1,
+          "exact": true
+        }
+      ]
+    },
+    {
+      "trial": "2-tap-first-candidate",
+      "ledgerSha256": "f5344a8f31c6e637042701de2f88ec2efa2a3a59fbb88d6bae7c07b519f74b3a",
+      "offers": [
+        {
+          "scopeSha256": "b3388005a1d648c3be58b03a318a0040175d6462de843cabe51ae5adb3632f77",
+          "oldObserverRecognized": 0,
+          "formattedRecognized": 1,
+          "exact": true
+        },
+        {
+          "scopeSha256": "25c4ab226563d6c2a312b7c2d21706dc1eba10d4c4187cf26060ac19d8f2fd97",
+          "oldObserverRecognized": 0,
+          "formattedRecognized": 1,
+          "exact": true
+        }
+      ]
+    }
+  ],
+  "offers": 32,
+  "oldRecognized": 0,
+  "newRecognized": 32
+}
