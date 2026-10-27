@@ -2149,7 +2149,13 @@ export class BlameAgentRuntime {
       try {
         return parseProjectInitializationAttempt(result, scan, input);
       } catch (error) {
-        if (attempt === maxInitializationAttempts) throw error;
+        if (attempt === maxInitializationAttempts) {
+          // Heuristic rules can be wrong about a project: rather than
+          // leave it without a setup, save the last one with its warnings.
+          return parseProjectInitializationAttempt(result, scan, input, {
+            acceptWarnings: true,
+          });
+        }
         correction = this.projectInitializationRetry(
           input,
           "project_initialization",

@@ -10,61 +10,122 @@ import {
 // itself, so only what the manifest decides is checked: dependency
 // installs, builds, migrations and the values its services read.
 
+export type PreviewSetupIssue = {
+  /**
+   * Blocking issues make an unusable or unsafe setup. Warnings come from
+   * heuristics that can be wrong about a project: the agent is asked to fix
+   * them, but a setup that keeps them is still saved, with the warning.
+   */
+  severity: "blocking" | "warning";
+  /** The rule, as told to the agent. */
+  rule: string;
+  /** What may go wrong, as told to the user. */
+  warning: string;
+};
+
+/**
+ * Throws the first issue of an initialized manifest. With `acceptWarnings`,
+ * only blocking issues throw and the warnings are returned.
+ */
 export function validatePreviewSetup(
   manifest: PreviewManifest,
   scan?: ProjectInitializationScan,
+  options: { acceptWarnings?: boolean } = {},
 ) {
   const hostOrchestration =
     scan && hostOrchestratedManifestCommand(manifest, scan.files);
   if (hostOrchestration) {
     throw new Error(hostOrchestrationError(hostOrchestration));
   }
+  const issues = previewSetupIssues(manifest, scan);
+  const blocking = issues.find(({ severity }) => severity === "blocking");
+  if (blocking) throw invalid(blocking.rule);
+  const warnings = issues.filter(({ severity }) => severity === "warning");
+  if (warnings.length && !options.acceptWarnings) {
+    throw invalid(warnings[0]!.rule);
+  }
+  return warnings;
+}
+
+export function previewSetupIssues(
+  manifest: PreviewManifest,
+  scan?: ProjectInitializationScan,
+): PreviewSetupIssue[] {
   const commands = manifestCommands(manifest);
+  const issues: PreviewSetupIssue[] = [];
+  const add = (
+    severity: PreviewSetupIssue["severity"],
+    rule: string,
+    warning: string,
+  ) => issues.push({ severity, rule, warning });
   if (forcesHostUidUser(manifest)) {
-    throw invalid("must not force BLAME_HOST_UID as the container user");
+    add(
+      "blocking",
+      "must not force BLAME_HOST_UID as the container user",
+      "A service forces the host user id.",
+    );
+  }
+  // `npm ci` removes node_modules first, which is a mounted volume.
+  if (/\bnpm\s+ci\b/.test(commands)) {
+    add(
+      "blocking",
+      "must use npm install --no-package-lock instead of npm ci",
+      "npm ci cannot run on the shared dependency volume.",
+    );
   }
   if (missingNodeDependencyInstall(manifest, commands, scan)) {
-    throw invalid(
+    add(
+      "warning",
       "must install detected Node dependencies before starting services",
+      "No setup task seems to install the Node dependencies.",
     );
   }
   if (usesNuxtPreviewWithoutBuild(commands, scan, manifest)) {
-    throw invalid(
+    add(
+      "warning",
       "must build Nuxt before running its preview script or use the development script",
+      "Nuxt's preview script may run without a build.",
     );
   }
   if (seedsPrismaWithoutGeneratedClient(commands, scan, manifest)) {
-    throw invalid(
+    add(
+      "warning",
       "must generate the Prisma client in a setup task (for example `prisma generate` or the project's db:generate script) before running database seeds",
+      "The database seed may run before the Prisma client is generated.",
     );
   }
   if (overridesEnvironmentDrivenServeCommand(manifest)) {
-    throw invalid(
+    add(
+      "warning",
       "must not append host or port flags to serve commands when HOST and PORT environment variables are already configured",
+      "A serve command sets its own host or port next to HOST and PORT.",
     );
   }
   if (usesInterpolatedContainerHost(manifest)) {
-    throw invalid(
+    add(
+      "warning",
       "must bind preview services to a literal 0.0.0.0 instead of preserving an existing HOST value",
+      "A service may not listen on all interfaces.",
     );
   }
   if (usesInterpolatedServiceUrl(manifest)) {
-    throw invalid(
+    add(
+      "warning",
       "must use literal service URLs for inter-container runtime configuration instead of preserving existing localhost values",
+      "A service may call another one at a localhost address.",
     );
   }
   if (
     requiresDatabaseMigration(manifest, scan) &&
     !runsDatabaseMigration(commands)
   ) {
-    throw invalid(
+    add(
+      "warning",
       "must run detected database migrations before starting backend services",
+      "No setup task seems to run the database migrations: the backend may start on an empty database.",
     );
   }
-  // `npm ci` removes node_modules first, which is a mounted volume.
-  if (/\bnpm\s+ci\b/.test(commands)) {
-    throw invalid("must use npm install --no-package-lock instead of npm ci");
-  }
+  return issues;
 }
 
 function invalid(rule: string) {
@@ -198,10 +259,27 @@ function usesRelationalDatabase(manifest: PreviewManifest) {
   );
 }
 
+// Migration commands across ecosystems, and package scripts named after
+// migrations. Commands are lowercased.
+const migrationCommandPatterns = [
+  /\bmigration:(?:run|fresh|refresh|up|latest)\b/,
+  /\bmigrate:(?:latest|up|fresh|refresh|deploy|run|reset)\b/,
+  /\bmigrate\s+(?:deploy|dev|up|latest|run|reset)\b/,
+  /\b(?:db|ecto)[:.]migrate\b/,
+  /\b(?:artisan|manage\.py|django-admin)\s+migrate\b/,
+  /\balembic\s+upgrade\b/,
+  /\bflask\s+db\s+upgrade\b/,
+  /\bprisma\s+db\s+push\b/,
+  /\bdrizzle-kit\s+(?:migrate|push)\b/,
+  /\b(?:goose|dbmate)\s+(?:up|migrate)\b/,
+  /\bflyway\s+migrate\b/,
+  /\bliquibase\s+update\b/,
+  /\bdiesel\s+migration\s+run\b/,
+  /\b(?:npm|pnpm|yarn|bun)\b[^\n;&|]*\bmigrat/,
+];
+
 function runsDatabaseMigration(commands: string) {
-  return /\b(?:migration:run|migrate\s+(?:deploy|dev|up|latest|run)|db:migrate|drizzle-kit\s+migrate|knex\s+migrate:latest)\b/.test(
-    commands,
-  );
+  return migrationCommandPatterns.some((pattern) => pattern.test(commands));
 }
 
 function relevantInitializationFiles(

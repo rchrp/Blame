@@ -18,7 +18,10 @@ import {
   projectPackageManager,
 } from "./preview-package-manager.js";
 import type { ProjectInitializationScan } from "./project-initialization-scan.js";
-import { validatePreviewSetup } from "./project-preview-validation.js";
+import {
+  validatePreviewSetup,
+  type PreviewSetupIssue,
+} from "./project-preview-validation.js";
 
 export {
   scanProjectForInitialization,
@@ -332,19 +335,26 @@ export function projectInitializationCorrectionPrompt(
   ].join("\n");
 }
 
+export type ProjectInitializationParseOptions = {
+  /** Save a setup that keeps heuristic warnings, listing them as risks. */
+  acceptWarnings?: boolean;
+};
+
 export function parseProjectInitializationResult(
   text: string,
   scan?: ProjectInitializationScan,
   preferences?: ProjectInitializationPreferences,
+  options: ProjectInitializationParseOptions = {},
 ): ParsedProjectInitialization {
   const parsed = JSON.parse(jsonPayload(text)) as unknown;
-  return parseProjectInitializationPayload(parsed, scan, preferences);
+  return parseProjectInitializationPayload(parsed, scan, preferences, options);
 }
 
 export function parseProjectInitializationPayload(
   parsed: unknown,
   scan?: ProjectInitializationScan,
   preferences?: ProjectInitializationPreferences,
+  options: ProjectInitializationParseOptions = {},
 ): ParsedProjectInitialization {
   if (!isRecord(parsed))
     throw new Error("Initialization result must be an object");
@@ -361,11 +371,29 @@ export function parseProjectInitializationPayload(
   );
   validatePreviewManifest(manifest);
   const runConfigurations = parseRunConfigurations(parsed.runConfigurations);
-  validateProjectInitializationOutput(runConfigurations, scan, manifest);
+  const warnings = validateProjectInitializationOutput(
+    runConfigurations,
+    scan,
+    manifest,
+    options,
+  );
   return {
-    previewManifest: manifest,
+    previewManifest: manifestWithWarnings(manifest, warnings),
     runConfigurations,
   };
+}
+
+function manifestWithWarnings(
+  manifest: PreviewManifest,
+  warnings: PreviewSetupIssue[],
+): PreviewManifest {
+  const known = new Set(manifest.risks.map(({ message }) => message));
+  const risks = warnings
+    .filter(({ warning }) => !known.has(warning))
+    .map(({ warning }) => ({ level: "medium" as const, message: warning }));
+  return risks.length
+    ? { ...manifest, risks: [...manifest.risks, ...risks] }
+    : manifest;
 }
 
 function validateRunConfigurationTopology(
@@ -599,9 +627,10 @@ export function validateProjectInitializationOutput(
   configurations: ProjectRunConfiguration[],
   scan: ProjectInitializationScan | undefined,
   manifest: PreviewManifest,
+  options: ProjectInitializationParseOptions = {},
 ) {
   validateRunConfigurationTopology(configurations, manifest);
-  validatePreviewSetup(manifest, scan);
+  return validatePreviewSetup(manifest, scan, options);
 }
 
 function truncateCorrectionPayload(value: string) {

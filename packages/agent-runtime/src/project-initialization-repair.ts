@@ -116,6 +116,8 @@ export function parseProjectInitializationRepairPayload(
     },
     scan,
     preferences,
+    // A repair answers an observed failure: heuristic warnings never block it.
+    { acceptWarnings: true },
   );
   return {
     classification,

@@ -24,6 +24,7 @@ import type { ProjectInitializationScan } from "./project-initialization.js";
 import {
   parseProjectInitializationPayload,
   parseProjectInitializationResult,
+  type ProjectInitializationParseOptions,
   projectInitializationCorrectionPrompt,
   projectInitializationPrompt,
   projectInitializationResultSchema,
@@ -214,17 +215,20 @@ export function parseProjectInitializationAttempt(
   attempt: ProjectInitializationAttempt,
   scan: ProjectInitializationScan,
   input: InitializeProjectInput,
+  options: ProjectInitializationParseOptions = {},
 ) {
   const initialization = attempt.submittedInput
     ? parseProjectInitializationPayload(
         attempt.submittedInput,
         scan,
         input.preferences,
+        options,
       )
     : parseProjectInitializationResult(
         String(attempt.result),
         scan,
         input.preferences,
+        options,
       );
   return {
     sessionId: attempt.sessionId,
