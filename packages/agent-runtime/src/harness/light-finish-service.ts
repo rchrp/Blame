@@ -24,7 +24,7 @@ import { readTaskCatalog } from "./task-catalog.js";
 import { WorkspaceFiles } from "./workspace-files.js";
 import { validationScopePaths } from "./validation-scope.js";
 import { currentValidationReport } from "./light-validation-report.js";
-import { checkInvocationKey, latestFailedInvocations } from "./light-check-repair.js";
+import { checkInvocationKey, latestFailedInvocations, failedLiteralCompilerInvocations } from "./light-check-repair.js";
 
 export type LocalFinishOptions = {
   conversationId: string;
@@ -162,6 +162,17 @@ export class LightFinishService {
     const required = await this.requiredValidationInputs();
     if (!state.changedPaths.length && !required.length)
       return { outcome: "not_applicable" as const };
+    // A direct no-emit compiler is a repair lead, never a substitute for any
+    // project obligation. Refresh it first; do not replay arbitrary shell.
+    for (const failed of failedLiteralCompilerInvocations(this.journal.currentValidations())) {
+      if (failed.category !== "code") continue;
+      const result = await this.runValidation({ kind: "command", command: failed.command!,
+        ...(failed.cwd && failed.cwd !== "." ? { cwd: failed.cwd } : {}) }, context);
+      if (result.status === "blocked" && result.category === "code") throw new Error(result.message);
+      if (result.status === "ok" && recordValue(recordValue(result.data).validation).status === "stale")
+        throw new Error("Source changed during compiler repair validation; review and validate again.");
+      assertNoFailedValidation(await this.completionSnapshot());
+    }
     const inputs = await this.validationInputs(state.changedPaths);
     for (const selection of required)
       if (!inputs.some(({ input, cwd }) => sameInvocation({ taskId: input.task, args: input.args, cwd }, selection.input, selection.cwd)))
@@ -274,7 +285,7 @@ export class LightFinishService {
   }
 
   private async runValidation(
-    input: Extract<LightRunTaskInput, { kind: "project" }>,
+    input: Extract<LightRunTaskInput, { kind: "project" }> | { kind: "command"; command: string; cwd?: string },
     context: AgentToolContext,
   ): Promise<LightToolResult<unknown>> {
     const toolCallId = `${context.toolCallId ?? "finish"}:validation:${++this.validationSequence}`;

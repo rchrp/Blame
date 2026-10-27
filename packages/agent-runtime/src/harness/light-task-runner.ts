@@ -24,6 +24,7 @@ import {
   readTaskCatalog,
   taskInvocation,
   taskInvocationDisplay,
+  plainCompilerCheck,
   type TaskCatalogItem,
 } from "./task-catalog.js";
 import {
@@ -458,7 +459,8 @@ export class LightTaskRunner {
     const identity = task ? { taskId: task.task_id, taskKind: task.kind,
       ...(task.validationScope ? { validationScope: task.validationScope } : {}) }
       : projectTestCommand(command, cwd, tasks);
-    if (!identity) return {};
+    if (!identity) return process.env.BLAME_AGENT_LITERAL_COMPILER_REPAIR !== "false" && plainCompilerCheck(command)
+      ? { taskKind: "typecheck", validationScope: "invocation_only" } : {};
     const matches = tasks.filter((item) => item.task_id === identity.taskId && item.cwd === cwd);
     return { ...identity, typecheckSelections: typecheckSelections(tasks, cwd),
       ...(matches.length === 1 ? { taskCommand: matches[0]!.command } : {}) };

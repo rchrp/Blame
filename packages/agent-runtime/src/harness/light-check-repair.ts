@@ -1,6 +1,6 @@
 import type { LightRunTaskInput, LightTaskContract } from "./light-contracts.js";
 import type { SessionJournal } from "./session-journal.js";
-import { readTaskCatalog } from "./task-catalog.js";
+import { readTaskCatalog, plainCompilerCheck } from "./task-catalog.js";
 import type { WorkspaceFiles } from "./workspace-files.js";
 
 type Validation = ReturnType<SessionJournal["currentValidations"]>[number];
@@ -14,8 +14,16 @@ export function checkInvocationKey(value: { taskId?: string; cwd?: string; args?
 export function latestFailedInvocations(validations: Validation[]) {
   const latest = new Map<string, Validation>();
   for (const value of validations) latest.set(checkInvocationKey(value), value);
-  return [...latest.values()].filter(value => value.taskId && checkKinds.has(value.taskKind ?? "") &&
-    value.terminal === "failed");
+  return [...[...latest.values()].filter(value => value.taskId && checkKinds.has(value.taskKind ?? "") &&
+    value.terminal === "failed"), ...failedLiteralCompilerInvocations(validations)];
+}
+
+/** Only exact no-emit compiler commands; never replay arbitrary or compound shell. */
+export function failedLiteralCompilerInvocations(validations: Validation[]) {
+  const latest = new Map<string, Validation>();
+  for (const value of validations) if (value.command && plainCompilerCheck(value.command))
+    latest.set(JSON.stringify([value.cwd ?? ".", value.command]), value);
+  return [...latest.values()].filter(value => !value.taskId && value.taskKind === "typecheck" && value.terminal === "failed");
 }
 
 export async function checkRepairPlan(files: WorkspaceFiles, journal: SessionJournal, contract?: LightTaskContract) {
@@ -29,10 +37,13 @@ export async function checkRepairPlan(files: WorkspaceFiles, journal: SessionJou
     return matches.length === 1 && checkKinds.has(matches[0]!.kind) ? matches[0] : undefined;
   };
   const repairFirst = failures.flatMap(value => {
-    const item = exactTask(value.taskId!, value.cwd ?? ".");
-    if (!item || (value.args?.length && item.kind !== "test")) return [];
-    return [{ input: { kind: "project" as const, task: item.task_id,
-      ...(item.kind === "test" ? { args: value.args ?? [] } : {}) }, cwd: item.cwd,
+    const item = value.taskId ? exactTask(value.taskId, value.cwd ?? ".") : undefined;
+    const input: LightRunTaskInput | undefined = item && (!value.args?.length || item.kind === "test")
+      ? { kind: "project", task: item.task_id, ...(item.kind === "test" ? { args: value.args ?? [] } : {}) }
+      : !value.taskId && value.command && plainCompilerCheck(value.command)
+        ? { kind: "command", command: value.command, ...(value.cwd && value.cwd !== "." ? { cwd: value.cwd } : {}) } : undefined;
+    if (!input) return [];
+    return [{ input, cwd: item?.cwd ?? value.cwd ?? ".",
       category: value.category ?? null, sourceRevisionId: value.sourceRevisionId ?? null,
       freshness: value.sourceRevisionId === state.sourceRevisionId ? "current" : "earlier_source",
       ...(value.recovery ? { recovery: value.recovery } : {}) }];
