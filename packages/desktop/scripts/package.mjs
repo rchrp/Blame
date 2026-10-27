@@ -13,6 +13,7 @@ import {
 
 import { verifyStagedWorkspaceRuntime, verifyPackagedWorkspaceRuntime } from "./package-integrity.mjs";
 import { pruneNodeModules } from "./package-prune.mjs";
+import { checkGeneratedJavaScript } from "./check-generated-javascript.mjs";
 
 const desktopDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const rootDir = resolve(desktopDir, "../..");
@@ -22,6 +23,7 @@ const args = packageArgs[0] === "--" ? packageArgs.slice(1) : packageArgs;
 
 await loadEnvFiles(rootDir);
 assertSingleMacosArchitecture(args);
+await checkGeneratedJavaScript(join(desktopDir, "out"));
 
 const stagingDir = await mkdtemp(
   join(stagingParentDir(), "blame-desktop-package-"),
