@@ -77,7 +77,8 @@
     "write-file-atomic": "8.0.0",
     "yarn": "1.22.22",
     "zod": "4.6.7",
-    "pnpm-legacy": "npm:pnpm@10.33.2"
+    "pnpm-legacy": "npm:pnpm@10.33.2",
+    "npm-legacy": "npm:npm@11.6.4"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

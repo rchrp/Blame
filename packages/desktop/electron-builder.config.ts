@@ -266,6 +266,7 @@ const config: Configuration = {
     "**/node_modules/@ast-grep/lang-*/**/*",
     "**/node_modules/@vscode/ripgrep-*/**/*",
     "**/node_modules/npm/**/*",
+    "**/node_modules/npm-legacy/**/*",
     "**/node_modules/pnpm/**/*",
     "**/node_modules/pnpm-legacy/**/*",
     "**/node_modules/@pnpm/exe.*/**/*",

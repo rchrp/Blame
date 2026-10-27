@@ -9,7 +9,8 @@ desktop releases.
 - **Node 24.22.1 and pnpm 12.15.0:** repository commands require Node >=24.15.
   pnpm 12 uses a native executable. The harness resolves the installed binary
   directly, without downloading a package manager while executing a task.
-  Bundled and provisioned pnpm 10.33.2 remain available for existing project pins.
+  Bundled and provisioned pnpm 10.33.2 and npm 11.6.4 remain available for existing
+  project pins, including Blame's current project templates.
   The workspace retains pnpm's release-age policy with exact exceptions for the
   reviewed package versions in this update.
 - **TypeScript 7.0.2:** the native compiler runs builds and checks through the
@@ -41,8 +42,8 @@ Unused electron-store and React Table dependencies are removed.
 
 The macOS and Windows manifests pin Node 24.22.1, Docker 29.9.2, Compose 5.6.1
 and Buildx 0.38.1. macOS bundles Lima 2.2.1. Download checksums are pinned for
-both architectures. Images contain npm 12.2.1, pnpm 12.15.0, pnpm 10.33.2 and
-Yarn 1.22.22. Their health checks verify both pnpm generations.
+both architectures. Images contain npm 12.2.1, npm 11.6.4, pnpm 12.15.0, pnpm 10.33.2 and
+Yarn 1.22.22. Their health checks verify both npm and pnpm generations.
 
 After CI passes and the PR is merged, the `runtime-v13` tag builds and verifies
 the four runtime images before the publication job runs. Publication must be

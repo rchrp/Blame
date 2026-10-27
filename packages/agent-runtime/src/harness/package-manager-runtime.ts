@@ -112,8 +112,8 @@ async function bundledManager(input: PackageManagerRequest) {
   const current = await bundledManagerPackage(input, input.name);
   return (
     current ??
-    (input.name === "pnpm"
-      ? bundledManagerPackage(input, "pnpm-legacy")
+    (["npm", "pnpm"].includes(input.name)
+      ? bundledManagerPackage(input, `${input.name}-legacy`)
       : undefined)
   );
 }
@@ -234,6 +234,8 @@ function bundledManifestPath(name: string) {
       }
     }
     if (name === "pnpm-legacy") return require.resolve("pnpm-legacy");
+    if (name === "npm-legacy")
+      return require.resolve("npm-legacy/package.json");
     if (name === "npm")
       return join(dirname(require.resolve("npm")), "package.json");
     if (name === "yarn") return require.resolve("yarn/package.json");

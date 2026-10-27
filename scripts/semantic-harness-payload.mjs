@@ -44,6 +44,7 @@ const dependencyNames = [
   "pdfjs-dist",
   "read-excel-file",
   "npm",
+  "npm-legacy",
   "pnpm",
   "pnpm-legacy",
   "proper-lockfile",

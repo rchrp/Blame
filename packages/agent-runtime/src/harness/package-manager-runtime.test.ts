@@ -7,15 +7,20 @@ import { join } from "node:path";
 import test from "node:test";
 import { resolvePackageManager } from "./package-manager-runtime.js";
 
-for (const version of ["12.15.0", "10.33.2"]) {
-  test(`runs bundled pnpm ${version} without package-manager downloads`, async () => {
+for (const [name, version] of [
+  ["pnpm", "12.15.0"],
+  ["pnpm", "10.33.2"],
+  ["npm", "12.2.1"],
+  ["npm", "11.6.4"],
+] as const) {
+  test(`runs bundled ${name} ${version} without package-manager downloads`, async () => {
     const root = await mkdtemp(join(tmpdir(), "blame-pnpm-compat-"));
     try {
       await writeFile(
         join(root, "package.json"),
-        JSON.stringify({ packageManager: `pnpm@${version}` }),
+        JSON.stringify({ packageManager: `${name}@${version}` }),
       );
-      const manager = await resolvePackageManager({ name: "pnpm", version });
+      const manager = await resolvePackageManager({ name, version });
       const result = await promisify(execFile)(
         manager.executable,
         [...manager.argsPrefix, "--version"],
@@ -31,7 +36,8 @@ for (const version of ["12.15.0", "10.33.2"]) {
       );
       assert.equal(result.stdout.trim(), version);
       assert.equal(manager.resolvedVersion, version);
-      if (version.startsWith("12.")) assert.deepEqual(manager.argsPrefix, []);
+      if (name === "pnpm" && version.startsWith("12."))
+        assert.deepEqual(manager.argsPrefix, []);
     } finally {
       await rm(root, { recursive: true, force: true });
     }

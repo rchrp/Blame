@@ -219,6 +219,7 @@ async function verifyRuntime(bundle, instanceName, environment) {
     "test \"$(/opt/blame/package-managers/pnpm/12.15.0/bin/pnpm --version)\" = \"12.15.0\"",
     "test \"$(/opt/blame/package-managers/pnpm/10.33.2/bin/pnpm --version)\" = \"10.33.2\"",
     "test \"$(/opt/blame/package-managers/npm/12.2.1/bin/npm --version)\" = \"12.2.1\"",
+    "test \"$(/opt/blame/package-managers/npm/11.6.4/bin/npm --version)\" = \"11.6.4\"",
     "test \"$(/opt/blame/package-managers/yarn/1.22.22/bin/yarn --version)\" = \"1.22.22\"",
     `test -z "$(find "$(npm root -g)" -type d \\( -path "*/node_modules/@openai/codex-linux-*" -o -path "*/node_modules/@anthropic-ai/claude-agent-sdk-linux-*" \\) -print -quit)"`,
     "docker --version",

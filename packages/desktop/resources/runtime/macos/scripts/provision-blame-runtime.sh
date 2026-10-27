@@ -58,6 +58,7 @@ ensure_node() {
 
 ensure_package_managers() {
   ensure_package_manager npm "$npm_version"
+  ensure_package_manager npm "11.6.4"
   ensure_package_manager pnpm "$pnpm_version"
   # Existing projects can keep their pnpm 10 pin when the runtime upgrades.
   ensure_package_manager pnpm "10.33.2"

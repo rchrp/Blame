@@ -30,12 +30,12 @@ test("fresh npm installation starts the distributed harness and verifies its SDK
     const managerScript = `
       import { execFileSync } from 'node:child_process';
       const { resolvePackageManager } = await import(process.argv[1]);
-      const manager = await resolvePackageManager({ name: 'pnpm', version: process.argv[2] });
+      const manager = await resolvePackageManager({ name: process.argv[2], version: process.argv[3] });
       process.stdout.write(execFileSync(manager.executable, [...manager.argsPrefix, '--version']));
     `;
-    for (const version of ["12.15.0", "10.33.2"]) {
+    for (const [name, version] of [["pnpm", "12.15.0"], ["pnpm", "10.33.2"], ["npm", "12.2.1"], ["npm", "11.6.4"]]) {
       const result = await execute(process.execPath, ["--input-type=module", "-e", managerScript,
-        pathToFileURL(join(packageRoot, "harness/package-manager-runtime.js")).href, version], {
+        pathToFileURL(join(packageRoot, "harness/package-manager-runtime.js")).href, name, version], {
         cwd: workspace,
         env: { ...process.env, COREPACK_ENABLE_NETWORK: "0", npm_config_manage_package_manager_versions: "false" },
         timeout: 15000,
