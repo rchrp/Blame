@@ -1,0 +1,22 @@
+{
+  "protocolHash": "a853cb7b2e266500c8a84b6ccdafa2219c633609da266317c7f864ff6f7ea93d",
+  "completed": 3,
+  "planned": 6,
+  "receipts": [
+    {
+      "name": "1-fetching-filters-reference",
+      "path": "checkpoints/1-fetching-filters-reference.json.gz",
+      "sha256": "429927202e834fca1ec69065df2eb0f50d88e574898c497808d2756a4e67e85c"
+    },
+    {
+      "name": "1-fetching-filters-wait",
+      "path": "checkpoints/1-fetching-filters-wait.json.gz",
+      "sha256": "2eb1739ceb0d725c312b2069766ff3303deb650d1ab955a5480473992ff3d58d"
+    },
+    {
+      "name": "1-fetching-filters-cline",
+      "path": "checkpoints/1-fetching-filters-cline.json.gz",
+      "sha256": "ceebc485ba115c95ecc67ff20435f10065b0d7a2f222735147aebe5a05ffddd5"
+    }
+  ]
+}

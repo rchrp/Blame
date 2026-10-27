@@ -1,0 +1,334 @@
+{
+  "protocolHash": "a853cb7b2e266500c8a84b6ccdafa2219c633609da266317c7f864ff6f7ea93d",
+  "executionFinished": false,
+  "trials": [
+    {
+      "name": "1-fetching-filters-reference",
+      "officialRuntimeSuccess": true,
+      "sourceSuccess": true,
+      "strictSuccess": true,
+      "iterationStartEvents": 21,
+      "observedStop": "official_completion",
+      "explanatoryEvent": null,
+      "lastCompletedTools": [
+        {
+          "callId": "call_5f0064bb0335415da04b4ddac51f3a69",
+          "tool": "read_code",
+          "input": {
+            "target": "packages/query-core/src/__tests__/queryClient.test-d.tsx",
+            "view": "range",
+            "range": {
+              "startLine": 1385,
+              "endLine": 1435
+            }
+          },
+          "inputSha256": "8505f6378c562d7dac003c37ee3d8f9972cdcb754470a4fe56304a848e6302f3",
+          "timestamp": "2026-10-27T16:29:54.352Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_5ad5bbbd7d84492197b411bc61057030",
+          "tool": "read_code",
+          "input": {
+            "target": "packages/query-core/src/queryClient.ts",
+            "view": "range",
+            "range": {
+              "startLine": 145,
+              "endLine": 160
+            }
+          },
+          "inputSha256": "adf8f87ebf43185c872cc6eeaeb974dbb3f80ccf1837e841de37c9da02eb4ca9",
+          "timestamp": "2026-10-27T16:30:01.806Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_ffe4a0539da246dd91ee479b4bd71773",
+          "tool": "read_code",
+          "input": {
+            "target": "packages/react-query/src/useIsFetching.ts",
+            "view": "range",
+            "range": {
+              "startLine": 1,
+              "endLine": 62
+            }
+          },
+          "inputSha256": "c181d24cc73675cb17ccfc6eb20f2d75c62ac6e92246e38cd44dedd17b46c63a",
+          "timestamp": "2026-10-27T16:30:02.163Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_8960d4f541b249acb2e2c64a5d4c3c24",
+          "tool": "read_code",
+          "input": {
+            "target": "packages/query-core/src/__tests__/isFetchingFilters.test-d.ts",
+            "view": "raw"
+          },
+          "inputSha256": "2dd137d2f519d05192cd9347786b3901270cade2de7129b58201b5067a452724",
+          "timestamp": "2026-10-27T16:30:02.532Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_0aeaf332730940d0baa920c524acb66e",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "git diff --check"
+          },
+          "inputSha256": "6450400cd609decf399579338ef3fdee66439c02c1eadb92b75d3d155321a030",
+          "timestamp": "2026-10-27T16:30:03.039Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_b53a3b2e285040f4a2cf48ed4d251e53",
+          "tool": "finish_task",
+          "input": {
+            "summary": "Implemented the requested fetching-filter API restriction in query-core and react-query.\n\nChanges:\n- `QueryClient.isFetching` now omits `fetchStatus` from its public filter parameter while retaining its generic entry point, generic inference, predicate typing, and runtime forced-filter behavior.\n- React `useIsFetching` now omits `fetchStatus` from its public filter parameter.\n- General query-cache filtering remains unchanged and continues to support `fetchStatus`.\n- Added new query-core runtime/type regression tests and a React type regression test. No supplied tests or other framework adapters were modified.\n\nRequired commands, each run directly:\n- `npm run test:study:regression` — passed; 23 test files, 631 tests.\n- `npm run typecheck:study:types` — passed (exit 0; this command reports no test counters).\n- `npm run typecheck:study:type-regression` — passed (exit 0; this command reports no test counters).\n- `npm run typecheck:study:delivered-types` — passed (exit 0; independently compiled the three new test files).\n\nAdditional verification:\n- `npm run test:study:delivered` — passed; 1 delivered runtime test file, 1 test.\n- `git diff --check` — passed.\n\nCoverage limits: the regression runtime command covers the existing query-core and React regression suites but does not establish compilation of changed test files; that was covered separately by `typecheck:study:delivered-types`. The typecheck commands reported successful exit status but no per-test counters. No visual or browser verification applies to this API/type-only change."
+          },
+          "inputSha256": "081f86482792167185b68a0c52833c4842b9e7f9a37f6f6a4210ea89e5ea493b",
+          "timestamp": "2026-10-27T16:30:12.289Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        }
+      ]
+    },
+    {
+      "name": "1-fetching-filters-wait",
+      "officialRuntimeSuccess": true,
+      "sourceSuccess": true,
+      "strictSuccess": true,
+      "iterationStartEvents": 18,
+      "observedStop": "official_completion",
+      "explanatoryEvent": null,
+      "lastCompletedTools": [
+        {
+          "callId": "call_e8f49837cc45409dbb029a12f750afbc",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "typecheck:study:type-regression"
+          },
+          "inputSha256": "766b8fcf5e9e540ad2237bfa101bd4f64bf50e6b1a7d853a21a18e3df6b3d11c",
+          "timestamp": "2026-10-27T16:33:30.151Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_fb0b0dd372684f02bc038e7e81393470",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "typecheck:study:delivered-types"
+          },
+          "inputSha256": "e006893c026b4f3c375d14e806aa9d7ca3439959f76aae1194e41cda77f14bf8",
+          "timestamp": "2026-10-27T16:33:34.721Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_228d9509605242bcb96855a3bf9faaec",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "git diff --check"
+          },
+          "inputSha256": "6450400cd609decf399579338ef3fdee66439c02c1eadb92b75d3d155321a030",
+          "timestamp": "2026-10-27T16:33:43.378Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_14e97439ce5e4683897257098e6731d7",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "git diff -- packages/query-core/src/queryClient.ts packages/react-query/src/useIsFetching.ts packages/query-core/src/__tests__/isFetching.test-d.tsx packages/react-query/src/__tests__/useIsFetching.test-d.tsx"
+          },
+          "inputSha256": "47710b69dc90cd9e15509ef8d710a046517b687433646dc2659061106c03a5dd",
+          "timestamp": "2026-10-27T16:33:43.819Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_c43e1d71e1e346d0b8acd01b66bd8bb7",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "git status --short"
+          },
+          "inputSha256": "1516e75288c9314bb01c2c897f36f9a4451349445691d3bf5f90029174137ec1",
+          "timestamp": "2026-10-27T16:33:44.260Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_6163672f2492402ba97aee5dd641ed05",
+          "tool": "finish_task",
+          "input": {
+            "summary": "Implemented the scoped filter-type change.\n\n- `QueryClient.isFetching` now accepts all `QueryFilters` fields except `fetchStatus`, while preserving its generic entry point, explicit `QueryFilters` type arguments, predicate inference, and `number` return type.\n- React `useIsFetching` now exposes the same restricted filter type with generic filter inference preserved.\n- General `QueryCache.findAll` filtering, including `fetchStatus`, was left unchanged.\n- Added new type-regression coverage under the existing query-core and react-query `__tests__` directories for accepted filters, rejected `fetchStatus`, explicit `QueryFilters`, predicate inference, and return types.\n\nRequired commands, run directly after the final source/test edit:\n- `npm run test:study:regression` — passed; 22 test files, 630 tests.\n- `npm run typecheck:study:types` — passed.\n- `npm run typecheck:study:type-regression` — passed.\n- `npm run typecheck:study:delivered-types` — passed; this compiles the newly added test files.\n\nAdditional validation: `git diff --check` passed. Coverage limits: the regression runtime command does not execute `.test-d.tsx` files, and the source typecheck excludes tests; the new type tests are covered by delivered-types compilation. No runtime behavior was changed, and no other framework adapters were modified."
+          },
+          "inputSha256": "8c1e32282b95054a27118671a0d5f27ad0d35aea1dfabeeab14f7bb6d42904ff",
+          "timestamp": "2026-10-27T16:33:51.412Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        }
+      ]
+    },
+    {
+      "name": "1-fetching-filters-cline",
+      "officialRuntimeSuccess": true,
+      "sourceSuccess": true,
+      "strictSuccess": true,
+      "iterationStartEvents": 16,
+      "observedStop": "official_completion",
+      "explanatoryEvent": null,
+      "lastCompletedTools": [
+        {
+          "callId": "call_4047e9243d86479b8cc579097808fb62",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run typecheck:study:types"
+            ]
+          },
+          "inputSha256": "f4644fc36592ae7f2df65433d1a3f9baf3bf6adb6036a4e490f83451e72ae39f",
+          "timestamp": "2026-10-27T16:37:42.453Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_077df729fccd4117b68667f41bd7862d",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run typecheck:study:type-regression"
+            ]
+          },
+          "inputSha256": "5b4d71ba2db8a32fdc95d9ea91682e531c4d3823d306e7ad512109a5f3819c39",
+          "timestamp": "2026-10-27T16:37:46.965Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_dc7d0897432c48a4a3a8607dac154c43",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run typecheck:study:delivered-types"
+            ]
+          },
+          "inputSha256": "194aba918f8461c7af86596f6e78318e9667db498832c35ca30e7e5a4d70efd6",
+          "timestamp": "2026-10-27T16:37:52.055Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_2f3260bd54644a988c54b28c96a56500",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "git status --short --branch && git diff --check && git diff --stat && git diff -- packages/query-core/src/queryClient.ts packages/react-query/src/useIsFetching.ts packages/query-core/src/__tests__/isFetchingFilters.test-d.tsx packages/query-core/src/__tests__/isFetchingFilters.test.tsx packages/react-query/src/__tests__/useIsFetching.test-d.tsx"
+            ],
+            "timeout": 120000
+          },
+          "inputSha256": "2df872d2c47d30f4847d6d8012c7825ad2ca601b93c86894427ab31916b0b28f",
+          "timestamp": "2026-10-27T16:37:57.529Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_6da1dbc7e74843c390fe5179293dcbcf",
+          "tool": "read_files",
+          "input": {
+            "files": [
+              {
+                "path": "/workspace/blame-study-runs/inspection-wait-f72/active/workspace/packages/query-core/src/queryClient.ts",
+                "start_line": 137,
+                "end_line": 158
+              },
+              {
+                "path": "/workspace/blame-study-runs/inspection-wait-f72/active/workspace/packages/react-query/src/useIsFetching.ts",
+                "start_line": 39,
+                "end_line": 59
+              },
+              {
+                "path": "/workspace/blame-study-runs/inspection-wait-f72/active/workspace/packages/query-core/src/__tests__/isFetchingFilters.test-d.tsx",
+                "start_line": 1,
+                "end_line": 120
+              },
+              {
+                "path": "/workspace/blame-study-runs/inspection-wait-f72/active/workspace/packages/query-core/src/__tests__/isFetchingFilters.test.tsx",
+                "start_line": 1,
+                "end_line": 120
+              },
+              {
+                "path": "/workspace/blame-study-runs/inspection-wait-f72/active/workspace/packages/react-query/src/__tests__/useIsFetching.test-d.tsx",
+                "start_line": 1,
+                "end_line": 100
+              }
+            ]
+          },
+          "inputSha256": "55f5f8f46bfc9e4b1b74584a28fdab3e5ff97cf228a46b694b68514051fee077",
+          "timestamp": "2026-10-27T16:37:57.763Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_5d488fca3a86482582031c0265b415ce",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "git diff --name-only && git ls-files --others --exclude-standard | sort"
+            ],
+            "timeout": 120000
+          },
+          "inputSha256": "e5ca53a425b7e7e2fa8ade42c29cd68be70ffb2627d529cd521813892a3f5c1f",
+          "timestamp": "2026-10-27T16:37:58.091Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        }
+      ]
+    }
+  ],
+  "boundary": "Observed stop reasons from actual SDK notices, never inferred solely from configured limits. Last tool snapshots are observations, not proof of physical process state at termination. The immutable primary completion/source/audit scores and resource totals are unchanged."
+}

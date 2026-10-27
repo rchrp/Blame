@@ -1,0 +1,554 @@
+{
+  "complete": false,
+  "executionFinished": false,
+  "interruptedTrials": [],
+  "trials": [
+    {
+      "panel": "F72",
+      "task": "fetching-filters",
+      "arm": "reference",
+      "repeat": 1,
+      "name": "1-fetching-filters-reference",
+      "declarationOffers": [
+        {
+          "callId": "call_21378ff4a87042719748b0c10b3ebb5f",
+          "query": "isFetching",
+          "scope": "packages/query-core/src",
+          "discovery": {
+            "engine": "syntax",
+            "status": "current",
+            "navigationOnly": true,
+            "sourceRevision": "src_59fd219b2c9a99aa8800a7d9bb786c99",
+            "eligibleFiles": 65,
+            "visitedFiles": 53,
+            "readBytes": 1031709,
+            "skippedFiles": 0,
+            "limited": true,
+            "limits": {
+              "files": 64,
+              "bytes": 1048576,
+              "fileBytes": 262144,
+              "declarations": 4
+            }
+          },
+          "candidates": [
+            {
+              "path": "packages/query-core/src/queryClient.ts",
+              "kind": "method",
+              "qualifiedName": "QueryClient.isFetching",
+              "targetSha256": "b518fa4642be53910aa26b53418c2d4a4690bc7da1d41ea039db7d8387fdbf11"
+            }
+          ],
+          "forwardedOccurrences": 20,
+          "exactCandidatePayloadForwarded": true,
+          "subsequentExplicitTargetReads": [
+            {
+              "targetSha256": "b518fa4642be53910aa26b53418c2d4a4690bc7da1d41ea039db7d8387fdbf11",
+              "callId": "call_0f5c164261774a10919ae271f138e0a2"
+            }
+          ]
+        },
+        {
+          "callId": "call_417c74a10380493797378593a83ec757",
+          "query": "interface QueryFilters",
+          "scope": "packages/query-core/src",
+          "discovery": {
+            "engine": "syntax",
+            "status": "current",
+            "navigationOnly": true,
+            "sourceRevision": "src_59fd219b2c9a99aa8800a7d9bb786c99",
+            "eligibleFiles": 65,
+            "visitedFiles": 53,
+            "readBytes": 1031709,
+            "skippedFiles": 0,
+            "limited": true,
+            "limits": {
+              "files": 64,
+              "bytes": 1048576,
+              "fileBytes": 262144,
+              "declarations": 4
+            }
+          },
+          "candidates": [
+            {
+              "path": "packages/query-core/src/utils.ts",
+              "kind": "interface",
+              "qualifiedName": "QueryFilters",
+              "targetSha256": "74297d5ca1cf6cd35c0f8dc4c09c9115cb776d565ad02effa4673ea82eb99a86"
+            }
+          ],
+          "forwardedOccurrences": 20,
+          "exactCandidatePayloadForwarded": true,
+          "subsequentExplicitTargetReads": [
+            {
+              "targetSha256": "74297d5ca1cf6cd35c0f8dc4c09c9115cb776d565ad02effa4673ea82eb99a86",
+              "callId": "call_f0f9063702a6463b8f0739846a0ce677"
+            }
+          ]
+        },
+        {
+          "callId": "call_ca042f9b85654d70af93dc6e565a1918",
+          "query": "Filter",
+          "scope": "packages/react-query/src",
+          "discovery": {
+            "engine": "syntax",
+            "status": "current",
+            "navigationOnly": true,
+            "sourceRevision": "src_59fd219b2c9a99aa8800a7d9bb786c99",
+            "eligibleFiles": 59,
+            "visitedFiles": 59,
+            "readBytes": 843583,
+            "skippedFiles": 1,
+            "limited": true,
+            "limits": {
+              "files": 64,
+              "bytes": 1048576,
+              "fileBytes": 262144,
+              "declarations": 4
+            }
+          },
+          "candidates": [],
+          "forwardedOccurrences": 17,
+          "exactCandidatePayloadForwarded": true,
+          "subsequentExplicitTargetReads": []
+        },
+        {
+          "callId": "call_b8b5a9851bbf481b9fe8b6378b0fd060",
+          "query": "function useIsFetching",
+          "scope": "packages",
+          "discovery": {
+            "engine": "syntax",
+            "status": "current",
+            "navigationOnly": true,
+            "sourceRevision": "src_59fd219b2c9a99aa8800a7d9bb786c99",
+            "eligibleFiles": 756,
+            "visitedFiles": 5,
+            "readBytes": 12577,
+            "skippedFiles": 0,
+            "limited": true,
+            "limits": {
+              "files": 64,
+              "bytes": 1048576,
+              "fileBytes": 262144,
+              "declarations": 4
+            }
+          },
+          "candidates": [
+            {
+              "path": "packages/lit-query/src/useIsFetching.ts",
+              "kind": "function",
+              "qualifiedName": "useIsFetching",
+              "targetSha256": "cb9b654a14b6d71536f4e5c777a536a3c14eb6a1de604af7876262beb2f0b51c"
+            },
+            {
+              "path": "packages/preact-query/src/useIsFetching.ts",
+              "kind": "function",
+              "qualifiedName": "useIsFetching",
+              "targetSha256": "2feb711dd39ff5a8f45c56636f59b4a216064d96e6042f1c590bdf0e1ca2ade8"
+            },
+            {
+              "path": "packages/react-query/src/useIsFetching.ts",
+              "kind": "function",
+              "qualifiedName": "useIsFetching",
+              "targetSha256": "7c81702f847e2b3cfad18fe987389a2c83713c82413acc6910f40e1b2bf2efb0"
+            },
+            {
+              "path": "packages/solid-query/src/useIsFetching.ts",
+              "kind": "function",
+              "qualifiedName": "useIsFetching",
+              "targetSha256": "7407c8b9102b72b7b9c45f6edc917c5f34ff6c20a304fd92c58f55f395663f92"
+            }
+          ],
+          "forwardedOccurrences": 14,
+          "exactCandidatePayloadForwarded": true,
+          "subsequentExplicitTargetReads": []
+        }
+      ],
+      "compilerRecovery": [],
+      "multiReadIterations": [
+        {
+          "iteration": 1,
+          "reads": 3
+        },
+        {
+          "iteration": 2,
+          "reads": 5
+        },
+        {
+          "iteration": 3,
+          "reads": 2
+        },
+        {
+          "iteration": 4,
+          "reads": 5
+        },
+        {
+          "iteration": 5,
+          "reads": 2
+        },
+        {
+          "iteration": 6,
+          "reads": 6
+        },
+        {
+          "iteration": 7,
+          "reads": 2
+        },
+        {
+          "iteration": 20,
+          "reads": 3
+        }
+      ],
+      "firstContract": {
+        "time": "2026-10-27T16:27:11.852Z",
+        "endpoint": "https://chatgpt.com/backend-api/codex/responses",
+        "model": "gpt-5.6-luna",
+        "reasoning": {
+          "effort": "high",
+          "summary": "detailed"
+        },
+        "maximumOutputTokens": 8192,
+        "toolsSha256": "923df5c21ad5d8c059a21090a18183222608911f1a6c7df258414c7ca66e6bfa",
+        "promptSha256": "4a4d6be04a4986a7fae4e0c405a2d766378e799d68e15f3804a7a22ea7328858",
+        "normalizedContractSha256": "ed7c4de39c58d90a4c76b082a5faae694a17979ae5a21d169507f84f455f2914",
+        "requestBodySha256": "7773ab157afcd22f8a6a9bf39606607224b4ded95adce879b3a881ab445c6856",
+        "requestBytes": 25817,
+        "byteLimit": 500000,
+        "budgetRejected": false,
+        "toolCount": 9
+      },
+      "advice": {
+        "fullOccurrences": 0,
+        "referenceOccurrences": 0,
+        "uniqueFullCalls": 0,
+        "uniqueReferenceCalls": 0,
+        "metadataBytes": 0,
+        "unresolved": 0
+      },
+      "filenameSearches": [],
+      "uniqueScopeOffers": 2,
+      "uniqueExactForwardedScopes": 2,
+      "scopeForwardingOccurrences": 10,
+      "groupedReads": [],
+      "tools": 65,
+      "reads": 29,
+      "blockedEdits": 2,
+      "compilerOffers": [],
+      "requiredChecksRetained": true
+    },
+    {
+      "panel": "F72",
+      "task": "fetching-filters",
+      "arm": "wait",
+      "repeat": 1,
+      "name": "1-fetching-filters-wait",
+      "declarationOffers": [
+        {
+          "callId": "call_5bd4d04a0bd2495e961516ee0a17509c",
+          "query": "isFetching",
+          "scope": [
+            "packages/query-core",
+            "packages/react-query"
+          ],
+          "discovery": {
+            "engine": "syntax",
+            "status": "current",
+            "navigationOnly": true,
+            "sourceRevision": "src_59fd219b2c9a99aa8800a7d9bb786c99",
+            "eligibleFiles": 135,
+            "visitedFiles": 64,
+            "readBytes": 608450,
+            "skippedFiles": 5,
+            "limited": true,
+            "limits": {
+              "files": 64,
+              "bytes": 1048576,
+              "fileBytes": 262144,
+              "declarations": 4
+            }
+          },
+          "candidates": [
+            {
+              "path": "packages/query-core/src/queryClient.ts",
+              "kind": "method",
+              "qualifiedName": "QueryClient.isFetching",
+              "targetSha256": "b518fa4642be53910aa26b53418c2d4a4690bc7da1d41ea039db7d8387fdbf11"
+            }
+          ],
+          "forwardedOccurrences": 17,
+          "exactCandidatePayloadForwarded": true,
+          "subsequentExplicitTargetReads": [
+            {
+              "targetSha256": "b518fa4642be53910aa26b53418c2d4a4690bc7da1d41ea039db7d8387fdbf11",
+              "callId": "call_ad452cceb5664573ac3e7a9efc39d2d5"
+            },
+            {
+              "targetSha256": "b518fa4642be53910aa26b53418c2d4a4690bc7da1d41ea039db7d8387fdbf11",
+              "callId": "call_3a650aaaf8724bb0829b4c3bb88d00d4"
+            }
+          ]
+        },
+        {
+          "callId": "call_2ccbc087385145adb5a492c4a6c229d9",
+          "query": "interface QueryFilters",
+          "scope": "packages/query-core",
+          "discovery": {
+            "engine": "syntax",
+            "status": "current",
+            "navigationOnly": true,
+            "sourceRevision": "src_59fd219b2c9a99aa8800a7d9bb786c99",
+            "eligibleFiles": 70,
+            "visitedFiles": 58,
+            "readBytes": 1032817,
+            "skippedFiles": 2,
+            "limited": true,
+            "limits": {
+              "files": 64,
+              "bytes": 1048576,
+              "fileBytes": 262144,
+              "declarations": 4
+            }
+          },
+          "candidates": [
+            {
+              "path": "packages/query-core/src/utils.ts",
+              "kind": "interface",
+              "qualifiedName": "QueryFilters",
+              "targetSha256": "74297d5ca1cf6cd35c0f8dc4c09c9115cb776d565ad02effa4673ea82eb99a86"
+            }
+          ],
+          "forwardedOccurrences": 17,
+          "exactCandidatePayloadForwarded": true,
+          "subsequentExplicitTargetReads": [
+            {
+              "targetSha256": "74297d5ca1cf6cd35c0f8dc4c09c9115cb776d565ad02effa4673ea82eb99a86",
+              "callId": "call_7290990f41a9423981ad71b03fe106c7"
+            }
+          ]
+        },
+        {
+          "callId": "call_20aa1eb44f614116aed66b3b08edcce2",
+          "query": "type QueryFilters",
+          "scope": "packages/query-core",
+          "discovery": {
+            "engine": "syntax",
+            "status": "current",
+            "navigationOnly": true,
+            "sourceRevision": "src_59fd219b2c9a99aa8800a7d9bb786c99",
+            "eligibleFiles": 70,
+            "visitedFiles": 58,
+            "readBytes": 1032817,
+            "skippedFiles": 2,
+            "limited": true,
+            "limits": {
+              "files": 64,
+              "bytes": 1048576,
+              "fileBytes": 262144,
+              "declarations": 4
+            }
+          },
+          "candidates": [
+            {
+              "path": "packages/query-core/src/utils.ts",
+              "kind": "interface",
+              "qualifiedName": "QueryFilters",
+              "targetSha256": "74297d5ca1cf6cd35c0f8dc4c09c9115cb776d565ad02effa4673ea82eb99a86"
+            }
+          ],
+          "forwardedOccurrences": 17,
+          "exactCandidatePayloadForwarded": true,
+          "subsequentExplicitTargetReads": [
+            {
+              "targetSha256": "74297d5ca1cf6cd35c0f8dc4c09c9115cb776d565ad02effa4673ea82eb99a86",
+              "callId": "call_7290990f41a9423981ad71b03fe106c7"
+            }
+          ]
+        },
+        {
+          "callId": "call_842aab04f18e4d5fb708d933c342618c",
+          "query": "QueryClient.isFetching",
+          "scope": [
+            "packages/query-core/src/__tests__",
+            "packages/react-query/src/__tests__"
+          ],
+          "discovery": {
+            "engine": "syntax",
+            "status": "current",
+            "navigationOnly": true,
+            "sourceRevision": "src_59fd219b2c9a99aa8800a7d9bb786c99",
+            "eligibleFiles": 78,
+            "visitedFiles": 58,
+            "readBytes": 1020085,
+            "skippedFiles": 0,
+            "limited": true,
+            "limits": {
+              "files": 64,
+              "bytes": 1048576,
+              "fileBytes": 262144,
+              "declarations": 4
+            }
+          },
+          "candidates": [],
+          "forwardedOccurrences": 17,
+          "exactCandidatePayloadForwarded": true,
+          "subsequentExplicitTargetReads": []
+        },
+        {
+          "callId": "call_f81a4db100364dbea2fd14494e723bb7",
+          "query": "fetchStatus",
+          "scope": [
+            "packages/query-core/src",
+            "packages/react-query/src"
+          ],
+          "discovery": {
+            "engine": "syntax",
+            "status": "current",
+            "navigationOnly": true,
+            "sourceRevision": "src_59fd219b2c9a99aa8800a7d9bb786c99",
+            "eligibleFiles": 124,
+            "visitedFiles": 64,
+            "readBytes": 834481,
+            "skippedFiles": 1,
+            "limited": true,
+            "limits": {
+              "files": 64,
+              "bytes": 1048576,
+              "fileBytes": 262144,
+              "declarations": 4
+            }
+          },
+          "candidates": [],
+          "forwardedOccurrences": 16,
+          "exactCandidatePayloadForwarded": true,
+          "subsequentExplicitTargetReads": []
+        }
+      ],
+      "compilerRecovery": [],
+      "multiReadIterations": [
+        {
+          "iteration": 2,
+          "reads": 7
+        },
+        {
+          "iteration": 3,
+          "reads": 5
+        },
+        {
+          "iteration": 4,
+          "reads": 4
+        },
+        {
+          "iteration": 6,
+          "reads": 2
+        },
+        {
+          "iteration": 7,
+          "reads": 4
+        },
+        {
+          "iteration": 9,
+          "reads": 3
+        }
+      ],
+      "firstContract": {
+        "time": "2026-10-27T16:31:15.810Z",
+        "endpoint": "https://chatgpt.com/backend-api/codex/responses",
+        "model": "gpt-5.6-luna",
+        "reasoning": {
+          "effort": "high",
+          "summary": "detailed"
+        },
+        "maximumOutputTokens": 8192,
+        "toolsSha256": "923df5c21ad5d8c059a21090a18183222608911f1a6c7df258414c7ca66e6bfa",
+        "promptSha256": "4a4d6be04a4986a7fae4e0c405a2d766378e799d68e15f3804a7a22ea7328858",
+        "normalizedContractSha256": "ed7c4de39c58d90a4c76b082a5faae694a17979ae5a21d169507f84f455f2914",
+        "requestBodySha256": "7773ab157afcd22f8a6a9bf39606607224b4ded95adce879b3a881ab445c6856",
+        "requestBytes": 25817,
+        "byteLimit": 500000,
+        "budgetRejected": false,
+        "toolCount": 9
+      },
+      "advice": {
+        "fullOccurrences": 0,
+        "referenceOccurrences": 0,
+        "uniqueFullCalls": 0,
+        "uniqueReferenceCalls": 0,
+        "metadataBytes": 0,
+        "unresolved": 0
+      },
+      "filenameSearches": [
+        {
+          "query": "QueryClient.isFetching",
+          "paths": []
+        }
+      ],
+      "uniqueScopeOffers": 1,
+      "uniqueExactForwardedScopes": 1,
+      "scopeForwardingOccurrences": 5,
+      "groupedReads": [],
+      "tools": 59,
+      "reads": 27,
+      "blockedEdits": 1,
+      "compilerOffers": [],
+      "requiredChecksRetained": true
+    },
+    {
+      "panel": "F72",
+      "task": "fetching-filters",
+      "arm": "cline",
+      "repeat": 1,
+      "name": "1-fetching-filters-cline",
+      "declarationOffers": [],
+      "compilerRecovery": [],
+      "multiReadIterations": [],
+      "firstContract": {
+        "time": "2026-10-27T16:35:01.843Z",
+        "endpoint": "https://chatgpt.com/backend-api/codex/responses",
+        "model": "gpt-5.6-luna",
+        "reasoning": {
+          "effort": "high",
+          "summary": "detailed"
+        },
+        "maximumOutputTokens": 8192,
+        "toolsSha256": "e9cf7b12faef5cc5cf09abaf67ff690f4af8442561acbe7b34ac80e4c0d076b6",
+        "promptSha256": "7edb3268b454d34341c0c860249d94d94f0d272a0bb7e295f3da93611dfdf199",
+        "normalizedContractSha256": "fbb33edb3252d250fd712b329fffefa4e2e1096b51d43dc257dd470924093e5e",
+        "requestBodySha256": "ae20b4676bf0b5a4fec488edb57cec5f8d89c59570f00c837072fd20e2f62ade",
+        "requestBytes": 14231,
+        "byteLimit": 500000,
+        "budgetRejected": false,
+        "toolCount": 6
+      },
+      "advice": {
+        "fullOccurrences": 0,
+        "referenceOccurrences": 0,
+        "uniqueFullCalls": 0,
+        "uniqueReferenceCalls": 0,
+        "metadataBytes": 0,
+        "unresolved": 0
+      },
+      "filenameSearches": [],
+      "uniqueScopeOffers": 0,
+      "uniqueExactForwardedScopes": 0,
+      "scopeForwardingOccurrences": 0,
+      "groupedReads": [],
+      "tools": 34,
+      "reads": 0,
+      "blockedEdits": 0,
+      "compilerOffers": [],
+      "requiredChecksRetained": true
+    }
+  ],
+  "contracts": [
+    {
+      "task": "fetching-filters",
+      "repeat": 1,
+      "panel": "F72",
+      "sameFirstPrompt": true,
+      "sameFirstTools": true,
+      "expectedSchemaChange": false,
+      "sameModelEffortOutputLimit": true
+    }
+  ],
+  "boundary": "Exact hash/call correlation at the fetch boundary; not proof of remote ingestion, model attention, reasoning or task benefit. Repeated forwarded occurrences are not independent offers. Prompt/schema differences remain visible, never normalized after outcomes. The frozen raw next-command metric includes inspections; this audit separately identifies actual compiler/required validation starts and completions, with one opportunity per observed failed compiler."
+}

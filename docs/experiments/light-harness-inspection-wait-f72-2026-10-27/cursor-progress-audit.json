@@ -1,0 +1,94 @@
+{
+  "executionFinished": false,
+  "trials": [
+    {
+      "name": "1-fetching-filters-reference",
+      "arm": "reference",
+      "inspections": [
+        {
+          "callId": "call_73369f40e80947d78448149b504d2068",
+          "run": "r1",
+          "inputCursor": "166",
+          "returnedCursor": "166",
+          "process": "running",
+          "outputBytes": 0,
+          "durationMs": 136,
+          "finalizedStatus": null,
+          "exitCode": null,
+          "rawCursorProgress": 0,
+          "emptyPresentedOutput": true
+        },
+        {
+          "callId": "call_d8ddc866415943c1b8d200d5eddef188",
+          "run": "r1",
+          "inputCursor": "166",
+          "returnedCursor": "166",
+          "process": "running",
+          "outputBytes": 0,
+          "durationMs": 122,
+          "finalizedStatus": null,
+          "exitCode": null,
+          "rawCursorProgress": 0,
+          "emptyPresentedOutput": true
+        },
+        {
+          "callId": "call_03ff491e6245479596a06ac7772f56e8",
+          "run": "r1",
+          "inputCursor": "166",
+          "returnedCursor": "642",
+          "process": "exited",
+          "outputBytes": 472,
+          "durationMs": 105,
+          "finalizedStatus": "ok",
+          "exitCode": 0,
+          "rawCursorProgress": 476,
+          "emptyPresentedOutput": false
+        }
+      ],
+      "emptyRunningWithoutCursorProgress": 2,
+      "emptyRunningWithRealCursorProgress": 0
+    },
+    {
+      "name": "1-fetching-filters-wait",
+      "arm": "wait",
+      "inspections": [
+        {
+          "callId": "call_f9c1e007a9054bee9526337652fc6781",
+          "run": "r2",
+          "inputCursor": "166",
+          "returnedCursor": "167",
+          "process": "running",
+          "outputBytes": 0,
+          "durationMs": 5030,
+          "finalizedStatus": null,
+          "exitCode": null,
+          "rawCursorProgress": 1,
+          "emptyPresentedOutput": true
+        },
+        {
+          "callId": "call_1cde28f4d753409983d8b741489fc0cc",
+          "run": "r2",
+          "inputCursor": "167",
+          "returnedCursor": "631",
+          "process": "exited",
+          "outputBytes": 461,
+          "durationMs": 113,
+          "finalizedStatus": "ok",
+          "exitCode": 0,
+          "rawCursorProgress": 464,
+          "emptyPresentedOutput": false
+        }
+      ],
+      "emptyRunningWithoutCursorProgress": 0,
+      "emptyRunningWithRealCursorProgress": 1
+    },
+    {
+      "name": "1-fetching-filters-cline",
+      "arm": "cline",
+      "inspections": [],
+      "emptyRunningWithoutCursorProgress": 0,
+      "emptyRunningWithRealCursorProgress": 0
+    }
+  ],
+  "boundary": "The byte cursor measures the raw captured stream. The displayed output has redaction and trim, so an empty displayed string can coexist with real progress, e.g. one newline byte. Preserve both observations; do not call this fabricated progress, missing execution or an unchanged stream. This post-dispatch interpretation does not change a model input or score."
+}

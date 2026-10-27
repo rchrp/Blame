@@ -1,0 +1,21 @@
+{
+  "registeredAtUTC": "2026-10-27T16:31:21.582566+00:00",
+  "kind": "Retrospective grader-scope sensitivity for F69/F70; supplemental sensitivity selected during F72, without changing its model task, executable or primary scoring",
+  "completedF72CheckpointsAtRegistration": 1,
+  "evidence": {
+    "upstreamTsconfig": "{\n  \"extends\": \"../../tsconfig.json\",\n  \"compilerOptions\": {\n    \"outDir\": \"./dist-ts\",\n    \"rootDir\": \".\",\n    \"jsx\": \"react-jsx\"\n  },\n  \"include\": [\n    \"src\",\n    \"test-setup.ts\",\n    \"*.config.ts\",\n    \"*.config.js\",\n    \"package.json\"\n  ]\n}\n",
+    "upstreamSetupSha256": "337c979f3a6c40729fcccb7c005667bb7ba3825f23e65e5f4df383eead651bfd",
+    "upstreamSetupImportsJestDomVitest": true,
+    "frozenDeliveredCompilerFiles": "New tests only; excludes upstream packages/react-query/test-setup.ts",
+    "observedDiagnostic": "F70 1-fetching-filters-reference: TS2339 toBeInTheDocument is absent on Assertion. F70 second source-order draw instead has a distinct TS2353 negative-type-test diagnostic."
+  },
+  "selectedCases": "Every filtering assignment in F69, F70 and F72, all arms/repetitions including all failures. Mutation-callback cases are core-only and do not use the React test environment.",
+  "procedure": [
+    "Wait for all measured F72 workers to exit.",
+    "Restore each exact unchanged original model patch, including captured POSIX modes, from the correct source cohort.",
+    "Run a local baseline fixture that uses the upstream matcher: it should distinguish the isolated compiler from one including the unchanged upstream setup; preserve all outcomes if it does not.",
+    "Compile the unchanged delivered test files with the frozen compiler/options plus the original React test-setup.ts in the file set. Keep the original immutable primary endpoints, tool-receipt proof and official SDK completion untouched.",
+    "Report original and supplemented diagnostics/exits and a clearly labelled source-only sensitivity. Never turn missing required invocations into observed execution, failed SDK completion into success, or retrieval into acceptance."
+  ],
+  "boundary": "This adds original ambient test-environment types, not a model solution or source repair. It is not full upstream repository typechecking. Native Cline and every Light arm receive the same shadow audit. No regrading or repair of archived patches and no model retry."
+}

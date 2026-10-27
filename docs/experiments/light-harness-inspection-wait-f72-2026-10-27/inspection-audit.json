@@ -1,0 +1,239 @@
+{
+  "executionFinished": false,
+  "trials": [
+    {
+      "name": "1-fetching-filters-reference",
+      "arm": "reference",
+      "officialRuntimeSuccess": true,
+      "sourceSuccess": true,
+      "strictSuccess": true,
+      "requiredEvidence": [
+        {
+          "id": "regression",
+          "command": "npm run test:study:regression",
+          "passedOnFinalSource": true,
+          "proof": {
+            "callId": "call_03ff491e6245479596a06ac7772f56e8",
+            "originCallId": "call_ed0421a407684e33ae6948c2a5dc2782",
+            "source": "db99fa5531cc214e245930dfda8099154c10c34e3eeb9e0504fa72fe4a945f04",
+            "evidence": "literal immutable-script execution with observed zero exit"
+          }
+        },
+        {
+          "id": "types",
+          "command": "npm run typecheck:study:types",
+          "passedOnFinalSource": true,
+          "proof": {
+            "callId": "call_f0246db943274785b90cf3e1e50486f1",
+            "originCallId": "call_f0246db943274785b90cf3e1e50486f1",
+            "source": "db99fa5531cc214e245930dfda8099154c10c34e3eeb9e0504fa72fe4a945f04",
+            "evidence": "literal immutable-script execution with observed zero exit"
+          }
+        },
+        {
+          "id": "type-regression",
+          "command": "npm run typecheck:study:type-regression",
+          "passedOnFinalSource": true,
+          "proof": {
+            "callId": "call_a83db0351b04457a9a8e52e560046f86",
+            "originCallId": "call_a83db0351b04457a9a8e52e560046f86",
+            "source": "db99fa5531cc214e245930dfda8099154c10c34e3eeb9e0504fa72fe4a945f04",
+            "evidence": "literal immutable-script execution with observed zero exit"
+          }
+        },
+        {
+          "id": "delivered-types",
+          "command": "npm run typecheck:study:delivered-types",
+          "passedOnFinalSource": true,
+          "proof": {
+            "callId": "call_7748bcff501b43bf8c0125d473ad4404",
+            "originCallId": "call_7748bcff501b43bf8c0125d473ad4404",
+            "source": "db99fa5531cc214e245930dfda8099154c10c34e3eeb9e0504fa72fe4a945f04",
+            "evidence": "literal immutable-script execution with observed zero exit"
+          }
+        }
+      ],
+      "startedInspections": 3,
+      "finishedInspections": 3,
+      "incrementalInspections": 3,
+      "emptyRunningSnapshots": 2,
+      "finalizedInspectionResults": 1,
+      "inspections": [
+        {
+          "callId": "call_73369f40e80947d78448149b504d2068",
+          "run": "r1",
+          "inputCursor": "166",
+          "returnedCursor": "166",
+          "process": "running",
+          "outputBytes": 0,
+          "durationMs": 136,
+          "finalizedStatus": null,
+          "exitCode": null
+        },
+        {
+          "callId": "call_d8ddc866415943c1b8d200d5eddef188",
+          "run": "r1",
+          "inputCursor": "166",
+          "returnedCursor": "166",
+          "process": "running",
+          "outputBytes": 0,
+          "durationMs": 122,
+          "finalizedStatus": null,
+          "exitCode": null
+        },
+        {
+          "callId": "call_03ff491e6245479596a06ac7772f56e8",
+          "run": "r1",
+          "inputCursor": "166",
+          "returnedCursor": "642",
+          "process": "exited",
+          "outputBytes": 472,
+          "durationMs": 105,
+          "finalizedStatus": "ok",
+          "exitCode": 0
+        }
+      ],
+      "hardLoopGuardEvent": null
+    },
+    {
+      "name": "1-fetching-filters-wait",
+      "arm": "wait",
+      "officialRuntimeSuccess": true,
+      "sourceSuccess": true,
+      "strictSuccess": true,
+      "requiredEvidence": [
+        {
+          "id": "regression",
+          "command": "npm run test:study:regression",
+          "passedOnFinalSource": true,
+          "proof": {
+            "callId": "call_1cde28f4d753409983d8b741489fc0cc",
+            "originCallId": "call_1826ea3c0ae943ce834bcccd1dd73a6b",
+            "source": "94a0021cf02f284cbe72a2065a1376c50b05b6bd381241077e7ccadaa655c47e",
+            "evidence": "literal immutable-script execution with observed zero exit"
+          }
+        },
+        {
+          "id": "types",
+          "command": "npm run typecheck:study:types",
+          "passedOnFinalSource": true,
+          "proof": {
+            "callId": "call_96b9876600d1480c92ce17d9357edffe",
+            "originCallId": "call_96b9876600d1480c92ce17d9357edffe",
+            "source": "94a0021cf02f284cbe72a2065a1376c50b05b6bd381241077e7ccadaa655c47e",
+            "evidence": "literal immutable-script execution with observed zero exit"
+          }
+        },
+        {
+          "id": "type-regression",
+          "command": "npm run typecheck:study:type-regression",
+          "passedOnFinalSource": true,
+          "proof": {
+            "callId": "call_e8f49837cc45409dbb029a12f750afbc",
+            "originCallId": "call_e8f49837cc45409dbb029a12f750afbc",
+            "source": "94a0021cf02f284cbe72a2065a1376c50b05b6bd381241077e7ccadaa655c47e",
+            "evidence": "literal immutable-script execution with observed zero exit"
+          }
+        },
+        {
+          "id": "delivered-types",
+          "command": "npm run typecheck:study:delivered-types",
+          "passedOnFinalSource": true,
+          "proof": {
+            "callId": "call_fb0b0dd372684f02bc038e7e81393470",
+            "originCallId": "call_fb0b0dd372684f02bc038e7e81393470",
+            "source": "94a0021cf02f284cbe72a2065a1376c50b05b6bd381241077e7ccadaa655c47e",
+            "evidence": "literal immutable-script execution with observed zero exit"
+          }
+        }
+      ],
+      "startedInspections": 2,
+      "finishedInspections": 2,
+      "incrementalInspections": 2,
+      "emptyRunningSnapshots": 1,
+      "finalizedInspectionResults": 1,
+      "inspections": [
+        {
+          "callId": "call_f9c1e007a9054bee9526337652fc6781",
+          "run": "r2",
+          "inputCursor": "166",
+          "returnedCursor": "167",
+          "process": "running",
+          "outputBytes": 0,
+          "durationMs": 5030,
+          "finalizedStatus": null,
+          "exitCode": null
+        },
+        {
+          "callId": "call_1cde28f4d753409983d8b741489fc0cc",
+          "run": "r2",
+          "inputCursor": "167",
+          "returnedCursor": "631",
+          "process": "exited",
+          "outputBytes": 461,
+          "durationMs": 113,
+          "finalizedStatus": "ok",
+          "exitCode": 0
+        }
+      ],
+      "hardLoopGuardEvent": null
+    },
+    {
+      "name": "1-fetching-filters-cline",
+      "arm": "cline",
+      "officialRuntimeSuccess": true,
+      "sourceSuccess": true,
+      "strictSuccess": true,
+      "requiredEvidence": [
+        {
+          "id": "regression",
+          "command": "npm run test:study:regression",
+          "passedOnFinalSource": true,
+          "proof": {
+            "callId": "call_3405b33d4ec94f649b8c65416b64d133",
+            "source": "1c3d9bfdea0fa4f8160e5c96da51f5b5d29704e48676b849e79c7750c8c75505",
+            "evidence": "successful literal native operation"
+          }
+        },
+        {
+          "id": "types",
+          "command": "npm run typecheck:study:types",
+          "passedOnFinalSource": true,
+          "proof": {
+            "callId": "call_4047e9243d86479b8cc579097808fb62",
+            "source": "1c3d9bfdea0fa4f8160e5c96da51f5b5d29704e48676b849e79c7750c8c75505",
+            "evidence": "successful literal native operation"
+          }
+        },
+        {
+          "id": "type-regression",
+          "command": "npm run typecheck:study:type-regression",
+          "passedOnFinalSource": true,
+          "proof": {
+            "callId": "call_077df729fccd4117b68667f41bd7862d",
+            "source": "1c3d9bfdea0fa4f8160e5c96da51f5b5d29704e48676b849e79c7750c8c75505",
+            "evidence": "successful literal native operation"
+          }
+        },
+        {
+          "id": "delivered-types",
+          "command": "npm run typecheck:study:delivered-types",
+          "passedOnFinalSource": true,
+          "proof": {
+            "callId": "call_dc7d0897432c48a4a3a8607dac154c43",
+            "source": "1c3d9bfdea0fa4f8160e5c96da51f5b5d29704e48676b849e79c7750c8c75505",
+            "evidence": "successful literal native operation"
+          }
+        }
+      ],
+      "startedInspections": 0,
+      "finishedInspections": 0,
+      "incrementalInspections": 0,
+      "emptyRunningSnapshots": 0,
+      "finalizedInspectionResults": 0,
+      "inspections": [],
+      "hardLoopGuardEvent": null
+    }
+  ],
+  "boundary": "Actual tool events and outcomes, including inspections started but not finished before a guard abort. Inspection duration includes observation/source/journal overhead, not only internal waiting. Cursor offsets and output bytes are actual data; a last running snapshot does not prove the process was physically running at later termination. No score changes, retries or synthetic completion."
+}
