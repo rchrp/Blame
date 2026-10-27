@@ -24,7 +24,7 @@ async function sdkBindings(){
  for(const [name,path]of Object.entries(files))out[name]={path,sha256:digest(await readFile(path))};
  return out;
 }
-const sharedScripts=['durable-campaign.mjs','isolated-node-environment.mjs','corpus/light-study-accounting.mjs','navigation-evidence/wire-audit.mjs','request-timing-preload.mjs','feedback-delivery-study/controls.mjs','feedback-delivery-study/receipt-metadata.mjs','context-economy-study/controls.mjs','context-economy-study/probes.mjs','context-economy-study/required-evidence.mjs','context-economy-study/source-epoch.mjs','context-economy-study/advice-metadata.mjs'];
+const sharedScripts=['durable-campaign.mjs','isolated-node-environment.mjs','corpus/light-study-accounting.mjs','navigation-evidence/wire-audit.mjs','request-timing-preload.mjs','feedback-delivery-study/controls.mjs','feedback-delivery-study/receipt-metadata.mjs','context-economy-study/controls.mjs','context-economy-study/probes.mjs','context-economy-study/required-evidence.mjs','context-economy-study/source-epoch.mjs','context-economy-study/advice-metadata.mjs','context-economy-study/inputs.mjs','request-timing.mjs','../../packages/agent-runtime/dist/usage-audit.js','../../packages/agent-runtime/dist/tool-result-envelope.js'];
 async function sharedBindings(){const out={};for(const path of sharedScripts)out[path]=digest(await readFile(join(import.meta.dirname,'..',path)));return out;}
 async function freeze(){
  const registration=await json(join(study,'selection-registration.json')),controls=await json(join(work,'controls.json'));
@@ -64,6 +64,7 @@ async function prepare(directory,task,p){
  isolated.env.PATH=join(root,'node_modules/.bin')+':'+process.env.PATH;
  const quote=value=>"'"+value.replaceAll("'","'\\''")+"'",shell=Object.entries(isolated.env).map(([k,v])=>'export '+k+'='+quote(v)).join('\n')+'\n';
  await writeFile(join(active,'shell-environment.sh'),shell);isolated.env.BASH_ENV=join(active,'shell-environment.sh');
+ assert.equal(digest(instruction(task)),p.inputs[task.id].instructionSha256,'Task prompt changed');assert.deepEqual(checksFor(task),p.inputs[task.id].requiredChecks);
  await atomicJson(join(directory,'environment.json'),isolated);await writeFile(join(directory,'instruction.txt'),instruction(task)+'\n');await atomicJson(join(directory,'required-checks.json'),checksFor(task));
  assert.equal(git(root,['status','--porcelain']).trim(),'','Input must be clean before dispatch');
  return isolated;
