@@ -1,0 +1,13 @@
+{
+  "recordedAtUTC": "2026-10-27T17:42:12.053203+00:00",
+  "path": "docs/semantic-harness-study.tex",
+  "sourceSha256": "75ea3c5d2865185482748a7c36125191fb962df07e63567e208ce8877574ebfe",
+  "nativeCompilerStatus": "unconfirmed_tool_no_response",
+  "details": "An open-in-editor request did not return and was cancelled. An independent native compilation request also returned no diagnostics or completion after the bounded wait and was cancelled. No successful compilation of this final source revision is claimed. The earlier revision compiled, but that is not evidence for the final source.",
+  "sourcePreserved": true,
+  "runtimeTests": "1207 passed,13 skipped;5 configured real-Vitest cases additionally passed",
+  "runnerTests": "37/37",
+  "portablePatchReplays": "46/46 reproduce original endpoint outcomes and compiler diagnostics",
+  "localFutureGraderChecks": "8/8 expected compiler/selection outcomes",
+  "modelAssignments": "46 completed, all original primary scores retained"
+}
