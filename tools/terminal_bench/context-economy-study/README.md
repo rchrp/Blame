@@ -64,3 +64,13 @@ on jointly audited successes and pair/task omissions. Cache reads are an input
 subset. SDK USD estimates are not invoices or euro conversions. Passive source
 observation overhead and unfinished HTTP spans are explicit. Request-boundary
 receipts establish forwarded context, not attention or useful model reasoning.
+
+After all workers exit, `archive-inputs.mjs` exports a shared Git bundle of only
+the four original input commits, exact frozen compiled runtime, official patches
+and per-task dependency locks. `replay.mjs --portable` restores those original
+commits, applies each unchanged archived model patch, verifies the exact final
+source fingerprint, and repeats the independent endpoints. Restore the pinned
+dependency directories first. Replay uses the frozen Linux permission convention
+(`umask 077`); it is not a cross-platform fingerprint claim. It retains mismatches
+and never repairs or retrieves a solution. The `inputs` archive is published only
+after model dispatch, so hidden official/probe information is not a worker input.

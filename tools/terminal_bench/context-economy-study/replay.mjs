@@ -1,6 +1,8 @@
 // Unchanged model patches, independent checks, no model calls or repair.
 import assert from 'node:assert/strict';import {mkdtemp,mkdir,cp,rm} from 'node:fs/promises';import {join} from 'node:path';import {execFileSync} from 'node:child_process';
 import {tasks,study,work,checksFor} from './inputs.mjs';import {endpoint,attachDependencies,applyOfficial} from './controls.mjs';import {restoreInput} from './restore-input.mjs';import {sourceEpoch} from './source-epoch.mjs';import {evidence,file} from './evidence.mjs';import {atomicJson,digest} from '../durable-campaign.mjs';
+// The frozen Linux source fingerprint includes permission bits.
+process.umask(0o077);
 const {protocol:p,records,executionFinished}=await evidence();assert.equal(executionFinished,true,'Wait for all workers');const portable=process.argv.includes('--portable'),destination=join(work,'replays');await mkdir(destination,{recursive:true});const results=[];
 for(const c of records.filter(c=>!c.partial)){
  const row=c.row,task=tasks.find(t=>t.id===row.task),root=await mkdtemp(join(destination,c.name+'-'));await restoreInput(root,task.id,p,{portable});const patch=file(c,'workspace.diff');if(patch.length)execFileSync('git',['apply','--binary','--whitespace=nowarn','-'],{cwd:root,input:patch});assert.equal(sourceEpoch(root).sha256,JSON.parse(file(c,'source-at-exit.json')).sha256,'Exact source reconstruction: '+c.name);

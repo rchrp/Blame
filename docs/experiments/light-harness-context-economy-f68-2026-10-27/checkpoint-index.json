@@ -1,6 +1,6 @@
 {
   "protocolHash": "42d111a0162283d14df36d9a10692ae74efdc129db05a5188215f0669c2b2a93",
-  "completed": 6,
+  "completed": 12,
   "planned": 28,
   "receipts": [
     {
@@ -32,6 +32,36 @@
       "name": "1-quota-reference",
       "path": "checkpoints/1-quota-reference.json.gz",
       "sha256": "0fa234fe0c842570409f24103357e72354fa17cd063fe740265fd84eea2c8719"
+    },
+    {
+      "name": "2-clamp-items-compact",
+      "path": "checkpoints/2-clamp-items-compact.json.gz",
+      "sha256": "8b15bf3ffb2f6e56ed0f484d012311306fcef371e86975847555951896cfad8b"
+    },
+    {
+      "name": "2-clamp-items-cline",
+      "path": "checkpoints/2-clamp-items-cline.json.gz",
+      "sha256": "11e6d67f9e379fd72146be0fd576672d786615e220686aa206fecab0b5a05f1f"
+    },
+    {
+      "name": "2-clamp-items-reference",
+      "path": "checkpoints/2-clamp-items-reference.json.gz",
+      "sha256": "35fa878577b96e6a481e42cf05626f53fa2eae7551ec89155f92e2211bf2fc98"
+    },
+    {
+      "name": "2-quota-cline",
+      "path": "checkpoints/2-quota-cline.json.gz",
+      "sha256": "57c9823de7b0e0daccf556f5e3e3ac8855e402f76398fe1a69979ba13e53e0f3"
+    },
+    {
+      "name": "2-quota-reference",
+      "path": "checkpoints/2-quota-reference.json.gz",
+      "sha256": "f6fd6ac1f084fe5adcedbe023ace866edaeb5f00973007238536d08bf33e8079"
+    },
+    {
+      "name": "2-quota-compact",
+      "path": "checkpoints/2-quota-compact.json.gz",
+      "sha256": "808508c36a31853a39c7fb732dd209ec725ad6c214804ef6e8f1638192b1d7dd"
     }
   ]
 }
