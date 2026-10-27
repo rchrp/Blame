@@ -214,6 +214,14 @@ async function deployPackage(targetDir, builderArgs) {
   const workspaceConfig = await readFile(workspaceFile, "utf8");
   const updatedConfig = YAML.parse(workspaceConfig);
   updatedConfig.supportedArchitectures = supportedArchitectures;
+  if (
+    !supportedArchitectures.os.includes(process.platform) ||
+    !supportedArchitectures.cpu.includes(process.arch)
+  ) {
+    // pnpm 12's install script links the host binary. Cross-packages only
+    // install target binaries, which the harness resolves and runs directly.
+    updatedConfig.allowBuilds = { ...updatedConfig.allowBuilds, pnpm: false };
+  }
 
   try {
     await writeFile(workspaceFile, YAML.stringify(updatedConfig), "utf8");

@@ -319,6 +319,7 @@ const config: Configuration = {
   npmRebuild: rebuildNativeDependencies,
   linux: {
     category: "Development",
+    executableName: "blame",
     icon: "icons/prod",
     maintainer: `${maintainerName} <${maintainerEmail}>`,
     target: ["AppImage", "deb", "rpm"],
