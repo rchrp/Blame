@@ -1,0 +1,517 @@
+{
+  "complete": true,
+  "planned": 6,
+  "results": [
+    {
+      "name": "1-fetching-filters-reference",
+      "patchSha256": "56676a55c43c6b5537dede989466b92803f981c077da7edb5bebdfa49f9879cf",
+      "exactSourceReconstructed": true,
+      "permissionOverridesRestored": 3,
+      "endpoints": [
+        {
+          "name": "regression",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 20798.624938,
+          "expectedExitCode": 0,
+          "expectedSignal": null,
+          "compilerDiagnosticsMatch": true,
+          "reproduced": true
+        },
+        {
+          "name": "types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1630.9967550000001,
+          "expectedExitCode": 0,
+          "expectedSignal": null,
+          "compilerDiagnosticsMatch": true,
+          "reproduced": true
+        },
+        {
+          "name": "type-regression",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1517.096046999999,
+          "expectedExitCode": 0,
+          "expectedSignal": null,
+          "compilerDiagnosticsMatch": true,
+          "reproduced": true
+        },
+        {
+          "name": "delivered-types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1548.2810119999995,
+          "expectedExitCode": 0,
+          "expectedSignal": null,
+          "compilerDiagnosticsMatch": true,
+          "reproduced": true
+        },
+        {
+          "name": "official",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1739.4956099999981,
+          "expectedExitCode": 0,
+          "expectedSignal": null,
+          "compilerDiagnosticsMatch": true,
+          "reproduced": true
+        },
+        {
+          "name": "probe",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1440.9010469999994,
+          "expectedExitCode": 0,
+          "expectedSignal": null,
+          "compilerDiagnosticsMatch": true,
+          "reproduced": true
+        },
+        {
+          "name": "compatibility",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1295.195216,
+          "expectedExitCode": 0,
+          "expectedSignal": null,
+          "compilerDiagnosticsMatch": true,
+          "reproduced": true
+        }
+      ]
+    },
+    {
+      "name": "1-fetching-filters-wait",
+      "patchSha256": "f6899d0149353fdbc41d1b9970b27a2168f01748ba725db232ae06e568f9b2c1",
+      "exactSourceReconstructed": true,
+      "permissionOverridesRestored": 2,
+      "endpoints": [
+        {
+          "name": "regression",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 20438.940857999994,
+          "expectedExitCode": 0,
+          "expectedSignal": null,
+          "compilerDiagnosticsMatch": true,
+          "reproduced": true
+        },
+        {
+          "name": "types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1666.220634000012,
+          "expectedExitCode": 0,
+          "expectedSignal": null,
+          "compilerDiagnosticsMatch": true,
+          "reproduced": true
+        },
+        {
+          "name": "type-regression",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1609.8980659999943,
+          "expectedExitCode": 0,
+          "expectedSignal": null,
+          "compilerDiagnosticsMatch": true,
+          "reproduced": true
+        },
+        {
+          "name": "delivered-types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1489.602429999999,
+          "expectedExitCode": 0,
+          "expectedSignal": null,
+          "compilerDiagnosticsMatch": true,
+          "reproduced": true
+        },
+        {
+          "name": "official",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1734.7120570000116,
+          "expectedExitCode": 0,
+          "expectedSignal": null,
+          "compilerDiagnosticsMatch": true,
+          "reproduced": true
+        },
+        {
+          "name": "probe",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1463.4513080000033,
+          "expectedExitCode": 0,
+          "expectedSignal": null,
+          "compilerDiagnosticsMatch": true,
+          "reproduced": true
+        },
+        {
+          "name": "compatibility",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1222.463201999999,
+          "expectedExitCode": 0,
+          "expectedSignal": null,
+          "compilerDiagnosticsMatch": true,
+          "reproduced": true
+        }
+      ]
+    },
+    {
+      "name": "1-fetching-filters-cline",
+      "patchSha256": "10a3d4e48659d59fb4bf889976df2fbb6ec762d5d6dd8db20818d5c403a811d4",
+      "exactSourceReconstructed": true,
+      "permissionOverridesRestored": 0,
+      "endpoints": [
+        {
+          "name": "regression",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 21121.464708,
+          "expectedExitCode": 0,
+          "expectedSignal": null,
+          "compilerDiagnosticsMatch": true,
+          "reproduced": true
+        },
+        {
+          "name": "types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1648.1544460000005,
+          "expectedExitCode": 0,
+          "expectedSignal": null,
+          "compilerDiagnosticsMatch": true,
+          "reproduced": true
+        },
+        {
+          "name": "type-regression",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1626.438697999998,
+          "expectedExitCode": 0,
+          "expectedSignal": null,
+          "compilerDiagnosticsMatch": true,
+          "reproduced": true
+        },
+        {
+          "name": "delivered-types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1582.302555000002,
+          "expectedExitCode": 0,
+          "expectedSignal": null,
+          "compilerDiagnosticsMatch": true,
+          "reproduced": true
+        },
+        {
+          "name": "official",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1826.6716100000049,
+          "expectedExitCode": 0,
+          "expectedSignal": null,
+          "compilerDiagnosticsMatch": true,
+          "reproduced": true
+        },
+        {
+          "name": "probe",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1527.2262489999994,
+          "expectedExitCode": 0,
+          "expectedSignal": null,
+          "compilerDiagnosticsMatch": true,
+          "reproduced": true
+        },
+        {
+          "name": "compatibility",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1330.9256239999959,
+          "expectedExitCode": 0,
+          "expectedSignal": null,
+          "compilerDiagnosticsMatch": true,
+          "reproduced": true
+        }
+      ]
+    },
+    {
+      "name": "2-fetching-filters-wait",
+      "patchSha256": "14d520ff340fd957072e7a61981df43a9e22361db1f98f6b374d4fb8e8711993",
+      "exactSourceReconstructed": true,
+      "permissionOverridesRestored": 3,
+      "endpoints": [
+        {
+          "name": "regression",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 20672.932050000003,
+          "expectedExitCode": 0,
+          "expectedSignal": null,
+          "compilerDiagnosticsMatch": true,
+          "reproduced": true
+        },
+        {
+          "name": "types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1646.2307819999987,
+          "expectedExitCode": 0,
+          "expectedSignal": null,
+          "compilerDiagnosticsMatch": true,
+          "reproduced": true
+        },
+        {
+          "name": "type-regression",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1549.4148780000105,
+          "expectedExitCode": 0,
+          "expectedSignal": null,
+          "compilerDiagnosticsMatch": true,
+          "reproduced": true
+        },
+        {
+          "name": "delivered-types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1460.2519449999963,
+          "expectedExitCode": 0,
+          "expectedSignal": null,
+          "compilerDiagnosticsMatch": true,
+          "reproduced": true
+        },
+        {
+          "name": "official",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1774.5997100000095,
+          "expectedExitCode": 0,
+          "expectedSignal": null,
+          "compilerDiagnosticsMatch": true,
+          "reproduced": true
+        },
+        {
+          "name": "probe",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1454.134642000019,
+          "expectedExitCode": 0,
+          "expectedSignal": null,
+          "compilerDiagnosticsMatch": true,
+          "reproduced": true
+        },
+        {
+          "name": "compatibility",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1285.5881180000142,
+          "expectedExitCode": 0,
+          "expectedSignal": null,
+          "compilerDiagnosticsMatch": true,
+          "reproduced": true
+        }
+      ]
+    },
+    {
+      "name": "2-fetching-filters-cline",
+      "patchSha256": "894c61d4a0418a4d2a45ddb6bfc57ca18d063f96f879eb4ff0988a9d14e9f1ee",
+      "exactSourceReconstructed": true,
+      "permissionOverridesRestored": 0,
+      "endpoints": [
+        {
+          "name": "regression",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 20957.01048299999,
+          "expectedExitCode": 0,
+          "expectedSignal": null,
+          "compilerDiagnosticsMatch": true,
+          "reproduced": true
+        },
+        {
+          "name": "types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1667.8905019999947,
+          "expectedExitCode": 0,
+          "expectedSignal": null,
+          "compilerDiagnosticsMatch": true,
+          "reproduced": true
+        },
+        {
+          "name": "type-regression",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1623.2016620000068,
+          "expectedExitCode": 0,
+          "expectedSignal": null,
+          "compilerDiagnosticsMatch": true,
+          "reproduced": true
+        },
+        {
+          "name": "delivered-types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1612.5074419999728,
+          "expectedExitCode": 0,
+          "expectedSignal": null,
+          "compilerDiagnosticsMatch": true,
+          "reproduced": true
+        },
+        {
+          "name": "official",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1712.2326140000077,
+          "expectedExitCode": 0,
+          "expectedSignal": null,
+          "compilerDiagnosticsMatch": true,
+          "reproduced": true
+        },
+        {
+          "name": "probe",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1516.2389690000273,
+          "expectedExitCode": 0,
+          "expectedSignal": null,
+          "compilerDiagnosticsMatch": true,
+          "reproduced": true
+        },
+        {
+          "name": "compatibility",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1347.9586100000015,
+          "expectedExitCode": 0,
+          "expectedSignal": null,
+          "compilerDiagnosticsMatch": true,
+          "reproduced": true
+        }
+      ]
+    },
+    {
+      "name": "2-fetching-filters-reference",
+      "patchSha256": "595e0412e7206c46c4fa3c52306375119fb8b9b04f70133587760299a1f6e262",
+      "exactSourceReconstructed": true,
+      "permissionOverridesRestored": 3,
+      "endpoints": [
+        {
+          "name": "regression",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 20934.324160999997,
+          "expectedExitCode": 0,
+          "expectedSignal": null,
+          "compilerDiagnosticsMatch": true,
+          "reproduced": true
+        },
+        {
+          "name": "types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1579.7604059999867,
+          "expectedExitCode": 0,
+          "expectedSignal": null,
+          "compilerDiagnosticsMatch": true,
+          "reproduced": true
+        },
+        {
+          "name": "type-regression",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1558.7994520000066,
+          "expectedExitCode": 0,
+          "expectedSignal": null,
+          "compilerDiagnosticsMatch": true,
+          "reproduced": true
+        },
+        {
+          "name": "delivered-types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1403.0310859999736,
+          "expectedExitCode": 0,
+          "expectedSignal": null,
+          "compilerDiagnosticsMatch": true,
+          "reproduced": true
+        },
+        {
+          "name": "official",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1762.340131999983,
+          "expectedExitCode": 0,
+          "expectedSignal": null,
+          "compilerDiagnosticsMatch": true,
+          "reproduced": true
+        },
+        {
+          "name": "probe",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1477.18511999998,
+          "expectedExitCode": 0,
+          "expectedSignal": null,
+          "compilerDiagnosticsMatch": true,
+          "reproduced": true
+        },
+        {
+          "name": "compatibility",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1255.6567340000183,
+          "expectedExitCode": 0,
+          "expectedSignal": null,
+          "compilerDiagnosticsMatch": true,
+          "reproduced": true
+        }
+      ]
+    }
+  ],
+  "boundary": "Exact unchanged patches restored from original commits, immutable supplied checks plus separate production-only official/probe tree. No model calls, no solution retrieval or patch repair. Every mismatch remains explicit."
+}

@@ -14,5 +14,10 @@
     "fetching-filters.patch": "2d8ee9f67b227b6c1429656f946bed73b1b5df0142317bb9dd0f74cd805a253f"
   },
   "runtimeSourceHead": "6d567ff41cdcd4d400e8bce5257c55662762a2b0",
-  "boundary": "Two original input commits only, shared Git objects; no model patches, solutions, dependencies, credentials or upstream fix history. Original commit IDs replace platform-dependent tar metadata for portable replay. Original private archive hashes remain unchanged."
+  "boundary": "Selected original input commits only, shared Git objects; no model patches, solutions, dependencies, credentials or upstream fix history. Original commit IDs replace platform-dependent tar metadata for portable replay. Original private archive hashes remain unchanged.",
+  "originalInputCommitCount": 1,
+  "postDispatchLabelCorrection": {
+    "previousManifestSha256": "24f8499744d6a374ee12a55c4401731602454e218ad7a177a72ce9d2f0d2ea22",
+    "reason": "The F72 cohort has one source input. Only the inherited descriptive count was corrected; all bundle/runtime/lock/source bytes and hashes are unchanged."
+  }
 }

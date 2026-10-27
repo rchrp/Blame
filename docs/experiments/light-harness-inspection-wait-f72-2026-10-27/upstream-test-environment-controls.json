@@ -1,0 +1,18 @@
+{
+  "isolated": {
+    "exitCode": 2,
+    "signal": null,
+    "error": null,
+    "stdout": ".study/reports/matcher-fixture.ts(1,69): error TS2339: Property 'toBeInTheDocument' does not exist on type 'Assertion<void, HTMLDivElement>'.\n",
+    "stderr": ""
+  },
+  "upstream": {
+    "exitCode": 0,
+    "signal": null,
+    "error": null,
+    "stdout": "",
+    "stderr": ""
+  },
+  "setupSha256": "337c979f3a6c40729fcccb7c005667bb7ba3825f23e65e5f4df383eead651bfd",
+  "validated": true
+}

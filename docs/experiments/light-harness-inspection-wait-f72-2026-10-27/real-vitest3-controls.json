@@ -1,0 +1,16 @@
+{
+  "externalModelRequests": 0,
+  "node": "v24.19.0",
+  "vitest": "3.2.4",
+  "dependencyLockSha256": "6203338f69a01a5bb57eb4bd010d82ad5cdfe6d053ddf31012018818fdfcf82e",
+  "exitCode": 0,
+  "command": [
+    "node",
+    "--test",
+    "--test-reporter=spec",
+    "--test-name-pattern=real Vitest behind Node wrapper",
+    "dist/harness/invocation-test-report.test.js"
+  ],
+  "isolation": "Private physical dependency copy; test workspace symlinks target this copy. Shared pinned image is not writable through these symlinks.",
+  "logSha256": "d3d17158a979eb9c5f47ad0aab4ccf271f454ff8f6f098eb11647522481ffa41"
+}

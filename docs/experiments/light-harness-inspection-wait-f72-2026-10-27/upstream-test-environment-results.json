@@ -1,0 +1,545 @@
+{
+  "complete": true,
+  "expected": 20,
+  "controls": {
+    "isolated": {
+      "exitCode": 2,
+      "signal": null,
+      "error": null,
+      "stdout": ".study/reports/matcher-fixture.ts(1,69): error TS2339: Property 'toBeInTheDocument' does not exist on type 'Assertion<void, HTMLDivElement>'.\n",
+      "stderr": ""
+    },
+    "upstream": {
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "stdout": "",
+      "stderr": ""
+    },
+    "setupSha256": "337c979f3a6c40729fcccb7c005667bb7ba3825f23e65e5f4df383eead651bfd",
+    "validated": true
+  },
+  "rows": [
+    {
+      "cohort": "F69",
+      "name": "1-fetching-filters-compact",
+      "patchSha256": "ff35d3afe17bf76602f1fd3b770a0b56320c0f80aeb43e7831256098db6eae96",
+      "exactSourceReconstructed": true,
+      "setupUnchanged": true,
+      "originalCompilerReproduced": true,
+      "original": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      },
+      "withOriginalSetup": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      },
+      "frozenPrimarySourceSuccess": false,
+      "sourceOnlySensitivity": false,
+      "frozenPrimaryStrictSuccess": false,
+      "originalRequiredExecutionsConfirmed": true
+    },
+    {
+      "cohort": "F69",
+      "name": "1-fetching-filters-navigation",
+      "patchSha256": "7e713c1e4b5b2da70f27aef6a9ad4d23c0c91d8609fac6ab2109c86af3420fd8",
+      "exactSourceReconstructed": true,
+      "setupUnchanged": true,
+      "originalCompilerReproduced": true,
+      "original": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      },
+      "withOriginalSetup": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      },
+      "frozenPrimarySourceSuccess": false,
+      "sourceOnlySensitivity": false,
+      "frozenPrimaryStrictSuccess": false,
+      "originalRequiredExecutionsConfirmed": true
+    },
+    {
+      "cohort": "F69",
+      "name": "1-fetching-filters-cline",
+      "patchSha256": "c8a7a37af1af39eaadade01588ed72380158f811b06b1dba217e2ec477dfabca",
+      "exactSourceReconstructed": true,
+      "setupUnchanged": true,
+      "originalCompilerReproduced": true,
+      "original": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      },
+      "withOriginalSetup": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      },
+      "frozenPrimarySourceSuccess": false,
+      "sourceOnlySensitivity": false,
+      "frozenPrimaryStrictSuccess": false,
+      "originalRequiredExecutionsConfirmed": true
+    },
+    {
+      "cohort": "F69",
+      "name": "1-fetching-filters-reference",
+      "patchSha256": "6d7a6b7b93d8e61848c02dcdabe227b70fd77637fef9d1664af4043c930b40dd",
+      "exactSourceReconstructed": true,
+      "setupUnchanged": true,
+      "originalCompilerReproduced": true,
+      "original": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      },
+      "withOriginalSetup": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      },
+      "frozenPrimarySourceSuccess": false,
+      "sourceOnlySensitivity": false,
+      "frozenPrimaryStrictSuccess": false,
+      "originalRequiredExecutionsConfirmed": false
+    },
+    {
+      "cohort": "F69",
+      "name": "2-fetching-filters-navigation",
+      "patchSha256": "c00a61e4d6a03b647d395d39c824027d69fa4d292f94d26592dd03f696599fbe",
+      "exactSourceReconstructed": true,
+      "setupUnchanged": true,
+      "originalCompilerReproduced": true,
+      "original": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      },
+      "withOriginalSetup": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      },
+      "frozenPrimarySourceSuccess": false,
+      "sourceOnlySensitivity": false,
+      "frozenPrimaryStrictSuccess": false,
+      "originalRequiredExecutionsConfirmed": true
+    },
+    {
+      "cohort": "F69",
+      "name": "2-fetching-filters-cline",
+      "patchSha256": "a56955440fe47c93790ae12393304a35d889654ee8983211223d20627ece51fa",
+      "exactSourceReconstructed": true,
+      "setupUnchanged": true,
+      "originalCompilerReproduced": true,
+      "original": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      },
+      "withOriginalSetup": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      },
+      "frozenPrimarySourceSuccess": true,
+      "sourceOnlySensitivity": true,
+      "frozenPrimaryStrictSuccess": true,
+      "originalRequiredExecutionsConfirmed": true
+    },
+    {
+      "cohort": "F69",
+      "name": "2-fetching-filters-reference",
+      "patchSha256": "7ce58d93796ae550a5735b67b5386195c400b99b7fc19a1fe35b496c65f95312",
+      "exactSourceReconstructed": true,
+      "setupUnchanged": true,
+      "originalCompilerReproduced": true,
+      "original": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      },
+      "withOriginalSetup": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      },
+      "frozenPrimarySourceSuccess": true,
+      "sourceOnlySensitivity": true,
+      "frozenPrimaryStrictSuccess": false,
+      "originalRequiredExecutionsConfirmed": false
+    },
+    {
+      "cohort": "F69",
+      "name": "2-fetching-filters-compact",
+      "patchSha256": "509e21ee66743a5005e6896fd7aa998fc3e5b471aec51a21ed2d53893c3cc86f",
+      "exactSourceReconstructed": true,
+      "setupUnchanged": true,
+      "originalCompilerReproduced": true,
+      "original": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      },
+      "withOriginalSetup": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      },
+      "frozenPrimarySourceSuccess": true,
+      "sourceOnlySensitivity": true,
+      "frozenPrimaryStrictSuccess": false,
+      "originalRequiredExecutionsConfirmed": false
+    },
+    {
+      "cohort": "F70",
+      "name": "1-fetching-filters-source-order",
+      "patchSha256": "5ba1d9f933c01ce92778021c193b9897cc9184f1aef5110fc348244676fc222c",
+      "exactSourceReconstructed": true,
+      "setupUnchanged": true,
+      "originalCompilerReproduced": true,
+      "original": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      },
+      "withOriginalSetup": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      },
+      "frozenPrimarySourceSuccess": true,
+      "sourceOnlySensitivity": true,
+      "frozenPrimaryStrictSuccess": false,
+      "originalRequiredExecutionsConfirmed": false
+    },
+    {
+      "cohort": "F70",
+      "name": "1-fetching-filters-cline",
+      "patchSha256": "7ef75d0edb5aa4cf4c1ee674d65076524f23c8ed11c4c0906f59d93f60a66062",
+      "exactSourceReconstructed": true,
+      "setupUnchanged": true,
+      "originalCompilerReproduced": true,
+      "original": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      },
+      "withOriginalSetup": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      },
+      "frozenPrimarySourceSuccess": true,
+      "sourceOnlySensitivity": true,
+      "frozenPrimaryStrictSuccess": true,
+      "originalRequiredExecutionsConfirmed": true
+    },
+    {
+      "cohort": "F70",
+      "name": "1-fetching-filters-reference",
+      "patchSha256": "ef996357b07f601b64833d4cdf16ff9f91c97841a6f504fdaf200009ef2bb6d8",
+      "exactSourceReconstructed": true,
+      "setupUnchanged": true,
+      "originalCompilerReproduced": true,
+      "original": {
+        "exitCode": 2,
+        "signal": null,
+        "error": null,
+        "stdout": "packages/react-query/src/__tests__/useIsFetchingFilters.test.tsx(31,49): error TS2339: Property 'toBeInTheDocument' does not exist on type 'Assertion<void, HTMLElement>'.\npackages/react-query/src/__tests__/useIsFetchingFilters.test.tsx(33,49): error TS2339: Property 'toBeInTheDocument' does not exist on type 'Assertion<void, HTMLElement>'.\n",
+        "stderr": ""
+      },
+      "withOriginalSetup": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      },
+      "frozenPrimarySourceSuccess": false,
+      "sourceOnlySensitivity": true,
+      "frozenPrimaryStrictSuccess": false,
+      "originalRequiredExecutionsConfirmed": false
+    },
+    {
+      "cohort": "F70",
+      "name": "2-fetching-filters-cline",
+      "patchSha256": "03702cbcbd54e807d0107db9a3a2eed98ed5a519b7341ba76145645ba0600ec5",
+      "exactSourceReconstructed": true,
+      "setupUnchanged": true,
+      "originalCompilerReproduced": true,
+      "original": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      },
+      "withOriginalSetup": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      },
+      "frozenPrimarySourceSuccess": true,
+      "sourceOnlySensitivity": true,
+      "frozenPrimaryStrictSuccess": true,
+      "originalRequiredExecutionsConfirmed": true
+    },
+    {
+      "cohort": "F70",
+      "name": "2-fetching-filters-reference",
+      "patchSha256": "f4a7dc89349fcbb4ed2a5e7362d375a4557e2c22855ed960564c92ceb9ed14df",
+      "exactSourceReconstructed": true,
+      "setupUnchanged": true,
+      "originalCompilerReproduced": true,
+      "original": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      },
+      "withOriginalSetup": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      },
+      "frozenPrimarySourceSuccess": true,
+      "sourceOnlySensitivity": true,
+      "frozenPrimaryStrictSuccess": false,
+      "originalRequiredExecutionsConfirmed": false
+    },
+    {
+      "cohort": "F70",
+      "name": "2-fetching-filters-source-order",
+      "patchSha256": "3bb8a7b4010c5d9ec9226a53a8df119ed96e378bff6b74a88711d12921cd5795",
+      "exactSourceReconstructed": true,
+      "setupUnchanged": true,
+      "originalCompilerReproduced": true,
+      "original": {
+        "exitCode": 2,
+        "signal": null,
+        "error": null,
+        "stdout": "packages/query-core/src/__tests__/isFetchingFilters.test-d.ts(26,44): error TS2353: Object literal may only specify known properties, and 'fetchStatus' does not exist in type 'OmitKeyof<QueryFilters<readonly unknown[]>, \"fetchStatus\">'.\n",
+        "stderr": ""
+      },
+      "withOriginalSetup": {
+        "exitCode": 2,
+        "signal": null,
+        "error": null,
+        "stdout": "packages/query-core/src/__tests__/isFetchingFilters.test-d.ts(26,44): error TS2353: Object literal may only specify known properties, and 'fetchStatus' does not exist in type 'OmitKeyof<QueryFilters<readonly unknown[]>, \"fetchStatus\">'.\n",
+        "stderr": ""
+      },
+      "frozenPrimarySourceSuccess": false,
+      "sourceOnlySensitivity": false,
+      "frozenPrimaryStrictSuccess": false,
+      "originalRequiredExecutionsConfirmed": false
+    },
+    {
+      "cohort": "F72",
+      "name": "1-fetching-filters-reference",
+      "patchSha256": "56676a55c43c6b5537dede989466b92803f981c077da7edb5bebdfa49f9879cf",
+      "exactSourceReconstructed": true,
+      "setupUnchanged": true,
+      "originalCompilerReproduced": true,
+      "original": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      },
+      "withOriginalSetup": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      },
+      "frozenPrimarySourceSuccess": true,
+      "sourceOnlySensitivity": true,
+      "frozenPrimaryStrictSuccess": true,
+      "originalRequiredExecutionsConfirmed": true
+    },
+    {
+      "cohort": "F72",
+      "name": "1-fetching-filters-wait",
+      "patchSha256": "f6899d0149353fdbc41d1b9970b27a2168f01748ba725db232ae06e568f9b2c1",
+      "exactSourceReconstructed": true,
+      "setupUnchanged": true,
+      "originalCompilerReproduced": true,
+      "original": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      },
+      "withOriginalSetup": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      },
+      "frozenPrimarySourceSuccess": true,
+      "sourceOnlySensitivity": true,
+      "frozenPrimaryStrictSuccess": true,
+      "originalRequiredExecutionsConfirmed": true
+    },
+    {
+      "cohort": "F72",
+      "name": "1-fetching-filters-cline",
+      "patchSha256": "10a3d4e48659d59fb4bf889976df2fbb6ec762d5d6dd8db20818d5c403a811d4",
+      "exactSourceReconstructed": true,
+      "setupUnchanged": true,
+      "originalCompilerReproduced": true,
+      "original": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      },
+      "withOriginalSetup": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      },
+      "frozenPrimarySourceSuccess": true,
+      "sourceOnlySensitivity": true,
+      "frozenPrimaryStrictSuccess": true,
+      "originalRequiredExecutionsConfirmed": true
+    },
+    {
+      "cohort": "F72",
+      "name": "2-fetching-filters-wait",
+      "patchSha256": "14d520ff340fd957072e7a61981df43a9e22361db1f98f6b374d4fb8e8711993",
+      "exactSourceReconstructed": true,
+      "setupUnchanged": true,
+      "originalCompilerReproduced": true,
+      "original": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      },
+      "withOriginalSetup": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      },
+      "frozenPrimarySourceSuccess": true,
+      "sourceOnlySensitivity": true,
+      "frozenPrimaryStrictSuccess": true,
+      "originalRequiredExecutionsConfirmed": true
+    },
+    {
+      "cohort": "F72",
+      "name": "2-fetching-filters-cline",
+      "patchSha256": "894c61d4a0418a4d2a45ddb6bfc57ca18d063f96f879eb4ff0988a9d14e9f1ee",
+      "exactSourceReconstructed": true,
+      "setupUnchanged": true,
+      "originalCompilerReproduced": true,
+      "original": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      },
+      "withOriginalSetup": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      },
+      "frozenPrimarySourceSuccess": true,
+      "sourceOnlySensitivity": true,
+      "frozenPrimaryStrictSuccess": true,
+      "originalRequiredExecutionsConfirmed": true
+    },
+    {
+      "cohort": "F72",
+      "name": "2-fetching-filters-reference",
+      "patchSha256": "595e0412e7206c46c4fa3c52306375119fb8b9b04f70133587760299a1f6e262",
+      "exactSourceReconstructed": true,
+      "setupUnchanged": true,
+      "originalCompilerReproduced": true,
+      "original": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      },
+      "withOriginalSetup": {
+        "exitCode": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": ""
+      },
+      "frozenPrimarySourceSuccess": true,
+      "sourceOnlySensitivity": true,
+      "frozenPrimaryStrictSuccess": true,
+      "originalRequiredExecutionsConfirmed": true
+    }
+  ],
+  "boundary": "Uniform shadow audit for every filtering assignment in its own cohort. Same exact patch/compiler/options, adding only original React setup to the delivered type-check file set. It is not full upstream repository typechecking. Primary scores, required tool execution proofs, SDK completion and formal admission stay unchanged. Independent compilation does not retroactively prove agent execution. All original diagnostics and adverse shadow changes are retained."
+}

@@ -130,7 +130,7 @@ export class LightTaskRunner {
         `Run ${input.run} does not belong to this session or is no longer available.`,
       );
     try {
-      const snapshot = process.env.BLAME_AGENT_INSPECT_WAIT === "true" && input.cursor !== undefined
+      const snapshot = process.env.BLAME_AGENT_INSPECT_WAIT !== "false" && input.cursor !== undefined
         ? await run.handle.waitForUpdate(input.cursor, 30_000, signal)
         : run.handle.inspect(input.cursor);
       // Process termination precedes source capture and journal finalization.

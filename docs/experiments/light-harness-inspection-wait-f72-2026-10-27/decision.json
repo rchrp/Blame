@@ -1,0 +1,319 @@
+{
+  "decision": "Enable bounded incremental inspection waiting by default; explicit BLAME_AGENT_INSPECT_WAIT=false retains the comparison reference behavior.",
+  "productionSourceSha256": "e002c46fde14b67831a5c0aa40f5aca587c1fd5b85fed33d3d98e9b646faa02c",
+  "defaultValidation": {
+    "runtimeTotal": 1220,
+    "runtimePassed": 1207,
+    "runtimeSkipped": 13,
+    "runtimeFailed": 0,
+    "runnerPassed": 37,
+    "runnerFailed": 0,
+    "affectedLint": "passed",
+    "lineBudgets": "passed",
+    "additionalRealVitest3CasesPassed": 5,
+    "additionalRealVitest3CasesFailed": 0
+  },
+  "replays": [
+    {
+      "cohort": "light-harness-context-economy-f68-2026-10-27",
+      "patches": 28,
+      "mismatches": 0
+    },
+    {
+      "cohort": "light-harness-declaration-order-f70-2026-10-27",
+      "patches": 12,
+      "mismatches": 0
+    },
+    {
+      "cohort": "light-harness-inspection-wait-f72-2026-10-27",
+      "patches": 6,
+      "mismatches": 0
+    }
+  ],
+  "modelComparison": [
+    {
+      "candidate": "wait",
+      "comparator": "reference",
+      "allMatched": {
+        "candidate": {
+          "assignments": 2,
+          "tokens": 1104452,
+          "input": 1096675,
+          "output": 7777,
+          "cacheRead": 1011968,
+          "cacheWrite": 0,
+          "sdkUsd": 0.06511436000000001,
+          "sdkMs": 337646,
+          "outerMs": 341532.90928100003,
+          "requests": 37,
+          "observerMs": 24208.60591999994,
+          "toolMs": 107273,
+          "missingCost": 0,
+          "reconciledTokensCost": 2,
+          "fullyReconciled": 0,
+          "cacheReadReconciled": 0,
+          "cacheWriteReconciled": 0,
+          "missingReasoning": 2
+        },
+        "comparator": {
+          "assignments": 2,
+          "tokens": 1599145,
+          "input": 1589508,
+          "output": 9637,
+          "cacheRead": 1471488,
+          "cacheWrite": 0,
+          "sdkUsd": 0.09116856,
+          "sdkMs": 405488,
+          "outerMs": 409517.77419,
+          "requests": 46,
+          "observerMs": 27090.516910999937,
+          "toolMs": 92600,
+          "missingCost": 0,
+          "reconciledTokensCost": 2,
+          "fullyReconciled": 0,
+          "cacheReadReconciled": 0,
+          "cacheWriteReconciled": 0,
+          "missingReasoning": 2
+        },
+        "changePercent": {
+          "tokens": -30.934843306892123,
+          "sdkUsd": -28.578053662359025,
+          "sdkMs": -16.730951347512136,
+          "requests": -19.565217391304344,
+          "toolMs": 15.845572354211669
+        }
+      },
+      "jointlyStrict": {
+        "candidate": {
+          "assignments": 2,
+          "tokens": 1104452,
+          "input": 1096675,
+          "output": 7777,
+          "cacheRead": 1011968,
+          "cacheWrite": 0,
+          "sdkUsd": 0.06511436000000001,
+          "sdkMs": 337646,
+          "outerMs": 341532.90928100003,
+          "requests": 37,
+          "observerMs": 24208.60591999994,
+          "toolMs": 107273,
+          "missingCost": 0,
+          "reconciledTokensCost": 2,
+          "fullyReconciled": 0,
+          "cacheReadReconciled": 0,
+          "cacheWriteReconciled": 0,
+          "missingReasoning": 2
+        },
+        "comparator": {
+          "assignments": 2,
+          "tokens": 1599145,
+          "input": 1589508,
+          "output": 9637,
+          "cacheRead": 1471488,
+          "cacheWrite": 0,
+          "sdkUsd": 0.09116856,
+          "sdkMs": 405488,
+          "outerMs": 409517.77419,
+          "requests": 46,
+          "observerMs": 27090.516910999937,
+          "toolMs": 92600,
+          "missingCost": 0,
+          "reconciledTokensCost": 2,
+          "fullyReconciled": 0,
+          "cacheReadReconciled": 0,
+          "cacheWriteReconciled": 0,
+          "missingReasoning": 2
+        },
+        "changePercent": {
+          "tokens": -30.934843306892123,
+          "sdkUsd": -28.578053662359025,
+          "sdkMs": -16.730951347512136,
+          "requests": -19.565217391304344,
+          "toolMs": 15.845572354211669
+        }
+      },
+      "pairNames": [
+        "1-fetching-filters",
+        "2-fetching-filters"
+      ],
+      "omittedPairs": [
+        {
+          "omitted": "1-fetching-filters",
+          "tokens": -40.656153585504605,
+          "sdkUsd": -32.94705226843758,
+          "sdkMs": -19.439554517693548,
+          "requests": -24,
+          "toolMs": 27.361704060314285
+        },
+        {
+          "omitted": "2-fetching-filters",
+          "tokens": -18.510435527089918,
+          "sdkUsd": -23.39637227181872,
+          "sdkMs": -13.43157848671831,
+          "requests": -14.28571428571429,
+          "toolMs": 5.403179309776784
+        }
+      ],
+      "omittedTasks": [
+        {
+          "omitted": "fetching-filters",
+          "tokens": null,
+          "sdkUsd": null,
+          "sdkMs": null,
+          "requests": null,
+          "toolMs": null
+        }
+      ]
+    },
+    {
+      "candidate": "wait",
+      "comparator": "cline",
+      "allMatched": {
+        "candidate": {
+          "assignments": 2,
+          "tokens": 1104452,
+          "input": 1096675,
+          "output": 7777,
+          "cacheRead": 1011968,
+          "cacheWrite": 0,
+          "sdkUsd": 0.06511436000000001,
+          "sdkMs": 337646,
+          "outerMs": 341532.90928100003,
+          "requests": 37,
+          "observerMs": 24208.60591999994,
+          "toolMs": 107273,
+          "missingCost": 0,
+          "reconciledTokensCost": 2,
+          "fullyReconciled": 0,
+          "cacheReadReconciled": 0,
+          "cacheWriteReconciled": 0,
+          "missingReasoning": 2
+        },
+        "comparator": {
+          "assignments": 2,
+          "tokens": 2261732,
+          "input": 2247460,
+          "output": 14272,
+          "cacheRead": 2080000,
+          "cacheWrite": 0,
+          "sdkUsd": 0.1177208,
+          "sdkMs": 439348,
+          "outerMs": 443558.826916,
+          "requests": 35,
+          "observerMs": 15520.63311000005,
+          "toolMs": 138084,
+          "missingCost": 0,
+          "reconciledTokensCost": 2,
+          "fullyReconciled": 0,
+          "cacheReadReconciled": 0,
+          "cacheWriteReconciled": 0,
+          "missingReasoning": 2
+        },
+        "changePercent": {
+          "tokens": -51.167866042484256,
+          "sdkUsd": -44.68746389762895,
+          "sdkMs": -23.148392618152357,
+          "requests": 5.714285714285716,
+          "toolMs": -22.313229628342167
+        }
+      },
+      "jointlyStrict": {
+        "candidate": {
+          "assignments": 2,
+          "tokens": 1104452,
+          "input": 1096675,
+          "output": 7777,
+          "cacheRead": 1011968,
+          "cacheWrite": 0,
+          "sdkUsd": 0.06511436000000001,
+          "sdkMs": 337646,
+          "outerMs": 341532.90928100003,
+          "requests": 37,
+          "observerMs": 24208.60591999994,
+          "toolMs": 107273,
+          "missingCost": 0,
+          "reconciledTokensCost": 2,
+          "fullyReconciled": 0,
+          "cacheReadReconciled": 0,
+          "cacheWriteReconciled": 0,
+          "missingReasoning": 2
+        },
+        "comparator": {
+          "assignments": 2,
+          "tokens": 2261732,
+          "input": 2247460,
+          "output": 14272,
+          "cacheRead": 2080000,
+          "cacheWrite": 0,
+          "sdkUsd": 0.1177208,
+          "sdkMs": 439348,
+          "outerMs": 443558.826916,
+          "requests": 35,
+          "observerMs": 15520.63311000005,
+          "toolMs": 138084,
+          "missingCost": 0,
+          "reconciledTokensCost": 2,
+          "fullyReconciled": 0,
+          "cacheReadReconciled": 0,
+          "cacheWriteReconciled": 0,
+          "missingReasoning": 2
+        },
+        "changePercent": {
+          "tokens": -51.167866042484256,
+          "sdkUsd": -44.68746389762895,
+          "sdkMs": -23.148392618152357,
+          "requests": 5.714285714285716,
+          "toolMs": -22.313229628342167
+        }
+      },
+      "pairNames": [
+        "1-fetching-filters",
+        "2-fetching-filters"
+      ],
+      "omittedPairs": [
+        {
+          "omitted": "1-fetching-filters",
+          "tokens": -53.17803224510005,
+          "sdkUsd": -43.932656599507204,
+          "sdkMs": -28.962103512453965,
+          "requests": 0,
+          "toolMs": -43.25792679225431
+        },
+        {
+          "omitted": "2-fetching-filters",
+          "tokens": -49.1354037642636,
+          "sdkUsd": -45.449857665051155,
+          "sdkMs": -15.289747240629914,
+          "requests": 12.5,
+          "toolMs": 30.441873502879567
+        }
+      ],
+      "omittedTasks": [
+        {
+          "omitted": "fetching-filters",
+          "tokens": null,
+          "sdkUsd": null,
+          "sdkMs": null,
+          "requests": null,
+          "toolMs": null
+        }
+      ]
+    }
+  ],
+  "allOutcomesRetained": true,
+  "panelEfficiencyGainObserved": true,
+  "globalTaskSuccessGainEstablished": false,
+  "generalEfficiencySuperiorityEstablished": false,
+  "causalBoundary": "Fixed-response SDK replay demonstrates prevention of the false identical-poll guard. Both natural reference draws finish, so live success is unchanged. Seven versus four inspections and five versus zero unchanged-stream empty snapshots support field mechanism use; not every saved request or token is solely attributable to polling. One known issue, two dependent draws; broader confirmation remains necessary.",
+  "validationEnvironmentBoundary": "One of20 uniform source-only shadow audits changes a F70 reference source classification after including original React setup. F72 all six results are unchanged. Primary historical scores, patches and required execution evidence remain frozen.",
+  "usageBoundary": "SDK USD estimates, not invoice/EUR. Input+output includes cache-read subset once; incomplete per-request cache/reasoning is not imputed. Historical18.64USD unknown reservations remain separate.",
+  "logsSha256": {
+    "default-runtime-tests": "2a51a83b5332d52fae03449cc820ec139bddce2d4fa7f1cb77083c72f3d0312e",
+    "default-runner-tests": "385465dfde254bfeaf51fe1159a3f4f41c57af398549b4c336f37c6ace8fd9f7",
+    "default-lint": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec",
+    "default-line-budgets": "907c6696ad8ba315fea520585fd8839064bd29418c081a6921651aa51a61bec7",
+    "portable-replays": "ef091369bd95fefc013456757a7759d727d85c0daccfad46b44358384b52cf08",
+    "test-environment-sensitivity": "4d3188291a4ac6cc34e46ef881295467f20f16f0eee4ef455c5b22b9beea424c",
+    "real-vitest3-controls": "243cc9a2a09d8e1ae575c955a72bc7b7740fd89daf720c3a232ee8c6f3393210"
+  }
+}
