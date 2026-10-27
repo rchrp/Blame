@@ -1,0 +1,14 @@
+{
+  "bundleSha256": "0ecdedccad2c7365a71a6ff87a2253cbcfccccccb3687bc2f406cbb0349bf9de",
+  "refs": {
+    "map-context": "75e763ab6c77c4108947f8eb6309fca8ab2a9a95",
+    "take-through": "b7fcd854a3d5abc8b43f293c0efffee5fe3c1a79",
+    "clamp-items": "dbe5b19581a9982a301335a366916498838c8e34",
+    "quota": "1a6d2ff891214a4e55f91bf0f0a4156931ec39a0"
+  },
+  "runtimeSha256": "972c0c987dc3fc5e3532a39a3630087785e02ddaae4a53f4009d80c00d2e95c7",
+  "runtimeLockSha256": "fcadb8fad034263300c7b93c60a6f0d04ec0e6a4bfa52e9e5f01e3cba8e6f3d7",
+  "dependencyLockSha256": "6203338f69a01a5bb57eb4bd010d82ad5cdfe6d053ddf31012018818fdfcf82e",
+  "runtimeSourceHead": "80e3e881c8df60f5644ef7f4b67d4d24a2579fd7",
+  "boundary": "Original input commits only, shared Git objects; no model patches, researcher solutions, dependencies, credentials or fetched solution history. Git commit identities replace platform-dependent tar metadata for portable replay; the original private archive hashes remain unchanged."
+}

@@ -1,0 +1,977 @@
+{
+  "complete": true,
+  "planned": 23,
+  "originalAssignments": 24,
+  "interruptedNotRetried": [
+    "2-map-context-reference"
+  ],
+  "results": [
+    {
+      "name": "1-map-context-reference",
+      "patchSha256": "e6d51d47e08136d574b19642b22cbdbcc217f40d25d9b8062d851d5c98ba9261",
+      "exactSourceReconstructed": true,
+      "endpoints": [
+        {
+          "name": "regression",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2626.809497
+        },
+        {
+          "name": "types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1538.4969509999996
+        },
+        {
+          "name": "delivered",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2857.0915110000005
+        },
+        {
+          "name": "delivered-types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1794.2968789999995
+        },
+        {
+          "name": "oracle",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2378.140969
+        }
+      ]
+    },
+    {
+      "name": "1-map-context-batch",
+      "patchSha256": "c011fddabc050c13308aecc7cbc95772ee3cc7f9077ac9eafea65289a19a85d4",
+      "exactSourceReconstructed": true,
+      "endpoints": [
+        {
+          "name": "regression",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2555.169543
+        },
+        {
+          "name": "types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1617.5868480000008
+        },
+        {
+          "name": "delivered",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2966.8776130000006
+        },
+        {
+          "name": "delivered-types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1781.1722420000006
+        },
+        {
+          "name": "oracle",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2447.084458999998
+        }
+      ]
+    },
+    {
+      "name": "1-map-context-cline",
+      "patchSha256": "eb1342f8bcfc7cf871f0e69311d133102a16406a42b754fad54af67a8611477b",
+      "exactSourceReconstructed": true,
+      "endpoints": [
+        {
+          "name": "regression",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2913.4170970000014
+        },
+        {
+          "name": "types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1534.9365440000001
+        },
+        {
+          "name": "delivered",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 3100.2270309999985
+        },
+        {
+          "name": "delivered-types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1846.3783959999964
+        },
+        {
+          "name": "oracle",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2402.071750000003
+        }
+      ]
+    },
+    {
+      "name": "1-take-through-batch",
+      "patchSha256": "fe94d6c9e21173e9ead5805d64e0225a3625b9783645d9e08b0867517980acbe",
+      "exactSourceReconstructed": true,
+      "endpoints": [
+        {
+          "name": "regression",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2803.7234190000017
+        },
+        {
+          "name": "types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1552.551059000005
+        },
+        {
+          "name": "delivered",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2947.665495000001
+        },
+        {
+          "name": "delivered-types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1721.0091459999967
+        },
+        {
+          "name": "oracle",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2352.4139399999985
+        }
+      ]
+    },
+    {
+      "name": "1-take-through-cline",
+      "patchSha256": "f43a46f056027c51ac049b8ad127a20e51a341e3bdd4848661fae9ebc2757bd8",
+      "exactSourceReconstructed": true,
+      "endpoints": [
+        {
+          "name": "regression",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2743.098635000002
+        },
+        {
+          "name": "types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1687.3101410000017
+        },
+        {
+          "name": "delivered",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 3095.478878999995
+        },
+        {
+          "name": "delivered-types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1820.0221429999947
+        },
+        {
+          "name": "oracle",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2534.481132000001
+        }
+      ]
+    },
+    {
+      "name": "1-take-through-reference",
+      "patchSha256": "610cda122667e06f505485ca0f50d9d0c110aa84d0ca37787809f7896a8334c0",
+      "exactSourceReconstructed": true,
+      "endpoints": [
+        {
+          "name": "regression",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2784.583369
+        },
+        {
+          "name": "types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1605.103553000008
+        },
+        {
+          "name": "delivered",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 3195.4696399999957
+        },
+        {
+          "name": "delivered-types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1660.332098999992
+        },
+        {
+          "name": "oracle",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2424.3628150000004
+        }
+      ]
+    },
+    {
+      "name": "2-map-context-batch",
+      "patchSha256": "f773e213a8aa8254564918f72f229e451c59a22ba91c7e9c39e10953d3306601",
+      "exactSourceReconstructed": true,
+      "endpoints": [
+        {
+          "name": "regression",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2589.228157000005
+        },
+        {
+          "name": "types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1518.117001999999
+        },
+        {
+          "name": "delivered",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2982.266941000009
+        },
+        {
+          "name": "delivered-types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1676.0041239999991
+        },
+        {
+          "name": "oracle",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2429.125112000009
+        }
+      ]
+    },
+    {
+      "name": "2-map-context-cline",
+      "patchSha256": "41c56a96c5eb7def56ef9d47bb0cecde0b01b5a5b24b59c3b48badd47aa04bbf",
+      "exactSourceReconstructed": true,
+      "endpoints": [
+        {
+          "name": "regression",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2536.3450509999966
+        },
+        {
+          "name": "types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1621.691067000007
+        },
+        {
+          "name": "delivered",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2973.5575329999992
+        },
+        {
+          "name": "delivered-types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1703.0449110000045
+        },
+        {
+          "name": "oracle",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2426.213904999997
+        }
+      ]
+    },
+    {
+      "name": "2-take-through-cline",
+      "patchSha256": "3d4c4f2d18ed25eaa0a953d8ccf2b89174cc80cd8d1c3cfce2bf08aab9927fe1",
+      "exactSourceReconstructed": true,
+      "endpoints": [
+        {
+          "name": "regression",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2804.033401000008
+        },
+        {
+          "name": "types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1565.8395089999976
+        },
+        {
+          "name": "delivered",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2983.2470849999954
+        },
+        {
+          "name": "delivered-types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1816.1551800000016
+        },
+        {
+          "name": "oracle",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2398.1612050000113
+        }
+      ]
+    },
+    {
+      "name": "2-take-through-reference",
+      "patchSha256": "8627a55907910d72ab63521a22b6f2f6a65626354474d1cf1923da5e53abfb09",
+      "exactSourceReconstructed": true,
+      "endpoints": [
+        {
+          "name": "regression",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2734.9211690000084
+        },
+        {
+          "name": "types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1626.857032999993
+        },
+        {
+          "name": "delivered",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 3172.281533000001
+        },
+        {
+          "name": "delivered-types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1810.4452220000094
+        },
+        {
+          "name": "oracle",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2451.1361939999915
+        }
+      ]
+    },
+    {
+      "name": "2-take-through-batch",
+      "patchSha256": "26cf3e3176af64e5a73a2e3f35c2f2ad180c6ecfa5dfc1430fbff5565b436d85",
+      "exactSourceReconstructed": true,
+      "endpoints": [
+        {
+          "name": "regression",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2653.072555000006
+        },
+        {
+          "name": "types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1586.4994930000103
+        },
+        {
+          "name": "delivered",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 3041.3963460000086
+        },
+        {
+          "name": "delivered-types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1690.069473999989
+        },
+        {
+          "name": "oracle",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2401.835358000011
+        }
+      ]
+    },
+    {
+      "name": "1-clamp-items-reference",
+      "patchSha256": "8894ef632018599442a8faf968ec1e47a8d58940da0de320a77bc9f7358d024b",
+      "exactSourceReconstructed": true,
+      "endpoints": [
+        {
+          "name": "regression",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 554.1265909999784
+        },
+        {
+          "name": "types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 574.7746950000001
+        },
+        {
+          "name": "delivered",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 817.3739539999806
+        },
+        {
+          "name": "delivered-types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 825.7777490000008
+        },
+        {
+          "name": "oracle",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 820.0590799999773
+        }
+      ]
+    },
+    {
+      "name": "1-clamp-items-compiler",
+      "patchSha256": "e61a69fbe65cedbcc90334c6abf4f08e33467331539adca55aa2c17cdae82474",
+      "exactSourceReconstructed": true,
+      "endpoints": [
+        {
+          "name": "regression",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 569.7478029999766
+        },
+        {
+          "name": "types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 615.6273090000032
+        },
+        {
+          "name": "delivered",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 983.0144459999865
+        },
+        {
+          "name": "delivered-types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 789.7126799999969
+        },
+        {
+          "name": "oracle",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 792.5325289999892
+        }
+      ]
+    },
+    {
+      "name": "1-clamp-items-cline",
+      "patchSha256": "bbef9bac69dd4ed4221a932e7297231000fa80be3c19e141ec01f26405bffca5",
+      "exactSourceReconstructed": true,
+      "endpoints": [
+        {
+          "name": "regression",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 600.969471999997
+        },
+        {
+          "name": "types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 646.041739999986
+        },
+        {
+          "name": "delivered",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 993.6952660000243
+        },
+        {
+          "name": "delivered-types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 876.7460200000205
+        },
+        {
+          "name": "oracle",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 785.2874669999874
+        }
+      ]
+    },
+    {
+      "name": "1-quota-compiler",
+      "patchSha256": "b3c898d62ab99c37fa15cefeaea6c347a8f0719de57c843b74b91264d7433774",
+      "exactSourceReconstructed": true,
+      "endpoints": [
+        {
+          "name": "regression",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 562.7080419999838
+        },
+        {
+          "name": "types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 556.0109079999966
+        },
+        {
+          "name": "delivered",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 741.1102869999886
+        },
+        {
+          "name": "delivered-types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 718.5524180000066
+        },
+        {
+          "name": "oracle",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 776.8558560000092
+        }
+      ]
+    },
+    {
+      "name": "1-quota-cline",
+      "patchSha256": "05b46af3a58dc770465e6ab4fe969b2a2d190d8230bddd39ae55e9b8746a30c3",
+      "exactSourceReconstructed": true,
+      "endpoints": [
+        {
+          "name": "regression",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 526.2592069999955
+        },
+        {
+          "name": "types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 558.3997319999908
+        },
+        {
+          "name": "delivered",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 747.4250549999997
+        },
+        {
+          "name": "delivered-types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 788.9531619999907
+        },
+        {
+          "name": "oracle",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 748.1584499999881
+        }
+      ]
+    },
+    {
+      "name": "1-quota-reference",
+      "patchSha256": "8bde054a9e37af41fff386ce829536efa630f2f04dffcf07b556bc82755fdb28",
+      "exactSourceReconstructed": true,
+      "endpoints": [
+        {
+          "name": "regression",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 535.9768489999988
+        },
+        {
+          "name": "types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 557.10349400001
+        },
+        {
+          "name": "delivered",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 764.0976739999896
+        },
+        {
+          "name": "delivered-types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 856.0517030000046
+        },
+        {
+          "name": "oracle",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 802.9989899999928
+        }
+      ]
+    },
+    {
+      "name": "2-clamp-items-compiler",
+      "patchSha256": "36999feb2c4267a0ff80478d86708c925b3dbfa8f3cbfc26177dad950e000497",
+      "exactSourceReconstructed": true,
+      "endpoints": [
+        {
+          "name": "regression",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 569.6320779999951
+        },
+        {
+          "name": "types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 577.4453060000087
+        },
+        {
+          "name": "delivered",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1083.0553000000073
+        },
+        {
+          "name": "delivered-types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 784.1991980000166
+        },
+        {
+          "name": "oracle",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 783.3951269999961
+        }
+      ]
+    },
+    {
+      "name": "2-clamp-items-cline",
+      "patchSha256": "e69aeacb60eda8523f69f93f488bb2b4b92dc15d332bcf32d18861fff549b953",
+      "exactSourceReconstructed": true,
+      "endpoints": [
+        {
+          "name": "regression",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 559.3779849999992
+        },
+        {
+          "name": "types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 605.0309110000089
+        },
+        {
+          "name": "delivered",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 931.9458060000034
+        },
+        {
+          "name": "delivered-types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 813.8368309999933
+        },
+        {
+          "name": "oracle",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 791.8538300000073
+        }
+      ]
+    },
+    {
+      "name": "2-clamp-items-reference",
+      "patchSha256": "ebd3ef16ee57e2d2116e0a06deda54d6721cc54254f86cbb1179cbe5b1a81f59",
+      "exactSourceReconstructed": true,
+      "endpoints": [
+        {
+          "name": "regression",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 620.9468909999996
+        },
+        {
+          "name": "types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 658.0042989999929
+        },
+        {
+          "name": "delivered",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 827.6284919999889
+        },
+        {
+          "name": "delivered-types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 845.0160859999887
+        },
+        {
+          "name": "oracle",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 780.5476839999901
+        }
+      ]
+    },
+    {
+      "name": "2-quota-cline",
+      "patchSha256": "6b4d07d1a0e60a0bfb35fa24cbdce221d9b14988f1aa9cc3a96aa76280b2ffa4",
+      "exactSourceReconstructed": true,
+      "endpoints": [
+        {
+          "name": "regression",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 596.8684950000024
+        },
+        {
+          "name": "types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 610.8397150000092
+        },
+        {
+          "name": "delivered",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 807.3538420000114
+        },
+        {
+          "name": "delivered-types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 834.7713740000036
+        },
+        {
+          "name": "oracle",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 806.3533490000118
+        }
+      ]
+    },
+    {
+      "name": "2-quota-reference",
+      "patchSha256": "d7ff92eacd124b05a1d19acd276623acc8b657685989378388d973b4012846ac",
+      "exactSourceReconstructed": true,
+      "endpoints": [
+        {
+          "name": "regression",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 580.6220480000193
+        },
+        {
+          "name": "types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 590.2443280000007
+        },
+        {
+          "name": "delivered",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 794.2078200000105
+        },
+        {
+          "name": "delivered-types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 873.7747039999813
+        },
+        {
+          "name": "oracle",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 746.9131160000106
+        }
+      ]
+    },
+    {
+      "name": "2-quota-compiler",
+      "patchSha256": "0a6ff14ef8512b45c9eaa867812f39308e1b1aac1276d70376601051335531ec",
+      "exactSourceReconstructed": true,
+      "endpoints": [
+        {
+          "name": "regression",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 567.8118179999874
+        },
+        {
+          "name": "types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 596.4661989999877
+        },
+        {
+          "name": "delivered",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 802.4008589999867
+        },
+        {
+          "name": "delivered-types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 827.83559100001
+        },
+        {
+          "name": "oracle",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 845.0381890000135
+        }
+      ]
+    }
+  ],
+  "boundary": "No model calls, no solution recovery or patch repair; original immutable checks and original five frozen endpoint criteria."
+}

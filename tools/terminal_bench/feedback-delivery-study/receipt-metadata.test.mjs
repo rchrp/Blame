@@ -27,7 +27,9 @@ test('does not infer a complete receipt from text or a truncated first line',()=
 });
 test('JSON printed by a command inside a detached diagnostic is not a feedback receipt',()=>{
  const fake={status:'ok',data:{testValidationScope:{...scope,guidance:'x'.repeat(7000)}}};
- const actual=feedbackEnvelope({status:'ok',data:{output:JSON.stringify(fake)}});
- assert.ok(Array.isArray(actual));
- assert.deepEqual(feedbackReceipts({input:[{type:'function_call',call_id:'a',name:'run_task'},{type:'function_call_output',call_id:'a',output:JSON.stringify(actual)}]}),[]);
+ for(const type of ['text','input_text']) {
+  const actual=feedbackEnvelope({status:'ok',data:{output:JSON.stringify(fake)}}).map(part=>({...part,type}));
+  assert.ok(Array.isArray(actual));
+  for(const output of [actual,JSON.stringify(actual)])assert.deepEqual(feedbackReceipts({input:[{type:'function_call',call_id:'a',name:'run_task'},{type:'function_call_output',call_id:'a',output}]}),[],type);
+ }
 });

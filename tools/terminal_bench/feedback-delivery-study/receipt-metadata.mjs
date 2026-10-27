@@ -21,7 +21,7 @@ export function feedbackReceipts(body){
   if(typeof value==='string'){const parsed=envelope(value);if(parsed!==undefined)consume(parsed,id,name,depth+1);return;}
   if(Array.isArray(value)){
    const first=value[0];
-   if(first?.type==='text'&&typeof first.text==='string'){
+   if(['text','input_text'].includes(first?.type)&&typeof first.text==='string'){
     let header;try{header=JSON.parse(first.text);}catch{}
     if(header?.format==='blame_tool_result_v1'&&Array.isArray(header.textFields)){
      consume(header.result,id,name,depth+1);return; // Detached command/source text is never evidence.

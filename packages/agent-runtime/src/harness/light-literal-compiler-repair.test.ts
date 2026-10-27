@@ -47,3 +47,20 @@ test("compound shell, emit-enabled and expanded compiler commands are never repl
   assert.equal(failedLiteralCompilerInvocations([{ ...entry, command: compiler }]).length, 1);
   assert.deepEqual(failedLiteralCompilerInvocations([{ ...entry, command: compiler }, { ...entry, command: compiler, taskId: "now-catalogued", terminal: "passed" }]), []);
 });
+
+test("a still-failing literal compiler stops finalization before refreshing green obligations", async () => {
+  await fixture(files, async (_, root) => {
+    await mkdir(join(root, "node_modules"));
+    await symlink(fileURLToPath(new URL("../../node_modules/typescript", import.meta.url)), join(root, "node_modules/typescript"));
+    const contract = { session_id: "still-failed", required_checks: [{ id: "runtime", task: "test" }] };
+    const workspace = new LightWorkspace(root, { sessionId: "still-failed", taskContract: contract });
+    assert.equal((await workspace.runTask({ kind: "command", command: compiler }, {})).status, "blocked");
+    data(await workspace.runTask({ kind: "project", task: "test" }, {}));
+    data(await workspace.editCode({ operations: [{ kind: "patch", path: "value.ts", patch: "*** Begin Patch\n*** Update File: value.ts\n@@\n-export const value: number = 'bad';\n+export const value: number = 'still bad';\n*** End Patch" }] }));
+    const order: unknown[] = [];
+    const finish = new LightFinishService({ workspaceRoot: root, conversationId: "still-failed", taskContract: contract,
+      onValidationActivity: item => { if (item.phase === "started") order.push(item.input); } });
+    await assert.rejects(finish.finish("Ready.", {} as never), /TS2322/);
+    assert.deepEqual(order, [{ kind: "command", command: compiler }]);
+  });
+});

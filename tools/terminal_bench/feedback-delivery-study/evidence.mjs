@@ -5,20 +5,20 @@ import {gunzipSync} from 'node:zlib';
 import {digest, trialName} from '../durable-campaign.mjs';
 import {study} from './inputs.mjs';
 const optional = path => readFile(path).catch(e => {if (e.code === 'ENOENT') return null; throw e;});
-export async function evidence() {
-  const protocolBytes = await readFile(join(study, 'model-protocol.json'));
+export async function evidence({directory = study} = {}) {
+  const protocolBytes = await readFile(join(directory, 'model-protocol.json'));
   const protocol = JSON.parse(protocolBytes), protocolHash = digest(protocolBytes);
-  const continued = await optional(join(study, 'continuation/model-protocol.json'));
+  const continued = await optional(join(directory, 'continuation/model-protocol.json'));
   const continuationHash = continued ? digest(continued) : null;
   if (continued) assert.equal(JSON.parse(continued).parentProtocolHash, protocolHash);
-  const interrupted = await optional(join(study, 'interrupted-trial.json.gz'));
+  const interrupted = await optional(join(directory, 'interrupted-trial.json.gz'));
   const partial = interrupted ? JSON.parse(gunzipSync(interrupted)) : null;
   const records = [];
   for (const slot of protocol.order) {
-    const name = trialName(slot); let bytes = await optional(join(study, 'checkpoints', name + '.json.gz'));
+    const name = trialName(slot); let bytes = await optional(join(directory, 'checkpoints', name + '.json.gz'));
     let hash = protocolHash, path = 'checkpoints/' + name + '.json.gz';
     if (!bytes && continued) {
-      bytes = await optional(join(study, 'continuation/checkpoints', name + '.json.gz'));
+      bytes = await optional(join(directory, 'continuation/checkpoints', name + '.json.gz'));
       hash = continuationHash; path = 'continuation/checkpoints/' + name + '.json.gz';
     }
     let c;
@@ -43,6 +43,7 @@ export async function evidence() {
     for (const [path, record] of Object.entries(c.files)) {
       const bytes = Buffer.from(record.base64, 'base64'); assert.equal(bytes.length, record.bytes, path); assert.equal(digest(bytes), record.sha256, path);
     }
+    if (!c.partial && c.files['score.json']) assert.deepEqual(JSON.parse(Buffer.from(c.files['score.json'].base64, 'base64')), c.row);
     records.push({...c, receipt: {name, path, sha256: digest(bytes)}});
   }
   return {protocol, protocolHash, records, interruption: partial?.record ?? null,

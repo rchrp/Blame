@@ -1,5 +1,5 @@
 {
-  "complete": false,
+  "complete": true,
   "kind": "post-hoc manual evidence sensitivity; frozen primary scores unchanged",
   "boundary": "No solution retrieval, source repair or endpoint change. Missing automatic recognition is not called a failed child invocation. Physical test layout remains strict.",
   "entries": [
@@ -76,6 +76,68 @@
         "inputSha256": "f270446de7ae17eff3d1a4d6ab160cd9b0f83ad9dabc7ebb552ab45f24399f57",
         "outputSha256": "579cfea3ac80886ed6e980c68e3d68b02b63569e9d7b6470533c23ab5b639e07",
         "finalSourceSha256": "ac25fdcaa51c8df341ce685a1b73c82d5bfb84906581124ff77df94a2bec1814",
+        "commands": [
+          {
+            "command": "npm run test:study:regression",
+            "observedChildExit": 0
+          },
+          {
+            "command": "npm run test:study:types",
+            "observedChildExit": 0
+          },
+          {
+            "command": "npm run test:study:delivered",
+            "observedChildExit": 0
+          },
+          {
+            "command": "npm run typecheck:delivered",
+            "observedChildExit": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "2-clamp-items-cline",
+      "reviewedAtUTC": "2026-10-27T01:56:33.904462+00:00",
+      "reviewer": "Codex repository audit",
+      "acceptRequiredInvocations": true,
+      "reason": "Four successful operation results run the exact required scripts after cd to the identical frozen workspace. Start/end source hashes match final source; the conservative observer excludes cd wrappers.",
+      "evidence": {
+        "toolCallId": "call_64739197f85a45848540a3adba30c983",
+        "inputSha256": "77357f61376d37e220060be5b4140da2c590234104f3e70d71f9951cb4cd819f",
+        "outputSha256": "ad92844c2c8fca27c45f68845361b546f4fda25cab3cb9bac790c167555fb8e8",
+        "finalSourceSha256": "100a7339e354b2056fdb0c576b81982b5ea8f4d873113bcb5c16a6d51dce2c8c",
+        "commands": [
+          {
+            "command": "npm run test:study:regression",
+            "observedChildExit": 0
+          },
+          {
+            "command": "npm run test:study:types",
+            "observedChildExit": 0
+          },
+          {
+            "command": "npm run test:study:delivered",
+            "observedChildExit": 0
+          },
+          {
+            "command": "npm run typecheck:delivered",
+            "observedChildExit": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "2-quota-cline",
+      "reviewedAtUTC": "2026-10-27T01:56:33.904770+00:00",
+      "reviewer": "Codex repository audit",
+      "acceptRequiredInvocations": true,
+      "reason": "The final-source collector function executes each exact required script and immediately prints its child exit 0. The function return 0 alone is not used; no source changes follow.",
+      "evidence": {
+        "toolCallId": "call_8f36e14d51274b5a81eefda8fb322354",
+        "inputSha256": "eca34da58ea099d1e42c243f642959326bcb7eed50b275939a39838350713231",
+        "outputSha256": "44fb03bae75c1f2a0145bd873c3c0fe2ae5449d75149d3918b52511691e01837",
+        "finalSourceSha256": "7c63131e09a447d332dfe74f700fe943b84801f7f90a34c74896d943ff042388",
         "commands": [
           {
             "command": "npm run test:study:regression",

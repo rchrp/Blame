@@ -31,11 +31,15 @@ paths for another campaign or run development builds/tests alongside live worker
 This is a research coordinator with fixed cloud paths, not a general benchmark CLI.
 
 After dispatch, `readout.mjs` and `mechanism-audit.mjs` only analyze checkpoints.
-`replay.mjs` requires all workers to have exited, reconstructs each unchanged
+`replay.mjs --portable` uses the published shared Git bundle of original input
+commits, requires all workers to have exited, reconstructs each unchanged
 model patch from the original input, checks exact final-source hashes, then
 repeats the five frozen endpoints against immutable checks. It never retrieves
-or repairs a solution. Replay needs the archived inputs and pinned dependencies;
-hash-only public metadata cannot recreate missing source or environment bytes.
+or repairs a solution. The published `inputs` directory retains original input commits, exact compiled
+runtime outputs and both dependency locks. Restore the F63 dependency directory
+from `dependencies-package.json` / `dependencies-package-lock.json` using npm
+11.6.4 before replay. Replay verifies original Git identities and every final
+source hash, without relying on platform-dependent original tar metadata.
 
 Compare official, source and strict success separately. Native check recognition
 is deliberately limited to successful literal npm invocations on final source;
@@ -44,3 +48,13 @@ comparisons include all assignments plus jointly strict pairs and omissions.
 Cache is an input subset; SDK cost is an estimate, not an invoice. The source
 observer's overhead is explicit. Receipt forwarding proves neither attention nor
 use, and offering an unused batch does not validate its intended mechanism.
+
+The original coordinator was killed during assignment nine. Eight completed
+checkpoints, its incomplete capture and fifteen unchanged continuation assignments
+are retained separately. The continuation binds the same executables and runs one
+new trial per process; it never retries the unknown trial. `readout.mjs` accounts
+for all 24 assignments and leaves unknown aggregate tokens/cost/duration null.
+`manual-readout.mjs` is an explicitly post-hoc child-status/source-order evidence
+sensitivity; the frozen automatic scores remain unchanged. Grouped reads had no
+use in four trials and were removed from production; the experiment remains in
+commit history and the frozen runtime archive.

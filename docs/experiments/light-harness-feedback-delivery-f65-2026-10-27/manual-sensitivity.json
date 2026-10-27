@@ -1,0 +1,569 @@
+{
+  "executionFinished": true,
+  "completeManualReview": true,
+  "panels": [
+    {
+      "id": "F66",
+      "arms": {
+        "reference": {
+          "assignments": 4,
+          "tokens": null,
+          "sdkUsd": null,
+          "sdkMs": null,
+          "requests": 53,
+          "frozenAutomaticStrict": 2,
+          "auditedStrict": 2,
+          "auditedRequired": 3
+        },
+        "batch": {
+          "assignments": 4,
+          "tokens": 1980624,
+          "sdkUsd": 0.11726,
+          "sdkMs": 448011,
+          "requests": 63,
+          "frozenAutomaticStrict": 2,
+          "auditedStrict": 2,
+          "auditedRequired": 4
+        },
+        "cline": {
+          "assignments": 4,
+          "tokens": 2138292,
+          "sdkUsd": 0.14684536,
+          "sdkMs": 498690,
+          "requests": 47,
+          "frozenAutomaticStrict": 1,
+          "auditedStrict": 3,
+          "auditedRequired": 4
+        }
+      },
+      "pairs": {
+        "reference": {
+          "jointlyAuditedStrict": {
+            "candidate": {
+              "assignments": 0,
+              "tokens": 0,
+              "sdkUsd": 0,
+              "sdkMs": 0,
+              "requests": 0
+            },
+            "comparator": {
+              "assignments": 0,
+              "tokens": 0,
+              "sdkUsd": 0,
+              "sdkMs": 0,
+              "requests": 0
+            },
+            "changePercent": {
+              "tokens": null,
+              "sdkUsd": null,
+              "sdkMs": null,
+              "requests": null
+            }
+          },
+          "jointlySourceCorrect": {
+            "candidate": {
+              "assignments": 3,
+              "tokens": 1242640,
+              "sdkUsd": 0.079337,
+              "sdkMs": 290741,
+              "requests": 43
+            },
+            "comparator": {
+              "assignments": 3,
+              "tokens": 1252052,
+              "sdkUsd": 0.08872036,
+              "sdkMs": 345309,
+              "requests": 44
+            },
+            "changePercent": {
+              "tokens": -0.7517259666531384,
+              "sdkUsd": -10.576332197028949,
+              "sdkMs": -15.802657909292838,
+              "requests": -2.2727272727272707
+            }
+          },
+          "strictPairNames": [],
+          "omittedStrictPairs": [],
+          "omittedStrictTasks": [
+            {
+              "omitted": "map-context",
+              "tokens": null,
+              "sdkUsd": null,
+              "sdkMs": null,
+              "requests": null
+            },
+            {
+              "omitted": "take-through",
+              "tokens": null,
+              "sdkUsd": null,
+              "sdkMs": null,
+              "requests": null
+            }
+          ]
+        },
+        "cline": {
+          "jointlyAuditedStrict": {
+            "candidate": {
+              "assignments": 2,
+              "tokens": 1217762,
+              "sdkUsd": 0.06596416,
+              "sdkMs": 256497,
+              "requests": 35
+            },
+            "comparator": {
+              "assignments": 2,
+              "tokens": 998155,
+              "sdkUsd": 0.06653444,
+              "sdkMs": 224347,
+              "requests": 21
+            },
+            "changePercent": {
+              "tokens": 22.0012923844493,
+              "sdkUsd": -0.8571200118314803,
+              "sdkMs": 14.33047912385723,
+              "requests": 66.66666666666667
+            }
+          },
+          "jointlySourceCorrect": {
+            "candidate": {
+              "assignments": 4,
+              "tokens": 1980624,
+              "sdkUsd": 0.11726,
+              "sdkMs": 448011,
+              "requests": 63
+            },
+            "comparator": {
+              "assignments": 4,
+              "tokens": 2138292,
+              "sdkUsd": 0.14684536,
+              "sdkMs": 498690,
+              "requests": 47
+            },
+            "changePercent": {
+              "tokens": -7.373548607954383,
+              "sdkUsd": -20.147289638569443,
+              "sdkMs": -10.16242555495398,
+              "requests": 34.04255319148937
+            }
+          },
+          "strictPairNames": [
+            "1-map-context",
+            "2-map-context"
+          ],
+          "omittedStrictPairs": [
+            {
+              "omitted": "1-map-context",
+              "tokens": 25.584585093909705,
+              "sdkUsd": 3.3529266840942595,
+              "sdkMs": 31.274936979349267,
+              "requests": 81.81818181818181
+            },
+            {
+              "omitted": "2-map-context",
+              "tokens": 16.871936782001185,
+              "sdkUsd": -6.033700470348213,
+              "sdkMs": -5.086804725237936,
+              "requests": 50
+            }
+          ],
+          "omittedStrictTasks": [
+            {
+              "omitted": "map-context",
+              "tokens": null,
+              "sdkUsd": null,
+              "sdkMs": null,
+              "requests": null
+            },
+            {
+              "omitted": "take-through",
+              "tokens": 22.0012923844493,
+              "sdkUsd": -0.8571200118314803,
+              "sdkMs": 14.33047912385723,
+              "requests": 66.66666666666667
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "F67",
+      "arms": {
+        "reference": {
+          "assignments": 4,
+          "tokens": 255241,
+          "sdkUsd": 0.036620400000000004,
+          "sdkMs": 421656,
+          "requests": 32,
+          "frozenAutomaticStrict": 4,
+          "auditedStrict": 4,
+          "auditedRequired": 4
+        },
+        "compiler": {
+          "assignments": 4,
+          "tokens": 267003,
+          "sdkUsd": 0.033777119999999994,
+          "sdkMs": 156695,
+          "requests": 32,
+          "frozenAutomaticStrict": 4,
+          "auditedStrict": 4,
+          "auditedRequired": 4
+        },
+        "cline": {
+          "assignments": 4,
+          "tokens": 248900,
+          "sdkUsd": 0.04274731999999999,
+          "sdkMs": 222664,
+          "requests": 35,
+          "frozenAutomaticStrict": 2,
+          "auditedStrict": 4,
+          "auditedRequired": 4
+        }
+      },
+      "pairs": {
+        "reference": {
+          "jointlyAuditedStrict": {
+            "candidate": {
+              "assignments": 4,
+              "tokens": 267003,
+              "sdkUsd": 0.033777119999999994,
+              "sdkMs": 156695,
+              "requests": 32
+            },
+            "comparator": {
+              "assignments": 4,
+              "tokens": 255241,
+              "sdkUsd": 0.036620400000000004,
+              "sdkMs": 421656,
+              "requests": 32
+            },
+            "changePercent": {
+              "tokens": 4.608193824659823,
+              "sdkUsd": -7.764197004948093,
+              "sdkMs": -62.83819037319521,
+              "requests": 0
+            }
+          },
+          "jointlySourceCorrect": {
+            "candidate": {
+              "assignments": 4,
+              "tokens": 267003,
+              "sdkUsd": 0.033777119999999994,
+              "sdkMs": 156695,
+              "requests": 32
+            },
+            "comparator": {
+              "assignments": 4,
+              "tokens": 255241,
+              "sdkUsd": 0.036620400000000004,
+              "sdkMs": 421656,
+              "requests": 32
+            },
+            "changePercent": {
+              "tokens": 4.608193824659823,
+              "sdkUsd": -7.764197004948093,
+              "sdkMs": -62.83819037319521,
+              "requests": 0
+            }
+          },
+          "strictPairNames": [
+            "1-clamp-items",
+            "1-quota",
+            "2-clamp-items",
+            "2-quota"
+          ],
+          "omittedStrictPairs": [
+            {
+              "omitted": "1-clamp-items",
+              "tokens": 4.127824911592914,
+              "sdkUsd": -13.113996629089597,
+              "sdkMs": -68.1661729949532,
+              "requests": 0
+            },
+            {
+              "omitted": "1-quota",
+              "tokens": 1.894893431480682,
+              "sdkUsd": -7.641842940617794,
+              "sdkMs": -11.011571210246707,
+              "requests": 0
+            },
+            {
+              "omitted": "2-clamp-items",
+              "tokens": 24.316747074522695,
+              "sdkUsd": 7.279358909507216,
+              "sdkMs": -69.5473683628135,
+              "requests": 14.28571428571428
+            },
+            {
+              "omitted": "2-quota",
+              "tokens": -6.803225550689563,
+              "sdkUsd": -13.735688383110379,
+              "sdkMs": -69.78996036988111,
+              "requests": -11.538461538461542
+            }
+          ],
+          "omittedStrictTasks": [
+            {
+              "omitted": "clamp-items",
+              "tokens": 34.03445275107788,
+              "sdkUsd": 2.975468433089179,
+              "sdkMs": -76.55298379362374,
+              "requests": 21.42857142857142
+            },
+            {
+              "omitted": "quota",
+              "tokens": -14.699870877320475,
+              "sdkUsd": -16.463849835802414,
+              "sdkMs": -15.198293971608635,
+              "requests": -16.666666666666664
+            }
+          ]
+        },
+        "cline": {
+          "jointlyAuditedStrict": {
+            "candidate": {
+              "assignments": 4,
+              "tokens": 267003,
+              "sdkUsd": 0.033777119999999994,
+              "sdkMs": 156695,
+              "requests": 32
+            },
+            "comparator": {
+              "assignments": 4,
+              "tokens": 248900,
+              "sdkUsd": 0.04274731999999999,
+              "sdkMs": 222664,
+              "requests": 35
+            },
+            "changePercent": {
+              "tokens": 7.273202089192443,
+              "sdkUsd": -20.98423947980832,
+              "sdkMs": -29.627151223367942,
+              "requests": -8.571428571428575
+            }
+          },
+          "jointlySourceCorrect": {
+            "candidate": {
+              "assignments": 4,
+              "tokens": 267003,
+              "sdkUsd": 0.033777119999999994,
+              "sdkMs": 156695,
+              "requests": 32
+            },
+            "comparator": {
+              "assignments": 4,
+              "tokens": 248900,
+              "sdkUsd": 0.04274731999999999,
+              "sdkMs": 222664,
+              "requests": 35
+            },
+            "changePercent": {
+              "tokens": 7.273202089192443,
+              "sdkUsd": -20.98423947980832,
+              "sdkMs": -29.627151223367942,
+              "requests": -8.571428571428575
+            }
+          },
+          "strictPairNames": [
+            "1-clamp-items",
+            "1-quota",
+            "2-clamp-items",
+            "2-quota"
+          ],
+          "omittedStrictPairs": [
+            {
+              "omitted": "1-clamp-items",
+              "tokens": 4.988182046768919,
+              "sdkUsd": -22.35027474461184,
+              "sdkMs": -31.659235051375077,
+              "requests": -7.4074074074074066
+            },
+            {
+              "omitted": "1-quota",
+              "tokens": 0.6189943115334495,
+              "sdkUsd": -22.78005562405022,
+              "sdkMs": -28.637459220654925,
+              "requests": -11.111111111111116
+            },
+            {
+              "omitted": "2-clamp-items",
+              "tokens": 17.183011713765637,
+              "sdkUsd": -21.255476620708425,
+              "sdkMs": -35.533327867508405,
+              "requests": -4.0000000000000036
+            },
+            {
+              "omitted": "2-quota",
+              "tokens": 7.972032506267834,
+              "sdkUsd": -17.395381115977283,
+              "sdkMs": -21.331269349845204,
+              "requests": -11.538461538461542
+            }
+          ],
+          "omittedStrictTasks": [
+            {
+              "omitted": "clamp-items",
+              "tokens": 17.543859649122815,
+              "sdkUsd": -23.47395189053301,
+              "sdkMs": -40.31983456296791,
+              "requests": 0
+            },
+            {
+              "omitted": "quota",
+              "tokens": -1.5921969623247434,
+              "sdkUsd": -18.331055731342182,
+              "sdkMs": -15.000797575370871,
+              "requests": -16.666666666666664
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "rows": [
+    {
+      "name": "1-map-context-reference",
+      "auditedRequired": true,
+      "auditedStrict": false,
+      "frozenAutomaticStrict": false
+    },
+    {
+      "name": "1-map-context-batch",
+      "auditedRequired": true,
+      "auditedStrict": true,
+      "frozenAutomaticStrict": true
+    },
+    {
+      "name": "1-map-context-cline",
+      "auditedRequired": true,
+      "auditedStrict": true,
+      "frozenAutomaticStrict": false
+    },
+    {
+      "name": "1-take-through-batch",
+      "auditedRequired": true,
+      "auditedStrict": false,
+      "frozenAutomaticStrict": false
+    },
+    {
+      "name": "1-take-through-cline",
+      "auditedRequired": true,
+      "auditedStrict": true,
+      "frozenAutomaticStrict": true
+    },
+    {
+      "name": "1-take-through-reference",
+      "auditedRequired": true,
+      "auditedStrict": true,
+      "frozenAutomaticStrict": true
+    },
+    {
+      "name": "2-map-context-batch",
+      "auditedRequired": true,
+      "auditedStrict": true,
+      "frozenAutomaticStrict": true
+    },
+    {
+      "name": "2-map-context-cline",
+      "auditedRequired": true,
+      "auditedStrict": true,
+      "frozenAutomaticStrict": false
+    },
+    {
+      "name": "2-map-context-reference",
+      "auditedRequired": false,
+      "auditedStrict": false,
+      "frozenAutomaticStrict": false
+    },
+    {
+      "name": "2-take-through-cline",
+      "auditedRequired": true,
+      "auditedStrict": false,
+      "frozenAutomaticStrict": false
+    },
+    {
+      "name": "2-take-through-reference",
+      "auditedRequired": true,
+      "auditedStrict": true,
+      "frozenAutomaticStrict": true
+    },
+    {
+      "name": "2-take-through-batch",
+      "auditedRequired": true,
+      "auditedStrict": false,
+      "frozenAutomaticStrict": false
+    },
+    {
+      "name": "1-clamp-items-reference",
+      "auditedRequired": true,
+      "auditedStrict": true,
+      "frozenAutomaticStrict": true
+    },
+    {
+      "name": "1-clamp-items-compiler",
+      "auditedRequired": true,
+      "auditedStrict": true,
+      "frozenAutomaticStrict": true
+    },
+    {
+      "name": "1-clamp-items-cline",
+      "auditedRequired": true,
+      "auditedStrict": true,
+      "frozenAutomaticStrict": true
+    },
+    {
+      "name": "1-quota-compiler",
+      "auditedRequired": true,
+      "auditedStrict": true,
+      "frozenAutomaticStrict": true
+    },
+    {
+      "name": "1-quota-cline",
+      "auditedRequired": true,
+      "auditedStrict": true,
+      "frozenAutomaticStrict": true
+    },
+    {
+      "name": "1-quota-reference",
+      "auditedRequired": true,
+      "auditedStrict": true,
+      "frozenAutomaticStrict": true
+    },
+    {
+      "name": "2-clamp-items-compiler",
+      "auditedRequired": true,
+      "auditedStrict": true,
+      "frozenAutomaticStrict": true
+    },
+    {
+      "name": "2-clamp-items-cline",
+      "auditedRequired": true,
+      "auditedStrict": true,
+      "frozenAutomaticStrict": false
+    },
+    {
+      "name": "2-clamp-items-reference",
+      "auditedRequired": true,
+      "auditedStrict": true,
+      "frozenAutomaticStrict": true
+    },
+    {
+      "name": "2-quota-cline",
+      "auditedRequired": true,
+      "auditedStrict": true,
+      "frozenAutomaticStrict": false
+    },
+    {
+      "name": "2-quota-reference",
+      "auditedRequired": true,
+      "auditedStrict": true,
+      "frozenAutomaticStrict": true
+    },
+    {
+      "name": "2-quota-compiler",
+      "auditedRequired": true,
+      "auditedStrict": true,
+      "frozenAutomaticStrict": true
+    }
+  ],
+  "boundary": "Post-hoc manual acceptance of child-status/source-order evidence that the conservative frozen observer does not recognize. No automatic score, source, test layout, endpoint or consumption is rewritten. Missing recognition is distinct from a failed check; this sensitivity is not the pre-registered primary result."
+}
