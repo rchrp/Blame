@@ -1,7 +1,6 @@
 import * as React from "react"
 import { createDebouncedUpdateQueue } from "@/lib/debounced-update-queue"
 import type { AgentEvent } from "@blame/agent-runtime"
-import { QuickChatEmptyState } from "@/components/chat/quick-chat-empty-state"
 import { toast } from "sonner"
 
 import type { UserStoryFileAttachment } from "@/components/backlog/data/backlog-data"
@@ -39,10 +38,7 @@ import {
   projectPreviewConfiguration,
   projectRunConfigurationPreviewKey,
 } from "@/components/backlog/board/project-run-configuration"
-import { ProjectRunConfigurationPreviewWarmup } from "@/components/backlog/board/project-run-preview-warmup"
 import {
-  AgentConversationComposer,
-  AgentConversationTimeline,
   screenshotOwnerFor,
   type AgentConversationUserMessageUndo,
 } from "@/components/chat/agent-conversation"
@@ -81,15 +77,7 @@ import {
 import { useQuickChatStore } from "@/components/chat/data/quick-chat-store"
 import { agentConversationResponseHeader } from "@/components/chat/agent-conversation-header"
 import { composerDraftStorageKey } from "@/components/backlog/drawer/composer-draft-storage"
-import { ModelSelector } from "@/components/model/model-selector"
 import { useModelSelection } from "@/components/model/model-selection"
-import {
-  MessageScroller,
-  MessageScrollerButton,
-  MessageScrollerContent,
-  MessageScrollerProvider,
-  MessageScrollerViewport,
-} from "@/components/ui/message-scroller"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
@@ -122,15 +110,10 @@ import {
 import { useComposerShortcuts } from "./use-composer-shortcuts"
 import { useQuickChatDraft } from "./use-quick-chat-draft"
 import { useQuickChatSnapshotReplay } from "./use-quick-chat-snapshot-replay"
-import { QuickChatStatus } from "./quick-chat-status"
+import { QuickChatView } from "./quick-chat-view"
 
 const agentEventPersistDelayMs = 1_500
 const agentCompletionRecoveryIntervalMs = 10_000
-const bottomBlurMask = {
-  maskImage: "linear-gradient(to top, black 0%, black 60%, transparent 100%)",
-  WebkitMaskImage:
-    "linear-gradient(to top, black 0%, black 60%, transparent 100%)",
-} satisfies React.CSSProperties
 
 type QuickChatDevelopmentSessionInput = {
   codeAttachments: PendingCodeSelectionAttachment[]
@@ -1016,156 +999,65 @@ function QuickChatProjectPage() {
     activeConversationLoaded && !activeConversation?.agentRuns?.length
 
   return (
-    <>
-      <div className="flex h-svh min-h-0 min-w-0 flex-col overflow-hidden md:h-[calc(100svh_-_1rem)]">
-        <div className="grid min-h-0 flex-1 grid-cols-1 gap-2">
-          <main className="relative flex min-h-0 min-w-0 flex-col overflow-hidden">
-            <MessageScrollerProvider
-              key={activeConversation?.id ?? "new-chat"}
-              memoryKey={activeConversation?.id}
-            >
-              <MessageScroller>
-                <MessageScrollerViewport>
-                  <MessageScrollerContent
-                    aria-busy={agentRunning}
-                    className="mx-auto w-full max-w-4xl gap-10 px-4 pt-[calc(var(--header-height)+1rem)] pb-48 md:px-8"
-                  >
-                    <QuickChatStatus
-                      error={quickChats.error}
-                      loading={quickChats.loading || !activeConversationLoaded}
-                      projectPath={project?.path}
-                    />
-                    {activeConversationLoaded &&
-                    activeConversation?.agentRuns?.length ? (
-                      <AgentConversationTimeline
-                        screenshotOwner={screenshotOwnerFor(
-                          "quickChat",
-                          activeConversation.id
-                        )}
-                        comments={activeConversation.messages ?? []}
-                        loadChangedFileDiffs={loadChangedFileDiffs}
-                        onChangedFileClick={(path) =>
-                          openProjectPath(
-                            project?.path,
-                            path,
-                            platform.openPath
-                          )
-                        }
-                        onFileLinkClick={(path) =>
-                          openProjectPath(
-                            project?.path,
-                            path,
-                            platform.openPath
-                          )
-                        }
-                        onLoadActivityDetail={(run, activity) =>
-                          quickChats.agentRunActivityDetail(
-                            activeConversation,
-                            run,
-                            activity
-                          )
-                        }
-                        onUserMessageUndo={undoQuickChatMessage}
-                        responseHeader={responseHeader}
-                        queued={
-                          <QueuedComments
-                            author={
-                              activeConversation.messages?.at(-1)?.author ??
-                              "You"
-                            }
-                            storyId={messageQueue.key}
-                          />
-                        }
-                        runs={activeConversation.agentRuns}
-                      />
-                    ) : null}
-                  </MessageScrollerContent>
-                </MessageScrollerViewport>
-                <MessageScrollerButton className="bottom-40 md:bottom-44" />
-              </MessageScroller>
-            </MessageScrollerProvider>
-            <div
-              className={
-                emptyConversation
-                  ? "absolute inset-0 z-20 flex flex-col justify-center overflow-y-auto px-3 pt-[calc(var(--header-height)+1rem)] pb-5 md:px-5"
-                  : "pointer-events-none absolute inset-x-0 bottom-0 z-20 pt-10 md:pt-12"
-              }
-            >
-              <div
-                className={
-                  emptyConversation
-                    ? "hidden"
-                    : "absolute inset-0 bg-background/40 backdrop-blur-xl"
-                }
-                style={bottomBlurMask}
-              />
-              <div className="pointer-events-auto relative px-3 pb-3 md:px-5 md:pb-5">
-                <div className="mx-auto w-full max-w-4xl">
-                  {emptyConversation ? (
-                    <QuickChatEmptyState
-                      onSuggestion={project ? applySuggestion : undefined}
-                    />
-                  ) : null}
-                  <AgentConversationComposer
-                    speechSessionKey={draftStorageKey}
-                    speechTarget={chatSpeechTarget(draftStorageKey)}
-                    minHeight={emptyConversation ? "min-h-44" : "min-h-24"}
-                    agentRunning={agentRunning}
-                    cancelingAgent={cancelingAgent}
-                    codeSelectionAttachments={draftCodeAttachments}
-                    disabled={!project || !activeConversationLoaded}
-                    submitting={sending && !agentRunning}
-                    queueWhileRunning
-                    editorKey={draftEditorKey}
-                    editorRef={draftRef}
-                    fileAttachments={pendingFileAttachments(
-                      draftFileAttachments
-                    )}
-                    mentionDirectory={mentionDirectory}
-                    message={draft}
-                    onCodeSelectionAttachmentRemove={(id) =>
-                      setDraftCodeAttachments((current) =>
-                        current.filter((attachment) => attachment.id !== id)
-                      )
-                    }
-                    onFileAttachmentRemove={removeDraftFileAttachment}
-                    onFileAttachmentsReplace={replaceDraftFileAttachments}
-                    onFileAttachmentsAdd={addDraftFileAttachments}
-                    onFileLinkClick={(path) =>
-                      openProjectPath(project?.path, path, platform.openPath)
-                    }
-                    onMessageChange={setDraft}
-                    onMessageSubmit={() => void submitDraft()}
-                    onMessageSendNow={() => void submitDraft(true)}
-                    onAgentCancel={cancelAgent}
-                    placeholder={
-                      agentRunning
-                        ? "Message the agent: ↵ when it finishes, ⌘↵ right now"
-                        : "Ask for a focused code change"
-                    }
-                    submitLabel={agentRunning ? "Queue message" : "Send"}
-                    toolbarEnd={
-                      <div className="w-[28rem] max-w-full min-w-0">
-                        <ModelSelector
-                          role="agent"
-                          warnOnModelChange={!emptyConversation}
-                        />
-                      </div>
-                    }
-                    turnMetrics={turnMetrics}
-                  />
-                </div>
-              </div>
-            </div>
-          </main>
-        </div>
-      </div>
-      <ProjectRunConfigurationPreviewWarmup
-        configuration={previewConfiguration}
-        devtoolsTarget
-        scope={project?.path}
-      />
-    </>
+    <QuickChatView
+      conversationId={activeConversation?.id}
+      emptyConversation={emptyConversation}
+      status={{
+        error: quickChats.error,
+        loading: quickChats.loading || !activeConversationLoaded,
+        projectPath: project?.path,
+      }}
+      timeline={activeConversationLoaded && activeConversation?.agentRuns?.length ? {
+        screenshotOwner: screenshotOwnerFor("quickChat", activeConversation.id),
+        comments: activeConversation.messages ?? [],
+        loadChangedFileDiffs,
+        onChangedFileClick: (path) => openProjectPath(project?.path, path, platform.openPath),
+        onFileLinkClick: (path) => openProjectPath(project?.path, path, platform.openPath),
+        onLoadActivityDetail: (run, activity) =>
+          quickChats.agentRunActivityDetail(activeConversation, run, activity),
+        onUserMessageUndo: undoQuickChatMessage,
+        responseHeader,
+        queued: (
+          <QueuedComments
+            author={activeConversation.messages?.at(-1)?.author ?? "You"}
+            storyId={messageQueue.key}
+          />
+        ),
+        runs: activeConversation.agentRuns,
+      } : undefined}
+      onSuggestion={project ? applySuggestion : undefined}
+      composer={{
+        speechSessionKey: draftStorageKey,
+        speechTarget: chatSpeechTarget(draftStorageKey),
+        agentRunning,
+        cancelingAgent,
+        codeSelectionAttachments: draftCodeAttachments,
+        disabled: !project || !activeConversationLoaded,
+        submitting: sending && !agentRunning,
+        queueWhileRunning: true,
+        editorKey: draftEditorKey,
+        editorRef: draftRef,
+        fileAttachments: pendingFileAttachments(draftFileAttachments),
+        mentionDirectory,
+        message: draft,
+        onCodeSelectionAttachmentRemove: (id) =>
+          setDraftCodeAttachments((current) => current.filter((attachment) => attachment.id !== id)),
+        onFileAttachmentRemove: removeDraftFileAttachment,
+        onFileAttachmentsReplace: replaceDraftFileAttachments,
+        onFileAttachmentsAdd: addDraftFileAttachments,
+        onFileLinkClick: (path) => openProjectPath(project?.path, path, platform.openPath),
+        onMessageChange: setDraft,
+        onMessageSubmit: () => void submitDraft(),
+        onMessageSendNow: () => void submitDraft(true),
+        onAgentCancel: cancelAgent,
+        placeholder: agentRunning
+          ? "Message the agent: ↵ when it finishes, ⌘↵ right now"
+          : "Ask for a focused code change",
+        submitLabel: agentRunning ? "Queue message" : "Send",
+        turnMetrics,
+      }}
+      preview={{ configuration: previewConfiguration, devtoolsTarget: true, scope: project?.path }}
+    />
   )
 }
 

@@ -1,0 +1,41 @@
+{
+  "bundleSha256": "f3f5f0c0af2c00ce23ab07545d0539970770d2bb1fce1f06299c57abd31199a5",
+  "refs": {
+    "clamp-items": "dbe5b19581a9982a301335a366916498838c8e34",
+    "quota": "1a6d2ff891214a4e55f91bf0f0a4156931ec39a0",
+    "mutation-callbacks": "5828e4ff35745c1571a1b6cfba510f3dc7a9fd99",
+    "fetching-filters": "5d3b5a65e9b098ff413781c0ab81f462646d719d"
+  },
+  "runtimeSha256": "2c50a34cd54e039d9a29b2f61d3288b68db8e7f17fb518661aaf9e402e7f789d",
+  "runtimeLockSha256": "8ae1e6dab4c0cdbfbf77799bfb48ca903ef6d6f4b9cc4cd31c5a8d1706c4ae7c",
+  "dependencyLockFiles": {
+    "clamp-items/package.json": "a29a0b594ff4378733c2250ed436e39ad54b39049dc355aa91ab8d96acb35024",
+    "clamp-items/package-lock.json": "6203338f69a01a5bb57eb4bd010d82ad5cdfe6d053ddf31012018818fdfcf82e",
+    "quota/package.json": "a29a0b594ff4378733c2250ed436e39ad54b39049dc355aa91ab8d96acb35024",
+    "quota/package-lock.json": "6203338f69a01a5bb57eb4bd010d82ad5cdfe6d053ddf31012018818fdfcf82e",
+    "mutation-callbacks/package.json": "8d55c535eca53f931facfa50a12af6c57dd7e3992f24bb829a2b38b857008863",
+    "mutation-callbacks/package-lock.json": "d4512b7d85dc5551d5486da8c40851b17d5b41236c031c39719b5de22866148f",
+    "fetching-filters/package.json": "215b107adab60cc011daf3a0f2ad8cf216cf14db5e31ca7b3694a200028a76cb",
+    "fetching-filters/package-lock.json": "474d18b9698683ae88d1afb59b4fd5ff8be76b9e461d912a656809f81f640414"
+  },
+  "frozenDependencyCaches": {
+    "mutation-callbacks": {
+      "sha256": "098bb2985d525708f196a14526d23f313ca75236da9503eafa9838eef473921d",
+      "files": 1,
+      "boundary": "Exact pre-dispatch cache bytes, including preflight transform/source mappings. No observed cache inspection by workers; not a claim of a cache-free model-input image."
+    },
+    "fetching-filters": {
+      "sha256": "24cf0900ab565ee6cb7944f5d5d6ecc29c6051f30f6325f30d6b22c37c47e72c",
+      "files": 152,
+      "boundary": "Exact pre-dispatch cache bytes, including preflight transform/source mappings. No observed cache inspection by workers; not a claim of a cache-free model-input image."
+    }
+  },
+  "officialFiles": {
+    "fetching-filters-positive.patch": "7712a49b3be359be87385b705dfa28a1811c63bf9f47b999de274161d962c3bc",
+    "fetching-filters.patch": "2d8ee9f67b227b6c1429656f946bed73b1b5df0142317bb9dd0f74cd805a253f",
+    "mutation-callbacks-positive.patch": "0145f1def2633de9617d7ca5618c46610f691d208bf319040227b58398a1ef3f",
+    "mutation-callbacks.patch": "9a83f1fbe263a902a291ec12cd92427b7b7a781ff74c5ecd2b6194de0ed84141"
+  },
+  "runtimeSourceHead": "f51f293129ad42602d408e521951c66328b67d31",
+  "boundary": "Four original input commits only, shared Git objects; no model patches, solutions, dependencies, credentials or upstream fix history. Original commit IDs replace platform-dependent tar metadata for portable replay. Original private archive hashes remain unchanged."
+}

@@ -224,7 +224,7 @@ export function patchDependency(patchPath) {
 }
 
 /** Regenerates stale patches for `version`; returns the ones left to redo by hand. */
-async function regeneratePatches(stalePatches, version) {
+export async function regeneratePatches(stalePatches, version, root = rootDir) {
   const remaining = []
   for (const patchPath of stalePatches) {
     const dependency = patchDependency(patchPath)
@@ -236,11 +236,14 @@ async function regeneratePatches(stalePatches, version) {
     const editDir = await mkdtemp(join(tmpdir(), "cline-patch-"))
     try {
       await rm(editDir, { recursive: true, force: true })
-      const run = (command, args) => execFileSync(command, args, { cwd: rootDir, stdio: "inherit" })
+      const run = (command, args) => execFileSync(command, args, { cwd: root, stdio: "inherit" })
       run("pnpm", ["patch", `${dependency}@${version}`, "--edit-dir", editDir])
-      run(process.execPath, [join(rootDir, generator), editDir])
-      run("pnpm", ["patch-commit", editDir])
-      await rm(join(rootDir, patchPath), { force: true })
+      run(process.execPath, [join(root, generator), editDir])
+      // patch-commit installs after writing the patch and workspace entry. In
+      // CI pnpm freezes the lockfile by default, leaving those writes behind
+      // with an outdated lockfile unless we explicitly allow its update.
+      run("pnpm", ["patch-commit", editDir, "--config.frozen-lockfile=false"])
+      await rm(join(root, patchPath), { force: true })
       console.log(`Regenerated the ${dependency} patch for ${version}`)
     } catch (error) {
       console.error(`Could not regenerate ${patchPath}: ${error.message}`)

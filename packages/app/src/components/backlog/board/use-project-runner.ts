@@ -7,6 +7,7 @@ import type {
   ProjectRunnerPendingOperation,
 } from "@/components/backlog/board/project-runner-types"
 import { usePlatform, type TerminalClient } from "@/context/platform"
+import { writeProjectCommand } from "./project-runner-terminal"
 
 export type ProjectRunSession = {
   configurationId: string
@@ -141,11 +142,7 @@ async function launchConfiguration(
   )
   actions.runtimes.set(configuration.id, { sessionId: session.id, unsubscribe })
   updateSession(actions, configuration.id, { sessionId: session.id })
-  const written = await terminal.write({
-    id: session.id,
-    data: `${configuration.command}\n`,
-  })
-  if (!written) throw new Error("Unable to write the launch command")
+  await writeProjectCommand(terminal, session.id, configuration.command)
   updateSession(actions, configuration.id, { status: "running" })
 }
 

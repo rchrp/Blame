@@ -1,6 +1,9 @@
 import { access, readFile, readdir, realpath } from "node:fs/promises";
 import { createRequire } from "node:module";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { join, normalize, posix, relative, sep } from "node:path";
+import { checkJavaScript } from "./check-generated-javascript.mjs";
 
 function runtimeTargets(manifest) {
   const paths = new Set();
@@ -126,9 +129,21 @@ export function verifyAsarTypeScriptLibraries(archive) {
     asar.listPackage(archive).map((entry) => entry.split(sep).join("/")),
   );
   const compilers = [...entries].filter((entry) =>
-    /(?:^|\/)node_modules\/typescript\/lib\/typescript\.js$/.test(entry),
+    /(?:^|\/)node_modules\/(?:typescript|@typescript\/(?:typescript6|old))\/lib\/typescript\.js$/.test(entry),
   );
   for (const compiler of compilers) {
+    // The official TypeScript 6 compatibility package forwards to @typescript/old.
+    const source = asar.extractFile(archive, normalize(compiler.replace(/^\//, ""))).toString("utf8");
+    if (/^\s*module\.exports\s*=\s*require\(["']@typescript\/old["']\);?\s*$/.test(source)) {
+      let parent = posix.dirname(posix.dirname(compiler));
+      while (!entries.has(posix.join(parent, "node_modules/@typescript/old/lib/typescript.js"))) {
+        const ancestor = posix.dirname(parent);
+        if (ancestor === parent)
+          throw new Error(`Desktop package is missing the TypeScript compatibility implementation: ${compiler}`);
+        parent = ancestor;
+      }
+      continue;
+    }
     const directory = posix.dirname(compiler);
     for (const library of requiredTypeScriptLibraries) {
       if (!entries.has(posix.join(directory, library)))
@@ -138,6 +153,33 @@ export function verifyAsarTypeScriptLibraries(archive) {
     }
   }
   return compilers.length;
+}
+
+async function verifyUnpackedNpm(archive) {
+  const asar = asarTools();
+  for (const entry of asar.listPackage(archive)) {
+    const path = entry.split(sep).join("/").replace(/^\//, "");
+    if (!/(?:^|\/)node_modules\/npm(?:-legacy)?\/package\.json$/.test(path)) continue;
+    const manifest = JSON.parse(asar.extractFile(archive, normalize(path)).toString("utf8"));
+    const executable = join(`${archive}.unpacked`, posix.dirname(path), manifest.bin.npm);
+    const { stdout } = await promisify(execFile)(process.execPath, [executable, "--version"], { timeout: 15000 });
+    if (stdout.trim() !== manifest.version)
+      throw new Error(`Packaged npm version mismatch in ${path}: ${stdout.trim()}`);
+  }
+}
+
+export function verifyAsarGeneratedJavaScript(archive) {
+  const asar = asarTools();
+  let count = 0;
+  for (const entry of asar.listPackage(archive)) {
+    const path = entry.split(sep).join("/").replace(/^\//, "");
+    if (!/^out\/(?:main|preload)\/.*\.[cm]?js$/.test(path)) continue;
+    checkJavaScript(asar.extractFile(archive, normalize(path)).toString("utf8"),
+      `${archive}/${path}`, path.startsWith("out/preload/") ? "commonjs" : "module");
+    count++;
+  }
+  if (!count) throw new Error(`No generated main/preload JavaScript in ${archive}`);
+  return count;
 }
 
 /** Run after electron-builder, before installers can be copied or uploaded. */
@@ -162,10 +204,12 @@ export async function verifyPackagedWorkspaceRuntime(dist) {
   if (!archives.length)
     throw new Error(`No packaged app.asar found in ${dist}`);
   for (const archive of archives) {
+    const generatedFiles = verifyAsarGeneratedJavaScript(archive);
     const count = await verifyAsarWorkspaceRuntime(archive);
     const compilers = verifyAsarTypeScriptLibraries(archive);
+    await verifyUnpackedNpm(archive);
     console.log(
-      `Verified ${count} workspace packages and the default libraries of ${compilers} TypeScript compiler(s) in ${archive}`,
+      `Verified ${generatedFiles} generated files, ${count} workspace packages and the default libraries of ${compilers} TypeScript compiler(s) in ${archive}`,
     );
   }
 }

@@ -1,0 +1,21 @@
+{
+  "recordedAtUTC": "2026-10-27T01:00:41.557686+00:00",
+  "externalModelRequestsBeforeAmendment": 0,
+  "selectionChanged": false,
+  "purpose": "Clarify measurement before dispatch; no task or outcome-dependent selection changes.",
+  "commonControls": [
+    "All arms use identical per-task Git HEAD and the same absolute workspace path sequentially.",
+    "Frozen SDK/core/provider executable byte hashes, compiled runtime and runner, prompts, task inputs, tool-schema hashes and dependency manifest are retained.",
+    "Observer records tracked and untracked source byte fingerprints at every tool start and finish; generated .blame and dependency state are excluded. Observation overhead is measured separately and not silently subtracted.",
+    "Native required checks count only literal successful npm run invocations (standalone or pure && chains) whose start/end source fingerprints equal final source. Unrecognized shell syntax remains unverified; this is not a compiler-selection proof.",
+    "Light required checks retain runtime admitted-obligation reporting; independent five-endpoint grading remains separate.",
+    "No remote solution retrieval permitted. Audit applies only allowed source changes to immutable input plus pinned dependencies.",
+    "One common F65 feedback fix across both Light arms; F66 changes grouped reads only, F67 changes direct compiler repair only.",
+    "Observed cost stop applies to this newly registered campaign; prior studies are not counted as new spending. A 0.5 USD scheduling reserve is not a billing bound."
+  ],
+  "limitations": [
+    "Source fingerprints do not prove environment equivalence or complete compiler/test coverage.",
+    "Passive instrumentation and nonexclusive host may affect timing; report raw duration and observer overhead.",
+    "Two repeats of two constructed tasks per panel do not establish general success or efficiency."
+  ]
+}

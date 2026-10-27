@@ -1,0 +1,388 @@
+{
+  "atUTC": "2026-10-27T04:11:43.058Z",
+  "reason": "Independent Vitest 5 grading added executable transform-cache entries through the baseline node_modules symlink; the next dispatch binding failed closed before any new model invocation.",
+  "originalManifestSha256": "dc70b6eee41714085284878b735eb28fd6b870919cb748cd490ccefda0b583a3",
+  "restoredManifestSha256": "dc70b6eee41714085284878b735eb28fd6b870919cb748cd490ccefda0b583a3",
+  "originalCacheFiles": 152,
+  "changedOriginalFiles": [],
+  "removedAddedFiles": [
+    {
+      "path": ".vitest-cache/03209f352e2fd2c0b881fe519d6bbf68546dc4f4",
+      "kind": "file",
+      "sha256": "91c9ebd8377dfc43fc5d2a5cdea09cde6343e45e5324a585ab762836c6649f54"
+    },
+    {
+      "path": ".vitest-cache/09100a8d8575f99d00994b3d7262909c0c02c61c",
+      "kind": "file",
+      "sha256": "a70a190fee45a156d7dc2de0973af6113238cd91db8f6fd0647dce8ed2fec413"
+    },
+    {
+      "path": ".vitest-cache/09799c6476f6533cef0dddc004a3ac4f0239531c",
+      "kind": "file",
+      "sha256": "421633b97b2c87f2ca3ff0121079177dbf57e394976a27957ae9d954b21f8d6f"
+    },
+    {
+      "path": ".vitest-cache/09f4a027abd6cb2b4c38156140a84f63d8b9191d",
+      "kind": "file",
+      "sha256": "81f155f71e87c5a14870d1686b1280e301f3b5ceac2510367512c75653bb721d"
+    },
+    {
+      "path": ".vitest-cache/0cff5ebbb3325e85fb0012eab41943932ee25bb6",
+      "kind": "file",
+      "sha256": "3af06edd2f0a21c4f2ad446c28184a021cd0d7c9f48ed10298992a3cf8497e36"
+    },
+    {
+      "path": ".vitest-cache/1229bfe85d016408002b6dd9073fccbf3fcdb1c1",
+      "kind": "file",
+      "sha256": "78866923d154d4377d1a75dce7a0faaacb425821bc9bf85ddceea03ef93cb026"
+    },
+    {
+      "path": ".vitest-cache/1453b3d33e27788e0abf7e3565dfe1ea9a3ac66f",
+      "kind": "file",
+      "sha256": "d9328c73e6d7efedf205384bfe1245cb97b6a5aecdd673cf450dd98a362b7964"
+    },
+    {
+      "path": ".vitest-cache/1a24f8a46d8e2a7d38b4d6cdbc3d6c94d028567f",
+      "kind": "file",
+      "sha256": "090598274b2b8766c89efc7857dc66855f36e7ec17d1304af7df118f2fbadc50"
+    },
+    {
+      "path": ".vitest-cache/1dc309abdc72816c9b0f956a1f004ece81010078",
+      "kind": "file",
+      "sha256": "60b69814828e7c22c19d2e5a1766258edb5a1da4bde77f5e2808bdb1f07a3d02"
+    },
+    {
+      "path": ".vitest-cache/1e641a655a90904d1e98bfddd69a0acff507761b",
+      "kind": "file",
+      "sha256": "7bb4d2ac7dcd9e7be945bec64a7b63be0675b6c2fb7948235d65a6b312457d96"
+    },
+    {
+      "path": ".vitest-cache/1eea3b9411c8f460e04d2ad97e1d446f7590a4db",
+      "kind": "file",
+      "sha256": "16ece6a298cb92f9654d01dc21b109aabf24286e607d71db8f34cd70a8256948"
+    },
+    {
+      "path": ".vitest-cache/20e73700b576c99f5b754910bcd828e7e4c6c284",
+      "kind": "file",
+      "sha256": "cab8819dad614905ceb6c3440c562ef1e6af0ff23e292f2c0bd9c64e1225a0ed"
+    },
+    {
+      "path": ".vitest-cache/24e20f15bd9f5ce80cb59c64a317e2f73d0f4b6b",
+      "kind": "file",
+      "sha256": "6e387a390b0e342ae5e556bf4b66d74c65eea9746be25c7a1f72f7eee166b1cc"
+    },
+    {
+      "path": ".vitest-cache/2f6a09ce14d882bb4d5d9a746083aa5f8c525681",
+      "kind": "file",
+      "sha256": "fad0063c4d1491cad6adc808dce8b8d060af6d9d321ac101f5116f0352c2b2a3"
+    },
+    {
+      "path": ".vitest-cache/311df11addd69a1b75e564bd4b3d94bafe8c936c",
+      "kind": "file",
+      "sha256": "acb7b782b6d69edd6999ad938eb39a04dd7f08bb56c780e00acb0bed25067da8"
+    },
+    {
+      "path": ".vitest-cache/363ba44dfc1559113cc33b4f764229463ad3e59b",
+      "kind": "file",
+      "sha256": "e59e229afc92aa74911d4553a9ea40499d3b5cbfc67aa148da5dd2c7c7271d73"
+    },
+    {
+      "path": ".vitest-cache/3c774f032b30ab2feab4f79b8ea07d9da8057f61",
+      "kind": "file",
+      "sha256": "f715c987813b19d57f302187816eb8c09644c28a759818e3f331fe223e9de916"
+    },
+    {
+      "path": ".vitest-cache/3ca3295825ff10c3e8eb680178abf5651860b017",
+      "kind": "file",
+      "sha256": "93d9dac3ac6ba26d5b1f86393a601572d8ce22a575def68af22ff8530153c063"
+    },
+    {
+      "path": ".vitest-cache/3e5cfacc8cc5606116b2094ec12696b3e5d0318c",
+      "kind": "file",
+      "sha256": "8b951594175a9fa65d42f5ec8732c7c3590dd3bb81d9668f745a1dcf1d157d05"
+    },
+    {
+      "path": ".vitest-cache/478dba24379da236e00866d9385b4374447e116f",
+      "kind": "file",
+      "sha256": "7aecd00c191ea93c933681758684f024f12a456b4d21f7d8fe70148bd50cb1fd"
+    },
+    {
+      "path": ".vitest-cache/4b523ff5c9d047dad8939eca321e6f351b1f7a77",
+      "kind": "file",
+      "sha256": "e0855ad4eeb8913ad58e2cabf6aa781266406406e858afe5a02b34e923ecf6c7"
+    },
+    {
+      "path": ".vitest-cache/4c64b9d8ca03c045b48dae46a3b2fc7d1b4d20df",
+      "kind": "file",
+      "sha256": "1f6841d8510741e75a73a1e74bfe4e79c1774cf7aa9a3d69af103ef52e42ce16"
+    },
+    {
+      "path": ".vitest-cache/4f55e7790e0185c695f5002e108faa187ca3f6f5",
+      "kind": "file",
+      "sha256": "b31a76896e1c458d0c541e8bf4fcd7267e0928770c211f0eb4eb07878d5da056"
+    },
+    {
+      "path": ".vitest-cache/5138a40602e4a3425f9277dfa9988b46eb5851f6",
+      "kind": "file",
+      "sha256": "ce43affe6b77776e0eaaeb3bf036962f0c3bc4d6b9bc413417d9efb4c5c470cd"
+    },
+    {
+      "path": ".vitest-cache/51e1d9b7831db41b1ebaf0cf86623cfac57bb4ce",
+      "kind": "file",
+      "sha256": "193c5335a7adc970250ef78b24778307aad273bcf9390f0d452c1789a580dea6"
+    },
+    {
+      "path": ".vitest-cache/54a427737006e76076ba0035c8913282141a421c",
+      "kind": "file",
+      "sha256": "b375eab4bbd037f59454ddb774406b294bdbdcdbf8269f15129aaa7d14734585"
+    },
+    {
+      "path": ".vitest-cache/55d3c945436ad31fa31ffe9901e49ded9fce14c8",
+      "kind": "file",
+      "sha256": "f037d21b9315072a4b8c2f35467d7a6c238e97cc14fd8f50a9016c16e191fba8"
+    },
+    {
+      "path": ".vitest-cache/56166e4ec06a8c02f9569a3d0299fd67caca9fdc",
+      "kind": "file",
+      "sha256": "aafcbb01b441262cd872663ee7c2cc0703a41c2c729f1dc1244305be6a0dcf50"
+    },
+    {
+      "path": ".vitest-cache/5872d94f33f5e60baa456142ab28805ce16facab",
+      "kind": "file",
+      "sha256": "039e6873d24edbdc2d23a0da877aed841395024e4d0238c734c18dabb638d650"
+    },
+    {
+      "path": ".vitest-cache/5c00f5d9ddc319cef0de662d483c1eab94a5a835",
+      "kind": "file",
+      "sha256": "f23d82fccd322d99447eea7811a3231fce724214c1e9c4411599422d72a4260e"
+    },
+    {
+      "path": ".vitest-cache/5c45901d98160c8dd951fde32a0024504b3c5219",
+      "kind": "file",
+      "sha256": "479400b52e6d747fa7efb96b00d9a2b5808db0dfb30d49d372cb915f38188b90"
+    },
+    {
+      "path": ".vitest-cache/5f7d3567c8c9691153c83f13158f8a2ffa4ed7a5",
+      "kind": "file",
+      "sha256": "60cf3e462c87ced4c0d2957320c1c91da81606976e64c89577542e890b508d63"
+    },
+    {
+      "path": ".vitest-cache/616eba80f38673d9fa51c5652a3cfef9366780be",
+      "kind": "file",
+      "sha256": "647cad0d50a116e0793558fef8519468a748572e681eca965c1190d9b56df0e4"
+    },
+    {
+      "path": ".vitest-cache/6b43f111b2abaaf40962f77c11f25d69613b3ced",
+      "kind": "file",
+      "sha256": "982a3a0522f7a35f9423a6092255f0399aeac8920f95d814a566ab945c2da7e2"
+    },
+    {
+      "path": ".vitest-cache/6d27c023cd56975c99bd942df9826e40c8b95c0b",
+      "kind": "file",
+      "sha256": "544b06ba39c0c9203e27fd3b2a850d4204553b3ab3b90e9c61547884f1daa8a7"
+    },
+    {
+      "path": ".vitest-cache/767ef4822ed287b56926c9b7199a20457f9a9b2d",
+      "kind": "file",
+      "sha256": "d632dc6ab822791e3a76b0db1c55fd79d75892741ab22e27ee99b49e0227b701"
+    },
+    {
+      "path": ".vitest-cache/76f3293650e29188cac841b0c16ea49933c0def8",
+      "kind": "file",
+      "sha256": "fa4f6d44728197c319bb93e684c1f6b41c843bff4ce865c01d7de60fd3da31ef"
+    },
+    {
+      "path": ".vitest-cache/7a4062267a04169bd4cbc50b7daf00bbeb81756e",
+      "kind": "file",
+      "sha256": "4fce629337cb7f2d992b708de29cd45512b9a86ebd3986bda828e7b531069395"
+    },
+    {
+      "path": ".vitest-cache/808d8c6fdcd3b922c5b72c41065beac7afc33489",
+      "kind": "file",
+      "sha256": "7ae682ad578cbfb4e18b8276975261f4f918084671ba74f3a131e71093df2e60"
+    },
+    {
+      "path": ".vitest-cache/8467b589752394baf8b2e3251501828da398d764",
+      "kind": "file",
+      "sha256": "2daab39c22b82dde24f0cafb1d35f61d55e9f46dd862a3658fd4a391bd5b5b8b"
+    },
+    {
+      "path": ".vitest-cache/849b6701738a401259ee4489f1e37e866bb6f19e",
+      "kind": "file",
+      "sha256": "c5d96a3d3ebed99df9db7dafd5022fc3704873333350d0c2db1fa90924e6e1be"
+    },
+    {
+      "path": ".vitest-cache/86e2c97d13e9e68b634e5c061951e85c81260c4c",
+      "kind": "file",
+      "sha256": "4d59d73a06fccf4f6b467f7dc2ddce4dede90237bda070da2c203161d2865f26"
+    },
+    {
+      "path": ".vitest-cache/8a6785e25a03aadbbf5b9b2188b81b56b1c98787",
+      "kind": "file",
+      "sha256": "a132b7c58891ee3e3e079ed8b00223490e3e4a1ba81c54c0443a58fcea7e4723"
+    },
+    {
+      "path": ".vitest-cache/8f26af5d40772840570f9abdb08cc0090265934a",
+      "kind": "file",
+      "sha256": "90829e83d1375d922e90d287ff6177eb6a4c2f29e8869f79fc657ccaabf27083"
+    },
+    {
+      "path": ".vitest-cache/9151f0e4641977bd81c33ea00f10f9d25cc6aa37",
+      "kind": "file",
+      "sha256": "41d75b48dc2e23d621a5caca48e010b8daf75debd3d23e58d69883e5d2701fb2"
+    },
+    {
+      "path": ".vitest-cache/961fd8e3731087ceff11aed132f91e27eed738ad",
+      "kind": "file",
+      "sha256": "ed722926036de9e508b42343f7810288eca86640f9080f2cddd36dc080300432"
+    },
+    {
+      "path": ".vitest-cache/96ec041e5279843db92607ddf40c3eb415174ec5",
+      "kind": "file",
+      "sha256": "314517145895dcb7bc21fe607a70cae8327758fe05ce985ce72aafbba7ce713b"
+    },
+    {
+      "path": ".vitest-cache/a444fe9b11809d3e21055adce0239147d0aa38a0",
+      "kind": "file",
+      "sha256": "5ba9135582afd6c6dbda21c4c7e3301bfe1abbf9d5821a35350cc972a748c616"
+    },
+    {
+      "path": ".vitest-cache/ab29d59cbc1bf61dd6c05f4ca8163341ce2d8bc2",
+      "kind": "file",
+      "sha256": "59f943bb56cf3483b7e25a64d09c80aeee920914b1db57e8fbc505a1a5b93e19"
+    },
+    {
+      "path": ".vitest-cache/acfbf82f38ea0f3eea06c5ad617e9c6a70d707db",
+      "kind": "file",
+      "sha256": "e296b0374f48018f73dba3e5723ac5604102a7a122786c6a3288ceefccf8650b"
+    },
+    {
+      "path": ".vitest-cache/ad1b7dda727c31f929c353a1bec61df04f8e146a",
+      "kind": "file",
+      "sha256": "14964e4893b02d38d06c272f9e166e4573690f0f7163206c438a0d00d4c115bb"
+    },
+    {
+      "path": ".vitest-cache/b89b2afe43a4cb9265d49b3486d16f0540acaab7",
+      "kind": "file",
+      "sha256": "d3de30d3edd53aeae52dc34a3b0a771743ecf78fa3538f976711382b9f5bfb17"
+    },
+    {
+      "path": ".vitest-cache/bd5a17141f9661bfbc644a82345dbde781458622",
+      "kind": "file",
+      "sha256": "bcb8c4ae9446867dc4a13685892336a57fd2ea2ce83ab8e2427c2240b5b76a1a"
+    },
+    {
+      "path": ".vitest-cache/c3435d6a29a368b7f0d0f9cdd2586998de7e013b",
+      "kind": "file",
+      "sha256": "b2e0eec7a15537842b2e69f2b33adb507c907e5ab1f4c6fc0d703b478b4f9ca5"
+    },
+    {
+      "path": ".vitest-cache/c41a7562ac35f5197417f269cc8e2d2899adf90d",
+      "kind": "file",
+      "sha256": "b3a40bc69e1d95a974e70f0882f9effccb6eabe1a19c7889f32b6fc4194a17bd"
+    },
+    {
+      "path": ".vitest-cache/c6964df06b87c73b470f70b290a6acf6e76509bd",
+      "kind": "file",
+      "sha256": "736af2108b39bc6e5d3be8388a49e9bf4ae5a55107b036a93900ac92bbacda8a"
+    },
+    {
+      "path": ".vitest-cache/caacd7681bb17780bcb54f77dc745b22ebaf8140",
+      "kind": "file",
+      "sha256": "dc6deafa111bae2956149062fa7e46a51387e1dc449b6a61e0f419ee94c1f31c"
+    },
+    {
+      "path": ".vitest-cache/cd48d03c164389fb5541f615881ce73e81eb281e",
+      "kind": "file",
+      "sha256": "9209411a3824c06ac202268787e9a0f5de26a863506c9874af288d2c644fb3b2"
+    },
+    {
+      "path": ".vitest-cache/d5e1ea71a5015ce8c6b1268f0dbcd891adc5f870",
+      "kind": "file",
+      "sha256": "6ccaa4a14db6dcaaf193b979dba5eced96a879d2b814964b86f3f0c448b177d5"
+    },
+    {
+      "path": ".vitest-cache/d6c5513b88b902a917f519e28b8e3237b77ecf60",
+      "kind": "file",
+      "sha256": "6cfd570719f16cc89b826bca3f66996281f12c2ed9b4762ef8a4f4363cfda39a"
+    },
+    {
+      "path": ".vitest-cache/d7f94316ca4a12363a9a5bed8914c17ba46d90d1",
+      "kind": "file",
+      "sha256": "7f40ade184659018e0f06d61916b0a44dd92513c7a2f387513748cd5d33a0ebb"
+    },
+    {
+      "path": ".vitest-cache/de24028055c58eff09e7d85a44c6ae8e2c2f72b1",
+      "kind": "file",
+      "sha256": "42229e71dc73ff5b7fdebb3ad0dc7bf9c9edaa2cf25f2e7278d85477d93e7500"
+    },
+    {
+      "path": ".vitest-cache/df8eb76dc62a4093dfcaaa5ce30d220c7032d803",
+      "kind": "file",
+      "sha256": "36efc2b8719834fe1508a2e4a2d1b3c4474025c5637995bddb70bf0534b63926"
+    },
+    {
+      "path": ".vitest-cache/dfab0ddfb4111b1d088bbf7cec935f23d135a35d",
+      "kind": "file",
+      "sha256": "40cfdcad63b22043dadc0fe3c43638275460a1a5251825f5c0fc751ea6769151"
+    },
+    {
+      "path": ".vitest-cache/e08037e540fb88ba828653a7ecdb429b9adb90b0",
+      "kind": "file",
+      "sha256": "63cb6c59a31fa0895fd3c3fd2e99b644d8e5709a814225255a50cb5ee9e64683"
+    },
+    {
+      "path": ".vitest-cache/e4dcced21c42128a9522e4f974dc340c40b3db1b",
+      "kind": "file",
+      "sha256": "490b0d6d6f0d4f2d6e388a2f30ab37b23571027d65acef6b2da18b6a50d1ca66"
+    },
+    {
+      "path": ".vitest-cache/e8414cc405d15bcba55f3c37d6064b0450a89a32",
+      "kind": "file",
+      "sha256": "baca76cba5b11af6021253c5c686ddb0cad767bc18174b4f91631fa0784b0c45"
+    },
+    {
+      "path": ".vitest-cache/e97b3b84d9b202d5de61ae6783afb1a71bae5600",
+      "kind": "file",
+      "sha256": "54c4475b9997c652350d7781e97b2d1e851df409b3a23dc277445dcca88815a6"
+    },
+    {
+      "path": ".vitest-cache/f51bcb50dd8cc19dccb44b6f4e7833c0f8e65709",
+      "kind": "file",
+      "sha256": "625739c75f04d74b6baace44cea899db1ab6bf38d0678d14362f9c5c2e21110a"
+    },
+    {
+      "path": ".vitest-cache/f5375619ad2bf65ba70f90313e851286b3a3c09a",
+      "kind": "file",
+      "sha256": "f84bcbe9de128f770ed919e31597467caff9850877634b923fa50d2372da4478"
+    },
+    {
+      "path": ".vitest-cache/f5e86a995d90cc1535973fdadcb16a39c1806c1c",
+      "kind": "file",
+      "sha256": "daa5f7fe611df9dc275034542fb8d3ab1e5dd664431a9a95efe3290d22fe74c9"
+    },
+    {
+      "path": ".vitest-cache/f8b62055657ad0ec1bdad10720f77a3c81c74c88",
+      "kind": "file",
+      "sha256": "05f0570cd1dadb0b3bc07dde75f43b05857d2f37a2e06f1e47bf6a15d6f4a947"
+    },
+    {
+      "path": ".vitest-cache/fd0c2b4e6f49760b311ae4eb3a4f005fba9ddf36",
+      "kind": "file",
+      "sha256": "7aaceb88176aabe47728f9e95b6826ebc69ba0502fb3f78a4f43fde42fe34222"
+    },
+    {
+      "path": ".vitest-cache/fe8249a7a021159f9d5e9275355650118a0135b2",
+      "kind": "file",
+      "sha256": "fdd5be6b99b599d89b0f1ca035ad57fbd348f956d716f1776a6e0e40f148b25a"
+    },
+    {
+      "path": ".vitest-cache/ff4843e7abab27da8794ab7ad73084e408605fdf",
+      "kind": "file",
+      "sha256": "f5602c3865ec69a0b171ffb3594e85088e06aae5038febae161d01c4285a10dd"
+    }
+  ],
+  "modelRetried": false,
+  "gradingCriteriaChanged": false,
+  "boundary": "Only exact original dependency bytes enter each new worker. Added cache contents are retained privately for forensics, not supplied to later workers. Model invocations and original negative outcomes are not repeated."
+}

@@ -20,7 +20,7 @@ $ClineSdkVersion = if ($env:BLAME_CLINE_SDK_VERSION) {
 } elseif ($Manifest.PSObject.Properties["clineSdkVersion"]) {
   [string]$Manifest.clineSdkVersion
 } else {
-  "0.0.95"
+  "0.2.0"
 }
 $SemanticHarnessPayload = Join-Path $RuntimeHome "payloads\blame-semantic-harness.tgz"
 $SemanticHarnessSha256 = if (Test-Path -LiteralPath $SemanticHarnessPayload) {
@@ -158,9 +158,35 @@ function Get-OptionalProperty {
 function Get-WslListText {
   $result = Invoke-WslHost -WslArgs @("--list", "--verbose")
   if ($result.Code -ne 0) {
+    if (Test-DistrosAbsentText $result.Output) {
+      return ""
+    }
     throw $result.Output
   }
   ($result.Stdout -replace "`0", "")
+}
+
+function Test-DistrosAbsentText {
+  param([string]$Text)
+  if (-not $Text) {
+    return $false
+  }
+  $Text = ($Text -replace "`0", "").Trim()
+  # Modern WSL reports this language-independent code for an empty verbose list.
+  # Other errors can contain EnumerateDistros/ReadDistroConfig: matching "distro"
+  # would hide those failures and send an existing installation down the import path.
+  $codes = [regex]::Matches($Text, '(?i)\bWsl(?:/[A-Za-z0-9_]+)+')
+  if ($codes.Count -gt 0) {
+    foreach ($code in $codes) {
+      if ($code.Value -notmatch '/WSL_E_DEFAULT_DISTRO_NOT_FOUND$') { return $false }
+    }
+    return $true
+  }
+  # Older WSL versions omit the code. Accept only known absence sentences,
+  # never generic distribution names, install suggestions or command usage.
+  # Unicode escapes keep this script compatible with Windows PowerShell 5.1.
+  $Text -match ('(?im)^\s*(?:Windows Subsystem for Linux has no installed distributions\.' +
+    '|(?:Le )?Sous-syst\u00e8me Windows pour Linux n[''\u2019]a aucune distribution install\u00e9e\.)\s*$')
 }
 
 function Test-WslAvailable {
@@ -268,7 +294,7 @@ check docker-compose sh -lc 'docker compose version >/dev/null 2>&1'
 check git sh -lc 'command -v git >/dev/null 2>&1'
 check cline-sdk valid_cline_sdk_install
 check semantic-harness sh -lc 'command -v blame-semantic-harness >/dev/null 2>&1 && test "$(cat /etc/blame-semantic-harness-sha256 2>/dev/null)" = "__SEMANTIC_HARNESS_SHA256__"'
-check package-managers sh -lc 'test "$(/opt/blame/package-managers/pnpm/10.33.2/bin/pnpm --version 2>/dev/null)" = "10.33.2" && test "$(/opt/blame/package-managers/npm/11.6.4/bin/npm --version 2>/dev/null)" = "11.6.4" && test "$(/opt/blame/package-managers/yarn/1.22.22/bin/yarn --version 2>/dev/null)" = "1.22.22"'
+check package-managers sh -lc 'test "$(/opt/blame/package-managers/pnpm/12.15.0/bin/pnpm --version 2>/dev/null)" = "12.15.0" && test "$(/opt/blame/package-managers/pnpm/10.33.2/bin/pnpm --version 2>/dev/null)" = "10.33.2" && test "$(/opt/blame/package-managers/npm/12.2.1/bin/npm --version 2>/dev/null)" = "12.2.1" && test "$(/opt/blame/package-managers/npm/11.6.4/bin/npm --version 2>/dev/null)" = "11.6.4" && test "$(/opt/blame/package-managers/yarn/1.22.22/bin/yarn --version 2>/dev/null)" = "1.22.22"'
 '@
   $command = $command -replace "__CLINE_SDK_VERSION__", $ClineSdkVersion
   $command = $command -replace "__RUNTIME_AGENT_VERSION__", $RuntimeAgentVersion
@@ -539,8 +565,8 @@ version_ok &&
   valid_cline_sdk_install &&
   command -v blame-semantic-harness >/dev/null 2>&1 &&
   test "$(cat /etc/blame-semantic-harness-sha256 2>/dev/null)" = "__SEMANTIC_HARNESS_SHA256__" &&
-  test "$(/opt/blame/package-managers/pnpm/10.33.2/bin/pnpm --version 2>/dev/null)" = "10.33.2" &&
-  test "$(/opt/blame/package-managers/npm/11.6.4/bin/npm --version 2>/dev/null)" = "11.6.4" &&
+  test "$(/opt/blame/package-managers/pnpm/12.15.0/bin/pnpm --version 2>/dev/null)" = "12.15.0" && test "$(/opt/blame/package-managers/pnpm/10.33.2/bin/pnpm --version 2>/dev/null)" = "10.33.2" &&
+  test "$(/opt/blame/package-managers/npm/12.2.1/bin/npm --version 2>/dev/null)" = "12.2.1" && test "$(/opt/blame/package-managers/npm/11.6.4/bin/npm --version 2>/dev/null)" = "11.6.4" &&
   test "$(/opt/blame/package-managers/yarn/1.22.22/bin/yarn --version 2>/dev/null)" = "1.22.22"
 '@
   $command = $command -replace "__CLINE_SDK_VERSION__", $ClineSdkVersion

@@ -19,8 +19,7 @@ export function baselineImportAction(input: {
 
 export function liveSourceDeltaMatches(
   session:
-    | Pick<PreviewSessionRecord, 'workspaceHash' | 'state' | 'pendingDeltaArtifactId'>
-    | undefined,
+    Pick<PreviewSessionRecord, 'workspaceHash' | 'state' | 'pendingDeltaArtifactId'> | undefined,
   source: SourceArtifact,
   baselineId?: string
 ) {

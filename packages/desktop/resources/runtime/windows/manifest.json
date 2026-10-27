@@ -1,14 +1,14 @@
 {
   "distro": "BlameRuntime",
-  "runtimeVersion": "11",
-  "clineSdkVersion": "0.0.95",
+  "runtimeVersion": "13",
+  "clineSdkVersion": "0.2.0",
   "runtimeAgentVersion": "10",
   "runtimeMarker": "/etc/blame-runtime-version",
   "runtimeRoot": "/home/blame/.local/share/blame/runtime",
-  "dockerVersion": "29.9.1",
-  "composeVersion": "5.6.0",
-  "buildxVersion": "0.38.0",
-  "nodeVersion": "22.23.1",
+  "dockerVersion": "29.9.2",
+  "composeVersion": "5.6.1",
+  "buildxVersion": "0.38.1",
+  "nodeVersion": "24.22.1",
   "rootfs": {
     "amd64": {
       "kind": "ubuntu",

@@ -19,8 +19,9 @@
     "test": "pnpm build && node --test dist/*.test.js"
   },
   "devDependencies": {
-    "@cline/shared": "0.0.95",
+    "@cline/shared": "0.2.0",
     "@types/node": "^24.12.0",
-    "typescript": "~5.9.3"
+    "typescript": "npm:@typescript/typescript6@6.0.2",
+    "@typescript/native": "npm:typescript@7.0.2"
   }
 }

@@ -2,6 +2,7 @@ import { writeFile } from "node:fs/promises";
 import {
   BrowserWindow,
   clipboard,
+  ClipboardItem,
   dialog,
   ipcMain,
   nativeImage,
@@ -82,7 +83,10 @@ export function registerAgentScreenshotIpcHandlers(input: {
       screenshotId(record(value).id),
     );
     if (!stored) return false;
-    clipboard.writeImage(nativeImage.createFromBuffer(stored.data));
+    const png = nativeImage.createFromBuffer(stored.data).toPNG();
+    await clipboard.write([
+      new ClipboardItem({ "image/png": new Blob([new Uint8Array(png)], { type: "image/png" }) }),
+    ]);
     return true;
   });
   ipcMain.handle("agent-screenshots:save-as", async (event, value) => {

@@ -37,14 +37,12 @@ export default [
         },
         optimizeDeps: {
           include: Object.keys(reactRuntime),
-          esbuildOptions: {
-            jsx: "automatic",
-            jsxImportSource: "react",
+          rolldownOptions: {
+            transform: { jsx: { runtime: "automatic", importSource: "react" } },
           },
         },
-        esbuild: {
-          jsx: "automatic",
-          jsxImportSource: "react",
+        oxc: {
+          jsx: { runtime: "automatic", importSource: "react" },
         },
         worker: {
           format: "es",

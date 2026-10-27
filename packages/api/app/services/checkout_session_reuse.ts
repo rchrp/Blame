@@ -5,7 +5,8 @@ type CheckoutSession = {
       price: { id: string } | null
     }>
   }
-  status: 'complete' | 'expired' | 'open' | null
+  // Stripe enums can gain new values without a major SDK release.
+  status: string | null
   url: string | null
 }
 

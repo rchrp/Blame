@@ -1,0 +1,147 @@
+{
+  "protocolHash": "42d111a0162283d14df36d9a10692ae74efdc129db05a5188215f0669c2b2a93",
+  "completed": 28,
+  "planned": 28,
+  "receipts": [
+    {
+      "name": "1-clamp-items-reference",
+      "path": "checkpoints/1-clamp-items-reference.json.gz",
+      "sha256": "2a92130be0ccdc6a2d6120ab48bdf877b248ca13f3b66eb4c922429f8ce27e40"
+    },
+    {
+      "name": "1-clamp-items-compact",
+      "path": "checkpoints/1-clamp-items-compact.json.gz",
+      "sha256": "d400cbf548ceef3b0484afadda969bb5abc95753cc3d0536239a248183acab2d"
+    },
+    {
+      "name": "1-clamp-items-cline",
+      "path": "checkpoints/1-clamp-items-cline.json.gz",
+      "sha256": "ebe04e5f6c2e42aa829c02238616ba50df73a9f7f14adda3956992270c8418c7"
+    },
+    {
+      "name": "1-quota-compact",
+      "path": "checkpoints/1-quota-compact.json.gz",
+      "sha256": "9f34fedece94ee978a17e41c9d208aa736eb639303665717d3cff6f774fb59bc"
+    },
+    {
+      "name": "1-quota-cline",
+      "path": "checkpoints/1-quota-cline.json.gz",
+      "sha256": "84044bba62779a4739f0255db965ceab74225d187a62ca3a8b31049da165d58e"
+    },
+    {
+      "name": "1-quota-reference",
+      "path": "checkpoints/1-quota-reference.json.gz",
+      "sha256": "0fa234fe0c842570409f24103357e72354fa17cd063fe740265fd84eea2c8719"
+    },
+    {
+      "name": "2-clamp-items-compact",
+      "path": "checkpoints/2-clamp-items-compact.json.gz",
+      "sha256": "8b15bf3ffb2f6e56ed0f484d012311306fcef371e86975847555951896cfad8b"
+    },
+    {
+      "name": "2-clamp-items-cline",
+      "path": "checkpoints/2-clamp-items-cline.json.gz",
+      "sha256": "11e6d67f9e379fd72146be0fd576672d786615e220686aa206fecab0b5a05f1f"
+    },
+    {
+      "name": "2-clamp-items-reference",
+      "path": "checkpoints/2-clamp-items-reference.json.gz",
+      "sha256": "35fa878577b96e6a481e42cf05626f53fa2eae7551ec89155f92e2211bf2fc98"
+    },
+    {
+      "name": "2-quota-cline",
+      "path": "checkpoints/2-quota-cline.json.gz",
+      "sha256": "57c9823de7b0e0daccf556f5e3e3ac8855e402f76398fe1a69979ba13e53e0f3"
+    },
+    {
+      "name": "2-quota-reference",
+      "path": "checkpoints/2-quota-reference.json.gz",
+      "sha256": "f6fd6ac1f084fe5adcedbe023ace866edaeb5f00973007238536d08bf33e8079"
+    },
+    {
+      "name": "2-quota-compact",
+      "path": "checkpoints/2-quota-compact.json.gz",
+      "sha256": "808508c36a31853a39c7fb732dd209ec725ad6c214804ef6e8f1638192b1d7dd"
+    },
+    {
+      "name": "1-mutation-callbacks-reference",
+      "path": "checkpoints/1-mutation-callbacks-reference.json.gz",
+      "sha256": "c67c8e277bffde55f35de7aa081153fc84f9f7ea96bc5931f49b2b694ec939a5"
+    },
+    {
+      "name": "1-mutation-callbacks-compact",
+      "path": "checkpoints/1-mutation-callbacks-compact.json.gz",
+      "sha256": "2ed4f310d0902e2847c88044d5aaab67aef2b09265846ce38323303bea5d917c"
+    },
+    {
+      "name": "1-mutation-callbacks-navigation",
+      "path": "checkpoints/1-mutation-callbacks-navigation.json.gz",
+      "sha256": "9d30c0381d61190a4a5a37a530b34435f10f43fc4b5b7571bc9699d60133a078"
+    },
+    {
+      "name": "1-mutation-callbacks-cline",
+      "path": "checkpoints/1-mutation-callbacks-cline.json.gz",
+      "sha256": "ba636741c242ebb35922b0c9a72dd1d13884e5227265875983f11039fc7d44da"
+    },
+    {
+      "name": "1-fetching-filters-compact",
+      "path": "checkpoints/1-fetching-filters-compact.json.gz",
+      "sha256": "f0382d9f5e2c0c453bfb379acc280f21fdf8332b3989ce388a5b6abffb49ca8a"
+    },
+    {
+      "name": "1-fetching-filters-navigation",
+      "path": "checkpoints/1-fetching-filters-navigation.json.gz",
+      "sha256": "64fe3827334c87d5118c9ae1ce3a49d768cc74377b940a698be4614407958024"
+    },
+    {
+      "name": "1-fetching-filters-cline",
+      "path": "checkpoints/1-fetching-filters-cline.json.gz",
+      "sha256": "72c0670e04896041f5527ff6d09f79a9c44458f023e43184c774d277855e71ab"
+    },
+    {
+      "name": "1-fetching-filters-reference",
+      "path": "checkpoints/1-fetching-filters-reference.json.gz",
+      "sha256": "1d2341c96c5ee07f69f58f266b5f5748f62e5e9cce9824e3cc15c1990153d4b6"
+    },
+    {
+      "name": "2-mutation-callbacks-compact",
+      "path": "checkpoints/2-mutation-callbacks-compact.json.gz",
+      "sha256": "12754fc11ca205965ab07fef4951a79c5e063dc2b36f764a734a61609c7debf5"
+    },
+    {
+      "name": "2-mutation-callbacks-navigation",
+      "path": "checkpoints/2-mutation-callbacks-navigation.json.gz",
+      "sha256": "c474b45ea51f9273dfb9ab9932dc9ee6f0e93620af3ad3d81d6967443f8e9834"
+    },
+    {
+      "name": "2-mutation-callbacks-cline",
+      "path": "checkpoints/2-mutation-callbacks-cline.json.gz",
+      "sha256": "e55cbd4ab45e7a6418b4341ede629de2dfec9a81c09ebd49ca90e275c6e7aeee"
+    },
+    {
+      "name": "2-mutation-callbacks-reference",
+      "path": "checkpoints/2-mutation-callbacks-reference.json.gz",
+      "sha256": "57b5975d22eff760946543b41a7c36b6a25cd031c6789f6f533cc69a1c54ad34"
+    },
+    {
+      "name": "2-fetching-filters-navigation",
+      "path": "checkpoints/2-fetching-filters-navigation.json.gz",
+      "sha256": "02001d87367edf756e9b3276767abdd1219b9621f95b1f173caf7893e75c8a43"
+    },
+    {
+      "name": "2-fetching-filters-cline",
+      "path": "checkpoints/2-fetching-filters-cline.json.gz",
+      "sha256": "288c205e470340141e5e10f102216d0bd1e882ca6198a9786d120b8f7920a730"
+    },
+    {
+      "name": "2-fetching-filters-reference",
+      "path": "checkpoints/2-fetching-filters-reference.json.gz",
+      "sha256": "2d1f1df653c653962c92655b1cb761b7d1636cd2eaa8939fa12688bdd5622f0c"
+    },
+    {
+      "name": "2-fetching-filters-compact",
+      "path": "checkpoints/2-fetching-filters-compact.json.gz",
+      "sha256": "bc4c2bb27e6f861a583bd7469fbde792cb20212e415e73ddcc1efd57e8d42bd4"
+    }
+  ]
+}

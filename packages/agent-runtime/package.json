@@ -32,13 +32,17 @@
     "./new-project-options": {
       "types": "./src/new-project-options.ts",
       "default": "./dist/new-project-options.js"
+    },
+    "./tool-result-envelope": {
+      "types": "./src/tool-result-envelope.ts",
+      "default": "./dist/tool-result-envelope.js"
     }
   },
   "scripts": {
     "build": "pnpm --filter @blame/model-catalog build && tsc && node scripts/copy-prompt.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test": "pnpm build && node --test dist/cline-sdk-smoke.test.js dist/project-initialization.test.js dist/project-name.test.js dist/project-code-practices.test.js dist/project-scanners.test.js dist/security-audit.test.js dist/project-initialization-repair.test.js dist/next-webpack-fallback.test.js dist/project-initialization-impact.test.js dist/project-host-orchestration.test.js dist/preview-package-manager.test.js dist/commit-message.test.js dist/approve-merge.test.js dist/production.test.js dist/reasoning.test.js dist/context-projection.test.js dist/image-context.test.js dist/image-compaction.test.js dist/tool-result-presentation.test.js dist/web-fetch.test.js dist/specialist-agents.test.js dist/blame-native-skills.test.js dist/cline-runtime-events.test.js dist/cline-session-replay.test.js dist/preview-harness-tools.test.js dist/preview-devtools-policy.test.js dist/agent-telemetry.test.js dist/provider-schema-compatibility.test.js dist/provider-output-limit.test.js dist/provider-catalog.test.js dist/claude-code/claude-code-protocol.test.js dist/claude-code/claude-code-bridge.test.js dist/subscription-usage.test.js dist/supplemental-model-config.test.js dist/context-limit-config.test.js dist/manual-compaction.test.js dist/cloud-api.test.js dist/title-generation.test.js dist/story-history-tools.test.js dist/story-planning.test.js dist/development-story-prompt.test.js dist/attachment-reader.test.js dist/harness/command-policy.test.js dist/harness/project-memory.test.js dist/harness/frontier.test.js dist/harness/light-harness.test.js dist/harness/light-search.test.js dist/harness/light-agent-navigation-guidance.test.js dist/harness/light-agent-editing-guidance.test.js dist/harness/light-patch-header-guidance.test.js dist/harness/light-whole-symbol-indent.test.js dist/harness/light-qualified-target-recovery.test.js dist/harness/light-path-recovery.test.js dist/harness/light-agent-validation-guidance.test.js dist/harness/light-declaration-search.test.js dist/harness/light-default-declarations.test.js dist/harness/light-references.test.js dist/harness/light-semantic-rename.test.js dist/harness/light-invariants.test.js dist/harness/light-recovery.test.js dist/harness/light-noop-body.test.js dist/harness/light-body-header.test.js dist/harness/light-edit-recovery.test.js dist/harness/light-signature-read.test.js dist/harness/light-dependency-read.test.js dist/harness/light-patch-scope-diagnostic.test.js dist/harness/light-compiler-invocation.test.js dist/harness/command-changes.test.js dist/harness/workspace-command-process.test.js dist/harness/light-command-wait.test.js dist/harness/light-final-tests.test.js dist/harness/light-required-checks.test.js dist/harness/light-check-repair.test.js dist/harness/light-validation-provenance.test.js dist/harness/runtime-test-scope.test.js dist/harness/node-check-observation.test.js dist/harness/node-event-evidence.test.js dist/harness/npm-check-observation.test.js dist/harness/test-selection-failure.test.js dist/harness/invocation-test-report.test.js dist/harness/test-type-evidence.test.js dist/harness/symbolic-math.test.js dist/harness/symbolic-analysis.test.js dist/harness/light-symbolic-analysis.test.js dist/harness/project-test-command.test.js dist/harness/light-patch-targets.test.js dist/harness/light-patch-effects.test.js dist/harness/light-images.test.js dist/harness/light-executor.test.js dist/harness/semantic-harness-runner.test.js dist/harness/light-friction.test.js dist/harness/native-task-catalog.test.js dist/harness/project-task-arguments.test.js dist/harness/project-invocation-display.test.js dist/harness/content-validation.test.js dist/preview-screenshots.test.js dist/harness/finish-task-images.test.js dist/component-preview-tool.test.js dist/new-project-planning.test.js dist/web-research.test.js"
+    "test": "pnpm build && node --test --test-concurrency=4 dist/cline-sdk-smoke.test.js dist/project-initialization.test.js dist/project-name.test.js dist/project-code-practices.test.js dist/project-scanners.test.js dist/security-audit.test.js dist/project-initialization-repair.test.js dist/next-webpack-fallback.test.js dist/project-initialization-impact.test.js dist/project-host-orchestration.test.js dist/preview-package-manager.test.js dist/commit-message.test.js dist/approve-merge.test.js dist/production.test.js dist/reasoning.test.js dist/context-projection.test.js dist/image-context.test.js dist/image-compaction.test.js dist/tool-result-presentation.test.js dist/web-fetch.test.js dist/specialist-agents.test.js dist/blame-native-skills.test.js dist/cline-runtime-events.test.js dist/cline-session-replay.test.js dist/preview-harness-tools.test.js dist/preview-devtools-policy.test.js dist/agent-telemetry.test.js dist/provider-schema-compatibility.test.js dist/provider-output-limit.test.js dist/provider-catalog.test.js dist/claude-code/claude-code-protocol.test.js dist/claude-code/claude-code-bridge.test.js dist/subscription-usage.test.js dist/supplemental-model-config.test.js dist/context-limit-config.test.js dist/manual-compaction.test.js dist/cloud-api.test.js dist/title-generation.test.js dist/story-history-tools.test.js dist/story-planning.test.js dist/development-story-prompt.test.js dist/attachment-reader.test.js dist/harness/package-manager-runtime.test.js dist/harness/command-policy.test.js dist/harness/project-memory.test.js dist/harness/frontier.test.js dist/harness/light-harness.test.js dist/harness/light-search.test.js dist/harness/light-agent-navigation-guidance.test.js dist/harness/light-agent-editing-guidance.test.js dist/harness/light-patch-header-guidance.test.js dist/harness/light-whole-symbol-indent.test.js dist/harness/light-qualified-target-recovery.test.js dist/harness/light-path-recovery.test.js dist/harness/light-agent-validation-guidance.test.js dist/harness/light-declaration-search.test.js dist/harness/light-default-declarations.test.js dist/harness/light-references.test.js dist/harness/light-semantic-rename.test.js dist/harness/light-invariants.test.js dist/harness/light-recovery.test.js dist/harness/light-noop-body.test.js dist/harness/light-body-header.test.js dist/harness/light-edit-recovery.test.js dist/harness/light-signature-read.test.js dist/harness/light-dependency-read.test.js dist/harness/light-patch-scope-diagnostic.test.js dist/harness/light-compiler-invocation.test.js dist/harness/command-changes.test.js dist/harness/workspace-command-process.test.js dist/harness/light-command-wait.test.js dist/harness/light-final-tests.test.js dist/harness/light-required-checks.test.js dist/harness/light-check-repair.test.js dist/harness/light-validation-provenance.test.js dist/harness/runtime-test-scope.test.js dist/harness/node-check-observation.test.js dist/harness/node-event-evidence.test.js dist/harness/npm-check-observation.test.js dist/harness/test-selection-failure.test.js dist/harness/invocation-test-report.test.js dist/harness/test-type-evidence.test.js dist/harness/symbolic-math.test.js dist/harness/symbolic-analysis.test.js dist/harness/light-symbolic-analysis.test.js dist/harness/project-test-command.test.js dist/harness/light-patch-targets.test.js dist/harness/light-patch-effects.test.js dist/harness/light-images.test.js dist/harness/light-executor.test.js dist/harness/semantic-harness-runner.test.js dist/harness/light-friction.test.js dist/harness/native-task-catalog.test.js dist/harness/project-task-arguments.test.js dist/harness/project-invocation-display.test.js dist/harness/content-validation.test.js dist/preview-screenshots.test.js dist/harness/finish-task-images.test.js dist/component-preview-tool.test.js dist/new-project-planning.test.js dist/web-research.test.js dist/tool-result-envelope.test.js dist/harness/light-literal-compiler-repair.test.js dist/repair-advice-projection.test.js dist/harness/light-filename-search.test.js dist/harness/light-declaration-source-order.test.js"
   },
   "dependencies": {
     "@ast-grep/lang-bash": "0.0.8",
@@ -49,47 +53,51 @@
     "@ast-grep/lang-java": "0.0.7",
     "@ast-grep/lang-python": "0.0.6",
     "@ast-grep/lang-rust": "0.0.7",
-    "@ast-grep/napi": "0.42.2",
+    "@ast-grep/napi": "0.51.0",
     "@blame/harness-core": "workspace:*",
     "@blame/model-catalog": "workspace:*",
     "@blame/preview-contract": "workspace:*",
     "@blame/telemetry": "workspace:*",
-    "@cline/llms": "0.0.95",
-    "@cline/sdk": "0.0.95",
-    "@cline/shared": "0.0.95",
+    "@cline/llms": "0.2.0",
+    "@cline/sdk": "0.2.0",
+    "@cline/shared": "0.2.0",
     "@mozilla/readability": "^0.6.0",
     "@vscode/ripgrep": "1.18.0",
-    "@xmldom/xmldom": "0.9.10",
+    "@xmldom/xmldom": "0.9.12",
+    "bowser": "2.15.0",
     "diff": "9.0.0",
-    "execa": "9.6.1",
+    "execa": "10.2.1",
     "fast-glob": "3.3.3",
     "ipaddr.js": "^2.5.0",
     "jsdom": "^30.1.3",
     "jsonc-parser": "3.3.1",
     "mammoth": "1.13.0",
-    "npm": "11.6.4",
+    "npm": "12.2.1",
     "pdfjs-dist": "6.4.299",
-    "pnpm": "10.33.2",
+    "pnpm": "12.15.0",
     "proper-lockfile": "4.1.2",
     "read-excel-file": "9.3.12",
-    "typescript": "~5.9.3",
-    "write-file-atomic": "7.0.1",
+    "typescript": "npm:@typescript/typescript6@6.0.2",
+    "write-file-atomic": "8.0.0",
     "yarn": "1.22.22",
-    "zod": "4.4.3"
+    "zod": "4.6.7",
+    "pnpm-legacy": "npm:pnpm@10.33.2",
+    "npm-legacy": "npm:npm@11.6.4"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.4",
+    "@eslint/js": "^10.0.1",
     "@opentelemetry/api": "1.9.1",
-    "@opentelemetry/api-logs": "0.220.0",
-    "@opentelemetry/sdk-logs": "0.220.0",
-    "@opentelemetry/sdk-metrics": "2.9.0",
-    "@opentelemetry/sdk-trace": "2.9.0",
+    "@opentelemetry/sdk-logs": "0.223.0",
+    "@opentelemetry/sdk-metrics": "2.12.0",
+    "@opentelemetry/sdk-trace": "2.12.0",
     "@types/jsdom": "^30.0.0",
     "@types/node": "^24.12.0",
     "@types/proper-lockfile": "4.1.4",
     "@types/write-file-atomic": "4.0.3",
-    "eslint": "^9.39.4",
-    "globals": "^16.5.0",
-    "typescript-eslint": "^8.57.1"
+    "eslint": "^10.13.0",
+    "globals": "^17.13.0",
+    "typescript-eslint": "^8.72.1",
+    "@typescript/native": "npm:typescript@7.0.2",
+    "@opentelemetry/api-logs": "0.223.0"
   }
 }

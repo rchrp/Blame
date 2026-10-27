@@ -1,0 +1,114 @@
+{
+  "kind": "post-hoc duration sensitivity; raw trial durations unchanged",
+  "rows": [
+    {
+      "name": "1-clamp-items-reference",
+      "arm": "reference",
+      "task": "clamp-items",
+      "repeat": 1,
+      "sdkMs": 34084,
+      "firstHttpMs": 1895.0277409999994,
+      "afterFirstStreamMs": 32188.972259000002
+    },
+    {
+      "name": "1-clamp-items-compiler",
+      "arm": "compiler",
+      "task": "clamp-items",
+      "repeat": 1,
+      "sdkMs": 33316,
+      "firstHttpMs": 2891.1178079999995,
+      "afterFirstStreamMs": 30424.882192
+    },
+    {
+      "name": "1-clamp-items-cline",
+      "arm": "cline",
+      "task": "clamp-items",
+      "repeat": 1,
+      "sdkMs": 42129,
+      "firstHttpMs": 3187.868486,
+      "afterFirstStreamMs": 38941.131514
+    },
+    {
+      "name": "1-quota-compiler",
+      "arm": "compiler",
+      "task": "quota",
+      "repeat": 1,
+      "sdkMs": 34416,
+      "firstHttpMs": 2624.749717,
+      "afterFirstStreamMs": 31791.250283
+    },
+    {
+      "name": "1-quota-cline",
+      "arm": "cline",
+      "task": "quota",
+      "repeat": 1,
+      "sdkMs": 51315,
+      "firstHttpMs": 3213.9152590000003,
+      "afterFirstStreamMs": 48101.084741
+    },
+    {
+      "name": "1-quota-reference",
+      "arm": "reference",
+      "task": "quota",
+      "repeat": 1,
+      "sdkMs": 284246,
+      "firstHttpMs": 237107.335964,
+      "afterFirstStreamMs": 47138.664036
+    },
+    {
+      "name": "2-clamp-items-compiler",
+      "arm": "compiler",
+      "task": "clamp-items",
+      "repeat": 2,
+      "sdkMs": 46613,
+      "firstHttpMs": 2128.155877,
+      "afterFirstStreamMs": 44484.844123
+    },
+    {
+      "name": "2-clamp-items-cline",
+      "arm": "cline",
+      "task": "clamp-items",
+      "repeat": 2,
+      "sdkMs": 51906,
+      "firstHttpMs": 2924.582424,
+      "afterFirstStreamMs": 48981.417576
+    },
+    {
+      "name": "2-clamp-items-reference",
+      "arm": "reference",
+      "task": "clamp-items",
+      "repeat": 2,
+      "sdkMs": 60170,
+      "firstHttpMs": 1791.0148460000005,
+      "afterFirstStreamMs": 58378.985154
+    },
+    {
+      "name": "2-quota-cline",
+      "arm": "cline",
+      "task": "quota",
+      "repeat": 2,
+      "sdkMs": 77314,
+      "firstHttpMs": 3998.763614,
+      "afterFirstStreamMs": 73315.236386
+    },
+    {
+      "name": "2-quota-reference",
+      "arm": "reference",
+      "task": "quota",
+      "repeat": 2,
+      "sdkMs": 43156,
+      "firstHttpMs": 2043.3467530000003,
+      "afterFirstStreamMs": 41112.653247
+    },
+    {
+      "name": "2-quota-compiler",
+      "arm": "compiler",
+      "task": "quota",
+      "repeat": 2,
+      "sdkMs": 42350,
+      "firstHttpMs": 2357.941808,
+      "afterFirstStreamMs": 39992.058192
+    }
+  ],
+  "boundary": "Subtracting a first HTTP span is descriptive, not causal attribution to queue/generation/network or a new primary endpoint."
+}

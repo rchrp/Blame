@@ -1,0 +1,102 @@
+{
+  "registeredAtUTC": "2026-10-27T04:06:54.984Z",
+  "kind": "Second prospective mechanism cycle, known diagnostic tasks, no F70 model dispatch",
+  "parentProtocolSha256": "42d111a0162283d14df36d9a10692ae74efdc129db05a5188215f0669c2b2a93",
+  "selectionSourceHead": "8809e8d6687e57cb9fe0025fb546c1955ba524a7",
+  "model": {
+    "provider": "openai-codex",
+    "model": "gpt-5.6-luna",
+    "effort": "high",
+    "sdk": "0.2.0"
+  },
+  "hypothesis": {
+    "mechanism": "Within the existing bounded syntax declaration scan, preserve exact filename affinity first, then visit production source before test-like paths. Do not exclude test files, expand limits, alter lexical results or admit validation.",
+    "evidence": "F69 1-mutation-callbacks-reference: interface MutateOptions yields zero declaration candidates after 58/65 files and 1,047,738/1,048,576 bytes, before types.ts. The earlier onSettled lookup returns eight matches in one test file. This treatment addresses only declaration-budget order, not lexical result ranking or the generic type-error reasoning failure.",
+    "measure": "Local exact-declaration recovery at unchanged byte/file limits; actual provider-boundary discovery metadata and subsequent explicit target use; audited quality before resources.",
+    "comparison": "Fresh reference, source-order and integrated Cline draws on both previously selected F69 tasks; two repetitions. No pooling with F69, no task replacement.",
+    "risk": "A broad query seeking test declarations may reach them later; explicit test scope and exact filename affinity must remain usable. More useful candidates may still be ignored or add tokens."
+  },
+  "panels": [
+    {
+      "id": "F70",
+      "tasks": [
+        {
+          "id": "mutation-callbacks",
+          "fix": "a16e71c7a8d30cc892266028aeeeae9fdf930c67",
+          "issue": "https://github.com/TanStack/query/issues/11451",
+          "scope": [
+            "packages/query-core/src"
+          ],
+          "request": "Correct per-call mutation callback handling when an onSuccess or onError handler starts another mutation with different callbacks. The callbacks for the mutation being settled must keep that mutation’s data, variables and context; onSettled must not call the next mutation’s handlers. Preserve subscription, notification, retry and cache behavior. Add a regression in a new test file under packages/query-core/src/__tests__; preserve existing tests.",
+          "base": "98fd5936f05efcfa9d0c5d69a00bb002bbb6f00b"
+        },
+        {
+          "id": "fetching-filters",
+          "fix": "18e54bfac3dc3756afdb8840418d831c61bc15bf",
+          "issue": "https://github.com/TanStack/query/pull/12390",
+          "scope": [
+            "packages/query-core/src",
+            "packages/react-query/src"
+          ],
+          "request": "In query-core QueryClient.isFetching and the React useIsFetching hook, disallow fetchStatus in the public filter argument: these APIs already count fetching queries. Preserve all other filter fields, their generic inference and return types, and leave fetchStatus supported by general query-cache filtering. Keep runtime behavior unchanged. Scope this change to query-core and react-query, preserving the other framework adapters. Add regression coverage in new files under the existing __tests__ directories; preserve supplied tests. Preserve the existing QueryClient.isFetching generic entry point: an explicit compatible QueryFilters type argument must remain accepted, as must typed predicate inference.",
+          "base": "02ac821eb2315b8104b1446d13f9bdfac74d8f34"
+        }
+      ],
+      "arms": [
+        "reference",
+        "source-order",
+        "cline"
+      ],
+      "knownDiagnostics": true,
+      "limits": "Both historical upstream issues are now known diagnostic tasks, not independent confirmation. Scope remains query-core plus requested React subset."
+    }
+  ],
+  "repetitions": 2,
+  "featureFlags": {
+    "reference": {
+      "compact": false,
+      "navigation": false,
+      "sourceOrder": false
+    },
+    "source-order": {
+      "compact": false,
+      "navigation": false,
+      "sourceOrder": true
+    },
+    "cline": {
+      "compact": false,
+      "navigation": false,
+      "sourceOrder": false
+    }
+  },
+  "budgets": {
+    "perTrialSdkCostLimitUsd": 1,
+    "perTrialMissingCostReserveUsd": 0.5,
+    "requestOvershootReserveUsd": 0.5,
+    "maxIterations": 35,
+    "timeoutSeconds": 600,
+    "maxOutputTokens": 8192,
+    "requestBytes": 500000,
+    "observedStudyStopUsd": 18
+  },
+  "order": "Panel, repeat, task; arms rotate by repeat+task; sequential one new model per process; no uncertain retry.",
+  "quality": "Same immutable required scripts, original test protection, official patches and independent probes as F69. Report any post-hoc compatibility sensitivities separately. Executed, passed, formally admitted and accepted are distinct. F70 clarifies public generic-argument compatibility in the shared task prompt and adds a pre-dispatch independent compiler endpoint for it; do not compare its success counts directly with F69.",
+  "resources": "All assignments retained, null costs/tokens are unknown. Input+output tokens, cache subset separately, SDK estimates not invoices, raw durations plus HTTP/tool attribution. Pair/task omission on jointly audited successes; panels/version baselines stay separate.",
+  "gates": [
+    "Complete and preserve the prior 28 assignments before any production build for this treatment.",
+    "Verify file- and byte-budget controls, explicit test scopes, filename affinity, source mutation checks and unchanged schemas/first prompts.",
+    "Use cache-free pinned dependency images; independent graders get writable physical copies, never mutate worker baselines.",
+    "Freeze complete executable, dependency, input, oracle, observer and prompt/settings bindings and push before external dispatch.",
+    "The original source must pass the compatibility endpoint; the upstream nongeneric positive control must fail it; a separate generic-preserving positive control must pass every endpoint before dispatch."
+  ],
+  "accounting": "Separate current cohort; SDK USD estimates, nullable per-request cache and reasoning fields, all failures/timeouts retained. Add this cohort to overall observed spending without adding scheduling reserves as charges.",
+  "preDispatchAmendments": [
+    {
+      "atUTC": "2026-10-27T04:24:14.980Z",
+      "externalF70ModelRequests": 0,
+      "parentRequestSha256": "bb843f65f53e9d78f0778d970fc5a4115b439ebf923f9a9d346508b1e7484f12",
+      "clarifiedRequestSha256": "6dff2483f6055e5148b58015dc1c3f25badbd3dc0cf4c38ba2dd704e14024b90",
+      "reason": "Make the generic API preservation criterion explicit for every F70 comparator before dispatch. This is a new task specification/audit version, not a repair or relabelling of an F69 outcome."
+    }
+  ]
+}

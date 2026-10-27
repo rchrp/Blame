@@ -13,7 +13,7 @@ test("loads the provider catalog and recommendations only from the protected API
   globalThis.fetch = async (input) => {
     const url = input.toString();
     requests.push(url);
-    return url.endsWith("/providers/catalog")
+    return url.endsWith("/providers/catalog?view=selector")
       ? jsonResponse(catalog)
       : jsonResponse({ data: credentials });
   };
@@ -25,7 +25,7 @@ test("loads the provider catalog and recommendations only from the protected API
     });
 
     assert.deepEqual(requests, [
-      "https://api.blame.test/api/v1/providers/catalog",
+      "https://api.blame.test/api/v1/providers/catalog?view=selector",
       "https://api.blame.test/api/v1/providers/credentials",
     ]);
     assert.deepEqual(providers.connected, ["anthropic"]);

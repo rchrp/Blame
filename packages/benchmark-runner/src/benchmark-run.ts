@@ -31,7 +31,7 @@ export async function runBenchmark(
     config,
   );
   const cleanupTimeoutMs = dependencies.cleanupTimeoutMs ?? 5_000;
-  let shutdownIncomplete = false;
+  let shutdownIncomplete: boolean;
   let outcome;
   try {
     outcome = await executeSession(

@@ -1,0 +1,30 @@
+{
+  "registeredAtUTC": "2026-10-27T15:42:26.869330+00:00",
+  "kind": "Local correctness cycle; no F71 model dispatch authorized by this protocol or claimed",
+  "sourceHead": "a1999d1041318dc5801e37dcf117d0005d06ffad",
+  "evidence": {
+    "path": "docs/experiments/light-harness-context-economy-f68-2026-10-27/journal-exit-audit.json",
+    "sha256": "3f5eb48d4ee10491565e9af71f16da9be8c2deeeb1891bc4d237d02619456ecf",
+    "case": "2-fetching-filters-reference: exited snapshot at 14:39:51.260Z lacks completed/exitCode; original journal records exit zero at 14:39:51.485Z. Frozen audit remains failed."
+  },
+  "hypothesis": {
+    "mechanism": "If a managed command is no longer running, await its existing finalization promise before publishing the inspection result. Do not launch/retry commands, synthesize passing evidence or change admission rules. Running snapshots remain nonblocking.",
+    "measure": "The first inspection of an exited process includes the same finalized result recorded in its journal, even while post-process source/journal capture is delayed.",
+    "comparison": "Identical deterministic regression tests against the sealed F70 runtime and the corrected build; old runtime copied to scratch, never overwritten. Original frozen model data/scores unchanged.",
+    "regressionRisk": "Inspection may wait longer for post-exit source/journal processing; test that running inspection still returns and interruption/nonzero/stale outcomes remain conservative."
+  },
+  "selectedControlsBeforeImplementation": [
+    "Delayed post-exit journal capture with exit zero: no exited-only result, one launch, exact incremental cursor preserved.",
+    "Nonzero exit under the same gate remains failed in finalized result.",
+    "Cancelled process under the same gate remains interrupted, never admitted passed.",
+    "Running command inspection remains immediate without waiting for command completion.",
+    "A test-like zero exit with unrecognized reporting remains unknown, not admitted verification."
+  ],
+  "gates": [
+    "Do not build or run these tests until every F70 measured worker exits.",
+    "First run the new regressions against a copy of the unchanged sealed reference and preserve expected failures.",
+    "Run affected command/validation tests, lint and line budgets after the targeted correction.",
+    "Compile the English study and archive outputs/bindings; no global model success or token claim from local controls."
+  ],
+  "nextModelBoundary": "Any subsequent live comparison requires a separate pre-dispatch task/model/settings/budget/executable binding, with reference, corrected Light and integrated Cline; this local protocol alone does not define one."
+}

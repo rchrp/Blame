@@ -127,20 +127,23 @@ function deduplicateCanonicalModels(candidates: RecommendationCandidate[]) {
 }
 
 function estimateModelCost(model: CatalogModel, profile: ModelRecommendationProfile) {
-  const input = pricedTokens(model.cost.input, profile.inputTokens)
+  // Runtime input totals include cache reads; bill that subset only once.
+  const cachedTokens = Math.min(profile.cacheReadTokens, profile.inputTokens)
+  const input = pricedTokens(model.cost.input, profile.inputTokens - cachedTokens)
   const output = pricedTokens(model.cost.output, profile.outputTokens)
-  const cacheRead = pricedTokens(model.cost.cacheRead, profile.cacheReadTokens)
-  const values = [input, output, cacheRead].filter((value): value is number => value !== null)
-  return values.length ? round(values.reduce((sum, value) => sum + value, 0)) : null
+  const cacheRead = pricedTokens(model.cost.cacheRead ?? model.cost.input, cachedTokens)
+  if (input === null || output === null || cacheRead === null) return null
+  return round(input + output + cacheRead)
 }
 
 function pricedTokens(price: number | null, tokens: number) {
+  if (tokens === 0) return 0
   if (price === null) return null
   return (price * tokens) / 1_000_000
 }
 
 function hasBenchmark(candidate: RecommendationCandidate) {
-  return comparableScore(candidate.model) !== undefined
+  return comparableScore(candidate.model) !== undefined && candidate.estimatedCost !== null
 }
 
 // Models are ranked on one scale only: the Artificial Analysis

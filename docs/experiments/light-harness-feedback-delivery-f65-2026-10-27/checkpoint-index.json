@@ -1,0 +1,128 @@
+{
+  "protocolHash": "2e0afdab7bfac83bb601bf24a7c2bd80368514e074d03cb32fd9dd34b91c02f3",
+  "completed": 23,
+  "accounted": 24,
+  "planned": 24,
+  "receipts": [
+    {
+      "name": "1-map-context-reference",
+      "path": "checkpoints/1-map-context-reference.json.gz",
+      "sha256": "28781c96be37c4e2ffc3414a926e1a64b883d706c6bbc372074041f75bdfb206"
+    },
+    {
+      "name": "1-map-context-batch",
+      "path": "checkpoints/1-map-context-batch.json.gz",
+      "sha256": "e5e64196eedaba5f64a18b914c7d206c064890caf8f79f525e3762f2b6b5b19b"
+    },
+    {
+      "name": "1-map-context-cline",
+      "path": "checkpoints/1-map-context-cline.json.gz",
+      "sha256": "b143e2f86371a809f5f7b563ad9c74fe909e80c7b7ece7361100b842d86f7466"
+    },
+    {
+      "name": "1-take-through-batch",
+      "path": "checkpoints/1-take-through-batch.json.gz",
+      "sha256": "9899d59fc5874e741372a66f63faae9d83009691f867777602ca563d2eabed23"
+    },
+    {
+      "name": "1-take-through-cline",
+      "path": "checkpoints/1-take-through-cline.json.gz",
+      "sha256": "f64ccbbe77bcf1249a810b37370ce31f84807551d9b9264085d062052c51ed54"
+    },
+    {
+      "name": "1-take-through-reference",
+      "path": "checkpoints/1-take-through-reference.json.gz",
+      "sha256": "19d29bbf2f3b66208c38ac90d7faab0bd56d141297e903d598ae868516029037"
+    },
+    {
+      "name": "2-map-context-batch",
+      "path": "checkpoints/2-map-context-batch.json.gz",
+      "sha256": "e3c90879c7c313c48ef148bb07a10fc4875829c03dcc8411879e25facc26a7d8"
+    },
+    {
+      "name": "2-map-context-cline",
+      "path": "checkpoints/2-map-context-cline.json.gz",
+      "sha256": "f8c06765ff0c046e0d89280d879d96112efc1f28b6724a0404719dbcd222ef56"
+    },
+    {
+      "name": "2-map-context-reference",
+      "path": "interrupted-trial.json.gz",
+      "sha256": "862bb4e26f842a7c34e21fcf1edaa0ec7460c7e04bc371c1e0e10bf99c03ef29"
+    },
+    {
+      "name": "2-take-through-cline",
+      "path": "continuation/checkpoints/2-take-through-cline.json.gz",
+      "sha256": "099405e8d36f3077aec10b1e45d5ad4adae55ef7047d336061520cd73c2ace7e"
+    },
+    {
+      "name": "2-take-through-reference",
+      "path": "continuation/checkpoints/2-take-through-reference.json.gz",
+      "sha256": "7c155bd53afb05f56fced67b6ce685cd320e4551d202248147ad9028b1f06b99"
+    },
+    {
+      "name": "2-take-through-batch",
+      "path": "continuation/checkpoints/2-take-through-batch.json.gz",
+      "sha256": "4bbc423ff460ea86a9594d231f48b0e579db8638f003add7f867e0d7fccdb6f2"
+    },
+    {
+      "name": "1-clamp-items-reference",
+      "path": "continuation/checkpoints/1-clamp-items-reference.json.gz",
+      "sha256": "ff5db78dac8a948c5d609f243cdbc16ea2d11c74f7fdaba86508f5953e3344cc"
+    },
+    {
+      "name": "1-clamp-items-compiler",
+      "path": "continuation/checkpoints/1-clamp-items-compiler.json.gz",
+      "sha256": "7a099cb964c991698de66ed2a12f5214d61d2182fc50220b267179dafe2f93b5"
+    },
+    {
+      "name": "1-clamp-items-cline",
+      "path": "continuation/checkpoints/1-clamp-items-cline.json.gz",
+      "sha256": "efcb170848b91ca63717f46aebb4479490260addb526b1c7b6c74bf7d25aa6f4"
+    },
+    {
+      "name": "1-quota-compiler",
+      "path": "continuation/checkpoints/1-quota-compiler.json.gz",
+      "sha256": "a0c3658a7ab70b600ac6e0e4befa86ec0088ca2c7976a9cb95fc81d915e00a33"
+    },
+    {
+      "name": "1-quota-cline",
+      "path": "continuation/checkpoints/1-quota-cline.json.gz",
+      "sha256": "13a64bddf87581195985d47ee5297e6beacc2572c2930dadc095ed4de2ce64a3"
+    },
+    {
+      "name": "1-quota-reference",
+      "path": "continuation/checkpoints/1-quota-reference.json.gz",
+      "sha256": "74b3e5694eb1573b3f1ef5c5afea53ef1bdf8a069f9fce081971fb7afa8d73a7"
+    },
+    {
+      "name": "2-clamp-items-compiler",
+      "path": "continuation/checkpoints/2-clamp-items-compiler.json.gz",
+      "sha256": "68716e33e802f35b5f68bedda73d1d888b56ab97db8c1b4dbf90a72b8d952b2a"
+    },
+    {
+      "name": "2-clamp-items-cline",
+      "path": "continuation/checkpoints/2-clamp-items-cline.json.gz",
+      "sha256": "741e890a3b1416da4d5cded90361317447f3ffb2e590dcc6025e541f17829a89"
+    },
+    {
+      "name": "2-clamp-items-reference",
+      "path": "continuation/checkpoints/2-clamp-items-reference.json.gz",
+      "sha256": "6f788d217fb62c0e2a8e7e7bb6ce2c0a803b81c1fda14901f07dbb0ff3c13bcf"
+    },
+    {
+      "name": "2-quota-cline",
+      "path": "continuation/checkpoints/2-quota-cline.json.gz",
+      "sha256": "4e857036993ecb309c79cb4fe8993e031d3b6cbbecf3dfeb3dcae18ee4bbae12"
+    },
+    {
+      "name": "2-quota-reference",
+      "path": "continuation/checkpoints/2-quota-reference.json.gz",
+      "sha256": "4e9f3ecc4240870d048f3c1324f9d6b0c4668fb7e9043ebd5004caf96a29498e"
+    },
+    {
+      "name": "2-quota-compiler",
+      "path": "continuation/checkpoints/2-quota-compiler.json.gz",
+      "sha256": "e450d2a14e7d4c640b79916c806d322df18d6e686dff1c381defafc94bb3402b"
+    }
+  ]
+}

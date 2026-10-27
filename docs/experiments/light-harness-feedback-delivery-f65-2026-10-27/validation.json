@@ -1,0 +1,42 @@
+{
+  "runtimeSourceHead": "4e6931c79ae46ebbd285afc7808e722b0cfd7338",
+  "node": "v24.19.0",
+  "checks": {
+    "runtime": {
+      "command": "corepack pnpm --filter @blame/agent-runtime test",
+      "pass": 1189,
+      "skip": 13,
+      "fail": 0
+    },
+    "app": {
+      "command": "corepack pnpm --filter @blame/app test",
+      "pass": 396,
+      "fail": 0
+    },
+    "runner": {
+      "command": "corepack pnpm --filter @blame/benchmark-runner test",
+      "pass": 37,
+      "fail": 0
+    },
+    "research": {
+      "command": "node --test tools/terminal_bench/feedback-delivery-study/*.test.mjs",
+      "pass": 9,
+      "fail": 0
+    },
+    "appTypecheck": true,
+    "affectedRuntimeLint": true,
+    "lineBudgets": true,
+    "latex": "Native editor compilation succeeded; final source rechecked separately"
+  },
+  "replays": {
+    "command": "node tools/terminal_bench/feedback-delivery-study/replay.mjs --portable",
+    "unchangedPatches": 23,
+    "endpointsPerPatch": 5,
+    "passed": true,
+    "interruptedNotRetried": 1
+  },
+  "initialIntegrationFailures": "Two new fixtures pointed to typescript/bin/tsc in a TypeScript compatibility package exposing only tsc6. They now use the existing native-compiler fixture and assert the actual TS2322 diagnostic; production repair logic unchanged.",
+  "observerNegativeControl": "Expanded input_text detached diagnostic test fails before, passes after one-line research observer correction; no raw model record rewritten.",
+  "logsSha256": "bb3f58ccb71b21c32cc0dbee366ed96d685b33f541e821fcd1ad7e403e3cffca",
+  "preMigrationBuildFailure": "runtime-full.log: stale preview-contract dist; recheck-tests.log and runtime-final.log verify rebuilt dependencies without source-test relaxation."
+}

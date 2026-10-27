@@ -1,0 +1,1031 @@
+{
+  "boundBeforeExternalF70Requests": true,
+  "externalF70ModelRequests": 0,
+  "earlierObservedSdkUsd": 12.571587359999999,
+  "earlierUnknownReservationUsd": 18.64,
+  "parentCompletedAssignments": 28,
+  "parentModelResultsSha256": "7fc1cb4cc987f1c4d10b327f5eaaba2e3ccc870fd7507a47c0d61ab74a1b2368",
+  "local": {
+    "controls.json": {
+      "sha256": "601771f143d86bec9aad6116f4c5579d49e49403ac3baa8ddbcce6bb6d8c1b49",
+      "report": {
+        "complete": true,
+        "externalModelRequests": 0,
+        "rows": [
+          {
+            "task": "mutation-callbacks",
+            "baselineOfficial": 1,
+            "baselineProbe": 1,
+            "compatibilityBaseline": null,
+            "upstreamCompatibility": null,
+            "positive": [
+              {
+                "name": "regression",
+                "exitCode": 0,
+                "signal": null,
+                "error": null,
+                "durationMs": 16446.444109
+              },
+              {
+                "name": "types",
+                "exitCode": 0,
+                "signal": null,
+                "error": null,
+                "durationMs": 1654.3278530000025
+              },
+              {
+                "name": "delivered",
+                "exitCode": 0,
+                "signal": null,
+                "error": null,
+                "durationMs": 1248.168346999999
+              },
+              {
+                "name": "delivered-types",
+                "exitCode": 0,
+                "signal": null,
+                "error": null,
+                "durationMs": 1772.1441570000025
+              },
+              {
+                "name": "official",
+                "exitCode": 0,
+                "signal": null,
+                "error": null,
+                "durationMs": 1198.5323659999995
+              },
+              {
+                "name": "probe",
+                "exitCode": 0,
+                "signal": null,
+                "error": null,
+                "durationMs": 1119.0020619999996
+              }
+            ]
+          },
+          {
+            "task": "fetching-filters",
+            "baselineOfficial": 2,
+            "baselineProbe": 2,
+            "compatibilityBaseline": 0,
+            "upstreamCompatibility": 2,
+            "positive": [
+              {
+                "name": "regression",
+                "exitCode": 0,
+                "signal": null,
+                "error": null,
+                "durationMs": 25090.788907999995
+              },
+              {
+                "name": "types",
+                "exitCode": 0,
+                "signal": null,
+                "error": null,
+                "durationMs": 2013.2692419999948
+              },
+              {
+                "name": "type-regression",
+                "exitCode": 0,
+                "signal": null,
+                "error": null,
+                "durationMs": 2148.889052000013
+              },
+              {
+                "name": "delivered-types",
+                "exitCode": 0,
+                "signal": null,
+                "error": null,
+                "durationMs": 1968.4715189999988
+              },
+              {
+                "name": "official",
+                "exitCode": 0,
+                "signal": null,
+                "error": null,
+                "durationMs": 1945.1005799999984
+              },
+              {
+                "name": "probe",
+                "exitCode": 0,
+                "signal": null,
+                "error": null,
+                "durationMs": 1762.7363320000004
+              },
+              {
+                "name": "compatibility",
+                "exitCode": 0,
+                "signal": null,
+                "error": null,
+                "durationMs": 1525.7674709999992
+              }
+            ]
+          }
+        ],
+        "sourceHashes": {
+          "controls": "b980d4e876747c970b717abada65f067604f43de99a4a8eb3a154cd3b6aa4236"
+        }
+      }
+    },
+    "sdk-controls.json": {
+      "sha256": "e0968584e64771a2860684a1aba93c9dd25e49a627df70f84df715764fe4577f",
+      "report": {
+        "externalModelRequests": 0,
+        "reports": [
+          {
+            "enabled": false,
+            "localHttpRequests": 3,
+            "externalModelRequests": 0,
+            "discoveryIsNavigationOnly": true,
+            "explicitReadAvailable": true,
+            "unchangedForwardedPrefix": true,
+            "actualProviderReceipts": [
+              {
+                "callIdSha256": "fa44132b238e67958fb17d33a71d325221805079909c3a7f5bed1a03666cf834",
+                "status": "current",
+                "sourceRevision": "src_e8feac188c32c938dc90408371c5dbaf",
+                "navigationOnly": true,
+                "limited": true,
+                "visitedFiles": 64,
+                "readBytes": 1088,
+                "limits": {
+                  "files": 64,
+                  "bytes": 1048576,
+                  "fileBytes": 262144,
+                  "declarations": 4
+                },
+                "candidates": []
+              }
+            ],
+            "firstToolsSha256": "952d9c0b24804af3b11eafdaa250cc716e32d68e674d35ba70c9de9996821bd7",
+            "firstSystemSha256": "8144d6953b2b71cd69e9b7bfe040b423f0aaccab552aef9fab4a7f179e9109e7"
+          },
+          {
+            "enabled": true,
+            "localHttpRequests": 3,
+            "externalModelRequests": 0,
+            "discoveryIsNavigationOnly": true,
+            "explicitReadAvailable": true,
+            "unchangedForwardedPrefix": true,
+            "actualProviderReceipts": [
+              {
+                "callIdSha256": "fa44132b238e67958fb17d33a71d325221805079909c3a7f5bed1a03666cf834",
+                "status": "current",
+                "sourceRevision": "src_e8feac188c32c938dc90408371c5dbaf",
+                "navigationOnly": true,
+                "limited": true,
+                "visitedFiles": 64,
+                "readBytes": 1124,
+                "limits": {
+                  "files": 64,
+                  "bytes": 1048576,
+                  "fileBytes": 262144,
+                  "declarations": 4
+                },
+                "candidates": [
+                  {
+                    "path": "src/types.ts",
+                    "qualifiedName": "MutateOptions",
+                    "kind": "interface",
+                    "targetSha256": "75710ec53463da75843fc275c7b28e1993ed3011723dfd34ff330eaa9aa2b0db"
+                  }
+                ]
+              }
+            ],
+            "firstToolsSha256": "952d9c0b24804af3b11eafdaa250cc716e32d68e674d35ba70c9de9996821bd7",
+            "firstSystemSha256": "8144d6953b2b71cd69e9b7bfe040b423f0aaccab552aef9fab4a7f179e9109e7"
+          }
+        ]
+      }
+    },
+    "local-replays.json": {
+      "sha256": "6f09ea12254118fa3fc556cb14475d30cf4fd96a6a55b398ed3c26f0ea98e383",
+      "report": {
+        "externalModelRequests": 0,
+        "reports": [
+          {
+            "task": "mutation-callbacks",
+            "query": "onSettled",
+            "flagOffMatchesSealedReference": true,
+            "reference": {
+              "results": [
+                {
+                  "path": "packages/query-core/src/__tests__/mutation.test.tsx",
+                  "kind": "text",
+                  "reason": "lexical_exact",
+                  "lines": [
+                    243,
+                    243
+                  ]
+                },
+                {
+                  "path": "packages/query-core/src/__tests__/mutation.test.tsx",
+                  "kind": "text",
+                  "reason": "lexical_exact",
+                  "lines": [
+                    249,
+                    249
+                  ]
+                },
+                {
+                  "path": "packages/query-core/src/__tests__/mutation.test.tsx",
+                  "kind": "text",
+                  "reason": "lexical_exact",
+                  "lines": [
+                    313,
+                    313
+                  ]
+                },
+                {
+                  "path": "packages/query-core/src/__tests__/mutation.test.tsx",
+                  "kind": "text",
+                  "reason": "lexical_exact",
+                  "lines": [
+                    353,
+                    353
+                  ]
+                },
+                {
+                  "path": "packages/query-core/src/__tests__/mutation.test.tsx",
+                  "kind": "text",
+                  "reason": "lexical_exact",
+                  "lines": [
+                    361,
+                    361
+                  ]
+                },
+                {
+                  "path": "packages/query-core/src/__tests__/mutation.test.tsx",
+                  "kind": "text",
+                  "reason": "lexical_exact",
+                  "lines": [
+                    365,
+                    365
+                  ]
+                },
+                {
+                  "path": "packages/query-core/src/__tests__/mutation.test.tsx",
+                  "kind": "text",
+                  "reason": "lexical_exact",
+                  "lines": [
+                    370,
+                    370
+                  ]
+                },
+                {
+                  "path": "packages/query-core/src/__tests__/mutation.test.tsx",
+                  "kind": "text",
+                  "reason": "lexical_exact",
+                  "lines": [
+                    378,
+                    378
+                  ]
+                }
+              ],
+              "candidates": [
+                {
+                  "path": "packages/query-core/src/__tests__/mutationCache.test.tsx",
+                  "kind": "variable",
+                  "qualifiedName": "onSettled",
+                  "reason": "exact_declaration_candidate",
+                  "lines": [
+                    74,
+                    78
+                  ],
+                  "signature": "onSettled = () =>"
+                },
+                {
+                  "path": "packages/query-core/src/__tests__/mutationCache.test.tsx",
+                  "kind": "variable",
+                  "qualifiedName": "onSettled",
+                  "reason": "exact_declaration_candidate",
+                  "lines": [
+                    165,
+                    169
+                  ],
+                  "signature": "onSettled = () =>"
+                },
+                {
+                  "path": "packages/query-core/src/__tests__/queryClient.test-d.tsx",
+                  "kind": "method",
+                  "qualifiedName": "onSettled",
+                  "reason": "exact_declaration_candidate",
+                  "lines": [
+                    1171,
+                    1177
+                  ],
+                  "signature": "onSettled(data, error, variables, onMutateResult, context)"
+                }
+              ],
+              "discovery": {
+                "engine": "syntax",
+                "status": "current",
+                "navigationOnly": true,
+                "eligibleFiles": 65,
+                "visitedFiles": 58,
+                "readBytes": 1047738,
+                "skippedFiles": 0,
+                "limited": true,
+                "limits": {
+                  "files": 64,
+                  "bytes": 1048576,
+                  "fileBytes": 262144,
+                  "declarations": 4
+                }
+              }
+            },
+            "candidate": {
+              "results": [
+                {
+                  "path": "packages/query-core/src/__tests__/mutation.test.tsx",
+                  "kind": "text",
+                  "reason": "lexical_exact",
+                  "lines": [
+                    243,
+                    243
+                  ]
+                },
+                {
+                  "path": "packages/query-core/src/__tests__/mutation.test.tsx",
+                  "kind": "text",
+                  "reason": "lexical_exact",
+                  "lines": [
+                    249,
+                    249
+                  ]
+                },
+                {
+                  "path": "packages/query-core/src/__tests__/mutation.test.tsx",
+                  "kind": "text",
+                  "reason": "lexical_exact",
+                  "lines": [
+                    313,
+                    313
+                  ]
+                },
+                {
+                  "path": "packages/query-core/src/__tests__/mutation.test.tsx",
+                  "kind": "text",
+                  "reason": "lexical_exact",
+                  "lines": [
+                    353,
+                    353
+                  ]
+                },
+                {
+                  "path": "packages/query-core/src/__tests__/mutation.test.tsx",
+                  "kind": "text",
+                  "reason": "lexical_exact",
+                  "lines": [
+                    361,
+                    361
+                  ]
+                },
+                {
+                  "path": "packages/query-core/src/__tests__/mutation.test.tsx",
+                  "kind": "text",
+                  "reason": "lexical_exact",
+                  "lines": [
+                    365,
+                    365
+                  ]
+                },
+                {
+                  "path": "packages/query-core/src/__tests__/mutation.test.tsx",
+                  "kind": "text",
+                  "reason": "lexical_exact",
+                  "lines": [
+                    370,
+                    370
+                  ]
+                },
+                {
+                  "path": "packages/query-core/src/__tests__/mutation.test.tsx",
+                  "kind": "text",
+                  "reason": "lexical_exact",
+                  "lines": [
+                    378,
+                    378
+                  ]
+                }
+              ],
+              "candidates": [
+                {
+                  "path": "packages/query-core/src/__tests__/mutationCache.test.tsx",
+                  "kind": "variable",
+                  "qualifiedName": "onSettled",
+                  "reason": "exact_declaration_candidate",
+                  "lines": [
+                    74,
+                    78
+                  ],
+                  "signature": "onSettled = () =>"
+                },
+                {
+                  "path": "packages/query-core/src/__tests__/mutationCache.test.tsx",
+                  "kind": "variable",
+                  "qualifiedName": "onSettled",
+                  "reason": "exact_declaration_candidate",
+                  "lines": [
+                    165,
+                    169
+                  ],
+                  "signature": "onSettled = () =>"
+                },
+                {
+                  "path": "packages/query-core/src/__tests__/queryClient.test-d.tsx",
+                  "kind": "method",
+                  "qualifiedName": "onSettled",
+                  "reason": "exact_declaration_candidate",
+                  "lines": [
+                    1171,
+                    1177
+                  ],
+                  "signature": "onSettled(data, error, variables, onMutateResult, context)"
+                }
+              ],
+              "discovery": {
+                "engine": "syntax",
+                "status": "current",
+                "navigationOnly": true,
+                "eligibleFiles": 65,
+                "visitedFiles": 53,
+                "readBytes": 1007314,
+                "skippedFiles": 0,
+                "limited": true,
+                "limits": {
+                  "files": 64,
+                  "bytes": 1048576,
+                  "fileBytes": 262144,
+                  "declarations": 4
+                }
+              }
+            }
+          },
+          {
+            "task": "mutation-callbacks",
+            "query": "interface MutateOptions",
+            "flagOffMatchesSealedReference": true,
+            "reference": {
+              "results": [
+                {
+                  "path": "packages/query-core/src/__tests__/infiniteQueryBehavior.test.tsx",
+                  "kind": "interface",
+                  "qualifiedName": "TestResponse",
+                  "reason": "lexical_symbol",
+                  "lines": [
+                    372,
+                    375
+                  ],
+                  "signature": "interface TestResponse"
+                },
+                {
+                  "path": "packages/query-core/src/__tests__/mutation.test-d.tsx",
+                  "kind": "text",
+                  "reason": "lexical_regex",
+                  "lines": [
+                    9,
+                    9
+                  ]
+                },
+                {
+                  "path": "packages/query-core/src/__tests__/mutation.test-d.tsx",
+                  "kind": "text",
+                  "reason": "lexical_regex",
+                  "lines": [
+                    587,
+                    587
+                  ]
+                },
+                {
+                  "path": "packages/query-core/src/__tests__/mutation.test-d.tsx",
+                  "kind": "text",
+                  "reason": "lexical_regex",
+                  "lines": [
+                    612,
+                    612
+                  ]
+                },
+                {
+                  "path": "packages/query-core/src/__tests__/mutation.test-d.tsx",
+                  "kind": "text",
+                  "reason": "lexical_regex",
+                  "lines": [
+                    634,
+                    634
+                  ]
+                },
+                {
+                  "path": "packages/query-core/src/__tests__/mutation.test-d.tsx",
+                  "kind": "text",
+                  "reason": "lexical_regex",
+                  "lines": [
+                    646,
+                    646
+                  ]
+                },
+                {
+                  "path": "packages/query-core/src/__tests__/mutation.test-d.tsx",
+                  "kind": "text",
+                  "reason": "lexical_regex",
+                  "lines": [
+                    665,
+                    665
+                  ]
+                },
+                {
+                  "path": "packages/query-core/src/__tests__/mutation.test-d.tsx",
+                  "kind": "text",
+                  "reason": "lexical_regex",
+                  "lines": [
+                    682,
+                    682
+                  ]
+                }
+              ],
+              "candidates": [],
+              "discovery": {
+                "engine": "syntax",
+                "status": "current",
+                "navigationOnly": true,
+                "eligibleFiles": 65,
+                "visitedFiles": 58,
+                "readBytes": 1047738,
+                "skippedFiles": 0,
+                "limited": true,
+                "limits": {
+                  "files": 64,
+                  "bytes": 1048576,
+                  "fileBytes": 262144,
+                  "declarations": 4
+                }
+              }
+            },
+            "candidate": {
+              "results": [
+                {
+                  "path": "packages/query-core/src/__tests__/infiniteQueryBehavior.test.tsx",
+                  "kind": "interface",
+                  "qualifiedName": "TestResponse",
+                  "reason": "lexical_symbol",
+                  "lines": [
+                    372,
+                    375
+                  ],
+                  "signature": "interface TestResponse"
+                },
+                {
+                  "path": "packages/query-core/src/__tests__/mutation.test-d.tsx",
+                  "kind": "text",
+                  "reason": "lexical_regex",
+                  "lines": [
+                    9,
+                    9
+                  ]
+                },
+                {
+                  "path": "packages/query-core/src/__tests__/mutation.test-d.tsx",
+                  "kind": "text",
+                  "reason": "lexical_regex",
+                  "lines": [
+                    587,
+                    587
+                  ]
+                },
+                {
+                  "path": "packages/query-core/src/__tests__/mutation.test-d.tsx",
+                  "kind": "text",
+                  "reason": "lexical_regex",
+                  "lines": [
+                    612,
+                    612
+                  ]
+                },
+                {
+                  "path": "packages/query-core/src/__tests__/mutation.test-d.tsx",
+                  "kind": "text",
+                  "reason": "lexical_regex",
+                  "lines": [
+                    634,
+                    634
+                  ]
+                },
+                {
+                  "path": "packages/query-core/src/__tests__/mutation.test-d.tsx",
+                  "kind": "text",
+                  "reason": "lexical_regex",
+                  "lines": [
+                    646,
+                    646
+                  ]
+                },
+                {
+                  "path": "packages/query-core/src/__tests__/mutation.test-d.tsx",
+                  "kind": "text",
+                  "reason": "lexical_regex",
+                  "lines": [
+                    665,
+                    665
+                  ]
+                },
+                {
+                  "path": "packages/query-core/src/__tests__/mutation.test-d.tsx",
+                  "kind": "text",
+                  "reason": "lexical_regex",
+                  "lines": [
+                    682,
+                    682
+                  ]
+                }
+              ],
+              "candidates": [
+                {
+                  "path": "packages/query-core/src/types.ts",
+                  "kind": "interface",
+                  "qualifiedName": "MutateOptions",
+                  "reason": "exact_declaration_candidate",
+                  "lines": [
+                    2012,
+                    2047
+                  ],
+                  "signature": "interface MutateOptions< TData = unknown, TError = DefaultError, TVariables = void, TOnMutateResult = unknown, >"
+                }
+              ],
+              "discovery": {
+                "engine": "syntax",
+                "status": "current",
+                "navigationOnly": true,
+                "eligibleFiles": 65,
+                "visitedFiles": 53,
+                "readBytes": 1007314,
+                "skippedFiles": 0,
+                "limited": true,
+                "limits": {
+                  "files": 64,
+                  "bytes": 1048576,
+                  "fileBytes": 262144,
+                  "declarations": 4
+                }
+              }
+            }
+          },
+          {
+            "task": "fetching-filters",
+            "query": "QueryFilters",
+            "flagOffMatchesSealedReference": true,
+            "reference": {
+              "results": [
+                {
+                  "path": "packages/query-core/src/utils.ts",
+                  "kind": "interface",
+                  "qualifiedName": "QueryFilters",
+                  "reason": "symbol_name",
+                  "lines": [
+                    31,
+                    57
+                  ],
+                  "signature": "interface QueryFilters<TQueryKey extends QueryKey = QueryKey>"
+                },
+                {
+                  "path": "packages/query-core/src/__tests__/queryClient.test-d.tsx",
+                  "kind": "variable",
+                  "qualifiedName": "typedQueryFilters",
+                  "reason": "symbol_name",
+                  "lines": [
+                    67,
+                    69
+                  ],
+                  "signature": "typedQueryFilters: QueryFilters< DataTag<QueryKey, TypedData, TypedError> > ="
+                },
+                {
+                  "path": "packages/query-core/src/__tests__/queryClient.test-d.tsx",
+                  "kind": "variable",
+                  "qualifiedName": "untypedQueryFilters",
+                  "reason": "symbol_name",
+                  "lines": [
+                    91,
+                    91
+                  ],
+                  "signature": "untypedQueryFilters: QueryFilters ="
+                },
+                {
+                  "path": "packages/query-core/src/types.ts",
+                  "kind": "interface",
+                  "qualifiedName": "InvalidateQueryFilters",
+                  "reason": "symbol_name",
+                  "lines": [
+                    892,
+                    905
+                  ],
+                  "signature": "interface InvalidateQueryFilters< TQueryKey extends QueryKey = QueryKey, > extends QueryFilters<TQueryKey>"
+                },
+                {
+                  "path": "packages/query-core/src/types.ts",
+                  "kind": "interface",
+                  "qualifiedName": "RefetchQueryFilters",
+                  "reason": "symbol_name",
+                  "lines": [
+                    910,
+                    912
+                  ],
+                  "signature": "interface RefetchQueryFilters< TQueryKey extends QueryKey = QueryKey, > extends QueryFilters<TQueryKey>"
+                }
+              ],
+              "candidates": [],
+              "discovery": null
+            },
+            "candidate": {
+              "results": [
+                {
+                  "path": "packages/query-core/src/utils.ts",
+                  "kind": "interface",
+                  "qualifiedName": "QueryFilters",
+                  "reason": "symbol_name",
+                  "lines": [
+                    31,
+                    57
+                  ],
+                  "signature": "interface QueryFilters<TQueryKey extends QueryKey = QueryKey>"
+                },
+                {
+                  "path": "packages/query-core/src/__tests__/queryClient.test-d.tsx",
+                  "kind": "variable",
+                  "qualifiedName": "typedQueryFilters",
+                  "reason": "symbol_name",
+                  "lines": [
+                    67,
+                    69
+                  ],
+                  "signature": "typedQueryFilters: QueryFilters< DataTag<QueryKey, TypedData, TypedError> > ="
+                },
+                {
+                  "path": "packages/query-core/src/__tests__/queryClient.test-d.tsx",
+                  "kind": "variable",
+                  "qualifiedName": "untypedQueryFilters",
+                  "reason": "symbol_name",
+                  "lines": [
+                    91,
+                    91
+                  ],
+                  "signature": "untypedQueryFilters: QueryFilters ="
+                },
+                {
+                  "path": "packages/query-core/src/types.ts",
+                  "kind": "interface",
+                  "qualifiedName": "InvalidateQueryFilters",
+                  "reason": "symbol_name",
+                  "lines": [
+                    892,
+                    905
+                  ],
+                  "signature": "interface InvalidateQueryFilters< TQueryKey extends QueryKey = QueryKey, > extends QueryFilters<TQueryKey>"
+                },
+                {
+                  "path": "packages/query-core/src/types.ts",
+                  "kind": "interface",
+                  "qualifiedName": "RefetchQueryFilters",
+                  "reason": "symbol_name",
+                  "lines": [
+                    910,
+                    912
+                  ],
+                  "signature": "interface RefetchQueryFilters< TQueryKey extends QueryKey = QueryKey, > extends QueryFilters<TQueryKey>"
+                }
+              ],
+              "candidates": [],
+              "discovery": null
+            }
+          },
+          {
+            "task": "fetching-filters",
+            "query": "isFetching",
+            "flagOffMatchesSealedReference": true,
+            "reference": {
+              "results": [
+                {
+                  "path": "packages/react-query/src/__tests__/useIsFetching.test.tsx",
+                  "kind": "path",
+                  "reason": "path_name"
+                },
+                {
+                  "path": "packages/react-query/src/useIsFetching.ts",
+                  "kind": "path",
+                  "reason": "path_name"
+                },
+                {
+                  "path": "packages/query-core/src/__tests__/infiniteQueryBehavior.test.tsx",
+                  "kind": "text",
+                  "reason": "lexical_exact",
+                  "lines": [
+                    87,
+                    87
+                  ]
+                },
+                {
+                  "path": "packages/query-core/src/__tests__/infiniteQueryBehavior.test.tsx",
+                  "kind": "text",
+                  "reason": "lexical_exact",
+                  "lines": [
+                    114,
+                    114
+                  ]
+                },
+                {
+                  "path": "packages/query-core/src/__tests__/infiniteQueryBehavior.test.tsx",
+                  "kind": "text",
+                  "reason": "lexical_exact",
+                  "lines": [
+                    133,
+                    133
+                  ]
+                },
+                {
+                  "path": "packages/query-core/src/__tests__/infiniteQueryBehavior.test.tsx",
+                  "kind": "text",
+                  "reason": "lexical_exact",
+                  "lines": [
+                    151,
+                    151
+                  ]
+                },
+                {
+                  "path": "packages/query-core/src/__tests__/infiniteQueryBehavior.test.tsx",
+                  "kind": "text",
+                  "reason": "lexical_exact",
+                  "lines": [
+                    169,
+                    169
+                  ]
+                },
+                {
+                  "path": "packages/query-core/src/__tests__/infiniteQueryBehavior.test.tsx",
+                  "kind": "text",
+                  "reason": "lexical_exact",
+                  "lines": [
+                    236,
+                    236
+                  ]
+                }
+              ],
+              "candidates": [],
+              "discovery": {
+                "engine": "syntax",
+                "status": "current",
+                "navigationOnly": true,
+                "eligibleFiles": 135,
+                "visitedFiles": 60,
+                "readBytes": 1033940,
+                "skippedFiles": 2,
+                "limited": true,
+                "limits": {
+                  "files": 64,
+                  "bytes": 1048576,
+                  "fileBytes": 262144,
+                  "declarations": 4
+                }
+              }
+            },
+            "candidate": {
+              "results": [
+                {
+                  "path": "packages/react-query/src/__tests__/useIsFetching.test.tsx",
+                  "kind": "path",
+                  "reason": "path_name"
+                },
+                {
+                  "path": "packages/react-query/src/useIsFetching.ts",
+                  "kind": "path",
+                  "reason": "path_name"
+                },
+                {
+                  "path": "packages/query-core/src/__tests__/infiniteQueryBehavior.test.tsx",
+                  "kind": "text",
+                  "reason": "lexical_exact",
+                  "lines": [
+                    87,
+                    87
+                  ]
+                },
+                {
+                  "path": "packages/query-core/src/__tests__/infiniteQueryBehavior.test.tsx",
+                  "kind": "text",
+                  "reason": "lexical_exact",
+                  "lines": [
+                    114,
+                    114
+                  ]
+                },
+                {
+                  "path": "packages/query-core/src/__tests__/infiniteQueryBehavior.test.tsx",
+                  "kind": "text",
+                  "reason": "lexical_exact",
+                  "lines": [
+                    133,
+                    133
+                  ]
+                },
+                {
+                  "path": "packages/query-core/src/__tests__/infiniteQueryBehavior.test.tsx",
+                  "kind": "text",
+                  "reason": "lexical_exact",
+                  "lines": [
+                    151,
+                    151
+                  ]
+                },
+                {
+                  "path": "packages/query-core/src/__tests__/infiniteQueryBehavior.test.tsx",
+                  "kind": "text",
+                  "reason": "lexical_exact",
+                  "lines": [
+                    169,
+                    169
+                  ]
+                },
+                {
+                  "path": "packages/query-core/src/__tests__/infiniteQueryBehavior.test.tsx",
+                  "kind": "text",
+                  "reason": "lexical_exact",
+                  "lines": [
+                    236,
+                    236
+                  ]
+                }
+              ],
+              "candidates": [
+                {
+                  "path": "packages/query-core/src/queryClient.ts",
+                  "kind": "method",
+                  "qualifiedName": "QueryClient.isFetching",
+                  "reason": "exact_declaration_candidate",
+                  "lines": [
+                    151,
+                    156
+                  ],
+                  "signature": "isFetching<TQueryFilters extends QueryFilters<any> = QueryFilters>( filters?: TQueryFilters, ): number"
+                }
+              ],
+              "discovery": {
+                "engine": "syntax",
+                "status": "current",
+                "navigationOnly": true,
+                "eligibleFiles": 135,
+                "visitedFiles": 64,
+                "readBytes": 608450,
+                "skippedFiles": 5,
+                "limited": true,
+                "limits": {
+                  "files": 64,
+                  "bytes": 1048576,
+                  "fileBytes": 262144,
+                  "declarations": 4
+                }
+              }
+            }
+          }
+        ],
+        "boundary": "Same original source and query; only bounded declaration-visit ordering changes. Aliases/source-revision identifiers are excluded from structural comparison. Lexical result ranks, parser limits and navigation-only status are preserved."
+      }
+    },
+    "dependency-images.json": {
+      "sha256": "d5d1d6d60070abec879233003febb5c9b9927b4def87bb3883729e404570f068",
+      "report": {
+        "mutation-callbacks": {
+          "cacheFree": true,
+          "files": 11040,
+          "manifestSha256": "432411914e40b912b089ad1601f2e1ce107d3b82eb939d8d33e9edf9c71540ee",
+          "parentManifestSha256": "03a0287489c344f609cf0bf66f6cf9ce1be3a9c9300da0e474f39cd3d82a8f3f"
+        },
+        "fetching-filters": {
+          "cacheFree": true,
+          "files": 10909,
+          "manifestSha256": "2a31adec4d462383c13ca7775dfbf8923d2de204eb7b7c99ad071caee2c9b24c",
+          "parentManifestSha256": "dc70b6eee41714085284878b735eb28fd6b870919cb748cd490ccefda0b583a3"
+        }
+      }
+    }
+  },
+  "mechanism": "Only bounded syntax declaration-visit order changes within this cohort: preserve exact filename affinity, then conventional test paths after other source. The primary lexical/symbol results, bounds, freshness checks, explicit target selection and lack of read/edit coverage stay intact.",
+  "qualityVersion": "Same original source archives and scripts as F69. The shared filter request now explicitly retains compatible generic arguments, and a finite hidden compiler check verifies that API and the baseline predicate shape. Not stronger tuple/data inference than the original API. New specification/audit cohort, never pooled with F69.",
+  "positiveControl": "Original source passes generic compatibility, upstream nongeneric fix fails it; a separate intersection/never positive control passes unchanged regressions, official tests, independent mixed-field probes and compatibility. Control solutions never enter worker inputs.",
+  "environment": {
+    "node": "v24.19.0",
+    "platform": "linux",
+    "arch": "x64",
+    "host": "d7de2791c604",
+    "boot": "4fdd8778-6f36-4a50-a8c6-ba74e7710654",
+    "availableParallelism": 4,
+    "cloudRevision": "923",
+    "workerImages": "Cache-free, physically copied pinned dependencies; empty offline npm cache and internal workspace links. Independent graders use private writable copies; original images are checked unchanged.",
+    "storage": "Checkpoint raw outputs and unchanged patch before deleting disposable grader trees. Linux source fingerprints include modes/links; permission metadata captured at model exit for exact portable replay."
+  },
+  "measurement": "Same literal immutable-script/source-epoch rules for both harnesses. Actual execution, passing, formal admission and audited task criteria stay separate. Missing formal native records are unknown. SDK input+output includes cache read once, costs are estimates in USD; absent per-request cache/reasoning remains null. HTTP intervals and observer overhead remain explicit.",
+  "limits": [
+    "Both issues are known diagnostics; two fresh dependent draws per task/arm, not a new-task confirmation or a general-superiority test.",
+    "Filter task remains core/React subset of upstream eight-adapter change.",
+    "F68–69 images included hash-bound preflight caches; no observed solution-cache retrieval, but F70 uses new clean images and grading copies.",
+    "Original cohort completed all28 calls despite transport interruption; assignment24 exit/checkpoint recovered, no retry. Last four assignments ran after host restart.",
+    "A preflight compatibility probe initially demanded stronger key inference than the original API. The baseline rejected it, so the probe was corrected before any F70 model dispatch; this is a fixture correction, not a harness regression.",
+    "Finite positive/negative probes do not establish universal user acceptance or project-wide verification. Model aliases, provider-side weights, caching and service drift cannot be pinned beyond captured request settings/bindings."
+  ]
+}

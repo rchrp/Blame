@@ -1,0 +1,115 @@
+{
+  "registeredAtUTC": "2026-10-27T00:36:06.270Z",
+  "kind": "pre-outcome task selection",
+  "sdk": "0.2.0",
+  "provider": "openai-codex",
+  "model": "gpt-5.6-luna",
+  "effort": "high",
+  "panels": [
+    {
+      "id": "F66",
+      "purpose": "Grouped reads only",
+      "tasks": [
+        {
+          "id": "map-context",
+          "name": "mapWithContext",
+          "request": "Add mapWithContext<T,C,R>(createContext:()=>C, project:(value:T,context:C,index:number)=>R):OperatorFunction<T,R>. Allocate exactly one context for each subscription, including empty subscriptions, before subscribing upstream. Keep context and zero-based indices separate across subscribers, and advance the index before calling project so reentry cannot reuse it. Emit each projection. Forward factory/project/source errors, stop synchronous producers after errors/unsubscription, and preserve normal teardown. Export from both public barrels and add meaningful src/*.test.ts tests."
+        },
+        {
+          "id": "take-through",
+          "name": "takeThrough",
+          "request": "Add takeThrough<T>(predicate:(value:T,index:number)=>boolean):MonoTypeOperatorFunction<T>. Forward values up to and including the first value for which predicate is false, then complete and unsubscribe upstream synchronously. Index starts at zero per subscription. Empty input completes without invoking predicate. A throwing predicate errors without emitting the offending value; upstream errors and early downstream unsubscription retain normal behavior. Export from both public barrels and add meaningful src/*.test.ts tests."
+        }
+      ],
+      "arms": [
+        "reference",
+        "batch",
+        "cline"
+      ],
+      "knownDiagnostics": false,
+      "project": "complete pinned RxJS checkout reused from F64; new constructed requests, not a new-project confirmation"
+    },
+    {
+      "id": "F67",
+      "purpose": "Literal no-emit compiler repair only",
+      "tasks": [
+        {
+          "id": "clamp-items",
+          "name": "clampItems",
+          "request": "Fix the existing compiler error, then implement normalizeRange(lower:number,upper:number):Readonly<{lower:number;upper:number}> in src/range.ts and clampItems(values:readonly number[],range:Readonly<{lower:number;upper:number}>):number[] in src/list.ts. Require safe integer bounds and values (TypeError otherwise), reject reversed bounds with RangeError, clamp inclusively, preserve order, and never mutate the array or range. Export both from src/index.ts and add meaningful src/*.test.ts tests."
+        },
+        {
+          "id": "quota",
+          "name": "createQuota",
+          "request": "Fix the existing compiler error, then add createQuota(limit:number) in src/quota.ts and export it from src/index.ts. Return an object with a read-only remaining getter, tryTake(amount=1):boolean and restore(amount=1):number. Limit and amounts must be nonnegative safe integers (RangeError otherwise). Taking too much returns false without mutation; zero is a no-op. Restore returns the new remaining amount capped at limit. State is independent per instance and invalid operations do not mutate it. Add meaningful src/*.test.ts tests."
+        }
+      ],
+      "arms": [
+        "reference",
+        "compiler",
+        "cline"
+      ],
+      "knownDiagnostics": true,
+      "project": "new small typed fixture; deliberate initial compiler error, explicit reproduction instruction"
+    }
+  ],
+  "commonInstruction": " Work only in this supplied checkout. Do not retrieve remote history, solutions or study artifacts, install dependencies, weaken existing tests, or change manifests/configuration/supplied checks. Preserve public APIs. After the final source/test edit execute npm run test:study:regression, npm run test:study:types, npm run test:study:delivered and npm run typecheck:delivered. Report exact outcomes; execution, test passing, admitted verification and user acceptance are distinct.",
+  "repetitions": 2,
+  "order": "Within each panel: repeat, task, arms rotated by task+repeat. Sequential workers, no replacements or outcome-dependent selection.",
+  "fixed": {
+    "analysis": false,
+    "symbolicHints": false,
+    "feedbackEnvelope": true,
+    "source": "one identical Git input snapshot per task across arms",
+    "dependencies": "isolated npm11.6.4, TypeScript5.9.3, Vitest3.2.4 lock",
+    "effort": "configured value frozen above",
+    "schemas": "freeze full request hashes and actual tool schemas before scoring",
+    "native": "Integrated Cline SDK0.2.0 built-ins without the historical 0.0.82 search patch; a separate cohort.",
+    "featureFlags": {
+      "reference": {
+        "batch": false,
+        "literalCompiler": false
+      },
+      "batch": {
+        "batch": true,
+        "literalCompiler": false
+      },
+      "compiler": {
+        "batch": false,
+        "literalCompiler": true
+      },
+      "cline": {
+        "batch": false,
+        "literalCompiler": false
+      }
+    }
+  },
+  "budgets": {
+    "perTrialSdkCostLimitUsd": 1,
+    "perTrialMissingCostReserveUsd": 0.5,
+    "timeoutSeconds": 600,
+    "maxIterations": 35,
+    "maxOutputTokens": 8192,
+    "requestBytes": 500000,
+    "observedStudyStopUsd": 30
+  },
+  "endpoints": [
+    "unchanged regression tests",
+    "source compilation",
+    "delivered runtime tests",
+    "delivered test compilation",
+    "independent finite behavior and public-type probes"
+  ],
+  "criteria": {
+    "quality": "All assignments retained; strict audited behavior, exports, test locations and immutable checks. Official completion reported separately.",
+    "mechanism": "F66: actual grouped reads forwarded, preserved byte/coverage guards. F67: exact failed compiler followed before green checks; final required invocations retained.",
+    "resources": "Jointly audited-successful pairs, tokens=input+output, cache subset reported separately, SDK cost estimates and durations. Include paired/task omission. No general efficiency claim from a small constructed panel."
+  },
+  "limitations": [
+    "model revision/seeds, provider cache, invoice completeness and host exclusivity unknown",
+    "F65 local SDK controls do not establish historical network receipt delivery",
+    "F67 is a seeded diagnostic, not natural failure prevalence",
+    "historical F63/F64 scores remain unchanged"
+  ],
+  "status": "selected before model requests; dispatch requires local controls and immutable executable/input binding"
+}

@@ -1,12 +1,14 @@
 import type { ContentBlock, Message } from "@cline/sdk";
 import { projectImageContext } from "./image-context.js";
+import { compactRepairAdvice } from "./repair-advice-projection.js";
 
 const harnessNames = new Set(["read_code", "search_code", "edit_code", "run_task"]);
 const textKeys = new Set(["content", "body", "imports", "signature", "snippet", "output", "message"]);
 
 export function presentToolResults(messages: Message[]): Message[] {
   const names = new Map<string, string>();
-  const presented = messages.map((message) => {
+  const source = process.env.BLAME_AGENT_REPAIR_CONTEXT_COMPACTION === "true" ? compactRepairAdvice(messages) : messages;
+  const presented = source.map((message) => {
     if (!Array.isArray(message.content)) return message;
     const content = message.content.map((block: ContentBlock) => {
       if (block.type === "tool_use") names.set(block.id, block.name);

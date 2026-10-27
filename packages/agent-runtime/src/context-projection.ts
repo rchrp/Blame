@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { projectReadOverlap } from "./read-overlap-projection.js";
 import { presentToolResults } from "./tool-result-presentation.js";
+import { unwrapFeedbackEnvelope } from "./tool-result-envelope.js";
 import type {
   AgentPlugin,
   ContentBlock,
@@ -623,9 +624,8 @@ function contentValues(messages: Message[]): unknown[] {
 }
 
 function parseToolResult(block: ToolResultContent) {
-  if (typeof block.content !== "string") return undefined;
   try {
-    return recordValue(JSON.parse(block.content));
+    return recordValue(unwrapFeedbackEnvelope(typeof block.content === "string" ? JSON.parse(block.content) : block.content));
   } catch {
     return undefined;
   }

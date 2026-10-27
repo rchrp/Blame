@@ -68,12 +68,13 @@ export async function runningPreviewWorktrees(
 }
 
 const removeProjectScript = `
+set -eu
 project="$1"
 label="label=com.docker.compose.project=$project"
 containers="$(docker ps -aq --filter "$label")"
 [ -z "$containers" ] || docker rm -f $containers >/dev/null
 networks="$(docker network ls -q --filter "$label")"
-[ -z "$networks" ] || docker network rm $networks >/dev/null 2>&1 || true
+[ -z "$networks" ] || docker network rm $networks >/dev/null
 volumes="$(docker volume ls -q --filter "name=^\${project}_")"
 [ -z "$volumes" ] || docker volume rm -f $volumes >/dev/null
 `;

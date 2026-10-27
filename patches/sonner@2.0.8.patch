@@ -1,5 +1,5 @@
 diff --git a/dist/index.d.mts b/dist/index.d.mts
-index d5819a36779ebbe3752b200dc2bdae379da34891..9ed022d274006c9baabb8abe54bed41dca074f1d 100644
+index a25db7918f195250e345bc25c587b3f4d11f9dcb..6d4d682f8ccf8090178f2f32cf11d00024d3fcfc 100644
 --- a/dist/index.d.mts
 +++ b/dist/index.d.mts
 @@ -76,6 +76,8 @@ interface ToastT {
@@ -12,7 +12,7 @@ index d5819a36779ebbe3752b200dc2bdae379da34891..9ed022d274006c9baabb8abe54bed41d
      closeButton?: boolean;
      descriptionClassName?: string;
 diff --git a/dist/index.d.ts b/dist/index.d.ts
-index d5819a36779ebbe3752b200dc2bdae379da34891..9ed022d274006c9baabb8abe54bed41dca074f1d 100644
+index a25db7918f195250e345bc25c587b3f4d11f9dcb..6d4d682f8ccf8090178f2f32cf11d00024d3fcfc 100644
 --- a/dist/index.d.ts
 +++ b/dist/index.d.ts
 @@ -76,6 +76,8 @@ interface ToastT {
@@ -25,10 +25,10 @@ index d5819a36779ebbe3752b200dc2bdae379da34891..9ed022d274006c9baabb8abe54bed41d
      closeButton?: boolean;
      descriptionClassName?: string;
 diff --git a/dist/index.js b/dist/index.js
-index bd21e898f431298b70e941833c78819a1eb53a36..6bf29b93888e6d6a9b83b644b6695d683febc766 100644
+index 394dbc2272f43b84642b0f9d5cc7eb1eacb0ffb3..9011a4648fffbfd317d052250167ca1311efbd92 100644
 --- a/dist/index.js
 +++ b/dist/index.js
-@@ -446,7 +446,7 @@ function getDefaultSwipeDirections(position) {
+@@ -499,7 +499,7 @@ function getDefaultSwipeDirections(position) {
  }
  const Toast = (props)=>{
      var _toast_classNames, _toast_classNames1, _toast_classNames2, _toast_classNames3, _toast_classNames4, _toast_classNames5, _toast_classNames6, _toast_classNames7, _toast_classNames8;
@@ -37,7 +37,7 @@ index bd21e898f431298b70e941833c78819a1eb53a36..6bf29b93888e6d6a9b83b644b6695d68
      const [swipeDirection, setSwipeDirection] = React__default.default.useState(null);
      const [swipeOutDirection, setSwipeOutDirection] = React__default.default.useState(null);
      const [mounted, setMounted] = React__default.default.useState(false);
-@@ -459,6 +459,7 @@ const Toast = (props)=>{
+@@ -512,6 +512,7 @@ const Toast = (props)=>{
      const remainingTime = React__default.default.useRef(toast.duration || durationFromToaster || TOAST_LIFETIME);
      const dragStartTime = React__default.default.useRef(null);
      const toastRef = React__default.default.useRef(null);
@@ -45,7 +45,7 @@ index bd21e898f431298b70e941833c78819a1eb53a36..6bf29b93888e6d6a9b83b644b6695d68
      const isFront = index === 0;
      const isVisible = index + 1 <= visibleToasts;
      const toastType = toast.type;
-@@ -588,6 +589,25 @@ const Toast = (props)=>{
+@@ -650,6 +651,25 @@ const Toast = (props)=>{
      React__default.default.useEffect(()=>{
          if (toast.promise && toastType === 'loading' || toast.duration === Infinity || toast.type === 'loading') return;
          let timeoutId;
@@ -71,7 +71,7 @@ index bd21e898f431298b70e941833c78819a1eb53a36..6bf29b93888e6d6a9b83b644b6695d68
          // Pause the timer on each hover
          const pauseTimer = ()=>{
              if (lastCloseTimerStartTimeRef.current < closeTimerStartTimeRef.current) {
-@@ -596,6 +616,7 @@ const Toast = (props)=>{
+@@ -658,6 +678,7 @@ const Toast = (props)=>{
                  remainingTime.current = remainingTime.current - elapsedTime;
              }
              lastCloseTimerStartTimeRef.current = new Date().getTime();
@@ -79,7 +79,7 @@ index bd21e898f431298b70e941833c78819a1eb53a36..6bf29b93888e6d6a9b83b644b6695d68
          };
          const startTimer = ()=>{
              // setTimeout(, Infinity) behaves as if the delay is 0.
-@@ -603,6 +624,7 @@ const Toast = (props)=>{
+@@ -665,6 +686,7 @@ const Toast = (props)=>{
              // See: https://github.com/denysdovhan/wtfjs?tab=readme-ov-file#an-infinite-timeout
              if (remainingTime.current === Infinity) return;
              closeTimerStartTimeRef.current = new Date().getTime();
@@ -87,7 +87,7 @@ index bd21e898f431298b70e941833c78819a1eb53a36..6bf29b93888e6d6a9b83b644b6695d68
              // Let the toast know it has started
              timeoutId = setTimeout(()=>{
                  toast.onAutoClose == null ? void 0 : toast.onAutoClose.call(toast, toast);
-@@ -614,13 +636,18 @@ const Toast = (props)=>{
+@@ -676,13 +698,18 @@ const Toast = (props)=>{
          } else {
              startTimer();
          }
@@ -107,7 +107,7 @@ index bd21e898f431298b70e941833c78819a1eb53a36..6bf29b93888e6d6a9b83b644b6695d68
          deleteToast
      ]);
      React__default.default.useEffect(()=>{
-@@ -783,7 +810,13 @@ const Toast = (props)=>{
+@@ -846,7 +873,13 @@ const Toast = (props)=>{
              (_toastRef_current = toastRef.current) == null ? void 0 : _toastRef_current.style.setProperty('--swipe-amount-x', `${swipeAmount.x}px`);
              (_toastRef_current1 = toastRef.current) == null ? void 0 : _toastRef_current1.style.setProperty('--swipe-amount-y', `${swipeAmount.y}px`);
          }
@@ -122,7 +122,7 @@ index bd21e898f431298b70e941833c78819a1eb53a36..6bf29b93888e6d6a9b83b644b6695d68
          "aria-label": closeButtonAriaLabel,
          "data-disabled": disabled,
          "data-close-button": true,
-@@ -1169,6 +1202,7 @@ const Toaster = /*#__PURE__*/ React__default.default.forwardRef(function Toaster
+@@ -1231,6 +1264,7 @@ const Toaster = /*#__PURE__*/ React__default.default.forwardRef(function Toaster
                  cancelButtonStyle: toastOptions == null ? void 0 : toastOptions.cancelButtonStyle,
                  actionButtonStyle: toastOptions == null ? void 0 : toastOptions.actionButtonStyle,
                  closeButtonAriaLabel: toastOptions == null ? void 0 : toastOptions.closeButtonAriaLabel,
@@ -131,10 +131,10 @@ index bd21e898f431298b70e941833c78819a1eb53a36..6bf29b93888e6d6a9b83b644b6695d68
                  toasts: filteredToasts.filter((t)=>t.position == toast.position),
                  heights: heights.filter((h)=>h.position == toast.position),
 diff --git a/dist/index.mjs b/dist/index.mjs
-index d0c7a5a1fa1ed8b19c27bea968bb404f2437a07e..3dfa8ec2a3899dfeb0fbb0c98c5c63ce052e967e 100644
+index c124f821a68f7070647a5a04441d0caa53689662..1cd47074c07769694688e8457ecd596bd29e9b03 100644
 --- a/dist/index.mjs
 +++ b/dist/index.mjs
-@@ -439,7 +439,7 @@ function getDefaultSwipeDirections(position) {
+@@ -492,7 +492,7 @@ function getDefaultSwipeDirections(position) {
  }
  const Toast = (props)=>{
      var _toast_classNames, _toast_classNames1, _toast_classNames2, _toast_classNames3, _toast_classNames4, _toast_classNames5, _toast_classNames6, _toast_classNames7, _toast_classNames8;
@@ -143,7 +143,7 @@ index d0c7a5a1fa1ed8b19c27bea968bb404f2437a07e..3dfa8ec2a3899dfeb0fbb0c98c5c63ce
      const [swipeDirection, setSwipeDirection] = React.useState(null);
      const [swipeOutDirection, setSwipeOutDirection] = React.useState(null);
      const [mounted, setMounted] = React.useState(false);
-@@ -452,6 +452,7 @@ const Toast = (props)=>{
+@@ -505,6 +505,7 @@ const Toast = (props)=>{
      const remainingTime = React.useRef(toast.duration || durationFromToaster || TOAST_LIFETIME);
      const dragStartTime = React.useRef(null);
      const toastRef = React.useRef(null);
@@ -151,7 +151,7 @@ index d0c7a5a1fa1ed8b19c27bea968bb404f2437a07e..3dfa8ec2a3899dfeb0fbb0c98c5c63ce
      const isFront = index === 0;
      const isVisible = index + 1 <= visibleToasts;
      const toastType = toast.type;
-@@ -581,6 +582,25 @@ const Toast = (props)=>{
+@@ -643,6 +644,25 @@ const Toast = (props)=>{
      React.useEffect(()=>{
          if (toast.promise && toastType === 'loading' || toast.duration === Infinity || toast.type === 'loading') return;
          let timeoutId;
@@ -177,7 +177,7 @@ index d0c7a5a1fa1ed8b19c27bea968bb404f2437a07e..3dfa8ec2a3899dfeb0fbb0c98c5c63ce
          // Pause the timer on each hover
          const pauseTimer = ()=>{
              if (lastCloseTimerStartTimeRef.current < closeTimerStartTimeRef.current) {
-@@ -589,6 +609,7 @@ const Toast = (props)=>{
+@@ -651,6 +671,7 @@ const Toast = (props)=>{
                  remainingTime.current = remainingTime.current - elapsedTime;
              }
              lastCloseTimerStartTimeRef.current = new Date().getTime();
@@ -185,7 +185,7 @@ index d0c7a5a1fa1ed8b19c27bea968bb404f2437a07e..3dfa8ec2a3899dfeb0fbb0c98c5c63ce
          };
          const startTimer = ()=>{
              // setTimeout(, Infinity) behaves as if the delay is 0.
-@@ -596,6 +617,7 @@ const Toast = (props)=>{
+@@ -658,6 +679,7 @@ const Toast = (props)=>{
              // See: https://github.com/denysdovhan/wtfjs?tab=readme-ov-file#an-infinite-timeout
              if (remainingTime.current === Infinity) return;
              closeTimerStartTimeRef.current = new Date().getTime();
@@ -193,7 +193,7 @@ index d0c7a5a1fa1ed8b19c27bea968bb404f2437a07e..3dfa8ec2a3899dfeb0fbb0c98c5c63ce
              // Let the toast know it has started
              timeoutId = setTimeout(()=>{
                  toast.onAutoClose == null ? void 0 : toast.onAutoClose.call(toast, toast);
-@@ -607,13 +629,18 @@ const Toast = (props)=>{
+@@ -669,13 +691,18 @@ const Toast = (props)=>{
          } else {
              startTimer();
          }
@@ -213,7 +213,7 @@ index d0c7a5a1fa1ed8b19c27bea968bb404f2437a07e..3dfa8ec2a3899dfeb0fbb0c98c5c63ce
          deleteToast
      ]);
      React.useEffect(()=>{
-@@ -776,7 +803,13 @@ const Toast = (props)=>{
+@@ -839,7 +866,13 @@ const Toast = (props)=>{
              (_toastRef_current = toastRef.current) == null ? void 0 : _toastRef_current.style.setProperty('--swipe-amount-x', `${swipeAmount.x}px`);
              (_toastRef_current1 = toastRef.current) == null ? void 0 : _toastRef_current1.style.setProperty('--swipe-amount-y', `${swipeAmount.y}px`);
          }
@@ -228,7 +228,7 @@ index d0c7a5a1fa1ed8b19c27bea968bb404f2437a07e..3dfa8ec2a3899dfeb0fbb0c98c5c63ce
          "aria-label": closeButtonAriaLabel,
          "data-disabled": disabled,
          "data-close-button": true,
-@@ -1162,6 +1195,7 @@ const Toaster = /*#__PURE__*/ React.forwardRef(function Toaster(props, ref) {
+@@ -1224,6 +1257,7 @@ const Toaster = /*#__PURE__*/ React.forwardRef(function Toaster(props, ref) {
                  cancelButtonStyle: toastOptions == null ? void 0 : toastOptions.cancelButtonStyle,
                  actionButtonStyle: toastOptions == null ? void 0 : toastOptions.actionButtonStyle,
                  closeButtonAriaLabel: toastOptions == null ? void 0 : toastOptions.closeButtonAriaLabel,

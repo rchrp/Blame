@@ -8,8 +8,7 @@ export type ClineProviderCatalog = {
 }
 
 type ClineCatalogRequest =
-  | { kind: 'catalog' }
-  | { kind: 'live'; url: string; providerIds: string[] }
+  { kind: 'catalog' } | { kind: 'live'; url: string; providerIds: string[] }
 type ClineCatalogResponse<T> = { ok: true; value: T } | { ok: false; message: string }
 
 export function loadClineProviderCatalog() {

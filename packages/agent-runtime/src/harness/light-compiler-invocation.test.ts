@@ -14,7 +14,7 @@ async function fixture(run: (root: string, workspace: InstanceType<typeof LightW
   const root = await mkdtemp(join(tmpdir(), "blame-compiler-check-"));
   try {
     await mkdir(join(root, "node_modules")); await mkdir(join(root, ".blame"));
-    await symlink(fileURLToPath(new URL("../../node_modules/typescript", import.meta.url)), join(root, "node_modules/typescript"));
+    await symlink(fileURLToPath(new URL("../../node_modules/@typescript/native", import.meta.url)), join(root, "node_modules/typescript"));
     await writeFile(join(root, "package.json"), JSON.stringify({ scripts: {
       ["pre" + (options.taskName ?? "test:study:types")]: "node hook.cjs pre", [options.taskName ?? "test:study:types"]: options.script ?? command,
       ["post" + (options.taskName ?? "test:study:types")]: options.badPost ? "node hook.cjs post && node -e 'process.exit(7)'" : "node hook.cjs post",

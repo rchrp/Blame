@@ -139,7 +139,8 @@ const catalogTools = (toolCatalog.tools as PreviewDevtoolsMcpTool[]).map(
 const catalogToolNames = new Set(catalogTools.map(({ name }) => name));
 const maximumStagedUploadBytes = 20 * 1024 * 1024;
 const previewMcpCallTimeoutMs = 15_000;
-const require = createRequire(import.meta.url);
+// Keep this binding distinct from electron-vite's generated CommonJS shim.
+const devtoolsRequire = createRequire(import.meta.url);
 
 export class PreviewDevtoolsMcpService {
   private readonly connections = new Map<string, PendingConnection>();
@@ -721,7 +722,7 @@ function previewMcpEnvironment() {
 }
 
 function previewDevtoolsExecutable() {
-  const packagePath = require.resolve("chrome-devtools-mcp/package.json");
+  const packagePath = devtoolsRequire.resolve("chrome-devtools-mcp/package.json");
   return join(
     dirname(packagePath),
     "build",

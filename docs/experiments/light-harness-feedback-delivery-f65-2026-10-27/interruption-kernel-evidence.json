@@ -1,0 +1,9 @@
+{
+  "recordedAtUTC": "2026-10-27T01:41:49.171338+00:00",
+  "pid": 40433,
+  "state": "Z",
+  "kernelWaitStatus": 9,
+  "signaled": true,
+  "signal": 9,
+  "boundary": "Kernel wait status belongs to the original same-host same-boot coordinator zombie, not the model runner. Sender/cause and model exit remain unestablished. No model retry."
+}

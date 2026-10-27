@@ -197,10 +197,8 @@ export async function stopLocalPreview(
 
 /** Removes the preview's containers, network and own volumes. */
 export async function removeLocalPreview(worktree: string) {
-  await localPreviewEngine(worktree)
-    .remove()
-    .catch(() => undefined);
-  await rm(localPreviewPaths(worktree).engineState).catch(() => undefined);
+  await localPreviewEngine(worktree).remove();
+  await rm(localPreviewPaths(worktree).engineState);
 }
 
 export async function localPreviewServices(

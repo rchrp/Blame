@@ -1,0 +1,9 @@
+{
+  "kind": "post-dispatch observer-only negative-control correction",
+  "modelTrialsChanged": false,
+  "rawReceiptFilesRewritten": false,
+  "commandsInspected": 134,
+  "detachedReceiptLiteralCandidates": [],
+  "change": "Ignore detached JSON in typed input_text envelope arrays, as already done for text arrays. Expanded local negative control fails before and passes after the one-line observer fix.",
+  "boundary": "Original provider bodies were not retained or reconstructed. No inspected command diagnostic contains the literal required for the false positive. Live receipts are separately correlated by exact offered hash and call identity. Historical exposure claims and scores remain unchanged."
+}

@@ -2,14 +2,7 @@ import { BaseModel, column } from '@adonisjs/lucid/orm'
 import { DateTime } from 'luxon'
 
 export type AiReasoningEffort =
-  | 'none'
-  | 'enabled'
-  | 'minimal'
-  | 'low'
-  | 'medium'
-  | 'high'
-  | 'xhigh'
-  | 'max'
+  'none' | 'enabled' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh' | 'max'
 
 export default class UserAiPreference extends BaseModel {
   @column({ isPrimary: true })

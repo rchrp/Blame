@@ -1,0 +1,186 @@
+{
+  "complete": true,
+  "externalModelRequests": 0,
+  "rows": [
+    {
+      "task": "clamp-items",
+      "knownDiagnostic": true,
+      "baselineOfficial": null,
+      "negativeProbe": null,
+      "positive": [
+        {
+          "name": "regression",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 560.243474
+        },
+        {
+          "name": "types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 565.948104
+        },
+        {
+          "name": "delivered",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 754.465465
+        },
+        {
+          "name": "delivered-types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 772.7359139999999
+        }
+      ],
+      "official": {
+        "exitCode": 0
+      },
+      "independentProbe": null,
+      "inputHead": "dbe5b19581a9982a301335a366916498838c8e34"
+    },
+    {
+      "task": "quota",
+      "knownDiagnostic": true,
+      "baselineOfficial": null,
+      "negativeProbe": null,
+      "positive": [
+        {
+          "name": "regression",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 578.6772389999996
+        },
+        {
+          "name": "types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 640.7488110000004
+        },
+        {
+          "name": "delivered",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 779.851079
+        },
+        {
+          "name": "delivered-types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 778.4205739999998
+        }
+      ],
+      "official": {
+        "exitCode": 0
+      },
+      "independentProbe": null,
+      "inputHead": "1a6d2ff891214a4e55f91bf0f0a4156931ec39a0"
+    },
+    {
+      "task": "mutation-callbacks",
+      "knownDiagnostic": false,
+      "baselineOfficial": {
+        "exitCode": 1
+      },
+      "negativeProbe": {
+        "exitCode": 1
+      },
+      "positive": [
+        {
+          "name": "regression",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 12197.626126
+        },
+        {
+          "name": "types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1364.7274849999994
+        },
+        {
+          "name": "delivered",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1172.550306000001
+        },
+        {
+          "name": "delivered-types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1686.999243000002
+        }
+      ],
+      "official": {
+        "exitCode": 0
+      },
+      "independentProbe": {
+        "exitCode": 0
+      },
+      "inputHead": "5828e4ff35745c1571a1b6cfba510f3dc7a9fd99"
+    },
+    {
+      "task": "fetching-filters",
+      "knownDiagnostic": false,
+      "baselineOfficial": {
+        "exitCode": 2
+      },
+      "negativeProbe": {
+        "exitCode": 2
+      },
+      "positive": [
+        {
+          "name": "regression",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 21463.180803000003
+        },
+        {
+          "name": "types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1667.5018779999955
+        },
+        {
+          "name": "type-regression",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1685.110010000004
+        },
+        {
+          "name": "delivered-types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1652.6880900000033
+        }
+      ],
+      "official": {
+        "exitCode": 0
+      },
+      "independentProbe": {
+        "exitCode": 0
+      },
+      "inputHead": "5d3b5a65e9b098ff413781c0ab81f462646d719d"
+    }
+  ],
+  "sourceHashes": {
+    "controls": "28591c437b697c8ab32ec75b6074caf2649acc4e0d8b45b7e75f2579afaf0e7b",
+    "checks": "28760dddc76a07c1ea5123738a404a1d6e708c10a3fdf86f0c01e90490c657c0"
+  }
+}

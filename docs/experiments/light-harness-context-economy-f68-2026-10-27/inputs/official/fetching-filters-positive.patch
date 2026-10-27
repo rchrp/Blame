@@ -1,0 +1,28 @@
+diff --git a/packages/query-core/src/queryClient.ts b/packages/query-core/src/queryClient.ts
+index 3d8e3e6..ba82cbb 100644
+--- a/packages/query-core/src/queryClient.ts
++++ b/packages/query-core/src/queryClient.ts
+@@ -148,9 +148,7 @@ export class QueryClient {
+    * }
+    * ```
+    */
+-  isFetching<TQueryFilters extends QueryFilters<any> = QueryFilters>(
+-    filters?: TQueryFilters,
+-  ): number {
++  isFetching(filters?: Omit<QueryFilters, 'fetchStatus'>): number {
+     return this.#queryCache.findAll({ ...filters, fetchStatus: 'fetching' })
+       .length
+   }
+diff --git a/packages/react-query/src/useIsFetching.ts b/packages/react-query/src/useIsFetching.ts
+index 6fd5dd7..5983d7d 100644
+--- a/packages/react-query/src/useIsFetching.ts
++++ b/packages/react-query/src/useIsFetching.ts
+@@ -39,7 +39,7 @@ import type { QueryClient, QueryFilters } from '@tanstack/query-core'
+  * ```
+  */
+ export function useIsFetching(
+-  filters?: QueryFilters,
++  filters?: Omit<QueryFilters, 'fetchStatus'>,
+   queryClient?: QueryClient,
+ ): number {
+   const client = useQueryClient(queryClient)

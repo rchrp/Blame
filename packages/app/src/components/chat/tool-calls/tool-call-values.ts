@@ -1,6 +1,7 @@
 // Small, defensive readers for tool call payloads. Tool inputs and outputs
 // come from several runtimes (Cline built-ins, the Blame harness, older
 // harness versions) and may be compacted into { excerpt, truncated } records.
+import { unwrapFeedbackEnvelope } from "@blame/agent-runtime/tool-result-envelope"
 
 export type TextValue = { text: string; truncated: boolean }
 
@@ -118,6 +119,7 @@ export type HarnessResult = {
 }
 
 export function harnessResult(output: unknown): HarnessResult | undefined {
+  output = unwrapFeedbackEnvelope(output)
   let value = record(output)
   const nested = record(value.output)
   if (str(nested.status) && !str(value.status)) value = nested

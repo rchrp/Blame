@@ -1,0 +1,5 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {mkdtemp,writeFile,mkdir,rm} from 'node:fs/promises';import {tmpdir} from 'node:os';import {join} from 'node:path';import {execFileSync} from 'node:child_process';import {sourceEpoch} from './source-epoch.mjs';
+test('source epochs track delivered/untracked source, not generated diagnostics',async()=>{
+ const root=await mkdtemp(join(tmpdir(),'source-epoch-'));
+ try{execFileSync('git',['init','--quiet'],{cwd:root});await writeFile(join(root,'.git/info/exclude'),'.blame/\nnode_modules\n');await writeFile(join(root,'a.ts'),'export const n=1;');const first=sourceEpoch(root);await mkdir(join(root,'.blame'));await writeFile(join(root,'.blame/check.log'),'not source');assert.deepEqual(sourceEpoch(root),first);await writeFile(join(root,'a.ts'),'export const n=2;');assert.notEqual(sourceEpoch(root).sha256,first.sha256);await writeFile(join(root,'new.test.ts'),'export {};');assert.equal(sourceEpoch(root).files,2);}finally{await rm(root,{force:true,recursive:true})}
+});

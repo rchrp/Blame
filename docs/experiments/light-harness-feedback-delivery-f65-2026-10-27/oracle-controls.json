@@ -1,0 +1,202 @@
+{
+  "complete": true,
+  "externalModelRequests": 0,
+  "rows": [
+    {
+      "task": "map-context",
+      "positive": [
+        {
+          "name": "regression",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2875.7740200000003
+        },
+        {
+          "name": "types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1625.7178490000006
+        },
+        {
+          "name": "delivered",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2944.401667
+        },
+        {
+          "name": "delivered-types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1688.4746609999993
+        },
+        {
+          "name": "oracle",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2177.3388319999995
+        }
+      ],
+      "negative": {
+        "name": "oracle",
+        "exitCode": 1,
+        "signal": null,
+        "error": null,
+        "durationMs": 327.7663740000007
+      },
+      "sourceMutantSha256": "ffd38b01141a759e2d2f4b05446d161c2190ae19a5c84352b4221f1d0411b6c4"
+    },
+    {
+      "task": "take-through",
+      "positive": [
+        {
+          "name": "regression",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2525.928234000001
+        },
+        {
+          "name": "types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1496.4404570000006
+        },
+        {
+          "name": "delivered",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2788.746313999998
+        },
+        {
+          "name": "delivered-types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1697.1062840000013
+        },
+        {
+          "name": "oracle",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2289.2712199999987
+        }
+      ],
+      "negative": {
+        "name": "oracle",
+        "exitCode": 1,
+        "signal": null,
+        "error": null,
+        "durationMs": 318.4949320000014
+      },
+      "sourceMutantSha256": "a4a87284fc2024471da4a33c9b8323b5f6b59cab49183d7a35a7304adbf6d72f"
+    },
+    {
+      "task": "clamp-items",
+      "positive": [
+        {
+          "name": "regression",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 556.5609100000001
+        },
+        {
+          "name": "types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 579.9969170000004
+        },
+        {
+          "name": "delivered",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 782.2319309999984
+        },
+        {
+          "name": "delivered-types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 768.6672099999996
+        },
+        {
+          "name": "oracle",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 804.9937820000014
+        }
+      ],
+      "negative": {
+        "name": "oracle",
+        "exitCode": 1,
+        "signal": null,
+        "error": null,
+        "durationMs": 164.5072650000002
+      },
+      "sourceMutantSha256": "d6829acf8e78cf23d5717b575469fb8ff579fe5970551674757b1d7e70fe47f6"
+    },
+    {
+      "task": "quota",
+      "positive": [
+        {
+          "name": "regression",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 588.7273580000001
+        },
+        {
+          "name": "types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 592.126773
+        },
+        {
+          "name": "delivered",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 803.7308340000018
+        },
+        {
+          "name": "delivered-types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 879.3120049999998
+        },
+        {
+          "name": "oracle",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 849.5238179999978
+        }
+      ],
+      "negative": {
+        "name": "oracle",
+        "exitCode": 1,
+        "signal": null,
+        "error": null,
+        "durationMs": 162.06538400000136
+      },
+      "sourceMutantSha256": "d802bc40ed098abf9c706f0624cef84d8ac175d7c39f1a7fe024f1b0fb45d759"
+    }
+  ],
+  "hashes": {
+    "oracle": "53b44ad55065835035471333bbd0dd21319f9d07721af5bb5a8045980e9b9b55",
+    "controls": "fe265ce049ca9ee6f793a1a86d405fca838beaefc65a6d1327e44e9647a2353a"
+  }
+}

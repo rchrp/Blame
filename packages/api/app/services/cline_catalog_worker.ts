@@ -11,8 +11,7 @@ import { missingProviderModels, withSupplementalModels } from '@blame/model-cata
 import type { ClineProviderCatalog } from './cline_catalog_client.js'
 
 type ClineCatalogRequest =
-  | { kind: 'catalog' }
-  | { kind: 'live'; url: string; providerIds: string[] }
+  { kind: 'catalog' } | { kind: 'live'; url: string; providerIds: string[] }
 
 async function loadProviderCatalog() {
   const providers = await getAllProviders()
@@ -27,12 +26,23 @@ async function loadProviderCatalog() {
 
 async function loadLiveCatalog(url: string, providerIds: string[]) {
   const catalog = await fetchLiveProviderModels(url)
+  const providers: ProviderInfo[] = await getAllProviders()
+  const subscriptionProviders = new Set(
+    providers
+      .filter((provider) => provider.metadata?.usageCostDisplay === 'subscription')
+      .map((provider) => provider.id)
+  )
   return Object.fromEntries(
     await Promise.all(
       providerIds.map(async (providerId) => {
         const official = await getModelsForProvider(providerId)
-        // An API model inherited through an alias is not official availability
-        // for a subscription provider (and may have different limits/pricing).
+        // Subscription limits, prices and availability belong to that provider.
+        // An API alias must not overwrite them once a supplemental model has
+        // graduated into Cline's bundled catalog.
+        if (subscriptionProviders.has(providerId)) {
+          return [providerId, withSupplementalModels(providerId, official)]
+        }
+        // Only direct provider entries retire a temporary model addition.
         const additions = missingProviderModels(providerId, {
           ...official,
           ...catalog[providerId],

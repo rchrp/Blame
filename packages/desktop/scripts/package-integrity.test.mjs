@@ -10,9 +10,11 @@ import {
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import { finished } from "node:stream/promises";
 import test from "node:test";
 import {
   verifyAsarWorkspaceRuntime,
+  verifyAsarGeneratedJavaScript,
   verifyPackagedWorkspaceRuntime,
   verifyStagedWorkspaceRuntime,
 } from "./package-integrity.mjs";
@@ -60,7 +62,9 @@ async function fixture(
   }
   async function pack() {
     await mkdir(dirname(archive), { recursive: true });
-    await asar.createPackage(source, archive);
+    const output = await asar.createPackage(source, archive);
+    // ASAR returns its write stream before the final buffered bytes are flushed.
+    await finished(output);
     asar.uncache(archive);
   }
   try {
@@ -81,6 +85,15 @@ test("rejects source-only transitive workspace packages in staging and the final
       verifyAsarWorkspaceRuntime(archive),
       /missing runtime entrypoint.*dist\/index.js/,
     );
+  });
+});
+
+test("rejects a duplicate require declaration inside the final ASAR", async () => {
+  await fixture(async ({ archive, file, pack }) => {
+    await file("out/main/chunks/devtools.js", "const require = () => {}; var require = () => {};");
+    await pack();
+    assert.throws(() => verifyAsarGeneratedJavaScript(archive),
+      /devtools\.js:[\s\S]*Identifier 'require' has already been declared/);
   });
 });
 
@@ -120,20 +133,39 @@ test("detects a dependency lost between deployment and packaging", async () => {
   });
 });
 
-test("requires the default libraries of a packaged TypeScript compiler", async () => {
+for (const compilerPackage of ["typescript", "@typescript/typescript6", "@typescript/old"]) {
+test(`requires the default libraries of packaged ${compilerPackage}`, async () => {
   await fixture(async ({ dist, file, pack }) => {
     for (const name of ["harness-core", "model-catalog"])
       await file(`node_modules/@blame/${name}/dist/index.js`);
-    await file("node_modules/typescript/lib/typescript.js");
-    await file("node_modules/typescript/lib/lib.d.ts");
+    await file(`node_modules/${compilerPackage}/lib/typescript.js`);
+    await file(`node_modules/${compilerPackage}/lib/lib.d.ts`);
     await pack();
     await assert.rejects(
       verifyPackagedWorkspaceRuntime(dist),
-      /missing TypeScript default library: .*typescript\/lib\/lib\.es5\.d\.ts/,
+      /missing TypeScript default library: .*\/lib\/lib\.es5\.d\.ts/,
     );
 
-    await file("node_modules/typescript/lib/lib.es5.d.ts");
-    await file("node_modules/typescript/lib/lib.dom.d.ts");
+    await file(`node_modules/${compilerPackage}/lib/lib.es5.d.ts`);
+    await file(`node_modules/${compilerPackage}/lib/lib.dom.d.ts`);
+    await pack();
+    await verifyPackagedWorkspaceRuntime(dist);
+  });
+});
+}
+
+test("resolves the TypeScript compatibility wrapper and checks its implementation libraries", async () => {
+  await fixture(async ({ dist, file, pack }) => {
+    for (const name of ["harness-core", "model-catalog"])
+      await file(`node_modules/@blame/${name}/dist/index.js`);
+    await file("node_modules/typescript/lib/typescript.js", 'module.exports = require("@typescript/old");\n');
+    await pack();
+    await assert.rejects(verifyPackagedWorkspaceRuntime(dist), /missing the TypeScript compatibility implementation/);
+    await file("node_modules/@typescript/old/lib/typescript.js");
+    await pack();
+    await assert.rejects(verifyPackagedWorkspaceRuntime(dist), /missing TypeScript default library/);
+    for (const library of ["lib.d.ts", "lib.es5.d.ts", "lib.dom.d.ts"])
+      await file(`node_modules/@typescript/old/lib/${library}`);
     await pack();
     await verifyPackagedWorkspaceRuntime(dist);
   });

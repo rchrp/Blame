@@ -36,6 +36,11 @@ export async function validateDeploymentSource(
       }
       stream.on('data', (chunk) => {
         if (rejected) return
+        if (!Buffer.isBuffer(chunk)) {
+          rejected = true
+          parser.destroy(new Error('Deployment source contains non-binary data'))
+          return
+        }
         received += chunk.length
         if (received > maximumExpandedBytes - expandedBytes) {
           rejected = true

@@ -294,7 +294,12 @@ export async function mkdir(path: string, input: RuntimeOptions = {}) {
 
 export async function rm(path: string, input: RuntimeOptions = {}) {
   if (!runtimeManagedPath(path, input.platform)) {
-    await rmHost(path, { force: true, recursive: true });
+    await rmHost(path, {
+      force: true,
+      recursive: true,
+      maxRetries: 5,
+      retryDelay: 100,
+    });
     return;
   }
   await run("rm", ["-rf", path], { ...input, user: "root" });

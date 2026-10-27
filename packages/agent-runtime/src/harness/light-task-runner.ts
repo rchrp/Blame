@@ -24,6 +24,7 @@ import {
   readTaskCatalog,
   taskInvocation,
   taskInvocationDisplay,
+  plainCompilerCheck,
   type TaskCatalogItem,
 } from "./task-catalog.js";
 import {
@@ -458,7 +459,8 @@ export class LightTaskRunner {
     const identity = task ? { taskId: task.task_id, taskKind: task.kind,
       ...(task.validationScope ? { validationScope: task.validationScope } : {}) }
       : projectTestCommand(command, cwd, tasks);
-    if (!identity) return {};
+    if (!identity) return process.env.BLAME_AGENT_LITERAL_COMPILER_REPAIR !== "false" && plainCompilerCheck(command)
+      ? { taskKind: "typecheck", validationScope: "invocation_only" } : {};
     const matches = tasks.filter((item) => item.task_id === identity.taskId && item.cwd === cwd);
     return { ...identity, typecheckSelections: typecheckSelections(tasks, cwd),
       ...(matches.length === 1 ? { taskCommand: matches[0]!.command } : {}) };
@@ -750,7 +752,7 @@ function pythonEntryModuleFailure(module: string): FailureAssessment {
 }
 
 function environmentDiagnostic(output: string) {
-  return /(?:\bEAI_AGAIN\b|\bEACCES\b|\bECONN(?:REFUSED|RESET)?\b|\bENETUNREACH\b|\bENOSPC\b|\bENOENT\b|\bENOTFOUND\b|\bEPERM\b|\bETIMEDOUT\b|\bELOOP\b|\bP1001\b|broken (?:symbolic )?link|can't reach database server|command not found|connection refused|could not connect to server|dangling symlink|failed to connect|managed preview.*(?:failed|unavailable)|no space left on device|no such file or directory|PACKAGE_MANAGER_UNAVAILABLE|permission denied|preview (?:container|runtime).*(?:failed|unavailable)|\.prisma\/client)/iu.test(
+  return /(?:\bEAI_AGAIN\b|\bEACCES\b|\bECONN(?:REFUSED|RESET)?\b|\bENETUNREACH\b|\bENOSPC\b|\bENOENT\b|\bENOTFOUND\b|\bEPERM\b|\bETIMEDOUT\b|\bELOOP\b|\bP1001\b|broken (?:symbolic )?link|can't reach database server|command not found|connection refused|could not connect to server|dangling symlink|failed to connect|managed preview.*(?:failed|unavailable)|no space left on device|no such file or directory|not recognized as an internal or external command|PACKAGE_MANAGER_UNAVAILABLE|permission denied|preview (?:container|runtime).*(?:failed|unavailable)|\.prisma\/client)/iu.test(
     output,
   );
 }
