@@ -20,9 +20,17 @@ else if (args[0] === "--warning") {
   stdout(readFileSync(0, "utf8"));
 } else if (args[0] === "--status") stderr("WSL warning");
 else if (args[0] === "--list") {
-  stdout("  NAME STATE VERSION\n* BlameRuntime Running 2\n");
-  stderr("list warning");
-  if (env.BLAME_TEST_WSL_FAIL === "list") code = 19;
+  if (env.BLAME_TEST_WSL_LIST_CODE) {
+    stdout(env.BLAME_TEST_WSL_LIST_STDOUT || "");
+    stderr(env.BLAME_TEST_WSL_LIST_STDERR || "");
+    code = Number(env.BLAME_TEST_WSL_LIST_CODE);
+  } else {
+    stdout("  NAME STATE VERSION\n* BlameRuntime Running 2\n");
+    stderr("list warning");
+    if (env.BLAME_TEST_WSL_FAIL === "list") code = 19;
+  }
+} else if (args[0] === "--import") {
+  code = 0;
 } else if (args[0] === "--unregister") {
   stderr("unregister failed");
   code = 17;

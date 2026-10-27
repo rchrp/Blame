@@ -69,6 +69,7 @@ $result = Invoke-DistroScript "echo caf$([char]0xe9)`r`necho done`r"
 Assert-Equal $result.Stdout "echo caf$([char]0xe9)`necho done`n" "script line endings"
 Assert-Equal (Test-WslAvailable) $true "WSL status tolerates warnings"
 Assert-Equal (Test-DistroPresent) $true "distro list ignores stderr"
+& (Join-Path $PSScriptRoot "check-distro-list.ps1") -FixtureRoot $FixtureRoot
 $env:BLAME_TEST_WSL_FAIL = "list"
 Assert-Throws { Test-DistroPresent } "Failed listing must not be treated as an absent distro"
 $env:BLAME_TEST_WSL_FAIL = ""
