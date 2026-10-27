@@ -1,8 +1,10 @@
 import { execFile } from "node:child_process"
 import {
+  cp,
   mkdtemp,
   readFile,
   readdir,
+  realpath,
   rename,
   rm,
   stat,
@@ -11,6 +13,7 @@ import {
 import { tmpdir } from "node:os"
 import { basename, dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
+import { createRequire } from "node:module"
 import { promisify } from "node:util"
 import { gzip, gunzip } from "node:zlib"
 import type { Configuration } from "electron-builder"
@@ -66,12 +69,30 @@ type PackContext = {
 }
 
 async function finalizePackage(context: PackContext) {
+  await restoreBundledPackageManagers(context)
   if (context.electronPlatformName !== "darwin") return
   await execFileAsync("xattr", ["-cr", context.appOutDir])
   console.log(`Removed macOS extended attributes from ${context.appOutDir}`)
   await assertMacosRuntimeArchitecture(context)
   if (macosCodeSigningRequested()) {
     await signMacosRuntimeExecutables(context)
+  }
+}
+
+async function restoreBundledPackageManagers(context: PackContext) {
+  const resources = context.electronPlatformName === "darwin"
+    ? join(context.appOutDir, `${context.packager.appInfo.productFilename}.app`, "Contents/Resources")
+    : join(context.appOutDir, "resources")
+  const runtimeManifest = await realpath(join(projectDir, "node_modules/@blame/agent-runtime/package.json"))
+  const runtimeRequire = createRequire(runtimeManifest)
+  for (const name of ["npm", "npm-legacy"]) {
+    // The pnpm collector omits npm's vendored dependency tree. External Node
+    // executes these unpacked CLIs, so restore their complete isolated trees.
+    const source = join(dirname(runtimeRequire.resolve(`${name}/package.json`)), "node_modules")
+    await cp(source, join(resources, "app.asar.unpacked/node_modules", name, "node_modules"), {
+      recursive: true,
+      dereference: true,
+    })
   }
 }
 

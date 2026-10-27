@@ -117,6 +117,7 @@ jobs:
       - run: pnpm --filter @blame/app test
       - run: pnpm --filter @blame/desktop test
       - run: pnpm --filter @blame/desktop test:performance
+      - run: pnpm --filter @blame/desktop test:package
       - run: pnpm --filter @blame/desktop build
       - run: pnpm test:semantic-harness-payload
       - run: node --test scripts/semantic-harness-install.test.mjs

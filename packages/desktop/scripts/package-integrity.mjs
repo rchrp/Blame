@@ -1,5 +1,7 @@
 import { access, readFile, readdir, realpath } from "node:fs/promises";
 import { createRequire } from "node:module";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { join, normalize, posix, relative, sep } from "node:path";
 
 function runtimeTargets(manifest) {
@@ -152,6 +154,19 @@ export function verifyAsarTypeScriptLibraries(archive) {
   return compilers.length;
 }
 
+async function verifyUnpackedNpm(archive) {
+  const asar = asarTools();
+  for (const entry of asar.listPackage(archive)) {
+    const path = entry.split(sep).join("/").replace(/^\//, "");
+    if (!/(?:^|\/)node_modules\/npm(?:-legacy)?\/package\.json$/.test(path)) continue;
+    const manifest = JSON.parse(asar.extractFile(archive, normalize(path)).toString("utf8"));
+    const executable = join(`${archive}.unpacked`, posix.dirname(path), manifest.bin.npm);
+    const { stdout } = await promisify(execFile)(process.execPath, [executable, "--version"], { timeout: 15000 });
+    if (stdout.trim() !== manifest.version)
+      throw new Error(`Packaged npm version mismatch in ${path}: ${stdout.trim()}`);
+  }
+}
+
 /** Run after electron-builder, before installers can be copied or uploaded. */
 export async function verifyPackagedWorkspaceRuntime(dist) {
   const archives = [];
@@ -176,6 +191,7 @@ export async function verifyPackagedWorkspaceRuntime(dist) {
   for (const archive of archives) {
     const count = await verifyAsarWorkspaceRuntime(archive);
     const compilers = verifyAsarTypeScriptLibraries(archive);
+    await verifyUnpackedNpm(archive);
     console.log(
       `Verified ${count} workspace packages and the default libraries of ${compilers} TypeScript compiler(s) in ${archive}`,
     );

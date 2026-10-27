@@ -165,5 +165,4 @@ test.group('auth', (group) => {
     const sessions = await db.from('auth_sessions').where('user_id', user.id)
     assert.lengthOf(sessions, 0)
   })
-
 })

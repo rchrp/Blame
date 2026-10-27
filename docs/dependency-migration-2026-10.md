@@ -21,6 +21,8 @@ desktop releases.
   copying uses the asynchronous clipboard API. Sandboxed preloads only import
   Electron. Vite configuration uses Rolldown and Oxc. The obsolete electron-builder
   signing patch is removed because the updated builder includes the fix.
+  The ABI registry supports Electron 45. Packaging preserves npm's vendored
+  dependencies and executes both unpacked npm versions before accepting an app.
 - **Stripe 23:** both billing clients explicitly request API
   `2026-09-30.endive`. Checkout keeps classic subscription billing, preserving
   the previous billing behavior. Unknown Checkout statuses cannot reuse an old
