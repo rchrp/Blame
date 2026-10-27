@@ -2102,7 +2102,14 @@ The proposed wait ends on new output, termination, or 30 seconds; an omitted
 cursor permits an immediate snapshot. Existing command timeout, cancellation and
 SDK loop protection remain intact. Sources, specification and seven grading
 endpoints must match F70; cache-free images and physical grader copies are reused.
-Controls, executable bindings and model results remain pending at this boundary.
+The mechanism is implemented opt-in. Output, timeout, command cancellation and
+observer-only cancellation controls pass; cancelled observation does not cancel
+or relabel the owned process. In an actual SDK loopback replay, reference makes
+six local HTTP requests and aborts at the duplicate-call guard; waiting makes
+four, launches the command once and transmits exit zero. Initial tools/system
+hashes and previously forwarded result prefixes match. These are mocked responses,
+not model trials. The integrated runtime passes 1,207 tests with 13 platform skips,
+runner 37/37, affected lint and line budgets. The six model outcomes are pending.
 Protocol: \filepath{docs/experiments/light-harness-inspection-wait-f72-2026-10-27}.
 
 \section{Next empirical priorities}

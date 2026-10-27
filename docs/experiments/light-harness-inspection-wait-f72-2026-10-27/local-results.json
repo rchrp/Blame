@@ -1,0 +1,151 @@
+{
+  "recordedAtUTC": "2026-10-27T16:21:40.634599+00:00",
+  "externalModelRequests": 0,
+  "runtimeTests": {
+    "total": 1220,
+    "passed": 1207,
+    "skipped": 13,
+    "failed": 0
+  },
+  "targetedBeforeObserverCancellationAddition": {
+    "total": 22,
+    "passed": 21,
+    "skipped": 1,
+    "failed": 0
+  },
+  "runnerTests": {
+    "total": 37,
+    "passed": 37,
+    "failed": 0
+  },
+  "lint": "passed",
+  "lineBudgets": "passed; existing review messages retained",
+  "oracleControls": {
+    "complete": true,
+    "externalModelRequests": 0,
+    "rows": [
+      {
+        "task": "fetching-filters",
+        "baselineOfficial": 2,
+        "baselineProbe": 2,
+        "compatibilityBaseline": 0,
+        "upstreamCompatibility": 2,
+        "positive": [
+          {
+            "name": "regression",
+            "exitCode": 0,
+            "signal": null,
+            "error": null,
+            "durationMs": 24398.765969
+          },
+          {
+            "name": "types",
+            "exitCode": 0,
+            "signal": null,
+            "error": null,
+            "durationMs": 2136.5279510000037
+          },
+          {
+            "name": "type-regression",
+            "exitCode": 0,
+            "signal": null,
+            "error": null,
+            "durationMs": 2028.2915439999997
+          },
+          {
+            "name": "delivered-types",
+            "exitCode": 0,
+            "signal": null,
+            "error": null,
+            "durationMs": 1878.9581410000028
+          },
+          {
+            "name": "official",
+            "exitCode": 0,
+            "signal": null,
+            "error": null,
+            "durationMs": 1803.030393000001
+          },
+          {
+            "name": "probe",
+            "exitCode": 0,
+            "signal": null,
+            "error": null,
+            "durationMs": 1605.2604060000012
+          },
+          {
+            "name": "compatibility",
+            "exitCode": 0,
+            "signal": null,
+            "error": null,
+            "durationMs": 1339.4679440000036
+          }
+        ]
+      }
+    ],
+    "sourceHashes": {
+      "controls": "4861ec3226dc7af0beefd0e086250ea70ec8bd7f6f21ff94e888850bca3e40ff"
+    }
+  },
+  "sdkControls": {
+    "complete": true,
+    "actualSdkLoopComparison": true,
+    "externalModelRequests": 0,
+    "reports": [
+      {
+        "enabled": false,
+        "localHttpRequests": 6,
+        "externalModelRequests": 0,
+        "loopGuard": true,
+        "completedExitCode": null,
+        "oneLaunch": true,
+        "unchangedForwardedPrefix": true,
+        "resultText": "",
+        "error": null,
+        "firstToolsSha256": "0f833a277ee5e8183a62a122583a9366e50aa1eba5c0a4e28f2ddc005f293509",
+        "firstSystemSha256": "8144d6953b2b71cd69e9b7bfe040b423f0aaccab552aef9fab4a7f179e9109e7",
+        "notices": [
+          {
+            "type": "chunk",
+            "payload": {
+              "sessionId": "inspection-7d3a831f-549c-461e-904c-9e85e0bfe727",
+              "stream": "agent",
+              "chunk": "{\"type\":\"error\",\"error\":{\"name\":\"Error\",\"message\":\"Detected 5 consecutive identical calls to `run_task`; stopping to avoid a loop.\",\"stack\":\"Error: Detected 5 consecutive identical calls to `run_task`; stopping to avoid a loop.\\n    at ey.record (file:///workspace/Blame/node_modules/.pnpm/@cline+core@0.2.0_patch_hash=10c3e9704d3c53fc031afbcc370053a9b5b55896536a6016dc91cefc6d_b7a672b1090097973c4623bb7d6205b0/node_modules/@cline/core/dist/index.js:203:28875)\\n    at file:///workspace/Blame/node_modules/.pnpm/@cline+core@0.2.0_patch_hash=10c3e9704d3c53fc031afbcc370053a9b5b55896536a6016dc91cefc6d_b7a672b1090097973c4623bb7d6205b0/node_modules/@cline/core/dist/index.js:209:17377\\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\"},\"recoverable\":true,\"iteration\":6}",
+              "ts": 1793117950397
+            }
+          }
+        ]
+      },
+      {
+        "enabled": true,
+        "localHttpRequests": 4,
+        "externalModelRequests": 0,
+        "loopGuard": false,
+        "completedExitCode": 0,
+        "oneLaunch": true,
+        "unchangedForwardedPrefix": true,
+        "resultText": "Control completed.",
+        "error": null,
+        "firstToolsSha256": "0f833a277ee5e8183a62a122583a9366e50aa1eba5c0a4e28f2ddc005f293509",
+        "firstSystemSha256": "8144d6953b2b71cd69e9b7bfe040b423f0aaccab552aef9fab4a7f179e9109e7",
+        "notices": []
+      }
+    ]
+  },
+  "logsSha256": {
+    "build": "8976437af693b2d15a77960173ac39bfa287ad87143a186421c8bbef1e0bafa1",
+    "targeted-tests": "80803ef061b400b3639648a655adec200d15b400e20a75c1d9d2a03b98f6b6a8",
+    "runtime-full": "13f053cb3b5af57b0b0ece9b5924073d0d8bba8627923dcd5fc8f95e6a7323aa",
+    "runner-tests": "e1ab20ca5bc158157cff6f6f966bb16aa8dd5bd14b064a0875aa91494cb35ff8",
+    "oracle-controls": "27ca66dc3068f29100e4a0584a9da352835189965227112a7d96b3f0906bb067",
+    "sdk-controls": "9c9102da2c962ac58a6be6eea8a69e04baf689f168a0c179f599dce9056c6cf5",
+    "lint": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec",
+    "line-budgets": "907c6696ad8ba315fea520585fd8839064bd29418c081a6921651aa51a61bec7"
+  },
+  "candidateSources": {
+    "packages/agent-runtime/src/harness/light-task-runner.ts": "dff4cb6d126877aadefd867e4b7819caad6fbc6041177d95036f9f5aade25592",
+    "packages/agent-runtime/src/harness/workspace-command-process.ts": "3fb3c19d845e607969fe4b5d441867cc91b935d8d1f95f05426e964fbb0b95c8",
+    "packages/agent-runtime/src/harness/light-inspection-wait.test.ts": "2970b5d173c09c0ad0706272d40ab3634d229978bfa589cd20b66875be64176a"
+  },
+  "boundary": "Local functional controls only; SDK uses loopback mock responses, not an external model. Four reference inspections cause the actual fifth-call guard; candidate uses two inspections and transmits the actual finalized exit. Unknown test reporting and admission rules are unchanged. No local timing/CPU comparison is a model efficiency claim."
+}

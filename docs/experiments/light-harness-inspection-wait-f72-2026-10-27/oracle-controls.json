@@ -1,0 +1,67 @@
+{
+  "complete": true,
+  "externalModelRequests": 0,
+  "rows": [
+    {
+      "task": "fetching-filters",
+      "baselineOfficial": 2,
+      "baselineProbe": 2,
+      "compatibilityBaseline": 0,
+      "upstreamCompatibility": 2,
+      "positive": [
+        {
+          "name": "regression",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 24398.765969
+        },
+        {
+          "name": "types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2136.5279510000037
+        },
+        {
+          "name": "type-regression",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2028.2915439999997
+        },
+        {
+          "name": "delivered-types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1878.9581410000028
+        },
+        {
+          "name": "official",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1803.030393000001
+        },
+        {
+          "name": "probe",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1605.2604060000012
+        },
+        {
+          "name": "compatibility",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1339.4679440000036
+        }
+      ]
+    }
+  ],
+  "sourceHashes": {
+    "controls": "4861ec3226dc7af0beefd0e086250ea70ec8bd7f6f21ff94e888850bca3e40ff"
+  }
+}

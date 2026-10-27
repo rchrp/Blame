@@ -1,0 +1,26 @@
+{
+  "atUTC": "2026-10-27T16:21:40.636951+00:00",
+  "externalF72ModelRequests": 0,
+  "parentModelProtocolSha256": "e748f642b3303616beb7f9172229dced6249fa821dc44c2f8884e442e4c11aae",
+  "parentAssignmentsComplete": 12,
+  "parentObservedSdkUsd": 0.49994476000000004,
+  "earlierObservedSdkUsd": 13.071532119999999,
+  "earlierUnknownReservationUsd": 18.64,
+  "environment": {
+    "environmentId": "ccarenv_b64_Y2NhcmVudl81ZjM3ZGRmNDg3Njg4MTkxODM2ZjY0NWQzOGYxY2QzYw",
+    "phase": "running",
+    "specRevision": "923",
+    "observedSpecRevision": "923",
+    "observationsCurrent": true,
+    "hostname": "d7de2791c604",
+    "node": "v24.19.0"
+  },
+  "priorCommonCorrection": "F71 3f9ca72a finalized-result publication, common to both Light arms",
+  "taskSpecification": "Identical F70 fetching-filters instruction, original source commit and seven endpoint checks; known diagnostic, no independent confirmation",
+  "localResultsSha256": "585178b4842294ab77fb493afc3257ae23aaefbb33e76d38a6d4a74157d11c4a",
+  "sdkControlsSha256": "ad88bf53c404a79618983e342cb35e16a4406776d87697eb8cd9522eaf42ea11",
+  "oracleControlsSha256": "6f34a471a2c94bdca9110f9a1962ba1aaa3fac59d8e4456137de8811875d331f",
+  "cacheCondition": "Same cache-free image as F70; every worker and grader gets a physical copy; baseline manifest must stay unchanged",
+  "comparison": "One frozen executable tree; only BLAME_AGENT_INSPECT_WAIT differs between Light arms. Immediate peek has no cursor; incremental wait uses real byte offsets and actual output/termination. SDK loop protection, command timeout, cancellation and all admission rules are preserved.",
+  "measurement": "Sequential trials, no development builds/tests/solvers or replay endpoint tests during measured workers. Passive source/receipt observer overhead is reported without subtraction."
+}

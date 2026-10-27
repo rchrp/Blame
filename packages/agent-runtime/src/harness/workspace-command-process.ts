@@ -44,6 +44,7 @@ export function startWorkspaceCommand(
   return {
     completion: execution.run(),
     inspect: (cursor?: string) => execution.inspect(cursor),
+    waitForUpdate: (cursor?: string, timeoutMs = 30_000, signal?: AbortSignal) => execution.waitForUpdate(cursor, timeoutMs, signal),
   };
 }
 
@@ -71,6 +72,7 @@ function spawnWorkspaceProcess(executable: string, args: string[], cwd: string, 
 
 class CommandExecution {
   private readonly chunks: Buffer[] = [];
+  private readonly waiters = new Set<() => void>();
   private bytes = 0;
   private finished = false;
   private exitCode?: number;
@@ -126,6 +128,31 @@ class CommandExecution {
     };
   }
 
+  waitForUpdate(cursor: string | undefined, timeoutMs: number, signal?: AbortSignal): Promise<WorkspaceCommandSnapshot> {
+    signal?.throwIfAborted();
+    const snapshot = this.inspect(cursor);
+    if (snapshot.process !== "running" || Number(snapshot.cursor) > Number(cursor ?? 0) || timeoutMs <= 0)
+      return Promise.resolve(snapshot);
+    return new Promise((resolve, reject) => {
+      const cleanup = () => {
+        clearTimeout(timer);
+        this.waiters.delete(updated);
+        signal?.removeEventListener("abort", cancelled);
+      };
+      const updated = () => { cleanup(); resolve(this.inspect(cursor)); };
+      const cancelled = () => { cleanup(); reject(signal?.reason ?? new Error("Inspection cancelled.")); };
+      const timer = setTimeout(updated, timeoutMs);
+      timer.unref();
+      this.waiters.add(updated);
+      signal?.addEventListener("abort", cancelled, { once: true });
+      if (signal?.aborted) cancelled();
+    });
+  }
+
+  private notifyWaiters() {
+    for (const updated of this.waiters) updated();
+  }
+
   private capture(stream: Readable | null) {
     if (!stream) return;
     const decoder = new StringDecoder("utf8");
@@ -144,6 +171,7 @@ class CommandExecution {
     const retained = chunk.subarray(0, remaining);
     this.chunks.push(retained);
     this.bytes += retained.length;
+    if (retained.length) this.notifyWaiters();
     if (chunk.length > remaining) this.interrupt("output_limit");
   }
 
@@ -164,6 +192,7 @@ class CommandExecution {
     this.interruption = reason;
     terminateCommand(this.child);
     this.scheduleDrain();
+    this.notifyWaiters();
   }
 
   private scheduleDrain() {
@@ -186,6 +215,7 @@ class CommandExecution {
       failed: this.exitCode !== 0 || !!this.interruption || !!this.error,
       ...(this.interruption ? { interruption: this.interruption } : {}),
     });
+    this.notifyWaiters();
   }
 
   private output() {

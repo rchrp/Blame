@@ -1,0 +1,45 @@
+{
+  "complete": true,
+  "actualSdkLoopComparison": true,
+  "externalModelRequests": 0,
+  "reports": [
+    {
+      "enabled": false,
+      "localHttpRequests": 6,
+      "externalModelRequests": 0,
+      "loopGuard": true,
+      "completedExitCode": null,
+      "oneLaunch": true,
+      "unchangedForwardedPrefix": true,
+      "resultText": "",
+      "error": null,
+      "firstToolsSha256": "0f833a277ee5e8183a62a122583a9366e50aa1eba5c0a4e28f2ddc005f293509",
+      "firstSystemSha256": "8144d6953b2b71cd69e9b7bfe040b423f0aaccab552aef9fab4a7f179e9109e7",
+      "notices": [
+        {
+          "type": "chunk",
+          "payload": {
+            "sessionId": "inspection-7d3a831f-549c-461e-904c-9e85e0bfe727",
+            "stream": "agent",
+            "chunk": "{\"type\":\"error\",\"error\":{\"name\":\"Error\",\"message\":\"Detected 5 consecutive identical calls to `run_task`; stopping to avoid a loop.\",\"stack\":\"Error: Detected 5 consecutive identical calls to `run_task`; stopping to avoid a loop.\\n    at ey.record (file:///workspace/Blame/node_modules/.pnpm/@cline+core@0.2.0_patch_hash=10c3e9704d3c53fc031afbcc370053a9b5b55896536a6016dc91cefc6d_b7a672b1090097973c4623bb7d6205b0/node_modules/@cline/core/dist/index.js:203:28875)\\n    at file:///workspace/Blame/node_modules/.pnpm/@cline+core@0.2.0_patch_hash=10c3e9704d3c53fc031afbcc370053a9b5b55896536a6016dc91cefc6d_b7a672b1090097973c4623bb7d6205b0/node_modules/@cline/core/dist/index.js:209:17377\\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\"},\"recoverable\":true,\"iteration\":6}",
+            "ts": 1793117950397
+          }
+        }
+      ]
+    },
+    {
+      "enabled": true,
+      "localHttpRequests": 4,
+      "externalModelRequests": 0,
+      "loopGuard": false,
+      "completedExitCode": 0,
+      "oneLaunch": true,
+      "unchangedForwardedPrefix": true,
+      "resultText": "Control completed.",
+      "error": null,
+      "firstToolsSha256": "0f833a277ee5e8183a62a122583a9366e50aa1eba5c0a4e28f2ddc005f293509",
+      "firstSystemSha256": "8144d6953b2b71cd69e9b7bfe040b423f0aaccab552aef9fab4a7f179e9109e7",
+      "notices": []
+    }
+  ]
+}

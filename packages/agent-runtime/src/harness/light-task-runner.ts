@@ -113,7 +113,7 @@ export class LightTaskRunner {
   run(input: LightRunTaskInput, context: RunnerContext = {}) {
     if (input.kind === "analyze")
       return Promise.resolve(blocked("input", "Symbolic analysis requires workspace symbol resolution."));
-    if (input.kind === "inspect") return this.inspect(input);
+    if (input.kind === "inspect") return this.inspect(input, context.signal);
     if (input.kind === "dependency") return this.dependency(input, context);
     if (input.kind === "project") return this.project(input, context);
     return this.command(input, context);
@@ -121,6 +121,7 @@ export class LightTaskRunner {
 
   private async inspect(
     input: Extract<LightRunTaskInput, { kind: "inspect" }>,
+    signal?: AbortSignal,
   ): Promise<LightToolResult<unknown>> {
     const run = this.runs.get(input.run);
     if (!run)
@@ -129,7 +130,9 @@ export class LightTaskRunner {
         `Run ${input.run} does not belong to this session or is no longer available.`,
       );
     try {
-      const snapshot = run.handle.inspect(input.cursor);
+      const snapshot = process.env.BLAME_AGENT_INSPECT_WAIT === "true" && input.cursor !== undefined
+        ? await run.handle.waitForUpdate(input.cursor, 30_000, signal)
+        : run.handle.inspect(input.cursor);
       // Process termination precedes source capture and journal finalization.
       // Expose their real result together instead of an exited-only snapshot.
       const completed = run.result ?? (snapshot.process === "running"
@@ -145,6 +148,8 @@ export class LightTaskRunner {
         },
       };
     } catch (error) {
+      if (signal?.aborted)
+        return blocked("environment", "Managed-run inspection was cancelled; no command outcome is inferred.");
       return blocked("input", errorMessage(error));
     }
   }
