@@ -106,10 +106,10 @@ export default class UserStoriesService {
     }
 
     const attachments = await this.fileAttachments.resolveInputs(userId, input.fileAttachments)
-    const storyNumber = await this.nextStoryNumber(input.projectId)
-    const storyId = await db.transaction((transaction) =>
-      this.createRecord(userId, input, storyNumber, attachments, transaction)
-    )
+    const storyId = await db.transaction(async (transaction) => {
+      const storyNumber = await this.nextStoryNumber(userId, input.projectId, transaction)
+      return this.createRecord(userId, input, storyNumber, attachments, transaction)
+    })
     return this.find(userId, storyId)
   }
 
@@ -128,10 +128,15 @@ export default class UserStoriesService {
         .forUpdate()
         .firstOrFail()
       const update = await this.updateInput(userStory, input)
+      const storyNumber =
+        input.projectId && input.projectId !== userStory.projectId
+          ? await this.nextStoryNumber(userId, input.projectId, transaction)
+          : userStory.storyNumber
       await cancelActiveAgentRun(userStory, input, transaction)
       userStory.useTransaction(transaction)
       userStory.merge({
         ...update,
+        storyNumber,
         ...inactiveAgentRunUpdate(input),
         mergedAt: input.mergedAt === undefined ? userStory.mergedAt : input.mergedAt,
       })
@@ -336,12 +341,21 @@ export default class UserStoriesService {
     }
   }
 
-  private async nextStoryNumber(projectId: string) {
-    const latest = await UserStory.query()
-      .where('projectId', projectId)
-      .orderBy('storyNumber', 'desc')
-      .first()
-    return (latest?.storyNumber ?? 0) + 1
+  private async nextStoryNumber(
+    userId: string,
+    projectId: string,
+    transaction: TransactionClientContract
+  ) {
+    // Lock the project even when it has no stories. Deleting a story never
+    // lowers this counter, and concurrent creates reserve distinct numbers.
+    const project = await Project.query({ client: transaction })
+      .where('id', projectId)
+      .where('userId', userId)
+      .forUpdate()
+      .firstOrFail()
+    project.lastStoryNumber += 1
+    await project.save()
+    return project.lastStoryNumber
   }
 
   private async createRecord(

@@ -56,6 +56,8 @@ import {
 import { setupPath } from "./host-tool-path";
 import { isProjectFolder } from "./worktree-safety";
 import { inspectWorktreeRemoval } from "./worktree-removal.ts";
+import { WorktreeActivity } from "./worktree-activity.ts";
+import { WorktreeLogs } from "./worktree-logs.ts";
 import type { DesktopBridgeGrant } from "./preview-browser/preview-bridge-grant";
 import { previewComposeProjectName } from "./preview-readiness";
 import { PreviewRecoveryCircuit } from "./preview-recovery-circuit";
@@ -154,7 +156,6 @@ import {
   type WorkspaceMode,
 } from "./workspace-mode.ts";
 import {
-  appendFile as appendRuntimeFile,
   dirnameWorkspacePath,
   findProjectFilesByName,
   joinWorkspacePath,
@@ -395,6 +396,15 @@ const setupEnvironmentCache = new Map<
 >();
 const removingWorktrees = new Set<string>();
 const removedWorktrees = new Set<string>();
+const worktreeActivity = new WorktreeActivity();
+const worktreeLogs = new WorktreeLogs(worktreeActivity);
+const {
+  append: appendRunLog,
+  flush: flushRunLogs,
+  section: appendRunLogSection,
+  recovery: appendRecoveryLog,
+  timing: appendTimingLog,
+} = worktreeLogs;
 const localPreviewService = new LocalPreviewService();
 function runtimeProgressReporter(
   event: IpcMainInvokeEvent,
@@ -754,12 +764,18 @@ async function createWorktree(input: CreateWorktreeInput) {
 async function createWorktreeOperation(input: CreateWorktreeInput) {
   if (input.direct) return directWorkspace(input);
   const context = worktreeCreationContext(input);
-  await prepareWorktreeCreation(context);
-  if (await reuseRegisteredWorktree(context)) return worktreeResult(context);
-  await assertWorktreePathAvailable(context);
-  await addStoryWorktree(context);
-  await completeWorktreeCreation(context);
-  return worktreeResult(context);
+  if (removingWorktrees.has(context.worktree))
+    throw new Error("The workspace is still being removed.");
+  if (worktreeActivity.isClosed(context.worktree))
+    worktreeActivity.open(context.worktree);
+  return worktreeActivity.run(context.worktree, async () => {
+    await prepareWorktreeCreation(context);
+    if (await reuseRegisteredWorktree(context)) return worktreeResult(context);
+    await assertWorktreePathAvailable(context);
+    await addStoryWorktree(context);
+    await completeWorktreeCreation(context);
+    return worktreeResult(context);
+  });
 }
 
 function worktreeCreationContext(
@@ -1123,9 +1139,13 @@ async function runProjectSetupOperation(
 // Writes what a local preview starts from: the canonical manifest, compiled
 // once here so an invalid one fails now, and the run configurations with
 // the selected one.
-async function prepareProjectPreviewArtifacts(
-  input: PrepareProjectPreviewInput,
-) {
+function prepareProjectPreviewArtifacts(input: PrepareProjectPreviewInput) {
+  return worktreeActivity.run(resolveRuntimePath(input.worktree), () =>
+    writeProjectPreviewArtifacts(input),
+  );
+}
+
+async function writeProjectPreviewArtifacts(input: PrepareProjectPreviewInput) {
   const worktree = resolveRuntimePath(input.worktree);
   const env = await setupEnvironment(worktree);
   const manifest = manifestWithProjectPackageManager(
@@ -1405,9 +1425,12 @@ function startProjectCompose(
   if (current) return current;
   // A cleanup removes unused images and networks: let it finish first, and
   // a running prefetch of this worktree, whose work the start reuses.
-  const next = (previewCleanup ?? Promise.resolve())
-    .then(() => previewPrefetches.get(worktree))
-    .then(() => startProjectComposeOperation(worktree, options))
+  const next = worktreeActivity
+    .run(worktree, async () => {
+      await previewCleanup;
+      await previewPrefetches.get(worktree);
+      return startProjectComposeOperation(worktree, options);
+    })
     .finally(() => previewStarts.delete(worktree));
   previewStarts.set(worktree, next);
   return next;
@@ -1417,9 +1440,11 @@ function startProjectCompose(
 // works. Its images and dependency installs are still prepared, so opening
 // the preview later starts it in seconds.
 function prefetchProjectPreview(worktree: string) {
+  if (worktreeActivity.isClosed(worktree)) return;
   if (previewStarts.has(worktree) || previewPrefetches.has(worktree)) return;
-  const next = (previewCleanup ?? Promise.resolve())
-    .then(async () => {
+  const next = worktreeActivity
+    .run(worktree, async () => {
+      await previewCleanup;
       await appendRunLogSection(worktree, "Preparing the preview");
       await prefetchLocalPreview(worktree, {
         log: (chunk) => appendRunLog(worktree, chunk),
@@ -1515,21 +1540,36 @@ async function removeWorktree(input: RemoveWorktreeInput) {
     await releaseAgentWorkspaceSessions(worktree);
     return true;
   }
-  if (state === "missing") {
-    if (mode === "local-container") await removeWorktreePreview(worktree);
-    removedWorktrees.add(worktree);
-    return true;
-  }
+  if (removingWorktrees.has(worktree))
+    throw new Error("The workspace is still being removed.");
   removingWorktrees.add(worktree);
+  const settled = worktreeActivity.close(worktree);
+  worktreeLogs.discard(worktree);
   try {
     await stopSetupRunsForWorktree(worktree);
     await stopProjectLogStream(worktree);
     await releaseAgentWorkspaceSessions(worktree);
+    await settled;
+    // A create or prefetch may have completed while removal was waiting.
+    const current = await inspectWorktreeRemoval({
+      repositoryRoot,
+      worktree,
+      workspaceMode: mode,
+    });
+    if (current.state === "project")
+      throw new Error("Refusing to delete the project folder.");
     previewRecoveries.delete(worktree);
     if (mode === "local-container") await removeWorktreePreview(worktree);
-    if (state === "registered")
+    if (current.state === "registered")
       await removeGitWorktree(repositoryRoot, worktree, mode);
     else await rmRuntime(worktree);
+    if (
+      (await runtimePathExists(worktree)) ||
+      (await worktreeRegistered(repositoryRoot, worktree, mode))
+    )
+      throw new Error(
+        "Unable to completely remove the worktree. Please retry deletion.",
+      );
     removedWorktrees.add(worktree);
     return true;
   } finally {
@@ -1540,10 +1580,12 @@ async function removeWorktree(input: RemoveWorktreeInput) {
 // A removed worktree takes its containers, network and volumes along; the
 // dependency volumes it shared go at the next cleanup once unused.
 async function removeWorktreePreview(worktree: string) {
-  await removeLocalPreview(worktree);
-  await removePreviewProject(previewComposeProjectName(worktree)).catch(
-    () => undefined,
-  );
+  // Label-based cleanup also works when a failed setup left no valid manifest.
+  await removeLocalPreview(worktree).catch(() => undefined);
+  if (!(await removePreviewProject(previewComposeProjectName(worktree))))
+    throw new Error(
+      "Unable to remove the preview containers and volumes. Please retry deletion.",
+    );
   schedulePreviewCleanup();
 }
 
@@ -1830,15 +1872,17 @@ function previewStatusConfiguration(
 }
 
 export async function controlProjectPreview(input: ControlProjectPreviewInput) {
-  const selection = await previewControlSelection(input);
-  recordPreviewUse(selection.worktree);
-  await appendRecoveryLog(
-    selection.worktree,
-    `run configuration ${input.action}: ${selection.selected.id}`,
-  );
-  if (input.action === "stop") return stopProjectPreview(selection);
-  previewRecoveryCircuit.reset(selection.worktree);
-  return startProjectPreview(selection, input.action === "restart");
+  return worktreeActivity.run(resolveRuntimePath(input.worktree), async () => {
+    const selection = await previewControlSelection(input);
+    recordPreviewUse(selection.worktree);
+    await appendRecoveryLog(
+      selection.worktree,
+      `run configuration ${input.action}: ${selection.selected.id}`,
+    );
+    if (input.action === "stop") return stopProjectPreview(selection);
+    previewRecoveryCircuit.reset(selection.worktree);
+    return startProjectPreview(selection, input.action === "restart");
+  });
 }
 
 export async function refreshProjectPreviewDependencies(worktreeInput: string) {
@@ -1856,27 +1900,29 @@ export async function applyProjectPreviewInitialization(
   input: ApplyProjectPreviewInitializationInput,
 ) {
   const worktree = resolveRuntimePath(input.worktree);
-  const state = await readPreviewRuntimeFileState(worktree);
-  if (state.desiredStatus === "running") {
-    await controlProjectPreview({ action: "stop", worktree });
-  }
-  await prepareProjectPreviewArtifacts({
-    executionId: `preview-repair:${input.storyId}`,
-    storyId: input.storyId,
-    worktree,
-    previewManifest: input.previewManifest,
-    runConfigurations: input.runConfigurations,
-    runConfigurationId:
-      state.desiredStatus === "running"
-        ? state.selectedConfigurationId
-        : undefined,
-    hostDependenciesChecked: true,
-    runtimeProfile: "local-container",
+  return worktreeActivity.run(worktree, async () => {
+    const state = await readPreviewRuntimeFileState(worktree);
+    if (state.desiredStatus === "running") {
+      await controlProjectPreview({ action: "stop", worktree });
+    }
+    await prepareProjectPreviewArtifacts({
+      executionId: `preview-repair:${input.storyId}`,
+      storyId: input.storyId,
+      worktree,
+      previewManifest: input.previewManifest,
+      runConfigurations: input.runConfigurations,
+      runConfigurationId:
+        state.desiredStatus === "running"
+          ? state.selectedConfigurationId
+          : undefined,
+      hostDependenciesChecked: true,
+      runtimeProfile: "local-container",
+    });
+    if (state.desiredStatus === "running") {
+      await controlProjectPreview({ action: "start", worktree });
+      await writeProjectPreviewRepairCandidate(worktree, input);
+    }
   });
-  if (state.desiredStatus === "running") {
-    await controlProjectPreview({ action: "start", worktree });
-    await writeProjectPreviewRepairCandidate(worktree, input);
-  }
 }
 
 async function writeProjectPreviewRepairCandidate(
@@ -2117,6 +2163,7 @@ async function runConfigurationServiceIds(
 }
 
 async function stopPreviewStartWhenRequested(worktree: string) {
+  if (worktreeActivity.isClosed(worktree)) return true;
   const state = await readPreviewRuntimeFileState(worktree);
   if (state.desiredStatus === "running") return false;
   const configurations = await readProjectRunConfigurations(worktree);
@@ -2133,7 +2180,13 @@ async function previewRuntimeStopped(worktree: string) {
 
 const readProjectRunConfigurations = readLocalRunConfigurations;
 const readPreviewRuntimeFileState = readLocalRuntimeState;
-const writePreviewRuntimeState = writeLocalRuntimeState;
+const writePreviewRuntimeState: typeof writeLocalRuntimeState = (
+  worktree,
+  state,
+) =>
+  worktreeActivity.write(worktree, () =>
+    writeLocalRuntimeState(worktree, state),
+  );
 const readProjectPreviewManifest = readLocalPreviewManifest;
 
 function previewRuntimeContainerState(service: ServiceState) {
@@ -2457,6 +2510,7 @@ function servicePriority(service: string) {
 
 // Follows the services' logs into the run log while the preview runs.
 async function startProjectLogStream(worktree: string) {
+  if (worktreeActivity.isClosed(worktree)) return;
   await stopProjectLogStream(worktree);
   await appendRunLogSection(worktree, "container logs");
   const stream: ProjectLogStream = { abort: new AbortController() };
@@ -2479,37 +2533,6 @@ async function stopProjectLogStream(worktree: string) {
   if (!stream) return;
   projectLogStreams.delete(worktree);
   stream.abort.abort();
-}
-
-async function appendRunLogSection(worktree: string, message: string) {
-  await mkdirRuntime(dirnameWorkspacePath(setupLogPath(worktree)));
-  await appendRuntimeFile(setupLogPath(worktree), `\n[${message}]\n`);
-}
-
-// Output arrives in small chunks; writing each one would cost a round trip
-// to the Blame Runtime, so the run log is appended in batches.
-const pendingRunLogs = new Map<string, string>();
-let runLogFlush: Promise<void> | undefined;
-
-function appendRunLog(worktree: string, text: string) {
-  pendingRunLogs.set(worktree, `${pendingRunLogs.get(worktree) ?? ""}${text}`);
-  runLogFlush ??= delay(300).then(flushRunLogs);
-}
-
-async function flushRunLogs() {
-  const pending = [...pendingRunLogs];
-  pendingRunLogs.clear();
-  runLogFlush = undefined;
-  await Promise.all(
-    pending.map(([worktree, text]) =>
-      appendRuntimeFile(setupLogPath(worktree), text).catch(() => undefined),
-    ),
-  );
-}
-
-async function appendRecoveryLog(worktree: string, message: string) {
-  await mkdirRuntime(dirnameWorkspacePath(setupLogPath(worktree)));
-  await appendRuntimeFile(setupLogPath(worktree), `\n[recovery ${message}]\n`);
 }
 
 async function timedRecoveryStep<T>(
@@ -2535,24 +2558,6 @@ async function recordPreviewStartStep(worktree: string, step: string) {
       ...state,
       lifecycle: { ...lifecycle, step },
     });
-  } catch {}
-}
-
-async function appendTimingLog(
-  worktree: string,
-  label: string,
-  duration: number,
-) {
-  try {
-    await appendRecoveryLog(worktree, `timing ${label}: ${duration}ms`);
-    await appendRuntimeFile(
-      timingLogPath(worktree),
-      `${JSON.stringify({
-        at: new Date().toISOString(),
-        durationMs: duration,
-        label,
-      })}\n`,
-    );
   } catch {}
 }
 
@@ -2629,7 +2634,9 @@ async function ensureWorkspaceGitRepository(
     root,
     mode
       ? workspaceExecution(mode)
-      : runtimeManagedPath(root) ? "virtualized" : undefined,
+      : runtimeManagedPath(root)
+        ? "virtualized"
+        : undefined,
   );
 }
 
@@ -2857,10 +2864,6 @@ function setupLogPath(worktree: string) {
   return localPreviewPaths(worktree).setupLog;
 }
 
-function timingLogPath(worktree: string) {
-  return localPreviewPaths(worktree).timingLog;
-}
-
 const dependencyHashFiles = [
   "package.json",
   "pnpm-lock.yaml",
@@ -2910,10 +2913,6 @@ async function previewResponds(url: string) {
   }
 }
 
-function delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 function errorMessage(error: unknown) {
   if (error instanceof PreviewRuntimeError)
     return `[${error.code}] ${error.message}\n`;
@@ -2942,7 +2941,7 @@ function emitSetupOutput(
   type: "stdout" | "stderr" | "exit",
   data: string,
 ) {
-  void appendRuntimeFile(setupLogPath(worktree), setupLogText(type, data));
+  appendRunLog(worktree, setupLogText(type, data));
   emitSetupEvent(runId, type, data);
 }
 
