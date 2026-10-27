@@ -1,6 +1,6 @@
 {
   "protocolHash": "42d111a0162283d14df36d9a10692ae74efdc129db05a5188215f0669c2b2a93",
-  "completed": 12,
+  "completed": 16,
   "planned": 28,
   "receipts": [
     {
@@ -62,6 +62,26 @@
       "name": "2-quota-compact",
       "path": "checkpoints/2-quota-compact.json.gz",
       "sha256": "808508c36a31853a39c7fb732dd209ec725ad6c214804ef6e8f1638192b1d7dd"
+    },
+    {
+      "name": "1-mutation-callbacks-reference",
+      "path": "checkpoints/1-mutation-callbacks-reference.json.gz",
+      "sha256": "c67c8e277bffde55f35de7aa081153fc84f9f7ea96bc5931f49b2b694ec939a5"
+    },
+    {
+      "name": "1-mutation-callbacks-compact",
+      "path": "checkpoints/1-mutation-callbacks-compact.json.gz",
+      "sha256": "2ed4f310d0902e2847c88044d5aaab67aef2b09265846ce38323303bea5d917c"
+    },
+    {
+      "name": "1-mutation-callbacks-navigation",
+      "path": "checkpoints/1-mutation-callbacks-navigation.json.gz",
+      "sha256": "9d30c0381d61190a4a5a37a530b34435f10f43fc4b5b7571bc9699d60133a078"
+    },
+    {
+      "name": "1-mutation-callbacks-cline",
+      "path": "checkpoints/1-mutation-callbacks-cline.json.gz",
+      "sha256": "ba636741c242ebb35922b0c9a72dd1d13884e5227265875983f11039fc7d44da"
     }
   ]
 }

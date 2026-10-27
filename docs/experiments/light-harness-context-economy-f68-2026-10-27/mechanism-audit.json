@@ -856,6 +856,253 @@
         }
       ],
       "requiredChecksRetained": true
+    },
+    {
+      "panel": "F69",
+      "task": "mutation-callbacks",
+      "arm": "reference",
+      "repeat": 1,
+      "name": "1-mutation-callbacks-reference",
+      "compilerRecovery": [],
+      "multiReadIterations": [
+        {
+          "iteration": 1,
+          "reads": 3
+        },
+        {
+          "iteration": 2,
+          "reads": 5
+        },
+        {
+          "iteration": 3,
+          "reads": 5
+        },
+        {
+          "iteration": 5,
+          "reads": 2
+        },
+        {
+          "iteration": 10,
+          "reads": 3
+        }
+      ],
+      "firstContract": {
+        "time": "2026-10-27T03:38:54.520Z",
+        "endpoint": "https://chatgpt.com/backend-api/codex/responses",
+        "model": "gpt-5.6-luna",
+        "reasoning": {
+          "effort": "high",
+          "summary": "detailed"
+        },
+        "maximumOutputTokens": 8192,
+        "toolsSha256": "923df5c21ad5d8c059a21090a18183222608911f1a6c7df258414c7ca66e6bfa",
+        "promptSha256": "bafd4de19b25dff14721ac86071e07ab1d3c7b7663e4597803c8f36d9c899e55",
+        "normalizedContractSha256": "2d651b2a43f38a0c39975df5a22bb9f300372dadace1322baa118a7c13fb0858",
+        "requestBodySha256": "a14bef96b2e3c7507df15bb9cb9e9e2e85012ff9973727523d6904bb39c0b5d9",
+        "requestBytes": 25560,
+        "byteLimit": 500000,
+        "budgetRejected": false,
+        "toolCount": 9
+      },
+      "advice": {
+        "fullOccurrences": 23,
+        "referenceOccurrences": 0,
+        "uniqueFullCalls": 7,
+        "uniqueReferenceCalls": 0,
+        "metadataBytes": 32972,
+        "unresolved": 0
+      },
+      "filenameSearches": [],
+      "uniqueScopeOffers": 2,
+      "uniqueExactForwardedScopes": 2,
+      "scopeForwardingOccurrences": 12,
+      "groupedReads": [],
+      "tools": 36,
+      "reads": 19,
+      "blockedEdits": 0,
+      "compilerOffers": [],
+      "requiredChecksRetained": true
+    },
+    {
+      "panel": "F69",
+      "task": "mutation-callbacks",
+      "arm": "compact",
+      "repeat": 1,
+      "name": "1-mutation-callbacks-compact",
+      "compilerRecovery": [],
+      "multiReadIterations": [
+        {
+          "iteration": 2,
+          "reads": 5
+        },
+        {
+          "iteration": 3,
+          "reads": 2
+        },
+        {
+          "iteration": 5,
+          "reads": 2
+        },
+        {
+          "iteration": 8,
+          "reads": 2
+        },
+        {
+          "iteration": 17,
+          "reads": 2
+        }
+      ],
+      "firstContract": {
+        "time": "2026-10-27T03:41:42.540Z",
+        "endpoint": "https://chatgpt.com/backend-api/codex/responses",
+        "model": "gpt-5.6-luna",
+        "reasoning": {
+          "effort": "high",
+          "summary": "detailed"
+        },
+        "maximumOutputTokens": 8192,
+        "toolsSha256": "923df5c21ad5d8c059a21090a18183222608911f1a6c7df258414c7ca66e6bfa",
+        "promptSha256": "bafd4de19b25dff14721ac86071e07ab1d3c7b7663e4597803c8f36d9c899e55",
+        "normalizedContractSha256": "2d651b2a43f38a0c39975df5a22bb9f300372dadace1322baa118a7c13fb0858",
+        "requestBodySha256": "a14bef96b2e3c7507df15bb9cb9e9e2e85012ff9973727523d6904bb39c0b5d9",
+        "requestBytes": 25560,
+        "byteLimit": 500000,
+        "budgetRejected": false,
+        "toolCount": 9
+      },
+      "advice": {
+        "fullOccurrences": 25,
+        "referenceOccurrences": 0,
+        "uniqueFullCalls": 2,
+        "uniqueReferenceCalls": 0,
+        "metadataBytes": 32409,
+        "unresolved": 0
+      },
+      "filenameSearches": [],
+      "uniqueScopeOffers": 2,
+      "uniqueExactForwardedScopes": 2,
+      "scopeForwardingOccurrences": 41,
+      "groupedReads": [],
+      "tools": 42,
+      "reads": 16,
+      "blockedEdits": 0,
+      "compilerOffers": [],
+      "requiredChecksRetained": true
+    },
+    {
+      "panel": "F69",
+      "task": "mutation-callbacks",
+      "arm": "navigation",
+      "repeat": 1,
+      "name": "1-mutation-callbacks-navigation",
+      "compilerRecovery": [],
+      "multiReadIterations": [
+        {
+          "iteration": 1,
+          "reads": 2
+        },
+        {
+          "iteration": 2,
+          "reads": 5
+        },
+        {
+          "iteration": 3,
+          "reads": 4
+        },
+        {
+          "iteration": 4,
+          "reads": 3
+        },
+        {
+          "iteration": 5,
+          "reads": 4
+        },
+        {
+          "iteration": 12,
+          "reads": 2
+        }
+      ],
+      "firstContract": {
+        "time": "2026-10-27T03:45:37.748Z",
+        "endpoint": "https://chatgpt.com/backend-api/codex/responses",
+        "model": "gpt-5.6-luna",
+        "reasoning": {
+          "effort": "high",
+          "summary": "detailed"
+        },
+        "maximumOutputTokens": 8192,
+        "toolsSha256": "923df5c21ad5d8c059a21090a18183222608911f1a6c7df258414c7ca66e6bfa",
+        "promptSha256": "bafd4de19b25dff14721ac86071e07ab1d3c7b7663e4597803c8f36d9c899e55",
+        "normalizedContractSha256": "2d651b2a43f38a0c39975df5a22bb9f300372dadace1322baa118a7c13fb0858",
+        "requestBodySha256": "a14bef96b2e3c7507df15bb9cb9e9e2e85012ff9973727523d6904bb39c0b5d9",
+        "requestBytes": 25560,
+        "byteLimit": 500000,
+        "budgetRejected": false,
+        "toolCount": 9
+      },
+      "advice": {
+        "fullOccurrences": 0,
+        "referenceOccurrences": 0,
+        "uniqueFullCalls": 0,
+        "uniqueReferenceCalls": 0,
+        "metadataBytes": 0,
+        "unresolved": 0
+      },
+      "filenameSearches": [],
+      "uniqueScopeOffers": 2,
+      "uniqueExactForwardedScopes": 2,
+      "scopeForwardingOccurrences": 8,
+      "groupedReads": [],
+      "tools": 34,
+      "reads": 20,
+      "blockedEdits": 0,
+      "compilerOffers": [],
+      "requiredChecksRetained": true
+    },
+    {
+      "panel": "F69",
+      "task": "mutation-callbacks",
+      "arm": "cline",
+      "repeat": 1,
+      "name": "1-mutation-callbacks-cline",
+      "compilerRecovery": [],
+      "multiReadIterations": [],
+      "firstContract": {
+        "time": "2026-10-27T03:48:26.997Z",
+        "endpoint": "https://chatgpt.com/backend-api/codex/responses",
+        "model": "gpt-5.6-luna",
+        "reasoning": {
+          "effort": "high",
+          "summary": "detailed"
+        },
+        "maximumOutputTokens": 8192,
+        "toolsSha256": "e9cf7b12faef5cc5cf09abaf67ff690f4af8442561acbe7b34ac80e4c0d076b6",
+        "promptSha256": "e84bed1801905816b497612b9555cb363ba66a42807a3f9b1922a7be61fedd05",
+        "normalizedContractSha256": "fbb33edb3252d250fd712b329fffefa4e2e1096b51d43dc257dd470924093e5e",
+        "requestBodySha256": "0e8502a64dbdd55f3c60717f3932b56811f34cffe42916372356f90db1dd22e7",
+        "requestBytes": 13958,
+        "byteLimit": 500000,
+        "budgetRejected": false,
+        "toolCount": 6
+      },
+      "advice": {
+        "fullOccurrences": 0,
+        "referenceOccurrences": 0,
+        "uniqueFullCalls": 0,
+        "uniqueReferenceCalls": 0,
+        "metadataBytes": 0,
+        "unresolved": 0
+      },
+      "filenameSearches": [],
+      "uniqueScopeOffers": 0,
+      "uniqueExactForwardedScopes": 0,
+      "scopeForwardingOccurrences": 0,
+      "groupedReads": [],
+      "tools": 19,
+      "reads": 0,
+      "blockedEdits": 0,
+      "compilerOffers": [],
+      "requiredChecksRetained": true
     }
   ],
   "contracts": [
@@ -890,6 +1137,24 @@
       "task": "quota",
       "repeat": 2,
       "panel": "F68",
+      "sameFirstPrompt": true,
+      "sameFirstTools": true,
+      "expectedSchemaChange": false,
+      "sameModelEffortOutputLimit": true
+    },
+    {
+      "task": "mutation-callbacks",
+      "repeat": 1,
+      "panel": "F69",
+      "sameFirstPrompt": true,
+      "sameFirstTools": true,
+      "expectedSchemaChange": false,
+      "sameModelEffortOutputLimit": true
+    },
+    {
+      "task": "mutation-callbacks",
+      "repeat": 1,
+      "panel": "F69",
       "sameFirstPrompt": true,
       "sameFirstTools": true,
       "expectedSchemaChange": false,
