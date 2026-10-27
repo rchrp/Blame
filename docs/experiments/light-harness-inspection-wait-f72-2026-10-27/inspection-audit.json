@@ -1,5 +1,5 @@
 {
-  "executionFinished": false,
+  "executionFinished": true,
   "trials": [
     {
       "name": "1-fetching-filters-reference",
@@ -311,6 +311,167 @@
           "process": "exited",
           "outputBytes": 439,
           "durationMs": 95,
+          "finalizedStatus": "ok",
+          "exitCode": 0
+        }
+      ],
+      "hardLoopGuardEvent": null
+    },
+    {
+      "name": "2-fetching-filters-cline",
+      "arm": "cline",
+      "officialRuntimeSuccess": true,
+      "sourceSuccess": true,
+      "strictSuccess": true,
+      "requiredEvidence": [
+        {
+          "id": "regression",
+          "command": "npm run test:study:regression",
+          "passedOnFinalSource": true,
+          "proof": {
+            "callId": "call_0283179c14ff447e80e994a8edca36cf",
+            "source": "4ae9aac74a7bb712687809c9bc599320f2e702e9d956247e7dee662bd659c170",
+            "evidence": "successful literal native operation"
+          }
+        },
+        {
+          "id": "types",
+          "command": "npm run typecheck:study:types",
+          "passedOnFinalSource": true,
+          "proof": {
+            "callId": "call_248f758a9d394dee84e16c74af7adf64",
+            "source": "4ae9aac74a7bb712687809c9bc599320f2e702e9d956247e7dee662bd659c170",
+            "evidence": "successful literal native operation"
+          }
+        },
+        {
+          "id": "type-regression",
+          "command": "npm run typecheck:study:type-regression",
+          "passedOnFinalSource": true,
+          "proof": {
+            "callId": "call_c77c89b10be447ec92f30dd90c15498c",
+            "source": "4ae9aac74a7bb712687809c9bc599320f2e702e9d956247e7dee662bd659c170",
+            "evidence": "successful literal native operation"
+          }
+        },
+        {
+          "id": "delivered-types",
+          "command": "npm run typecheck:study:delivered-types",
+          "passedOnFinalSource": true,
+          "proof": {
+            "callId": "call_65935919e1bd4eb9aef4ca08a45395f6",
+            "source": "4ae9aac74a7bb712687809c9bc599320f2e702e9d956247e7dee662bd659c170",
+            "evidence": "successful literal native operation"
+          }
+        }
+      ],
+      "startedInspections": 0,
+      "finishedInspections": 0,
+      "incrementalInspections": 0,
+      "emptyRunningSnapshots": 0,
+      "finalizedInspectionResults": 0,
+      "inspections": [],
+      "hardLoopGuardEvent": null
+    },
+    {
+      "name": "2-fetching-filters-reference",
+      "arm": "reference",
+      "officialRuntimeSuccess": true,
+      "sourceSuccess": true,
+      "strictSuccess": true,
+      "requiredEvidence": [
+        {
+          "id": "regression",
+          "command": "npm run test:study:regression",
+          "passedOnFinalSource": true,
+          "proof": {
+            "callId": "call_86b6cf8854a54ab1a68e39f9643e7709",
+            "originCallId": "call_033f7738c989432082880fdee3188eaf",
+            "source": "3196217e9ea4cd65382419acf2a0bf5059dfba189fa7fd6013e42f82ee9b7fce",
+            "evidence": "literal immutable-script execution with observed zero exit"
+          }
+        },
+        {
+          "id": "types",
+          "command": "npm run typecheck:study:types",
+          "passedOnFinalSource": true,
+          "proof": {
+            "callId": "call_d38dc15dd6a34bd3a271ebcccfdf0536",
+            "originCallId": "call_d38dc15dd6a34bd3a271ebcccfdf0536",
+            "source": "3196217e9ea4cd65382419acf2a0bf5059dfba189fa7fd6013e42f82ee9b7fce",
+            "evidence": "literal immutable-script execution with observed zero exit"
+          }
+        },
+        {
+          "id": "type-regression",
+          "command": "npm run typecheck:study:type-regression",
+          "passedOnFinalSource": true,
+          "proof": {
+            "callId": "call_eb4324be015e412abcfa8b4d069b3f85",
+            "originCallId": "call_eb4324be015e412abcfa8b4d069b3f85",
+            "source": "3196217e9ea4cd65382419acf2a0bf5059dfba189fa7fd6013e42f82ee9b7fce",
+            "evidence": "literal immutable-script execution with observed zero exit"
+          }
+        },
+        {
+          "id": "delivered-types",
+          "command": "npm run typecheck:study:delivered-types",
+          "passedOnFinalSource": true,
+          "proof": {
+            "callId": "call_79ed62fa846f4700a617028f96c9f3e1",
+            "originCallId": "call_79ed62fa846f4700a617028f96c9f3e1",
+            "source": "3196217e9ea4cd65382419acf2a0bf5059dfba189fa7fd6013e42f82ee9b7fce",
+            "evidence": "literal immutable-script execution with observed zero exit"
+          }
+        }
+      ],
+      "startedInspections": 4,
+      "finishedInspections": 4,
+      "incrementalInspections": 4,
+      "emptyRunningSnapshots": 3,
+      "finalizedInspectionResults": 1,
+      "inspections": [
+        {
+          "callId": "call_3836f863fc954d998af01f94c4173afc",
+          "run": "r2",
+          "inputCursor": "166",
+          "returnedCursor": "166",
+          "process": "running",
+          "outputBytes": 0,
+          "durationMs": 119,
+          "finalizedStatus": null,
+          "exitCode": null
+        },
+        {
+          "callId": "call_9658e87f6dae4b3ea4624060640d6445",
+          "run": "r2",
+          "inputCursor": "166",
+          "returnedCursor": "166",
+          "process": "running",
+          "outputBytes": 0,
+          "durationMs": 104,
+          "finalizedStatus": null,
+          "exitCode": null
+        },
+        {
+          "callId": "call_c980c6ec46ba40948547c116c6c57f2d",
+          "run": "r2",
+          "inputCursor": "166",
+          "returnedCursor": "166",
+          "process": "running",
+          "outputBytes": 0,
+          "durationMs": 118,
+          "finalizedStatus": null,
+          "exitCode": null
+        },
+        {
+          "callId": "call_86b6cf8854a54ab1a68e39f9643e7709",
+          "run": "r2",
+          "inputCursor": "166",
+          "returnedCursor": "642",
+          "process": "exited",
+          "outputBytes": 472,
+          "durationMs": 94,
           "finalizedStatus": "ok",
           "exitCode": 0
         }

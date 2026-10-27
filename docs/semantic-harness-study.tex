@@ -2112,6 +2112,13 @@ not model trials. The integrated runtime passes 1,207 tests with 13 skipped cont
 runner 37/37, affected lint and line budgets. The six model outcomes are pending.
 Protocol: \filepath{docs/experiments/light-harness-inspection-wait-f72-2026-10-27}.
 
+A uniform grader-scope sensitivity is registered after the first F72 checkpoint.
+The upstream React compiler includes \code{test-setup.ts}, which imports the
+Jest DOM augmentation; the isolated delivered-test compiler omits it. One F70
+matcher diagnostic may therefore reflect the grader's file set. Every filtering
+patch in F69/F70/F72 will receive the same original-environment type audit,
+without changing frozen scores, task instructions or model patches.
+
 \section{Next empirical priorities}
 Confirm any useful declaration-order effect on unseen issues and another project,
 then investigate source/test-result crowding and negative type-contract coverage.

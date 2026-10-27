@@ -1,5 +1,5 @@
 {
-  "executionFinished": false,
+  "executionFinished": true,
   "trials": [
     {
       "name": "1-fetching-filters-reference",
@@ -121,6 +121,73 @@
         }
       ],
       "emptyRunningWithoutCursorProgress": 0,
+      "emptyRunningWithRealCursorProgress": 0
+    },
+    {
+      "name": "2-fetching-filters-cline",
+      "arm": "cline",
+      "inspections": [],
+      "emptyRunningWithoutCursorProgress": 0,
+      "emptyRunningWithRealCursorProgress": 0
+    },
+    {
+      "name": "2-fetching-filters-reference",
+      "arm": "reference",
+      "inspections": [
+        {
+          "callId": "call_3836f863fc954d998af01f94c4173afc",
+          "run": "r2",
+          "inputCursor": "166",
+          "returnedCursor": "166",
+          "process": "running",
+          "outputBytes": 0,
+          "durationMs": 119,
+          "finalizedStatus": null,
+          "exitCode": null,
+          "rawCursorProgress": 0,
+          "emptyPresentedOutput": true
+        },
+        {
+          "callId": "call_9658e87f6dae4b3ea4624060640d6445",
+          "run": "r2",
+          "inputCursor": "166",
+          "returnedCursor": "166",
+          "process": "running",
+          "outputBytes": 0,
+          "durationMs": 104,
+          "finalizedStatus": null,
+          "exitCode": null,
+          "rawCursorProgress": 0,
+          "emptyPresentedOutput": true
+        },
+        {
+          "callId": "call_c980c6ec46ba40948547c116c6c57f2d",
+          "run": "r2",
+          "inputCursor": "166",
+          "returnedCursor": "166",
+          "process": "running",
+          "outputBytes": 0,
+          "durationMs": 118,
+          "finalizedStatus": null,
+          "exitCode": null,
+          "rawCursorProgress": 0,
+          "emptyPresentedOutput": true
+        },
+        {
+          "callId": "call_86b6cf8854a54ab1a68e39f9643e7709",
+          "run": "r2",
+          "inputCursor": "166",
+          "returnedCursor": "642",
+          "process": "exited",
+          "outputBytes": 472,
+          "durationMs": 94,
+          "finalizedStatus": "ok",
+          "exitCode": 0,
+          "rawCursorProgress": 476,
+          "emptyPresentedOutput": false
+        }
+      ],
+      "emptyRunningWithoutCursorProgress": 3,
       "emptyRunningWithRealCursorProgress": 0
     }
   ],

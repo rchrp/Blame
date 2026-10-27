@@ -1,6 +1,6 @@
 {
   "protocolHash": "a853cb7b2e266500c8a84b6ccdafa2219c633609da266317c7f864ff6f7ea93d",
-  "executionFinished": false,
+  "executionFinished": true,
   "trials": [
     {
       "name": "1-fetching-filters-reference",
@@ -421,6 +421,226 @@
           },
           "inputSha256": "552c0e8d5dfd9d6bdd28c934ffe5307607d27b41ab0eca481d90dc14d95d3ef8",
           "timestamp": "2026-10-27T16:45:52.833Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        }
+      ]
+    },
+    {
+      "name": "2-fetching-filters-cline",
+      "officialRuntimeSuccess": true,
+      "sourceSuccess": true,
+      "strictSuccess": true,
+      "iterationStartEvents": 19,
+      "observedStop": "official_completion",
+      "explanatoryEvent": null,
+      "lastCompletedTools": [
+        {
+          "callId": "call_248f758a9d394dee84e16c74af7adf64",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run typecheck:study:types"
+            ],
+            "timeout": 120000
+          },
+          "inputSha256": "33ad323452ae1e2348cac45ceb5925d5ff6a87706cc5bfe5e396387f04ac403f",
+          "timestamp": "2026-10-27T16:50:45.294Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_c77c89b10be447ec92f30dd90c15498c",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run typecheck:study:type-regression"
+            ],
+            "timeout": 120000
+          },
+          "inputSha256": "048d289956a46e85ac9aa55bcff441ccce1abc5f322638e415d503bb2c0c8fc6",
+          "timestamp": "2026-10-27T16:50:48.963Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_65935919e1bd4eb9aef4ca08a45395f6",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run typecheck:study:delivered-types"
+            ],
+            "timeout": 120000
+          },
+          "inputSha256": "27440d873d32723bdf309e03ac76bbeb7079e4d4ff24d919ec2fc3cc95df1160",
+          "timestamp": "2026-10-27T16:50:52.986Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_34e950fab4a74d2da42c00062d9ca84a",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run test:study:delivered"
+            ],
+            "timeout": 120000
+          },
+          "inputSha256": "b090c8ffb71e1ece1d60f090e965d75304d6e352987cf2899d38b1ea1cdda4fb",
+          "timestamp": "2026-10-27T16:50:58.125Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_5f2a0e690ce04b0fa94651d9c0aced89",
+          "tool": "read_files",
+          "input": {
+            "files": [
+              {
+                "path": "/workspace/blame-study-runs/inspection-wait-f72/active/workspace/packages/query-core/src/queryClient.ts",
+                "start_line": 148,
+                "end_line": 158
+              },
+              {
+                "path": "/workspace/blame-study-runs/inspection-wait-f72/active/workspace/packages/react-query/src/useIsFetching.ts",
+                "start_line": 1,
+                "end_line": 56
+              },
+              {
+                "path": "/workspace/blame-study-runs/inspection-wait-f72/active/workspace/packages/query-core/src/__tests__/isFetchingFilters.test-d.tsx",
+                "start_line": 1,
+                "end_line": 100
+              },
+              {
+                "path": "/workspace/blame-study-runs/inspection-wait-f72/active/workspace/packages/react-query/src/__tests__/useIsFetchingFilters.test-d.tsx",
+                "start_line": 1,
+                "end_line": 80
+              }
+            ]
+          },
+          "inputSha256": "8f4863a2322ed31033d169c5b33b22b1af7ece6f224000c951fc634e78a59057",
+          "timestamp": "2026-10-27T16:50:58.387Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_81bbee414d5441ae8f0dea4accdab9f4",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "git diff --check && git status --short && git diff --stat && git diff --name-only"
+            ],
+            "timeout": 120000
+          },
+          "inputSha256": "498bb26f6e29f60e3613fe2672e70baf050802abdbeb9b0823221fc0c7ef7fc7",
+          "timestamp": "2026-10-27T16:50:58.699Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        }
+      ]
+    },
+    {
+      "name": "2-fetching-filters-reference",
+      "officialRuntimeSuccess": true,
+      "sourceSuccess": true,
+      "strictSuccess": true,
+      "iterationStartEvents": 25,
+      "observedStop": "official_completion",
+      "explanatoryEvent": null,
+      "lastCompletedTools": [
+        {
+          "callId": "call_eb4324be015e412abcfa8b4d069b3f85",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npm run typecheck:study:type-regression"
+          },
+          "inputSha256": "dca891a875fd719d39f4b071c4677fc7a16816f567ebfae6d43dcf97d0146a4b",
+          "timestamp": "2026-10-27T16:55:31.720Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_79ed62fa846f4700a617028f96c9f3e1",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npm run typecheck:study:delivered-types"
+          },
+          "inputSha256": "392e94f8cacad98651f322c273300a760bc1e97232d7955d979cfb13f25a2423",
+          "timestamp": "2026-10-27T16:55:37.829Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_d225b9b28a31466c8a816d45a2ec5c61",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "git status --short"
+          },
+          "inputSha256": "1516e75288c9314bb01c2c897f36f9a4451349445691d3bf5f90029174137ec1",
+          "timestamp": "2026-10-27T16:55:44.716Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_1e40ed2efce84c9faf17eb1187bf1ad3",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "git diff --check"
+          },
+          "inputSha256": "6450400cd609decf399579338ef3fdee66439c02c1eadb92b75d3d155321a030",
+          "timestamp": "2026-10-27T16:55:45.166Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_de1735ad935c4fb4aaea7a7bd6a05264",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "git diff --stat && git diff -- packages/query-core/src/queryClient.ts packages/react-query/src/useIsFetching.ts packages/query-core/src/__tests__/isFetchingFilters.test-d.ts packages/query-core/src/__tests__/isFetchingFilters.test.tsx packages/react-query/src/__tests__/useIsFetchingFilters.test-d.tsx"
+          },
+          "inputSha256": "284d6868f48209b6c0632f0b1a7f0ba9e625381380d118a1078402e56da7dba4",
+          "timestamp": "2026-10-27T16:55:45.609Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_ae130b01c5664075a53779639af5d32c",
+          "tool": "finish_task",
+          "input": {
+            "summary": "Implemented the requested filter typing changes scoped to `query-core` and `react-query`.\n\nChanges:\n- `QueryClient.isFetching` now accepts `OmitKeyof<TQueryFilters, 'fetchStatus'>`, preserving its generic entry point, explicit `QueryFilters` arguments, predicate inference, other filters, and `number` return type.\n- React `useIsFetching` now excludes `fetchStatus` from its public filter argument while preserving the remaining `QueryFilters` fields and return type.\n- Runtime behavior remains unchanged: `isFetching` still forces `fetchStatus: 'fetching'` internally.\n- General `QueryCache` filtering remains unchanged and continues to support `fetchStatus`.\n- Added new regression coverage under the existing query-core and react-query `__tests__` directories: one runtime test and two type tests.\n\nRequired commands, each run directly after the final edit:\n- `npm run test:study:regression` — passed; 23 test files and 631 tests passed.\n- `npm run typecheck:study:types` — exited 0/passed. This source configuration excludes test files.\n- `npm run typecheck:study:type-regression` — exited 0/passed. This checks the supplied type-regression selection.\n- `npm run typecheck:study:delivered-types` — exited 0/passed. This compiles the newly delivered regression test/type files.\n\nCoverage limits: the regression command covers the configured query-core suite and React `useIsFetching` suite; it does not execute other framework adapter suites. No adapter files outside query-core and react-query, manifests, or configuration were changed. `git diff --check` also passed.",
+            "images": []
+          },
+          "inputSha256": "9867fd7c760e7078fe116192672fc281ea1fb292cd0fdbb7f8fa8908c1e0c441",
+          "timestamp": "2026-10-27T16:55:54.639Z",
           "status": null,
           "process": null,
           "hasFinalizedPayload": false,
