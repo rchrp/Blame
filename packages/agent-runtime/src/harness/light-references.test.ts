@@ -3,6 +3,7 @@ import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import ts from "typescript";
 import { LightWorkspace } from "./light-workspace.js";
 import { LightAliasRegistry } from "./light-aliases.js";
 import { LightReferenceSearch } from "./light-reference-search.js";
@@ -84,7 +85,7 @@ test("identity references follow an import alias and exclude unrelated homonyms/
     assert.equal(result.completeness, "configured_project");
     assert.equal(
       (result.project as { compilerVersion: string }).compilerVersion,
-      "5.9.3",
+      ts.version,
     );
     for (const [path, text] of Object.entries(files))
       assert.equal(await readFile(join(root, path), "utf8"), text);

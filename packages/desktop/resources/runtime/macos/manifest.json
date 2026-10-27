@@ -1,36 +1,36 @@
 {
   "vm": "BlameRuntime",
-  "runtimeVersion": "12",
+  "runtimeVersion": "13",
   "clineSdkVersion": "0.2.0",
   "runtimeAgentVersion": "10",
   "runtimeMarker": "/etc/blame-runtime-version",
   "runtimeRoot": "/home/blame/.local/share/blame/runtime",
-  "dockerVersion": "29.9.1",
-  "composeVersion": "5.6.0",
-  "buildxVersion": "0.38.0",
-  "nodeVersion": "22.23.1",
+  "dockerVersion": "29.9.2",
+  "composeVersion": "5.6.1",
+  "buildxVersion": "0.38.1",
+  "nodeVersion": "24.22.1",
   "lima": {
-    "version": "2.1.2",
+    "version": "2.2.1",
     "bin": "lima/bundle/bin",
     "archives": {
       "darwin": {
         "arm64": {
-          "url": "https://github.com/lima-vm/lima/releases/download/v2.1.2/lima-2.1.2-Darwin-arm64.tar.gz",
-          "sha256": "7081d03d01511f20c4a3b38d8120428ef1c66e4b21ec9b54017bc65da60b031f"
+          "url": "https://github.com/lima-vm/lima/releases/download/v2.2.1/lima-2.2.1-Darwin-arm64.tar.gz",
+          "sha256": "9e9eacce88f37e185c346bad73aa6136f738d8cdf8c3bb23cd42b071824bc66e"
         },
         "x86_64": {
-          "url": "https://github.com/lima-vm/lima/releases/download/v2.1.2/lima-2.1.2-Darwin-x86_64.tar.gz",
-          "sha256": "3dc5218c7b0cc14126fb6e3ae6f174f026660e4e2cdffcb34b16e5a2f415eb45"
+          "url": "https://github.com/lima-vm/lima/releases/download/v2.2.1/lima-2.2.1-Darwin-x86_64.tar.gz",
+          "sha256": "6b776e4bc41f358e6ee01fefcc78e2eb26f11635a0fcff632234af77a566c6c4"
         }
       },
       "linux": {
         "aarch64": {
-          "url": "https://github.com/lima-vm/lima/releases/download/v2.1.2/lima-2.1.2-Linux-aarch64.tar.gz",
-          "sha256": "c2deb0aad9ba375b0d1cc37bf3e01402f2d9ef6cf63db924171d2627823626b0"
+          "url": "https://github.com/lima-vm/lima/releases/download/v2.2.1/lima-2.2.1-Linux-aarch64.tar.gz",
+          "sha256": "fbcf4d127936666aa2cf6013b663c250431f2a59394757b404070f8d6a160e10"
         },
         "x86_64": {
-          "url": "https://github.com/lima-vm/lima/releases/download/v2.1.2/lima-2.1.2-Linux-x86_64.tar.gz",
-          "sha256": "648ed5f599012a0864bd0c4809063b18116bca57f2593d30547dfedbef3c2ce0"
+          "url": "https://github.com/lima-vm/lima/releases/download/v2.2.1/lima-2.2.1-Linux-x86_64.tar.gz",
+          "sha256": "b391ac7fcac2b2a5a1628107756463188ded4d18d3104a40a66a8bb6fec01bcb"
         }
       }
     }

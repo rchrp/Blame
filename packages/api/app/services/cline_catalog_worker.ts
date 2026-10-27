@@ -11,8 +11,7 @@ import { missingProviderModels, withSupplementalModels } from '@blame/model-cata
 import type { ClineProviderCatalog } from './cline_catalog_client.js'
 
 type ClineCatalogRequest =
-  | { kind: 'catalog' }
-  | { kind: 'live'; url: string; providerIds: string[] }
+  { kind: 'catalog' } | { kind: 'live'; url: string; providerIds: string[] }
 
 async function loadProviderCatalog() {
   const providers = await getAllProviders()

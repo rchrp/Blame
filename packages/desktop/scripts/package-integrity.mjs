@@ -126,7 +126,7 @@ export function verifyAsarTypeScriptLibraries(archive) {
     asar.listPackage(archive).map((entry) => entry.split(sep).join("/")),
   );
   const compilers = [...entries].filter((entry) =>
-    /(?:^|\/)node_modules\/typescript\/lib\/typescript\.js$/.test(entry),
+    /(?:^|\/)node_modules\/(?:typescript|@typescript\/typescript6)\/lib\/typescript\.js$/.test(entry),
   );
   for (const compiler of compilers) {
     const directory = posix.dirname(compiler);

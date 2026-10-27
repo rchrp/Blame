@@ -45,6 +45,7 @@ jobs:
       - run: pnpm exec turbo run build --filter="@blame/api^..."
       - run: pnpm --filter @blame/api exec node ace.js test unit
       - run: pnpm --filter @blame/api exec node ace.js test --files='tests/functional/auth.spec.ts'
+      - run: pnpm --filter @blame/api exec node ace.js test --files='tests/functional/consumer_contracts.spec.ts'
 
   windows-runtime:
     name: Windows PowerShell runtime tests
@@ -66,6 +67,7 @@ jobs:
           node-version: 24
       - run: pnpm --filter @blame/desktop build:workspace-dependencies
       - run: pnpm --filter @blame/desktop test:windows-workspaces
+      - run: pnpm --filter @blame/agent-runtime exec node --test dist/harness/workspace-command-process.test.js dist/harness/package-manager-runtime.test.js
 
   line-budgets:
     name: Line budgets
@@ -104,6 +106,7 @@ jobs:
         with:
           node-version: 24
       - run: pnpm typecheck
+      - run: pnpm --filter @blame/telemetry test
       - run: pnpm --filter @blame/preview-contract test
       - run: pnpm --filter @blame/preview-runtime test
       - run: pnpm --filter @blame/sandbox-runner test

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFile } from "node:fs/promises";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { createRequire } from "node:module";
 import { data, fixture } from "./light-agent-guidance-fixture.js";
@@ -29,9 +29,9 @@ test("binding mistakes are shown with the preserved header and still require a r
       action: "replace_body", content: "{ const { min, max } = limits; return value; }" }] });
     assert.equal(result.status, "ok", "Syntax-only admission does not establish type correctness");
     assert.match(JSON.stringify(result), /headers_before_body_edits/u);
-    const compiled = spawnSync(process.execPath, [createRequire(import.meta.url).resolve("typescript/bin/tsc"),
-      "--noEmit", "--skipLibCheck", join(root, "value.ts")], { encoding: "utf8" });
-    assert.equal(compiled.status, 2);
+    const compiled = spawnSync(process.execPath, [join(dirname(createRequire(import.meta.url).resolve("@typescript/native/package.json")), "bin/tsc"),
+      "--ignoreConfig", "--noEmit", "--skipLibCheck", join(root, "value.ts")], { encoding: "utf8" });
+    assert.notEqual(compiled.status, 0, compiled.stdout + compiled.stderr);
     assert.match(compiled.stdout, /Duplicate identifier|Cannot redeclare|Cannot find name/u);
     // A later deliberate complete declaration edit remains possible.
     data(await workspace.editCode({ operations: [{ kind: "symbol", target: "value.ts#clamp", action: "replace",

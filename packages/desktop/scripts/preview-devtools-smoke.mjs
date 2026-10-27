@@ -51,6 +51,7 @@ const timeout = setTimeout(() => {
 let owner;
 let userView;
 let agent;
+let exitCode = 0;
 const results = [];
 
 void app.whenReady().then(runSmoke);
@@ -71,7 +72,7 @@ async function runSmoke() {
       }),
     );
   } catch (error) {
-    process.exitCode = 1;
+    exitCode = 1;
     console.error(error);
   } finally {
     clearTimeout(timeout);
@@ -79,7 +80,7 @@ async function runSmoke() {
     destroyAgentPreviewBrowser("smoke");
     owner.destroy();
     server.close();
-    app.exit(process.exitCode ?? 0);
+    app.exit(exitCode);
   }
 }
 
@@ -129,6 +130,7 @@ async function inspectAgentBrowser(iteration) {
     textContent(await call("take_snapshot")),
     /Preview inspection smoke/,
   );
+  assertToolSuccess(await call("emulate", { colorScheme: "light" }));
   const light = await screenshot(call, `light-${iteration}`);
   assert.deepEqual(
     [light.width, light.height],

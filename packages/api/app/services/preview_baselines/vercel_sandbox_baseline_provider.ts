@@ -20,8 +20,7 @@ const runnerControlBinary = '/opt/blame/bin/blame-runnerctl'
 const runnerRequestDirectory = '/run/blame/control/requests'
 
 type RunnerResponse<T> =
-  | { ok: true; result: T }
-  | { ok: false; error: { code: string; message: string } }
+  { ok: true; result: T } | { ok: false; error: { code: string; message: string } }
 
 export default class VercelSandboxBaselineProvider implements PreviewBaselineProvider {
   constructor(private readonly config: PreviewRuntimeConfig = previewRuntimeConfig()) {}

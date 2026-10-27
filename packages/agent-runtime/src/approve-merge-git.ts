@@ -46,6 +46,7 @@ export async function assertTargetChangesRestorable(
   } catch (error) {
     throw new Error(
       `The story changes conflict with local target-branch changes. The merge was stopped before advancing the target branch. ${errorMessage(error)}`,
+      { cause: error },
     );
   } finally {
     await git(cwd, ["reset", "--hard", "HEAD"]);
@@ -63,6 +64,7 @@ export async function restoreTargetChanges(
   } catch (error) {
     throw new Error(
       `Git could not restore the local target-branch changes automatically. They remain saved in the stash (${stash.commit}). ${errorMessage(error)}`,
+      { cause: error },
     );
   }
   const reference = await gitStashReference(cwd, stash.commit, git);

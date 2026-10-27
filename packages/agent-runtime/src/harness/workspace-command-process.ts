@@ -63,7 +63,7 @@ function spawnWorkspaceProcess(executable: string, args: string[], cwd: string, 
     reject: false,
   });
   void child.catch(() => undefined);
-  return child;
+  return child.nodeChildProcess;
 }
 
 class CommandExecution {

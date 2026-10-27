@@ -3,6 +3,7 @@ import { access, readFile, readdir, realpath } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { delimiter, dirname, join, resolve } from "node:path";
 import { createRequire } from "node:module";
+import { pathToFileURL } from "node:url";
 import { execa } from "execa";
 
 export type PackageManagerName = "bun" | "npm" | "pnpm" | "yarn";
@@ -108,7 +109,20 @@ async function provisionedManager(input: PackageManagerRequest) {
 
 async function bundledManager(input: PackageManagerRequest) {
   if (!managedPackageNames.has(input.name)) return undefined;
-  const resolvedManifestPath = bundledManifestPath(input.name);
+  const current = await bundledManagerPackage(input, input.name);
+  return (
+    current ??
+    (input.name === "pnpm"
+      ? bundledManagerPackage(input, "pnpm-legacy")
+      : undefined)
+  );
+}
+
+async function bundledManagerPackage(
+  input: PackageManagerRequest,
+  packageName: string,
+) {
+  const resolvedManifestPath = bundledManifestPath(packageName);
   if (!resolvedManifestPath) return undefined;
   const manifestPath = await physicalBundledPath(resolvedManifestPath);
   const manifest = JSON.parse(await readFile(manifestPath, "utf8")) as {
@@ -122,9 +136,25 @@ async function bundledManager(input: PackageManagerRequest) {
     return undefined;
   const entry = managerBin(manifest.bin, input.name);
   if (!entry) return undefined;
+  const packageRoot = dirname(manifestPath);
+  if (input.name === "pnpm" && Number(manifest.version.split(".")[0]) >= 11) {
+    // Resolve only the installed native binary; never invoke the downloading wrapper.
+    const native = await import(
+      pathToFileURL(join(packageRoot, "native-binary.mjs")).href
+    );
+    const installed: string | null = native.resolveInstalledBinary();
+    if (!installed) return undefined;
+    const executable = await realpath(await physicalBundledPath(installed));
+    if (!(await executableFile(executable))) return undefined;
+    return {
+      executable,
+      argsPrefix: [],
+      readonlyRoots: [packageRoot, dirname(executable)],
+      resolvedVersion: manifest.version,
+    };
+  }
   const executable = await resolveStableNodeExecutable();
   if (!executable) return undefined;
-  const packageRoot = dirname(manifestPath);
   return {
     executable,
     argsPrefix: [join(packageRoot, entry)],
@@ -194,9 +224,16 @@ function temporaryRuntimePath(path: string, platform: NodeJS.Platform) {
   return resolve(path).startsWith(temporaryRoot);
 }
 
-function bundledManifestPath(name: PackageManagerName) {
+function bundledManifestPath(name: string) {
   try {
-    if (name === "pnpm") return require.resolve("pnpm");
+    if (name === "pnpm") {
+      try {
+        return require.resolve("pnpm/package.json");
+      } catch {
+        return require.resolve("pnpm");
+      }
+    }
+    if (name === "pnpm-legacy") return require.resolve("pnpm-legacy");
     if (name === "npm")
       return join(dirname(require.resolve("npm")), "package.json");
     if (name === "yarn") return require.resolve("yarn/package.json");
@@ -287,10 +324,15 @@ export function packageManagerVersionsCompatible(input: {
 async function compatibleCandidates(name: PackageManagerName) {
   const provisioned = await provisionedManagerCandidates(name);
   const bundled = await bundledManager({ name });
+  const legacy =
+    name === "pnpm"
+      ? await bundledManagerPackage({ name }, "pnpm-legacy")
+      : undefined;
   const system = await systemManager({ name });
   return uniqueCandidates([
     ...provisioned,
     ...(bundled ? [bundled] : []),
+    ...(legacy ? [legacy] : []),
     ...(system ? [system] : []),
   ]);
 }

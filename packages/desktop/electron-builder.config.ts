@@ -253,7 +253,7 @@ async function executableArchitecture(executable: string) {
 // runtime's TypeScript language service needs the compiler's default
 // libraries: without lib.*.d.ts, built-in types such as Array or Promise do
 // not resolve and semantic references miss most uses.
-const typeScriptDefaultLibrary = /[\\/]typescript[\\/]lib[\\/]lib(?:\.[^\\/]+)?\.d\.ts$/
+const typeScriptDefaultLibrary = /[\\/](?:typescript|@typescript[\\/]typescript6)[\\/]lib[\\/]lib(?:\.[^\\/]+)?\.d\.ts$/
 
 const config: Configuration = {
   afterPack: finalizePackage,
@@ -267,6 +267,8 @@ const config: Configuration = {
     "**/node_modules/@vscode/ripgrep-*/**/*",
     "**/node_modules/npm/**/*",
     "**/node_modules/pnpm/**/*",
+    "**/node_modules/pnpm-legacy/**/*",
+    "**/node_modules/@pnpm/exe.*/**/*",
     "**/node_modules/yarn/**/*",
   ],
   productName: "Blame",
@@ -300,6 +302,7 @@ const config: Configuration = {
     target: ["AppImage", "deb", "rpm"],
   },
   mac: {
+    minimumSystemVersion: "13.0",
     category: "public.app-category.developer-tools",
     entitlements: macosInheritedEntitlements,
     entitlementsInherit: macosInheritedEntitlements,

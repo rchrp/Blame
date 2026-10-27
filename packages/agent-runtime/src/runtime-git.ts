@@ -215,7 +215,7 @@ export async function git(cwd: string, args: string[]) {
     });
     return stdout.trim();
   } catch (error) {
-    throw new Error(gitErrorMessage(args, error));
+    throw new Error(gitErrorMessage(args, error), { cause: error });
   }
 }
 

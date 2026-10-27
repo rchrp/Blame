@@ -10,6 +10,7 @@ import {
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import { finished } from "node:stream/promises";
 import test from "node:test";
 import {
   verifyAsarWorkspaceRuntime,
@@ -60,7 +61,9 @@ async function fixture(
   }
   async function pack() {
     await mkdir(dirname(archive), { recursive: true });
-    await asar.createPackage(source, archive);
+    const output = await asar.createPackage(source, archive);
+    // ASAR returns its write stream before the final buffered bytes are flushed.
+    await finished(output);
     asar.uncache(archive);
   }
   try {
@@ -120,24 +123,26 @@ test("detects a dependency lost between deployment and packaging", async () => {
   });
 });
 
-test("requires the default libraries of a packaged TypeScript compiler", async () => {
+for (const compilerPackage of ["typescript", "@typescript/typescript6"]) {
+test(`requires the default libraries of packaged ${compilerPackage}`, async () => {
   await fixture(async ({ dist, file, pack }) => {
     for (const name of ["harness-core", "model-catalog"])
       await file(`node_modules/@blame/${name}/dist/index.js`);
-    await file("node_modules/typescript/lib/typescript.js");
-    await file("node_modules/typescript/lib/lib.d.ts");
+    await file(`node_modules/${compilerPackage}/lib/typescript.js`);
+    await file(`node_modules/${compilerPackage}/lib/lib.d.ts`);
     await pack();
     await assert.rejects(
       verifyPackagedWorkspaceRuntime(dist),
-      /missing TypeScript default library: .*typescript\/lib\/lib\.es5\.d\.ts/,
+      /missing TypeScript default library: .*\/lib\/lib\.es5\.d\.ts/,
     );
 
-    await file("node_modules/typescript/lib/lib.es5.d.ts");
-    await file("node_modules/typescript/lib/lib.dom.d.ts");
+    await file(`node_modules/${compilerPackage}/lib/lib.es5.d.ts`);
+    await file(`node_modules/${compilerPackage}/lib/lib.dom.d.ts`);
     await pack();
     await verifyPackagedWorkspaceRuntime(dist);
   });
 });
+}
 
 test("refuses success when no packaged application was produced", async () => {
   await fixture(async ({ dist }) => {

@@ -7,7 +7,7 @@ export default defineConfig({
       externalizeDeps: {
         exclude: ["electron-context-menu", "electron-window-state"],
       },
-      rollupOptions: {
+      rolldownOptions: {
         input: {
           "agent-runtime-process": "src/main/agent-runtime-process.ts",
           index: "src/main/bootstrap.ts",
@@ -20,7 +20,7 @@ export default defineConfig({
   },
   preload: {
     build: {
-      rollupOptions: {
+      rolldownOptions: {
         input: { index: "src/preload/index.ts" },
         output: {
           entryFileNames: "[name].js",
@@ -35,7 +35,7 @@ export default defineConfig({
     publicDir: "../../../app/public",
     root: "src/renderer",
     build: {
-      rollupOptions: {
+      rolldownOptions: {
         input: {
           main: "src/renderer/index.html",
         },

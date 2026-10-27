@@ -8,12 +8,7 @@ import UserStoryComment from '#models/user_story_comment'
 import type { HasMany, ManyToMany } from '@adonisjs/lucid/types/relations'
 
 export type UserStoryStatus =
-  | 'backlog'
-  | 'ready'
-  | 'in-progress'
-  | 'in-review'
-  | 'done'
-  | 'discarded'
+  'backlog' | 'ready' | 'in-progress' | 'in-review' | 'done' | 'discarded'
 
 export type UserStoryPriority = 'Low' | 'Medium' | 'High'
 export type UserStoryWorkspaceMode = 'local-container' | 'cloud-mirror' | 'direct'

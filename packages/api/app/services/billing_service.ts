@@ -1,4 +1,5 @@
 import Stripe from 'stripe'
+import { createStripeClient } from '#services/stripe_client'
 import env from '#start/env'
 import User from '#models/user'
 import UserSubscription from '#models/user_subscription'
@@ -15,7 +16,7 @@ export default class BillingService {
   private stripeClient() {
     const secretKey = env.get('STRIPE_SECRET_KEY')
     if (!secretKey) throw new Error('Stripe billing is not configured')
-    return new Stripe(secretKey)
+    return createStripeClient(secretKey)
   }
 
   private config(
@@ -169,13 +170,15 @@ export default class BillingService {
   ) {
     return this.stripeClient().checkout.sessions.create({
       mode: 'subscription',
+      integration_identifier: 'blame-subscription-hvytpmqx',
       customer: subscription.stripeCustomerId,
       client_reference_id: userId,
       line_items: [{ price, quantity: 1 }],
       allow_promotion_codes: false,
       success_url: this.config('STRIPE_CHECKOUT_SUCCESS_URL'),
       cancel_url: this.config('STRIPE_CHECKOUT_CANCEL_URL'),
-      subscription_data: { metadata: { blameUserId: userId } },
+      // Clover changed the default to flexible; preserve existing billing behavior.
+      subscription_data: { billing_mode: { type: 'classic' }, metadata: { blameUserId: userId } },
     })
   }
 
