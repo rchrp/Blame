@@ -44,7 +44,8 @@ async function launch() {
 
 async function checkStartup() {
   const { app } = await import("electron");
-  const [application, profile] = process.argv.slice(2);
+  // Electron retains Chromium flags in argv on Linux; our inputs are always last.
+  const [application, profile] = process.argv.slice(-2);
   for (const name of ["appData", "userData", "sessionData"]) app.setPath(name, profile);
   app.setAppLogsPath(join(profile, "logs"));
   // Load the actual built application and isolate OS integration from the user.
