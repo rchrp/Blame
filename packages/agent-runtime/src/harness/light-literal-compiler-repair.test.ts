@@ -16,11 +16,12 @@ const files = { "package.json": JSON.stringify({ scripts: { test: "node --test s
 test("an unmatched literal compiler is repaired before green checks without replacing final obligations", async () => {
   await fixture(files, async (_, root) => {
     await mkdir(join(root, "node_modules"));
-    await symlink(fileURLToPath(new URL("../../node_modules/typescript", import.meta.url)), join(root, "node_modules/typescript"));
+    await symlink(fileURLToPath(new URL("../../node_modules/@typescript/native", import.meta.url)), join(root, "node_modules/typescript"));
     const contract = { session_id: "literal", required_checks: [{ id: "runtime", task: "test" }] };
     const workspace = new LightWorkspace(root, { sessionId: "literal", taskContract: contract });
     const failed = await workspace.runTask({ kind: "command", command: compiler }, {});
     assert.equal(failed.status, "blocked");
+    assert.match(failed.status === "blocked" ? failed.message : "", /TS2322/);
     assert.equal(failed.status === "blocked" && failed.category, "code");
     assert.equal(failed.status === "blocked" && JSON.parse(failed.recovery!.split("\n").at(-1)!).validationRepair.repairFirst[0].input.command, compiler);
     data(await workspace.runTask({ kind: "project", task: "test" }, {}));
@@ -51,10 +52,12 @@ test("compound shell, emit-enabled and expanded compiler commands are never repl
 test("a still-failing literal compiler stops finalization before refreshing green obligations", async () => {
   await fixture(files, async (_, root) => {
     await mkdir(join(root, "node_modules"));
-    await symlink(fileURLToPath(new URL("../../node_modules/typescript", import.meta.url)), join(root, "node_modules/typescript"));
+    await symlink(fileURLToPath(new URL("../../node_modules/@typescript/native", import.meta.url)), join(root, "node_modules/typescript"));
     const contract = { session_id: "still-failed", required_checks: [{ id: "runtime", task: "test" }] };
     const workspace = new LightWorkspace(root, { sessionId: "still-failed", taskContract: contract });
-    assert.equal((await workspace.runTask({ kind: "command", command: compiler }, {})).status, "blocked");
+    const failed = await workspace.runTask({ kind: "command", command: compiler }, {});
+    assert.equal(failed.status, "blocked");
+    assert.match(failed.status === "blocked" ? failed.message : "", /TS2322/);
     data(await workspace.runTask({ kind: "project", task: "test" }, {}));
     data(await workspace.editCode({ operations: [{ kind: "patch", path: "value.ts", patch: "*** Begin Patch\n*** Update File: value.ts\n@@\n-export const value: number = 'bad';\n+export const value: number = 'still bad';\n*** End Patch" }] }));
     const order: unknown[] = [];
