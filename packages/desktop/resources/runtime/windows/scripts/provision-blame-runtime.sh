@@ -43,17 +43,33 @@ missing_runtime_packages() {
   printf '%s' "$missing"
 }
 
-ensure_node() {
-  if command -v node >/dev/null 2>&1 && node -e 'process.exit(process.versions.node === process.argv[1] ? 0 : 1)' "$node_version" >/dev/null 2>&1; then
+ensure_node() (
+  if valid_node_install /usr/local >/dev/null 2>&1; then
     return
   fi
   arch="$(node_archive_architecture)"
   archive="node-v${node_version}-linux-${arch}.tar.xz"
   temp_dir="$(mktemp -d)"
+  trap 'rm -rf "$temp_dir"' 0
   curl -fsSL "https://nodejs.org/dist/v${node_version}/${archive}" -o "$temp_dir/$archive"
   printf '%s  %s\n' "$(node_archive_sha256 "$arch")" "$temp_dir/$archive" | sha256sum -c - >/dev/null
+  tar -C "$temp_dir" --strip-components=1 -xJf "$temp_dir/$archive"
+  valid_node_install "$temp_dir"
+  # An overlay leaves obsolete nested dependencies that can shadow npm's new
+  # dependencies. Replace only npm, after validating the complete archive;
+  # preserve the harness and any other globally installed packages.
+  rm -rf /usr/local/lib/node_modules/npm
   tar -C /usr/local --strip-components=1 -xJf "$temp_dir/$archive"
-  rm -rf "$temp_dir"
+  valid_node_install /usr/local
+)
+
+valid_node_install() {
+  [ -x "$1/bin/node" ] && [ -x "$1/bin/npm" ] &&
+    "$1/bin/node" -e '
+if (process.versions.node !== process.argv[1]) process.exit(1);
+// npm --version and npm root do not load the installation dependencies.
+require(process.argv[2]);
+' "$node_version" "$1/lib/node_modules/npm/lib/commands/install.js"
 }
 
 ensure_package_managers() {
