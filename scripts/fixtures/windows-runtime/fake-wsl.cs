@@ -31,6 +31,11 @@ public class FakeWsl
         if (args[0] == "--status") { Console.Error.Write("WSL warning"); return 0; }
         if (args[0] == "--list")
         {
+            if (Env("BLAME_TEST_WSL_FAIL") == "no-distros")
+            {
+                Console.Error.Write("Windows Subsystem for Linux has no installed distributions.\nUse 'wsl.exe --list --online' to list available distributions\nand 'wsl.exe --install <Distro>' to install.\n");
+                return 1;
+            }
             Console.Write("  NAME STATE VERSION\n* BlameRuntime Running 2\n");
             Console.Error.Write("list warning");
             return Env("BLAME_TEST_WSL_FAIL") == "list" ? 19 : 0;

@@ -20,9 +20,16 @@ else if (args[0] === "--warning") {
   stdout(readFileSync(0, "utf8"));
 } else if (args[0] === "--status") stderr("WSL warning");
 else if (args[0] === "--list") {
-  stdout("  NAME STATE VERSION\n* BlameRuntime Running 2\n");
-  stderr("list warning");
-  if (env.BLAME_TEST_WSL_FAIL === "list") code = 19;
+  if (env.BLAME_TEST_WSL_FAIL === "no-distros") {
+    stderr(
+      "Windows Subsystem for Linux has no installed distributions.\nUse 'wsl.exe --list --online' to list available distributions\nand 'wsl.exe --install <Distro>' to install.\n",
+    );
+    code = 1;
+  } else {
+    stdout("  NAME STATE VERSION\n* BlameRuntime Running 2\n");
+    stderr("list warning");
+    if (env.BLAME_TEST_WSL_FAIL === "list") code = 19;
+  }
 } else if (args[0] === "--unregister") {
   stderr("unregister failed");
   code = 17;

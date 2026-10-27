@@ -158,9 +158,23 @@ function Get-OptionalProperty {
 function Get-WslListText {
   $result = Invoke-WslHost -WslArgs @("--list", "--verbose")
   if ($result.Code -ne 0) {
+    if (Test-DistrosAbsentText $result.Output) {
+      return ""
+    }
     throw $result.Output
   }
   ($result.Stdout -replace "`0", "")
+}
+
+function Test-DistrosAbsentText {
+  param([string]$Text)
+  if (-not $Text) {
+    return $false
+  }
+  # WSL exits with a failure message when no distributions have been installed yet.
+  # This text varies across Windows display languages, but always advises installing one
+  # or states that no distribution is installed.
+  $Text -match "(?i)distribution|distro|verteilung|wsl(?:\.exe)?\s+--(?:list|install)"
 }
 
 function Test-WslAvailable {
