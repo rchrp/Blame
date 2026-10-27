@@ -74,3 +74,9 @@ dependency directories first. Replay uses the frozen Linux permission convention
 (`umask 077`); it is not a cross-platform fingerprint claim. It retains mismatches
 and never repairs or retrieves a solution. The `inputs` archive is published only
 after model dispatch, so hidden official/probe information is not a worker input.
+
+Exact source replay also restores captured POSIX permission metadata, because Git
+patches preserve executable bits but omit other permission differences. This
+never changes source bytes or repairs a model patch; the original exact source
+fingerprint must still match. Replay graders use private dependency copies, and
+successfully reproduced disposable trees are removed after their outputs are saved.

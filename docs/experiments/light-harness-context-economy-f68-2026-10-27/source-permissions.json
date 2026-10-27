@@ -1,0 +1,237 @@
+{
+  "protocolHash": "42d111a0162283d14df36d9a10692ae74efdc129db05a5188215f0669c2b2a93",
+  "trials": {
+    "1-clamp-items-reference": {
+      "checkpointSha256": "2a92130be0ccdc6a2d6120ab48bdf877b248ca13f3b66eb4c922429f8ce27e40",
+      "workspaceArchiveSha256": "958690b5ef460068c82058e006a97e7f3cd67b2af4a6f097f3a74bbadf580c33",
+      "sourceSha256": "6b4bbc3e01b746e56fda39f64c270d445dcdf329ac312a1f756dcf26c59974a2",
+      "overrides": {
+        "src/list.test.ts": 420,
+        "src/list.ts": 420,
+        "src/range.test.ts": 420
+      }
+    },
+    "1-clamp-items-compact": {
+      "checkpointSha256": "d400cbf548ceef3b0484afadda969bb5abc95753cc3d0536239a248183acab2d",
+      "workspaceArchiveSha256": "684e4387c5dce60fc79b1c1d6480d701849682fa37fc62fa7ac1e4d7cafba386",
+      "sourceSha256": "fea4c1074416eea2d40b8e36d0d39bdd82dfdbbcd7deb8daaede463e7c2c69e6",
+      "overrides": {
+        "src/list.test.ts": 420,
+        "src/list.ts": 420,
+        "src/range.test.ts": 420
+      }
+    },
+    "1-clamp-items-cline": {
+      "checkpointSha256": "ebe04e5f6c2e42aa829c02238616ba50df73a9f7f14adda3956992270c8418c7",
+      "workspaceArchiveSha256": "98c72bc8fed34141715494d7d1c994ed2d38b00427b60c10832d9f64ddf0c56e",
+      "sourceSha256": "b8ef1f0f9060646152ffd7987a09b3a25fa931bc857bfab8d52423171222c7b5",
+      "overrides": {}
+    },
+    "1-quota-compact": {
+      "checkpointSha256": "9f34fedece94ee978a17e41c9d208aa736eb639303665717d3cff6f774fb59bc",
+      "workspaceArchiveSha256": "ba9a6546d113db9e01c956ce54b791fec652288d7b952e8c421671f29b5f3949",
+      "sourceSha256": "2cb9ea3a5e06fc7f6b7b9433356bc917a22faf7a5d6477df2c3b60662704f40f",
+      "overrides": {
+        "src/quota.test.ts": 420,
+        "src/quota.ts": 420
+      }
+    },
+    "1-quota-cline": {
+      "checkpointSha256": "84044bba62779a4739f0255db965ceab74225d187a62ca3a8b31049da165d58e",
+      "workspaceArchiveSha256": "6ec5ef991d8e37aae3fcf857c2d2dfe303cb18fb4e06d019b7103a52807764e2",
+      "sourceSha256": "625f4cdb69d1aaa98b807be4e56880bff7b3bd25d95862a792fcf58a21e64ce2",
+      "overrides": {}
+    },
+    "1-quota-reference": {
+      "checkpointSha256": "0fa234fe0c842570409f24103357e72354fa17cd063fe740265fd84eea2c8719",
+      "workspaceArchiveSha256": "8a215bb7c41638ddc807a751ea6cdf0a3318060bcf7005ac47e54f5b6ad1455a",
+      "sourceSha256": "3416ba721ff897b73f13df7d1bf9b64af4eb562b61bb9bf3c31780f4e67d3022",
+      "overrides": {
+        "src/quota.test.ts": 420,
+        "src/quota.ts": 420
+      }
+    },
+    "2-clamp-items-compact": {
+      "checkpointSha256": "8b15bf3ffb2f6e56ed0f484d012311306fcef371e86975847555951896cfad8b",
+      "workspaceArchiveSha256": "743546a770406eb34895341e44743eb3e694b08649fe30bb0ddbe175a483b0ac",
+      "sourceSha256": "719a4fb8f9378e1d5e119ab8f97ae99f5b97bb925fb322468685a0919ac9dfea",
+      "overrides": {
+        "src/list.test.ts": 420,
+        "src/list.ts": 420,
+        "src/range.test.ts": 420
+      }
+    },
+    "2-clamp-items-cline": {
+      "checkpointSha256": "11e6d67f9e379fd72146be0fd576672d786615e220686aa206fecab0b5a05f1f",
+      "workspaceArchiveSha256": "5fe627405e88254efc81234a877d43060cf4ffe0204572e6cef166c41badd3d3",
+      "sourceSha256": "2de392a0171e2fa0ec9344b9d92e3d83bcac3e6e21ef8587ab602b424822ca73",
+      "overrides": {}
+    },
+    "2-clamp-items-reference": {
+      "checkpointSha256": "35fa878577b96e6a481e42cf05626f53fa2eae7551ec89155f92e2211bf2fc98",
+      "workspaceArchiveSha256": "b7d6a73126aa7a268fb8d3377c353b0542b4d374efdfc96a993169492eef7d7e",
+      "sourceSha256": "16b73fe572eddae0c03857f5726db3004fe84dec2f796d53c482f47d6effce65",
+      "overrides": {
+        "src/list.test.ts": 420,
+        "src/list.ts": 420,
+        "src/range.test.ts": 420
+      }
+    },
+    "2-quota-cline": {
+      "checkpointSha256": "57c9823de7b0e0daccf556f5e3e3ac8855e402f76398fe1a69979ba13e53e0f3",
+      "workspaceArchiveSha256": "61c514c2d8886d60655b6a573bd84d5a1090b121dc1e23163c366ae54608883b",
+      "sourceSha256": "759645367d230feebe1336b1e0d5b415a7f20808a3c8cabbb57750b500e99d9e",
+      "overrides": {}
+    },
+    "2-quota-reference": {
+      "checkpointSha256": "f6fd6ac1f084fe5adcedbe023ace866edaeb5f00973007238536d08bf33e8079",
+      "workspaceArchiveSha256": "14dadb0e107d025e7f21247dcdd8020dcb1b5f5176088fc9af0a0224259fdf38",
+      "sourceSha256": "f98502d965975d3ac7779802ca03ba6017db9b398b80072f5a6c779f82709ec5",
+      "overrides": {
+        "src/quota.test.ts": 420,
+        "src/quota.ts": 420
+      }
+    },
+    "2-quota-compact": {
+      "checkpointSha256": "808508c36a31853a39c7fb732dd209ec725ad6c214804ef6e8f1638192b1d7dd",
+      "workspaceArchiveSha256": "422190cfdaaa33dd89f9a4d91296c5c088f4d4b6e2833ac054c8466f794050f3",
+      "sourceSha256": "2a751505f06f2b888a9778da7920c144f1ce56338c3562987e8857332f2c475a",
+      "overrides": {
+        "src/quota.test.ts": 420,
+        "src/quota.ts": 420
+      }
+    },
+    "1-mutation-callbacks-reference": {
+      "checkpointSha256": "c67c8e277bffde55f35de7aa081153fc84f9f7ea96bc5931f49b2b694ec939a5",
+      "workspaceArchiveSha256": "e82c08b190076ede4d0bee59bcde7818e5ec73f0dfab93bcd9ed0c2d1428e17b",
+      "sourceSha256": "74a981efeb94219d6b2c6a92023f956ae4e790195284021cd42b1c7a7e8e216b",
+      "overrides": {
+        "packages/query-core/src/__tests__/mutation-callbacks.test.tsx": 420
+      }
+    },
+    "1-mutation-callbacks-compact": {
+      "checkpointSha256": "2ed4f310d0902e2847c88044d5aaab67aef2b09265846ce38323303bea5d917c",
+      "workspaceArchiveSha256": "30bbb37bba37ccafa67d3dd6c50e8d6b4331de9e16136e26d85cd9715b5867e1",
+      "sourceSha256": "6fcaa70be4cbd66ea6c96d48a2809bd69f072df1ce057d36df3228c5632947d7",
+      "overrides": {
+        "packages/query-core/src/__tests__/mutationObserver.reentrantCallbacks.test.tsx": 420
+      }
+    },
+    "1-mutation-callbacks-navigation": {
+      "checkpointSha256": "9d30c0381d61190a4a5a37a530b34435f10f43fc4b5b7571bc9699d60133a078",
+      "workspaceArchiveSha256": "9f026bc5c5ccfcab33459915bda2b7448432e46a8332ea7da7091c683c41ce1d",
+      "sourceSha256": "9a6ff1d7ec2b761dac052a2c71b21c3e6a850e2cd5e277e9c2d7c3ec7c4e7b7a",
+      "overrides": {
+        "packages/query-core/src/__tests__/mutationObserver.callbacks.test.tsx": 420
+      }
+    },
+    "1-mutation-callbacks-cline": {
+      "checkpointSha256": "ba636741c242ebb35922b0c9a72dd1d13884e5227265875983f11039fc7d44da",
+      "workspaceArchiveSha256": "b2a116de7f8891e47f4125e212def34400e167db460bd3791e77491fff59c90b",
+      "sourceSha256": "0bb76987a402d619803ef4fec2c5af3d05fc1d7ad88c6dca9f34b36e9c9cc7c9",
+      "overrides": {}
+    },
+    "1-fetching-filters-compact": {
+      "checkpointSha256": "f0382d9f5e2c0c453bfb379acc280f21fdf8332b3989ce388a5b6abffb49ca8a",
+      "workspaceArchiveSha256": "4b0b07f1791b2cff628d74f842425c3fad904b6b6ea7a25a26b15d49b225e893",
+      "sourceSha256": "9bfdf4d9ff7a4472541772a87a54675a95563723a1644a79ea6289da4a1acf6b",
+      "overrides": {
+        "packages/query-core/src/__tests__/queryClient.isFetching.test-d.ts": 420,
+        "packages/query-core/src/__tests__/queryClient.isFetching.test.tsx": 420,
+        "packages/react-query/src/__tests__/useIsFetching.test-d.tsx": 420
+      }
+    },
+    "1-fetching-filters-navigation": {
+      "checkpointSha256": "64fe3827334c87d5118c9ae1ce3a49d768cc74377b940a698be4614407958024",
+      "workspaceArchiveSha256": "601b7bdc6f39c2c8a094bbaf585c0eb0149e1fb9c5b778ccb90b2f895cd32b6f",
+      "sourceSha256": "9fc0aa6e566d1ffbf1bd38adbb1089064f2ba5a469a0f80f3ed397e6335e1d60",
+      "overrides": {
+        "packages/query-core/src/__tests__/queryClient.isFetching.test-d.ts": 420,
+        "packages/react-query/src/__tests__/useIsFetching.test-d.tsx": 420
+      }
+    },
+    "1-fetching-filters-cline": {
+      "checkpointSha256": "72c0670e04896041f5527ff6d09f79a9c44458f023e43184c774d277855e71ab",
+      "workspaceArchiveSha256": "91d2eebe01adabb7ddb1a19a10580f4473a8b578ba3a5381b499215d7be7840d",
+      "sourceSha256": "65e4b0201ed9a6ff48e1b3b0982c2ec5a4d1db99d9aa46855240da0f85f30dee",
+      "overrides": {}
+    },
+    "1-fetching-filters-reference": {
+      "checkpointSha256": "1d2341c96c5ee07f69f58f266b5f5748f62e5e9cce9824e3cc15c1990153d4b6",
+      "workspaceArchiveSha256": "ffb79294264d9623fc6002756c849acc257e14e7621a4d6669b02ab2a7adbe5d",
+      "sourceSha256": "f0f699b5fdf660c52c0fd029b268934e49c8a2a6f1cf7b2ae1923af537cedf23",
+      "overrides": {
+        "packages/query-core/src/__tests__/queryClient.isFetching.test-d.ts": 420,
+        "packages/query-core/src/__tests__/queryClient.isFetching.test.tsx": 420,
+        "packages/react-query/src/__tests__/useIsFetching.test-d.tsx": 420
+      }
+    },
+    "2-mutation-callbacks-compact": {
+      "checkpointSha256": "12754fc11ca205965ab07fef4951a79c5e063dc2b36f764a734a61609c7debf5",
+      "workspaceArchiveSha256": "cfe7be540ca27614985b8964a0368458296b94227b5a8b26a4cde19972d39655",
+      "sourceSha256": "f42e260195f28e1865020b66c9944393d3833383097962b6bb5ea601561ad42d",
+      "overrides": {
+        "packages/query-core/src/__tests__/mutation-callbacks.test.tsx": 420
+      }
+    },
+    "2-mutation-callbacks-navigation": {
+      "checkpointSha256": "c474b45ea51f9273dfb9ab9932dc9ee6f0e93620af3ad3d81d6967443f8e9834",
+      "workspaceArchiveSha256": "1fe5c7a04d6cf17d2cdeca5df627f57f757b5c2bf0dc33c11fdfff09a1771b89",
+      "sourceSha256": "04b6a32be393e4c3031b8948aee7064d66e65c77221ba761a8b8f485145d7244",
+      "overrides": {
+        "packages/query-core/src/__tests__/mutationObserver-callbacks.test.tsx": 420
+      }
+    },
+    "2-mutation-callbacks-cline": {
+      "checkpointSha256": "e55cbd4ab45e7a6418b4341ede629de2dfec9a81c09ebd49ca90e275c6e7aeee",
+      "workspaceArchiveSha256": "7cfc3b42bb0ba9d8e10aafcf68af4d1d3fafd6d6a66df539d3b412fb0c88d72f",
+      "sourceSha256": "fd83e5e72bd8b9a97d476f928ddda4775db219122ffa3851d5e0d706f5a61b3e",
+      "overrides": {}
+    },
+    "2-mutation-callbacks-reference": {
+      "checkpointSha256": "57b5975d22eff760946543b41a7c36b6a25cd031c6789f6f533cc69a1c54ad34",
+      "workspaceArchiveSha256": "235328ad358127768685f3f1481a6290a7448e8ce82ef7a1d158225359731c0d",
+      "sourceSha256": "af08c615091f8ffb1af558468925810ca59b41504f1efe2f04d2c2382dd37338",
+      "overrides": {
+        "packages/query-core/src/__tests__/mutationCallbacks.test.tsx": 420
+      }
+    },
+    "2-fetching-filters-navigation": {
+      "checkpointSha256": "02001d87367edf756e9b3276767abdd1219b9621f95b1f173caf7893e75c8a43",
+      "workspaceArchiveSha256": "674ffa7cccea5c7a58d0dcef861cae4e1b699648200ead4c17c49efe8579c538",
+      "sourceSha256": "5b4463c82acd21a31411fc3ff896bd8ee533f9d6ef879eb1c15d8ea199f5c5cc",
+      "overrides": {
+        "packages/query-core/src/__tests__/isFetchingFilters.test-d.tsx": 420,
+        "packages/query-core/src/__tests__/isFetchingFilters.test.tsx": 420,
+        "packages/react-query/src/__tests__/useIsFetching.test-d.tsx": 420
+      }
+    },
+    "2-fetching-filters-cline": {
+      "checkpointSha256": "288c205e470340141e5e10f102216d0bd1e882ca6198a9786d120b8f7920a730",
+      "workspaceArchiveSha256": "4d01a83ec1aafd6eff78c5412793ba47087f52189abb09617c85e14b7640ca2e",
+      "sourceSha256": "d1f2edace293f317d4516f7e5799cb2a6e8e7cc6394e66db90999bac61dde389",
+      "overrides": {}
+    },
+    "2-fetching-filters-reference": {
+      "checkpointSha256": "2d1f1df653c653962c92655b1cb761b7d1636cd2eaa8939fa12688bdd5622f0c",
+      "workspaceArchiveSha256": "3809668eca457eb527594f942efff71505de02472df4ac28dd9f6e3a17852df8",
+      "sourceSha256": "dabe51ce5218fad68d904152e382583fbfc477af427ebbaa83f99764213339b8",
+      "overrides": {
+        "packages/query-core/src/__tests__/isFetching.test-d.tsx": 420,
+        "packages/query-core/src/__tests__/isFetching.test.tsx": 420,
+        "packages/react-query/src/__tests__/useIsFetching.test-d.tsx": 420
+      }
+    },
+    "2-fetching-filters-compact": {
+      "checkpointSha256": "bc4c2bb27e6f861a583bd7469fbde792cb20212e415e73ddcc1efd57e8d42bd4",
+      "workspaceArchiveSha256": "1438471d6afecd0a6426609411f3eadee0e1f669b3c457523666a44c08e0d423",
+      "sourceSha256": "f8389f6934797175a5bb80e02518ba7c913e599f7f53d4d0b156862ee543a419",
+      "overrides": {
+        "packages/query-core/src/__tests__/queryClient.isFetching.test-d.tsx": 420,
+        "packages/query-core/src/__tests__/queryClient.isFetching.test.tsx": 420,
+        "packages/react-query/src/__tests__/useIsFetching.test-d.tsx": 420
+      }
+    }
+  },
+  "boundary": "Permission metadata only, derived after dispatch from each hash-bound original workspace snapshot. No source bytes, patches or scores are changed. Replays apply the original patch plus these POSIX-mode overrides, then require the original exact source fingerprint."
+}

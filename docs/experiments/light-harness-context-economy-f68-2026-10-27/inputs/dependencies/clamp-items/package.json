@@ -1,0 +1,16 @@
+{
+  "name": "blame-validation-recovery-f63-dependencies",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@types/node": "24.6.0",
+    "npm": "11.6.4",
+    "tsx": "4.20.6",
+    "type-fest": "4.41.0",
+    "typescript": "5.9.3",
+    "vitest": "3.2.4",
+    "lodash": "4.17.21",
+    "tslib": "2.8.1",
+    "chai": "4.5.0"
+  }
+}

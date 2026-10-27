@@ -1,6 +1,6 @@
 {
   "protocolHash": "42d111a0162283d14df36d9a10692ae74efdc129db05a5188215f0669c2b2a93",
-  "completed": 24,
+  "completed": 28,
   "planned": 28,
   "receipts": [
     {
@@ -122,6 +122,26 @@
       "name": "2-mutation-callbacks-reference",
       "path": "checkpoints/2-mutation-callbacks-reference.json.gz",
       "sha256": "57b5975d22eff760946543b41a7c36b6a25cd031c6789f6f533cc69a1c54ad34"
+    },
+    {
+      "name": "2-fetching-filters-navigation",
+      "path": "checkpoints/2-fetching-filters-navigation.json.gz",
+      "sha256": "02001d87367edf756e9b3276767abdd1219b9621f95b1f173caf7893e75c8a43"
+    },
+    {
+      "name": "2-fetching-filters-cline",
+      "path": "checkpoints/2-fetching-filters-cline.json.gz",
+      "sha256": "288c205e470340141e5e10f102216d0bd1e882ca6198a9786d120b8f7920a730"
+    },
+    {
+      "name": "2-fetching-filters-reference",
+      "path": "checkpoints/2-fetching-filters-reference.json.gz",
+      "sha256": "2d1f1df653c653962c92655b1cb761b7d1636cd2eaa8939fa12688bdd5622f0c"
+    },
+    {
+      "name": "2-fetching-filters-compact",
+      "path": "checkpoints/2-fetching-filters-compact.json.gz",
+      "sha256": "bc4c2bb27e6f861a583bd7469fbde792cb20212e415e73ddcc1efd57e8d42bd4"
     }
   ]
 }
