@@ -20,5 +20,6 @@ export * from "./ports/session-repository.js";
 export * from "./ports/source-transport.js";
 export {
   isLocalPreviewDatabaseEnvironmentValue,
+  parsePreviewManifest,
   previewEnvironmentValueRejection,
 } from "@blame/preview-contract";

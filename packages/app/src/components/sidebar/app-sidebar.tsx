@@ -15,7 +15,9 @@ import {
 import { useCloudAuth } from "@/context/cloud-auth"
 import { useCodePracticeAnalysis } from "@/components/practices/data/use-code-practice-analysis"
 import { useSecurityAudits } from "@/components/security/data/use-security-audits"
+import { useProjectInitialization } from "@/components/project-initialization/use-project-initialization"
 import {
+  BoxesIcon,
   CircleHelpIcon,
   ClipboardCheckIcon,
   CloudUploadIcon,
@@ -79,6 +81,11 @@ const data = {
       url: "/deploy",
       icon: <CloudUploadIcon />,
     },
+    {
+      title: "Initialization",
+      url: "/initialization",
+      icon: <BoxesIcon />,
+    },
   ],
 }
 
@@ -89,20 +96,23 @@ export function AppSidebar({
   const auth = useCloudAuth()
   const codePracticeAnalysis = useCodePracticeAnalysis()
   const securityAudits = useSecurityAudits()
+  const initialization = useProjectInitialization()
   const projectItems = data.project.map((item) =>
     item.url === "/practices"
       ? { ...item, status: codePracticeAnalysisStatus(codePracticeAnalysis) }
-      : item.url === "/security" && securityAudits.running
-        ? {
-            ...item,
-            status: (
-              <LoaderCircleIcon
-                aria-label="Security audit in progress"
-                className="size-3.5 animate-spin text-muted-foreground"
-              />
-            ),
-          }
-        : item
+      : item.url === "/initialization"
+        ? { ...item, status: initializationStatus(initialization) }
+        : item.url === "/security" && securityAudits.running
+          ? {
+              ...item,
+              status: (
+                <LoaderCircleIcon
+                  aria-label="Security audit in progress"
+                  className="size-3.5 animate-spin text-muted-foreground"
+                />
+              ),
+            }
+          : item
   )
 
   return (
@@ -127,6 +137,25 @@ export function AppSidebar({
         {auth.user ? <NavUser user={auth.user} onLogout={auth.logout} /> : null}
       </SidebarFooter>
     </Sidebar>
+  )
+}
+
+function initializationStatus(
+  initialization: ReturnType<typeof useProjectInitialization>
+) {
+  if (initialization?.availability === "running")
+    return (
+      <LoaderCircleIcon
+        aria-label="Project initialization in progress"
+        className="size-3.5 animate-spin text-muted-foreground"
+      />
+    )
+  if (initialization?.availability !== "unavailable") return undefined
+  return (
+    <span
+      aria-label="Project initialization needs attention"
+      className="size-2 rounded-full bg-amber-500"
+    />
   )
 }
 
