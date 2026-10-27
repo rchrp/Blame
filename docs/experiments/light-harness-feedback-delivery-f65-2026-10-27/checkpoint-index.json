@@ -1,6 +1,6 @@
 {
   "protocolHash": "2e0afdab7bfac83bb601bf24a7c2bd80368514e074d03cb32fd9dd34b91c02f3",
-  "completed": 3,
+  "completed": 7,
   "planned": 24,
   "receipts": [
     {
@@ -14,6 +14,22 @@
     {
       "name": "1-map-context-cline",
       "sha256": "b143e2f86371a809f5f7b563ad9c74fe909e80c7b7ece7361100b842d86f7466"
+    },
+    {
+      "name": "1-take-through-batch",
+      "sha256": "9899d59fc5874e741372a66f63faae9d83009691f867777602ca563d2eabed23"
+    },
+    {
+      "name": "1-take-through-cline",
+      "sha256": "f64ccbbe77bcf1249a810b37370ce31f84807551d9b9264085d062052c51ed54"
+    },
+    {
+      "name": "1-take-through-reference",
+      "sha256": "19d29bbf2f3b66208c38ac90d7faab0bd56d141297e903d598ae868516029037"
+    },
+    {
+      "name": "2-map-context-batch",
+      "sha256": "e3c90879c7c313c48ef148bb07a10fc4875829c03dcc8411879e25facc26a7d8"
     }
   ]
 }

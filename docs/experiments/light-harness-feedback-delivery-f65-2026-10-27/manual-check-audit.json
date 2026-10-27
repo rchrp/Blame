@@ -1,0 +1,38 @@
+{
+  "complete": false,
+  "kind": "post-hoc manual evidence sensitivity; frozen primary scores unchanged",
+  "boundary": "No solution retrieval, source repair or endpoint change. Missing automatic recognition is not called a failed child invocation. Physical test layout remains strict.",
+  "entries": [
+    {
+      "name": "1-map-context-cline",
+      "reviewedAtUTC": "2026-10-27T01:12:37.199578+00:00",
+      "reviewer": "Codex repository audit",
+      "acceptRequiredInvocations": true,
+      "reason": "The final-source shell loop prints each of the four exact required npm commands and its immediate child status 0. The loop exit 0 alone is not used. Source, delivered tests and all immutable endpoints pass. The frozen literal-command observer deliberately does not recognize this loop.",
+      "evidence": {
+        "toolCallId": "call_b0f40695ca884335be24b2528446354b",
+        "inputSha256": "1cd7a5dfce2ae79b4c5dc1ea8f81a78516d1be416e6d69ee53841376843fc283",
+        "outputSha256": "fd2b2bb3b10e9cc636a94f5e8a5ccdde113ae1fa2e4d13d772abf820d1fc249c",
+        "finalSourceSha256": "5e8b7f958c8dbd2a873ff9ad37ffad5f463779eedf9f946400150c426fa4d9dd",
+        "commands": [
+          {
+            "command": "npm run test:study:regression",
+            "observedChildExit": 0
+          },
+          {
+            "command": "npm run test:study:types",
+            "observedChildExit": 0
+          },
+          {
+            "command": "npm run test:study:delivered",
+            "observedChildExit": 0
+          },
+          {
+            "command": "npm run typecheck:delivered",
+            "observedChildExit": 0
+          }
+        ]
+      }
+    }
+  ]
+}

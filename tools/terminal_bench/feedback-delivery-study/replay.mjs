@@ -6,6 +6,7 @@ import {execFileSync} from 'node:child_process';
 import {gunzipSync} from 'node:zlib';
 import {tasks, study, work, repo} from './inputs.mjs';
 import {endpoint} from './controls.mjs';
+import {restoreInput} from './restore-input.mjs';
 import {sourceEpoch} from './source-epoch.mjs';
 import {atomicJson, digest, trialName} from '../durable-campaign.mjs';
 const p = JSON.parse(await readFile(join(study, 'model-protocol.json')));
@@ -23,16 +24,15 @@ for (const slot of p.order) {
     const record = checkpoint.files[path], bytes = Buffer.from(record.base64, 'base64');
     assert.equal(digest(bytes), record.sha256); return bytes;
   };
-  const archive = join(work, 'inputs', task.id + '.tar.gz');
-  assert.equal(digest(await readFile(archive)), p.inputs[task.id].archiveSha256);
+  const options = {portable: process.argv.includes('--portable')};
   const original = await mkdtemp(join(destination, name + '-'));
-  execFileSync('tar', ['-xzf', archive, '-C', original]);
+  await restoreInput(original, task.id, p, options);
   const patch = file('workspace.diff');
   if (patch.length) execFileSync('git', ['apply', '--binary', '--whitespace=nowarn', '-'], {cwd: original, input: patch});
   const expectedEpoch = JSON.parse(file('source-at-exit.json'));
   assert.equal(sourceEpoch(original).sha256, expectedEpoch.sha256, name + ': reconstructed patch differs from delivered source');
   const audit = await mkdtemp(join(destination, name + '-immutable-'));
-  execFileSync('tar', ['-xzf', archive, '-C', audit]); await symlink(modules, join(audit, 'node_modules'));
+  await restoreInput(audit, task.id, p, options); await symlink(modules, join(audit, 'node_modules'));
   // Repeat the frozen grader: only permitted source edits enter immutable checks.
   const row = checkpoint.row;
   const allowed = row.score.changedPaths.filter(path => !row.score.protectedPaths.includes(path));
@@ -48,7 +48,7 @@ for (const slot of p.order) {
     return {name: actual.name, exitCode: actual.exitCode, signal: actual.signal, error: actual.error, durationMs: actual.durationMs};
   });
   results.push({name, patchSha256: digest(patch), exactSourceReconstructed: true, endpoints});
-  await atomicJson(join(study, 'patch-replays.json'), {complete: results.length === p.order.length, planned: p.order.length, results,
+  await atomicJson(join(study, options.portable ? 'portable-patch-replays.json' : 'patch-replays.json'), {complete: results.length === p.order.length, planned: p.order.length, results,
     boundary: 'No model calls, no solution recovery or patch repair; original immutable checks and original five frozen endpoint criteria.'});
   console.log('REPLAY', name, endpoints.map(e => e.exitCode).join(','));
 }

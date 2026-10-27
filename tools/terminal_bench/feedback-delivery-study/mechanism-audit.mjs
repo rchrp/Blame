@@ -23,8 +23,7 @@ for (const slot of protocol.order) {
   function observe(result, id) {
     if (result?.data?.testValidationScope) {
       const sha = digest(JSON.stringify(result.data.testValidationScope));
-      offered.set(sha, {scopeSha256: sha, callIdSha256: digest(id ?? ''),
-        source: result.data.reporting?.invocationSourceRevisionId ?? null});
+      const ids = offered.get(sha) ?? new Set(); ids.add(digest(id ?? '')); offered.set(sha, ids);
     }
     if (result?.data?.completed) observe(result.data.completed, id);
   }
@@ -38,8 +37,16 @@ for (const slot of protocol.order) {
     const observation = queue.get(request.requestBodySha256)?.shift();
     if (observation && !request.budgetRejected) forwarded.push(...observation.receipts);
   }
-  const exact = new Set(forwarded.filter(r => offered.get(r.scopeSha256)?.callIdSha256 === r.callIdSha256).map(r => r.scopeSha256));
-  trials.push({...slot, name, firstContract: wire[0] ?? null,
+  const exact = new Set(forwarded.filter(r => offered.get(r.scopeSha256)?.has(r.callIdSha256)).map(r => r.scopeSha256));
+  const iterationTools = new Map(); let iteration = 0;
+  for (const {event} of jsonl('events.jsonl')) {
+    if (event?.type === 'notice' && event.payload?.message === 'Agent iteration started.') iteration++;
+    if (event?.type === 'tool' && event.payload?.phase === 'started') {
+      const group = iterationTools.get(iteration) ?? []; group.push(event.payload.toolCall?.name); iterationTools.set(iteration, group);
+    }
+  }
+  const multiReadIterations = [...iterationTools.entries()].filter(([, names]) => names.filter(n => n === 'read_code').length > 1).map(([iteration, names]) => ({iteration, reads: names.filter(n => n === 'read_code').length}));
+  trials.push({...slot, name, multiReadIterations, firstContract: wire[0] ?? null,
     uniqueScopeOffers: offered.size, uniqueExactForwardedScopes: exact.size,
     scopeForwardingOccurrences: forwarded.length,
     groupedReads: tools.filter(t => t.tool === 'read_code' && Array.isArray(t.input?.reads)).map(t => ({
