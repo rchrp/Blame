@@ -1,0 +1,118 @@
+{
+  "complete": true,
+  "externalModelRequests": 0,
+  "rows": [
+    {
+      "task": "mutation-callbacks",
+      "baselineOfficial": 1,
+      "baselineProbe": 1,
+      "compatibilityBaseline": null,
+      "upstreamCompatibility": null,
+      "positive": [
+        {
+          "name": "regression",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 16446.444109
+        },
+        {
+          "name": "types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1654.3278530000025
+        },
+        {
+          "name": "delivered",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1248.168346999999
+        },
+        {
+          "name": "delivered-types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1772.1441570000025
+        },
+        {
+          "name": "official",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1198.5323659999995
+        },
+        {
+          "name": "probe",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1119.0020619999996
+        }
+      ]
+    },
+    {
+      "task": "fetching-filters",
+      "baselineOfficial": 2,
+      "baselineProbe": 2,
+      "compatibilityBaseline": 0,
+      "upstreamCompatibility": 2,
+      "positive": [
+        {
+          "name": "regression",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 25090.788907999995
+        },
+        {
+          "name": "types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2013.2692419999948
+        },
+        {
+          "name": "type-regression",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 2148.889052000013
+        },
+        {
+          "name": "delivered-types",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1968.4715189999988
+        },
+        {
+          "name": "official",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1945.1005799999984
+        },
+        {
+          "name": "probe",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1762.7363320000004
+        },
+        {
+          "name": "compatibility",
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "durationMs": 1525.7674709999992
+        }
+      ]
+    }
+  ],
+  "sourceHashes": {
+    "controls": "b980d4e876747c970b717abada65f067604f43de99a4a8eb3a154cd3b6aa4236"
+  }
+}
