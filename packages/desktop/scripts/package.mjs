@@ -1,9 +1,8 @@
-import { access, cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { access, cp, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
-import YAML from "yaml";
 import { loadEnvFiles } from "../../../scripts/env-files.mjs";
 import { prepareRuntimeManifests } from "../../../scripts/runtime-manifest.mjs";
 import {
@@ -14,6 +13,7 @@ import {
 import { verifyStagedWorkspaceRuntime, verifyPackagedWorkspaceRuntime } from "./package-integrity.mjs";
 import { pruneNodeModules } from "./package-prune.mjs";
 import { checkGeneratedJavaScript } from "./check-generated-javascript.mjs";
+import { withDeploymentConfig } from "./package-deploy-config.mjs";
 
 const desktopDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const rootDir = resolve(desktopDir, "../..");
@@ -207,30 +207,11 @@ async function preserveRuntimeArtifacts(stagedDist) {
 }
 
 async function deployPackage(targetDir, builderArgs) {
-  const supportedArchitectures = targetSupportedArchitectures(builderArgs);
-  if (!supportedArchitectures) {
-    await runDeploy(targetDir);
-    return;
-  }
-
-  const workspaceConfig = await readFile(workspaceFile, "utf8");
-  const updatedConfig = YAML.parse(workspaceConfig);
-  updatedConfig.supportedArchitectures = supportedArchitectures;
-  if (
-    !supportedArchitectures.os.includes(process.platform) ||
-    !supportedArchitectures.cpu.includes(process.arch)
-  ) {
-    // pnpm 12's install script links the host binary. Cross-packages only
-    // install target binaries, which the harness resolves and runs directly.
-    updatedConfig.allowBuilds = { ...updatedConfig.allowBuilds, pnpm: false };
-  }
-
-  try {
-    await writeFile(workspaceFile, YAML.stringify(updatedConfig), "utf8");
-    await runDeploy(targetDir);
-  } finally {
-    await writeFile(workspaceFile, workspaceConfig, "utf8");
-  }
+  return withDeploymentConfig(
+    workspaceFile,
+    targetSupportedArchitectures(builderArgs),
+    () => runDeploy(targetDir),
+  );
 }
 
 // Platform-specific optional dependencies (native binaries) are installed for
