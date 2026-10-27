@@ -1,0 +1,381 @@
+{
+  "boundBeforeExternalRequests": true,
+  "externalModelRequestsSoFar": 0,
+  "reason": "Complete local controls, then immutable executable/inputs/oracles/observers before dispatch.",
+  "local": {
+    "controls.json": {
+      "sha256": "cc4e0201034c2c63322f413d7add491d238dfe9b0bcce1e0b35a7ff40e182831",
+      "report": {
+        "complete": true,
+        "externalModelRequests": 0,
+        "rows": [
+          {
+            "task": "clamp-items",
+            "knownDiagnostic": true,
+            "baselineOfficial": null,
+            "negativeProbe": null,
+            "positive": [
+              {
+                "name": "regression",
+                "exitCode": 0,
+                "signal": null,
+                "error": null,
+                "durationMs": 560.243474
+              },
+              {
+                "name": "types",
+                "exitCode": 0,
+                "signal": null,
+                "error": null,
+                "durationMs": 565.948104
+              },
+              {
+                "name": "delivered",
+                "exitCode": 0,
+                "signal": null,
+                "error": null,
+                "durationMs": 754.465465
+              },
+              {
+                "name": "delivered-types",
+                "exitCode": 0,
+                "signal": null,
+                "error": null,
+                "durationMs": 772.7359139999999
+              }
+            ],
+            "official": {
+              "exitCode": 0
+            },
+            "independentProbe": null,
+            "inputHead": "dbe5b19581a9982a301335a366916498838c8e34"
+          },
+          {
+            "task": "quota",
+            "knownDiagnostic": true,
+            "baselineOfficial": null,
+            "negativeProbe": null,
+            "positive": [
+              {
+                "name": "regression",
+                "exitCode": 0,
+                "signal": null,
+                "error": null,
+                "durationMs": 578.6772389999996
+              },
+              {
+                "name": "types",
+                "exitCode": 0,
+                "signal": null,
+                "error": null,
+                "durationMs": 640.7488110000004
+              },
+              {
+                "name": "delivered",
+                "exitCode": 0,
+                "signal": null,
+                "error": null,
+                "durationMs": 779.851079
+              },
+              {
+                "name": "delivered-types",
+                "exitCode": 0,
+                "signal": null,
+                "error": null,
+                "durationMs": 778.4205739999998
+              }
+            ],
+            "official": {
+              "exitCode": 0
+            },
+            "independentProbe": null,
+            "inputHead": "1a6d2ff891214a4e55f91bf0f0a4156931ec39a0"
+          },
+          {
+            "task": "mutation-callbacks",
+            "knownDiagnostic": false,
+            "baselineOfficial": {
+              "exitCode": 1
+            },
+            "negativeProbe": {
+              "exitCode": 1
+            },
+            "positive": [
+              {
+                "name": "regression",
+                "exitCode": 0,
+                "signal": null,
+                "error": null,
+                "durationMs": 12197.626126
+              },
+              {
+                "name": "types",
+                "exitCode": 0,
+                "signal": null,
+                "error": null,
+                "durationMs": 1364.7274849999994
+              },
+              {
+                "name": "delivered",
+                "exitCode": 0,
+                "signal": null,
+                "error": null,
+                "durationMs": 1172.550306000001
+              },
+              {
+                "name": "delivered-types",
+                "exitCode": 0,
+                "signal": null,
+                "error": null,
+                "durationMs": 1686.999243000002
+              }
+            ],
+            "official": {
+              "exitCode": 0
+            },
+            "independentProbe": {
+              "exitCode": 0
+            },
+            "inputHead": "5828e4ff35745c1571a1b6cfba510f3dc7a9fd99"
+          },
+          {
+            "task": "fetching-filters",
+            "knownDiagnostic": false,
+            "baselineOfficial": {
+              "exitCode": 2
+            },
+            "negativeProbe": {
+              "exitCode": 2
+            },
+            "positive": [
+              {
+                "name": "regression",
+                "exitCode": 0,
+                "signal": null,
+                "error": null,
+                "durationMs": 21463.180803000003
+              },
+              {
+                "name": "types",
+                "exitCode": 0,
+                "signal": null,
+                "error": null,
+                "durationMs": 1667.5018779999955
+              },
+              {
+                "name": "type-regression",
+                "exitCode": 0,
+                "signal": null,
+                "error": null,
+                "durationMs": 1685.110010000004
+              },
+              {
+                "name": "delivered-types",
+                "exitCode": 0,
+                "signal": null,
+                "error": null,
+                "durationMs": 1652.6880900000033
+              }
+            ],
+            "official": {
+              "exitCode": 0
+            },
+            "independentProbe": {
+              "exitCode": 0
+            },
+            "inputHead": "5d3b5a65e9b098ff413781c0ab81f462646d719d"
+          }
+        ],
+        "sourceHashes": {
+          "controls": "28591c437b697c8ab32ec75b6074caf2649acc4e0d8b45b7e75f2579afaf0e7b",
+          "checks": "28760dddc76a07c1ea5123738a404a1d6e708c10a3fdf86f0c01e90490c657c0"
+        }
+      }
+    },
+    "sdk-controls.json": {
+      "sha256": "4cb092b1e64b20fb4ed6b1ff60ce8d98b8af766e50a26ea6d62c00a6c383b5c2",
+      "report": {
+        "externalModelRequests": 0,
+        "reports": [
+          {
+            "enabled": false,
+            "localHttpRequests": 4,
+            "externalModelRequests": 0,
+            "kinds": [
+              "full",
+              "full",
+              "full"
+            ],
+            "adviceChars": [
+              907,
+              907,
+              907
+            ],
+            "actualObserverReceipts": [
+              {
+                "kind": "full",
+                "callIdSha256": "16d34b5e7bcb341ee6cb3d16495d90e93fbe57c46d3827432613210a24ebca30",
+                "planSha256": "0c16918f825b1d8fb04a46b3e54647c5b87c7f89d832d0705e442614617f5e08",
+                "source": "src_dcee70110c8180e46470b7e84e8ed4fd",
+                "bytes": 907,
+                "resolved": true,
+                "referencedCallIdSha256": null
+              },
+              {
+                "kind": "full",
+                "callIdSha256": "3b1957f394d1b896c8064464feca7a2fcdcacad82e22ee7413eca63e5e7cc596",
+                "planSha256": "0c16918f825b1d8fb04a46b3e54647c5b87c7f89d832d0705e442614617f5e08",
+                "source": "src_dcee70110c8180e46470b7e84e8ed4fd",
+                "bytes": 907,
+                "resolved": true,
+                "referencedCallIdSha256": null
+              },
+              {
+                "kind": "full",
+                "callIdSha256": "956c565118a75c68cedda49ef02ddfbdfb08ef9b8a00164287d43a2358c7e44b",
+                "planSha256": "0c16918f825b1d8fb04a46b3e54647c5b87c7f89d832d0705e442614617f5e08",
+                "source": "src_dcee70110c8180e46470b7e84e8ed4fd",
+                "bytes": 907,
+                "resolved": true,
+                "referencedCallIdSha256": null
+              }
+            ],
+            "firstToolContentSha256": "153c44bf793a66810e6ac377390a9d40fde2a70daa432e765373fefc12f7be9a",
+            "unchangedForwardedPrefix": true,
+            "failedCheckStillFailed": true,
+            "explicitChecksRestoresFull": true
+          },
+          {
+            "enabled": true,
+            "localHttpRequests": 4,
+            "externalModelRequests": 0,
+            "kinds": [
+              "full",
+              "repair_plan_reference",
+              "full"
+            ],
+            "adviceChars": [
+              907,
+              343,
+              907
+            ],
+            "actualObserverReceipts": [
+              {
+                "kind": "full",
+                "callIdSha256": "16d34b5e7bcb341ee6cb3d16495d90e93fbe57c46d3827432613210a24ebca30",
+                "planSha256": "0c16918f825b1d8fb04a46b3e54647c5b87c7f89d832d0705e442614617f5e08",
+                "source": "src_dcee70110c8180e46470b7e84e8ed4fd",
+                "bytes": 907,
+                "resolved": true,
+                "referencedCallIdSha256": null
+              },
+              {
+                "kind": "reference",
+                "callIdSha256": "3b1957f394d1b896c8064464feca7a2fcdcacad82e22ee7413eca63e5e7cc596",
+                "planSha256": "0c16918f825b1d8fb04a46b3e54647c5b87c7f89d832d0705e442614617f5e08",
+                "source": "src_dcee70110c8180e46470b7e84e8ed4fd",
+                "bytes": 343,
+                "resolved": true,
+                "referencedCallIdSha256": "16d34b5e7bcb341ee6cb3d16495d90e93fbe57c46d3827432613210a24ebca30"
+              },
+              {
+                "kind": "full",
+                "callIdSha256": "956c565118a75c68cedda49ef02ddfbdfb08ef9b8a00164287d43a2358c7e44b",
+                "planSha256": "0c16918f825b1d8fb04a46b3e54647c5b87c7f89d832d0705e442614617f5e08",
+                "source": "src_dcee70110c8180e46470b7e84e8ed4fd",
+                "bytes": 907,
+                "resolved": true,
+                "referencedCallIdSha256": null
+              }
+            ],
+            "firstToolContentSha256": "796a2e23b2408397d1c58e44f900e183f59f9389547b965e10cfeef3fce46026",
+            "unchangedForwardedPrefix": true,
+            "failedCheckStillFailed": true,
+            "explicitChecksRestoresFull": true
+          }
+        ]
+      }
+    },
+    "local-replays.json": {
+      "sha256": "64e42459dac7cfb4d80ee6fbd237518c447782974d113e3d0dd29ed08d9e0a56",
+      "report": {
+        "externalModelRequests": 0,
+        "knownDiagnosticReplays": [
+          {
+            "name": "1-clamp-items-compiler",
+            "flagOffMatchesSealedReference": true,
+            "rawBytes": 36049,
+            "projectedBytes": 33865,
+            "references": 2
+          },
+          {
+            "name": "1-quota-compiler",
+            "flagOffMatchesSealedReference": true,
+            "rawBytes": 42375,
+            "projectedBytes": 42375,
+            "references": 0
+          },
+          {
+            "name": "2-clamp-items-compiler",
+            "flagOffMatchesSealedReference": true,
+            "rawBytes": 46722,
+            "projectedBytes": 44538,
+            "references": 2
+          },
+          {
+            "name": "2-quota-compiler",
+            "flagOffMatchesSealedReference": true,
+            "rawBytes": 33769,
+            "projectedBytes": 33769,
+            "references": 0
+          }
+        ],
+        "filenameReplay": {
+          "query": "test.ts",
+          "candidates": [
+            "packages/a/src/combineLatest.ts",
+            "packages/b/src/combineLatest.ts",
+            "packages/a/src/map.test.ts"
+          ],
+          "reference": [
+            "packages/a/src/combineLatest.ts",
+            "packages/a/src/map.test.ts",
+            "packages/b/src/combineLatest.ts"
+          ],
+          "literal": [
+            "packages/a/src/map.test.ts"
+          ]
+        },
+        "limits": "Serialized model-context bytes, not tokenizer measurements. Historical transcript replay, not new task success."
+      }
+    }
+  },
+  "adapter": {
+    "checkout": "Full project tree, dummy history without upstream fix commits",
+    "packageManager": "npm@12.2.1 in worker adapter, dependencies preinstalled physically per trial; no dependency install requested",
+    "frameworks": {
+      "F68": "Vitest 3.2.4 / TypeScript 5.9.3",
+      "mutationCallbacks": "Vitest 4.1.11 / TypeScript 6.0.3",
+      "fetchingFilters": "Vitest 5.0.5 / TypeScript 6.0.3"
+    },
+    "nativeViteConfig": true,
+    "reactSetup": "Original react-query/test-setup.ts retained for React runtime regressions",
+    "monorepoAliases": "Source paths plus worker-internal workspace package links",
+    "scope": "Compiler source adapter checks core and requested React source; core original type suite is separate. Not a full upstream workspace build."
+  },
+  "quality": {
+    "independentEndpoints": "Four immutable required scripts plus unchanged upstream official test patch; F69 additionally preselected independent error-reentrancy or allowed-filter/type probe. Official tree receives production changes only.",
+    "requiredInvocation": "Same rules for Light and native: exact literal immutable script, observable zero exit or native operation success, matching launch/poll source fingerprints before and after, no shell masking/wrappers. Formal runtime admission separate.",
+    "reporter": "Unsupported Vitest reporter scope stays unknown; zero invocation status is observed execution, not admitted project verification.",
+    "sourceFingerprint": "Version 2 hashes tracked/unignored source/config/test paths, file modes and symlink targets, skips generated ignored reports/dependencies. Added passive observation overhead is reported.",
+    "retrieval": "No remote solutions/history or study artifacts permitted. Automatic request heuristic plus bounded manual audit; absence of matches is not proof against training contamination."
+  },
+  "limits": [
+    "Only two prospective historical upstream issues, two model draws per arm; no general superiority claim from this sample.",
+    "Mutation official production fix is one file. Fetching task scopes core and React from an eight-adapter upstream PR.",
+    "No seed/deterministic model replay; rotated sequential assignments reduce but cannot eliminate provider/cache/time effects.",
+    "Costs are SDK estimates in USD, not invoices or euro exchange conversions. Null consumptions remain unknown.",
+    "Initial unbound adapter preparation failures (missing React test setup) corrected before worker dispatch; not harness regressions.",
+    "Brief execution transport interruption happened during local preparation, no model trial in flight."
+  ]
+}

@@ -81,6 +81,14 @@ export function uniqueSearchResults(results: unknown[]) {
 }
 
 export function pathMatches(query: string, candidates: string[]) {
+  if (process.env.BLAME_AGENT_LITERAL_FILE_SEARCH !== "false" && literalFileQuery(query)) {
+    const literal = query.replace(/^\.\//u, "").toLocaleLowerCase();
+    return candidates.filter(path => {
+      const normalized = path.toLocaleLowerCase();
+      return normalized === literal || normalized.endsWith(`/${literal}`) ||
+        (!literal.includes("/") && normalized.split("/").at(-1)!.endsWith(literal.startsWith(".") ? literal : `.${literal}`));
+    }).sort((a, b) => Number(b.toLocaleLowerCase() === literal) - Number(a.toLocaleLowerCase() === literal) || a.localeCompare(b)).slice(0, 8);
+  }
   const terms = searchTerms(query);
   if (!terms.length) return [];
   return candidates
@@ -92,6 +100,11 @@ export function pathMatches(query: string, candidates: string[]) {
     )
     .slice(0, 8)
     .map(({ path }) => path);
+}
+
+function literalFileQuery(query: string) {
+  return !/[\s*?{}[\]#]/u.test(query) && !query.split("/").includes("..") &&
+    /\.(?:[cm]?[jt]sx?|json|ya?ml|toml|md|py|rs|go|java|c|cpp|h|hpp|vue|svelte)$/iu.test(query);
 }
 
 function pathMatchScore(path: string, query: string, terms: string[]) {
