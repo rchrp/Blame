@@ -31,10 +31,17 @@ public class FakeWsl
         if (args[0] == "--status") { Console.Error.Write("WSL warning"); return 0; }
         if (args[0] == "--list")
         {
+            if (Env("BLAME_TEST_WSL_LIST_CODE") != "")
+            {
+                Console.Write(Env("BLAME_TEST_WSL_LIST_STDOUT"));
+                Console.Error.Write(Env("BLAME_TEST_WSL_LIST_STDERR"));
+                return int.Parse(Env("BLAME_TEST_WSL_LIST_CODE"));
+            }
             Console.Write("  NAME STATE VERSION\n* BlameRuntime Running 2\n");
             Console.Error.Write("list warning");
             return Env("BLAME_TEST_WSL_FAIL") == "list" ? 19 : 0;
         }
+        if (args[0] == "--import") { return 0; }
         if (args[0] == "--unregister") { Console.Error.Write("unregister failed"); return 17; }
         if (args.Length < 6 || args[4] != "--exec")
         { Console.Error.Write("Guest commands must bypass the default shell"); return 80; }

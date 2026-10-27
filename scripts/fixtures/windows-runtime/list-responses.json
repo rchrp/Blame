@@ -1,0 +1,100 @@
+[
+  {
+    "name": "empty successful listing",
+    "code": 0,
+    "stdout": "",
+    "stderr": "",
+    "absent": true
+  },
+  {
+    "name": "legacy English absence on stderr",
+    "code": 1,
+    "stdout": "",
+    "stderr": "Windows Subsystem for Linux has no installed distributions.\r\nUse 'wsl.exe --list --online' to list available distributions\r\nand 'wsl.exe --install <Distro>' to install.\r\n",
+    "absent": true
+  },
+  {
+    "name": "legacy French absence on stdout",
+    "code": 1,
+    "stdout": "Sous-système Windows pour Linux n'a aucune distribution installée.\r\nUtilisez 'wsl.exe --list --online' pour afficher les distributions disponibles.\r\n",
+    "stderr": "",
+    "absent": true
+  },
+  {
+    "name": "French absence with typographic apostrophe",
+    "code": 1,
+    "stdout": "",
+    "stderr": "Le sous-système Windows pour Linux n’a aucune distribution installée.\r\n",
+    "absent": true
+  },
+  {
+    "name": "language independent absence code",
+    "code": 1,
+    "stdout": "ローカライズされた診断\r\n",
+    "stderr": "Error code: Wsl/WSL_E_DEFAULT_DISTRO_NOT_FOUND\r\n",
+    "absent": true
+  },
+  {
+    "name": "absence code with service context",
+    "code": 1,
+    "stdout": "Error code: Wsl/Service/GetDefaultDistro/WSL_E_DEFAULT_DISTRO_NOT_FOUND\r\n",
+    "stderr": "",
+    "absent": true
+  },
+  {
+    "name": "corrupt distro configuration",
+    "code": 1,
+    "stdout": "",
+    "stderr": "Failed to read property 'DistributionName' from distribution {00000000-0000-0000-0000-000000000001}\r\nError code: Wsl/EnumerateDistros/Service/ReadDistroConfig/E_UNEXPECTED\r\n",
+    "absent": false
+  },
+  {
+    "name": "enumeration path failure",
+    "code": 1,
+    "stdout": "The system cannot find the path specified.\r\n",
+    "stderr": "Error code: Wsl/Service/EnumerateDistros/ERROR_PATH_NOT_FOUND\r\n",
+    "absent": false
+  },
+  {
+    "name": "enumeration access denied",
+    "code": 1,
+    "stdout": "Accès refusé.\r\nCode d'erreur : Wsl/EnumerateDistros/Service/E_ACCESSDENIED\r\n",
+    "stderr": "",
+    "absent": false
+  },
+  {
+    "name": "install suggestion is not absence",
+    "code": 1,
+    "stdout": "",
+    "stderr": "WSL is not installed. Run 'wsl.exe --install' to install it.\r\n",
+    "absent": false
+  },
+  {
+    "name": "generic distribution failure without code",
+    "code": 1,
+    "stdout": "",
+    "stderr": "Failed to enumerate distributions.\r\n",
+    "absent": false
+  },
+  {
+    "name": "different error overrides absence wording",
+    "code": 1,
+    "stdout": "Windows Subsystem for Linux has no installed distributions.\r\n",
+    "stderr": "Error code: Wsl/EnumerateDistros/Service/E_ACCESSDENIED\r\n",
+    "absent": false
+  },
+  {
+    "name": "mixed error codes retain failure",
+    "code": 1,
+    "stdout": "Error code: Wsl/WSL_E_DEFAULT_DISTRO_NOT_FOUND\r\n",
+    "stderr": "Error code: Wsl/Service/EnumerateDistros/ERROR_PATH_NOT_FOUND\r\n",
+    "absent": false
+  },
+  {
+    "name": "absence code must match exactly",
+    "code": 1,
+    "stdout": "",
+    "stderr": "Error code: Wsl/WSL_E_DEFAULT_DISTRO_NOT_FOUND_OTHER\r\n",
+    "absent": false
+  }
+]
