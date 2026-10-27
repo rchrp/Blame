@@ -18,7 +18,7 @@ test("a wrapper's types argument can repeat runtime while changed tests still fa
     "tsconfig.json": JSON.stringify({ compilerOptions: { strict: true, types: [] }, include: ["*.test.ts"] }),
   }, async (workspace, root) => {
     await mkdir(join(root, "node_modules"), { recursive: true });
-    await symlink(fileURLToPath(new URL("../../node_modules/typescript", import.meta.url)), join(root, "node_modules/typescript"));
+    await symlink(fileURLToPath(new URL("../../node_modules/@typescript/native", import.meta.url)), join(root, "node_modules/typescript"));
     await workspace.editCode({ operations: [{ kind: "patch", path: "new.test.ts", patch: "export const wrong: number = 'not compiled by runtime';\n" }] });
     const result = data(await workspace.runTask({ kind: "project", task: "test:delivered", args: ["types"] }, {}));
     assert.equal(result.exitCode, 0);

@@ -3,9 +3,7 @@ import { assignUuidV7Id } from '#lib/uuid_v7_model'
 import { beforeCreate } from '@adonisjs/lucid/orm'
 
 export type AccountClosureStatus =
-  | 'pending_active_deletion'
-  | 'pending_external_cleanup'
-  | 'completed'
+  'pending_active_deletion' | 'pending_external_cleanup' | 'completed'
 
 export default class AccountClosureRequest extends AccountClosureRequestSchema {
   static selfAssignPrimaryKey = true

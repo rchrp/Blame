@@ -29,11 +29,12 @@
   },
   "dependencies": {
     "@blame/preview-contract": "workspace:*",
-    "ignore": "7.0.5",
-    "yaml": "2.9.0"
+    "ignore": "7.0.14",
+    "yaml": "2.9.1"
   },
   "devDependencies": {
     "@types/node": "^24.12.0",
-    "typescript": "~5.9.3"
+    "typescript": "npm:@typescript/typescript6@6.0.2",
+    "@typescript/native": "npm:typescript@7.0.2"
   }
 }

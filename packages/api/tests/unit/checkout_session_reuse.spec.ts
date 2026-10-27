@@ -14,6 +14,14 @@ test.group('checkout session reuse', () => {
     assert.deepEqual(sessions.expiredSessionIds, [])
   })
 
+  for (const status of ['complete', 'expired', 'future_status', null]) {
+    test(`does not reuse or expire a checkout with status ${status}`, async ({ assert }) => {
+      const sessions = new FakeCheckoutSessions('price_monthly', status)
+      assert.isNull(await reuseCheckoutUrlForPrice(sessions, 'cs_monthly', 'price_monthly'))
+      assert.deepEqual(sessions.expiredSessionIds, [])
+    })
+  }
+
   test('expires an open checkout when switching billing cycles', async ({ assert }) => {
     const monthlyCheckout = new FakeCheckoutSessions('price_monthly')
     const yearlyCheckout = new FakeCheckoutSessions('price_yearly')
@@ -31,7 +39,10 @@ test.group('checkout session reuse', () => {
 class FakeCheckoutSessions implements CheckoutSessionGateway {
   expiredSessionIds: string[] = []
 
-  constructor(private priceId: string) {}
+  constructor(
+    private priceId: string,
+    private status: string | null = 'open'
+  ) {}
 
   async retrieve(sessionId: string, _parameters: { expand: string[] }) {
     return {
@@ -39,7 +50,7 @@ class FakeCheckoutSessions implements CheckoutSessionGateway {
       line_items: {
         data: [{ price: { id: this.priceId } }],
       },
-      status: 'open' as const,
+      status: this.status,
       url: `https://checkout.stripe.test/${sessionId}`,
     }
   }

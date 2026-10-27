@@ -182,8 +182,7 @@ function providerRequestId(error: unknown) {
   const json = objectValue(details?.json)
   const bodyError = objectValue(json?.error)
   const headers = objectValue(objectValue(details?.response)?.headers) as
-    | { get?: (name: string) => string | null }
-    | undefined
+    { get?: (name: string) => string | null } | undefined
   const header = headers?.get?.('x-vercel-id') ?? headers?.get?.('x-request-id')
   const value = bodyError?.requestId ?? json?.requestId ?? details?.requestId ?? header
   return typeof value === 'string' ? value : undefined

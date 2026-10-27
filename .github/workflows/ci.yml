@@ -13,6 +13,40 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  api-auth:
+    name: API authentication and unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: blame_ci
+          MYSQL_ROOT_HOST: "%"
+          MYSQL_DATABASE: opencode_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -pblame_ci"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: blame_ci
+      DB_DATABASE: opencode_test
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+        with:
+          node-version: 24
+      - run: pnpm exec turbo run build --filter="@blame/api^..."
+      - run: pnpm --filter @blame/api exec node ace.js test unit
+      - run: pnpm --filter @blame/api exec node ace.js test --files='tests/functional/auth.spec.ts'
+      - run: pnpm --filter @blame/api exec node ace.js test --files='tests/functional/consumer_contracts.spec.ts'
+
   windows-runtime:
     name: Windows PowerShell runtime tests
     runs-on: windows-latest
@@ -33,6 +67,7 @@ jobs:
           node-version: 24
       - run: pnpm --filter @blame/desktop build:workspace-dependencies
       - run: pnpm --filter @blame/desktop test:windows-workspaces
+      - run: pnpm --filter @blame/agent-runtime exec node --test dist/harness/workspace-command-process.test.js dist/harness/package-manager-runtime.test.js
 
   line-budgets:
     name: Line budgets
@@ -71,6 +106,7 @@ jobs:
         with:
           node-version: 24
       - run: pnpm typecheck
+      - run: pnpm --filter @blame/telemetry test
       - run: pnpm --filter @blame/preview-contract test
       - run: pnpm --filter @blame/preview-runtime test
       - run: pnpm --filter @blame/sandbox-runner test
@@ -81,6 +117,7 @@ jobs:
       - run: pnpm --filter @blame/app test
       - run: pnpm --filter @blame/desktop test
       - run: pnpm --filter @blame/desktop test:performance
+      - run: pnpm --filter @blame/desktop test:package
       - run: pnpm --filter @blame/desktop build
       - run: pnpm test:semantic-harness-payload
       - run: node --test scripts/semantic-harness-install.test.mjs

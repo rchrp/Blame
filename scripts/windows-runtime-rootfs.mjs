@@ -176,14 +176,14 @@ function requiredRuntimeVersion() {
 // it pins a checksum for each.
 function dockerVersionAssignments() {
   return [
-    `BLAME_DOCKER_VERSION=${text(process.env.BLAME_DOCKER_VERSION) ?? "29.9.1"}`,
-    `BLAME_COMPOSE_VERSION=${text(process.env.BLAME_COMPOSE_VERSION) ?? "5.6.0"}`,
-    `BLAME_BUILDX_VERSION=${text(process.env.BLAME_BUILDX_VERSION) ?? "0.38.0"}`,
+    `BLAME_DOCKER_VERSION=${text(process.env.BLAME_DOCKER_VERSION) ?? "29.9.2"}`,
+    `BLAME_COMPOSE_VERSION=${text(process.env.BLAME_COMPOSE_VERSION) ?? "5.6.1"}`,
+    `BLAME_BUILDX_VERSION=${text(process.env.BLAME_BUILDX_VERSION) ?? "0.38.1"}`,
   ];
 }
 
 function requiredNodeVersion() {
-  return text(process.env.BLAME_NODE_VERSION) ?? "22.23.1";
+  return text(process.env.BLAME_NODE_VERSION) ?? "24.22.1";
 }
 
 function valueArg(name) {

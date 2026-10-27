@@ -16,16 +16,69 @@ allowBuilds:
   esbuild: true
   msw: true
   node-pty: true
+  pnpm: true
   protobufjs: true
   sharp: true
   unrs-resolver: true
+  yarn: false
 
 catalog:
-  shiki: 3.20.0
+  shiki: 4.5.0
 
 overrides:
   "brace-expansion@>=5.0.0 <5.0.9": 5.0.9
+  # Electron 45 needs an ABI registry newer than rebuild's existing lock entry.
+  "@electron/rebuild>node-abi": 4.40.0
 
 patchedDependencies:
   '@cline/core@0.2.0': patches/@cline__core@0.2.0.patch
-  app-builder-lib@26.8.1: patches/app-builder-lib@26.8.1.patch
+
+minimumReleaseAgeExclude:
+  - "@aws-sdk/checksums@3.1001.6"
+  - "@aws-sdk/client-s3@3.1157.0"
+  - "@aws-sdk/core@3.978.6"
+  - "@aws-sdk/credential-provider-env@3.972.77"
+  - "@aws-sdk/credential-provider-http@3.972.79"
+  - "@aws-sdk/credential-provider-ini@3.973.22"
+  - "@aws-sdk/credential-provider-login@3.972.84"
+  - "@aws-sdk/credential-provider-node@3.972.89"
+  - "@aws-sdk/credential-provider-process@3.972.77"
+  - "@aws-sdk/credential-provider-sso@3.973.21"
+  - "@aws-sdk/credential-provider-web-identity@3.972.83"
+  - "@aws-sdk/middleware-sdk-s3@3.972.82"
+  - "@aws-sdk/nested-clients@3.997.51"
+  - "@aws-sdk/s3-request-presigner@3.1157.0"
+  - "@aws-sdk/token-providers@3.1157.0"
+  - "@better-auth/core@1.7.14"
+  - "@better-auth/drizzle-adapter@1.7.14"
+  - "@better-auth/kysely-adapter@1.7.14"
+  - "@better-auth/memory-adapter@1.7.14"
+  - "@better-auth/mongo-adapter@1.7.14"
+  - "@better-auth/passkey@1.7.14"
+  - "@better-auth/prisma-adapter@1.7.14"
+  - "@better-auth/telemetry@1.7.14"
+  - "@cline/agents@0.2.0"
+  - "@cline/core@0.2.0"
+  - "@cline/llms@0.2.0"
+  - "@cline/sdk@0.2.0"
+  - "@cline/shared@0.2.0"
+  - "@smithy/core@3.37.0"
+  - "@smithy/node-http-handler@4.13.0"
+  - "@typescript-eslint/eslint-plugin@8.72.1"
+  - "@typescript-eslint/parser@8.72.1"
+  - "@typescript-eslint/project-service@8.72.1"
+  - "@typescript-eslint/scope-manager@8.72.1"
+  - "@typescript-eslint/tsconfig-utils@8.72.1"
+  - "@typescript-eslint/type-utils@8.72.1"
+  - "@typescript-eslint/types@8.72.1"
+  - "@typescript-eslint/typescript-estree@8.72.1"
+  - "@typescript-eslint/utils@8.72.1"
+  - "@typescript-eslint/visitor-keys@8.72.1"
+  - better-auth@1.7.14
+  - bowser@2.15.0
+  - browserslist@4.29.5
+  - electron-to-chromium@1.5.465
+  - magic-string@1.4.4
+  - postcss@8.5.32
+  - strtok3@10.6.3
+  - typescript-eslint@8.72.1

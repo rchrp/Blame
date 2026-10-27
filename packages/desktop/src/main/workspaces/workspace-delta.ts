@@ -168,6 +168,7 @@ async function readDeltaArchive(content: Uint8Array) {
         if (header.type === "file") {
           const chunks: Buffer[] = [];
           for await (const chunk of stream) {
+            if (!Buffer.isBuffer(chunk)) throw new Error("Archive stream emitted non-binary data.");
             expandedBytes += Buffer.byteLength(chunk);
             if (expandedBytes > 1_000_000_000)
               throw new Error("Delta expands beyond its limit");

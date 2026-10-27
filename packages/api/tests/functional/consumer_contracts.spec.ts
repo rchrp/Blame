@@ -12,7 +12,7 @@ const password = 'password123'
 const now = DateTime.fromISO('2026-07-19T10:00:00.000Z')
 
 test.group('consumer contract actions', (group) => {
-  group.setup(() => testUtils.db().migrate())
+  group.setup(() => testUtils.db().truncate())
   group.each.setup(() => testUtils.db().truncate())
 
   test('withdraws an eligible contract, refunds and cancels immediately', async ({ assert }) => {

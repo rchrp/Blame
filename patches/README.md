@@ -20,4 +20,4 @@ The generator also adds `dist/blame-patch.json`, listing the applied changes. Th
 
 # Electron Builder macOS signing
 
-The `app-builder-lib@26.8.1` patch backports electron-userland/electron-builder#10172. It passes the temporary keychain password to `security set-key-partition-list`, while preserving the certificate password for `security import`. Recent macOS runners reject the certificate password when unlocking the keychain. `node --test scripts/macos-signing.test.mjs` exercises the installed implementation with distinct certificate and keychain passwords. Remove this patch when upgrading to an upstream version containing that fix.
+The temporary keychain password fix is included upstream in electron-builder 26.18.0, so the former `app-builder-lib@26.8.1` backport is no longer needed. `node --test scripts/macos-signing.test.mjs` still exercises the installed implementation with distinct certificate and keychain passwords.
