@@ -151,15 +151,20 @@ test("run_task inspects a long command without launching it again", async () => 
     );
     assert.match((inspected as { data: { output: string } }).data.output, /second/u);
     controller.abort();
-    await delay(150);
-    const cancelled = await workspace.runTask(
-      {
-        kind: "inspect",
-        run: initial.data.run,
-        cursor: (inspected as { data: { cursor: string } }).data.cursor,
-      },
-      {},
-    );
+    // Cancellation is immediate; final journal writes can finish later on Windows.
+    let cancelled: Awaited<ReturnType<typeof workspace.runTask>>;
+    const completionDeadline = Date.now() + 5000;
+    do {
+      await delay(25);
+      cancelled = await workspace.runTask(
+        {
+          kind: "inspect",
+          run: initial.data.run,
+          cursor: (inspected as { data: { cursor: string } }).data.cursor,
+        },
+        {},
+      );
+    } while (!JSON.stringify(cancelled).includes('"completed":') && Date.now() < completionDeadline);
     assert.match(JSON.stringify(cancelled), /cancelled/u);
     assert.match(JSON.stringify(cancelled), /completed/u);
     assert.equal(await readFile(join(root, "launches"), "utf8"), "x");
