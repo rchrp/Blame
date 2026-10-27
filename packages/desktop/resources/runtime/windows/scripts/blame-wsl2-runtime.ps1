@@ -171,10 +171,22 @@ function Test-DistrosAbsentText {
   if (-not $Text) {
     return $false
   }
-  # WSL exits with a failure message when no distributions have been installed yet.
-  # This text varies across Windows display languages, but always advises installing one
-  # or states that no distribution is installed.
-  $Text -match "(?i)distribution|distro|verteilung|wsl(?:\.exe)?\s+--(?:list|install)"
+  $Text = ($Text -replace "`0", "").Trim()
+  # Modern WSL reports this language-independent code for an empty verbose list.
+  # Other errors can contain EnumerateDistros/ReadDistroConfig: matching "distro"
+  # would hide those failures and send an existing installation down the import path.
+  $codes = [regex]::Matches($Text, '(?i)\bWsl(?:/[A-Za-z0-9_]+)+')
+  if ($codes.Count -gt 0) {
+    foreach ($code in $codes) {
+      if ($code.Value -notmatch '/WSL_E_DEFAULT_DISTRO_NOT_FOUND$') { return $false }
+    }
+    return $true
+  }
+  # Older WSL versions omit the code. Accept only known absence sentences,
+  # never generic distribution names, install suggestions or command usage.
+  # Unicode escapes keep this script compatible with Windows PowerShell 5.1.
+  $Text -match ('(?im)^\s*(?:Windows Subsystem for Linux has no installed distributions\.' +
+    '|(?:Le )?Sous-syst\u00e8me Windows pour Linux n[''\u2019]a aucune distribution install\u00e9e\.)\s*$')
 }
 
 function Test-WslAvailable {
