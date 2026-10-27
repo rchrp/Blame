@@ -2513,6 +2513,7 @@ async function startProjectLogStream(worktree: string) {
   if (worktreeActivity.isClosed(worktree)) return;
   await stopProjectLogStream(worktree);
   await appendRunLogSection(worktree, "container logs");
+  if (worktreeActivity.isClosed(worktree)) return;
   const stream: ProjectLogStream = { abort: new AbortController() };
   projectLogStreams.set(worktree, stream);
   void followLocalPreviewLogs(
