@@ -74,7 +74,7 @@ const routes = [
   { path: "/deploy", title: "Deploy", element: <DeployPage /> },
   {
     path: "/initialization",
-    title: "Initialization",
+    title: "Preview Environment",
     element: <InitializationPage />,
   },
 ]

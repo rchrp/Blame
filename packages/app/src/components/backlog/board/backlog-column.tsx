@@ -273,21 +273,21 @@ export function BacklogColumnHeader({
       {queueInitializing && (
         <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
           <LoaderCircleIcon className="size-3 animate-spin" />
-          Project initialization in progress
+          Setting up the preview environment
           <Tooltip>
             <TooltipTrigger asChild>
               <button
                 type="button"
                 className="inline-flex size-4 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground"
-                aria-label="Project initialization details"
+                aria-label="Preview environment details"
               >
                 <InfoIcon className="size-3.5" />
               </button>
             </TooltipTrigger>
             <TooltipContent side="right" className="max-w-64 text-pretty">
-              Blame is analyzing the project runtime and preview setup. This
-              only happens the first time the project is opened; afterwards, the
-              result is saved.
+              Blame is analyzing the project to set up its preview environment.
+              Only stories in Direct mode start until it ends; the result is
+              saved for the next stories.
             </TooltipContent>
           </Tooltip>
         </div>

@@ -18,7 +18,7 @@ export const routeShortcuts = [
   { key: "1", path: "/backlog", label: "Backlog" },
   { key: "2", path: "/chat", label: "Chat" },
   { key: "3", path: "/git", label: "Git" },
-  { key: "4", path: "/initialization", label: "Initialization" },
+  { key: "4", path: "/initialization", label: "Preview Environment" },
   { key: "5", path: "/practices", label: "Code Practices" },
   { key: "6", path: "/security", label: "Security Audit" },
   { key: "7", path: "/deploy", label: "Deploy" },

@@ -352,7 +352,7 @@ function useInitializationRunRequests(
           current.currentVariant
         )
         if (!run) {
-          toast.error("Initialization needs a model", {
+          toast.error("The analysis needs a model", {
             description: "Choose a model in Settings, then run it again.",
             id: toastId,
             position: "bottom-right",
@@ -479,7 +479,7 @@ function initializesAutomatically(
 function showProgress(projectName: string, projectId: string) {
   const current = initializationProgressFor(projectId)
   if (!current) return
-  toast.loading(`Initializing ${projectName}`, {
+  toast.loading(`Setting up ${projectName}`, {
     id: toastId,
     position: "bottom-right",
     duration: Infinity,
@@ -672,7 +672,7 @@ async function persistInitializationError(
 }
 
 function showError(projectId: string, error: unknown) {
-  toast.error("Project initialization failed", {
+  toast.error("Preview environment setup failed", {
     description: `${errorMessage(error)} Stories run in Direct mode until it works.`,
     id: toastId,
     position: "bottom-right",
@@ -688,8 +688,8 @@ function showError(projectId: string, error: unknown) {
 
 function showSuccess(warnings: number) {
   if (warnings) {
-    toast.warning("Project initialized with warnings", {
-      description: `Blame saved the preview setup, but ${warnings === 1 ? "one point needs" : `${warnings} points need`} a look.`,
+    toast.warning("Preview environment ready, with warnings", {
+      description: `Blame saved the setup, but ${warnings === 1 ? "one point needs" : `${warnings} points need`} a look.`,
       id: toastId,
       position: "bottom-right",
       duration: 15_000,
@@ -697,8 +697,8 @@ function showSuccess(warnings: number) {
     })
     return
   }
-  toast.success("Project initialized", {
-    description: "The preview setup is saved: stories can run in containers.",
+  toast.success("Preview environment ready", {
+    description: "Stories can now run in containers with a live preview.",
     id: toastId,
     position: "bottom-right",
     duration: 6_000,
@@ -706,5 +706,5 @@ function showSuccess(warnings: number) {
 }
 
 function errorMessage(error: unknown) {
-  return error instanceof Error ? error.message : "Unable to initialize project"
+  return error instanceof Error ? error.message : "Unable to set up the preview environment"
 }

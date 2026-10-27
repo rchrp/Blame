@@ -54,7 +54,7 @@ export function DeployPage() {
     try {
       const preflight = await deploy.refreshPreflight()
       if (!preflight) {
-        toast.error("Run project initialization again before deploying.")
+        toast.error("Set up the preview environment again before deploying.")
         return
       }
       if (preflight.manifest.compatibility.status === "unsupported") {

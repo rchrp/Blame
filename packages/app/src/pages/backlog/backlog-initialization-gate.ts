@@ -29,9 +29,9 @@ export function notifyDirectFallback(projectId: string, storyTitle: string) {
   if (notifiedProjects.has(projectId)) return
   notifiedProjects.add(projectId)
   toast.warning("Running in Direct mode", {
-    description: `This project has no working initialization, so “${storyTitle}” runs in your project folder with your own setup. Previews come back once the initialization works.`,
+    description: `This project has no working preview environment, so “${storyTitle}” runs in your project folder with your own setup. Previews come back once the environment works.`,
     action: {
-      label: "Open initialization",
+      label: "Open environment",
       onClick: () => navigate("/initialization"),
     },
     duration: 15_000,

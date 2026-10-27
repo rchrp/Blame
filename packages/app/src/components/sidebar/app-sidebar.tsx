@@ -67,7 +67,7 @@ const data = {
   ],
   project: [
     {
-      title: "Initialization",
+      title: "Preview Environment",
       url: "/initialization",
       icon: <BoxesIcon />,
     },
@@ -146,14 +146,14 @@ function initializationStatus(
   if (initialization?.availability === "running")
     return (
       <LoaderCircleIcon
-        aria-label="Project initialization in progress"
+        aria-label="Preview environment setup in progress"
         className="size-3.5 animate-spin text-muted-foreground"
       />
     )
   if (initialization?.availability !== "unavailable") return undefined
   return (
     <span
-      aria-label="Project initialization needs attention"
+      aria-label="Preview environment needs attention"
       className="size-2 rounded-full bg-amber-500"
     />
   )

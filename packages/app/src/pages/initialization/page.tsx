@@ -108,7 +108,7 @@ export function InitializationPage() {
         <header className="flex flex-wrap items-end justify-between gap-4">
           <div className="grid gap-1">
             <h2 className="font-heading text-2xl font-semibold tracking-normal">
-              Initialization
+              Preview Environment
             </h2>
             <p className="max-w-xl text-sm text-pretty text-muted-foreground">
               How Blame runs {project?.name ?? "this project"} in containers:

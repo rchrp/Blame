@@ -496,16 +496,16 @@ function cloudProject(value: unknown) {
 function cloudProjectInitializationSnapshot(value: unknown) {
   const snapshot = transformerValue(value)
   if (!isRecord(snapshot))
-    throw new Error("Unable to read project initialization.")
+    throw new Error("Unable to read the preview environment.")
   if (!("practices" in snapshot) || !Array.isArray(snapshot.practices)) {
-    throw new Error("Unable to read project initialization.")
+    throw new Error("Unable to read the preview environment.")
   }
   if (
     "initialization" in snapshot &&
     snapshot.initialization !== null &&
     !isRecord(snapshot.initialization)
   ) {
-    throw new Error("Unable to read project initialization.")
+    throw new Error("Unable to read the preview environment.")
   }
   return snapshot as CloudProjectInitializationSnapshot
 }

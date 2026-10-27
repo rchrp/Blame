@@ -232,7 +232,7 @@ function StatusBlock({
 }) {
   return (
     <section
-      aria-label="Initialization status"
+      aria-label="Preview environment status"
       className={cn(
         "grid grid-cols-[auto_1fr] gap-x-3 rounded-lg border bg-card px-4 py-3.5",
         tones[tone]

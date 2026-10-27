@@ -99,9 +99,9 @@ function deploymentSourceItems(preflight: LocalDeployPreflight) {
 function deploymentReadinessCopy(preflight?: LocalDeployPreflight) {
   if (!preflight)
     return {
-      title: "Initialize your project first",
+      title: "Set up the preview environment first",
       description:
-        "Open the backlog and complete project initialization to prepare your production build.",
+        "Open Preview Environment and analyze the project to prepare your production build.",
     }
   if (preflight.manifest.compatibility.status === "unsupported")
     return {

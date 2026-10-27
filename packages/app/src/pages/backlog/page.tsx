@@ -1687,7 +1687,7 @@ async function checkProjectInitializationImpact(
   input: CheckInitializationImpactInput
 ) {
   const toastId = `project-initialization-impact-${input.mergeCommit}`
-  toast.loading("Checking initialization impact", {
+  toast.loading("Checking the preview environment", {
     id: toastId,
     position: "bottom-right",
   })
@@ -1707,7 +1707,7 @@ async function checkProjectInitializationImpact(
     })
     showInitializationImpactResult(toastId, result)
   } catch (error) {
-    toast.error("Story merged, initialization check failed", {
+    toast.error("Story merged, preview environment check failed", {
       description: errorMessage(error),
       id: toastId,
       position: "bottom-right",
@@ -1722,16 +1722,16 @@ function showInitializationImpactResult(
   const options = { id: toastId, position: "bottom-right" as const }
   if (!result) return void toast.dismiss(toastId)
   if (result.repair?.classification === "repairable_initialization") {
-    toast.success("Initialization successfully updated", {
+    toast.success("Preview environment updated", {
       ...options,
       description:
-        "Your project initialization is up to date with the merged changes.",
+        "It now matches the merged changes.",
     })
     return
   }
   if (showUnchangedInitializationImpactResult(toastId, result)) return
   if (result.assessment.classification === "initialization_update_required") {
-    toast.error("Story merged, initialization update failed", {
+    toast.error("Story merged, preview environment update failed", {
       ...options,
       description: result.repair?.reason ?? result.assessment.reason,
     })
@@ -1755,8 +1755,8 @@ function showUnchangedInitializationImpactResult(
   const unconfirmed = classification === "unknown"
   toast.info(
     unconfirmed
-      ? "Initialization kept unchanged"
-      : "Initialization already up to date",
+      ? "Preview environment kept unchanged"
+      : "Preview environment already up to date",
     {
       description: unconfirmed
         ? "The review did not confirm a needed update. Your current configuration was kept."
