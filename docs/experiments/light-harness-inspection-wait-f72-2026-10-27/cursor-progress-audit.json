@@ -88,6 +88,40 @@
       "inspections": [],
       "emptyRunningWithoutCursorProgress": 0,
       "emptyRunningWithRealCursorProgress": 0
+    },
+    {
+      "name": "2-fetching-filters-wait",
+      "arm": "wait",
+      "inspections": [
+        {
+          "callId": "call_5deef4d6fc134acf93566ad437be0e4c",
+          "run": "r2",
+          "inputCursor": "166",
+          "returnedCursor": "195",
+          "process": "running",
+          "outputBytes": 26,
+          "durationMs": 6995,
+          "finalizedStatus": null,
+          "exitCode": null,
+          "rawCursorProgress": 29,
+          "emptyPresentedOutput": false
+        },
+        {
+          "callId": "call_b5fbbe8c80594a058660443ef48cb657",
+          "run": "r2",
+          "inputCursor": "195",
+          "returnedCursor": "642",
+          "process": "exited",
+          "outputBytes": 439,
+          "durationMs": 95,
+          "finalizedStatus": "ok",
+          "exitCode": 0,
+          "rawCursorProgress": 447,
+          "emptyPresentedOutput": false
+        }
+      ],
+      "emptyRunningWithoutCursorProgress": 0,
+      "emptyRunningWithRealCursorProgress": 0
     }
   ],
   "boundary": "The byte cursor measures the raw captured stream. The displayed output has redaction and trim, so an empty displayed string can coexist with real progress, e.g. one newline byte. Preserve both observations; do not call this fabricated progress, missing execution or an unchanged stream. This post-dispatch interpretation does not change a model input or score."

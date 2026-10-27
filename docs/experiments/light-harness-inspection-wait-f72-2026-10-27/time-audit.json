@@ -57,6 +57,25 @@
       "abnormalEnds": 0,
       "boundedHttpMs": 140731.24853515625,
       "anomalies": []
+    },
+    {
+      "name": "2-fetching-filters-wait",
+      "panel": "F72",
+      "arm": "wait",
+      "interrupted": false,
+      "sdkMs": 179392,
+      "observedHttpMs": 113555.02514648438,
+      "observedHeaderMs": 15843.962158203125,
+      "observedBodyMs": 97711.06298828125,
+      "observedToolUnionMs": 55854,
+      "observedOverlapMs": 0,
+      "outsideObservedMs": 9982.974853515625,
+      "sourceObserverMs": 12367.685837999965,
+      "unfinishedRequests": 0,
+      "unfinishedTools": 0,
+      "abnormalEnds": 0,
+      "boundedHttpMs": 113555.02514648438,
+      "anomalies": []
     }
   ],
   "groups": [
@@ -76,13 +95,13 @@
     {
       "panel": "F72",
       "arm": "wait",
-      "assignments": 1,
-      "sdkMs": 158254,
-      "observedHttpMs": 97359.142578125,
-      "observedToolUnionMs": 51020,
-      "observedHeaderMs": 19011.765380859375,
-      "observedBodyMs": 78347.37719726562,
-      "sourceObserverMs": 11840.920081999975,
+      "assignments": 2,
+      "sdkMs": 337646,
+      "observedHttpMs": 210914.16772460938,
+      "observedToolUnionMs": 106874,
+      "observedHeaderMs": 34855.7275390625,
+      "observedBodyMs": 176058.44018554688,
+      "sourceObserverMs": 24208.60591999994,
       "unfinishedRequests": 0,
       "abnormalEnds": 0
     },

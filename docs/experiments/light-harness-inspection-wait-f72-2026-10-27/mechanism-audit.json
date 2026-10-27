@@ -537,6 +537,264 @@
       "blockedEdits": 0,
       "compilerOffers": [],
       "requiredChecksRetained": true
+    },
+    {
+      "panel": "F72",
+      "task": "fetching-filters",
+      "arm": "wait",
+      "repeat": 2,
+      "name": "2-fetching-filters-wait",
+      "declarationOffers": [
+        {
+          "callId": "call_93c45fecfd0e4ae4a88baabda6ba76e1",
+          "query": "isFetching",
+          "scope": "packages/query-core/src",
+          "discovery": {
+            "engine": "syntax",
+            "status": "current",
+            "navigationOnly": true,
+            "sourceRevision": "src_59fd219b2c9a99aa8800a7d9bb786c99",
+            "eligibleFiles": 65,
+            "visitedFiles": 53,
+            "readBytes": 1031709,
+            "skippedFiles": 0,
+            "limited": true,
+            "limits": {
+              "files": 64,
+              "bytes": 1048576,
+              "fileBytes": 262144,
+              "declarations": 4
+            }
+          },
+          "candidates": [
+            {
+              "path": "packages/query-core/src/queryClient.ts",
+              "kind": "method",
+              "qualifiedName": "QueryClient.isFetching",
+              "targetSha256": "b518fa4642be53910aa26b53418c2d4a4690bc7da1d41ea039db7d8387fdbf11"
+            }
+          ],
+          "forwardedOccurrences": 18,
+          "exactCandidatePayloadForwarded": true,
+          "subsequentExplicitTargetReads": [
+            {
+              "targetSha256": "b518fa4642be53910aa26b53418c2d4a4690bc7da1d41ea039db7d8387fdbf11",
+              "callId": "call_b8e1b4803a0147deaa35320252afa1f3"
+            }
+          ]
+        },
+        {
+          "callId": "call_8f4deeb558e24d908404c3f367641941",
+          "query": "fetchStatus",
+          "scope": [
+            "packages/query-core/src",
+            "packages/react-query/src"
+          ],
+          "discovery": {
+            "engine": "syntax",
+            "status": "current",
+            "navigationOnly": true,
+            "sourceRevision": "src_59fd219b2c9a99aa8800a7d9bb786c99",
+            "eligibleFiles": 124,
+            "visitedFiles": 64,
+            "readBytes": 834481,
+            "skippedFiles": 1,
+            "limited": true,
+            "limits": {
+              "files": 64,
+              "bytes": 1048576,
+              "fileBytes": 262144,
+              "declarations": 4
+            }
+          },
+          "candidates": [],
+          "forwardedOccurrences": 18,
+          "exactCandidatePayloadForwarded": true,
+          "subsequentExplicitTargetReads": []
+        },
+        {
+          "callId": "call_bed68f1b8a9b441cbb97e19c70a653ae",
+          "query": "QueryFilters",
+          "scope": [
+            "packages/query-core/src",
+            "packages/react-query/src"
+          ],
+          "discovery": {
+            "engine": "syntax",
+            "status": "current",
+            "navigationOnly": true,
+            "sourceRevision": "src_59fd219b2c9a99aa8800a7d9bb786c99",
+            "eligibleFiles": 124,
+            "visitedFiles": 64,
+            "readBytes": 834481,
+            "skippedFiles": 1,
+            "limited": true,
+            "limits": {
+              "files": 64,
+              "bytes": 1048576,
+              "fileBytes": 262144,
+              "declarations": 4
+            }
+          },
+          "candidates": [
+            {
+              "path": "packages/query-core/src/utils.ts",
+              "kind": "interface",
+              "qualifiedName": "QueryFilters",
+              "targetSha256": "74297d5ca1cf6cd35c0f8dc4c09c9115cb776d565ad02effa4673ea82eb99a86"
+            }
+          ],
+          "forwardedOccurrences": 18,
+          "exactCandidatePayloadForwarded": true,
+          "subsequentExplicitTargetReads": [
+            {
+              "targetSha256": "74297d5ca1cf6cd35c0f8dc4c09c9115cb776d565ad02effa4673ea82eb99a86",
+              "callId": "call_fc474b544fa847869029a294fcc4d53f"
+            }
+          ]
+        },
+        {
+          "callId": "call_be2fe566e68e4f8b899290475881e9bd",
+          "query": "NoInfer",
+          "scope": "packages/query-core/src",
+          "discovery": {
+            "engine": "syntax",
+            "status": "current",
+            "navigationOnly": true,
+            "sourceRevision": "src_05a49b511de8a3526cc01f61acb19171",
+            "eligibleFiles": 67,
+            "visitedFiles": 55,
+            "readBytes": 1033673,
+            "skippedFiles": 0,
+            "limited": true,
+            "limits": {
+              "files": 64,
+              "bytes": 1048576,
+              "fileBytes": 262144,
+              "declarations": 4
+            }
+          },
+          "candidates": [],
+          "forwardedOccurrences": 8,
+          "exactCandidatePayloadForwarded": true,
+          "subsequentExplicitTargetReads": []
+        },
+        {
+          "callId": "call_2937a7427c4d4ed2aa0bad74f7971b3d",
+          "query": "type NoInfer",
+          "scope": "packages/query-core/src",
+          "discovery": {
+            "engine": "syntax",
+            "status": "current",
+            "navigationOnly": true,
+            "sourceRevision": "src_05a49b511de8a3526cc01f61acb19171",
+            "eligibleFiles": 67,
+            "visitedFiles": 55,
+            "readBytes": 1033673,
+            "skippedFiles": 0,
+            "limited": true,
+            "limits": {
+              "files": 64,
+              "bytes": 1048576,
+              "fileBytes": 262144,
+              "declarations": 4
+            }
+          },
+          "candidates": [],
+          "forwardedOccurrences": 8,
+          "exactCandidatePayloadForwarded": true,
+          "subsequentExplicitTargetReads": []
+        },
+        {
+          "callId": "call_6079be296d24434ebc74d3b75fe66732",
+          "query": "noInfer",
+          "scope": "packages/query-core/src",
+          "discovery": {
+            "engine": "syntax",
+            "status": "current",
+            "navigationOnly": true,
+            "sourceRevision": "src_05a49b511de8a3526cc01f61acb19171",
+            "eligibleFiles": 67,
+            "visitedFiles": 55,
+            "readBytes": 1033673,
+            "skippedFiles": 0,
+            "limited": true,
+            "limits": {
+              "files": 64,
+              "bytes": 1048576,
+              "fileBytes": 262144,
+              "declarations": 4
+            }
+          },
+          "candidates": [],
+          "forwardedOccurrences": 8,
+          "exactCandidatePayloadForwarded": true,
+          "subsequentExplicitTargetReads": []
+        }
+      ],
+      "compilerRecovery": [],
+      "multiReadIterations": [
+        {
+          "iteration": 2,
+          "reads": 6
+        },
+        {
+          "iteration": 4,
+          "reads": 4
+        },
+        {
+          "iteration": 5,
+          "reads": 6
+        },
+        {
+          "iteration": 6,
+          "reads": 5
+        },
+        {
+          "iteration": 8,
+          "reads": 3
+        },
+        {
+          "iteration": 9,
+          "reads": 4
+        }
+      ],
+      "firstContract": {
+        "time": "2026-10-27T16:42:55.961Z",
+        "endpoint": "https://chatgpt.com/backend-api/codex/responses",
+        "model": "gpt-5.6-luna",
+        "reasoning": {
+          "effort": "high",
+          "summary": "detailed"
+        },
+        "maximumOutputTokens": 8192,
+        "toolsSha256": "923df5c21ad5d8c059a21090a18183222608911f1a6c7df258414c7ca66e6bfa",
+        "promptSha256": "4a4d6be04a4986a7fae4e0c405a2d766378e799d68e15f3804a7a22ea7328858",
+        "normalizedContractSha256": "ed7c4de39c58d90a4c76b082a5faae694a17979ae5a21d169507f84f455f2914",
+        "requestBodySha256": "7773ab157afcd22f8a6a9bf39606607224b4ded95adce879b3a881ab445c6856",
+        "requestBytes": 25817,
+        "byteLimit": 500000,
+        "budgetRejected": false,
+        "toolCount": 9
+      },
+      "advice": {
+        "fullOccurrences": 0,
+        "referenceOccurrences": 0,
+        "uniqueFullCalls": 0,
+        "uniqueReferenceCalls": 0,
+        "metadataBytes": 0,
+        "unresolved": 0
+      },
+      "filenameSearches": [],
+      "uniqueScopeOffers": 1,
+      "uniqueExactForwardedScopes": 1,
+      "scopeForwardingOccurrences": 4,
+      "groupedReads": [],
+      "tools": 59,
+      "reads": 28,
+      "blockedEdits": 0,
+      "compilerOffers": [],
+      "requiredChecksRetained": true
     }
   ],
   "contracts": [

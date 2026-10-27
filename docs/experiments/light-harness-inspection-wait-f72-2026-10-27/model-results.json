@@ -2,7 +2,7 @@
   "protocolHash": "a853cb7b2e266500c8a84b6ccdafa2219c633609da266317c7f864ff6f7ea93d",
   "complete": false,
   "executionFinished": false,
-  "completed": 3,
+  "completed": 4,
   "planned": 6,
   "panels": [
     {
@@ -37,28 +37,28 @@
           "failures": []
         },
         "wait": {
-          "assignments": 1,
-          "tokens": 572038,
-          "input": 567845,
-          "output": 4193,
-          "cacheRead": 523904,
+          "assignments": 2,
+          "tokens": 1104452,
+          "input": 1096675,
+          "output": 7777,
+          "cacheRead": 1011968,
           "cacheWrite": 0,
-          "sdkUsd": 0.031947880000000005,
-          "sdkMs": 158254,
-          "outerMs": 160243.47226100002,
-          "requests": 18,
-          "observerMs": 11840.920081999975,
-          "toolMs": 51188,
+          "sdkUsd": 0.06511436000000001,
+          "sdkMs": 337646,
+          "outerMs": 341532.90928100003,
+          "requests": 37,
+          "observerMs": 24208.60591999994,
+          "toolMs": 107273,
           "missingCost": 0,
-          "reconciledTokensCost": 1,
+          "reconciledTokensCost": 2,
           "fullyReconciled": 0,
           "cacheReadReconciled": 0,
           "cacheWriteReconciled": 0,
-          "missingReasoning": 1,
-          "official": 1,
-          "source": 1,
-          "strict": 1,
-          "finalRequired": 1,
+          "missingReasoning": 2,
+          "official": 2,
+          "source": 2,
+          "strict": 2,
+          "finalRequired": 2,
           "admittedAllRequired": 0,
           "formalAdmissionUnavailable": 0,
           "failures": []
@@ -328,24 +328,24 @@
     }
   ],
   "allAssignments": {
-    "assignments": 3,
-    "tokens": 2398644,
-    "input": 2382875,
-    "output": 15769,
-    "cacheRead": 2179840,
+    "assignments": 4,
+    "tokens": 2931058,
+    "input": 2911705,
+    "output": 19353,
+    "cacheRead": 2667904,
     "cacheWrite": 0,
-    "sdkUsd": 0.1322194,
-    "sdkMs": 527880,
-    "outerMs": 534182.792764,
-    "requests": 55,
-    "observerMs": 32908.52390700006,
-    "toolMs": 138994,
+    "sdkUsd": 0.16538587999999999,
+    "sdkMs": 707272,
+    "outerMs": 715472.229784,
+    "requests": 74,
+    "observerMs": 45276.20974500003,
+    "toolMs": 195079,
     "missingCost": 0,
-    "reconciledTokensCost": 3,
+    "reconciledTokensCost": 4,
     "fullyReconciled": 0,
     "cacheReadReconciled": 0,
     "cacheWriteReconciled": 0,
-    "missingReasoning": 3
+    "missingReasoning": 4
   },
   "rows": [
     {
@@ -1835,6 +1835,520 @@
       "actualSchemaHashes": [
         "e9cf7b12faef5cc5cf09abaf67ff690f4af8442561acbe7b34ac80e4c0d076b6"
       ]
+    },
+    {
+      "panel": "F72",
+      "repeat": 2,
+      "task": "fetching-filters",
+      "arm": "wait",
+      "name": "2-fetching-filters-wait",
+      "officialRuntimeSuccess": true,
+      "requiredInvocationsReported": true,
+      "requiredEvidence": [
+        {
+          "id": "regression",
+          "command": "npm run test:study:regression",
+          "passedOnFinalSource": true,
+          "proof": {
+            "callId": "call_b5fbbe8c80594a058660443ef48cb657",
+            "originCallId": "call_ca0f72a2a02945858630c2f563de63f4",
+            "source": "6734aa723df638fb9ed63482392b726b4dbb6577b6faa7cefcff0f2a5d970896",
+            "evidence": "literal immutable-script execution with observed zero exit"
+          }
+        },
+        {
+          "id": "types",
+          "command": "npm run typecheck:study:types",
+          "passedOnFinalSource": true,
+          "proof": {
+            "callId": "call_0a9d8e89fe35459aa3803f4641abb820",
+            "originCallId": "call_0a9d8e89fe35459aa3803f4641abb820",
+            "source": "6734aa723df638fb9ed63482392b726b4dbb6577b6faa7cefcff0f2a5d970896",
+            "evidence": "literal immutable-script execution with observed zero exit"
+          }
+        },
+        {
+          "id": "type-regression",
+          "command": "npm run typecheck:study:type-regression",
+          "passedOnFinalSource": true,
+          "proof": {
+            "callId": "call_006c91d77da64bf8961d2b974f55fef4",
+            "originCallId": "call_006c91d77da64bf8961d2b974f55fef4",
+            "source": "6734aa723df638fb9ed63482392b726b4dbb6577b6faa7cefcff0f2a5d970896",
+            "evidence": "literal immutable-script execution with observed zero exit"
+          }
+        },
+        {
+          "id": "delivered-types",
+          "command": "npm run typecheck:study:delivered-types",
+          "passedOnFinalSource": true,
+          "proof": {
+            "callId": "call_80644e2cb3624f168bee46ac8eaf6c21",
+            "originCallId": "call_80644e2cb3624f168bee46ac8eaf6c21",
+            "source": "6734aa723df638fb9ed63482392b726b4dbb6577b6faa7cefcff0f2a5d970896",
+            "evidence": "literal immutable-script execution with observed zero exit"
+          }
+        }
+      ],
+      "admittedRequiredChecks": [
+        {
+          "id": "regression",
+          "admitted": false
+        },
+        {
+          "id": "types",
+          "admitted": true
+        },
+        {
+          "id": "type-regression",
+          "admitted": true
+        },
+        {
+          "id": "delivered-types",
+          "admitted": true
+        }
+      ],
+      "strictSuccess": true,
+      "sourceSuccess": true,
+      "score": {
+        "sourceSuccess": true,
+        "strictLayout": true,
+        "protectedPaths": [],
+        "deleted": [],
+        "symlinks": [],
+        "newTests": [
+          "packages/query-core/src/__tests__/queryClient.fetchingFilters.test-d.ts",
+          "packages/query-core/src/__tests__/queryClient.fetchingFilters.test.tsx",
+          "packages/react-query/src/__tests__/useIsFetching.fetchingFilters.test-d.tsx"
+        ],
+        "changedPaths": [
+          "packages/query-core/src/queryClient.ts",
+          "packages/react-query/src/useIsFetching.ts",
+          "packages/query-core/src/__tests__/queryClient.fetchingFilters.test-d.ts",
+          "packages/query-core/src/__tests__/queryClient.fetchingFilters.test.tsx",
+          "packages/react-query/src/__tests__/useIsFetching.fetchingFilters.test-d.tsx"
+        ],
+        "dependencyComparison": {
+          "pinnedDependenciesUnchanged": true,
+          "changed": [],
+          "missing": [],
+          "added": [],
+          "generated": [
+            ".vitest-cache/_metadata.json",
+            ".vitest-cache/00104ace1b5b2f1ee26fc20b05f585603f6010f2",
+            ".vitest-cache/00c7331704b2996602b05c127f09546e75fd68f7",
+            ".vitest-cache/0634ebf2d89a25d6e1775fe500b511abd0c859c5",
+            ".vitest-cache/0971afcc182d858e0145391a2b7f07ca16b51357",
+            ".vitest-cache/0bfbf53976bb2000a6b538f843c3b40982be2321",
+            ".vitest-cache/0ddf5b790fdd0cc79239335fb9a6b16aa9e70e84",
+            ".vitest-cache/117a1c94fb09393bd4b155f81ddbcd791126bb87",
+            ".vitest-cache/14c92b2b632e0af734e9987ea01ae1fe36b86e28",
+            ".vitest-cache/1925f0b880c8322447279d5a432eecefaba15ce8",
+            ".vitest-cache/1a4979b5d72271e09232f1f815e4870ec43a2562",
+            ".vitest-cache/1ddefc78daf564e32f8a908df0366dc4baca13c4",
+            ".vitest-cache/2130fbc554827369c35f790842946f47024d899f",
+            ".vitest-cache/2237817bbb257f18efb7ec3850ad6892fe86da9c",
+            ".vitest-cache/224f84c2a9082606df8735a89533f77886072916",
+            ".vitest-cache/226a60bae4134674e74a98415b3f3b471351c39c",
+            ".vitest-cache/23a3a00b1af2e33e69fe4a53715d303c3e6b3548",
+            ".vitest-cache/2d59d10353b72c7b155629944417771c5eccdbf9",
+            ".vitest-cache/32ef4fb9e4e123f70a40560270bcefb2a46dd87a",
+            ".vitest-cache/333fefa66ffcd587129290c973419bcfcba34f7a",
+            ".vitest-cache/340fb5e281efd05f57dee9e7138c8bc02fc09bbe",
+            ".vitest-cache/3813f81ffccd4329875627aafe80345bc00bbd67",
+            ".vitest-cache/3fc0c530d070c05f78ebbddaa517b8d2fcb4cd86",
+            ".vitest-cache/4185d1912ebd8566248fe5f3c4125278369c576c",
+            ".vitest-cache/41e6f0e945493d5860291ccd1ad1c74ca325e5e2",
+            ".vitest-cache/4d2118642f11b11352283175adcfd29bf95d8525",
+            ".vitest-cache/54763ed20d3c790a91d0d94b5f62325f73b353d5",
+            ".vitest-cache/5fa218cdc3bc6dd29d88cc5c618dca5d5adb1815",
+            ".vitest-cache/61e196c91aa31a0faceff7a648b51f5bb4a6d135",
+            ".vitest-cache/6b5d014054966539000d11a1d1a57247cee37132",
+            ".vitest-cache/6bdc9c3ae881fcf372f21fa97c8bc92a38bc124e",
+            ".vitest-cache/6c1ea2413f7175730a9192371d3039788fe11d86",
+            ".vitest-cache/72a2ddf7b317202581cd6e5b4b30c8313738275d",
+            ".vitest-cache/73875edd756900ea4a4dc8429a934f3f6e3fe629",
+            ".vitest-cache/78297b8098fe6111d22e4d42c4a26b92a06c615f",
+            ".vitest-cache/7a23c9f13bb5711d70811f250fcc1bd4aece9f57",
+            ".vitest-cache/7a2b7f646c06a896c06365adb70f5aba6299648e",
+            ".vitest-cache/7caabb967d252d3358e5e76be87deedd53bfe2c7",
+            ".vitest-cache/7d3791e23cadafd74c02831d6a1296c4d03b827a",
+            ".vitest-cache/7fa4e445bd9604ed256805518b326511feddf26c",
+            ".vitest-cache/7fd0b35efa4482389f983e2d8b75f45ae8467bc1",
+            ".vitest-cache/8629ebecae253c6d27576d2547886ab05852c3f4",
+            ".vitest-cache/8a8253fb7d7f4b9d1203215dd35810b4be5e2ffc",
+            ".vitest-cache/8f1402a56ac7f0956660242287b0c96ee9f3288c",
+            ".vitest-cache/8fce50c04316230172081203adc3733d3c429850",
+            ".vitest-cache/9e2847a23545c464aa8f1336e3bd97f1b05cfee7",
+            ".vitest-cache/a840ee4948d57a63ca3377fcfb3bfa6935c73adb",
+            ".vitest-cache/a96ed9fbc156f04f097bd1109d15cc3bfa87a4aa",
+            ".vitest-cache/af93ec98d97899e2c0d6b4f1a1776b98b5cd964c",
+            ".vitest-cache/afd1b92b7505e82b3bb2252311fd7c63cb6b169f",
+            ".vitest-cache/b0afa4187b4873b26f295394230c8c92755004b9",
+            ".vitest-cache/b4dc5ff8a6d8c281967fce199ac9934b745a47ce",
+            ".vitest-cache/b53e6e7236fa28fb8d05b26bf5bcf56911c4c584",
+            ".vitest-cache/b716ea5a25fba8dc430afb3fff2128bc847923a5",
+            ".vitest-cache/bcddbc9748e02f558ed7c9f22a9ca03eef6bf109",
+            ".vitest-cache/bee0bdcb11ece9f3f08e67559760fa16d450d515",
+            ".vitest-cache/bf75f504329d3fdbe6b70ced3154b9a09929c0f6",
+            ".vitest-cache/c0d3514d9e06369c058f39fc4e11d98b673b7f98",
+            ".vitest-cache/c462e49ce80d48cb17ab7f32d73480d7d3b50088",
+            ".vitest-cache/c60d85feb267833de57b30e9f0d718656f90860d",
+            ".vitest-cache/c7e8d4245bb225d58a022c39b07a4f2e4a936d6a",
+            ".vitest-cache/CACHEDIR.TAG",
+            ".vitest-cache/cb6bbdba24b2b215ccb593ce00f730dd514292b9",
+            ".vitest-cache/d207e7a3b523dbec0275dff01dce5872d95feab3",
+            ".vitest-cache/d405e77a98d742e9dbe314696f30c15a8ec0eebf",
+            ".vitest-cache/d7fb89c1fe5a3d75060d6d297dd68b256880d45c",
+            ".vitest-cache/dc8c48e6e2856b9a98a88074e6ef883163344ac9",
+            ".vitest-cache/dd634191fd3575d43a767a19e6192c69168709e9",
+            ".vitest-cache/de0f44e6a636c8925d613a053a55058dc08bd253",
+            ".vitest-cache/e1800ef44c0e99f0ae64fac5eb258deb003877a7",
+            ".vitest-cache/e3910430f48c7af246e6d74f13d73a1828f99027",
+            ".vitest-cache/e62b2b0220bd5ec9cfce5b8277ad014dac3067a6",
+            ".vitest-cache/f2a4eb77408f2726c28ac9657de36957d9215bb1",
+            ".vitest-cache/f2f4ac77291ab4a03ab568653fbbb7e39443d82d",
+            ".vitest-cache/f979726cec79c73ebabf8112b411ac5a841b181f",
+            ".vitest-cache/fa9a8912aad4cb8a481cac1d44a38c3c65077cd6",
+            ".vitest-cache/faf0c7d35c188d892513defdc40c591b976a40fc"
+          ],
+          "generatedModified": []
+        },
+        "endpoints": [
+          {
+            "name": "regression",
+            "exitCode": 0,
+            "signal": null,
+            "error": null,
+            "durationMs": 22930.093045000016
+          },
+          {
+            "name": "types",
+            "exitCode": 0,
+            "signal": null,
+            "error": null,
+            "durationMs": 1708.5806169999996
+          },
+          {
+            "name": "type-regression",
+            "exitCode": 0,
+            "signal": null,
+            "error": null,
+            "durationMs": 1644.2536649999965
+          },
+          {
+            "name": "delivered-types",
+            "exitCode": 0,
+            "signal": null,
+            "error": null,
+            "durationMs": 1565.9036780000024
+          },
+          {
+            "name": "official",
+            "exitCode": 0,
+            "signal": null,
+            "error": null,
+            "durationMs": 1901.8041889999877
+          },
+          {
+            "name": "probe",
+            "exitCode": 0,
+            "signal": null,
+            "error": null,
+            "durationMs": 1581.0838259999873
+          },
+          {
+            "name": "compatibility",
+            "exitCode": 0,
+            "signal": null,
+            "error": null,
+            "durationMs": 1339.9128070000152
+          }
+        ]
+      },
+      "solutionRetrieval": false,
+      "usage": {
+        "input": 528830,
+        "output": 3584,
+        "cacheRead": 488064,
+        "cacheWrite": 0,
+        "cost": 0.03316648,
+        "reasoning": null,
+        "completeness": "complete",
+        "normalizationVersion": "blame-usage-v1",
+        "complete": false,
+        "tokensCostReconciled": true,
+        "requests": 19,
+        "reports": 19,
+        "perRequest": [
+          {
+            "input": 5094,
+            "output": 123,
+            "cacheRead": null,
+            "cacheWrite": null,
+            "cost": 0.001248,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 7749,
+            "output": 222,
+            "cacheRead": 4992,
+            "cacheWrite": null,
+            "cost": 0.0010640399999999996,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 13160,
+            "output": 186,
+            "cacheRead": 7552,
+            "cacheWrite": null,
+            "cost": 0.00222664,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 15008,
+            "output": 185,
+            "cacheRead": 13056,
+            "cacheWrite": null,
+            "cost": 0.0013295199999999998,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 18581,
+            "output": 186,
+            "cacheRead": 14848,
+            "cacheWrite": null,
+            "cost": 0.00146356,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 22303,
+            "output": 148,
+            "cacheRead": 18432,
+            "cacheWrite": null,
+            "cost": 0.0022228400000000002,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 26019,
+            "output": 143,
+            "cacheRead": 22144,
+            "cacheWrite": null,
+            "cost": 0.0024130799999999997,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 27177,
+            "output": 200,
+            "cacheRead": 25856,
+            "cacheWrite": null,
+            "cost": 0.00198012,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 29983,
+            "output": 161,
+            "cacheRead": 27008,
+            "cacheWrite": null,
+            "cost": 0.00310796,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 32238,
+            "output": 1136,
+            "cacheRead": 29824,
+            "cacheWrite": null,
+            "cost": 0.00504288,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 33738,
+            "output": 191,
+            "cacheRead": 32128,
+            "cacheWrite": null,
+            "cost": 0.0024441600000000008,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 36204,
+            "output": 150,
+            "cacheRead": 33536,
+            "cacheWrite": null,
+            "cost": 0.0019903200000000003,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 36476,
+            "output": 50,
+            "cacheRead": 36096,
+            "cacheWrite": null,
+            "cost": 0.0010763199999999987,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 36621,
+            "output": 27,
+            "cacheRead": 36352,
+            "cacheWrite": null,
+            "cost": 0.0008132399999999998,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 36702,
+            "output": 27,
+            "cacheRead": 36480,
+            "cacheWrite": null,
+            "cost": 0.0008063999999999988,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 37667,
+            "output": 48,
+            "cacheRead": 36608,
+            "cacheWrite": null,
+            "cost": 0.0010015599999999986,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 37851,
+            "output": 49,
+            "cacheRead": 37504,
+            "cacheWrite": null,
+            "cost": 0.0008782799999999986,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 38039,
+            "output": 50,
+            "cacheRead": 37760,
+            "cacheWrite": null,
+            "cost": 0.0008710000000000002,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          },
+          {
+            "input": 38220,
+            "output": 302,
+            "cacheRead": 37888,
+            "cacheWrite": null,
+            "cost": 0.0011865600000000032,
+            "reasoning": null,
+            "completeness": "partial",
+            "normalizationVersion": "blame-usage-v1"
+          }
+        ],
+        "reconciliation": {
+          "input": {
+            "sum": 528830,
+            "aggregate": 528830,
+            "matches": true
+          },
+          "output": {
+            "sum": 3584,
+            "aggregate": 3584,
+            "matches": true
+          },
+          "cacheRead": {
+            "sum": null,
+            "aggregate": 488064,
+            "matches": false
+          },
+          "cacheWrite": {
+            "sum": null,
+            "aggregate": 0,
+            "matches": false
+          },
+          "cost": {
+            "sum": 0.03316648,
+            "aggregate": 0.03316648,
+            "matches": true
+          }
+        }
+      },
+      "sdkDurationMs": 179392,
+      "exit": {
+        "code": 0,
+        "signal": null,
+        "watchdog": false,
+        "durationMs": 181289.43702,
+        "stderr": "(node:81200) Warning: AI SDK Warning System: To turn off warning logging, set the AI_SDK_LOG_WARNINGS global to false.\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Inspecting backend API and test files**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Inspecting backend API and test files**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning test additions under __tests__ directories**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Inspecting backend API and test files**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning test additions under __tests__ directories**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Designing fetchStatus omission type****Refining isFetching generic constraints****Proposing isFetching with Omit filter****Assessing generic handling in useIsFetching**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Inspecting backend API and test files**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning test additions under __tests__ directories**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Designing fetchStatus omission type****Refining isFetching generic constraints****Proposing isFetching with Omit filter****Assessing generic handling in useIsFetching**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Designing fetchStatus-excluding filter type****Verifying generic predicate inference for filters**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Inspecting backend API and test files**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning test additions under __tests__ directories**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Designing fetchStatus omission type****Refining isFetching generic constraints****Proposing isFetching with Omit filter****Assessing generic handling in useIsFetching**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Designing fetchStatus-excluding filter type****Verifying generic predicate inference for filters**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning QueryFilters type refinement****Reviewing local study test files**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Inspecting backend API and test files**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning test additions under __tests__ directories**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Designing fetchStatus omission type****Refining isFetching generic constraints****Proposing isFetching with Omit filter****Assessing generic handling in useIsFetching**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Designing fetchStatus-excluding filter type****Verifying generic predicate inference for filters**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning QueryFilters type refinement****Reviewing local study test files**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Designing generic filter type without fetchStatus****Refining isFetching signature to accept explicit QueryFilters****Designing generic useIsFetching filters****Planning new test files in __tests__ directories**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Inspecting backend API and test files**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning test additions under __tests__ directories**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Designing fetchStatus omission type****Refining isFetching generic constraints****Proposing isFetching with Omit filter****Assessing generic handling in useIsFetching**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Designing fetchStatus-excluding filter type****Verifying generic predicate inference for filters**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning QueryFilters type refinement****Reviewing local study test files**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Designing generic filter type without fetchStatus****Refining isFetching signature to accept explicit QueryFilters****Designing generic useIsFetching filters****Planning new test files in __tests__ directories**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Designing isFetching overloads to exclude fetchStatus****Analyzing TypeScript inference challenges for fetchStatus omission****Analyzing typed predicate inference for query filtering****Planning new regression test files creation**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Inspecting backend API and test files**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning test additions under __tests__ directories**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Designing fetchStatus omission type****Refining isFetching generic constraints****Proposing isFetching with Omit filter****Assessing generic handling in useIsFetching**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Designing fetchStatus-excluding filter type****Verifying generic predicate inference for filters**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning QueryFilters type refinement****Reviewing local study test files**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Designing generic filter type without fetchStatus****Refining isFetching signature to accept explicit QueryFilters****Designing generic useIsFetching filters****Planning new test files in __tests__ directories**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Designing isFetching overloads to exclude fetchStatus****Analyzing TypeScript inference challenges for fetchStatus omission****Analyzing typed predicate inference for query filtering****Planning new regression test files creation**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning regression coverage implementation****Refining generic filter types excluding fetchStatus****Confirming QueryFilters generic compatibility****Defining refined QueryFilters type alias****Planning new isFetching type and runtime tests**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Inspecting backend API and test files**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning test additions under __tests__ directories**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Designing fetchStatus omission type****Refining isFetching generic constraints****Proposing isFetching with Omit filter****Assessing generic handling in useIsFetching**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Designing fetchStatus-excluding filter type****Verifying generic predicate inference for filters**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning QueryFilters type refinement****Reviewing local study test files**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Designing generic filter type without fetchStatus****Refining isFetching signature to accept explicit QueryFilters****Designing generic useIsFetching filters****Planning new test files in __tests__ directories**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Designing isFetching overloads to exclude fetchStatus****Analyzing TypeScript inference challenges for fetchStatus omission****Analyzing typed predicate inference for query filtering****Planning new regression test files creation**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning regression coverage implementation****Refining generic filter types excluding fetchStatus****Confirming QueryFilters generic compatibility****Defining refined QueryFilters type alias****Planning new isFetching type and runtime tests**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning filter type alias without fetchStatus****Refining generic constraints for filter types****Planning regression test additions without modifying existing tests****Designing generic type alias for query filters****Evaluating QueryFilters generic compatibility****Defining strict filter types and planning runtime tests**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Inspecting backend API and test files**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning test additions under __tests__ directories**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Designing fetchStatus omission type****Refining isFetching generic constraints****Proposing isFetching with Omit filter****Assessing generic handling in useIsFetching**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Designing fetchStatus-excluding filter type****Verifying generic predicate inference for filters**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning QueryFilters type refinement****Reviewing local study test files**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Designing generic filter type without fetchStatus****Refining isFetching signature to accept explicit QueryFilters****Designing generic useIsFetching filters****Planning new test files in __tests__ directories**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Designing isFetching overloads to exclude fetchStatus****Analyzing TypeScript inference challenges for fetchStatus omission****Analyzing typed predicate inference for query filtering****Planning new regression test files creation**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning regression coverage implementation****Refining generic filter types excluding fetchStatus****Confirming QueryFilters generic compatibility****Defining refined QueryFilters type alias****Planning new isFetching type and runtime tests**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Planning filter type alias without fetchStatus****Refining generic constraints for filter types****Planning regression test additions without modifying existing tests****Designing generic type alias for query filters****Evaluating QueryFilters generic compatibility****Defining strict filter types and planning runtime tests**\"}.\n(node:81200) Warning: AI SDK Warning (openai-codex.responses / gpt-5.6-luna): Non-OpenAI reasoning parts are not supported. Skipping reasoning part: {\"type\":\"reasoning\",\"text\":\"**Designing generic QueryFilters type constraint****Evaluating fetchStatus excess property checks****Refining useIsFetching hook filters****Planning new regression test files****Testing typed predicate inference in QueryFilters****Refining filter types with OmitKeyof and testing****Verifying generic type compatibility in isFetching****Planning runtime fetchStatus filtering tests****Adding runtime and React hook type tests**\"}.\n"
+      },
+      "status": "succeeded",
+      "completion": {
+        "source_revision_id": "src_3c599f5cb43d7777af5bd476f15bb860",
+        "delivery": "satisfied",
+        "verification": "unverified",
+        "satisfied_obligations": [
+          "check:types",
+          "check:type-regression",
+          "check:delivered-types"
+        ],
+        "missing_obligations": [
+          "check:regression"
+        ],
+        "failed_obligations": [],
+        "reservations": [
+          {
+            "code": "REQUIRED_CHECK_UNCONFIRMED",
+            "message": "A required final-source invocation has no observed passing execution. User acceptance criteria remain a separate assessment.",
+            "obligation_ids": [
+              "check:regression"
+            ]
+          },
+          {
+            "code": "VALIDATION_UNAVAILABLE",
+            "message": "No current project validation was available.",
+            "obligation_ids": []
+          }
+        ]
+      },
+      "forwardedRequests": 19,
+      "scopeReceipts": 4,
+      "receiptRequests": 19,
+      "groupedReads": 0,
+      "compilerRepairOffers": 0,
+      "compilerOffers": [],
+      "sourceAuditObservationMs": 12367.685837999965,
+      "toolTimeMs": 56085,
+      "hashes": {},
+      "actualSchemaHashes": [
+        "923df5c21ad5d8c059a21090a18183222608911f1a6c7df258414c7ca66e6bfa"
+      ]
     }
   ],
   "accounting": {
@@ -1844,7 +2358,7 @@
     "missing": "Null stays unknown; reserve is not measured spending.",
     "earlierObservedSdkUsd": 13.071532119999999,
     "earlierUnknownReservationUsd": 18.64,
-    "newCompletedSdkUsd": 0.1322194,
+    "newCompletedSdkUsd": 0.16538587999999999,
     "newPartialObservedSdkUsd": 0,
     "newMissingCostReserveUsd": 0
   },

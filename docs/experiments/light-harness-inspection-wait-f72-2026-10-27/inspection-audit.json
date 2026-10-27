@@ -233,6 +233,89 @@
       "finalizedInspectionResults": 0,
       "inspections": [],
       "hardLoopGuardEvent": null
+    },
+    {
+      "name": "2-fetching-filters-wait",
+      "arm": "wait",
+      "officialRuntimeSuccess": true,
+      "sourceSuccess": true,
+      "strictSuccess": true,
+      "requiredEvidence": [
+        {
+          "id": "regression",
+          "command": "npm run test:study:regression",
+          "passedOnFinalSource": true,
+          "proof": {
+            "callId": "call_b5fbbe8c80594a058660443ef48cb657",
+            "originCallId": "call_ca0f72a2a02945858630c2f563de63f4",
+            "source": "6734aa723df638fb9ed63482392b726b4dbb6577b6faa7cefcff0f2a5d970896",
+            "evidence": "literal immutable-script execution with observed zero exit"
+          }
+        },
+        {
+          "id": "types",
+          "command": "npm run typecheck:study:types",
+          "passedOnFinalSource": true,
+          "proof": {
+            "callId": "call_0a9d8e89fe35459aa3803f4641abb820",
+            "originCallId": "call_0a9d8e89fe35459aa3803f4641abb820",
+            "source": "6734aa723df638fb9ed63482392b726b4dbb6577b6faa7cefcff0f2a5d970896",
+            "evidence": "literal immutable-script execution with observed zero exit"
+          }
+        },
+        {
+          "id": "type-regression",
+          "command": "npm run typecheck:study:type-regression",
+          "passedOnFinalSource": true,
+          "proof": {
+            "callId": "call_006c91d77da64bf8961d2b974f55fef4",
+            "originCallId": "call_006c91d77da64bf8961d2b974f55fef4",
+            "source": "6734aa723df638fb9ed63482392b726b4dbb6577b6faa7cefcff0f2a5d970896",
+            "evidence": "literal immutable-script execution with observed zero exit"
+          }
+        },
+        {
+          "id": "delivered-types",
+          "command": "npm run typecheck:study:delivered-types",
+          "passedOnFinalSource": true,
+          "proof": {
+            "callId": "call_80644e2cb3624f168bee46ac8eaf6c21",
+            "originCallId": "call_80644e2cb3624f168bee46ac8eaf6c21",
+            "source": "6734aa723df638fb9ed63482392b726b4dbb6577b6faa7cefcff0f2a5d970896",
+            "evidence": "literal immutable-script execution with observed zero exit"
+          }
+        }
+      ],
+      "startedInspections": 2,
+      "finishedInspections": 2,
+      "incrementalInspections": 2,
+      "emptyRunningSnapshots": 0,
+      "finalizedInspectionResults": 1,
+      "inspections": [
+        {
+          "callId": "call_5deef4d6fc134acf93566ad437be0e4c",
+          "run": "r2",
+          "inputCursor": "166",
+          "returnedCursor": "195",
+          "process": "running",
+          "outputBytes": 26,
+          "durationMs": 6995,
+          "finalizedStatus": null,
+          "exitCode": null
+        },
+        {
+          "callId": "call_b5fbbe8c80594a058660443ef48cb657",
+          "run": "r2",
+          "inputCursor": "195",
+          "returnedCursor": "642",
+          "process": "exited",
+          "outputBytes": 439,
+          "durationMs": 95,
+          "finalizedStatus": "ok",
+          "exitCode": 0
+        }
+      ],
+      "hardLoopGuardEvent": null
     }
   ],
   "boundary": "Actual tool events and outcomes, including inspections started but not finished before a guard abort. Inspection duration includes observation/source/journal overhead, not only internal waiting. Cursor offsets and output bytes are actual data; a last running snapshot does not prove the process was physically running at later termination. No score changes, retries or synthetic completion."

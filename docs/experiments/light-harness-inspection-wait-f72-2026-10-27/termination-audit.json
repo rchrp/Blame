@@ -328,6 +328,105 @@
           "exitCode": null
         }
       ]
+    },
+    {
+      "name": "2-fetching-filters-wait",
+      "officialRuntimeSuccess": true,
+      "sourceSuccess": true,
+      "strictSuccess": true,
+      "iterationStartEvents": 19,
+      "observedStop": "official_completion",
+      "explanatoryEvent": null,
+      "lastCompletedTools": [
+        {
+          "callId": "call_5deef4d6fc134acf93566ad437be0e4c",
+          "tool": "run_task",
+          "input": {
+            "kind": "inspect",
+            "run": "r2",
+            "cursor": "166"
+          },
+          "inputSha256": "37886826aa42187db0dfe0f61c7ab5324b93952f50de397cc43ea9a8a082af09",
+          "timestamp": "2026-10-27T16:45:33.746Z",
+          "status": "ok",
+          "process": "running",
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_b5fbbe8c80594a058660443ef48cb657",
+          "tool": "run_task",
+          "input": {
+            "kind": "inspect",
+            "run": "r2",
+            "cursor": "195"
+          },
+          "inputSha256": "4f61cdf39be505cd7b55db14c005a2e7c49e9316efcb02a2b622563ac80d11fa",
+          "timestamp": "2026-10-27T16:45:35.729Z",
+          "status": "ok",
+          "process": "exited",
+          "hasFinalizedPayload": true,
+          "exitCode": null
+        },
+        {
+          "callId": "call_0a9d8e89fe35459aa3803f4641abb820",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "typecheck:study:types",
+            "packagePath": "/workspace/blame-study-runs/inspection-wait-f72/active/workspace"
+          },
+          "inputSha256": "c74d642ac6edeb1cd1d732c235302d4d6894856ecd2fa6c382a55fed72c09b95",
+          "timestamp": "2026-10-27T16:45:41.074Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_006c91d77da64bf8961d2b974f55fef4",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "typecheck:study:type-regression",
+            "packagePath": "/workspace/blame-study-runs/inspection-wait-f72/active/workspace"
+          },
+          "inputSha256": "a560ce97d6f7900a852f341e4bbcd71232fdc4a9ca9439ba565a2dae09c28e0b",
+          "timestamp": "2026-10-27T16:45:45.217Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_80644e2cb3624f168bee46ac8eaf6c21",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "typecheck:study:delivered-types",
+            "packagePath": "/workspace/blame-study-runs/inspection-wait-f72/active/workspace"
+          },
+          "inputSha256": "7cefa252a904441e78d03200036a922c017987d2f5d03169783c50fc33522787",
+          "timestamp": "2026-10-27T16:45:48.945Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_8047fa8a82654b8089c234e51e1bfe4b",
+          "tool": "finish_task",
+          "input": {
+            "summary": "Implemented the fetching-filter API restriction in the requested scope.\n\nChanges:\n- `QueryClient.isFetching` now omits `fetchStatus` from its public filter argument while preserving the existing generic entry point, other filter fields, predicate inference, and `number` return type.\n- React `useIsFetching` now likewise disallows `fetchStatus` while retaining the remaining `QueryFilters` fields and return type.\n- General query-cache filtering still supports `fetchStatus`; runtime fetching-count behavior is unchanged.\n- Added new query-core runtime/type regression tests and a React type regression test under the existing `__tests__` directories.\n\nRequired commands, each run directly:\n- `npm run test:study:regression` — passed; 23 test files, 631 tests passed.\n- `npm run typecheck:study:types` — exited 0/passed.\n- `npm run typecheck:study:type-regression` — exited 0/passed.\n- `npm run typecheck:study:delivered-types` — exited 0/passed.\n\nCoverage limits: the regression command exercises the frozen query-core and React runtime suites, while the delivered type check compiles the newly added test/type files. No adapter suites outside query-core and react-query were changed or run. The reported typecheck commands do not provide individual test/count breakdowns."
+          },
+          "inputSha256": "552c0e8d5dfd9d6bdd28c934ffe5307607d27b41ab0eca481d90dc14d95d3ef8",
+          "timestamp": "2026-10-27T16:45:52.833Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        }
+      ]
     }
   ],
   "boundary": "Observed stop reasons from actual SDK notices, never inferred solely from configured limits. Last tool snapshots are observations, not proof of physical process state at termination. The immutable primary completion/source/audit scores and resource totals are unchanged."
