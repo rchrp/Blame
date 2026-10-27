@@ -2,7 +2,7 @@ import type { AgentToolContext } from "@cline/sdk";
 import { createInitialTaskBriefing } from "./initial-task-briefing.js";
 import type {
   LightEditCodeInput,
-  LightReadCodeInput,
+  LightReadCodeRequest,
   LightRunTaskInput,
   LightSearchCodeInput,
   LightTaskContract,
@@ -123,7 +123,7 @@ async function executeWithWorkspace(
         signal,
       );
     case "read_code":
-      return workspace.readCode(request.input as LightReadCodeInput, context);
+      return workspace.readCode(request.input as LightReadCodeRequest, context);
     case "edit_code":
       return workspace.editCode(request.input as LightEditCodeInput, context);
     case "run_task":
