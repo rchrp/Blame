@@ -1,6 +1,6 @@
 {
   "protocolHash": "e748f642b3303616beb7f9172229dced6249fa821dc44c2f8884e442e4c11aae",
-  "executionFinished": false,
+  "executionFinished": true,
   "trials": [
     {
       "name": "1-mutation-callbacks-reference",
@@ -1098,6 +1098,239 @@
           "timestamp": "2026-10-27T15:52:17.610Z",
           "status": null,
           "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        }
+      ]
+    },
+    {
+      "name": "2-fetching-filters-reference",
+      "officialRuntimeSuccess": false,
+      "sourceSuccess": true,
+      "strictSuccess": false,
+      "iterationStartEvents": 35,
+      "observedStop": "max_iterations",
+      "explanatoryEvent": {
+        "event": {
+          "type": "error",
+          "sessionId": "1793116417721_49d13",
+          "payload": {
+            "iteration": 35,
+            "message": "Agent runtime exceeded maxIterations (35)",
+            "recoverable": false
+          },
+          "executionId": "1793116417721_49d13:initial-execution"
+        },
+        "kind": "agent_event",
+        "recordedAt": "2026-10-27T15:58:25.422Z",
+        "schemaVersion": 1
+      },
+      "lastCompletedTools": [
+        {
+          "callId": "call_67e28c7cfc6b41aebc966bd097dd6ecf",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "typecheck:study:types"
+          },
+          "inputSha256": "0022cd0be0b5b5ee0f4465906290fbe0d8c6f18d911ff3c09e44ba8f0b9ec609",
+          "timestamp": "2026-10-27T15:57:58.283Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_98b9ee8e701e4c66881c2694a6248538",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "typecheck:study:type-regression"
+          },
+          "inputSha256": "766b8fcf5e9e540ad2237bfa101bd4f64bf50e6b1a7d853a21a18e3df6b3d11c",
+          "timestamp": "2026-10-27T15:58:04.019Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_ca3f131ff02341c5b7ef459a7740e0aa",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "typecheck:study:delivered-types"
+          },
+          "inputSha256": "e006893c026b4f3c375d14e806aa9d7ca3439959f76aae1194e41cda77f14bf8",
+          "timestamp": "2026-10-27T15:58:08.786Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_33a28cb12baa418b822d2b4cb342cb4a",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "git status --short && git diff --stat && git diff -- packages/query-core/src/queryClient.ts packages/react-query/src/useIsFetching.ts packages/query-core/src/__tests__/isFetchingFilters.test-d.ts packages/react-query/src/__tests__/useIsFetching-filters.test-d.tsx"
+          },
+          "inputSha256": "023d05196e0ff9506412d1b4943b060be04af0abfb79f20759c45b4b7333cca2",
+          "timestamp": "2026-10-27T15:58:15.445Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_30cee814d2d9452db991d40a4ea66cd7",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "node_modules/.bin/vitest run --configLoader native --config .study/vitest.config.mjs packages/query-core/src/__tests__/isFetchingFilters.test.tsx packages/react-query/src/__tests__/useIsFetching-filters.test.tsx",
+            "cwd": "."
+          },
+          "inputSha256": "b9afa8717c2afdedecdd5fefaa8544d821760257c180c7c7cb9ea9383d5c281b",
+          "timestamp": "2026-10-27T15:58:18.201Z",
+          "status": "blocked",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_9c00a6351f45468090f29d8674fb720b",
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "path": "packages/react-query/src/__tests__/useIsFetching-filters.test.tsx",
+                "patch": "*** Begin Patch\n*** Update File: packages/react-query/src/__tests__/useIsFetching-filters.test.tsx\n@@\n-import { describe, expect, it, vi } from 'vitest'\n+import { afterEach, describe, expect, it, vi } from 'vitest'\n@@\n describe('useIsFetching filters', () => {\n-  it('should count only fetching queries matching its other filters', () => {\n+  afterEach(() => {\n+    vi.useRealTimers()\n+  })\n+\n+  it('should count only fetching queries matching its other filters', async () => {\n@@\n     }\n \n     const rendered = renderWithClient(queryClient, <Page />)\n+    await vi.advanceTimersByTimeAsync(0)\n     expect(rendered.getByText('fetching: 1')).toBeTruthy()\n-\n-    vi.useRealTimers()\n   })\n })\n*** End Patch"
+              }
+            ]
+          },
+          "inputSha256": "7ddbabf896ff9d81a2494d9b1b9c2f946a7b0496f791f84a95c0ec834691034a",
+          "timestamp": "2026-10-27T15:58:25.023Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        }
+      ]
+    },
+    {
+      "name": "2-fetching-filters-source-order",
+      "officialRuntimeSuccess": false,
+      "sourceSuccess": false,
+      "strictSuccess": false,
+      "iterationStartEvents": 27,
+      "observedStop": "sdk_identical_call_guard",
+      "explanatoryEvent": {
+        "event": {
+          "type": "notice",
+          "sessionId": "1793116774586_a63cb",
+          "payload": {
+            "iteration": 27,
+            "message": "Detected 5 consecutive identical calls to `run_task`; stopping to avoid a loop.",
+            "recoverable": true
+          },
+          "executionId": "1793116774586_a63cb:initial-execution"
+        },
+        "kind": "agent_event",
+        "recordedAt": "2026-10-27T16:04:08.653Z",
+        "schemaVersion": 1
+      },
+      "lastCompletedTools": [
+        {
+          "callId": "call_2f2587ecfa98424eb3403b36aad789e1",
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "path": "packages/query-core/src/__tests__/isFetchingFilters.test-d.ts",
+                "patch": "*** Begin Patch\n*** Update File: packages/query-core/src/__tests__/isFetchingFilters.test-d.ts\n@@\n-    queryClient.isFetching<QueryFilters>({ queryKey: ['todos'] })\n+    queryClient.isFetching<QueryFilters>({ fetchStatus: 'fetching' })\n*** End Patch"
+              }
+            ]
+          },
+          "inputSha256": "f8e4773a4b7a2b062c5333a91c8f16ee81390bc08045f555c6fa3a4c0d227a29",
+          "timestamp": "2026-10-27T16:03:39.982Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_996d066f509643c9889ca973608e654f",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "test:study:regression"
+          },
+          "inputSha256": "bd6a23666cee27cfb799ab6fdfa9e3489cd0c22ddef230e1fa40f30618530720",
+          "timestamp": "2026-10-27T16:03:58.525Z",
+          "status": "ok",
+          "process": "running",
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_a440f7caf7a64879a5efca7f903cfc57",
+          "tool": "run_task",
+          "input": {
+            "kind": "inspect",
+            "run": "r5",
+            "cursor": "162"
+          },
+          "inputSha256": "1aa673340b67980bd1d61833e8a502426d7eb33a3dc43e6616229854f58f02ff",
+          "timestamp": "2026-10-27T16:04:01.070Z",
+          "status": "ok",
+          "process": "running",
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_99bf72be1cee46868c08f1483babcfac",
+          "tool": "run_task",
+          "input": {
+            "kind": "inspect",
+            "run": "r5",
+            "cursor": "162"
+          },
+          "inputSha256": "1aa673340b67980bd1d61833e8a502426d7eb33a3dc43e6616229854f58f02ff",
+          "timestamp": "2026-10-27T16:04:02.774Z",
+          "status": "ok",
+          "process": "running",
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_5781936485d74ec89a210344a1031c72",
+          "tool": "run_task",
+          "input": {
+            "kind": "inspect",
+            "run": "r5",
+            "cursor": "162"
+          },
+          "inputSha256": "1aa673340b67980bd1d61833e8a502426d7eb33a3dc43e6616229854f58f02ff",
+          "timestamp": "2026-10-27T16:04:04.448Z",
+          "status": "ok",
+          "process": "running",
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_e80821163b014738bbe93833337f0232",
+          "tool": "run_task",
+          "input": {
+            "kind": "inspect",
+            "run": "r5",
+            "cursor": "162"
+          },
+          "inputSha256": "1aa673340b67980bd1d61833e8a502426d7eb33a3dc43e6616229854f58f02ff",
+          "timestamp": "2026-10-27T16:04:06.867Z",
+          "status": "ok",
+          "process": "running",
           "hasFinalizedPayload": false,
           "exitCode": null
         }

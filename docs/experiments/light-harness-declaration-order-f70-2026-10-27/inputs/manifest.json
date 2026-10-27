@@ -1,0 +1,23 @@
+{
+  "bundleSha256": "b498be0fa67ae5e9c1e7261feea381d2b7f266545e855f979df7306720a7365f",
+  "refs": {
+    "mutation-callbacks": "5828e4ff35745c1571a1b6cfba510f3dc7a9fd99",
+    "fetching-filters": "5d3b5a65e9b098ff413781c0ab81f462646d719d"
+  },
+  "runtimeSha256": "e9edf05bdc2acde233663a2be154160b232554f237a778d82583fee8ece7cfcf",
+  "runtimeLockSha256": "8ae1e6dab4c0cdbfbf77799bfb48ca903ef6d6f4b9cc4cd31c5a8d1706c4ae7c",
+  "dependencyLockFiles": {
+    "mutation-callbacks/package.json": "8d55c535eca53f931facfa50a12af6c57dd7e3992f24bb829a2b38b857008863",
+    "mutation-callbacks/package-lock.json": "d4512b7d85dc5551d5486da8c40851b17d5b41236c031c39719b5de22866148f",
+    "fetching-filters/package.json": "215b107adab60cc011daf3a0f2ad8cf216cf14db5e31ca7b3694a200028a76cb",
+    "fetching-filters/package-lock.json": "474d18b9698683ae88d1afb59b4fd5ff8be76b9e461d912a656809f81f640414"
+  },
+  "officialFiles": {
+    "fetching-filters-positive.patch": "7712a49b3be359be87385b705dfa28a1811c63bf9f47b999de274161d962c3bc",
+    "fetching-filters.patch": "2d8ee9f67b227b6c1429656f946bed73b1b5df0142317bb9dd0f74cd805a253f",
+    "mutation-callbacks-positive.patch": "0145f1def2633de9617d7ca5618c46610f691d208bf319040227b58398a1ef3f",
+    "mutation-callbacks.patch": "9a83f1fbe263a902a291ec12cd92427b7b7a781ff74c5ecd2b6194de0ed84141"
+  },
+  "runtimeSourceHead": "6ba0337f3a563972f7a26173224d9e359eb01a4e",
+  "boundary": "Two original input commits only, shared Git objects; no model patches, solutions, dependencies, credentials or upstream fix history. Original commit IDs replace platform-dependent tar metadata for portable replay. Original private archive hashes remain unchanged."
+}

@@ -1,0 +1,47 @@
+{
+  "recordedAtUTC": "2026-10-27T16:11:44.924758+00:00",
+  "sourceBaseHead": "1f35a4827f498e623f0bb5468e57e5cfe15ffc7d",
+  "node": "v24.19.0",
+  "externalModelRequests": 0,
+  "sealedReferenceModuleSha256": "c390d8fe56af8615c749fcf0f8ca602f824ba34c5331a343d6a74c2dd086960e",
+  "candidateFiles": {
+    "src/harness/light-task-runner.ts": "0f2f24d57fe5d1a08889b0b6ef745f02471a5a81e9ae4b5fc00ac38f9d5e896c",
+    "src/harness/light-managed-result.test.ts": "eca42031bfcb7fbb269446195ec793d5ccb13b6547712840911b256e2cce200f",
+    "dist/harness/light-task-runner.js": "c24db95c33195c0e795995ae16fc785d9675abe645b2a85012102a52704190c2",
+    "dist/harness/light-managed-result.test.js": "dc592d18952a6af13a661b23d971ab5436e37a4c77ed503ab4de120a9b3fca64"
+  },
+  "controls": {
+    "reference": {
+      "tests": 5,
+      "passed": 1,
+      "failed": 4,
+      "reason": "All four terminal snapshot controls reproduce missing finalized result."
+    },
+    "candidate": {
+      "tests": 5,
+      "passed": 5,
+      "failed": 0
+    },
+    "related": {
+      "tests": 54,
+      "passed": 53,
+      "skipped": 1,
+      "failed": 0
+    },
+    "affectedLint": "passed",
+    "lineBudgets": "passed; existing review messages retained"
+  },
+  "prototypeFailures": "The first candidate run had two fixture assertion failures: the ordinary command exactly matched the fixture declared test script, so it was classified as a test and returned a structured ok result rather than blocked. The fixture now declares that script only in the unknown-reporting control. Product classification and failure/admission rules were not changed. Both original logs and the corrected reference/candidate logs are retained.",
+  "logs": {
+    "reference-controls": "d99a1c5db5ff1e64e7b8c515a252d7488ebd3c6c9ef933a433e98d8604ab0f37",
+    "candidate-controls": "d182fa3d0565cfed5ba3a838681522a98ae832d09ed4be8a7caa149b764f58ff",
+    "reference-controls-v1": "a6817fef23baa8e31b4ba8241ba1f4e25468ea664601b70d8aa300cb0ed7648b",
+    "candidate-controls-v1": "ba1479717e6951bce235bf7605e98215e7ebc9c336b1f717a46bb414b1893c89",
+    "related-tests": "9bbb0902da9eae596d1fafd2b6da695a380a07ea272b383c18620f58c0f8b06c",
+    "build-before-fix": "f9ce639039bd65bd7c193f97b679b4355f9e3ee9027341b7e06e4cc7b6279788",
+    "build-after-fix": "8976437af693b2d15a77960173ac39bfa287ad87143a186421c8bbef1e0bafa1",
+    "build-after-fixture": "8976437af693b2d15a77960173ac39bfa287ad87143a186421c8bbef1e0bafa1",
+    "line-budgets": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec"
+  },
+  "decision": "Keep the limited publication correction. A terminal process observation now waits for its already-running source/journal finalization, retaining the actual result. Running snapshots without a cursor stay immediate. This is local correctness evidence, not a new global task success, token or speed claim. The separate F72 polling hypothesis remains untested here."
+}

@@ -130,6 +130,10 @@ export class LightTaskRunner {
       );
     try {
       const snapshot = run.handle.inspect(input.cursor);
+      // Process termination precedes source capture and journal finalization.
+      // Expose their real result together instead of an exited-only snapshot.
+      const completed = run.result ?? (snapshot.process === "running"
+        ? undefined : await run.completion);
       return {
         status: "ok",
         data: {
@@ -137,7 +141,7 @@ export class LightTaskRunner {
           command: run.command,
           ...snapshot,
           output: redactedOutput(snapshot.output),
-          ...(run.result ? { completed: run.result } : {}),
+          ...(completed ? { completed } : {}),
         },
       };
     } catch (error) {
@@ -388,16 +392,7 @@ export class LightTaskRunner {
       this.runs.delete(runId);
       return initial.result;
     }
-    const snapshot = first.handle.inspect();
-    return {
-      status: "ok",
-      data: {
-        run: runId,
-        command,
-        ...snapshot,
-        output: redactedOutput(snapshot.output),
-      },
-    };
+    return this.inspect({ kind: "inspect", run: runId });
   }
 
   private async executeLocked(

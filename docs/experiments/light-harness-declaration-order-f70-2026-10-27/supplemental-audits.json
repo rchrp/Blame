@@ -1,5 +1,5 @@
 {
-  "executionFinished": false,
+  "executionFinished": true,
   "trials": [
     {
       "name": "1-mutation-callbacks-reference",
@@ -282,6 +282,150 @@
       "task": "fetching-filters",
       "repeat": 2,
       "offers": [],
+      "lastAttemptedFinish": null
+    },
+    {
+      "name": "2-fetching-filters-reference",
+      "arm": "reference",
+      "task": "fetching-filters",
+      "repeat": 2,
+      "offers": [
+        {
+          "query": "export function useIsFetching",
+          "path": "packages/lit-query/src/useIsFetching.ts",
+          "qualifiedName": "useIsFetching",
+          "absentFromThisPrimaryResult": true,
+          "absentFromEarlierStructuredSearchResults": true,
+          "matchingCandidateMetadataObserved": true,
+          "successfulSubsequentReads": []
+        },
+        {
+          "query": "export function useIsFetching",
+          "path": "packages/preact-query/src/useIsFetching.ts",
+          "qualifiedName": "useIsFetching",
+          "absentFromThisPrimaryResult": true,
+          "absentFromEarlierStructuredSearchResults": true,
+          "matchingCandidateMetadataObserved": true,
+          "successfulSubsequentReads": []
+        },
+        {
+          "query": "export function useIsFetching",
+          "path": "packages/react-query/src/useIsFetching.ts",
+          "qualifiedName": "useIsFetching",
+          "absentFromThisPrimaryResult": true,
+          "absentFromEarlierStructuredSearchResults": false,
+          "matchingCandidateMetadataObserved": true,
+          "successfulSubsequentReads": []
+        },
+        {
+          "query": "export function useIsFetching",
+          "path": "packages/solid-query/src/useIsFetching.ts",
+          "qualifiedName": "useIsFetching",
+          "absentFromThisPrimaryResult": true,
+          "absentFromEarlierStructuredSearchResults": true,
+          "matchingCandidateMetadataObserved": true,
+          "successfulSubsequentReads": []
+        }
+      ],
+      "lastAttemptedFinish": null
+    },
+    {
+      "name": "2-fetching-filters-source-order",
+      "arm": "source-order",
+      "task": "fetching-filters",
+      "repeat": 2,
+      "offers": [
+        {
+          "query": "isFetching",
+          "path": "packages/query-core/src/queryClient.ts",
+          "qualifiedName": "QueryClient.isFetching",
+          "absentFromThisPrimaryResult": true,
+          "absentFromEarlierStructuredSearchResults": true,
+          "matchingCandidateMetadataObserved": true,
+          "successfulSubsequentReads": [
+            {
+              "callId": "call_a796f635d895411ebaa323c6f7e3278b",
+              "usingAlias": false,
+              "usingQualifiedTarget": true
+            }
+          ]
+        },
+        {
+          "query": "useIsFetching",
+          "path": "packages/react-query/src/useIsFetching.ts",
+          "qualifiedName": "useIsFetching",
+          "absentFromThisPrimaryResult": true,
+          "absentFromEarlierStructuredSearchResults": true,
+          "matchingCandidateMetadataObserved": true,
+          "successfulSubsequentReads": [
+            {
+              "callId": "call_0180c7ef66244e32a684c95d36816ee6",
+              "usingAlias": false,
+              "usingQualifiedTarget": true
+            }
+          ]
+        },
+        {
+          "query": "interface QueryFilters",
+          "path": "packages/query-core/src/utils.ts",
+          "qualifiedName": "QueryFilters",
+          "absentFromThisPrimaryResult": true,
+          "absentFromEarlierStructuredSearchResults": true,
+          "matchingCandidateMetadataObserved": true,
+          "successfulSubsequentReads": [
+            {
+              "callId": "call_3e71adad3e734a5f855c46be62344b24",
+              "usingAlias": false,
+              "usingQualifiedTarget": true
+            }
+          ]
+        },
+        {
+          "query": "type QueryFilters",
+          "path": "packages/query-core/src/utils.ts",
+          "qualifiedName": "QueryFilters",
+          "absentFromThisPrimaryResult": true,
+          "absentFromEarlierStructuredSearchResults": false,
+          "matchingCandidateMetadataObserved": true,
+          "successfulSubsequentReads": [
+            {
+              "callId": "call_3e71adad3e734a5f855c46be62344b24",
+              "usingAlias": false,
+              "usingQualifiedTarget": true
+            }
+          ]
+        },
+        {
+          "query": "type OmitKeyof",
+          "path": "packages/query-core/src/types.ts",
+          "qualifiedName": "OmitKeyof",
+          "absentFromThisPrimaryResult": true,
+          "absentFromEarlierStructuredSearchResults": true,
+          "matchingCandidateMetadataObserved": true,
+          "successfulSubsequentReads": [
+            {
+              "callId": "call_41d9875a6ffd42838ab8134dcc5027b2",
+              "usingAlias": false,
+              "usingQualifiedTarget": true
+            }
+          ]
+        },
+        {
+          "query": "OmitKeyof",
+          "path": "packages/query-core/src/types.ts",
+          "qualifiedName": "OmitKeyof",
+          "absentFromThisPrimaryResult": true,
+          "absentFromEarlierStructuredSearchResults": false,
+          "matchingCandidateMetadataObserved": true,
+          "successfulSubsequentReads": [
+            {
+              "callId": "call_41d9875a6ffd42838ab8134dcc5027b2",
+              "usingAlias": false,
+              "usingQualifiedTarget": true
+            }
+          ]
+        }
+      ],
       "lastAttemptedFinish": null
     }
   ],
