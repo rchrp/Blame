@@ -5,7 +5,8 @@ import type { AccountVerificationResult } from '#services/account_verification_s
 import env from '#start/env'
 import { randomUUID } from 'node:crypto'
 import { DateTime } from 'luxon'
-import Stripe from 'stripe'
+import type Stripe from 'stripe'
+import { createStripeClient } from '#services/stripe_client'
 
 export type ConsumerContractStripeClient = {
   subscriptions: {
@@ -126,15 +127,15 @@ export default class ConsumerContractService {
   }
 
   private stripeClient() {
-    this.stripe ??= createStripeClient()
+    this.stripe ??= configuredStripeClient()
     return this.stripe
   }
 }
 
-function createStripeClient(): ConsumerContractStripeClient {
+function configuredStripeClient(): ConsumerContractStripeClient {
   const secretKey = env.get('STRIPE_SECRET_KEY')
   if (!secretKey) throw new Error('Stripe billing is not configured')
-  return new Stripe(secretKey)
+  return createStripeClient(secretKey)
 }
 
 function invalidContract() {

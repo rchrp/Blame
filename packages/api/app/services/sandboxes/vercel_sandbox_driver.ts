@@ -53,8 +53,7 @@ import {
   type RunnerCallOptions,
 } from '#services/sandboxes/vercel_sandbox_support'
 type RunnerResponse<T> =
-  | { ok: true; result: T }
-  | { ok: false; error: { code: string; message: string } }
+  { ok: true; result: T } | { ok: false; error: { code: string; message: string } }
 
 type RunnerEndpointMap = {
   revision: number

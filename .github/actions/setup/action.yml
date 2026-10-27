@@ -4,7 +4,7 @@ description: Install pnpm, Node.js and the workspace dependencies
 inputs:
   node-version:
     description: Node.js version
-    default: "22"
+    default: "24"
   save-cache:
     description: >-
       Save the pnpm store after installing. Tag builds pass "false": a cache

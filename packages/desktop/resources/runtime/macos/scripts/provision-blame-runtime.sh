@@ -1,15 +1,15 @@
 set -eu
 
-runtime_version="${1:-11}"
+runtime_version="${1:-13}"
 runtime_root="/home/blame/.local/share/blame/runtime"
 package_manager_root="/opt/blame/package-managers"
 cline_sdk_version="${BLAME_CLINE_SDK_VERSION:-${2:-0.2.0}}"
-docker_version="${BLAME_DOCKER_VERSION:-29.9.1}"
-compose_version="${BLAME_COMPOSE_VERSION:-5.6.0}"
-buildx_version="${BLAME_BUILDX_VERSION:-0.38.0}"
-node_version="${BLAME_NODE_VERSION:-22.23.1}"
-npm_version="${BLAME_NPM_VERSION:-11.6.4}"
-pnpm_version="${BLAME_PNPM_VERSION:-10.33.2}"
+docker_version="${BLAME_DOCKER_VERSION:-29.9.2}"
+compose_version="${BLAME_COMPOSE_VERSION:-5.6.1}"
+buildx_version="${BLAME_BUILDX_VERSION:-0.38.1}"
+node_version="${BLAME_NODE_VERSION:-24.22.1}"
+npm_version="${BLAME_NPM_VERSION:-12.2.1}"
+pnpm_version="${BLAME_PNPM_VERSION:-12.15.0}"
 yarn_version="${BLAME_YARN_VERSION:-1.22.22}"
 runtime_packages="bubblewrap ca-certificates curl dbus-user-session git gzip iptables procps python3 tar xz-utils"
 
@@ -58,7 +58,10 @@ ensure_node() {
 
 ensure_package_managers() {
   ensure_package_manager npm "$npm_version"
+  ensure_package_manager npm "11.6.4"
   ensure_package_manager pnpm "$pnpm_version"
+  # Existing projects can keep their pnpm 10 pin when the runtime upgrades.
+  ensure_package_manager pnpm "10.33.2"
   ensure_package_manager yarn "$yarn_version"
 }
 
@@ -87,8 +90,8 @@ node_archive_architecture() {
 
 node_archive_sha256() {
   case "$node_version:$1" in
-    22.23.1:x64) printf '%s' "9749e988f437343b7fa832c69ded82a312e41a03116d766797ac14f6f9eee578" ;;
-    22.23.1:arm64) printf '%s' "0294e8b915ab75f92c7513d2fcb830ae06e10684e6c603e99a87dbf8835389c1" ;;
+    24.22.1:x64) printf '%s' "6c172a9ab6718f7b801fb5a7bd486af2ee5e32758086a04b84fcce2aa77095e6" ;;
+    24.22.1:arm64) printf '%s' "dbabf7a1cbf947e6059ffad2c27b80041db97dea1e553b62afdee7f13fca336e" ;;
     *)
       if [ -z "${BLAME_NODE_SHA256:-}" ]; then
         printf '%s\n' "BLAME_NODE_SHA256 is required for Node $node_version on $1." >&2
@@ -252,12 +255,12 @@ docker_artifact_sha256() {
     *) return 1 ;;
   esac
   case "$1:$version:$2" in
-    docker:29.9.1:amd64) printf '%s' "c158ecc55adb3afb01bbd3539ed3b997d20c26dbdc418080506cc1bf5243ff57" ;;
-    docker:29.9.1:arm64) printf '%s' "3e93cc6d1a686456a3b18eefdde26467a837a7a2b257af22e27cba1dbc1b2018" ;;
-    compose:5.6.0:amd64) printf '%s' "40343e21ca777173e69cff5dbafeb37c6f81f3b0d57d9e597f036e95eb63e76a" ;;
-    compose:5.6.0:arm64) printf '%s' "733ec76717ceb59052a9609b9dadfb523b2df8eab57a54212872d10a58078ea2" ;;
-    buildx:0.38.0:amd64) printf '%s' "4fe4cc38adf48169132749b6ca22a990928db0118e3407584ee553723115d287" ;;
-    buildx:0.38.0:arm64) printf '%s' "38e890e1a162bfdbf32fbe91404991dc4fc28e55b0de901b34374a061bab4d2c" ;;
+    docker:29.9.2:amd64) printf '%s' "9ac225999fd5e863f7694c728ef23d480616b1e5639328fa309befd4243d69eb" ;;
+    docker:29.9.2:arm64) printf '%s' "873b3e0207857c3b2f28392fb922f3ea6efe37620c16d4d4aaf2fef409c90b73" ;;
+    compose:5.6.1:amd64) printf '%s' "47737f4236e6d3ccea7291995203f8f018058783b4c3a9469119811a0b5db8c0" ;;
+    compose:5.6.1:arm64) printf '%s' "42cfa75f51ad0ccf290bad37899e0038a8c10a0069e85233ecc1d53e3ff1347d" ;;
+    buildx:0.38.1:amd64) printf '%s' "e25d5cd675092bb5d1d03632fdc46cdf3fede7b514dc5f023a105e00d3ce5ad4" ;;
+    buildx:0.38.1:arm64) printf '%s' "3b83b3731916ba433feccaaa689fe5bcdc81c641d92c8e6c2ea865dfa141c97a" ;;
     *)
       printf '%s\n' "No pinned checksum for $1 $version on $2." >&2
       return 1

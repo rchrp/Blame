@@ -1,8 +1,10 @@
 import { execFile } from "node:child_process"
 import {
+  cp,
   mkdtemp,
   readFile,
   readdir,
+  realpath,
   rename,
   rm,
   stat,
@@ -11,6 +13,7 @@ import {
 import { tmpdir } from "node:os"
 import { basename, dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
+import { createRequire } from "node:module"
 import { promisify } from "node:util"
 import { gzip, gunzip } from "node:zlib"
 import type { Configuration } from "electron-builder"
@@ -66,12 +69,30 @@ type PackContext = {
 }
 
 async function finalizePackage(context: PackContext) {
+  await restoreBundledPackageManagers(context)
   if (context.electronPlatformName !== "darwin") return
   await execFileAsync("xattr", ["-cr", context.appOutDir])
   console.log(`Removed macOS extended attributes from ${context.appOutDir}`)
   await assertMacosRuntimeArchitecture(context)
   if (macosCodeSigningRequested()) {
     await signMacosRuntimeExecutables(context)
+  }
+}
+
+async function restoreBundledPackageManagers(context: PackContext) {
+  const resources = context.electronPlatformName === "darwin"
+    ? join(context.appOutDir, `${context.packager.appInfo.productFilename}.app`, "Contents/Resources")
+    : join(context.appOutDir, "resources")
+  const runtimeManifest = await realpath(join(projectDir, "node_modules/@blame/agent-runtime/package.json"))
+  const runtimeRequire = createRequire(runtimeManifest)
+  for (const name of ["npm", "npm-legacy"]) {
+    // The pnpm collector omits npm's vendored dependency tree. External Node
+    // executes these unpacked CLIs, so restore their complete isolated trees.
+    const source = join(dirname(runtimeRequire.resolve(`${name}/package.json`)), "node_modules")
+    await cp(source, join(resources, "app.asar.unpacked/node_modules", name, "node_modules"), {
+      recursive: true,
+      dereference: true,
+    })
   }
 }
 
@@ -253,7 +274,7 @@ async function executableArchitecture(executable: string) {
 // runtime's TypeScript language service needs the compiler's default
 // libraries: without lib.*.d.ts, built-in types such as Array or Promise do
 // not resolve and semantic references miss most uses.
-const typeScriptDefaultLibrary = /[\\/]typescript[\\/]lib[\\/]lib(?:\.[^\\/]+)?\.d\.ts$/
+const typeScriptDefaultLibrary = /[\\/](?:typescript|@typescript[\\/](?:typescript6|old))[\\/]lib[\\/]lib(?:\.[^\\/]+)?\.d\.ts$/
 
 const config: Configuration = {
   afterPack: finalizePackage,
@@ -266,7 +287,10 @@ const config: Configuration = {
     "**/node_modules/@ast-grep/lang-*/**/*",
     "**/node_modules/@vscode/ripgrep-*/**/*",
     "**/node_modules/npm/**/*",
+    "**/node_modules/npm-legacy/**/*",
     "**/node_modules/pnpm/**/*",
+    "**/node_modules/pnpm-legacy/**/*",
+    "**/node_modules/@pnpm/exe.*/**/*",
     "**/node_modules/yarn/**/*",
   ],
   productName: "Blame",
@@ -300,6 +324,7 @@ const config: Configuration = {
     target: ["AppImage", "deb", "rpm"],
   },
   mac: {
+    minimumSystemVersion: "13.0",
     category: "public.app-category.developer-tools",
     entitlements: macosInheritedEntitlements,
     entitlementsInherit: macosInheritedEntitlements,

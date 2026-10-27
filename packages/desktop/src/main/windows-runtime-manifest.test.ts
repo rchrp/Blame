@@ -130,7 +130,7 @@ test("pins every macOS runtime build input with a SHA-256", async () => {
     await readFile(managedManifestPaths[0], "utf8"),
   ) as MacosRuntimeManifest;
 
-  assert.equal(manifest.lima?.version, "2.1.2");
+  assert.equal(manifest.lima?.version, "2.2.1");
   assert.equal(manifest.lima?.bin, "lima/bundle/bin");
   assertVerifiedSpecs(manifest.baseImages, ["aarch64", "x86_64"]);
   assertVerifiedSpecs(manifest.lima?.archives?.darwin, ["arm64", "x86_64"]);

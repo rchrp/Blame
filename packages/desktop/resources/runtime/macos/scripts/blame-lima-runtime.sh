@@ -181,7 +181,7 @@ check docker-compose sh -lc 'docker compose version >/dev/null 2>&1'
 check git sh -lc 'command -v git >/dev/null 2>&1'
 check cline-sdk valid_cline_sdk_install
 check semantic-harness sh -lc 'command -v blame-semantic-harness >/dev/null 2>&1 && test "$(cat /etc/blame-semantic-harness-sha256 2>/dev/null)" = "$1"' sh "$semantic_harness_sha256"
-check package-managers sh -lc 'test "$(/opt/blame/package-managers/pnpm/10.33.2/bin/pnpm --version 2>/dev/null)" = "10.33.2" && test "$(/opt/blame/package-managers/npm/11.6.4/bin/npm --version 2>/dev/null)" = "11.6.4" && test "$(/opt/blame/package-managers/yarn/1.22.22/bin/yarn --version 2>/dev/null)" = "1.22.22"'
+check package-managers sh -lc 'test "$(/opt/blame/package-managers/pnpm/12.15.0/bin/pnpm --version 2>/dev/null)" = "12.15.0" && test "$(/opt/blame/package-managers/npm/12.2.1/bin/npm --version 2>/dev/null)" = "12.2.1" && test "$(/opt/blame/package-managers/yarn/1.22.22/bin/yarn --version 2>/dev/null)" = "1.22.22"'
 EOF
 )"
   if [ -z "$output" ]; then

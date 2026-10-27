@@ -151,15 +151,20 @@ test("run_task inspects a long command without launching it again", async () => 
     );
     assert.match((inspected as { data: { output: string } }).data.output, /second/u);
     controller.abort();
-    await delay(150);
-    const cancelled = await workspace.runTask(
-      {
-        kind: "inspect",
-        run: initial.data.run,
-        cursor: (inspected as { data: { cursor: string } }).data.cursor,
-      },
-      {},
-    );
+    // Cancellation is immediate; final journal writes can finish later on Windows.
+    let cancelled: Awaited<ReturnType<typeof workspace.runTask>>;
+    const completionDeadline = Date.now() + 5000;
+    do {
+      await delay(25);
+      cancelled = await workspace.runTask(
+        {
+          kind: "inspect",
+          run: initial.data.run,
+          cursor: (inspected as { data: { cursor: string } }).data.cursor,
+        },
+        {},
+      );
+    } while (!JSON.stringify(cancelled).includes('"completed":') && Date.now() < completionDeadline);
     assert.match(JSON.stringify(cancelled), /cancelled/u);
     assert.match(JSON.stringify(cancelled), /completed/u);
     assert.equal(await readFile(join(root, "launches"), "utf8"), "x");
@@ -169,14 +174,16 @@ test("run_task inspects a long command without launching it again", async () => 
 test("spawn failures retain their environment diagnostic", async () => {
   const result = await executeWorkspaceCommand("blame-nonexistent-test-executable", [], { cwd: tmpdir() });
   assert.equal(result.failed, true);
-  assert.equal(result.exitCode, undefined);
-  assert.match(result.all, /ENOENT/u);
+  assert.equal(result.exitCode, process.platform === "win32" ? 1 : undefined);
+  assert.match(result.all, /ENOENT|not recognized as an internal or external command/u);
 });
 
 test("Windows command scripts preserve argument boundaries", { skip: process.platform !== "win32" }, async () => {
   await fixture(async (root) => {
     const command = join(root, "echo argument.cmd");
-    await writeFile(command, "@echo off\r\necho %~1\r\n");
+    await writeFile(join(root, "echo.cjs"), "process.stdout.write(process.argv[2]);");
+    // Forward quoted argv like npm's command shims; unquoted %~1 would interpret & again.
+    await writeFile(command, `@echo off\r\n"${process.execPath}" "%~dp0echo.cjs" %*\r\n`);
     const result = await executeWorkspaceCommand(command, ["two words & literal"], { cwd: root });
     assert.equal(result.failed, false, result.all);
     assert.equal(result.all.trim(), "two words & literal");

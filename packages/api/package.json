@@ -42,7 +42,7 @@
   },
   "devDependencies": {
     "@adonisjs/assembler": "^8.6.0",
-    "@adonisjs/eslint-config": "^3.0.0",
+    "@adonisjs/eslint-config": "^3.1.0",
     "@adonisjs/prettier-config": "^1.5.0",
     "@adonisjs/tsconfig": "^2.0.0",
     "@japa/assert": "^4.2.0",
@@ -51,16 +51,17 @@
     "@poppinss/ts-exec": "^1.5.1",
     "@react-email/ui": "6.11.3",
     "@types/luxon": "^3.7.6",
-    "@types/node": "~25.6.0",
+    "@types/node": "^24.12.0",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@types/tar-stream": "3.1.5",
-    "eslint": "^10.2.0",
+    "eslint": "^10.13.0",
     "hot-hook": "^1.0.0",
     "pino-pretty": "^13.2.0",
     "prettier": "^3.9.10",
-    "typescript": "~6.0.2",
-    "youch": "^4.1.1"
+    "typescript": "npm:@typescript/typescript6@6.0.2",
+    "youch": "^4.1.1",
+    "@typescript/native": "npm:typescript@7.0.2"
   },
   "dependencies": {
     "@adonisjs/auth": "^10.1.0",
@@ -80,7 +81,7 @@
     "@cline/llms": "0.2.0",
     "@japa/api-client": "^3.2.1",
     "@tuyau/core": "^1.2.3",
-    "@vercel/sandbox": "2.9.2",
+    "@vercel/sandbox": "3.9.0",
     "@vinejs/vine": "^4.3.1",
     "better-auth": "1.7.14",
     "luxon": "^3.7.2",
@@ -90,7 +91,7 @@
     "react-email": "6.11.3",
     "reflect-metadata": "^0.2.2",
     "resend": "6.34.1",
-    "stripe": "^18.5.0",
+    "stripe": "^23.0.1",
     "tar-stream": "3.2.2"
   },
   "hotHook": {

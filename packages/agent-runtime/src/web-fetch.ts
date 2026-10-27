@@ -34,7 +34,7 @@ export function createTextWebFetchExecutor(options: WebFetchOptions = {}): WebFe
       return await fetchWebContent(url, prompt, signal, maxResponseBytes);
     } catch (error) {
       if (context.signal?.aborted) throw context.signal.reason;
-      if (timeout.aborted) throw new Error(`Request timed out after ${timeoutMs}ms`);
+      if (timeout.aborted) throw new Error(`Request timed out after ${timeoutMs}ms`, { cause: error });
       throw error;
     }
   };

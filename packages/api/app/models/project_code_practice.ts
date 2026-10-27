@@ -3,10 +3,7 @@ import { BaseModel, beforeCreate, column } from '@adonisjs/lucid/orm'
 import { DateTime } from 'luxon'
 
 export type ProjectCodePracticeKey =
-  | 'coding_style'
-  | 'unit_tests'
-  | 'layered_architecture'
-  | 'commit_message_convention'
+  'coding_style' | 'unit_tests' | 'layered_architecture' | 'commit_message_convention'
 
 export default class ProjectCodePractice extends BaseModel {
   static selfAssignPrimaryKey = true

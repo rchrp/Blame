@@ -2706,9 +2706,10 @@ export class BlameAgentRuntime {
       try {
         await git(input.worktree, ["merge", "--abort"]);
       } catch (abortError) {
-        throw new Error(
+        throw new AggregateError(
+          [error, abortError],
           `Merge resolution failed and Git could not abort the merge: ${errorMessage(abortError)}`,
-          { cause: error },
+          { cause: abortError },
         );
       }
       throw error;
