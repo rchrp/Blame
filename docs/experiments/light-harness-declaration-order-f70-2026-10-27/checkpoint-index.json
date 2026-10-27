@@ -1,6 +1,6 @@
 {
   "protocolHash": "e748f642b3303616beb7f9172229dced6249fa821dc44c2f8884e442e4c11aae",
-  "completed": 7,
+  "completed": 10,
   "planned": 12,
   "receipts": [
     {
@@ -37,6 +37,21 @@
       "name": "2-mutation-callbacks-source-order",
       "path": "checkpoints/2-mutation-callbacks-source-order.json.gz",
       "sha256": "254e0db254508008af286af66a28f7b4aa351789d338a16ddf01a21ae5d37aab"
+    },
+    {
+      "name": "2-mutation-callbacks-cline",
+      "path": "checkpoints/2-mutation-callbacks-cline.json.gz",
+      "sha256": "e2de310883a6f220a7a6288d8ab086cb89c1122494447b671ca1b7b2b59f73b5"
+    },
+    {
+      "name": "2-mutation-callbacks-reference",
+      "path": "checkpoints/2-mutation-callbacks-reference.json.gz",
+      "sha256": "8c1681383c5cfff7dfcc9c58f63c6d584c98e1f4ac7f8186897f15534626db55"
+    },
+    {
+      "name": "2-fetching-filters-cline",
+      "path": "checkpoints/2-fetching-filters-cline.json.gz",
+      "sha256": "32504b7ae0765222e02ac253e31d6e69ffda61670a581d0e086e3e97c22f7ca3"
     }
   ]
 }

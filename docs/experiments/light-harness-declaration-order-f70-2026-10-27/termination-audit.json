@@ -1,0 +1,1108 @@
+{
+  "protocolHash": "e748f642b3303616beb7f9172229dced6249fa821dc44c2f8884e442e4c11aae",
+  "executionFinished": false,
+  "trials": [
+    {
+      "name": "1-mutation-callbacks-reference",
+      "officialRuntimeSuccess": true,
+      "sourceSuccess": true,
+      "strictSuccess": true,
+      "iterationStartEvents": 14,
+      "observedStop": "official_completion",
+      "explanatoryEvent": null,
+      "lastCompletedTools": [
+        {
+          "callId": "call_3d3bc820d0f448ad9a68b116807f3224",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npm run typecheck:study:types",
+            "cwd": "/workspace/blame-study-runs/declaration-f70/active/workspace"
+          },
+          "inputSha256": "0067f6a5b689282e57f4c8d9b54a3be3d5f140d3d75fa9d38c5122fc9b0fc486",
+          "timestamp": "2026-10-27T15:11:48.804Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_bd80ae87541843aaa3a284e5033be702",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npm run test:study:delivered",
+            "cwd": "/workspace/blame-study-runs/declaration-f70/active/workspace"
+          },
+          "inputSha256": "66a95b165190411efcd4c780bdb05ae4b46a992dab8b710814ae154695e4feb6",
+          "timestamp": "2026-10-27T15:11:53.950Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_956bd630a22340358fd08942423e1846",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npm run typecheck:study:delivered-types",
+            "cwd": "/workspace/blame-study-runs/declaration-f70/active/workspace"
+          },
+          "inputSha256": "c9fe8a99a3eff4457f3045f195763363a60d7737ccdea7693defb0edbf43824f",
+          "timestamp": "2026-10-27T15:11:58.477Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_0f2b2b9639e14decbd2056783f609ac5",
+          "tool": "read_code",
+          "input": {
+            "target": "@checks",
+            "view": "raw"
+          },
+          "inputSha256": "ee6f1fade8cf063fa7517beeec5720f43e2e3a12288182afdeaf20d2dedc5f71",
+          "timestamp": "2026-10-27T15:12:07.830Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_78bc3c0d06b54b02a15344e6056b584c",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "git diff --check && git status --short && git diff -- packages/query-core/src/mutationObserver.ts packages/query-core/src/__tests__/mutationObserverCallbacks.test.tsx",
+            "cwd": "/workspace/blame-study-runs/declaration-f70/active/workspace"
+          },
+          "inputSha256": "3983c858c2731b32617a2ec1d2b497ccd52139812d72d98d9da4c4588717b51b",
+          "timestamp": "2026-10-27T15:12:08.306Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_f89993a49a4b4e8185b6db05c5ef44d7",
+          "tool": "finish_task",
+          "input": {
+            "summary": "Implemented per-call mutation callback snapshotting in `MutationObserver`: settlement callbacks now retain the settling mutation’s per-call handlers, variables, and context even when `onSuccess` or `onError` starts another mutation. Added `packages/query-core/src/__tests__/mutationObserverCallbacks.test.tsx` covering both success and error re-entrant mutations, including `onSettled` arguments and second-mutation callbacks.\n\nChecks run directly as requested:\n- `npm run test:study:regression`: process exit 0; Vitest reported 22 test files and 617 tests passed. The check wrapper’s admitted status remained unverified/unknown despite the runner output.\n- `npm run typecheck:study:types`: exit 0; admitted passed.\n- `npm run test:study:delivered`: process exit 0; Vitest reported 1 test file and 2 tests passed. The check wrapper’s admitted status remained unverified/unknown despite the runner output.\n- `npm run typecheck:study:delivered-types`: exit 0; admitted passed.\n\nAdditional `git diff --check` completed with exit 0. Coverage limit: the regression command covers the supplied query-core regression suite, while the delivered command covers only the new regression file; no broader repository test/build suite was run. No manifests or configuration files were changed."
+          },
+          "inputSha256": "7e9bb3186991ca4f00ce969879eb2c8a0e1127efbc858e9b3ee2fd3b0ae48807",
+          "timestamp": "2026-10-27T15:12:15.957Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        }
+      ]
+    },
+    {
+      "name": "1-mutation-callbacks-source-order",
+      "officialRuntimeSuccess": true,
+      "sourceSuccess": true,
+      "strictSuccess": true,
+      "iterationStartEvents": 16,
+      "observedStop": "official_completion",
+      "explanatoryEvent": null,
+      "lastCompletedTools": [
+        {
+          "callId": "call_556acf40f1fa46908c540d16507b8d95",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npm run typecheck:study:types",
+            "cwd": "/workspace/blame-study-runs/declaration-f70/active/workspace"
+          },
+          "inputSha256": "0067f6a5b689282e57f4c8d9b54a3be3d5f140d3d75fa9d38c5122fc9b0fc486",
+          "timestamp": "2026-10-27T15:15:03.942Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_caf8aaf750df4fb3a852b0e607ad1d89",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npm run test:study:delivered",
+            "cwd": "/workspace/blame-study-runs/declaration-f70/active/workspace"
+          },
+          "inputSha256": "66a95b165190411efcd4c780bdb05ae4b46a992dab8b710814ae154695e4feb6",
+          "timestamp": "2026-10-27T15:15:07.548Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_14e67e335ab64793b2b40e0ee85d976f",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npm run typecheck:study:delivered-types",
+            "cwd": "/workspace/blame-study-runs/declaration-f70/active/workspace"
+          },
+          "inputSha256": "c9fe8a99a3eff4457f3045f195763363a60d7737ccdea7693defb0edbf43824f",
+          "timestamp": "2026-10-27T15:15:11.759Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_7e2aaded6dae4801b884bc983f9db191",
+          "tool": "read_code",
+          "input": {
+            "target": "@checks"
+          },
+          "inputSha256": "41331bf85aa8807b84de1913627f3ee6455ed96228263d92d51494bcce418153",
+          "timestamp": "2026-10-27T15:15:14.323Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_ca8c86f6a32d4ad1b46660fbe3e7b2f9",
+          "tool": "read_code",
+          "input": {
+            "target": "packages/query-core/src/notifyManager.ts",
+            "view": "range",
+            "range": {
+              "startLine": 1,
+              "endLine": 230
+            }
+          },
+          "inputSha256": "534a4a252e8eff9c170a28734ac9ddd35327a1f9ec063f11f51bfe8368b2b337",
+          "timestamp": "2026-10-27T15:15:24.346Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_afde6601bc75415eb32e502e060e67b5",
+          "tool": "finish_task",
+          "input": {
+            "summary": "Implemented the per-call mutation callback fix in `MutationObserver.#notify` by snapshotting the settling mutation’s mutate options and result before invoking callbacks. This keeps `onSuccess`/`onError` and `onSettled` aligned with the mutation’s own data, variables, and context even when a callback starts a subsequent mutation.\n\nAdded `packages/query-core/src/__tests__/mutationObserver-callbacks.test.tsx` with success and error regressions covering callback replacement, argument preservation, and ensuring each mutation’s `onSettled` runs exactly once. Existing tests were preserved.\n\nChecks run directly after the final edit:\n- `npm run test:study:regression` — exit 0; 22 test files passed, 617 tests passed. The runner’s structured admission remained unverified despite the successful process result.\n- `npm run typecheck:study:types` — exit 0; admitted passed.\n- `npm run test:study:delivered` — exit 0; 1 delivered test file passed, 2 tests passed. The runner’s structured admission remained unverified despite the successful process result.\n- `npm run typecheck:study:delivered-types` — exit 0; admitted passed.\n\nCoverage limits: the regression suite covers query-core runtime tests, and the delivered suite covers the new regression file. These checks do not establish broader integration/application behavior, nor do they independently prove subscription, notification, retry, or cache behavior beyond the existing query-core suite exercised by the regression command."
+          },
+          "inputSha256": "d5e77530f2b8d4239b2b5a8c4915788a2b808f3700763a0aa457c2dae07ef416",
+          "timestamp": "2026-10-27T15:15:28.780Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        }
+      ]
+    },
+    {
+      "name": "1-mutation-callbacks-cline",
+      "officialRuntimeSuccess": true,
+      "sourceSuccess": true,
+      "strictSuccess": true,
+      "iterationStartEvents": 13,
+      "observedStop": "official_completion",
+      "explanatoryEvent": null,
+      "lastCompletedTools": [
+        {
+          "callId": "call_4454d9af577b4aa8ba037e0dc7373095",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run typecheck:study:types"
+            ],
+            "timeout": 120000
+          },
+          "inputSha256": "33ad323452ae1e2348cac45ceb5925d5ff6a87706cc5bfe5e396387f04ac403f",
+          "timestamp": "2026-10-27T15:18:04.863Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_913e0b5a7977437d826c279a93a56d08",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run test:study:delivered"
+            ],
+            "timeout": 120000
+          },
+          "inputSha256": "b090c8ffb71e1ece1d60f090e965d75304d6e352987cf2899d38b1ea1cdda4fb",
+          "timestamp": "2026-10-27T15:18:08.298Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_48d569d6345545bc84d6174f2f57c301",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run typecheck:study:delivered-types"
+            ],
+            "timeout": 120000
+          },
+          "inputSha256": "27440d873d32723bdf309e03ac76bbeb7079e4d4ff24d919ec2fc3cc95df1160",
+          "timestamp": "2026-10-27T15:18:12.051Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_4f4433d9dba94df29418e146303bb781",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "git status --short --branch && git diff --check && git diff -- packages/query-core/src/mutationObserver.ts packages/query-core/src/__tests__/mutationObserverCallbacks.test.tsx"
+            ],
+            "timeout": 120000
+          },
+          "inputSha256": "21ec587aaf226e165537b2f144c4169f426fbd97eaa4eeacefe0643ddb1e3562",
+          "timestamp": "2026-10-27T15:18:17.140Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_4be38978874242109980eabbebb63270",
+          "tool": "read_files",
+          "input": {
+            "files": [
+              {
+                "path": "/workspace/blame-study-runs/declaration-f70/active/workspace/packages/query-core/src/mutationObserver.ts",
+                "start_line": 245,
+                "end_line": 315
+              },
+              {
+                "path": "/workspace/blame-study-runs/declaration-f70/active/workspace/packages/query-core/src/__tests__/mutationObserverCallbacks.test.tsx"
+              }
+            ]
+          },
+          "inputSha256": "aeb263b05f31c7e8563cc6c7e4845d5ecb4c2cf9bb97353dcfc209caa340ee8b",
+          "timestamp": "2026-10-27T15:18:17.328Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_81974573d3ad45eb9d96fa655ce99f2e",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "git ls-files --others --exclude-standard | sort"
+            ],
+            "timeout": 120000
+          },
+          "inputSha256": "107d77506bd6ff329f129e3625284050c25f87a40b087ac730f2ede3740e2a4a",
+          "timestamp": "2026-10-27T15:18:17.555Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        }
+      ]
+    },
+    {
+      "name": "1-fetching-filters-source-order",
+      "officialRuntimeSuccess": false,
+      "sourceSuccess": true,
+      "strictSuccess": false,
+      "iterationStartEvents": 27,
+      "observedStop": "sdk_identical_call_guard",
+      "explanatoryEvent": {
+        "event": {
+          "type": "notice",
+          "sessionId": "1793114363878_58497",
+          "payload": {
+            "iteration": 27,
+            "message": "Detected 5 consecutive identical calls to `run_task`; stopping to avoid a loop.",
+            "recoverable": true
+          },
+          "executionId": "1793114363878_58497:initial-execution"
+        },
+        "kind": "agent_event",
+        "recordedAt": "2026-10-27T15:24:05.956Z",
+        "schemaVersion": 1
+      },
+      "lastCompletedTools": [
+        {
+          "callId": "call_cbe0993d0f184bc9bf04c37aafb9935a",
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "path": "packages/query-core/src/__tests__/fetchingFilters.test.tsx",
+                "patch": "*** Begin Patch\n*** Update File: packages/query-core/src/__tests__/fetchingFilters.test.tsx\n@@\n- describe('fetching filters', () => {\n+describe('fetching filters', () => {\n*** End Patch"
+              }
+            ]
+          },
+          "inputSha256": "b2b9e14d1db16b1b5e62231a5cb145b703c1a0732af7af2b07d030eba7484593",
+          "timestamp": "2026-10-27T15:23:33.768Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_7cb35154a7c944e9bcf6753b69793972",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npm run test:study:regression",
+            "cwd": "/workspace/blame-study-runs/declaration-f70/active/workspace"
+          },
+          "inputSha256": "91419c621df4ed452471bdff5f6387b05fb7d8cba7954a9781bc9c6b7f955b5e",
+          "timestamp": "2026-10-27T15:23:52.020Z",
+          "status": "ok",
+          "process": "running",
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_34b33ccb78914566823d528d3c6e2593",
+          "tool": "run_task",
+          "input": {
+            "kind": "inspect",
+            "run": "r6",
+            "cursor": "162"
+          },
+          "inputSha256": "761e89a6d5d0c8f0e8ef54a843141537ec39769649b7425108c6b67e89a628ad",
+          "timestamp": "2026-10-27T15:23:55.083Z",
+          "status": "ok",
+          "process": "running",
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_32ab9a5a946c459f8b4850a2be8c48a0",
+          "tool": "run_task",
+          "input": {
+            "kind": "inspect",
+            "run": "r6",
+            "cursor": "162"
+          },
+          "inputSha256": "761e89a6d5d0c8f0e8ef54a843141537ec39769649b7425108c6b67e89a628ad",
+          "timestamp": "2026-10-27T15:23:57.542Z",
+          "status": "ok",
+          "process": "running",
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_2708bcc63daa46339652ef8fef512ef4",
+          "tool": "run_task",
+          "input": {
+            "kind": "inspect",
+            "run": "r6",
+            "cursor": "162"
+          },
+          "inputSha256": "761e89a6d5d0c8f0e8ef54a843141537ec39769649b7425108c6b67e89a628ad",
+          "timestamp": "2026-10-27T15:23:59.985Z",
+          "status": "ok",
+          "process": "running",
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_07b144cc8960447d889668474ff1f0cd",
+          "tool": "run_task",
+          "input": {
+            "kind": "inspect",
+            "run": "r6",
+            "cursor": "162"
+          },
+          "inputSha256": "761e89a6d5d0c8f0e8ef54a843141537ec39769649b7425108c6b67e89a628ad",
+          "timestamp": "2026-10-27T15:24:02.809Z",
+          "status": "ok",
+          "process": "running",
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        }
+      ]
+    },
+    {
+      "name": "1-fetching-filters-cline",
+      "officialRuntimeSuccess": true,
+      "sourceSuccess": true,
+      "strictSuccess": true,
+      "iterationStartEvents": 16,
+      "observedStop": "official_completion",
+      "explanatoryEvent": null,
+      "lastCompletedTools": [
+        {
+          "callId": "call_cf0bcefc6bae4281912daaff8eef19be",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run typecheck:study:delivered-types"
+            ],
+            "timeout": 120000
+          },
+          "inputSha256": "27440d873d32723bdf309e03ac76bbeb7079e4d4ff24d919ec2fc3cc95df1160",
+          "timestamp": "2026-10-27T15:29:38.407Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_e816edd532c2472f838412dc2e260552",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run test:study:delivered"
+            ],
+            "timeout": 120000
+          },
+          "inputSha256": "b090c8ffb71e1ece1d60f090e965d75304d6e352987cf2899d38b1ea1cdda4fb",
+          "timestamp": "2026-10-27T15:29:40.178Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_1a957a515e9f47a8bc57c525d2d5a62b",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "git status --short && git diff --check"
+            ],
+            "timeout": 120000
+          },
+          "inputSha256": "455e87232f19b36d6ab241b93e4acdb7ad4d9a8f50d943891659c2b4dd4446a1",
+          "timestamp": "2026-10-27T15:29:40.406Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_8e5d346293fd4272981807cfc1f2fdcf",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run test:study:regression"
+            ],
+            "timeout": 120000
+          },
+          "inputSha256": "ce246506f499a7164ff6ba56bc11a0c6dc6b0afd2f4d71e1bdc9cc99543be90e",
+          "timestamp": "2026-10-27T15:30:15.198Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_344583f95c8e4168911f59638a4c71c3",
+          "tool": "read_files",
+          "input": {
+            "files": [
+              {
+                "path": "/workspace/blame-study-runs/declaration-f70/active/workspace/packages/query-core/src/queryClient.ts",
+                "start_line": 40,
+                "end_line": 165
+              },
+              {
+                "path": "/workspace/blame-study-runs/declaration-f70/active/workspace/packages/react-query/src/useIsFetching.ts",
+                "start_line": 1,
+                "end_line": 65
+              },
+              {
+                "path": "/workspace/blame-study-runs/declaration-f70/active/workspace/packages/query-core/src/__tests__/isFetchingFilters.test-d.ts"
+              },
+              {
+                "path": "/workspace/blame-study-runs/declaration-f70/active/workspace/packages/query-core/src/__tests__/isFetchingFilters.test.tsx"
+              },
+              {
+                "path": "/workspace/blame-study-runs/declaration-f70/active/workspace/packages/react-query/src/__tests__/useIsFetchingFilters.test-d.tsx"
+              }
+            ]
+          },
+          "inputSha256": "e7cd93c85f856a5df672bdd35e2a521087aff175839b1687acfbedaf6626d7bb",
+          "timestamp": "2026-10-27T15:30:25.896Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_fd3f341b26874f18b00a9e481dd39f4f",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "git diff --check && git status --short && git diff --stat && git diff -- packages/query-core/src/queryClient.ts packages/react-query/src/useIsFetching.ts"
+            ],
+            "timeout": 120000
+          },
+          "inputSha256": "06c67e1524597552e116bd8e03236a7a07afef077c1de2ed27ae96768dbcb09e",
+          "timestamp": "2026-10-27T15:30:26.182Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        }
+      ]
+    },
+    {
+      "name": "1-fetching-filters-reference",
+      "officialRuntimeSuccess": false,
+      "sourceSuccess": false,
+      "strictSuccess": false,
+      "iterationStartEvents": 23,
+      "observedStop": "sdk_identical_call_guard",
+      "explanatoryEvent": {
+        "event": {
+          "type": "notice",
+          "sessionId": "1793115107888_9f7f9",
+          "payload": {
+            "iteration": 23,
+            "message": "Detected 5 consecutive identical calls to `run_task`; stopping to avoid a loop.",
+            "recoverable": true
+          },
+          "executionId": "1793115107888_9f7f9:initial-execution"
+        },
+        "kind": "agent_event",
+        "recordedAt": "2026-10-27T15:35:58.344Z",
+        "schemaVersion": 1
+      },
+      "lastCompletedTools": [
+        {
+          "callId": "call_b72fc4b51d2e4cd1ac9c3374f3558ca0",
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "path": "packages/query-core/src/__tests__/isFetchingFilters.test.tsx",
+                "patch": "import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'\nimport { sleep } from '@tanstack/query-test-utils'\nimport { QueryClient } from '..'\n\ndescribe('QueryClient.isFetching filters', () => {\n  let queryClient: QueryClient\n\n  beforeEach(() => {\n    vi.useFakeTimers()\n    queryClient = new QueryClient()\n  })\n\n  afterEach(() => {\n    queryClient.clear()\n    vi.useRealTimers()\n  })\n\n  it('preserves the other query filters', async () => {\n    const key = ['key'] as const\n\n    void queryClient\n      .query({\n        queryKey: key,\n        queryFn: () => sleep(10).then(() => 'data'),\n      })\n      .catch(() => undefined)\n\n    expect(queryClient.isFetching({ queryKey: key, exact: true })).toBe(1)\n    expect(\n      queryClient.getQueryCache().findAll({ fetchStatus: 'fetching' }),\n    ).toHaveLength(1)\n\n    await vi.advanceTimersByTimeAsync(10)\n    expect(queryClient.isFetching({ queryKey: key })).toBe(0)\n    expect(\n      queryClient.getQueryCache().findAll({ fetchStatus: 'idle' }),\n    ).toHaveLength(1)\n  })\n})\n"
+              },
+              {
+                "kind": "patch",
+                "path": "packages/react-query/src/__tests__/useIsFetchingFilters.test.tsx",
+                "patch": "import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'\nimport { sleep } from '@tanstack/query-test-utils'\nimport { QueryClient, useIsFetching, useQuery } from '..'\nimport { renderWithClient } from './utils'\n\n describe('useIsFetching filters', () => {\n  beforeEach(() => {\n    vi.useFakeTimers()\n  })\n\n  afterEach(() => {\n    vi.useRealTimers()\n  })\n\n  it('preserves the other query filters', async () => {\n    const queryClient = new QueryClient()\n    const key = ['key'] as const\n\n    function Page() {\n      const isFetching = useIsFetching({ queryKey: key, exact: true })\n      useQuery({\n        queryKey: key,\n        queryFn: () => sleep(10).then(() => 'data'),\n      })\n\n      return <div>isFetching: {isFetching}</div>\n    }\n\n    const rendered = renderWithClient(queryClient, <Page />)\n\n    expect(rendered.getByText('isFetching: 1')).toBeInTheDocument()\n    await vi.advanceTimersByTimeAsync(10)\n    expect(rendered.getByText('isFetching: 0')).toBeInTheDocument()\n  })\n})\n"
+              }
+            ]
+          },
+          "inputSha256": "e0569f23824822f5b584edf8c11fcdb84045e5dde213c1c71fefc6eba9add3b2",
+          "timestamp": "2026-10-27T15:35:27.021Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_c62b7353a51e4e9dbe78503175d87655",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "test:study:regression"
+          },
+          "inputSha256": "bd6a23666cee27cfb799ab6fdfa9e3489cd0c22ddef230e1fa40f30618530720",
+          "timestamp": "2026-10-27T15:35:46.729Z",
+          "status": "ok",
+          "process": "running",
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_c0b1addca64f4e8ba2d17d63d436625d",
+          "tool": "run_task",
+          "input": {
+            "kind": "inspect",
+            "run": "r7",
+            "cursor": "162"
+          },
+          "inputSha256": "bafdbf5bf6d208568ecfb7b42380309c42d2e76ffd7477bec1477da06f7cfde8",
+          "timestamp": "2026-10-27T15:35:48.514Z",
+          "status": "ok",
+          "process": "running",
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_d7e60e8895c243afb766d89d9f2668e7",
+          "tool": "run_task",
+          "input": {
+            "kind": "inspect",
+            "run": "r7",
+            "cursor": "162"
+          },
+          "inputSha256": "bafdbf5bf6d208568ecfb7b42380309c42d2e76ffd7477bec1477da06f7cfde8",
+          "timestamp": "2026-10-27T15:35:51.952Z",
+          "status": "ok",
+          "process": "running",
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_e2ed6eeb09794a989f970c20269e6553",
+          "tool": "run_task",
+          "input": {
+            "kind": "inspect",
+            "run": "r7",
+            "cursor": "162"
+          },
+          "inputSha256": "bafdbf5bf6d208568ecfb7b42380309c42d2e76ffd7477bec1477da06f7cfde8",
+          "timestamp": "2026-10-27T15:35:53.882Z",
+          "status": "ok",
+          "process": "running",
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_b0582ab001774bafb8c39e7f0fa21898",
+          "tool": "run_task",
+          "input": {
+            "kind": "inspect",
+            "run": "r7",
+            "cursor": "162"
+          },
+          "inputSha256": "bafdbf5bf6d208568ecfb7b42380309c42d2e76ffd7477bec1477da06f7cfde8",
+          "timestamp": "2026-10-27T15:35:55.464Z",
+          "status": "ok",
+          "process": "running",
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        }
+      ]
+    },
+    {
+      "name": "2-mutation-callbacks-source-order",
+      "officialRuntimeSuccess": true,
+      "sourceSuccess": true,
+      "strictSuccess": true,
+      "iterationStartEvents": 10,
+      "observedStop": "official_completion",
+      "explanatoryEvent": null,
+      "lastCompletedTools": [
+        {
+          "callId": "call_3f11faefa63746a6ad1b7bf495515956",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npm run typecheck:study:types"
+          },
+          "inputSha256": "5d08f77d22b3075f7f1d67dc7ec5581d1febf1f92bac289dce76925b7655ef23",
+          "timestamp": "2026-10-27T15:39:00.849Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_3b316c2097d84c10a836bdd94766e975",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npm run test:study:delivered"
+          },
+          "inputSha256": "cae0a030d0c4140394d423be75b7b05d75885d8c8c832393b2e36c9ba485ac99",
+          "timestamp": "2026-10-27T15:39:02.566Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_09e27ed5a0e344a4aa784bab74772d7f",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npm run typecheck:study:delivered-types"
+          },
+          "inputSha256": "392e94f8cacad98651f322c273300a760bc1e97232d7955d979cfb13f25a2423",
+          "timestamp": "2026-10-27T15:39:04.920Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_bf8ac3ba01c340179cb6ebc3d56db8da",
+          "tool": "read_code",
+          "input": {
+            "target": "packages/query-core/src/__tests__/mutationObserverCallback.test.tsx",
+            "view": "raw"
+          },
+          "inputSha256": "0ceb727acfbbcac53db4e911ccd1d9e9f92e8690f02126f268342daf86a70750",
+          "timestamp": "2026-10-27T15:39:07.841Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_024170c5bed64715bf99c4ae02332f70",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "git status --short && git diff --stat && git diff -- packages/query-core/src/mutationObserver.ts packages/query-core/src/__tests__/mutationObserverCallback.test.tsx"
+          },
+          "inputSha256": "4536431c8aa370ff425ed28e82fa6f9df3f95da0db6fadfa3deac98a1e917f70",
+          "timestamp": "2026-10-27T15:39:08.424Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_a9ffe4e1fc06469e9b17097fde62d383",
+          "tool": "finish_task",
+          "input": {
+            "summary": "Implemented per-call mutation callback snapshotting in `MutationObserver.#notify`. Settlement callbacks now retain the settled mutation’s mutate options, variables, onMutate context, and mutation-function context even when `onSuccess` or `onError` starts another mutation; `onSettled` consequently cannot use the next mutation’s handlers or state.\n\nAdded `packages/query-core/src/__tests__/mutationObserverCallback.test.tsx` with success and error regressions covering nested mutations and callback arguments.\n\nChecks run directly after the final source/test edit:\n- `npm run test:study:regression` — passed: 22 test files, 617 tests.\n- `npm run typecheck:study:types` — passed.\n- `npm run test:study:delivered` — passed: 1 delivered test file, 2 tests.\n- `npm run typecheck:study:delivered-types` — passed.\n\nAdditional focused regression execution passed: 1 file, 2 tests. Coverage limit: the supplied regression suite and delivered test suite validate the relevant query-core behavior, while the type checks report successful compilation but do not provide runtime behavior coverage; no broader package/build or integration validation was run."
+          },
+          "inputSha256": "d8788a8838413954b81a0c31ceedd66fbe27f87e483426f2ab2cb409ba29467d",
+          "timestamp": "2026-10-27T15:39:13.750Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        }
+      ]
+    },
+    {
+      "name": "2-mutation-callbacks-cline",
+      "officialRuntimeSuccess": true,
+      "sourceSuccess": true,
+      "strictSuccess": true,
+      "iterationStartEvents": 14,
+      "observedStop": "official_completion",
+      "explanatoryEvent": null,
+      "lastCompletedTools": [
+        {
+          "callId": "call_d369e3a08c144284a75b5fc0bde22908",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run test:study:regression"
+            ]
+          },
+          "inputSha256": "d2a2e37afc47f60828f4bc0857b112c5f1a673200d9f2df496762ddc19fd8162",
+          "timestamp": "2026-10-27T15:41:56.171Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_a7e8a254aee4411dbc784f78c6190974",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run typecheck:study:types"
+            ]
+          },
+          "inputSha256": "f4644fc36592ae7f2df65433d1a3f9baf3bf6adb6036a4e490f83451e72ae39f",
+          "timestamp": "2026-10-27T15:41:59.439Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_c2f3536f61d5491b9c7b28b6af430bbe",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run test:study:delivered"
+            ]
+          },
+          "inputSha256": "6f2e702134ce1e3574e39a1eb65f6efc55f30fe8ab58d877e233fca2f7bf3f14",
+          "timestamp": "2026-10-27T15:42:02.496Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_e58b0bb7f5ab4146bb2a7cc9c0adfd7a",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run typecheck:study:delivered-types"
+            ]
+          },
+          "inputSha256": "194aba918f8461c7af86596f6e78318e9667db498832c35ca30e7e5a4d70efd6",
+          "timestamp": "2026-10-27T15:42:07.246Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_4777cbaae6ea485cadd1049d45b8825d",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "git status --short --branch && git diff --check && git diff --stat && git diff -- packages/query-core/src/mutationObserver.ts packages/query-core/src/__tests__/mutationObserver.callbacks.test.tsx"
+            ]
+          },
+          "inputSha256": "361c74de74735301df0e9980ec28b4733b9c923d9ad5939df91ecd2df86839e0",
+          "timestamp": "2026-10-27T15:42:14.559Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_1769065699f749adb2129c9f473878c4",
+          "tool": "read_files",
+          "input": {
+            "files": [
+              {
+                "path": "/workspace/blame-study-runs/declaration-f70/active/workspace/packages/query-core/src/mutationObserver.ts",
+                "start_line": 250,
+                "end_line": 316
+              },
+              {
+                "path": "/workspace/blame-study-runs/declaration-f70/active/workspace/packages/query-core/src/__tests__/mutationObserver.callbacks.test.tsx"
+              }
+            ]
+          },
+          "inputSha256": "797cdf497403b464c669f1b4e2d59a1627bdc91ce37e2009de8bce0a9aa69a9a",
+          "timestamp": "2026-10-27T15:42:14.760Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        }
+      ]
+    },
+    {
+      "name": "2-mutation-callbacks-reference",
+      "officialRuntimeSuccess": true,
+      "sourceSuccess": true,
+      "strictSuccess": true,
+      "iterationStartEvents": 18,
+      "observedStop": "official_completion",
+      "explanatoryEvent": null,
+      "lastCompletedTools": [
+        {
+          "callId": "call_dcfaa6eede924bb1b8d2a41d1ca87631",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npm run typecheck:study:delivered-types",
+            "cwd": "/workspace/blame-study-runs/declaration-f70/active/workspace"
+          },
+          "inputSha256": "c9fe8a99a3eff4457f3045f195763363a60d7737ccdea7693defb0edbf43824f",
+          "timestamp": "2026-10-27T15:46:13.854Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_d083dbcfedea450f94bd3420fed82822",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "git diff --check",
+            "cwd": "/workspace/blame-study-runs/declaration-f70/active/workspace"
+          },
+          "inputSha256": "e7b2990e08872754a1a8cd1db3d1a7949c1a5e150077732eab76d1598898b213",
+          "timestamp": "2026-10-27T15:46:22.609Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_819c7d50117944ee8237a20c331e36c5",
+          "tool": "read_code",
+          "input": {
+            "target": "packages/query-core/src/mutationObserver.ts",
+            "range": {
+              "startLine": 250,
+              "endLine": 315
+            }
+          },
+          "inputSha256": "62958bb387a73b700cae4b1364ffd58676744e569d18178241884bd43e10b152",
+          "timestamp": "2026-10-27T15:46:22.979Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_7209c6023f1248edba6d8b6c824ea53f",
+          "tool": "read_code",
+          "input": {
+            "target": "packages/query-core/src/__tests__/mutationObserver.callbacks.test.tsx",
+            "view": "raw"
+          },
+          "inputSha256": "6a5f2d38f314ea47fa8abdc92f1c195ddbd96523c3a0cf1937b8feec7084a443",
+          "timestamp": "2026-10-27T15:46:23.354Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_337a7b1a7a6146f39fbc3f162d5385a0",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "git status --short",
+            "cwd": "/workspace/blame-study-runs/declaration-f70/active/workspace"
+          },
+          "inputSha256": "5c4bcdc54f7cc82c9fe554ab9dc88f37b3118bbf8eeb7c2b28d64a2c8894b519",
+          "timestamp": "2026-10-27T15:46:23.850Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_11ec2e473d1a4bdda5dea76cefd6e36b",
+          "tool": "finish_task",
+          "input": {
+            "summary": "Implemented per-call mutation callback snapshotting in `MutationObserver.#notify`: each settled mutation now retains its own `onSuccess`/`onError`/`onSettled` handlers while callbacks may synchronously start another mutation. Added `packages/query-core/src/__tests__/mutationObserver.callbacks.test.tsx` covering success and error cases, including data, variables, and context isolation. Existing subscription/notification, retry, and cache paths were left unchanged.\n\nChecks run directly after the final edits:\n- `npm run test:study:regression` — passed; 22 test files, 617 tests passed.\n- `npm run typecheck:study:types` — passed.\n- `npm run test:study:delivered` — passed; 1 test file, 2 tests passed.\n- `npm run typecheck:study:delivered-types` — passed.\n- `git diff --check` — passed.\n\nCoverage limits: the supplied study regression suite reports the full query-core regression selection; delivered tests report only the 1-file/2-test delivered selection. The typecheck commands passed but do not report per-file or runtime coverage, and the test commands do not independently prove every public API or behavior outside their configured selections."
+          },
+          "inputSha256": "912c2e8c08706b82e36c025f80cb76421db4c96c1454112202c7bd0142c2acd4",
+          "timestamp": "2026-10-27T15:46:29.697Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        }
+      ]
+    },
+    {
+      "name": "2-fetching-filters-cline",
+      "officialRuntimeSuccess": true,
+      "sourceSuccess": true,
+      "strictSuccess": true,
+      "iterationStartEvents": 28,
+      "observedStop": "official_completion",
+      "explanatoryEvent": null,
+      "lastCompletedTools": [
+        {
+          "callId": "call_90bf1c80fd8f4b82a8f017e94919110e",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run test:study:regression"
+            ]
+          },
+          "inputSha256": "d2a2e37afc47f60828f4bc0857b112c5f1a673200d9f2df496762ddc19fd8162",
+          "timestamp": "2026-10-27T15:51:59.895Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_79b71d9126ec4ee6a1fa6542d797b577",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run typecheck:study:types"
+            ]
+          },
+          "inputSha256": "f4644fc36592ae7f2df65433d1a3f9baf3bf6adb6036a4e490f83451e72ae39f",
+          "timestamp": "2026-10-27T15:52:04.255Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_2699ca9de4b2454c950feb4e8cdb0120",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run typecheck:study:type-regression"
+            ]
+          },
+          "inputSha256": "5b4d71ba2db8a32fdc95d9ea91682e531c4d3823d306e7ad512109a5f3819c39",
+          "timestamp": "2026-10-27T15:52:08.805Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_a5fd1b1c54a941149605f19030ff2704",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run typecheck:study:delivered-types"
+            ]
+          },
+          "inputSha256": "194aba918f8461c7af86596f6e78318e9667db498832c35ca30e7e5a4d70efd6",
+          "timestamp": "2026-10-27T15:52:13.001Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_ec8831ce908243f080b629a5d33a7d49",
+          "tool": "read_files",
+          "input": {
+            "files": [
+              {
+                "path": "/workspace/blame-study-runs/declaration-f70/active/workspace/packages/query-core/src/queryClient.ts",
+                "start_line": 145,
+                "end_line": 157
+              },
+              {
+                "path": "/workspace/blame-study-runs/declaration-f70/active/workspace/packages/react-query/src/useIsFetching.ts",
+                "start_line": 1,
+                "end_line": 62
+              },
+              {
+                "path": "/workspace/blame-study-runs/declaration-f70/active/workspace/packages/query-core/src/__tests__/isFetchingFilters.test-d.tsx"
+              },
+              {
+                "path": "/workspace/blame-study-runs/declaration-f70/active/workspace/packages/query-core/src/__tests__/isFetchingFilters.test.tsx"
+              },
+              {
+                "path": "/workspace/blame-study-runs/declaration-f70/active/workspace/packages/react-query/src/__tests__/useIsFetchingFilters.test-d.tsx"
+              },
+              {
+                "path": "/workspace/blame-study-runs/declaration-f70/active/workspace/packages/react-query/src/__tests__/useIsFetchingFilters.test.tsx"
+              }
+            ]
+          },
+          "inputSha256": "0286deee3cb94b96bf98a90771e1afe56f5f199ffd1c1dfc7fe58bf20bab4dc8",
+          "timestamp": "2026-10-27T15:52:17.234Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_79a3d0e079f3472cb18560e93071931c",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "git diff --check && git status --short && git diff --stat && git diff -- packages/query-core/src/queryClient.ts packages/react-query/src/useIsFetching.ts"
+            ]
+          },
+          "inputSha256": "26feef462127b963ac85b99a93e3757efc289023b755805b4dd35211df1cd372",
+          "timestamp": "2026-10-27T15:52:17.610Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        }
+      ]
+    }
+  ],
+  "boundary": "Observed stop reasons from actual SDK notices, never inferred solely from configured limits. Last tool snapshots are observations, not proof of physical process state at termination. The immutable primary completion/source/audit scores and resource totals are unchanged."
+}

@@ -1,0 +1,2917 @@
+{
+  "protocolHash": "42d111a0162283d14df36d9a10692ae74efdc129db05a5188215f0669c2b2a93",
+  "executionFinished": true,
+  "trials": [
+    {
+      "name": "1-clamp-items-reference",
+      "officialRuntimeSuccess": true,
+      "sourceSuccess": true,
+      "strictSuccess": true,
+      "iterationStartEvents": 10,
+      "observedStop": "official_completion",
+      "explanatoryEvent": null,
+      "lastCompletedTools": [
+        {
+          "callId": "call_d09f8aba90b540438224a9d078af6f87",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "node node_modules/typescript/bin/tsc --noEmit -p tsconfig.check.json"
+          },
+          "inputSha256": "d4f60939a708616ffab51f00617651f13348ab59a1f24bcc3364a732a7f4fe36",
+          "timestamp": "2026-10-27T03:24:39.032Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_9f0ae1e1bc2e477aa6cfa32739fd6fe5",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "test:study:regression"
+          },
+          "inputSha256": "bd6a23666cee27cfb799ab6fdfa9e3489cd0c22ddef230e1fa40f30618530720",
+          "timestamp": "2026-10-27T03:24:42.174Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_d79fd2715abf4b96bafebf3ef0bcd74e",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "inputSha256": "67e2e4f0a549a11b79b813f93c0fbf9b33c8779537664f8daff30e3ab1979051",
+          "timestamp": "2026-10-27T03:24:45.415Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_70498bf89a6e4345825b858657e14e83",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "test:study:delivered"
+          },
+          "inputSha256": "6c90761f35b9ddf440cd343c289cec5cd8d48f06779720ab7b8f8ebb0b2bdf3e",
+          "timestamp": "2026-10-27T03:24:48.112Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_d22473b5ab024321bd0ce0aa8a2c5e92",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "typecheck:delivered"
+          },
+          "inputSha256": "744ef4f4d746a6c0a8f8b62a41dc4e8d19a9393c8838635ca26235b11433243e",
+          "timestamp": "2026-10-27T03:24:50.742Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_fb01a42787634a01a57c0d26c6978cb9",
+          "tool": "finish_task",
+          "input": {
+            "summary": "Implemented the requested range and list utilities.\n\nChanges:\n- Fixed the existing compiler error in `src/range.ts`.\n- Added `normalizeRange`, validating safe-integer bounds and rejecting reversed bounds.\n- Added `clampItems`, validating safe-integer values, clamping inclusively, preserving order, and avoiding input mutation.\n- Exported both functions from `src/index.ts`.\n- Added meaningful tests in `src/range.test.ts` and `src/list.test.ts`.\n\nCommands and exact outcomes:\n- Initial required diagnostic: `node node_modules/typescript/bin/tsc --noEmit -p tsconfig.check.json` — failed as expected with `TS2322` at `src/range.ts(1,14)` (`string` not assignable to `number`).\n- After editing, the same compiler command — passed, exit code 0.\n- `npm run test:study:regression` — passed, 1 test passed. Coverage is limited to the configured original regression test; the new tests are not included by this script.\n- `npm run test:study:types` — passed, exit code 0. This checks non-test source files only, per its supplied tsconfig.\n- `npm run test:study:delivered` — passed, 6 tests passed across the original and two added test files.\n- `npm run typecheck:delivered` — passed, exit code 0; this is the supplied delivered-test typecheck selection.\n\nAll requested source and test criteria are satisfied; no manifests or configuration files were changed."
+          },
+          "inputSha256": "ec835c2fcbc66407fadfa36fe77aeaacd4a6835d66fc3205652b07e85a48ea7f",
+          "timestamp": "2026-10-27T03:24:56.005Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        }
+      ]
+    },
+    {
+      "name": "1-clamp-items-compact",
+      "officialRuntimeSuccess": true,
+      "sourceSuccess": true,
+      "strictSuccess": true,
+      "iterationStartEvents": 7,
+      "observedStop": "official_completion",
+      "explanatoryEvent": null,
+      "lastCompletedTools": [
+        {
+          "callId": "call_b3f70e0dacf542bb9ebc384155ef5dbf",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "node node_modules/typescript/bin/tsc --noEmit -p tsconfig.check.json",
+            "cwd": "/workspace/blame-study-runs/context-f68/active/workspace"
+          },
+          "inputSha256": "70ff67f4478bb6ee327f31656c28af33cb89034d2120c2b2e8526a5f805f7d1a",
+          "timestamp": "2026-10-27T03:25:56.693Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_d87cc1a923814a8fb03aa7a2fcf22897",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "test:study:regression",
+            "packagePath": "/workspace/blame-study-runs/context-f68/active/workspace"
+          },
+          "inputSha256": "e94ff9f1d09848a10ef4aac8c0fab6fbc056cbaea9b0afadf9f6d82582e83345",
+          "timestamp": "2026-10-27T03:25:59.647Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_6c052a5d096847c49113445dc25d3672",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "test:study:types",
+            "packagePath": "/workspace/blame-study-runs/context-f68/active/workspace"
+          },
+          "inputSha256": "b3a499ace0b4c9768214f07cb8be3685bac67099add6fc8a198fd47e6f94abec",
+          "timestamp": "2026-10-27T03:26:00.469Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_6ca4fee7fd024542b08afab29b289416",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "test:study:delivered",
+            "packagePath": "/workspace/blame-study-runs/context-f68/active/workspace"
+          },
+          "inputSha256": "86b6f45cd009ce9b17056730aa9d45a26abccdacab7027d18fab904366c63a94",
+          "timestamp": "2026-10-27T03:26:01.688Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_da11f30cbbcb4911a1ddbff1dd7fe23b",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "typecheck:delivered",
+            "packagePath": "/workspace/blame-study-runs/context-f68/active/workspace"
+          },
+          "inputSha256": "f0994fb4aefca41239a9fc58c7e0c65c59cfcbbbb51d0af33fd9fb8d12f1fc13",
+          "timestamp": "2026-10-27T03:26:02.720Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_cfdfde4157a14faf87799844d001ea02",
+          "tool": "finish_task",
+          "input": {
+            "summary": "Implemented the requested range/list APIs and fixed the existing compiler error.\n\nChanges:\n- Corrected `defaultUpper` in `src/range.ts` from a string to the number `10`.\n- Added `normalizeRange`, validating safe-integer bounds and rejecting reversed bounds.\n- Added `clampItems`, validating safe-integer bounds/values, clamping inclusively, preserving order, and avoiding mutation.\n- Exported both functions from `src/index.ts`.\n- Added meaningful tests in `src/range.test.ts` and `src/list.test.ts`.\n\nChecks after the final source/test edit:\n- `node node_modules/typescript/bin/tsc --noEmit -p tsconfig.check.json`: passed (exit 0); this was also rerun after repairing the original diagnostic.\n- `npm run test:study:regression`: passed, 1/1 test. Coverage is limited to the configured original regression test; it does not include the added tests.\n- `npm run test:study:types`: passed (exit 0). Its supplied configuration typechecks source files while excluding test files.\n- `npm run test:study:delivered`: passed, 6/6 tests across the original and two added test files.\n- `npm run typecheck:delivered`: passed (exit 0), including the delivered test files.\n\nNo manifests or configuration files were changed, and no remote resources were used."
+          },
+          "inputSha256": "a04bd0f72e1464831ae17fb54941d9dfb6c32c8e694d6cc47c188422450b77d2",
+          "timestamp": "2026-10-27T03:26:08.769Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        }
+      ]
+    },
+    {
+      "name": "1-clamp-items-cline",
+      "officialRuntimeSuccess": true,
+      "sourceSuccess": true,
+      "strictSuccess": true,
+      "iterationStartEvents": 11,
+      "observedStop": "official_completion",
+      "explanatoryEvent": null,
+      "lastCompletedTools": [
+        {
+          "callId": "call_cefb6becbb6c41a2862b6dcb80838a98",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run test:study:regression"
+            ]
+          },
+          "inputSha256": "d2a2e37afc47f60828f4bc0857b112c5f1a673200d9f2df496762ddc19fd8162",
+          "timestamp": "2026-10-27T03:27:36.298Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_4515e0e486f641468922d0a12e6db073",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run test:study:types"
+            ]
+          },
+          "inputSha256": "44a1932f7faa8063bae557fd59deddeb4dfcd8e53c5dfea6a2abc636e0c0b80b",
+          "timestamp": "2026-10-27T03:27:38.698Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_d644ddde8c5242369d4b047a2b83ba7d",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run test:study:delivered"
+            ]
+          },
+          "inputSha256": "6f2e702134ce1e3574e39a1eb65f6efc55f30fe8ab58d877e233fca2f7bf3f14",
+          "timestamp": "2026-10-27T03:27:41.484Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_5a89d878605d4047b51f797d77fbe243",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run typecheck:delivered"
+            ]
+          },
+          "inputSha256": "9934272b309e64d989901e4e8af9e9b26dcc6dd1ebc825b0c1e9bffd81058321",
+          "timestamp": "2026-10-27T03:27:43.788Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_65195cf644dd4864b39014b9fe35ac99",
+          "tool": "read_files",
+          "input": {
+            "files": [
+              {
+                "path": "/workspace/blame-study-runs/context-f68/active/workspace/src/range.ts"
+              },
+              {
+                "path": "/workspace/blame-study-runs/context-f68/active/workspace/src/list.ts"
+              },
+              {
+                "path": "/workspace/blame-study-runs/context-f68/active/workspace/src/index.ts"
+              },
+              {
+                "path": "/workspace/blame-study-runs/context-f68/active/workspace/src/range-list.test.ts"
+              }
+            ]
+          },
+          "inputSha256": "0a5748ffb4445f8473c330d905f850d55605de368daad87b9c27d848e43944f9",
+          "timestamp": "2026-10-27T03:27:48.390Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_4967b962866d40878b87e7a751c39fb3",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "git status --short && git diff --check && git diff -- src/range.ts src/list.ts src/index.ts src/range-list.test.ts"
+            ],
+            "timeout": 120000
+          },
+          "inputSha256": "30d90b711fda4cddd0748ec51daf1da571bcdd3bd7476640aa31715642f99473",
+          "timestamp": "2026-10-27T03:27:48.417Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        }
+      ]
+    },
+    {
+      "name": "1-quota-compact",
+      "officialRuntimeSuccess": true,
+      "sourceSuccess": true,
+      "strictSuccess": true,
+      "iterationStartEvents": 9,
+      "observedStop": "official_completion",
+      "explanatoryEvent": null,
+      "lastCompletedTools": [
+        {
+          "callId": "call_5b77d1d23e8946efb828e76a9f00e12a",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "typecheck:delivered",
+            "packagePath": "/workspace/blame-study-runs/context-f68/active/workspace"
+          },
+          "inputSha256": "f0994fb4aefca41239a9fc58c7e0c65c59cfcbbbb51d0af33fd9fb8d12f1fc13",
+          "timestamp": "2026-10-27T03:28:43.153Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_5437944f745442cf9df46ab5a96a95e7",
+          "tool": "read_code",
+          "input": {
+            "target": "src/quota.ts",
+            "view": "raw"
+          },
+          "inputSha256": "34bdae2b5570b225909d0fc4637fab7fd0217c36440f94739ae9b3245fed2026",
+          "timestamp": "2026-10-27T03:28:46.261Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_801b7fbd6edc4fa9ad13ae000c468a0f",
+          "tool": "read_code",
+          "input": {
+            "target": "src/index.ts",
+            "view": "raw"
+          },
+          "inputSha256": "24944072a738a4321aedc806e02a2153162b9e70d7871a6844c182858e764621",
+          "timestamp": "2026-10-27T03:28:46.296Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_5e7e587c369c46739a8b09a137d5ad74",
+          "tool": "read_code",
+          "input": {
+            "target": "src/quota.test.ts",
+            "view": "raw"
+          },
+          "inputSha256": "abf7ac29d4b555aabfec090254ca92682c58092c4bed4a35a2bb0c94267b6f32",
+          "timestamp": "2026-10-27T03:28:46.334Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_d70c3ff74a1749a0bcb5df274da33d40",
+          "tool": "read_code",
+          "input": {
+            "target": "@checks",
+            "view": "auto"
+          },
+          "inputSha256": "8f222829b44a900de022b84fc772d655522205446eae178c533c6737ea2b41b1",
+          "timestamp": "2026-10-27T03:28:46.380Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_70943e0853ba45b7901ae0fa9dd4168e",
+          "tool": "finish_task",
+          "input": {
+            "summary": "Implemented the quota backlog item and fixed the existing compiler error.\n\nChanges:\n- Corrected `src/range.ts` so `defaultUpper` is a number instead of a string.\n- Added `createQuota(limit: number)` in `src/quota.ts` with:\n  - read-only `remaining` getter\n  - `tryTake(amount = 1): boolean`\n  - `restore(amount = 1): number`\n  - nonnegative safe-integer validation using `RangeError`\n  - no mutation on invalid operations or failed over-takes\n  - zero-amount no-ops and restore capping at the limit\n  - independent state per instance\n- Exported `createQuota` from `src/index.ts`.\n- Added meaningful tests in `src/quota.test.ts` covering independence, defaults, zero amounts, failed takes, restore capping, invalid inputs, and mutation safety.\n\nChecks:\n- Initial required diagnostic: `node node_modules/typescript/bin/tsc --noEmit -p tsconfig.check.json` failed with `src/range.ts(1,14): error TS2322: Type 'string' is not assignable to type 'number'.`\n- After the fix, the same command passed.\n- `npm run test:study:regression`: passed, 1 executed / 1 passed. Coverage limit: configured regression includes only `src/original.test.ts`, so it does not exercise the new quota tests.\n- `npm run test:study:types`: passed.\n- `npm run test:study:delivered`: passed, 5 executed / 5 passed across the original test and 4 new quota tests.\n- `npm run typecheck:delivered`: passed.\n\nAll required final-source commands completed successfully. No manifests or configuration files were changed.",
+            "images": []
+          },
+          "inputSha256": "d6db951d36d3cb1d9ee0636b9df07526d20faa9fe4b99925de1e684c6a9ef2a7",
+          "timestamp": "2026-10-27T03:28:51.480Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        }
+      ]
+    },
+    {
+      "name": "1-quota-cline",
+      "officialRuntimeSuccess": true,
+      "sourceSuccess": true,
+      "strictSuccess": true,
+      "iterationStartEvents": 12,
+      "observedStop": "official_completion",
+      "explanatoryEvent": null,
+      "lastCompletedTools": [
+        {
+          "callId": "call_5df9fb0804434a83bd9eae8ba097028e",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run test:study:regression"
+            ]
+          },
+          "inputSha256": "d2a2e37afc47f60828f4bc0857b112c5f1a673200d9f2df496762ddc19fd8162",
+          "timestamp": "2026-10-27T03:29:49.572Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_5234aa87954841aa96aba8a13f5ef96d",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run test:study:types"
+            ]
+          },
+          "inputSha256": "44a1932f7faa8063bae557fd59deddeb4dfcd8e53c5dfea6a2abc636e0c0b80b",
+          "timestamp": "2026-10-27T03:29:52.756Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_bbc32a06f308427dbc37befbef136360",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run test:study:delivered"
+            ]
+          },
+          "inputSha256": "6f2e702134ce1e3574e39a1eb65f6efc55f30fe8ab58d877e233fca2f7bf3f14",
+          "timestamp": "2026-10-27T03:29:55.557Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_2743a74c331f4f5496a51a36e1fe3c1a",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run typecheck:delivered"
+            ]
+          },
+          "inputSha256": "9934272b309e64d989901e4e8af9e9b26dcc6dd1ebc825b0c1e9bffd81058321",
+          "timestamp": "2026-10-27T03:29:58.008Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_b6677300dec0464aa424e22829212f01",
+          "tool": "read_files",
+          "input": {
+            "files": [
+              {
+                "path": "/workspace/blame-study-runs/context-f68/active/workspace/src/range.ts"
+              },
+              {
+                "path": "/workspace/blame-study-runs/context-f68/active/workspace/src/index.ts"
+              },
+              {
+                "path": "/workspace/blame-study-runs/context-f68/active/workspace/src/quota.ts"
+              },
+              {
+                "path": "/workspace/blame-study-runs/context-f68/active/workspace/src/quota.test.ts"
+              }
+            ]
+          },
+          "inputSha256": "bfa2d8dac1959db8a6ac2bf18a4549d827801ae8bf82c78b52b818c8aaa13dce",
+          "timestamp": "2026-10-27T03:30:02.394Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_b3efa0839c834c1383b99b6d1be97b17",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "git -C /workspace/blame-study-runs/context-f68/active/workspace diff --check && git -C /workspace/blame-study-runs/context-f68/active/workspace status --short && git -C /workspace/blame-study-runs/context-f68/active/workspace diff --stat"
+            ]
+          },
+          "inputSha256": "d965bc19c8ebed304b825fbf69f53c558391a3ea80c635a8275de9d2b2a5b28c",
+          "timestamp": "2026-10-27T03:30:02.419Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        }
+      ]
+    },
+    {
+      "name": "1-quota-reference",
+      "officialRuntimeSuccess": true,
+      "sourceSuccess": true,
+      "strictSuccess": true,
+      "iterationStartEvents": 7,
+      "observedStop": "official_completion",
+      "explanatoryEvent": null,
+      "lastCompletedTools": [
+        {
+          "callId": "call_b2e50306fc81486bb76f1a9011e2e3aa",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "node node_modules/typescript/bin/tsc --noEmit -p tsconfig.check.json"
+          },
+          "inputSha256": "d4f60939a708616ffab51f00617651f13348ab59a1f24bcc3364a732a7f4fe36",
+          "timestamp": "2026-10-27T03:30:55.496Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_6c92982af6204c008fd6e637e3e14ddd",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "test:study:regression"
+          },
+          "inputSha256": "bd6a23666cee27cfb799ab6fdfa9e3489cd0c22ddef230e1fa40f30618530720",
+          "timestamp": "2026-10-27T03:30:58.641Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_aa40cd593eae45ea8f1c971cd31ddddf",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "inputSha256": "67e2e4f0a549a11b79b813f93c0fbf9b33c8779537664f8daff30e3ab1979051",
+          "timestamp": "2026-10-27T03:30:59.479Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_1f2002ac49e34ec9885046817b38ee96",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "test:study:delivered"
+          },
+          "inputSha256": "6c90761f35b9ddf440cd343c289cec5cd8d48f06779720ab7b8f8ebb0b2bdf3e",
+          "timestamp": "2026-10-27T03:31:00.547Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_ac23c533512b439cbfba2152d177f5ab",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "typecheck:delivered"
+          },
+          "inputSha256": "744ef4f4d746a6c0a8f8b62a41dc4e8d19a9393c8838635ca26235b11433243e",
+          "timestamp": "2026-10-27T03:31:01.558Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_3b3d41c5280442f0bdbdda770d5cb990",
+          "tool": "finish_task",
+          "input": {
+            "summary": "Implemented the quota API and fixed the existing compiler error.\n\nChanges:\n- Corrected `src/range.ts` so `defaultUpper` is a number.\n- Added `createQuota(limit)` in `src/quota.ts` with:\n  - read-only `remaining` getter\n  - `tryTake(amount = 1): boolean`\n  - `restore(amount = 1): number`\n  - RangeError validation for limits and amounts that are not nonnegative safe integers\n  - no mutation on failed or invalid operations, independent instance state, and capped restores\n- Exported `createQuota` from `src/index.ts`.\n- Added meaningful quota tests in `src/quota.test.ts`.\n\nInitial reproduction:\n- `node node_modules/typescript/bin/tsc --noEmit -p tsconfig.check.json` failed as expected with `src/range.ts(1,14): error TS2322: Type 'string' is not assignable to type 'number'.`\n\nFinal checks, each executed directly:\n- `node node_modules/typescript/bin/tsc --noEmit -p tsconfig.check.json`: passed, exit 0.\n- `npm run test:study:regression`: passed, 1 executed / 1 passed.\n- `npm run test:study:types`: passed, exit 0.\n- `npm run test:study:delivered`: passed, 5 executed / 5 passed across the original and quota tests.\n- `npm run typecheck:delivered`: passed, exit 0.\n\nCoverage limits: no line or branch coverage report was produced. The regression command only exercised the original test file; the delivered runtime command exercised the 4 new quota tests plus the original test. Typecheck success confirms the selected compiler invocations, not broader runtime or coverage guarantees."
+          },
+          "inputSha256": "f71219930f70a13f083be64491c0eaf7acee1f549dc47e9aa781ee59fa7012ba",
+          "timestamp": "2026-10-27T03:31:08.731Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        }
+      ]
+    },
+    {
+      "name": "2-clamp-items-compact",
+      "officialRuntimeSuccess": true,
+      "sourceSuccess": true,
+      "strictSuccess": true,
+      "iterationStartEvents": 10,
+      "observedStop": "official_completion",
+      "explanatoryEvent": null,
+      "lastCompletedTools": [
+        {
+          "callId": "call_3ade47260a984969b1a3665bce1eb195",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "node node_modules/typescript/bin/tsc --noEmit -p tsconfig.check.json",
+            "cwd": "/workspace/blame-study-runs/context-f68/active/workspace"
+          },
+          "inputSha256": "70ff67f4478bb6ee327f31656c28af33cb89034d2120c2b2e8526a5f805f7d1a",
+          "timestamp": "2026-10-27T03:32:12.268Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_9b32820d10954fc78ba818c4e15ee4f2",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "test:study:regression",
+            "packagePath": "/workspace/blame-study-runs/context-f68/active/workspace"
+          },
+          "inputSha256": "e94ff9f1d09848a10ef4aac8c0fab6fbc056cbaea9b0afadf9f6d82582e83345",
+          "timestamp": "2026-10-27T03:32:15.427Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_2efa90e8e407432da53f7683b12f2773",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "test:study:types",
+            "packagePath": "/workspace/blame-study-runs/context-f68/active/workspace"
+          },
+          "inputSha256": "b3a499ace0b4c9768214f07cb8be3685bac67099add6fc8a198fd47e6f94abec",
+          "timestamp": "2026-10-27T03:32:17.513Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_c538a2271d9d4a47a9671f1a0093060d",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "test:study:delivered",
+            "packagePath": "/workspace/blame-study-runs/context-f68/active/workspace"
+          },
+          "inputSha256": "86b6f45cd009ce9b17056730aa9d45a26abccdacab7027d18fab904366c63a94",
+          "timestamp": "2026-10-27T03:32:20.235Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_af32b34422f54524889ed81f314a3131",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "typecheck:delivered",
+            "packagePath": "/workspace/blame-study-runs/context-f68/active/workspace"
+          },
+          "inputSha256": "f0994fb4aefca41239a9fc58c7e0c65c59cfcbbbb51d0af33fd9fb8d12f1fc13",
+          "timestamp": "2026-10-27T03:32:23.219Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_208e6df9ef70490f80c1e73eddc19951",
+          "tool": "finish_task",
+          "input": {
+            "summary": "Implemented the requested range/list functionality.\n\n- Reproduced and fixed the initial compiler diagnostic: `src/range.ts(1,14): error TS2322` caused by assigning `'10'` to `number`.\n- Added `normalizeRange` with safe-integer validation, reversed-bound rejection, and the requested readonly return type.\n- Added `clampItems` with safe-integer validation, inclusive clamping, order preservation, and no input mutation.\n- Exported both functions from `src/index.ts`.\n- Added meaningful tests in `src/range.test.ts` and `src/list.test.ts`.\n\nRequired command outcomes on the final source/test state:\n- `node node_modules/typescript/bin/tsc --noEmit -p tsconfig.check.json`: passed (exit 0).\n- `npm run test:study:regression`: passed (1 executed, 1 passed). Coverage limit: the supplied regression config runs only `src/original.test.ts`, so it does not execute the new tests.\n- `npm run test:study:types`: passed (exit 0). Coverage limit: its config includes non-test `src/**/*.ts` and excludes test files.\n- `npm run test:study:delivered`: passed (6 executed, 6 passed across 3 test files: original plus both new test files).\n- `npm run typecheck:delivered`: passed (exit 0), covering the delivered source and added tests through the supplied delivered-check script.\n\nAll requested user-facing behavior is covered by the delivered tests. The harness reports these checks as observed passing executions; its admission/coverage metadata remains unverified beyond the scopes described above.",
+            "images": []
+          },
+          "inputSha256": "56bb941052d1afa0c49e6c54ba46b2e01301c54e6b1bc7fc2412a1a91365e959",
+          "timestamp": "2026-10-27T03:32:31.325Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        }
+      ]
+    },
+    {
+      "name": "2-clamp-items-cline",
+      "officialRuntimeSuccess": true,
+      "sourceSuccess": true,
+      "strictSuccess": true,
+      "iterationStartEvents": 12,
+      "observedStop": "official_completion",
+      "explanatoryEvent": null,
+      "lastCompletedTools": [
+        {
+          "callId": "call_70962203d9d24226b72c3aa81357b6df",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run test:study:regression"
+            ]
+          },
+          "inputSha256": "d2a2e37afc47f60828f4bc0857b112c5f1a673200d9f2df496762ddc19fd8162",
+          "timestamp": "2026-10-27T03:33:23.211Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_16ff4407b7b64de9982e22e2ef361ca8",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run test:study:types"
+            ]
+          },
+          "inputSha256": "44a1932f7faa8063bae557fd59deddeb4dfcd8e53c5dfea6a2abc636e0c0b80b",
+          "timestamp": "2026-10-27T03:33:25.347Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_e8bc2abaa3c14e2092a44e925640691f",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run test:study:delivered"
+            ]
+          },
+          "inputSha256": "6f2e702134ce1e3574e39a1eb65f6efc55f30fe8ab58d877e233fca2f7bf3f14",
+          "timestamp": "2026-10-27T03:33:27.841Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_77d28cc8c12246099689b683827a881d",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run typecheck:delivered"
+            ]
+          },
+          "inputSha256": "9934272b309e64d989901e4e8af9e9b26dcc6dd1ebc825b0c1e9bffd81058321",
+          "timestamp": "2026-10-27T03:33:31.728Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_3bcccb7a322c4a83aad1b5e31631d5d8",
+          "tool": "read_files",
+          "input": {
+            "files": [
+              {
+                "path": "/workspace/blame-study-runs/context-f68/active/workspace/src/range.ts"
+              },
+              {
+                "path": "/workspace/blame-study-runs/context-f68/active/workspace/src/list.ts"
+              },
+              {
+                "path": "/workspace/blame-study-runs/context-f68/active/workspace/src/index.ts"
+              },
+              {
+                "path": "/workspace/blame-study-runs/context-f68/active/workspace/src/range-list.test.ts"
+              }
+            ]
+          },
+          "inputSha256": "0a5748ffb4445f8473c330d905f850d55605de368daad87b9c27d848e43944f9",
+          "timestamp": "2026-10-27T03:33:36.051Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_924af7813a4a4f85950932fd3c048f0d",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "git -C /workspace/blame-study-runs/context-f68/active/workspace status --short",
+              "git -C /workspace/blame-study-runs/context-f68/active/workspace diff --check",
+              "git -C /workspace/blame-study-runs/context-f68/active/workspace diff -- src/range.ts src/list.ts src/index.ts src/range-list.test.ts"
+            ]
+          },
+          "inputSha256": "52bdfdabbaec06daa76730326155f0fd35b6ccae3ee8813671da8adbe402a736",
+          "timestamp": "2026-10-27T03:33:36.074Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        }
+      ]
+    },
+    {
+      "name": "2-clamp-items-reference",
+      "officialRuntimeSuccess": true,
+      "sourceSuccess": true,
+      "strictSuccess": true,
+      "iterationStartEvents": 12,
+      "observedStop": "official_completion",
+      "explanatoryEvent": null,
+      "lastCompletedTools": [
+        {
+          "callId": "call_2f90bcd90fd7434da27d2e76df5e4f8e",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npm run test:study:regression",
+            "cwd": "/workspace/blame-study-runs/context-f68/active/workspace"
+          },
+          "inputSha256": "a16490b750bfdc84a196a31b58d974642b37597b67c6139f5bebbb9483f89c1c",
+          "timestamp": "2026-10-27T03:34:40.351Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_094f874089334f948843c04b2dc40669",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "test:study:types",
+            "packagePath": "/workspace/blame-study-runs/context-f68/active/workspace"
+          },
+          "inputSha256": "b3a499ace0b4c9768214f07cb8be3685bac67099add6fc8a198fd47e6f94abec",
+          "timestamp": "2026-10-27T03:34:44.710Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_c294c12697344aabb45516bc9186c4f1",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "test:study:delivered",
+            "packagePath": "/workspace/blame-study-runs/context-f68/active/workspace"
+          },
+          "inputSha256": "86b6f45cd009ce9b17056730aa9d45a26abccdacab7027d18fab904366c63a94",
+          "timestamp": "2026-10-27T03:34:47.702Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_5483399c8aa447db89add77798cf6987",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "typecheck:delivered",
+            "packagePath": "/workspace/blame-study-runs/context-f68/active/workspace"
+          },
+          "inputSha256": "f0994fb4aefca41239a9fc58c7e0c65c59cfcbbbb51d0af33fd9fb8d12f1fc13",
+          "timestamp": "2026-10-27T03:34:50.863Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_1c54ac25ddca48a1ace2cd2d1e2e7e6f",
+          "tool": "read_code",
+          "input": {
+            "target": "@checks",
+            "view": "auto"
+          },
+          "inputSha256": "8f222829b44a900de022b84fc772d655522205446eae178c533c6737ea2b41b1",
+          "timestamp": "2026-10-27T03:34:53.123Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_2b27bff95300421393550e49dd79de3d",
+          "tool": "finish_task",
+          "input": {
+            "summary": "Implemented the requested range and list utilities.\n\n- Fixed the existing `src/range.ts` compiler error.\n- Added `normalizeRange`, including safe-integer validation and reversed-bound rejection.\n- Added `clampItems`, including safe-integer validation, inclusive clamping, order preservation, and non-mutation of inputs.\n- Exported both functions from `src/index.ts`.\n- Added meaningful tests in `src/range.test.ts` and `src/list.test.ts`.\n\nChecks run directly on the final source:\n- `node node_modules/typescript/bin/tsc --noEmit -p tsconfig.check.json`: passed.\n- `npm run test:study:regression`: passed; 1 test passed. Scope limitation: configured regression includes only the original test file, not the new tests.\n- `npm run test:study:types`: passed.\n- `npm run test:study:delivered`: passed; 7 tests passed across 3 files, including both new test files.\n- `npm run typecheck:delivered`: passed.\n\nThe required commands all exited successfully. Runtime test counts reflect executed tests; typecheck commands report successful process completion without test-case counts."
+          },
+          "inputSha256": "7bfdcfd1460808b5580cf663d4e9464edf967ededd256fefba252616c632c09f",
+          "timestamp": "2026-10-27T03:34:56.478Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        }
+      ]
+    },
+    {
+      "name": "2-quota-cline",
+      "officialRuntimeSuccess": true,
+      "sourceSuccess": true,
+      "strictSuccess": true,
+      "iterationStartEvents": 11,
+      "observedStop": "official_completion",
+      "explanatoryEvent": null,
+      "lastCompletedTools": [
+        {
+          "callId": "call_2cc773b583894490a09aec37af9bdca4",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run test:study:regression"
+            ]
+          },
+          "inputSha256": "d2a2e37afc47f60828f4bc0857b112c5f1a673200d9f2df496762ddc19fd8162",
+          "timestamp": "2026-10-27T03:35:49.613Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_9976c1c408e148e5b517221de11d0c8c",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run test:study:types"
+            ]
+          },
+          "inputSha256": "44a1932f7faa8063bae557fd59deddeb4dfcd8e53c5dfea6a2abc636e0c0b80b",
+          "timestamp": "2026-10-27T03:35:51.980Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_63467aa3a570483d8aa31c80902a369c",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run test:study:delivered"
+            ]
+          },
+          "inputSha256": "6f2e702134ce1e3574e39a1eb65f6efc55f30fe8ab58d877e233fca2f7bf3f14",
+          "timestamp": "2026-10-27T03:35:54.184Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_645a0bddfe7647e99458ce3372a18f2d",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run typecheck:delivered"
+            ]
+          },
+          "inputSha256": "9934272b309e64d989901e4e8af9e9b26dcc6dd1ebc825b0c1e9bffd81058321",
+          "timestamp": "2026-10-27T03:35:56.419Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_743cd2a334524a8e9a7cec470ebc2d9b",
+          "tool": "read_files",
+          "input": {
+            "files": [
+              {
+                "path": "/workspace/blame-study-runs/context-f68/active/workspace/src/range.ts"
+              },
+              {
+                "path": "/workspace/blame-study-runs/context-f68/active/workspace/src/index.ts"
+              },
+              {
+                "path": "/workspace/blame-study-runs/context-f68/active/workspace/src/quota.ts"
+              },
+              {
+                "path": "/workspace/blame-study-runs/context-f68/active/workspace/src/quota.test.ts"
+              }
+            ]
+          },
+          "inputSha256": "bfa2d8dac1959db8a6ac2bf18a4549d827801ae8bf82c78b52b818c8aaa13dce",
+          "timestamp": "2026-10-27T03:35:58.962Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_f27210f1dd3c4152966b836d80f17d99",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "git diff --check && git status --short && git diff -- src/range.ts src/index.ts src/quota.ts src/quota.test.ts"
+            ]
+          },
+          "inputSha256": "35d2dd30d8e2b1638d98eab549cd0180e348a2c4cc61a2521c2fb3a2acc1db29",
+          "timestamp": "2026-10-27T03:35:58.984Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        }
+      ]
+    },
+    {
+      "name": "2-quota-reference",
+      "officialRuntimeSuccess": true,
+      "sourceSuccess": true,
+      "strictSuccess": true,
+      "iterationStartEvents": 10,
+      "observedStop": "official_completion",
+      "explanatoryEvent": null,
+      "lastCompletedTools": [
+        {
+          "callId": "call_87ca8d1f5a9f4d1ea053325ff1ffbcc0",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "node node_modules/typescript/bin/tsc --noEmit -p tsconfig.check.json"
+          },
+          "inputSha256": "d4f60939a708616ffab51f00617651f13348ab59a1f24bcc3364a732a7f4fe36",
+          "timestamp": "2026-10-27T03:36:51.035Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_54891185dfe14c14b6e4ac188632868a",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "test:study:regression"
+          },
+          "inputSha256": "bd6a23666cee27cfb799ab6fdfa9e3489cd0c22ddef230e1fa40f30618530720",
+          "timestamp": "2026-10-27T03:36:53.738Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_ca0ec9af5dc84e3393f1b5c5ec4a804e",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "test:study:types"
+          },
+          "inputSha256": "67e2e4f0a549a11b79b813f93c0fbf9b33c8779537664f8daff30e3ab1979051",
+          "timestamp": "2026-10-27T03:36:57.082Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_4ccc395d0af140a4b8755155323ee474",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "test:study:delivered"
+          },
+          "inputSha256": "6c90761f35b9ddf440cd343c289cec5cd8d48f06779720ab7b8f8ebb0b2bdf3e",
+          "timestamp": "2026-10-27T03:36:59.589Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_8fddb5c3a33046439d9313c038556b8e",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "typecheck:delivered"
+          },
+          "inputSha256": "744ef4f4d746a6c0a8f8b62a41dc4e8d19a9393c8838635ca26235b11433243e",
+          "timestamp": "2026-10-27T03:37:04.938Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_f8cf24b0a09241a4a5d3dcf2deadf872",
+          "tool": "finish_task",
+          "input": {
+            "summary": "Implemented the quota API and repaired the existing compiler error.\n\nChanges:\n- Fixed `src/range.ts` so `defaultUpper` is a number.\n- Added `createQuota(limit)` in `src/quota.ts` with:\n  - read-only `remaining` getter\n  - `tryTake(amount = 1): boolean`\n  - `restore(amount = 1): number`\n  - safe-integer/nonnegative validation via `RangeError`\n  - no mutation on invalid or over-limit operations\n  - restore capping at the quota limit\n- Exported `createQuota` from `src/index.ts`.\n- Added meaningful quota tests covering independent instances, taking/restoring, zero operations, capping, and invalid inputs.\n\nThe required initial diagnostic was reproduced exactly and failed with `TS2322` in `src/range.ts`. After the final edits, all required commands were run as separate invocations:\n- `node node_modules/typescript/bin/tsc --noEmit -p tsconfig.check.json`: passed.\n- `npm run test:study:regression`: passed; 1 executed, 1 passed. This configured regression suite covers only the original test.\n- `npm run test:study:types`: passed. The command completed successfully; it typechecks the study source configuration, with no test-count report.\n- `npm run test:study:delivered`: passed; 5 executed, 5 passed across the delivered quota test and original test.\n- `npm run typecheck:delivered`: passed. The command completed successfully; no test-count report.\n\nCoverage limit: the regression command does not include the new quota test; delivered runtime validation covered all 4 quota tests plus the original test. The typecheck commands establish successful command execution for their configured selections but do not provide runtime behavior coverage counts."
+          },
+          "inputSha256": "d7defa404c6ac1e722660a74c911f32e6c4a39d0704763c6ff00b2dfb3400449",
+          "timestamp": "2026-10-27T03:37:10.504Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        }
+      ]
+    },
+    {
+      "name": "2-quota-compact",
+      "officialRuntimeSuccess": true,
+      "sourceSuccess": true,
+      "strictSuccess": true,
+      "iterationStartEvents": 10,
+      "observedStop": "official_completion",
+      "explanatoryEvent": null,
+      "lastCompletedTools": [
+        {
+          "callId": "call_418032e7ab124467afe67c2f3293b0b3",
+          "tool": "read_code",
+          "input": {
+            "target": "src/quota.ts",
+            "view": "raw"
+          },
+          "inputSha256": "34bdae2b5570b225909d0fc4637fab7fd0217c36440f94739ae9b3245fed2026",
+          "timestamp": "2026-10-27T03:38:10.110Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_b02a42a5609a4b1db46157742f388711",
+          "tool": "read_code",
+          "input": {
+            "target": "src/index.ts",
+            "view": "raw"
+          },
+          "inputSha256": "24944072a738a4321aedc806e02a2153162b9e70d7871a6844c182858e764621",
+          "timestamp": "2026-10-27T03:38:10.146Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_c9d7ff8dea6947c5916d829a75683e1a",
+          "tool": "read_code",
+          "input": {
+            "target": "src/quota.test.ts",
+            "view": "raw"
+          },
+          "inputSha256": "abf7ac29d4b555aabfec090254ca92682c58092c4bed4a35a2bb0c94267b6f32",
+          "timestamp": "2026-10-27T03:38:10.184Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_45a4365529584ef0bf9ff8d19d3d9192",
+          "tool": "read_code",
+          "input": {
+            "target": "@checks",
+            "view": "raw"
+          },
+          "inputSha256": "ee6f1fade8cf063fa7517beeec5720f43e2e3a12288182afdeaf20d2dedc5f71",
+          "timestamp": "2026-10-27T03:38:10.254Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_5401d5173e794c8487c0825647c4c2cc",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "test:study:regression",
+            "packagePath": "/workspace/blame-study-runs/context-f68/active/workspace"
+          },
+          "inputSha256": "e94ff9f1d09848a10ef4aac8c0fab6fbc056cbaea9b0afadf9f6d82582e83345",
+          "timestamp": "2026-10-27T03:38:14.511Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_3773df8cd69d457a8de99123eae02016",
+          "tool": "finish_task",
+          "input": {
+            "summary": "Implemented the requested quota API and repaired the existing compiler error.\n\nChanges:\n- Fixed `src/range.ts` so `defaultUpper` is a number.\n- Added `createQuota(limit: number)` in `src/quota.ts` with:\n  - read-only `remaining` getter\n  - `tryTake(amount = 1): boolean`\n  - `restore(amount = 1): number`\n  - safe-integer/nonnegative validation via `RangeError`\n  - no mutation on invalid or over-limit operations\n  - capped restoration and independent per-instance state\n- Exported `createQuota` from `src/index.ts`.\n- Added meaningful coverage in `src/quota.test.ts`.\n\nValidation outcomes:\n- Initial required reproduction, exactly `node node_modules/typescript/bin/tsc --noEmit -p tsconfig.check.json`: failed with the pre-existing `src/range.ts(1,14): error TS2322` diagnostic.\n- After repair, the same command passed with exit code 0.\n- `npm run test:study:regression`: passed, 1 executed / 1 passed. Coverage is limited to the configured original regression test; it does not include the new quota test.\n- `npm run test:study:types`: passed with exit code 0.\n- `npm run test:study:delivered`: passed, 5 executed / 5 passed across the original and new tests.\n- `npm run typecheck:delivered`: passed with exit code 0.\n\nThe delivered runtime test covers the new quota behavior; the delivered typecheck covers the source and added test file. No manifests or configuration files were changed.",
+            "images": []
+          },
+          "inputSha256": "79e147caf66f5ceb3cc5374fca1b6585a48115cbf8cfe681c64416be8b705d57",
+          "timestamp": "2026-10-27T03:38:20.345Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        }
+      ]
+    },
+    {
+      "name": "1-mutation-callbacks-reference",
+      "officialRuntimeSuccess": true,
+      "sourceSuccess": true,
+      "strictSuccess": true,
+      "iterationStartEvents": 11,
+      "observedStop": "official_completion",
+      "explanatoryEvent": null,
+      "lastCompletedTools": [
+        {
+          "callId": "call_8ebe0108faec4801b6a7888a382e6053",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npm run test:study:delivered",
+            "cwd": "/workspace/blame-study-runs/context-f68/active/workspace"
+          },
+          "inputSha256": "a45c71ccaa16eca33f364439bb40c2a037fd9c6e57d46e78b08412a41ddf05e0",
+          "timestamp": "2026-10-27T03:40:47.828Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_db9e1ed5c08747048ee884c814b79096",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npm run typecheck:study:delivered-types",
+            "cwd": "/workspace/blame-study-runs/context-f68/active/workspace"
+          },
+          "inputSha256": "89d33280d7b66d463de2bce40f67d04820d593acc1d0206f1b17a9b39e354eb1",
+          "timestamp": "2026-10-27T03:40:49.791Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_c03ddadde20d412dbfcf9b9b08e65bc3",
+          "tool": "read_code",
+          "input": {
+            "target": "@checks",
+            "view": "auto"
+          },
+          "inputSha256": "8f222829b44a900de022b84fc772d655522205446eae178c533c6737ea2b41b1",
+          "timestamp": "2026-10-27T03:40:52.566Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_46ff70b1b82344d68a6b08b18d37a638",
+          "tool": "read_code",
+          "input": {
+            "target": "packages/query-core/src/mutationObserver.ts",
+            "view": "range",
+            "range": {
+              "startLine": 245,
+              "endLine": 335
+            }
+          },
+          "inputSha256": "514f9361ef12adeaba3d0d0e30603af9e63e32a5f9fdf1869af561bc258c176a",
+          "timestamp": "2026-10-27T03:40:52.854Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_2a85c44916f24ce29f3502da2c96b141",
+          "tool": "read_code",
+          "input": {
+            "target": "packages/query-core/src/__tests__/mutation-callbacks.test.tsx",
+            "view": "raw"
+          },
+          "inputSha256": "f5c545f6887b34d4a12e3f63764d5aad7c9fb5e6f33eaf142e4752bd0ea981a3",
+          "timestamp": "2026-10-27T03:40:53.162Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_a22f853740ee435ebac46b6a71a6cae5",
+          "tool": "finish_task",
+          "input": {
+            "summary": "Implemented per-mutation callback snapshotting in `MutationObserver.#notify`, so a mutation’s `onSuccess`/`onError`/`onSettled` callbacks retain that mutation’s variables and context even when a callback starts another mutation. Added `packages/query-core/src/__tests__/mutation-callbacks.test.tsx` covering both success and error paths, including callback arguments for both mutations.\n\nChecks run directly after the final source/test edit:\n- `npm run test:study:regression` — exit 0; Vitest reported 22 files and 617 tests passed.\n- `npm run typecheck:study:types` — exit 0.\n- `npm run test:study:delivered` — exit 0; Vitest reported 1 file and 2 tests passed.\n- `npm run typecheck:study:delivered-types` — exit 0.\n\nCoverage limits: the two typecheck commands report successful execution but do not provide test counts. The runtime study checks passed; the tooling records their detailed status as unreported/unknown despite exit code 0. No unrelated files, manifests, or configuration were changed."
+          },
+          "inputSha256": "f6b4fdb81dd85fc8527469cae54eae254bff3d4a9774deb72386df063f074e7b",
+          "timestamp": "2026-10-27T03:40:57.505Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        }
+      ]
+    },
+    {
+      "name": "1-mutation-callbacks-compact",
+      "officialRuntimeSuccess": true,
+      "sourceSuccess": true,
+      "strictSuccess": true,
+      "iterationStartEvents": 24,
+      "observedStop": "official_completion",
+      "explanatoryEvent": null,
+      "lastCompletedTools": [
+        {
+          "callId": "call_b5f9544612bc4bce8dba6ab29f10047d",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "test:study:regression",
+            "packagePath": "/workspace/blame-study-runs/context-f68/active/workspace"
+          },
+          "inputSha256": "e94ff9f1d09848a10ef4aac8c0fab6fbc056cbaea9b0afadf9f6d82582e83345",
+          "timestamp": "2026-10-27T03:44:38.754Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_792e7c6c6a7e4c47aae72771fdd6307a",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "typecheck:study:types",
+            "packagePath": "/workspace/blame-study-runs/context-f68/active/workspace"
+          },
+          "inputSha256": "8e0cbde927b7ce02a740aad145e2ac5a9f2baf460e3f7c0ef7755fffbb5442d1",
+          "timestamp": "2026-10-27T03:44:42.569Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_977bc6e6a706424292674737407bf05b",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "test:study:delivered",
+            "packagePath": "/workspace/blame-study-runs/context-f68/active/workspace"
+          },
+          "inputSha256": "86b6f45cd009ce9b17056730aa9d45a26abccdacab7027d18fab904366c63a94",
+          "timestamp": "2026-10-27T03:44:45.575Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_1868a3a29c40417eb3b4bdec8e5e1654",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "typecheck:study:delivered-types",
+            "packagePath": "/workspace/blame-study-runs/context-f68/active/workspace"
+          },
+          "inputSha256": "4ff92534bec0ed5fb292f53fec5404c88847a2ed369888d847e4b67191c0dc82",
+          "timestamp": "2026-10-27T03:44:49.168Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_7606404bd83c47348826d8fcf33cae20",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "git diff --check && git status --short && git diff --stat",
+            "cwd": "/workspace/blame-study-runs/context-f68/active/workspace"
+          },
+          "inputSha256": "6ed775646afaeb8f68e499176510f1af0a89298a0e055f809f16244b6da7b347",
+          "timestamp": "2026-10-27T03:44:51.475Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_669adf9044614ace9d5df6c788ce88d0",
+          "tool": "finish_task",
+          "input": {
+            "summary": "Implemented per-mutation callback capture for `MutationObserver`. Per-call `onSuccess`, `onError`, and `onSettled` handlers are now stored against the specific mutation instance, and settlement callbacks read that mutation’s variables, context, metadata, and key. Observer notifications pass the originating mutation through, preventing a reentrant `mutate()` call from replacing the callbacks or data used by the mutation currently settling.\n\nAdded `packages/query-core/src/__tests__/mutationObserver.reentrantCallbacks.test.tsx` covering both success and error cases where callbacks start a second mutation with different callbacks. Existing subscription, notification, retry, and cache paths were otherwise left unchanged.\n\nChecks run after the final source/test edit:\n- `npm run test:study:regression` — passed: 22 test files, 617 tests.\n- `npm run typecheck:study:types` — passed.\n- `npm run test:study:delivered` — passed: 1 delivered test file, 2 tests.\n- `npm run typecheck:study:delivered-types` — passed.\n- `git diff --check` — passed.\n\nCoverage limits: the regression check exercises the supplied query-core regression suite; the delivered check exercises the new test file only. The reported test counts do not include skipped/pending breakdowns because the study runner did not report those counters."
+          },
+          "inputSha256": "39959dadb6a0cbbd2c7c191757e08fac04d959ebbbb2d0c88f82b093f541da67",
+          "timestamp": "2026-10-27T03:44:56.342Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        }
+      ]
+    },
+    {
+      "name": "1-mutation-callbacks-navigation",
+      "officialRuntimeSuccess": true,
+      "sourceSuccess": true,
+      "strictSuccess": true,
+      "iterationStartEvents": 13,
+      "observedStop": "official_completion",
+      "explanatoryEvent": null,
+      "lastCompletedTools": [
+        {
+          "callId": "call_b95b53d019a949ebb5fd5a0beaf0a46d",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npm run typecheck:study:delivered-types"
+          },
+          "inputSha256": "392e94f8cacad98651f322c273300a760bc1e97232d7955d979cfb13f25a2423",
+          "timestamp": "2026-10-27T03:47:28.016Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_b3fe1b74a29948ffa5a0adf3d3fadcd9",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "git diff --check"
+          },
+          "inputSha256": "6450400cd609decf399579338ef3fdee66439c02c1eadb92b75d3d155321a030",
+          "timestamp": "2026-10-27T03:47:33.205Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_33913d1dd321431092b99bd1d4621993",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "git status --short"
+          },
+          "inputSha256": "1516e75288c9314bb01c2c897f36f9a4451349445691d3bf5f90029174137ec1",
+          "timestamp": "2026-10-27T03:47:33.625Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_a41e6f40cf7640449c6904acbcf4cffc",
+          "tool": "read_code",
+          "input": {
+            "target": "packages/query-core/src/mutationObserver.ts",
+            "range": {
+              "startLine": 220,
+              "endLine": 320
+            }
+          },
+          "inputSha256": "091c900bbe6bf13addd5be030b753f0851c3a77d24d5581dd71e69ab40c47134",
+          "timestamp": "2026-10-27T03:47:33.945Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_c665e0b0e36d495cb093d69ecea02aa7",
+          "tool": "read_code",
+          "input": {
+            "target": "packages/query-core/src/__tests__/mutationObserver.callbacks.test.tsx",
+            "view": "raw"
+          },
+          "inputSha256": "6a5f2d38f314ea47fa8abdc92f1c195ddbd96523c3a0cf1937b8feec7084a443",
+          "timestamp": "2026-10-27T03:47:34.251Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_414fbe46ec884d6ba3c151dc95dc90b6",
+          "tool": "finish_task",
+          "input": {
+            "summary": "Implemented per-call mutation callback snapshotting in `packages/query-core/src/mutationObserver.ts`. The settling mutation now retains its own `onSuccess`/`onError`/`onSettled` handlers while nested mutations replace the observer’s current callbacks; the existing settled mutation variables and onMutate context remain captured for all callbacks. Added `packages/query-core/src/__tests__/mutationObserver.callbacks.test.tsx` covering nested mutations from both success and error handlers, including data, variables, context, and settled-callback isolation.\n\nChecks run as separate direct invocations:\n- `npm run test:study:regression`: exit 0; Vitest reported 22 test files and 617 tests passed.\n- `npm run typecheck:study:types`: exit 0; TypeScript completed without diagnostics.\n- `npm run test:study:delivered`: exit 0; Vitest reported 1 test file and 2 tests passed.\n- `npm run typecheck:study:delivered-types`: exit 0; TypeScript completed without diagnostics.\n\nAdditional validation: `git diff --check` passed. Coverage limits: no coverage instrumentation was enabled, so these results do not provide statement/branch coverage; typechecks do not validate runtime behavior beyond compilation. The attempted formatter executable was unavailable in this checkout (`node_modules/.bin/oxfmt: No such file or directory`), but the edited files passed parsing and the required checks."
+          },
+          "inputSha256": "ff2a990570a05b569e3deb729fc4dc5d78242e1a74f1e8c01113d4384f66aff2",
+          "timestamp": "2026-10-27T03:47:46.051Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        }
+      ]
+    },
+    {
+      "name": "1-mutation-callbacks-cline",
+      "officialRuntimeSuccess": true,
+      "sourceSuccess": true,
+      "strictSuccess": true,
+      "iterationStartEvents": 10,
+      "observedStop": "official_completion",
+      "explanatoryEvent": null,
+      "lastCompletedTools": [
+        {
+          "callId": "call_2e593b9431da4360be27c02c27078448",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run typecheck:study:types"
+            ]
+          },
+          "inputSha256": "f4644fc36592ae7f2df65433d1a3f9baf3bf6adb6036a4e490f83451e72ae39f",
+          "timestamp": "2026-10-27T03:49:36.439Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_5d7f7b60b97e482895e2816f4a0050e0",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run test:study:delivered"
+            ]
+          },
+          "inputSha256": "6f2e702134ce1e3574e39a1eb65f6efc55f30fe8ab58d877e233fca2f7bf3f14",
+          "timestamp": "2026-10-27T03:49:39.547Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_abaf1416448d4ab9bcb11dd91c2852f0",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run typecheck:study:delivered-types"
+            ]
+          },
+          "inputSha256": "194aba918f8461c7af86596f6e78318e9667db498832c35ca30e7e5a4d70efd6",
+          "timestamp": "2026-10-27T03:49:43.403Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_f251297e98864d64ae023cb393c0bc23",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "git status --short && git diff --check && git diff --stat && git diff -- packages/query-core/src/mutationObserver.ts packages/query-core/src/__tests__/mutationObserverCallbacks.test.tsx"
+            ]
+          },
+          "inputSha256": "0faa4f7e84ac016087339b36250c5942ad710117308b08f27017025fee0ad048",
+          "timestamp": "2026-10-27T03:49:50.358Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_f40ce650db7b4b9ea74103af5437659e",
+          "tool": "read_files",
+          "input": {
+            "files": [
+              {
+                "path": "/workspace/blame-study-runs/context-f68/active/workspace/packages/query-core/src/mutationObserver.ts",
+                "start_line": 245,
+                "end_line": 315
+              },
+              {
+                "path": "/workspace/blame-study-runs/context-f68/active/workspace/packages/query-core/src/__tests__/mutationObserverCallbacks.test.tsx"
+              }
+            ]
+          },
+          "inputSha256": "558a19afbc822c1d0851480519b42bd280f6f903ad96e6764b20b72ed0d90204",
+          "timestamp": "2026-10-27T03:49:50.578Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_c80460cec614459da973a4693b704fad",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "git diff --name-only && test -f packages/query-core/src/__tests__/mutationObserverCallbacks.test.tsx && printf 'new regression file: present\\n' && git status --porcelain=v1 --untracked-files=all"
+            ]
+          },
+          "inputSha256": "88c96cfba7653a3870628fb5578935ff6ac215a765150cceb6cb3d1b66e746e4",
+          "timestamp": "2026-10-27T03:49:50.770Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        }
+      ]
+    },
+    {
+      "name": "1-fetching-filters-compact",
+      "officialRuntimeSuccess": true,
+      "sourceSuccess": false,
+      "strictSuccess": false,
+      "iterationStartEvents": 19,
+      "observedStop": "official_completion",
+      "explanatoryEvent": null,
+      "lastCompletedTools": [
+        {
+          "callId": "call_30e233160cc449d1a630973f54ab8c44",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npm run typecheck:study:type-regression",
+            "cwd": "/workspace/blame-study-runs/context-f68/active/workspace"
+          },
+          "inputSha256": "bc4bb42d840ecd74fb733433ff7df97ab792b6686f93d36e91e98341b274478d",
+          "timestamp": "2026-10-27T03:53:39.110Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_8d62a74fef954566b8ffde90e60fcfa8",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npm run typecheck:study:delivered-types",
+            "cwd": "/workspace/blame-study-runs/context-f68/active/workspace"
+          },
+          "inputSha256": "89d33280d7b66d463de2bce40f67d04820d593acc1d0206f1b17a9b39e354eb1",
+          "timestamp": "2026-10-27T03:53:42.478Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_608a1cfd8fc34b52a1d529b170fee8b9",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "git diff --check && git status --short && git diff -- packages/query-core/src/queryClient.ts packages/react-query/src/useIsFetching.ts packages/query-core/src/__tests__/queryClient.isFetching.test.tsx packages/query-core/src/__tests__/queryClient.isFetching.test-d.ts packages/react-query/src/__tests__/useIsFetching.test-d.tsx",
+            "cwd": "/workspace/blame-study-runs/context-f68/active/workspace"
+          },
+          "inputSha256": "475c4ea23ee84bb2f050f24532562bac2ea8304bd8df094962bad66c83480ca8",
+          "timestamp": "2026-10-27T03:53:48.071Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_76c84222ef1b4543b12561624bf21dff",
+          "tool": "read_code",
+          "input": {
+            "target": "packages/query-core/src/queryClient.ts",
+            "range": {
+              "startLine": 145,
+              "endLine": 165
+            }
+          },
+          "inputSha256": "78e61b0ade9af72e64776d4a97c47ac73001673b140993dea44694fbe299119a",
+          "timestamp": "2026-10-27T03:53:48.388Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_fa5f1031ae404c29811b1a24a3a987cc",
+          "tool": "read_code",
+          "input": {
+            "target": "packages/react-query/src/useIsFetching.ts",
+            "range": {
+              "startLine": 35,
+              "endLine": 65
+            }
+          },
+          "inputSha256": "2401ffa77850045dec9bcd9e3637d4e1d15b99fe87438c1f1216061f7c46d26f",
+          "timestamp": "2026-10-27T03:53:48.716Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_a5617fbd4cf8419eb0451fdb2b7ab715",
+          "tool": "finish_task",
+          "input": {
+            "summary": "Implemented the requested filter typing change within `query-core` and `react-query` only.\n\n- `QueryClient.isFetching` now accepts all `QueryFilters` fields except `fetchStatus`, while retaining its generic filter inference and `number` return type.\n- React `useIsFetching` mirrors the same public filter restriction and preserves its generic inference and return type.\n- General query-cache filtering still accepts `fetchStatus`; runtime `isFetching` behavior remains unchanged because it continues to force `fetchStatus: 'fetching'` internally.\n- Added new query-core runtime/type regression tests and a React hook type regression test under the existing `__tests__` directories.\n- No other framework adapters, manifests, or configuration files were modified.\n\nRequired commands, run as separate direct invocations after the final edits:\n- `npm run test:study:regression` — passed; 23 test files and 631 tests passed. This covers the supplied query-core and React regression suites, including the new query-core runtime test; it does not itself compile TypeScript test files.\n- `npm run typecheck:study:types` — passed.\n- `npm run typecheck:study:type-regression` — passed.\n- `npm run typecheck:study:delivered-types` — passed; independently compiled the newly delivered test/type files.\n\nCoverage limits: the required checks establish the reported runtime and TypeScript results, but do not constitute full validation of every framework adapter or every possible consumer build. `git diff --check` also passed."
+          },
+          "inputSha256": "61bf54bdf1ba10805fc59797e23c0c5f4185a97368f6045a643d18f44ec2005b",
+          "timestamp": "2026-10-27T03:53:54.780Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        }
+      ]
+    },
+    {
+      "name": "1-fetching-filters-navigation",
+      "officialRuntimeSuccess": true,
+      "sourceSuccess": false,
+      "strictSuccess": false,
+      "iterationStartEvents": 22,
+      "observedStop": "official_completion",
+      "explanatoryEvent": null,
+      "lastCompletedTools": [
+        {
+          "callId": "call_8026c0d6d9c24bb2bdef850566daa388",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npm run typecheck:study:type-regression"
+          },
+          "inputSha256": "dca891a875fd719d39f4b071c4677fc7a16816f567ebfae6d43dcf97d0146a4b",
+          "timestamp": "2026-10-27T04:01:32.795Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_69398b14c0344fb7a4880ea6464ac722",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npm run typecheck:study:delivered-types"
+          },
+          "inputSha256": "392e94f8cacad98651f322c273300a760bc1e97232d7955d979cfb13f25a2423",
+          "timestamp": "2026-10-27T04:01:36.540Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_a639ca3f176b4d079cf1c8738ac788fc",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "git status --short"
+          },
+          "inputSha256": "1516e75288c9314bb01c2c897f36f9a4451349445691d3bf5f90029174137ec1",
+          "timestamp": "2026-10-27T04:01:40.951Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_6d171a1ad29d437ab3c04263695d43ea",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "git diff --stat"
+          },
+          "inputSha256": "29b2bb377d2764b82dc342352f07db65ba0fbd077bfb629f3fded41b3fd48bdf",
+          "timestamp": "2026-10-27T04:01:41.344Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_040ec9c0a4d5486b84f05d6f88562a9c",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "git diff --check"
+          },
+          "inputSha256": "6450400cd609decf399579338ef3fdee66439c02c1eadb92b75d3d155321a030",
+          "timestamp": "2026-10-27T04:01:41.806Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_6c1afac6e41044078e89ee6fa9e2c8b0",
+          "tool": "finish_task",
+          "input": {
+            "summary": "Implemented the requested public filter restriction in query-core and react-query.\n\nChanges:\n- `QueryClient.isFetching` now accepts all `QueryFilters` fields except `fetchStatus`, while retaining generic filter inference and returning `number`.\n- React `useIsFetching` now uses the same restricted filter shape and preserves its generic inference and return type.\n- General query-cache filtering remains unchanged, including `fetchStatus` support.\n- Added new type-regression files under the existing test directories:\n  - `packages/query-core/src/__tests__/queryClient.isFetching.test-d.ts`\n  - `packages/react-query/src/__tests__/useIsFetching.test-d.tsx`\n\nRequired commands, run as separate direct invocations:\n- `npm run test:study:regression` — exit 0; 22 test files passed, 630 tests passed.\n- `npm run typecheck:study:types` — exit 0.\n- `npm run typecheck:study:type-regression` — exit 0.\n- `npm run typecheck:study:delivered-types` — exit 0.\n\nAdditional workspace validation:\n- `git diff --check` — passed.\n- Final changed paths are limited to the two requested source packages and their new regression tests.\n\nCoverage limits: the regression command covers the frozen query-core and react-query runtime suites, but the newly added `.test-d.ts` files are type-only and are not runtime test cases. Their compilation is covered by the delivered-types check and the broader typecheck commands. No other framework adapters were modified."
+          },
+          "inputSha256": "ec63ad1707bfeb941e1446a4bd0815040ff023a266d4b71915767089527a93ad",
+          "timestamp": "2026-10-27T04:01:47.391Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        }
+      ]
+    },
+    {
+      "name": "1-fetching-filters-cline",
+      "officialRuntimeSuccess": true,
+      "sourceSuccess": false,
+      "strictSuccess": false,
+      "iterationStartEvents": 14,
+      "observedStop": "official_completion",
+      "explanatoryEvent": null,
+      "lastCompletedTools": [
+        {
+          "callId": "call_b772cb169f89463f8d809802e280f824",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run typecheck:study:types"
+            ]
+          },
+          "inputSha256": "f4644fc36592ae7f2df65433d1a3f9baf3bf6adb6036a4e490f83451e72ae39f",
+          "timestamp": "2026-10-27T04:05:12.477Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_536560c08a5b4e8daaa7aa713c4b8547",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run typecheck:study:type-regression"
+            ]
+          },
+          "inputSha256": "5b4d71ba2db8a32fdc95d9ea91682e531c4d3823d306e7ad512109a5f3819c39",
+          "timestamp": "2026-10-27T04:05:16.836Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_da89e1a6d7da47d8b469f5e3271c46dd",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run typecheck:study:delivered-types"
+            ]
+          },
+          "inputSha256": "194aba918f8461c7af86596f6e78318e9667db498832c35ca30e7e5a4d70efd6",
+          "timestamp": "2026-10-27T04:05:20.700Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_ee71eb1a8d7246729e6c294c1ad7d56e",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "git diff --check && git status --short --untracked-files=all && printf '\\n-- changed paths --\\n' && git diff --name-only && git ls-files --others --exclude-standard | sort"
+            ]
+          },
+          "inputSha256": "d953c9091f262a4c12ea3158902658ade9b161482a6443053dc5542462daf310",
+          "timestamp": "2026-10-27T04:05:29.787Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_c43f4676573d4c2d8e6118b0547326a0",
+          "tool": "read_files",
+          "input": {
+            "files": [
+              {
+                "path": "/workspace/blame-study-runs/context-f68/active/workspace/packages/query-core/src/queryClient.ts",
+                "start_line": 45,
+                "end_line": 165
+              },
+              {
+                "path": "/workspace/blame-study-runs/context-f68/active/workspace/packages/react-query/src/useIsFetching.ts",
+                "start_line": 1,
+                "end_line": 65
+              },
+              {
+                "path": "/workspace/blame-study-runs/context-f68/active/workspace/packages/query-core/src/__tests__/isFetchingFilters.test-d.tsx",
+                "start_line": 1,
+                "end_line": 100
+              },
+              {
+                "path": "/workspace/blame-study-runs/context-f68/active/workspace/packages/query-core/src/__tests__/isFetchingFilters.test.tsx",
+                "start_line": 1,
+                "end_line": 100
+              },
+              {
+                "path": "/workspace/blame-study-runs/context-f68/active/workspace/packages/react-query/src/__tests__/useIsFetchingFilters.test-d.tsx",
+                "start_line": 1,
+                "end_line": 100
+              }
+            ]
+          },
+          "inputSha256": "349f531a182173b9ade3cbcb54aa81085ed92fa1bf95755b15b82e8a8e7b386f",
+          "timestamp": "2026-10-27T04:05:29.990Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_0c6f4e4ccb524f0c96f90f2bc8a7ee6d",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "git diff --numstat && printf '\\n-- scoped adapter/source mentions --\\n' && git diff -- packages/query-core/src packages/react-query/src | grep -E '^[+-].*(fetchStatus|isFetching|useIsFetching)' || true"
+            ]
+          },
+          "inputSha256": "e650d51e35552145dd3293ea17af67eca0b1f4ef066cc251f0a2c19a2a50741f",
+          "timestamp": "2026-10-27T04:05:30.206Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        }
+      ]
+    },
+    {
+      "name": "1-fetching-filters-reference",
+      "officialRuntimeSuccess": false,
+      "sourceSuccess": false,
+      "strictSuccess": false,
+      "iterationStartEvents": 35,
+      "observedStop": "max_iterations",
+      "explanatoryEvent": {
+        "event": {
+          "type": "error",
+          "sessionId": "1793073991899_e5b35",
+          "payload": {
+            "iteration": 35,
+            "message": "Agent runtime exceeded maxIterations (35)",
+            "recoverable": false
+          },
+          "executionId": "1793073991899_e5b35:initial-execution"
+        },
+        "kind": "agent_event",
+        "recordedAt": "2026-10-27T04:11:06.604Z",
+        "schemaVersion": 1
+      },
+      "lastCompletedTools": [
+        {
+          "callId": "call_c498d371dbde4a89ab59f41817c48ab4",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "typecheck:study:types",
+            "packagePath": "/workspace/blame-study-runs/context-f68/active/workspace"
+          },
+          "inputSha256": "8e0cbde927b7ce02a740aad145e2ac5a9f2baf460e3f7c0ef7755fffbb5442d1",
+          "timestamp": "2026-10-27T04:10:29.744Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_ca5bd70d9ccb4b29ab920c1844914b76",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "typecheck:study:type-regression",
+            "packagePath": "/workspace/blame-study-runs/context-f68/active/workspace"
+          },
+          "inputSha256": "c9476c9f723da452d13f301af3374db48b4015f07e07b4b7d3a93d2c0eadefc9",
+          "timestamp": "2026-10-27T04:10:33.529Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_83f91e9130504f23a883007630a168d9",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "typecheck:study:delivered-types",
+            "packagePath": "/workspace/blame-study-runs/context-f68/active/workspace"
+          },
+          "inputSha256": "4ff92534bec0ed5fb292f53fec5404c88847a2ed369888d847e4b67191c0dc82",
+          "timestamp": "2026-10-27T04:10:37.275Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_b0cff0010cd84a8f83982daa7b9c84ba",
+          "tool": "edit_code",
+          "input": {
+            "operations": [
+              {
+                "kind": "patch",
+                "path": "packages/query-core/src/queryClient.ts",
+                "patch": "*** Begin Patch\n*** Update File: packages/query-core/src/queryClient.ts\n@@\n-type QueryFiltersForIsFetching = OmitKeyof<\n-  QueryFilters<any>,\n-  'fetchStatus'\n-> & {\n-  fetchStatus?: never\n-}\n+type QueryFiltersForIsFetching = OmitKeyof<QueryFilters<any>, 'fetchStatus'>\n*** Update File: packages/react-query/src/useIsFetching.ts\n@@\n export function useIsFetching(\n-  filters?: OmitKeyof<QueryFilters, 'fetchStatus'> & {\n-    fetchStatus?: never\n-  },\n+  filters?: OmitKeyof<QueryFilters, 'fetchStatus'>,\n*** Update File: packages/query-core/src/__tests__/queryClient.isFetching.test-d.ts\n@@\n   it('should not accept fetchStatus', () => {\n     const queryClient = new QueryClient()\n \n     // @ts-expect-error isFetching always filters for fetching queries\n     queryClient.isFetching({ fetchStatus: 'fetching' })\n+    // @ts-expect-error fetchStatus is not a public isFetching filter\n+    queryClient.isFetching({ fetchStatus: undefined })\n   })\n })\n*** Update File: packages/react-query/src/__tests__/useIsFetching.test-d.tsx\n@@\n   it('should not accept fetchStatus', () => {\n     // @ts-expect-error useIsFetching always filters for fetching queries\n     useIsFetching({ fetchStatus: 'fetching' })\n+    // @ts-expect-error fetchStatus is not a public useIsFetching filter\n+    useIsFetching({ fetchStatus: undefined })\n   })\n })\n*** End Patch"
+              }
+            ]
+          },
+          "inputSha256": "65b6976428e896356a51a870a31162b55c69743e78b9750aa643891b1d62fdfb",
+          "timestamp": "2026-10-27T04:10:46.061Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_3dfdfb3d14564f609e7005800b3d17ba",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npm run test:study:regression",
+            "cwd": "/workspace/blame-study-runs/context-f68/active/workspace"
+          },
+          "inputSha256": "a16490b750bfdc84a196a31b58d974642b37597b67c6139f5bebbb9483f89c1c",
+          "timestamp": "2026-10-27T04:11:04.686Z",
+          "status": "ok",
+          "process": "running",
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_566cdd375c2b4c33bcb67c67d5449ff3",
+          "tool": "run_task",
+          "input": {
+            "kind": "inspect",
+            "run": "r10",
+            "cursor": "158"
+          },
+          "inputSha256": "f3c1de4704712bf98cd48f0f85383433865cd9e2af6f24986d4b7c4775dcd2b3",
+          "timestamp": "2026-10-27T04:11:06.350Z",
+          "status": "ok",
+          "process": "running",
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        }
+      ]
+    },
+    {
+      "name": "2-mutation-callbacks-compact",
+      "officialRuntimeSuccess": true,
+      "sourceSuccess": true,
+      "strictSuccess": true,
+      "iterationStartEvents": 25,
+      "observedStop": "official_completion",
+      "explanatoryEvent": null,
+      "lastCompletedTools": [
+        {
+          "callId": "call_a86cd83644cd494384e85fbf91ed4e5b",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npm run test:study:regression",
+            "cwd": "/workspace/blame-study-runs/context-f68/active/workspace"
+          },
+          "inputSha256": "a16490b750bfdc84a196a31b58d974642b37597b67c6139f5bebbb9483f89c1c",
+          "timestamp": "2026-10-27T04:15:12.479Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_a709dc55fbfd4b8c934d4ffdaa15e82f",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "typecheck:study:types",
+            "packagePath": "."
+          },
+          "inputSha256": "1bf9f8494f665cff6a066568da3dd40c50510eebd4a41085b8864bbe37a47a28",
+          "timestamp": "2026-10-27T04:15:15.539Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_946edec339ba4cb0b2780d634ccf1fe4",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "test:study:delivered",
+            "packagePath": "."
+          },
+          "inputSha256": "e09af91f7689b93acbe612c1ed60500917c922006eb252da08c933486aefc0af",
+          "timestamp": "2026-10-27T04:15:18.376Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_f383dd89b83e42138cdcb03ce93379b4",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "typecheck:study:delivered-types",
+            "packagePath": "."
+          },
+          "inputSha256": "a4499d2ca84ee7f1c54cf403a7a2da687117db9575564d41e2a971fe81dc1162",
+          "timestamp": "2026-10-27T04:15:21.641Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_9799f93c8efc40df8eaa16676496ade9",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "git diff --check && git status --short",
+            "cwd": "/workspace/blame-study-runs/context-f68/active/workspace"
+          },
+          "inputSha256": "dd33b052ad1cc23497978fb858b3da4f6ceca0eb3f531497732cd6133172b34e",
+          "timestamp": "2026-10-27T04:15:23.900Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_72d20f4300b3468a997c2b8c96107773",
+          "tool": "finish_task",
+          "input": {
+            "summary": "Implemented the mutation callback fix.\n\n- Updated `MutationObserver.#notify` to snapshot the settling mutation’s per-call callbacks and current result before invoking `onSuccess`/`onError`, so a nested mutation cannot replace the callbacks or arguments used by the original mutation’s `onSettled` handler.\n- Added `packages/query-core/src/__tests__/mutation-callbacks.test.tsx` covering nested mutations from both `onSuccess` and `onError`, including data, variables, context, and `onSettled` isolation.\n- Preserved the existing observer, notification, retry, and cache paths.\n\nRequired commands run directly after the final edit:\n- `npm run test:study:regression` — exit 0; 22 test files and 617 tests passed.\n- `npm run typecheck:study:types` — exit 0; passed.\n- `npm run test:study:delivered` — exit 0; 1 test file and 2 tests passed.\n- `npm run typecheck:study:delivered-types` — exit 0; passed.\n\nAdditional `git diff --check` passed. Coverage is limited to the supplied regression suite, delivered regression tests, and the configured source/delivered typechecks; broader package or integration suites were not run."
+          },
+          "inputSha256": "86497cc58b321b93b929c54d9b31fa193b9e098fdc53f1c0fc076f0f3febeedc",
+          "timestamp": "2026-10-27T04:15:27.479Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        }
+      ]
+    },
+    {
+      "name": "2-mutation-callbacks-navigation",
+      "officialRuntimeSuccess": true,
+      "sourceSuccess": true,
+      "strictSuccess": true,
+      "iterationStartEvents": 20,
+      "observedStop": "official_completion",
+      "explanatoryEvent": null,
+      "lastCompletedTools": [
+        {
+          "callId": "call_7e8a701b6cb94e999b3bdca0616997bf",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npm run test:study:regression",
+            "cwd": "/workspace/blame-study-runs/context-f68/active/workspace"
+          },
+          "inputSha256": "a16490b750bfdc84a196a31b58d974642b37597b67c6139f5bebbb9483f89c1c",
+          "timestamp": "2026-10-27T04:18:46.191Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_a0ca4c46bead43e49a50bb2a12bd7747",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npm run typecheck:study:types",
+            "cwd": "/workspace/blame-study-runs/context-f68/active/workspace"
+          },
+          "inputSha256": "6508de13d48e4a14ba9384a653410609cfcf5c7248e384abd8e371fdfd74e356",
+          "timestamp": "2026-10-27T04:18:52.587Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_4864cf856605401984fc3924b55ee3ee",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npm run test:study:delivered",
+            "cwd": "/workspace/blame-study-runs/context-f68/active/workspace"
+          },
+          "inputSha256": "a45c71ccaa16eca33f364439bb40c2a037fd9c6e57d46e78b08412a41ddf05e0",
+          "timestamp": "2026-10-27T04:18:56.306Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_8068cab99db94cd280ea9bd7bef59410",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npm run typecheck:study:delivered-types",
+            "cwd": "/workspace/blame-study-runs/context-f68/active/workspace"
+          },
+          "inputSha256": "89d33280d7b66d463de2bce40f67d04820d593acc1d0206f1b17a9b39e354eb1",
+          "timestamp": "2026-10-27T04:19:01.730Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_0af49bd28f814712a12629f75de169a8",
+          "tool": "read_code",
+          "input": {
+            "target": "@changes",
+            "view": "raw"
+          },
+          "inputSha256": "5a47558ab75861513fc6115dca986840f7e25c4b116c7c28e4701be07587cb8a",
+          "timestamp": "2026-10-27T04:19:03.729Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_1fc288621e6d42e687d7fd9219c0e38c",
+          "tool": "finish_task",
+          "input": {
+            "summary": "Implemented the mutation callback fix in `packages/query-core/src/mutationObserver.ts`: settlement now snapshots the current per-call options and result data before callbacks can start another mutation, so the settled mutation’s `onSuccess`/`onError`/`onSettled` receive its own callbacks, variables, and context. Added `packages/query-core/src/__tests__/mutationObserver-callbacks.test.tsx` covering both success and error callback replacement scenarios.\n\nRequired commands, each run directly after the final edits:\n- `npm run test:study:regression` — exit 0; 22 test files passed, 617 tests passed.\n- `npm run typecheck:study:types` — exit 0.\n- `npm run test:study:delivered` — exit 0; 1 test file passed, 2 tests passed.\n- `npm run typecheck:study:delivered-types` — exit 0.\n\nThe delivered regression test was also run directly before the required commands and passed (1 file, 2 tests). Coverage limits: the supplied study checks report no coverage metrics; validation covers the query-core regression suite, the new executable regression, source TypeScript compilation, and delivered-test TypeScript compilation, but does not establish broader package/application behavior beyond those selections. No manifests or configuration were changed.",
+            "images": []
+          },
+          "inputSha256": "0642a81706dd0312dee99a72aa608c7c7b1a61f93982d82aada5eae6ddfd89bc",
+          "timestamp": "2026-10-27T04:19:07.517Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        }
+      ]
+    },
+    {
+      "name": "2-mutation-callbacks-cline",
+      "officialRuntimeSuccess": true,
+      "sourceSuccess": true,
+      "strictSuccess": true,
+      "iterationStartEvents": 11,
+      "observedStop": "official_completion",
+      "explanatoryEvent": null,
+      "lastCompletedTools": [
+        {
+          "callId": "call_2b9be155aae74000a9ce6f7acaa66b76",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run test:study:regression"
+            ]
+          },
+          "inputSha256": "d2a2e37afc47f60828f4bc0857b112c5f1a673200d9f2df496762ddc19fd8162",
+          "timestamp": "2026-10-27T04:21:15.249Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_e7c7623c26f244e8ba245096e5e670a4",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run typecheck:study:types"
+            ]
+          },
+          "inputSha256": "f4644fc36592ae7f2df65433d1a3f9baf3bf6adb6036a4e490f83451e72ae39f",
+          "timestamp": "2026-10-27T04:21:19.642Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_ca4730dc02a44168adaad3385fa027e3",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run test:study:delivered"
+            ]
+          },
+          "inputSha256": "6f2e702134ce1e3574e39a1eb65f6efc55f30fe8ab58d877e233fca2f7bf3f14",
+          "timestamp": "2026-10-27T04:21:23.105Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_05285e37aafb4021946d1fd3acd397c6",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run typecheck:study:delivered-types"
+            ]
+          },
+          "inputSha256": "194aba918f8461c7af86596f6e78318e9667db498832c35ca30e7e5a4d70efd6",
+          "timestamp": "2026-10-27T04:21:27.025Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_0a5e4e0e82d740c5b3919271b2ff09ff",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "git status --short && git diff --check && git diff --stat && git diff -- packages/query-core/src/mutationObserver.ts packages/query-core/src/__tests__/mutationObserverReentrant.test.tsx"
+            ]
+          },
+          "inputSha256": "bc1a50014efa636649f29a6a6b02d2c66127c4d67b704233f4c0d49d5dc54aed",
+          "timestamp": "2026-10-27T04:21:32.210Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_4d381ea4db454a058be986b470312de2",
+          "tool": "read_files",
+          "input": {
+            "files": [
+              {
+                "path": "/workspace/blame-study-runs/context-f68/active/workspace/packages/query-core/src/mutationObserver.ts",
+                "start_line": 245,
+                "end_line": 320
+              },
+              {
+                "path": "/workspace/blame-study-runs/context-f68/active/workspace/packages/query-core/src/__tests__/mutationObserverReentrant.test.tsx"
+              }
+            ]
+          },
+          "inputSha256": "ad2a82a946a043bec9279b07ac2eeef2924f21d8ac4b47e26a1ff9767c0e1f82",
+          "timestamp": "2026-10-27T04:21:32.382Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        }
+      ]
+    },
+    {
+      "name": "2-mutation-callbacks-reference",
+      "officialRuntimeSuccess": true,
+      "sourceSuccess": true,
+      "strictSuccess": true,
+      "iterationStartEvents": 17,
+      "observedStop": "official_completion",
+      "explanatoryEvent": null,
+      "lastCompletedTools": [
+        {
+          "callId": "call_9638dd1ab37d4636993892aa6a95e793",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npm run typecheck:study:delivered-types",
+            "cwd": "/workspace/blame-study-runs/context-f68/active/workspace"
+          },
+          "inputSha256": "89d33280d7b66d463de2bce40f67d04820d593acc1d0206f1b17a9b39e354eb1",
+          "timestamp": "2026-10-27T04:24:23.668Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_6b6a1d6e45584236a43ee9de5b89a875",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "git status --short && git diff --stat && git diff -- packages/query-core/src/mutationObserver.ts packages/query-core/src/__tests__/mutationCallbacks.test.tsx",
+            "cwd": "/workspace/blame-study-runs/context-f68/active/workspace"
+          },
+          "inputSha256": "cafcdbbfd00c63977240ec1a4754073c00f576dc55304ac164509072bc7bb0b4",
+          "timestamp": "2026-10-27T04:24:28.471Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_62322d4ffa744c4bb29b162c1062f9f1",
+          "tool": "read_code",
+          "input": {
+            "target": "packages/query-core/src/mutationObserver.ts",
+            "range": {
+              "startLine": 250,
+              "endLine": 325
+            }
+          },
+          "inputSha256": "9da7b9746ee35c4eb1b2dfcd596b355f77a8f1ea2d6f15f8bf41b21c8f568423",
+          "timestamp": "2026-10-27T04:24:28.786Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_ab7315f59ae04280adbf91a54ad5ac10",
+          "tool": "read_code",
+          "input": {
+            "target": "packages/query-core/src/__tests__/mutationCallbacks.test.tsx",
+            "view": "raw"
+          },
+          "inputSha256": "83878e9470beffd9a6e2a87ba107cbadda40a8acb667ea3b4c60ee62cadd6ca3",
+          "timestamp": "2026-10-27T04:24:29.074Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_4822a37d1bc64425a045b979e9d3829e",
+          "tool": "read_code",
+          "input": {
+            "target": "packages/query-core/src/mutation.ts",
+            "range": {
+              "startLine": 300,
+              "endLine": 470
+            }
+          },
+          "inputSha256": "8ac2db7b8bb6a4076fec639e6fa2a2336810c19645cf581f10ff2f2b4eda0360",
+          "timestamp": "2026-10-27T04:24:36.543Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_c7b33a1688a74a4f89db84e5a92149f6",
+          "tool": "finish_task",
+          "input": {
+            "summary": "Implemented the mutation callback fix and added `packages/query-core/src/__tests__/mutationCallbacks.test.tsx`.\n\n- Snapshots the per-call mutation options before invoking callbacks, so an `onSuccess`/`onError` callback that starts another mutation cannot replace the callbacks used by the mutation currently settling.\n- Added success and error regressions verifying data, variables, context, and `onSettled` callback ownership for both mutations.\n- Public APIs, subscription, notification, retry, and cache code paths were otherwise unchanged.\n\nChecks run directly after the final edits:\n- `npm run test:study:regression` — passed; 22 test files, 617 tests passed.\n- `npm run typecheck:study:types` — passed; no compiler diagnostics reported. This validates the configured source typecheck scope; it does not report per-file coverage counts.\n- `npm run test:study:delivered` — passed; 1 delivered test file, 2 tests passed.\n- `npm run typecheck:study:delivered-types` — passed; no compiler diagnostics reported for the delivered test/type scope.\n\nAdditional focused regression run passed: 1 file, 2 tests. Coverage is limited to the supplied study regression suites and configured typecheck scopes; no broader repository test suite was run."
+          },
+          "inputSha256": "de0f753a3b6863dd1edca2d2b731da6d631479e21f2f6fc01caf02d663151f06",
+          "timestamp": "2026-10-27T04:24:47.878Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        }
+      ]
+    },
+    {
+      "name": "2-fetching-filters-navigation",
+      "officialRuntimeSuccess": true,
+      "sourceSuccess": false,
+      "strictSuccess": false,
+      "iterationStartEvents": 21,
+      "observedStop": "official_completion",
+      "explanatoryEvent": null,
+      "lastCompletedTools": [
+        {
+          "callId": "call_92bceb7229544b7480d63eae9640d58c",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npm run typecheck:study:type-regression",
+            "cwd": "/workspace/blame-study-runs/context-f68/active/workspace"
+          },
+          "inputSha256": "bc4bb42d840ecd74fb733433ff7df97ab792b6686f93d36e91e98341b274478d",
+          "timestamp": "2026-10-27T14:32:02.849Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_26241ec7750a48f389e5fba61f71a84d",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "npm run typecheck:study:delivered-types",
+            "cwd": "/workspace/blame-study-runs/context-f68/active/workspace"
+          },
+          "inputSha256": "89d33280d7b66d463de2bce40f67d04820d593acc1d0206f1b17a9b39e354eb1",
+          "timestamp": "2026-10-27T14:32:06.442Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_8e67a1c010864f64870b11a769d2add1",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "git diff --check && git status --short && git diff -- packages/query-core/src/queryClient.ts packages/react-query/src/useIsFetching.ts packages/query-core/src/__tests__/isFetchingFilters.test-d.tsx packages/react-query/src/__tests__/useIsFetching.test-d.tsx packages/query-core/src/__tests__/isFetchingFilters.test.tsx",
+            "cwd": "/workspace/blame-study-runs/context-f68/active/workspace"
+          },
+          "inputSha256": "c57aabbc6545947b3f5c639ec55002b25d5f85f7def2b97ac2d1eb760b4b562f",
+          "timestamp": "2026-10-27T14:32:12.657Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_242bedbe594f453aa73a0ffc97eb5dca",
+          "tool": "read_code",
+          "input": {
+            "target": "packages/query-core/src/__tests__/isFetchingFilters.test-d.tsx",
+            "view": "raw"
+          },
+          "inputSha256": "c6aceb64fda450329fa5ed22d3e27637033b592f1d536de89d545f6fd9df2a77",
+          "timestamp": "2026-10-27T14:32:13.023Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_7d80006ff1b54e45aeaa303e1d397b5d",
+          "tool": "read_code",
+          "input": {
+            "target": "packages/react-query/src/__tests__/useIsFetching.test-d.tsx",
+            "view": "raw"
+          },
+          "inputSha256": "8afca921f7db24ada448d6e3274f15ed45318f892950be23300cf8b1657e4500",
+          "timestamp": "2026-10-27T14:32:13.360Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_2255b005482c4615b2998ca386d113cc",
+          "tool": "finish_task",
+          "input": {
+            "summary": "Implemented the requested public-filter restriction in query-core and react-query.\n\n- `QueryClient.isFetching` now omits `fetchStatus` from its filter type while retaining the other filters, generic inference, and `number` return type.\n- React `useIsFetching` now likewise disallows `fetchStatus` without changing runtime behavior or other adapters.\n- General `QueryCache.findAll` filtering still accepts `fetchStatus`; added runtime regression coverage for that behavior.\n- Added new type-regression files under the existing query-core and react-query `__tests__` directories. No supplied tests, manifests, or configuration were changed.\n\nRequired commands, each run directly:\n- `npm run test:study:regression` — passed: 23 test files, 631 tests.\n- `npm run typecheck:study:types` — exited 0/passed; no test counts reported.\n- `npm run typecheck:study:type-regression` — exited 0/passed; no test counts reported.\n- `npm run typecheck:study:delivered-types` — exited 0/passed; no test counts reported.\n\nCoverage limits: the regression runner covered the study-selected query-core/react-query runtime suite and the new executable regression test; the type checks covered their configured source/type-regression selections plus the delivered new type tests. Other framework adapters were not modified or specifically revalidated by these study commands."
+          },
+          "inputSha256": "661dd8d54dca3579ca25accee546cd6a8f39c52a09eb8992dbd8224559026ded",
+          "timestamp": "2026-10-27T14:32:21.329Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        }
+      ]
+    },
+    {
+      "name": "2-fetching-filters-cline",
+      "officialRuntimeSuccess": true,
+      "sourceSuccess": true,
+      "strictSuccess": true,
+      "iterationStartEvents": 11,
+      "observedStop": "official_completion",
+      "explanatoryEvent": null,
+      "lastCompletedTools": [
+        {
+          "callId": "call_fab9f26a6ab1489aa92a35152facde73",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run test:study:regression"
+            ]
+          },
+          "inputSha256": "d2a2e37afc47f60828f4bc0857b112c5f1a673200d9f2df496762ddc19fd8162",
+          "timestamp": "2026-10-27T14:35:03.384Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_a6d77b0dd5f849118f12d6ce61bf0b8e",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run typecheck:study:types"
+            ]
+          },
+          "inputSha256": "f4644fc36592ae7f2df65433d1a3f9baf3bf6adb6036a4e490f83451e72ae39f",
+          "timestamp": "2026-10-27T14:35:06.671Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_bc623c7574e84f0a88c083c34a9faca4",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run typecheck:study:type-regression"
+            ]
+          },
+          "inputSha256": "5b4d71ba2db8a32fdc95d9ea91682e531c4d3823d306e7ad512109a5f3819c39",
+          "timestamp": "2026-10-27T14:35:10.863Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_4d426eccf2154b32b498962d91f7d1b3",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "npm run typecheck:study:delivered-types"
+            ]
+          },
+          "inputSha256": "194aba918f8461c7af86596f6e78318e9667db498832c35ca30e7e5a4d70efd6",
+          "timestamp": "2026-10-27T14:35:15.301Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_f4b9d07b23d149bbbb67cc0732c6c694",
+          "tool": "run_commands",
+          "input": {
+            "commands": [
+              "git status --short --untracked-files=all && printf '\\nDiff stat:\\n' && git diff --stat && printf '\\nDiff check:\\n' && git diff --check"
+            ]
+          },
+          "inputSha256": "3bfb22ce6d5136202abf2c06604225cbf799b3112b73ecfd6e8ae57b5640e5f5",
+          "timestamp": "2026-10-27T14:35:24.865Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_7c6658a08745459da2db71517f5ab02a",
+          "tool": "read_files",
+          "input": {
+            "files": [
+              {
+                "path": "/workspace/blame-study-runs/context-f68/active/workspace/packages/query-core/src/queryClient.ts",
+                "start_line": 47,
+                "end_line": 57
+              },
+              {
+                "path": "/workspace/blame-study-runs/context-f68/active/workspace/packages/query-core/src/queryClient.ts",
+                "start_line": 154,
+                "end_line": 165
+              },
+              {
+                "path": "/workspace/blame-study-runs/context-f68/active/workspace/packages/react-query/src/useIsFetching.ts",
+                "start_line": 5,
+                "end_line": 12
+              },
+              {
+                "path": "/workspace/blame-study-runs/context-f68/active/workspace/packages/react-query/src/useIsFetching.ts",
+                "start_line": 43,
+                "end_line": 61
+              },
+              {
+                "path": "/workspace/blame-study-runs/context-f68/active/workspace/packages/query-core/src/__tests__/isFetchingFilters.test-d.tsx",
+                "start_line": 1,
+                "end_line": 40
+              },
+              {
+                "path": "/workspace/blame-study-runs/context-f68/active/workspace/packages/react-query/src/__tests__/useIsFetching.test-d.tsx",
+                "start_line": 1,
+                "end_line": 32
+              }
+            ]
+          },
+          "inputSha256": "473d1f61d73608f4daa34ee6b5dce71ff8dc6c9c3b1a54c89b88a5e31fd266ec",
+          "timestamp": "2026-10-27T14:35:25.068Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        }
+      ]
+    },
+    {
+      "name": "2-fetching-filters-reference",
+      "officialRuntimeSuccess": true,
+      "sourceSuccess": true,
+      "strictSuccess": false,
+      "iterationStartEvents": 25,
+      "observedStop": "official_completion",
+      "explanatoryEvent": null,
+      "lastCompletedTools": [
+        {
+          "callId": "call_93e45fa550c24af9a208f22160640bb4",
+          "tool": "run_task",
+          "input": {
+            "kind": "inspect",
+            "run": "r2",
+            "cursor": "158"
+          },
+          "inputSha256": "86282bd1d40f9eec6ef2595f92674d8b9a2edd739c1a3ad6e817f0ef3b42e3ce",
+          "timestamp": "2026-10-27T14:39:51.260Z",
+          "status": "ok",
+          "process": "exited",
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_39c0186929e74c43b059928021b8cc1e",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "typecheck:study:types"
+          },
+          "inputSha256": "0022cd0be0b5b5ee0f4465906290fbe0d8c6f18d911ff3c09e44ba8f0b9ec609",
+          "timestamp": "2026-10-27T14:39:55.634Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_0c9047cb094e41f6912339a27e2702da",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "typecheck:study:type-regression"
+          },
+          "inputSha256": "766b8fcf5e9e540ad2237bfa101bd4f64bf50e6b1a7d853a21a18e3df6b3d11c",
+          "timestamp": "2026-10-27T14:39:59.314Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_646ffb2a729e40e1901e46490f57029e",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "typecheck:study:delivered-types"
+          },
+          "inputSha256": "e006893c026b4f3c375d14e806aa9d7ca3439959f76aae1194e41cda77f14bf8",
+          "timestamp": "2026-10-27T14:40:03.140Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_4c324fbe54be4ad28274deb571089cd7",
+          "tool": "run_task",
+          "input": {
+            "kind": "command",
+            "command": "git status --short"
+          },
+          "inputSha256": "1516e75288c9314bb01c2c897f36f9a4451349445691d3bf5f90029174137ec1",
+          "timestamp": "2026-10-27T14:40:04.942Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_7faebe0c5dcd43108eeb6eb3dfdf7b76",
+          "tool": "finish_task",
+          "input": {
+            "summary": "Implemented the requested scoped API typing change.\n\n- `QueryClient.isFetching` now rejects the public `fetchStatus` filter while preserving the other `QueryFilters` fields, generic inference, and `number` return type.\n- React `useIsFetching` now applies the same public filter restriction and preserves its generic inference and return type.\n- General query-cache filtering remains unchanged and continues to support `fetchStatus`.\n- Added new query-core runtime and type regression tests plus a React type regression test under the existing `__tests__` directories.\n- No other framework adapters, manifests, or configuration were changed.\n\nRequired commands, each run directly:\n- `npm run test:study:regression` — passed: 23 test files, 631 tests.\n- `npm run typecheck:study:types` — passed.\n- `npm run typecheck:study:type-regression` — passed.\n- `npm run typecheck:study:delivered-types` — passed.\n\nCoverage limits: the regression suite exercised the supplied query-core and React regression scope; the type checks covered source types, the existing type-regression file, and the newly delivered type tests. No broader framework-adapter test suite or full repository validation was run."
+          },
+          "inputSha256": "9dca2fcf700c1b15210a0ab67ab6b67eda7399d4f8730a146efb9cfb62dfd32f",
+          "timestamp": "2026-10-27T14:40:08.976Z",
+          "status": null,
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        }
+      ]
+    },
+    {
+      "name": "2-fetching-filters-compact",
+      "officialRuntimeSuccess": false,
+      "sourceSuccess": true,
+      "strictSuccess": false,
+      "iterationStartEvents": 18,
+      "observedStop": "sdk_identical_call_guard",
+      "explanatoryEvent": {
+        "event": {
+          "type": "notice",
+          "sessionId": "1793112065236_f73be",
+          "payload": {
+            "iteration": 18,
+            "message": "Detected 5 consecutive identical calls to `run_task`; stopping to avoid a loop.",
+            "recoverable": true
+          },
+          "executionId": "1793112065236_f73be:initial-execution"
+        },
+        "kind": "agent_event",
+        "recordedAt": "2026-10-27T14:44:00.918Z",
+        "schemaVersion": 1
+      },
+      "lastCompletedTools": [
+        {
+          "callId": "call_c14d7d545adc48b28076c7f7632c1b5c",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "typecheck:study:type-regression"
+          },
+          "inputSha256": "766b8fcf5e9e540ad2237bfa101bd4f64bf50e6b1a7d853a21a18e3df6b3d11c",
+          "timestamp": "2026-10-27T14:43:33.769Z",
+          "status": "ok",
+          "process": null,
+          "hasFinalizedPayload": false,
+          "exitCode": 0
+        },
+        {
+          "callId": "call_e33b96fc7da54196af63afa78d0503ad",
+          "tool": "run_task",
+          "input": {
+            "kind": "project",
+            "task": "test:study:regression"
+          },
+          "inputSha256": "bd6a23666cee27cfb799ab6fdfa9e3489cd0c22ddef230e1fa40f30618530720",
+          "timestamp": "2026-10-27T14:43:50.779Z",
+          "status": "ok",
+          "process": "running",
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_236b7bf45eb7450b88ea6d187d0aef32",
+          "tool": "run_task",
+          "input": {
+            "kind": "inspect",
+            "run": "r3",
+            "cursor": "158"
+          },
+          "inputSha256": "4dc88b4aeee7d35a48d3810c61257ed3c48ff4cf0dce3a17f8afeb2e9bfc7fb2",
+          "timestamp": "2026-10-27T14:43:52.766Z",
+          "status": "ok",
+          "process": "running",
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_584facfc951a4ec79b31dc531984e8ba",
+          "tool": "run_task",
+          "input": {
+            "kind": "inspect",
+            "run": "r3",
+            "cursor": "158"
+          },
+          "inputSha256": "4dc88b4aeee7d35a48d3810c61257ed3c48ff4cf0dce3a17f8afeb2e9bfc7fb2",
+          "timestamp": "2026-10-27T14:43:54.642Z",
+          "status": "ok",
+          "process": "running",
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_7fde53a816344916b01d165cd428cd75",
+          "tool": "run_task",
+          "input": {
+            "kind": "inspect",
+            "run": "r3",
+            "cursor": "158"
+          },
+          "inputSha256": "4dc88b4aeee7d35a48d3810c61257ed3c48ff4cf0dce3a17f8afeb2e9bfc7fb2",
+          "timestamp": "2026-10-27T14:43:56.774Z",
+          "status": "ok",
+          "process": "running",
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        },
+        {
+          "callId": "call_9ec7f4cb8148414aad6bcd2efa2d08c7",
+          "tool": "run_task",
+          "input": {
+            "kind": "inspect",
+            "run": "r3",
+            "cursor": "158"
+          },
+          "inputSha256": "4dc88b4aeee7d35a48d3810c61257ed3c48ff4cf0dce3a17f8afeb2e9bfc7fb2",
+          "timestamp": "2026-10-27T14:43:58.929Z",
+          "status": "ok",
+          "process": "running",
+          "hasFinalizedPayload": false,
+          "exitCode": null
+        }
+      ]
+    }
+  ],
+  "boundary": "Observed stop reasons from actual SDK notices, never inferred solely from configured limits. Last tool snapshots are observations, not proof of physical process state at termination. The immutable primary completion/source/audit scores and resource totals are unchanged."
+}

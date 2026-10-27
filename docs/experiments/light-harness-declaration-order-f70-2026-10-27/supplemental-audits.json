@@ -225,6 +225,64 @@
         "callId": "call_a9ffe4e1fc06469e9b17097fde62d383",
         "unconfirmedRequiredRuns": []
       }
+    },
+    {
+      "name": "2-mutation-callbacks-cline",
+      "arm": "cline",
+      "task": "mutation-callbacks",
+      "repeat": 2,
+      "offers": [],
+      "lastAttemptedFinish": null
+    },
+    {
+      "name": "2-mutation-callbacks-reference",
+      "arm": "reference",
+      "task": "mutation-callbacks",
+      "repeat": 2,
+      "offers": [
+        {
+          "query": "interface MutateOptions",
+          "path": "packages/query-core/src/types.ts",
+          "qualifiedName": "MutateOptions",
+          "absentFromThisPrimaryResult": true,
+          "absentFromEarlierStructuredSearchResults": true,
+          "matchingCandidateMetadataObserved": true,
+          "successfulSubsequentReads": [
+            {
+              "callId": "call_39fecefff03540998bc3fa891de7326a",
+              "usingAlias": false,
+              "usingQualifiedTarget": true
+            }
+          ]
+        },
+        {
+          "query": "type MutateOptions",
+          "path": "packages/query-core/src/types.ts",
+          "qualifiedName": "MutateOptions",
+          "absentFromThisPrimaryResult": true,
+          "absentFromEarlierStructuredSearchResults": false,
+          "matchingCandidateMetadataObserved": true,
+          "successfulSubsequentReads": [
+            {
+              "callId": "call_39fecefff03540998bc3fa891de7326a",
+              "usingAlias": false,
+              "usingQualifiedTarget": true
+            }
+          ]
+        }
+      ],
+      "lastAttemptedFinish": {
+        "callId": "call_11ec2e473d1a4bdda5dea76cefd6e36b",
+        "unconfirmedRequiredRuns": []
+      }
+    },
+    {
+      "name": "2-fetching-filters-cline",
+      "arm": "cline",
+      "task": "fetching-filters",
+      "repeat": 2,
+      "offers": [],
+      "lastAttemptedFinish": null
     }
   ],
   "boundary": "Derived sensitivity, not a change to frozen primary scores. Equivalent alias and qualified-target reads are counted separately; primary-result overlap is explicit, so a read does not prove candidate adoption or causal benefit. Candidate metadata was observed, but alias fields are not independently attested by the compact receipt. Pending-run records describe the last observed snapshot, not the physical state at finish or a passing outcome."
