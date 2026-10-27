@@ -86,8 +86,10 @@ export function initializationConfig(
   input: InitializeProjectInput,
   credential: { apiKey: string; baseUrl: string | null },
   submitTool?: AgentTool,
+  sessionId?: string,
 ) {
   return appendProductionConfig({
+    ...(sessionId ? { sessionId } : {}),
     providerId: input.providerId,
     modelId: input.modelId,
     apiKey: credential.apiKey,

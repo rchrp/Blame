@@ -556,6 +556,8 @@ export type InitializeProjectInput = {
   backend?: AgentBackendConfig;
   executionId?: string;
   storyId?: string;
+  /** Channel of `initialization_progress` notices, see initialization-progress.ts. */
+  progressId?: string;
 };
 
 export type InitializeProjectResult = {

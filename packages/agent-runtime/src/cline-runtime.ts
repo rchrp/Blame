@@ -66,6 +66,7 @@ import {
   type RuntimeClineResult,
   type RuntimeSessionSummary,
 } from "./cline-initialization.js";
+import { initializationProgress } from "./initialization-progress.js";
 import {
   backendKey,
   blameNativePluginPath,
@@ -2135,23 +2136,29 @@ export class BlameAgentRuntime {
   ): Promise<InitializeProjectResult> {
     assertWorkspacePath(input.cwd, input.workspaceRoot, "cwd");
     const resolvedCredential = await this.initializationCredential(input);
+    const progress = initializationProgress(this.events, input, maxInitializationAttempts);
+    progress.scanning();
     const scan = await scanProjectForInitialization(input.workspaceRoot);
     const cline = await this.core(input.backend);
     let correction = input.validationFeedback;
     for (let attempt = 1; attempt <= maxInitializationAttempts; attempt += 1) {
-      const result = await this.startProjectInitializationAttempt(
-        cline,
-        input,
-        scan,
-        resolvedCredential,
-        correction,
+      progress.attempt(attempt, correction);
+      const result = await progress.follow(cline, (sessionId) =>
+        this.startProjectInitializationAttempt(
+          cline,
+          input,
+          scan,
+          resolvedCredential,
+          correction,
+          sessionId,
+        ),
       );
+      progress.checking();
       try {
         return parseProjectInitializationAttempt(result, scan, input);
       } catch (error) {
         if (attempt === maxInitializationAttempts) {
-          // Heuristic rules can be wrong about a project: rather than
-          // leave it without a setup, save the last one with its warnings.
+          // Better a setup with heuristic warnings than no setup at all.
           return parseProjectInitializationAttempt(result, scan, input, {
             acceptWarnings: true,
           });
@@ -2175,6 +2182,7 @@ export class BlameAgentRuntime {
     scan: ProjectInitializationScan,
     credential: InitializationCredential,
     correction?: InitializationCorrection,
+    sessionId?: string,
   ) {
     const submitTool = projectInitializationSubmitTool();
     const session = await this.startProjectInitializationAgent(
@@ -2184,6 +2192,7 @@ export class BlameAgentRuntime {
       credential,
       submitTool.tool,
       correction,
+      sessionId,
     );
     return collectProjectInitializationAttempt(cline, session, submitTool);
   }
@@ -2195,6 +2204,7 @@ export class BlameAgentRuntime {
     credential: InitializationCredential,
     submitTool: AgentTool,
     correction: InitializationCorrection | undefined,
+    sessionId?: string,
   ) {
     return this.agentTelemetry.runOperation(
       input,
@@ -2202,7 +2212,7 @@ export class BlameAgentRuntime {
       () =>
         cline.start({
           prompt: initializationPrompt(scan, correction, input.preferences),
-          config: initializationConfig(input, credential, submitTool),
+          config: initializationConfig(input, credential, submitTool, sessionId),
           interactive: false,
           source: "blame-project-initialization",
           toolPolicies: initializationToolPolicies(),

@@ -33,6 +33,7 @@ export {
   referencedScriptFiles,
 } from "./project-host-orchestration.js";
 export { parseRunConfigurations } from "./project-initialization.js";
+export type { InitializationProgress } from "./initialization-progress.js";
 export {
   normalizePreviewManifest,
   normalizePreviewManifestWithPreferences,
