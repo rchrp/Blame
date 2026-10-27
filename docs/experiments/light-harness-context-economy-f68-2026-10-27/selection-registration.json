@@ -1,0 +1,131 @@
+{
+  "registeredAtUTC": "2026-10-27T02:44:49.837Z",
+  "sourceHead": "641df0ede44632208f7111b9a5cf27ea83776489",
+  "kind": "pre-outcome selection; no new model requests",
+  "model": {
+    "provider": "openai-codex",
+    "model": "gpt-5.6-luna",
+    "effort": "high",
+    "sdk": "0.2.0"
+  },
+  "hypotheses": [
+    {
+      "id": "H1",
+      "mechanism": "Only duplicate source-bound repair plans are replaced with a short reference to a full plan still visible in the same consumer transcript. New failures, source/plan changes, explicit @checks reads and compaction without the old full plan re-expose full advice.",
+      "measure": "Actual provider-boundary plan/reference bytes, request tokens/cache/cost/duration, exact failed-compiler-first order and audited source/required-check quality.",
+      "comparison": "Current reference versus advice compaction only; Cline separately.",
+      "risk": "Losing useful advice after compaction or changing previously committed provider prefixes."
+    },
+    {
+      "id": "H2",
+      "mechanism": "File-like path queries require a filename/path boundary instead of independent fuzzy tokens; lexical and symbol content search remain intact.",
+      "measure": "False file candidates and wasted reads on frozen trace replays and natural tasks; strict correctness and resource outcomes.",
+      "comparison": "Current reference versus literal filename matching only; compaction disabled in both.",
+      "risk": "Missing genuine file candidates or incorrectly narrowing an explicit text/symbol query."
+    },
+    {
+      "id": "H3",
+      "mechanism": "Prospective confirmation on real upstream issues in a new substantial monorepo, with independent unchanged official test patches and finite additional probes.",
+      "measure": "Official completion, audited user criteria, actual required invocation execution/outcomes, admitted verification and complete resources separately.",
+      "comparison": "Reference, each isolated treatment and integrated Cline on identical per-task inputs.",
+      "risk": "Small selected issue sample, historical training contamination, task-version differences and unsupported reporter/typecheck scopes."
+    }
+  ],
+  "panels": [
+    {
+      "id": "F68",
+      "purpose": "Known diagnostic; advice compaction only",
+      "tasks": [
+        {
+          "id": "clamp-items",
+          "name": "clampItems",
+          "request": "Fix the existing compiler error, then implement normalizeRange(lower:number,upper:number):Readonly<{lower:number;upper:number}> in src/range.ts and clampItems(values:readonly number[],range:Readonly<{lower:number;upper:number}>):number[] in src/list.ts. Require safe integer bounds and values (TypeError otherwise), reject reversed bounds with RangeError, clamp inclusively, preserve order, and never mutate the array or range. Export both from src/index.ts and add meaningful src/*.test.ts tests."
+        },
+        {
+          "id": "quota",
+          "name": "createQuota",
+          "request": "Fix the existing compiler error, then add createQuota(limit:number) in src/quota.ts and export it from src/index.ts. Return an object with a read-only remaining getter, tryTake(amount=1):boolean and restore(amount=1):number. Limit and amounts must be nonnegative safe integers (RangeError otherwise). Taking too much returns false without mutation; zero is a no-op. Restore returns the new remaining amount capped at limit. State is independent per instance and invalid operations do not mutate it. Add meaningful src/*.test.ts tests."
+        }
+      ],
+      "arms": [
+        "reference",
+        "compact",
+        "cline"
+      ],
+      "knownDiagnostics": true,
+      "limits": "Reuses known task definitions as diagnostic opportunities; not new-task confirmation. Fresh model draws and current migrated executable stay separate from F67."
+    },
+    {
+      "id": "F69",
+      "purpose": "Natural cross-module confirmation and isolated navigation/advice effects",
+      "project": "TanStack/query complete checkout",
+      "tasks": [
+        {
+          "id": "mutation-callbacks",
+          "fix": "a16e71c7a8d30cc892266028aeeeae9fdf930c67",
+          "issue": "https://github.com/TanStack/query/issues/11451",
+          "scope": [
+            "packages/query-core/src"
+          ],
+          "request": "Correct per-call mutation callback handling when an onSuccess or onError handler starts another mutation with different callbacks. The callbacks for the mutation being settled must keep that mutation’s data, variables and context; onSettled must not call the next mutation’s handlers. Preserve subscription, notification, retry and cache behavior. Add a regression in a new test file under packages/query-core/src/__tests__; preserve existing tests.",
+          "base": "98fd5936f05efcfa9d0c5d69a00bb002bbb6f00b"
+        },
+        {
+          "id": "fetching-filters",
+          "fix": "18e54bfac3dc3756afdb8840418d831c61bc15bf",
+          "issue": "https://github.com/TanStack/query/pull/12390",
+          "scope": [
+            "packages/query-core/src",
+            "packages/react-query/src"
+          ],
+          "request": "In query-core QueryClient.isFetching and the React useIsFetching hook, disallow fetchStatus in the public filter argument: these APIs already count fetching queries. Preserve all other filter fields, their generic inference and return types, and leave fetchStatus supported by general query-cache filtering. Keep runtime behavior unchanged. Scope this change to query-core and react-query, preserving the other framework adapters. Add regression coverage in new files under the existing __tests__ directories; preserve supplied tests.",
+          "base": "02ac821eb2315b8104b1446d13f9bdfac74d8f34"
+        }
+      ],
+      "arms": [
+        "reference",
+        "compact",
+        "navigation",
+        "cline"
+      ],
+      "knownDiagnostics": false,
+      "limits": "Historical upstream issues new to this study. Mutation reference fix touches one production file; filters task is an explicitly scoped query-core/React subset of an eight-adapter upstream issue. No claim of solving the entire upstream PR."
+    }
+  ],
+  "repetitions": 2,
+  "order": "Panel, repeat, task; arms rotate by repeat+task, sequential workers, one new trial per coordinator process; no outcome-dependent replacements or uncertain retries.",
+  "featureFlags": {
+    "reference": {
+      "compact": false,
+      "navigation": false
+    },
+    "compact": {
+      "compact": true,
+      "navigation": false
+    },
+    "navigation": {
+      "compact": false,
+      "navigation": true
+    },
+    "cline": {
+      "compact": false,
+      "navigation": false
+    }
+  },
+  "budgets": {
+    "perTrialSdkCostLimitUsd": 1,
+    "perTrialMissingCostReserveUsd": 0.5,
+    "requestOvershootReserveUsd": 0.5,
+    "maxIterations": 35,
+    "timeoutSeconds": 600,
+    "maxOutputTokens": 8192,
+    "requestBytes": 500000,
+    "observedStudyStopUsd": 45
+  },
+  "quality": "Preserve source/public API criteria, immutable supplied tests/configuration and every required final invocation. Record executed, passed, admitted and accepted independently; unsupported reporting is unknown. Primary audit uses the same immutable-script/actual-outcome/source-fingerprint rules for Light and Cline; formal completion admission stays separate.",
+  "resources": "All assignments retained, null costs/tokens are unknown. Input+output tokens, cache subset separately, SDK estimates not invoices, raw durations plus HTTP/tool attribution. Pair/task omission on jointly audited successes; panels/version baselines stay separate.",
+  "gates": "Test local positive/negative controls and full SDK/prefix behavior, then freeze compiled source, SDK/provider bytes, prompts, schemas, dependencies, official test patches, task inputs and grading scripts before model dispatch. No builds/tests/solver alongside measured workers; no solution retrieval by workers.",
+  "provenance": {
+    "priorProtocolSha256": "2e0afdab7bfac83bb601bf24a7c2bd80368514e074d03cb32fd9dd34b91c02f3"
+  }
+}
