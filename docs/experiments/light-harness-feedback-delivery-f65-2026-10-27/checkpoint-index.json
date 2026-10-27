@@ -1,35 +1,68 @@
 {
   "protocolHash": "2e0afdab7bfac83bb601bf24a7c2bd80368514e074d03cb32fd9dd34b91c02f3",
-  "completed": 7,
+  "completed": 11,
+  "accounted": 12,
   "planned": 24,
   "receipts": [
     {
       "name": "1-map-context-reference",
+      "path": "checkpoints/1-map-context-reference.json.gz",
       "sha256": "28781c96be37c4e2ffc3414a926e1a64b883d706c6bbc372074041f75bdfb206"
     },
     {
       "name": "1-map-context-batch",
+      "path": "checkpoints/1-map-context-batch.json.gz",
       "sha256": "e5e64196eedaba5f64a18b914c7d206c064890caf8f79f525e3762f2b6b5b19b"
     },
     {
       "name": "1-map-context-cline",
+      "path": "checkpoints/1-map-context-cline.json.gz",
       "sha256": "b143e2f86371a809f5f7b563ad9c74fe909e80c7b7ece7361100b842d86f7466"
     },
     {
       "name": "1-take-through-batch",
+      "path": "checkpoints/1-take-through-batch.json.gz",
       "sha256": "9899d59fc5874e741372a66f63faae9d83009691f867777602ca563d2eabed23"
     },
     {
       "name": "1-take-through-cline",
+      "path": "checkpoints/1-take-through-cline.json.gz",
       "sha256": "f64ccbbe77bcf1249a810b37370ce31f84807551d9b9264085d062052c51ed54"
     },
     {
       "name": "1-take-through-reference",
+      "path": "checkpoints/1-take-through-reference.json.gz",
       "sha256": "19d29bbf2f3b66208c38ac90d7faab0bd56d141297e903d598ae868516029037"
     },
     {
       "name": "2-map-context-batch",
+      "path": "checkpoints/2-map-context-batch.json.gz",
       "sha256": "e3c90879c7c313c48ef148bb07a10fc4875829c03dcc8411879e25facc26a7d8"
+    },
+    {
+      "name": "2-map-context-cline",
+      "path": "checkpoints/2-map-context-cline.json.gz",
+      "sha256": "f8c06765ff0c046e0d89280d879d96112efc1f28b6724a0404719dbcd222ef56"
+    },
+    {
+      "name": "2-map-context-reference",
+      "path": "interrupted-trial.json.gz",
+      "sha256": "862bb4e26f842a7c34e21fcf1edaa0ec7460c7e04bc371c1e0e10bf99c03ef29"
+    },
+    {
+      "name": "2-take-through-cline",
+      "path": "continuation/checkpoints/2-take-through-cline.json.gz",
+      "sha256": "099405e8d36f3077aec10b1e45d5ad4adae55ef7047d336061520cd73c2ace7e"
+    },
+    {
+      "name": "2-take-through-reference",
+      "path": "continuation/checkpoints/2-take-through-reference.json.gz",
+      "sha256": "7c155bd53afb05f56fced67b6ce685cd320e4551d202248147ad9028b1f06b99"
+    },
+    {
+      "name": "2-take-through-batch",
+      "path": "continuation/checkpoints/2-take-through-batch.json.gz",
+      "sha256": "4bbc423ff460ea86a9594d231f48b0e579db8638f003add7f867e0d7fccdb6f2"
     }
   ]
 }

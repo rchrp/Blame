@@ -5,14 +5,11 @@ import {join} from 'node:path';
 import {gunzipSync} from 'node:zlib';
 import {digest, atomicJson, trialName} from '../durable-campaign.mjs';
 import {study} from './inputs.mjs';
-const protocol = JSON.parse(await readFile(join(study, 'model-protocol.json')));
-const hash = digest(await readFile(join(study, 'model-protocol.json')));
+import {evidence} from './evidence.mjs';
+const {protocol, records, executionFinished} = await evidence();
 const trials = [];
-for (const slot of protocol.order) {
-  const name = trialName(slot); let bytes;
-  try {bytes = await readFile(join(study, 'checkpoints', name + '.json.gz'));}
-  catch (e) {if (e.code === 'ENOENT') break; throw e;}
-  const c = JSON.parse(gunzipSync(bytes)); assert.equal(c.protocolHash, hash);
+for (const c of records.filter(c => !c.partial)) {
+  const {name, row: slot} = c;
   const file = path => {
     const record = c.files[path]; if (!record) return '';
     const bytes = Buffer.from(record.base64, 'base64'); assert.equal(digest(bytes), record.sha256); return bytes.toString();
@@ -46,7 +43,7 @@ for (const slot of protocol.order) {
     }
   }
   const multiReadIterations = [...iterationTools.entries()].filter(([, names]) => names.filter(n => n === 'read_code').length > 1).map(([iteration, names]) => ({iteration, reads: names.filter(n => n === 'read_code').length}));
-  trials.push({...slot, name, multiReadIterations, firstContract: wire[0] ?? null,
+  trials.push({panel: slot.panel, task: slot.task, arm: slot.arm, repeat: slot.repeat, name, multiReadIterations, firstContract: wire[0] ?? null,
     uniqueScopeOffers: offered.size, uniqueExactForwardedScopes: exact.size,
     scopeForwardingOccurrences: forwarded.length,
     groupedReads: tools.filter(t => t.tool === 'read_code' && Array.isArray(t.input?.reads)).map(t => ({
@@ -68,7 +65,7 @@ for (const trial of trials.filter(t => !['reference', 'cline'].includes(t.arm)))
     expectedSchemaChange: trial.arm === 'batch',
     sameModelEffortOutputLimit: JSON.stringify([reference.firstContract.model, reference.firstContract.reasoning, reference.firstContract.maximumOutputTokens]) === JSON.stringify([trial.firstContract.model, trial.firstContract.reasoning, trial.firstContract.maximumOutputTokens])});
 }
-const report = {complete: trials.length === protocol.order.length, trials, contracts,
+const report = {complete: trials.length === protocol.order.length, executionFinished, interruptedTrials: records.filter(c => c.partial).map(c => c.name), trials, contracts,
   boundary: 'Exact hash/call correlation at the fetch boundary; not proof of remote ingestion, model attention, reasoning or task benefit. Repeated forwarded occurrences are not independent offers. Prompt/schema differences remain visible, never normalized after outcomes.'};
 await atomicJson(join(study, 'mechanism-audit.json'), report);
 console.log(JSON.stringify({complete: report.complete, trials: trials.length, contracts}, null, 2));

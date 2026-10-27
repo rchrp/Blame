@@ -1,11 +1,15 @@
 {
   "complete": false,
+  "executionFinished": false,
+  "interruptedTrials": [
+    "2-map-context-reference"
+  ],
   "trials": [
     {
       "panel": "F66",
-      "repeat": 1,
       "task": "map-context",
       "arm": "reference",
+      "repeat": 1,
       "name": "1-map-context-reference",
       "multiReadIterations": [
         {
@@ -67,9 +71,9 @@
     },
     {
       "panel": "F66",
-      "repeat": 1,
       "task": "map-context",
       "arm": "batch",
+      "repeat": 1,
       "name": "1-map-context-batch",
       "multiReadIterations": [
         {
@@ -123,9 +127,9 @@
     },
     {
       "panel": "F66",
-      "repeat": 1,
       "task": "map-context",
       "arm": "cline",
+      "repeat": 1,
       "name": "1-map-context-cline",
       "multiReadIterations": [],
       "firstContract": {
@@ -158,9 +162,9 @@
     },
     {
       "panel": "F66",
-      "repeat": 1,
       "task": "take-through",
       "arm": "batch",
+      "repeat": 1,
       "name": "1-take-through-batch",
       "multiReadIterations": [
         {
@@ -218,9 +222,9 @@
     },
     {
       "panel": "F66",
-      "repeat": 1,
       "task": "take-through",
       "arm": "cline",
+      "repeat": 1,
       "name": "1-take-through-cline",
       "multiReadIterations": [],
       "firstContract": {
@@ -253,9 +257,9 @@
     },
     {
       "panel": "F66",
-      "repeat": 1,
       "task": "take-through",
       "arm": "reference",
+      "repeat": 1,
       "name": "1-take-through-reference",
       "multiReadIterations": [
         {
@@ -317,9 +321,9 @@
     },
     {
       "panel": "F66",
-      "repeat": 2,
       "task": "map-context",
       "arm": "batch",
+      "repeat": 2,
       "name": "2-map-context-batch",
       "multiReadIterations": [
         {
@@ -378,6 +382,196 @@
       "blockedEdits": 0,
       "compilerOffers": [],
       "requiredChecksRetained": true
+    },
+    {
+      "panel": "F66",
+      "task": "map-context",
+      "arm": "cline",
+      "repeat": 2,
+      "name": "2-map-context-cline",
+      "multiReadIterations": [],
+      "firstContract": {
+        "time": "2026-10-27T01:16:39.639Z",
+        "endpoint": "https://chatgpt.com/backend-api/codex/responses",
+        "model": "gpt-5.6-luna",
+        "reasoning": {
+          "effort": "high",
+          "summary": "detailed"
+        },
+        "maximumOutputTokens": 8192,
+        "toolsSha256": "e9cf7b12faef5cc5cf09abaf67ff690f4af8442561acbe7b34ac80e4c0d076b6",
+        "promptSha256": "f5032e3eb42179c13a22bec16eea7e8bb2ad53fb599b51fa20d6dabb1d229cce",
+        "normalizedContractSha256": "fbb33edb3252d250fd712b329fffefa4e2e1096b51d43dc257dd470924093e5e",
+        "requestBodySha256": "16a812a57233d95148a2de61327062ea8eee5dccee07797d2aae4741602eabfd",
+        "requestBytes": 13947,
+        "byteLimit": 500000,
+        "budgetRejected": false,
+        "toolCount": 6
+      },
+      "uniqueScopeOffers": 0,
+      "uniqueExactForwardedScopes": 0,
+      "scopeForwardingOccurrences": 0,
+      "groupedReads": [],
+      "tools": 19,
+      "reads": 0,
+      "blockedEdits": 0,
+      "compilerOffers": [],
+      "requiredChecksRetained": false
+    },
+    {
+      "panel": "F66",
+      "task": "take-through",
+      "arm": "cline",
+      "repeat": 2,
+      "name": "2-take-through-cline",
+      "multiReadIterations": [],
+      "firstContract": {
+        "time": "2026-10-27T01:27:27.617Z",
+        "endpoint": "https://chatgpt.com/backend-api/codex/responses",
+        "model": "gpt-5.6-luna",
+        "reasoning": {
+          "effort": "high",
+          "summary": "detailed"
+        },
+        "maximumOutputTokens": 8192,
+        "toolsSha256": "e9cf7b12faef5cc5cf09abaf67ff690f4af8442561acbe7b34ac80e4c0d076b6",
+        "promptSha256": "f5032e3eb42179c13a22bec16eea7e8bb2ad53fb599b51fa20d6dabb1d229cce",
+        "normalizedContractSha256": "fbb33edb3252d250fd712b329fffefa4e2e1096b51d43dc257dd470924093e5e",
+        "requestBodySha256": "9ff2889fe8dbbedf2da098655ca215e9ecfb772510e8309554b10934f988af0c",
+        "requestBytes": 13892,
+        "byteLimit": 500000,
+        "budgetRejected": false,
+        "toolCount": 6
+      },
+      "uniqueScopeOffers": 0,
+      "uniqueExactForwardedScopes": 0,
+      "scopeForwardingOccurrences": 0,
+      "groupedReads": [],
+      "tools": 21,
+      "reads": 0,
+      "blockedEdits": 0,
+      "compilerOffers": [],
+      "requiredChecksRetained": false
+    },
+    {
+      "panel": "F66",
+      "task": "take-through",
+      "arm": "reference",
+      "repeat": 2,
+      "name": "2-take-through-reference",
+      "multiReadIterations": [
+        {
+          "iteration": 1,
+          "reads": 3
+        },
+        {
+          "iteration": 2,
+          "reads": 3
+        },
+        {
+          "iteration": 3,
+          "reads": 3
+        },
+        {
+          "iteration": 4,
+          "reads": 5
+        },
+        {
+          "iteration": 5,
+          "reads": 5
+        },
+        {
+          "iteration": 6,
+          "reads": 2
+        }
+      ],
+      "firstContract": {
+        "time": "2026-10-27T01:31:04.054Z",
+        "endpoint": "https://chatgpt.com/backend-api/codex/responses",
+        "model": "gpt-5.6-luna",
+        "reasoning": {
+          "effort": "high",
+          "summary": "detailed"
+        },
+        "maximumOutputTokens": 8192,
+        "toolsSha256": "923df5c21ad5d8c059a21090a18183222608911f1a6c7df258414c7ca66e6bfa",
+        "promptSha256": "bc0efda336e77491e727032fcfe837e616f3ccae1d6789a6e6b58b77d3ef1e14",
+        "normalizedContractSha256": "5588b0b01c55d3c2e57b6cfb63c5e7c542d0347aebd4a9c7120da9f5073c9ee1",
+        "requestBodySha256": "96f7147a2142196742f37be120e0f5e11dbfda172ccc9e6f5a5ba3dc47e49bca",
+        "requestBytes": 24555,
+        "byteLimit": 500000,
+        "budgetRejected": false,
+        "toolCount": 9
+      },
+      "uniqueScopeOffers": 2,
+      "uniqueExactForwardedScopes": 2,
+      "scopeForwardingOccurrences": 14,
+      "groupedReads": [],
+      "tools": 49,
+      "reads": 22,
+      "blockedEdits": 1,
+      "compilerOffers": [],
+      "requiredChecksRetained": true
+    },
+    {
+      "panel": "F66",
+      "task": "take-through",
+      "arm": "batch",
+      "repeat": 2,
+      "name": "2-take-through-batch",
+      "multiReadIterations": [
+        {
+          "iteration": 2,
+          "reads": 5
+        },
+        {
+          "iteration": 3,
+          "reads": 5
+        },
+        {
+          "iteration": 4,
+          "reads": 4
+        },
+        {
+          "iteration": 5,
+          "reads": 4
+        },
+        {
+          "iteration": 6,
+          "reads": 3
+        },
+        {
+          "iteration": 14,
+          "reads": 2
+        }
+      ],
+      "firstContract": {
+        "time": "2026-10-27T01:33:43.413Z",
+        "endpoint": "https://chatgpt.com/backend-api/codex/responses",
+        "model": "gpt-5.6-luna",
+        "reasoning": {
+          "effort": "high",
+          "summary": "detailed"
+        },
+        "maximumOutputTokens": 8192,
+        "toolsSha256": "61f7f4d18a5f7ab66c5c22b614bc7b6f2c0cd7b52a03118735bfe62262381490",
+        "promptSha256": "bc0efda336e77491e727032fcfe837e616f3ccae1d6789a6e6b58b77d3ef1e14",
+        "normalizedContractSha256": "c3a1d9b5237255236da7e60c9f7e3c1dd85d0ecfa5eb603e79b5893b9d8d6172",
+        "requestBodySha256": "a997fe6124adf1a78d038961e5bb9f78c90981f7003245a69eda911ac7e8f445",
+        "requestBytes": 25666,
+        "byteLimit": 500000,
+        "budgetRejected": false,
+        "toolCount": 9
+      },
+      "uniqueScopeOffers": 3,
+      "uniqueExactForwardedScopes": 3,
+      "scopeForwardingOccurrences": 24,
+      "groupedReads": [],
+      "tools": 51,
+      "reads": 24,
+      "blockedEdits": 1,
+      "compilerOffers": [],
+      "requiredChecksRetained": true
     }
   ],
   "contracts": [
@@ -393,6 +587,15 @@
     {
       "task": "take-through",
       "repeat": 1,
+      "panel": "F66",
+      "sameFirstPrompt": true,
+      "sameFirstTools": false,
+      "expectedSchemaChange": true,
+      "sameModelEffortOutputLimit": true
+    },
+    {
+      "task": "take-through",
+      "repeat": 2,
       "panel": "F66",
       "sameFirstPrompt": true,
       "sameFirstTools": false,

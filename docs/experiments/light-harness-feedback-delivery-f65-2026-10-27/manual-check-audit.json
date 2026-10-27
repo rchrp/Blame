@@ -33,6 +33,68 @@
           }
         ]
       }
+    },
+    {
+      "name": "2-map-context-cline",
+      "reviewedAtUTC": "2026-10-27T01:33:35.515083+00:00",
+      "reviewer": "Codex repository audit",
+      "acceptRequiredInvocations": true,
+      "reason": "Each exact required command and immediate child exit 0 is printed by the final-source loop. Frozen automatic recognition deliberately excludes loops.",
+      "evidence": {
+        "toolCallId": "call_b4e5e0b3c5524ce0879ca1de4eef5724",
+        "inputSha256": "c8e2db7a988474e2310312213ccb4e6cbde35604d98c01c863be407e04bd4a9b",
+        "outputSha256": "a1e7651fd1fad9c9a49afe5a214e35880754e22b3aaf804edee9df3e963594be",
+        "finalSourceSha256": "e1978d6da51f0ef17423976eb87a075c15a89ed8d392c9099057c95d04f0d42e",
+        "commands": [
+          {
+            "command": "npm run test:study:regression",
+            "observedChildExit": 0
+          },
+          {
+            "command": "npm run test:study:types",
+            "observedChildExit": 0
+          },
+          {
+            "command": "npm run test:study:delivered",
+            "observedChildExit": 0
+          },
+          {
+            "command": "npm run typecheck:delivered",
+            "observedChildExit": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "2-take-through-cline",
+      "reviewedAtUTC": "2026-10-27T01:33:35.517795+00:00",
+      "reviewer": "Codex repository audit",
+      "acceptRequiredInvocations": true,
+      "reason": "The script appends missing final newlines before the four exact required invocations. Each immediate child exit is printed as 0; no later source change occurs. Tool start/end fingerprints differ because edits precede checks within this tool. Test layout remains a separate strict failure.",
+      "evidence": {
+        "toolCallId": "call_034bc3d707614cb18cecae7b95d5b404",
+        "inputSha256": "f270446de7ae17eff3d1a4d6ab160cd9b0f83ad9dabc7ebb552ab45f24399f57",
+        "outputSha256": "579cfea3ac80886ed6e980c68e3d68b02b63569e9d7b6470533c23ab5b639e07",
+        "finalSourceSha256": "ac25fdcaa51c8df341ce685a1b73c82d5bfb84906581124ff77df94a2bec1814",
+        "commands": [
+          {
+            "command": "npm run test:study:regression",
+            "observedChildExit": 0
+          },
+          {
+            "command": "npm run test:study:types",
+            "observedChildExit": 0
+          },
+          {
+            "command": "npm run test:study:delivered",
+            "observedChildExit": 0
+          },
+          {
+            "command": "npm run typecheck:delivered",
+            "observedChildExit": 0
+          }
+        ]
+      }
     }
   ]
 }

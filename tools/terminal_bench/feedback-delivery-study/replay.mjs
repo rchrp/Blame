@@ -7,19 +7,17 @@ import {gunzipSync} from 'node:zlib';
 import {tasks, study, work, repo} from './inputs.mjs';
 import {endpoint} from './controls.mjs';
 import {restoreInput} from './restore-input.mjs';
+import {evidence} from './evidence.mjs';
 import {sourceEpoch} from './source-epoch.mjs';
 import {atomicJson, digest, trialName} from '../durable-campaign.mjs';
-const p = JSON.parse(await readFile(join(study, 'model-protocol.json')));
-const status = JSON.parse(await readFile(join(study, 'campaign-status.json')));
-assert.equal(status.complete, true, 'Wait for all model workers; no concurrent test/compiler workload');
-const protocolHash = digest(await readFile(join(study, 'model-protocol.json')));
+const {protocol: p, records, executionFinished, modelCompleted} = await evidence();
+assert.equal(executionFinished, true, 'Wait until every original assignment is completed or explicitly interrupted');
+const completedRecords = records.filter(c => !c.partial);
 const modules = join(repo, '.blame/research/validation-recovery-f63/dependencies/node_modules');
 const destination = join(work, 'replays'); await mkdir(destination, {recursive: true});
 const results = [];
-for (const slot of p.order) {
-  const name = trialName(slot), task = tasks.find(t => t.id === slot.task);
-  const checkpoint = JSON.parse(gunzipSync(await readFile(join(study, 'checkpoints', name + '.json.gz'))));
-  assert.equal(checkpoint.protocolHash, protocolHash);
+for (const checkpoint of completedRecords) {
+  const slot = checkpoint.row, name = checkpoint.name, task = tasks.find(t => t.id === slot.task);
   const file = path => {
     const record = checkpoint.files[path], bytes = Buffer.from(record.base64, 'base64');
     assert.equal(digest(bytes), record.sha256); return bytes;
@@ -48,7 +46,7 @@ for (const slot of p.order) {
     return {name: actual.name, exitCode: actual.exitCode, signal: actual.signal, error: actual.error, durationMs: actual.durationMs};
   });
   results.push({name, patchSha256: digest(patch), exactSourceReconstructed: true, endpoints});
-  await atomicJson(join(study, options.portable ? 'portable-patch-replays.json' : 'patch-replays.json'), {complete: results.length === p.order.length, planned: p.order.length, results,
+  await atomicJson(join(study, options.portable ? 'portable-patch-replays.json' : 'patch-replays.json'), {complete: results.length === modelCompleted, planned: modelCompleted, originalAssignments: p.order.length, interruptedNotRetried: records.filter(c => c.partial).map(c => c.name), results,
     boundary: 'No model calls, no solution recovery or patch repair; original immutable checks and original five frozen endpoint criteria.'});
   console.log('REPLAY', name, endpoints.map(e => e.exitCode).join(','));
 }
