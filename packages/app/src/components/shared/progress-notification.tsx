@@ -1,12 +1,15 @@
 import { useAnimatedBorderEffect } from "@/hooks/use-animated-border-effect"
 
-// Shared by runtime maintenance and desktop updates.
+// Shared by runtime maintenance, desktop updates and project initialization.
 export function ProgressNotificationBody({
   label,
   percent,
+  detail,
 }: {
   label: string
   percent?: number
+  /** A second, quieter line about the current step. */
+  detail?: string
 }) {
   const value =
     percent !== undefined && Number.isFinite(percent)
@@ -36,6 +39,9 @@ export function ProgressNotificationBody({
           }
         />
       </div>
+      {detail ? (
+        <span className="text-xs text-muted-foreground">{detail}</span>
+      ) : null}
     </div>
   )
 }

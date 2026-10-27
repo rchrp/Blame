@@ -65,6 +65,10 @@ import { createCloudApi } from "@/lib/cloud-api"
 import { effectiveProjectCodePractices } from "@/lib/project-code-practice-preferences"
 import { storyMaxInputTokens } from "@/components/backlog/data/story-context-limit"
 import { refreshDriftedProjectInitialization } from "@/pages/backlog/project-initialization-drift"
+import {
+  notifyDirectFallback,
+  storyInitializationGate,
+} from "@/pages/backlog/backlog-initialization-gate"
 import { type StoryRunMode, useStoryRunMode } from "@/lib/runtime-preference"
 import {
   measurePerformanceOperation,
@@ -96,7 +100,6 @@ import {
   pendingAgentUpdate,
   type PendingAgentUpdate,
   previewRecoveryStateKey,
-  projectInitializing,
   type QueuedAgentUpdate,
   queuedStories,
   recoverableAgentRun,
@@ -219,34 +222,34 @@ export function useBacklogRotation(
       auth.apiConnection
     ).projectInitialization(projects.activeProject.id)
     const savedInitialization = projectInitialization.initialization
-
-    if (
-      savedInitialization?.status !== "done" ||
-      !savedInitialization.previewManifest
-    ) {
-      if (projectInitializing(savedInitialization?.status))
-        return retryStory(detailedStory)
-      reportBlocker(
-        detailedStory,
-        "Project initialization is required before starting queued user stories."
-      )
-      return
-    }
+    const gate = storyInitializationGate(
+      savedInitialization,
+      projects.activeProject.id,
+      storyRunMode(detailedStory)
+    )
+    if (gate === "wait") return retryStory(detailedStory)
+    if (gate === "run-direct") return runDirectWithoutInitialization(detailedStory)
     // Commits made outside Blame can leave the saved preview setup stale.
-    const refreshed = await refreshDriftedProjectInitialization({
-      apiConnection: auth.apiConnection,
-      platform,
-      projectId: projects.activeProject.id,
-      repositoryRoot: projects.activeProject.path,
-      initialization: savedInitialization,
-      providerId: selection.currentModel.provider.id,
-      modelId: selection.currentModel.id,
-      credentialLabel: selection.currentModel.credentialLabel,
-      reasoningEffort: selection.currentVariant,
-    })
-    const initialization = refreshed.previewManifest
+    const ready =
+      savedInitialization?.status === "done" && savedInitialization.previewManifest
+        ? { ...savedInitialization, previewManifest: savedInitialization.previewManifest }
+        : undefined
+    const refreshed = ready
+      ? await refreshDriftedProjectInitialization({
+          apiConnection: auth.apiConnection,
+          platform,
+          projectId: projects.activeProject.id,
+          repositoryRoot: projects.activeProject.path,
+          initialization: ready,
+          providerId: selection.currentModel.provider.id,
+          modelId: selection.currentModel.id,
+          credentialLabel: selection.currentModel.credentialLabel,
+          reasoningEffort: selection.currentVariant,
+        })
+      : undefined
+    const initialization = refreshed?.previewManifest
       ? { ...refreshed, previewManifest: refreshed.previewManifest }
-      : { ...savedInitialization, previewManifest: savedInitialization.previewManifest }
+      : ready
 
     const workspace = platform.workspace
     const agent = platform.agent
@@ -319,7 +322,7 @@ export function useBacklogRotation(
     let sessionPromise: ReturnType<typeof agent.sessions.startDevelopment> | undefined
     let started: { run: UserStoryAgentRun; sessionId: string } | undefined
     try {
-      const preparationPromise = direct
+      const preparationPromise = direct || !initialization
         ? Promise.resolve()
         : workspace.prepareProjectPreview({
         executionId,
@@ -354,14 +357,14 @@ export function useBacklogRotation(
         // In Direct mode, the project's own app (Blame's project runner).
         previewDevtoolsScope: direct
           ? directStoryPreviewScope(
-              initialization.runConfigurations,
+              initialization?.runConfigurations ?? [],
               projects.activeProject.path
             )
           : storyPreviewDevtoolsScope(detailedStory.id),
         codePractices: effectiveProjectCodePractices(
           projectInitialization.practices
         ),
-        projectInitialization: {
+        projectInitialization: initialization && {
           previewManifest: initialization.previewManifest,
           runConfigurations: initialization.runConfigurations,
           databaseMode: initialization.databaseMode,
@@ -487,6 +490,19 @@ export function useBacklogRotation(
       slots -= 1
     }
     return selected
+  }
+
+  // No usable initialization: run the story Direct rather than wait for one.
+  function runDirectWithoutInitialization(story: UserStory) {
+    retryStory(story, 0)
+    notifyDirectFallback(story.projectId, story.title)
+    void backlog
+      .update(story, { runMode: "direct" })
+      .then(() => {
+        blockedStories.current.delete(story.id)
+        refreshStartingStories((value) => value + 1)
+      })
+      .catch(reportAgentPersistenceError)
   }
 
   // A Cloud Preview story whose owner no longer has Premium: ask where to

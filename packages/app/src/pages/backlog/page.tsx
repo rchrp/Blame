@@ -76,10 +76,7 @@ import {
 } from "@/components/model/model-selection"
 import { storyMaxInputTokens } from "@/components/backlog/data/story-context-limit"
 import { storyModelChoice } from "@/components/backlog/data/story-model-choice"
-import {
-  projectInitializing,
-  useProjectInitialization,
-} from "@/components/project-initialization/use-project-initialization"
+import { useProjectInitialization } from "@/components/project-initialization/use-project-initialization"
 import { KanbanBoard } from "@/components/shared/kanban-board"
 import { BacklogDragDrop } from "@/components/backlog/board/backlog-drag-drop"
 import { useCloudAuth } from "@/context/cloud-auth"
@@ -168,8 +165,7 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
     () => new Set<string>()
   )
   const projectInitialization = useProjectInitialization()
-  const initializationStatus = projectInitialization?.status ?? null
-  const queueInitializing = projectInitializing(initializationStatus)
+  const queueInitializing = projectInitialization?.availability === "running"
   const userStoryDiffStats = useUserStoryDiffStats(
     backlog.stories,
     platform.workspace,

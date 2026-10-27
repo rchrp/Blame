@@ -14,7 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { useCloudAuth } from "@/context/cloud-auth"
+import { useCloudAuth, type CloudProjectInitialization } from "@/context/cloud-auth"
 import {
   usePlatform,
   type HostDependencyReport,
@@ -22,7 +22,24 @@ import {
 } from "@/context/platform"
 import { useProjects } from "@/context/projects"
 import { CloudApiError, createCloudApi } from "@/lib/cloud-api"
-import { notifyProjectInitializationUpdated } from "@/components/project-initialization/project-initialization-events"
+import { navigate } from "@/components/navigation/navigation"
+import { ProgressNotificationBody } from "@/components/shared/progress-notification"
+import {
+  notifyProjectInitializationUpdated,
+  requestProjectInitializationRun,
+  subscribeProjectInitializationRunRequested,
+} from "@/components/project-initialization/project-initialization-events"
+import {
+  initializationRunningHere,
+  initializationStale,
+  markInitializationRunning,
+} from "@/components/project-initialization/project-initialization-availability"
+import {
+  agentInitializationProgress,
+  initializationProgressChannel,
+  initializationProgressFor,
+  setInitializationProgress,
+} from "@/components/project-initialization/project-initialization-progress"
 
 const toastId = "project-initialization"
 const maxBackendCompletionAttempts = 3
@@ -98,6 +115,17 @@ function useProjectInitializationController() {
     databaseDialog.openDatabaseDialog,
     hostDependenciesDialog.openHostDependenciesDialog
   )
+  useInitializationRunRequests({
+    activeProject,
+    agent: platform.agent,
+    workspace: platform.workspace,
+    auth: initializationAuth,
+    currentModel,
+    currentVariant: selection.currentVariant,
+    openDatabaseDialog: databaseDialog.openDatabaseDialog,
+    openHostDependenciesDialog:
+      hostDependenciesDialog.openHostDependenciesDialog,
+  })
 
   return initializationController({
     databaseDialog,
@@ -304,6 +332,44 @@ function useInitializationEffect(
   )
 }
 
+// "Run again" from the toast or the Initialization page.
+function useInitializationRunRequests(
+  input: Parameters<typeof initializationEffect>[0]
+) {
+  const latest = React.useRef(input)
+  latest.current = input
+  React.useEffect(
+    () =>
+      subscribeProjectInitializationRunRequested((projectId) => {
+        const current = latest.current
+        if (current.activeProject?.id !== projectId) return
+        if (initializationRunningHere(projectId)) return
+        const run = runInput(
+          current.activeProject,
+          current.auth,
+          current.agent,
+          current.currentModel,
+          current.currentVariant
+        )
+        if (!run) {
+          toast.error("Initialization needs a model", {
+            description: "Choose a model in Settings, then run it again.",
+            id: toastId,
+            position: "bottom-right",
+          })
+          return
+        }
+        void startInitialization(
+          run,
+          current.workspace,
+          current.openDatabaseDialog,
+          current.openHostDependenciesDialog
+        )
+      }),
+    []
+  )
+}
+
 function initializationEffect(input: {
   activeProject?: { id: string; name: string; path: string }
   agent?: NonNullable<ReturnType<typeof usePlatform>["agent"]>
@@ -328,7 +394,11 @@ async function maybeInitializeProject(
   if (!input.activeProject || !input.agent) return
   const cloud = createCloudApi(input.auth.apiConnection)
   const snapshot = await cloud.projectInitialization(input.activeProject.id)
-  if (signal.aborted || completed(snapshot.initialization?.status)) return
+  if (
+    signal.aborted ||
+    !initializesAutomatically(input.activeProject.id, snapshot.initialization)
+  )
+    return
   const run = runInput(
     input.activeProject,
     input.auth,
@@ -365,16 +435,65 @@ function runInput(
 }
 
 async function runInitialization(input: InitializationRunInput) {
+  const projectId = input.project.id
+  if (initializationRunningHere(projectId)) return
   const cloud = createCloudApi(input.auth.apiConnection)
-  toast.loading(`Initializing ${input.project.name}`, {
-    description: "Blame is analyzing the project runtime and preview setup.",
+  const progressId = crypto.randomUUID()
+  const progress = (update: { percent: number; label: string; detail?: string }) => {
+    setInitializationProgress(projectId, update)
+    showProgress(input.project.name, projectId)
+  }
+  const stopFollowing = input.agent.sessions.onEvent(
+    initializationProgressChannel(progressId),
+    (event) => {
+      const update = agentInitializationProgress(event)
+      if (update) progress(update)
+    }
+  )
+  markInitializationRunning(projectId, true)
+  progress({ percent: 2, label: "Starting the analysis" })
+  try {
+    await persistInitializationResult(input, cloud, progressId, progress)
+  } catch (error) {
+    await persistInitializationError(input, cloud, error)
+  } finally {
+    stopFollowing()
+    setInitializationProgress(projectId, undefined)
+    markInitializationRunning(projectId, false)
+  }
+}
+
+// Runs by itself only for a project never initialized, or whose last run
+// stopped reporting. After a failure the person decides: Run again.
+function initializesAutomatically(
+  projectId: string,
+  initialization: CloudProjectInitialization | null | undefined
+) {
+  if (initializationRunningHere(projectId)) return false
+  if (!initialization || initialization.status === "pending") return true
+  return (
+    initialization.status === "running" && initializationStale(initialization)
+  )
+}
+
+function showProgress(projectName: string, projectId: string) {
+  const current = initializationProgressFor(projectId)
+  if (!current) return
+  toast.loading(`Initializing ${projectName}`, {
     id: toastId,
     position: "bottom-right",
+    duration: Infinity,
+    className: "progress-notification-toast",
+    closeButton: false,
+    dismissible: true,
+    description: (
+      <ProgressNotificationBody
+        label={current.label}
+        percent={current.percent}
+        detail={current.detail}
+      />
+    ),
   })
-
-  await persistInitializationResult(input, cloud).catch((error) =>
-    persistInitializationError(input, cloud, error)
-  )
 }
 
 async function startInitialization(
@@ -403,31 +522,46 @@ function checkInitializationHostDependencies(workspace: WorkspaceClient) {
 
 async function persistInitializationResult(
   input: InitializationRunInput,
-  cloud: ReturnType<typeof createCloudApi>
+  cloud: ReturnType<typeof createCloudApi>,
+  progressId: string,
+  progress: (update: { percent: number; label: string; detail?: string }) => void
 ) {
   await cloud.startProjectInitialization(input.project.id, {
     providerId: input.providerId,
     modelId: input.modelId,
   })
+  notifyProjectInitializationUpdated(input.project.id)
   let feedback: InitializationValidationFeedback | undefined
   for (let attempt = 1; attempt <= maxBackendCompletionAttempts; attempt += 1) {
-    const result = await runProjectInitializationAgent(input, feedback)
+    const result = await runProjectInitializationAgent(
+      input,
+      progressId,
+      feedback
+    )
+    progress({ percent: 95, label: "Saving the setup" })
     try {
       await completeProjectInitialization(input, cloud, result)
-      showSuccess()
+      showSuccess(result.previewManifest.risks.length)
       return
     } catch (error) {
       if (!shouldRetryBackendValidation(error, attempt)) throw error
       feedback = validationFeedback(error, result)
+      progress({
+        percent: 60,
+        label: "Fixing the setup",
+        detail: errorMessage(error),
+      })
     }
   }
 }
 
 function runProjectInitializationAgent(
   input: InitializationRunInput,
+  progressId: string,
   validationFeedback?: InitializationValidationFeedback
 ) {
   return input.agent.initializations.run({
+    progressId,
     apiConnection: input.auth.apiConnection,
     providerId: input.providerId,
     modelId: input.modelId,
@@ -534,26 +668,40 @@ async function persistInitializationError(
     .failProjectInitialization(input.project.id, { error: errorMessage(error) })
     .catch(() => undefined)
   notifyProjectInitializationUpdated(input.project.id)
-  showError(error)
+  showError(input.project.id, error)
 }
 
-function completed(status: string | undefined) {
-  return status === "running" || status === "done"
-}
-
-function showError(error: unknown) {
+function showError(projectId: string, error: unknown) {
   toast.error("Project initialization failed", {
-    description: errorMessage(error),
+    description: `${errorMessage(error)} Stories run in Direct mode until it works.`,
     id: toastId,
     position: "bottom-right",
+    duration: 20_000,
+    className: undefined,
+    action: {
+      label: "Run again",
+      onClick: () => requestProjectInitializationRun(projectId),
+    },
+    cancel: { label: "Details", onClick: () => navigate("/initialization") },
   })
 }
 
-function showSuccess() {
+function showSuccess(warnings: number) {
+  if (warnings) {
+    toast.warning("Project initialized with warnings", {
+      description: `Blame saved the preview setup, but ${warnings === 1 ? "one point needs" : `${warnings} points need`} a look.`,
+      id: toastId,
+      position: "bottom-right",
+      duration: 15_000,
+      action: { label: "Review", onClick: () => navigate("/initialization") },
+    })
+    return
+  }
   toast.success("Project initialized", {
-    description: "Worktree and preview setup were saved.",
+    description: "The preview setup is saved: stories can run in containers.",
     id: toastId,
     position: "bottom-right",
+    duration: 6_000,
   })
 }
 

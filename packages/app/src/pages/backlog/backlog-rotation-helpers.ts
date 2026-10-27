@@ -215,10 +215,6 @@ function blocked(
   return false
 }
 
-export function projectInitializing(status: string | undefined) {
-  return !status || status === "pending" || status === "running"
-}
-
 export function rotationBlocker(
   authStatus: ReturnType<typeof useCloudAuth>["status"],
   platform: ReturnType<typeof usePlatform>,
