@@ -1,0 +1,119 @@
+{
+  "complete": false,
+  "trials": [
+    {
+      "panel": "F66",
+      "repeat": 1,
+      "task": "map-context",
+      "arm": "reference",
+      "name": "1-map-context-reference",
+      "firstContract": {
+        "time": "2026-10-27T01:01:07.192Z",
+        "endpoint": "https://chatgpt.com/backend-api/codex/responses",
+        "model": "gpt-5.6-luna",
+        "reasoning": {
+          "effort": "high",
+          "summary": "detailed"
+        },
+        "maximumOutputTokens": 8192,
+        "toolsSha256": "923df5c21ad5d8c059a21090a18183222608911f1a6c7df258414c7ca66e6bfa",
+        "promptSha256": "979c9dd04df49958f5bc1acfa6f032bd2569a31ceea3a39fe0bd46e3cbe047e3",
+        "normalizedContractSha256": "003fb41b4060b226ebd76f3ebcbb21a6ac937d3c04cddfbaa416793dde460eca",
+        "requestBodySha256": "1642ee6bb8ae29e738419dc48c42a0fee162e36db654851b0b16fc32b690a3bf",
+        "requestBytes": 24652,
+        "byteLimit": 500000,
+        "budgetRejected": false,
+        "toolCount": 9
+      },
+      "uniqueScopeOffers": 2,
+      "uniqueExactForwardedScopes": 2,
+      "scopeForwardingOccurrences": 22,
+      "groupedReads": [],
+      "tools": 51,
+      "reads": 23,
+      "blockedEdits": 4,
+      "compilerOffers": [],
+      "requiredChecksRetained": true
+    },
+    {
+      "panel": "F66",
+      "repeat": 1,
+      "task": "map-context",
+      "arm": "batch",
+      "name": "1-map-context-batch",
+      "firstContract": {
+        "time": "2026-10-27T01:03:42.524Z",
+        "endpoint": "https://chatgpt.com/backend-api/codex/responses",
+        "model": "gpt-5.6-luna",
+        "reasoning": {
+          "effort": "high",
+          "summary": "detailed"
+        },
+        "maximumOutputTokens": 8192,
+        "toolsSha256": "61f7f4d18a5f7ab66c5c22b614bc7b6f2c0cd7b52a03118735bfe62262381490",
+        "promptSha256": "979c9dd04df49958f5bc1acfa6f032bd2569a31ceea3a39fe0bd46e3cbe047e3",
+        "normalizedContractSha256": "75bafd554942897ad8b1827067e93cf65cc24cc1707bedbf4ea40ee3b375ea7a",
+        "requestBodySha256": "31df096cb1ab0aab3eba35ba55edd496128a8d8fdc4973f0bd5055462dc964df",
+        "requestBytes": 25763,
+        "byteLimit": 500000,
+        "budgetRejected": false,
+        "toolCount": 9
+      },
+      "uniqueScopeOffers": 2,
+      "uniqueExactForwardedScopes": 2,
+      "scopeForwardingOccurrences": 14,
+      "groupedReads": [],
+      "tools": 53,
+      "reads": 18,
+      "blockedEdits": 1,
+      "compilerOffers": [],
+      "requiredChecksRetained": true
+    },
+    {
+      "panel": "F66",
+      "repeat": 1,
+      "task": "map-context",
+      "arm": "cline",
+      "name": "1-map-context-cline",
+      "firstContract": {
+        "time": "2026-10-27T01:05:39.448Z",
+        "endpoint": "https://chatgpt.com/backend-api/codex/responses",
+        "model": "gpt-5.6-luna",
+        "reasoning": {
+          "effort": "high",
+          "summary": "detailed"
+        },
+        "maximumOutputTokens": 8192,
+        "toolsSha256": "e9cf7b12faef5cc5cf09abaf67ff690f4af8442561acbe7b34ac80e4c0d076b6",
+        "promptSha256": "f5032e3eb42179c13a22bec16eea7e8bb2ad53fb599b51fa20d6dabb1d229cce",
+        "normalizedContractSha256": "fbb33edb3252d250fd712b329fffefa4e2e1096b51d43dc257dd470924093e5e",
+        "requestBodySha256": "16a812a57233d95148a2de61327062ea8eee5dccee07797d2aae4741602eabfd",
+        "requestBytes": 13947,
+        "byteLimit": 500000,
+        "budgetRejected": false,
+        "toolCount": 6
+      },
+      "uniqueScopeOffers": 0,
+      "uniqueExactForwardedScopes": 0,
+      "scopeForwardingOccurrences": 0,
+      "groupedReads": [],
+      "tools": 19,
+      "reads": 0,
+      "blockedEdits": 0,
+      "compilerOffers": [],
+      "requiredChecksRetained": false
+    }
+  ],
+  "contracts": [
+    {
+      "task": "map-context",
+      "repeat": 1,
+      "panel": "F66",
+      "sameFirstPrompt": true,
+      "sameFirstTools": false,
+      "expectedSchemaChange": true,
+      "sameModelEffortOutputLimit": true
+    }
+  ],
+  "boundary": "Exact hash/call correlation at the fetch boundary; not proof of remote ingestion, model attention, reasoning or task benefit. Repeated forwarded occurrences are not independent offers. Prompt/schema differences remain visible, never normalized after outcomes."
+}

@@ -1,0 +1,19 @@
+{
+  "protocolHash": "2e0afdab7bfac83bb601bf24a7c2bd80368514e074d03cb32fd9dd34b91c02f3",
+  "completed": 3,
+  "planned": 24,
+  "receipts": [
+    {
+      "name": "1-map-context-reference",
+      "sha256": "28781c96be37c4e2ffc3414a926e1a64b883d706c6bbc372074041f75bdfb206"
+    },
+    {
+      "name": "1-map-context-batch",
+      "sha256": "e5e64196eedaba5f64a18b914c7d206c064890caf8f79f525e3762f2b6b5b19b"
+    },
+    {
+      "name": "1-map-context-cline",
+      "sha256": "b143e2f86371a809f5f7b563ad9c74fe909e80c7b7ece7361100b842d86f7466"
+    }
+  ]
+}
