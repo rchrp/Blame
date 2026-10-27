@@ -1,6 +1,6 @@
 {
   "protocolHash": "42d111a0162283d14df36d9a10692ae74efdc129db05a5188215f0669c2b2a93",
-  "completed": 17,
+  "completed": 24,
   "planned": 28,
   "receipts": [
     {
@@ -87,6 +87,41 @@
       "name": "1-fetching-filters-compact",
       "path": "checkpoints/1-fetching-filters-compact.json.gz",
       "sha256": "f0382d9f5e2c0c453bfb379acc280f21fdf8332b3989ce388a5b6abffb49ca8a"
+    },
+    {
+      "name": "1-fetching-filters-navigation",
+      "path": "checkpoints/1-fetching-filters-navigation.json.gz",
+      "sha256": "64fe3827334c87d5118c9ae1ce3a49d768cc74377b940a698be4614407958024"
+    },
+    {
+      "name": "1-fetching-filters-cline",
+      "path": "checkpoints/1-fetching-filters-cline.json.gz",
+      "sha256": "72c0670e04896041f5527ff6d09f79a9c44458f023e43184c774d277855e71ab"
+    },
+    {
+      "name": "1-fetching-filters-reference",
+      "path": "checkpoints/1-fetching-filters-reference.json.gz",
+      "sha256": "1d2341c96c5ee07f69f58f266b5f5748f62e5e9cce9824e3cc15c1990153d4b6"
+    },
+    {
+      "name": "2-mutation-callbacks-compact",
+      "path": "checkpoints/2-mutation-callbacks-compact.json.gz",
+      "sha256": "12754fc11ca205965ab07fef4951a79c5e063dc2b36f764a734a61609c7debf5"
+    },
+    {
+      "name": "2-mutation-callbacks-navigation",
+      "path": "checkpoints/2-mutation-callbacks-navigation.json.gz",
+      "sha256": "c474b45ea51f9273dfb9ab9932dc9ee6f0e93620af3ad3d81d6967443f8e9834"
+    },
+    {
+      "name": "2-mutation-callbacks-cline",
+      "path": "checkpoints/2-mutation-callbacks-cline.json.gz",
+      "sha256": "e55cbd4ab45e7a6418b4341ede629de2dfec9a81c09ebd49ca90e275c6e7aeee"
+    },
+    {
+      "name": "2-mutation-callbacks-reference",
+      "path": "checkpoints/2-mutation-callbacks-reference.json.gz",
+      "sha256": "57b5975d22eff760946543b41a7c36b6a25cd031c6789f6f533cc69a1c54ad34"
     }
   ]
 }
