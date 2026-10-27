@@ -1,5 +1,7 @@
 /* Keep status color on the icon, with a quiet echo in the toast surface. */
 [data-sonner-toaster] {
+  /* Modal drawers disable pointer events on body; notifications stay interactive. */
+  pointer-events: auto;
   --toast-success: var(--color-emerald-600);
   --toast-info: var(--color-blue-600);
   --toast-warning: var(--color-amber-600);
@@ -38,4 +40,29 @@
 
 [data-sonner-toaster] .cn-toast [data-icon] {
   color: var(--toast-accent, var(--normal-text));
+}
+
+[data-sonner-toaster] .cn-toast [data-progress-track] {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+[data-sonner-toaster] .cn-toast [data-progress-bar] {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--muted-foreground);
+  transform-origin: left;
+  /* The patched Sonner timer drives this animation, including every pause. */
+  --toast-progress-easing: linear;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-sonner-toaster] .cn-toast [data-progress-bar] {
+    --toast-progress-easing: steps(4, end);
+  }
 }

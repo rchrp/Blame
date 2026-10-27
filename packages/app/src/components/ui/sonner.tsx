@@ -36,6 +36,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
         } as React.CSSProperties
       }
       toastOptions={{
+        progressBar: true,
         classNames: {
           toast: "cn-toast",
         },
