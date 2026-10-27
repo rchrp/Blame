@@ -1,0 +1,231 @@
+{
+  "executionFinished": false,
+  "trials": [
+    {
+      "name": "1-mutation-callbacks-reference",
+      "arm": "reference",
+      "task": "mutation-callbacks",
+      "repeat": 1,
+      "offers": [
+        {
+          "query": "onSettled",
+          "path": "packages/query-core/src/__tests__/mutationCache.test.tsx",
+          "qualifiedName": "onSettled",
+          "absentFromThisPrimaryResult": true,
+          "absentFromEarlierStructuredSearchResults": true,
+          "matchingCandidateMetadataObserved": true,
+          "successfulSubsequentReads": []
+        },
+        {
+          "query": "onSettled",
+          "path": "packages/query-core/src/__tests__/mutationCache.test.tsx",
+          "qualifiedName": "onSettled",
+          "absentFromThisPrimaryResult": true,
+          "absentFromEarlierStructuredSearchResults": true,
+          "matchingCandidateMetadataObserved": true,
+          "successfulSubsequentReads": []
+        },
+        {
+          "query": "onSettled",
+          "path": "packages/query-core/src/__tests__/queryClient.test-d.tsx",
+          "qualifiedName": "onSettled",
+          "absentFromThisPrimaryResult": true,
+          "absentFromEarlierStructuredSearchResults": true,
+          "matchingCandidateMetadataObserved": true,
+          "successfulSubsequentReads": []
+        },
+        {
+          "query": "MutationObserver",
+          "path": "packages/query-core/src/mutationObserver.ts",
+          "qualifiedName": "MutationObserver",
+          "absentFromThisPrimaryResult": true,
+          "absentFromEarlierStructuredSearchResults": true,
+          "matchingCandidateMetadataObserved": true,
+          "successfulSubsequentReads": []
+        }
+      ],
+      "lastAttemptedFinish": {
+        "callId": "call_f89993a49a4b4e8185b6db05c5ef44d7",
+        "unconfirmedRequiredRuns": []
+      }
+    },
+    {
+      "name": "1-mutation-callbacks-source-order",
+      "arm": "source-order",
+      "task": "mutation-callbacks",
+      "repeat": 1,
+      "offers": [
+        {
+          "query": "MutationObserver",
+          "path": "packages/query-core/src/mutationObserver.ts",
+          "qualifiedName": "MutationObserver",
+          "absentFromThisPrimaryResult": true,
+          "absentFromEarlierStructuredSearchResults": true,
+          "matchingCandidateMetadataObserved": true,
+          "successfulSubsequentReads": []
+        },
+        {
+          "query": "notifyManager",
+          "path": "packages/query-core/src/notifyManager.ts",
+          "qualifiedName": "notifyManager",
+          "absentFromThisPrimaryResult": true,
+          "absentFromEarlierStructuredSearchResults": true,
+          "matchingCandidateMetadataObserved": true,
+          "successfulSubsequentReads": []
+        }
+      ],
+      "lastAttemptedFinish": {
+        "callId": "call_afde6601bc75415eb32e502e060e67b5",
+        "unconfirmedRequiredRuns": []
+      }
+    },
+    {
+      "name": "1-mutation-callbacks-cline",
+      "arm": "cline",
+      "task": "mutation-callbacks",
+      "repeat": 1,
+      "offers": [],
+      "lastAttemptedFinish": null
+    },
+    {
+      "name": "1-fetching-filters-source-order",
+      "arm": "source-order",
+      "task": "fetching-filters",
+      "repeat": 1,
+      "offers": [
+        {
+          "query": "isFetching",
+          "path": "packages/query-core/src/queryClient.ts",
+          "qualifiedName": "QueryClient.isFetching",
+          "absentFromThisPrimaryResult": true,
+          "absentFromEarlierStructuredSearchResults": true,
+          "matchingCandidateMetadataObserved": true,
+          "successfulSubsequentReads": [
+            {
+              "callId": "call_48fbf58ade1c4e0eb3f38d31e80d5dc3",
+              "usingAlias": false,
+              "usingQualifiedTarget": true
+            }
+          ]
+        },
+        {
+          "query": "type QueryFilters",
+          "path": "packages/query-core/src/utils.ts",
+          "qualifiedName": "QueryFilters",
+          "absentFromThisPrimaryResult": true,
+          "absentFromEarlierStructuredSearchResults": true,
+          "matchingCandidateMetadataObserved": true,
+          "successfulSubsequentReads": [
+            {
+              "callId": "call_98275888adb24110a6bcf333acb87f85",
+              "usingAlias": false,
+              "usingQualifiedTarget": true
+            }
+          ]
+        },
+        {
+          "query": "type OmitKeyof",
+          "path": "packages/query-core/src/types.ts",
+          "qualifiedName": "OmitKeyof",
+          "absentFromThisPrimaryResult": true,
+          "absentFromEarlierStructuredSearchResults": true,
+          "matchingCandidateMetadataObserved": true,
+          "successfulSubsequentReads": []
+        },
+        {
+          "query": "function useIsFetching",
+          "path": "packages/lit-query/src/useIsFetching.ts",
+          "qualifiedName": "useIsFetching",
+          "absentFromThisPrimaryResult": true,
+          "absentFromEarlierStructuredSearchResults": true,
+          "matchingCandidateMetadataObserved": true,
+          "successfulSubsequentReads": []
+        },
+        {
+          "query": "function useIsFetching",
+          "path": "packages/preact-query/src/useIsFetching.ts",
+          "qualifiedName": "useIsFetching",
+          "absentFromThisPrimaryResult": true,
+          "absentFromEarlierStructuredSearchResults": true,
+          "matchingCandidateMetadataObserved": true,
+          "successfulSubsequentReads": []
+        },
+        {
+          "query": "function useIsFetching",
+          "path": "packages/react-query/src/useIsFetching.ts",
+          "qualifiedName": "useIsFetching",
+          "absentFromThisPrimaryResult": true,
+          "absentFromEarlierStructuredSearchResults": false,
+          "matchingCandidateMetadataObserved": true,
+          "successfulSubsequentReads": []
+        },
+        {
+          "query": "function useIsFetching",
+          "path": "packages/solid-query/src/useIsFetching.ts",
+          "qualifiedName": "useIsFetching",
+          "absentFromThisPrimaryResult": true,
+          "absentFromEarlierStructuredSearchResults": true,
+          "matchingCandidateMetadataObserved": true,
+          "successfulSubsequentReads": []
+        }
+      ],
+      "lastAttemptedFinish": null
+    },
+    {
+      "name": "1-fetching-filters-cline",
+      "arm": "cline",
+      "task": "fetching-filters",
+      "repeat": 1,
+      "offers": [],
+      "lastAttemptedFinish": null
+    },
+    {
+      "name": "1-fetching-filters-reference",
+      "arm": "reference",
+      "task": "fetching-filters",
+      "repeat": 1,
+      "offers": [],
+      "lastAttemptedFinish": null
+    },
+    {
+      "name": "2-mutation-callbacks-source-order",
+      "arm": "source-order",
+      "task": "mutation-callbacks",
+      "repeat": 2,
+      "offers": [
+        {
+          "query": "onSettled",
+          "path": "packages/query-core/src/__tests__/mutationCache.test.tsx",
+          "qualifiedName": "onSettled",
+          "absentFromThisPrimaryResult": true,
+          "absentFromEarlierStructuredSearchResults": true,
+          "matchingCandidateMetadataObserved": true,
+          "successfulSubsequentReads": []
+        },
+        {
+          "query": "onSettled",
+          "path": "packages/query-core/src/__tests__/mutationCache.test.tsx",
+          "qualifiedName": "onSettled",
+          "absentFromThisPrimaryResult": true,
+          "absentFromEarlierStructuredSearchResults": true,
+          "matchingCandidateMetadataObserved": true,
+          "successfulSubsequentReads": []
+        },
+        {
+          "query": "onSettled",
+          "path": "packages/query-core/src/__tests__/queryClient.test-d.tsx",
+          "qualifiedName": "onSettled",
+          "absentFromThisPrimaryResult": true,
+          "absentFromEarlierStructuredSearchResults": true,
+          "matchingCandidateMetadataObserved": true,
+          "successfulSubsequentReads": []
+        }
+      ],
+      "lastAttemptedFinish": {
+        "callId": "call_a9ffe4e1fc06469e9b17097fde62d383",
+        "unconfirmedRequiredRuns": []
+      }
+    }
+  ],
+  "boundary": "Derived sensitivity, not a change to frozen primary scores. Equivalent alias and qualified-target reads are counted separately; primary-result overlap is explicit, so a read does not prove candidate adoption or causal benefit. Candidate metadata was observed, but alias fields are not independently attested by the compact receipt. Pending-run records describe the last observed snapshot, not the physical state at finish or a passing outcome."
+}

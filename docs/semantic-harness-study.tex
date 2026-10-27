@@ -2008,11 +2008,15 @@ by \code{Omit<...,'fetchStatus'>} can still accept that field alongside an allow
 field. Negative tests containing only the forbidden field pass for an unrelated
 weak-type reason. Unchanged upstream tests and independent mixed-field probes
 reject these patches despite green authored checks. Two other Light patches are
-source-correct at the finite endpoints but omit required final-source executions;
-one exhausts the iteration budget. The second filter reference finishes while
-its required regression process still has no observed exit: launch and repeated
-polls are not a passing execution. Execution, passing, formally admitted
-verification and satisfaction of user criteria remain distinct. Missing native
+source-correct at the finite endpoints but lack the frozen required-execution
+proofs; one exhausts the iteration budget. Post-hoc inspection corrects the
+second filter reference diagnosis: its last poll shows ``exited'' and 631 passed
+cases, but neither an exit code nor a finalized result. The hash-bound original
+journal records exit zero 225 ms later, with unsupported test reporting still
+unknown. This exposes a process/result-publication interval, not proof that the
+test never ran or solely a model omission. The primary tool-receipt score stays
+unchanged; journal diagnostics are archived separately. Execution, passing,
+formally admitted verification and user acceptance remain distinct. Missing native
 obligation records are unavailable, not failed checks; unsupported Vitest 4/5
 reporting does not establish project verification.
 

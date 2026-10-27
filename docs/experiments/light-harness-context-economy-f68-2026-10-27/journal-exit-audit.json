@@ -1,0 +1,483 @@
+{
+  "protocolHash": "42d111a0162283d14df36d9a10692ae74efdc129db05a5188215f0669c2b2a93",
+  "complete": true,
+  "selected": "All completed Light assignments with missing frozen required-execution evidence; selected after outcomes, not a new success endpoint.",
+  "evidenceSha256": "fa38d1f4edc32f072cd99880c49d1c32e2f08c4e3314c68e21c323fe6111d908",
+  "trials": [
+    {
+      "name": "1-fetching-filters-reference",
+      "frozenRequiredEvidence": [
+        {
+          "id": "regression",
+          "command": "npm run test:study:regression",
+          "passedOnFinalSource": false,
+          "proof": null
+        },
+        {
+          "id": "types",
+          "command": "npm run typecheck:study:types",
+          "passedOnFinalSource": false,
+          "proof": null
+        },
+        {
+          "id": "type-regression",
+          "command": "npm run typecheck:study:type-regression",
+          "passedOnFinalSource": false,
+          "proof": null
+        },
+        {
+          "id": "delivered-types",
+          "command": "npm run typecheck:study:delivered-types",
+          "passedOnFinalSource": false,
+          "proof": null
+        }
+      ],
+      "finalSourceSha256": "f0f699b5fdf660c52c0fd029b268934e49c8a2a6f1cf7b2ae1923af537cedf23",
+      "journals": [
+        {
+          "path": "./.blame/harness/light/7545afe19a737ead200ec27c.jsonl",
+          "sha256": "b894fc0b691c90957bcb3017b920770ccb906dca7e369b0faa3175dc11d06c4c"
+        }
+      ],
+      "requiredValidations": [
+        {
+          "type": "validation",
+          "command": "npm run test:study:regression",
+          "cwd": ".",
+          "paths": [],
+          "sourceRevisionId": "src_5cbb43d5a731dd00ac7c707f4000183e",
+          "status": "unknown",
+          "taskId": "test:study:regression",
+          "taskKind": "test",
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "not_observed",
+            "outcome": "unknown",
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "none"
+          },
+          "id": "validation://e8dcddebc6069f8e859b5fb6db381c6af945e246c1e8b82b604d5f3c5a8daee8",
+          "terminal": "unknown",
+          "files": [],
+          "timestamp": "2026-10-27T04:09:32.423Z"
+        },
+        {
+          "type": "validation",
+          "scope": "invocation_only",
+          "command": "npm run typecheck:study:types",
+          "cwd": ".",
+          "paths": [],
+          "sourceRevisionId": "src_5cbb43d5a731dd00ac7c707f4000183e",
+          "status": "passed",
+          "taskId": "typecheck:study:types",
+          "taskKind": "typecheck",
+          "id": "validation://05ca79641acdd932be87c97f8e339b9958d61a73b845f410f2a94caeda150f0b",
+          "terminal": "passed",
+          "files": [],
+          "timestamp": "2026-10-27T04:09:36.863Z"
+        },
+        {
+          "type": "validation",
+          "scope": "invocation_only",
+          "command": "npm run typecheck:study:type-regression",
+          "cwd": ".",
+          "paths": [],
+          "sourceRevisionId": "src_5cbb43d5a731dd00ac7c707f4000183e",
+          "status": "passed",
+          "taskId": "typecheck:study:type-regression",
+          "taskKind": "typecheck",
+          "id": "validation://514681a76454e922c3b44e22d3fedfc8f35635e0bc1c75f5c9e1f53c4d75b0e9",
+          "terminal": "passed",
+          "files": [],
+          "timestamp": "2026-10-27T04:09:40.795Z"
+        },
+        {
+          "type": "validation",
+          "scope": "invocation_only",
+          "command": "npm run typecheck:study:delivered-types",
+          "cwd": ".",
+          "paths": [],
+          "sourceRevisionId": "src_5cbb43d5a731dd00ac7c707f4000183e",
+          "status": "failed",
+          "taskId": "typecheck:study:delivered-types",
+          "taskKind": "typecheck",
+          "category": "code",
+          "recovery": "Fix the reported project error before running the relevant validation again.",
+          "id": "validation://109758567d417f88d92a56f57bc0f7f6e5acc659ea5dd76dd97d36dd4fe3429a",
+          "terminal": "failed",
+          "files": [],
+          "timestamp": "2026-10-27T04:09:44.875Z"
+        },
+        {
+          "type": "validation",
+          "scope": "invocation_only",
+          "command": "npm run typecheck:study:delivered-types",
+          "cwd": ".",
+          "paths": [],
+          "sourceRevisionId": "src_0d5e85e757b465744f1e4bcca3fd582e",
+          "status": "passed",
+          "taskId": "typecheck:study:delivered-types",
+          "taskKind": "typecheck",
+          "id": "validation://41643db7ecbeb3b5a3c663a8674ca199d9a5b0dd8786e246e059ff3ba4696af4",
+          "terminal": "passed",
+          "files": [],
+          "timestamp": "2026-10-27T04:09:58.651Z"
+        },
+        {
+          "type": "validation",
+          "command": "npm run test:study:regression",
+          "cwd": ".",
+          "paths": [],
+          "sourceRevisionId": "src_0d5e85e757b465744f1e4bcca3fd582e",
+          "status": "unknown",
+          "taskId": "test:study:regression",
+          "taskKind": "test",
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "not_observed",
+            "outcome": "unknown",
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "none"
+          },
+          "id": "validation://9bfbc1e621647097239189cb83ce16ff6bf2c90f3b6d5f6337f3ca3fa8311d02",
+          "terminal": "unknown",
+          "files": [],
+          "timestamp": "2026-10-27T04:10:25.043Z"
+        },
+        {
+          "type": "validation",
+          "scope": "invocation_only",
+          "command": "npm run typecheck:study:types",
+          "cwd": ".",
+          "paths": [],
+          "sourceRevisionId": "src_0d5e85e757b465744f1e4bcca3fd582e",
+          "status": "passed",
+          "taskId": "typecheck:study:types",
+          "taskKind": "typecheck",
+          "id": "validation://f8b0f7e6305c4cb50ecc5b72458adede209b95e52f82874e2dd821e2d4324de4",
+          "terminal": "passed",
+          "files": [],
+          "timestamp": "2026-10-27T04:10:29.742Z"
+        },
+        {
+          "type": "validation",
+          "scope": "invocation_only",
+          "command": "npm run typecheck:study:type-regression",
+          "cwd": ".",
+          "paths": [],
+          "sourceRevisionId": "src_0d5e85e757b465744f1e4bcca3fd582e",
+          "status": "passed",
+          "taskId": "typecheck:study:type-regression",
+          "taskKind": "typecheck",
+          "id": "validation://cc8891ff088a49991805bea4bca9184fbd9ae665cbaf0e2e54b0d507ae6518a8",
+          "terminal": "passed",
+          "files": [],
+          "timestamp": "2026-10-27T04:10:33.527Z"
+        },
+        {
+          "type": "validation",
+          "scope": "invocation_only",
+          "command": "npm run typecheck:study:delivered-types",
+          "cwd": ".",
+          "paths": [],
+          "sourceRevisionId": "src_0d5e85e757b465744f1e4bcca3fd582e",
+          "status": "passed",
+          "taskId": "typecheck:study:delivered-types",
+          "taskKind": "typecheck",
+          "id": "validation://9ca6046686870bed1c2004c74c79b0405ace0312a3ca698bb26dd8af0a14af58",
+          "terminal": "passed",
+          "files": [],
+          "timestamp": "2026-10-27T04:10:37.273Z"
+        }
+      ],
+      "incompleteSnapshots": [],
+      "terminal": [
+        {
+          "type": "terminal",
+          "state": "harness_failure",
+          "timestamp": "2026-10-27T04:11:06.600Z"
+        }
+      ]
+    },
+    {
+      "name": "2-fetching-filters-reference",
+      "frozenRequiredEvidence": [
+        {
+          "id": "regression",
+          "command": "npm run test:study:regression",
+          "passedOnFinalSource": false,
+          "proof": null
+        },
+        {
+          "id": "types",
+          "command": "npm run typecheck:study:types",
+          "passedOnFinalSource": true,
+          "proof": {
+            "callId": "call_39c0186929e74c43b059928021b8cc1e",
+            "originCallId": "call_39c0186929e74c43b059928021b8cc1e",
+            "source": "dabe51ce5218fad68d904152e382583fbfc477af427ebbaa83f99764213339b8",
+            "evidence": "literal immutable-script execution with observed zero exit"
+          }
+        },
+        {
+          "id": "type-regression",
+          "command": "npm run typecheck:study:type-regression",
+          "passedOnFinalSource": true,
+          "proof": {
+            "callId": "call_0c9047cb094e41f6912339a27e2702da",
+            "originCallId": "call_0c9047cb094e41f6912339a27e2702da",
+            "source": "dabe51ce5218fad68d904152e382583fbfc477af427ebbaa83f99764213339b8",
+            "evidence": "literal immutable-script execution with observed zero exit"
+          }
+        },
+        {
+          "id": "delivered-types",
+          "command": "npm run typecheck:study:delivered-types",
+          "passedOnFinalSource": true,
+          "proof": {
+            "callId": "call_646ffb2a729e40e1901e46490f57029e",
+            "originCallId": "call_646ffb2a729e40e1901e46490f57029e",
+            "source": "dabe51ce5218fad68d904152e382583fbfc477af427ebbaa83f99764213339b8",
+            "evidence": "literal immutable-script execution with observed zero exit"
+          }
+        }
+      ],
+      "finalSourceSha256": "dabe51ce5218fad68d904152e382583fbfc477af427ebbaa83f99764213339b8",
+      "journals": [
+        {
+          "path": "./.blame/harness/light/51ea17f54537ff91da29dd92.jsonl",
+          "sha256": "4b7eef9be718e387e8044c374246caed8e793794848a08c7ecd626d2a840cbb1"
+        }
+      ],
+      "requiredValidations": [
+        {
+          "type": "validation",
+          "command": "npm run test:study:regression",
+          "cwd": ".",
+          "paths": [],
+          "sourceRevisionId": "src_099656a729cae57fa5944b5ccc1fd812",
+          "status": "unknown",
+          "taskId": "test:study:regression",
+          "taskKind": "test",
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "not_observed",
+            "outcome": "unknown",
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "none"
+          },
+          "id": "validation://2fc8c1119bdebf4adcd3b870d382d87eab7d5e987014da208f63c9224ee5bed5",
+          "terminal": "unknown",
+          "files": [],
+          "timestamp": "2026-10-27T14:39:51.485Z"
+        },
+        {
+          "type": "validation",
+          "scope": "invocation_only",
+          "command": "npm run typecheck:study:types",
+          "cwd": ".",
+          "paths": [],
+          "sourceRevisionId": "src_099656a729cae57fa5944b5ccc1fd812",
+          "status": "passed",
+          "taskId": "typecheck:study:types",
+          "taskKind": "typecheck",
+          "id": "validation://e957ca517770edbb0f921fe9b04c2e8ea482b25626547e69974f30a65c9dbcd9",
+          "terminal": "passed",
+          "files": [],
+          "timestamp": "2026-10-27T14:39:55.632Z"
+        },
+        {
+          "type": "validation",
+          "scope": "invocation_only",
+          "command": "npm run typecheck:study:type-regression",
+          "cwd": ".",
+          "paths": [],
+          "sourceRevisionId": "src_099656a729cae57fa5944b5ccc1fd812",
+          "status": "passed",
+          "taskId": "typecheck:study:type-regression",
+          "taskKind": "typecheck",
+          "id": "validation://b8db85ed0ecdd5456b12e47a222fb9b84bb2f74bf864167b1b13de34f534fba2",
+          "terminal": "passed",
+          "files": [],
+          "timestamp": "2026-10-27T14:39:59.313Z"
+        },
+        {
+          "type": "validation",
+          "scope": "invocation_only",
+          "command": "npm run typecheck:study:delivered-types",
+          "cwd": ".",
+          "paths": [],
+          "sourceRevisionId": "src_099656a729cae57fa5944b5ccc1fd812",
+          "status": "passed",
+          "taskId": "typecheck:study:delivered-types",
+          "taskKind": "typecheck",
+          "id": "validation://0f49312f72c7cd37322e79fb76db22c4b5a7321349d1c0ea4fd99729319dee00",
+          "terminal": "passed",
+          "files": [],
+          "timestamp": "2026-10-27T14:40:03.138Z"
+        }
+      ],
+      "incompleteSnapshots": [
+        {
+          "callId": "call_93e45fa550c24af9a208f22160640bb4",
+          "timestamp": "2026-10-27T14:39:51.260Z",
+          "run": "r2",
+          "command": "npm run test:study:regression",
+          "process": "exited",
+          "hasExitCode": false,
+          "nextJournalValidation": {
+            "type": "validation",
+            "command": "npm run test:study:regression",
+            "cwd": ".",
+            "paths": [],
+            "sourceRevisionId": "src_099656a729cae57fa5944b5ccc1fd812",
+            "status": "unknown",
+            "taskId": "test:study:regression",
+            "taskKind": "test",
+            "check": {
+              "process": "exited",
+              "exitCode": 0,
+              "execution": "not_observed",
+              "outcome": "unknown",
+              "scope": ".",
+              "selection": "unknown",
+              "freshness": "unknown",
+              "evidenceOrigin": "none"
+            },
+            "id": "validation://2fc8c1119bdebf4adcd3b870d382d87eab7d5e987014da208f63c9224ee5bed5",
+            "terminal": "unknown",
+            "files": [],
+            "timestamp": "2026-10-27T14:39:51.485Z"
+          }
+        }
+      ],
+      "terminal": [
+        {
+          "type": "terminal",
+          "state": "completed_with_validation_unavailable",
+          "timestamp": "2026-10-27T14:40:08.974Z"
+        }
+      ]
+    },
+    {
+      "name": "2-fetching-filters-compact",
+      "frozenRequiredEvidence": [
+        {
+          "id": "regression",
+          "command": "npm run test:study:regression",
+          "passedOnFinalSource": false,
+          "proof": null
+        },
+        {
+          "id": "types",
+          "command": "npm run typecheck:study:types",
+          "passedOnFinalSource": true,
+          "proof": {
+            "callId": "call_bd62e1acd726443cb85dc03ea590a981",
+            "originCallId": "call_bd62e1acd726443cb85dc03ea590a981",
+            "source": "f8389f6934797175a5bb80e02518ba7c913e599f7f53d4d0b156862ee543a419",
+            "evidence": "literal immutable-script execution with observed zero exit"
+          }
+        },
+        {
+          "id": "type-regression",
+          "command": "npm run typecheck:study:type-regression",
+          "passedOnFinalSource": true,
+          "proof": {
+            "callId": "call_c14d7d545adc48b28076c7f7632c1b5c",
+            "originCallId": "call_c14d7d545adc48b28076c7f7632c1b5c",
+            "source": "f8389f6934797175a5bb80e02518ba7c913e599f7f53d4d0b156862ee543a419",
+            "evidence": "literal immutable-script execution with observed zero exit"
+          }
+        },
+        {
+          "id": "delivered-types",
+          "command": "npm run typecheck:study:delivered-types",
+          "passedOnFinalSource": false,
+          "proof": null
+        }
+      ],
+      "finalSourceSha256": "f8389f6934797175a5bb80e02518ba7c913e599f7f53d4d0b156862ee543a419",
+      "journals": [
+        {
+          "path": "./.blame/harness/light/bb44edc8ca4d22cd29dadb9e.jsonl",
+          "sha256": "f4442d81afb5905372f40a27f9f0965f01405cf6fdcfde48de43f991abd7f107"
+        }
+      ],
+      "requiredValidations": [
+        {
+          "type": "validation",
+          "scope": "invocation_only",
+          "command": "npm run typecheck:study:types",
+          "cwd": ".",
+          "paths": [],
+          "sourceRevisionId": "src_ac5efbf2a2cd0cc831087af971e951e6",
+          "status": "passed",
+          "taskId": "typecheck:study:types",
+          "taskKind": "typecheck",
+          "id": "validation://7a2534a5f81ede2ff1aa52416d711ef6bc85935f3ac02332d2adf36c1185e4ca",
+          "terminal": "passed",
+          "files": [],
+          "timestamp": "2026-10-27T14:43:26.822Z"
+        },
+        {
+          "type": "validation",
+          "scope": "invocation_only",
+          "command": "npm run typecheck:study:type-regression",
+          "cwd": ".",
+          "paths": [],
+          "sourceRevisionId": "src_ac5efbf2a2cd0cc831087af971e951e6",
+          "status": "passed",
+          "taskId": "typecheck:study:type-regression",
+          "taskKind": "typecheck",
+          "id": "validation://ff62cad8642dd62775416379ff45a61d071acc213b571b780857b8973cd85d2d",
+          "terminal": "passed",
+          "files": [],
+          "timestamp": "2026-10-27T14:43:33.768Z"
+        },
+        {
+          "type": "validation",
+          "command": "npm run test:study:regression",
+          "cwd": ".",
+          "paths": [],
+          "sourceRevisionId": "src_ac5efbf2a2cd0cc831087af971e951e6",
+          "status": "unknown",
+          "taskId": "test:study:regression",
+          "taskKind": "test",
+          "check": {
+            "process": "exited",
+            "exitCode": 0,
+            "execution": "not_observed",
+            "outcome": "unknown",
+            "scope": ".",
+            "selection": "unknown",
+            "freshness": "unknown",
+            "evidenceOrigin": "none"
+          },
+          "id": "validation://3325c59ebf1012d2d852044cb2f79b988936e6c21afd70ee7167485ae539f2d3",
+          "terminal": "unknown",
+          "files": [],
+          "timestamp": "2026-10-27T14:43:59.632Z"
+        }
+      ],
+      "incompleteSnapshots": [],
+      "terminal": [
+        {
+          "type": "terminal",
+          "state": "cancelled",
+          "timestamp": "2026-10-27T14:44:01.039Z"
+        }
+      ]
+    }
+  ],
+  "boundary": "Original journals extracted without source changes from local archives whose SHA-256 is authenticated by the published immutable checkpoints. Full extracted journal bytes are retained here; reproducing archive membership also requires the original private workspace archives. A journal zero exit, displayed runner counts, finalized tool result, admitted verification and user acceptance are separate facts. The primary tool-receipt/final-source score is unchanged; no automatic reinterpretation of journal source revision IDs as the independent source fingerprint."
+}
