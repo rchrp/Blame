@@ -41,7 +41,9 @@ async function freeze(){
  for(const task of tasks)sourceEpoch(join(work,'inputs',task.id));
  const dependencies={};for(const task of tasks)dependencies[task.id]={modules:baselineModules(task),manifestSha256:digest(JSON.stringify(await dependencyManifest(baselineModules(task))))};
  const protocol={...registration,provider:registration.model.provider,model:registration.model.model,effort:registration.model.effort,registeredSourceHead:registration.sourceHead,sourceHead,boundAtUTC:new Date().toISOString(),order,observationBoundary:await json(join(study,'pre-dispatch-boundary.json')),dependencies,inputs:await json(join(work,'input-manifest.json')),oracleFiles:await hashes(join(work,'official')),runtimeFiles:await hashes(frozen),sdkFiles:await sdkBindings(),sharedScripts:await sharedBindings(),boundScripts,lockSha256:digest(await readFile(join(repo,'pnpm-lock.yaml'))),node:process.version,platform:process.platform,arch:process.arch,budgets:{...registration.budgets,requestOvershootReserveUsd:registration.budgets.perTrialMissingCostReserveUsd}};
- await atomicJson(join(study,'model-protocol.json'),protocol,{exclusive:true});await atomicJson(join(study,'oracle-controls.json'),controls,{exclusive:true});
+ const oraclePath=join(study,'oracle-controls.json');
+ await readFile(oraclePath).then(bytes=>assert.deepEqual(JSON.parse(bytes),controls),error=>{if(error.code!=='ENOENT')throw error;return atomicJson(oraclePath,controls,{exclusive:true});});
+ await atomicJson(join(study,'model-protocol.json'),protocol,{exclusive:true});
  console.log('Bound '+order.length+' immutable assignments; no model request.');
 }
 async function validateBindings(p){
