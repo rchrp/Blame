@@ -30,6 +30,7 @@ import {
 } from "./local-preview-files.ts";
 import {
   localPreviewUrl,
+  removeLocalPreview,
   startLocalPreview,
   useLocalDockerHost,
 } from "./local-preview-runner.ts";
@@ -267,6 +268,33 @@ test("restarts the selected run configuration and returns its preview URL", asyn
     "Waiting for the app to answer",
   ]);
   assert.equal(await localPreviewUrl(worktree), url);
+});
+
+test("keeps preview state when Docker removal fails so deletion can be retried", async (t) => {
+  const worktree = await worktreeFixture(t);
+  const stateDirectory = localPreviewPaths(worktree).engineState;
+  await mkdir(stateDirectory, { recursive: true });
+  const projectFile = join(stateDirectory, "project.json");
+  await writeFile(
+    projectFile,
+    JSON.stringify({ projectName: "blame_0123456789ab" }),
+  );
+  let fail = true;
+  const host = new FakeDockerHost();
+  host.run = async (_command, args) => {
+    assert.ok(args.includes("down"));
+    return fail
+      ? { exitCode: 1, stdout: "", stderr: "container busy" }
+      : ok("");
+  };
+  useLocalDockerHost(host);
+  await assert.rejects(removeLocalPreview(worktree), /container busy/);
+  assert.ok((await stat(projectFile)).isFile());
+  fail = false;
+  await removeLocalPreview(worktree);
+  await assert.rejects(stat(stateDirectory), { code: "ENOENT" });
+  assert.ok((await stat(join(worktree, "package.json"))).isFile());
+  await removeLocalPreview(worktree);
 });
 
 class FakeDockerHost implements DockerHost {

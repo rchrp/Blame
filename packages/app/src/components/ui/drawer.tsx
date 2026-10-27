@@ -46,6 +46,7 @@ function DrawerOverlay({
 function DrawerContent({
   className,
   children,
+  onInteractOutside,
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Content>) {
   return (
@@ -58,6 +59,16 @@ function DrawerContent({
           className
         )}
         {...props}
+        onInteractOutside={(event) => {
+          if (
+            event.target instanceof Element &&
+            event.target.closest("[data-sonner-toaster]")
+          ) {
+            event.preventDefault()
+            return
+          }
+          onInteractOutside?.(event)
+        }}
       >
         <div className="mx-auto mt-4 hidden h-1 w-[100px] shrink-0 rounded-full bg-muted group-data-[vaul-drawer-direction=bottom]/drawer-content:block" />
         {children}

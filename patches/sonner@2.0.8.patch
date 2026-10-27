@@ -1,0 +1,238 @@
+diff --git a/dist/index.d.mts b/dist/index.d.mts
+index a25db7918f195250e345bc25c587b3f4d11f9dcb..6d4d682f8ccf8090178f2f32cf11d00024d3fcfc 100644
+--- a/dist/index.d.mts
++++ b/dist/index.d.mts
+@@ -76,6 +76,8 @@ interface ToastT {
+ }
+ type Position = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'top-center' | 'bottom-center';
+ interface ToastOptions {
++    /** Show a progress bar synchronized with the auto-dismiss timer. */
++    progressBar?: boolean;
+     className?: string;
+     closeButton?: boolean;
+     descriptionClassName?: string;
+diff --git a/dist/index.d.ts b/dist/index.d.ts
+index a25db7918f195250e345bc25c587b3f4d11f9dcb..6d4d682f8ccf8090178f2f32cf11d00024d3fcfc 100644
+--- a/dist/index.d.ts
++++ b/dist/index.d.ts
+@@ -76,6 +76,8 @@ interface ToastT {
+ }
+ type Position = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'top-center' | 'bottom-center';
+ interface ToastOptions {
++    /** Show a progress bar synchronized with the auto-dismiss timer. */
++    progressBar?: boolean;
+     className?: string;
+     closeButton?: boolean;
+     descriptionClassName?: string;
+diff --git a/dist/index.js b/dist/index.js
+index 394dbc2272f43b84642b0f9d5cc7eb1eacb0ffb3..9011a4648fffbfd317d052250167ca1311efbd92 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -499,7 +499,7 @@ function getDefaultSwipeDirections(position) {
+ }
+ const Toast = (props)=>{
+     var _toast_classNames, _toast_classNames1, _toast_classNames2, _toast_classNames3, _toast_classNames4, _toast_classNames5, _toast_classNames6, _toast_classNames7, _toast_classNames8;
+-    const { invert: ToasterInvert, toast, unstyled, interacting, setHeights, visibleToasts, heights, index, toasts, expanded, removeToast, defaultRichColors, closeButton: closeButtonFromToaster, style, cancelButtonStyle, actionButtonStyle, className = '', descriptionClassName = '', duration: durationFromToaster, position, gap, expandByDefault, classNames, icons, closeButtonAriaLabel = 'Close toast' } = props;
++    const { invert: ToasterInvert, toast, unstyled, interacting, setHeights, visibleToasts, heights, index, toasts, expanded, removeToast, defaultRichColors, closeButton: closeButtonFromToaster, style, cancelButtonStyle, actionButtonStyle, className = '', descriptionClassName = '', duration: durationFromToaster, position, gap, expandByDefault, classNames, icons, progressBar, closeButtonAriaLabel = 'Close toast' } = props;
+     const [swipeDirection, setSwipeDirection] = React__default.default.useState(null);
+     const [swipeOutDirection, setSwipeOutDirection] = React__default.default.useState(null);
+     const [mounted, setMounted] = React__default.default.useState(false);
+@@ -512,6 +512,7 @@ const Toast = (props)=>{
+     const remainingTime = React__default.default.useRef(toast.duration || durationFromToaster || TOAST_LIFETIME);
+     const dragStartTime = React__default.default.useRef(null);
+     const toastRef = React__default.default.useRef(null);
++    const progressRef = React__default.default.useRef(null);
+     const isFront = index === 0;
+     const isVisible = index + 1 <= visibleToasts;
+     const toastType = toast.type;
+@@ -650,6 +651,25 @@ const Toast = (props)=>{
+     React__default.default.useEffect(()=>{
+         if (toast.promise && toastType === 'loading' || toast.duration === Infinity || toast.type === 'loading') return;
+         let timeoutId;
++        let progressAnimation;
++        // Share the dismissal timer's remaining time instead of running a second clock.
++        const syncProgress = (paused)=>{
++            const progress = progressRef.current;
++            if (!progress || !Number.isFinite(duration) || duration <= 0) return;
++            const remaining = Math.max(0, remainingTime.current);
++            const transform = `scaleX(${Math.min(1, remaining / duration)})`;
++            progress.style.transform = transform;
++            if (!paused && remaining > 0) {
++                progressAnimation = progress.animate([
++                    { transform },
++                    { transform: 'scaleX(0)' }
++                ], {
++                    duration: remaining,
++                    easing: getComputedStyle(progress).getPropertyValue('--toast-progress-easing').trim() || 'linear',
++                    fill: 'forwards'
++                });
++            }
++        };
+         // Pause the timer on each hover
+         const pauseTimer = ()=>{
+             if (lastCloseTimerStartTimeRef.current < closeTimerStartTimeRef.current) {
+@@ -658,6 +678,7 @@ const Toast = (props)=>{
+                 remainingTime.current = remainingTime.current - elapsedTime;
+             }
+             lastCloseTimerStartTimeRef.current = new Date().getTime();
++            syncProgress(true);
+         };
+         const startTimer = ()=>{
+             // setTimeout(, Infinity) behaves as if the delay is 0.
+@@ -665,6 +686,7 @@ const Toast = (props)=>{
+             // See: https://github.com/denysdovhan/wtfjs?tab=readme-ov-file#an-infinite-timeout
+             if (remainingTime.current === Infinity) return;
+             closeTimerStartTimeRef.current = new Date().getTime();
++            syncProgress(false);
+             // Let the toast know it has started
+             timeoutId = setTimeout(()=>{
+                 toast.onAutoClose == null ? void 0 : toast.onAutoClose.call(toast, toast);
+@@ -676,13 +698,18 @@ const Toast = (props)=>{
+         } else {
+             startTimer();
+         }
+-        return ()=>clearTimeout(timeoutId);
++        return ()=>{
++            clearTimeout(timeoutId);
++            progressAnimation == null ? void 0 : progressAnimation.cancel();
++        };
+     }, [
+         expanded,
+         interacting,
+         toast,
+         toastType,
+         isDocumentHidden,
++        duration,
++        progressBar,
+         deleteToast
+     ]);
+     React__default.default.useEffect(()=>{
+@@ -846,7 +873,13 @@ const Toast = (props)=>{
+             (_toastRef_current = toastRef.current) == null ? void 0 : _toastRef_current.style.setProperty('--swipe-amount-x', `${swipeAmount.x}px`);
+             (_toastRef_current1 = toastRef.current) == null ? void 0 : _toastRef_current1.style.setProperty('--swipe-amount-y', `${swipeAmount.y}px`);
+         }
+-    }, closeButton && !toast.jsx && toastType !== 'loading' ? /*#__PURE__*/ React__default.default.createElement("button", {
++    }, progressBar && !toast.jsx && !toast.unstyled && !unstyled && toastType !== 'loading' && Number.isFinite(duration) && duration > 0 ? /*#__PURE__*/ React__default.default.createElement("span", {
++        "data-progress-track": "",
++        "aria-hidden": true
++    }, /*#__PURE__*/ React__default.default.createElement("span", {
++        "data-progress-bar": "",
++        ref: progressRef
++    })) : null, closeButton && !toast.jsx && toastType !== 'loading' ? /*#__PURE__*/ React__default.default.createElement("button", {
+         "aria-label": closeButtonAriaLabel,
+         "data-disabled": disabled,
+         "data-close-button": true,
+@@ -1231,6 +1264,7 @@ const Toaster = /*#__PURE__*/ React__default.default.forwardRef(function Toaster
+                 cancelButtonStyle: toastOptions == null ? void 0 : toastOptions.cancelButtonStyle,
+                 actionButtonStyle: toastOptions == null ? void 0 : toastOptions.actionButtonStyle,
+                 closeButtonAriaLabel: toastOptions == null ? void 0 : toastOptions.closeButtonAriaLabel,
++                progressBar: toastOptions == null ? void 0 : toastOptions.progressBar,
+                 removeToast: removeToast,
+                 toasts: filteredToasts.filter((t)=>t.position == toast.position),
+                 heights: heights.filter((h)=>h.position == toast.position),
+diff --git a/dist/index.mjs b/dist/index.mjs
+index c124f821a68f7070647a5a04441d0caa53689662..1cd47074c07769694688e8457ecd596bd29e9b03 100644
+--- a/dist/index.mjs
++++ b/dist/index.mjs
+@@ -492,7 +492,7 @@ function getDefaultSwipeDirections(position) {
+ }
+ const Toast = (props)=>{
+     var _toast_classNames, _toast_classNames1, _toast_classNames2, _toast_classNames3, _toast_classNames4, _toast_classNames5, _toast_classNames6, _toast_classNames7, _toast_classNames8;
+-    const { invert: ToasterInvert, toast, unstyled, interacting, setHeights, visibleToasts, heights, index, toasts, expanded, removeToast, defaultRichColors, closeButton: closeButtonFromToaster, style, cancelButtonStyle, actionButtonStyle, className = '', descriptionClassName = '', duration: durationFromToaster, position, gap, expandByDefault, classNames, icons, closeButtonAriaLabel = 'Close toast' } = props;
++    const { invert: ToasterInvert, toast, unstyled, interacting, setHeights, visibleToasts, heights, index, toasts, expanded, removeToast, defaultRichColors, closeButton: closeButtonFromToaster, style, cancelButtonStyle, actionButtonStyle, className = '', descriptionClassName = '', duration: durationFromToaster, position, gap, expandByDefault, classNames, icons, progressBar, closeButtonAriaLabel = 'Close toast' } = props;
+     const [swipeDirection, setSwipeDirection] = React.useState(null);
+     const [swipeOutDirection, setSwipeOutDirection] = React.useState(null);
+     const [mounted, setMounted] = React.useState(false);
+@@ -505,6 +505,7 @@ const Toast = (props)=>{
+     const remainingTime = React.useRef(toast.duration || durationFromToaster || TOAST_LIFETIME);
+     const dragStartTime = React.useRef(null);
+     const toastRef = React.useRef(null);
++    const progressRef = React.useRef(null);
+     const isFront = index === 0;
+     const isVisible = index + 1 <= visibleToasts;
+     const toastType = toast.type;
+@@ -643,6 +644,25 @@ const Toast = (props)=>{
+     React.useEffect(()=>{
+         if (toast.promise && toastType === 'loading' || toast.duration === Infinity || toast.type === 'loading') return;
+         let timeoutId;
++        let progressAnimation;
++        // Share the dismissal timer's remaining time instead of running a second clock.
++        const syncProgress = (paused)=>{
++            const progress = progressRef.current;
++            if (!progress || !Number.isFinite(duration) || duration <= 0) return;
++            const remaining = Math.max(0, remainingTime.current);
++            const transform = `scaleX(${Math.min(1, remaining / duration)})`;
++            progress.style.transform = transform;
++            if (!paused && remaining > 0) {
++                progressAnimation = progress.animate([
++                    { transform },
++                    { transform: 'scaleX(0)' }
++                ], {
++                    duration: remaining,
++                    easing: getComputedStyle(progress).getPropertyValue('--toast-progress-easing').trim() || 'linear',
++                    fill: 'forwards'
++                });
++            }
++        };
+         // Pause the timer on each hover
+         const pauseTimer = ()=>{
+             if (lastCloseTimerStartTimeRef.current < closeTimerStartTimeRef.current) {
+@@ -651,6 +671,7 @@ const Toast = (props)=>{
+                 remainingTime.current = remainingTime.current - elapsedTime;
+             }
+             lastCloseTimerStartTimeRef.current = new Date().getTime();
++            syncProgress(true);
+         };
+         const startTimer = ()=>{
+             // setTimeout(, Infinity) behaves as if the delay is 0.
+@@ -658,6 +679,7 @@ const Toast = (props)=>{
+             // See: https://github.com/denysdovhan/wtfjs?tab=readme-ov-file#an-infinite-timeout
+             if (remainingTime.current === Infinity) return;
+             closeTimerStartTimeRef.current = new Date().getTime();
++            syncProgress(false);
+             // Let the toast know it has started
+             timeoutId = setTimeout(()=>{
+                 toast.onAutoClose == null ? void 0 : toast.onAutoClose.call(toast, toast);
+@@ -669,13 +691,18 @@ const Toast = (props)=>{
+         } else {
+             startTimer();
+         }
+-        return ()=>clearTimeout(timeoutId);
++        return ()=>{
++            clearTimeout(timeoutId);
++            progressAnimation == null ? void 0 : progressAnimation.cancel();
++        };
+     }, [
+         expanded,
+         interacting,
+         toast,
+         toastType,
+         isDocumentHidden,
++        duration,
++        progressBar,
+         deleteToast
+     ]);
+     React.useEffect(()=>{
+@@ -839,7 +866,13 @@ const Toast = (props)=>{
+             (_toastRef_current = toastRef.current) == null ? void 0 : _toastRef_current.style.setProperty('--swipe-amount-x', `${swipeAmount.x}px`);
+             (_toastRef_current1 = toastRef.current) == null ? void 0 : _toastRef_current1.style.setProperty('--swipe-amount-y', `${swipeAmount.y}px`);
+         }
+-    }, closeButton && !toast.jsx && toastType !== 'loading' ? /*#__PURE__*/ React.createElement("button", {
++    }, progressBar && !toast.jsx && !toast.unstyled && !unstyled && toastType !== 'loading' && Number.isFinite(duration) && duration > 0 ? /*#__PURE__*/ React.createElement("span", {
++        "data-progress-track": "",
++        "aria-hidden": true
++    }, /*#__PURE__*/ React.createElement("span", {
++        "data-progress-bar": "",
++        ref: progressRef
++    })) : null, closeButton && !toast.jsx && toastType !== 'loading' ? /*#__PURE__*/ React.createElement("button", {
+         "aria-label": closeButtonAriaLabel,
+         "data-disabled": disabled,
+         "data-close-button": true,
+@@ -1224,6 +1257,7 @@ const Toaster = /*#__PURE__*/ React.forwardRef(function Toaster(props, ref) {
+                 cancelButtonStyle: toastOptions == null ? void 0 : toastOptions.cancelButtonStyle,
+                 actionButtonStyle: toastOptions == null ? void 0 : toastOptions.actionButtonStyle,
+                 closeButtonAriaLabel: toastOptions == null ? void 0 : toastOptions.closeButtonAriaLabel,
++                progressBar: toastOptions == null ? void 0 : toastOptions.progressBar,
+                 removeToast: removeToast,
+                 toasts: filteredToasts.filter((t)=>t.position == toast.position),
+                 heights: heights.filter((h)=>h.position == toast.position),

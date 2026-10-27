@@ -32,6 +32,7 @@ overrides:
 
 patchedDependencies:
   '@cline/core@0.2.0': patches/@cline__core@0.2.0.patch
+  sonner@2.0.8: patches/sonner@2.0.8.patch
 
 minimumReleaseAgeExclude:
   - "@aws-sdk/checksums@3.1001.6"

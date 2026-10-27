@@ -46,6 +46,7 @@ jobs:
       - run: pnpm --filter @blame/api exec node ace.js test unit
       - run: pnpm --filter @blame/api exec node ace.js test --files='tests/functional/auth.spec.ts'
       - run: pnpm --filter @blame/api exec node ace.js test --files='tests/functional/consumer_contracts.spec.ts'
+      - run: pnpm --filter @blame/api exec node ace.js test --files='tests/functional/story_numbering.spec.ts'
 
   windows-runtime:
     name: Windows PowerShell runtime tests
