@@ -1,10 +1,12 @@
 import {
+  ChevronRightIcon,
   CircleAlertIcon,
   CircleCheckIcon,
   CircleDashedIcon,
   TriangleAlertIcon,
 } from "lucide-react"
 
+import { navigate } from "@/components/navigation/navigation"
 import type { ProjectInitializationAvailability } from "@/components/project-initialization/project-initialization-availability"
 import type { ProjectInitializationProgress } from "@/components/project-initialization/project-initialization-progress"
 import { ProgressNotificationBody } from "@/components/shared/progress-notification"
@@ -178,8 +180,30 @@ function FailedStatus({
       <p>
         Stories run in Direct mode, in your project folder, until an analysis
         succeeds. Run it again: a second try often succeeds. If it keeps
-        failing, try another model in Settings.
+        failing, try another model in{" "}
+        <button
+          type="button"
+          className="text-foreground underline underline-offset-3 hover:text-foreground/80"
+          onClick={() => navigate("/settings")}
+        >
+          Settings
+        </button>
+        .
       </p>
+      {initialization.error ? (
+        <details className="group">
+          <summary className="inline-flex cursor-pointer list-none items-center gap-1 text-xs select-none hover:text-foreground [&::-webkit-details-marker]:hidden">
+            <ChevronRightIcon
+              aria-hidden
+              className="size-3.5 transition-transform duration-150 group-open:rotate-90"
+            />
+            Error details
+          </summary>
+          <pre className="mt-1.5 font-mono text-xs break-words whitespace-pre-wrap text-foreground/80">
+            {initialization.error}
+          </pre>
+        </details>
+      ) : null}
     </StatusBlock>
   )
 }

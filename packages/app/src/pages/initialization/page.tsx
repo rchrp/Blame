@@ -1,5 +1,5 @@
 import * as React from "react"
-import { PencilIcon, RefreshCwIcon } from "lucide-react"
+import { CopyIcon, PencilIcon, RefreshCwIcon } from "lucide-react"
 import { toast } from "sonner"
 
 import {
@@ -27,7 +27,11 @@ import {
   InitializationSetupEditor,
   InitializationSetupView,
 } from "./initialization-setup"
-import { manualEditReason, type SavedSetup } from "./initialization-setup-draft"
+import {
+  manualEditReason,
+  setupJson,
+  type SavedSetup,
+} from "./initialization-setup-draft"
 import { InitializationStatus } from "./initialization-status"
 
 export function InitializationPage() {
@@ -36,7 +40,9 @@ export function InitializationPage() {
   const project = projects.activeProject
   const snapshot = useProjectInitialization()
   const progress = useInitializationProgress(project?.id)
-  const [editing, setEditing] = React.useState(false)
+  // The setup being edited, kept while an analysis started elsewhere
+  // replaces the saved one.
+  const [editing, setEditing] = React.useState<SavedSetup>()
   const [confirmRun, setConfirmRun] = React.useState(false)
 
   const initialization = snapshot?.initialization
@@ -50,10 +56,6 @@ export function InitializationPage() {
     : undefined
   const neverRan = !initialization || initialization.status === "pending"
 
-  React.useEffect(() => {
-    if (running) setEditing(false)
-  }, [running])
-
   const runAgain = () => {
     if (!project) return
     if (initialization?.repairReason === manualEditReason && !confirmRun) {
@@ -62,6 +64,23 @@ export function InitializationPage() {
     }
     setConfirmRun(false)
     requestProjectInitializationRun(project.id)
+  }
+
+  const copySetup = () => {
+    if (!setup) return
+    void navigator.clipboard
+      .writeText(setupJson(setup))
+      .then(() =>
+        toast.success("Setup copied", {
+          description: "The JSON of the current setup is in your clipboard.",
+          position: "bottom-right",
+        })
+      )
+      .catch(() =>
+        toast.error("The setup could not be copied", {
+          position: "bottom-right",
+        })
+      )
   }
 
   const save = async (next: SavedSetup) => {
@@ -76,7 +95,7 @@ export function InitializationPage() {
       }
     )
     notifyProjectInitializationUpdated(project.id)
-    setEditing(false)
+    setEditing(undefined)
     toast.success("Setup saved", {
       description: "Stories started from now on use it.",
       position: "bottom-right",
@@ -102,7 +121,7 @@ export function InitializationPage() {
               {setup ? (
                 <Button
                   variant="outline"
-                  onClick={() => setEditing(true)}
+                  onClick={() => setEditing(setup)}
                   disabled={running}
                 >
                   <PencilIcon data-icon="inline-start" />
@@ -132,10 +151,15 @@ export function InitializationPage() {
               initialization={initialization}
               progress={progress}
             />
-            {setup && editing ? (
+            {editing ? (
               <InitializationSetupEditor
-                saved={setup}
-                onCancel={() => setEditing(false)}
+                saved={editing}
+                locked={
+                  running
+                    ? "An analysis is running. Save waits until it ends, and then replaces its result with your version."
+                    : undefined
+                }
+                onCancel={() => setEditing(undefined)}
                 onSave={save}
               />
             ) : setup ? (
@@ -150,11 +174,15 @@ export function InitializationPage() {
             <AlertDialogTitle>Replace your edits?</AlertDialogTitle>
             <AlertDialogDescription>
               You edited this setup by hand. A new analysis writes a new setup
-              and your edits are lost. Copy them from the JSON view first if you
-              want to keep them.
+              and your edits are lost. Copy the current setup first to keep a
+              copy of them.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
+            <Button variant="ghost" className="sm:mr-auto" onClick={copySetup}>
+              <CopyIcon data-icon="inline-start" />
+              Copy setup
+            </Button>
             <AlertDialogCancel>Keep my setup</AlertDialogCancel>
             <AlertDialogAction onClick={runAgain}>
               Run the analysis

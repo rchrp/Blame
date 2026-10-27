@@ -132,7 +132,7 @@ test("says initialization errors in plain words", () => {
     readableInitializationError(
       "Error invoking remote method 'agent:initializations:run': Error: Initialization result previewManifest must run detected database migrations before starting backend services"
     ),
-    "The setup Blame wrote must run detected database migrations before starting backend services."
+    "The setup Blame wrote was rejected: it must run detected database migrations before starting backend services."
   )
   assert.equal(
     readableInitializationError(null),

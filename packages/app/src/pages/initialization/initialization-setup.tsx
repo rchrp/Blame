@@ -1,14 +1,29 @@
 import * as React from "react"
+import { ChevronRightIcon } from "lucide-react"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
+import { cn } from "@/lib/utils"
 import {
   appliedSetup,
+  containerFieldId,
+  runFieldId,
+  SetupFieldError,
   setupDraft,
   setupFromJson,
   setupJson,
@@ -26,38 +41,37 @@ const kindLabels = {
   worker: "Worker",
 } as const
 
+const sections = {
+  runConfigurations: {
+    title: "Run configurations",
+    description: "What a story can start, and where its preview opens.",
+  },
+  services: {
+    title: "Services",
+    description: "Containers that keep running while a preview is open.",
+  },
+  setup: {
+    title: "Setup tasks",
+    description:
+      "One-off steps before the services start: installs, migrations, builds. They rerun only when what they depend on changes.",
+  },
+}
+
+type RunConfiguration = SavedSetup["runConfigurations"][number]
+
 export function InitializationSetupView({ setup }: { setup: SavedSetup }) {
   const manifest = setup.previewManifest
   return (
     <div className="grid gap-8">
-      <SetupSection
-        title="Run configurations"
-        description="What a story can start, and where its preview opens."
-      >
+      <SetupSection {...sections.runConfigurations}>
         {setup.runConfigurations.map((configuration) => (
           <li key={configuration.id} className="grid gap-1.5 px-4 py-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm font-medium">{configuration.name}</span>
-              {configuration.default ? (
-                <Badge variant="secondary">Default</Badge>
-              ) : null}
-            </div>
+            <RunConfigurationHeading configuration={configuration} />
             <Code>{configuration.command}</Code>
-            <p className="text-xs text-muted-foreground">
-              {configuration.services.length
-                ? `Starts ${configuration.services.join(", ")}`
-                : "Runs on this computer"}
-              {configuration.previewService
-                ? ` · preview from ${configuration.previewService}`
-                : ""}
-            </p>
           </li>
         ))}
       </SetupSection>
-      <SetupSection
-        title="Services"
-        description="Containers that keep running while a preview is open."
-      >
+      <SetupSection {...sections.services}>
         {manifest.services.map((service) => (
           <li key={service.id} className="grid gap-2 px-4 py-3">
             <ItemHeading id={service.id} badge={kindLabels[service.kind]} />
@@ -87,20 +101,10 @@ export function InitializationSetupView({ setup }: { setup: SavedSetup }) {
         ))}
       </SetupSection>
       {manifest.setup.length ? (
-        <SetupSection
-          title="Setup tasks"
-          description="One-off steps before the services start: installs, migrations, builds. They rerun only when what they depend on changes."
-        >
+        <SetupSection {...sections.setup}>
           {manifest.setup.map((task) => (
             <li key={task.id} className="grid gap-2 px-4 py-3">
-              <ItemHeading
-                id={task.id}
-                badge={
-                  task.dependsOn?.length
-                    ? `After ${task.dependsOn.join(", ")}`
-                    : undefined
-                }
-              />
+              <ItemHeading id={task.id} badge={afterLabel(task.dependsOn)} />
               <Details>
                 <Detail label="Image">
                   <Code>{containerLabel(task.container)}</Code>
@@ -118,11 +122,18 @@ export function InitializationSetupView({ setup }: { setup: SavedSetup }) {
   )
 }
 
+type FieldError = { fieldId: string; message: string }
+
+const FieldErrorContext = React.createContext<FieldError | undefined>(undefined)
+
 export function InitializationSetupEditor({
+  locked,
   saved,
   onCancel,
   onSave,
 }: {
+  /** Why saving waits, such as an analysis running. */
+  locked?: string
   saved: SavedSetup
   onCancel(): void
   onSave(setup: SavedSetup): Promise<void>
@@ -132,10 +143,41 @@ export function InitializationSetupEditor({
   const [view, setView] = React.useState<"form" | "json">("form")
   const [json, setJson] = React.useState("")
   const [error, setError] = React.useState<string>()
+  const [fieldError, setFieldError] = React.useState<FieldError>()
+  const [changed, setChanged] = React.useState(false)
+  const [confirmDiscard, setConfirmDiscard] = React.useState(false)
   const [saving, setSaving] = React.useState(false)
+
+  React.useEffect(() => {
+    if (!fieldError) return
+    const field = document.getElementById(fieldError.fieldId)
+    field?.scrollIntoView({ block: "center", behavior: "smooth" })
+    field?.focus({ preventScroll: true })
+  }, [fieldError])
 
   const current = () =>
     view === "json" ? setupFromJson(json) : appliedSetup(base, draft)
+
+  const showError = (cause: unknown) => {
+    if (cause instanceof SetupFieldError && cause.fieldId && view === "form") {
+      setError(undefined)
+      // Under its field, the message needs no "Service web, port http:".
+      const message = cause.message.replace(/^[^:]*:\s*/, "")
+      setFieldError({
+        fieldId: cause.fieldId,
+        message: message.charAt(0).toUpperCase() + message.slice(1),
+      })
+      return
+    }
+    setFieldError(undefined)
+    setError(messageOf(cause))
+  }
+
+  const editDraft = (next: SetupDraft) => {
+    setDraft(next)
+    setChanged(true)
+    setFieldError(undefined)
+  }
 
   const switchView = (next: string) => {
     if (next === view) return
@@ -147,9 +189,10 @@ export function InitializationSetupEditor({
         setDraft(setupDraft(setup))
       }
       setError(undefined)
+      setFieldError(undefined)
       setView(next as "form" | "json")
     } catch (cause) {
-      setError(messageOf(cause))
+      showError(cause)
     }
   }
 
@@ -158,11 +201,12 @@ export function InitializationSetupEditor({
     try {
       setup = current()
     } catch (cause) {
-      setError(messageOf(cause))
+      showError(cause)
       return
     }
     setSaving(true)
     setError(undefined)
+    setFieldError(undefined)
     try {
       await onSave(setup)
     } catch (cause) {
@@ -172,53 +216,83 @@ export function InitializationSetupEditor({
     }
   }
 
+  const cancel = () => {
+    if (changed) setConfirmDiscard(true)
+    else onCancel()
+  }
+
   return (
-    <div className="grid gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-card px-4 py-3">
-        <div className="grid gap-0.5">
-          <span className="text-sm font-medium">Editing the setup</span>
-          <span className="text-xs text-muted-foreground">
-            Stories started from now on use it. Blame checks it before saving.
-          </span>
+    <FieldErrorContext.Provider value={fieldError}>
+      <div className="grid gap-6">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-card px-4 py-3">
+          <div className="grid gap-0.5">
+            <span className="text-sm font-medium">Editing the setup</span>
+            <span className="text-xs text-muted-foreground">
+              {locked ??
+                "Stories started from now on use it. Blame checks it before saving."}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Tabs value={view} onValueChange={switchView}>
+              <TabsList>
+                <TabsTrigger value="form">Fields</TabsTrigger>
+                <TabsTrigger value="json">JSON</TabsTrigger>
+              </TabsList>
+            </Tabs>
+            <Button variant="ghost" onClick={cancel} disabled={saving}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => void save()}
+              disabled={saving || Boolean(locked)}
+            >
+              {saving ? "Saving…" : "Save setup"}
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Tabs value={view} onValueChange={switchView}>
-            <TabsList>
-              <TabsTrigger value="form">Fields</TabsTrigger>
-              <TabsTrigger value="json">JSON</TabsTrigger>
-            </TabsList>
-          </Tabs>
-          <Button variant="ghost" onClick={onCancel} disabled={saving}>
-            Cancel
-          </Button>
-          <Button onClick={() => void save()} disabled={saving}>
-            {saving ? "Saving…" : "Save setup"}
-          </Button>
-        </div>
+        {error ? (
+          <Alert variant="destructive">
+            <AlertTitle>The setup can&apos;t be saved yet</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        ) : null}
+        {view === "json" ? (
+          <div className="grid gap-2">
+            <Label htmlFor="initialization-json">
+              Preview manifest and run configurations
+            </Label>
+            <Textarea
+              id="initialization-json"
+              value={json}
+              onChange={(event) => {
+                setJson(event.target.value)
+                setChanged(true)
+              }}
+              spellCheck={false}
+              className="min-h-[32rem] font-mono text-xs leading-relaxed md:text-xs"
+            />
+          </div>
+        ) : (
+          <SetupForm saved={base} draft={draft} onChange={editDraft} />
+        )}
       </div>
-      {error ? (
-        <Alert variant="destructive">
-          <AlertTitle>The setup can&apos;t be saved yet</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      ) : null}
-      {view === "json" ? (
-        <div className="grid gap-2">
-          <Label htmlFor="initialization-json">
-            Preview manifest and run configurations
-          </Label>
-          <Textarea
-            id="initialization-json"
-            value={json}
-            onChange={(event) => setJson(event.target.value)}
-            spellCheck={false}
-            className="min-h-[32rem] font-mono text-xs leading-relaxed"
-          />
-        </div>
-      ) : (
-        <SetupForm saved={base} draft={draft} onChange={setDraft} />
-      )}
-    </div>
+      <AlertDialog open={confirmDiscard} onOpenChange={setConfirmDiscard}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Discard your changes?</AlertDialogTitle>
+            <AlertDialogDescription>
+              The setup stays as it was saved.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep editing</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={onCancel}>
+              Discard changes
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </FieldErrorContext.Provider>
   )
 }
 
@@ -239,48 +313,49 @@ function SetupForm({
 
   return (
     <div className="grid gap-8">
-      <SetupSection title="Run configurations">
-        {draft.runConfigurations.map((configuration, index) => (
-          <li key={configuration.id} className="grid gap-3 px-4 py-3">
-            <ItemHeading id={configuration.id} />
-            <div className="grid gap-3 sm:grid-cols-[minmax(0,14rem)_1fr]">
-              <TextField
-                id={`run-${configuration.id}-name`}
-                label="Name"
-                value={configuration.name}
-                onChange={(name) =>
-                  update({
-                    runConfigurations: replace(draft.runConfigurations, index, {
-                      ...configuration,
-                      name,
-                    }),
-                  })
-                }
-              />
-              <TextField
-                id={`run-${configuration.id}-command`}
-                label="Command"
-                code
-                value={configuration.command}
-                onChange={(command) =>
-                  update({
-                    runConfigurations: replace(draft.runConfigurations, index, {
-                      ...configuration,
-                      command,
-                    }),
-                  })
-                }
-              />
-            </div>
-          </li>
-        ))}
+      <SetupSection {...sections.runConfigurations}>
+        {draft.runConfigurations.map((configuration, index) => {
+          const original = saved.runConfigurations.find(
+            ({ id }) => id === configuration.id
+          )
+          const edit = (patch: Partial<typeof configuration>) =>
+            update({
+              runConfigurations: replace(draft.runConfigurations, index, {
+                ...configuration,
+                ...patch,
+              }),
+            })
+          return (
+            <li key={configuration.id} className="grid gap-3 px-4 py-3">
+              {original ? (
+                <RunConfigurationHeading configuration={original} />
+              ) : null}
+              <div className="grid gap-3 sm:grid-cols-[minmax(0,14rem)_1fr]">
+                <TextField
+                  id={runFieldId(configuration.id, "name")}
+                  label="Name"
+                  value={configuration.name}
+                  onChange={(name) => edit({ name })}
+                />
+                <TextField
+                  id={runFieldId(configuration.id, "command")}
+                  label="Command"
+                  code
+                  value={configuration.command}
+                  onChange={(command) => edit({ command })}
+                />
+              </div>
+            </li>
+          )
+        })}
       </SetupSection>
-      <SetupSection title="Services">
+      <SetupSection {...sections.services}>
         {draft.services.map((service, index) => {
           const original = manifest.services.find(({ id }) => id === service.id)
           return (
             <ContainerFields
               key={service.id}
+              scope="service"
               container={service}
               badge={original ? kindLabels[original.kind] : undefined}
               built={Boolean(original?.container.build)}
@@ -293,19 +368,22 @@ function SetupForm({
         })}
       </SetupSection>
       {draft.setup.length ? (
-        <SetupSection title="Setup tasks">
-          {draft.setup.map((task, index) => (
-            <ContainerFields
-              key={task.id}
-              container={task}
-              built={Boolean(
-                manifest.setup.find(({ id }) => id === task.id)?.container.build
-              )}
-              onChange={(next) =>
-                update({ setup: replace(draft.setup, index, next) })
-              }
-            />
-          ))}
+        <SetupSection {...sections.setup}>
+          {draft.setup.map((task, index) => {
+            const original = manifest.setup.find(({ id }) => id === task.id)
+            return (
+              <ContainerFields
+                key={task.id}
+                scope="task"
+                container={task}
+                badge={afterLabel(original?.dependsOn)}
+                built={Boolean(original?.container.build)}
+                onChange={(next) =>
+                  update({ setup: replace(draft.setup, index, next) })
+                }
+              />
+            )
+          })}
         </SetupSection>
       ) : null}
     </div>
@@ -318,14 +396,16 @@ function ContainerFields({
   commandHint,
   container,
   onChange,
+  scope,
 }: {
   badge?: string
   built: boolean
   commandHint?: string
   container: DraftContainer
   onChange(container: DraftContainer): void
+  scope: "service" | "task"
 }) {
-  const id = `container-${container.id}`
+  const field = (name: string) => containerFieldId(scope, container.id, name)
   return (
     <li className="grid gap-3 px-4 py-3">
       <ItemHeading id={container.id} badge={badge} />
@@ -336,7 +416,7 @@ function ContainerFields({
         </p>
       ) : (
         <TextField
-          id={`${id}-image`}
+          id={field("image")}
           label="Image"
           code
           value={container.image}
@@ -344,7 +424,7 @@ function ContainerFields({
         />
       )}
       <TextAreaField
-        id={`${id}-command`}
+        id={field("command")}
         label="Command"
         hint={commandHint}
         value={container.command}
@@ -353,32 +433,29 @@ function ContainerFields({
       {container.ports.length ? (
         <div className="flex flex-wrap gap-3">
           {container.ports.map((port, index) => (
-            <div key={port.endpointId} className="grid w-28 gap-1.5">
-              <Label htmlFor={`${id}-port-${port.endpointId}`}>
-                Port · {port.endpointId}
-              </Label>
-              <Input
-                id={`${id}-port-${port.endpointId}`}
-                inputMode="numeric"
-                value={port.port}
-                className="font-mono tabular-nums"
-                onChange={(event) =>
-                  onChange({
-                    ...container,
-                    ports: container.ports.map((current, position) =>
-                      position === index
-                        ? { ...current, port: event.target.value }
-                        : current
-                    ),
-                  })
-                }
-              />
-            </div>
+            <TextField
+              key={port.endpointId}
+              id={field(`port-${port.endpointId}`)}
+              label="Port"
+              labelHint={port.endpointId}
+              code
+              numeric
+              className="w-32"
+              value={port.port}
+              onChange={(value) =>
+                onChange({
+                  ...container,
+                  ports: container.ports.map((current, position) =>
+                    position === index ? { ...current, port: value } : current
+                  ),
+                })
+              }
+            />
           ))}
         </div>
       ) : null}
       <TextAreaField
-        id={`${id}-environment`}
+        id={field("environment")}
         label="Environment"
         hint="One KEY=value per line."
         value={container.environment}
@@ -388,29 +465,50 @@ function ContainerFields({
   )
 }
 
+function useFieldError(id: string) {
+  const error = React.useContext(FieldErrorContext)
+  return error?.fieldId === id ? error.message : undefined
+}
+
 function TextField({
+  className,
   code,
   id,
   label,
+  labelHint,
+  numeric,
   onChange,
   value,
 }: {
+  className?: string
   code?: boolean
   id: string
   label: string
+  labelHint?: string
+  numeric?: boolean
   onChange(value: string): void
   value: string
 }) {
+  const error = useFieldError(id)
   return (
-    <div className="grid gap-1.5">
-      <Label htmlFor={id}>{label}</Label>
+    <div className={cn("grid content-start gap-1.5", className)}>
+      <Label htmlFor={id}>
+        {label}
+        {labelHint ? (
+          <span className="font-normal text-muted-foreground">{labelHint}</span>
+        ) : null}
+      </Label>
       <Input
         id={id}
         value={value}
         spellCheck={false}
-        className={code ? "font-mono text-xs" : undefined}
+        inputMode={numeric ? "numeric" : undefined}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? `${id}-error` : undefined}
+        className={cn(code && "font-mono text-xs tabular-nums md:text-xs")}
         onChange={(event) => onChange(event.target.value)}
       />
+      <FieldMessage id={id} error={error} />
     </div>
   )
 }
@@ -428,6 +526,7 @@ function TextAreaField({
   onChange(value: string): void
   value: string
 }) {
+  const error = useFieldError(id)
   return (
     <div className="grid gap-1.5">
       <Label htmlFor={id}>{label}</Label>
@@ -436,16 +535,38 @@ function TextAreaField({
         value={value}
         spellCheck={false}
         rows={Math.min(8, Math.max(2, value.split("\n").length))}
-        className="font-mono text-xs leading-relaxed"
+        className="font-mono text-xs leading-relaxed md:text-xs"
         onChange={(event) => onChange(event.target.value)}
-        aria-describedby={hint ? `${id}-hint` : undefined}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={
+          error ? `${id}-error` : hint ? `${id}-hint` : undefined
+        }
       />
-      {hint ? (
-        <span id={`${id}-hint`} className="text-xs text-muted-foreground">
-          {hint}
-        </span>
-      ) : null}
+      <FieldMessage id={id} error={error} hint={hint} />
     </div>
+  )
+}
+
+function FieldMessage({
+  error,
+  hint,
+  id,
+}: {
+  error?: string
+  hint?: string
+  id: string
+}) {
+  if (error)
+    return (
+      <span id={`${id}-error`} className="text-xs text-destructive">
+        {error}
+      </span>
+    )
+  if (!hint) return null
+  return (
+    <span id={`${id}-hint`} className="text-xs text-muted-foreground">
+      {hint}
+    </span>
   )
 }
 
@@ -468,6 +589,31 @@ function SetupSection({
       </div>
       <ul className="divide-y rounded-lg border bg-card">{children}</ul>
     </section>
+  )
+}
+
+function RunConfigurationHeading({
+  configuration,
+}: {
+  configuration: RunConfiguration
+}) {
+  return (
+    <div className="grid gap-0.5">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-sm font-medium">{configuration.name}</span>
+        {configuration.default ? (
+          <Badge variant="secondary">Default</Badge>
+        ) : null}
+      </div>
+      <p className="text-xs text-muted-foreground">
+        {configuration.services.length
+          ? `Starts ${configuration.services.join(", ")}`
+          : "Runs on this computer"}
+        {configuration.previewService
+          ? ` · preview from ${configuration.previewService}`
+          : ""}
+      </p>
+    </div>
   )
 }
 
@@ -513,10 +659,14 @@ function EnvironmentDetail({
   return (
     <Detail label="Environment">
       <details className="group">
-        <summary className="cursor-pointer text-muted-foreground select-none hover:text-foreground">
+        <summary className="inline-flex cursor-pointer list-none items-center gap-1 text-muted-foreground select-none hover:text-foreground [&::-webkit-details-marker]:hidden">
+          <ChevronRightIcon
+            aria-hidden
+            className="size-3.5 transition-transform duration-150 group-open:rotate-90"
+          />
           {entries.length === 1 ? "1 variable" : `${entries.length} variables`}
         </summary>
-        <div className="mt-1.5 grid gap-0.5">
+        <div className="mt-1.5 grid gap-0.5 pl-4.5">
           {entries.map(([key, value]) => (
             <Code key={key}>{`${key}=${value}`}</Code>
           ))}
@@ -532,6 +682,10 @@ function Code({ children }: { children: React.ReactNode }) {
       {children}
     </code>
   )
+}
+
+function afterLabel(dependsOn: string[] | undefined) {
+  return dependsOn?.length ? `After ${dependsOn.join(", ")}` : undefined
 }
 
 function containerLabel(
