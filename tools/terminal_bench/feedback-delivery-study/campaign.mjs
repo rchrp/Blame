@@ -114,11 +114,11 @@ async function analyse(slot,directory,p){
   forwardedRequests:wire.filter(r=>!r.budgetRejected).length,scopeReceipts,receiptRequests,groupedReads:tools.filter(t=>t.tool==='read_code'&&Array.isArray(t.input?.reads)).length,compilerRepairOffers:compilerOffers.length,compilerOffers,sourceAuditObservationMs:epochs.reduce((n,e)=>n+e.observationMs,0),nativeRequiredCommands:nativeCommands,toolTimeMs:tools.reduce((n,t)=>n+(t.durationMs??0),0),hashes:{}};
  const firstSchemas=[...new Set(wire.map(r=>r.toolsSha256))];row.actualSchemaHashes=firstSchemas;return {row,wire};
 }
-async function run(){
- const path=join(study,'model-protocol.json'),p=await json(path);await validateBindings(p);
- const durable=new DurableCampaign({campaign,study,protocol:p,protocolHash:digest(await readFile(path))});await durable.acquire();
- try{let rows=[];for(const slot of p.order){
-  const state=await durable.inspect(slot),directory=join(campaign,trialName(slot));
+export async function run({studyRoot=study,campaignRoot=campaign,maxNewTrials=Infinity}={}){
+ const path=join(studyRoot,'model-protocol.json'),p=await json(path);await validateBindings(p);
+ const durable=new DurableCampaign({campaign:campaignRoot,study:studyRoot,protocol:p,protocolHash:digest(await readFile(path))});await durable.acquire();
+ try{let rows=[],newTrials=0;for(const slot of p.order){
+  const state=await durable.inspect(slot),directory=join(campaignRoot,trialName(slot));
   if(state.state==='complete'){rows.push(state.row);continue;}
   assert.ok(['unstarted','finalize'].includes(state.state));
   if(state.state==='finalize'){
@@ -128,17 +128,18 @@ async function run(){
    const analysed=await analyse(slot,directory,p);await atomicJson(join(directory,'score.json'),analysed.row);await durable.checkpoint(analysed.row,analysed.wire);rows.push(analysed.row);continue;
   }
   const spent=rows.reduce((n,r)=>n+(r.usage.cost??0)+(r.usage.cost===null?p.budgets.perTrialMissingCostReserveUsd:0),0);
-  if(spent+p.budgets.perTrialSdkCostLimitUsd+p.budgets.perTrialMissingCostReserveUsd>p.budgets.observedStudyStopUsd){await atomicJson(join(campaign,'budget-stop.json'),{spent,slot});break;}
+  if(spent+p.budgets.perTrialSdkCostLimitUsd+p.budgets.perTrialMissingCostReserveUsd>p.budgets.observedStudyStopUsd){await atomicJson(join(campaignRoot,'budget-stop.json'),{spent,slot});break;}
   await mkdir(directory,{recursive:true});const task=tasks.find(t=>t.id===slot.task),isolated=await prepare(directory,task,p);
   console.log('START',trialName(slot));await durable.begin(slot);const exit=await model(slot,directory,p,isolated);await atomicJson(join(directory,'model-exit.json'),exit,{exclusive:true});
   await atomicJson(join(directory,'source-at-exit.json'),sourceEpoch(root),{exclusive:true});await atomicJson(join(directory,'dependencies-at-exit.json'),{manifest:await dependencyManifest(join(root,'node_modules'))},{exclusive:true});
   execFileSync('tar',['-czf',join(directory,'workspace.tar.gz'),'--exclude=node_modules','-C',root,'.']);await atomicJson(join(directory,'workspace-archive.json'),{sha256:digest(await readFile(join(directory,'workspace.tar.gz')))},{exclusive:true});
   assert.equal(sourceEpoch(root).sha256,(await json(join(directory,'source-at-exit.json'))).sha256,'Source moved while archiving');
-  const analysed=await analyse(slot,directory,p);await atomicJson(join(directory,'score.json'),analysed.row);await durable.checkpoint(analysed.row,analysed.wire);rows.push(analysed.row);await atomicJson(join(campaign,'rows.json'),rows);
+  const analysed=await analyse(slot,directory,p);await atomicJson(join(directory,'score.json'),analysed.row);await durable.checkpoint(analysed.row,analysed.wire);rows.push(analysed.row);await atomicJson(join(campaignRoot,'rows.json'),rows);
   console.log('END',trialName(slot),'official='+analysed.row.officialRuntimeSuccess,'audit='+analysed.row.strictSuccess,'tokens='+[analysed.row.usage.input,analysed.row.usage.output].join('+'),'sdkUsd='+analysed.row.usage.cost);
-  if(!analysed.row.forwardedRequests&&!analysed.row.officialRuntimeSuccess){await atomicJson(join(campaign,'access-stop.json'),{slot,status:analysed.row.status,exit});break;}
+  if(!analysed.row.forwardedRequests&&!analysed.row.officialRuntimeSuccess){await atomicJson(join(campaignRoot,'access-stop.json'),{slot,status:analysed.row.status,exit});break;}
+  if(++newTrials>=maxNewTrials)break;
  }
- await atomicJson(join(study,'campaign-status.json'),{complete:rows.length===p.order.length,completed:rows.length,planned:p.order.length});
+ await atomicJson(join(studyRoot,'campaign-status.json'),{complete:rows.length===p.order.length,completed:rows.length,planned:p.order.length});
  }finally{await durable.release();}
 }
 if(process.argv[1]===import.meta.filename){const action=process.argv[2];if(action==='freeze')await freeze();else if(action==='run')await run();else throw Error('Expected freeze or run');}

@@ -1,0 +1,136 @@
+{
+  "slot": {
+    "panel": "F66",
+    "repeat": 2,
+    "task": "map-context",
+    "arm": "reference"
+  },
+  "name": "2-map-context-reference",
+  "protocolHash": "2e0afdab7bfac83bb601bf24a7c2bd80368514e074d03cb32fd9dd34b91c02f3",
+  "capturedAtUTC": "2026-10-27T01:26:37.480Z",
+  "state": "model_exit_unknown",
+  "processState": "original coordinator is a same-host same-boot zombie; no live local model worker found on inspection",
+  "coordinatorExitCause": "unknown; execution session disappeared around its 20-minute lifetime, causality unproved",
+  "modelRetried": false,
+  "officialSuccess": false,
+  "finalSourceKnown": false,
+  "forwardedRequests": 9,
+  "usageReports": 8,
+  "lastObservedCumulativeUsage": {
+    "type": "usage",
+    "inputTokens": 30368,
+    "outputTokens": 137,
+    "cacheReadTokens": 26752,
+    "cost": 0.0018582400000000006,
+    "reasoningTokenCount": 363,
+    "totalInputTokens": 152587,
+    "totalOutputTokens": 2665,
+    "totalCacheReadTokens": 121088,
+    "totalCost": 0.01469516
+  },
+  "aggregateInput": null,
+  "aggregateOutput": null,
+  "aggregateSdkCost": null,
+  "osExitCode": null,
+  "sdkDurationMs": null,
+  "schedulingReserveUsd": 1.5,
+  "reserveBoundary": "Scheduling allowance, not a measured charge or invoice bound. Retain partial observed usage without treating it as a complete aggregate.",
+  "sourceAtCapture": {
+    "sha256": "8c307be3c13d778a954ddef5a6c5561916006205c4bca81bbef8bf249045c638",
+    "files": 1295
+  },
+  "partialArchiveSha256": "8ec5380ff37d2313570413db9954cfedaa0d5f59bd5fc4422ff5770679c2d5e9",
+  "remainingOrder": [
+    {
+      "panel": "F66",
+      "repeat": 2,
+      "task": "take-through",
+      "arm": "cline"
+    },
+    {
+      "panel": "F66",
+      "repeat": 2,
+      "task": "take-through",
+      "arm": "reference"
+    },
+    {
+      "panel": "F66",
+      "repeat": 2,
+      "task": "take-through",
+      "arm": "batch"
+    },
+    {
+      "panel": "F67",
+      "repeat": 1,
+      "task": "clamp-items",
+      "arm": "reference"
+    },
+    {
+      "panel": "F67",
+      "repeat": 1,
+      "task": "clamp-items",
+      "arm": "compiler"
+    },
+    {
+      "panel": "F67",
+      "repeat": 1,
+      "task": "clamp-items",
+      "arm": "cline"
+    },
+    {
+      "panel": "F67",
+      "repeat": 1,
+      "task": "quota",
+      "arm": "compiler"
+    },
+    {
+      "panel": "F67",
+      "repeat": 1,
+      "task": "quota",
+      "arm": "cline"
+    },
+    {
+      "panel": "F67",
+      "repeat": 1,
+      "task": "quota",
+      "arm": "reference"
+    },
+    {
+      "panel": "F67",
+      "repeat": 2,
+      "task": "clamp-items",
+      "arm": "compiler"
+    },
+    {
+      "panel": "F67",
+      "repeat": 2,
+      "task": "clamp-items",
+      "arm": "cline"
+    },
+    {
+      "panel": "F67",
+      "repeat": 2,
+      "task": "clamp-items",
+      "arm": "reference"
+    },
+    {
+      "panel": "F67",
+      "repeat": 2,
+      "task": "quota",
+      "arm": "cline"
+    },
+    {
+      "panel": "F67",
+      "repeat": 2,
+      "task": "quota",
+      "arm": "reference"
+    },
+    {
+      "panel": "F67",
+      "repeat": 2,
+      "task": "quota",
+      "arm": "compiler"
+    }
+  ],
+  "completedBeforeInterruption": 8
+}
