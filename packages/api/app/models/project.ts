@@ -22,6 +22,9 @@ export default class Project extends BaseModel {
   @column()
   declare name: string
 
+  @column()
+  declare lastStoryNumber: number
+
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
 

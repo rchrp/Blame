@@ -804,12 +804,14 @@ export class ProjectInitializationSchema extends BaseModel {
 }
 
 export class ProjectSchema extends BaseModel {
-  static $columns = ['createdAt', 'id', 'name', 'repositoryFingerprint', 'updatedAt', 'userId'] as const
+  static $columns = ['createdAt', 'id', 'lastStoryNumber', 'name', 'repositoryFingerprint', 'updatedAt', 'userId'] as const
   $columns = ProjectSchema.$columns
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
   @column({ isPrimary: true })
   declare id: string
+  @column()
+  declare lastStoryNumber: number
   @column()
   declare name: string
   @column()
