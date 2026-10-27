@@ -1103,6 +1103,88 @@
       "blockedEdits": 0,
       "compilerOffers": [],
       "requiredChecksRetained": true
+    },
+    {
+      "panel": "F69",
+      "task": "fetching-filters",
+      "arm": "compact",
+      "repeat": 1,
+      "name": "1-fetching-filters-compact",
+      "compilerRecovery": [],
+      "multiReadIterations": [
+        {
+          "iteration": 2,
+          "reads": 3
+        },
+        {
+          "iteration": 3,
+          "reads": 4
+        },
+        {
+          "iteration": 4,
+          "reads": 2
+        },
+        {
+          "iteration": 5,
+          "reads": 4
+        },
+        {
+          "iteration": 6,
+          "reads": 2
+        },
+        {
+          "iteration": 7,
+          "reads": 4
+        },
+        {
+          "iteration": 8,
+          "reads": 3
+        },
+        {
+          "iteration": 9,
+          "reads": 5
+        },
+        {
+          "iteration": 18,
+          "reads": 2
+        }
+      ],
+      "firstContract": {
+        "time": "2026-10-27T03:51:17.803Z",
+        "endpoint": "https://chatgpt.com/backend-api/codex/responses",
+        "model": "gpt-5.6-luna",
+        "reasoning": {
+          "effort": "high",
+          "summary": "detailed"
+        },
+        "maximumOutputTokens": 8192,
+        "toolsSha256": "923df5c21ad5d8c059a21090a18183222608911f1a6c7df258414c7ca66e6bfa",
+        "promptSha256": "0c38ab9f6509dea5d4b25ebf66ee53bf4f44c8ec60f4ee158d1e8864015baca5",
+        "normalizedContractSha256": "ed7c4de39c58d90a4c76b082a5faae694a17979ae5a21d169507f84f455f2914",
+        "requestBodySha256": "e6150d0f97ac5b23c9285d3c8b4b550e476942ea7f9a38994957516761a966c6",
+        "requestBytes": 25620,
+        "byteLimit": 500000,
+        "budgetRejected": false,
+        "toolCount": 9
+      },
+      "advice": {
+        "fullOccurrences": 0,
+        "referenceOccurrences": 0,
+        "uniqueFullCalls": 0,
+        "uniqueReferenceCalls": 0,
+        "metadataBytes": 0,
+        "unresolved": 0
+      },
+      "filenameSearches": [],
+      "uniqueScopeOffers": 1,
+      "uniqueExactForwardedScopes": 1,
+      "scopeForwardingOccurrences": 5,
+      "groupedReads": [],
+      "tools": 63,
+      "reads": 30,
+      "blockedEdits": 0,
+      "compilerOffers": [],
+      "requiredChecksRetained": true
     }
   ],
   "contracts": [

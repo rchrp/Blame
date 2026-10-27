@@ -1,6 +1,6 @@
 {
   "protocolHash": "42d111a0162283d14df36d9a10692ae74efdc129db05a5188215f0669c2b2a93",
-  "completed": 16,
+  "completed": 17,
   "planned": 28,
   "receipts": [
     {
@@ -82,6 +82,11 @@
       "name": "1-mutation-callbacks-cline",
       "path": "checkpoints/1-mutation-callbacks-cline.json.gz",
       "sha256": "ba636741c242ebb35922b0c9a72dd1d13884e5227265875983f11039fc7d44da"
+    },
+    {
+      "name": "1-fetching-filters-compact",
+      "path": "checkpoints/1-fetching-filters-compact.json.gz",
+      "sha256": "f0382d9f5e2c0c453bfb379acc280f21fdf8332b3989ce388a5b6abffb49ca8a"
     }
   ]
 }
