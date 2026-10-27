@@ -7,7 +7,7 @@ const textKeys = new Set(["content", "body", "imports", "signature", "snippet", 
 
 export function presentToolResults(messages: Message[]): Message[] {
   const names = new Map<string, string>();
-  const source = process.env.BLAME_AGENT_REPAIR_CONTEXT_COMPACTION === "false" ? messages : compactRepairAdvice(messages);
+  const source = process.env.BLAME_AGENT_REPAIR_CONTEXT_COMPACTION === "true" ? compactRepairAdvice(messages) : messages;
   const presented = source.map((message) => {
     if (!Array.isArray(message.content)) return message;
     const content = message.content.map((block: ContentBlock) => {

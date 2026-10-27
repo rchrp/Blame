@@ -73,6 +73,8 @@ test("the reference flag preserves presentation without advice compaction", () =
   const previous = process.env.BLAME_AGENT_REPAIR_CONTEXT_COMPACTION;
   try {
     const messages = [...pair("first"), ...pair("next")];
+    delete process.env.BLAME_AGENT_REPAIR_CONTEXT_COMPACTION;
+    assert.deepEqual(result(presentToolResults(messages)).data.validationRepair, plan);
     process.env.BLAME_AGENT_REPAIR_CONTEXT_COMPACTION = "false";
     assert.deepEqual(result(presentToolResults(messages)).data.validationRepair, plan);
     process.env.BLAME_AGENT_REPAIR_CONTEXT_COMPACTION = "true";

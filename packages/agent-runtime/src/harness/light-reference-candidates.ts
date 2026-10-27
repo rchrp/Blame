@@ -23,12 +23,14 @@ export async function referenceDeclarationCandidates(
   signal?: AbortSignal,
 ) {
   signal?.throwIfAborted();
-  // A filename is only an ordering hint, never declaration identity. Visit
-  // likely definition files before spending the fixed parser budget on callers.
+  // Ordering hints never establish declaration identity. Keep exact filename
+  // affinity first, then preserve the bounded scan for source before test callers.
   const filename = query.split(".")[0];
   const eligible = paths.filter((path) => /\.[cm]?[jt]sx?$/iu.test(path))
     .sort((left, right) => Number(right.split("/").at(-1)?.replace(/\.[cm]?[jt]sx?$/iu, "") === filename) -
-      Number(left.split("/").at(-1)?.replace(/\.[cm]?[jt]sx?$/iu, "") === filename));
+      Number(left.split("/").at(-1)?.replace(/\.[cm]?[jt]sx?$/iu, "") === filename) ||
+      (process.env.BLAME_AGENT_DECLARATION_SOURCE_ORDER === "false" ? 0 :
+        Number(testLikePath(left)) - Number(testLikePath(right))));
   const selected: Candidate[] = [];
   const reads = new Map<string, string>();
   let visitedFiles = 0, readBytes = 0, skippedFiles = 0;
@@ -84,4 +86,8 @@ export async function referenceDeclarationCandidates(
     return report("source_changed");
   }
   return report("current", selected.slice(0, limits.declarations));
+}
+
+function testLikePath(path: string) {
+  return /(?:^|\/)(?:__tests__|tests?|specs?)(?:\/|$)|\.(?:test|spec)(?:-d)?\.[cm]?[jt]sx?$/iu.test(path);
 }
