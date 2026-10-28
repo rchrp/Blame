@@ -124,7 +124,7 @@ export class DeviceTargetService extends EventEmitter {
   restore(records: Array<{ story: DeviceStory; target: PreviewManifestDeviceTarget; handle?: DeviceHandle }>) {
     for (const record of records) this.sessions.set(record.story.id, { ...record, booted: false, lastActivity: this.now(), state: { status: "stopped", message: "Build and run to resume this device.", logs: [], handle: record.handle } });
   }
-  active(storyId: string) { const session = this.sessions.get(storyId); if (!session?.handle || !session.booted) throw new Error("Start the device preview before using it."); session.lastActivity = this.now(); return { driver: this.driver(session.target), handle: session.handle, target: session.target }; }
+  active(storyId: string) { const session = this.sessions.get(storyId); if (!session?.handle || !session.booted) throw new Error("Start the device preview before using it."); session.lastActivity = this.now(); return { driver: this.driver(session.target), handle: session.handle, target: session.target, environment: session.story.environment ?? {} }; }
   private async shutdown(session: Session) { session.abort?.abort(); if (session.handle) await this.driver(session.target).shutdown(session.handle); session.booted = false; this.update(session, { status: "stopped", message: "Stopped" }); }
   private async collectLogs(session: Session, driver: DeviceDriver, signal: AbortSignal) { try { for await (const line of driver.logs(session.handle!, session.target, signal)) this.log(session, line); } catch { /* Log streams end when the device stops. */ } }
   private log(session: Session, text: string) { session.state.logs = [...session.state.logs, ...text.split(/\r?\n/)].slice(-200); this.emit("state", session.story.id, session.state); }

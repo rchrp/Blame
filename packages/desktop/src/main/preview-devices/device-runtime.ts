@@ -1,3 +1,6 @@
+import { AndroidDriver } from "./android-driver.ts";
+import { androidTool, androidSystemImage, androidAbi } from "./android-sdk.ts";
+import { installAndroidTools } from "./android-tools.ts";
 import { randomUUID } from "node:crypto";
 import { app, dialog, shell } from "electron";
 import { existsSync } from "node:fs";
@@ -20,16 +23,19 @@ export class DeviceRuntime {
   readonly service: DeviceTargetService;
   private root = app.getPath("userData");
   private ios: IosDriver;
+  private android: AndroidDriver;
   private initialized: Promise<void>;
   private writes = Promise.resolve();
   private approvals = new Set<string>();
+  private installSteps = new Map<string,{ label: string; logs: string[] }>();
   private installations = new Map<string, Promise<void>>();
   constructor() {
     const pinned = join(this.root, "device-tools", "axe-1.8.0", "axe");
     const axe = existsSync(pinned) ? pinned : existsSync("/opt/homebrew/bin/axe") ? "/opt/homebrew/bin/axe" : "axe";
     this.ios = new IosDriver({ axe, cache: join(this.root, "device-frames") });
+    this.android = new AndroidDriver({ root: this.root });
     this.service = new DeviceTargetService({
-      drivers: [this.ios],
+      drivers: [this.ios,this.android],
       mirror: (story) => syncDeviceBuildMirror(story, this.root),
       services: async (story, target) => {
         if (story.workspaceMode === "cloud-mirror") throw new Error("Device previews run on your computer. This story runs in the cloud.");
@@ -38,7 +44,9 @@ export class DeviceRuntime {
           const { controlProjectPreview } = await import("../workspace-ipc.ts");
           await controlProjectPreview({ action: "start", worktree: story.worktree });
         }
-        return deviceBindings(target, context.manifest, (await localPreviewEndpoints(story.worktree)).routes).environment;
+        const bindings = deviceBindings(target, context.manifest, (await localPreviewEndpoints(story.worktree)).routes);
+        if (target.platform === "android") { this.android.setBindings(story.id,bindings.reverse); return {...this.android.environment(),...bindings.environment}; }
+        return bindings.environment;
       },
       prepare: async (story, target, signal, output) => {
         const cwd = await deviceProjectDirectory(story, target.projectDir);
@@ -87,8 +95,11 @@ export class DeviceRuntime {
   async availability(scope: DeviceScope) {
     const { story, target } = await this.resolve(scope);
     if (!surfaceEnabled(target.platform)) return { status: "unavailable" as const, reason: "experimental_disabled" as const };
-    return this.service.availability(story, target);
+    const availability = await this.service.availability(story,target), installing = this.installSteps.get(story.id);
+    if (installing) return { status: "missing-prerequisites" as const, prerequisites: [...(availability.status === "missing-prerequisites" ? availability.prerequisites : []), { id: "installing", title: installing.label, status: "checking" as const }] };
+    return availability;
   }
+  state(storyId: string) { const installing = this.installSteps.get(storyId); return installing ? { ...this.service.status(storyId), status: "starting", step: installing.label, message: installing.label, logs: installing.logs } : this.service.status(storyId); }
   async start(scope: DeviceScope) {
     const availability = await this.availability(scope);
     if (availability.status !== "ready") return { status: "unavailable" as const, message: "This device cannot start here yet.", availability, logs: [] };
@@ -96,6 +107,7 @@ export class DeviceRuntime {
     return this.service.start(story, target);
   }
   async prerequisite(scope: DeviceScope, id: string) {
+    const { target } = await this.resolve(scope);
     const availability = await this.availability(scope);
     const prerequisite = availability.status === "missing-prerequisites" ? availability.prerequisites.find((p) => p.id === id) : undefined;
     const action = prerequisite?.action;
@@ -105,11 +117,19 @@ export class DeviceRuntime {
     const key = `${scope.projectId}:${id}`;
     if (this.installations.has(key)) return this.installations.get(key);
     const install = (async () => {
-      const accepted = await dialog.showMessageBox({ type: "question", message: action.label, detail: id === "ios-runtime" ? "The iOS Simulator runtime downloads several GB. Xcode manages the download; its licenses must be accepted by you." : "Blame will download the pinned simulator controls into its app data folder and verify their checksum.", buttons: ["Cancel", "Download"], defaultId: 0, cancelId: 0 });
+      const accepted = await dialog.showMessageBox({ type: "question", message: action.label, detail: id === "ios-runtime" ? "The iOS Simulator runtime downloads several GB. Xcode manages the download; its licenses must be accepted by you." : id === "android-packages" ? "The emulator and system image download several GB using the Android SDK Manager. Accept the SDK licenses yourself before continuing." : "Blame will download the pinned device tools into its app data folder and verify their checksum.", buttons: ["Cancel", "Download"], defaultId: 0, cancelId: 0 });
       if (accepted.response !== 1) return;
-      if (id === "axe") this.ios.useAxe(await installAxe(this.root, deviceHost));
-      else if (id === "ios-runtime") await checked(deviceHost, "xcodebuild", ["-downloadPlatform", "iOS"], { timeoutMs: 60 * 60000 });
-    })().finally(() => this.installations.delete(key));
+      const progress = { label: action.label, logs: [] as string[] }; this.installSteps.set(scope.storyId,progress);
+      const output = (text: string) => { progress.logs = [...progress.logs,...text.split(/\r?\n/)].slice(-200); };
+      if (id === "android-sdk") await installAndroidTools(this.root,deviceHost);
+      else if (id === "android-packages") {
+        const root = this.android.sdkRoot();
+        if (!existsSync(join(root,"licenses/android-sdk-license"))) throw new Error("Read and accept the Android SDK licenses in the terminal first.");
+        await checked(deviceHost,androidTool(root,"sdkmanager"),[`--sdk_root=${root}`,"emulator","platform-tools",androidSystemImage(target.device?.os,androidAbi(process.platform,process.arch))],{environment:this.android.environment(),timeoutMs:60*60000,output});
+      }
+      else if (id === "axe") this.ios.useAxe(await installAxe(this.root, deviceHost));
+      else if (id === "ios-runtime") await checked(deviceHost, "xcodebuild", ["-downloadPlatform", "iOS"], { timeoutMs: 60 * 60000, output });
+    })().finally(() => { this.installations.delete(key); this.installSteps.delete(scope.storyId); });
     this.installations.set(key, install); return install;
   }
   private async openTerminal(command: string) {

@@ -40,10 +40,11 @@ export async function openDeviceScreenChannel(service: DeviceTargetService, stor
         }).catch((error: Error) => { if (client.readyState === WebSocket.OPEN) client.send(JSON.stringify({ type: "state", message: error.message })); });
       });
       void (async () => {
-        let previous = "", metadata = "";
+        let previous = "", metadata = "", lastFrameAt = 0;
         for await (const frame of driver.screen(handle).frames(controller.signal)) {
           if (controller.signal.aborted || client.readyState !== WebSocket.OPEN) break;
-          if (client.bufferedAmount > 2 * 1024 * 1024) continue;
+          if (client.bufferedAmount > 2 * 1024 * 1024 || Date.now()-lastFrameAt < 1000/15) continue;
+          lastFrameAt = Date.now();
           const image = nativeImage.createFromBuffer(frame.data), size = image.getSize();
           if (!size.width || !size.height) continue;
           handle.width = size.width; handle.height = size.height;

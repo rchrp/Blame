@@ -1,0 +1,1472 @@
+{
+  "options": {
+    "java_multiple_files": true,
+    "java_package": "com.android.emulator.control",
+    "objc_class_prefix": "AEC"
+  },
+  "nested": {
+    "android": {
+      "nested": {
+        "emulation": {
+          "nested": {
+            "control": {
+              "nested": {
+                "EmulatorController": {
+                  "methods": {
+                    "sendKey": {
+                      "requestType": "KeyboardEvent",
+                      "responseType": "google.protobuf.Empty"
+                    },
+                    "sendTouch": {
+                      "requestType": "TouchEvent",
+                      "responseType": "google.protobuf.Empty"
+                    },
+                    "getScreenshot": {
+                      "requestType": "ImageFormat",
+                      "responseType": "Image"
+                    },
+                    "streamScreenshot": {
+                      "requestType": "ImageFormat",
+                      "responseType": "Image",
+                      "responseStream": true
+                    }
+                  }
+                },
+                "VmRunState": {
+                  "fields": {
+                    "state": {
+                      "type": "RunState",
+                      "id": 1
+                    }
+                  },
+                  "nested": {
+                    "RunState": {
+                      "values": {
+                        "UNKNOWN": 0,
+                        "RUNNING": 1,
+                        "RESTORE_VM": 2,
+                        "PAUSED": 3,
+                        "SAVE_VM": 4,
+                        "SHUTDOWN": 5,
+                        "TERMINATE": 7,
+                        "RESET": 9,
+                        "INTERNAL_ERROR": 10,
+                        "RESTART": 11,
+                        "START": 12,
+                        "STOP": 13
+                      }
+                    }
+                  }
+                },
+                "ParameterValue": {
+                  "fields": {
+                    "data": {
+                      "rule": "repeated",
+                      "type": "float",
+                      "id": 1,
+                      "options": {
+                        "packed": true
+                      }
+                    }
+                  }
+                },
+                "PhysicalModelValue": {
+                  "fields": {
+                    "target": {
+                      "type": "PhysicalType",
+                      "id": 1
+                    },
+                    "status": {
+                      "type": "State",
+                      "id": 2
+                    },
+                    "value": {
+                      "type": "ParameterValue",
+                      "id": 3
+                    },
+                    "interpolation": {
+                      "type": "Interpolation",
+                      "id": 4
+                    }
+                  },
+                  "nested": {
+                    "State": {
+                      "values": {
+                        "OK": 0,
+                        "NO_SERVICE": -3,
+                        "DISABLED": -2,
+                        "UNKNOWN": -1
+                      }
+                    },
+                    "PhysicalType": {
+                      "values": {
+                        "POSITION": 0,
+                        "ROTATION": 1,
+                        "MAGNETIC_FIELD": 2,
+                        "TEMPERATURE": 3,
+                        "PROXIMITY": 4,
+                        "LIGHT": 5,
+                        "PRESSURE": 6,
+                        "HUMIDITY": 7,
+                        "VELOCITY": 8,
+                        "AMBIENT_MOTION": 9,
+                        "HINGE_ANGLE0": 10,
+                        "HINGE_ANGLE1": 11,
+                        "HINGE_ANGLE2": 12,
+                        "ROLLABLE0": 13,
+                        "ROLLABLE1": 14,
+                        "ROLLABLE2": 15,
+                        "POSTURE": 16,
+                        "HEART_RATE": 17,
+                        "RGBC_LIGHT": 18,
+                        "WRIST_TILT": 19
+                      }
+                    },
+                    "Interpolation": {
+                      "values": {
+                        "SMOOTH": 0,
+                        "STEP": 1
+                      }
+                    }
+                  }
+                },
+                "SensorValue": {
+                  "fields": {
+                    "target": {
+                      "type": "SensorType",
+                      "id": 1
+                    },
+                    "status": {
+                      "type": "State",
+                      "id": 2
+                    },
+                    "value": {
+                      "type": "ParameterValue",
+                      "id": 3
+                    }
+                  },
+                  "nested": {
+                    "State": {
+                      "values": {
+                        "OK": 0,
+                        "NO_SERVICE": -3,
+                        "DISABLED": -2,
+                        "UNKNOWN": -1
+                      }
+                    },
+                    "SensorType": {
+                      "values": {
+                        "ACCELERATION": 0,
+                        "GYROSCOPE": 1,
+                        "MAGNETIC_FIELD": 2,
+                        "ORIENTATION": 3,
+                        "TEMPERATURE": 4,
+                        "PROXIMITY": 5,
+                        "LIGHT": 6,
+                        "PRESSURE": 7,
+                        "HUMIDITY": 8,
+                        "MAGNETIC_FIELD_UNCALIBRATED": 9,
+                        "GYROSCOPE_UNCALIBRATED": 10,
+                        "HEART_RATE": 14,
+                        "RGBC_LIGHT": 15,
+                        "ACCELERATION_UNCALIBRATED": 17,
+                        "HEADING": 18
+                      }
+                    }
+                  }
+                },
+                "BrightnessValue": {
+                  "fields": {
+                    "target": {
+                      "type": "LightType",
+                      "id": 1
+                    },
+                    "value": {
+                      "type": "uint32",
+                      "id": 2
+                    }
+                  },
+                  "nested": {
+                    "LightType": {
+                      "values": {
+                        "LCD": 0,
+                        "KEYBOARD": 1,
+                        "BUTTON": 2
+                      }
+                    }
+                  }
+                },
+                "DisplayModeValue": {
+                  "values": {
+                    "PHONE": 0,
+                    "FOLDABLE": 1,
+                    "TABLET": 2,
+                    "DESKTOP": 3
+                  }
+                },
+                "DisplayMode": {
+                  "fields": {
+                    "value": {
+                      "type": "DisplayModeValue",
+                      "id": 1
+                    }
+                  }
+                },
+                "XrOptions": {
+                  "fields": {
+                    "environment": {
+                      "type": "Environment",
+                      "id": 1
+                    },
+                    "passthroughCoefficient": {
+                      "type": "float",
+                      "id": 2
+                    },
+                    "dimmingValue": {
+                      "type": "float",
+                      "id": 4
+                    }
+                  },
+                  "nested": {
+                    "Environment": {
+                      "values": {
+                        "LIVING_ROOM_DAY": 0,
+                        "LIVING_ROOM_NIGHT": 1
+                      }
+                    }
+                  }
+                },
+                "LedIndicator": {
+                  "oneofs": {
+                    "_id": {
+                      "oneof": [
+                        "id"
+                      ]
+                    },
+                    "_facing": {
+                      "oneof": [
+                        "facing"
+                      ]
+                    },
+                    "_state": {
+                      "oneof": [
+                        "state"
+                      ]
+                    },
+                    "_color": {
+                      "oneof": [
+                        "color"
+                      ]
+                    }
+                  },
+                  "fields": {
+                    "id": {
+                      "type": "uint32",
+                      "id": 1,
+                      "options": {
+                        "proto3_optional": true
+                      }
+                    },
+                    "facing": {
+                      "type": "Facing",
+                      "id": 2,
+                      "options": {
+                        "proto3_optional": true
+                      }
+                    },
+                    "state": {
+                      "type": "State",
+                      "id": 3,
+                      "options": {
+                        "proto3_optional": true
+                      }
+                    },
+                    "color": {
+                      "type": "uint32",
+                      "id": 4,
+                      "options": {
+                        "proto3_optional": true
+                      }
+                    }
+                  },
+                  "nested": {
+                    "Facing": {
+                      "values": {
+                        "INSIDE": 0,
+                        "OUTSIDE": 1
+                      }
+                    },
+                    "State": {
+                      "values": {
+                        "OFF": 0,
+                        "ON": 1
+                      }
+                    }
+                  }
+                },
+                "LogMessage": {
+                  "fields": {
+                    "contents": {
+                      "type": "string",
+                      "id": 1
+                    },
+                    "start": {
+                      "type": "int64",
+                      "id": 2,
+                      "options": {
+                        "deprecated": true
+                      }
+                    },
+                    "next": {
+                      "type": "int64",
+                      "id": 3,
+                      "options": {
+                        "deprecated": true
+                      }
+                    },
+                    "sort": {
+                      "type": "LogType",
+                      "id": 4
+                    },
+                    "entries": {
+                      "rule": "repeated",
+                      "type": "LogcatEntry",
+                      "id": 5
+                    }
+                  },
+                  "nested": {
+                    "LogType": {
+                      "values": {
+                        "Text": 0,
+                        "Parsed": 1
+                      }
+                    }
+                  }
+                },
+                "LogcatEntry": {
+                  "fields": {
+                    "timestamp": {
+                      "type": "uint64",
+                      "id": 1
+                    },
+                    "pid": {
+                      "type": "uint32",
+                      "id": 2
+                    },
+                    "tid": {
+                      "type": "uint32",
+                      "id": 3
+                    },
+                    "level": {
+                      "type": "LogLevel",
+                      "id": 4
+                    },
+                    "tag": {
+                      "type": "string",
+                      "id": 5
+                    },
+                    "msg": {
+                      "type": "string",
+                      "id": 6
+                    }
+                  },
+                  "nested": {
+                    "LogLevel": {
+                      "values": {
+                        "UNKNOWN": 0,
+                        "DEFAULT": 1,
+                        "VERBOSE": 2,
+                        "DEBUG": 3,
+                        "INFO": 4,
+                        "WARN": 5,
+                        "ERR": 6,
+                        "FATAL": 7,
+                        "SILENT": 8
+                      }
+                    }
+                  }
+                },
+                "VmConfiguration": {
+                  "fields": {
+                    "hypervisorType": {
+                      "type": "VmHypervisorType",
+                      "id": 1
+                    },
+                    "numberOfCpuCores": {
+                      "type": "int32",
+                      "id": 2
+                    },
+                    "ramSizeBytes": {
+                      "type": "int64",
+                      "id": 3
+                    }
+                  },
+                  "nested": {
+                    "VmHypervisorType": {
+                      "valuesOptions": {
+                        "HAXM": {
+                          "deprecated": true
+                        }
+                      },
+                      "values": {
+                        "UNKNOWN": 0,
+                        "NONE": 1,
+                        "KVM": 2,
+                        "HAXM": 3,
+                        "HVF": 4,
+                        "WHPX": 5,
+                        "AEHD": 6
+                      }
+                    }
+                  }
+                },
+                "ClipData": {
+                  "fields": {
+                    "text": {
+                      "type": "string",
+                      "id": 1
+                    }
+                  }
+                },
+                "Touch": {
+                  "fields": {
+                    "x": {
+                      "type": "int32",
+                      "id": 1
+                    },
+                    "y": {
+                      "type": "int32",
+                      "id": 2
+                    },
+                    "identifier": {
+                      "type": "int32",
+                      "id": 3
+                    },
+                    "pressure": {
+                      "type": "int32",
+                      "id": 4
+                    },
+                    "touchMajor": {
+                      "type": "int32",
+                      "id": 5
+                    },
+                    "touchMinor": {
+                      "type": "int32",
+                      "id": 6
+                    },
+                    "expiration": {
+                      "type": "EventExpiration",
+                      "id": 7
+                    },
+                    "orientation": {
+                      "type": "int32",
+                      "id": 8
+                    }
+                  },
+                  "nested": {
+                    "EventExpiration": {
+                      "values": {
+                        "EVENT_EXPIRATION_UNSPECIFIED": 0,
+                        "NEVER_EXPIRE": 1
+                      }
+                    }
+                  }
+                },
+                "Pen": {
+                  "fields": {
+                    "location": {
+                      "type": "Touch",
+                      "id": 1
+                    },
+                    "buttonPressed": {
+                      "type": "bool",
+                      "id": 2
+                    },
+                    "rubberPointer": {
+                      "type": "bool",
+                      "id": 3
+                    }
+                  }
+                },
+                "TouchEvent": {
+                  "fields": {
+                    "touches": {
+                      "rule": "repeated",
+                      "type": "Touch",
+                      "id": 1
+                    },
+                    "display": {
+                      "type": "int32",
+                      "id": 2
+                    }
+                  }
+                },
+                "TouchpadEvent": {
+                  "fields": {
+                    "touches": {
+                      "rule": "repeated",
+                      "type": "Touch",
+                      "id": 1
+                    },
+                    "touchpad": {
+                      "type": "int32",
+                      "id": 2
+                    }
+                  }
+                },
+                "PenEvent": {
+                  "fields": {
+                    "events": {
+                      "rule": "repeated",
+                      "type": "Pen",
+                      "id": 1
+                    },
+                    "display": {
+                      "type": "int32",
+                      "id": 2
+                    }
+                  }
+                },
+                "MouseEvent": {
+                  "fields": {
+                    "x": {
+                      "type": "int32",
+                      "id": 1
+                    },
+                    "y": {
+                      "type": "int32",
+                      "id": 2
+                    },
+                    "buttons": {
+                      "type": "int32",
+                      "id": 3
+                    },
+                    "display": {
+                      "type": "int32",
+                      "id": 4
+                    }
+                  }
+                },
+                "WheelEvent": {
+                  "fields": {
+                    "dx": {
+                      "type": "int32",
+                      "id": 1
+                    },
+                    "dy": {
+                      "type": "int32",
+                      "id": 2
+                    },
+                    "display": {
+                      "type": "int32",
+                      "id": 3
+                    }
+                  }
+                },
+                "KeyboardEvent": {
+                  "fields": {
+                    "codeType": {
+                      "type": "KeyCodeType",
+                      "id": 1
+                    },
+                    "eventType": {
+                      "type": "KeyEventType",
+                      "id": 2
+                    },
+                    "keyCode": {
+                      "type": "int32",
+                      "id": 3
+                    },
+                    "key": {
+                      "type": "string",
+                      "id": 4
+                    },
+                    "text": {
+                      "type": "string",
+                      "id": 5
+                    }
+                  },
+                  "nested": {
+                    "KeyCodeType": {
+                      "values": {
+                        "Usb": 0,
+                        "Evdev": 1,
+                        "XKB": 2,
+                        "Win": 3,
+                        "Mac": 4
+                      }
+                    },
+                    "KeyEventType": {
+                      "values": {
+                        "keydown": 0,
+                        "keyup": 1,
+                        "keypress": 2
+                      }
+                    }
+                  }
+                },
+                "XrCommand": {
+                  "fields": {
+                    "action": {
+                      "type": "Action",
+                      "id": 1
+                    }
+                  },
+                  "nested": {
+                    "Action": {
+                      "values": {
+                        "RECENTER": 0
+                      }
+                    }
+                  }
+                },
+                "InputEvent": {
+                  "oneofs": {
+                    "type": {
+                      "oneof": [
+                        "keyEvent",
+                        "touchEvent",
+                        "mouseEvent",
+                        "androidEvent",
+                        "penEvent",
+                        "wheelEvent",
+                        "xrHandEvent",
+                        "xrEyeEvent",
+                        "xrCommand",
+                        "xrHeadRotationEvent",
+                        "xrHeadMovementEvent",
+                        "xrHeadAngularVelocityEvent",
+                        "xrHeadVelocityEvent",
+                        "touchpadEvent"
+                      ]
+                    }
+                  },
+                  "fields": {
+                    "keyEvent": {
+                      "type": "KeyboardEvent",
+                      "id": 1
+                    },
+                    "touchEvent": {
+                      "type": "TouchEvent",
+                      "id": 2
+                    },
+                    "mouseEvent": {
+                      "type": "MouseEvent",
+                      "id": 3
+                    },
+                    "androidEvent": {
+                      "type": "AndroidEvent",
+                      "id": 4
+                    },
+                    "penEvent": {
+                      "type": "PenEvent",
+                      "id": 5
+                    },
+                    "wheelEvent": {
+                      "type": "WheelEvent",
+                      "id": 6
+                    },
+                    "xrHandEvent": {
+                      "type": "MouseEvent",
+                      "id": 7
+                    },
+                    "xrEyeEvent": {
+                      "type": "MouseEvent",
+                      "id": 8
+                    },
+                    "xrCommand": {
+                      "type": "XrCommand",
+                      "id": 9
+                    },
+                    "xrHeadRotationEvent": {
+                      "type": "RotationRadian",
+                      "id": 10
+                    },
+                    "xrHeadMovementEvent": {
+                      "type": "Translation",
+                      "id": 11
+                    },
+                    "xrHeadAngularVelocityEvent": {
+                      "type": "AngularVelocity",
+                      "id": 12
+                    },
+                    "xrHeadVelocityEvent": {
+                      "type": "Velocity",
+                      "id": 13
+                    },
+                    "touchpadEvent": {
+                      "type": "TouchpadEvent",
+                      "id": 14
+                    }
+                  }
+                },
+                "AndroidEvent": {
+                  "fields": {
+                    "type": {
+                      "type": "int32",
+                      "id": 1
+                    },
+                    "code": {
+                      "type": "int32",
+                      "id": 2
+                    },
+                    "value": {
+                      "type": "int32",
+                      "id": 3
+                    },
+                    "display": {
+                      "type": "int32",
+                      "id": 4
+                    }
+                  }
+                },
+                "Fingerprint": {
+                  "fields": {
+                    "isTouching": {
+                      "type": "bool",
+                      "id": 1
+                    },
+                    "touchId": {
+                      "type": "int32",
+                      "id": 2
+                    }
+                  }
+                },
+                "GpsState": {
+                  "fields": {
+                    "passiveUpdate": {
+                      "type": "bool",
+                      "id": 1
+                    },
+                    "latitude": {
+                      "type": "double",
+                      "id": 2
+                    },
+                    "longitude": {
+                      "type": "double",
+                      "id": 3
+                    },
+                    "speed": {
+                      "type": "double",
+                      "id": 4
+                    },
+                    "bearing": {
+                      "type": "double",
+                      "id": 5
+                    },
+                    "altitude": {
+                      "type": "double",
+                      "id": 6
+                    },
+                    "satellites": {
+                      "type": "int32",
+                      "id": 7
+                    }
+                  }
+                },
+                "BatteryState": {
+                  "fields": {
+                    "hasBattery": {
+                      "type": "bool",
+                      "id": 1
+                    },
+                    "isPresent": {
+                      "type": "bool",
+                      "id": 2
+                    },
+                    "charger": {
+                      "type": "BatteryCharger",
+                      "id": 3
+                    },
+                    "chargeLevel": {
+                      "type": "int32",
+                      "id": 4
+                    },
+                    "health": {
+                      "type": "BatteryHealth",
+                      "id": 5
+                    },
+                    "status": {
+                      "type": "BatteryStatus",
+                      "id": 6
+                    }
+                  },
+                  "nested": {
+                    "BatteryStatus": {
+                      "values": {
+                        "UNKNOWN": 0,
+                        "CHARGING": 1,
+                        "DISCHARGING": 2,
+                        "NOT_CHARGING": 3,
+                        "FULL": 4
+                      }
+                    },
+                    "BatteryCharger": {
+                      "values": {
+                        "NONE": 0,
+                        "AC": 1,
+                        "USB": 2,
+                        "WIRELESS": 3
+                      }
+                    },
+                    "BatteryHealth": {
+                      "values": {
+                        "GOOD": 0,
+                        "FAILED": 1,
+                        "DEAD": 2,
+                        "OVERVOLTAGE": 3,
+                        "OVERHEATED": 4
+                      }
+                    }
+                  }
+                },
+                "ImageTransport": {
+                  "fields": {
+                    "channel": {
+                      "type": "TransportChannel",
+                      "id": 1
+                    },
+                    "handle": {
+                      "type": "string",
+                      "id": 2
+                    }
+                  },
+                  "nested": {
+                    "TransportChannel": {
+                      "values": {
+                        "TRANSPORT_CHANNEL_UNSPECIFIED": 0,
+                        "MMAP": 1
+                      }
+                    }
+                  }
+                },
+                "FoldedDisplay": {
+                  "fields": {
+                    "width": {
+                      "type": "uint32",
+                      "id": 1
+                    },
+                    "height": {
+                      "type": "uint32",
+                      "id": 2
+                    },
+                    "xOffset": {
+                      "type": "uint32",
+                      "id": 3
+                    },
+                    "yOffset": {
+                      "type": "uint32",
+                      "id": 4
+                    }
+                  }
+                },
+                "ImageFormat": {
+                  "fields": {
+                    "format": {
+                      "type": "ImgFormat",
+                      "id": 1
+                    },
+                    "rotation": {
+                      "type": "Rotation",
+                      "id": 2
+                    },
+                    "width": {
+                      "type": "uint32",
+                      "id": 3
+                    },
+                    "height": {
+                      "type": "uint32",
+                      "id": 4
+                    },
+                    "display": {
+                      "type": "uint32",
+                      "id": 5
+                    },
+                    "transport": {
+                      "type": "ImageTransport",
+                      "id": 6
+                    },
+                    "foldedDisplay": {
+                      "type": "FoldedDisplay",
+                      "id": 7
+                    },
+                    "displayMode": {
+                      "type": "DisplayModeValue",
+                      "id": 8
+                    }
+                  },
+                  "nested": {
+                    "ImgFormat": {
+                      "values": {
+                        "PNG": 0,
+                        "RGBA8888": 1,
+                        "RGB888": 2
+                      }
+                    }
+                  }
+                },
+                "Image": {
+                  "fields": {
+                    "format": {
+                      "type": "ImageFormat",
+                      "id": 1
+                    },
+                    "width": {
+                      "type": "uint32",
+                      "id": 2,
+                      "options": {
+                        "deprecated": true
+                      }
+                    },
+                    "height": {
+                      "type": "uint32",
+                      "id": 3,
+                      "options": {
+                        "deprecated": true
+                      }
+                    },
+                    "image": {
+                      "type": "bytes",
+                      "id": 4
+                    },
+                    "seq": {
+                      "type": "uint32",
+                      "id": 5
+                    },
+                    "timestampUs": {
+                      "type": "uint64",
+                      "id": 6
+                    }
+                  }
+                },
+                "Rotation": {
+                  "fields": {
+                    "rotation": {
+                      "type": "SkinRotation",
+                      "id": 1
+                    },
+                    "xAxis": {
+                      "type": "double",
+                      "id": 2
+                    },
+                    "yAxis": {
+                      "type": "double",
+                      "id": 3
+                    },
+                    "zAxis": {
+                      "type": "double",
+                      "id": 4
+                    }
+                  },
+                  "nested": {
+                    "SkinRotation": {
+                      "values": {
+                        "PORTRAIT": 0,
+                        "LANDSCAPE": 1,
+                        "REVERSE_PORTRAIT": 2,
+                        "REVERSE_LANDSCAPE": 3
+                      }
+                    }
+                  }
+                },
+                "PhoneCall": {
+                  "fields": {
+                    "operation": {
+                      "type": "Operation",
+                      "id": 1
+                    },
+                    "number": {
+                      "type": "string",
+                      "id": 2
+                    }
+                  },
+                  "nested": {
+                    "Operation": {
+                      "values": {
+                        "InitCall": 0,
+                        "AcceptCall": 1,
+                        "RejectCallExplicit": 2,
+                        "RejectCallBusy": 3,
+                        "DisconnectCall": 4,
+                        "PlaceCallOnHold": 5,
+                        "TakeCallOffHold": 6
+                      }
+                    }
+                  }
+                },
+                "PhoneResponse": {
+                  "fields": {
+                    "response": {
+                      "type": "Response",
+                      "id": 1
+                    }
+                  },
+                  "nested": {
+                    "Response": {
+                      "values": {
+                        "OK": 0,
+                        "BadOperation": 1,
+                        "BadNumber": 2,
+                        "InvalidAction": 3,
+                        "ActionFailed": 4,
+                        "RadioOff": 5
+                      }
+                    }
+                  }
+                },
+                "Entry": {
+                  "fields": {
+                    "key": {
+                      "type": "string",
+                      "id": 1
+                    },
+                    "value": {
+                      "type": "string",
+                      "id": 2
+                    }
+                  }
+                },
+                "EntryList": {
+                  "fields": {
+                    "entry": {
+                      "rule": "repeated",
+                      "type": "Entry",
+                      "id": 1
+                    }
+                  }
+                },
+                "EmulatorStatus": {
+                  "fields": {
+                    "version": {
+                      "type": "string",
+                      "id": 1
+                    },
+                    "uptime": {
+                      "type": "uint64",
+                      "id": 2
+                    },
+                    "booted": {
+                      "type": "bool",
+                      "id": 3
+                    },
+                    "vmConfig": {
+                      "type": "VmConfiguration",
+                      "id": 4
+                    },
+                    "hardwareConfig": {
+                      "type": "EntryList",
+                      "id": 5,
+                      "options": {
+                        "deprecated": true
+                      }
+                    },
+                    "heartbeat": {
+                      "type": "uint64",
+                      "id": 6
+                    },
+                    "guestConfig": {
+                      "keyType": "string",
+                      "type": "string",
+                      "id": 7
+                    },
+                    "platformConfig": {
+                      "keyType": "string",
+                      "type": "string",
+                      "id": 8
+                    }
+                  }
+                },
+                "AudioFormat": {
+                  "fields": {
+                    "samplingRate": {
+                      "type": "uint64",
+                      "id": 1
+                    },
+                    "channels": {
+                      "type": "Channels",
+                      "id": 2
+                    },
+                    "format": {
+                      "type": "SampleFormat",
+                      "id": 3
+                    },
+                    "mode": {
+                      "type": "DeliveryMode",
+                      "id": 4
+                    }
+                  },
+                  "nested": {
+                    "SampleFormat": {
+                      "values": {
+                        "AUD_FMT_U8": 0,
+                        "AUD_FMT_S16": 1
+                      }
+                    },
+                    "Channels": {
+                      "values": {
+                        "Mono": 0,
+                        "Stereo": 1
+                      }
+                    },
+                    "DeliveryMode": {
+                      "values": {
+                        "MODE_UNSPECIFIED": 0,
+                        "MODE_REAL_TIME": 1
+                      }
+                    }
+                  }
+                },
+                "AudioPacket": {
+                  "fields": {
+                    "format": {
+                      "type": "AudioFormat",
+                      "id": 1
+                    },
+                    "timestamp": {
+                      "type": "uint64",
+                      "id": 2
+                    },
+                    "audio": {
+                      "type": "bytes",
+                      "id": 3
+                    }
+                  }
+                },
+                "MicrophoneState": {
+                  "fields": {
+                    "realAudioEnabled": {
+                      "type": "bool",
+                      "id": 1
+                    }
+                  }
+                },
+                "SmsMessage": {
+                  "fields": {
+                    "srcAddress": {
+                      "type": "string",
+                      "id": 1
+                    },
+                    "text": {
+                      "type": "string",
+                      "id": 2
+                    }
+                  }
+                },
+                "DisplayConfiguration": {
+                  "fields": {
+                    "width": {
+                      "type": "uint32",
+                      "id": 1
+                    },
+                    "height": {
+                      "type": "uint32",
+                      "id": 2
+                    },
+                    "dpi": {
+                      "type": "uint32",
+                      "id": 3
+                    },
+                    "flags": {
+                      "type": "uint32",
+                      "id": 4
+                    },
+                    "display": {
+                      "type": "uint32",
+                      "id": 5
+                    }
+                  },
+                  "nested": {
+                    "DisplayFlags": {
+                      "values": {
+                        "DISPLAYFLAGS_UNSPECIFIED": 0,
+                        "VIRTUAL_DISPLAY_FLAG_PUBLIC": 1,
+                        "VIRTUAL_DISPLAY_FLAG_PRESENTATION": 2,
+                        "VIRTUAL_DISPLAY_FLAG_SECURE": 4,
+                        "VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY": 8,
+                        "VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR": 16
+                      }
+                    }
+                  }
+                },
+                "DisplayPowerModeNotification": {
+                  "fields": {
+                    "display": {
+                      "type": "uint32",
+                      "id": 1
+                    },
+                    "powerMode": {
+                      "type": "PowerMode",
+                      "id": 2
+                    }
+                  },
+                  "nested": {
+                    "PowerMode": {
+                      "values": {
+                        "OFF": 0,
+                        "DOZE": 1,
+                        "ON": 2,
+                        "DOZE_SUSPEND": 3,
+                        "ON_SUSPEND": 4
+                      }
+                    }
+                  }
+                },
+                "DisplayConfigurations": {
+                  "fields": {
+                    "displays": {
+                      "rule": "repeated",
+                      "type": "DisplayConfiguration",
+                      "id": 1
+                    },
+                    "userConfigurable": {
+                      "type": "uint32",
+                      "id": 2
+                    },
+                    "maxDisplays": {
+                      "type": "uint32",
+                      "id": 3
+                    }
+                  }
+                },
+                "Notification": {
+                  "oneofs": {
+                    "type": {
+                      "oneof": [
+                        "cameraNotification",
+                        "displayConfigurationsChangedNotification",
+                        "posture",
+                        "booted",
+                        "brightness",
+                        "textViewFocus",
+                        "xrOptions",
+                        "microphoneState",
+                        "ledIndicator",
+                        "displayPowerMode"
+                      ]
+                    }
+                  },
+                  "fields": {
+                    "cameraNotification": {
+                      "type": "CameraNotification",
+                      "id": 2
+                    },
+                    "displayConfigurationsChangedNotification": {
+                      "type": "DisplayConfigurationsChangedNotification",
+                      "id": 3
+                    },
+                    "posture": {
+                      "type": "Posture",
+                      "id": 4
+                    },
+                    "booted": {
+                      "type": "BootCompletedNotification",
+                      "id": 5
+                    },
+                    "brightness": {
+                      "type": "BrightnessValue",
+                      "id": 6
+                    },
+                    "textViewFocus": {
+                      "type": "TextViewFocus",
+                      "id": 7
+                    },
+                    "xrOptions": {
+                      "type": "XrOptions",
+                      "id": 8
+                    },
+                    "microphoneState": {
+                      "type": "MicrophoneState",
+                      "id": 9
+                    },
+                    "ledIndicator": {
+                      "type": "LedIndicator",
+                      "id": 10
+                    },
+                    "displayPowerMode": {
+                      "type": "DisplayPowerModeNotification",
+                      "id": 11
+                    }
+                  }
+                },
+                "BootCompletedNotification": {
+                  "fields": {
+                    "time": {
+                      "type": "int32",
+                      "id": 1
+                    }
+                  }
+                },
+                "CameraNotification": {
+                  "fields": {
+                    "active": {
+                      "type": "bool",
+                      "id": 1
+                    },
+                    "display": {
+                      "type": "int32",
+                      "id": 2
+                    }
+                  }
+                },
+                "TextViewFocus": {
+                  "fields": {
+                    "textViewHasFocus": {
+                      "type": "bool",
+                      "id": 1
+                    },
+                    "display": {
+                      "type": "int32",
+                      "id": 2
+                    }
+                  }
+                },
+                "DisplayConfigurationsChangedNotification": {
+                  "fields": {
+                    "displayConfigurations": {
+                      "type": "DisplayConfigurations",
+                      "id": 1
+                    }
+                  }
+                },
+                "RotationRadian": {
+                  "fields": {
+                    "x": {
+                      "type": "float",
+                      "id": 1
+                    },
+                    "y": {
+                      "type": "float",
+                      "id": 2
+                    },
+                    "z": {
+                      "type": "float",
+                      "id": 3
+                    }
+                  }
+                },
+                "Translation": {
+                  "fields": {
+                    "deltaX": {
+                      "type": "float",
+                      "id": 1
+                    },
+                    "deltaY": {
+                      "type": "float",
+                      "id": 2
+                    },
+                    "deltaZ": {
+                      "type": "float",
+                      "id": 3
+                    }
+                  }
+                },
+                "AngularVelocity": {
+                  "fields": {
+                    "omegaX": {
+                      "type": "float",
+                      "id": 1
+                    },
+                    "omegaY": {
+                      "type": "float",
+                      "id": 2
+                    },
+                    "omegaZ": {
+                      "type": "float",
+                      "id": 3
+                    }
+                  }
+                },
+                "Velocity": {
+                  "fields": {
+                    "x": {
+                      "type": "float",
+                      "id": 1
+                    },
+                    "y": {
+                      "type": "float",
+                      "id": 2
+                    },
+                    "z": {
+                      "type": "float",
+                      "id": 3
+                    }
+                  }
+                },
+                "Posture": {
+                  "fields": {
+                    "value": {
+                      "type": "PostureValue",
+                      "id": 3
+                    }
+                  },
+                  "nested": {
+                    "PostureValue": {
+                      "values": {
+                        "POSTURE_UNKNOWN": 0,
+                        "POSTURE_CLOSED": 1,
+                        "POSTURE_HALF_OPENED": 2,
+                        "POSTURE_OPENED": 3,
+                        "POSTURE_FLIPPED": 4,
+                        "POSTURE_TENT": 5,
+                        "POSTURE_MAX": 6
+                      }
+                    }
+                  }
+                },
+                "PhoneNumber": {
+                  "fields": {
+                    "number": {
+                      "type": "string",
+                      "id": 1
+                    }
+                  }
+                },
+                "Environment": {
+                  "fields": {
+                    "environment": {
+                      "keyType": "string",
+                      "type": "string",
+                      "id": 1
+                    }
+                  }
+                },
+                "Camera": {
+                  "fields": {
+                    "displayName": {
+                      "type": "string",
+                      "id": 1
+                    },
+                    "id": {
+                      "type": "string",
+                      "id": 2
+                    }
+                  }
+                },
+                "CameraList": {
+                  "fields": {
+                    "cameras": {
+                      "rule": "repeated",
+                      "type": "Camera",
+                      "id": 1
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "google": {
+      "nested": {
+        "protobuf": {
+          "nested": {
+            "Empty": {
+              "fields": {}
+            }
+          }
+        }
+      }
+    }
+  }
+}

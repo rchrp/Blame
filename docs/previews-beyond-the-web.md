@@ -1211,3 +1211,20 @@ AGPL-3.0; the GPL tools run as separate programs inside images.
   Linux unit tests cover command construction, parsing, fallback, mirrors, shared
   bindings and the two-device/idle limits. Xcode, SwiftUI, Expo and Flutter manual
   acceptance on a Mac is still outstanding; the `ios` gate is retained.
+
+- Android source implementation: SDK/Java/acceleration prerequisites, pinned
+  command-line tools 23.0 for Linux/macOS/Windows (all four archives verified
+  against Google's repository metadata and SHA-256), read-only emulator instances,
+  host Gradle builds, Expo/React Native/Flutter, adb reverse, bounded UI trees,
+  logs, input and screenshot fallback. The gRPC descriptor is generated from the
+  emulator 37.2.12 archive build 16428233 (archive SHA-256
+  `b08fc43d8608d2955f607f1b287beb525041e730086bdca3af152accac3af9c1`).
+  Tests exercise the generated client against an authenticated fake server.
+  SDK components installed by sdkmanager remain governed by the user's SDK
+  installation and accepted licenses; Blame does not accept licenses.
+- S5 has not been run: no Vercel Sandbox credentials or existing test sandbox are
+  attached to this execution environment. The managed execution container is not
+  evidence about Vercel's KVM availability. Cloud device targets return
+  `cloud_story` and no cloud Android support is claimed.
+- Android Studio template / Expo / Flutter acceptance on macOS and Windows is
+  still outstanding; the `android` gate is retained.

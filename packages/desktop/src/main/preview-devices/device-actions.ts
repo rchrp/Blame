@@ -6,7 +6,7 @@ export async function deviceAction(scope: DeviceScope, args: Record<string, unkn
   if (args.action === "status") return { ...runtime.service.status(scope.storyId), availability };
   if (args.action === "build_and_run") return runtime.start(scope);
   if (availability.status !== "ready") return { status: "unavailable", availability, message: "Set up this device on your computer before using it." };
-  const { driver, handle, target } = runtime.service.active(scope.storyId), input = driver.input(handle);
+  const { driver, handle, target, environment } = runtime.service.active(scope.storyId), input = driver.input(handle);
   const point = (name: string, maximum: number) => { const value = Number(args[name]); if (!Number.isFinite(value) || value < 0 || value > maximum) throw new Error(`Choose ${name} inside the device screen.`); return value; };
   const text = (name: string, max = 64000) => { const value = args[name]; if (typeof value !== "string" || value.length > max || value.includes("\0")) throw new Error(`Invalid device ${name}.`); return value; };
   switch (args.action) {
@@ -23,7 +23,7 @@ export async function deviceAction(scope: DeviceScope, args: Record<string, unkn
       await input.openUrl(url); break;
     }
     case "appearance": if (args.value !== "light" && args.value !== "dark") throw new Error("Choose light or dark appearance."); await input.appearance(args.value); break;
-    case "restart": await driver.terminate(handle, target); await driver.launch(handle, target, {}); break;
+    case "restart": if (target.toolchain === "flutter") return runtime.start(scope); await driver.terminate(handle, target); await driver.launch(handle, target, environment); break;
     case "logs": return { status: "ready", logs: runtime.service.status(scope.storyId).logs.slice(-200) };
     default: throw new Error("Unknown device action.");
   }
