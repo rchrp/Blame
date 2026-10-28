@@ -8,7 +8,6 @@ import {
   SquareTerminalIcon,
 } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 
 // One color per kind of container, for its label. The corner light, as on
@@ -123,32 +122,34 @@ export const environmentSections = {
   },
 }
 
+/**
+ * A part of the environment: its title and what it is on the left, its
+ * items on the right, under a rule that marks where it starts.
+ */
 export function EnvironmentSection({
   children,
-  count,
   description,
   title,
 }: {
   children: React.ReactNode
-  count?: number
   description: string
   title: string
 }) {
   const id = React.useId()
   return (
-    <section aria-labelledby={id} className="grid gap-3">
-      <header className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-        <h3 id={id} className="text-base font-semibold">
+    <section
+      aria-labelledby={id}
+      className="grid gap-4 border-t pt-8 md:grid-cols-[13rem_minmax(0,1fr)] md:gap-10"
+    >
+      <header className="grid content-start gap-1.5">
+        <h3 id={id} className="font-heading text-lg font-semibold">
           {title}
         </h3>
-        {count !== undefined ? (
-          <Badge variant="secondary" className="tabular-nums">
-            {count}
-          </Badge>
-        ) : null}
-        <p className="text-xs text-muted-foreground">{description}</p>
+        <p className="text-sm text-pretty text-muted-foreground">
+          {description}
+        </p>
       </header>
-      {children}
+      <div className="min-w-0">{children}</div>
     </section>
   )
 }

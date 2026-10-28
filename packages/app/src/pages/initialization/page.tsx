@@ -101,8 +101,8 @@ export function InitializationPage() {
   }
 
   return (
-    <div className="flex min-h-0 min-w-0 flex-1 flex-col items-center overflow-y-auto px-4 pt-[calc(var(--header-height)+1rem)] pb-10 lg:px-6 lg:pt-[calc(var(--header-height)+1.5rem)]">
-      <div className="flex w-full max-w-4xl flex-col gap-8">
+    <div className="flex h-svh min-h-0 min-w-0 flex-col items-center overflow-y-auto px-4 pt-[calc(var(--header-height)+1rem)] pb-12 md:h-[calc(100svh_-_1rem)] lg:px-6 lg:pt-[calc(var(--header-height)+1.5rem)]">
+      <div className="flex w-full max-w-5xl flex-col gap-10">
         <header className="flex flex-wrap items-end justify-between gap-4">
           <div className="grid gap-1">
             <h2 className="font-heading text-2xl font-semibold tracking-normal">

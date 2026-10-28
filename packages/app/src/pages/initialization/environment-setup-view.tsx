@@ -33,11 +33,8 @@ export function EnvironmentSetupView({ setup }: { setup: SavedSetup }) {
   )
   return (
     <div className="grid gap-10">
-      <EnvironmentSection
-        {...environmentSections.runConfigurations}
-        count={setup.runConfigurations.length}
-      >
-        <div className="grid gap-3 md:grid-cols-2">
+      <EnvironmentSection {...environmentSections.runConfigurations}>
+        <div className="grid gap-3">
           {setup.runConfigurations.map((configuration) => (
             <article
               key={configuration.id}
@@ -47,7 +44,7 @@ export function EnvironmentSetupView({ setup }: { setup: SavedSetup }) {
               <div className="grid min-w-0 flex-1 gap-2">
                 <div className="grid gap-0.5">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h4 className="text-base font-semibold">
+                    <h4 className="text-sm font-semibold">
                       {configuration.name}
                     </h4>
                     {configuration.default ? (
@@ -66,11 +63,8 @@ export function EnvironmentSetupView({ setup }: { setup: SavedSetup }) {
           ))}
         </div>
       </EnvironmentSection>
-      <EnvironmentSection
-        {...environmentSections.services}
-        count={services.length}
-      >
-        <div className="grid items-start gap-3 md:grid-cols-2">
+      <EnvironmentSection {...environmentSections.services}>
+        <div className="grid gap-3">
           {services.map((service) => (
             <ContainerCard
               key={service.id}
@@ -86,11 +80,8 @@ export function EnvironmentSetupView({ setup }: { setup: SavedSetup }) {
         </div>
       </EnvironmentSection>
       {manifest.setup.length ? (
-        <EnvironmentSection
-          {...environmentSections.setup}
-          count={manifest.setup.length}
-        >
-          <div className="grid items-start gap-3 md:grid-cols-2">
+        <EnvironmentSection {...environmentSections.setup}>
+          <div className="grid gap-3">
             {manifest.setup.map((task) => (
               <ContainerCard
                 key={task.id}
@@ -155,7 +146,7 @@ function ContainerCard({
           className="mt-1 size-4.5"
         />
         <div className="grid min-w-0 flex-1 gap-0.5">
-          <h4 className="truncate text-base font-semibold">{name}</h4>
+          <h4 className="truncate text-sm font-semibold">{name}</h4>
           <p className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
             <span
               className={cn(
