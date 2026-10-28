@@ -85,7 +85,7 @@ export type ProjectInitializationRepairAttempt = {
 export function initializationConfig(
   input: InitializeProjectInput,
   credential: { apiKey: string; baseUrl: string | null },
-  submitTool?: AgentTool,
+  tools?: AgentTool[],
   sessionId?: string,
 ) {
   return appendProductionConfig({
@@ -101,8 +101,9 @@ export function initializationConfig(
     enableTools: true,
     enableSpawnAgent: false,
     enableAgentTeams: false,
-    extraTools: submitTool ? [submitTool] : undefined,
-    maxIterations: 8,
+    extraTools: tools?.length ? tools : undefined,
+    // Room to read a few files and fix rejected submissions in one session.
+    maxIterations: 40,
   });
 }
 

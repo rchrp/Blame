@@ -312,7 +312,7 @@ export function projectInitializationPrompt(
 ) {
   return [
     "Analyze this project scan according to your system instructions.",
-    "Call submit_project_initialization exactly once with the complete result.",
+    "Call submit_project_initialization with the complete result. Blame checks it immediately; fix any rejected problems and submit again.",
     "Do not answer with JSON text.",
     "Use read_files or search_codebase only when a required runtime fact is absent from this evidence.",
     ...databasePreferencePrompt(preferences),
@@ -327,10 +327,10 @@ export function projectInitializationCorrectionPrompt(
 ) {
   return [
     projectInitializationPrompt(scan, preferences),
-    "Your previous tool input was rejected by validation.",
-    "Call submit_project_initialization again with a complete corrected input.",
-    "Do not broaden the analysis and do not read more files.",
-    `Validation error: ${correction.validationError}`,
+    "A previous result for this project was not accepted.",
+    "Call submit_project_initialization with a complete corrected input.",
+    "Read more files only when the problem below needs a fact you do not have.",
+    `Last problem: ${correction.validationError}`,
     `Previous rejected input: ${truncateCorrectionPayload(correction.previousResult)}`,
   ].join("\n");
 }

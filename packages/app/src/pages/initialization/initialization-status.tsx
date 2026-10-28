@@ -5,6 +5,10 @@ import type { ProjectInitializationAvailability } from "@/components/project-ini
 import type { ProjectInitializationProgress } from "@/components/project-initialization/project-initialization-progress"
 import { ProgressNotificationBody } from "@/components/shared/progress-notification"
 import type { CloudProjectInitialization } from "@/context/cloud-auth"
+import {
+  blockedInitialization,
+  type BlockedInitialization,
+} from "@/components/project-initialization/initialization-blocked"
 import { useAnimatedBorderEffect } from "@/hooks/use-animated-border-effect"
 import { cn } from "@/lib/utils"
 import { CornerLight, type CornerTone } from "./environment-kinds"
@@ -34,8 +38,14 @@ export function InitializationStatus({
     return <RunningStatus progress={progress} initialization={initialization} />
   if (availability === "ready" && initialization)
     return <ReadyStatus initialization={initialization} setup={setup} />
-  if (initialization?.status === "error")
-    return <FailedStatus initialization={initialization} />
+  if (initialization?.status === "error") {
+    const blocked = blockedInitialization(initialization.error)
+    return blocked ? (
+      <BlockedStatus blocked={blocked} initialization={initialization} />
+    ) : (
+      <FailedStatus initialization={initialization} />
+    )
+  }
   if (initialization?.status === "running")
     return (
       <StatusBlock
@@ -153,6 +163,55 @@ function ReadyStatus({
   )
 }
 
+function BlockedStatus({
+  blocked,
+  initialization,
+}: {
+  blocked: BlockedInitialization
+  initialization: CloudProjectInitialization
+}) {
+  const at = initialization.updatedAt ?? initialization.createdAt
+  return (
+    <StatusBlock
+      tone="warning"
+      title={blocked.title}
+      meta={`Stopped ${relativeDate(at)}`}
+    >
+      <p className="text-foreground">{blocked.summary}</p>
+      <div className="grid gap-0.5">
+        <span className="text-xs font-medium text-foreground">
+          What you can do
+        </span>
+        <p>{blocked.userAction}</p>
+      </div>
+      <p>
+        Then run the analysis again. Until it succeeds, stories run in Direct
+        mode, in your project folder.
+      </p>
+      {blocked.evidence ? (
+        <ErrorDetails label="What Blame found" text={blocked.evidence} />
+      ) : null}
+    </StatusBlock>
+  )
+}
+
+function ErrorDetails({ label, text }: { label: string; text: string }) {
+  return (
+    <details className="group">
+      <summary className="inline-flex cursor-pointer list-none items-center gap-1 text-xs select-none hover:text-foreground [&::-webkit-details-marker]:hidden">
+        <ChevronRightIcon
+          aria-hidden
+          className="size-3.5 transition-transform duration-150 group-open:rotate-90"
+        />
+        {label}
+      </summary>
+      <pre className="mt-1.5 font-mono text-xs break-words whitespace-pre-wrap text-foreground/80">
+        {text}
+      </pre>
+    </details>
+  )
+}
+
 function FailedStatus({
   initialization,
 }: {
@@ -170,8 +229,7 @@ function FailedStatus({
       </p>
       <p>
         Stories run in Direct mode, in your project folder, until an analysis
-        succeeds. Run it again: a second try often succeeds. If it keeps
-        failing, try another model in{" "}
+        succeeds. Run it again; if it keeps failing, try another model in{" "}
         <button
           type="button"
           className="text-foreground underline underline-offset-3 hover:text-foreground/80"
@@ -182,18 +240,7 @@ function FailedStatus({
         .
       </p>
       {initialization.error ? (
-        <details className="group">
-          <summary className="inline-flex cursor-pointer list-none items-center gap-1 text-xs select-none hover:text-foreground [&::-webkit-details-marker]:hidden">
-            <ChevronRightIcon
-              aria-hidden
-              className="size-3.5 transition-transform duration-150 group-open:rotate-90"
-            />
-            Error details
-          </summary>
-          <pre className="mt-1.5 font-mono text-xs break-words whitespace-pre-wrap text-foreground/80">
-            {initialization.error}
-          </pre>
-        </details>
+        <ErrorDetails label="Error details" text={initialization.error} />
       ) : null}
     </StatusBlock>
   )

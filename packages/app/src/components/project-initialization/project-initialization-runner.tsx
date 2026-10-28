@@ -29,6 +29,7 @@ import {
   requestProjectInitializationRun,
   subscribeProjectInitializationRunRequested,
 } from "@/components/project-initialization/project-initialization-events"
+import { blockedInitialization } from "@/components/project-initialization/initialization-blocked"
 import {
   initializationRunningHere,
   initializationStale,
@@ -672,6 +673,18 @@ async function persistInitializationError(
 }
 
 function showError(projectId: string, error: unknown) {
+  const blocked = blockedInitialization(errorMessage(error))
+  if (blocked) {
+    toast.warning(blocked.title, {
+      description: `${blocked.summary} ${blocked.userAction}`,
+      id: toastId,
+      position: "bottom-right",
+      duration: 30_000,
+      className: undefined,
+      action: { label: "Details", onClick: () => navigate("/initialization") },
+    })
+    return
+  }
   toast.error("Preview environment setup failed", {
     description: `${errorMessage(error)} Stories run in Direct mode until it works.`,
     id: toastId,

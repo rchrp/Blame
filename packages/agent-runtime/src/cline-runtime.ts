@@ -46,7 +46,6 @@ import { assertTargetChangesRestorable, stashTargetChanges, type TargetChangesSt
 import {
   codePracticesConfig,
   codePracticesPrompt,
-  collectProjectInitializationAttempt,
   collectProjectInitializationRepairAttempt,
   combinedTaskBriefing,
   initializationConfig,
@@ -57,7 +56,6 @@ import {
   parsedCodePracticesAttempt,
   projectCodePracticesSubmitTool,
   projectInitializationRepairSubmitTool,
-  projectInitializationSubmitTool,
   type AgentTool,
   type CodePracticesAttemptOutcome,
   type InitializationCorrection,
@@ -67,6 +65,11 @@ import {
   type RuntimeSessionSummary,
 } from "./cline-initialization.js";
 import { initializationProgress } from "./initialization-progress.js";
+import {
+  InitializationBlockedError,
+  InitializationSession,
+  maxInitializationSubmissions,
+} from "./initialization-session.js";
 import {
   backendKey,
   blameNativePluginPath,
@@ -2136,65 +2139,64 @@ export class BlameAgentRuntime {
   ): Promise<InitializeProjectResult> {
     assertWorkspacePath(input.cwd, input.workspaceRoot, "cwd");
     const resolvedCredential = await this.initializationCredential(input);
-    const progress = initializationProgress(this.events, input, maxInitializationAttempts);
+    const progress = initializationProgress(
+      this.events,
+      input,
+      maxInitializationSubmissions,
+    );
     progress.scanning();
     const scan = await scanProjectForInitialization(input.workspaceRoot);
     const cline = await this.core(input.backend);
+    const session = new InitializationSession(
+      (submitted, options) =>
+        parseProjectInitializationAttempt(
+          { result: submitted, sessionId: "", submittedInput: submitted },
+          scan,
+          input,
+          options,
+        ),
+      {
+        onChecking: (submission) => progress.checking(submission),
+        onRejected: (submission, error) => {
+          progress.rejected(submission, error);
+          this.agentTelemetry.recordOperationRetry(
+            input,
+            "project_initialization",
+            error,
+          );
+        },
+      },
+    );
+    progress.analyzing();
     let correction = input.validationFeedback;
-    for (let attempt = 1; attempt <= maxInitializationAttempts; attempt += 1) {
-      progress.attempt(attempt, correction);
-      const result = await progress.follow(cline, (sessionId) =>
-        this.startProjectInitializationAttempt(
+    // A second session only when the first ended without any outcome.
+    for (let run = 1; run <= 2; run += 1) {
+      const started = await progress.follow(cline, (sessionId) =>
+        this.startProjectInitializationAgent(
           cline,
           input,
           scan,
           resolvedCredential,
+          session.tools(),
           correction,
           sessionId,
         ),
       );
-      progress.checking();
-      try {
-        return parseProjectInitializationAttempt(result, scan, input);
-      } catch (error) {
-        if (attempt === maxInitializationAttempts) {
-          // Better a setup with heuristic warnings than no setup at all.
-          return parseProjectInitializationAttempt(result, scan, input, {
-            acceptWarnings: true,
-          });
-        }
-        correction = this.projectInitializationRetry(
-          input,
-          "project_initialization",
-          result.result,
-          error,
-        );
-      }
+      const outcome = session.outcome();
+      if (outcome.type === "accepted")
+        return { ...outcome.result, sessionId: started.sessionId };
+      if (outcome.type === "blocked")
+        throw new InitializationBlockedError(outcome.blocked);
+      if (outcome.type === "stopped") throw outcome.error;
+      correction = initializationCorrection(
+        outcome.lastRejection?.input ?? started.result?.text ?? "",
+        outcome.lastRejection?.error ??
+          "The session ended without calling submit_project_initialization.",
+      );
     }
     throw new Error(
-      "Project initialization agent did not return a valid result",
+      "Project initialization agent did not submit a result",
     );
-  }
-
-  private async startProjectInitializationAttempt(
-    cline: ClineCore,
-    input: InitializeProjectInput,
-    scan: ProjectInitializationScan,
-    credential: InitializationCredential,
-    correction?: InitializationCorrection,
-    sessionId?: string,
-  ) {
-    const submitTool = projectInitializationSubmitTool();
-    const session = await this.startProjectInitializationAgent(
-      cline,
-      input,
-      scan,
-      credential,
-      submitTool.tool,
-      correction,
-      sessionId,
-    );
-    return collectProjectInitializationAttempt(cline, session, submitTool);
   }
 
   private startProjectInitializationAgent(
@@ -2202,7 +2204,7 @@ export class BlameAgentRuntime {
     input: InitializeProjectInput,
     scan: ProjectInitializationScan,
     credential: InitializationCredential,
-    submitTool: AgentTool,
+    tools: AgentTool[],
     correction: InitializationCorrection | undefined,
     sessionId?: string,
   ) {
@@ -2212,7 +2214,7 @@ export class BlameAgentRuntime {
       () =>
         cline.start({
           prompt: initializationPrompt(scan, correction, input.preferences),
-          config: initializationConfig(input, credential, submitTool, sessionId),
+          config: initializationConfig(input, credential, tools, sessionId),
           interactive: false,
           source: "blame-project-initialization",
           toolPolicies: initializationToolPolicies(),

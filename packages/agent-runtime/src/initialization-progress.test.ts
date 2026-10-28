@@ -13,17 +13,21 @@ test("reports monotonic progress on the run's channel", () => {
   const progress = initializationProgress(
     { emit: (event) => events.push(event) },
     { progressId: "run-1" },
-    3,
+    10,
   );
   progress.scanning();
-  progress.attempt(1);
+  progress.analyzing();
   progress.tool("read_files");
   progress.tool("search_codebase");
-  progress.checking();
-  progress.attempt(2, {
-    validationError:
+  progress.checking(1);
+  progress.rejected(
+    1,
+    new Error(
       "Initialization result previewManifest must run detected database migrations before starting backend services",
-  });
+    ),
+  );
+  progress.tool("submit_project_initialization");
+  progress.checking(2);
   const payloads = events.map(
     ({ payload }) => payload as InitializationProgress,
   );
@@ -36,9 +40,11 @@ test("reports monotonic progress on the run's channel", () => {
     percents,
   );
   assert.equal(payloads[2]!.label, "Reading project files");
-  assert.equal(payloads.at(-1)!.phase, "correcting");
+  const correcting = payloads.find(({ phase }) => phase === "correcting")!;
+  assert.equal(correcting.label, "Fixing the setup · 2 of 10");
+  assert.equal(payloads.at(-1)!.phase, "checking");
   assert.equal(
-    payloads.at(-1)!.detail,
+    correcting.detail,
     "The setup must run detected database migrations before starting backend services.",
   );
 });

@@ -24,6 +24,19 @@ export type PreviewSetupIssue = {
 };
 
 /**
+ * A rejected setup. Its message is the first issue; `issues` holds every
+ * one, so the agent can fix them all in one go.
+ */
+export class PreviewSetupError extends Error {
+  readonly issues: PreviewSetupIssue[];
+
+  constructor(issues: PreviewSetupIssue[]) {
+    super(`Initialization result previewManifest ${issues[0]!.rule}`);
+    this.issues = issues;
+  }
+}
+
+/**
  * Throws the first issue of an initialized manifest. With `acceptWarnings`,
  * only blocking issues throw and the warnings are returned.
  */
@@ -38,11 +51,10 @@ export function validatePreviewSetup(
     throw new Error(hostOrchestrationError(hostOrchestration));
   }
   const issues = previewSetupIssues(manifest, scan);
-  const blocking = issues.find(({ severity }) => severity === "blocking");
-  if (blocking) throw invalid(blocking.rule);
+  const blocking = issues.filter(({ severity }) => severity === "blocking");
   const warnings = issues.filter(({ severity }) => severity === "warning");
-  if (warnings.length && !options.acceptWarnings) {
-    throw invalid(warnings[0]!.rule);
+  if (blocking.length || (warnings.length && !options.acceptWarnings)) {
+    throw new PreviewSetupError([...blocking, ...warnings]);
   }
   return warnings;
 }
@@ -126,10 +138,6 @@ export function previewSetupIssues(
     );
   }
   return issues;
-}
-
-function invalid(rule: string) {
-  return new Error(`Initialization result previewManifest ${rule}`);
 }
 
 function manifestCommands(manifest: PreviewManifest) {

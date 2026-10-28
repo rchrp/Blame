@@ -58,17 +58,30 @@ export class InitializationProgressReporter {
     this.send("scanning", 4, "Reading the repository");
   }
 
-  attempt(attempt: number, correction?: { validationError: string }) {
-    this.attemptNumber = attempt;
-    if (attempt === 1 && !correction) {
-      this.send("analyzing", 10, "Analyzing the project");
-      return;
-    }
+  analyzing() {
+    this.send("analyzing", 10, "Analyzing the project");
+  }
+
+  /** A submission reached Blame's checks. */
+  checking(submission = this.attemptNumber) {
+    this.attemptNumber = submission;
+    this.send(
+      "checking",
+      this.percent + (95 - this.percent) * 0.35,
+      "Checking the setup",
+    );
+  }
+
+  /** Blame sent a submission back to the agent to fix. */
+  rejected(submission: number, error: unknown) {
+    this.attemptNumber = submission + 1;
     this.send(
       "correcting",
       this.percent,
-      `Fixing the setup · attempt ${attempt} of ${this.maxAttempts}`,
-      correction && readableValidationError(correction.validationError),
+      `Fixing the setup · ${submission + 1} of ${this.maxAttempts}`,
+      readableValidationError(
+        error instanceof Error ? error.message : String(error),
+      ),
     );
   }
 
@@ -78,10 +91,6 @@ export class InitializationProgressReporter {
       this.percent + (86 - this.percent) * 0.12,
       initializationToolLabel(toolName),
     );
-  }
-
-  checking() {
-    this.send("checking", 88, "Checking the setup");
   }
 
   /**
@@ -139,6 +148,8 @@ export function initializationToolLabel(toolName: string) {
   const name = toolName.toLowerCase();
   if (name.startsWith("submit_project_initialization"))
     return "Writing the preview setup";
+  if (name.startsWith("report_project_initialization_blocked"))
+    return "Reporting what blocks the analysis";
   if (/read/.test(name)) return "Reading project files";
   if (/search|grep|find/.test(name)) return "Searching the code";
   if (/list|glob|tree/.test(name)) return "Exploring folders";
