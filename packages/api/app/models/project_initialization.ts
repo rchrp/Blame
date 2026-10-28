@@ -14,6 +14,7 @@ type ProjectRunConfiguration = {
   category: 'web' | 'mobile' | 'desktop' | 'terminal' | 'service' | 'other'
   services: string[]
   previewService?: string | null
+  previewTarget?: string | null
   scopes: string[]
   previewUrl?: string | null
 }

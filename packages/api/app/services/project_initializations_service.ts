@@ -122,7 +122,7 @@ function validatedPreviewManifest(value: unknown) {
   }
 }
 
-function validateRunConfigurations(
+export function validateRunConfigurations(
   configurations: NonNullable<CompleteInput['runConfigurations']>,
   manifest: PreviewManifest
 ) {
@@ -160,18 +160,37 @@ function invalidRunConfigurationTopology(
   if (requiresContainerServices(configuration.category) && !services.length) return true
   if (!configuration.scopes.length) return true
   if (configuration.category === 'web' && !configuration.previewService) return true
-  if (configuration.category !== 'web' && configuration.previewService) return true
+  // Terminal, screen and device previews belong to their own categories.
+  if (configuration.previewService && !previewCategories.has(configuration.category)) return true
   if (configuration.previewService && !services.includes(configuration.previewService)) return true
+  if (configuration.previewTarget && invalidDeviceTarget(configuration, manifest)) return true
   const serviceIds = new Set(manifest.services.map(({ id }) => id))
   if (services.some((service) => !serviceIds.has(service))) return true
   if (
     configuration.category !== 'web' &&
+    !configuration.previewService &&
+    !configuration.previewTarget &&
     manifest.services.some(({ id, kind }) => services.includes(id) && kind === 'preview')
   ) {
     return true
   }
   const preview = manifest.services.find(({ id }) => id === configuration.previewService)
-  return Boolean(configuration.previewService && preview?.kind !== 'preview')
+  if (configuration.previewService && preview?.kind !== 'preview') return true
+  return Boolean(configuration.previewUrl && preview?.surface && preview.surface.type !== 'web')
+}
+
+const previewCategories = new Set(['web', 'mobile', 'terminal', 'desktop'])
+
+function invalidDeviceTarget(
+  configuration: NonNullable<CompleteInput['runConfigurations']>[number],
+  manifest: PreviewManifest
+) {
+  return (
+    configuration.category !== 'mobile' ||
+    Boolean(configuration.previewService) ||
+    Boolean(configuration.previewUrl) ||
+    !manifest.devices?.some(({ id }) => id === configuration.previewTarget)
+  )
 }
 
 function requiresContainerServices(

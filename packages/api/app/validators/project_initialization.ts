@@ -13,6 +13,7 @@ const runConfiguration = vine.object({
   category: vine.enum(['web', 'mobile', 'desktop', 'terminal', 'service', 'other']),
   services: vine.array(vine.string().trim().minLength(1).maxLength(80)).maxLength(20),
   previewService: vine.string().trim().minLength(1).maxLength(80).nullable().optional(),
+  previewTarget: vine.string().trim().minLength(1).maxLength(80).nullable().optional(),
   scopes: vine.array(vine.string().trim().minLength(1).maxLength(500)).minLength(1).maxLength(50),
   previewUrl: vine.string().trim().minLength(1).maxLength(2048).nullable().optional(),
 })
