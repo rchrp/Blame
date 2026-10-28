@@ -71,6 +71,19 @@ jobs:
       - run: pnpm --filter @blame/desktop test:package
       - run: pnpm --filter @blame/agent-runtime exec node --test dist/harness/workspace-command-process.test.js dist/harness/package-manager-runtime.test.js
 
+  macos-terminal:
+    name: macOS native terminal regressions
+    runs-on: macos-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+        with:
+          node-version: 24
+      - run: pnpm --filter @blame/desktop test:package
+      - run: pnpm --filter @blame/desktop build:workspace-dependencies
+      - run: pnpm --filter @blame/desktop exec node --test --experimental-strip-types src/main/terminal-service.test.ts
+
   line-budgets:
     name: Line budgets
     runs-on: ubuntu-latest

@@ -4,9 +4,11 @@ import { readFile } from "node:fs/promises"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { resolveLimaBundle } from "../../../scripts/lima-runtime-bundle.mjs"
+import { prepareNodePtyHelpers } from "./prepare-node-pty.mjs"
 
 const forceKillDelayMs = 2_000
 const desktopDir = dirname(dirname(fileURLToPath(import.meta.url)))
+await prepareNodePtyHelpers()
 const runtimeEnvironment =
   process.platform === "darwin"
     ? await macosRuntimeEnvironment()

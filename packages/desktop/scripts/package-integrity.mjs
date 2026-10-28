@@ -4,6 +4,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { join, normalize, posix, relative, sep } from "node:path";
 import { checkJavaScript } from "./check-generated-javascript.mjs";
+import { verifyNodePtyHelpers } from "./prepare-node-pty.mjs";
 
 function runtimeTargets(manifest) {
   const paths = new Set();
@@ -208,6 +209,10 @@ export async function verifyPackagedWorkspaceRuntime(dist) {
     const count = await verifyAsarWorkspaceRuntime(archive);
     const compilers = verifyAsarTypeScriptLibraries(archive);
     await verifyUnpackedNpm(archive);
+    const manifest = JSON.parse(asarTools().extractFile(archive, "package.json").toString("utf8"));
+    if (archive.split(sep).join("/").endsWith(".app/Contents/Resources/app.asar") && manifest.dependencies?.["node-pty"]) {
+      await verifyNodePtyHelpers(join(`${archive}.unpacked`, "node_modules/node-pty"));
+    }
     console.log(
       `Verified ${generatedFiles} generated files, ${count} workspace packages and the default libraries of ${compilers} TypeScript compiler(s) in ${archive}`,
     );
