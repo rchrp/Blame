@@ -165,6 +165,12 @@ function runtimeService(service: ServiceLaunchPlan, context: RenderContext) {
       context,
     ),
     network_mode: sharesLoopback ? `service:${anchor}` : undefined,
+    // The window manager adds the app's host name to every window title when
+    // it differs from the screen's.
+    hostname:
+      service.surface?.type === "display" && !sharesLoopback
+        ? "blame-display"
+        : undefined,
     ports: sharesLoopback ? undefined : publishedPorts(service, context),
     volumes:
       service.surface?.type === "terminal"

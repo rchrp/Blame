@@ -43,6 +43,7 @@ test("display compiles a healthy sidecar and a private per-app X11 volume", () =
     }).yaml,
   );
   assert.equal(yaml.services.app.shm_size, "1g");
+  assert.equal(yaml.services.app.hostname, yaml.services.app__display.hostname);
   assert.equal(
     yaml.services.app.depends_on.app__display.condition,
     "service_healthy",
