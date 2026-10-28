@@ -7,7 +7,8 @@ import {
   EnvironmentSection,
   environmentKinds,
   environmentSections,
-  KindTile,
+  CornerLight,
+  KindIcon,
   type EnvironmentKind,
 } from "./environment-kinds"
 import type { SavedSetup } from "./initialization-setup-draft"
@@ -40,9 +41,10 @@ export function EnvironmentSetupView({ setup }: { setup: SavedSetup }) {
           {setup.runConfigurations.map((configuration) => (
             <article
               key={configuration.id}
-              className="flex items-start gap-3 rounded-xl border bg-card p-4"
+              className="relative flex items-start gap-3 rounded-xl border bg-card p-4"
             >
-              <KindTile kind="run" />
+              <CornerLight tone="run" />
+              <KindIcon kind="run" className="mt-1 size-4.5" />
               <div className="grid min-w-0 flex-1 gap-2">
                 <div className="grid gap-0.5">
                   <div className="flex flex-wrap items-center gap-2">
@@ -50,7 +52,7 @@ export function EnvironmentSetupView({ setup }: { setup: SavedSetup }) {
                       {configuration.name}
                     </h4>
                     {configuration.default ? (
-                      <span className="rounded-md border border-blue-500/40 bg-blue-500/10 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:text-blue-300">
+                      <span className="rounded-md border px-1.5 py-0.5 text-xs font-medium text-muted-foreground">
                         Default
                       </span>
                     ) : null}
@@ -80,7 +82,6 @@ export function EnvironmentSetupView({ setup }: { setup: SavedSetup }) {
               command={service.command}
               environment={service.environment}
               ports={service.endpoints}
-              highlighted={service.kind === "preview"}
             />
           ))}
         </div>
@@ -116,7 +117,6 @@ function ContainerCard({
   command,
   container,
   environment,
-  highlighted,
   kind,
   name,
   ports = [],
@@ -126,7 +126,6 @@ function ContainerCard({
   command?: string
   container: Container
   environment?: Record<string, string>
-  highlighted?: boolean
   kind: EnvironmentKind
   name: string
   ports?: Service["endpoints"]
@@ -145,13 +144,17 @@ function ContainerCard({
       id={anchor}
       tabIndex={-1}
       className={cn(
-        "rounded-xl border bg-card transition-[border-color,box-shadow] duration-300 outline-none",
-        "data-[pointed]:border-blue-500/60 data-[pointed]:shadow-[0_0_0_3px] data-[pointed]:shadow-blue-500/15",
-        highlighted && "border-blue-500/30"
+        "relative rounded-xl border bg-card transition-[border-color,box-shadow] duration-300 outline-none",
+        "data-[pointed]:border-foreground/35 data-[pointed]:shadow-[0_0_0_3px] data-[pointed]:shadow-foreground/10"
       )}
     >
+      <CornerLight tone={kind} />
       <div className="flex items-start gap-3 p-4">
-        <KindTile kind={kind} image={container.image} />
+        <KindIcon
+          kind={kind}
+          image={container.image}
+          className="mt-1 size-4.5"
+        />
         <div className="grid min-w-0 flex-1 gap-0.5">
           <h4 className="truncate text-base font-semibold">{name}</h4>
           <p className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
@@ -174,11 +177,7 @@ function ContainerCard({
             {ports.map((port) => (
               <span
                 key={port.id}
-                className={cn(
-                  "inline-flex items-baseline gap-1 rounded-md border px-1.5 py-0.5 font-mono text-xs tabular-nums",
-                  kind === "preview" &&
-                    "border-blue-500/40 bg-blue-500/10 text-blue-700 dark:text-blue-300"
-                )}
+                className="inline-flex items-baseline gap-1 rounded-md border px-1.5 py-0.5 font-mono text-xs tabular-nums"
               >
                 :{port.port}
                 <span className="text-[0.6875rem] opacity-70">

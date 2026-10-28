@@ -1,7 +1,6 @@
 import { ArrowRightIcon } from "lucide-react"
 
-import { cn } from "@/lib/utils"
-import { containerAnchor, KindTile } from "./environment-kinds"
+import { containerAnchor, CornerLight, KindIcon } from "./environment-kinds"
 import { startOrder, type StartNode } from "./environment-start-order"
 import type { SavedSetup } from "./initialization-setup-draft"
 
@@ -59,16 +58,13 @@ function ChainNode({ image, node }: { image?: string; node: StartNode }) {
           ? `${node.id}, preview on port ${node.port}`
           : node.id
       }
-      className={cn(
-        "inline-flex items-center gap-2 rounded-lg border bg-background/70 py-1 pr-2.5 pl-1 text-sm font-medium transition-colors outline-none hover:border-foreground/25 hover:bg-background focus-visible:ring-3 focus-visible:ring-ring/50",
-        preview &&
-          "border-blue-500/45 shadow-[0_0_0_1px_oklch(0.7_0.17_250/25%),0_0_14px_oklch(0.65_0.2_250/32%)] hover:border-blue-500/70"
-      )}
+      className="relative inline-flex items-center gap-2 rounded-lg border bg-background/70 px-2.5 py-1.5 text-sm font-medium transition-colors outline-none hover:bg-background focus-visible:ring-3 focus-visible:ring-ring/50"
     >
-      <KindTile kind={kind} image={image} size="sm" />
+      <CornerLight tone={kind} width="70%" height="140%" />
+      <KindIcon kind={kind} image={image} className="size-3.5" />
       {node.id}
       {preview && node.port ? (
-        <span className="font-mono text-xs font-normal text-blue-700 tabular-nums dark:text-blue-300">
+        <span className="font-mono text-xs font-normal text-muted-foreground tabular-nums">
           :{node.port}
         </span>
       ) : null}

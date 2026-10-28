@@ -33,7 +33,7 @@ import {
   EnvironmentSection,
   environmentKinds,
   environmentSections,
-  KindTile,
+  KindIcon,
   type EnvironmentKind,
 } from "./environment-kinds"
 
@@ -141,7 +141,7 @@ export function InitializationSetupEditor({
   return (
     <FieldErrorContext.Provider value={fieldError}>
       <div className="grid gap-6">
-        <div className="sticky top-[calc(var(--header-height)+0.5rem)] z-10 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-blue-500/30 bg-popover px-4 py-3 shadow-[0_8px_24px_-12px_rgb(0_0_0/0.6)]">
+        <div className="sticky top-[calc(var(--header-height)+0.5rem)] z-10 flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-popover px-4 py-3 shadow-[0_8px_24px_-12px_rgb(0_0_0/0.6)]">
           <div className="grid gap-0.5">
             <span className="text-sm font-medium">Editing the setup</span>
             <span className="text-xs text-muted-foreground">
@@ -515,7 +515,7 @@ function ItemHeading({
 }) {
   return (
     <div className="flex items-center gap-3">
-      <KindTile kind={kind} image={image} size="sm" />
+      <KindIcon kind={kind} image={image} className="size-4" />
       <span className="text-sm font-semibold">{name}</span>
       <span className={cn("text-xs font-medium", environmentKinds[kind].text)}>
         {environmentKinds[kind].label}

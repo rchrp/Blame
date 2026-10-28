@@ -11,40 +11,75 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 
-// The colors and icons the Preview Environment page gives each kind of
-// container, taken from the backlog's palette: blue is where the preview
-// opens, like the stories that run.
+// One color per kind of container. It lights the top left corner of the
+// container's card and its step in the start order, like the New project
+// choices; icons stay neutral.
 
 export type EnvironmentKind =
   "preview" | "dependency" | "worker" | "task" | "run"
 
+export type CornerTone =
+  EnvironmentKind | "ready" | "warning" | "failed" | "idle"
+
+/** Hue and chroma of each tone's light, in OKLCH. */
+const lights: Record<CornerTone, [number, number, number]> = {
+  preview: [0.72, 0.16, 250],
+  dependency: [0.72, 0.15, 295],
+  worker: [0.78, 0.17, 55],
+  task: [0.8, 0.14, 80],
+  run: [0.75, 0.15, 165],
+  ready: [0.75, 0.15, 165],
+  warning: [0.8, 0.14, 80],
+  failed: [0.7, 0.19, 18],
+  idle: [0.7, 0, 0],
+}
+
 export const environmentKinds = {
-  preview: {
-    label: "Preview",
-    text: "text-blue-600 dark:text-blue-300",
-    tile: "bg-blue-500/12 text-blue-600 ring-blue-500/25 dark:text-blue-300",
-  },
+  preview: { label: "Preview", text: "text-blue-600 dark:text-blue-300" },
   dependency: {
     label: "Dependency",
     text: "text-violet-600 dark:text-violet-300",
-    tile: "bg-violet-500/12 text-violet-600 ring-violet-500/25 dark:text-violet-300",
   },
-  worker: {
-    label: "Worker",
-    text: "text-orange-600 dark:text-orange-300",
-    tile: "bg-orange-500/12 text-orange-600 ring-orange-500/25 dark:text-orange-300",
-  },
-  task: {
-    label: "Setup task",
-    text: "text-amber-700 dark:text-amber-300",
-    tile: "bg-amber-500/12 text-amber-700 ring-amber-500/25 dark:text-amber-300",
-  },
+  worker: { label: "Worker", text: "text-orange-600 dark:text-orange-300" },
+  task: { label: "Setup task", text: "text-amber-700 dark:text-amber-300" },
   run: {
     label: "Run configuration",
     text: "text-emerald-700 dark:text-emerald-300",
-    tile: "bg-emerald-500/12 text-emerald-700 ring-emerald-500/25 dark:text-emerald-300",
   },
-} satisfies Record<EnvironmentKind, unknown>
+} satisfies Record<EnvironmentKind, { label: string; text: string }>
+
+/**
+ * The top left corner light of a card. Its parent needs `relative` and a
+ * border radius.
+ */
+export function CornerLight({
+  height,
+  tone,
+  width,
+}: {
+  /** Size of the light, as a share of the card; wide cards want less. */
+  height?: string
+  tone: CornerTone
+  width?: string
+}) {
+  const [lightness, chroma, hue] = lights[tone]
+  const style = {
+    "--story-status-color": `oklch(${lightness} ${chroma} ${hue})`,
+    "--story-status-glow-color": `oklch(${lightness - 0.06} ${chroma + 0.02} ${hue} / 28%)`,
+    ...(width ? { "--corner-w": width } : {}),
+    ...(height ? { "--corner-h": height } : {}),
+  } as React.CSSProperties
+  return (
+    <span
+      aria-hidden
+      style={style}
+      className="pointer-events-none absolute -inset-px rounded-[inherit]"
+    >
+      <span className="story-status-corner story-status-corner-glow" />
+      <span className="story-status-corner" />
+    </span>
+  )
+}
 
 const databaseImage =
   /postgres|mysql|maria|mongo|redis|valkey|clickhouse|elastic|opensearch|meili|couch|cassandra|neo4j|surreal/i
@@ -70,30 +105,11 @@ export function KindIcon({
             : image && databaseImage.test(image)
               ? DatabaseIcon
               : ServerIcon
-  return <Icon aria-hidden className={className} />
-}
-
-export function KindTile({
-  image,
-  kind,
-  size = "md",
-}: {
-  image?: string
-  kind: EnvironmentKind
-  size?: "sm" | "md"
-}) {
   return (
-    <span
-      className={cn(
-        "inline-flex shrink-0 items-center justify-center ring-1 ring-inset",
-        size === "md"
-          ? "size-9 rounded-lg [&_svg]:size-4"
-          : "size-6 rounded-md [&_svg]:size-3.5",
-        environmentKinds[kind].tile
-      )}
-    >
-      <KindIcon kind={kind} image={image} />
-    </span>
+    <Icon
+      aria-hidden
+      className={cn("shrink-0 text-muted-foreground", className)}
+    />
   )
 }
 

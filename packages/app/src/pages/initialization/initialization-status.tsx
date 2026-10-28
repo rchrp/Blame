@@ -5,7 +5,9 @@ import type { ProjectInitializationAvailability } from "@/components/project-ini
 import type { ProjectInitializationProgress } from "@/components/project-initialization/project-initialization-progress"
 import { ProgressNotificationBody } from "@/components/shared/progress-notification"
 import type { CloudProjectInitialization } from "@/context/cloud-auth"
+import { useAnimatedBorderEffect } from "@/hooks/use-animated-border-effect"
 import { cn } from "@/lib/utils"
+import { CornerLight, type CornerTone } from "./environment-kinds"
 import { EnvironmentStartChain } from "./environment-start-chain"
 import {
   manualEditReason,
@@ -14,8 +16,8 @@ import {
 } from "./initialization-setup-draft"
 
 // One block that says where the project's environment stands and what to
-// do next. Its tone follows the state, like the backlog's columns; once
-// ready, it shows the order a story's preview starts its containers.
+// do next. Its corner light follows the state; once ready, it shows the
+// order a story's preview starts its containers.
 
 export function InitializationStatus({
   availability,
@@ -198,24 +200,15 @@ function FailedStatus({
 }
 
 const tones = {
-  neutral: { ring: "border-muted-foreground/60", wash: "" },
-  running: {
-    ring: "",
-    wash: "border-blue-500/30 bg-[linear-gradient(to_bottom,oklch(0.65_0.2_250/9%),transparent_7rem)]",
-  },
-  success: {
-    ring: "border-emerald-500",
-    wash: "bg-[linear-gradient(to_bottom,oklch(0.7_0.15_160/7%),transparent_7rem)]",
-  },
-  warning: {
-    ring: "border-amber-500",
-    wash: "border-amber-500/30 bg-[linear-gradient(to_bottom,oklch(0.77_0.16_75/9%),transparent_7rem)]",
-  },
-  danger: {
-    ring: "border-rose-500",
-    wash: "border-rose-500/30 bg-[linear-gradient(to_bottom,oklch(0.65_0.2_15/9%),transparent_7rem)]",
-  },
-}
+  neutral: { ring: "border-muted-foreground/60", light: "idle" },
+  running: { ring: "", light: undefined },
+  success: { ring: "border-emerald-500", light: "ready" },
+  warning: { ring: "border-amber-500", light: "warning" },
+  danger: { ring: "border-rose-500", light: "failed" },
+} as const satisfies Record<
+  string,
+  { ring: string; light: CornerTone | undefined }
+>
 
 function StatusBlock({
   children,
@@ -230,47 +223,63 @@ function StatusBlock({
   title: string
   tone: keyof typeof tones
 }) {
+  const running = tone === "running"
+  // While Blame analyzes, the border turns like the agent's final replies.
+  const effectRef = useAnimatedBorderEffect(
+    running ? "agent-response" : undefined
+  )
+  const light = tones[tone].light
   return (
-    <section
-      aria-label="Preview environment status"
-      className={cn(
-        "overflow-hidden rounded-xl border bg-card",
-        tones[tone].wash
-      )}
+    <div
+      ref={effectRef}
+      className={cn(running && "agent-response-effect")}
+      style={
+        running
+          ? ({ "--radius-3xl": "var(--radius-xl)" } as React.CSSProperties)
+          : undefined
+      }
     >
-      <div className="grid gap-2.5 px-5 py-4">
-        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
-          <div className="flex min-w-0 items-center gap-2.5">
-            {tone === "running" ? (
-              <LoaderCircleIcon
-                aria-hidden
-                className="size-3.5 shrink-0 animate-spin text-blue-500 motion-reduce:animate-none"
-              />
-            ) : (
-              <span
-                aria-hidden
-                className={cn(
-                  "size-3 shrink-0 rounded-full border-2",
-                  tones[tone].ring
-                )}
-              />
-            )}
-            <h3 className="text-base font-semibold">{title}</h3>
+      <section
+        aria-label="Preview environment status"
+        className={cn("relative rounded-xl bg-card", !running && "border")}
+      >
+        {light ? <CornerLight tone={light} width="30%" height="140%" /> : null}
+        <div className="grid gap-2.5 px-5 py-4">
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+            <div className="flex min-w-0 items-center gap-2.5">
+              {running ? (
+                <LoaderCircleIcon
+                  aria-hidden
+                  className="size-3.5 shrink-0 animate-spin text-muted-foreground motion-reduce:animate-none"
+                />
+              ) : (
+                <span
+                  aria-hidden
+                  className={cn(
+                    "size-3 shrink-0 rounded-full border-2",
+                    tones[tone].ring
+                  )}
+                />
+              )}
+              <h3 className="text-base font-semibold">{title}</h3>
+            </div>
+            {meta ? (
+              <span className="text-xs text-muted-foreground tabular-nums">
+                {meta}
+              </span>
+            ) : null}
           </div>
-          {meta ? (
-            <span className="text-xs text-muted-foreground tabular-nums">
-              {meta}
-            </span>
-          ) : null}
+          <div className="grid gap-2 pl-5.5 text-sm text-muted-foreground">
+            {children}
+          </div>
         </div>
-        <div className="grid gap-2 pl-5.5 text-sm text-muted-foreground">
-          {children}
-        </div>
-      </div>
-      {footer ? (
-        <div className="border-t bg-muted/30 px-5 py-4">{footer}</div>
-      ) : null}
-    </section>
+        {footer ? (
+          <div className="rounded-b-xl border-t bg-muted/30 px-5 py-4">
+            {footer}
+          </div>
+        ) : null}
+      </section>
+    </div>
   )
 }
 
