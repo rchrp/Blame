@@ -35,13 +35,38 @@ export class IosDriver implements DeviceDriver {
   private os: NodeJS.Platform;
   private cache: string;
   private flutter = new Map<string, FlutterDeviceSession>();
+  private xcodeApps: () => Promise<string[]>;
+  private developerDir?: Promise<string | undefined>;
+  private resolvedDeveloperDir?: string;
   constructor(options: {
     host?: DeviceHost;
     axe: string;
     cache: string;
     platform?: NodeJS.Platform;
+    xcodeApps?: () => Promise<string[]>;
   }) {
-    this.host = options.host ?? deviceHost;
+    const base = options.host ?? deviceHost;
+    this.xcodeApps = options.xcodeApps ?? installedXcodeApps;
+    // Without a selected Xcode, Blame points its own commands at an installed
+    // one, so the user never needs `sudo xcode-select`.
+    this.host = {
+      run: async (command, args, commandOptions = {}) =>
+        base.run(command, args, {
+          ...commandOptions,
+          environment: withDeveloperDir(
+            commandOptions.environment,
+            await this.xcodeDeveloperDir(base),
+          ),
+        }),
+      spawn: (command, args, commandOptions = {}) =>
+        base.spawn(command, args, {
+          ...commandOptions,
+          environment: withDeveloperDir(
+            commandOptions.environment,
+            this.resolvedDeveloperDir,
+          ),
+        }),
+    };
     this.axe = options.axe;
     this.cache = options.cache;
     this.os = options.platform ?? process.platform;
@@ -54,6 +79,7 @@ export class IosDriver implements DeviceDriver {
   ): Promise<DeviceAvailability> {
     if (this.os !== "darwin")
       return { status: "unavailable", reason: "not_macos" };
+    this.developerDir = undefined;
     const checks: DevicePrerequisite[] = [];
     const add = (
       id: string,
@@ -77,20 +103,6 @@ export class IosDriver implements DeviceDriver {
       xcode.exitCode === 0,
       { type: "open-url", url: "macappstore://apps.apple.com/app/id497799835" },
       "Install Xcode from the App Store.",
-    );
-    const selected = await this.host.run("xcode-select", ["-p"], {
-      timeoutMs: 10000,
-    });
-    add(
-      "xcode-selected",
-      "Xcode selected",
-      selected.exitCode === 0 &&
-        /Xcode[^/]*\.app\/Contents\/Developer/.test(selected.stdout),
-      {
-        type: "open-terminal",
-        command:
-          "sudo xcode-select -s /Applications/Xcode.app/Contents/Developer",
-      },
     );
     const firstLaunch = xcode.exitCode
       ? undefined
@@ -146,6 +158,21 @@ export class IosDriver implements DeviceDriver {
     return checks.every((c) => c.status === "done")
       ? { status: "ready" }
       : { status: "missing-prerequisites", prerequisites: checks };
+  }
+  private xcodeDeveloperDir(base: DeviceHost) {
+    this.developerDir ??= (async () => {
+      const selected = await base.run("xcode-select", ["-p"], {
+        timeoutMs: 10000,
+      });
+      if (
+        selected.exitCode === 0 &&
+        /Xcode[^/]*\.app\/Contents\/Developer/.test(selected.stdout)
+      )
+        return undefined;
+      const [app] = await this.xcodeApps().catch(() => []);
+      return app ? join(app, "Contents", "Developer") : undefined;
+    })().then((directory) => (this.resolvedDeveloperDir = directory));
+    return this.developerDir;
   }
   async ensureDevice(
     story: DeviceStory,
@@ -647,4 +674,25 @@ export class IosDriver implements DeviceDriver {
         pointHeight: 844,
       }));
   }
+}
+
+function withDeveloperDir(
+  environment: Record<string, string> | undefined,
+  developerDir: string | undefined,
+) {
+  return developerDir
+    ? { DEVELOPER_DIR: developerDir, ...environment }
+    : environment;
+}
+
+/** Installed Xcode apps, the stable "Xcode.app" first. */
+async function installedXcodeApps() {
+  const apps = (await readdir("/Applications")).filter((name) =>
+    /^Xcode.*\.app$/.test(name),
+  );
+  return apps
+    .sort((a, b) =>
+      a === "Xcode.app" ? -1 : b === "Xcode.app" ? 1 : a.localeCompare(b),
+    )
+    .map((name) => join("/Applications", name));
 }

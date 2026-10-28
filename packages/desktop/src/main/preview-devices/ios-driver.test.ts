@@ -123,6 +123,53 @@ test("iOS prerequisites follow Xcode selection and availability is neutral on ot
     { status: "ready" },
   );
 });
+test("iOS uses an installed Xcode that is not selected", async () => {
+  const seen: Array<string | undefined> = [];
+  const host: DeviceHost = {
+    run: async (command, args, options) => {
+      const developerDir = options?.environment?.DEVELOPER_DIR;
+      if (command === "xcode-select")
+        return {
+          exitCode: 0,
+          stdout: "/Library/Developer/CommandLineTools",
+          stderr: "",
+        };
+      seen.push(developerDir);
+      const ok = Boolean(developerDir) || command === "axe";
+      return {
+        exitCode: ok ? 0 : 1,
+        stdout:
+          command === "axe"
+            ? "axe 1.8.0"
+            : args.includes("runtimes")
+              ? JSON.stringify(list)
+              : "Xcode 27",
+        stderr: "",
+      };
+    },
+    spawn() {
+      throw new Error("not used");
+    },
+  };
+  const driver = (apps: string[]) =>
+    new IosDriver({
+      host,
+      axe: "axe",
+      cache: "/tmp/frames",
+      platform: "darwin",
+      xcodeApps: async () => apps,
+    });
+  assert.deepEqual(await driver(["/Applications/Xcode.app"]).availability(), {
+    status: "ready",
+  });
+  assert.ok(
+    seen.every((dir) => dir === "/Applications/Xcode.app/Contents/Developer"),
+  );
+  const missing = await driver([]).availability();
+  assert.equal(missing.status, "missing-prerequisites");
+  if (missing.status === "missing-prerequisites")
+    assert.equal(missing.prerequisites[0]!.status, "missing");
+});
 test("iOS boots headlessly and degrades controls when AXe cannot take a frame", async () => {
   const root = await mkdtemp(join(tmpdir(), "blame-ios-")),
     commands: string[][] = [];
