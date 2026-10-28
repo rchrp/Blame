@@ -175,7 +175,9 @@ function PhonePreview({
 /** The manifest that tells which surface a configuration shows. */
 export function usePreviewSurfaceManifest(
   provided: PreviewManifest | undefined,
-  worktree: string | undefined
+  worktree: string | undefined,
+  /** Read again when it changes: a new story writes its manifest later. */
+  refreshKey?: string
 ) {
   const platform = usePlatform()
   const [manifest, setManifest] = React.useState(provided)
@@ -205,7 +207,7 @@ export function usePreviewSurfaceManifest(
     return () => {
       cancelled = true
     }
-  }, [platform, worktree, provided])
+  }, [platform, worktree, provided, refreshKey])
   return manifest
 }
 

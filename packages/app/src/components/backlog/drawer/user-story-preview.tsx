@@ -483,7 +483,8 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
     )
   const surfaceManifest = usePreviewSurfaceManifest(
     projectRun?.surface?.manifest,
-    setupLogWorktree ?? undefined
+    setupLogWorktree ?? undefined,
+    runtimeLifecycle?.phase
   )
   const browserSurface =
     previewSurfaceType(surfaceConfiguration, surfaceManifest) === "web"
