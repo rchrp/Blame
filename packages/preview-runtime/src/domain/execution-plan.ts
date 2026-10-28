@@ -54,7 +54,13 @@ export type ServiceLaunchPlan = {
   dependsOn: string[];
   endpoints: ServiceEndpointPlan[];
   bindings: ServiceBindingPlan[];
+  surface?: ServiceSurfacePlan;
 };
+
+export type ServiceSurfacePlan =
+  | { type: "web"; device?: "phone" | "tablet" }
+  | { type: "terminal"; columns: number; rows: number; endpointId: "terminal" }
+  | { type: "display"; width: number; height: number; endpointId: "display"; sidecarServiceId: string };
 
 export type CachePlan = { name: string; target: string };
 
@@ -104,7 +110,7 @@ export type CompatibilityRequirement =
   | { type: "container-engine" };
 
 export type PreviewExecutionPlan = {
-  version: 2;
+  version: 2 | 3;
   workspaceRoot: "/workspace";
   setup: SetupTaskPlan[];
   services: ServiceLaunchPlan[];
@@ -113,6 +119,7 @@ export type PreviewExecutionPlan = {
   environmentPlan: import("./environment-plan.js").SecretPlan;
   networking: NetworkPlan;
   detectedCompatibility: CompatibilityRequirement[];
+  tools?: { ttyd?: true };
 };
 
 export type RuntimeSelection = {

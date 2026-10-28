@@ -14,6 +14,7 @@ import type {
   PreviewManifestSetupTask,
 } from "./types.js";
 import { previewEnvironmentValueRejection } from "./environment-security.js";
+import { parseSurface, validateSurfaces } from "./parser-surfaces.js";
 
 const serviceKinds = new Set<PreviewManifestServiceKind>([
   "preview",
@@ -66,6 +67,7 @@ export function parsePreviewManifest(value: unknown): PreviewManifest {
 }
 
 export function validatePreviewManifest(manifest: PreviewManifest) {
+  validateSurfaces(manifest.services);
   uniqueIds(
     "setup task",
     manifest.setup.map(({ id }) => id),
@@ -171,6 +173,7 @@ function parseService(value: unknown): PreviewManifestService {
     "dependsOn",
     "endpoints",
     "bindings",
+    "surface",
   ]);
   return {
     id: requiredString(value.id, "service.id"),
@@ -184,6 +187,7 @@ function parseService(value: unknown): PreviewManifestService {
     dependsOn: parseOptionalStrings(value.dependsOn, "service.dependsOn"),
     endpoints: parseEndpoints(value.endpoints),
     bindings: parseBindings(value.bindings),
+    ...(value.surface === undefined ? {} : { surface: parseSurface(value.surface) }),
   };
 }
 
@@ -585,6 +589,7 @@ function validateService(
 }
 
 function validatePreviewService(service: PreviewManifestService) {
+  if (service.surface?.type === "terminal" || service.surface?.type === "display") return;
   if (service.kind === "preview") {
     const published = service.endpoints.filter(
       ({ protocol }) => protocol !== "tcp",

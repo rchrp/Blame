@@ -15,6 +15,7 @@ import { defaultProbeTimeoutMs } from "../domain/functional-probes.js";
 import {
   launchEnvironment,
   normalizedLaunchCommand,
+  shellQuote,
 } from "./command-normalization.js";
 import { PreviewRuntimeError } from "../domain/preview-errors.js";
 import { endpointRouteKey } from "../domain/endpoint-map.js";
@@ -100,7 +101,8 @@ export function compilePreviewManifest(
       ? ["A browser binding targets a separately authenticated origin."]
       : []),
   ];
-  const requiresWebSockets = hints.some((hint) => hint.type === "websocket");
+  const terminal = services.some((service) => service.surface?.type === "terminal");
+  const requiresWebSockets = terminal || hints.some((hint) => hint.type === "websocket");
   const detectedCompatibility: CompatibilityRequirement[] = [
     { type: "bidirectional-sync" },
     { type: "container-engine" },
@@ -115,7 +117,8 @@ export function compilePreviewManifest(
     })),
   ];
   return {
-    version: 2,
+    version: terminal ? 3 : 2,
+    ...(terminal ? { tools: { ttyd: true as const } } : {}),
     workspaceRoot: "/workspace",
     setup: orderedSetupTasks(manifest).map((task) => ({
       id: task.id,
@@ -227,15 +230,22 @@ function compileService(
   service: PreviewManifestService,
   serviceIds: Set<string>,
 ): ServiceLaunchPlan {
+  const terminal = service.surface?.type === "terminal" ? service.surface : undefined;
+  const command = service.command && normalizedLaunchCommand(service.command);
   return {
     id: service.id,
     kind: service.kind,
     container: structuredClone(service.container),
     workingDir: service.workingDir || "/workspace",
-    command: service.command && normalizedLaunchCommand(service.command),
+    command: terminal
+      ? `/opt/blame/tools/ttyd --port 7681 --interface 0.0.0.0 --writable --max-clients 1 --ping-interval 20 -- sh -c ${shellQuote(`sh -c ${shellQuote(command!)}; code=$?; printf '\\033]1337;BlameExit=%s\\007' "$code"; exit "$code"`)}`
+      : command,
+    ...(terminal ? { surface: { type: "terminal" as const, columns: terminal.columns ?? 120, rows: terminal.rows ?? 32, endpointId: "terminal" as const } }
+      : service.surface?.type === "web" ? { surface: { ...service.surface } } : {}),
     entrypoint: service.entrypoint ? [...service.entrypoint] : undefined,
     user: service.user,
     environment: launchEnvironment(service.command, {
+      ...(terminal ? { TERM: "xterm-256color", COLORTERM: "truecolor", LANG: "C.UTF-8" } : {}),
       ...(service.environment ?? {}),
     }),
     dependsOn: [
@@ -297,7 +307,9 @@ function compileEndpoint(
 function serviceEndpoints(
   service: PreviewManifestService,
 ): PreviewManifestEndpoint[] {
-  return service.endpoints;
+  return service.surface?.type === "terminal"
+    ? [...service.endpoints, { id: "terminal", protocol: "http", port: 7681, healthcheck: { type: "tcp", timeoutMs: 30000 } }]
+    : service.endpoints;
 }
 
 function browserEndpoints(services: PreviewManifestService[]) {

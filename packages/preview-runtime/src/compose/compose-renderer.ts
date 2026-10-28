@@ -166,7 +166,10 @@ function runtimeService(service: ServiceLaunchPlan, context: RenderContext) {
     ),
     network_mode: sharesLoopback ? `service:${anchor}` : undefined,
     ports: sharesLoopback ? undefined : publishedPorts(service, context),
-    volumes: serviceVolumes(
+    volumes: service.surface?.type === "terminal" ? [
+      ...(serviceVolumes(service, service.id, context, needsWorkspace(service)) ?? []),
+      "/opt/blame/tools:/opt/blame/tools:ro",
+    ] : serviceVolumes(
       service,
       service.id,
       context,

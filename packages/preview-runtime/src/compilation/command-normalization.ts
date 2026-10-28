@@ -10,6 +10,11 @@ export function normalizedLaunchCommand(command: string) {
   );
 }
 
+/** A literal POSIX shell argument, including embedded quotes and newlines. */
+export function shellQuote(value: string) {
+  return "'" + value.replace(/'/g, "'\"'\"'") + "'";
+}
+
 // Package managers skip prompts and progress bars when CI is set.
 export function launchEnvironment(
   command: string | undefined,

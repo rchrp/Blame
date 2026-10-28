@@ -1,6 +1,7 @@
 export type PreviewEndpointProtocol = "http" | "https" | "ws" | "wss";
 
 export type PreviewEndpointRoute = {
+  surface?: "web" | "terminal" | "display";
   routeId: string;
   serviceId: string;
   endpointId: string;

@@ -29,5 +29,6 @@ export type {
   PreviewManifestRisk,
   PreviewManifestService,
   PreviewManifestServiceKind,
+  PreviewManifestSurface,
   PreviewManifestSetupTask,
 } from "./types.js";

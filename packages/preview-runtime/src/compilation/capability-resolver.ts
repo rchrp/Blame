@@ -9,6 +9,8 @@ import type { RuntimeProfileId } from "../domain/runtime-profile.js";
 
 const profileCapabilities: Record<RuntimeProfileId, RuntimeCapabilities> = {
   "local-container": {
+    terminalSurface: true,
+    displaySurface: true,
     dockerCompose: true,
     sharedLoopback: false,
     snapshots: false,
@@ -20,6 +22,8 @@ const profileCapabilities: Record<RuntimeProfileId, RuntimeCapabilities> = {
     bidirectionalSync: false,
   },
   "vercel-compose": {
+    terminalSurface: false,
+    displaySurface: false,
     dockerCompose: true,
     sharedLoopback: true,
     snapshots: true,
@@ -45,6 +49,11 @@ export function resolveCapabilities(
   capabilities: RuntimeCapabilities = runtimeCapabilities(profile),
 ): CapabilityReport {
   const incompatibilities: CapabilityIncompatibility[] = [];
+  for (const type of ["terminal", "display"] as const) {
+    if (plan.services.some((service) => service.surface?.type === type) && !capabilities[`${type}Surface`]) {
+      incompatibilities.push({ code: "SURFACE_UNSUPPORTED", capability: `${type}Surface`, message: `${type === "terminal" ? "Terminal" : "Screen"} previews need an updated sandbox runner. Update the preview runtime and try again.` });
+    }
+  }
   requireCapability(
     incompatibilities,
     capabilities,

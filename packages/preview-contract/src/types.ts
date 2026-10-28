@@ -33,6 +33,12 @@ export type PreviewManifestSetupTask = {
 
 export type PreviewManifestServiceKind = "preview" | "dependency" | "worker";
 
+/** What a preview shows; omitted means a web page. */
+export type PreviewManifestSurface =
+  | { type: "web"; device?: "phone" | "tablet" }
+  | { type: "terminal"; columns?: number; rows?: number }
+  | { type: "display"; width?: number; height?: number };
+
 export type PreviewManifestEndpointHealthcheck = {
   type: "http" | "tcp";
   path?: string;
@@ -76,6 +82,7 @@ export type PreviewManifestService = {
   dependsOn?: string[];
   endpoints: PreviewManifestEndpoint[];
   bindings?: PreviewManifestBinding[];
+  surface?: PreviewManifestSurface;
 };
 
 export type PreviewManifestProbeTarget = {
@@ -104,7 +111,7 @@ export type PreviewManifestRisk = {
   message: string;
 };
 
-/** Canonical, unversioned, container-only preview manifest. */
+/** Canonical, unversioned preview manifest. */
 export type PreviewManifest = {
   confidence: PreviewManifestConfidence;
   project: PreviewManifestProject;

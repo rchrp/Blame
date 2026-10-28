@@ -7,3 +7,4 @@ export * from "./compose-engine.js";
 export * from "./docker-host.js";
 export * from "./readiness.js";
 export * from "./service-selection.js";
+export * from "./blame-tools.js";
