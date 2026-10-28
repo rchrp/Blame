@@ -23,6 +23,7 @@ import { useProjectInitialization } from "@/components/project-initialization/us
 import { useCloudAuth } from "@/context/cloud-auth"
 import { useProjects } from "@/context/projects"
 import { createCloudApi } from "@/lib/cloud-api"
+import { cn } from "@/lib/utils"
 import { EnvironmentSetupView } from "./environment-setup-view"
 import { InitializationSetupEditor } from "./initialization-setup"
 import {
@@ -101,8 +102,13 @@ export function InitializationPage() {
   }
 
   return (
-    <div className="flex h-svh min-h-0 min-w-0 flex-col items-center overflow-y-auto px-4 pt-[calc(var(--header-height)+1rem)] pb-12 md:h-[calc(100svh_-_1rem)] lg:px-6 lg:pt-[calc(var(--header-height)+1.5rem)]">
-      <div className="flex w-full max-w-5xl flex-col gap-10">
+    <div
+      className={cn(
+        "flex h-svh min-h-0 min-w-0 flex-col items-center overflow-y-auto px-4 pt-[calc(var(--header-height)+1rem)] md:h-[calc(100svh_-_1rem)] lg:px-6 lg:pt-[calc(var(--header-height)+1.5rem)]",
+        editing ? "pb-0" : "pb-12"
+      )}
+    >
+      <div className="flex min-h-full w-full max-w-5xl shrink-0 flex-col gap-10">
         <header className="flex flex-wrap items-end justify-between gap-4">
           <div className="grid gap-1">
             <h2 className="font-heading text-2xl font-semibold tracking-normal">

@@ -16,8 +16,9 @@ import { useCloudAuth } from "@/context/cloud-auth"
 import { useCodePracticeAnalysis } from "@/components/practices/data/use-code-practice-analysis"
 import { useSecurityAudits } from "@/components/security/data/use-security-audits"
 import { useProjectInitialization } from "@/components/project-initialization/use-project-initialization"
+import { InitializationStatusBadge } from "@/components/project-initialization/initialization-status-badge"
 import {
-  BoxesIcon,
+  BoxIcon,
   CircleHelpIcon,
   ClipboardCheckIcon,
   CloudUploadIcon,
@@ -69,7 +70,7 @@ const data = {
     {
       title: "Preview Environment",
       url: "/initialization",
-      icon: <BoxesIcon />,
+      icon: <BoxIcon />,
     },
     {
       title: "Code Practices",
@@ -101,7 +102,15 @@ export function AppSidebar({
     item.url === "/practices"
       ? { ...item, status: codePracticeAnalysisStatus(codePracticeAnalysis) }
       : item.url === "/initialization"
-        ? { ...item, status: initializationStatus(initialization) }
+        ? {
+            ...item,
+            status: initialization ? (
+              <InitializationStatusBadge
+                availability={initialization.availability}
+                initialization={initialization.initialization}
+              />
+            ) : undefined,
+          }
         : item.url === "/security" && securityAudits.running
           ? {
               ...item,
@@ -137,25 +146,6 @@ export function AppSidebar({
         {auth.user ? <NavUser user={auth.user} onLogout={auth.logout} /> : null}
       </SidebarFooter>
     </Sidebar>
-  )
-}
-
-function initializationStatus(
-  initialization: ReturnType<typeof useProjectInitialization>
-) {
-  if (initialization?.availability === "running")
-    return (
-      <LoaderCircleIcon
-        aria-label="Preview environment setup in progress"
-        className="size-3.5 animate-spin text-muted-foreground"
-      />
-    )
-  if (initialization?.availability !== "unavailable") return undefined
-  return (
-    <span
-      aria-label="Preview environment needs attention"
-      className="size-2 rounded-full bg-amber-500"
-    />
   )
 }
 

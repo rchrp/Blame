@@ -22,6 +22,14 @@ import {
 } from "./use-deploy-page"
 
 export function DeployPage() {
+  return (
+    <div className="flex h-svh min-h-0 min-w-0 flex-col overflow-hidden md:h-[calc(100svh_-_1rem)]">
+      <DeployPageContent />
+    </div>
+  )
+}
+
+function DeployPageContent() {
   const auth = useCloudAuth()
   const deploy = useDeployPage()
   const [confirmOpen, setConfirmOpen] = React.useState(false)

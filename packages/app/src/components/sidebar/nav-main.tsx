@@ -67,9 +67,9 @@ export function NavMain({
                   }}
                 >
                   {item.icon}
-                  <span>{item.title}</span>
+                  <span className="min-w-0 truncate">{item.title}</span>
                   {item.status ? (
-                    <span className="ml-auto inline-flex items-center">
+                    <span className="ml-auto inline-flex shrink-0 items-center">
                       {item.status}
                     </span>
                   ) : routeShortcutLabel(item.url) ? (

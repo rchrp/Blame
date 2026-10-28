@@ -141,32 +141,6 @@ export function InitializationSetupEditor({
   return (
     <FieldErrorContext.Provider value={fieldError}>
       <div className="grid gap-6">
-        <div className="sticky top-[calc(var(--header-height)+0.5rem)] z-10 flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-popover px-4 py-3 shadow-[0_8px_24px_-12px_rgb(0_0_0/0.6)]">
-          <div className="grid gap-0.5">
-            <span className="text-sm font-medium">Editing the setup</span>
-            <span className="text-xs text-muted-foreground">
-              {locked ??
-                "Stories started from now on use it. Blame checks it before saving."}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Tabs value={view} onValueChange={switchView}>
-              <TabsList>
-                <TabsTrigger value="form">Fields</TabsTrigger>
-                <TabsTrigger value="json">JSON</TabsTrigger>
-              </TabsList>
-            </Tabs>
-            <Button variant="ghost" onClick={cancel} disabled={saving}>
-              Cancel
-            </Button>
-            <Button
-              onClick={() => void save()}
-              disabled={saving || Boolean(locked)}
-            >
-              {saving ? "Saving…" : "Save setup"}
-            </Button>
-          </div>
-        </div>
         {error ? (
           <Alert variant="destructive">
             <AlertTitle>The setup can&apos;t be saved yet</AlertTitle>
@@ -192,6 +166,32 @@ export function InitializationSetupEditor({
         ) : (
           <SetupForm saved={base} draft={draft} onChange={editDraft} />
         )}
+      </div>
+      <div className="sticky bottom-4 z-10 mt-auto flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-popover px-4 py-3">
+        <div className="grid gap-0.5">
+          <span className="text-sm font-medium">Editing the setup</span>
+          <span className="text-xs text-muted-foreground">
+            {locked ??
+              "Stories started from now on use it. Blame checks it before saving."}
+          </span>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Tabs value={view} onValueChange={switchView}>
+            <TabsList>
+              <TabsTrigger value="form">Fields</TabsTrigger>
+              <TabsTrigger value="json">JSON</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <Button variant="ghost" onClick={cancel} disabled={saving}>
+            Cancel
+          </Button>
+          <Button
+            onClick={() => void save()}
+            disabled={saving || Boolean(locked)}
+          >
+            {saving ? "Saving…" : "Save setup"}
+          </Button>
+        </div>
       </div>
       <AlertDialog open={confirmDiscard} onOpenChange={setConfirmDiscard}>
         <AlertDialogContent>
