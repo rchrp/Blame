@@ -8,3 +8,4 @@ export * from "./docker-host.js";
 export * from "./readiness.js";
 export * from "./service-selection.js";
 export * from "./blame-tools.js";
+export * from "./display-actions.js";

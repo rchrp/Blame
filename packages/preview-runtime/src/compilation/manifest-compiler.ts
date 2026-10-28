@@ -23,8 +23,10 @@ import {
   mergeEnvironmentPlan,
   type EnvironmentPlanEntry,
 } from "../domain/environment-plan.js";
+import { displaySurfaceServices } from "./display-surface.js";
 
 export type ManifestCompilerOptions = {
+  displayImage?: string;
   gatewayPortStart?: number;
   compatibilityHints?: Array<
     | {
@@ -57,12 +59,16 @@ export function compilePreviewManifest(
     );
   }
   const serviceIds = new Set(manifest.services.map(({ id }) => id));
-  const services = manifest.services.map((service) =>
-    compileService(service, serviceIds),
-  );
+  const services = manifest.services.flatMap((service) => {
+    const compiled = compileService(service, serviceIds);
+    return service.surface?.type === "display" ? displaySurfaceServices(compiled, service.surface, options.displayImage) : [compiled];
+  });
   const hints = options.compatibilityHints ?? [];
   assertCompatibilityHints(hints, services);
-  const publishedEndpoints = browserEndpoints(manifest.services);
+  const publishedEndpoints: Array<{ service: { id: string }; endpoint: PreviewManifestEndpoint }> = [
+    ...browserEndpoints(manifest.services),
+    ...services.filter((s) => s.surface?.type === "display" && s.id === s.surface.sidecarServiceId).flatMap((service) => service.endpoints.map((endpoint) => ({ service, endpoint }))),
+  ];
   const environmentPlan = compileEnvironmentPlan(manifest);
   const gatewayStart = options.gatewayPortStart ?? 43_000;
   const gatewayListeners = publishedEndpoints.map(
@@ -102,7 +108,8 @@ export function compilePreviewManifest(
       : []),
   ];
   const terminal = services.some((service) => service.surface?.type === "terminal");
-  const requiresWebSockets = terminal || hints.some((hint) => hint.type === "websocket");
+  const display = services.some((service) => service.surface?.type === "display");
+  const requiresWebSockets = terminal || display || hints.some((hint) => hint.type === "websocket");
   const detectedCompatibility: CompatibilityRequirement[] = [
     { type: "bidirectional-sync" },
     { type: "container-engine" },
@@ -117,7 +124,7 @@ export function compilePreviewManifest(
     })),
   ];
   return {
-    version: terminal ? 3 : 2,
+    version: terminal || display ? 3 : 2,
     ...(terminal ? { tools: { ttyd: true as const } } : {}),
     workspaceRoot: "/workspace",
     setup: orderedSetupTasks(manifest).map((task) => ({

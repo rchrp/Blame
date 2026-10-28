@@ -746,6 +746,7 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
                 ) : previewBrowser ? (
                   <PreviewSurface
                     configuration={surfaceConfiguration}
+                    onRestart={() => void previewRunner.control("restart", previewRunner.selectedId)}
                     storyId={userStory?.id}
                     surfaceWorktree={setupLogWorktree ?? undefined}
                     client={previewBrowser}

@@ -175,6 +175,7 @@ function runtimeService(service: ServiceLaunchPlan, context: RenderContext) {
       context,
       needsWorkspace(service),
     ),
+    shm_size: service.surface?.type === "display" && service.id !== service.surface.sidecarServiceId ? "1g" : undefined,
     user: serviceUser(service, context.target),
     healthcheck: context.healthchecks.get(service.id),
     // Locally the desktop restarts the previews people want running: a
@@ -382,7 +383,9 @@ function serviceVolumes(
   workspace: boolean,
 ) {
   const { plan, target } = context;
-  const volumes = [
+  const display = "surface" in item && item.surface?.type === "display" ? item.surface : undefined;
+  const volumes: MountedVolume[] = [
+    ...(display ? [{ alias: `surface-x11-${safeId(display.sidecarServiceId)}`, name: `${projectName(target)}_x11_${safeId(display.sidecarServiceId)}`, target: "/tmp/.X11-unix", owner: "project" as const, shared: false, tracksSetup: false }] : []),
     ...cacheVolumes(plan, target),
     ...(workspace ? packageNodeModulesVolumes(plan, target, item) : []),
   ];

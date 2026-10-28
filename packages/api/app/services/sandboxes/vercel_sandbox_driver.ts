@@ -109,6 +109,7 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
     capabilities.terminalSurface = /^0\.(?:[3-9]|[1-9]\d+)\.|^[1-9]\d*\./.test(
       this.config.sandbox.runnerVersion
     )
+    capabilities.displaySurface = capabilities.terminalSurface
     const report = resolveCapabilities(this.profile, plan, capabilities)
     const configurationFailure = this.configurationFailure()
     if (configurationFailure) {
@@ -379,6 +380,10 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
       environment: input.environment,
       timeoutMs: input.timeoutMs,
     })
+  }
+
+  surfaceAction(handle: RuntimeHandle, serviceId: string, args: Record<string, unknown>) {
+    return this.runnerCall<ExecResult>(handle, { operation: 'surface-action', serviceId, arguments: args })
   }
 
   async inspect(

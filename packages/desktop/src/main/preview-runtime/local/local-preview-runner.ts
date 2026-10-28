@@ -70,6 +70,7 @@ export function localPreviewEngine(
     stateDirectory: localPreviewPaths(worktree).engineState,
     log: (chunk) => {
       options.log?.(chunk);
+      if (chunk.includes("Waiting for the app window")) options.step?.("Waiting for the app window");
       const setup = /^Running setup (.+)\.$/m.exec(chunk);
       if (setup) options.step?.(`Running setup task ${setup[1]}`);
     },
@@ -268,6 +269,7 @@ export async function localPreviewEndpoints(worktree: string) {
           ? [
               {
                 serviceId: service.id,
+                ...(service.surface ? { surface: service.surface.type } : {}),
                 endpointId: endpoint.id,
                 protocol: endpoint.protocol as "http" | "https",
                 port: target.port,

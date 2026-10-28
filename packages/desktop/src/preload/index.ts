@@ -69,6 +69,8 @@ ipcRenderer.on("auth:callback", (_event, delivery) => {
 const api: BlameDesktopApi = {
   previewSurfaces: {
     enabled: () => ipcRenderer.invoke("preview-surfaces:enabled"),
+    open: (scope) => ipcRenderer.invoke("preview-surfaces:open", scope),
+    action: (scope, args) => ipcRenderer.invoke("preview-surfaces:action", scope, args),
   },
   previewTerminal: {
     attach: (scope) => ipcRenderer.invoke("preview-terminal:attach", scope),

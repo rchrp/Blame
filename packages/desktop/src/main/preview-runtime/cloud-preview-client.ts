@@ -238,6 +238,10 @@ export class CloudPreviewClient implements PreviewSessionBackend<CloudManagedPre
     });
   }
 
+  surfaceAction(sessionId: string, serviceId: string, args: Record<string, unknown>) {
+    return this.request<import("@blame/preview-runtime").ExecResult>(`/preview-sessions/${encoded(sessionId)}/surface-action`, { method: "POST", body: { serviceId, arguments: args } });
+  }
+
   prepareSourceUpload(
     sessionId: string,
     artifact: {

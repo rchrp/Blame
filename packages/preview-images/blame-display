@@ -1,0 +1,104 @@
+#!/usr/bin/python3
+"""Screen transport and bounded input helpers; run as the project user."""
+import base64
+import json
+import os
+import signal
+import subprocess
+import sys
+import time
+
+
+def run(*args, binary=False):
+    return subprocess.check_output(args, text=not binary, timeout=15)
+
+
+def main():
+    action, *args = sys.argv[1:]
+    os.environ.setdefault("DISPLAY", ":99")
+    if action == "serve":
+        import argparse
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--display", default=":99")
+        parser.add_argument("--geometry", default="1280x800")
+        parser.add_argument("--port", default="6080")
+        options = parser.parse_args(args)
+        resolution = "/tmp/.X11-unix/blame-resolution"
+        if os.path.exists(resolution):
+            with open(resolution) as saved:
+                options.geometry = saved.read().strip()
+        os.environ["DISPLAY"] = options.display
+        os.makedirs(os.path.expanduser("~/.vnc"), exist_ok=True)
+        children = []
+
+        def stop(*_):
+            for child in reversed(children):
+                child.terminate()
+            for child in children:
+                try:
+                    child.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    child.kill()
+
+        signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
+        signal.signal(signal.SIGINT, lambda *_: sys.exit(0))
+        try:
+            children.append(subprocess.Popen(["Xtigervnc", options.display, "-geometry", options.geometry, "-depth", "24", "-rfbport", "5900", "-SecurityTypes", "None", "-localhost", "yes", "-ac", "-nolisten", "tcp"]))
+            socket = "/tmp/.X11-unix/X" + options.display.lstrip(":")
+            deadline = time.monotonic() + 15
+            while not os.path.exists(socket):
+                if children[0].poll() is not None or time.monotonic() > deadline:
+                    raise RuntimeError("The virtual screen did not start")
+                time.sleep(.1)
+            children.append(subprocess.Popen(["openbox", "--sm-disable"]))
+            children.append(subprocess.Popen(["websockify", "0.0.0.0:" + options.port, "127.0.0.1:5900"]))
+            while all(child.poll() is None for child in children):
+                time.sleep(.25)
+            raise RuntimeError("The virtual screen stopped")
+        finally:
+            stop()
+    elif action == "resolution":
+        width, height = map(int, args)
+        if (width, height) not in [(1280, 800), (1440, 900), (1920, 1080)]:
+            raise ValueError("Unsupported resolution")
+        with open("/tmp/.X11-unix/blame-resolution", "w") as saved:
+            saved.write(str(width) + "x" + str(height))
+    elif action == "shot":
+        data = run("import", "-window", "root", "png:-", binary=True)
+        sys.stdout.buffer.write(base64.b64encode(data) if "--base64" in args else data)
+    elif action == "windows":
+        windows = []
+        for line in run("wmctrl", "-lpG").splitlines():
+            fields = line.split(None, 8)
+            if len(fields) < 9:
+                continue
+            state = run("xprop", "-id", fields[0], "_NET_WM_STATE")
+            if "_NET_WM_STATE_HIDDEN" not in state:
+                windows.append({"id": fields[0], "x": int(fields[3]), "y": int(fields[4]), "width": int(fields[5]), "height": int(fields[6]), "title": fields[8]})
+        print(json.dumps(windows))
+    elif action == "click":
+        x, y, button, count = args
+        run("xdotool", "mousemove", x, y, "click", "--repeat", count, "--delay", "100", button)
+    elif action == "type":
+        run("xdotool", "type", "--clearmodifiers", "--", args[0])
+    elif action == "key":
+        if args[0].startswith("-"):
+            raise ValueError("Invalid key")
+        run("xdotool", "key", "--clearmodifiers", args[0])
+    elif action == "scroll":
+        delta = int(args[0])
+        if delta:
+            run("xdotool", "click", "--repeat", str(min(50, max(1, abs(delta) // 40))), "4" if delta < 0 else "5")
+    elif action == "drag":
+        x, y, tx, ty = args
+        run("xdotool", "mousemove", x, y, "mousedown", "1", "mousemove", "--sync", tx, ty, "mouseup", "1")
+    else:
+        raise ValueError("Unknown screen action")
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as error:
+        print(str(error), file=sys.stderr)
+        sys.exit(1)

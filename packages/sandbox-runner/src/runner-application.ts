@@ -32,6 +32,7 @@ import {
   normalizeRuntimeSelection,
   probeServices,
   runFunctionalProbes,
+  displayActionCommand,
 } from "@blame/preview-runtime/compose";
 import { GatewaySupervisor } from "./gateway/gateway-supervisor.js";
 import { importSourceArtifact } from "./workspace/source-importer.js";
@@ -87,6 +88,12 @@ export class RunnerApplication {
         return acknowledgeSourceDelta(request.revision);
       case "exec":
         return this.exec(request);
+      case "surface-action": {
+        const state = await requiredPreparedState();
+        const service = state.plan?.services.find((s) => s.id === request.serviceId);
+        if (!state.running || service?.surface?.type !== "display" || service.surface.sidecarServiceId !== service.id || !state.selection?.serviceIds?.includes(service.id)) throw runnerError("INVALID_SURFACE", "Start this screen preview before using it.");
+        return compose.execInService(service.id, displayActionCommand(request.arguments));
+      }
     }
   }
 
@@ -354,6 +361,7 @@ export class RunnerApplication {
           listener.endpointId,
         ),
         serviceId: listener.serviceId,
+        ...(state.plan!.services.find((s) => s.id === listener.serviceId)?.surface ? { surface: state.plan!.services.find((s) => s.id === listener.serviceId)!.surface!.type } : {}),
         endpointId: listener.endpointId,
         protocol: "http" as const,
         logicalPort: listener.logicalPort,
@@ -573,7 +581,7 @@ function handshake() {
     imageDigest: process.env.BLAME_RUNNER_IMAGE_DIGEST ?? "unconfigured",
     capabilities: {
       terminalSurface: true,
-      displaySurface: false,
+      displaySurface: true,
       dockerCompose: true,
       sharedLoopback: true,
       snapshots: true,

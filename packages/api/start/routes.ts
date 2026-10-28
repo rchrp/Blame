@@ -10,6 +10,7 @@
 import { middleware } from '#start/kernel'
 import router from '@adonisjs/core/services/router'
 import { controllers } from '#generated/controllers'
+const PreviewSurfacesController = () => import('#controllers/preview_surfaces_controller')
 
 const ProviderCredentialsController = () => import('#controllers/provider_credentials_controller')
 const ModelCatalogController = () => import('#controllers/model_catalog_controller')
@@ -84,6 +85,7 @@ router
           .use(middleware.premium({ feature: 'cloud_preview' }))
         router.get('/:id', [PreviewSessionsController, 'show'])
         router.post('/:id/actions', [PreviewSessionsController, 'action'])
+        router.post('/:id/surface-action', [PreviewSurfacesController, 'action']).use(middleware.premium({ feature: 'cloud_preview' }))
         router
           .post('/:id/source/import', [PreviewSessionsController, 'sourceImport'])
           .use(middleware.premium({ feature: 'cloud_preview' }))

@@ -1,3 +1,7 @@
+import { surfaceUpstream } from "../preview-surfaces/surface-upstream.ts";
+import { openSurfaceChannel } from "../preview-surfaces/surface-proxy.ts";
+import { displaySurfaceAction } from "../preview-surfaces/display-surface.ts";
+import { surfaceEnabled } from "../preview-surfaces/experimental-surfaces.ts";
 import { app, ipcMain, type WebContents } from "electron";
 import type { PreviewService } from "../preview-runtime/preview-service.ts";
 import {
@@ -14,6 +18,16 @@ export function registerPreviewSurfacesIpc(options: {
   isAppWindow(sender: WebContents): boolean;
 }) {
   configureSurfaceSessions(options.service);
+  ipcMain.handle("preview-surfaces:open", async (event, scope: SurfaceScope) => {
+    authorized(event.sender);
+    if (!surfaceEnabled("display")) throw new Error("Screen previews are not enabled on this computer.");
+    const channel = await openSurfaceChannel(() => surfaceUpstream(scope, "display", options.service));
+    return { url: channel.url };
+  });
+  ipcMain.handle("preview-surfaces:action", async (event, scope: SurfaceScope, args: Record<string, unknown>) => {
+    authorized(event.sender);
+    return displaySurfaceAction(scope, args, options.service);
+  });
   const authorized = (sender: WebContents) => {
     if (!options.isAppWindow(sender))
       throw new Error("Untrusted preview request");

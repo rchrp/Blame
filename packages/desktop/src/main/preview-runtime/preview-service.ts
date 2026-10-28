@@ -113,6 +113,10 @@ export class PreviewService {
     return this.cloudClient().accessTicket(sessionId, routeId);
   }
 
+  surfaceAction(sessionId: string, serviceId: string, args: Record<string, unknown>) {
+    return this.cloudClient().surfaceAction(sessionId, serviceId, args);
+  }
+
   async openExternal(sessionId: string, routeId?: string) {
     await launchExternalPreview(
       await this.cloudClient().accessTicket(sessionId, routeId),

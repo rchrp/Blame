@@ -164,6 +164,7 @@ export class LocalPreviewDriver implements PreviewRuntimeDriver {
     const mapped = routes.map((route) => ({
       routeId: `${sessionId}:${route.serviceId}:${route.endpointId}`,
       serviceId: route.serviceId,
+      ...(route.surface ? { surface: route.surface } : {}),
       endpointId: route.endpointId,
       protocol: route.protocol,
       logicalHost: "localhost" as const,

@@ -24,4 +24,8 @@ export type PreviewTerminalClient = {
     callback: (event: { type: "stdout" | "state"; data: string }) => void
   ): () => void
 }
-export type PreviewSurfacesClient = { enabled(): Promise<string[]> }
+export type PreviewSurfacesClient = {
+  enabled(): Promise<string[]>
+  open(scope: PreviewSurfaceScope): Promise<{ url: string }>
+  action(scope: PreviewSurfaceScope, args: Record<string, unknown>): Promise<{ status: string; message?: string; content?: Array<{ type: string; data: string }> }>
+}

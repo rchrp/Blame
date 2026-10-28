@@ -386,6 +386,7 @@ function developmentPreviewPrompt(input: StartDevelopmentSessionInput) {
   const initialization = input.projectInitialization;
   const configuration = initialization?.runConfigurations.find((c) => c.default) ?? initialization?.runConfigurations[0];
   const surface = initialization?.previewManifest.services.find((s) => s.id === configuration?.previewService)?.surface;
+  if (surface?.type === "display") return "The preview is the app screen. Use preview_display to list its windows, take a screenshot, click, type, press keys, scroll and drag. Coordinates are screen pixels. Check a screenshot after changing the UI. Blame manages the app and virtual screen; do not start them manually.";
   if (surface?.type === "terminal") return "The preview is a program terminal. Use preview_terminal to read its screen, type, press keys, wait for output and restart. The user sees the same terminal, so do not clear it without reason. Blame manages the service; do not start it manually.";
   if (!input.previewDevtoolsScope) return "";
   if (input.workspaceMode === "direct")

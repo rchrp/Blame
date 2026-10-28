@@ -120,3 +120,25 @@ The cloud preview sandbox runner image is still published manually with `pnpm re
 Before releasing, log Docker in to the registry with a fresh OIDC token (it expires after 12 hours) from the linked `blame-sandbox-runtime` Vercel project: `vercel env pull`, then `docker login vcr.vercel.com -u oidc --password-stdin` with `VERCEL_OIDC_TOKEN`. Signing then asks you to approve a Sigstore login in the browser. If that code expires after the image was pushed, sign the published digest without rebuilding: `node scripts/sandbox-runner-release.mjs sign sha256:<digest>`.
 
 `packages/sandbox-runner/grype.yaml` lists the critical findings the release scans accept because no fixed upstream build exists yet. Remove each entry once its fix ships.
+
+
+## Preview surfaces and GUI images
+
+Run the `Release preview images` workflow with an immutable version. It builds
+amd64 and arm64 display, GUI Node and GUI Tauri images, signs their digests with
+Sigstore, and exports package inventories, notices and distribution source
+archives. The workflow also attaches these files to the permanent GitHub release. Keep
+those release assets while distributing the images.
+
+Download the three `.image` files to one folder and run
+`node scripts/preview-image-pins.mjs <folder>`. Review and commit the generated
+pins. Never replace a missing release with a mutable tag or an invented digest.
+Rebuild the runtime images to prefetch the display image after updating the pins.
+
+Build and publish sandbox runner 0.3.0 with `pnpm release:sandbox-runner` using
+the existing release configuration, then update the API runner version **and its
+verified image digest together**. Older runners keep serving version 2 web plans;
+terminal and display plans require version 3. Keep `BLAME_EXPERIMENTAL_SURFACES`
+enabled only for the surfaces being validated until the spec's acceptance matrix
+has passed. The first-use desktop ttyd installer supports runtimes predating
+this release and verifies the same hashes as the runner image.

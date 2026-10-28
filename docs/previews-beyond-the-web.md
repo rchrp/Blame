@@ -1192,3 +1192,13 @@ AGPL-3.0; the GPL tools run as separate programs inside images.
   remain deferred until the two physical-device checks pass.
 - Experimental gates stay in place until the manual acceptance matrix for each
   surface passes on the required operating systems.
+
+- Display: sidecar compilation, private X11 volume, shared memory, noVNC, bounded
+  actions, cloud owner checks and window readiness are implemented. A local
+  non-root image smoke test opened xmessage, listed its window, captured a PNG and
+  clicked it. The Linux desktop build has passed typechecks. GHCR publication is
+  blocked here by invalid GitHub release authentication, so the image pins remain
+  empty instead of using guessed digests. The workflow publishes multi-arch signed
+  images and permanent corresponding-source release assets; import its real pins
+  before enabling screen previews. Electron/Tauri/GTK/Qt and cloud acceptance
+  tests remain required.

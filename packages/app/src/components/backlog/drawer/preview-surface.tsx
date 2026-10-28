@@ -1,3 +1,4 @@
+import { DisplaySurfaceView } from "./surfaces/display-surface-view"
 import { PhoneFrame } from "./surfaces/phone-frame"
 import * as React from "react"
 import type {
@@ -11,11 +12,13 @@ import { SurfaceUnavailable } from "./surfaces/surface-unavailable"
 
 export function PreviewSurface({
   configuration,
+  onRestart,
   storyId,
   surfaceWorktree,
   manifest: providedManifest,
   ...native
 }: React.ComponentProps<typeof NativePreviewPanel> & {
+  onRestart?: () => void
   configuration?: ProjectRunConfiguration
   storyId?: string
   manifest?: PreviewManifest
@@ -80,6 +83,10 @@ export function PreviewSurface({
         }}
       />
     )
+  }
+  if (surface?.type === "display" && configuration?.previewService && storyId) {
+    if (!enabled.includes("display")) return <SurfaceUnavailable message="Screen previews are not enabled on this computer." />
+    return <DisplaySurfaceView active={native.visible} onRestart={onRestart} scope={{ storyId, serviceId: `${configuration.previewService}__display`, worktree: native.previewWorktree, sessionId: native.previewSessionId }} />
   }
   if (surface?.type === "web" && surface.device && enabled.includes("phone-web"))
     return <PhonePreview native={native} device={surface.device} />

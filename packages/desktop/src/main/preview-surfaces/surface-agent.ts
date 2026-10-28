@@ -1,3 +1,5 @@
+import { displaySurfaceAction } from "./display-surface.ts";
+import { storePreviewDevtoolsScreenshots } from "../agent-screenshots/agent-screenshots-service.ts";
 import type { PreviewService } from "../preview-runtime/preview-service.ts";
 import { localPreviewContext } from "../preview-runtime/local/local-preview-runner.ts";
 import { surfaceEnabled } from "./experimental-surfaces.ts";
@@ -15,8 +17,8 @@ export async function agentSurfaceInfo(
     (s) => s.id === context.selected?.previewService,
   );
   const type = service?.surface?.type;
-  if (service && type === "terminal" && surfaceEnabled(type))
-    return { type, serviceId: service.id } as const;
+  if (service && (type === "terminal" || type === "display") && surfaceEnabled(type))
+    return { type, serviceId: type === "display" ? `${service.id}__display` : service.id } as const;
 }
 
 export async function agentSurfaceCall(
@@ -39,6 +41,8 @@ export async function agentSurfaceCall(
     input.workspaceMode === "cloud-mirror"
       ? await previews.findForUserStory(input.storyId, "vercel-compose")
       : undefined;
+  const scope = { storyId: input.storyId, serviceId: surface.serviceId, worktree: input.worktree, sessionId: cloud?.session?.id };
+  if (surface.type === "display") return storePreviewDevtoolsScreenshots(await displaySurfaceAction(scope, input.arguments, previews), { scope: input.storyId });
   return terminalSurfaceAction(
     {
       storyId: input.storyId,
