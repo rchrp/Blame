@@ -1,6 +1,6 @@
 import { ArrowRightIcon } from "lucide-react"
 
-import { containerAnchor, CornerLight, KindIcon } from "./environment-kinds"
+import { containerAnchor, KindIcon } from "./environment-kinds"
 import { startOrder, type StartNode } from "./environment-start-order"
 import type { SavedSetup } from "./initialization-setup-draft"
 
@@ -58,9 +58,8 @@ function ChainNode({ image, node }: { image?: string; node: StartNode }) {
           ? `${node.id}, preview on port ${node.port}`
           : node.id
       }
-      className="relative inline-flex items-center gap-2 rounded-lg border bg-background/70 px-2.5 py-1.5 text-sm font-medium transition-colors outline-none hover:bg-background focus-visible:ring-3 focus-visible:ring-ring/50"
+      className="inline-flex items-center gap-2 rounded-lg border bg-background/70 px-2.5 py-1.5 text-sm font-medium transition-colors outline-none hover:border-foreground/25 hover:bg-background focus-visible:ring-3 focus-visible:ring-ring/50"
     >
-      <CornerLight tone={kind} width="70%" height="140%" />
       <KindIcon kind={kind} image={image} className="size-3.5" />
       {node.id}
       {preview && node.port ? (
