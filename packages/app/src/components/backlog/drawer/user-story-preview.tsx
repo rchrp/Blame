@@ -465,7 +465,7 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
     ({ id }) => id === previewRunner.selectedId
   )
   const hasPreviewSurface =
-    Boolean(source || surfaceConfiguration?.previewService) ||
+    Boolean(source || surfaceConfiguration?.previewService || surfaceConfiguration?.previewTarget) ||
     runtimeStarting ||
     Boolean(previewFailure)
   const activeTab = activePreviewTab(tab, hasPreviewSurface, hasSetupLog)
@@ -738,7 +738,7 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
                 activeTab !== "preview" && "hidden"
               )}
             >
-              {(source || surfaceConfiguration?.previewService) &&
+              {(source || surfaceConfiguration?.previewService || surfaceConfiguration?.previewTarget) &&
                 (projectRunWaiting ? (
                   <StartedAppWaitingPanel source={source ?? ""} />
                 ) : setupPreviewWaiting ? (
@@ -748,6 +748,9 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
                     configuration={surfaceConfiguration}
                     onRestart={() => void previewRunner.control("restart", previewRunner.selectedId)}
                     storyId={userStory?.id}
+                    projectId={userStory?.projectId}
+                    workspaceMode={userStory?.workspaceMode}
+                    runRequested={previewRunner.runtime?.desiredStatus === "running"}
                     surfaceWorktree={setupLogWorktree ?? undefined}
                     client={previewBrowser}
                     devtoolsScope={previewScope}

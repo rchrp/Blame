@@ -40,6 +40,6 @@ export function projectRunConfigurationPreviewKey(
 function hasPreview(configuration: ProjectRunConfiguration) {
   return Boolean(
     projectRunConfigurationPreviewUrl(configuration) ||
-    configuration.previewService
+    configuration.previewService || configuration.previewTarget
   )
 }

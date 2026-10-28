@@ -15,6 +15,7 @@ import type {
 } from "./types.js";
 import { previewEnvironmentValueRejection } from "./environment-security.js";
 import { parseSurface, validateSurfaces } from "./parser-surfaces.js";
+import { parseDevices, validateDevices } from "./parser-devices.js";
 
 const serviceKinds = new Set<PreviewManifestServiceKind>([
   "preview",
@@ -52,6 +53,7 @@ export function parsePreviewManifest(value: unknown): PreviewManifest {
     "caches",
     "risks",
     "probes",
+    "devices",
   ]);
   const manifest: PreviewManifest = {
     confidence: parseConfidence(value.confidence),
@@ -61,6 +63,7 @@ export function parsePreviewManifest(value: unknown): PreviewManifest {
     caches: parseCaches(value.caches),
     risks: parseRisks(value.risks),
     probes: parseProbes(value.probes),
+    ...(value.devices === undefined ? {} : { devices: parseDevices(value.devices, { environment: parseEnvironment, command: validateCommand, path: workspaceRelativePath }) }),
   };
   validatePreviewManifest(manifest);
   return manifest;
@@ -68,6 +71,7 @@ export function parsePreviewManifest(value: unknown): PreviewManifest {
 
 export function validatePreviewManifest(manifest: PreviewManifest) {
   validateSurfaces(manifest.services);
+  validateDevices(parseDevices(manifest.devices ?? [], { environment: parseEnvironment, command: validateCommand, path: workspaceRelativePath }), manifest.services, [...manifest.setup.map((t) => t.id), ...manifest.services.flatMap((s) => s.surface?.type === "display" ? [s.id, `${s.id}__display`] : [s.id])]);
   uniqueIds(
     "setup task",
     manifest.setup.map(({ id }) => id),

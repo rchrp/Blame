@@ -470,6 +470,7 @@ export type ProjectRunConfiguration = {
   category: ProjectRunConfigurationCategory;
   services: string[];
   previewService?: string;
+  previewTarget?: string;
   scopes: string[];
   previewUrl?: string;
 };

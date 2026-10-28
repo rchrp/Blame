@@ -111,7 +111,28 @@ export type PreviewManifestRisk = {
   message: string;
 };
 
-/** Canonical, unversioned preview manifest. */
+export type PreviewManifestDeviceBinding = {
+  target: PreviewManifestBindingTarget;
+  source: PreviewManifestBindingSource;
+  format?: "url" | "host" | "port" | "host-port";
+  path?: string;
+};
+
+export type PreviewManifestDeviceTarget = {
+  id: string;
+  platform: "ios" | "android";
+  projectDir: string;
+  toolchain: "xcode" | "expo" | "react-native" | "flutter" | "gradle";
+  prepare?: string[];
+  build: { workspace?: string; project?: string; scheme?: string; configuration?: string; module?: string; variant?: string; flavor?: string; target?: string };
+  app: { bundleId?: string; applicationId?: string; launchActivity?: string };
+  device?: { model?: string; os?: string };
+  environment?: PreviewManifestEnvironment;
+  dependsOn?: string[];
+  bindings?: PreviewManifestDeviceBinding[];
+};
+
+/** Canonical manifest. Services are container-based; devices run on the host. */
 export type PreviewManifest = {
   confidence: PreviewManifestConfidence;
   project: PreviewManifestProject;
@@ -120,4 +141,5 @@ export type PreviewManifest = {
   caches: PreviewManifestCache[];
   risks: PreviewManifestRisk[];
   probes: PreviewManifestProbe[];
+  devices?: PreviewManifestDeviceTarget[];
 };

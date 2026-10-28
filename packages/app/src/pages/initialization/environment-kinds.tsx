@@ -1,6 +1,8 @@
 import * as React from "react"
 import {
   CogIcon,
+  SmartphoneIcon,
+  AppWindowIcon,
   DatabaseIcon,
   MonitorIcon,
   PlayIcon,
@@ -15,7 +17,7 @@ import { cn } from "@/lib/utils"
 // the service the preview opens. Icons stay neutral.
 
 export type EnvironmentKind =
-  "preview" | "dependency" | "worker" | "task" | "run" | "terminal"
+  "preview" | "dependency" | "worker" | "task" | "run" | "terminal" | "display" | "ios" | "android" | "host-window"
 
 export type CornerTone = "preview" | "ready" | "warning" | "failed" | "idle"
 
@@ -29,6 +31,10 @@ const lights: Record<CornerTone, [number, number, number]> = {
 }
 
 export const environmentKinds = {
+  display: { label: "Screen", text: "text-muted-foreground" },
+  ios: { label: "iOS", text: "text-muted-foreground" },
+  android: { label: "Android", text: "text-muted-foreground" },
+  "host-window": { label: "App window", text: "text-muted-foreground" },
   terminal: { label: "Terminal", text: "text-muted-foreground" },
   preview: { label: "Preview", text: "text-blue-600 dark:text-blue-400" },
   dependency: {
@@ -89,7 +95,7 @@ export function KindIcon({
   kind: EnvironmentKind
 }) {
   const Icon =
-    kind === "preview"
+    kind === "ios" || kind === "android" ? SmartphoneIcon : kind === "host-window" ? AppWindowIcon : kind === "display" ? MonitorIcon : kind === "preview"
       ? MonitorIcon
       : kind === "worker"
         ? CogIcon
@@ -156,6 +162,6 @@ export function EnvironmentSection({
 }
 
 /** The id of a container's card, so the start order can point at it. */
-export function containerAnchor(type: "service" | "task", id: string) {
+export function containerAnchor(type: "service" | "task" | "device", id: string) {
   return `environment-${type}-${id}`
 }

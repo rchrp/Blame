@@ -20,6 +20,7 @@ mountApp(root, {
     backlogStatusPip: window.blame.backlogStatusPip,
     platform: window.blame.platform,
     previewBrowser: window.blame.previewBrowser,
+    previewDevices: window.blame.previewDevices,
     previewTerminal: window.blame.previewTerminal,
     previewSurfaces: window.blame.previewSurfaces,
     previewRuntime: window.blame.previewRuntime,

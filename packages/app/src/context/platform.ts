@@ -108,6 +108,7 @@ export type Platform = {
   securityAudits?: SecurityAuditClient
   systemNotifications?: SystemNotificationsClient
   terminal?: TerminalClient
+  previewDevices?: import("./platform-preview-devices").PreviewDevicesClient
   previewTerminal?: import("./platform-preview-surfaces").PreviewTerminalClient
   previewSurfaces?: import("./platform-preview-surfaces").PreviewSurfacesClient
   telemetry?: TelemetryClient

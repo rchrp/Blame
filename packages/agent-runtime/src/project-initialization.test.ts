@@ -112,6 +112,15 @@ function canonicalResult(): {
   };
 }
 
+test("native targets select a mobile configuration without a browser URL", () => {
+  const value = canonicalResult();
+  value.previewManifest.devices = [{ id: "iphone", platform: "ios", projectDir: ".", toolchain: "xcode", build: { project: "App.xcodeproj", scheme: "App" }, app: { bundleId: "com.example.App" } }];
+  value.runConfigurations = [{ id: "iphone", name: "iPhone", command: "xcodebuild build", cwd: ".", default: true, category: "mobile", services: [], previewTarget: "iphone", scopes: ["ios"] }];
+  assert.equal(parseProjectInitializationPayload(value).runConfigurations[0]!.previewTarget, "iphone");
+  value.runConfigurations[0]!.previewService = "app";
+  assert.throws(() => parseProjectInitializationPayload(value), /cannot select|at most one/);
+});
+
 test("normalizes the canonical unversioned manifest", () => {
   const result = parseProjectInitializationPayload(canonicalResult());
 

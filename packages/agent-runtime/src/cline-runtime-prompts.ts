@@ -385,6 +385,7 @@ function developmentEnvironmentPrompt(input: StartDevelopmentSessionInput) {
 function developmentPreviewPrompt(input: StartDevelopmentSessionInput) {
   const initialization = input.projectInitialization;
   const configuration = initialization?.runConfigurations.find((c) => c.default) ?? initialization?.runConfigurations[0];
+  if (configuration?.previewTarget) return "The preview is a local device. Use preview_device to check availability, describe_ui before tapping, and screenshot to inspect the result. Coordinates are points. Build errors refer to worktree files. Use build_and_run to rebuild after edits; Blame manages the simulator and supporting containers. If the device is unavailable here, continue local validation and report the reason.";
   const surface = initialization?.previewManifest.services.find((s) => s.id === configuration?.previewService)?.surface;
   if (surface?.type === "display") return "The preview is the app screen. Use preview_display to list its windows, take a screenshot, click, type, press keys, scroll and drag. Coordinates are screen pixels. Check a screenshot after changing the UI. Blame manages the app and virtual screen; do not start them manually.";
   if (surface?.type === "terminal") return "The preview is a program terminal. Use preview_terminal to read its screen, type, press keys, wait for output and restart. The user sees the same terminal, so do not clear it without reason. Blame manages the service; do not start it manually.";

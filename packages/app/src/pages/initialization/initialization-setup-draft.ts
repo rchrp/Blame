@@ -39,6 +39,7 @@ export function containerFieldId(
 }
 
 export type SetupDraft = {
+  devices?: NonNullable<PreviewManifest["devices"]>;
   runConfigurations: { id: string; name: string; command: string }[]
   services: DraftContainer[]
   setup: DraftContainer[]
@@ -61,6 +62,7 @@ export type SavedSetup = {
 
 export function setupDraft(setup: SavedSetup): SetupDraft {
   return {
+    ...(setup.previewManifest.devices ? { devices: structuredClone(setup.previewManifest.devices) } : {}),
     runConfigurations: setup.runConfigurations.map(({ id, name, command }) => ({
       id,
       name,
@@ -182,7 +184,7 @@ export function appliedSetup(saved: SavedSetup, draft: SetupDraft): SavedSetup {
     return { ...configuration, name, command }
   })
   return checkedSetup({
-    previewManifest: withoutUndefined({ ...manifest, services, setup }),
+    previewManifest: withoutUndefined({ ...manifest, services, setup, ...(draft.devices ? { devices: draft.devices } : {}) }),
     runConfigurations,
   })
 }

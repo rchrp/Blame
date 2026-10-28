@@ -30,5 +30,7 @@ export type {
   PreviewManifestService,
   PreviewManifestServiceKind,
   PreviewManifestSurface,
+  PreviewManifestDeviceTarget,
+  PreviewManifestDeviceBinding,
   PreviewManifestSetupTask,
 } from "./types.js";

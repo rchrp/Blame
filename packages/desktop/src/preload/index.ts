@@ -67,6 +67,15 @@ ipcRenderer.on("auth:callback", (_event, delivery) => {
 });
 
 const api: BlameDesktopApi = {
+  previewDevices: {
+    availability: (scope) => ipcRenderer.invoke("preview-devices:availability", scope),
+    state: (scope) => ipcRenderer.invoke("preview-devices:state", scope),
+    start: (scope) => ipcRenderer.invoke("preview-devices:start", scope),
+    action: (scope, args) => ipcRenderer.invoke("preview-devices:action", scope, args),
+    channel: (scope) => ipcRenderer.invoke("preview-devices:channel", scope),
+    prerequisite: (scope, id) => ipcRenderer.invoke("preview-devices:prerequisite", scope, id),
+    stop: (input) => ipcRenderer.invoke("preview-devices:stop", input),
+  },
   previewSurfaces: {
     enabled: () => ipcRenderer.invoke("preview-surfaces:enabled"),
     open: (scope) => ipcRenderer.invoke("preview-surfaces:open", scope),

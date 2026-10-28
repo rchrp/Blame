@@ -82,6 +82,7 @@ export function previewRunConfigurationStatus(
   runtimeState: PreviewRuntimeSelectionState,
 ): ProjectRunConfigurationStatus {
   const services = configuration.services;
+  if (configuration.previewTarget && !services.length) return runtimeState.desiredStatus === "running" ? "running" : "stopped";
   if (hostOnlyRunConfiguration(configuration)) return "stopped";
   const matching = containers.filter(({ service }) =>
     services.includes(service),
@@ -113,7 +114,7 @@ export function previewRunConfigurationStatus(
 }
 
 function hostOnlyRunConfiguration(configuration: ProjectRunConfiguration) {
-  if (configuration.services.length) return false;
+  if (configuration.previewTarget || configuration.services.length) return false;
   return (
     configuration.category === "desktop" ||
     configuration.category === "mobile" ||
@@ -127,7 +128,8 @@ export function previewRunConfigurationServiceIds(
   manifest: PreviewManifest,
 ) {
   const runtimeServices = new Set(manifest.services.map(({ id }) => id));
-  const active = new Set(configuration.services);
+  const target = manifest.devices?.find((d) => d.id === configuration.previewTarget);
+  const active = new Set([...configuration.services, ...(target?.dependsOn ?? []), ...(target?.bindings ?? []).map((b) => b.source.service)]);
   const pending = Array.from(active);
   while (pending.length) {
     const serviceId = pending.shift();

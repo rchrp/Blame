@@ -1,3 +1,4 @@
+import { DeviceTargetFields } from "./environment-devices"
 import * as React from "react"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -292,6 +293,7 @@ function SetupForm({
           })}
         </EditList>
       </EnvironmentSection>
+      {draft.devices?.length ? <EnvironmentSection title="Devices" description="Build commands and app identifiers for local devices."><div className="grid gap-4">{draft.devices.map((target, index) => <DeviceTargetFields key={target.id} target={target} onChange={(next) => update({ devices: replace(draft.devices!, index, next) })} />)}</div></EnvironmentSection> : null}
       {draft.setup.length ? (
         <EnvironmentSection {...environmentSections.setup}>
           <EditList>

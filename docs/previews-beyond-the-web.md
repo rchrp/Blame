@@ -1202,3 +1202,12 @@ AGPL-3.0; the GPL tools run as separate programs inside images.
   images and permanent corresponding-source release assets; import its real pins
   before enabling screen previews. Electron/Tauri/GTK/Qt and cloud acceptance
   tests remain required.
+
+- iOS source implementation: device manifest and run-configuration validation,
+  one-way build mirrors, project-scoped host-build consent, prerequisites, AXe
+  1.8.0 installer (verified upstream SHA-256), simulator lifecycle, Xcode builds,
+  Flutter resident daemon, frame streaming with simctl fallback, input and
+  accessibility tools, environment bindings, device editor and lifecycle cleanup.
+  Linux unit tests cover command construction, parsing, fallback, mirrors, shared
+  bindings and the two-device/idle limits. Xcode, SwiftUI, Expo and Flutter manual
+  acceptance on a Mac is still outstanding; the `ios` gate is retained.

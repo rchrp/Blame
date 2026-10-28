@@ -166,8 +166,8 @@ test("records a block straight away when nothing was rejected", () => {
   assert.deepEqual(
     session.reportBlocked({
       category: "unsupported_stack",
-      summary: "This is an iOS app with no server.",
-      userAction: "Run stories in Direct mode.",
+      summary: "This is a watchOS app that requires a physical watch.",
+      userAction: "Use a supported preview target or test on the physical device.",
     }),
     { recorded: true },
   );

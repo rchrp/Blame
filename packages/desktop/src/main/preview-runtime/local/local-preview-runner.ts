@@ -1,3 +1,4 @@
+import { stopDevicesForWorktree } from "../../preview-devices/device-registry.ts";
 import type { PreviewExecutionPlan } from "@blame/preview-runtime";
 import {
   ComposeEngine,
@@ -202,6 +203,7 @@ export async function stopLocalPreview(
   const { stopSurfaceTerminals } =
     await import("../../preview-surfaces/surface-sessions.ts");
   stopSurfaceTerminals(undefined, worktree);
+  await stopDevicesForWorktree(worktree);
   const engine = localPreviewEngine(worktree);
   if (!(await engine.prepared())) return;
   if (!serviceIds) return engine.stop();
@@ -211,6 +213,7 @@ export async function stopLocalPreview(
 
 /** Removes the preview's containers, network and own volumes. */
 export async function removeLocalPreview(worktree: string) {
+  await stopDevicesForWorktree(worktree, true);
   await localPreviewEngine(worktree).remove();
   await rm(localPreviewPaths(worktree).engineState);
 }

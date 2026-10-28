@@ -3,6 +3,8 @@ import type {
   ProjectInitializationPreferences,
   ProjectRunConfiguration,
 } from "./types.js";
+import { previewDevicesSchema } from "./preview-device-schema.js";
+import { validateRunConfigurationPreview } from "./project-preview-validation.js";
 import {
   isDatabaseEnvironmentKey,
   normalizeLocalPreviewDatabaseEnvironmentValue,
@@ -213,6 +215,7 @@ export const projectInitializationResultSchema = {
             },
           },
         },
+        devices: previewDevicesSchema,
         caches: {
           type: "array",
           items: {
@@ -306,6 +309,7 @@ export const projectInitializationResultSchema = {
             maxItems: 20,
           },
           previewService: { type: "string" },
+          previewTarget: { type: "string" },
           scopes: {
             type: "array",
             items: { type: "string" },
@@ -415,6 +419,7 @@ function validateRunConfigurationTopology(
 ) {
   const services = new Set(manifest.services.map(({ id }) => id));
   for (const configuration of configurations) {
+    validateRunConfigurationPreview(configuration, manifest);
     validateRunConfigurationServices(configuration, manifest, services);
   }
 }
@@ -511,6 +516,7 @@ function parseRunConfiguration(value: unknown): ProjectRunConfiguration {
       "category",
       "services",
       "previewService",
+      "previewTarget",
       "scopes",
       "previewUrl",
     ],
@@ -557,6 +563,8 @@ function parseRunConfigurationTopology(value: Record<string, unknown>) {
   const services = parseRunConfigurationStrings(value.services, "services", 20);
   const scopes = parseRunConfigurationStrings(value.scopes, "scopes", 50);
   const previewService = stringValue(value.previewService);
+  const previewTarget = stringValue(value.previewTarget);
+  if (previewTarget && (category !== "mobile" || previewService)) throw new Error("A device preview needs category mobile and cannot select a previewService");
   if (requiresContainerServices(category) && !services.length) {
     throw new Error(
       "Initialization run configuration services must not be empty",
@@ -581,6 +589,7 @@ function parseRunConfigurationTopology(value: Record<string, unknown>) {
     category,
     services,
     ...(previewService ? { previewService } : {}),
+    ...(previewTarget ? { previewTarget } : {}),
     scopes,
   };
 }

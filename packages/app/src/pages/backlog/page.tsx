@@ -1848,6 +1848,7 @@ async function stopStoryRuntime(
     abortStoryAgent(story, platform),
     stopStoryProjectSetup(story, platform),
     stopManagedCloudPreview(platform, story.id),
+    platform.previewDevices?.stop({ storyId: story.id, destroy: true }),
   ])
 }
 

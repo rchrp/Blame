@@ -1,3 +1,4 @@
+import { EnvironmentDevices } from "./environment-devices"
 import * as React from "react"
 import { ChevronDownIcon } from "lucide-react"
 
@@ -70,7 +71,7 @@ export function EnvironmentSetupView({ setup }: { setup: SavedSetup }) {
               key={service.id}
               anchor={containerAnchor("service", service.id)}
               name={service.id}
-              kind={service.surface?.type === "terminal" ? "terminal" : service.kind}
+              kind={service.surface?.type === "terminal" || service.surface?.type === "display" ? service.surface.type : service.kind}
               container={service.container}
               command={service.command}
               environment={service.environment}
@@ -79,6 +80,7 @@ export function EnvironmentSetupView({ setup }: { setup: SavedSetup }) {
           ))}
         </div>
       </EnvironmentSection>
+      <EnvironmentDevices devices={manifest.devices ?? []} />
       {manifest.setup.length ? (
         <EnvironmentSection {...environmentSections.setup}>
           <div className="grid gap-3">

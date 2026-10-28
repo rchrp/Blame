@@ -1,3 +1,4 @@
+import { DeviceSurfaceView } from "./surfaces/device-surface-view"
 import { DisplaySurfaceView } from "./surfaces/display-surface-view"
 import { PhoneFrame } from "./surfaces/phone-frame"
 import * as React from "react"
@@ -14,12 +15,18 @@ export function PreviewSurface({
   configuration,
   onRestart,
   storyId,
+  projectId,
+  workspaceMode,
+  runRequested,
   surfaceWorktree,
   manifest: providedManifest,
   ...native
 }: React.ComponentProps<typeof NativePreviewPanel> & {
   onRestart?: () => void
   configuration?: ProjectRunConfiguration
+  projectId?: string
+  workspaceMode?: "direct" | "local-container" | "cloud-mirror" | null
+  runRequested?: boolean
   storyId?: string
   manifest?: PreviewManifest
   surfaceWorktree?: string
@@ -60,6 +67,8 @@ export function PreviewSurface({
       cancelled = true
     }
   }, [platform, surfaceWorktree, providedManifest])
+  if (configuration?.previewTarget && storyId && projectId && surfaceWorktree)
+    return <DeviceSurfaceView active={native.visible} running={Boolean(runRequested)} scope={{ storyId, projectId, worktree: surfaceWorktree, targetId: configuration.previewTarget, workspaceMode: workspaceMode ?? "local-container" }} />
   const surface = manifest?.services.find(
     (service) => service.id === configuration?.previewService
   )?.surface

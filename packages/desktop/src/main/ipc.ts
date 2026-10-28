@@ -1,3 +1,4 @@
+import { registerPreviewDevicesIpc } from "./ipc/preview-devices-ipc";
 import {
   ipcMain,
   shell,
@@ -69,6 +70,7 @@ export function registerDesktopIpcHandlers(options: DesktopIpcOptions) {
     options.packaged,
   );
   const deploy = new DeployService(options.packaged);
+  registerPreviewDevicesIpc({ isAppWindow: options.isAppWindow });
   registerPreviewSurfacesIpc({ service: previews, isAppWindow: options.isAppWindow });
   options.registerCoreHandlers();
   ipcMain.handle("shell:open-attachment", (event, input: unknown) => {

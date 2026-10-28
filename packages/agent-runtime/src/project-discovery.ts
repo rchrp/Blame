@@ -1,3 +1,4 @@
+import { configurationName, nativeProjectEvidence } from "./project-configuration-evidence.js";
 import { type Dirent } from "node:fs";
 import { opendir, realpath } from "node:fs/promises";
 import { dirname, extname, join, resolve } from "node:path";
@@ -560,6 +561,7 @@ export function isProjectManifestPath(path: string) {
   const name = fileName(path);
   return (
     manifestNames.has(name) ||
+    /(?:^|\/)(?:Project\.swift|project\.yml)$/.test(path) ||
     /^requirements(?:[-_.].*)?\.txt$/.test(name) ||
     /\.(cabal|csproj|fsproj|vbproj|sln|slnx|gemspec|opam|rockspec|uproject)$/.test(
       name,
@@ -581,22 +583,11 @@ export function isProjectConfigurationPath(path: string) {
   return configurationName(name, lower);
 }
 
-function configurationName(name: string, path: string) {
-  return (
-    /^(\.babelrc|\.clang-format|\.clang-tidy|\.commitlintrc|\.credo\.exs|\.editorconfig|\.eslintrc|\.flake8|\.formatter\.exs|\.globalconfig|\.golangci|\.hlint|\.ocamlformat|\.php-cs-fixer|\.prettierrc|\.rspec|\.rubocop|\.scalafmt|\.standard|\.stylelintrc|\.stylua|\.swiftformat|\.swiftlint)/.test(
-      name,
-    ) ||
-    /^(analysis_options|biome|checkstyle|clippy|clj-kondo|commitlint|cypress|dart_test|deny|detekt|directory\.build|eslint|hlint|jest|ktlint|lint-staged|mypy|nextest|phpcs|phpstan|phpunit|playwright|pmd|prettier|psalm|pytest|ruff|rustfmt|scalafmt|spotbugs|stylecop|stylelint|stylua|tox|tsconfig|vitest)/.test(
-      name,
-    ) ||
-    path.includes("/.github/workflows/")
-  );
-}
 
 export function isRuntimeEvidencePath(path: string) {
   const name = fileName(path);
   return (
-    runtimeRootNames.has(name) ||
+    runtimeRootNames.has(name) || nativeProjectEvidence(path) ||
     runtimePinNames.has(name) ||
     workspaceMarkerNames.has(name) ||
     isEnvironmentTemplatePath(path) ||

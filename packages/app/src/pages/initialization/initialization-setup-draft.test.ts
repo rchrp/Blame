@@ -68,6 +68,16 @@ function saved(): SavedSetup {
   }
 }
 
+test("device fields round-trip through the same manifest validation", () => {
+  const setup = saved();
+  setup.previewManifest.devices = [{ id: "iphone", platform: "ios", projectDir: ".", toolchain: "xcode", build: { workspace: "App.xcworkspace", scheme: "App" }, app: { bundleId: "com.example.App" } }];
+  const draft = setupDraft(setup);
+  draft.devices![0]!.build.scheme = "Other";
+  assert.equal(appliedSetup(setup, draft).previewManifest.devices![0]!.build.scheme, "Other");
+  draft.devices![0]!.projectDir = "../outside";
+  assert.throws(() => appliedSetup(setup, draft));
+});
+
 test("an unchanged draft gives back the same setup", () => {
   const setup = saved()
   const applied = appliedSetup(setup, setupDraft(setup))

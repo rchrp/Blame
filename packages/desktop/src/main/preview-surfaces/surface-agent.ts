@@ -1,3 +1,4 @@
+import { deviceAction } from "../preview-devices/device-actions.ts";
 import { displaySurfaceAction } from "./display-surface.ts";
 import { storePreviewDevtoolsScreenshots } from "../agent-screenshots/agent-screenshots-service.ts";
 import type { PreviewService } from "../preview-runtime/preview-service.ts";
@@ -13,6 +14,8 @@ export async function agentSurfaceInfo(
     () => undefined,
   );
   if (!context?.selected) return;
+  const target = context.manifest.devices?.find((d) => d.id === context.selected?.previewTarget);
+  if (target && surfaceEnabled(target.platform)) return { type: "device", targetId: target.id } as const;
   const service = context.manifest.services.find(
     (s) => s.id === context.selected?.previewService,
   );
@@ -25,6 +28,9 @@ export async function agentSurfaceCall(
   input: {
     worktree: string;
     storyId?: string;
+    projectId?: string;
+    sessionId?: string;
+    toolCallId?: string;
     workspaceMode?: string;
     arguments: Record<string, unknown>;
   },
@@ -37,6 +43,10 @@ export async function agentSurfaceCall(
       status: "unavailable",
       message: "This story has no interactive preview.",
     };
+  if (surface.type === "device") {
+    const scope = { storyId: input.storyId, projectId: input.projectId ?? input.storyId, worktree: input.worktree, targetId: surface.targetId, workspaceMode: input.workspaceMode === "cloud-mirror" ? "cloud-mirror" as const : input.workspaceMode === "direct" ? "direct" as const : "local-container" as const };
+    return storePreviewDevtoolsScreenshots(await deviceAction(scope, input.arguments), { scope: input.storyId, sessionId: input.sessionId, toolCallId: input.toolCallId });
+  }
   const cloud =
     input.workspaceMode === "cloud-mirror"
       ? await previews.findForUserStory(input.storyId, "vercel-compose")

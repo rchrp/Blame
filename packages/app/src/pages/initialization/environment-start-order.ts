@@ -12,6 +12,7 @@ export type StartNode =
       port?: number
     }
   | { type: "task"; id: string }
+  | { type: "device"; id: string; kind: "ios" | "android" }
 
 type Service = SavedSetup["previewManifest"]["services"][number]
 
@@ -47,6 +48,7 @@ export function startOrder(setup: SavedSetup): StartNode[][] {
       (step) => step.map((id): StartNode => ({ type: "task", id }))
     ),
     ...steps(late, neededServices).map((step) => step.map(serviceNode)),
+    ...(manifest.devices?.length ? [manifest.devices.map((d): StartNode => ({ type: "device", id: d.id, kind: d.platform }))] : []),
   ]
 }
 

@@ -14,6 +14,7 @@ export async function deleteUserStoryWithRuntime(
 ) {
   await beginUserStoryPreviewDeletion(story.id)
   try {
+    await platform.previewDevices?.stop({ storyId: story.id, destroy: true })
     await abortStoryAgent(story, platform)
     const setupStopped = await stopStoryProjectSetup(story, platform)
     if (story.worktree) {

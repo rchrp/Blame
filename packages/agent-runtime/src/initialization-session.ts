@@ -32,7 +32,7 @@ export const initializationBlockedCategories = {
   unavailable_image:
     "A required container image or runtime does not exist or cannot be pulled.",
   unsupported_stack:
-    "The project cannot run in Linux containers (for example a native desktop or mobile app with no web or server part).",
+    "The project cannot be previewed by any surface Blame supports (for example watchOS, tvOS or visionOS apps, firmware, or apps that need physical hardware).",
   repository_problem:
     "The repository itself is broken: missing or conflicting lockfiles, unresolved merge conflicts, files that do not parse.",
   blame_problem:
