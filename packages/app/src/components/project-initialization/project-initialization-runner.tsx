@@ -2,7 +2,10 @@ import * as React from "react"
 import { ChevronRightIcon, DatabaseIcon, ServerIcon } from "lucide-react"
 import { toast } from "sonner"
 
-import { type ModelSelection, useModelSelection } from "@/components/model/model-selection"
+import {
+  type ModelSelection,
+  useModelSelection,
+} from "@/components/model/model-selection"
 import type { ProjectInitializationDatabaseMode } from "@blame/agent-runtime"
 import { Button } from "@/components/ui/button"
 import { HostDependenciesDialog } from "@/pages/backlog/host-dependencies-dialog"
@@ -14,7 +17,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { useCloudAuth, type CloudProjectInitialization } from "@/context/cloud-auth"
+import {
+  useCloudAuth,
+  type CloudProjectInitialization,
+} from "@/context/cloud-auth"
 import {
   usePlatform,
   type HostDependencyReport,
@@ -30,6 +36,7 @@ import {
   subscribeProjectInitializationRunRequested,
 } from "@/components/project-initialization/project-initialization-events"
 import { blockedInitialization } from "@/components/project-initialization/initialization-blocked"
+import { readableInitializationError } from "@/pages/initialization/initialization-setup-draft"
 import {
   initializationRunningHere,
   initializationStale,
@@ -440,7 +447,11 @@ async function runInitialization(input: InitializationRunInput) {
   if (initializationRunningHere(projectId)) return
   const cloud = createCloudApi(input.auth.apiConnection)
   const progressId = crypto.randomUUID()
-  const progress = (update: { percent: number; label: string; detail?: string }) => {
+  const progress = (update: {
+    percent: number
+    label: string
+    detail?: string
+  }) => {
     setInitializationProgress(projectId, update)
     showProgress(input.project.name, projectId)
   }
@@ -525,7 +536,11 @@ async function persistInitializationResult(
   input: InitializationRunInput,
   cloud: ReturnType<typeof createCloudApi>,
   progressId: string,
-  progress: (update: { percent: number; label: string; detail?: string }) => void
+  progress: (update: {
+    percent: number
+    label: string
+    detail?: string
+  }) => void
 ) {
   await cloud.startProjectInitialization(input.project.id, {
     providerId: input.providerId,
@@ -686,7 +701,7 @@ function showError(projectId: string, error: unknown) {
     return
   }
   toast.error("Preview environment setup failed", {
-    description: `${errorMessage(error)} Stories run in Direct mode until it works.`,
+    description: `${readableInitializationError(errorMessage(error))} Stories run in Direct mode until it works.`,
     id: toastId,
     position: "bottom-right",
     duration: 20_000,
@@ -719,5 +734,7 @@ function showSuccess(warnings: number) {
 }
 
 function errorMessage(error: unknown) {
-  return error instanceof Error ? error.message : "Unable to set up the preview environment"
+  return error instanceof Error
+    ? error.message
+    : "Unable to set up the preview environment"
 }

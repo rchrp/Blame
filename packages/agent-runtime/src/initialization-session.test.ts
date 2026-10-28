@@ -121,6 +121,37 @@ test("asks to fix a fixable rejection before recording a block", () => {
   );
 });
 
+test("records a block once the same problem came back twice", () => {
+  const session = new InitializationSession(
+    checker({ a: [migrations], b: [migrations] }),
+  );
+  assert.throws(() => session.submit({ id: "a" }));
+  assert.throws(() => session.submit({ id: "b" }));
+  assert.deepEqual(
+    session.reportBlocked({
+      category: "blame_problem",
+      summary: "A Blame rule rejects every PostgreSQL image.",
+      userAction: "Report it to Blame.",
+    }),
+    { recorded: true },
+  );
+});
+
+test("names the setup, not internal fields, when it stops", () => {
+  const session = new InitializationSession(
+    checker({ a: [migrations], b: [migrations], c: [migrations] }),
+  );
+  assert.throws(() => session.submit({ id: "a" }));
+  assert.throws(() => session.submit({ id: "b" }));
+  session.submit({ id: "c" });
+  const outcome = session.outcome();
+  assert.ok(outcome.type === "stopped");
+  assert.equal(
+    outcome.error.message,
+    "The setup was rejected 3 times in a row for the same problem: The setup must run detected database migrations before starting backend services.",
+  );
+});
+
 test("records a block straight away when nothing was rejected", () => {
   const session = new InitializationSession(checker({}));
   assert.throws(

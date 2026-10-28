@@ -159,7 +159,9 @@ export class InitializationSession<T> {
     if (this.settled)
       return { recorded: false, message: "This analysis already ended." };
     const blocked = parseBlocked(input);
-    if (this.lastRejection && !this.blockedChallenged) {
+    // A block right after a first rejection is often a way out of a fixable
+    // problem; once the same one came back twice, the agent tried.
+    if (this.lastRejection && this.repeats < 2 && !this.blockedChallenged) {
       this.blockedChallenged = true;
       throw new Error(
         [
@@ -335,7 +337,10 @@ function rejectionSignature(error: unknown) {
 }
 
 function stoppedError(error: unknown, repeats: number, final: boolean) {
-  const reason = readableRejection(errorMessage(error));
+  const reason =
+    error instanceof PreviewSetupError
+      ? `The setup ${error.issues[0]!.rule}.`
+      : readableRejection(errorMessage(error));
   return new Error(
     final
       ? `The setup was still rejected after ${maxInitializationSubmissions} corrections. Last problem: ${reason}`
