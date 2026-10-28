@@ -479,7 +479,7 @@ function initializesAutomatically(
 function showProgress(projectName: string, projectId: string) {
   const current = initializationProgressFor(projectId)
   if (!current) return
-  toast.loading(`Setting up ${projectName}`, {
+  toast.loading(`Setting up the ${projectName} environment`, {
     id: toastId,
     position: "bottom-right",
     duration: Infinity,
