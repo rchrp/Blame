@@ -17,6 +17,7 @@ import { createRequire } from "node:module"
 import { promisify } from "node:util"
 import { gzip, gunzip } from "node:zlib"
 import type { Configuration } from "electron-builder"
+import { prepareNodePtyHelpers } from "./scripts/prepare-node-pty.mjs"
 
 const execFileAsync = promisify(execFile)
 const gzipAsync = promisify(gzip)
@@ -71,6 +72,9 @@ type PackContext = {
 async function finalizePackage(context: PackContext) {
   await restoreBundledPackageManagers(context)
   if (context.electronPlatformName !== "darwin") return
+  await prepareNodePtyHelpers(join(context.appOutDir,
+    `${context.packager.appInfo.productFilename}.app`,
+    "Contents/Resources/app.asar.unpacked/node_modules/node-pty"), "darwin")
   await execFileAsync("xattr", ["-cr", context.appOutDir])
   console.log(`Removed macOS extended attributes from ${context.appOutDir}`)
   await assertMacosRuntimeArchitecture(context)
