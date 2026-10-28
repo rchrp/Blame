@@ -23,10 +23,8 @@ import { useProjectInitialization } from "@/components/project-initialization/us
 import { useCloudAuth } from "@/context/cloud-auth"
 import { useProjects } from "@/context/projects"
 import { createCloudApi } from "@/lib/cloud-api"
-import {
-  InitializationSetupEditor,
-  InitializationSetupView,
-} from "./initialization-setup"
+import { EnvironmentSetupView } from "./environment-setup-view"
+import { InitializationSetupEditor } from "./initialization-setup"
 import {
   manualEditReason,
   setupJson,
@@ -103,17 +101,16 @@ export function InitializationPage() {
   }
 
   return (
-    <div className="flex flex-1 flex-col items-center px-4 pt-[calc(var(--header-height)+1rem)] pb-4 lg:px-6 lg:pt-[calc(var(--header-height)+1.5rem)] lg:pb-6">
-      <div className="flex w-full max-w-4xl flex-col gap-6">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col items-center overflow-y-auto px-4 pt-[calc(var(--header-height)+1rem)] pb-10 lg:px-6 lg:pt-[calc(var(--header-height)+1.5rem)]">
+      <div className="flex w-full max-w-4xl flex-col gap-8">
         <header className="flex flex-wrap items-end justify-between gap-4">
           <div className="grid gap-1">
             <h2 className="font-heading text-2xl font-semibold tracking-normal">
               Preview Environment
             </h2>
-            <p className="max-w-xl text-sm text-pretty text-muted-foreground">
-              How Blame runs {project?.name ?? "this project"} in containers:
-              what it installs, which services it starts, and where each
-              story&apos;s preview opens.
+            <p className="text-sm text-muted-foreground">
+              Where each story of {project?.name ?? "this project"} runs and
+              opens its preview.
             </p>
           </div>
           {snapshot && !editing ? (
@@ -150,6 +147,7 @@ export function InitializationPage() {
               availability={availability}
               initialization={initialization}
               progress={progress}
+              setup={setup}
             />
             {editing ? (
               <InitializationSetupEditor
@@ -163,7 +161,7 @@ export function InitializationPage() {
                 onSave={save}
               />
             ) : setup ? (
-              <InitializationSetupView setup={setup} />
+              <EnvironmentSetupView setup={setup} />
             ) : null}
           </>
         )}

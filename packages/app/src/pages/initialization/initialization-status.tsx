@@ -1,10 +1,4 @@
-import {
-  ChevronRightIcon,
-  CircleAlertIcon,
-  CircleCheckIcon,
-  CircleDashedIcon,
-  TriangleAlertIcon,
-} from "lucide-react"
+import { ChevronRightIcon, LoaderCircleIcon } from "lucide-react"
 
 import { navigate } from "@/components/navigation/navigation"
 import type { ProjectInitializationAvailability } from "@/components/project-initialization/project-initialization-availability"
@@ -12,33 +6,37 @@ import type { ProjectInitializationProgress } from "@/components/project-initial
 import { ProgressNotificationBody } from "@/components/shared/progress-notification"
 import type { CloudProjectInitialization } from "@/context/cloud-auth"
 import { cn } from "@/lib/utils"
+import { EnvironmentStartChain } from "./environment-start-chain"
 import {
   manualEditReason,
   readableInitializationError,
+  type SavedSetup,
 } from "./initialization-setup-draft"
 
-// One block that says where the project's setup stands and what to do
-// next. Its tone follows the state; the actions live in the page header.
+// One block that says where the project's environment stands and what to
+// do next. Its tone follows the state, like the backlog's columns; once
+// ready, it shows the order a story's preview starts its containers.
 
 export function InitializationStatus({
   availability,
   initialization,
   progress,
+  setup,
 }: {
   availability: ProjectInitializationAvailability
   initialization?: CloudProjectInitialization
   progress?: ProjectInitializationProgress
+  setup?: SavedSetup
 }) {
   if (availability === "running")
     return <RunningStatus progress={progress} initialization={initialization} />
   if (availability === "ready" && initialization)
-    return <ReadyStatus initialization={initialization} />
+    return <ReadyStatus initialization={initialization} setup={setup} />
   if (initialization?.status === "error")
     return <FailedStatus initialization={initialization} />
   if (initialization?.status === "running")
     return (
       <StatusBlock
-        icon={<CircleAlertIcon />}
         tone="warning"
         title="The last analysis stopped before it finished"
       >
@@ -50,11 +48,7 @@ export function InitializationStatus({
       </StatusBlock>
     )
   return (
-    <StatusBlock
-      icon={<CircleDashedIcon />}
-      tone="neutral"
-      title="This project has not been analyzed yet"
-    >
+    <StatusBlock tone="neutral" title="This project has not been analyzed yet">
       <p>
         The analysis reads the repository and writes a setup: what to install,
         which services to start, and where each story&apos;s preview opens.
@@ -77,10 +71,7 @@ function RunningStatus({
     : (initialization?.updatedAt ?? initialization?.createdAt)
   return (
     <StatusBlock
-      icon={
-        <CircleDashedIcon className="animate-spin [animation-duration:3s]" />
-      }
-      tone="neutral"
+      tone="running"
       title="Analyzing the project"
       meta={startedAt ? `Started ${relativeDate(startedAt)}` : undefined}
     >
@@ -98,8 +89,10 @@ function RunningStatus({
 
 function ReadyStatus({
   initialization,
+  setup,
 }: {
   initialization: CloudProjectInitialization
+  setup?: SavedSetup
 }) {
   const risks = initialization.previewManifest?.risks ?? []
   const savedAt = initialization.updatedAt ?? initialization.createdAt
@@ -116,24 +109,21 @@ function ReadyStatus({
     .join(" · ")
   const repaired =
     initialization.repairReason && !edited ? initialization.repairReason : null
+  const chain = setup ? <EnvironmentStartChain setup={setup} /> : undefined
   if (!risks.length)
     return (
-      <StatusBlock
-        icon={<CircleCheckIcon />}
-        tone="success"
-        title="Ready"
-        meta={meta}
-      >
+      <StatusBlock tone="success" title="Ready" meta={meta} footer={chain}>
         <p>
-          Stories run in containers with a live preview, using the setup below.
+          Each story gets its own containers and a live preview. They start in
+          this order:
         </p>
         {repaired ? <p>Last repaired by Blame: {repaired}</p> : null}
       </StatusBlock>
     )
   return (
     <StatusBlock
-      icon={<TriangleAlertIcon />}
       tone="warning"
+      footer={chain}
       title={
         risks.length === 1
           ? "Ready, with one point to check"
@@ -169,7 +159,6 @@ function FailedStatus({
   const failedAt = initialization.updatedAt ?? initialization.createdAt
   return (
     <StatusBlock
-      icon={<CircleAlertIcon />}
       tone="danger"
       title="The last analysis failed"
       meta={`Failed ${relativeDate(failedAt)}`}
@@ -209,23 +198,34 @@ function FailedStatus({
 }
 
 const tones = {
-  neutral: "border-border",
-  success: "border-border [&_[data-slot=status-icon]]:text-emerald-500",
-  warning:
-    "border-amber-500/30 bg-amber-500/[0.06] [&_[data-slot=status-icon]]:text-amber-600 dark:[&_[data-slot=status-icon]]:text-amber-400",
-  danger:
-    "border-destructive/30 bg-destructive/[0.06] [&_[data-slot=status-icon]]:text-destructive",
+  neutral: { ring: "border-muted-foreground/60", wash: "" },
+  running: {
+    ring: "",
+    wash: "border-blue-500/30 bg-[linear-gradient(to_bottom,oklch(0.65_0.2_250/9%),transparent_7rem)]",
+  },
+  success: {
+    ring: "border-emerald-500",
+    wash: "bg-[linear-gradient(to_bottom,oklch(0.7_0.15_160/7%),transparent_7rem)]",
+  },
+  warning: {
+    ring: "border-amber-500",
+    wash: "border-amber-500/30 bg-[linear-gradient(to_bottom,oklch(0.77_0.16_75/9%),transparent_7rem)]",
+  },
+  danger: {
+    ring: "border-rose-500",
+    wash: "border-rose-500/30 bg-[linear-gradient(to_bottom,oklch(0.65_0.2_15/9%),transparent_7rem)]",
+  },
 }
 
 function StatusBlock({
   children,
-  icon,
+  footer,
   meta,
   title,
   tone,
 }: {
   children: React.ReactNode
-  icon: React.ReactNode
+  footer?: React.ReactNode
   meta?: string
   title: string
   tone: keyof typeof tones
@@ -234,29 +234,42 @@ function StatusBlock({
     <section
       aria-label="Preview environment status"
       className={cn(
-        "grid grid-cols-[auto_1fr] gap-x-3 rounded-lg border bg-card px-4 py-3.5",
-        tones[tone]
+        "overflow-hidden rounded-xl border bg-card",
+        tones[tone].wash
       )}
     >
-      <span
-        data-slot="status-icon"
-        className="mt-0.5 text-muted-foreground [&_svg]:size-4"
-      >
-        {icon}
-      </span>
-      <div className="grid min-w-0 gap-2.5">
-        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5">
-          <h3 className="text-sm font-medium">{title}</h3>
+      <div className="grid gap-2.5 px-5 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+          <div className="flex min-w-0 items-center gap-2.5">
+            {tone === "running" ? (
+              <LoaderCircleIcon
+                aria-hidden
+                className="size-3.5 shrink-0 animate-spin text-blue-500 motion-reduce:animate-none"
+              />
+            ) : (
+              <span
+                aria-hidden
+                className={cn(
+                  "size-3 shrink-0 rounded-full border-2",
+                  tones[tone].ring
+                )}
+              />
+            )}
+            <h3 className="text-base font-semibold">{title}</h3>
+          </div>
           {meta ? (
             <span className="text-xs text-muted-foreground tabular-nums">
               {meta}
             </span>
           ) : null}
         </div>
-        <div className="grid gap-2 text-sm text-muted-foreground">
+        <div className="grid gap-2 pl-5.5 text-sm text-muted-foreground">
           {children}
         </div>
       </div>
+      {footer ? (
+        <div className="border-t bg-muted/30 px-5 py-4">{footer}</div>
+      ) : null}
     </section>
   )
 }

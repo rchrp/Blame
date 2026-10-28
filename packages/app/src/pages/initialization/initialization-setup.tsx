@@ -1,5 +1,4 @@
 import * as React from "react"
-import { ChevronRightIcon } from "lucide-react"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {
@@ -12,7 +11,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -31,96 +29,15 @@ import {
   type SavedSetup,
   type SetupDraft,
 } from "./initialization-setup-draft"
+import {
+  EnvironmentSection,
+  environmentKinds,
+  environmentSections,
+  KindTile,
+  type EnvironmentKind,
+} from "./environment-kinds"
 
-// What Blame runs for this project, in three lists, and the same lists as
-// fields when editing. The JSON view covers whatever the fields do not.
-
-const kindLabels = {
-  preview: "Preview",
-  dependency: "Dependency",
-  worker: "Worker",
-} as const
-
-const sections = {
-  runConfigurations: {
-    title: "Run configurations",
-    description: "What a story can start, and where its preview opens.",
-  },
-  services: {
-    title: "Services",
-    description: "Containers that keep running while a preview is open.",
-  },
-  setup: {
-    title: "Setup tasks",
-    description:
-      "One-off steps before the services start: installs, migrations, builds. They rerun only when what they depend on changes.",
-  },
-}
-
-type RunConfiguration = SavedSetup["runConfigurations"][number]
-
-export function InitializationSetupView({ setup }: { setup: SavedSetup }) {
-  const manifest = setup.previewManifest
-  return (
-    <div className="grid gap-8">
-      <SetupSection {...sections.runConfigurations}>
-        {setup.runConfigurations.map((configuration) => (
-          <li key={configuration.id} className="grid gap-1.5 px-4 py-3">
-            <RunConfigurationHeading configuration={configuration} />
-            <Code>{configuration.command}</Code>
-          </li>
-        ))}
-      </SetupSection>
-      <SetupSection {...sections.services}>
-        {manifest.services.map((service) => (
-          <li key={service.id} className="grid gap-2 px-4 py-3">
-            <ItemHeading id={service.id} badge={kindLabels[service.kind]} />
-            <Details>
-              <Detail label="Image">
-                <Code>{containerLabel(service.container)}</Code>
-              </Detail>
-              <Detail label="Command">
-                {service.command ? (
-                  <Code>{service.command}</Code>
-                ) : (
-                  <span>The image&apos;s own</span>
-                )}
-              </Detail>
-              {service.endpoints.length ? (
-                <Detail label="Ports">
-                  <span className="tabular-nums">
-                    {service.endpoints
-                      .map(({ port, protocol }) => `${port} ${protocol}`)
-                      .join(" · ")}
-                  </span>
-                </Detail>
-              ) : null}
-              <EnvironmentDetail environment={service.environment} />
-            </Details>
-          </li>
-        ))}
-      </SetupSection>
-      {manifest.setup.length ? (
-        <SetupSection {...sections.setup}>
-          {manifest.setup.map((task) => (
-            <li key={task.id} className="grid gap-2 px-4 py-3">
-              <ItemHeading id={task.id} badge={afterLabel(task.dependsOn)} />
-              <Details>
-                <Detail label="Image">
-                  <Code>{containerLabel(task.container)}</Code>
-                </Detail>
-                <Detail label="Command">
-                  <Code>{task.command}</Code>
-                </Detail>
-                <EnvironmentDetail environment={task.environment} />
-              </Details>
-            </li>
-          ))}
-        </SetupSection>
-      ) : null}
-    </div>
-  )
-}
+// The setup as fields, and as JSON for whatever the fields do not cover.
 
 type FieldError = { fieldId: string; message: string }
 
@@ -224,7 +141,7 @@ export function InitializationSetupEditor({
   return (
     <FieldErrorContext.Provider value={fieldError}>
       <div className="grid gap-6">
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-card px-4 py-3">
+        <div className="sticky top-[calc(var(--header-height)+0.5rem)] z-10 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-blue-500/30 bg-popover px-4 py-3 shadow-[0_8px_24px_-12px_rgb(0_0_0/0.6)]">
           <div className="grid gap-0.5">
             <span className="text-sm font-medium">Editing the setup</span>
             <span className="text-xs text-muted-foreground">
@@ -313,102 +230,115 @@ function SetupForm({
 
   return (
     <div className="grid gap-8">
-      <SetupSection {...sections.runConfigurations}>
-        {draft.runConfigurations.map((configuration, index) => {
-          const original = saved.runConfigurations.find(
-            ({ id }) => id === configuration.id
-          )
-          const edit = (patch: Partial<typeof configuration>) =>
-            update({
-              runConfigurations: replace(draft.runConfigurations, index, {
-                ...configuration,
-                ...patch,
-              }),
-            })
-          return (
-            <li key={configuration.id} className="grid gap-3 px-4 py-3">
-              {original ? (
-                <RunConfigurationHeading configuration={original} />
-              ) : null}
-              <div className="grid gap-3 sm:grid-cols-[minmax(0,14rem)_1fr]">
-                <TextField
-                  id={runFieldId(configuration.id, "name")}
-                  label="Name"
-                  value={configuration.name}
-                  onChange={(name) => edit({ name })}
+      <EnvironmentSection {...environmentSections.runConfigurations}>
+        <EditList>
+          {draft.runConfigurations.map((configuration, index) => {
+            const original = saved.runConfigurations.find(
+              ({ id }) => id === configuration.id
+            )
+            const edit = (patch: Partial<typeof configuration>) =>
+              update({
+                runConfigurations: replace(draft.runConfigurations, index, {
+                  ...configuration,
+                  ...patch,
+                }),
+              })
+            return (
+              <li key={configuration.id} className="grid gap-3 p-4">
+                <ItemHeading
+                  kind="run"
+                  name={original?.name ?? configuration.id}
                 />
-                <TextField
-                  id={runFieldId(configuration.id, "command")}
-                  label="Command"
-                  code
-                  value={configuration.command}
-                  onChange={(command) => edit({ command })}
-                />
-              </div>
-            </li>
-          )
-        })}
-      </SetupSection>
-      <SetupSection {...sections.services}>
-        {draft.services.map((service, index) => {
-          const original = manifest.services.find(({ id }) => id === service.id)
-          return (
-            <ContainerFields
-              key={service.id}
-              scope="service"
-              container={service}
-              badge={original ? kindLabels[original.kind] : undefined}
-              built={Boolean(original?.container.build)}
-              commandHint="Leave empty to run the image's own command."
-              onChange={(next) =>
-                update({ services: replace(draft.services, index, next) })
-              }
-            />
-          )
-        })}
-      </SetupSection>
-      {draft.setup.length ? (
-        <SetupSection {...sections.setup}>
-          {draft.setup.map((task, index) => {
-            const original = manifest.setup.find(({ id }) => id === task.id)
+                <div className="grid gap-3 sm:grid-cols-[minmax(0,14rem)_1fr]">
+                  <TextField
+                    id={runFieldId(configuration.id, "name")}
+                    label="Name"
+                    value={configuration.name}
+                    onChange={(name) => edit({ name })}
+                  />
+                  <TextField
+                    id={runFieldId(configuration.id, "command")}
+                    label="Command"
+                    code
+                    value={configuration.command}
+                    onChange={(command) => edit({ command })}
+                  />
+                </div>
+              </li>
+            )
+          })}
+        </EditList>
+      </EnvironmentSection>
+      <EnvironmentSection {...environmentSections.services}>
+        <EditList>
+          {draft.services.map((service, index) => {
+            const original = manifest.services.find(
+              ({ id }) => id === service.id
+            )
             return (
               <ContainerFields
-                key={task.id}
-                scope="task"
-                container={task}
-                badge={afterLabel(original?.dependsOn)}
+                key={service.id}
+                scope="service"
+                container={service}
+                kind={original?.kind ?? "dependency"}
+                image={original?.container.image}
                 built={Boolean(original?.container.build)}
+                commandHint="Leave empty to run the image's own command."
                 onChange={(next) =>
-                  update({ setup: replace(draft.setup, index, next) })
+                  update({ services: replace(draft.services, index, next) })
                 }
               />
             )
           })}
-        </SetupSection>
+        </EditList>
+      </EnvironmentSection>
+      {draft.setup.length ? (
+        <EnvironmentSection {...environmentSections.setup}>
+          <EditList>
+            {draft.setup.map((task, index) => {
+              const original = manifest.setup.find(({ id }) => id === task.id)
+              return (
+                <ContainerFields
+                  key={task.id}
+                  scope="task"
+                  container={task}
+                  kind="task"
+                  image={original?.container.image}
+                  built={Boolean(original?.container.build)}
+                  onChange={(next) =>
+                    update({ setup: replace(draft.setup, index, next) })
+                  }
+                />
+              )
+            })}
+          </EditList>
+        </EnvironmentSection>
       ) : null}
     </div>
   )
 }
 
 function ContainerFields({
-  badge,
   built,
   commandHint,
   container,
   onChange,
   scope,
+  image,
+  kind,
 }: {
-  badge?: string
   built: boolean
   commandHint?: string
   container: DraftContainer
   onChange(container: DraftContainer): void
   scope: "service" | "task"
+  image?: string
+  kind: EnvironmentKind
 }) {
   const field = (name: string) => containerFieldId(scope, container.id, name)
   return (
-    <li className="grid gap-3 px-4 py-3">
-      <ItemHeading id={container.id} badge={badge} />
+    <li className="grid gap-3 p-4">
+      <ItemHeading kind={kind} name={container.id} image={image} />
       {built ? (
         <p className="text-xs text-muted-foreground">
           Built from the project&apos;s Dockerfile. Change the build in the JSON
@@ -570,132 +500,28 @@ function FieldMessage({
   )
 }
 
-function SetupSection({
-  children,
-  description,
-  title,
-}: {
-  children: React.ReactNode
-  description?: string
-  title: string
-}) {
-  return (
-    <section className="grid gap-3">
-      <div className="grid gap-0.5">
-        <h3 className="text-sm font-medium">{title}</h3>
-        {description ? (
-          <p className="text-xs text-muted-foreground">{description}</p>
-        ) : null}
-      </div>
-      <ul className="divide-y rounded-lg border bg-card">{children}</ul>
-    </section>
-  )
+function EditList({ children }: { children: React.ReactNode }) {
+  return <ul className="divide-y rounded-xl border bg-card">{children}</ul>
 }
 
-function RunConfigurationHeading({
-  configuration,
+function ItemHeading({
+  image,
+  kind,
+  name,
 }: {
-  configuration: RunConfiguration
+  image?: string
+  kind: EnvironmentKind
+  name: string
 }) {
   return (
-    <div className="grid gap-0.5">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-sm font-medium">{configuration.name}</span>
-        {configuration.default ? (
-          <Badge variant="secondary">Default</Badge>
-        ) : null}
-      </div>
-      <p className="text-xs text-muted-foreground">
-        {configuration.services.length
-          ? `Starts ${configuration.services.join(", ")}`
-          : "Runs on this computer"}
-        {configuration.previewService
-          ? ` · preview from ${configuration.previewService}`
-          : ""}
-      </p>
+    <div className="flex items-center gap-3">
+      <KindTile kind={kind} image={image} size="sm" />
+      <span className="text-sm font-semibold">{name}</span>
+      <span className={cn("text-xs font-medium", environmentKinds[kind].text)}>
+        {environmentKinds[kind].label}
+      </span>
     </div>
   )
-}
-
-function ItemHeading({ badge, id }: { badge?: string; id: string }) {
-  return (
-    <div className="flex flex-wrap items-center gap-2">
-      <span className="font-mono text-sm font-medium">{id}</span>
-      {badge ? <Badge variant="outline">{badge}</Badge> : null}
-    </div>
-  )
-}
-
-function Details({ children }: { children: React.ReactNode }) {
-  return (
-    <dl className="grid grid-cols-[6.5rem_minmax(0,1fr)] gap-x-4 gap-y-1.5 text-xs">
-      {children}
-    </dl>
-  )
-}
-
-function Detail({
-  children,
-  label,
-}: {
-  children: React.ReactNode
-  label: string
-}) {
-  return (
-    <>
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className="min-w-0">{children}</dd>
-    </>
-  )
-}
-
-function EnvironmentDetail({
-  environment,
-}: {
-  environment?: Record<string, string>
-}) {
-  const entries = Object.entries(environment ?? {})
-  if (!entries.length) return null
-  return (
-    <Detail label="Environment">
-      <details className="group">
-        <summary className="inline-flex cursor-pointer list-none items-center gap-1 text-muted-foreground select-none hover:text-foreground [&::-webkit-details-marker]:hidden">
-          <ChevronRightIcon
-            aria-hidden
-            className="size-3.5 transition-transform duration-150 group-open:rotate-90"
-          />
-          {entries.length === 1 ? "1 variable" : `${entries.length} variables`}
-        </summary>
-        <div className="mt-1.5 grid gap-0.5 pl-4.5">
-          {entries.map(([key, value]) => (
-            <Code key={key}>{`${key}=${value}`}</Code>
-          ))}
-        </div>
-      </details>
-    </Detail>
-  )
-}
-
-function Code({ children }: { children: React.ReactNode }) {
-  return (
-    <code className="font-mono text-xs break-words whitespace-pre-wrap text-foreground/90">
-      {children}
-    </code>
-  )
-}
-
-function afterLabel(dependsOn: string[] | undefined) {
-  return dependsOn?.length ? `After ${dependsOn.join(", ")}` : undefined
-}
-
-function containerLabel(
-  container: SavedSetup["previewManifest"]["services"][number]["container"]
-) {
-  if (container.image) return container.image
-  const build = container.build
-  return build
-    ? `Dockerfile ${build.dockerfile ?? "Dockerfile"} in ${build.context}`
-    : "—"
 }
 
 function messageOf(cause: unknown) {
