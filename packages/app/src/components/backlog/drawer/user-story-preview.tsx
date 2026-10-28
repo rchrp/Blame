@@ -4,7 +4,11 @@ import {
   useProjectServices,
   useProjectServiceLog,
 } from "./preview-service-logs"
-import { PreviewSurface } from "./preview-surface"
+import {
+  PreviewSurface,
+  previewSurfaceType,
+  usePreviewSurfaceManifest,
+} from "./preview-surface"
 import type { PreviewLifecycleState } from "@blame/agent-runtime"
 import {
   CopyIcon,
@@ -144,6 +148,8 @@ export type ProjectRunPreview = {
 
 type PreviewIslandProps = {
   activeTab: string
+  /** Terminal, screen and device previews have no address or page actions. */
+  browserSurface: boolean
   projectRun?: ProjectRunPreview
   captureDisabled?: boolean
   hasPreview: boolean
@@ -475,6 +481,12 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
     previewRunner.runtime?.configurations.find(
       ({ id }) => id === previewRunner.selectedId
     )
+  const surfaceManifest = usePreviewSurfaceManifest(
+    projectRun?.surface?.manifest,
+    setupLogWorktree ?? undefined
+  )
+  const browserSurface =
+    previewSurfaceType(surfaceConfiguration, surfaceManifest) === "web"
   const hasPreviewSurface =
     Boolean(
       source ||
@@ -723,6 +735,7 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
         >
           <PreviewIsland
             activeTab={activeTab}
+            browserSurface={browserSurface}
             projectRun={projectRun}
             captureDisabled={previewWaiting || !previewCapture}
             hasPreview={hasPreviewSurface}
@@ -765,7 +778,7 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
                 ) : previewBrowser ? (
                   <PreviewSurface
                     configuration={surfaceConfiguration}
-                    manifest={projectRun?.surface?.manifest}
+                    manifest={surfaceManifest}
                     onRestart={() =>
                       void previewRunner.control(
                         "restart",
@@ -954,6 +967,7 @@ function PreviewWaitingPanel({
 
 function PreviewIsland({
   activeTab,
+  browserSurface,
   projectRun,
   captureDisabled,
   hasPreview,
@@ -993,23 +1007,27 @@ function PreviewIsland({
   }
   return (
     <div className="preview-toolbar pointer-events-none absolute inset-x-4 top-4 z-20 flex min-w-0 items-center gap-1.5">
-      <PreviewAddress
-        disabled={navigationDisabled}
-        locationBlocked={locationBlocked}
-        onNavigatePath={onNavigatePath}
-        onOpen={onOpen}
-        previewLocation={previewLocation}
-        previewProxy={previewProxy}
-        source={source}
-        syncStatus={syncStatus}
-        updateNotice={updateNotice}
-      />
-      <PreviewActions
-        captureDisabled={navigationDisabled || captureDisabled}
-        onCapture={onCapture}
-        onReload={onReload}
-        refreshDisabled={navigationDisabled}
-      />
+      {browserSurface && (
+        <>
+          <PreviewAddress
+            disabled={navigationDisabled}
+            locationBlocked={locationBlocked}
+            onNavigatePath={onNavigatePath}
+            onOpen={onOpen}
+            previewLocation={previewLocation}
+            previewProxy={previewProxy}
+            source={source}
+            syncStatus={syncStatus}
+            updateNotice={updateNotice}
+          />
+          <PreviewActions
+            captureDisabled={navigationDisabled || captureDisabled}
+            onCapture={onCapture}
+            onReload={onReload}
+            refreshDisabled={navigationDisabled}
+          />
+        </>
+      )}
       {previewRunner?.runtime && (
         <UserStoryPreviewRunnerControls
           runner={previewRunner}
