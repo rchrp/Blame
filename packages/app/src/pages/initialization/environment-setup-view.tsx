@@ -43,7 +43,6 @@ export function EnvironmentSetupView({ setup }: { setup: SavedSetup }) {
               key={configuration.id}
               className="relative flex items-start gap-3 rounded-xl border bg-card p-4"
             >
-              <CornerLight tone="run" />
               <KindIcon kind="run" className="mt-1 size-4.5" />
               <div className="grid min-w-0 flex-1 gap-2">
                 <div className="grid gap-0.5">
@@ -148,7 +147,7 @@ function ContainerCard({
         "data-[pointed]:border-foreground/35 data-[pointed]:shadow-[0_0_0_3px] data-[pointed]:shadow-foreground/10"
       )}
     >
-      <CornerLight tone={kind} />
+      {kind === "preview" ? <CornerLight tone="preview" /> : null}
       <div className="flex items-start gap-3 p-4">
         <KindIcon
           kind={kind}

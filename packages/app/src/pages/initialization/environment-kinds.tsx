@@ -11,40 +11,35 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 
-// One color per kind of container. It lights the top left corner of the
-// container's card and its step in the start order, like the New project
-// choices; icons stay neutral.
+// One color per kind of container, for its label. The corner light, as on
+// the New project choices, is kept for what matters most: the status and
+// the service the preview opens. Icons stay neutral.
 
 export type EnvironmentKind =
   "preview" | "dependency" | "worker" | "task" | "run"
 
-export type CornerTone =
-  EnvironmentKind | "ready" | "warning" | "failed" | "idle"
+export type CornerTone = "preview" | "ready" | "warning" | "failed" | "idle"
 
-/** Hue and chroma of each tone's light, in OKLCH. */
+/** Lightness, chroma and hue of each light: Tailwind's 500 shades. */
 const lights: Record<CornerTone, [number, number, number]> = {
-  preview: [0.72, 0.16, 250],
-  dependency: [0.72, 0.15, 295],
-  worker: [0.78, 0.17, 55],
-  task: [0.8, 0.14, 80],
-  run: [0.75, 0.15, 165],
-  ready: [0.75, 0.15, 165],
-  warning: [0.8, 0.14, 80],
-  failed: [0.7, 0.19, 18],
-  idle: [0.7, 0, 0],
+  preview: [0.623, 0.214, 259.8],
+  ready: [0.696, 0.17, 162.5],
+  warning: [0.769, 0.188, 70.1],
+  failed: [0.645, 0.246, 16.4],
+  idle: [0.65, 0, 0],
 }
 
 export const environmentKinds = {
-  preview: { label: "Preview", text: "text-blue-600 dark:text-blue-300" },
+  preview: { label: "Preview", text: "text-blue-600 dark:text-blue-400" },
   dependency: {
     label: "Dependency",
-    text: "text-violet-600 dark:text-violet-300",
+    text: "text-violet-600 dark:text-violet-400",
   },
-  worker: { label: "Worker", text: "text-orange-600 dark:text-orange-300" },
-  task: { label: "Setup task", text: "text-amber-700 dark:text-amber-300" },
+  worker: { label: "Worker", text: "text-orange-600 dark:text-orange-400" },
+  task: { label: "Setup task", text: "text-amber-600 dark:text-amber-400" },
   run: {
     label: "Run configuration",
-    text: "text-emerald-700 dark:text-emerald-300",
+    text: "text-emerald-600 dark:text-emerald-400",
   },
 } satisfies Record<EnvironmentKind, { label: string; text: string }>
 
@@ -65,7 +60,7 @@ export function CornerLight({
   const [lightness, chroma, hue] = lights[tone]
   const style = {
     "--story-status-color": `oklch(${lightness} ${chroma} ${hue})`,
-    "--story-status-glow-color": `oklch(${lightness - 0.06} ${chroma + 0.02} ${hue} / 28%)`,
+    "--story-status-glow-color": `oklch(${lightness} ${chroma} ${hue} / 35%)`,
     ...(width ? { "--corner-w": width } : {}),
     ...(height ? { "--corner-h": height } : {}),
   } as React.CSSProperties
