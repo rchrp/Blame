@@ -158,7 +158,8 @@ export class TerminalSurface extends EventEmitter {
     return {
       status: this.state,
       message: this.message,
-      text: lines.join("\n"),
+      // Blank rows below the output only cost the agent tokens.
+      text: lines.join("\n").replace(/\n+$/, ""),
       cursor: { x: buffer.cursorX, y: buffer.cursorY },
       exited: this.exitCode !== undefined,
       exitCode: this.exitCode,
