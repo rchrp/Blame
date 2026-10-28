@@ -50,6 +50,14 @@ export class PreviewService {
     operationId: string,
   ) {
     const client = this.cloudClient();
+    if (
+      ["stop-services", "suspend-host", "destroy-host"].includes(command.type)
+    ) {
+      const { stopSurfaceTerminals } =
+        await import("../preview-surfaces/surface-sessions.ts");
+      const current = await client.get(sessionId);
+      stopSurfaceTerminals(current.userStoryId);
+    }
     if (command.type === "start-agent") {
       const workspace = await this.sync.workspaceForSession(sessionId);
       if (workspace) this.assertLocalWriterIdle(workspace);
@@ -99,6 +107,10 @@ export class PreviewService {
 
   bridgeGrant(sessionId: string) {
     return this.cloudClient().bridgeGrant(sessionId);
+  }
+
+  surfaceAccessTicket(sessionId: string, routeId: string) {
+    return this.cloudClient().accessTicket(sessionId, routeId);
   }
 
   async openExternal(sessionId: string, routeId?: string) {

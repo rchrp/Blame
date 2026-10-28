@@ -43,7 +43,7 @@ A native or otherwise host-only launch surface is valid with `services: []`, for
 - The canonical `previewManifest` is the only source of truth: Blame renders and runs the Compose project from it.
 - Be conservative with confidence. Use `low` or `medium` when scan evidence is partial.
 - Include non-blocking concerns in `previewManifest.risks[]`; do not require manual user steps.
-- A browser preview is optional. Never invent an HTTP server, port, long-running command, or preview surface for a library, CLI, batch, worker, or project without explicit browser-facing evidence.
+- A browser preview is optional. Never invent an HTTP server or port for a library, CLI, batch or worker. A CLI or TUI uses a terminal surface; libraries without a CLI keep no preview.
 </initialization_lens>
 
 ## Run Configurations
@@ -205,3 +205,8 @@ Before calling the tool, ensure:
 - `previewService`, browser bindings, preview probes, and published ports exist only when a browser-facing service is evidenced
 - every explicit main root development or orchestration command is represented even when specialized nested configurations also exist
 </final_checklist>
+
+
+## Terminal previews
+
+A CLI or TUI runs in a preview service with `surface: {"type":"terminal"}` and `endpoints: []`. Blame supplies the terminal transport. A matching run configuration has category `terminal`, `previewService`, and no `previewUrl`. Use a REPL or TUI's normal command; use `--help` or a short documented demo for a one-shot CLI. For a Python Click CLI: image `python:3.13-slim`, setup `pip install -e .`, service `cli` with command `mytool --help`, surface `{"type":"terminal"}`, no endpoints; configuration `{"id":"cli","name":"Command line","command":"mytool --help","cwd":".","default":true,"category":"terminal","services":["cli"],"previewService":"cli","scopes":["cli"]}`. Do not add an HTTP server for it.

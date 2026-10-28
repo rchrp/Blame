@@ -23,6 +23,7 @@ import { PreviewService } from "./preview-runtime/preview-service";
 import { registerPreviewRuntimeIpcHandlers } from "./ipc/preview-runtime-ipc";
 import { registerTelemetryIpcHandlers } from "./telemetry-ipc";
 import { registerTerminalIpcHandlers } from "./terminal-ipc";
+import { registerPreviewSurfacesIpc } from "./ipc/preview-surfaces-ipc";
 import {
   localPreviewBridgeGrant,
   registerWorkspaceIpcHandlers,
@@ -68,6 +69,7 @@ export function registerDesktopIpcHandlers(options: DesktopIpcOptions) {
     options.packaged,
   );
   const deploy = new DeployService(options.packaged);
+  registerPreviewSurfacesIpc({ service: previews, isAppWindow: options.isAppWindow });
   options.registerCoreHandlers();
   ipcMain.handle("shell:open-attachment", (event, input: unknown) => {
     if (!options.isAppWindow(event.sender)) throw new Error("Untrusted attachment request");

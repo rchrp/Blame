@@ -16,7 +16,7 @@ ARG DOCKER_VERSION=29.9.1
 ARG DOCKER_SHA256=c158ecc55adb3afb01bbd3539ed3b997d20c26dbdc418080506cc1bf5243ff57
 ARG COMPOSE_VERSION=5.6.0
 ARG COMPOSE_SHA256=40343e21ca777173e69cff5dbafeb37c6f81f3b0d57d9e597f036e95eb63e76a
-ARG BLAME_RUNNER_VERSION=0.2.20
+ARG BLAME_RUNNER_VERSION=0.3.0
 ARG BLAME_RUNNER_IMAGE_DIGEST=sha256:development
 
 RUN dnf upgrade -y \
@@ -102,3 +102,11 @@ ENV PATH="/opt/blame/bin:${PATH}"
 # the daemon socket to project services.
 USER root
 WORKDIR /workspace
+
+# ttyd is a static MIT-licensed binary shared read-only with terminal services.
+RUN mkdir -p /opt/blame/tools \
+    && curl --fail --silent --show-error --location \
+      https://github.com/tsl0922/ttyd/releases/download/1.7.7/ttyd.x86_64 \
+      --output /opt/blame/tools/ttyd \
+    && echo "8a217c968aba172e0dbf3f34447218dc015bc4d5e59bf51db2f2cd12b7be4f55  /opt/blame/tools/ttyd" | sha256sum --check --strict \
+    && chmod 755 /opt/blame/tools/ttyd

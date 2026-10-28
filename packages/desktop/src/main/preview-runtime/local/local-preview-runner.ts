@@ -1,6 +1,7 @@
 import type { PreviewExecutionPlan } from "@blame/preview-runtime";
 import {
   ComposeEngine,
+  installTtydCommand,
   probeServices,
   runFunctionalProbes,
   type DockerHost,
@@ -135,6 +136,15 @@ export async function startLocalPreview(
     selected: context.selected,
     ownPorts,
   });
+  if (context.plan.tools?.ttyd && dockerHost === blameRuntimeDockerHost) {
+    const installed = await dockerHost.run("sh", ["-c", installTtydCommand()], {
+      timeoutMs: 120000,
+    });
+    if (installed.exitCode)
+      throw new Error(
+        "Terminal tools could not be installed. Check the runtime connection and try again.",
+      );
+  }
   await engine.prepare(local.rendered, local.owner);
   if (!(await wanted(options))) return undefined;
   await stopOtherServices(engine, context.plan, serviceIds);
@@ -188,6 +198,9 @@ export async function stopLocalPreview(
   worktree: string,
   serviceIds?: string[],
 ) {
+  const { stopSurfaceTerminals } =
+    await import("../../preview-surfaces/surface-sessions.ts");
+  stopSurfaceTerminals(undefined, worktree);
   const engine = localPreviewEngine(worktree);
   if (!(await engine.prepared())) return;
   if (!serviceIds) return engine.stop();

@@ -67,6 +67,26 @@ ipcRenderer.on("auth:callback", (_event, delivery) => {
 });
 
 const api: BlameDesktopApi = {
+  previewSurfaces: {
+    enabled: () => ipcRenderer.invoke("preview-surfaces:enabled"),
+  },
+  previewTerminal: {
+    attach: (scope) => ipcRenderer.invoke("preview-terminal:attach", scope),
+    detach: (id) => ipcRenderer.invoke("preview-terminal:detach", id),
+    write: (input) => ipcRenderer.invoke("preview-terminal:write", input),
+    resize: (input) => ipcRenderer.invoke("preview-terminal:resize", input),
+    restart: (id) => ipcRenderer.invoke("preview-terminal:restart", id),
+    read: (id) => ipcRenderer.invoke("preview-terminal:read", id),
+    onEvent: (id, callback) => {
+      const channel = `preview-terminal:event:${id}`;
+      const handler = (
+        _event: unknown,
+        value: Parameters<typeof callback>[0],
+      ) => callback(value);
+      ipcRenderer.on(channel, handler);
+      return () => ipcRenderer.removeListener(channel, handler);
+    },
+  },
   auth: {
     request: (input) => ipcRenderer.invoke("cloud-auth:request", input),
     ready: () => {

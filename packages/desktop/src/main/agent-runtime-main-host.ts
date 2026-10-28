@@ -1,4 +1,5 @@
 import { withoutTelemetryEnvironment } from "@blame/telemetry";
+import { agentSurfaceInfo, agentSurfaceCall } from "./preview-surfaces/surface-agent.ts";
 import type { LightWorkspaceExecutionRequest } from "@blame/agent-runtime";
 import { shell } from "electron";
 import { execFile } from "node:child_process";
@@ -53,6 +54,8 @@ async function handleAgentHostRequest(
   devtools: PreviewDevtoolsMcpService,
   previews: PreviewService,
 ) {
+  if (method === "previewSurfaceInfo") return agentSurfaceInfo(input as never, previews);
+  if (method === "previewSurfaceCall") return agentSurfaceCall(input as never, previews, signal);
   if (method === 'renderWebPage') {
     const { renderResearchPage } = await import('./web-research-browser.ts');
     return renderResearchPage(String(recordInput(input).url ?? ''), signal);

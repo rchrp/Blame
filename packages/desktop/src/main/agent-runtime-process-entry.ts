@@ -73,6 +73,8 @@ function createAgentRuntime(hostClient: AgentRuntimeHostClient) {
       },
       previewContainerLogs: (input) =>
         hostRequest(hostClient, "previewContainerLogs", input),
+      previewSurfaceInfo: (input) => hostRequest(hostClient, "previewSurfaceInfo", { ...input, signal: undefined }),
+      previewSurfaceCall: (input) => hostRequest(hostClient, "previewSurfaceCall", input),
       previewDevtools: (input) =>
         hostRequest<PreviewDevtoolsTarget | undefined>(
           hostClient,

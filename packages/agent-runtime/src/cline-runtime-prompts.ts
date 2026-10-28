@@ -383,6 +383,10 @@ function developmentEnvironmentPrompt(input: StartDevelopmentSessionInput) {
 }
 
 function developmentPreviewPrompt(input: StartDevelopmentSessionInput) {
+  const initialization = input.projectInitialization;
+  const configuration = initialization?.runConfigurations.find((c) => c.default) ?? initialization?.runConfigurations[0];
+  const surface = initialization?.previewManifest.services.find((s) => s.id === configuration?.previewService)?.surface;
+  if (surface?.type === "terminal") return "The preview is a program terminal. Use preview_terminal to read its screen, type, press keys, wait for output and restart. The user sees the same terminal, so do not clear it without reason. Blame manages the service; do not start it manually.";
   if (!input.previewDevtoolsScope) return "";
   if (input.workspaceMode === "direct")
     return "The preview is the project's own app, run by Blame's project runner: the same process the user starts and stops from Blame. Check it or start it with project_app, never by hand. After final UI edits, use get_preview_devtools with waitFor=ready once; if the app is not running, start it with project_app first. If its port is held by another app, or it cannot start, continue with local validation and tell the user.";

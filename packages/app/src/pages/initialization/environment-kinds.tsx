@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils"
 // the service the preview opens. Icons stay neutral.
 
 export type EnvironmentKind =
-  "preview" | "dependency" | "worker" | "task" | "run"
+  "preview" | "dependency" | "worker" | "task" | "run" | "terminal"
 
 export type CornerTone = "preview" | "ready" | "warning" | "failed" | "idle"
 
@@ -29,6 +29,7 @@ const lights: Record<CornerTone, [number, number, number]> = {
 }
 
 export const environmentKinds = {
+  terminal: { label: "Terminal", text: "text-muted-foreground" },
   preview: { label: "Preview", text: "text-blue-600 dark:text-blue-400" },
   dependency: {
     label: "Dependency",
@@ -92,7 +93,7 @@ export function KindIcon({
       ? MonitorIcon
       : kind === "worker"
         ? CogIcon
-        : kind === "task"
+        : kind === "task" || kind === "terminal"
           ? SquareTerminalIcon
           : kind === "run"
             ? PlayIcon

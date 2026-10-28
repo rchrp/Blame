@@ -130,9 +130,22 @@ export const projectInitializationResultSchema = {
                 additionalProperties: { type: "string" },
               },
               dependsOn: { type: "array", items: { type: "string" } },
+              surface: {
+                type: "object",
+                additionalProperties: false,
+                required: ["type"],
+                properties: {
+                  type: { enum: ["web", "terminal", "display"] },
+                  device: { enum: ["phone", "tablet"] },
+                  columns: { type: "integer", minimum: 40, maximum: 300 },
+                  rows: { type: "integer", minimum: 10, maximum: 100 },
+                  width: { type: "integer", minimum: 640, maximum: 3840 },
+                  height: { type: "integer", minimum: 480, maximum: 2160 },
+                },
+              },
               endpoints: {
                 type: "array",
-                minItems: 1,
+                minItems: 0,
                 maxItems: 20,
                 items: {
                   type: "object",
@@ -411,7 +424,13 @@ function validateRunConfigurationServices(
   manifest: PreviewManifest,
   services: Set<string>,
 ) {
-  if (configuration.category !== "web" && configuration.previewService) {
+  if (
+    configuration.category !== "web" &&
+    configuration.category !== "mobile" &&
+    configuration.category !== "terminal" &&
+    configuration.category !== "desktop" &&
+    configuration.previewService
+  ) {
     throw new Error(
       `Initialization run configuration ${configuration.id} exposes a browser preview outside the web category`,
     );
@@ -425,6 +444,7 @@ function validateRunConfigurationServices(
     const manifestService = manifest.services.find(({ id }) => id === service);
     if (
       configuration.category !== "web" &&
+      !configuration.previewService &&
       manifestService?.kind === "preview"
     ) {
       throw new Error(
@@ -441,6 +461,15 @@ function validateRunConfigurationServices(
   const preview = manifest.services.find(
     ({ id }) => id === configuration.previewService,
   );
+  if (
+    configuration.previewUrl &&
+    preview?.surface &&
+    preview.surface.type !== "web"
+  ) {
+    throw new Error(
+      "Initialization run configuration previewUrl is only available for web surfaces",
+    );
+  }
   if (preview?.kind !== "preview") {
     throw new Error(
       `Initialization run configuration ${configuration.id} previewService is not browser-facing`,

@@ -4,6 +4,10 @@ import { currentWorkspaceRevisionState } from "./harness/workspace-revisions.js"
 import { sha256 } from "./harness/light-identity.js";
 import { previewDevtoolsAgentTimeoutMs } from "./preview-devtools-policy.js";
 import {
+  previewSurfaceTool,
+  type PreviewSurfaceInfo,
+} from "./preview-surface-tools.js";
+import {
   previewToolModelOutput,
   recordSessionScreenshots,
 } from "./preview-screenshots.js";
@@ -41,6 +45,7 @@ export type PreviewDevtoolsTarget = {
 };
 
 export type PreviewRuntimeContext = {
+  surface?: PreviewSurfaceInfo;
   // Lets the desktop app apply the project's browser tool settings.
   projectId?: string;
   scope?: string;
@@ -94,6 +99,18 @@ type PreviewContainerLogsInput = PreviewRuntimeContext & {
 };
 
 export type PreviewToolRuntimeOptions = {
+  previewSurfaceInfo?(
+    input: PreviewRuntimeContext,
+  ): Promise<PreviewSurfaceInfo | undefined>;
+  previewSurfaceCall?(
+    input: PreviewRuntimeContext & {
+      surface: PreviewSurfaceInfo;
+      arguments: Record<string, unknown>;
+      signal?: AbortSignal;
+      sessionId?: string;
+      toolCallId?: string;
+    },
+  ): Promise<unknown>;
   previewContainerLogs?(
     input: PreviewContainerLogsInput,
   ): Promise<unknown> | unknown;
@@ -166,6 +183,12 @@ export async function previewDevtoolsMcpTools(
   preview: PreviewRuntimeContext,
   logger: PreviewToolsLogger,
 ): Promise<AgentTool[]> {
+  const surface = await options.previewSurfaceInfo?.(preview);
+  if (surface) {
+    preview.surface = surface;
+    const tool = previewSurfaceTool(options, preview, surface);
+    return tool ? [tool] : [];
+  }
   if (!preview.scope || !mcpAvailable(options)) return [];
   try {
     // The desktop service sets each call's timeout (the wait asked for,
@@ -346,7 +369,7 @@ export function previewDevtoolsTool(
   options: PreviewToolRuntimeOptions,
   preview: PreviewRuntimeContext | undefined,
 ): AgentTool | undefined {
-  if (!options.previewDevtools || !preview) return undefined;
+  if (!options.previewDevtools || !preview || preview.surface) return undefined;
   return {
     name: "get_preview_devtools",
     description:

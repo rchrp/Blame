@@ -13,6 +13,7 @@ import { randomUUID } from 'node:crypto'
 import {
   PreviewRuntimeError,
   resolveCapabilities,
+  runtimeCapabilities,
   runtimeHandle,
   type DurableDeltaReceipt,
   type EndpointMap,
@@ -103,7 +104,12 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
   }
 
   async capabilities(plan: PreviewExecutionPlan) {
-    const report = resolveCapabilities(this.profile, plan)
+    const capabilities = runtimeCapabilities(this.profile)
+    // The configured image is checked against this version by the handshake.
+    capabilities.terminalSurface = /^0\.(?:[3-9]|[1-9]\d+)\.|^[1-9]\d*\./.test(
+      this.config.sandbox.runnerVersion
+    )
+    const report = resolveCapabilities(this.profile, plan, capabilities)
     const configurationFailure = this.configurationFailure()
     if (configurationFailure) {
       report.compatible = false

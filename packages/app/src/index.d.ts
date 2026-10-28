@@ -1,6 +1,10 @@
 import type { Root } from "react-dom/client"
 import type { ComponentType } from "react"
 import type { Platform } from "./context/platform"
+export type {
+  PreviewTerminalClient,
+  PreviewSurfacesClient,
+} from "./context/platform-preview-surfaces"
 
 export declare const App: ComponentType
 export type {

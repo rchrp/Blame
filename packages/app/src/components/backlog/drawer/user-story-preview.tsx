@@ -1,3 +1,5 @@
+import { useManagedPreviewLog, useProjectServices, useProjectServiceLog } from "./preview-service-logs"
+import { PreviewSurface } from "./preview-surface"
 import type { PreviewLifecycleState } from "@blame/agent-runtime"
 import {
   CopyIcon,
@@ -70,7 +72,6 @@ import { pruneRuntimeSessionStates } from "@/lib/runtime-preference"
 import { cn } from "@/lib/utils"
 import {
   destroyReleasedNativePreviewSessions,
-  NativePreviewPanel,
   nativePreviewRetainedSessionLimit,
   nativePreviewStatus,
   NativePreviewWarmup,
@@ -223,7 +224,6 @@ export const UserStoryPreviewWarmup = React.memo(
   }) {
     const platform = usePlatform()
     const previewBrowser = platform.previewBrowser
-    // Each story warms up the preview of the mode it runs in.
     const stories = React.useMemo(
       () => nativePreviewWarmupStories(userStories),
       [userStories]
@@ -352,7 +352,6 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
     ? storyPreviewDevtoolsScope(userStory.id)
     : previewSessionKey
   const previewIdentity = previewScope ?? previewLabel
-  // With the project's runner, the story's own preview runtime stays off.
   const projectRunMode = Boolean(projectRun)
   const setupLogWorktree = projectRunMode
     ? undefined
@@ -462,8 +461,13 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
     setupLogWorktree,
     userStory?.id
   )
+  const surfaceConfiguration = previewRunner.runtime?.configurations.find(
+    ({ id }) => id === previewRunner.selectedId
+  )
   const hasPreviewSurface =
-    Boolean(source) || runtimeStarting || Boolean(previewFailure)
+    Boolean(source || surfaceConfiguration?.previewService) ||
+    runtimeStarting ||
+    Boolean(previewFailure)
   const activeTab = activePreviewTab(tab, hasPreviewSurface, hasSetupLog)
   const localServices = useProjectServices(
     visible && activeTab === "setup-log" && !managedPreview
@@ -734,13 +738,16 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
                 activeTab !== "preview" && "hidden"
               )}
             >
-              {source &&
+              {(source || surfaceConfiguration?.previewService) &&
                 (projectRunWaiting ? (
-                  <StartedAppWaitingPanel source={source} />
+                  <StartedAppWaitingPanel source={source ?? ""} />
                 ) : setupPreviewWaiting ? (
                   <PreviewWaitingPanel />
                 ) : previewBrowser ? (
-                  <NativePreviewPanel
+                  <PreviewSurface
+                    configuration={surfaceConfiguration}
+                    storyId={userStory?.id}
+                    surfaceWorktree={setupLogWorktree ?? undefined}
                     client={previewBrowser}
                     devtoolsScope={previewScope}
                     onCaptureReady={setPreviewCaptureHandler}
@@ -751,7 +758,7 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
                     previewWorktree={previewWorktree}
                     reloadKey={reloadKey}
                     sessionKey={nativePreviewSessionKey}
-                    source={source}
+                    source={source ?? ""}
                     storageKey={nativePreviewStorageKey}
                     visible={
                       visible &&
@@ -769,7 +776,7 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
                     onReload={reloadPreview}
                     previewKey={previewKey}
                     previewState={previewState}
-                    source={source}
+                    source={source ?? ""}
                     title={`${previewLabel} preview`}
                   />
                 ))}
@@ -1429,176 +1436,6 @@ function SetupLogPanel({
       </pre>
     </div>
   )
-}
-
-function useManagedPreviewLog(sessionId?: string, service?: string) {
-  const platform = usePlatform()
-  const [state, setState] = React.useState({
-    content: "",
-    error: "",
-    loading: Boolean(sessionId),
-    service,
-    sessionId,
-  })
-
-  React.useEffect(() => {
-    if (!sessionId || !platform.previewRuntime?.onLog) return
-    return platform.previewRuntime.onLog(
-      { sessionId },
-      (event) => {
-        if (service && event.serviceId && event.serviceId !== service) return
-        const prefix = event.serviceId ? `${event.serviceId} | ` : ""
-        setState((current) => {
-          const content =
-            current.sessionId === sessionId && current.service === service
-              ? current.content
-              : ""
-          return {
-            content: `${content}${prefix}${event.message}\n`.slice(-250_000),
-            error: "",
-            loading: false,
-            service,
-            sessionId,
-          }
-        })
-      },
-      (error) =>
-        setState((current) => ({
-          content:
-            current.sessionId === sessionId && current.service === service
-              ? current.content
-              : "",
-          error,
-          loading: false,
-          service,
-          sessionId,
-        }))
-    )
-  }, [platform.previewRuntime, service, sessionId])
-
-  return state.sessionId === sessionId && state.service === service
-    ? state
-    : { content: "", error: "", loading: Boolean(sessionId) }
-}
-
-function useProjectServices(worktree?: string | null) {
-  const platform = usePlatform()
-  const [result, setResult] = React.useState<{
-    services: string[]
-    worktree: string
-  }>({ services: [], worktree: "" })
-
-  React.useEffect(() => {
-    if (!worktree || !platform.workspace?.listProjectServices) return
-    let cancelled = false
-    const loadServices = () => {
-      platform.workspace
-        ?.listProjectServices?.({ worktree })
-        .then((nextServices) => {
-          if (!cancelled) setResult({ services: nextServices, worktree })
-        })
-        .catch(() => {
-          if (!cancelled) setResult({ services: [], worktree })
-        })
-    }
-    loadServices()
-    const interval = window.setInterval(loadServices, 2000)
-    return () => {
-      cancelled = true
-      window.clearInterval(interval)
-    }
-  }, [platform.workspace, worktree])
-
-  return worktree && result.worktree === worktree ? result.services : []
-}
-
-function useProjectServiceLog(worktree?: string | null, service?: string) {
-  const platform = usePlatform()
-  const [state, setState] = React.useState({
-    content: "",
-    error: "",
-    loading: Boolean(worktree && service),
-    service,
-    worktree,
-  })
-
-  React.useEffect(() => {
-    if (!worktree || !service || !platform.workspace) return
-    if (
-      !platform.workspace.startProjectServiceLogs ||
-      !platform.workspace.stopProjectServiceLogs ||
-      !platform.workspace.onProjectServiceLog
-    ) {
-      return
-    }
-    let cancelled = false
-    let cleanup = () => {}
-    let activeStreamId = ""
-    void platform.workspace
-      .startProjectServiceLogs({ service, worktree })
-      .then(({ streamId }) => {
-        activeStreamId = streamId
-        if (cancelled) {
-          void platform.workspace?.stopProjectServiceLogs?.({ streamId })
-          return
-        }
-        setState((current) => ({ ...current, loading: false }))
-        cleanup =
-          platform.workspace?.onProjectServiceLog?.(streamId, (event) => {
-            if (event.type === "exit") return
-            setState((current) => ({
-              ...current,
-              content: `${current.content}${event.data}`,
-              error: "",
-              loading: false,
-            }))
-          }) ?? (() => {})
-      })
-      .catch((error) => {
-        if (!cancelled) {
-          setState({
-            content: "",
-            error:
-              error instanceof Error
-                ? error.message
-                : "Unable to read service logs",
-            loading: false,
-            service,
-            worktree,
-          })
-        }
-      })
-    return () => {
-      cancelled = true
-      cleanup()
-      if (activeStreamId) {
-        void platform.workspace?.stopProjectServiceLogs?.({
-          streamId: activeStreamId,
-        })
-      }
-    }
-  }, [platform.workspace, service, worktree])
-
-  if (!worktree || !service) {
-    return { content: "", error: "", loading: false, service, worktree }
-  }
-  if (
-    !platform.workspace?.startProjectServiceLogs ||
-    !platform.workspace.stopProjectServiceLogs ||
-    !platform.workspace.onProjectServiceLog
-  ) {
-    return {
-      content: "",
-      error: "Desktop workspace bridge is unavailable.",
-      loading: false,
-      service,
-      worktree,
-    }
-  }
-  if (state.worktree !== worktree || state.service !== service) {
-    return { content: "", error: "", loading: true, service, worktree }
-  }
-  return state
 }
 
 function serviceLogContent(

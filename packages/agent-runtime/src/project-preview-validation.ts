@@ -137,6 +137,17 @@ export function previewSetupIssues(
       "No setup task seems to run the database migrations: the backend may start on an empty database.",
     );
   }
+  for (const service of manifest.services) {
+    if (
+      service.surface?.type === "terminal" &&
+      service.endpoints.some((e) => e.protocol !== "tcp")
+    )
+      add(
+        "warning",
+        "should not declare its own HTTP endpoint for a terminal surface",
+        "A terminal preview does not need its own HTTP endpoint",
+      );
+  }
   return issues;
 }
 

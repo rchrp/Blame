@@ -49,6 +49,8 @@ export const agentHostMethods = [
   "git",
   "openExternalUrl",
   "previewDevtools",
+  "previewSurfaceInfo",
+  "previewSurfaceCall",
   "previewDevtoolsCall",
   "previewScreenshotKnown",
   "previewDevtoolsTools",

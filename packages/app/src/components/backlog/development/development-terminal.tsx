@@ -1,19 +1,10 @@
-import { FitAddon } from "@xterm/addon-fit"
-import { Terminal } from "@xterm/xterm"
-import "@xterm/xterm/css/xterm.css"
+import { createTerminalView } from "./terminal-view"
 import { ServerOffIcon, SquareIcon, TerminalIcon } from "lucide-react"
 import * as React from "react"
 
 import type { UserStory } from "@/components/backlog/data/backlog-data"
 import { Button } from "@/components/ui/button"
 import { usePlatform } from "@/context/platform"
-
-const terminalTheme = {
-  background: "#09090b",
-  cursor: "#f4f4f5",
-  selectionBackground: "rgba(96, 165, 250, 0.35)",
-  foreground: "#f4f4f5",
-}
 
 export function DevelopmentTerminal({ userStory }: { userStory?: UserStory }) {
   const platform = usePlatform()
@@ -30,38 +21,17 @@ export function DevelopmentTerminal({ userStory }: { userStory?: UserStory }) {
     let cancelled = false
     let unsubscribe: (() => void) | undefined
     let sessionId: string | undefined
-    const terminal = new Terminal({
-      convertEol: true,
-      cursorBlink: true,
-      fontFamily:
-        "SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace",
-      fontSize: 12,
-      fontWeight: 400,
-      letterSpacing: 0,
-      lineHeight: 1.1,
-      scrollback: 10_000,
-      theme: terminalTheme,
-    })
-    const fitAddon = new FitAddon()
-    terminal.loadAddon(fitAddon)
-    terminal.open(element)
-    fitAddon.fit()
-
-    const resize = () => {
-      fitAddon.fit()
-      if (!sessionId) return
-      void terminalApi.resize({
-        cols: terminal.cols,
-        id: sessionId,
-        rows: terminal.rows,
-      })
-    }
-    const resizeObserver = new ResizeObserver(resize)
-    resizeObserver.observe(element)
-    const dataDisposable = terminal.onData((data) => {
-      const id = terminalSession.current
-      if (id) void terminalApi.write({ data, id })
-    })
+    const view = createTerminalView(
+      element,
+      (cols, rows) => {
+        if (sessionId) void terminalApi.resize({ cols, id: sessionId, rows })
+      },
+      (data) => {
+        const id = terminalSession.current
+        if (id) void terminalApi.write({ data, id })
+      }
+    )
+    const { terminal, resize } = view
 
     terminal.write("\x1b[90mStarting terminal…\x1b[0m\r\n")
     terminalApi
@@ -94,12 +64,11 @@ export function DevelopmentTerminal({ userStory }: { userStory?: UserStory }) {
 
     return () => {
       cancelled = true
-      resizeObserver.disconnect()
-      dataDisposable.dispose()
+
       unsubscribe?.()
       if (sessionId) void terminalApi.stop(sessionId)
       terminalSession.current = undefined
-      terminal.dispose()
+      view.dispose()
     }
   }, [platform.terminal, userStory?.worktree])
 

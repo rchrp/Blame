@@ -531,7 +531,7 @@ export function resumeRuntimeState(
       "Runner resume context is invalid.",
     );
   }
-  if (state.plan && state.plan.version !== 2) {
+  if (state.plan && ![2, 3].includes(state.plan.version)) {
     throw runnerError(
       "STALE_EXECUTION_PLAN",
       "The persisted preview plan is obsolete and the session must be recreated.",
@@ -569,9 +569,11 @@ function requiredRouteId(
 function handshake() {
   return runnerHandshake({
     clineSdkVersion: process.env.BLAME_CLINE_SDK_VERSION ?? "0.2.0",
-    runnerVersion: process.env.BLAME_RUNNER_VERSION ?? "0.2.20",
+    runnerVersion: process.env.BLAME_RUNNER_VERSION ?? "0.3.0",
     imageDigest: process.env.BLAME_RUNNER_IMAGE_DIGEST ?? "unconfigured",
     capabilities: {
+      terminalSurface: true,
+      displaySurface: false,
       dockerCompose: true,
       sharedLoopback: true,
       snapshots: true,
@@ -610,7 +612,7 @@ function baselineBindingUrls(plan: PreviewExecutionPlan) {
 function assertExecutionPlan(value: PreviewExecutionPlan) {
   if (
     !value ||
-    value.version !== 2 ||
+    ![2, 3].includes(value.version) ||
     value.workspaceRoot !== "/workspace" ||
     !Array.isArray(value.services) ||
     !Array.isArray(value.setup) ||

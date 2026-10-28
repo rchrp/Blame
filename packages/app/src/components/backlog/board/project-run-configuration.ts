@@ -14,10 +14,8 @@ export function projectPreviewConfiguration(
 ) {
   return (
     configurations.find(
-      (configuration) =>
-        configuration.default &&
-        projectRunConfigurationPreviewUrl(configuration)
-    ) ?? configurations.find(projectRunConfigurationPreviewUrl)
+      (configuration) => configuration.default && hasPreview(configuration)
+    ) ?? configurations.find(hasPreview)
   )
 }
 
@@ -37,4 +35,11 @@ export function projectRunConfigurationPreviewKey(
   scope = "project"
 ) {
   return runnerPreviewDevtoolsScope(configuration, scope)
+}
+
+function hasPreview(configuration: ProjectRunConfiguration) {
+  return Boolean(
+    projectRunConfigurationPreviewUrl(configuration) ||
+    configuration.previewService
+  )
 }
