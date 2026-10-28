@@ -69,6 +69,40 @@ test("wait patterns are bounded and invalid patterns fail without blocking the m
   }
 });
 
+test("an exit code survives a connection reset right after the program ends", async () => {
+  const server = new WebSocketServer({ port: 0, host: "127.0.0.1" });
+  await once(server, "listening");
+  const address = server.address();
+  assert.ok(address && typeof address !== "string");
+  server.on("connection", (socket) => {
+    socket.once("message", () => {
+      socket.send(Buffer.from("0sh: 1: tool: not found\r\n"));
+      socket.send(Buffer.from("0\x1b]1337;BlameExit=127\x07"));
+      // Like ttyd once the program exits: a close frame with status 1006,
+      // which the client reports as an invalid frame.
+      setTimeout(() => {
+        const raw = (socket as unknown as { _socket: NodeJS.WritableStream })
+          ._socket;
+        raw.write(Buffer.from([0x88, 0x02, 0x03, 0xee]));
+      }, 100);
+    });
+  });
+  const terminal = new TerminalSurface(
+    async () => new WebSocket(`ws://127.0.0.1:${address.port}`, "tty"),
+    80,
+    24,
+  );
+  try {
+    await terminal.connect();
+    const screen = await terminal.waitFor("never", 1000);
+    assert.equal(screen.exitCode, 127);
+    assert.equal(screen.message, "Exited with code 127");
+  } finally {
+    terminal.dispose();
+    server.close();
+  }
+});
+
 test(
   "official ttyd preserves immediate exit markers and can restart",
   { skip: !process.env.BLAME_TEST_TTYD, timeout: 15000 },

@@ -9,6 +9,7 @@ import {
   persistLocalPreviewResult,
   suspendedLocalPreviewLifecycle,
   validPreviewLifecycle,
+  selectsBrowserPreview,
 } from "./local-preview-lifecycle.ts";
 
 test("projects local container and endpoint observations to the shared lifecycle", () => {
@@ -152,4 +153,20 @@ test("keeps a preview stopped for lack of use suspended", () => {
     localPreviewLifecycle(stopped, "stopped", true, undefined).phase,
     "idle",
   );
+});
+
+test("only web surfaces wait for a preview URL", () => {
+  const manifest = {
+    services: [
+      { id: "web" },
+      { id: "phone", surface: { type: "web" } },
+      { id: "cli", surface: { type: "terminal" } },
+      { id: "app", surface: { type: "display" } },
+    ],
+  };
+  assert.equal(selectsBrowserPreview("web", manifest), true);
+  assert.equal(selectsBrowserPreview("phone", manifest), true);
+  assert.equal(selectsBrowserPreview("cli", manifest), false);
+  assert.equal(selectsBrowserPreview("app", manifest), false);
+  assert.equal(selectsBrowserPreview(undefined, manifest), false);
 });

@@ -10,6 +10,21 @@ type WritePreviewRuntimeState = (
   state: PreviewRuntimeSelectionState,
 ) => Promise<void>;
 
+/**
+ * Whether the selected configuration opens a page: terminal and screen
+ * previews are ready once their service runs, without a preview URL.
+ */
+export function selectsBrowserPreview(
+  previewService: string | undefined,
+  manifest:
+    { services: Array<{ id: string; surface?: { type: string } }> } | undefined,
+) {
+  if (!previewService) return false;
+  const surface = manifest?.services.find(({ id }) => id === previewService)
+    ?.surface?.type;
+  return !surface || surface === "web";
+}
+
 export function localPreviewLifecycle(
   persisted: PreviewRuntimeSelectionState,
   selectedStatus: ProjectPreviewRuntimeState["statuses"][string] | undefined,

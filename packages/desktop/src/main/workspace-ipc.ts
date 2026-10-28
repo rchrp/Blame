@@ -72,6 +72,7 @@ import {
 import {
   idleLocalPreviewLifecycle,
   localPreviewLifecycle,
+  selectsBrowserPreview,
   pendingLocalPreviewLifecycle,
   suspendedLocalPreviewLifecycle,
   runLocalPreviewOperation,
@@ -1780,14 +1781,18 @@ export async function projectPreviewRuntimeState(
     runtimeState,
     manifest,
   );
+  const browserPreview = selectsBrowserPreview(
+    selected?.previewService,
+    manifest,
+  );
   const previewUrl =
-    runtimeState.desiredStatus === "running" && selected?.previewService
+    runtimeState.desiredStatus === "running" && browserPreview
       ? ((await resolveProjectPreviewUrl({ worktree })) ?? undefined)
       : undefined;
   const lifecycle = localPreviewLifecycle(
     runtimeState,
     selected ? statuses[selected.id] : undefined,
-    Boolean(selected?.previewService),
+    browserPreview,
     previewUrl,
   );
   return {

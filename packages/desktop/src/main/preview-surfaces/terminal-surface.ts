@@ -120,11 +120,16 @@ export class TerminalSurface extends EventEmitter {
             socket.on("error", () => {
               clearTimeout(timer);
               if (this.socket !== socket) return;
-              this.update(
-                "failed",
-                "The terminal connection was lost. Run the program again.",
-              );
-              reject(new Error(this.message));
+              // ttyd may reset the connection right after the program exits:
+              // keep its exit code once the remaining output is read.
+              void this.output.then(() => {
+                if (this.socket === socket && this.exitCode === undefined)
+                  this.update(
+                    "failed",
+                    "The terminal connection was lost. Run the program again.",
+                  );
+              });
+              reject(new Error("The terminal connection was lost."));
             });
             socket.once("close", () => {
               clearTimeout(timer);
