@@ -52,8 +52,12 @@ export function OpenProjectChoiceDialog({
           Don't ask again
         </Label>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <Button variant="outline" onClick={() => choose("new-window")}>
+          <AlertDialogCancel className="sm:mr-auto">Cancel</AlertDialogCancel>
+          <Button
+            variant="outline"
+            className="border-primary dark:border-primary"
+            onClick={() => choose("new-window")}
+          >
             New Window
           </Button>
           <Button autoFocus onClick={() => choose("this-window")}>
