@@ -1,6 +1,12 @@
 import type { PreviewManifestDeviceTarget } from "@blame/preview-contract";
 import type { DeviceUiNode } from "./types.ts";
 
+type IosDeviceType = {
+  identifier: string;
+  name: string;
+  minRuntimeVersionString?: string;
+  maxRuntimeVersionString?: string;
+};
 export function chooseIosDevice(
   list: {
     runtimes: Array<{
@@ -8,33 +14,51 @@ export function chooseIosDevice(
       version: string;
       name: string;
       isAvailable: boolean;
+      supportedDeviceTypes?: IosDeviceType[];
     }>;
-    devicetypes: Array<{ identifier: string; name: string }>;
+    devicetypes: IosDeviceType[];
   },
   target: PreviewManifestDeviceTarget,
 ) {
   const runtimes = list.runtimes
     .filter((r) => r.isAvailable && /iOS/.test(r.name))
-    .sort((a, b) =>
-      b.version.localeCompare(a.version, undefined, { numeric: true }),
-    );
+    .sort((a, b) => compareVersions(b.version, a.version));
   const runtime = target.device?.os
     ? runtimes.find((r) => r.version === target.device!.os)
     : runtimes[0];
-  const models = list.devicetypes
+  // Only a phone the runtime supports can be created: an older or newer model
+  // fails with "Incompatible device".
+  const supported = runtime?.supportedDeviceTypes?.length
+    ? runtime.supportedDeviceTypes
+    : list.devicetypes.filter(
+        (d) =>
+          runtime &&
+          compareVersions(d.minRuntimeVersionString ?? "0", runtime.version) <=
+            0 &&
+          compareVersions(
+            runtime.version,
+            d.maxRuntimeVersionString ?? "65535",
+          ) <= 0,
+      );
+  const models = supported
     .filter((d) => /^iPhone /.test(d.name))
-    .sort((a, b) => b.name.localeCompare(a.name, undefined, { numeric: true }));
-  const model =
-    (target.device?.model
-      ? models.find((d) => d.name === target.device!.model)
-      : undefined) ??
-    models.find((d) => !/Pro|Max|Plus|mini|SE/.test(d.name)) ??
-    models[0];
+    .sort((a, b) => phoneGeneration(b.name) - phoneGeneration(a.name));
+  const model = target.device?.model
+    ? models.find((d) => d.name === target.device!.model)
+    : (models.find((d) => /^iPhone \d+$/.test(d.name)) ?? models[0]);
   if (!runtime || !model)
     throw new Error(
-      "Install a compatible iOS Simulator runtime in Xcode, then try again.",
+      target.device?.model && runtime
+        ? `The installed iOS ${runtime.version} simulator has no ${target.device.model}. Choose another device in Preview Environment.`
+        : "Install a compatible iOS Simulator runtime in Xcode, then try again.",
     );
   return { runtime, model };
+}
+function phoneGeneration(name: string) {
+  return Number(/^iPhone (\d+)/.exec(name)?.[1] ?? 0);
+}
+function compareVersions(a: string, b: string) {
+  return a.localeCompare(b, undefined, { numeric: true });
 }
 export function iosBuildArguments(
   target: PreviewManifestDeviceTarget,

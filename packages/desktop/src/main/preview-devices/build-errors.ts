@@ -8,8 +8,13 @@ export function mapBuildPath(file: string, mirror: string, worktree: string) {
       /* Preserve the compiler path. */
     }
   }
-  const prefix = mirror.replace(/\\/g, "/").replace(/\/$/, "");
-  const normalized = path.replace(/\\/g, "/").replace(/^\/([A-Za-z]:\/)/, "$1");
+  // macOS reports /private/tmp and /private/var paths without "/private".
+  const unprivate = (value: string) =>
+    value.replace(/^\/private\/(tmp|var)\//, "/$1/");
+  const prefix = unprivate(mirror.replace(/\\/g, "/").replace(/\/$/, ""));
+  const normalized = unprivate(
+    path.replace(/\\/g, "/").replace(/^\/([A-Za-z]:\/)/, "$1"),
+  );
   const windows = /^[A-Za-z]:\//.test(prefix);
   return (windows ? normalized.toLowerCase() : normalized).startsWith(
     (windows ? prefix.toLowerCase() : prefix) + "/",
@@ -43,10 +48,16 @@ export function failedDeviceBuild(
   worktree: string,
   issues: Array<{ file?: string; line?: number; message: string }> = [],
 ): DeviceBuildResult {
-  const errors = [...issues, ...parseBuildErrors(log, mirror, worktree)].slice(
-    0,
-    200,
-  );
+  // xcresult and the compiler log repeat the same diagnostic.
+  const seen = new Set<string>();
+  const errors = [...issues, ...parseBuildErrors(log, mirror, worktree)]
+    .filter((error) => {
+      const key = `${error.file}:${error.line}:${error.message.toLowerCase()}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, 200);
   return {
     ok: false,
     summary:
@@ -94,7 +105,8 @@ export function parseXcodeBuildIssues(
         const [path, fragment = ""] = location.split("#");
         file = mapBuildPath(path!, mirror, worktree);
         const number = new URLSearchParams(fragment).get("StartingLineNumber");
-        if (number && /^\d+$/.test(number)) line = Number(number);
+        // xcresult line numbers start at 0.
+        if (number && /^\d+$/.test(number)) line = Number(number) + 1;
       }
       errors.push({ file, line, message: message.slice(0, 2000) });
     }

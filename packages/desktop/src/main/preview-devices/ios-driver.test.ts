@@ -53,6 +53,34 @@ test("iOS commands choose a normal phone, build without signing and preserve lit
     /scheme/,
   );
 });
+test("iOS device choice keeps to the models the runtime supports", () => {
+  const xs = {
+    name: "iPhone Xs",
+    identifier: "xs",
+    minRuntimeVersionString: "12.0.0",
+    maxRuntimeVersionString: "18.99.0",
+  };
+  const runtime = { ...list.runtimes[0], version: "26.5" };
+  const phones = [
+    { name: "iPhone 17 Pro", identifier: "17pro" },
+    { name: "iPhone 17e", identifier: "17e" },
+    { name: "iPhone Air", identifier: "air" },
+    { name: "iPhone 17", identifier: "17" },
+    { name: "iPhone 11", identifier: "11" },
+  ];
+  const listed = { runtimes: [runtime], devicetypes: [xs, ...phones] };
+  assert.equal(chooseIosDevice(listed, target).model.identifier, "17");
+  const declared = {
+    runtimes: [{ ...runtime, supportedDeviceTypes: phones }],
+    devicetypes: [xs, ...phones],
+  };
+  assert.equal(chooseIosDevice(declared, target).model.identifier, "17");
+  assert.throws(
+    () =>
+      chooseIosDevice(declared, { ...target, device: { model: "iPhone Xs" } }),
+    /has no iPhone Xs/,
+  );
+});
 test("iOS prerequisites follow Xcode selection and availability is neutral on other hosts", async () => {
   const host: DeviceHost = {
     run: async (command, args) => ({
@@ -191,7 +219,7 @@ test("xcresult diagnostics and Windows file URLs map to worktree files", async (
             issueType: "Swift Compiler Error",
             message: "Cannot find 'label' in scope",
             sourceURL:
-              "file:///mirror/My%20App/ContentView.swift#StartingLineNumber=17&StartingColumnNumber=9",
+              "file:///mirror/My%20App/ContentView.swift#StartingLineNumber=16&StartingColumnNumber=9",
           },
         ],
       },
@@ -214,6 +242,21 @@ test("xcresult diagnostics and Windows file URLs map to worktree files", async (
     ),
     "/worktree/Main.kt",
   );
+  const { failedDeviceBuild } = await import("./build-errors.ts");
+  const failed = failedDeviceBuild(
+    "/tmp/mirror/App.swift:14:5: error: cannot convert value",
+    "/private/tmp/mirror",
+    "/worktree",
+    [
+      {
+        file: "/worktree/App.swift",
+        line: 14,
+        message: "Cannot convert value",
+      },
+    ],
+  );
+  assert.equal(failed.ok, false);
+  if (!failed.ok) assert.equal(failed.errors.length, 1);
 });
 
 test("a framework-incompatible AXe allows the simctl-only preview", async () => {
