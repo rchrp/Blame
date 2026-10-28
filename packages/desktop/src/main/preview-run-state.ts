@@ -53,7 +53,7 @@ export function shouldStartBrowserPreview(
   if (state.desiredStatus !== "running") return false;
   const selected = selectedPreviewRunConfiguration(configurations, state);
   if (!manifest || !selected) return false;
-  if (selected.category !== "web") return false;
+  if (selected.category !== "web" && selected.category !== "mobile") return false;
   return manifest.services.some(
     (service) =>
       service.id === selected.previewService && browserPreviewService(service),

@@ -43,6 +43,7 @@ export function registerPreviewBrowserIpcHandlers(
       event,
       input: {
         storageKey: string;
+        device?: "phone" | "tablet";
         previewSessionId?: string;
         previewWorktree?: string;
       },

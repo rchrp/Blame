@@ -1,3 +1,4 @@
+import { emulatePreviewDevice, previewDeviceSize } from "./device-emulation.ts";
 import { randomUUID } from "node:crypto";
 import { BrowserWindow, type WebContents } from "electron";
 import { probePreviewApplication } from "./preview-application-probe.ts";
@@ -14,12 +15,14 @@ import { previewNavigationAllowed } from "./preview-navigation-policy.ts";
 // partition, so cookies, sign-in and the managed network bridge apply.
 
 export type AgentPreviewSource = {
+  device?: "phone" | "tablet";
   initialUrl: string;
   partition: string;
   previewOrigin?: string;
 };
 
 export type AgentPreviewBrowser = {
+  device?: "phone" | "tablet";
   destroyed: boolean;
   // The viewport the agent sees, kept across DevTools reconnections.
   viewport: { height: number; width: number };
@@ -60,7 +63,8 @@ export async function ensureAgentPreviewBrowser(
   scope: string,
   source: AgentPreviewSource,
 ) {
-  const current = agentPreviewBrowser(scope);
+  let current = agentPreviewBrowser(scope);
+  if (current && current.device !== source.device) { destroyAgentPreviewBrowser(scope); current = undefined; }
   if (current) {
     current.touch();
     await current.ready;
@@ -137,8 +141,9 @@ export function refreshAgentApplicationState(record: AgentPreviewBrowser) {
 }
 
 function createAgentRecord(scope: string, source: AgentPreviewSource) {
+  const viewport = source.device ? previewDeviceSize(source.device) : agentPreviewViewport;
   const window = new BrowserWindow({
-    height: agentPreviewViewport.height,
+    height: viewport.height,
     show: false,
     useContentSize: true,
     webPreferences: {
@@ -149,13 +154,15 @@ function createAgentRecord(scope: string, source: AgentPreviewSource) {
       partition: source.partition,
       sandbox: true,
     },
-    width: agentPreviewViewport.width,
+    width: viewport.width,
   });
   const webContents = window.webContents;
   webContents.setFrameRate(agentPreviewFrameRate);
   webContents.setAudioMuted(true);
   const id = randomUUID();
+  if (source.device) emulatePreviewDevice(window.webContents, source.device);
   const record: AgentRecord = {
+    device: source.device,
     destroyed: false,
     id,
     previewOrigin: source.previewOrigin,
@@ -163,7 +170,7 @@ function createAgentRecord(scope: string, source: AgentPreviewSource) {
     scope,
     state: { id, loading: true, url: source.initialUrl },
     touch: () => restartIdleTimer(record),
-    viewport: { ...agentPreviewViewport },
+    viewport: { ...viewport },
     webContents,
     window,
   };

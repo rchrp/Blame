@@ -698,6 +698,7 @@ export type PreviewBrowserClient = {
   }): Promise<string | null>
   create(input: {
     storageKey: string
+    device?: "phone" | "tablet"
     previewSessionId?: string
     previewWorktree?: string
   }): Promise<{ id: string }>

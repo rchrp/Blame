@@ -1,3 +1,4 @@
+import { PhoneFrame } from "./surfaces/phone-frame"
 import * as React from "react"
 import type {
   PreviewManifest,
@@ -80,5 +81,12 @@ export function PreviewSurface({
       />
     )
   }
+  if (surface?.type === "web" && surface.device && enabled.includes("phone-web"))
+    return <PhonePreview native={native} device={surface.device} />
   return <NativePreviewPanel {...native} />
+}
+
+function PhonePreview({ native, device }: { native: React.ComponentProps<typeof NativePreviewPanel>; device: "phone" | "tablet" }) {
+  const client = React.useMemo(() => ({ ...native.client, create: (input: Parameters<typeof native.client.create>[0]) => native.client.create({ ...input, device }) }), [native.client, device])
+  return <PhoneFrame device={device}><NativePreviewPanel {...native} client={client} sessionKey={`${native.sessionKey}:${device}`} storageKey={native.storageKey} /></PhoneFrame>
 }

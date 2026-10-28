@@ -210,3 +210,8 @@ Before calling the tool, ensure:
 ## Terminal previews
 
 A CLI or TUI runs in a preview service with `surface: {"type":"terminal"}` and `endpoints: []`. Blame supplies the terminal transport. A matching run configuration has category `terminal`, `previewService`, and no `previewUrl`. Use a REPL or TUI's normal command; use `--help` or a short documented demo for a one-shot CLI. For a Python Click CLI: image `python:3.13-slim`, setup `pip install -e .`, service `cli` with command `mytool --help`, surface `{"type":"terminal"}`, no endpoints; configuration `{"id":"cli","name":"Command line","command":"mytool --help","cwd":".","default":true,"category":"terminal","services":["cli"],"previewService":"cli","scopes":["cli"]}`. Do not add an HTTP server for it.
+
+
+## Cross-platform mobile web previews
+
+When the project already supports a web build, set its web service surface to `{"type":"web","device":"phone"}` and use a mobile run configuration with previewService and previewUrl. Expo with react-native-web uses `npx expo start --web --port 8081` (HTTP endpoint 8081). Ionic and Capacitor use the web framework's existing dev server. Flutter uses `flutter run -d web-server --web-hostname 0.0.0.0 --web-port 8080`, a project Dockerfile with its pinned Flutter toolchain and a cache for the pub directory. React Native without react-native-web has no web version: use a native device target. Never invent a web counterpart for native-only code. Expo Go phone links are not available yet; do not claim the user can scan a QR code.

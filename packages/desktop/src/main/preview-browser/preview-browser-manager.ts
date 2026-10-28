@@ -1,3 +1,5 @@
+import { emulatePreviewDevice } from "./device-emulation";
+import { surfaceEnabled } from "../preview-surfaces/experimental-surfaces";
 import { randomUUID } from "node:crypto";
 import {
   BrowserWindow,
@@ -35,6 +37,7 @@ import {
 } from "./preview-browser-state";
 
 type PreviewBrowserRecord = {
+  device?: "phone" | "tablet";
   devtoolsScope?: string;
   id: string;
   owner: BrowserWindow;
@@ -132,6 +135,7 @@ function agentPreviewSource(
   if (!initialUrl) return undefined;
   return {
     initialUrl,
+    device: record.device,
     partition: previewSessionPartition(record.storageKey),
     previewOrigin: record.previewOrigin,
   };
@@ -210,6 +214,7 @@ export async function createPreviewBrowser(
   event: IpcMainInvokeEvent,
   input: {
     storageKey: string;
+    device?: "phone" | "tablet";
     previewSessionId?: string;
     previewWorktree?: string;
   },
@@ -224,6 +229,8 @@ export async function createPreviewBrowser(
   const bridgeSource = previewBridgeSource(input);
   const id = randomUUID();
   const view = createPreviewBrowserView(input.storageKey);
+  const device = surfaceEnabled("phone-web") && (input.device === "phone" || input.device === "tablet") ? input.device : undefined;
+  if (device) emulatePreviewDevice(view.webContents, device);
   view.webContents.setFrameRate(hiddenPreviewFrameRate);
   const bridge =
     bridgeSource && options.bridgeGrant
@@ -254,6 +261,7 @@ export async function createPreviewBrowser(
     id,
     owner,
     storageKey: input.storageKey,
+    device,
     view,
     visible: false,
     bridge,
@@ -336,6 +344,7 @@ export function setPreviewBrowserBounds(input: {
   const visible = input.visible && bounds.width > 0 && bounds.height > 0;
   record.visible = visible;
   record.view.setBounds(bounds);
+  if (record.device && bounds.width > 0 && bounds.height > 0) emulatePreviewDevice(record.view.webContents, record.device, bounds);
   record.view.setVisible(visible);
   record.view.webContents.setFrameRate(
     visible ? visiblePreviewFrameRate : hiddenPreviewFrameRate,

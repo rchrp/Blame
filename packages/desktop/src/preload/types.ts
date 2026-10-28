@@ -295,6 +295,7 @@ export type BlameDesktopApi = {
     }): Promise<string | null>;
     create(input: {
       storageKey: string;
+      device?: "phone" | "tablet";
       previewSessionId?: string;
       previewWorktree?: string;
     }): Promise<{ id: string }>;

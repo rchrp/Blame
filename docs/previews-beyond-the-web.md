@@ -1,6 +1,6 @@
 # Previews beyond the web
 
-Status: specification, not started (2026-10-28). Written for an implementing
+Status: implementation in progress (2026-10-28). Written for an implementing
 agent. It covers six steps, in this order:
 
 1. Terminal previews for CLI projects (local and cloud).
@@ -1175,3 +1175,20 @@ AGPL-3.0; the GPL tools run as separate programs inside images.
 - [ttyd](https://docsearch.algolia.com/mcp/docs/repo/tsl0922/ttyd)
 - [Selkies](https://github.com/selkies-project/selkies)
 - [Lume vs Tart (Cua)](https://cua.ai/docs/lume/guide/getting-started/comparison)
+
+
+## Implementation evidence (2026-10-28)
+
+- Terminal parser/compiler, shared ttyd session, IPC terminal view and agent tool
+  are implemented. ttyd 1.7.7 static assets are pinned by SHA-256. The web parity
+  corpus is unchanged. The runner source accepts plan 3; publication of runner
+  0.3.0 and its image digest is still required before changing the API's pinned
+  runner. Until then cloud surface capabilities remain unavailable.
+- Phone/tablet web framing and matching browser/agent device emulation are
+  implemented behind `phone-web`.
+- S2 has **not** been validated: this Linux execution environment has no iOS or
+  Android phone running Expo Go. No claim about proxy reachability can be made.
+  As section 6.2 permits, the Expo Go dialog and unauthenticated device links
+  remain deferred until the two physical-device checks pass.
+- Experimental gates stay in place until the manual acceptance matrix for each
+  surface passes on the required operating systems.
