@@ -1228,3 +1228,10 @@ AGPL-3.0; the GPL tools run as separate programs inside images.
   `cloud_story` and no cloud Android support is claimed.
 - Android Studio template / Expo / Flutter acceptance on macOS and Windows is
   still outstanding; the `android` gate is retained.
+
+- Host windows: a Direct story uses the shared project runner for Start, Stop,
+  Restart, status and logs. Foreground desktop commands close their runner shell
+  on exit so failures and clean exits are reported. Other placements show the
+  local-only explanation without a start button. Native-window agent prompts
+  explicitly say that the agent cannot inspect the window. The `host-window`
+  gate remains pending SwiftUI macOS / WinUI acceptance.

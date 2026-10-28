@@ -14,6 +14,7 @@ export async function agentSurfaceInfo(
     () => undefined,
   );
   if (!context?.selected) return;
+  if (context.selected.category === "desktop" && !context.selected.services.length && !context.selected.previewService) return { type: "host-window" } as const;
   const target = context.manifest.devices?.find((d) => d.id === context.selected?.previewTarget);
   if (target && surfaceEnabled(target.platform)) return { type: "device", targetId: target.id } as const;
   const service = context.manifest.services.find(
@@ -43,6 +44,7 @@ export async function agentSurfaceCall(
       status: "unavailable",
       message: "This story has no interactive preview.",
     };
+  if (surface.type === "host-window") return { status: "unavailable", message: "The app opens in its own window. Use project_app in a Direct story; ask the user to check its interface." };
   if (surface.type === "device") {
     const scope = { storyId: input.storyId, projectId: input.projectId ?? input.storyId, worktree: input.worktree, targetId: surface.targetId, workspaceMode: input.workspaceMode === "cloud-mirror" ? "cloud-mirror" as const : input.workspaceMode === "direct" ? "direct" as const : "local-container" as const };
     return storePreviewDevtoolsScreenshots(await deviceAction(scope, input.arguments), { scope: input.storyId, sessionId: input.sessionId, toolCallId: input.toolCallId });

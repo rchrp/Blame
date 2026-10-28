@@ -1,3 +1,5 @@
+import { HostWindowPanel, type HostWindowPanelProps } from "./surfaces/host-window-panel"
+import { isHostWindowConfiguration } from "./surfaces/host-window-kind"
 import { DeviceSurfaceView } from "./surfaces/device-surface-view"
 import { DisplaySurfaceView } from "./surfaces/display-surface-view"
 import { PhoneFrame } from "./surfaces/phone-frame"
@@ -11,7 +13,13 @@ import { NativePreviewPanel } from "./native-preview"
 import { TerminalSurfaceView } from "./surfaces/terminal-surface-view"
 import { SurfaceUnavailable } from "./surfaces/surface-unavailable"
 
-export function PreviewSurface({
+type IntegratedPreviewProps = React.ComponentProps<typeof IntegratedPreviewSurface>
+export function PreviewSurface(props: IntegratedPreviewProps | { hostWindow: HostWindowPanelProps }) {
+  if ("hostWindow" in props) return <HostWindowPanel {...props.hostWindow} />
+  return <IntegratedPreviewSurface {...props} />
+}
+
+function IntegratedPreviewSurface({
   configuration,
   onRestart,
   storyId,
@@ -67,6 +75,7 @@ export function PreviewSurface({
       cancelled = true
     }
   }, [platform, surfaceWorktree, providedManifest])
+  if (isHostWindowConfiguration(configuration)) return <HostWindowPanel mode={workspaceMode ?? "local-container"} />
   if (configuration?.previewTarget && storyId && projectId && surfaceWorktree)
     return <DeviceSurfaceView active={native.visible} running={Boolean(runRequested)} scope={{ storyId, projectId, worktree: surfaceWorktree, targetId: configuration.previewTarget, workspaceMode: workspaceMode ?? "local-container" }} />
   const surface = manifest?.services.find(

@@ -1,3 +1,5 @@
+import { PreviewSurface } from "./preview-surface"
+import { isHostWindowConfiguration } from "./surfaces/host-window-kind"
 import { CircleAlertIcon, MonitorIcon } from "lucide-react"
 import * as React from "react"
 
@@ -41,6 +43,7 @@ export function DirectStoryPreview({
       : undefined
   const outside = runningOutside(runner, selected.id)
   const session = runner.activeSession
+  if (isHostWindowConfiguration(selected)) return <PreviewSurface hostWindow={{ mode: "direct", status, logs: runner.sessionFor(selected.id)?.logs, onStart: () => runner.start(selected.id,{revealLogs:false}), onStop: () => runner.stop(selected.id), onRestart: () => runner.start(selected.id,{revealLogs:false}) }} />
   return (
     <UserStoryPreview
       // The same page as the header's preview: one app, one browser view.

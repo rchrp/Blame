@@ -305,6 +305,7 @@ export type StartDevelopmentSessionInput = {
   previewDevtoolsScope?: string;
   codePractices?: ProjectCodePracticePreference[];
   projectInitialization?: {
+    runConfigurationId?: string;
     previewManifest: PreviewManifest;
     runConfigurations: ProjectRunConfiguration[];
     databaseMode?: ProjectInitializationDatabaseMode | null;

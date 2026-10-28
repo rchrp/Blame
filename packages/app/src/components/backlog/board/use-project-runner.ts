@@ -1,3 +1,5 @@
+import { foregroundHostWindowCommand } from "./host-window-command"
+import { isHostWindowConfiguration } from "../drawer/surfaces/host-window-kind"
 import type { ProjectRunConfiguration } from "@blame/agent-runtime"
 import * as React from "react"
 import { toast } from "sonner"
@@ -26,7 +28,8 @@ export function useProjectRunner(
   configurations: ProjectRunConfiguration[],
   projectPath?: string
 ) {
-  const terminal = usePlatform().terminal
+  const platform = usePlatform()
+  const terminal = platform.terminal
   const [selectedId, setSelectedId] = React.useState(
     () => defaultConfiguration(configurations)?.id
   )
@@ -62,7 +65,7 @@ export function useProjectRunner(
     // preview tab) instead of the runner's logs drawer.
     start: (id: string, options?: ProjectRunnerStartOptions) =>
       void startConfiguration(
-        configurations.find((configuration) => configuration.id === id),
+        configurations.map((configuration) => isHostWindowConfiguration(configuration) ? { ...configuration, command: foregroundHostWindowCommand(configuration.command,platform.platform) } : configuration).find((configuration) => configuration.id === id),
         projectPath,
         terminal,
         runnerActions(),
@@ -143,7 +146,7 @@ async function launchConfiguration(
   actions.runtimes.set(configuration.id, { sessionId: session.id, unsubscribe })
   updateSession(actions, configuration.id, { sessionId: session.id })
   await writeProjectCommand(terminal, session.id, configuration.command)
-  updateSession(actions, configuration.id, { status: "running" })
+  if (actions.runtimes.has(configuration.id)) updateSession(actions, configuration.id, { status: "running" })
 }
 
 async function handleStartFailure(
@@ -227,7 +230,7 @@ function subscribeToOutput(
       actions,
       configurationId,
       `\n[process exited ${event.data}]\n`,
-      "stopped"
+      Number(event.data) === 0 ? "stopped" : "error"
     )
     actions.runtimes.get(configurationId)?.unsubscribe()
     actions.runtimes.delete(configurationId)

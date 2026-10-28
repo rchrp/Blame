@@ -365,6 +365,7 @@ export function useBacklogRotation(
           projectInitialization.practices
         ),
         projectInitialization: initialization && {
+          runConfigurationId: detailedStory.runConfigurationId ?? undefined,
           previewManifest: initialization.previewManifest,
           runConfigurations: initialization.runConfigurations,
           databaseMode: initialization.databaseMode,

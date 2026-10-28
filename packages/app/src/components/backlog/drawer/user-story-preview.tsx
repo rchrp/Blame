@@ -1,3 +1,4 @@
+import { isHostWindowConfiguration } from "./surfaces/host-window-kind"
 import { useManagedPreviewLog, useProjectServices, useProjectServiceLog } from "./preview-service-logs"
 import { PreviewSurface } from "./preview-surface"
 import type { PreviewLifecycleState } from "@blame/agent-runtime"
@@ -465,7 +466,7 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
     ({ id }) => id === previewRunner.selectedId
   )
   const hasPreviewSurface =
-    Boolean(source || surfaceConfiguration?.previewService || surfaceConfiguration?.previewTarget) ||
+    Boolean(source || surfaceConfiguration?.previewService || surfaceConfiguration?.previewTarget || isHostWindowConfiguration(surfaceConfiguration)) ||
     runtimeStarting ||
     Boolean(previewFailure)
   const activeTab = activePreviewTab(tab, hasPreviewSurface, hasSetupLog)
@@ -738,7 +739,7 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
                 activeTab !== "preview" && "hidden"
               )}
             >
-              {(source || surfaceConfiguration?.previewService || surfaceConfiguration?.previewTarget) &&
+              {(source || surfaceConfiguration?.previewService || surfaceConfiguration?.previewTarget || isHostWindowConfiguration(surfaceConfiguration)) &&
                 (projectRunWaiting ? (
                   <StartedAppWaitingPanel source={source ?? ""} />
                 ) : setupPreviewWaiting ? (

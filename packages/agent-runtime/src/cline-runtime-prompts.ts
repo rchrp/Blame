@@ -1,3 +1,4 @@
+import { selectedInitializationConfiguration } from "./preview-selection.js";
 import { randomUUID } from "node:crypto";
 
 import { basename, join } from "node:path";
@@ -384,7 +385,8 @@ function developmentEnvironmentPrompt(input: StartDevelopmentSessionInput) {
 
 function developmentPreviewPrompt(input: StartDevelopmentSessionInput) {
   const initialization = input.projectInitialization;
-  const configuration = initialization?.runConfigurations.find((c) => c.default) ?? initialization?.runConfigurations[0];
+  const configuration = selectedInitializationConfiguration(initialization,input.previewDevtoolsScope);
+  if (configuration?.category === "desktop" && !configuration.services.length) { if (input.workspaceMode !== "direct") return "This native desktop app runs on the user's computer in a Direct story. Its host window is unavailable in this isolated story. Continue source checks and ask the user to try the UI in a Direct story."; return "This native desktop app opens in its own window on the user's computer, without isolation. Use project_app to start it and read its run status and logs. You cannot see or take screenshots of its host window. Ask the user to check the interface; never claim you inspected it visually."; }
   if (configuration?.previewTarget) return "The preview is a local device. Use preview_device to check availability, describe_ui before tapping, and screenshot to inspect the result. Coordinates are points. Build errors refer to worktree files. Use build_and_run to rebuild after edits; Blame manages the simulator and supporting containers. If the device is unavailable here, continue local validation and report the reason.";
   const surface = initialization?.previewManifest.services.find((s) => s.id === configuration?.previewService)?.surface;
   if (surface?.type === "display") return "The preview is the app screen. Use preview_display to list its windows, take a screenshot, click, type, press keys, scroll and drag. Coordinates are screen pixels. Check a screenshot after changing the UI. Blame manages the app and virtual screen; do not start them manually.";

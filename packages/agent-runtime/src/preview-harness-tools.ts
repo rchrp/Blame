@@ -3,6 +3,7 @@ import { createMcpTools } from "@cline/sdk";
 import { currentWorkspaceRevisionState } from "./harness/workspace-revisions.js";
 import { sha256 } from "./harness/light-identity.js";
 import { previewDevtoolsAgentTimeoutMs } from "./preview-devtools-policy.js";
+import { initializationSurface, type PreviewInitialization } from "./preview-selection.js";
 import {
   previewSurfaceTool,
   type PreviewSurfaceInfo,
@@ -157,6 +158,7 @@ type PreviewToolsLogger = {
 };
 
 type PreviewSessionContextInput = {
+  projectInitialization?: PreviewInitialization;
   previewDevtoolsScope?: string;
   projectId?: string;
   storyId?: string;
@@ -168,6 +170,7 @@ export function previewRuntimeContext(
   input: PreviewSessionContextInput,
 ): PreviewRuntimeContext {
   return {
+    surface: initializationSurface(input.projectInitialization,input.previewDevtoolsScope),
     ...(input.previewDevtoolsScope
       ? { scope: input.previewDevtoolsScope }
       : {}),
@@ -183,7 +186,7 @@ export async function previewDevtoolsMcpTools(
   preview: PreviewRuntimeContext,
   logger: PreviewToolsLogger,
 ): Promise<AgentTool[]> {
-  const surface = await options.previewSurfaceInfo?.(preview);
+  const surface = await options.previewSurfaceInfo?.(preview) ?? preview.surface;
   if (surface) {
     preview.surface = surface;
     const tool = previewSurfaceTool(options, preview, surface);
@@ -392,7 +395,7 @@ export function projectAppTool(
   return {
     name: "project_app",
     description:
-      "Check or start the project's own app (its dev server) through Blame's project runner: the same process the user starts and stops from Blame, with its logs. status reports whether it runs (through Blame or already outside it) and returns recent logs. start launches it when it is stopped and returns once it answers on its port, or fails with its logs. If its port is held by another app, it reports that app instead of starting: tell the user. Never start the app's dev server yourself.",
+      "Check or start the project's own app through Blame's project runner: the same process the user starts and stops from Blame, with its logs. status reports whether it runs (through Blame or already outside it) and returns recent logs. start launches it when it is stopped and returns once it answers on its port, or fails with its logs. If its port is held by another app, it reports that app instead of starting: tell the user. Never start the app's dev server yourself.",
     inputSchema: {
       type: "object",
       properties: {

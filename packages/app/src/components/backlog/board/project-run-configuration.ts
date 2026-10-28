@@ -1,6 +1,7 @@
+import { isHostWindowConfiguration } from "../drawer/surfaces/host-window-kind.ts"
 import type { ProjectRunConfiguration } from "@blame/agent-runtime"
 
-import { runnerPreviewDevtoolsScope } from "@/components/backlog/shared/preview-devtools-scope"
+import { runnerPreviewDevtoolsScope } from "../shared/preview-devtools-scope.ts"
 
 export function projectRunConfigurationPreviewUrl(
   configuration?: ProjectRunConfiguration
@@ -15,7 +16,7 @@ export function projectPreviewConfiguration(
   return (
     configurations.find(
       (configuration) => configuration.default && hasPreview(configuration)
-    ) ?? configurations.find(hasPreview)
+    ) ?? configurations.find(hasPreview) ?? configurations.find((c) => c.default && isHostWindowConfiguration(c)) ?? configurations.find(isHostWindowConfiguration)
   )
 }
 
