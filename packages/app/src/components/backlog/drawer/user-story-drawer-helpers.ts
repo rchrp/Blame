@@ -38,7 +38,7 @@ export function drawerActions(
   if (status === "ready") return ["Dequeue"]
   if (status === "in-progress") return ["Stop Agent"]
   if (status === "in-review")
-    return ["Request Changes", "Reject", "Approve & Merge"]
+    return ["Reject", "Approve & Merge"]
   if (status === "done") return ["Close"]
   return ["Delete Permanently", "Rework as Draft"]
 }

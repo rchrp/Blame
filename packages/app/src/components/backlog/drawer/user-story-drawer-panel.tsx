@@ -334,6 +334,11 @@ export function UserStoryDrawerPanel({
   )
   const summaryValueRef = React.useRef(summary)
   const commentValueRef = React.useRef(comment)
+  const hasCommentDraft = Boolean(
+    comment.trim() ||
+      commentCodeSelectionAttachments.length ||
+      commentFileAttachments.length
+  )
   const summaryRef = React.useRef<HTMLDivElement>(null)
   const commentRef = React.useRef<HTMLDivElement>(null)
   const pendingComposerDraftRef = React.useRef<
@@ -426,12 +431,14 @@ export function UserStoryDrawerPanel({
     const sendToDevAgentAvailable = drawerActions(mode, status).includes(
       "Send to Dev Agent"
     )
-    if (!open || !sendToDevAgentAvailable) return
+    const requestChangesAvailable =
+      mode !== "create" && status === "in-review" && hasCommentDraft
+    if (!open || (!sendToDevAgentAvailable && !requestChangesAvailable)) return
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (!isSendToDevAgentShortcut(event)) return
+      if (event.defaultPrevented || event.isComposing || !isSendToDevAgentShortcut(event)) return
       event.preventDefault()
-      void handleAction("Send to Dev Agent")
+      void handleAction(requestChangesAvailable ? "Request Changes" : "Send to Dev Agent")
     }
 
     window.addEventListener("keydown", handleKeyDown)
@@ -580,6 +587,7 @@ export function UserStoryDrawerPanel({
   const drawerActionButtons = React.useMemo(
     () => (
       <DrawerActions
+        hasCommentDraft={hasCommentDraft}
         loadingAction={pendingAction}
         mode={mode}
         status={status}
@@ -593,6 +601,7 @@ export function UserStoryDrawerPanel({
       />
     ),
     [
+      hasCommentDraft,
       handleDrawerAction,
       mode,
       onDeleteUserStory,
