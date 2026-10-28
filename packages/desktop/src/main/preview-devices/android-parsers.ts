@@ -1,5 +1,30 @@
 import type { PreviewManifestDeviceTarget } from "@blame/preview-contract";
 import type { DeviceUiNode } from "./types.ts";
+import { basename } from "node:path";
+
+export function selectAndroidApk(
+  files: string[],
+  variant: string,
+  abi: string,
+) {
+  const normalize = (value: string) =>
+    value.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const candidates = files.filter((file) =>
+    normalize(basename(file))
+      .replace(/arm64v8a|armeabiv7a|x8664|x86|universal/g, "")
+      .includes(normalize(variant)),
+  );
+  return (
+    candidates.find((file) => /universal/i.test(basename(file))) ??
+    candidates.find((file) =>
+      normalize(basename(file)).includes(normalize(abi)),
+    ) ??
+    candidates.find(
+      (file) =>
+        !/(arm64v8a|armeabiv7a|x8664|x86)/.test(normalize(basename(file))),
+    )
+  );
+}
 export function androidBuildArguments(target: PreviewManifestDeviceTarget) {
   const module = target.build.module ?? "app",
     variant = target.build.variant ?? "debug";

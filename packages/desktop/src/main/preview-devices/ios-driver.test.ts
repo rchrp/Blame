@@ -215,3 +215,28 @@ test("xcresult diagnostics and Windows file URLs map to worktree files", async (
     "/worktree/Main.kt",
   );
 });
+
+test("a framework-incompatible AXe allows the simctl-only preview", async () => {
+  const driver = new IosDriver({
+    platform: "darwin",
+    axe: "axe",
+    cache: "/tmp/frames",
+    host: {
+      run: async (command, args) => ({
+        exitCode: command === "axe" ? 134 : 0,
+        stdout:
+          command === "xcode-select"
+            ? "/Applications/Xcode.app/Contents/Developer"
+            : args.includes("runtimes")
+              ? JSON.stringify(list)
+              : "Xcode 27",
+        stderr:
+          command === "axe" ? "dyld: Library not loaded: SimulatorKit" : "",
+      }),
+      spawn() {
+        throw new Error("not used");
+      },
+    },
+  });
+  assert.deepEqual(await driver.availability(target), { status: "ready" });
+});

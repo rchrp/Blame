@@ -135,10 +135,16 @@ export async function agentSurfaceCall(
         toolCallId: input.toolCallId,
       },
     );
+  const terminal = input.previewManifest?.services.find(
+    (s) => s.id === surface.serviceId,
+  )?.surface;
   return terminalSurfaceAction(
     {
       storyId: input.storyId,
       serviceId: surface.serviceId,
+      ...(terminal?.type === "terminal"
+        ? { columns: terminal.columns, rows: terminal.rows }
+        : {}),
       worktree: input.worktree,
       sessionId: cloud?.session?.id,
     },

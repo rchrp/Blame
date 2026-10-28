@@ -103,6 +103,8 @@ ENV PATH="/opt/blame/bin:${PATH}"
 USER root
 WORKDIR /workspace
 
+COPY packages/sandbox-runner/ttyd-LICENSE /opt/blame/tools/NOTICE
+
 # ttyd is a static MIT-licensed binary shared read-only with terminal services.
 RUN mkdir -p /opt/blame/tools \
     && curl --fail --silent --show-error --location \

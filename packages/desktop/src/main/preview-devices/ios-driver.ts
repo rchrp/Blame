@@ -128,7 +128,10 @@ export class IosDriver implements DeviceDriver {
     add(
       "axe",
       "Simulator controls",
-      axe.exitCode === 0 && /\b1\.8\.0\b/.test(axe.stdout),
+      // A loader/framework failure must allow simctl's limited preview. A
+      // missing executable (127) or an unsupported version still needs setup.
+      (axe.exitCode === 0 && /\b1\.8\.0\b/.test(axe.stdout)) ||
+        (axe.exitCode !== 0 && axe.exitCode !== 127),
       { type: "install", label: "Install simulator controls" },
     );
     if (target?.toolchain === "flutter") {

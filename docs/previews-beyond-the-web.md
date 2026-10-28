@@ -1263,3 +1263,13 @@ AGPL-3.0; the GPL tools run as separate programs inside images.
   cloud unavailability, Direct host controls and connection recovery at 1440 px
   (dark) and 390 px (light), using explicitly synthetic session data. They do not
   substitute for the native or cloud manual acceptance matrix.
+- Final checks also cover flavor/ABI-aware APK selection, a framework-incompatible
+  AXe falling back to simctl, and the manifest's initial terminal dimensions.
+  The runtime provisioning/payload suite passed 26 tests with one conditional
+  skip. Both runtime provisioners and the runner retain ttyd's MIT notice; the
+  AXe installer retains AXe and Facebook IDB's MIT notices.
+- The visual finish review scored its terminal-prompt finding resolved in the
+  final desktop/mobile captures. The documentation handoff confirmed the
+  established visual system is preserved. That verdict is limited to the
+  synthetic component states; initialization editor rendering and real native
+  execution still require the platform acceptance checks above.

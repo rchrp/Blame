@@ -153,7 +153,8 @@ async function launchConfiguration(
     configuration.id,
     session.id,
     terminal,
-    actions
+    actions,
+    isHostWindowConfiguration(configuration)
   )
   actions.runtimes.set(configuration.id, { sessionId: session.id, unsubscribe })
   updateSession(actions, configuration.id, { sessionId: session.id })
@@ -232,7 +233,8 @@ function subscribeToOutput(
   configurationId: string,
   sessionId: string,
   terminal: TerminalClient,
-  actions: RunnerActions
+  actions: RunnerActions,
+  reportExitFailure: boolean
 ) {
   return terminal.onEvent(sessionId, (event) => {
     if (event.type !== "exit") {
@@ -243,7 +245,7 @@ function subscribeToOutput(
       actions,
       configurationId,
       `\n[process exited ${event.data}]\n`,
-      Number(event.data) === 0 ? "stopped" : "error"
+      reportExitFailure && Number(event.data) !== 0 ? "error" : "stopped"
     )
     actions.runtimes.get(configurationId)?.unsubscribe()
     actions.runtimes.delete(configurationId)

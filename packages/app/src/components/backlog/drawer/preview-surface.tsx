@@ -121,6 +121,8 @@ function IntegratedPreviewSurface({
         scope={{
           storyId,
           serviceId: configuration.previewService,
+          columns: surface.columns,
+          rows: surface.rows,
           worktree: native.previewWorktree,
           sessionId: native.previewSessionId,
         }}

@@ -7,6 +7,8 @@ export type SurfaceScope = {
   serviceId: string;
   worktree?: string;
   sessionId?: string;
+  columns?: number;
+  rows?: number;
 };
 
 export async function surfaceUpstream(

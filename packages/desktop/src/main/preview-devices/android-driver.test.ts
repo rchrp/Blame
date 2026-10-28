@@ -210,3 +210,21 @@ test("shutdown never kills an Android Studio emulator which reused a saved port"
     true,
   );
 });
+
+test("flavored Gradle outputs choose a compatible APK rather than a different ABI", async () => {
+  const { selectAndroidApk } = await import("./android-parsers.ts");
+  const files = [
+    "/out/demo/debug/app-demo-x86_64-debug.apk",
+    "/out/demo/debug/app-demo-arm64-v8a-debug.apk",
+    "/out/release/app-demo-release.apk",
+  ];
+  assert.equal(selectAndroidApk(files, "demoDebug", "arm64-v8a"), files[1]);
+  assert.equal(
+    selectAndroidApk([files[0]!], "demoDebug", "arm64-v8a"),
+    undefined,
+  );
+  assert.equal(
+    selectAndroidApk(["/out/app-demo-debug.apk"], "demoDebug", "x86_64"),
+    "/out/app-demo-debug.apk",
+  );
+});

@@ -3,6 +3,8 @@ export type PreviewSurfaceScope = {
   serviceId: string
   worktree?: string
   sessionId?: string
+  columns?: number
+  rows?: number
 }
 export type PreviewTerminalState = {
   status: string

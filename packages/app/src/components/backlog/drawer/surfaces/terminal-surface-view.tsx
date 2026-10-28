@@ -51,7 +51,9 @@ export function TerminalSurfaceView({
         }
         session.current = result.id
         setState(result)
-        view.terminal.write(result.replay)
+        view.terminal.write(result.replay, () => {
+          if (!cancelled) view.resize()
+        })
         unsubscribe = client.onEvent(result.id, (event) => {
           if (event.type === "stdout") view.terminal.write(event.data)
           else {
@@ -62,7 +64,6 @@ export function TerminalSurfaceView({
             }
           }
         })
-        view.resize()
       })
       .catch((error: Error) => {
         if (!cancelled)

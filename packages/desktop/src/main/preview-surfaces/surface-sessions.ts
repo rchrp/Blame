@@ -28,10 +28,23 @@ export async function attachSurfaceTerminal(
     session = undefined;
   }
   if (!session) {
+    const columns = size?.columns ?? scope.columns ?? 120;
+    const rows = size?.rows ?? scope.rows ?? 32;
+    if (
+      !Number.isInteger(columns) ||
+      columns < 40 ||
+      columns > 300 ||
+      !Number.isInteger(rows) ||
+      rows < 10 ||
+      rows > 100
+    )
+      throw new Error(
+        "Choose a terminal size between 40–300 columns and 10–100 rows.",
+      );
     const terminal = new TerminalSurface(
       () => surfaceUpstream(scope, "terminal", previews, "tty"),
-      size?.columns,
-      size?.rows,
+      columns,
+      rows,
     );
     session = { id: randomUUID(), scope, terminal };
     sessions.set(key, session);

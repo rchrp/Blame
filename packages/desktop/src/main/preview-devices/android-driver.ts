@@ -23,6 +23,7 @@ import {
   androidBuildArguments,
   androidEmulatorArguments,
   androidUiNodes,
+  selectAndroidApk,
 } from "./android-parsers.ts";
 import { AndroidGrpc, androidDiscovery } from "./android-grpc.ts";
 import { deviceProjectDirectory } from "./device-build-mirror.ts";
@@ -345,6 +346,8 @@ export class AndroidDriver implements DeviceDriver {
       handle.pointWidth = handle.width / scale;
       handle.pointHeight = handle.height / scale;
       const grpc = await this.connectGrpc(handle);
+      this.grpc.get(handle.id)?.close();
+      this.grpc.delete(handle.id);
       if (grpc) this.grpc.set(handle.id, grpc);
       else
         handle.limited =
@@ -455,10 +458,11 @@ export class AndroidDriver implements DeviceDriver {
       );
       const apks = await findApks(output),
         variant = (target.build.variant ?? "debug").toLowerCase();
-      const artifact =
-        apks.find(
-          (f) => f.toLowerCase().includes(variant) && /universal/.test(f),
-        ) ?? apks.find((f) => f.toLowerCase().includes(variant));
+      const artifact = selectAndroidApk(
+        apks,
+        variant,
+        androidAbi(this.os, this.arch),
+      );
       if (!artifact)
         throw new Error(
           "The Gradle build produced no APK for the configured variant.",
