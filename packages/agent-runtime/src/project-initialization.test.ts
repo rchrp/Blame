@@ -155,6 +155,37 @@ test("native targets select a mobile configuration without a browser URL", () =>
   );
 });
 
+test("device targets submitted next to the manifest move inside it", () => {
+  const value = canonicalResult();
+  const device = {
+    id: "iphone",
+    platform: "ios",
+    projectDir: ".",
+    toolchain: "xcode",
+    build: { project: "App.xcodeproj", scheme: "App" },
+    app: { bundleId: "com.example.App" },
+  };
+  const result = parseProjectInitializationPayload({
+    ...value,
+    devices: [device],
+    runConfigurations: [
+      {
+        id: "iphone",
+        name: "iPhone",
+        command: "xcodebuild build",
+        cwd: ".",
+        default: true,
+        category: "mobile",
+        services: [],
+        previewTarget: "iphone",
+        scopes: ["ios"],
+      },
+    ],
+  });
+  assert.equal(result.previewManifest.devices?.[0]?.id, "iphone");
+  assert.equal(result.runConfigurations[0]!.previewTarget, "iphone");
+});
+
 test("normalizes the canonical unversioned manifest", () => {
   const result = parseProjectInitializationPayload(canonicalResult());
 

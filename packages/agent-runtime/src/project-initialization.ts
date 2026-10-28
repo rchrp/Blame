@@ -368,13 +368,14 @@ export function parseProjectInitializationResult(
 }
 
 export function parseProjectInitializationPayload(
-  parsed: unknown,
+  payload: unknown,
   scan?: ProjectInitializationScan,
   preferences?: ProjectInitializationPreferences,
   options: ProjectInitializationParseOptions = {},
 ): ParsedProjectInitialization {
-  if (!isRecord(parsed))
+  if (!isRecord(payload))
     throw new Error("Initialization result must be an object");
+  const parsed = withDevicesInManifest(payload);
   assertOnlyKeys(parsed, ["previewManifest", "runConfigurations"], "result");
   if (!parsed.previewManifest) {
     throw new Error("Initialization result is missing previewManifest");
@@ -636,6 +637,16 @@ function parseRunConfigurationStrings(
     throw new Error(`Initialization run configuration ${field} is invalid`);
   }
   return Array.from(new Set((value as string[]).map((entry) => entry.trim())));
+}
+
+// Agents often submit device targets next to the manifest instead of inside
+// it; rejecting them made agents drop the device preview altogether.
+function withDevicesInManifest(parsed: Record<string, unknown>) {
+  if (!("devices" in parsed)) return parsed;
+  const { devices, ...rest } = parsed;
+  if (!isRecord(rest.previewManifest) || "devices" in rest.previewManifest)
+    return parsed;
+  return { ...rest, previewManifest: { ...rest.previewManifest, devices } };
 }
 
 function assertOnlyKeys(
