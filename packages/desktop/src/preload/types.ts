@@ -157,6 +157,7 @@ export type ProjectApp = {
 };
 
 export type ProjectWindows = {
+  onMenuAction(callback: (action: "new" | "open") => void): () => void;
   focusProject(path: string): Promise<boolean>;
   openProject(path: string): Promise<"focused" | "opened" | undefined>;
   reportProject(path: string | null): void;

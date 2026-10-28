@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/command"
 import { Button } from "@/components/ui/button"
 import { NewProjectDialog } from "@/components/new-project/new-project-dialog"
+import { useProjectMenuActions } from "@/components/navigation/use-project-menu-actions"
 import {
   Popover,
   PopoverContent,
@@ -32,6 +33,15 @@ export function ProjectSelector() {
   const projects = useProjects()
   const [open, setOpen] = React.useState(false)
   const [newProjectOpen, setNewProjectOpen] = React.useState(false)
+
+  useProjectMenuActions({
+    onNewProject: () => {
+      if (!projects.opening) openNewProject()
+    },
+    onOpenProject: () => {
+      if (!projects.opening && !newProjectOpen) void openProject()
+    },
+  })
 
   async function openProject() {
     setOpen(false)

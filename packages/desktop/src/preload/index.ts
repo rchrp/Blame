@@ -220,6 +220,16 @@ const api: BlameDesktopApi = {
       ipcRenderer.invoke("project-app:respond", { id, result }),
   },
   projectWindows: {
+    onMenuAction: (callback) => {
+      const handler = (_event: unknown, action: "new" | "open") =>
+        callback(action);
+      ipcRenderer.on("project-menu:action", handler);
+      ipcRenderer.send("project-menu:ready", true);
+      return () => {
+        ipcRenderer.removeListener("project-menu:action", handler);
+        ipcRenderer.send("project-menu:ready", false);
+      };
+    },
     focusProject: (path) => ipcRenderer.invoke("window:focus-project", path),
     openProject: (path) => ipcRenderer.invoke("window:open-project", path),
     reportProject: (path) => ipcRenderer.send("window:report-project", path),

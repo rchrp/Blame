@@ -370,6 +370,7 @@ export type ProjectAppClient = {
 }
 
 export type ProjectWindowsClient = {
+  onMenuAction?(callback: (action: "new" | "open") => void): () => void
   // Brings forward another window that has this project open.
   focusProject(path: string): Promise<boolean>
   openProject(path: string): Promise<"focused" | "opened" | undefined>

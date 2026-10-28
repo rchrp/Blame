@@ -12,6 +12,7 @@ import { AnimatePresence, motion } from "motion/react"
 
 import { BlameLogoMark } from "@/components/brand/blame-logo-mark"
 import { NewProjectDialog } from "@/components/new-project/new-project-dialog"
+import { useProjectMenuActions } from "@/components/navigation/use-project-menu-actions"
 import { GlassPanel } from "@/components/onboarding/stage/glass-panel"
 import { Button } from "@/components/ui/button"
 import { Kbd } from "@/components/ui/kbd"
@@ -29,6 +30,20 @@ import { HostDependenciesDialog } from "@/pages/backlog/host-dependencies-dialog
 export function WelcomeScreen() {
   const projectOpening = useProjectOpening()
   const [newProjectOpen, setNewProjectOpen] = React.useState(false)
+  useProjectMenuActions({
+    onNewProject: () => {
+      if (!projectOpening.opening && !projectOpening.hostDependenciesDialog.open)
+        setNewProjectOpen(true)
+    },
+    onOpenProject: () => {
+      if (
+        !newProjectOpen &&
+        !projectOpening.opening &&
+        !projectOpening.hostDependenciesDialog.open
+      )
+        void projectOpening.chooseProject()
+    },
+  })
   // Removed projects stay hidden while their "Undo" toast is visible.
   const [pendingRemovals, setPendingRemovals] = React.useState<ReadonlySet<string>>(
     () => new Set()

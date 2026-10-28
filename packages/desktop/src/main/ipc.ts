@@ -6,6 +6,7 @@ import {
   type WebContents,
 } from "electron";
 import { openAttachment } from "./attachment-open";
+import { installApplicationMenu } from "./application-menu";
 import { localAgentOwnsWorkspace, registerAgentIpcHandlers } from "./agent-ipc";
 import { registerAppearanceIpcHandlers } from "./appearance-ipc";
 import { registerAgentScreenshotIpcHandlers } from "./ipc/agent-screenshots-ipc";
@@ -55,6 +56,12 @@ export type DesktopIpcOptions = {
 };
 
 export function registerDesktopIpcHandlers(options: DesktopIpcOptions) {
+  const setProjectMenuReady = installApplicationMenu();
+  ipcMain.on("project-menu:ready", (event, ready: unknown) => {
+    if (!options.isAppWindow(event.sender) || typeof ready !== "boolean")
+      return;
+    setProjectMenuReady(event.sender, ready);
+  });
   registerAppearanceIpcHandlers({ isAppWindow: options.isAppWindow });
   const previews = new PreviewService(
     localAgentOwnsWorkspace,
