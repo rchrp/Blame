@@ -43,14 +43,15 @@ export function chooseIosDevice(
   const models = supported
     .filter((d) => /^iPhone /.test(d.name))
     .sort((a, b) => phoneGeneration(b.name) - phoneGeneration(a.name));
-  const model = target.device?.model
-    ? models.find((d) => d.name === target.device!.model)
-    : (models.find((d) => /^iPhone \d+$/.test(d.name)) ?? models[0]);
+  // An unknown model name falls back to the default phone rather than
+  // blocking the preview.
+  const model =
+    models.find((d) => d.name === target.device?.model) ??
+    models.find((d) => /^iPhone \d+$/.test(d.name)) ??
+    models[0];
   if (!runtime || !model)
     throw new Error(
-      target.device?.model && runtime
-        ? `The installed iOS ${runtime.version} simulator has no ${target.device.model}. Choose another device in Preview Environment.`
-        : "Install a compatible iOS Simulator runtime in Xcode, then try again.",
+      "Install a compatible iOS Simulator runtime in Xcode, then try again.",
     );
   return { runtime, model };
 }

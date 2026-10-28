@@ -75,10 +75,15 @@ test("iOS device choice keeps to the models the runtime supports", () => {
     devicetypes: [xs, ...phones],
   };
   assert.equal(chooseIosDevice(declared, target).model.identifier, "17");
-  assert.throws(
-    () =>
-      chooseIosDevice(declared, { ...target, device: { model: "iPhone Xs" } }),
-    /has no iPhone Xs/,
+  assert.equal(
+    chooseIosDevice(declared, { ...target, device: { model: "iPhone Xs" } })
+      .model.identifier,
+    "17",
+  );
+  assert.equal(
+    chooseIosDevice(declared, { ...target, device: { model: "iPhone Air" } })
+      .model.identifier,
+    "air",
   );
 });
 test("iOS prerequisites follow Xcode selection and availability is neutral on other hosts", async () => {
