@@ -42,6 +42,7 @@ import { shutdownTerminalSessions } from "./terminal-ipc";
 import { shutdownWorkspaceProcesses } from "./workspace-ipc";
 import { setupPath } from "./host-tool-path";
 import { stopRuntimeInBackground } from "./runtime-manager";
+import { stopAllDevices } from "./preview-devices/device-registry";
 import { runtimeHostPath, runtimeVmInternalPath } from "./workspace-runtime";
 import { registerAppActivityIpc } from "./app-activity-ipc";
 import { registerDesktopIpcHandlers } from "./ipc";
@@ -683,6 +684,7 @@ async function cleanupApplication() {
     shutdownWorkspaceProcesses(),
     shutdownAgentRuntime(),
     shutdownPreviewDevtoolsMcp(),
+    stopAllDevices(),
   ]).then(() => undefined);
   await settleWithin(runtimeShutdown, runtimeShutdownTimeoutMs);
   stopRuntimeInBackground({ ...process.env, PATH: setupPath() });

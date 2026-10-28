@@ -167,7 +167,8 @@ test("records a block straight away when nothing was rejected", () => {
     session.reportBlocked({
       category: "unsupported_stack",
       summary: "This is a watchOS app that requires a physical watch.",
-      userAction: "Use a supported preview target or test on the physical device.",
+      userAction:
+        "Use a supported preview target or test on the physical device.",
     }),
     { recorded: true },
   );

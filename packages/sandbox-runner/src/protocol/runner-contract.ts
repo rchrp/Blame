@@ -41,7 +41,11 @@ export type RunnerPreviewStartResult = {
 
 export type RunnerRequest = (
   | { operation: "handshake" }
-  | { operation: "surface-action"; serviceId: string; arguments: Record<string, unknown> }
+  | {
+      operation: "surface-action";
+      serviceId: string;
+      arguments: Record<string, unknown>;
+    }
   | { operation: "resume-host"; sessionId: string; generation: number }
   | {
       operation: "prepare-engine";

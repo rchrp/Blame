@@ -1,4 +1,4 @@
-declare module "@novnc/novnc/lib/rfb" {
+declare module "@novnc/novnc/core/rfb.js" {
   export default class RFB {
     constructor(target: HTMLElement, url: string)
     scaleViewport: boolean

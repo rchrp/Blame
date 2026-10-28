@@ -10,7 +10,13 @@ export function configurationName(name: string, path: string) {
   );
 }
 
-
 export function nativeProjectEvidence(path: string) {
-  return /(?:^|\/)(?:project\.yml|Project\.swift|Info\.plist|AndroidManifest\.xml|app\.json|app\.config\.[^/]+)$/.test(path) || /\.(?:xcodeproj\/project\.pbxproj|xcworkspace\/contents\.xcworkspacedata|xcscheme)$/.test(path);
+  return (
+    /(?:^|\/)(?:project\.yml|Project\.swift|Info\.plist|AndroidManifest\.xml|app\.json|app\.config\.[^/]+)$/.test(
+      path,
+    ) ||
+    /\.(?:xcodeproj\/project\.pbxproj|xcworkspace\/contents\.xcworkspacedata|xcscheme)$/.test(
+      path,
+    )
+  );
 }

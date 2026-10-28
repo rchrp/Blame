@@ -3,7 +3,10 @@ import { createMcpTools } from "@cline/sdk";
 import { currentWorkspaceRevisionState } from "./harness/workspace-revisions.js";
 import { sha256 } from "./harness/light-identity.js";
 import { previewDevtoolsAgentTimeoutMs } from "./preview-devtools-policy.js";
-import { initializationSurface, type PreviewInitialization } from "./preview-selection.js";
+import {
+  initializationSurface,
+  type PreviewInitialization,
+} from "./preview-selection.js";
 import {
   previewSurfaceTool,
   type PreviewSurfaceInfo,
@@ -47,6 +50,7 @@ export type PreviewDevtoolsTarget = {
 
 export type PreviewRuntimeContext = {
   surface?: PreviewSurfaceInfo;
+  previewManifest?: PreviewInitialization["previewManifest"];
   // Lets the desktop app apply the project's browser tool settings.
   projectId?: string;
   scope?: string;
@@ -170,7 +174,16 @@ export function previewRuntimeContext(
   input: PreviewSessionContextInput,
 ): PreviewRuntimeContext {
   return {
-    surface: initializationSurface(input.projectInitialization,input.previewDevtoolsScope),
+    ...(initializationSurface(
+      input.projectInitialization,
+      input.previewDevtoolsScope,
+    )
+      ? { previewManifest: input.projectInitialization?.previewManifest }
+      : {}),
+    surface: initializationSurface(
+      input.projectInitialization,
+      input.previewDevtoolsScope,
+    ),
     ...(input.previewDevtoolsScope
       ? { scope: input.previewDevtoolsScope }
       : {}),
@@ -186,7 +199,8 @@ export async function previewDevtoolsMcpTools(
   preview: PreviewRuntimeContext,
   logger: PreviewToolsLogger,
 ): Promise<AgentTool[]> {
-  const surface = await options.previewSurfaceInfo?.(preview) ?? preview.surface;
+  const surface =
+    (await options.previewSurfaceInfo?.(preview)) ?? preview.surface;
   if (surface) {
     preview.surface = surface;
     const tool = previewSurfaceTool(options, preview, surface);

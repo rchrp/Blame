@@ -1,15 +1,31 @@
 import type { ProjectInitializationScan } from "./project-initialization-scan.js";
 import type { PreviewManifest, ProjectRunConfiguration } from "./types.js";
 
-export function validateRunConfigurationPreview(configuration: ProjectRunConfiguration, manifest: PreviewManifest) {
-  if (configuration.previewTarget && configuration.previewService) throw new Error("A run configuration must select at most one preview service or device target");
+export function validateRunConfigurationPreview(
+  configuration: ProjectRunConfiguration,
+  manifest: PreviewManifest,
+) {
+  if (configuration.previewTarget && configuration.previewService)
+    throw new Error(
+      "A run configuration must select at most one preview service or device target",
+    );
   if (configuration.previewTarget) {
-    if (configuration.category !== "mobile") throw new Error("A device preview needs category mobile");
-    if (!manifest.devices?.some((d) => d.id === configuration.previewTarget)) throw new Error("Run configuration previewTarget is unknown");
-    if (configuration.previewUrl) throw new Error("A device preview has no previewUrl");
+    if (configuration.category !== "mobile")
+      throw new Error("A device preview needs category mobile");
+    if (!manifest.devices?.some((d) => d.id === configuration.previewTarget))
+      throw new Error("Run configuration previewTarget is unknown");
+    if (configuration.previewUrl)
+      throw new Error("A device preview has no previewUrl");
   }
-  const service = manifest.services.find((s) => s.id === configuration.previewService);
-  if (configuration.previewUrl && service?.surface && service.surface.type !== "web") throw new Error("previewUrl is only accepted for a web surface");
+  const service = manifest.services.find(
+    (s) => s.id === configuration.previewService,
+  );
+  if (
+    configuration.previewUrl &&
+    service?.surface &&
+    service.surface.type !== "web"
+  )
+    throw new Error("previewUrl is only accepted for a web surface");
 }
 import {
   hostOrchestratedManifestCommand,

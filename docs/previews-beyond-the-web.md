@@ -1235,3 +1235,31 @@ AGPL-3.0; the GPL tools run as separate programs inside images.
   local-only explanation without a start button. Native-window agent prompts
   explicitly say that the agent cannot inspect the window. The `host-window`
   gate remains pending SwiftUI macOS / WinUI acceptance.
+
+### Verification record
+
+- Full package suites: preview-contract 14/14; preview-runtime 77/77;
+  sandbox-runner 26/26; agent-runtime 1,226 passed with 13 existing conditional
+  skips; app 413/413; desktop 452 passed with two conditional skips. The web
+  parity corpus remains unchanged.
+- Desktop, app, agent-runtime, API, contract, runtime and runner TypeScript checks
+  pass. The production Electron main/preload/renderer bundle builds.
+- An integration test against the checksum-verified official ttyd 1.7.7 binary
+  exercises the compiled shell command, shared screen, input, resize, immediate
+  exit code 7, and restart. ttyd closes on SIGCHLD; the wrapper yields for 100 ms
+  after writing its exit marker so its event loop drains the PTY first.
+- Terminal attach now sequences replay and live output across both IPC and view
+  subscription gaps. Device tests cover cancelled boots, startup cleanup and an
+  Android Studio emulator reusing a persisted Blame port.
+- ttyd is baked by both runtime provisioners, with the existing-runtime first-use
+  fallback. Native Linux uses a user-owned tools directory mounted read-only at
+  the same container path. Importing published display pins also updates the
+  runtime's image prefetch.
+- noVNC 1.6.0 is taken from its immutable upstream source commit
+  `a8dfd6a3ea3c74244f5ebdaa5a7f1023007a7820` with lockfile integrity. Its npm
+  CommonJS distribution contains an unsupported top-level await; the ESM source
+  works in the production renderer bundle.
+- React component captures cover terminal, phone frame, prerequisites, neutral
+  cloud unavailability, Direct host controls and connection recovery at 1440 px
+  (dark) and 390 px (light), using explicitly synthetic session data. They do not
+  substitute for the native or cloud manual acceptance matrix.

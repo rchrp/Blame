@@ -61,13 +61,25 @@ export function compilePreviewManifest(
   const serviceIds = new Set(manifest.services.map(({ id }) => id));
   const services = manifest.services.flatMap((service) => {
     const compiled = compileService(service, serviceIds);
-    return service.surface?.type === "display" ? displaySurfaceServices(compiled, service.surface, options.displayImage) : [compiled];
+    return service.surface?.type === "display"
+      ? displaySurfaceServices(compiled, service.surface, options.displayImage)
+      : [compiled];
   });
   const hints = options.compatibilityHints ?? [];
   assertCompatibilityHints(hints, services);
-  const publishedEndpoints: Array<{ service: { id: string }; endpoint: PreviewManifestEndpoint }> = [
+  const publishedEndpoints: Array<{
+    service: { id: string };
+    endpoint: PreviewManifestEndpoint;
+  }> = [
     ...browserEndpoints(manifest.services),
-    ...services.filter((s) => s.surface?.type === "display" && s.id === s.surface.sidecarServiceId).flatMap((service) => service.endpoints.map((endpoint) => ({ service, endpoint }))),
+    ...services
+      .filter(
+        (s) =>
+          s.surface?.type === "display" && s.id === s.surface.sidecarServiceId,
+      )
+      .flatMap((service) =>
+        service.endpoints.map((endpoint) => ({ service, endpoint })),
+      ),
   ];
   const environmentPlan = compileEnvironmentPlan(manifest);
   const gatewayStart = options.gatewayPortStart ?? 43_000;
@@ -107,9 +119,14 @@ export function compilePreviewManifest(
       ? ["A browser binding targets a separately authenticated origin."]
       : []),
   ];
-  const terminal = services.some((service) => service.surface?.type === "terminal");
-  const display = services.some((service) => service.surface?.type === "display");
-  const requiresWebSockets = terminal || display || hints.some((hint) => hint.type === "websocket");
+  const terminal = services.some(
+    (service) => service.surface?.type === "terminal",
+  );
+  const display = services.some(
+    (service) => service.surface?.type === "display",
+  );
+  const requiresWebSockets =
+    terminal || display || hints.some((hint) => hint.type === "websocket");
   const detectedCompatibility: CompatibilityRequirement[] = [
     { type: "bidirectional-sync" },
     { type: "container-engine" },
@@ -237,22 +254,36 @@ function compileService(
   service: PreviewManifestService,
   serviceIds: Set<string>,
 ): ServiceLaunchPlan {
-  const terminal = service.surface?.type === "terminal" ? service.surface : undefined;
+  const terminal =
+    service.surface?.type === "terminal" ? service.surface : undefined;
   const command = service.command && normalizedLaunchCommand(service.command);
   return {
     id: service.id,
     kind: service.kind,
     container: structuredClone(service.container),
     workingDir: service.workingDir || "/workspace",
+    // Let ttyd drain the final PTY output before SIGCHLD closes its socket.
     command: terminal
-      ? `/opt/blame/tools/ttyd --port 7681 --interface 0.0.0.0 --writable --max-clients 1 --ping-interval 20 -- sh -c ${shellQuote(`sh -c ${shellQuote(command!)}; code=$?; printf '\\033]1337;BlameExit=%s\\007' "$code"; exit "$code"`)}`
+      ? `/opt/blame/tools/ttyd --port 7681 --interface 0.0.0.0 --writable --max-clients 1 --ping-interval 20 -- sh -c ${shellQuote(`sh -c ${shellQuote(command!)}; code=$?; printf '\\033]1337;BlameExit=%s\\007' "$code"; sleep 0.1; exit "$code"`)}`
       : command,
-    ...(terminal ? { surface: { type: "terminal" as const, columns: terminal.columns ?? 120, rows: terminal.rows ?? 32, endpointId: "terminal" as const } }
-      : service.surface?.type === "web" ? { surface: { ...service.surface } } : {}),
+    ...(terminal
+      ? {
+          surface: {
+            type: "terminal" as const,
+            columns: terminal.columns ?? 120,
+            rows: terminal.rows ?? 32,
+            endpointId: "terminal" as const,
+          },
+        }
+      : service.surface?.type === "web"
+        ? { surface: { ...service.surface } }
+        : {}),
     entrypoint: service.entrypoint ? [...service.entrypoint] : undefined,
     user: service.user,
     environment: launchEnvironment(service.command, {
-      ...(terminal ? { TERM: "xterm-256color", COLORTERM: "truecolor", LANG: "C.UTF-8" } : {}),
+      ...(terminal
+        ? { TERM: "xterm-256color", COLORTERM: "truecolor", LANG: "C.UTF-8" }
+        : {}),
       ...(service.environment ?? {}),
     }),
     dependsOn: [
@@ -315,7 +346,15 @@ function serviceEndpoints(
   service: PreviewManifestService,
 ): PreviewManifestEndpoint[] {
   return service.surface?.type === "terminal"
-    ? [...service.endpoints, { id: "terminal", protocol: "http", port: 7681, healthcheck: { type: "tcp", timeoutMs: 30000 } }]
+    ? [
+        ...service.endpoints,
+        {
+          id: "terminal",
+          protocol: "http",
+          port: 7681,
+          healthcheck: { type: "tcp", timeoutMs: 30000 },
+        },
+      ]
     : service.endpoints;
 }
 

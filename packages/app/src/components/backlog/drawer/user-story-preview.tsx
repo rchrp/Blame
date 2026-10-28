@@ -1,5 +1,9 @@
 import { isHostWindowConfiguration } from "./surfaces/host-window-kind"
-import { useManagedPreviewLog, useProjectServices, useProjectServiceLog } from "./preview-service-logs"
+import {
+  useManagedPreviewLog,
+  useProjectServices,
+  useProjectServiceLog,
+} from "./preview-service-logs"
 import { PreviewSurface } from "./preview-surface"
 import type { PreviewLifecycleState } from "@blame/agent-runtime"
 import {
@@ -111,6 +115,10 @@ type PreviewUrlWarmupProps = {
 // A preview whose app runs from the project's own runner (a story working
 // directly in the project folder): its controls and logs come from there.
 export type ProjectRunPreview = {
+  surface?: {
+    configuration: import("@blame/agent-runtime").ProjectRunConfiguration
+    manifest?: import("@blame/agent-runtime").PreviewManifest
+  }
   // Hides the native preview while a menu of the controls is open.
   controls: (props: {
     onMenuOpenChange: (open: boolean) => void
@@ -462,11 +470,18 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
     setupLogWorktree,
     userStory?.id
   )
-  const surfaceConfiguration = previewRunner.runtime?.configurations.find(
-    ({ id }) => id === previewRunner.selectedId
-  )
+  const surfaceConfiguration =
+    projectRun?.surface?.configuration ??
+    previewRunner.runtime?.configurations.find(
+      ({ id }) => id === previewRunner.selectedId
+    )
   const hasPreviewSurface =
-    Boolean(source || surfaceConfiguration?.previewService || surfaceConfiguration?.previewTarget || isHostWindowConfiguration(surfaceConfiguration)) ||
+    Boolean(
+      source ||
+      surfaceConfiguration?.previewService ||
+      surfaceConfiguration?.previewTarget ||
+      isHostWindowConfiguration(surfaceConfiguration)
+    ) ||
     runtimeStarting ||
     Boolean(previewFailure)
   const activeTab = activePreviewTab(tab, hasPreviewSurface, hasSetupLog)
@@ -739,7 +754,10 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
                 activeTab !== "preview" && "hidden"
               )}
             >
-              {(source || surfaceConfiguration?.previewService || surfaceConfiguration?.previewTarget || isHostWindowConfiguration(surfaceConfiguration)) &&
+              {(source ||
+                surfaceConfiguration?.previewService ||
+                surfaceConfiguration?.previewTarget ||
+                isHostWindowConfiguration(surfaceConfiguration)) &&
                 (projectRunWaiting ? (
                   <StartedAppWaitingPanel source={source ?? ""} />
                 ) : setupPreviewWaiting ? (
@@ -747,11 +765,19 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
                 ) : previewBrowser ? (
                   <PreviewSurface
                     configuration={surfaceConfiguration}
-                    onRestart={() => void previewRunner.control("restart", previewRunner.selectedId)}
+                    manifest={projectRun?.surface?.manifest}
+                    onRestart={() =>
+                      void previewRunner.control(
+                        "restart",
+                        previewRunner.selectedId
+                      )
+                    }
                     storyId={userStory?.id}
                     projectId={userStory?.projectId}
                     workspaceMode={userStory?.workspaceMode}
-                    runRequested={previewRunner.runtime?.desiredStatus === "running"}
+                    runRequested={
+                      previewRunner.runtime?.desiredStatus === "running"
+                    }
                     surfaceWorktree={setupLogWorktree ?? undefined}
                     client={previewBrowser}
                     devtoolsScope={previewScope}

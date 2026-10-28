@@ -65,7 +65,19 @@ export function useProjectRunner(
     // preview tab) instead of the runner's logs drawer.
     start: (id: string, options?: ProjectRunnerStartOptions) =>
       void startConfiguration(
-        configurations.map((configuration) => isHostWindowConfiguration(configuration) ? { ...configuration, command: foregroundHostWindowCommand(configuration.command,platform.platform) } : configuration).find((configuration) => configuration.id === id),
+        configurations
+          .map((configuration) =>
+            isHostWindowConfiguration(configuration)
+              ? {
+                  ...configuration,
+                  command: foregroundHostWindowCommand(
+                    configuration.command,
+                    platform.platform
+                  ),
+                }
+              : configuration
+          )
+          .find((configuration) => configuration.id === id),
         projectPath,
         terminal,
         runnerActions(),
@@ -146,7 +158,8 @@ async function launchConfiguration(
   actions.runtimes.set(configuration.id, { sessionId: session.id, unsubscribe })
   updateSession(actions, configuration.id, { sessionId: session.id })
   await writeProjectCommand(terminal, session.id, configuration.command)
-  if (actions.runtimes.has(configuration.id)) updateSession(actions, configuration.id, { status: "running" })
+  if (actions.runtimes.has(configuration.id))
+    updateSession(actions, configuration.id, { status: "running" })
 }
 
 async function handleStartFailure(

@@ -1,3 +1,4 @@
+import { StringDecoder } from "node:string_decoder";
 import headless from "@xterm/headless";
 import serialize from "@xterm/addon-serialize";
 import { EventEmitter } from "node:events";
@@ -28,6 +29,8 @@ export class TerminalSurface extends EventEmitter {
   private socket?: WebSocket;
   private connecting?: Promise<void>;
   private output = Promise.resolve();
+  private decoder = new StringDecoder("utf8");
+  private sequence = 0;
   private connectedBefore = false;
   private stopped = false;
   exitCode?: number;
@@ -86,7 +89,7 @@ export class TerminalSurface extends EventEmitter {
               );
               if (this.connectedBefore) {
                 this.terminal.reset();
-                this.emit("event", {
+                this.publish({
                   type: "stdout",
                   data: "\x1bcThe program restarted after the connection was lost.\r\n",
                 });
@@ -106,14 +109,17 @@ export class TerminalSurface extends EventEmitter {
               this.output = this.output.then(
                 () =>
                   new Promise<void>((done) =>
-                    this.terminal.write(payload, done),
+                    this.terminal.write(payload, () => {
+                      const text = this.decoder.write(payload);
+                      if (text) this.publish({ type: "stdout", data: text });
+                      done();
+                    }),
                   ),
               );
-              // xterm's streaming decoder handles UTF-8 split across messages.
-              this.emit("bytes", payload);
             });
             socket.on("error", () => {
               clearTimeout(timer);
+              if (this.socket !== socket) return;
               this.update(
                 "failed",
                 "The terminal connection was lost. Run the program again.",
@@ -123,7 +129,7 @@ export class TerminalSurface extends EventEmitter {
             socket.once("close", () => {
               clearTimeout(timer);
               void this.output.then(() => {
-                if (this.exitCode === undefined)
+                if (this.socket === socket && this.exitCode === undefined)
                   this.update(
                     "stopped",
                     "The terminal disconnected. Run the program again.",
@@ -142,6 +148,9 @@ export class TerminalSurface extends EventEmitter {
 
   async snapshot() {
     await this.output;
+    return this.currentSnapshot();
+  }
+  private currentSnapshot() {
     const buffer = this.terminal.buffer.active;
     const lines = [];
     for (let i = Math.max(0, buffer.length - 200); i < buffer.length; i++)
@@ -154,6 +163,17 @@ export class TerminalSurface extends EventEmitter {
       exited: this.exitCode !== undefined,
       exitCode: this.exitCode,
     };
+  }
+  async capture() {
+    await this.output;
+    return {
+      replay: this.serializer.serialize({ scrollback: 200 }),
+      sequence: this.sequence,
+      ...this.currentSnapshot(),
+    };
+  }
+  private publish(event: SurfaceTerminalEvent) {
+    this.emit("event", { ...event, sequence: ++this.sequence });
   }
   async replay() {
     await this.output;
@@ -187,10 +207,12 @@ export class TerminalSurface extends EventEmitter {
     this.socket = undefined;
     socket?.removeAllListeners();
     socket?.terminate();
+    await this.output;
+    this.decoder = new StringDecoder("utf8");
     this.exitCode = undefined;
     this.terminal.reset();
     this.connectedBefore = false;
-    this.emit("event", { type: "stdout", data: "\x1bc" });
+    this.publish({ type: "stdout", data: "\x1bc" });
     this.update("starting", "Restarting the program");
     await this.connect();
   }
@@ -202,7 +224,7 @@ export class TerminalSurface extends EventEmitter {
     const deadline = Date.now() + Math.min(60_000, Math.max(1, timeoutMs));
     const worker = new Worker(
       `const {parentPort, workerData}=require('node:worker_threads'); const re=new RegExp(workerData); parentPort.on('message', text=>parentPort.postMessage(re.test(text)));`,
-      { eval: true, workerData: pattern },
+      { eval: true, workerData: pattern, execArgv: [] },
     );
     try {
       while (true) {
@@ -247,13 +269,13 @@ export class TerminalSurface extends EventEmitter {
   }
   dispose() {
     this.close();
-    this.terminal.dispose();
+    void this.output.then(() => this.terminal.dispose());
     this.removeAllListeners();
   }
   private update(state: typeof this.state, message: string) {
     this.state = state;
     this.message = message;
-    this.emit("event", {
+    this.publish({
       type: "state",
       data: JSON.stringify({ status: state, message, exitCode: this.exitCode }),
     });

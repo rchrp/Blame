@@ -40,7 +40,7 @@
     "@dnd-kit/utilities": "3.2.2",
     "@fontsource-variable/nunito-sans": "5.3.0",
     "@fontsource-variable/source-sans-3": "5.3.1",
-    "@novnc/novnc": "1.6.0",
+    "@novnc/novnc": "https://github.com/novnc/noVNC/archive/a8dfd6a3ea3c74244f5ebdaa5a7f1023007a7820.tar.gz",
     "@octokit/core": "^7.0.8",
     "@pierre/diffs": "^1.6.1",
     "@shikijs/themes": "^4.5.0",

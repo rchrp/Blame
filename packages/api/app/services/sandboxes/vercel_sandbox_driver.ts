@@ -383,7 +383,11 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
   }
 
   surfaceAction(handle: RuntimeHandle, serviceId: string, args: Record<string, unknown>) {
-    return this.runnerCall<ExecResult>(handle, { operation: 'surface-action', serviceId, arguments: args })
+    return this.runnerCall<ExecResult>(handle, {
+      operation: 'surface-action',
+      serviceId,
+      arguments: args,
+    })
   }
 
   async inspect(

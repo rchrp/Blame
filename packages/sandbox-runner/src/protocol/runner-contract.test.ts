@@ -30,6 +30,8 @@ test("advertises the atomic preview startup runner protocol", () => {
       runnerVersion: "0.2.13",
       imageDigest: "sha256:test",
       capabilities: {
+        terminalSurface: true,
+        displaySurface: false,
         dockerCompose: true,
         sharedLoopback: true,
         snapshots: true,

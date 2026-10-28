@@ -17,7 +17,16 @@ import { cn } from "@/lib/utils"
 // the service the preview opens. Icons stay neutral.
 
 export type EnvironmentKind =
-  "preview" | "dependency" | "worker" | "task" | "run" | "terminal" | "display" | "ios" | "android" | "host-window"
+  | "preview"
+  | "dependency"
+  | "worker"
+  | "task"
+  | "run"
+  | "terminal"
+  | "display"
+  | "ios"
+  | "android"
+  | "host-window"
 
 export type CornerTone = "preview" | "ready" | "warning" | "failed" | "idle"
 
@@ -95,17 +104,23 @@ export function KindIcon({
   kind: EnvironmentKind
 }) {
   const Icon =
-    kind === "ios" || kind === "android" ? SmartphoneIcon : kind === "host-window" ? AppWindowIcon : kind === "display" ? MonitorIcon : kind === "preview"
-      ? MonitorIcon
-      : kind === "worker"
-        ? CogIcon
-        : kind === "task" || kind === "terminal"
-          ? SquareTerminalIcon
-          : kind === "run"
-            ? PlayIcon
-            : image && databaseImage.test(image)
-              ? DatabaseIcon
-              : ServerIcon
+    kind === "ios" || kind === "android"
+      ? SmartphoneIcon
+      : kind === "host-window"
+        ? AppWindowIcon
+        : kind === "display"
+          ? MonitorIcon
+          : kind === "preview"
+            ? MonitorIcon
+            : kind === "worker"
+              ? CogIcon
+              : kind === "task" || kind === "terminal"
+                ? SquareTerminalIcon
+                : kind === "run"
+                  ? PlayIcon
+                  : image && databaseImage.test(image)
+                    ? DatabaseIcon
+                    : ServerIcon
   return (
     <Icon
       aria-hidden
@@ -162,6 +177,9 @@ export function EnvironmentSection({
 }
 
 /** The id of a container's card, so the start order can point at it. */
-export function containerAnchor(type: "service" | "task" | "device", id: string) {
+export function containerAnchor(
+  type: "service" | "task" | "device",
+  id: string
+) {
   return `environment-${type}-${id}`
 }

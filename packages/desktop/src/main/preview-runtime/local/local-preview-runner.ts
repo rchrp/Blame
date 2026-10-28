@@ -1,3 +1,4 @@
+import { localPreviewToolsPath } from "./local-preview-tools.ts";
 import { stopDevicesForWorktree } from "../../preview-devices/device-registry.ts";
 import type { PreviewExecutionPlan } from "@blame/preview-runtime";
 import {
@@ -71,7 +72,8 @@ export function localPreviewEngine(
     stateDirectory: localPreviewPaths(worktree).engineState,
     log: (chunk) => {
       options.log?.(chunk);
-      if (chunk.includes("Waiting for the app window")) options.step?.("Waiting for the app window");
+      if (chunk.includes("Waiting for the app window"))
+        options.step?.("Waiting for the app window");
       const setup = /^Running setup (.+)\.$/m.exec(chunk);
       if (setup) options.step?.(`Running setup task ${setup[1]}`);
     },
@@ -139,9 +141,13 @@ export async function startLocalPreview(
     ownPorts,
   });
   if (context.plan.tools?.ttyd && dockerHost === blameRuntimeDockerHost) {
-    const installed = await dockerHost.run("sh", ["-c", installTtydCommand()], {
-      timeoutMs: 120000,
-    });
+    const installed = await dockerHost.run(
+      "sh",
+      ["-c", installTtydCommand(localPreviewToolsPath())],
+      {
+        timeoutMs: 120000,
+      },
+    );
     if (installed.exitCode)
       throw new Error(
         "Terminal tools could not be installed. Check the runtime connection and try again.",

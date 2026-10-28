@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto";
-import { StringDecoder } from "node:string_decoder";
 import type { PreviewService } from "../preview-runtime/preview-service.ts";
 import { TerminalSurface, terminalKeys } from "./terminal-surface.ts";
 import { surfaceUpstream, type SurfaceScope } from "./surface-upstream.ts";
@@ -34,20 +33,11 @@ export async function attachSurfaceTerminal(
       size?.columns,
       size?.rows,
     );
-    const decoder = new StringDecoder("utf8");
-    terminal.on("bytes", (data: Buffer) => {
-      const text = decoder.write(data);
-      if (text) terminal.emit("event", { type: "stdout", data: text });
-    });
     session = { id: randomUUID(), scope, terminal };
     sessions.set(key, session);
   }
   if (session.terminal.exitCode === undefined) await session.terminal.connect();
-  return {
-    session,
-    replay: await session.terminal.replay(),
-    state: await session.terminal.snapshot(),
-  };
+  return { session };
 }
 export function surfaceTerminalById(id: string) {
   return [...sessions.values()].find((s) => s.id === id)?.terminal;

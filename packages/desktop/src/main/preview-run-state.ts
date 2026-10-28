@@ -53,7 +53,8 @@ export function shouldStartBrowserPreview(
   if (state.desiredStatus !== "running") return false;
   const selected = selectedPreviewRunConfiguration(configurations, state);
   if (!manifest || !selected) return false;
-  if (selected.category !== "web" && selected.category !== "mobile") return false;
+  if (selected.category !== "web" && selected.category !== "mobile")
+    return false;
   return manifest.services.some(
     (service) =>
       service.id === selected.previewService && browserPreviewService(service),
@@ -82,7 +83,8 @@ export function previewRunConfigurationStatus(
   runtimeState: PreviewRuntimeSelectionState,
 ): ProjectRunConfigurationStatus {
   const services = configuration.services;
-  if (configuration.previewTarget && !services.length) return runtimeState.desiredStatus === "running" ? "running" : "stopped";
+  if (configuration.previewTarget && !services.length)
+    return runtimeState.desiredStatus === "running" ? "running" : "stopped";
   if (hostOnlyRunConfiguration(configuration)) return "stopped";
   const matching = containers.filter(({ service }) =>
     services.includes(service),
@@ -114,7 +116,8 @@ export function previewRunConfigurationStatus(
 }
 
 function hostOnlyRunConfiguration(configuration: ProjectRunConfiguration) {
-  if (configuration.previewTarget || configuration.services.length) return false;
+  if (configuration.previewTarget || configuration.services.length)
+    return false;
   return (
     configuration.category === "desktop" ||
     configuration.category === "mobile" ||
@@ -128,8 +131,14 @@ export function previewRunConfigurationServiceIds(
   manifest: PreviewManifest,
 ) {
   const runtimeServices = new Set(manifest.services.map(({ id }) => id));
-  const target = manifest.devices?.find((d) => d.id === configuration.previewTarget);
-  const active = new Set([...configuration.services, ...(target?.dependsOn ?? []), ...(target?.bindings ?? []).map((b) => b.source.service)]);
+  const target = manifest.devices?.find(
+    (d) => d.id === configuration.previewTarget,
+  );
+  const active = new Set([
+    ...configuration.services,
+    ...(target?.dependsOn ?? []),
+    ...(target?.bindings ?? []).map((b) => b.source.service),
+  ]);
   const pending = Array.from(active);
   while (pending.length) {
     const serviceId = pending.shift();

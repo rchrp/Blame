@@ -1,3 +1,12 @@
+import {
+  parsePreviewManifest,
+  type PreviewManifest,
+} from "@blame/preview-contract";
+type PreviewSurfaceInfo = {
+  type: "device" | "terminal" | "display" | "host-window";
+  serviceId?: string;
+  targetId?: string;
+};
 import { deviceAction } from "../preview-devices/device-actions.ts";
 import { displaySurfaceAction } from "./display-surface.ts";
 import { storePreviewDevtoolsScreenshots } from "../agent-screenshots/agent-screenshots-service.ts";
@@ -7,22 +16,54 @@ import { surfaceEnabled } from "./experimental-surfaces.ts";
 import { terminalSurfaceAction } from "./surface-sessions.ts";
 
 export async function agentSurfaceInfo(
-  input: { worktree: string },
+  input: {
+    worktree: string;
+    surface?: PreviewSurfaceInfo;
+    previewManifest?: PreviewManifest;
+    workspaceMode?: string;
+  },
   previews: PreviewService,
 ) {
-  const context = await localPreviewContext(input.worktree).catch(
-    () => undefined,
+  const context =
+    input.workspaceMode === "direct" || input.workspaceMode === "cloud-mirror"
+      ? undefined
+      : await localPreviewContext(input.worktree).catch(() => undefined);
+  const manifest =
+    context?.manifest ??
+    (input.previewManifest
+      ? parsePreviewManifest(input.previewManifest)
+      : undefined);
+  if (!manifest) return;
+  if (
+    context?.selected
+      ? context.selected.category === "desktop" &&
+        !context.selected.services.length &&
+        !context.selected.previewTarget
+      : input.surface?.type === "host-window"
+  )
+    return { type: "host-window" } as const;
+  const targetId = context?.selected?.previewTarget ?? input.surface?.targetId;
+  const target = manifest.devices?.find((d) => d.id === targetId);
+  if (target && surfaceEnabled(target.platform))
+    return { type: "device", targetId: target.id } as const;
+  const serviceId =
+    context?.selected?.previewService ?? input.surface?.serviceId;
+  const service = manifest.services.find(
+    (s) =>
+      s.id === serviceId ||
+      (s.surface?.type === "display" && `${s.id}__display` === serviceId),
   );
-  if (!context?.selected) return;
-  if (context.selected.category === "desktop" && !context.selected.services.length && !context.selected.previewService) return { type: "host-window" } as const;
-  const target = context.manifest.devices?.find((d) => d.id === context.selected?.previewTarget);
-  if (target && surfaceEnabled(target.platform)) return { type: "device", targetId: target.id } as const;
-  const service = context.manifest.services.find(
-    (s) => s.id === context.selected?.previewService,
-  );
+
   const type = service?.surface?.type;
-  if (service && (type === "terminal" || type === "display") && surfaceEnabled(type))
-    return { type, serviceId: type === "display" ? `${service.id}__display` : service.id } as const;
+  if (
+    service &&
+    (type === "terminal" || type === "display") &&
+    surfaceEnabled(type)
+  )
+    return {
+      type,
+      serviceId: type === "display" ? `${service.id}__display` : service.id,
+    } as const;
 }
 
 export async function agentSurfaceCall(
@@ -33,6 +74,8 @@ export async function agentSurfaceCall(
     sessionId?: string;
     toolCallId?: string;
     workspaceMode?: string;
+    surface?: PreviewSurfaceInfo;
+    previewManifest?: PreviewManifest;
     arguments: Record<string, unknown>;
   },
   previews: PreviewService,
@@ -44,17 +87,54 @@ export async function agentSurfaceCall(
       status: "unavailable",
       message: "This story has no interactive preview.",
     };
-  if (surface.type === "host-window") return { status: "unavailable", message: "The app opens in its own window. Use project_app in a Direct story; ask the user to check its interface." };
+  if (surface.type === "host-window")
+    return {
+      status: "unavailable",
+      message:
+        "The app opens in its own window. Use project_app in a Direct story; ask the user to check its interface.",
+    };
   if (surface.type === "device") {
-    const scope = { storyId: input.storyId, projectId: input.projectId ?? input.storyId, worktree: input.worktree, targetId: surface.targetId, workspaceMode: input.workspaceMode === "cloud-mirror" ? "cloud-mirror" as const : input.workspaceMode === "direct" ? "direct" as const : "local-container" as const };
-    return storePreviewDevtoolsScreenshots(await deviceAction(scope, input.arguments), { scope: input.storyId, sessionId: input.sessionId, toolCallId: input.toolCallId });
+    const scope = {
+      storyId: input.storyId,
+      projectId: input.projectId ?? input.storyId,
+      worktree: input.worktree,
+      targetId: surface.targetId,
+      manifest: input.previewManifest,
+      workspaceMode:
+        input.workspaceMode === "cloud-mirror"
+          ? ("cloud-mirror" as const)
+          : input.workspaceMode === "direct"
+            ? ("direct" as const)
+            : ("local-container" as const),
+    };
+    return storePreviewDevtoolsScreenshots(
+      await deviceAction(scope, input.arguments),
+      {
+        scope: input.storyId,
+        sessionId: input.sessionId,
+        toolCallId: input.toolCallId,
+      },
+    );
   }
   const cloud =
     input.workspaceMode === "cloud-mirror"
       ? await previews.findForUserStory(input.storyId, "vercel-compose")
       : undefined;
-  const scope = { storyId: input.storyId, serviceId: surface.serviceId, worktree: input.worktree, sessionId: cloud?.session?.id };
-  if (surface.type === "display") return storePreviewDevtoolsScreenshots(await displaySurfaceAction(scope, input.arguments, previews), { scope: input.storyId });
+  const scope = {
+    storyId: input.storyId,
+    serviceId: surface.serviceId,
+    worktree: input.worktree,
+    sessionId: cloud?.session?.id,
+  };
+  if (surface.type === "display")
+    return storePreviewDevtoolsScreenshots(
+      await displaySurfaceAction(scope, input.arguments, previews),
+      {
+        scope: input.storyId,
+        sessionId: input.sessionId,
+        toolCallId: input.toolCallId,
+      },
+    );
   return terminalSurfaceAction(
     {
       storyId: input.storyId,

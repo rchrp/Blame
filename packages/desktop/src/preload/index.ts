@@ -1,3 +1,4 @@
+import { createPreviewTerminalClient } from "./preview-terminal-client";
 import { contextBridge, ipcRenderer } from "electron";
 import type { AgentEvent } from "@blame/agent-runtime";
 import type { RuntimeProgress } from "@blame/app";
@@ -68,36 +69,24 @@ ipcRenderer.on("auth:callback", (_event, delivery) => {
 
 const api: BlameDesktopApi = {
   previewDevices: {
-    availability: (scope) => ipcRenderer.invoke("preview-devices:availability", scope),
+    availability: (scope) =>
+      ipcRenderer.invoke("preview-devices:availability", scope),
     state: (scope) => ipcRenderer.invoke("preview-devices:state", scope),
     start: (scope) => ipcRenderer.invoke("preview-devices:start", scope),
-    action: (scope, args) => ipcRenderer.invoke("preview-devices:action", scope, args),
+    action: (scope, args) =>
+      ipcRenderer.invoke("preview-devices:action", scope, args),
     channel: (scope) => ipcRenderer.invoke("preview-devices:channel", scope),
-    prerequisite: (scope, id) => ipcRenderer.invoke("preview-devices:prerequisite", scope, id),
+    prerequisite: (scope, id) =>
+      ipcRenderer.invoke("preview-devices:prerequisite", scope, id),
     stop: (input) => ipcRenderer.invoke("preview-devices:stop", input),
   },
   previewSurfaces: {
     enabled: () => ipcRenderer.invoke("preview-surfaces:enabled"),
     open: (scope) => ipcRenderer.invoke("preview-surfaces:open", scope),
-    action: (scope, args) => ipcRenderer.invoke("preview-surfaces:action", scope, args),
+    action: (scope, args) =>
+      ipcRenderer.invoke("preview-surfaces:action", scope, args),
   },
-  previewTerminal: {
-    attach: (scope) => ipcRenderer.invoke("preview-terminal:attach", scope),
-    detach: (id) => ipcRenderer.invoke("preview-terminal:detach", id),
-    write: (input) => ipcRenderer.invoke("preview-terminal:write", input),
-    resize: (input) => ipcRenderer.invoke("preview-terminal:resize", input),
-    restart: (id) => ipcRenderer.invoke("preview-terminal:restart", id),
-    read: (id) => ipcRenderer.invoke("preview-terminal:read", id),
-    onEvent: (id, callback) => {
-      const channel = `preview-terminal:event:${id}`;
-      const handler = (
-        _event: unknown,
-        value: Parameters<typeof callback>[0],
-      ) => callback(value);
-      ipcRenderer.on(channel, handler);
-      return () => ipcRenderer.removeListener(channel, handler);
-    },
-  },
+  previewTerminal: createPreviewTerminalClient(ipcRenderer),
   auth: {
     request: (input) => ipcRenderer.invoke("cloud-auth:request", input),
     ready: () => {

@@ -27,5 +27,12 @@ export type PreviewTerminalClient = {
 export type PreviewSurfacesClient = {
   enabled(): Promise<string[]>
   open(scope: PreviewSurfaceScope): Promise<{ url: string }>
-  action(scope: PreviewSurfaceScope, args: Record<string, unknown>): Promise<{ status: string; message?: string; content?: Array<{ type: string; data: string }> }>
+  action(
+    scope: PreviewSurfaceScope,
+    args: Record<string, unknown>
+  ): Promise<{
+    status: string
+    message?: string
+    content?: Array<{ type: string; data: string }>
+  }>
 }

@@ -68,3 +68,86 @@ test("wait patterns are bounded and invalid patterns fail without blocking the m
     terminal.dispose();
   }
 });
+
+test(
+  "official ttyd preserves immediate exit markers and can restart",
+  { skip: !process.env.BLAME_TEST_TTYD, timeout: 15000 },
+  async () => {
+    const { spawn } = await import("node:child_process");
+    const { createServer } = await import("node:net");
+    const { createHash } = await import("node:crypto");
+    const { readFile } = await import("node:fs/promises");
+    const { compilePreviewManifest } = await import("@blame/preview-runtime");
+    const { ttydAssets } = await import("@blame/preview-runtime/compose");
+    const binary = process.env.BLAME_TEST_TTYD!;
+    const architecture = process.arch === "arm64" ? "aarch64" : "x86_64";
+    assert.equal(
+      createHash("sha256")
+        .update(await readFile(binary))
+        .digest("hex"),
+      ttydAssets[architecture].sha256,
+    );
+    const listener = createServer();
+    await new Promise<void>((resolve) =>
+      listener.listen(0, "127.0.0.1", resolve),
+    );
+    const address = listener.address() as { port: number };
+    await new Promise<void>((resolve) => listener.close(() => resolve()));
+    const plan = compilePreviewManifest({
+      confidence: "high",
+      project: {},
+      setup: [],
+      caches: [],
+      risks: [],
+      probes: [],
+      services: [
+        {
+          id: "cli",
+          kind: "preview",
+          container: { image: "debian" },
+          surface: { type: "terminal" },
+          endpoints: [],
+          command:
+            'printf "value> "; IFS= read -r value; printf "received:%s\\n" "$value"; exit 7',
+        },
+      ],
+    });
+    const command = plan.services[0]!.command!.replace(
+      "/opt/blame/tools/ttyd",
+      "'" + binary.replace(/'/g, "'\"'\"'") + "'",
+    ).replace("--port 7681", `--port ${address.port}`);
+    const child = spawn("sh", ["-c", "exec " + command], { stdio: "ignore" });
+    const terminal = new TerminalSurface(
+      async () => new WebSocket(`ws://127.0.0.1:${address.port}/ws`, "tty"),
+    );
+    try {
+      for (let attempt = 0; attempt < 100; attempt++) {
+        const { Socket } = await import("node:net");
+        const ready = await new Promise<boolean>((resolve) => {
+          const socket = new Socket();
+          socket.once("error", () => resolve(false));
+          socket.connect(address.port, "127.0.0.1", () => {
+            socket.destroy();
+            resolve(true);
+          });
+        });
+        if (ready) break;
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      }
+      await terminal.connect();
+      assert.equal((await terminal.waitFor("value>", 2000)).matched, true);
+      terminal.resize(100, 30);
+      terminal.write("literal answer\r");
+      assert.equal(
+        (await terminal.waitFor("received:literal answer", 2000)).matched,
+        true,
+      );
+      assert.equal((await terminal.waitFor("never", 2000)).exitCode, 7);
+      await terminal.restart();
+      assert.equal((await terminal.waitFor("value>", 2000)).matched, true);
+    } finally {
+      terminal.dispose();
+      child.kill();
+    }
+  },
+);

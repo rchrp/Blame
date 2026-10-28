@@ -1,4 +1,7 @@
-import { HostWindowPanel, type HostWindowPanelProps } from "./surfaces/host-window-panel"
+import {
+  HostWindowPanel,
+  type HostWindowPanelProps,
+} from "./surfaces/host-window-panel"
 import { isHostWindowConfiguration } from "./surfaces/host-window-kind"
 import { DeviceSurfaceView } from "./surfaces/device-surface-view"
 import { DisplaySurfaceView } from "./surfaces/display-surface-view"
@@ -13,9 +16,17 @@ import { NativePreviewPanel } from "./native-preview"
 import { TerminalSurfaceView } from "./surfaces/terminal-surface-view"
 import { SurfaceUnavailable } from "./surfaces/surface-unavailable"
 
-type IntegratedPreviewProps = React.ComponentProps<typeof IntegratedPreviewSurface>
-export function PreviewSurface(props: IntegratedPreviewProps | { hostWindow: HostWindowPanelProps }) {
+type IntegratedPreviewProps = React.ComponentProps<
+  typeof IntegratedPreviewSurface
+>
+export function PreviewSurface(
+  props:
+    | IntegratedPreviewProps
+    | { hostWindow: HostWindowPanelProps }
+    | { device: React.ComponentProps<typeof DeviceSurfaceView> }
+) {
   if ("hostWindow" in props) return <HostWindowPanel {...props.hostWindow} />
+  if ("device" in props) return <DeviceSurfaceView {...props.device} />
   return <IntegratedPreviewSurface {...props} />
 }
 
@@ -75,9 +86,23 @@ function IntegratedPreviewSurface({
       cancelled = true
     }
   }, [platform, surfaceWorktree, providedManifest])
-  if (isHostWindowConfiguration(configuration)) return <HostWindowPanel mode={workspaceMode ?? "local-container"} />
-  if (configuration?.previewTarget && storyId && projectId && surfaceWorktree)
-    return <DeviceSurfaceView active={native.visible} running={Boolean(runRequested)} scope={{ storyId, projectId, worktree: surfaceWorktree, targetId: configuration.previewTarget, workspaceMode: workspaceMode ?? "local-container" }} />
+  if (isHostWindowConfiguration(configuration))
+    return <HostWindowPanel mode={workspaceMode ?? "local-container"} />
+  if (configuration?.previewTarget && storyId && projectId)
+    return (
+      <DeviceSurfaceView
+        active={native.visible}
+        running={Boolean(runRequested)}
+        scope={{
+          storyId,
+          projectId,
+          worktree: surfaceWorktree ?? "",
+          manifest,
+          targetId: configuration.previewTarget,
+          workspaceMode: workspaceMode ?? "local-container",
+        }}
+      />
+    )
   const surface = manifest?.services.find(
     (service) => service.id === configuration?.previewService
   )?.surface
@@ -103,15 +128,55 @@ function IntegratedPreviewSurface({
     )
   }
   if (surface?.type === "display" && configuration?.previewService && storyId) {
-    if (!enabled.includes("display")) return <SurfaceUnavailable message="Screen previews are not enabled on this computer." />
-    return <DisplaySurfaceView active={native.visible} onRestart={onRestart} scope={{ storyId, serviceId: `${configuration.previewService}__display`, worktree: native.previewWorktree, sessionId: native.previewSessionId }} />
+    if (!enabled.includes("display"))
+      return (
+        <SurfaceUnavailable message="Screen previews are not enabled on this computer." />
+      )
+    return (
+      <DisplaySurfaceView
+        active={native.visible}
+        onRestart={onRestart}
+        scope={{
+          storyId,
+          serviceId: `${configuration.previewService}__display`,
+          worktree: native.previewWorktree,
+          sessionId: native.previewSessionId,
+        }}
+      />
+    )
   }
-  if (surface?.type === "web" && surface.device && enabled.includes("phone-web"))
+  if (
+    surface?.type === "web" &&
+    surface.device &&
+    enabled.includes("phone-web")
+  )
     return <PhonePreview native={native} device={surface.device} />
   return <NativePreviewPanel {...native} />
 }
 
-function PhonePreview({ native, device }: { native: React.ComponentProps<typeof NativePreviewPanel>; device: "phone" | "tablet" }) {
-  const client = React.useMemo(() => ({ ...native.client, create: (input: Parameters<typeof native.client.create>[0]) => native.client.create({ ...input, device }) }), [native.client, device])
-  return <PhoneFrame device={device}><NativePreviewPanel {...native} client={client} sessionKey={`${native.sessionKey}:${device}`} storageKey={native.storageKey} /></PhoneFrame>
+function PhonePreview({
+  native,
+  device,
+}: {
+  native: React.ComponentProps<typeof NativePreviewPanel>
+  device: "phone" | "tablet"
+}) {
+  const client = React.useMemo(
+    () => ({
+      ...native.client,
+      create: (input: Parameters<typeof native.client.create>[0]) =>
+        native.client.create({ ...input, device }),
+    }),
+    [native.client, device]
+  )
+  return (
+    <PhoneFrame device={device}>
+      <NativePreviewPanel
+        {...native}
+        client={client}
+        sessionKey={`${native.sessionKey}:${device}`}
+        storageKey={native.storageKey}
+      />
+    </PhoneFrame>
+  )
 }

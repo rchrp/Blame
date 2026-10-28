@@ -50,8 +50,15 @@ export function resolveCapabilities(
 ): CapabilityReport {
   const incompatibilities: CapabilityIncompatibility[] = [];
   for (const type of ["terminal", "display"] as const) {
-    if (plan.services.some((service) => service.surface?.type === type) && !capabilities[`${type}Surface`]) {
-      incompatibilities.push({ code: "SURFACE_UNSUPPORTED", capability: `${type}Surface`, message: `${type === "terminal" ? "Terminal" : "Screen"} previews need an updated sandbox runner. Update the preview runtime and try again.` });
+    if (
+      plan.services.some((service) => service.surface?.type === type) &&
+      !capabilities[`${type}Surface`]
+    ) {
+      incompatibilities.push({
+        code: "SURFACE_UNSUPPORTED",
+        capability: `${type}Surface`,
+        message: `${type === "terminal" ? "Terminal" : "Screen"} previews need an updated sandbox runner. Update the preview runtime and try again.`,
+      });
     }
   }
   requireCapability(

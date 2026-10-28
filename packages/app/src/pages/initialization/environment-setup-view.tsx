@@ -71,7 +71,12 @@ export function EnvironmentSetupView({ setup }: { setup: SavedSetup }) {
               key={service.id}
               anchor={containerAnchor("service", service.id)}
               name={service.id}
-              kind={service.surface?.type === "terminal" || service.surface?.type === "display" ? service.surface.type : service.kind}
+              kind={
+                service.surface?.type === "terminal" ||
+                service.surface?.type === "display"
+                  ? service.surface.type
+                  : service.kind
+              }
               container={service.container}
               command={service.command}
               environment={service.environment}

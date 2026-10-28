@@ -450,6 +450,7 @@ function validateRunConfigurationServices(
     if (
       configuration.category !== "web" &&
       !configuration.previewService &&
+      !configuration.previewTarget &&
       manifestService?.kind === "preview"
     ) {
       throw new Error(
@@ -564,7 +565,10 @@ function parseRunConfigurationTopology(value: Record<string, unknown>) {
   const scopes = parseRunConfigurationStrings(value.scopes, "scopes", 50);
   const previewService = stringValue(value.previewService);
   const previewTarget = stringValue(value.previewTarget);
-  if (previewTarget && (category !== "mobile" || previewService)) throw new Error("A device preview needs category mobile and cannot select a previewService");
+  if (previewTarget && (category !== "mobile" || previewService))
+    throw new Error(
+      "A device preview needs category mobile and cannot select a previewService",
+    );
   if (requiresContainerServices(category) && !services.length) {
     throw new Error(
       "Initialization run configuration services must not be empty",

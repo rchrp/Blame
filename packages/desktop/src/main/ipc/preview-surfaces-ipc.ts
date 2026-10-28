@@ -18,16 +18,25 @@ export function registerPreviewSurfacesIpc(options: {
   isAppWindow(sender: WebContents): boolean;
 }) {
   configureSurfaceSessions(options.service);
-  ipcMain.handle("preview-surfaces:open", async (event, scope: SurfaceScope) => {
-    authorized(event.sender);
-    if (!surfaceEnabled("display")) throw new Error("Screen previews are not enabled on this computer.");
-    const channel = await openSurfaceChannel(() => surfaceUpstream(scope, "display", options.service));
-    return { url: channel.url };
-  });
-  ipcMain.handle("preview-surfaces:action", async (event, scope: SurfaceScope, args: Record<string, unknown>) => {
-    authorized(event.sender);
-    return displaySurfaceAction(scope, args, options.service);
-  });
+  ipcMain.handle(
+    "preview-surfaces:open",
+    async (event, scope: SurfaceScope) => {
+      authorized(event.sender);
+      if (!surfaceEnabled("display"))
+        throw new Error("Screen previews are not enabled on this computer.");
+      const channel = await openSurfaceChannel(() =>
+        surfaceUpstream(scope, "display", options.service),
+      );
+      return { url: channel.url };
+    },
+  );
+  ipcMain.handle(
+    "preview-surfaces:action",
+    async (event, scope: SurfaceScope, args: Record<string, unknown>) => {
+      authorized(event.sender);
+      return displaySurfaceAction(scope, args, options.service);
+    },
+  );
   const authorized = (sender: WebContents) => {
     if (!options.isAppWindow(sender))
       throw new Error("Untrusted preview request");
@@ -46,8 +55,8 @@ export function registerPreviewSurfacesIpc(options: {
         typeof scope.serviceId !== "string"
       )
         throw new Error("Preview scope is invalid");
-      const { session, replay, state } = await attachSurfaceTerminal(scope);
-      const channel = `preview-terminal:event:${session.id}`;
+      const { session } = await attachSurfaceTerminal(scope);
+      const channel = "preview-terminal:event";
       const send = (value: unknown) => {
         if (!event.sender.isDestroyed())
           event.sender.send(channel, { ...(value as object), id: session.id });
@@ -63,7 +72,7 @@ export function registerPreviewSurfacesIpc(options: {
       };
       subscriptions.set(key, cleanup);
       event.sender.once("destroyed", cleanup);
-      return { id: session.id, replay, ...state };
+      return { id: session.id, ...(await session.terminal.capture()) };
     },
   );
   ipcMain.handle("preview-terminal:detach", (event, id: string) => {

@@ -20,6 +20,7 @@ import { ProjectRunnerControls } from "@/components/backlog/board/project-runner
 import { UserStoryPreview } from "@/components/backlog/drawer/user-story-preview"
 import { Button } from "@/components/ui/button"
 import { useProjects } from "@/context/projects"
+import { useProjectInitialization } from "@/components/project-initialization/use-project-initialization"
 
 // The preview of a story working directly in the project folder: the usual
 // story preview, but its app is the project's own, started and stopped with
@@ -27,11 +28,15 @@ import { useProjects } from "@/context/projects"
 export function DirectStoryPreview({
   onCapture,
   visible,
+  storyId,
 }: {
+  storyId: string
   onCapture?: (file: File) => void
   visible: boolean
 }) {
   const runner = useSharedProjectRunner()
+  const project = useProjects().activeProject
+  const initialization = useProjectInitialization()?.initialization
   const [startRequest, setStartRequest] = React.useState(0)
   const selected = runner?.selected
   if (!runner || !selected) return <NoRunConfiguration />
@@ -43,7 +48,42 @@ export function DirectStoryPreview({
       : undefined
   const outside = runningOutside(runner, selected.id)
   const session = runner.activeSession
-  if (isHostWindowConfiguration(selected)) return <PreviewSurface hostWindow={{ mode: "direct", status, logs: runner.sessionFor(selected.id)?.logs, onStart: () => runner.start(selected.id,{revealLogs:false}), onStop: () => runner.stop(selected.id), onRestart: () => runner.start(selected.id,{revealLogs:false}) }} />
+  if (
+    selected.previewTarget &&
+    project &&
+    runner.projectPath &&
+    initialization?.previewManifest
+  )
+    return (
+      <PreviewSurface
+        device={{
+          active: visible,
+          running: false,
+          scope: {
+            storyId,
+            projectId: project.id,
+            title: selected.name,
+            worktree: runner.projectPath,
+            targetId: selected.previewTarget,
+            workspaceMode: "direct",
+            manifest: initialization.previewManifest,
+          },
+        }}
+      />
+    )
+  if (isHostWindowConfiguration(selected))
+    return (
+      <PreviewSurface
+        hostWindow={{
+          mode: "direct",
+          status,
+          logs: runner.sessionFor(selected.id)?.logs,
+          onStart: () => runner.start(selected.id, { revealLogs: false }),
+          onStop: () => runner.stop(selected.id),
+          onRestart: () => runner.start(selected.id, { revealLogs: false }),
+        }}
+      />
+    )
   return (
     <UserStoryPreview
       // The same page as the header's preview: one app, one browser view.
@@ -54,6 +94,10 @@ export function DirectStoryPreview({
       previewTitle={selected.name}
       previewUrl={previewUrl}
       projectRun={{
+        surface: {
+          configuration: selected,
+          manifest: initialization?.previewManifest ?? undefined,
+        },
         controls: ({ onMenuOpenChange }) => (
           <ProjectRunnerControls
             configurations={runner.configurations}

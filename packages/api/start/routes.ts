@@ -85,7 +85,9 @@ router
           .use(middleware.premium({ feature: 'cloud_preview' }))
         router.get('/:id', [PreviewSessionsController, 'show'])
         router.post('/:id/actions', [PreviewSessionsController, 'action'])
-        router.post('/:id/surface-action', [PreviewSurfacesController, 'action']).use(middleware.premium({ feature: 'cloud_preview' }))
+        router
+          .post('/:id/surface-action', [PreviewSurfacesController, 'action'])
+          .use(middleware.premium({ feature: 'cloud_preview' }))
         router
           .post('/:id/source/import', [PreviewSessionsController, 'sourceImport'])
           .use(middleware.premium({ feature: 'cloud_preview' }))

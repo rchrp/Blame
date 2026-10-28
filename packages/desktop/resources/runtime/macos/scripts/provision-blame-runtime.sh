@@ -11,6 +11,7 @@ node_version="${BLAME_NODE_VERSION:-24.22.1}"
 npm_version="${BLAME_NPM_VERSION:-12.2.1}"
 pnpm_version="${BLAME_PNPM_VERSION:-12.15.0}"
 yarn_version="${BLAME_YARN_VERSION:-1.22.22}"
+preview_display_image="" # Filled from the signed preview-image release.
 runtime_packages="bubblewrap ca-certificates curl dbus-user-session git gzip iptables procps python3 tar xz-utils"
 
 ensure_user() {
@@ -42,6 +43,23 @@ missing_runtime_packages() {
   done
   printf '%s' "$missing"
 }
+
+ensure_preview_tools() (
+set -eu
+case "$(uname -m)" in
+  x86_64) arch=x86_64; checksum=8a217c968aba172e0dbf3f34447218dc015bc4d5e59bf51db2f2cd12b7be4f55 ;;
+  aarch64|arm64) arch=aarch64; checksum=b38acadd89d1d396a0f5649aa52c539edbad07f4bc7348b27b4f4b7219dd4165 ;;
+  *) echo 'Terminal previews need an x86_64 or arm64 runtime.' >&2; exit 1 ;;
+esac
+mkdir -p /opt/blame/tools
+if printf '%s  %s\n' "$checksum" /opt/blame/tools/ttyd | sha256sum -c --status; then exit 0; fi
+temporary=$(mktemp /opt/blame/tools/ttyd.XXXXXX)
+trap 'rm -f "$temporary"' EXIT
+curl --fail --location --retry 3 --proto '=https' --tlsv1.2 'https://github.com/tsl0922/ttyd/releases/download/1.7.7/ttyd.'"$arch" -o "$temporary"
+printf '%s  %s\n' "$checksum" "$temporary" | sha256sum -c --status
+chmod 755 "$temporary"
+mv "$temporary" /opt/blame/tools/ttyd
+)
 
 ensure_node() (
   if valid_node_install /usr/local >/dev/null 2>&1; then
@@ -1140,6 +1158,15 @@ EOF
   chmod 755 /usr/local/bin/blame-runtime-agent
 }
 
+prefetch_preview_display() {
+  image="${BLAME_PREVIEW_DISPLAY_IMAGE:-$preview_display_image}"
+  [ -n "$image" ] || return 0
+  case "$image" in
+    ghcr.io/*@sha256:*) docker pull "$image" ;;
+    *) printf '%s\n' 'Screen preview images must be pinned by digest.' >&2; return 1 ;;
+  esac
+}
+
 write_marker() {
   printf '%s\n' "$runtime_version" >/etc/blame-runtime-version
 }
@@ -1147,6 +1174,7 @@ write_marker() {
 cd /
 ensure_user
 ensure_packages
+ensure_preview_tools
 ensure_node
 ensure_package_managers
 ensure_semantic_harness
@@ -1158,6 +1186,7 @@ ensure_docker_config
 stop_legacy_container_stack
 ensure_agent
 ensure_docker_running
+prefetch_preview_display
 migrate_legacy_volumes
 remove_legacy_container_stack
 trim_guest_services

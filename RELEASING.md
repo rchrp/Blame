@@ -121,7 +121,6 @@ Before releasing, log Docker in to the registry with a fresh OIDC token (it expi
 
 `packages/sandbox-runner/grype.yaml` lists the critical findings the release scans accept because no fixed upstream build exists yet. Remove each entry once its fix ships.
 
-
 ## Preview surfaces and GUI images
 
 Run the `Release preview images` workflow with an immutable version. It builds

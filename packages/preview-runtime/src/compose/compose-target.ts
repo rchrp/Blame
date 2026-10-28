@@ -33,6 +33,8 @@ export type LocalComposeTarget = {
   dependencyKey: string;
   /** Host files mounted over workspace paths, such as materialized env files. */
   fileMounts?: Array<{ source: string; target: string }>;
+  /** Native Linux keeps downloaded tools in the desktop user's data folder. */
+  toolsPath?: string;
 };
 
 export type ComposeTarget = SandboxComposeTarget | LocalComposeTarget;

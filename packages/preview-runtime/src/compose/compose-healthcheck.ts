@@ -22,7 +22,19 @@ const checkTimeoutMs = 4_000;
 export function serviceHealthcheck(
   service: ServiceLaunchPlan,
 ): ComposeHealthcheck | undefined {
-  if (service.surface?.type === "display" && service.id === service.surface.sidecarServiceId) return timing(["CMD", "python3", "-c", "import socket; socket.create_connection((\"127.0.0.1\",6080),2).close()"], 30000);
+  if (
+    service.surface?.type === "display" &&
+    service.id === service.surface.sidecarServiceId
+  )
+    return timing(
+      [
+        "CMD",
+        "python3",
+        "-c",
+        'import socket; socket.create_connection(("127.0.0.1",6080),2).close()',
+      ],
+      30000,
+    );
   const declared = service.endpoints.find(({ healthcheck }) => healthcheck);
   const startMs = Math.max(declared?.healthcheck?.timeoutMs ?? 60_000, 10_000);
   const known = knownServiceCheck(service);

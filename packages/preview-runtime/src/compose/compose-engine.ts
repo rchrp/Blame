@@ -134,7 +134,12 @@ export class ComposeEngine {
         { timeoutMs: this.startTimeoutMs + 30_000 },
       ),
     );
-    await waitForDisplayWindows(plan, serviceIds, (id, args) => this.execInService(id, args, { timeoutMs: 15000 }), { log: (message) => this.options.log?.(message) });
+    await waitForDisplayWindows(
+      plan,
+      serviceIds,
+      (id, args) => this.execInService(id, args, { timeoutMs: 15000 }),
+      { log: (message) => this.options.log?.(message) },
+    );
   }
 
   /** Runs every setup task and prepares every image, as a warm baseline. */

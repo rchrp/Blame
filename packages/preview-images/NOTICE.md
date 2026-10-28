@@ -2,14 +2,14 @@
 
 The images run these unmodified programs as separate processes:
 
-| Program | License | Corresponding source |
-| --- | --- | --- |
-| TigerVNC | GPL-2.0 | https://github.com/TigerVNC/tigervnc |
-| websockify | LGPL-3.0 | https://github.com/novnc/websockify |
-| Openbox | GPL-2.0 | http://openbox.org/ |
-| xdotool | BSD-3-Clause | https://github.com/jordansissel/xdotool |
-| wmctrl | GPL-2.0 | https://salsa.debian.org/debian/wmctrl |
-| ImageMagick | ImageMagick | https://imagemagick.org/script/license.php |
+| Program     | License      | Corresponding source                       |
+| ----------- | ------------ | ------------------------------------------ |
+| TigerVNC    | GPL-2.0      | https://github.com/TigerVNC/tigervnc       |
+| websockify  | LGPL-3.0     | https://github.com/novnc/websockify        |
+| Openbox     | GPL-2.0      | http://openbox.org/                        |
+| xdotool     | BSD-3-Clause | https://github.com/jordansissel/xdotool    |
+| wmctrl      | GPL-2.0      | https://salsa.debian.org/debian/wmctrl     |
+| ImageMagick | ImageMagick  | https://imagemagick.org/script/license.php |
 
 Each release must include the Debian copyright files under
 `/usr/share/doc/*/copyright`, the installed package/version inventory and the

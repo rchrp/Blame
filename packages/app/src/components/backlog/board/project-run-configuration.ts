@@ -16,7 +16,10 @@ export function projectPreviewConfiguration(
   return (
     configurations.find(
       (configuration) => configuration.default && hasPreview(configuration)
-    ) ?? configurations.find(hasPreview) ?? configurations.find((c) => c.default && isHostWindowConfiguration(c)) ?? configurations.find(isHostWindowConfiguration)
+    ) ??
+    configurations.find(hasPreview) ??
+    configurations.find((c) => c.default && isHostWindowConfiguration(c)) ??
+    configurations.find(isHostWindowConfiguration)
   )
 }
 
@@ -41,6 +44,7 @@ export function projectRunConfigurationPreviewKey(
 function hasPreview(configuration: ProjectRunConfiguration) {
   return Boolean(
     projectRunConfigurationPreviewUrl(configuration) ||
-    configuration.previewService || configuration.previewTarget
+    configuration.previewService ||
+    configuration.previewTarget
   )
 }

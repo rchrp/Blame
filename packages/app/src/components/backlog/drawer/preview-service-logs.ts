@@ -82,7 +82,10 @@ export function useProjectServices(worktree?: string | null) {
   return worktree && result.worktree === worktree ? result.services : []
 }
 
-export function useProjectServiceLog(worktree?: string | null, service?: string) {
+export function useProjectServiceLog(
+  worktree?: string | null,
+  service?: string
+) {
   const platform = usePlatform()
   const [state, setState] = React.useState({
     content: "",
@@ -170,4 +173,3 @@ export function useProjectServiceLog(worktree?: string | null, service?: string)
   }
   return state
 }
-

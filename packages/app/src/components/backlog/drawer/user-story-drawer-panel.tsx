@@ -787,6 +787,7 @@ export function UserStoryDrawerPanel({
           >
             {directPreview ? (
               <DirectStoryPreview
+                storyId={userStory.id}
                 visible={tab === "preview"}
                 onCapture={handlePreviewCapture}
               />

@@ -60,7 +60,13 @@ export type ServiceLaunchPlan = {
 export type ServiceSurfacePlan =
   | { type: "web"; device?: "phone" | "tablet" }
   | { type: "terminal"; columns: number; rows: number; endpointId: "terminal" }
-  | { type: "display"; width: number; height: number; endpointId: "display"; sidecarServiceId: string };
+  | {
+      type: "display";
+      width: number;
+      height: number;
+      endpointId: "display";
+      sidecarServiceId: string;
+    };
 
 export type CachePlan = { name: string; target: string };
 

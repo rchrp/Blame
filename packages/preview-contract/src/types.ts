@@ -124,7 +124,16 @@ export type PreviewManifestDeviceTarget = {
   projectDir: string;
   toolchain: "xcode" | "expo" | "react-native" | "flutter" | "gradle";
   prepare?: string[];
-  build: { workspace?: string; project?: string; scheme?: string; configuration?: string; module?: string; variant?: string; flavor?: string; target?: string };
+  build: {
+    workspace?: string;
+    project?: string;
+    scheme?: string;
+    configuration?: string;
+    module?: string;
+    variant?: string;
+    flavor?: string;
+    target?: string;
+  };
   app: { bundleId?: string; applicationId?: string; launchActivity?: string };
   device?: { model?: string; os?: string };
   environment?: PreviewManifestEnvironment;

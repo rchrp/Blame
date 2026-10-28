@@ -1,3 +1,4 @@
+import { localPreviewToolsPath } from "./local-preview-tools.ts";
 import { createHash } from "node:crypto";
 import { stat } from "node:fs/promises";
 import { posix, relative, sep } from "node:path";
@@ -61,6 +62,7 @@ export async function renderLocalPreview(input: {
     projectUser: `${projectUser.uid}:${projectUser.gid}`,
     hostPorts,
     dependencyKey,
+    toolsPath: localPreviewToolsPath(),
   };
   const draft = renderCompose(plan, target);
   const origin = previewOrigin(plan, hostPorts, input.selected);

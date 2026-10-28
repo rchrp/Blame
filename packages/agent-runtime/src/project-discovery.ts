@@ -1,4 +1,7 @@
-import { configurationName, nativeProjectEvidence } from "./project-configuration-evidence.js";
+import {
+  configurationName,
+  nativeProjectEvidence,
+} from "./project-configuration-evidence.js";
 import { type Dirent } from "node:fs";
 import { opendir, realpath } from "node:fs/promises";
 import { dirname, extname, join, resolve } from "node:path";
@@ -583,11 +586,11 @@ export function isProjectConfigurationPath(path: string) {
   return configurationName(name, lower);
 }
 
-
 export function isRuntimeEvidencePath(path: string) {
   const name = fileName(path);
   return (
-    runtimeRootNames.has(name) || nativeProjectEvidence(path) ||
+    runtimeRootNames.has(name) ||
+    nativeProjectEvidence(path) ||
     runtimePinNames.has(name) ||
     workspaceMarkerNames.has(name) ||
     isEnvironmentTemplatePath(path) ||

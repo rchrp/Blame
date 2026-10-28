@@ -48,7 +48,15 @@ export function startOrder(setup: SavedSetup): StartNode[][] {
       (step) => step.map((id): StartNode => ({ type: "task", id }))
     ),
     ...steps(late, neededServices).map((step) => step.map(serviceNode)),
-    ...(manifest.devices?.length ? [manifest.devices.map((d): StartNode => ({ type: "device", id: d.id, kind: d.platform }))] : []),
+    ...(manifest.devices?.length
+      ? [
+          manifest.devices.map((d): StartNode => ({
+            type: "device",
+            id: d.id,
+            kind: d.platform,
+          })),
+        ]
+      : []),
   ]
 }
 

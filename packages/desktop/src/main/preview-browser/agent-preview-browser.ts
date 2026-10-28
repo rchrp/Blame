@@ -64,7 +64,10 @@ export async function ensureAgentPreviewBrowser(
   source: AgentPreviewSource,
 ) {
   let current = agentPreviewBrowser(scope);
-  if (current && current.device !== source.device) { destroyAgentPreviewBrowser(scope); current = undefined; }
+  if (current && current.device !== source.device) {
+    destroyAgentPreviewBrowser(scope);
+    current = undefined;
+  }
   if (current) {
     current.touch();
     await current.ready;
@@ -141,7 +144,9 @@ export function refreshAgentApplicationState(record: AgentPreviewBrowser) {
 }
 
 function createAgentRecord(scope: string, source: AgentPreviewSource) {
-  const viewport = source.device ? previewDeviceSize(source.device) : agentPreviewViewport;
+  const viewport = source.device
+    ? previewDeviceSize(source.device)
+    : agentPreviewViewport;
   const window = new BrowserWindow({
     height: viewport.height,
     show: false,

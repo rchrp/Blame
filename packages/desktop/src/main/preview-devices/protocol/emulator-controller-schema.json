@@ -239,24 +239,16 @@
                 "LedIndicator": {
                   "oneofs": {
                     "_id": {
-                      "oneof": [
-                        "id"
-                      ]
+                      "oneof": ["id"]
                     },
                     "_facing": {
-                      "oneof": [
-                        "facing"
-                      ]
+                      "oneof": ["facing"]
                     },
                     "_state": {
-                      "oneof": [
-                        "state"
-                      ]
+                      "oneof": ["state"]
                     },
                     "_color": {
-                      "oneof": [
-                        "color"
-                      ]
+                      "oneof": ["color"]
                     }
                   },
                   "fields": {

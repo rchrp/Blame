@@ -229,7 +229,11 @@ export async function createPreviewBrowser(
   const bridgeSource = previewBridgeSource(input);
   const id = randomUUID();
   const view = createPreviewBrowserView(input.storageKey);
-  const device = surfaceEnabled("phone-web") && (input.device === "phone" || input.device === "tablet") ? input.device : undefined;
+  const device =
+    surfaceEnabled("phone-web") &&
+    (input.device === "phone" || input.device === "tablet")
+      ? input.device
+      : undefined;
   if (device) emulatePreviewDevice(view.webContents, device);
   view.webContents.setFrameRate(hiddenPreviewFrameRate);
   const bridge =
@@ -344,7 +348,8 @@ export function setPreviewBrowserBounds(input: {
   const visible = input.visible && bounds.width > 0 && bounds.height > 0;
   record.visible = visible;
   record.view.setBounds(bounds);
-  if (record.device && bounds.width > 0 && bounds.height > 0) emulatePreviewDevice(record.view.webContents, record.device, bounds);
+  if (record.device && bounds.width > 0 && bounds.height > 0)
+    emulatePreviewDevice(record.view.webContents, record.device, bounds);
   record.view.setVisible(visible);
   record.view.webContents.setFrameRate(
     visible ? visiblePreviewFrameRate : hiddenPreviewFrameRate,
