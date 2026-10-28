@@ -209,7 +209,7 @@ Before calling the tool, ensure:
 
 ## Terminal previews
 
-A CLI or TUI runs in a preview service with `surface: {"type":"terminal"}` and `endpoints: []`. Blame supplies the terminal transport. A matching run configuration has category `terminal`, `previewService`, and no `previewUrl`. Use a REPL or TUI's normal command; use `--help` or a short documented demo for a one-shot CLI. For a Python Click CLI: image `python:3.13-slim`, setup `pip install -e .`, service `cli` with command `mytool --help`, surface `{"type":"terminal"}`, no endpoints; configuration `{"id":"cli","name":"Command line","command":"mytool --help","cwd":".","default":true,"category":"terminal","services":["cli"],"previewService":"cli","scopes":["cli"]}`. Do not add an HTTP server for it.
+A CLI or TUI runs in a preview service with `surface: {"type":"terminal"}` and `endpoints: []`. Blame supplies the terminal transport. A matching run configuration has category `terminal`, `previewService`, and no `previewUrl`. Use a REPL or TUI's normal command; use `--help` or a short documented demo for a one-shot CLI. For a Python Click CLI: image `python:3.13-slim`, cache `{"name":"venv","target":"/opt/venv"}` (setup containers are discarded, so installs must land in a cache volume), setup `python -m venv /opt/venv && /opt/venv/bin/pip install -e .`, service `cli` with command `/opt/venv/bin/mytool --help`, surface `{"type":"terminal"}`, no endpoints; configuration `{"id":"cli","name":"Command line","command":"/opt/venv/bin/mytool --help","cwd":".","default":true,"category":"terminal","services":["cli"],"previewService":"cli","scopes":["cli"]}`. Do not add an HTTP server for it.
 
 
 ## Cross-platform mobile web previews
