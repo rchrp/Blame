@@ -121,8 +121,14 @@ function ModelPicker({
   setDialog: (dialog: ModelDialog) => void
 }) {
   const [open, setOpen] = React.useState(false)
-  const [advanced, setAdvanced] = React.useState(false)
-  const [providerID, setProviderID] = React.useState(allProvidersValue)
+  const [manualSelection, setManualSelection] = React.useState(false)
+  const providerID =
+    selection.providerFilter === allProvidersValue ||
+    selection.connectedProviderIDs.has(selection.providerFilter)
+      ? selection.providerFilter
+      : (selection.currentModel?.provider.id ?? allProvidersValue)
+  const advanced =
+    manualSelection || selection.recommendedModels(providerID).length === 0
   const onWheel = useWheelStep((direction) => {
     const model = advanced
       ? adjacentManualModel(selection, providerID, direction)
@@ -151,10 +157,10 @@ function ModelPicker({
         advanced={advanced}
         providerID={providerID}
         selection={selection}
-        setAdvanced={setAdvanced}
+        setAdvanced={setManualSelection}
         setDialog={setDialog}
         setOpen={setOpen}
-        setProviderID={setProviderID}
+        setProviderID={selection.setProviderFilter}
       />
     </Popover>
   )
@@ -281,7 +287,9 @@ function ModelPickerPanel({
         providerID={providerID}
         selection={selection}
       />
-      <ModelPickerBottomBar advanced={advanced} onChange={setAdvanced} />
+      {selection.recommendedModels(providerID).length > 0 ? (
+        <ModelPickerBottomBar advanced={advanced} onChange={setAdvanced} />
+      ) : null}
     </div>
   )
 }
@@ -528,12 +536,12 @@ function selectProviderChoice(
   setProviderID: (value: string) => void
 ) {
   const providerID = choice.provider?.id ?? allProvidersValue
-  setProviderID(providerID)
   if (choice.account && choice.provider) {
     void selection.setAccount(choice.provider.id, choice.account.label)
-    return
+  } else {
+    selectProviderRecommendation(selection, providerID)
   }
-  selectProviderRecommendation(selection, providerID)
+  setProviderID(providerID)
 }
 
 function providerModelGroups(selection: ModelSelection, providerID: string) {

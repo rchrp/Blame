@@ -77,6 +77,7 @@ type ModelSelectionState = {
   recent: ModelKey[]
   hidden: ModelKey[]
   accounts: Record<string, string>
+  providerFilter?: string
 }
 
 export type RecommendedSelectableModel = ModelRecommendation & {
@@ -202,6 +203,12 @@ export function useModelSelection(options: ModelSelectionOptions = {}) {
     directory: providerState.directory,
     emptyMessage: getEmptyMessage(providerState),
     providerGroups: groupModels(visibleModels),
+    providerFilter: state.providerFilter ?? allProvidersValue,
+    setProviderFilter: (providerID: string) =>
+      setModelState(providerState.directory, setState, {
+        ...readModelState(providerState.directory),
+        providerFilter: providerID,
+      }),
     models: visibleModels,
     recommendations: providerState.providers?.recommendations,
     refreshProviders: providerState.refresh,
@@ -940,6 +947,8 @@ function isModelState(value: unknown): value is ModelSelectionState {
   if (!value || typeof value !== "object") return false
   if (!("recent" in value) || !Array.isArray(value.recent)) return false
   if ("hidden" in value && !Array.isArray(value.hidden)) return false
+  if ("providerFilter" in value && typeof value.providerFilter !== "string")
+    return false
   if (
     "accounts" in value &&
     (!value.accounts ||
