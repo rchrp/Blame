@@ -1,9 +1,12 @@
 import { spawn } from "node:child_process";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { appendFile, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { writeRunnerPin } from "./sandbox-runner-pin.mjs";
 
 const action = process.argv[2];
+// --pin also writes the published image into the API's runner pin.
+const pin = process.argv.includes("--pin");
 const image = process.env.BLAME_SANDBOX_RUNNER_IMAGE_TAG;
 if (!image) throw new Error("BLAME_SANDBOX_RUNNER_IMAGE_TAG is required");
 if (!new Set(["build", "release", "sign"]).has(action))
@@ -34,6 +37,7 @@ if (action === "sign") {
   const immutableImage = `${imageRepository(image)}@${publishedDigest}`;
   await command("grype", [immutableImage, ...grypeArgs]);
   await sign(immutableImage, publishedDigest);
+  await recordRelease(immutableImage);
 } else {
   await command("pnpm", ["--filter", "@blame/sandbox-runner", "build"]);
   await buildImage("build");
@@ -55,6 +59,17 @@ if (action === "release") {
   const immutableImage = `${imageRepository(image)}@${publishedDigest}`;
   await command("grype", [immutableImage, ...grypeArgs]);
   await sign(immutableImage, publishedDigest);
+  await recordRelease(immutableImage);
+}
+
+async function recordRelease(immutableImage) {
+  if (pin) await writeRunnerPin(immutableImage, runnerVersion);
+  // GitHub Actions reads the released image and version from here.
+  if (process.env.GITHUB_OUTPUT)
+    await appendFile(
+      process.env.GITHUB_OUTPUT,
+      `image=${immutableImage}\nversion=${runnerVersion}\n`,
+    );
 }
 
 async function sign(immutableImage, publishedDigest) {

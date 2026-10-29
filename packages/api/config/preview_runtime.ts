@@ -1,4 +1,5 @@
 import env from '#start/env'
+import { sandboxRunnerPin } from '#config/sandbox_runner_pin'
 import {
   workspaceArtifactsReady,
   workspaceArtifactTransferHosts,
@@ -12,6 +13,8 @@ export function previewRuntimeConfig() {
     env.get('BLAME_PREVIEW_MAX_RETAINED_SUSPENDED'),
     4
   )
+  // The runner pinned in the repository, unless the deployment sets its own.
+  const runnerImage = env.get('BLAME_SANDBOX_RUNNER_IMAGE') ?? sandboxRunnerPin.image
   const maxUnreferencedBaselines = positiveInteger(
     env.get('BLAME_PREVIEW_BASELINE_MAX_UNREFERENCED'),
     1
@@ -42,9 +45,7 @@ export function previewRuntimeConfig() {
     leaseSeconds: positiveInteger(env.get('BLAME_PREVIEW_LEASE_SECONDS'), 90),
     rpoSeconds: Math.min(10, positiveInteger(env.get('BLAME_PREVIEW_RPO_SECONDS'), 10)),
     baselines: {
-      enabled:
-        env.get('BLAME_PREVIEW_BASELINES_ENABLED') ??
-        Boolean(env.get('BLAME_SANDBOX_RUNNER_IMAGE')),
+      enabled: env.get('BLAME_PREVIEW_BASELINES_ENABLED') ?? Boolean(runnerImage),
       retentionDays: positiveInteger(env.get('BLAME_PREVIEW_BASELINE_RETENTION_DAYS'), 7),
       maxUnreferenced:
         vercelPlan === 'hobby' ? Math.min(maxUnreferencedBaselines, 1) : maxUnreferencedBaselines,
@@ -59,8 +60,8 @@ export function previewRuntimeConfig() {
     workspaceEncryptionReady: workspaceArtifactsReady(),
     artifactTransferHosts: workspaceArtifactTransferHosts(),
     sandbox: {
-      image: env.get('BLAME_SANDBOX_RUNNER_IMAGE'),
-      runnerVersion: env.get('BLAME_SANDBOX_RUNNER_VERSION') ?? '0.2.20',
+      image: runnerImage,
+      runnerVersion: env.get('BLAME_SANDBOX_RUNNER_VERSION') ?? sandboxRunnerPin.version,
       protocolVersion: positiveInteger(env.get('BLAME_SANDBOX_PROTOCOL_VERSION'), 3),
       vercelPlan,
       timeoutMinutes: positiveInteger(env.get('BLAME_SANDBOX_TIMEOUT_MINUTES'), 60),

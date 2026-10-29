@@ -23,7 +23,7 @@
     "test": "turbo run test && pnpm test:semantic-harness-payload",
     "test:benchmark-corpus": "node --test tools/terminal_bench/corpus/corpus.test.mjs",
     "test:semantic-harness-payload": "node --test scripts/semantic-harness-payload.test.mjs scripts/runtime-tool-context.test.mjs scripts/runtime-hub-lifecycle.test.mjs scripts/runtime-docker-lifecycle.test.mjs scripts/runtime-sdk-payload.test.mjs scripts/runtime-node-install.test.mjs",
-    "test:release": "node --test scripts/release-preflight.test.mjs scripts/macos-signing.test.mjs scripts/desktop-release.test.mjs scripts/cline-sdk-update.test.mjs scripts/lima-image-chroot.test.mjs",
+    "test:release": "node --test scripts/sandbox-runner-pin.test.mjs scripts/release-preflight.test.mjs scripts/macos-signing.test.mjs scripts/desktop-release.test.mjs scripts/cline-sdk-update.test.mjs scripts/lima-image-chroot.test.mjs",
     "verify:runtime:macos": "node scripts/macos-runtime-image.mjs verify",
     "check:line-budgets": "node scripts/check-line-budgets.mjs",
     "licenses:extract": "node scripts/extract-open-source-projects.mjs",

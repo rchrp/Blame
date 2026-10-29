@@ -1,0 +1,98 @@
+name: Release sandbox runner
+
+# Builds, scans, publishes and signs the cloud preview runner, then opens a
+# pull request that pins it in the API. Bump packages/sandbox-runner's version
+# on main first. See RELEASING.md.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  # Keyless Sigstore signing with the workflow's identity.
+  id-token: write
+
+concurrency:
+  group: release-sandbox-runner
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    # Holds VERCEL_TOKEN; protect it with required reviewers.
+    environment: sandbox-runner-release
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+        with:
+          node-version: 24
+          save-cache: "false"
+      - uses: docker/setup-buildx-action@v4
+      - uses: sigstore/cosign-installer@v4
+      - id: grype
+        uses: anchore/scan-action/download-grype@v7
+      - run: echo "$(dirname "${{ steps.grype.outputs.cmd }}")" >> "$GITHUB_PATH"
+
+      - name: Log in to the Vercel registry
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ vars.VERCEL_TEAM_ID }}
+          VERCEL_PROJECT_ID: ${{ vars.VERCEL_RUNNER_PROJECT_ID }}
+        run: |
+          env_file="$RUNNER_TEMP/runner.env"
+          pnpm dlx vercel@65.5.0 env pull "$env_file" --yes --token "$VERCEL_TOKEN"
+          token="$(sed -n 's/^VERCEL_OIDC_TOKEN="\{0,1\}\([^"]*\)"\{0,1\}$/\1/p' "$env_file")"
+          rm -f "$env_file"
+          test -n "$token" || { echo "The Vercel project returned no OIDC token." >&2; exit 1; }
+          echo "::add-mask::$token"
+          printf '%s' "$token" | docker login vcr.vercel.com -u oidc --password-stdin
+
+      - id: version
+        env:
+          REPOSITORY: ${{ vars.BLAME_SANDBOX_RUNNER_REPOSITORY }}
+        run: |
+          version="$(node -p 'require("./packages/sandbox-runner/package.json").version')"
+          tag="$REPOSITORY:$version"
+          if docker buildx imagetools inspect "$tag" > /dev/null 2>&1; then
+            echo "Sandbox runner $version is already published. Bump its version first." >&2
+            exit 1
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - id: release
+        name: Build, scan, publish and sign
+        env:
+          BLAME_SANDBOX_RUNNER_IMAGE_TAG: ${{ steps.version.outputs.tag }}
+        run: node scripts/sandbox-runner-release.mjs release --pin
+
+      - name: Open the pin pull request
+        env:
+          # Pull requests opened with the default token do not start CI.
+          GH_TOKEN: ${{ secrets.CLINE_SDK_UPDATE_TOKEN || github.token }}
+          IMAGE: ${{ steps.release.outputs.image }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          branch="release/sandbox-runner-$VERSION"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git add packages/api/config/sandbox_runner_pin.ts
+          git commit -m "chore(api): pin sandbox runner $VERSION"
+          git push origin "$branch"
+          gh pr create --base main --head "$branch" \
+            --title "chore(api): pin sandbox runner $VERSION" \
+            --body "Pins the API to sandbox runner $VERSION, published and signed by run ${{ github.run_id }}.
+
+          \`$IMAGE\`
+
+          Merging deploys the API with this runner. If CI did not start, close and reopen this pull request before merging."
+          {
+            echo "### Sandbox runner $VERSION"
+            echo
+            echo "\`$IMAGE\`"
+            echo
+            echo "A pull request pins it in the API."
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -115,9 +115,22 @@ For Cline SDK update pull requests:
 
 ## Sandbox runner image
 
-The cloud preview sandbox runner image is still published manually with `pnpm release:sandbox-runner`. It is a container image, not a GitHub Release.
+The cloud preview sandbox runner image is published by the **Release sandbox runner** workflow, run by hand from the Actions tab on `main`. It is a container image, not a GitHub Release.
 
-Before releasing, log Docker in to the registry with a fresh OIDC token (it expires after 12 hours) from the linked `blame-sandbox-runtime` Vercel project: `vercel env pull`, then `docker login vcr.vercel.com -u oidc --password-stdin` with `VERCEL_OIDC_TOKEN`. Signing then asks you to approve a Sigstore login in the browser. If that code expires after the image was pushed, sign the published digest without rebuilding: `node scripts/sandbox-runner-release.mjs sign sha256:<digest>`.
+1. Bump `packages/sandbox-runner/package.json`'s version on `main`. The workflow refuses a version that is already published.
+2. Run the workflow. It builds the amd64 image, scans it with grype, pushes it to the Vercel registry, signs its digest with Sigstore using the workflow's GitHub identity (no browser), and opens a pull request that writes the image and version into `packages/api/config/sandbox_runner_pin.ts`.
+3. Merge that pull request. The API deploys with the new runner; code and runner always change together.
+
+Setup, once:
+
+- A GitHub environment `sandbox-runner-release`, with required reviewers, holding the secret `VERCEL_TOKEN` (a Vercel token that can read the `blame-sandbox-runtime` project's environment).
+- Repository variables `VERCEL_TEAM_ID`, `VERCEL_RUNNER_PROJECT_ID` (the `blame-sandbox-runtime` project) and `BLAME_SANDBOX_RUNNER_REPOSITORY` (for example `vcr.vercel.com/<team>/<project>/blame-runner`).
+- GitHub Actions allowed to open pull requests, as for the Cline SDK update. The optional `CLINE_SDK_UPDATE_TOKEN` also lets the pin pull request start CI.
+- Remove `BLAME_SANDBOX_RUNNER_IMAGE` and `BLAME_SANDBOX_RUNNER_VERSION` from the production API environment once the first pin is merged: when set, they override the pin. Self-hosted deployments that publish their own runner set both instead.
+
+The workflow's signature is verifiable by anyone: `cosign verify-blob` with the bundle from the `-signatures` image, `--certificate-identity-regexp 'https://github.com/rchrp/Blame/.github/workflows/release-sandbox-runner.yml@.*'` and `--certificate-oidc-issuer https://token.actions.githubusercontent.com`.
+
+To publish from a workstation instead, log Docker in to the registry with a fresh OIDC token (it expires after 12 hours) from the linked `blame-sandbox-runtime` Vercel project (`vercel env pull`, then `docker login vcr.vercel.com -u oidc --password-stdin` with `VERCEL_OIDC_TOKEN`) and run `pnpm release:sandbox-runner -- --pin`. Signing then asks you to approve a Sigstore login in the browser. If that code expires after the image was pushed, sign the published digest without rebuilding: `node scripts/sandbox-runner-release.mjs sign sha256:<digest> --pin`.
 
 `packages/sandbox-runner/grype.yaml` lists the critical findings the release scans accept because no fixed upstream build exists yet. Remove each entry once its fix ships.
 
@@ -134,9 +147,9 @@ Download the three `.image` files to one folder and run
 pins. Never replace a missing release with a mutable tag or an invented digest.
 Rebuild the runtime images to prefetch the display image after updating the pins.
 
-Build and publish sandbox runner 0.3.0 with `pnpm release:sandbox-runner` using
-the existing release configuration, then update the API runner version **and its
-verified image digest together**. Older runners keep serving version 2 web plans;
+Publish sandbox runner 0.3.0 with the **Release sandbox runner** workflow and
+merge its pin pull request: the API runner version and its verified image
+digest change together. Older runners keep serving version 2 web plans;
 terminal and display plans require version 3. Keep `BLAME_EXPERIMENTAL_SURFACES`
 enabled only for the surfaces being validated until the spec's acceptance matrix
 has passed. The first-use desktop ttyd installer supports runtimes predating
