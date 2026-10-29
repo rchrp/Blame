@@ -1,5 +1,5 @@
 import { test } from '@japa/runner'
-import { usesCurrentRunner } from '#services/preview_sessions/preview_session_service'
+import { usesCurrentRunner } from '#services/preview_sessions/preview_session_reuse'
 
 const sandbox = { image: 'vcr.vercel.com/blame/runner@sha256:new', runnerVersion: '0.3.2' }
 

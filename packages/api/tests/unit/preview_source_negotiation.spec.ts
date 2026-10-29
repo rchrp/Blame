@@ -1,4 +1,4 @@
-import { sourceImportUnchanged } from '#services/preview_sessions/preview_session_service'
+import { sourceImportUnchanged } from '#services/preview_sessions/preview_session_reuse'
 import {
   baselineImportAction,
   liveSourceDeltaMatches,

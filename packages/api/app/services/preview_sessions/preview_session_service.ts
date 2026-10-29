@@ -24,6 +24,10 @@ import PreviewProjectBaselineService, {
   type PreviewBaselineSourceMetadata,
 } from '#services/preview_baselines/preview_project_baseline_service'
 import { previewRuntimeConfig, type PreviewRuntimeConfig } from '#config/preview_runtime'
+import {
+  sourceImportUnchanged,
+  usesCurrentRunner,
+} from '#services/preview_sessions/preview_session_reuse'
 import { DateTime } from 'luxon'
 import { createHash } from 'node:crypto'
 import {
@@ -154,7 +158,6 @@ export default class PreviewSessionService {
         input.userStoryId,
         input.profile
       )
-      // A sandbox started with another runner fails its handshake, so recreate it.
       if (reusable?.planHash === planHash && usesCurrentRunner(reusable, this.config.sandbox)) {
         if (
           ['failed', 'provisioning', 'resuming', 'suspended', 'unprovisioned'].includes(
@@ -965,22 +968,6 @@ function validRecentConsent(value: string) {
   return consent.toUTC().toISO()!
 }
 
-export function sourceImportUnchanged(
-  session: Pick<
-    import('@blame/preview-runtime').PreviewSessionView,
-    'state' | 'pendingDeltaArtifactId' | 'workspaceHash' | 'sourceRevision'
-  >,
-  metadata: PreviewBaselineSourceMetadata
-) {
-  return (
-    session.state.sync === 'clean' &&
-    !session.pendingDeltaArtifactId &&
-    session.workspaceHash === metadata.workspaceHash &&
-    session.sourceRevision === metadata.baseRevision &&
-    ['running', 'suspended'].includes(session.state.host)
-  )
-}
-
 function validateOperationId(value: string) {
   if (!/^[A-Za-z0-9:_-]{8,80}$/.test(value)) throw new Error('Invalid operation ID.')
 }
@@ -997,13 +984,4 @@ function assertOwner(actual: string, expected: string) {
 
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error)
-}
-
-export function usesCurrentRunner(
-  session: { runnerVersion?: string; imageDigest?: string },
-  sandbox: Pick<PreviewRuntimeConfig['sandbox'], 'image' | 'runnerVersion'>
-) {
-  const digest = sandbox.image?.split('@')[1]
-  if (session.runnerVersion && session.runnerVersion !== sandbox.runnerVersion) return false
-  return !digest || !session.imageDigest || session.imageDigest === digest
 }
