@@ -154,7 +154,8 @@ export default class PreviewSessionService {
         input.userStoryId,
         input.profile
       )
-      if (reusable?.planHash === planHash) {
+      // A sandbox started with another runner fails its handshake, so recreate it.
+      if (reusable?.planHash === planHash && usesCurrentRunner(reusable, this.config.sandbox)) {
         if (
           ['failed', 'provisioning', 'resuming', 'suspended', 'unprovisioned'].includes(
             reusable.state.host
@@ -996,4 +997,13 @@ function assertOwner(actual: string, expected: string) {
 
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error)
+}
+
+export function usesCurrentRunner(
+  session: { runnerVersion?: string; imageDigest?: string },
+  sandbox: Pick<PreviewRuntimeConfig['sandbox'], 'image' | 'runnerVersion'>
+) {
+  const digest = sandbox.image?.split('@')[1]
+  if (session.runnerVersion && session.runnerVersion !== sandbox.runnerVersion) return false
+  return !digest || !session.imageDigest || session.imageDigest === digest
 }
