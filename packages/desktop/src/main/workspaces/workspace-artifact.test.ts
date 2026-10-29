@@ -69,7 +69,15 @@ for (const configuration of ["committed", "untracked", "edited"] as const) {
         const bundle = join(transport, "repository.bundle");
         const clone = join(transport, "checkout");
         await writeFile(bundle, entries.get(".blame/repository.bundle")!);
-        await exec("git", ["clone", "--quiet", bundle, clone]);
+        await exec("git", [
+          "clone",
+          "--quiet",
+          "--branch",
+          "main",
+          "--single-branch",
+          bundle,
+          clone,
+        ]);
         await assert.rejects(readFile(join(clone, "archives/results.zip")), {
           code: "ENOENT",
         });
