@@ -23,7 +23,6 @@ const sandboxOnlyKeys = new Set([
   "pids_limit",
   "read_only",
   "security_opt",
-  "tmpfs",
 ]);
 
 type ComposeService = Record<string, unknown> & {

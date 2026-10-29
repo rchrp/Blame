@@ -26,12 +26,19 @@ export async function serveRunnerRequest(
         code: runnerErrorCode(error),
         message:
           error instanceof Error
-            ? error.message.slice(0, 500)
+            ? boundedMessage(error.message)
             : "Runner request failed.",
       },
     };
   }
 }
+// A failing command reports its cause last, so a long message keeps its end.
+export function boundedMessage(message: string, limit = 1_500) {
+  if (message.length <= limit) return message;
+  const head = message.slice(0, 200);
+  return `${head}\n...\n${message.slice(-(limit - head.length - 5))}`;
+}
+
 function validatedRequestPath(value: string) {
   if (
     !value.startsWith(requestRoot) ||

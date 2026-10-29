@@ -209,7 +209,9 @@ function serviceUser(service: ServiceLaunchPlan, target: ComposeTarget) {
 }
 
 // `init` gives every container a PID 1 that forwards signals, so services
-// stop in a moment instead of waiting for the kill timeout.
+// stop in a moment instead of waiting for the kill timeout. /tmp stays on the
+// sandbox disk, as it does locally: it holds HOME and the package managers'
+// caches and builds, which outgrow a memory-backed tmpfs.
 function container(context: RenderContext, service: Record<string, unknown>) {
   const hardened =
     context.target.kind === "sandbox"
@@ -218,7 +220,6 @@ function container(context: RenderContext, service: Record<string, unknown>) {
           security_opt: ["no-new-privileges:true"],
           pids_limit: 512,
           read_only: false,
-          tmpfs: ["/tmp:rw,noexec,nosuid,size=256m"],
         }
       : {};
   return withoutEmpty({
