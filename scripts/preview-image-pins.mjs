@@ -15,19 +15,31 @@ for (const kind of ["display", "node", "tauri"]) {
     throw new Error(`Invalid immutable ${kind} image.`);
   pins[kind] = image;
 }
-await writeFile(
-  "packages/preview-runtime/src/compose/blame-images.ts",
-  `// Generated from published, signed preview images.\nexport const publishedPreviewImages = ${JSON.stringify(pins, null, 2)};\n\nexport function previewDisplayImage(override?: string) {\n  const image = override ?? publishedPreviewImages.display;\n  if (!/^[a-z0-9./:_-]+@sha256:[a-f0-9]{64}$/.test(image)) throw new Error("Screen previews need a published image pinned by digest.");\n  return image;\n}\n`,
+const updates = new Map();
+const imagesPath = "packages/preview-runtime/src/compose/blame-images.ts";
+const source = await readFile(imagesPath, "utf8");
+const declaration =
+  /^(export const publishedPreviewImages\b[\s\S]*?=\s*)\{[\s\S]*?^\}/m;
+if (!declaration.test(source))
+  throw new Error(`Cannot find the preview image pins in ${imagesPath}.`);
+updates.set(
+  imagesPath,
+  source.replace(
+    declaration,
+    (_, prefix) => `${prefix}${JSON.stringify(pins, null, 2)}`,
+  ),
 );
 
 for (const platform of ["macos", "windows"]) {
   const path = `packages/desktop/resources/runtime/${platform}/scripts/provision-blame-runtime.sh`;
   const source = await readFile(path, "utf8");
-  await writeFile(
+  const assignment = /^preview_display_image=".*"/m;
+  if (!assignment.test(source))
+    throw new Error(`Cannot find the display image pin in ${path}.`);
+  updates.set(
     path,
-    source.replace(
-      /^preview_display_image=".*"/m,
-      `preview_display_image="${pins.display}"`,
-    ),
+    source.replace(assignment, `preview_display_image="${pins.display}"`),
   );
 }
+
+for (const [path, content] of updates) await writeFile(path, content);
