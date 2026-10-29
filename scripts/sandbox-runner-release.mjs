@@ -39,7 +39,14 @@ if (action === "sign") {
   await sign(immutableImage, publishedDigest);
   await recordRelease(immutableImage);
 } else {
-  await command("pnpm", ["--filter", "@blame/sandbox-runner", "build"]);
+  // Turbo builds the workspace packages the runner imports first.
+  await command("pnpm", [
+    "exec",
+    "turbo",
+    "run",
+    "build",
+    "--filter=@blame/sandbox-runner",
+  ]);
   await buildImage("build");
 }
 if (action === "release") {
