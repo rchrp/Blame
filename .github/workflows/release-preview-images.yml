@@ -80,5 +80,5 @@ jobs:
           RELEASE_VERSION: ${{ inputs.version }}
         run: |
           release="preview-images-v$RELEASE_VERSION"
-          gh release view "$release" >/dev/null 2>&1 || gh release create "$release" --target "$GITHUB_SHA" --title "Preview images $RELEASE_VERSION" --notes "Signed GUI images, immutable pins, license notices and corresponding distribution sources." || gh release view "$release"
+          gh release view "$release" >/dev/null 2>&1 || gh release create "$release" --latest=false --target "$GITHUB_SHA" --title "Preview images $RELEASE_VERSION" --notes "Signed GUI images, immutable pins, license notices and corresponding distribution sources." || gh release view "$release"
           gh release upload "$release" '${{ matrix.kind }}.image' '${{ matrix.kind }}-sources.tar.gz' --clobber
