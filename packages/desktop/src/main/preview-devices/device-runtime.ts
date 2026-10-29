@@ -5,7 +5,7 @@ import { randomUUID } from "node:crypto";
 import { app, dialog, shell } from "electron";
 import { existsSync } from "node:fs";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { deviceHost, checked } from "./device-host.ts";
 import { IosDriver } from "./ios-driver.ts";
 import { DeviceTargetService } from "./device-target-service.ts";
@@ -258,7 +258,10 @@ export class DeviceRuntime {
     const story: DeviceStory = {
       id: scope.storyId,
       projectId: scope.projectId,
-      title: scope.title ?? scope.storyId,
+      // Agents have no title: the worktree folder names the story too.
+      title:
+        scope.title ??
+        (scope.worktree ? basename(scope.worktree) : scope.storyId),
       worktree: scope.worktree,
       buildRoot: scope.worktree,
       workspaceMode: scope.workspaceMode ?? "local-container",
@@ -384,11 +387,7 @@ export class DeviceRuntime {
         );
       } else if (id === "axe")
         this.ios.useAxe(await installAxe(this.root, deviceHost));
-      else if (id === "ios-runtime")
-        await checked(deviceHost, "xcodebuild", ["-downloadPlatform", "iOS"], {
-          timeoutMs: 60 * 60000,
-          output,
-        });
+      else if (id === "ios-runtime") await this.ios.downloadRuntime(output);
     })().finally(() => {
       this.installations.delete(key);
       this.installSteps.delete(scope.storyId);

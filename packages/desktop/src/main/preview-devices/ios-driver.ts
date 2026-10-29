@@ -174,6 +174,13 @@ export class IosDriver implements DeviceDriver {
     })().then((directory) => (this.resolvedDeveloperDir = directory));
     return this.developerDir;
   }
+  /** Downloads the iOS Simulator runtime with the Xcode Blame uses. */
+  async downloadRuntime(output: (text: string) => void) {
+    await checked(this.host, "xcodebuild", ["-downloadPlatform", "iOS"], {
+      timeoutMs: 60 * 60000,
+      output,
+    });
+  }
   async ensureDevice(
     story: DeviceStory,
     target: PreviewManifestDeviceTarget,
