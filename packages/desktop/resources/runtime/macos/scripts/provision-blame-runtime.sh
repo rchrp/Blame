@@ -534,7 +534,7 @@ json_worker_count = max(1, min(2, os.cpu_count() or 1))
 large_json_threshold = 64 * 1024
 ignored_env_directories = {".git", ".blame", "build", "coverage", "dist", "node_modules", "out"}
 env_template_suffixes = (".example", ".sample", ".template")
-runtime_agent_version = "10"
+runtime_agent_version = "11"
 
 def serialize_json_line(value):
     return json.dumps(value, separators=(",", ":")) + "\n"
@@ -892,6 +892,7 @@ def run_node_json(script, timeout=15):
 hub_process = None
 hub_result_cache = None
 hub_lock = threading.Lock()
+hub_startup_timeout = 60
 
 def read_line_with_timeout(pipe, timeout):
     result = [None]
@@ -900,6 +901,8 @@ def read_line_with_timeout(pipe, timeout):
     t = threading.Thread(target=read, daemon=True)
     t.start()
     t.join(timeout)
+    if t.is_alive():
+        raise TimeoutError("Cline hub readiness deadline exceeded")
     return result[0]
 
 def cline_hub_build_id():
@@ -1072,7 +1075,12 @@ closeSync({ready_write});
 
     threading.Thread(target=monitor_hub, args=(proc,), daemon=True).start()
     with os.fdopen(ready_read, "r", encoding="utf-8") as ready_pipe:
-        line = read_line_with_timeout(ready_pipe, 10)
+        try:
+            line = read_line_with_timeout(ready_pipe, hub_startup_timeout)
+        except TimeoutError:
+            proc.kill()
+            proc.wait()
+            raise RuntimeError(f"Cline hub startup timed out after {hub_startup_timeout} seconds; see {log_path}") from None
         if not line:
             if proc.poll() is None:
                 proc.kill()

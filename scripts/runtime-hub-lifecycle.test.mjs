@@ -29,6 +29,11 @@ export function createLocalHubScheduleRuntimeHandlers() { return {}; }
 export async function ensureHubServer({port}) {
   console.log("startup log before readiness");
   process.stdout.on("error", () => process.exit(71));
+  if (process.env.TEST_HUB_TIMEOUT === "1") {
+    setInterval(() => {}, 1000);
+    await new Promise(() => {});
+  }
+  await new Promise(resolve => setTimeout(resolve, 750));
   const server = http.createServer((req, res) => {
     process.stdout.write("runtime log ".repeat(25000) + "\\n");
     res.end(JSON.stringify({ok:true}));
@@ -65,7 +70,15 @@ def safe_run(args, **kwargs):
     return real_run(args, **kwargs)
 import socket, time
 subprocess.run = safe_run
-result = run_cline_hub_ensure({})
+# Scale the startup clock: 750 ms exceeds the former 10 s budget / 20,
+# while leaving headroom in the new budget for slower CI machines.
+real_read_line = read_line_with_timeout
+read_line_with_timeout = lambda pipe, timeout: real_read_line(pipe, timeout / 20)
+try:
+    result = run_cline_hub_ensure({})
+except Exception as error:
+    print(str(error), file=sys.stderr)
+    sys.exit(1)
 print(json.dumps({"action":result["action"],"status":result["status"]}), flush=True)
 '''
     worker.write_text(body.replace('if __name__ == "__main__":', 'if False:') + footer)
@@ -104,6 +117,13 @@ print(json.dumps({"action":result["action"],"status":result["status"]}), flush=T
             results = list(pool.map(lambda _: ensure(), range(2)))
         assert sorted(r["action"] for r in results) == ["connected", "started"], results
         health()
+        os.kill(pid(), signal.SIGTERM)
+        time.sleep(0.15)
+        env["TEST_HUB_TIMEOUT"] = "1"
+        failed = subprocess.run([sys.executable, str(worker)], capture_output=True, text=True, env=env, timeout=15)
+        assert failed.returncode != 0, "A hub that never becomes ready must time out"
+        assert "Cline hub startup timed out after 60 seconds" in failed.stderr, failed.stderr
+        assert "exit=-9" not in failed.stderr, failed.stderr
     finally:
         try: os.kill(pid(), signal.SIGTERM)
         except (FileNotFoundError, ProcessLookupError): pass
@@ -111,7 +131,7 @@ print(json.dumps({"action":result["action"],"status":result["status"]}), flush=T
 
 for (const platform of ["macos", "windows"]) {
   test(
-    `${platform} hub survives its launcher, concurrent starts, and SDK replacement`,
+    `${platform} hub handles delayed readiness, concurrent starts, SDK replacement, and startup timeouts`,
     { skip: !pythonAvailable },
     () => {
       const path = resolve(

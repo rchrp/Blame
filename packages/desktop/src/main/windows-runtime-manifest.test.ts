@@ -121,7 +121,7 @@ test("keeps managed runtime agent revisions aligned", async () => {
     const manifest = JSON.parse(
       await readFile(path, "utf8"),
     ) as WindowsRuntimeManifest;
-    assert.equal(manifest.runtimeAgentVersion, "10");
+    assert.equal(manifest.runtimeAgentVersion, "11");
   }
 });
 
