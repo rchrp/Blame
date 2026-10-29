@@ -27,16 +27,10 @@ export function PhoneFrame({
     return () => observer.disconnect()
   }, [width, height])
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      <div
-        className="border-b px-3 py-2 text-sm text-muted-foreground"
-        title="The native app may differ from this web version."
-      >
-        Web version
-      </div>
+    <div className="flex h-full min-h-0 flex-col bg-muted/20 pt-[64px]">
       <div
         ref={element}
-        className="flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-muted/20 p-3"
+        className="flex min-h-0 flex-1 items-center justify-center overflow-hidden p-3"
       >
         <div
           className="relative shrink-0 overflow-hidden rounded-2xl border bg-background"
@@ -45,6 +39,12 @@ export function PhoneFrame({
           {children}
         </div>
       </div>
+      <p
+        className="pb-3 text-center text-xs text-muted-foreground"
+        title="The native app may differ from this web version."
+      >
+        Web version
+      </p>
     </div>
   )
 }

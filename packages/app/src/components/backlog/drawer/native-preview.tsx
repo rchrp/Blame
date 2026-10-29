@@ -1,3 +1,4 @@
+import { cn } from "@/lib/utils"
 import * as React from "react"
 
 import {
@@ -45,11 +46,14 @@ type NativePreviewPanelProps = {
   source: string
   storageKey: string
   visible: boolean
+  /** Fills its container without the page margins, inside a device frame. */
+  bare?: boolean
 }
 
 export type PreviewCaptureHandler = () => Promise<File | undefined>
 
 type NativePreviewFrameProps = {
+  bare?: boolean
   ambilightColor?: PreviewAmbilightColor
   browserId?: string
   client: PreviewBrowserClient
@@ -138,6 +142,7 @@ export function NativePreviewPanel({
   source,
   storageKey,
   visible,
+  bare,
 }: NativePreviewPanelProps) {
   const surfaceRef = React.useRef<HTMLDivElement>(null)
   const handleState = React.useCallback(
@@ -176,6 +181,7 @@ export function NativePreviewPanel({
 
   return (
     <NativePreviewFrame
+      bare={bare}
       ambilightColor={ambilightColor}
       browserId={browserId}
       client={client}
@@ -202,6 +208,7 @@ function useNativePreviewCapture(
 }
 
 function NativePreviewFrame({
+  bare,
   ambilightColor,
   browserId,
   client,
@@ -209,9 +216,17 @@ function NativePreviewFrame({
   surfaceRef,
 }: NativePreviewFrameProps) {
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-muted/20 px-4 pt-[72px] pb-4">
+    <div
+      className={cn(
+        "flex h-full min-h-0 flex-col overflow-hidden",
+        !bare && "bg-muted/20 px-4 pt-[72px] pb-4"
+      )}
+    >
       <div
-        className="relative min-h-0 flex-1 overflow-hidden rounded-lg border bg-background transition-shadow duration-700"
+        className={cn(
+          "relative min-h-0 flex-1 overflow-hidden bg-background transition-shadow duration-700",
+          !bare && "rounded-lg border"
+        )}
         style={{ boxShadow: previewAmbilightShadow(ambilightColor) }}
       >
         <div ref={surfaceRef} className="h-full w-full" />

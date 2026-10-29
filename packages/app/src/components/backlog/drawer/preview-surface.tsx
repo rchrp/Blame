@@ -164,6 +164,7 @@ function PhonePreview({
     <PhoneFrame device={device}>
       <NativePreviewPanel
         {...native}
+        bare
         client={client}
         sessionKey={`${native.sessionKey}:${device}`}
         storageKey={native.storageKey}
