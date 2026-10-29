@@ -3,6 +3,7 @@ import PreviewEdgeRouteService from '#services/preview_gateway/preview_edge_rout
 import { vercelNetworkPolicy } from '#services/sandboxes/vercel_network_policy'
 import WorkspaceArtifactService from '#services/workspace_artifacts/workspace_artifact_service'
 import { Sandbox, Snapshot, type NetworkPolicy } from '@vercel/sandbox'
+import { currentWorkspaceSnapshotPolicy } from '@blame/preview-runtime/workspace-ignore'
 import {
   ATTR_BLAME_OPERATION_STATUS,
   ATTR_BLAME_RUNTIME_NAME,
@@ -735,6 +736,14 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
       throw runnerFailure(
         'RUNNER_VERSION_INCOMPATIBLE',
         `Runner version ${response.runnerVersion} is incompatible with control plane version ${this.config.sandbox.runnerVersion}.`
+      )
+    }
+    if (
+      !response.capabilities.workspaceSnapshotPolicies?.includes(currentWorkspaceSnapshotPolicy)
+    ) {
+      throw runnerFailure(
+        'RUNNER_WORKSPACE_POLICY_INCOMPATIBLE',
+        `Runner ${response.runnerVersion} does not support ${currentWorkspaceSnapshotPolicy}. Publish and pin the updated sandbox runner before using cloud previews.`
       )
     }
     if (

@@ -46,6 +46,18 @@ export async function snapshotWorkspace(
   };
 }
 
+export async function readWorkspaceCloudIgnore(root: string) {
+  const path = join(root, blameignoreFileName);
+  try {
+    if (!(await lstat(path)).isFile())
+      throw new Error(".blameignore must be a regular file");
+    return await readFile(path, "utf8");
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    return undefined;
+  }
+}
+
 export function forbiddenWorkspacePath(path: string) {
   const normalized = path.replaceAll("\\", "/").toLowerCase();
   const segments = normalized.split("/");

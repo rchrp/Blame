@@ -16,12 +16,15 @@ import { createGunzip } from "node:zlib";
 import { extract } from "tar-stream";
 import {
   parseWorkspaceSnapshotPolicy,
+  blameignoreFileName,
+  WorkspaceIgnore,
   type WorkspaceSnapshotPolicy,
 } from "@blame/preview-runtime/workspace-ignore";
 import { WorkspaceSyncConflict } from "./workspace-sync-conflict.ts";
 import {
   assertSafeSymlink,
   forbiddenWorkspacePath,
+  readWorkspaceCloudIgnore,
   snapshotWorkspace,
   type WorkspaceFileMetadata,
 } from "./workspace-snapshot.ts";
@@ -104,12 +107,29 @@ async function applyTransaction(
   entries: Map<string, ArchiveEntry>,
   manifest: DeltaManifest,
 ) {
+  const rules = new WorkspaceIgnore(manifest.snapshotPolicy);
+  const control = entries.get(`files/${blameignoreFileName}`);
+  if (manifest.snapshotPolicy === "blameignore-v1") {
+    if (control && control.type !== "file")
+      throw new Error(".blameignore must be a regular file");
+    const content = manifest.changed.includes(blameignoreFileName)
+      ? control?.content?.toString("utf8")
+      : manifest.deleted.includes(blameignoreFileName)
+        ? undefined
+        : await readWorkspaceCloudIgnore(root);
+    rules.addCloud(content ?? "");
+    if (manifest.changed.some((path) => rules.cloudIgnores(path)))
+      throw new Error("Workspace delta changes a cloud-excluded path");
+  }
+  // Removing files from the cloud view is not a request to delete the local
+  // originals. The final hash ignores them under the new configuration.
+  const deleted = manifest.deleted.filter((path) => !rules.cloudIgnores(path));
+  const paths = [...new Set([...manifest.changed, ...deleted])].sort();
   const transaction = await mkdtemp(
     join(dirname(root), ".blame-workspace-sync-"),
   );
   const staged = join(transaction, "staged");
   const backup = join(transaction, "backup");
-  const paths = [...new Set([...manifest.changed, ...manifest.deleted])].sort();
   const replaced = new Set<string>();
   try {
     for (const path of manifest.changed) {
@@ -168,7 +188,8 @@ async function readDeltaArchive(content: Uint8Array) {
         if (header.type === "file") {
           const chunks: Buffer[] = [];
           for await (const chunk of stream) {
-            if (!Buffer.isBuffer(chunk)) throw new Error("Archive stream emitted non-binary data.");
+            if (!Buffer.isBuffer(chunk))
+              throw new Error("Archive stream emitted non-binary data.");
             expandedBytes += Buffer.byteLength(chunk);
             if (expandedBytes > 1_000_000_000)
               throw new Error("Delta expands beyond its limit");

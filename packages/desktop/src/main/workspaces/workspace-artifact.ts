@@ -19,6 +19,7 @@ import { pack } from "tar-stream";
 import { pipeline } from "node:stream/promises";
 import {
   currentWorkspaceSnapshotPolicy,
+  blameignoreFileName,
   gitignoreFileName,
   WorkspaceIgnore,
   workspaceSnapshotHash,
@@ -26,6 +27,7 @@ import {
 } from "@blame/preview-runtime/workspace-ignore";
 import {
   forbiddenWorkspacePath,
+  readWorkspaceCloudIgnore,
   snapshotWorkspace,
   type WorkspaceSnapshot,
 } from "./workspace-snapshot.ts";
@@ -79,6 +81,8 @@ type CanonicalEntry = {
   type: "blob";
   object: string;
   path: string;
+  /** Current control-file content, stored only in the temporary Git repository. */
+  content?: string;
 };
 
 type CanonicalTree = {
@@ -95,12 +99,22 @@ export type PreparedWorkspaceSource = {
 
 export async function prepareWorkspaceSource(
   root: string,
+  attempt = 0,
 ): Promise<PreparedWorkspaceSource> {
   const [sourceRevision, snapshot, canonical] = await Promise.all([
     git(root, ["rev-parse", "HEAD"]),
     snapshotWorkspace(root),
     canonicalTree(root),
   ]);
+  if (
+    snapshot.files[blameignoreFileName]?.sha256 !==
+    canonical.files[blameignoreFileName]?.sha256
+  ) {
+    if (attempt < 2) return prepareWorkspaceSource(root, attempt + 1);
+    throw new Error(
+      ".blameignore kept changing while preparing the cloud workspace",
+    );
+  }
   return {
     root,
     snapshot,
@@ -426,6 +440,9 @@ function matchingPreparedSource(
 }
 
 async function canonicalTree(root: string): Promise<CanonicalTree> {
+  const cloudIgnore = await readWorkspaceCloudIgnore(root);
+  const cloudRules = new WorkspaceIgnore(currentWorkspaceSnapshotPolicy);
+  cloudRules.addCloud(cloudIgnore ?? "");
   const entries = (await gitOutput(root, ["ls-tree", "-rz", "-r", "HEAD"]))
     .split("\0")
     .filter(Boolean)
@@ -441,7 +458,12 @@ async function canonicalTree(root: string): Promise<CanonicalTree> {
       if (type !== "blob" || !["100644", "100755", "120000"].includes(mode)) {
         throw new Error("Repository tree contains an unsupported entry");
       }
-      if (forbiddenWorkspacePath(path)) return undefined;
+      if (
+        forbiddenWorkspacePath(path) ||
+        path === blameignoreFileName ||
+        cloudRules.cloudIgnores(path)
+      )
+        return undefined;
       return {
         mode: mode as CanonicalEntry["mode"],
         type: "blob",
@@ -451,9 +473,33 @@ async function canonicalTree(root: string): Promise<CanonicalTree> {
     })
     .filter((entry): entry is CanonicalEntry => Boolean(entry))
     .sort((left, right) => left.path.localeCompare(right.path));
-  const objects = await gitObjectMetadata(root, entries);
+  if (cloudIgnore !== undefined) {
+    entries.push({
+      mode: "100644",
+      type: "blob",
+      path: blameignoreFileName,
+      object: (
+        await gitWithInput(root, ["hash-object", "--stdin"], cloudIgnore)
+      ).trim(),
+      content: cloudIgnore,
+    });
+    entries.sort((left, right) => left.path.localeCompare(right.path));
+  }
+  const objects = await gitObjectMetadata(
+    root,
+    entries.filter((entry) => entry.content === undefined),
+  );
   const files: Record<string, SnapshotFile> = {};
   for (const entry of entries) {
+    if (entry.content !== undefined) {
+      files[entry.path] = {
+        type: "file",
+        mode: 0o644,
+        size: Buffer.byteLength(entry.content),
+        sha256: createHash("sha256").update(entry.content).digest("hex"),
+      };
+      continue;
+    }
     const object = objects.get(entry.object);
     if (!object) throw new Error("Repository object metadata is unavailable");
     if (entry.mode === "120000") {
@@ -478,7 +524,7 @@ async function canonicalTree(root: string): Promise<CanonicalTree> {
   }
   return {
     entries,
-    files: await synchronizedCanonicalFiles(root, entries, files),
+    files: await synchronizedCanonicalFiles(root, entries, files, cloudIgnore),
   };
 }
 
@@ -488,8 +534,10 @@ async function synchronizedCanonicalFiles(
   root: string,
   entries: CanonicalEntry[],
   files: Record<string, SnapshotFile>,
+  cloudIgnore?: string,
 ) {
   const rules = new WorkspaceIgnore(currentWorkspaceSnapshotPolicy);
+  rules.addCloud(cloudIgnore ?? "");
   if (rules.policy === "legacy") return files;
   for (const entry of entries) {
     if (entry.mode === "120000") continue;
@@ -751,6 +799,18 @@ async function createSanitizedBundle(
     },
   );
   const indexFile = join(repository, ".git", "blame-preview-index");
+  for (const entry of entries) {
+    if (entry.content === undefined) continue;
+    const object = (
+      await gitWithInput(
+        repository,
+        ["hash-object", "-w", "--stdin"],
+        entry.content,
+      )
+    ).trim();
+    if (object !== entry.object)
+      throw new Error("Cloud ignore configuration changed during packaging");
+  }
   const indexEnvironment = { GIT_INDEX_FILE: indexFile };
   const index = entries
     .map(

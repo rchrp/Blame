@@ -25,7 +25,7 @@ export type WorkspaceSnapshotPolicy =
   "legacy" | "gitignore-v1" | "blameignore-v1";
 
 export const currentWorkspaceSnapshotPolicy: WorkspaceSnapshotPolicy =
-  "gitignore-v1";
+  "blameignore-v1";
 
 export const workspaceSnapshotPolicies: readonly WorkspaceSnapshotPolicy[] = [
   "legacy",
@@ -87,12 +87,16 @@ export class WorkspaceIgnore {
   }
 
   cloudIgnores(path: string, directory = false) {
-    if (
-      this.policy !== "blameignore-v1" ||
-      path === blameignoreFileName ||
-      basename(path) === gitignoreFileName
-    )
+    if (this.policy !== "blameignore-v1" || path === blameignoreFileName)
       return false;
+    if (basename(path) === gitignoreFileName) {
+      const parts = path.split("/");
+      return parts
+        .slice(0, -1)
+        .some((_, index) =>
+          this.cloudRules?.ignores(`${parts.slice(0, index + 1).join("/")}/`),
+        );
+    }
     return this.cloudRules?.ignores(directory ? `${path}/` : path) ?? false;
   }
 

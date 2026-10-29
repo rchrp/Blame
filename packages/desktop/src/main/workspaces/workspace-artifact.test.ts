@@ -1,6 +1,13 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { mkdir, mkdtemp, rm, unlink, writeFile } from "node:fs/promises";
+import {
+  mkdir,
+  mkdtemp,
+  readFile,
+  rm,
+  unlink,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Readable } from "node:stream";
@@ -18,6 +25,82 @@ import { workspaceSourceMode } from "./baseline-transfer.ts";
 import { snapshotWorkspace } from "./workspace-snapshot.ts";
 
 const exec = promisify(execFile);
+
+for (const configuration of ["committed", "untracked", "edited"] as const) {
+  test(`cloud exclusions remove Git objects and source files with ${configuration} rules`, async () => {
+    const root = await mkdtemp(join(tmpdir(), "blame-cloud-bundle-"));
+    try {
+      await exec("git", ["init", root]);
+      await mkdir(join(root, "archives"));
+      await writeFile(join(root, "index.js"), "console.log('app')\n");
+      await writeFile(join(root, ".gitignore"), ".blameignore\n");
+      await writeFile(
+        join(root, "archives/results.zip"),
+        "excluded-private-archive-data\n",
+      );
+      await writeFile(join(root, "archives/keep.json"), "{}\n");
+      const rules = "/archives/**\n# Manual exception\n!/archives/keep.json\n";
+      if (configuration !== "untracked") {
+        await writeFile(
+          join(root, ".blameignore"),
+          configuration === "edited" ? "# Old configuration\n" : rules,
+        );
+        await exec("git", ["-C", root, "add", "--force", ".blameignore"]);
+      }
+      await exec("git", ["-C", root, "add", "."]);
+      await exec("git", [
+        "-C",
+        root,
+        "-c",
+        "user.name=Blame Test",
+        "-c",
+        "user.email=test@blame.so",
+        "commit",
+        "-m",
+        "base",
+      ]);
+      await writeFile(join(root, ".blameignore"), rules);
+      const artifact = await buildWorkspaceArtifact(root);
+      const entries = await archiveEntries(artifact.content);
+      assert.equal(entries.has("workspace/archives/results.zip"), false);
+      assert.equal(entries.has("workspace/archives/keep.json"), true);
+      const transport = await mkdtemp(join(tmpdir(), "blame-cloud-clone-"));
+      try {
+        const bundle = join(transport, "repository.bundle");
+        const clone = join(transport, "checkout");
+        await writeFile(bundle, entries.get(".blame/repository.bundle")!);
+        await exec("git", ["clone", "--quiet", bundle, clone]);
+        await assert.rejects(readFile(join(clone, "archives/results.zip")), {
+          code: "ENOENT",
+        });
+        assert.equal(
+          await readFile(join(clone, ".blameignore"), "utf8"),
+          rules,
+        );
+        assert.equal(
+          (await snapshotWorkspace(clone)).hash,
+          artifact.workspaceHash,
+        );
+        const { stdout: history } = await exec("git", [
+          "-C",
+          clone,
+          "log",
+          "--all",
+          "-p",
+        ]);
+        assert.equal(history.includes("excluded-private-archive-data"), false);
+      } finally {
+        await rm(transport, { recursive: true, force: true });
+      }
+      assert.equal(
+        await readFile(join(root, "archives/results.zip"), "utf8"),
+        "excluded-private-archive-data\n",
+      );
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+}
 
 test("desktop snapshots apply cloud exclusions while preserving manual exceptions", async () => {
   const root = await mkdtemp(join(tmpdir(), "blame-desktop-cloud-ignore-"));
@@ -217,7 +300,7 @@ test("leaves gitignored files out of deltas and declares the snapshot rule", asy
     const manifest = JSON.parse(
       entries.get(".blame/delta-manifest.json")!.toString("utf8"),
     );
-    assert.equal(manifest.snapshotPolicy, "gitignore-v1");
+    assert.equal(manifest.snapshotPolicy, "blameignore-v1");
     assert.deepEqual(manifest.changed, ["index.js"]);
     assert.deepEqual(manifest.deleted, []);
 
@@ -227,7 +310,7 @@ test("leaves gitignored files out of deltas and declares the snapshot rule", asy
         .get(".blame/source-manifest.json")!
         .toString("utf8"),
     );
-    assert.equal(source.snapshotPolicy, "gitignore-v1");
+    assert.equal(source.snapshotPolicy, "blameignore-v1");
     assert.deepEqual(Object.keys(source.files).sort(), [
       ".gitignore",
       "index.js",

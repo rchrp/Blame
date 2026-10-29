@@ -150,6 +150,55 @@ test("applies a gitignore-v1 delta beside generated local files", async () => {
   }
 });
 
+test("a remote cloud exclusion preserves the local original", async () => {
+  const root = await mkdtemp(join(tmpdir(), "blame-delta-cloud-test-"));
+  try {
+    await mkdir(join(root, "archives"));
+    await writeFile(join(root, "archives/results.zip"), "local archive");
+    const base = await snapshotWorkspace(root);
+    const rules = Buffer.from("/archives/**\n");
+    await writeFile(join(root, ".blameignore"), rules);
+    const final = await snapshotWorkspace(root);
+    await rm(join(root, ".blameignore"));
+    const archive = await deltaArchive(
+      {
+        version: 1,
+        snapshotPolicy: "blameignore-v1",
+        generation: 1,
+        revision: "1",
+        baseHash: base.hash,
+        finalHash: final.hash,
+        changed: [".blameignore"],
+        deleted: ["archives/results.zip"],
+        files: { ".blameignore": final.files[".blameignore"]! },
+        baseFiles: {
+          ".blameignore": null,
+          "archives/results.zip": base.files["archives/results.zip"]!,
+        },
+      },
+      rules,
+      ".blameignore",
+    );
+    const result = await applyWorkspaceDelta({
+      root,
+      content: archive,
+      size: archive.byteLength,
+      sha256: createHash("sha256").update(archive).digest("hex"),
+    });
+    assert.equal(result.finalHash, final.hash);
+    assert.equal(
+      await readFile(join(root, "archives/results.zip"), "utf8"),
+      "local archive",
+    );
+    assert.equal(
+      await readFile(join(root, ".blameignore"), "utf8"),
+      rules.toString(),
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 async function deltaArchive(
   manifest: object,
   content: Buffer,
