@@ -30,7 +30,7 @@ jobs:
           node-version: 24
           save-cache: "false"
       - uses: docker/setup-buildx-action@v4
-      - uses: sigstore/cosign-installer@v4
+      - uses: sigstore/cosign-installer@v4.1.2
       - id: grype
         uses: anchore/scan-action/download-grype@v7
       - run: echo "$(dirname "${{ steps.grype.outputs.cmd }}")" >> "$GITHUB_PATH"
