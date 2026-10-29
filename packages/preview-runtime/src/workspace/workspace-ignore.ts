@@ -10,6 +10,8 @@ import ignore, { type Ignore } from "ignore";
 //   files exclude. Files a running app generates (an ORM client,
 //   next-env.d.ts, *.tsbuildinfo, .nuxt...) then stay out of the hash, the
 //   change journal and the deltas sent back to the local worktree.
+// - "blameignore-v1": also applies the root .blameignore to cloud transfers.
+//   Its rules never restore a Git-ignored or forbidden file.
 //
 // "gitignore-v1" also orders paths by UTF-16 code unit instead of
 // localeCompare, whose order follows the process language (Czech sorts "ch"
@@ -19,7 +21,8 @@ import ignore, { type Ignore } from "ignore";
 // .git/info/exclude differ between machines, and matching is case-sensitive
 // as on the Linux sandbox. A .gitignore file itself is never skipped, so both
 // sides always read the same rules.
-export type WorkspaceSnapshotPolicy = "legacy" | "gitignore-v1";
+export type WorkspaceSnapshotPolicy =
+  "legacy" | "gitignore-v1" | "blameignore-v1";
 
 export const currentWorkspaceSnapshotPolicy: WorkspaceSnapshotPolicy =
   "gitignore-v1";
@@ -27,14 +30,19 @@ export const currentWorkspaceSnapshotPolicy: WorkspaceSnapshotPolicy =
 export const workspaceSnapshotPolicies: readonly WorkspaceSnapshotPolicy[] = [
   "legacy",
   "gitignore-v1",
+  "blameignore-v1",
 ];
 
 export const gitignoreFileName = ".gitignore";
+export const blameignoreFileName = ".blameignore";
 
 export function parseWorkspaceSnapshotPolicy(
   value: unknown,
 ): WorkspaceSnapshotPolicy {
-  return value === "gitignore-v1" ? "gitignore-v1" : "legacy";
+  if (value === undefined || value === null || value === "") return "legacy";
+  if (workspaceSnapshotPolicies.includes(value as WorkspaceSnapshotPolicy))
+    return value as WorkspaceSnapshotPolicy;
+  throw new Error(`Unsupported workspace snapshot policy: ${String(value)}`);
 }
 
 /** Orders workspace paths as the policy's snapshot hash does. */
@@ -68,8 +76,25 @@ type GitignoreRules = { directory: string; depth: number; matcher: Ignore };
 
 export class WorkspaceIgnore {
   private readonly rules: GitignoreRules[] = [];
+  private cloudRules?: Ignore;
 
   constructor(readonly policy: WorkspaceSnapshotPolicy) {}
+
+  /** Root-only cloud exclusions, independent of Git's own ignore rules. */
+  addCloud(gitignore: string) {
+    if (this.policy === "blameignore-v1")
+      this.cloudRules = ignore({ ignorecase: false }).add(gitignore);
+  }
+
+  cloudIgnores(path: string, directory = false) {
+    if (
+      this.policy !== "blameignore-v1" ||
+      path === blameignoreFileName ||
+      basename(path) === gitignoreFileName
+    )
+      return false;
+    return this.cloudRules?.ignores(directory ? `${path}/` : path) ?? false;
+  }
 
   /** Adds the rules of `<directory>/.gitignore`; "" is the workspace root. */
   add(directory: string, gitignore: string) {
@@ -89,7 +114,11 @@ export class WorkspaceIgnore {
    */
   ignores(path: string, directory = false) {
     if (this.policy === "legacy") return false;
-    if (!directory && basename(path) === gitignoreFileName) return false;
+    if (
+      !directory &&
+      (basename(path) === gitignoreFileName || path === blameignoreFileName)
+    )
+      return false;
     let ignored = false;
     for (const rule of this.rules) {
       const relative = relativeTo(rule.directory, path);
@@ -98,7 +127,7 @@ export class WorkspaceIgnore {
       if (result.ignored) ignored = true;
       else if (result.unignored) ignored = false;
     }
-    return ignored;
+    return ignored || this.cloudIgnores(path, directory);
   }
 
   /** Like `ignores`, for a path whose parent directories were not checked. */

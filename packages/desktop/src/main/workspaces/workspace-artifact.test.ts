@@ -19,6 +19,38 @@ import { snapshotWorkspace } from "./workspace-snapshot.ts";
 
 const exec = promisify(execFile);
 
+test("desktop snapshots apply cloud exclusions while preserving manual exceptions", async () => {
+  const root = await mkdtemp(join(tmpdir(), "blame-desktop-cloud-ignore-"));
+  try {
+    await mkdir(join(root, "archives"));
+    await writeFile(join(root, ".gitignore"), ".*\n");
+    await writeFile(
+      join(root, ".blameignore"),
+      "/archives/**\n!/archives/keep.json\n",
+    );
+    await writeFile(join(root, "archives/keep.json"), "{}\n");
+    await writeFile(join(root, "archives/results.zip"), "large archive\n");
+    const before = await snapshotWorkspace(root, "blameignore-v1");
+    assert.deepEqual(Object.keys(before.files).sort(), [
+      ".blameignore",
+      ".gitignore",
+      "archives/keep.json",
+    ]);
+    await writeFile(join(root, "archives/results.zip"), "new archive\n");
+    assert.equal(
+      (await snapshotWorkspace(root, "blameignore-v1")).hash,
+      before.hash,
+    );
+    assert.ok(
+      (await snapshotWorkspace(root, "gitignore-v1")).files[
+        "archives/results.zip"
+      ],
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test("uses deltas only for exact baselines", () => {
   assert.equal(workspaceSourceMode(undefined), "full");
   assert.equal(workspaceSourceMode({ match: "cache" }), "full");

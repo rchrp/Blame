@@ -11,6 +11,7 @@ import {
 import { dirname, join, relative, sep } from "node:path";
 import {
   gitignoreFileName,
+  blameignoreFileName,
   parseWorkspaceSnapshotPolicy,
   WorkspaceIgnore,
   workspaceSnapshotHash,
@@ -55,13 +56,14 @@ export async function snapshotWorkspace(
 }
 
 export async function readWorkspaceSnapshotPolicy() {
+  let value: string;
   try {
-    return parseWorkspaceSnapshotPolicy(
-      (await readFile(runtimePaths.snapshotPolicy, "utf8")).trim(),
-    );
-  } catch {
-    return parseWorkspaceSnapshotPolicy(undefined);
+    value = (await readFile(runtimePaths.snapshotPolicy, "utf8")).trim();
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    return "legacy";
   }
+  return parseWorkspaceSnapshotPolicy(value);
 }
 
 export async function writeWorkspaceSnapshotPolicy(
@@ -84,6 +86,13 @@ export async function addDirectoryGitignore(
   entries: { name: string; isFile(): boolean }[],
 ) {
   if (rules.policy === "legacy") return;
+  if (
+    directory === root &&
+    entries.some(
+      (entry) => entry.isFile() && entry.name === blameignoreFileName,
+    )
+  )
+    rules.addCloud(await readFile(join(root, blameignoreFileName), "utf8"));
   if (
     !entries.some((entry) => entry.isFile() && entry.name === gitignoreFileName)
   )

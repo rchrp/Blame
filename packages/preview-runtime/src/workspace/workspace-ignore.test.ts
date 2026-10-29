@@ -88,3 +88,33 @@ test("gitignore-v1 hashes paths in a language-independent order", () => {
     workspaceSnapshotHash(reversed, "gitignore-v1"),
   );
 });
+
+test("cloud exclusions preserve manual exceptions and cannot restore Git-ignored files", () => {
+  const rules = new WorkspaceIgnore("blameignore-v1");
+  rules.add("", "generated/\n.*\n");
+  rules.addCloud(
+    "/archives/**\n!/archives/keep.json\n!generated/\n.blameignore\n",
+  );
+  assert.equal(rules.ignoresWithAncestors("archives/results.zip"), true);
+  assert.equal(rules.ignoresWithAncestors("archives/keep.json"), false);
+  assert.equal(rules.ignoresWithAncestors("generated/client.js"), true);
+  assert.equal(rules.ignores(".blameignore"), false);
+  assert.equal(rules.ignores("src/index.ts"), false);
+  assert.equal(rules.ignores("packages/archives/results.zip"), false);
+  assert.equal(
+    parseWorkspaceSnapshotPolicy("blameignore-v1"),
+    "blameignore-v1",
+  );
+  assert.throws(
+    () => parseWorkspaceSnapshotPolicy("future-v9"),
+    /Unsupported workspace snapshot policy/,
+  );
+});
+
+test("older policies do not change when a project gains cloud exclusions", () => {
+  for (const policy of ["legacy", "gitignore-v1"] as const) {
+    const rules = new WorkspaceIgnore(policy);
+    rules.addCloud("archives/\n");
+    assert.equal(rules.ignoresWithAncestors("archives/results.zip"), false);
+  }
+});

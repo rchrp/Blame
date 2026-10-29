@@ -4,6 +4,7 @@ import { join, relative, sep } from "node:path";
 import {
   compareWorkspacePaths,
   currentWorkspaceSnapshotPolicy,
+  blameignoreFileName,
   gitignoreFileName,
   WorkspaceIgnore,
   workspaceSnapshotHash,
@@ -77,6 +78,13 @@ async function visit(
   rules: WorkspaceIgnore,
 ) {
   const entries = await readdir(directory, { withFileTypes: true });
+  if (
+    directory === root &&
+    entries.some(
+      (entry) => entry.isFile() && entry.name === blameignoreFileName,
+    )
+  )
+    rules.addCloud(await readFile(join(root, blameignoreFileName), "utf8"));
   if (
     rules.policy !== "legacy" &&
     entries.some((entry) => entry.isFile() && entry.name === gitignoreFileName)
