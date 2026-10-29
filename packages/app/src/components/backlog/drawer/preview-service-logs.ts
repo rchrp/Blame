@@ -13,10 +13,27 @@ export function useManagedPreviewLog(sessionId?: string, service?: string) {
 
   React.useEffect(() => {
     if (!sessionId || !platform.previewRuntime?.onLog) return
-    return platform.previewRuntime.onLog(
+    // A preview whose services never started sends no log at all.
+    const quiet = window.setTimeout(
+      () =>
+        setState((current) =>
+          current.sessionId === sessionId && current.service === service
+            ? { ...current, loading: false }
+            : { content: "", error: "", loading: false, service, sessionId }
+        ),
+      5_000
+    )
+    const unsubscribe = platform.previewRuntime.onLog(
       { sessionId },
       (event) => {
-        if (service && event.serviceId && event.serviceId !== service) return
+        // Setup output belongs to every service of the preview.
+        if (
+          service &&
+          event.serviceId &&
+          event.serviceId !== service &&
+          event.serviceId !== "setup"
+        )
+          return
         const prefix = event.serviceId ? `${event.serviceId} | ` : ""
         setState((current) => {
           const content =
@@ -44,6 +61,10 @@ export function useManagedPreviewLog(sessionId?: string, service?: string) {
           sessionId,
         }))
     )
+    return () => {
+      window.clearTimeout(quiet)
+      unsubscribe?.()
+    }
   }, [platform.previewRuntime, service, sessionId])
 
   return state.sessionId === sessionId && state.service === service
