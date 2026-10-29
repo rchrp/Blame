@@ -2,9 +2,10 @@
 # Each entry is a critical finding with no fixed upstream build yet, scoped to the
 # affected binary or package. Remove an entry as soon as a fixed release exists.
 ignore:
-  # HTTP/2 server flow control in Go (2026-10-08). The latest buildx (0.38.0),
-  # Compose (5.6.0) and containerd from Docker 29.9.1 are still built with
-  # Go 1.26.8 / x/net 0.58-0.59. Remove when they ship Go >= 1.26.9 / x/net >= 0.60.
+  # HTTP/2 server flow control in golang.org/x/net (2026-10-08). Docker 29.9.2,
+  # buildx 0.38.1 and Compose 5.6.1 are built with Go 1.26.10, but buildx,
+  # Compose, containerd and runc (1.5.2 is the latest) still vendor
+  # x/net 0.55-0.59. Remove each entry when its binary ships x/net >= 0.60.
   - vulnerability: GO-2026-6612
     reason: No fixed Docker, Compose or buildx build is available yet.
     package:
@@ -13,6 +14,10 @@ ignore:
     reason: No fixed Docker static build is available yet.
     package:
       location: /usr/local/bin/c*
+  - vulnerability: GO-2026-6612
+    reason: No runc release vendors a fixed x/net yet.
+    package:
+      location: /usr/local/bin/runc
   # os.Root junction traversal, Windows only; the image is Linux.
   - vulnerability: GO-2026-6604
     reason: Windows-only vulnerability in a Linux image.
