@@ -284,7 +284,7 @@ export class ComposeEngine {
     if (!allowFailure && result.exitCode !== 0) {
       throw new ComposeEngineError(
         "COMPOSE_COMMAND_FAILED",
-        `Compose ${args[0]} failed: ${commandFailureDetail(result.stderr, result.stdout)}`,
+        `Compose ${args[0]} failed (exit code ${result.exitCode}): ${commandFailureDetail(result.stderr, result.stdout)}`,
       );
     }
     return result;

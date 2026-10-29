@@ -5,18 +5,18 @@ import { commandFailureDetail } from "./docker-host.js";
 test("preserves short Compose command output", () => {
   assert.equal(
     commandFailureDetail(" warning \n", " result \n"),
-    "warning\nresult",
+    "result\nwarning",
   );
 });
 
-test("preserves the fatal tail after noisy Compose warnings", () => {
+test("keeps the end of each stream, with the error last", () => {
   const detail = commandFailureDetail(
-    `first warning\n${"repeated warning\n".repeat(100)}`,
-    "fatal: container creation failed",
+    `Network Creating\n${"Container Created\n".repeat(100)}ERR_PNPM_LIFECYCLE postinstall failed`,
+    `${"Progress: resolved 1853\n".repeat(100)}Progress: done`,
   );
 
-  assert.equal(detail.length, 1_000);
-  assert.match(detail, /^first warning/);
+  assert.ok(detail.length <= 1_000);
   assert.match(detail, /Compose output truncated/);
-  assert.match(detail, /fatal: container creation failed$/);
+  assert.match(detail, /Progress: done\n/);
+  assert.match(detail, /ERR_PNPM_LIFECYCLE postinstall failed$/);
 });

@@ -47,18 +47,25 @@ export class ComposeEngineError extends PreviewRuntimeError {
 const detailLimit = 1_000;
 const truncationMarker = "\n... [Compose output truncated] ...\n";
 
+// Errors usually end stderr (Compose's own messages and a container's
+// errors), while tools such as pnpm print their progress on stdout: keep the
+// end of each stream, stderr last.
 export function commandFailureDetail(
   stderr: string,
   stdout: string,
   limit = detailLimit,
 ) {
-  const detail = [stderr, stdout]
-    .map((value) => value.trim())
-    .filter(Boolean)
-    .join("\n");
+  const streams = [stdout, stderr].map((value) => value.trim()).filter(Boolean);
+  const detail = streams.join("\n");
   if (detail.length <= limit) return detail;
-  if (limit <= truncationMarker.length) return detail.slice(-limit);
-  const available = limit - truncationMarker.length;
-  const headLength = Math.floor(available / 3);
-  return `${detail.slice(0, headLength)}${truncationMarker}${detail.slice(-(available - headLength))}`;
+  const share = Math.floor(
+    (limit - truncationMarker.length * streams.length) / streams.length,
+  );
+  return streams
+    .map((value) =>
+      value.length <= share
+        ? value
+        : `${truncationMarker.trimStart()}${value.slice(-share)}`,
+    )
+    .join("\n");
 }
