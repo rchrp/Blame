@@ -6,6 +6,9 @@ import type {
 } from "@blame/preview-runtime";
 import { runtimePaths } from "../runtime-paths.js";
 
+// Matches setupLogId in compose-log-collector.ts, which imports this module.
+const setupLogId = "setup";
+
 export async function processLogEvents(input: {
   sessionId: string;
   serviceIds: string[];
@@ -15,7 +18,10 @@ export async function processLogEvents(input: {
   state: PreviewSessionState;
 }): Promise<PreviewLogEvent[]> {
   const after = safeCursor(input.cursor);
-  const ids = input.serviceId ? [input.serviceId] : input.serviceIds;
+  const ids = [
+    setupLogId,
+    ...(input.serviceId ? [input.serviceId] : input.serviceIds),
+  ];
   const values = input.messages ?? (await fileLogMessages(ids));
   return values.slice(after, after + 1000).map((value, index) => ({
     sessionId: input.sessionId,

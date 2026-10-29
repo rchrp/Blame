@@ -131,3 +131,17 @@ function safeId(value: string) {
 function delay(milliseconds: number) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
+
+/** The engine's own output: setup tasks and Compose start, shown as "setup". */
+export const setupLogId = "setup";
+let setupLogWrites = Promise.resolve();
+export function appendSetupLog(text: string) {
+  setupLogWrites = setupLogWrites
+    .then(async () => {
+      await mkdir(runtimePaths.logs, { recursive: true, mode: 0o700 });
+      await appendFile(join(runtimePaths.logs, `${setupLogId}.log`), text, {
+        mode: 0o600,
+      });
+    })
+    .catch(() => undefined);
+}

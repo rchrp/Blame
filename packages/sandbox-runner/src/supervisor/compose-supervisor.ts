@@ -18,6 +18,7 @@ import {
 import { runnerError } from "../protocol/runner-errors.js";
 import { measureRunnerPhase } from "../performance-measure.js";
 import {
+  appendSetupLog,
   startComposeLogCollectors,
   stopComposeLogCollectors,
 } from "../logs/compose-log-collector.js";
@@ -52,6 +53,8 @@ const engine = new ComposeEngine({
   host: sandboxHost,
   stateDirectory,
   measure: measureRunnerPhase,
+  // Setup output reaches the run logs even when the services never start.
+  log: appendSetupLog,
 });
 
 export class ComposeSupervisor {
