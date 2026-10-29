@@ -1,6 +1,6 @@
 # Previews beyond the web
 
-Status: implementation in progress (2026-10-28). Written for an implementing
+Status: implemented, validated on a Mac for terminal, iOS and Direct apps (2026-10-29). Written for an implementing
 agent. It covers six steps, in this order:
 
 1. Terminal previews for CLI projects (local and cloud).
@@ -477,10 +477,13 @@ Prompt (`project-initialization-system.txt`):
   surface instead of no preview. Pick the command a user runs first: a
   REPL or TUI as is; for a one-shot CLI, its `--help` or a short demo from
   the README.
-- Add one example: a Python Click CLI (`python:3.13-slim`, setup task
-  `pip install -e .`, service `cli` with `surface: {"type":"terminal"}` and
-  command `mytool --help`, run configuration `category: "terminal"`,
-  `previewService: "cli"`).
+- Add one example: a Python Click CLI (`python:3.13-slim`, a cache
+  `{"name":"venv","target":"/opt/venv"}`, setup task
+  `python -m venv /opt/venv && /opt/venv/bin/pip install -e .`, service `cli`
+  with `surface: {"type":"terminal"}` and command `/opt/venv/bin/mytool`,
+  run configuration `category: "terminal"`, `previewService: "cli"`). Setup
+  tasks run in containers that are discarded, so installs must land in a
+  cache volume.
 - Libraries with no CLI keep no preview.
 
 Validation adds: a terminal service with an `http` endpoint other than
@@ -884,10 +887,10 @@ In this order, mirroring the Xcode setup flow users know:
 
 1. **Xcode installed**: `/Applications/Xcode*.app` exists and
    `xcodebuild -version` works. Action: open the App Store page of Xcode.
-2. **Xcode selected**: `xcode-select -p` points inside an Xcode app, not
-   Command Line Tools. Action `open-terminal`:
-   `sudo xcode-select -s /Applications/Xcode.app/Contents/Developer`
-   (the user types their password; Blame never asks for it).
+2. **No Xcode selection step.** When `xcode-select -p` points at the
+   Command Line Tools, Blame runs its own Xcode commands with
+   `DEVELOPER_DIR` set to an installed Xcode (`/Applications/Xcode.app`
+   first), so the user never runs `sudo xcode-select`.
 3. **License and first launch**: `xcodebuild -checkFirstLaunchStatus`.
    Action `open-terminal`: `sudo xcodebuild -runFirstLaunch`.
 4. **iOS simulator runtime**: `xcrun simctl list runtimes --json` has an
@@ -1273,3 +1276,54 @@ AGPL-3.0; the GPL tools run as separate programs inside images.
   established visual system is preserved. That verdict is limited to the
   synthetic component states; initialization editor rendering and real native
   execution still require the platform acceptance checks above.
+
+## Mac validation (2026-10-29)
+
+Run on an Apple Silicon Mac (macOS 27, Xcode 27.1, only the Command Line
+Tools selected), with the dev desktop, a local API on the branch and the
+local-container runtime. Test projects: a Python Click CLI, a SwiftUI iPhone
+app, a SwiftUI macOS app and a Vite + Capacitor app.
+
+Passed in the app, end to end:
+
+- **Terminal (step 1).** Initialization produced a terminal service; the
+  story preview shows the program; the story agent used `preview_terminal`
+  to answer an interactive prompt, read "Hello, Bob!", quit and report exit
+  code 0. Outside the app, the compiled Compose file ran the pinned ttyd in
+  Docker (UTF-8, resize, exit code, restart).
+- **iOS (step 4).** Initialization produced `previewManifest.devices`; the
+  checklist showed only the missing simulator controls, installed them; the
+  app built, launched and streamed in the story; clicks reached the app; the
+  agent used `describe_ui`, taps, a screenshot and the app logs. A failing
+  Swift build reports one error at the right worktree line.
+- **Native macOS app (step 6).** A Direct story starts, stops and logs the
+  app; the agent starts it with `project_app` and says it cannot see the
+  window.
+- **Screen (step 3), outside the app.** The display and GUI Node images
+  build for arm64; an Electron app rendered through Blame's Compose file;
+  window listing, screenshots, double click, typing (accents included),
+  keys and the VNC WebSocket work.
+
+Fixed during validation: the API rejected terminal, screen and device run
+configurations; terminal and screen previews never left "Loading preview";
+ttyd's connection reset hid exit codes; the web toolbar covered other
+surfaces; the Python example's install never reached the service; device
+targets submitted beside the manifest were lost; simulator model choice
+and Xcode error lines; phone previews crashed the app (device emulation
+before the page had a renderer); native app logs showed raw terminal codes.
+
+Still open:
+
+- **Phone frame (step 2).** The frame, mobile user agent and scaling work,
+  but Electron's `enableDeviceEmulation` ignores the page's viewport meta
+  (the page lays out at 980 px), touch emulation was removed because it
+  held the page's debugger, and the agent's own preview page is not
+  emulated. A correct version needs CDP `Emulation.setDeviceMetricsOverride`
+  with `mobile: true`, shared with the agent's DevTools connection.
+- **Preview harness readiness.** For terminal surfaces the agent still sees
+  `application_ready: false` from the web preview harness.
+- **Run logs** of terminal and device previews stay on "Loading service
+  logs..." / "No services found yet.".
+- **Not run:** screen previews inside the app (needs the published images),
+  Tauri, GTK, Qt, Android (no SDK or Java on this Mac), Windows, Expo Go
+  (S2, needs a phone), cloud runner 0.3.0 and S5.
