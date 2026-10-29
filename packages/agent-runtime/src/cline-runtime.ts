@@ -52,6 +52,7 @@ import {
   initializationCorrection,
   initializationPrompt,
   parseProjectInitializationAttempt,
+  saveProjectInitialization,
   parseProjectInitializationRepairAttempt,
   parsedCodePracticesAttempt,
   projectCodePracticesSubmitTool,
@@ -2184,7 +2185,7 @@ export class BlameAgentRuntime {
       );
       const outcome = session.outcome();
       if (outcome.type === "accepted")
-        return { ...outcome.result, sessionId: started.sessionId };
+        return saveProjectInitialization(input.workspaceRoot, outcome.result, started.sessionId);
       if (outcome.type === "blocked")
         throw new InitializationBlockedError(outcome.blocked);
       if (outcome.type === "stopped") throw outcome.error;
@@ -2194,9 +2195,7 @@ export class BlameAgentRuntime {
           "The session ended without calling submit_project_initialization.",
       );
     }
-    throw new Error(
-      "Project initialization agent did not submit a result",
-    );
+    throw new Error("Project initialization agent did not submit a result");
   }
 
   private startProjectInitializationAgent(

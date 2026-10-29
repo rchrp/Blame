@@ -16,6 +16,11 @@ import {
 } from "./preview-manifest.js";
 import { jsonPayload } from "./json-payload.js";
 import {
+  cloudPreviewIgnoreSchema,
+  parseCloudPreviewIgnore,
+  type CloudPreviewIgnoreRule,
+} from "./project-cloud-ignore.js";
+import {
   manifestWithProjectPackageManager,
   projectPackageManager,
 } from "./preview-package-manager.js";
@@ -37,6 +42,7 @@ const maxCorrectionPayloadLength = 24_000;
 type ParsedProjectInitialization = {
   previewManifest: PreviewManifest;
   runConfigurations: ProjectRunConfiguration[];
+  cloudPreviewIgnore?: CloudPreviewIgnoreRule[];
 };
 
 type ProjectInitializationCorrection = {
@@ -67,8 +73,9 @@ const previewManifestContainerSchema = {
 export const projectInitializationResultSchema = {
   type: "object",
   additionalProperties: false,
-  required: ["previewManifest", "runConfigurations"],
+  required: ["previewManifest", "runConfigurations", "cloudPreviewIgnore"],
   properties: {
+    cloudPreviewIgnore: cloudPreviewIgnoreSchema,
     previewManifest: {
       type: "object",
       additionalProperties: false,
@@ -376,7 +383,12 @@ export function parseProjectInitializationPayload(
   if (!isRecord(payload))
     throw new Error("Initialization result must be an object");
   const parsed = withDevicesInManifest(payload);
-  assertOnlyKeys(parsed, ["previewManifest", "runConfigurations"], "result");
+  assertOnlyKeys(
+    parsed,
+    ["previewManifest", "runConfigurations", "cloudPreviewIgnore"],
+    "result",
+  );
+  const cloudPreviewIgnore = parseCloudPreviewIgnore(parsed.cloudPreviewIgnore);
   if (!parsed.previewManifest) {
     throw new Error("Initialization result is missing previewManifest");
   }
@@ -398,6 +410,7 @@ export function parseProjectInitializationPayload(
   return {
     previewManifest: manifestWithWarnings(manifest, warnings),
     runConfigurations,
+    ...(cloudPreviewIgnore === undefined ? {} : { cloudPreviewIgnore }),
   };
 }
 

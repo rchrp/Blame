@@ -1,4 +1,8 @@
 import { basename } from "node:path";
+import {
+  scanProjectCloudTransfer,
+  type ProjectCloudTransferScan,
+} from "./project-cloud-transfer-scan.js";
 
 import {
   discoverProjectFiles,
@@ -38,6 +42,7 @@ export type ProjectInitializationScan = {
   topLevelEntries: string[];
   files: Record<string, string>;
   gitLog: string[];
+  cloudTransfer?: ProjectCloudTransferScan;
   discovery?: {
     scannedFileCount: number;
     scannedDirectoryCount: number;
@@ -86,9 +91,10 @@ export async function scanProjectForInitialization(
 ): Promise<ProjectInitializationScan> {
   const discovery = await discoverProjectFiles(root);
   const candidates = initializationCandidates(discovery);
-  const [evidence, gitLog] = await Promise.all([
+  const [evidence, gitLog, cloudTransfer] = await Promise.all([
     initializationEvidence(root, candidates),
     initializationGitLog(root, discovery.repositoryRoots),
+    scanProjectCloudTransfer(root, discovery.files),
   ]);
   const files = await withPackageScriptFiles(root, discovery, evidence);
   return {
@@ -96,6 +102,7 @@ export async function scanProjectForInitialization(
     topLevelEntries: topLevelProjectEntries(discovery),
     files,
     gitLog,
+    cloudTransfer,
     discovery: initializationDiscovery(discovery),
   };
 }

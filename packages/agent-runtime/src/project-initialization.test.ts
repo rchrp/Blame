@@ -8,6 +8,32 @@ import {
 import { parsePreviewManifest } from "./preview-manifest.js";
 import type { PreviewManifest, ProjectRunConfiguration } from "./types.js";
 
+test("initialization validates and retains evidence-based cloud exclusions", () => {
+  const rules = [
+    {
+      pattern: "/archives/**",
+      reason: "Historical experiment exports unused by build or runtime",
+    },
+  ];
+  const result = parseProjectInitializationPayload({
+    ...canonicalResult(),
+    cloudPreviewIgnore: rules,
+  });
+  assert.deepEqual(result.cloudPreviewIgnore, rules);
+  assert.throws(
+    () =>
+      parseProjectInitializationPayload({
+        ...canonicalResult(),
+        cloudPreviewIgnore: [{ pattern: "/**", reason: "Too big" }],
+      }),
+    /exact rooted paths/,
+  );
+  assert.equal(
+    parseProjectInitializationPayload(canonicalResult()).cloudPreviewIgnore,
+    undefined,
+  );
+});
+
 function canonicalResult(): {
   previewManifest: PreviewManifest;
   runConfigurations: ProjectRunConfiguration[];

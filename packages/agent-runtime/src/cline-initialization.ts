@@ -1,4 +1,5 @@
 import type { ClineCore, CoreSessionConfig } from "@cline/sdk";
+import { updateProjectCloudIgnore } from "./project-cloud-ignore.js";
 
 import { asRecord, errorMessage, stringValue } from "./cline-runtime-events.js";
 
@@ -38,6 +39,7 @@ import type {
   AnalyzeProjectCodePracticesInput,
   AnalyzeProjectCodePracticesResult,
   InitializeProjectInput,
+  InitializeProjectResult,
   RepairProjectInitializationInput,
 } from "./types.js";
 
@@ -237,7 +239,20 @@ export function parseProjectInitializationAttempt(
     sessionId: attempt.sessionId,
     previewManifest: initialization.previewManifest,
     runConfigurations: initialization.runConfigurations,
+    ...(initialization.cloudPreviewIgnore === undefined
+      ? {}
+      : { cloudPreviewIgnore: initialization.cloudPreviewIgnore }),
   };
+}
+
+export async function saveProjectInitialization(
+  root: string,
+  accepted: ReturnType<typeof parseProjectInitializationAttempt>,
+  sessionId: string,
+): Promise<InitializeProjectResult> {
+  const { cloudPreviewIgnore, ...result } = accepted;
+  await updateProjectCloudIgnore(root, cloudPreviewIgnore);
+  return { ...result, sessionId };
 }
 
 export function parsedCodePracticesAttempt(

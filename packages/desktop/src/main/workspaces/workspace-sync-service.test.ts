@@ -242,8 +242,7 @@ test("applies ordinary local edits as a live delta without restarting services",
     const metadata = await service.prepareInitial(root);
     const session = runningSession(metadata.workspaceHash);
     let uploaded:
-      | { baseHash?: string; workspaceHash?: string; mode?: string }
-      | undefined;
+      { baseHash?: string; workspaceHash?: string; mode?: string } | undefined;
     const commands: string[] = [];
     const client = {
       async negotiateSource() {
@@ -434,43 +433,44 @@ test("watches the attached worktree and pushes later edits automatically", async
   }
 });
 
-test("files the app generates do not trigger a live delta", async (context) => {
-  const root = await workspaceFixture();
-  try {
-    context.mock.method(
-      globalThis,
-      "fetch",
-      async () => new Response(null, { status: 200 }),
-    );
-    await writeFile(join(root, ".gitignore"), "generated/\n");
-    const service = new WorkspaceSyncService();
-    const metadata = await service.prepareInitial(root);
-    const session = runningSession(metadata.workspaceHash);
-    let uploads = 0;
-    const client = {
-      async negotiateSource() {
-        return { unchanged: true, session };
-      },
-      async get() {
-        return session;
-      },
-      async prepareSourceUpload() {
-        uploads += 1;
-        return uploadTarget();
-      },
-    } as unknown as CloudPreviewClient;
-    await service.syncInitial(client, session.id, root);
-    await mkdir(join(root, "generated"));
-    await writeFile(join(root, "generated/client.ts"), "generated\n");
+for (const control of [".gitignore", ".blameignore"])
+  test(`${control} exclusions do not trigger a live delta`, async (context) => {
+    const root = await workspaceFixture();
+    try {
+      context.mock.method(
+        globalThis,
+        "fetch",
+        async () => new Response(null, { status: 200 }),
+      );
+      await writeFile(join(root, control), "generated/\n");
+      const service = new WorkspaceSyncService();
+      const metadata = await service.prepareInitial(root);
+      const session = runningSession(metadata.workspaceHash);
+      let uploads = 0;
+      const client = {
+        async negotiateSource() {
+          return { unchanged: true, session };
+        },
+        async get() {
+          return session;
+        },
+        async prepareSourceUpload() {
+          uploads += 1;
+          return uploadTarget();
+        },
+      } as unknown as CloudPreviewClient;
+      await service.syncInitial(client, session.id, root);
+      await mkdir(join(root, "generated"));
+      await writeFile(join(root, "generated/client.ts"), "generated\n");
 
-    const result = await service.syncLive(client, session.id, root);
+      const result = await service.syncLive(client, session.id, root);
 
-    assert.equal(result.synchronized, false);
-    assert.equal(uploads, 0);
-  } finally {
-    await rm(root, { recursive: true, force: true });
-  }
-});
+      assert.equal(result.synchronized, false);
+      assert.equal(uploads, 0);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
 
 test("a base saved before snapshot rules resynchronizes once with the current rule", async (context) => {
   const root = await realpath(await workspaceFixture());
