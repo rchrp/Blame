@@ -11,7 +11,7 @@ node_version="${BLAME_NODE_VERSION:-24.22.1}"
 npm_version="${BLAME_NPM_VERSION:-12.2.1}"
 pnpm_version="${BLAME_PNPM_VERSION:-12.15.0}"
 yarn_version="${BLAME_YARN_VERSION:-1.22.22}"
-preview_display_image="" # Filled from the signed preview-image release.
+preview_display_image="ghcr.io/rchrp/blame-preview-display@sha256:ff979c4dd3b0df001f26252d2da11949f86c820ff7dde8fbbb94bc1d7bd98e2b" # Filled from the signed preview-image release.
 runtime_packages="bubblewrap ca-certificates curl dbus-user-session git gzip iptables procps python3 tar xz-utils"
 
 ensure_user() {
