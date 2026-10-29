@@ -117,7 +117,7 @@ For Cline SDK update pull requests:
 
 The cloud preview sandbox runner image is published by the **Release sandbox runner** workflow, run by hand from the Actions tab on `main`. It is a container image, not a GitHub Release.
 
-1. Bump `packages/sandbox-runner/package.json`'s version on `main`. The workflow refuses a version that is already published.
+1. Bump the runner version on `main` in `packages/sandbox-runner/package.json`, `src/version.ts` and the `Dockerfile`'s `BLAME_RUNNER_VERSION`; a test fails if they differ. The workflow refuses a version that is already published.
 2. Run the workflow. It builds the amd64 image, scans it with grype, pushes it to the Vercel registry, signs its digest with Sigstore using the workflow's GitHub identity (no browser), and opens a pull request that writes the image and version into `packages/api/config/sandbox_runner_pin.ts`.
 3. Merge that pull request. The API deploys with the new runner; code and runner always change together.
 

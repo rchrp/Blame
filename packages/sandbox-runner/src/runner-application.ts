@@ -49,6 +49,7 @@ import {
 } from "./workspace/change-journal.js";
 import { processLogEvents } from "./logs/log-multiplexer.js";
 import { measureRunnerPhase } from "./performance-measure.js";
+import { runnerVersion } from "./version.js";
 
 const compose = new ComposeSupervisor();
 const gateway = new GatewaySupervisor();
@@ -598,7 +599,7 @@ function requiredRouteId(
 function handshake() {
   return runnerHandshake({
     clineSdkVersion: process.env.BLAME_CLINE_SDK_VERSION ?? "0.2.0",
-    runnerVersion: process.env.BLAME_RUNNER_VERSION ?? "0.3.1",
+    runnerVersion,
     imageDigest: process.env.BLAME_RUNNER_IMAGE_DIGEST ?? "unconfigured",
     capabilities: {
       terminalSurface: true,
