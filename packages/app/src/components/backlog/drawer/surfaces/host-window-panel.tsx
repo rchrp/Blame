@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { usePlatform } from "@/context/platform"
 import { navigate } from "@/components/navigation/navigation"
 import { SurfaceUnavailable } from "./surface-unavailable"
+import { terminalText } from "@/lib/terminal-text"
 
 export type HostWindowPanelProps = {
   mode: "direct" | "local-container" | "cloud-mirror"
@@ -100,7 +101,8 @@ export function HostWindowPanel({
         aria-label="Application logs"
         className="max-h-[50%] min-h-32 overflow-auto border-t bg-muted/20 p-4 text-xs whitespace-pre-wrap"
       >
-        {logs?.slice(-64000) || "Run the app to see its logs."}
+        {terminalText(logs?.slice(-64000) ?? "") ||
+          "Run the app to see its logs."}
       </pre>
     </div>
   )
