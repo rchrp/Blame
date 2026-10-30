@@ -78,6 +78,7 @@ import {
 } from "@/components/ui/tooltip"
 import { usePlatform } from "@/context/platform"
 import { pruneRuntimeSessionStates } from "@/lib/runtime-preference"
+import { terminalText } from "@/lib/terminal-text"
 import { cn } from "@/lib/utils"
 import {
   destroyReleasedNativePreviewSessions,
@@ -1462,7 +1463,10 @@ function SetupLogPanel({
   const local = useProjectServiceLog(managed ? undefined : worktree, service)
   const managedLog = useManagedPreviewLog(previewSessionId, service)
   const runtimeLog = managed ? managedLog : local
-  const content = runtimeLog.content
+  const content = React.useMemo(
+    () => terminalText(runtimeLog.content),
+    [runtimeLog.content]
+  )
   const error = managedError ?? runtimeLog.error
   const loading = managed
     ? Boolean(previewSessionId && runtimeLog.loading)

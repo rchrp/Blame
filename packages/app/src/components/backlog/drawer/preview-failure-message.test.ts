@@ -15,3 +15,12 @@ test("keeps only the failure the desktop reported", () => {
     "Preview did not respond"
   )
 })
+
+test("drops the colors of quoted command output", () => {
+  assert.equal(
+    readableFailure(
+      "Compose run failed (exit code 1): \u001b[31mℹ EnvValidationException\u001b[39m"
+    ),
+    "Compose run failed (exit code 1): ℹ EnvValidationException"
+  )
+})
