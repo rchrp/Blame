@@ -80,4 +80,19 @@ test("screen actions cannot become shell commands and readiness requires a windo
     ),
     /opened no window/,
   );
+  // An app that exited fails at once with its reason, not after the wait.
+  const started = Date.now();
+  await assert.rejects(
+    waitForDisplayWindows(
+      plan,
+      ["app"],
+      async () => ({ exitCode: 0, stdout: "[]", stderr: "" }),
+      {
+        timeoutMs: 60_000,
+        stopped: async () => "exit code 1: Error: Electron uninstall",
+      },
+    ),
+    /stopped before opening a window \(exit code 1: Error: Electron uninstall\)/,
+  );
+  assert.ok(Date.now() - started < 5_000);
 });

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { errorExcerpt } from "./command-output.js";
 import { commandFailureDetail } from "./docker-host.js";
 
 test("preserves short Compose command output", () => {
@@ -70,5 +71,26 @@ test("drops terminal colors, code frames and stack frames", () => {
       '◉ - Missing environment variable "DB_HOST"',
       "Error: ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL",
     ].join("\n"),
+  );
+});
+
+test("an exit excerpt keeps the errors when Compose prints them first", () => {
+  // Captured from an Electron preview whose binary was never downloaded:
+  // Compose printed the container's stderr after its stdout.
+  const logs = [
+    "desktop-1  | error during start dev server and electron app:",
+    "desktop-1  | Error: Electron uninstall",
+    "desktop-1  |     at getElectronPath (file:///workspace/node_modules/.pnpm/electron-vite@6.0.0/node_modules/electron-vite/dist/chunks/lib-DoUt4oMD.js:194:19)",
+    "desktop-1  | Error: ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL",
+    "desktop-1  | ",
+    'desktop-1  |   × "pnpm recursive exec" failed in /workspace/packages/desktop',
+    "",
+    "desktop-1  | ✓ 3 modules transformed.",
+    "desktop-1  | out/preload/index.js  27.05 kB",
+    "desktop-1  | electron preload scripts built successfully",
+  ].join("\n");
+  assert.equal(
+    errorExcerpt(logs),
+    'error during start dev server and electron app: Error: Electron uninstall Error: ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL × "pnpm recursive exec" failed in /workspace/packages/desktop',
   );
 });

@@ -36,6 +36,23 @@ export function readableCommandOutput(raw: string) {
   return lines.join("\n");
 }
 
+// The last lines that report an error, or the last lines at all. Compose
+// prints a container's stdout and stderr apart, so errors are not always last.
+export function errorExcerpt(raw: string, maxLines = 4) {
+  const lines = readableCommandOutput(
+    raw.replace(/^\S+-\d+\s*\|\s?/gmu, ""),
+  ).split("\n");
+  const errors = lines.filter((line) =>
+    /\b(?:error|failed|fatal|cannot|exception|uninstall)\b|\bERR_|^×/iu.test(
+      line,
+    ),
+  );
+  return (errors.length ? errors : lines)
+    .slice(-maxLines)
+    .join(" ")
+    .slice(0, 500);
+}
+
 export function stripTerminalCodes(raw: string) {
   return (
     raw

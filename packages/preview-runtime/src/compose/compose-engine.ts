@@ -1,3 +1,4 @@
+import { errorExcerpt } from "./command-output.js";
 import { waitForDisplayWindows } from "./display-readiness.js";
 import { createHash } from "node:crypto";
 import { posix } from "node:path";
@@ -138,8 +139,28 @@ export class ComposeEngine {
       plan,
       serviceIds,
       (id, args) => this.execInService(id, args, { timeoutMs: 15000 }),
-      { log: (message) => this.options.log?.(message) },
+      {
+        log: (message) => this.options.log?.(message),
+        stopped: (id) => this.stoppedReason(plan, id),
+      },
     );
+  }
+
+  /** Why a service container stopped, from its exit code and last errors. */
+  private async stoppedReason(plan: PreviewExecutionPlan, serviceId: string) {
+    const state = (await this.inspect(plan).catch(() => [])).find(
+      ({ id }) => id === serviceId,
+    );
+    if (state?.state !== "exited" && state?.state !== "dead") return undefined;
+    const logs = await this.logs(serviceId, { tail: 80, timeoutMs: 15_000 })
+      .then(({ stdout, stderr }) => `${stdout}\n${stderr}`)
+      .catch(() => "");
+    const excerpt = errorExcerpt(logs);
+    const code =
+      state.exitCode === undefined
+        ? state.state
+        : `exit code ${state.exitCode}`;
+    return excerpt ? `${code}: ${excerpt}` : code;
   }
 
   /** Runs every setup task and prepares every image, as a warm baseline. */

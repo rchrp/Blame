@@ -5,7 +5,12 @@ export async function waitForDisplayWindows(
   plan: PreviewExecutionPlan,
   selected: string[],
   exec: (id: string, args: string[]) => Promise<CommandResult>,
-  options: { timeoutMs?: number; log?: (message: string) => void } = {},
+  options: {
+    timeoutMs?: number;
+    log?: (message: string) => void;
+    // Why the app container stopped, or nothing while it runs.
+    stopped?: (id: string) => Promise<string | undefined>;
+  } = {},
 ) {
   for (const service of plan.services) {
     if (
@@ -30,6 +35,13 @@ export async function waitForDisplayWindows(
         /* Retry while the window manager starts. */
       }
       if (ready) break;
+      // An app that already exited will never open a window.
+      const stopped = await options.stopped?.(service.id);
+      if (stopped)
+        throw new ComposeEngineError(
+          "DISPLAY_APP_EXITED",
+          `The app stopped before opening a window (${stopped}). Open its Run logs, fix the startup error and try again.`,
+        );
       if (Date.now() < deadline)
         await new Promise((resolve) =>
           setTimeout(resolve, Math.min(1000, deadline - Date.now())),

@@ -28,7 +28,9 @@ export function displaySurfaceServices(
       kind: "dependency",
       container: { image: previewDisplayImage(image) },
       workingDir: "/",
-      command: `blame-display serve --display :99 --geometry ${width}x${height} --port 6080`,
+      // A restart reuses the container and its X11 volume: the lock and
+      // socket of the previous X server would stop the new one at once.
+      command: `rm -f /tmp/.X99-lock /tmp/.X11-unix/X99 && blame-display serve --display :99 --geometry ${width}x${height} --port 6080`,
       environment: { DISPLAY: ":99" },
       dependsOn: [],
       endpoints: [
