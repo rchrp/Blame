@@ -78,6 +78,8 @@ export function previewRuntimeConfig() {
           'registry-1.docker.io',
           'production.cloudfront.docker.com',
           'docker-images-prod.s3.dualstack.us-east-1.amazonaws.com',
+          // Prisma downloads its engines when pnpm skips their install script.
+          'binaries.prisma.sh',
           ...csv(env.get('BLAME_SANDBOX_EGRESS_ALLOWLIST')),
         ])
       ),
