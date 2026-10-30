@@ -2,7 +2,7 @@
   "name": "@blame/sandbox-runner",
   "private": true,
   "license": "AGPL-3.0-only",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "type": "module",
   "bin": {
     "blame-sandbox-runner": "dist/blame-sandbox-runner.cjs",
