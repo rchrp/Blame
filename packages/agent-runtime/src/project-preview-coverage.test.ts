@@ -38,6 +38,7 @@ function manifest(input: {
   api?: Record<string, string> | false;
   display?: boolean;
   install?: string;
+  desktop?: string;
 }) {
   const image = input.image ?? "node:24-bookworm";
   return parsePreviewManifest({
@@ -90,7 +91,7 @@ function manifest(input: {
               kind: "preview",
               container: { image },
               workingDir: "/workspace/packages/desktop",
-              command: "corepack pnpm dev -- --no-sandbox",
+              command: input.desktop ?? "corepack pnpm dev -- --no-sandbox",
               surface: { type: "display" },
               endpoints: [],
             },
@@ -181,5 +182,33 @@ test("asks the setup to download Electron's binary", () => {
   assert.match(
     issues[0]!,
     /^blocking: must download Electron's binary in the install setup task/,
+  );
+});
+
+test("asks to pass --no-sandbox to Electron itself", () => {
+  // Blame's own dev script wraps electron-vite and drops extra arguments.
+  const wrapped = {
+    files: {
+      ...workspace.files,
+      "packages/desktop/package.json":
+        '{"name":"@blame/desktop","scripts":{"dev":"node scripts/dev.mjs"},"devDependencies":{"electron":"45"}}',
+    },
+  } as unknown as ProjectInitializationScan;
+  const check = (desktop?: string) =>
+    rules(
+      previewSetupIssues(
+        manifest({ migrate: database, api: database, display: true, desktop }),
+        wrapped,
+      ),
+    );
+  assert.deepEqual(check(), [
+    "blocking: must pass --no-sandbox to Electron itself in desktop: run the launcher directly, for example corepack pnpm --filter @blame/desktop exec electron-vite dev -- --no-sandbox --disable-gpu, and build in setup what its dev pre-scripts build. Chromium's sandbox cannot start in a container, and a dev script that wraps the launcher does not pass extra arguments on",
+  ]);
+  assert.equal(check("corepack pnpm dev").length, 1);
+  assert.deepEqual(
+    check(
+      "corepack pnpm --filter @blame/desktop exec electron-vite dev -- --no-sandbox --disable-gpu",
+    ),
+    [],
   );
 });

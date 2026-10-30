@@ -24,6 +24,10 @@ import {
 } from "./project-discovery.js";
 import { referencedScriptFiles } from "./project-host-orchestration.js";
 import {
+  workspacePackageEvidence,
+  type WorkspacePackageEvidence,
+} from "./project-workspace-packages.js";
+import {
   balancedGitMessages,
   readBoundedProjectFiles,
   recentProjectGitLogs,
@@ -46,6 +50,8 @@ export type ProjectInitializationScan = {
   cloudTransfer?: ProjectCloudTransferScan;
   /** Pinned images with the GUI libraries Linux screen previews need. */
   previewImages?: { electron?: string; tauri?: string };
+  /** The workspace's Node packages, from their full package.json. */
+  workspacePackages?: WorkspacePackageEvidence[];
   discovery?: {
     scannedFileCount: number;
     scannedDirectoryCount: number;
@@ -94,11 +100,13 @@ export async function scanProjectForInitialization(
 ): Promise<ProjectInitializationScan> {
   const discovery = await discoverProjectFiles(root);
   const candidates = initializationCandidates(discovery);
-  const [evidence, gitLog, cloudTransfer] = await Promise.all([
-    initializationEvidence(root, candidates),
-    initializationGitLog(root, discovery.repositoryRoots),
-    scanProjectCloudTransfer(root, discovery.files),
-  ]);
+  const [evidence, gitLog, cloudTransfer, workspacePackages] =
+    await Promise.all([
+      initializationEvidence(root, candidates),
+      initializationGitLog(root, discovery.repositoryRoots),
+      scanProjectCloudTransfer(root, discovery.files),
+      workspacePackageEvidence(root, discovery.files),
+    ]);
   const files = await withPackageScriptFiles(root, discovery, evidence);
   return {
     rootName: basename(root),
@@ -110,6 +118,7 @@ export async function scanProjectForInitialization(
       electron: publishedPreviewImages.node,
       tauri: publishedPreviewImages.tauri,
     },
+    ...(workspacePackages ? { workspacePackages } : {}),
     discovery: initializationDiscovery(discovery),
   };
 }

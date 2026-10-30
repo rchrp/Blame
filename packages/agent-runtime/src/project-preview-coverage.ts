@@ -152,6 +152,63 @@ export function electronBinaryIssues(
   }));
 }
 
+// Chromium's sandbox cannot start in a container: --no-sandbox must reach
+// Electron itself. A package script passes extra arguments on only when it
+// is the launcher; a wrapper such as `node scripts/dev.mjs` drops them.
+export function electronSandboxIssues(
+  manifest: PreviewManifest,
+  scan: ProjectInitializationScan | undefined,
+): Issue[] {
+  if (!scan) return [];
+  const issues: Issue[] = [];
+  for (const [path] of electronApps(scan)) {
+    const directory = dirname(path);
+    const name = packageName(scan, directory);
+    for (const service of manifest.services) {
+      if (service.surface?.type !== "display") continue;
+      if (!runsIn(service, directory, name)) continue;
+      const segment = (service.command ?? "")
+        .split(/&&|\|\||[;\n|]/)
+        .find((part) => /--no-sandbox\b/.test(part));
+      if (segment && reachesElectron(segment, scan, directory)) continue;
+      issues.push({
+        severity: "blocking",
+        rule: `must pass --no-sandbox to Electron itself in ${service.id}: run the launcher directly, for example corepack pnpm --filter ${name ?? "<app>"} exec electron-vite dev -- --no-sandbox --disable-gpu, and build in setup what its dev pre-scripts build. Chromium's sandbox cannot start in a container, and a dev script that wraps the launcher does not pass extra arguments on`,
+        warning: `${service.id} may not pass --no-sandbox to Electron.`,
+      });
+    }
+  }
+  return issues;
+}
+
+const electronLauncher =
+  /^(?:\S+=\S+\s+|cross-env\s+(?:\S+=\S+\s+)*)*(?:electron-vite|electron-forge|electron)(?:\s|$)/;
+
+function reachesElectron(
+  segment: string,
+  scan: ProjectInitializationScan,
+  directory: string,
+) {
+  if (/\b(?:electron-vite|electron-forge)\b|\belectron\s+\S/.test(segment))
+    return true;
+  const script =
+    /\b(?:pnpm|npm|yarn|bun)\s+(?:(?:--filter|-F)[= ]\S+\s+)*(?:run\s+)?([\w:.-]+)/.exec(
+      segment,
+    )?.[1];
+  if (!script || script === "exec") return false;
+  const scripts =
+    scan.workspacePackages?.find((pkg) => pkg.path === directory)?.scripts ??
+    {};
+  const body =
+    scripts[script] ??
+    new RegExp(`"${escape(script)}"\\s*:\\s*"([^"]*)"`).exec(
+      scan.files[
+        directory === "." ? "package.json" : `${directory}/package.json`
+      ] ?? "",
+    )?.[1];
+  return electronLauncher.test(body?.trim() ?? "");
+}
+
 function electronApps(scan: ProjectInitializationScan) {
   return packageFiles(scan).filter(
     ([path, json]) =>
@@ -200,7 +257,11 @@ function databaseClients(manifest: PreviewManifest): Task[] {
 
 // Whether a task runs code of a directory: it works there, or it filters
 // the workspace on that package.
-function runsIn(task: Task, directory: string, name: string | undefined) {
+export function runsIn(
+  task: Task,
+  directory: string,
+  name: string | undefined,
+) {
   const workingDir = (task.workingDir ?? "").replace(/^\/workspace\/?/, "");
   if (
     directory !== "." &&
@@ -243,7 +304,7 @@ function envKeys(content: string) {
 }
 
 // Fixtures, build output and experiments are not the project.
-function ignoredEvidence(path: string) {
+export function ignoredEvidence(path: string) {
   return /(?:^|\/)(?:dist|build|out|node_modules|fixtures?|test-fixtures|tools|docs|examples?)\//.test(
     path,
   );
@@ -258,6 +319,6 @@ function basename(path: string) {
   return path.slice(path.lastIndexOf("/") + 1);
 }
 
-function escape(value: string) {
+export function escape(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&");
 }

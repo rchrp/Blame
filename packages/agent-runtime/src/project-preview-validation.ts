@@ -36,8 +36,10 @@ import {
   databaseEnvironmentIssues,
   electronBinaryIssues,
   electronCoverageIssues,
+  electronSandboxIssues,
   prismaImageIssues,
 } from "./project-preview-coverage.js";
+import { workspaceBuildIssues } from "./project-preview-workspace-builds.js";
 
 // Checks that an initialized manifest can run its project, from what the
 // scan found in the repository. Blame renders and runs the Compose project
@@ -177,6 +179,8 @@ export function previewSetupIssues(
     ...backendCoverageIssues(manifest, scan),
     ...electronCoverageIssues(manifest, scan),
     ...electronBinaryIssues(manifest, scan),
+    ...electronSandboxIssues(manifest, scan),
+    ...workspaceBuildIssues(manifest, scan),
   );
   for (const service of manifest.services) {
     if (
