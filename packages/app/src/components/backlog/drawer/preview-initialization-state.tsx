@@ -5,6 +5,7 @@ import type {
 import { CheckIcon, LoaderCircleIcon } from "lucide-react"
 import * as React from "react"
 
+import { useNow } from "@/hooks/use-now"
 import {
   formatStepDuration,
   nextPreviewStartHistory,
@@ -64,15 +65,6 @@ export function PreviewInitializationState({
       )}
     </div>
   )
-}
-
-function useNow() {
-  const [now, setNow] = React.useState(() => Date.now())
-  React.useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 1000)
-    return () => window.clearInterval(timer)
-  }, [])
-  return now
 }
 
 function previewLifecycleCopy(phase: PreviewLifecyclePhase | undefined) {

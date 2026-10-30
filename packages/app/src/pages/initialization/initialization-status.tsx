@@ -10,6 +10,7 @@ import {
   type BlockedInitialization,
 } from "@/components/project-initialization/initialization-blocked"
 import { useAnimatedBorderEffect } from "@/hooks/use-animated-border-effect"
+import { useNow } from "@/hooks/use-now"
 import { cn } from "@/lib/utils"
 import { CornerLight, type CornerTone } from "./environment-kinds"
 import { EnvironmentStartChain } from "./environment-start-chain"
@@ -78,6 +79,9 @@ function RunningStatus({
   initialization?: CloudProjectInitialization
   progress?: ProjectInitializationProgress
 }) {
+  // No progress arrives while the model writes a long answer; the clock
+  // keeps the elapsed time honest meanwhile.
+  const now = useNow(30_000)
   const startedAt = progress
     ? new Date(progress.startedAt).toISOString()
     : (initialization?.updatedAt ?? initialization?.createdAt)
@@ -85,7 +89,7 @@ function RunningStatus({
     <StatusBlock
       tone="running"
       title="Analyzing the project"
-      meta={startedAt ? `Started ${relativeDate(startedAt)}` : undefined}
+      meta={startedAt ? `Started ${relativeDate(startedAt, now)}` : undefined}
     >
       <ProgressNotificationBody
         label={progress?.label ?? "Running in another Blame window"}
@@ -332,10 +336,10 @@ function StatusBlock({
 
 const relativeFormat = new Intl.RelativeTimeFormat("en", { numeric: "auto" })
 
-function relativeDate(value: string) {
+function relativeDate(value: string, now = Date.now()) {
   const time = Date.parse(value)
   if (!Number.isFinite(time)) return ""
-  const minutes = Math.round((time - Date.now()) / 60_000)
+  const minutes = Math.round((time - now) / 60_000)
   if (Math.abs(minutes) < 60) return relativeFormat.format(minutes, "minute")
   const hours = Math.round(minutes / 60)
   if (Math.abs(hours) < 24) return relativeFormat.format(hours, "hour")
