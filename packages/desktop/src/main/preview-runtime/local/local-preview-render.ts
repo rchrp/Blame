@@ -25,8 +25,9 @@ import { allocatePreviewHostPorts } from "./local-preview-ports.ts";
 // Renders a worktree's plan for the Blame Runtime: the worktree is mounted
 // at /workspace, every endpoint gets a port on this computer, worktrees with
 // the same dependency manifests share their node_modules volumes, and env
-// files that name the preview origin or a browser binding are materialized
-// with the published values and mounted over the originals.
+// files are materialized for the preview and mounted over the originals:
+// with the preview origin, its bindings and the manifest's values, and
+// without the developer's database settings.
 
 const dependencyManifestFiles = [
   "package.json",
@@ -150,34 +151,53 @@ type ComposeDocument = {
   >;
 };
 
-// The values bound for each directory, so an env file there names them too.
+// The values bound for each directory, so an env file there names them
+// too, and the values the manifest sets there, so a loader that lets the
+// env file win still reads the manifest's.
 function environmentOverrides(
   plan: PreviewExecutionPlan,
   yaml: string,
 ): EnvFileOverride[] {
   const services = (parseYaml(yaml) as ComposeDocument).services ?? {};
-  const byDirectory = new Map<string, Record<string, string>>();
+  const bound = new Map<string, Record<string, string>>();
+  const set = new Map<string, Record<string, string>>();
   for (const service of plan.services) {
     const directory = workspaceDirectory(service.workingDir);
     if (!directory || !service.bindings.length) continue;
     const environment = services[service.id]?.environment ?? {};
-    const values = byDirectory.get(directory) ?? {};
     for (const { targetKey } of service.bindings) {
       const value = environment[targetKey]?.replace(/\$\$/g, "$");
-      if (value === undefined) continue;
-      // Two services of one directory bound to different values: neither
-      // can be written to their shared env file.
-      values[targetKey] =
-        targetKey in values && values[targetKey] !== value ? "" : value;
+      if (value !== undefined) merge(bound, directory, targetKey, value);
     }
-    byDirectory.set(directory, values);
   }
-  return [...byDirectory].map(([directory, values]) => ({
+  for (const task of [...plan.setup, ...plan.services]) {
+    const directory = workspaceDirectory(task.workingDir);
+    if (!directory) continue;
+    for (const [key, value] of Object.entries(task.environment))
+      merge(set, directory, key, value.replace(/\$\$/g, "$"));
+  }
+  return [...new Set([...bound.keys(), ...set.keys()])].map((directory) => ({
     directory,
-    values: Object.fromEntries(
-      Object.entries(values).filter(([, value]) => value),
-    ),
+    values: settled(bound.get(directory)),
+    replacements: settled(set.get(directory)),
   }));
+}
+
+// Two tasks of one directory with different values: neither can be
+// written to their shared env file.
+function merge(
+  byDirectory: Map<string, Record<string, string>>,
+  directory: string,
+  key: string,
+  value: string,
+) {
+  const values = byDirectory.get(directory) ?? {};
+  values[key] = key in values && values[key] !== value ? "" : value;
+  byDirectory.set(directory, values);
+}
+
+function settled(values: Record<string, string> = {}) {
+  return Object.fromEntries(Object.entries(values).filter(([, v]) => v));
 }
 
 function workspaceDirectory(workingDir: string) {

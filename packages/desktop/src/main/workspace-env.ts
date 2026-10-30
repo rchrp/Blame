@@ -60,8 +60,22 @@ export type EnvHostFileMount = {
 
 export type EnvFileOverride = {
   directory: string;
+  /** Values the preview binds: written to the env file. */
   values: Record<string, string>;
+  /** Values the manifest sets: replace the ones the env file has. */
+  replacements?: Record<string, string>;
 };
+
+// Settings that connect to a database, cache or queue. A developer's env
+// file points them at their own data (a local server, a tunnel to
+// production): a preview never reads them from there, only from the
+// manifest, which gives it its own database.
+const databaseEnvironmentKey =
+  /^(?:DB|DATABASE|MYSQL|MARIADB|POSTGRES|POSTGRESQL|PG|MONGO|MONGODB|REDIS|MSSQL|SQL)(?:_|$)|^(?:PGHOST|PGPORT|PGUSER|PGPASSWORD|PGDATABASE|DIRECT_URL)$|_(?:DATABASE_URL|DB_URL|DSN)$/;
+
+export function previewDatabaseEnvironmentKey(key: string) {
+  return databaseEnvironmentKey.test(key);
+}
 
 const publicOriginEnvironmentKeys = new Set([
   "APP_URL",
@@ -148,7 +162,6 @@ export async function materializedPreviewEnvHostFileMounts(
   previewOrigin: string | undefined,
   overrides: EnvFileOverride[] = [],
 ) {
-  if (!previewOrigin && overrides.length === 0) return [];
   const files = await projectEnvFiles(worktree);
   const mounts = await Promise.all(
     files.runtime.map((path) =>
@@ -168,7 +181,6 @@ export async function materializedPreviewEnvFilesMatch(
   previewOrigin: string | undefined,
   overrides: EnvFileOverride[] = [],
 ) {
-  if (!previewOrigin && overrides.length === 0) return true;
   const files = await projectEnvFiles(worktree);
   const matches = await Promise.all(
     files.runtime.map((path) =>
@@ -195,6 +207,7 @@ async function materializedPreviewEnvHostFileMount(
     content,
     previewOrigin,
     override.values,
+    override.replacements,
   );
   if (materialized === content) return null;
   const relativePath = relativeWorkspacePath(worktree, path);
@@ -223,6 +236,7 @@ async function materializedPreviewEnvFileMatches(
     content,
     previewOrigin,
     override.values,
+    override.replacements,
   );
   if (materialized === content) return true;
   const relativePath = relativeWorkspacePath(worktree, path);
@@ -243,6 +257,7 @@ export function materializePreviewEnvValues(
   content: string,
   previewOrigin: string | undefined,
   overrides: Record<string, string> = {},
+  replacements: Record<string, string> = {},
 ) {
   let hasPublicOrigin = false;
   let hasNextPublicAppUrl = false;
@@ -252,13 +267,11 @@ export function materializePreviewEnvValues(
     if (!parsed) return line;
     usedKeys.add(parsed.key);
     if (parsed.key === "NEXT_PUBLIC_APP_URL") hasNextPublicAppUrl = true;
-    if (overrides[parsed.key] !== undefined) {
-      return materializedEnvLine(
-        parsed.key,
-        parsed.value,
-        overrides[parsed.key],
-      );
-    }
+    const value = overrides[parsed.key] ?? replacements[parsed.key];
+    if (value !== undefined)
+      return materializedEnvLine(parsed.key, parsed.value, value);
+    if (previewDatabaseEnvironmentKey(parsed.key))
+      return `# ${parsed.key} left out by Blame: a preview uses its own database.`;
     if (!previewOrigin || !publicOriginEnvironmentKeys.has(parsed.key))
       return line;
     hasPublicOrigin = true;
@@ -285,6 +298,7 @@ function envFileOverride(
     overrides.find((override) => override.directory === directory) ?? {
       directory,
       values: {},
+      replacements: {},
     }
   );
 }

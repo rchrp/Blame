@@ -176,7 +176,7 @@ test("materializes preview public env values", () => {
     [
       "APP_URL=http://localhost:42251",
       'BETTER_AUTH_URL="http://localhost:42251"',
-      "DATABASE_URL=mysql://database:3306/app",
+      "# DATABASE_URL left out by Blame: a preview uses its own database.",
       "NEXT_PUBLIC_APP_URL=http://localhost:42251",
       "",
     ].join("\n"),
@@ -199,6 +199,38 @@ test("materializes typed binding values without framework-specific keys", () => 
       "BROWSER_ORIGIN=http://localhost:42251",
       "",
     ].join("\n"),
+  );
+});
+
+test("never hands a preview the database settings of a developer env file", () => {
+  const developer = [
+    "PORT=3333",
+    "DB_HOST=127.0.0.1",
+    "DB_PORT=13307",
+    "DB_PASSWORD=real-secret",
+    "DATABASE_URL=mysql://prod:secret@db.example.com/prod",
+    "REDIS_URL=redis://127.0.0.1:6379",
+    "STRIPE_KEY=sk_test",
+    "",
+  ].join("\n");
+  const preview = materializePreviewEnvValues(
+    developer,
+    undefined,
+    {},
+    {
+      DB_HOST: "mysql",
+      PORT: "3333",
+    },
+  );
+  assert.match(preview, /^DB_HOST=mysql$/m);
+  assert.match(preview, /^PORT=3333$/m);
+  assert.match(preview, /^STRIPE_KEY=sk_test$/m);
+  assert.doesNotMatch(preview, /13307|real-secret|prod:secret|6379/);
+  assert.match(preview, /^# DB_PORT left out by Blame/m);
+  // Replacements only rewrite keys the file has; bindings are added.
+  assert.doesNotMatch(
+    materializePreviewEnvValues("A=1\n", undefined, {}, { B: "2" }),
+    /B=/,
   );
 });
 
