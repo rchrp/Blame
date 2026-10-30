@@ -29,6 +29,7 @@ import { parseLocalPreviewRuntimeSelectionState } from "./local-preview-lifecycl
 // configuration with its lifecycle, and the engine's own state.
 
 export type LocalPreviewErrorCode =
+  | "preview_configuration_host_only"
   | "preview_container_stopped"
   | "preview_dependency_timeout"
   | "preview_manifest_invalid"

@@ -1,32 +1,97 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { ProjectPreviewRuntimeState } from "@blame/agent-runtime";
 import type { PreviewRuntimeSelectionState } from "../../preview-run-state.ts";
 import {
   localPreviewLifecycle,
   parseLocalPreviewRuntimeSelectionState,
+  localPreviewOperationInFlight,
   persistLocalPreviewFailure,
-  persistLocalPreviewResult,
+  readyLocalPreviewLifecycle,
+  runLocalPreviewOperation,
   suspendedLocalPreviewLifecycle,
   validPreviewLifecycle,
   selectsBrowserPreview,
 } from "./local-preview-lifecycle.ts";
 
-test("projects local container and endpoint observations to the shared lifecycle", () => {
+test("reports ready only once the start that owns the preview settled", () => {
   const starting = selection("running", "starting");
+  // While the start runs, running containers do not make it ready.
   assert.equal(
-    localPreviewLifecycle(starting, "starting", true, undefined).phase,
+    localPreviewLifecycle(starting, "running", true, "http://x/", true).phase,
     "starting",
   );
+  // A pending start no operation owns any more was interrupted.
+  const interrupted = localPreviewLifecycle(starting, "running", true, "x");
+  assert.equal(interrupted.status, "error");
+  assert.match(interrupted.failure?.message ?? "", /interrupted/);
+  const ready = { ...starting, lifecycle: readyLocalPreviewLifecycle() };
   assert.equal(
-    localPreviewLifecycle(starting, "running", true, undefined).phase,
-    "loading",
-  );
-  assert.equal(
-    localPreviewLifecycle(starting, "running", true, "http://127.0.0.1:3000")
-      .phase,
+    localPreviewLifecycle(ready, "running", true, "http://x/").phase,
     "ready",
   );
+  // Settled, then its services stopped: a failure, never a new wait.
+  assert.equal(
+    localPreviewLifecycle(ready, "stopped", true, undefined).status,
+    "error",
+  );
+  assert.equal(
+    localPreviewLifecycle(ready, "error", true, "x").status,
+    "error",
+  );
+});
+
+test("a selected preview nobody started yet is idle, not starting", () => {
+  const selected: PreviewRuntimeSelectionState = {
+    desiredStatus: "running",
+    selectedConfigurationId: "web",
+  };
+  assert.equal(
+    localPreviewLifecycle(selected, "stopped", false, undefined).phase,
+    "idle",
+  );
+});
+
+test("an operation settles the lifecycle unless a newer request took over", async () => {
+  const writes: PreviewRuntimeSelectionState[] = [];
+  let current: PreviewRuntimeSelectionState = { desiredStatus: "stopped" };
+  const write = async (_: string, state: PreviewRuntimeSelectionState) => {
+    writes.push(state);
+    current = state;
+  };
+  const read = async () => current;
+  let inFlight = false;
+  await runLocalPreviewOperation(
+    "/w",
+    "web",
+    "running",
+    "starting",
+    async () => {
+      inFlight = localPreviewOperationInFlight("/w");
+      return readyLocalPreviewLifecycle();
+    },
+    write,
+    read,
+  );
+  assert.equal(inFlight, true);
+  assert.equal(localPreviewOperationInFlight("/w"), false);
+  assert.deepEqual(
+    writes.map(({ lifecycle }) => lifecycle?.phase),
+    ["starting", "ready"],
+  );
+  // A stop arrived during the start: the start writes nothing more.
+  await runLocalPreviewOperation(
+    "/w",
+    "web",
+    "running",
+    "starting",
+    async () => {
+      current = { desiredStatus: "stopped" };
+      throw new Error("compose failed");
+    },
+    write,
+    read,
+  ).catch(() => undefined);
+  assert.equal(current.desiredStatus, "stopped");
 });
 
 test("rejects stale runtime state instead of defaulting it to running", () => {
@@ -51,27 +116,11 @@ test("rejects stale runtime state instead of defaulting it to running", () => {
   );
 });
 
-test("persists local completion and failures through one selection contract", async () => {
+test("persists failures as readable lifecycle errors", async () => {
   const writes: PreviewRuntimeSelectionState[] = [];
-  const write = async (
-    _worktree: string,
-    state: PreviewRuntimeSelectionState,
-  ) => {
+  const write = async (_: string, state: PreviewRuntimeSelectionState) => {
     writes.push(state);
   };
-  const result = {
-    configurations: [],
-    desiredStatus: "running",
-    lifecycle: {
-      phase: "ready",
-      status: "ready",
-      since: new Date().toISOString(),
-    },
-    selectedConfigurationId: "web",
-    statuses: {},
-  } satisfies ProjectPreviewRuntimeState;
-
-  await persistLocalPreviewResult("/workspace", result, write);
   await persistLocalPreviewFailure(
     "/workspace",
     "web",
@@ -79,12 +128,10 @@ test("persists local completion and failures through one selection contract", as
     new Error("compose failed"),
     write,
   );
-
-  assert.equal(writes[0]?.lifecycle?.phase, "ready");
-  assert.deepEqual(writes[1]?.lifecycle?.failure, {
+  assert.deepEqual(writes[0]?.lifecycle?.failure, {
     message: "compose failed",
   });
-  assert.equal(validPreviewLifecycle(writes[1]?.lifecycle), true);
+  assert.equal(validPreviewLifecycle(writes[0]?.lifecycle), true);
 });
 
 function selection(
@@ -114,13 +161,8 @@ test("reports the step of a starting preview until its phase changes", () => {
     },
   };
   assert.equal(
-    localPreviewLifecycle(starting, "starting", true, undefined).step,
+    localPreviewLifecycle(starting, "starting", true, undefined, true).step,
     "Downloading container images",
-  );
-  assert.equal(
-    localPreviewLifecycle(starting, "running", true, "http://localhost:3000/")
-      .step,
-    undefined,
   );
 });
 
@@ -145,7 +187,7 @@ test("keeps a preview stopped for lack of use suspended", () => {
     "suspended",
   );
   assert.equal(
-    localPreviewLifecycle(suspended, "running", true, undefined).phase,
+    localPreviewLifecycle(suspended, "running", true, undefined, true).phase,
     "stopping",
   );
   const stopped: PreviewRuntimeSelectionState = { desiredStatus: "stopped" };

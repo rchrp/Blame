@@ -72,12 +72,20 @@ import {
 import {
   idleLocalPreviewLifecycle,
   localPreviewLifecycle,
+  localPreviewOperationInFlight,
+  persistLocalPreviewFailure,
+  readyLocalPreviewLifecycle,
   selectsBrowserPreview,
   pendingLocalPreviewLifecycle,
   suspendedLocalPreviewLifecycle,
   runLocalPreviewOperation,
+  trackLocalPreviewOperation,
 } from "./preview-runtime/local/local-preview-lifecycle.js";
 import { LocalPreviewService } from "./preview-runtime/local/local-preview-service";
+import {
+  previewRecoveryConfigurationFingerprint,
+  previewRecoveryFailureFingerprint,
+} from "./preview-recovery-fingerprint.ts";
 import {
   createProject,
   setNewProjectAgentRuntime,
@@ -126,6 +134,7 @@ import {
   localPreviewHealthy,
   localPreviewLogs,
   localPreviewProbesPass,
+  assertLocalPreviewHasServices,
   localPreviewServices,
   localPreviewUrl,
   prefetchLocalPreview,
@@ -1429,7 +1438,14 @@ function startProjectCompose(
   const next = worktreeActivity
     .run(worktree, async () => {
       await previewCleanup;
-      await previewPrefetches.get(worktree);
+      const prefetch = previewPrefetches.get(worktree);
+      if (prefetch) {
+        void recordPreviewStartStep(
+          worktree,
+          "Finishing the preparation of images and dependencies",
+        );
+        await prefetch;
+      }
       return startProjectComposeOperation(worktree, options);
     })
     .finally(() => previewStarts.delete(worktree));
@@ -1705,13 +1721,12 @@ async function ensureProjectPreviewUrl(input: EnsureProjectPreviewUrlInput) {
     return currentUrl;
   const recovery = previewRecoveries.get(worktree);
   if (recovery) return recovery;
-  const configurationFingerprint =
-    await previewRecoveryConfigurationFingerprint(
-      worktree,
-      configurations,
-      runtimeState,
-      manifest,
-    );
+  const configurationFingerprint = previewRecoveryConfigurationFingerprint({
+    configurations,
+    files: await previewRecoveryFingerprintFiles(worktree),
+    manifest,
+    runtimeState,
+  });
   const decision = previewRecoveryCircuit.decision(
     worktree,
     configurationFingerprint,
@@ -1743,6 +1758,7 @@ async function ensureProjectPreviewUrl(input: EnsureProjectPreviewUrlInput) {
           configurations,
           runtimeState,
           error,
+          operationErrorType(error),
         ),
       );
       throw error;
@@ -1763,6 +1779,10 @@ export async function projectPreviewRuntimeState(
   if (workspaceMode === "cloud-mirror" || workspaceMode === "direct") {
     return cloudMirrorPreviewRuntimeState(worktree);
   }
+  // Read before the files: an operation that settles during this read has
+  // written its result by the time it stops being in flight.
+  const inFlight =
+    localPreviewOperationInFlight(worktree) || previewStarts.has(worktree);
   const [configurations, runtimeState, containers, manifest] =
     await Promise.all([
       readProjectRunConfigurations(worktree),
@@ -1794,6 +1814,7 @@ export async function projectPreviewRuntimeState(
     selected ? statuses[selected.id] : undefined,
     browserPreview,
     previewUrl,
+    inFlight,
   );
   return {
     configurations,
@@ -1877,6 +1898,16 @@ function previewStatusConfiguration(
 }
 
 export async function controlProjectPreview(input: ControlProjectPreviewInput) {
+  const worktree = resolveRuntimePath(input.worktree);
+  // In flight from the request on, so no read sees it half applied; the
+  // state it returns is read once it settled.
+  await trackLocalPreviewOperation(worktree, () =>
+    controlProjectPreviewNow(input),
+  );
+  return projectPreviewRuntimeState(worktree);
+}
+
+async function controlProjectPreviewNow(input: ControlProjectPreviewInput) {
   return worktreeActivity.run(resolveRuntimePath(input.worktree), async () => {
     const selection = await previewControlSelection(input);
     recordPreviewUse(selection.worktree);
@@ -1975,32 +2006,6 @@ async function refreshProjectDependencyArtifacts(worktree: string) {
   });
 }
 
-async function previewRecoveryConfigurationFingerprint(
-  worktree: string,
-  configurations: ProjectRunConfiguration[],
-  runtimeState: PreviewRuntimeSelectionState,
-  manifest: PreviewManifest | undefined,
-) {
-  const hash = createHash("sha256");
-  hash.update(
-    JSON.stringify({
-      configurations,
-      desiredStatus: runtimeState.desiredStatus,
-      manifest,
-      selectedConfigurationId: runtimeState.selectedConfigurationId,
-    }),
-  );
-  for (const { content, file } of await previewRecoveryFingerprintFiles(
-    worktree,
-  )) {
-    hash.update("\0");
-    hash.update(file);
-    hash.update("\0");
-    hash.update(content);
-  }
-  return hash.digest("hex");
-}
-
 async function previewRecoveryFingerprintFiles(worktree: string) {
   const paths = await dependencyInputPaths(worktree);
   const contents = await readExistingRuntimeFiles(
@@ -2010,39 +2015,6 @@ async function previewRecoveryFingerprintFiles(worktree: string) {
     const content = contents[path];
     return typeof content === "string" ? [{ content, file }] : [];
   });
-}
-
-function previewRecoveryFailureFingerprint(
-  configurationFingerprint: string,
-  configurations: ProjectRunConfiguration[],
-  runtimeState: PreviewRuntimeSelectionState,
-  error: unknown,
-) {
-  const diagnostic = errorMessage(error).trim().split(/\r?\n/u, 1)[0] ?? "";
-  const selected = configurations.find(
-    ({ id }) => id === runtimeState.selectedConfigurationId,
-  );
-  return createHash("sha256")
-    .update(
-      JSON.stringify({
-        command: selected?.command,
-        configurationFingerprint,
-        diagnostic,
-        errorType: operationErrorType(error),
-        exitCode: previewRecoveryExitCode(error),
-        service: selected?.previewService ?? selected?.services[0],
-      }),
-    )
-    .digest("hex");
-}
-
-function previewRecoveryExitCode(error: unknown) {
-  if (error && typeof error === "object") {
-    const value = "exitCode" in error ? error.exitCode : undefined;
-    if (typeof value === "number") return value;
-  }
-  const match = errorMessage(error).match(/exited? with code (\d+)/iu);
-  return match ? Number(match[1]) : undefined;
 }
 
 async function previewControlSelection(input: ControlProjectPreviewInput) {
@@ -2067,7 +2039,7 @@ async function stopProjectPreview(
   options: { suspend?: boolean } = {},
 ) {
   const { current, selected, worktree } = selection;
-  return runLocalPreviewOperation(
+  await runLocalPreviewOperation(
     worktree,
     selected.id,
     "stopped",
@@ -2077,13 +2049,14 @@ async function stopProjectPreview(
         await stopRunConfigurationServices(worktree, current);
       }
       await stopRunConfigurationServices(worktree, selected);
-      const state = await projectPreviewRuntimeState(worktree);
       return options.suspend
-        ? { ...state, lifecycle: suspendedLocalPreviewLifecycle() }
-        : state;
+        ? suspendedLocalPreviewLifecycle()
+        : idleLocalPreviewLifecycle();
     },
     writePreviewRuntimeState,
+    readPreviewRuntimeFileState,
   );
+  return projectPreviewRuntimeState(worktree);
 }
 
 // Stops a preview nobody used for a while, as suspended: opening it in the
@@ -2114,7 +2087,7 @@ async function startProjectPreview(
   restart: boolean,
 ) {
   const { current, selected, worktree } = selection;
-  return runLocalPreviewOperation(
+  await runLocalPreviewOperation(
     worktree,
     selected.id,
     "running",
@@ -2131,11 +2104,18 @@ async function startProjectPreview(
           selectedConfigurationId: selected.id,
         });
       }
+      await assertLocalPreviewHasServices(worktree, selected);
       await startProjectCompose(worktree);
-      return projectPreviewRuntimeState(worktree);
+      // Ready once the start has passed its readiness checks, not when
+      // the containers merely run.
+      return (await previewRuntimeStopped(worktree))
+        ? undefined
+        : readyLocalPreviewLifecycle();
     },
     writePreviewRuntimeState,
+    readPreviewRuntimeFileState,
   );
+  return projectPreviewRuntimeState(worktree);
 }
 
 function assertPreviewRunnerAction(action: string) {
@@ -2236,20 +2216,43 @@ async function recoverProjectPreview(worktree: string) {
   if (await previewRuntimeStopped(worktree)) return null;
   if (removedWorktrees.has(worktree)) return null;
   if (removingWorktrees.has(worktree)) return null;
-  if (await previewRuntimeStopped(worktree)) return null;
   await appendRecoveryLog(worktree, "compose starting");
-  try {
-    const previewUrl = await startProjectCompose(worktree);
-    await appendRecoveryLog(
-      worktree,
-      previewUrl ? `preview ready at ${previewUrl}` : "run configuration ready",
-    );
-    return previewUrl ?? null;
-  } catch (error) {
-    await stopProjectLogStream(worktree);
-    await appendRecoveryLog(worktree, errorMessage(error).trim());
-    throw error;
-  }
+  // A recovery is a start: it owns the lifecycle until it settles.
+  return trackLocalPreviewOperation(worktree, async () => {
+    try {
+      const previewUrl = await startProjectCompose(worktree);
+      await appendRecoveryLog(
+        worktree,
+        previewUrl
+          ? `preview ready at ${previewUrl}`
+          : "run configuration ready",
+      );
+      await settleRecoveredPreview(worktree);
+      return previewUrl ?? null;
+    } catch (error) {
+      await stopProjectLogStream(worktree);
+      await appendRecoveryLog(worktree, errorMessage(error).trim());
+      const state = await readPreviewRuntimeFileState(worktree);
+      if (state.desiredStatus === "running" && state.selectedConfigurationId)
+        await persistLocalPreviewFailure(
+          worktree,
+          state.selectedConfigurationId,
+          "running",
+          error,
+          writePreviewRuntimeState,
+        );
+      throw error;
+    }
+  });
+}
+
+async function settleRecoveredPreview(worktree: string) {
+  const state = await readPreviewRuntimeFileState(worktree);
+  if (state.desiredStatus !== "running") return;
+  await writePreviewRuntimeState(worktree, {
+    ...state,
+    lifecycle: readyLocalPreviewLifecycle(),
+  });
 }
 
 export async function shutdownWorkspaceProcesses() {

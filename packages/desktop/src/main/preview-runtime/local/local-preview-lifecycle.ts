@@ -9,6 +9,9 @@ type WritePreviewRuntimeState = (
   worktree: string,
   state: PreviewRuntimeSelectionState,
 ) => Promise<void>;
+type ReadPreviewRuntimeState = (
+  worktree: string,
+) => Promise<PreviewRuntimeSelectionState>;
 
 /**
  * Whether the selected configuration opens a page: terminal and screen
@@ -25,44 +28,67 @@ export function selectsBrowserPreview(
   return !surface || surface === "web";
 }
 
+/**
+ * The lifecycle shown for a local preview. The operation in flight owns it:
+ * while one runs, its persisted phase and step are the truth. Once none
+ * runs, the persisted result stands, and the containers can only turn a
+ * settled preview into a failure. A pending state no operation owns any
+ * more (Blame was closed during a start) is reported as interrupted, so a
+ * preview never waits forever.
+ */
 export function localPreviewLifecycle(
   persisted: PreviewRuntimeSelectionState,
   selectedStatus: ProjectPreviewRuntimeState["statuses"][string] | undefined,
   browserPreview: boolean,
   previewUrl: string | undefined,
+  inFlight = false,
 ): PreviewLifecycleState {
-  if (selectedStatus === "error") {
-    return failedLocalPreviewLifecycle(
-      persisted.lifecycle?.failure?.message ?? "A preview container failed.",
-      persisted.lifecycle?.since,
+  const last = persisted.lifecycle;
+  if (inFlight) {
+    if (last?.status === "pending") return last;
+    return localLifecycle(
+      persisted.desiredStatus === "running" ? "starting" : "stopping",
+      "pending",
+      last,
     );
   }
-  if (
-    persisted.desiredStatus === "running" &&
-    selectedStatus === "running" &&
-    (!browserPreview || previewUrl)
-  ) {
-    return localLifecycle("ready", "ready", persisted.lifecycle);
-  }
   if (persisted.desiredStatus === "stopped") {
-    if (selectedStatus === "running" || selectedStatus === "starting") {
-      return localLifecycle("stopping", "pending", persisted.lifecycle);
-    }
-    // Stopped for lack of use: opening the preview starts it again.
-    return persisted.lifecycle?.phase === "suspended"
-      ? persisted.lifecycle
-      : idleLocalPreviewLifecycle(persisted.lifecycle?.since);
+    if (last?.status === "error" || last?.phase === "suspended") return last;
+    return idleLocalPreviewLifecycle(
+      last?.phase === "idle" ? last.since : undefined,
+    );
   }
-  if (persisted.lifecycle?.status === "error") return persisted.lifecycle;
-  if (selectedStatus === "running" && browserPreview && !previewUrl) {
-    return localLifecycle("loading", "pending", persisted.lifecycle);
+  if (last?.status === "error") return last;
+  if (last?.status === "pending") {
+    return failedLocalPreviewLifecycle(
+      last.phase === "stopping" || last.phase === "suspending"
+        ? "The preview stop was interrupted before it finished. Stop or restart the preview."
+        : "The preview start was interrupted before it finished, for example because Blame was closed. Restart the preview.",
+    );
   }
-  const pendingPhase = persisted.lifecycle?.phase;
-  return localLifecycle(
-    pendingPhase === "stopping" ? "stopping" : "starting",
-    "pending",
-    persisted.lifecycle,
+  if (selectedStatus === "error") {
+    return failedLocalPreviewLifecycle(
+      "A preview service stopped unexpectedly. Open Run logs to see its output, then restart the preview.",
+    );
+  }
+  if (selectedStatus === "running" && (!browserPreview || previewUrl))
+    return localLifecycle("ready", "ready", last);
+  // Its address could not be read this time: wait for the next reading.
+  if (selectedStatus === "running")
+    return localLifecycle("loading", "pending", last);
+  if (last?.phase === "ready" || last?.phase === "loading") {
+    return failedLocalPreviewLifecycle(
+      "The preview services are no longer running. Restart the preview.",
+    );
+  }
+  // Selected but never started: the start request has not arrived yet.
+  return idleLocalPreviewLifecycle(
+    last?.phase === "idle" ? last.since : undefined,
   );
+}
+
+export function readyLocalPreviewLifecycle(): PreviewLifecycleState {
+  return { phase: "ready", status: "ready", since: new Date().toISOString() };
 }
 
 export function suspendedLocalPreviewLifecycle(): PreviewLifecycleState {
@@ -89,18 +115,6 @@ export function pendingLocalPreviewLifecycle(
   return { phase, status: "pending", since: new Date().toISOString() };
 }
 
-export async function persistLocalPreviewResult(
-  worktree: string,
-  result: ProjectPreviewRuntimeState,
-  writeState: WritePreviewRuntimeState,
-) {
-  await writeState(worktree, {
-    desiredStatus: result.desiredStatus,
-    lifecycle: result.lifecycle ?? idleLocalPreviewLifecycle(),
-    selectedConfigurationId: result.selectedConfigurationId,
-  });
-}
-
 export async function persistLocalPreviewFailure(
   worktree: string,
   selectedConfigurationId: string,
@@ -115,33 +129,83 @@ export async function persistLocalPreviewFailure(
   });
 }
 
+const operations = new Map<string, number>();
+
+/** Whether a start, stop or recovery of this worktree's preview runs now. */
+export function localPreviewOperationInFlight(worktree: string) {
+  return (operations.get(worktree) ?? 0) > 0;
+}
+
+/** Marks a preview operation of a worktree as running until it settles. */
+export async function trackLocalPreviewOperation<T>(
+  worktree: string,
+  action: () => Promise<T>,
+) {
+  operations.set(worktree, (operations.get(worktree) ?? 0) + 1);
+  try {
+    return await action();
+  } finally {
+    const remaining = (operations.get(worktree) ?? 1) - 1;
+    if (remaining > 0) operations.set(worktree, remaining);
+    else operations.delete(worktree);
+  }
+}
+
+/**
+ * Runs a start or stop as the owner of the preview's lifecycle: pending
+ * while it runs, then the lifecycle the operation settled on, or its
+ * failure. An operation that returns nothing was overtaken by a newer
+ * request (a stop during a start), which writes its own result.
+ */
 export async function runLocalPreviewOperation(
   worktree: string,
   selectedConfigurationId: string,
   desiredStatus: PreviewRuntimeSelectionState["desiredStatus"],
   phase: Extract<PreviewLifecyclePhase, "starting" | "stopping" | "suspending">,
-  operation: () => Promise<ProjectPreviewRuntimeState>,
+  operation: () => Promise<PreviewLifecycleState | undefined>,
   writeState: WritePreviewRuntimeState,
+  readState: ReadPreviewRuntimeState,
 ) {
-  await writeState(worktree, {
-    desiredStatus,
-    lifecycle: pendingLocalPreviewLifecycle(phase),
-    selectedConfigurationId,
-  });
-  try {
-    const result = await operation();
-    await persistLocalPreviewResult(worktree, result, writeState);
-    return result;
-  } catch (error) {
-    await persistLocalPreviewFailure(
-      worktree,
-      selectedConfigurationId,
+  await trackLocalPreviewOperation(worktree, async () => {
+    await writeState(worktree, {
       desiredStatus,
-      error,
-      writeState,
-    );
-    throw error;
-  }
+      lifecycle: pendingLocalPreviewLifecycle(phase),
+      selectedConfigurationId,
+    });
+    try {
+      const lifecycle = await operation();
+      if (
+        !lifecycle ||
+        !(await stillWanted(worktree, desiredStatus, readState))
+      )
+        return;
+      await writeState(worktree, {
+        desiredStatus,
+        lifecycle,
+        selectedConfigurationId,
+      });
+    } catch (error) {
+      if (await stillWanted(worktree, desiredStatus, readState)) {
+        await persistLocalPreviewFailure(
+          worktree,
+          selectedConfigurationId,
+          desiredStatus,
+          error,
+          writeState,
+        );
+      }
+      throw error;
+    }
+  });
+}
+
+async function stillWanted(
+  worktree: string,
+  desiredStatus: PreviewRuntimeSelectionState["desiredStatus"],
+  readState: ReadPreviewRuntimeState,
+) {
+  const current = await readState(worktree).catch(() => undefined);
+  return !current || current.desiredStatus === desiredStatus;
 }
 
 export function validPreviewLifecycle(
@@ -229,14 +293,13 @@ function validFailure(value: unknown) {
   );
 }
 
-function failedLocalPreviewLifecycle(
+export function failedLocalPreviewLifecycle(
   message: string,
-  since?: string,
 ): PreviewLifecycleState {
   return {
     phase: "failed",
     status: "error",
-    since: since ?? new Date().toISOString(),
+    since: new Date().toISOString(),
     failure: { message: message.trim() || "The local preview failed." },
   };
 }

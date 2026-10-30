@@ -1,6 +1,7 @@
 import { localPreviewToolsPath } from "./local-preview-tools.ts";
 import { stopDevicesForWorktree } from "../../preview-devices/device-registry.ts";
 import type { PreviewExecutionPlan } from "@blame/preview-runtime";
+import type { ProjectRunConfiguration } from "@blame/agent-runtime";
 import {
   ComposeEngine,
   installTtydCommand,
@@ -120,6 +121,27 @@ export function selectedServiceIds(context: LocalPreviewContext) {
     context.selected,
     context.manifest,
   ).filter((id) => ids.has(id));
+}
+
+/**
+ * Fails a start that would run nothing: a host-only configuration (a
+ * native app, a wrapper that opens host tools) has no container service.
+ */
+export async function assertLocalPreviewHasServices(
+  worktree: string,
+  configuration: ProjectRunConfiguration,
+) {
+  if (configuration.previewTarget) return;
+  const manifest = await readLocalPreviewManifest(worktree);
+  if (
+    manifest &&
+    previewRunConfigurationServiceIds(configuration, manifest).length
+  )
+    return;
+  throw new LocalPreviewError(
+    "preview_configuration_host_only",
+    `"${configuration.name}" runs on your computer only (${configuration.command}), so a container preview has nothing to start for it. Choose a run configuration with container services, or run this story in Direct mode.`,
+  );
 }
 
 /**
