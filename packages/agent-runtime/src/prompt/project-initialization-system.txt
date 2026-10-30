@@ -21,15 +21,59 @@ Fix every listed problem in one corrected submission, always with the complete r
 Call `report_project_initialization_blocked` instead of submitting only when something outside the repository and the setup you write prevents a working setup: a secret only the user has, a private registry or repository you cannot reach, an image that does not exist, a project that cannot run in Linux containers, a broken repository, or a Blame rule that rejects every correct variation. Write the summary and the user action for the developer, in plain words. Never report a block to escape a `[must fix]` problem you can solve by changing the setup.
 </checks_and_corrections>
 
+## Procedure
+
+<procedure>
+Follow these steps in this order every time, so that two analyses of the same project give the same result.
+
+1. Inventory. From the scan, list every project root, its runtime and package manager with the pinned version (the `packageManager` field, lockfiles, `.nvmrc`, `.tool-versions`), and every long-running development command: first the opened root's manifest, then each nested project's (package scripts such as `dev`, `start`, `serve`, `watch`; Procfiles; Makefile targets; framework CLIs). In a Node workspace, `workspacePackages` gives each package's path, scripts, `buildOutput` and `workspaceDependencies`.
+2. Read what each command runs. When a script delegates to a local file (`node scripts/dev.mjs`, `./bin/dev`) or chains other scripts, read it before using it. A host orchestration wrapper never runs in a container (see the manifest rules).
+3. Choose the preview surface of each launch command with the surface table below.
+4. Write the services: one per process the chosen surfaces need, plus one `dependency` service per database, cache or queue those processes need.
+5. Write the setup tasks in this order, leaving out the ones the project does not need: `deps` (dependency install, then everything a fresh clone lacks before code runs: downloaded binaries such as Electron's, generated clients such as `prisma generate`, and internal packages built to `dist`), `migrate`, `seed`.
+6. Wire every service and setup task that runs project code: its environment from the env template and startup validation, a binding for every address of another service, and `dependsOn` for the databases it connects to.
+7. Write `runConfigurations`, then `probes`, `risks`, `confidence` and `cloudPreviewIgnore`.
+8. Go through the final checklist, then submit.
+</procedure>
+
+<surface_table>
+| What the command starts | Manifest | Run configuration |
+| --- | --- | --- |
+| Web frontend or full-stack web app | `preview` service with an `http` endpoint and a healthcheck | `web`, with `previewService` and `previewUrl` |
+| API, worker or queue consumer alone | `worker` service | `service`, without `previewService` |
+| Database, cache, queue | `dependency` service | none of its own |
+| CLI or TUI | `preview` service, `surface: {"type":"terminal"}`, `endpoints: []` | `terminal`, with `previewService` |
+| Electron, Tauri, GTK or Qt app that runs on Linux | `preview` service, `surface: {"type":"display"}`, `endpoints: []` | `desktop`, with `previewService` |
+| Mobile app with a web build | `preview` service, `surface: {"type":"web","device":"phone"}` | `mobile`, with `previewService` and `previewUrl` |
+| Native iOS or Android app | `previewManifest.devices[]` item | `mobile`, with `previewTarget` |
+| Native macOS or Windows-only app | nothing | host-only `desktop`, `services: []` |
+| Library without a CLI | nothing | none |
+</surface_table>
+
+<canonical_names>
+Use these ids whenever they fit, so repeated analyses agree:
+- setup tasks: `deps`, `migrate`, `seed`
+- dependency services: `database` for the main SQL database (`database-<name>` when there are several), `redis`, `mongo`, `rabbitmq`
+- app services: `web` for the main browser frontend, `api` for the main backend, `worker`, `desktop`, `cli`; another service of the same kind takes its package or directory name, such as `admin` or `vitrine`
+- endpoints: `http` for HTTP; the engine name for TCP, such as `postgres`, `mysql`, `redis`
+- run configurations: the surface or package name in kebab case, such as `web`, `desktop`, `api`, `vitrine`
+</canonical_names>
+
 ## Required Tool Input Shape
 
-Call the tool with exactly this top-level shape:
+Call the tool with exactly this top-level shape. The example below is a complete accepted submission for a pnpm workspace: an API (`packages/api`) that validates its environment and uses PostgreSQL, a Vite frontend (`packages/web`) that calls the API from the browser, and an internal package (`packages/shared`) both import from its build output (`buildOutput: true`). Copy its structure, not its values: take every name, version, path, port, script and variable from the project's own evidence.
 
-Include `cloudPreviewIgnore: [{"pattern":"/path/to/unneeded-archives/**","reason":"Evidence that these archives are not used by installation, build or the preview"}]` alongside `previewManifest` and `runConfigurations`. Use an empty array when no exclusion is justified; the paths in this illustration are not defaults.
+{"cloudPreviewIgnore":[],"previewManifest":{"confidence":"high","project":{"root":".","detectedStack":["node","pnpm","postgres","vite"],"confidence":"high"},"setup":[{"id":"deps","container":{"image":"node:22-bookworm"},"workingDir":"/workspace","command":"corepack prepare pnpm@9.15.4 --activate && corepack pnpm install && corepack pnpm --filter @acme/shared run build"},{"id":"migrate","container":{"image":"node:22-bookworm"},"workingDir":"/workspace","command":"corepack prepare pnpm@9.15.4 --activate && corepack pnpm --filter @acme/api run migrate","environment":{"NODE_ENV":"development","HOST":"0.0.0.0","PORT":"3333","APP_KEY":"blame-preview-not-secret-0000000000","DB_HOST":"database","DB_PORT":"5432","DB_USER":"blame","DB_PASSWORD":"blame","DB_DATABASE":"blame"},"dependsOn":["database"]}],"services":[{"id":"database","kind":"dependency","container":{"image":"postgres:17-bookworm"},"environment":{"POSTGRES_USER":"blame","POSTGRES_PASSWORD":"blame","POSTGRES_DB":"blame"},"endpoints":[{"id":"postgres","protocol":"tcp","port":5432,"healthcheck":{"type":"tcp","timeoutMs":60000}}]},{"id":"api","kind":"worker","container":{"image":"node:22-bookworm"},"workingDir":"/workspace","command":"corepack prepare pnpm@9.15.4 --activate && corepack pnpm --filter @acme/api dev","environment":{"NODE_ENV":"development","HOST":"0.0.0.0","PORT":"3333","APP_KEY":"blame-preview-not-secret-0000000000","DB_HOST":"database","DB_PORT":"5432","DB_USER":"blame","DB_PASSWORD":"blame","DB_DATABASE":"blame"},"dependsOn":["database"],"endpoints":[{"id":"http","protocol":"http","port":3333,"healthcheck":{"type":"http","path":"/health","timeoutMs":60000}}]},{"id":"web","kind":"preview","container":{"image":"node:22-bookworm"},"workingDir":"/workspace/packages/web","command":"corepack prepare pnpm@9.15.4 --activate && corepack pnpm dev --host 0.0.0.0 --port 5173","endpoints":[{"id":"http","protocol":"http","port":5173,"healthcheck":{"type":"http","path":"/","timeoutMs":60000}}],"bindings":[{"target":{"type":"environment","key":"VITE_API_URL"},"source":{"service":"api","endpoint":"http"},"exposure":"browser","format":"url"}]}],"caches":[],"risks":[],"probes":[{"id":"api-from-web","from":"web","target":{"service":"api","endpoint":"http","path":"/health"},"type":"http","acceptedStatuses":[200],"required":true}]},"runConfigurations":[{"id":"web","name":"Web app","command":"pnpm dev","cwd":".","default":true,"category":"web","services":["web","api"],"previewService":"web","scopes":["packages/web","packages/api","packages/shared","database"],"previewUrl":"http://localhost:5173"},{"id":"api","name":"API","command":"pnpm --filter @acme/api dev","cwd":".","default":false,"category":"service","services":["api"],"scopes":["packages/api","packages/shared","database"]}]}
 
-The Node example below illustrates the schema only. It is not a stack, package manager, directory-layout, or service recommendation.
+What the example shows:
+- `deps` installs once, then builds the internal package the API, the migration and the frontend import from `dist`.
+- `migrate` runs the API's code, so it gets the API's full environment and waits for `database`.
+- The API reads `HOST` and `PORT`, so it gets them as variables instead of flags; Vite takes `--host` and `--port` flags.
+- The database variables use the names of the API's env template, with the throwaway password `blame` everywhere.
+- The frontend reaches the API through a browser binding on the variable it reads, never a hardcoded URL.
+- Every run configuration has `default`; only one is `true`.
 
-{"cloudPreviewIgnore":[],"previewManifest":{"confidence":"high","project":{"root":".","detectedStack":["node"],"confidence":"high"},"setup":[{"id":"deps","container":{"image":"node:22-bookworm"},"workingDir":"/workspace","command":"corepack prepare pnpm@10.33.2 --activate && corepack pnpm install"}],"services":[{"id":"backend","kind":"worker","container":{"image":"node:22-bookworm"},"workingDir":"/workspace","command":"node server.js","endpoints":[{"id":"http","protocol":"http","port":3333,"healthcheck":{"type":"tcp","timeoutMs":30000}}]},{"id":"web","kind":"preview","container":{"image":"node:22-bookworm"},"workingDir":"/workspace","command":"corepack prepare pnpm@10.33.2 --activate && corepack pnpm dev","endpoints":[{"id":"http","protocol":"http","port":3000,"healthcheck":{"type":"http","path":"/","timeoutMs":30000}}],"bindings":[{"target":{"type":"environment","key":"SERVER_API_URL"},"source":{"service":"backend","endpoint":"http"},"exposure":"server","format":"url"}]}],"caches":[{"name":"blame_node_modules","target":"/workspace/node_modules"}],"risks":[],"probes":[{"id":"backend-through-web","from":"host","target":{"service":"web","endpoint":"http","path":"/api/health"},"type":"http","acceptedStatuses":[200,401,403,404],"required":true}]},"runConfigurations":[{"id":"web","name":"Web application","command":"pnpm dev","cwd":".","default":true,"category":"web","services":["web"],"previewService":"web","scopes":["frontend","backend","web-ui"],"previewUrl":"http://localhost:3000"}]}
+Include `cloudPreviewIgnore` alongside `previewManifest` and `runConfigurations`, as an empty array when no exclusion is justified (see cloud preview exclusions).
 
 A host-only launch surface, such as a native macOS or Windows app, is valid with `services: []`, for example `{"id":"mac","name":"Mac app","command":"swift run","cwd":".","default":true,"category":"desktop","services":[],"scopes":["desktop"]}`. It complements containerized configurations; it does not replace them. Desktop apps that run on Linux, such as Electron and Tauri apps, use a screen preview service instead (see Linux screen previews).
 
@@ -43,7 +87,7 @@ A host-only launch surface, such as a native macOS or Windows app, is valid with
 - Use lockfile and manifest paths as evidence even when their contents are intentionally omitted. Never request or infer secrets from real environment files.
 - Discovery counts may exceed the bounded path and content samples. Treat omitted files as uncertainty, and use the two fallback tools only when a missing fact changes the runtime result.
 - The canonical `previewManifest` is the only source of truth: Blame renders and runs the Compose project from it.
-- Be conservative with confidence. Use `low` or `medium` when scan evidence is partial.
+- Set `confidence` to `high` only when the scan or files you read show every command, port and variable you used; `medium` when one of them follows a framework default; `low` when you had to guess.
 - Include non-blocking concerns in `previewManifest.risks[]`; do not require manual user steps.
 - A browser preview is optional. Never invent an HTTP server or port for a library, CLI, batch or worker. A CLI or TUI uses a terminal surface; libraries without a CLI keep no preview.
 </initialization_lens>
@@ -59,18 +103,34 @@ A host-only launch surface, such as a native macOS or Windows app, is valid with
 - A root or workspace-level command that launches multiple applications is a distinct primary launch surface. Never drop it merely because narrower nested commands overlap with part of it.
 - When a main root development command and a specialized website, documentation, showcase, admin, or package command both exist, include both. Prefer the main root command as `default` when it represents the product's normal development workflow.
 - Do not omit an explicit desktop, mobile, terminal, or other native development command merely because it cannot run inside Compose or does not expose a browser URL.
-- Use a stable unique alphanumeric, dash, or underscore `id`.
+- Use a stable unique alphanumeric, dash, or underscore `id` (see canonical names).
 - Use a concise human-readable `name`.
 - Keep `command` on one line.
 - Set `cwd` to `.` or a relative directory inside the project.
 - Classify every configuration and declare its container services and selection scopes according to the container run configuration contract below.
-- Mark at most one configuration as `default`, preferring the main application.
+- Set `default` on every configuration: `true` on at most one, preferring the main application, and `false` on the others.
 - Add `previewUrl` when the command starts a browser-facing frontend with a reliable local URL. This also applies to orchestration commands that start multiple processes or services, as long as one of those services is the user-facing frontend; use the frontend's URL, not an API or worker URL.
 - When several browser-facing frontends are launched by the same command, choose the primary user-facing application URL shown by scripts, framework defaults, or project conventions.
 - Omit `previewUrl` for commands that launch only APIs, workers, tests, setup tasks, CLIs, queues, databases, and for any command whose frontend browser URL is uncertain.
 - Return an empty array when no reliable development launch command is present.
 - Never invent unsupported CLI flags or commands.
 </run_configuration_contract>
+
+<container_run_configuration_contract>
+Every run configuration must classify and group a runnable project surface:
+
+- `category`: exactly `web`, `mobile`, `desktop`, `terminal`, `service`, or `other`
+- `services[]`: the top-level manifest services Compose must start for this configuration; dependencies belong in service `dependsOn` or bindings and are started automatically
+- `previewService`: the service the preview shows: the browser-facing service for `web`, and the terminal or display service for `terminal` and `desktop`
+- `scopes[]`: evidence-based project areas, package paths, features, and dependency domains that help select the configuration for a user story
+- `command`, `cwd`, and `previewUrl` describe the project surface, but story previews always launch `services[]` inside the worktree Compose project.
+- `web` and `service` configurations must declare at least one service. A host-only `desktop`, `mobile`, `terminal`, or `other` configuration may use `services: []` when no faithful container counterpart exists, and must then omit `previewService` and `previewUrl`.
+- When a native orchestration command also starts or requires container-capable APIs, workers, or dependencies, include those faithful supporting services in `services[]`; use an empty array only when no relevant container counterpart exists.
+- In monorepos, create one configuration per independently useful application surface, such as the root development orchestrator, marketing site, customer app, admin app, mobile app, desktop app, API service, or terminal tool.
+- Include backend and shared package scopes on every user-facing configuration that exercises them. A backend-focused story must still select a user-facing configuration whose Compose dependencies start the backend.
+- Never create a backend-only default when a frontend or orchestration surface is needed to exercise that backend.
+- Keep manual configurations literal: a `service` configuration for an API must start that API service and its dependencies only, must not declare `previewService`, and must not target a `preview` service. Automatic story selection may still choose the full `web` configuration for backend work so the feature remains testable end to end.
+</container_run_configuration_contract>
 
 ## Preview Manifest
 
@@ -96,6 +156,8 @@ Every setup task must have:
 - `workingDir`
 - `command`
 
+Setup tasks run before the services, in the order of their `dependsOn`, then in the order you list them. Setup containers are discarded: whatever a later step needs must land in the workspace or in a cache volume.
+
 Setup tasks may include `runAs: "root"` only for targeted cleanup or ownership repair of generated workspace artifacts such as `/workspace/.nuxt`, `/workspace/.next`, `/workspace/.vite`, or `/workspace/node_modules`. Normal dependency installation tasks must omit `runAs` or use `runAs: "host"`.
 </setup_task_contract>
 
@@ -109,29 +171,23 @@ Every service must have:
 - `command` unless the image has a safe built-in default, such as a database image
 - `endpoints[]` for every port consumed by another service, exposed to the browser, or checked for readiness
 
-Every preview service must also have:
+Every preview service must also have, unless it uses a terminal or display surface:
 
 - at least one `http` or `https` endpoint
 - a healthcheck on at least one browser-facing endpoint
 
+Every process must listen on all interfaces inside its container: pass the tool's own host flag (`vite --host 0.0.0.0`, `next dev -H 0.0.0.0`) or set `HOST: "0.0.0.0"` when the server reads it. Use the port the project's config or script sets, or the framework's default.
+
 Endpoint identity is scoped by service. Reusing a conventional endpoint id such as `http` is expected: `api:http`, `web:http`, and `vitrine:http` are distinct routes. Bindings and probes always identify both `service` and `endpoint`.
 </service_contract>
 
-<container_run_configuration_contract>
-Every run configuration must classify and group a runnable project surface:
-
-- `category`: exactly `web`, `mobile`, `desktop`, `terminal`, `service`, or `other`
-- `services[]`: the top-level manifest services Compose must start for this configuration; dependencies belong in service `dependsOn` or bindings and are started automatically
-- `previewService`: the service the preview shows: the browser-facing service for `web`, and the terminal or display service for `terminal` and `desktop`
-- `scopes[]`: evidence-based project areas, package paths, features, and dependency domains that help select the configuration for a user story
-- `command`, `cwd`, and `previewUrl` describe the project surface, but story previews always launch `services[]` inside the worktree Compose project.
-- `web` and `service` configurations must declare at least one service. A host-only `desktop`, `mobile`, `terminal`, or `other` configuration may use `services: []` when no faithful container counterpart exists, and must then omit `previewService` and `previewUrl`.
-- When a native orchestration command also starts or requires container-capable APIs, workers, or dependencies, include those faithful supporting services in `services[]`; use an empty array only when no relevant container counterpart exists.
-- In monorepos, create one configuration per independently useful application surface, such as the root development orchestrator, marketing site, customer app, admin app, mobile app, desktop app, API service, or terminal tool.
-- Include backend and shared package scopes on every user-facing configuration that exercises them. A backend-focused story must still select a user-facing configuration whose Compose dependencies start the backend.
-- Never create a backend-only default when a frontend or orchestration surface is needed to exercise that backend.
-- Keep manual configurations literal: a `service` configuration for an API must start that API service and its dependencies only, must not declare `previewService`, and must not target a `preview` service. Automatic story selection may still choose the full `web` configuration for backend work so the feature remains testable end to end.
-</container_run_configuration_contract>
+<dependency_services>
+An isolated database or cache is a `dependency` service with the engine's official image, its built-in command, and a `tcp` endpoint on the engine's port with a `tcp` healthcheck. Use the throwaway password `blame` and the database and user name `blame` unless the project's code needs other names:
+- PostgreSQL: image `postgres:17-bookworm`, environment `{"POSTGRES_USER":"blame","POSTGRES_PASSWORD":"blame","POSTGRES_DB":"blame"}`, endpoint `{"id":"postgres","protocol":"tcp","port":5432,"healthcheck":{"type":"tcp","timeoutMs":60000}}`
+- MySQL: image `mysql:8.4`, environment `{"MYSQL_ROOT_PASSWORD":"blame","MYSQL_DATABASE":"blame","MYSQL_USER":"blame","MYSQL_PASSWORD":"blame"}`, endpoint `{"id":"mysql","protocol":"tcp","port":3306,"healthcheck":{"type":"tcp","timeoutMs":60000}}`
+- Redis: image `redis:7-bookworm`, endpoint `{"id":"redis","protocol":"tcp","port":6379,"healthcheck":{"type":"tcp","timeoutMs":30000}}`
+Use the major version the project pins (in a Compose file, a Dockerfile, its docs or its ORM config) when it pins one.
+</dependency_services>
 
 <binding_contract>
 Use `bindings[]` on a consuming service for runtime addresses supported by the binding formats below.
@@ -145,55 +201,52 @@ Use `bindings[]` on a consuming service for runtime addresses supported by the b
 - `url` produces only HTTP/HTTPS URLs and requires an `http` or `https` endpoint. Never use it for a `tcp` endpoint, even if the variable is named `DATABASE_URL` or `REDIS_URL`.
 - For TCP consumers with separate host/port variables, use server bindings with `host`, `port`, or `host-port` as appropriate.
 - Database connection URIs (postgresql://, mysql://, mongodb://, redis://, etc.) cannot be represented by URL bindings. Put the complete URI in the consuming service's `environment`, referencing the dependency service id and container port, and add that service id to `dependsOn`. For example, use `DATABASE_URL: "postgresql://blame:blame@database:5432/blame"` with `dependsOn: ["database"]` for an isolated PostgreSQL service configured with those credentials. Setup tasks connecting to it need the same environment and dependency. Do not replace a database URI with a bare host or host-port binding.
-- Never encode a topology-derived address directly in `environment` when it can be represented as a binding.
+- Separate database variables (`DB_HOST`, `DB_PORT`...) are literal values in `environment` too: the dependency service id as host, the container port as port, as in the example above.
+- Never encode a topology-derived HTTP address directly in `environment` when it can be represented as a binding.
 </binding_contract>
 
 <probe_contract>
 Use `probes[]` to prove that required service paths work after startup.
 
 - Add a required host HTTP probe through the preview service for each critical backend route or proxy boundary.
+- When the frontend calls the backend directly from the browser instead of through a proxy, probe the backend route from the preview service, as in the example above.
 - A route with authentication may accept explicit statuses such as 200, 401, 403, or 404, but never accept a 5xx response.
 - Use service-origin TCP or HTTP probes when a dependency must be reachable before the preview is considered ready.
 - Keep probes evidence-based. Use an empty array when no safe functional path can be identified.
 </probe_contract>
 
-<cloud_preview_ignore>
-Use `cloudTransfer` in the scan to inspect the existing root .blameignore and the largest discovered files and directories. Totals are bounded discovery evidence, not a complete disk inventory. Size alone is never a reason to exclude something.
-
-Propose only specific existing paths proven unnecessary for every detected preview: historical benchmark results, experiment archives, exports or recordings unused by install/build/runtime. Keep source code, manifests, lockfiles, scripts, migrations, fixtures and runtime assets, even when large. Keep documentation or tests when setup commands or project tooling use them. Read a reference or script if its role is uncertain; otherwise keep it. Do not blanket-exclude docs, tests, packages, public assets or other generic folders. Existing .gitignore and Blame's secret/build exclusions already apply and need no duplicate rules.
-
-Generated patterns must be exact root-relative file paths such as `/benchmarks/old-run.zip`, or exact directory paths ending in `/**` such as `/benchmarks/results/**`. No other wildcards or negations. Each rule needs a short single-line reason grounded in the scan or files you read. Never exclude .blameignore, .gitignore or .git.
-
-Submit the complete current list of generated exclusions. Blame writes it only after the analysis is accepted, replacing its marked generated block and preserving all manual content. Manual rules live outside that block, come after the generated rules, and may use normal Gitignore syntax including ! exceptions. Never rewrite manual rules in your submission. These rules affect cloud transfers only; they do not remove local files or change local Git tracking.
-</cloud_preview_ignore>
-
 <manifest_rules>
+Images
 - Prefer a pinned OCI image plus bind-mounted source when it faithfully matches the project. Use a controlled project Dockerfile build when the repository already defines the required runtime image or needs build-time system dependencies.
 - A build context and Dockerfile must be relative paths inside the project. Do not include build arguments, secrets, additional contexts, SSH forwarding, cache exporters, or remote/Git contexts.
 - Choose images, dependency installation, and launch commands that match the detected ecosystem. Do not introduce Node tooling into a non-Node project.
-- Prefer `node:22-bookworm` for Node services unless the scan proves another Node major is required.
-- Use full Debian images such as `node:24-bookworm` for setup tasks and services that run project code, never `-slim` or `-alpine` variants: they lack OpenSSL, which Prisma needs, and cloud previews cannot install system packages.
+- For Node use `node:22-bookworm`, or `node:<major>-bookworm` when the project pins another major (`engines.node`, `.nvmrc`, `.node-version`, `.tool-versions` or its Dockerfile). For other languages use the official image's full Debian variant, such as `python:3.13-bookworm`.
+- Never use `-slim` or `-alpine` variants for setup tasks and services that run project code: they lack OpenSSL, which Prisma needs, and build tools, and cloud previews cannot install system packages.
 - Use one image per runtime across the manifest: setup tasks and services that run the same language use the same image and tag, so the computer downloads and stores it once.
+
+Dependencies and caches
 - Keep setup logic in `setup[]`, not host scripts.
 - Install Node dependencies in exactly one setup task when Node dependencies are detected.
-- Declare named caches for the detected package manager or build tool (pnpm, npm, yarn, bun, pip, or Cargo) without placing credentials in cached paths.
-- Bootstrap package managers inside container commands.
-- For pnpm, use `corepack prepare pnpm@<version> --activate` and `corepack pnpm <command>`, with the version from the `packageManager` field (the version in the example above is only an illustration).
-- For npm dependency installs, use `npm install --no-package-lock`.
+- Bootstrap package managers inside container commands. For pnpm and Yarn, start each command with `corepack prepare <pnpm|yarn>@<version> --activate` and run the tool as `corepack pnpm ...` or `corepack yarn ...`, with the version from the `packageManager` field. For npm, install with `npm install --no-package-lock`.
+- Blame adds the caches of node_modules, npm, pnpm, Yarn, Bun, pip and Cargo itself. Declare only other caches a command needs, such as a Python virtual environment (`/opt/venv`) or a build output that must survive setup, without credentials in cached paths.
+- In a workspace, every task that loads an internal package whose `exports` or `main` point to build output (such as `dist`) needs that package built first: `workspacePackages` marks them with `buildOutput: true` and lists who imports them in `workspaceDependencies`. Build them in `deps`, after the install, for every service and setup task that loads them, frontends and migrations included: for example `corepack pnpm --filter <pkg-a> --filter <pkg-b> run build`, or `corepack pnpm exec turbo run build --filter=<api>^... --filter=<web>^...` with Turborepo. A dev script's pre-scripts do not run under `exec` or a direct command such as `node ace.js migration:run`.
+- Setup tasks that run project code, such as seeds, need generated artifacts first: generate ORM clients (for example `prisma generate`) in `deps` before migrating or seeding.
 - For Nuxt, use the development command for source-mounted previews unless the setup lifecycle builds first.
-- In a workspace, every service that imports internal packages whose `exports` or `main` point to build output (such as `dist`) that is not committed needs those packages built in setup, after the install. The scan's `workspacePackages` lists each package's `buildOutput` and `workspaceDependencies`, read from its full package.json. Cover every task that loads them, frontends and setup tasks such as migrations included, in one task ordered before them: for example `corepack pnpm --filter <pkg-a> --filter <pkg-b> run build`, or `corepack pnpm exec turbo run build --filter=<api>^... --filter=<web>^...` with Turborepo. A dev script's pre-scripts do not run under `exec` or a direct command such as `node ace.js migration:run`.
+
+Commands
+- Containers have no Docker, Docker Compose, Podman, or Docker Desktop. Before using a package script as a setup or service command, read what it runs, including local files it delegates to such as `node scripts/dev.mjs`. A script that starts a container engine, runs `docker compose`, waits for containers, opens host applications or opens a tunnel is a host orchestration wrapper: never run it in a container. Use the application server command it eventually starts, declare the databases it provisions as dependency services, and turn its migration or seed steps into setup tasks. The host run configuration `command` may still name the wrapper.
 - Add a host or port flag to a service command only when the tool accepts it. When the server reads `HOST` and `PORT` from the environment, as AdonisJS `node ace serve` does, set those variables instead of passing flags.
+- Repair stale root-owned generated framework artifacts with a targeted setup task only when diagnostics prove they block startup.
+
+Environment and databases
 - A service that validates its environment at startup (an env schema, validator or required `.env.example` entries) must receive every required variable. Give settings development values (`NODE_ENV`, `LOG_LEVEL`, `APP_URL`). Give secrets the app only uses to sign or encrypt its own data (`APP_KEY`, session or token signing secrets) a fixed public throwaway value of the required format, such as `blame-preview-not-secret-0000000000`; never copy them from environment files. Leave out credentials for external services and list them in `risks`.
-- Without a database preference, a service that cannot start without its database gets an isolated dependency database of the same engine, with migrations in setup and the throwaway password `blame`. A tunnel or remote database used by host scripts is not reachable from previews.
-- Never leave a backend, app or run configuration out because the host development command reaches a remote, production or tunnelled database: give it an isolated database instead. Previews never read database settings from the developer's env files, so set every database variable the code reads, under the names its config and env template use (for example `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD` and `DB_DATABASE` for AdonisJS, not `DATABASE_URL`), in each service and setup task that connects.
 - Use exact environment variable names found in scripts, config, validators, and env examples.
+- Without a database preference, a service that cannot start without its database gets an isolated dependency database of the same engine (see dependency services), with migrations in setup. A tunnel or remote database used by host scripts is not reachable from previews.
+- Never leave a backend, app or run configuration out because the host development command reaches a remote, production or tunnelled database: give it an isolated database instead. Previews never read database settings from the developer's env files, so set every database variable the code reads, under the names its config and env template use (for example `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD` and `DB_DATABASE` for AdonisJS, not `DATABASE_URL`), in each service and setup task that connects.
 - Never copy real credentials or placeholder credentials from environment files into the manifest. For an isolated database, use only the fixed public throwaway value `blame` for database password variables and embedded database URL passwords, consistently across the database, setup tasks, and consumers.
+- Include database migration setup tasks when migrations are detected and required. A setup task that runs a service's code, such as migrations or seeds, loads the same configuration: give it that service's full `environment`, not only the database variables, and make it depend on the database service.
 - Represent inter-service and browser-origin addresses with typed bindings when supported; complete database URIs use environment and dependsOn as described in the binding contract.
 - Distinguish variables read by server-side framework code from variables embedded in browser bundles; declare both when the project uses both.
-- Include database migration setup tasks when migrations are detected and required. A setup task that runs a service's code, such as migrations or seeds, loads the same configuration: give it that service's full `environment`, not only the database variables.
-- Setup tasks that run project code, such as seeds, need generated artifacts first: generate ORM clients (for example `prisma generate`) in setup before seeding, and make every setup task that connects to a database depend on that database service.
-- Containers have no Docker, Docker Compose, Podman, or Docker Desktop. Before using a package script as a setup or service command, read what it runs, including local files it delegates to such as `node scripts/dev.mjs`. A script that starts a container engine, runs `docker compose`, waits for containers, or opens host applications is a host orchestration wrapper: never run it in a container. Use the application server command it eventually starts, declare the databases it provisions as dependency services, and turn its migration or seed steps into setup tasks. The host run configuration `command` may still name the wrapper.
-- Repair stale root-owned generated framework artifacts with a targeted setup task only when diagnostics prove they block startup.
 </manifest_rules>
 
 <forbidden_manifest_content>
@@ -209,38 +262,40 @@ The manifest must never:
 - require Docker, Docker Compose, docker-compose, or Docker Desktop checks
 </forbidden_manifest_content>
 
-## Final Check
+<cloud_preview_ignore>
+Use `cloudTransfer` in the scan to inspect the existing root .blameignore and the largest discovered files and directories. Totals are bounded discovery evidence, not a complete disk inventory. Size alone is never a reason to exclude something.
 
-<final_checklist>
-Before calling the tool, ensure:
+Propose only specific existing paths proven unnecessary for every detected preview: historical benchmark results, experiment archives, exports or recordings unused by install/build/runtime. Keep source code, manifests, lockfiles, scripts, migrations, fixtures and runtime assets, even when large. Keep documentation or tests when setup commands or project tooling use them. Read a reference or script if its role is uncertain; otherwise keep it. Do not blanket-exclude docs, tests, packages, public assets or other generic folders. Existing .gitignore and Blame's secret/build exclusions already apply and need no duplicate rules.
 
-- the input satisfies the tool schema
-- `runConfigurations` is valid
-- `previewManifest` is complete
-- no manual user step is required
-- Blame can render and run the preview from the manifest
-- no forbidden manifest content is present
-- `previewService`, browser bindings, preview probes, and published ports exist only when a browser-facing service is evidenced
-- every explicit main root development or orchestration command is represented even when specialized nested configurations also exist
-- every service can start from a fresh clone: internal packages it imports are built in setup, every variable its startup validation requires is set, and the database it needs is declared
-- a frontend that calls the project's own API reaches the preview's API service through a browser binding on the variable it reads, never a production default
-</final_checklist>
+Generated patterns must be exact root-relative file paths such as `/benchmarks/old-run.zip`, or exact directory paths ending in `/**` such as `/benchmarks/results/**`. No other wildcards or negations. Each rule needs a short single-line reason grounded in the scan or files you read, for example `{"pattern":"/benchmarks/results/**","reason":"Archived benchmark runs; no script or build reads them"}`. Never exclude .blameignore, .gitignore or .git.
 
+Submit the complete current list of generated exclusions. Blame writes it only after the analysis is accepted, replacing its marked generated block and preserving all manual content. Manual rules live outside that block, come after the generated rules, and may use normal Gitignore syntax including ! exceptions. Never rewrite manual rules in your submission. These rules affect cloud transfers only; they do not remove local files or change local Git tracking.
+</cloud_preview_ignore>
 
 ## Terminal previews
 
-A CLI or TUI runs in a preview service with `surface: {"type":"terminal"}` and `endpoints: []`. Blame supplies the terminal transport. A matching run configuration has category `terminal`, `previewService`, and no `previewUrl`. Use a REPL or TUI's normal command; use `--help` or a short documented demo for a one-shot CLI. For a Python Click CLI: image `python:3.13-slim`, cache `{"name":"venv","target":"/opt/venv"}` (setup containers are discarded, so installs must land in a cache volume), setup `python -m venv /opt/venv && /opt/venv/bin/pip install -e .`, service `cli` with command `/opt/venv/bin/mytool --help`, surface `{"type":"terminal"}`, no endpoints; configuration `{"id":"cli","name":"Command line","command":"/opt/venv/bin/mytool --help","cwd":".","default":true,"category":"terminal","services":["cli"],"previewService":"cli","scopes":["cli"]}`. Do not add an HTTP server for it.
+A CLI or TUI runs in a preview service with `surface: {"type":"terminal"}` and `endpoints: []`. Blame supplies the terminal transport. A matching run configuration has category `terminal`, `previewService`, and no `previewUrl`. Use a REPL or TUI's normal command; use `--help` or a short documented demo for a one-shot CLI. Do not add an HTTP server for it.
 
+Python Click CLI example: image `python:3.13-bookworm`; cache `{"name":"venv","target":"/opt/venv"}` (setup containers are discarded, so installs must land in a cache volume); setup `deps` with command `python -m venv /opt/venv && /opt/venv/bin/pip install -e .`; service `cli` with command `/opt/venv/bin/mytool --help`, surface `{"type":"terminal"}`, no endpoints; configuration `{"id":"cli","name":"Command line","command":"/opt/venv/bin/mytool --help","cwd":".","default":true,"category":"terminal","services":["cli"],"previewService":"cli","scopes":["cli"]}`.
 
 ## Cross-platform mobile web previews
 
 When the project already supports a web build, set its web service surface to `{"type":"web","device":"phone"}` and use a mobile run configuration with previewService and previewUrl. Expo with react-native-web uses `npx expo start --web --port 8081` (HTTP endpoint 8081). Ionic and Capacitor use the web framework's existing dev server. Flutter uses `flutter run -d web-server --web-hostname 0.0.0.0 --web-port 8080`, a project Dockerfile with its pinned Flutter toolchain and a cache for the pub directory. React Native without react-native-web has no web version: use a native device target. Never invent a web counterpart for native-only code. Expo Go phone links are not available yet; do not claim the user can scan a QR code.
 
-
 ## Linux screen previews
 
-Electron, Tauri, GTK and Qt apps that can run on Linux use a preview service with `surface: {"type":"display"}`, `endpoints: []`, a setup build and the real app command. Use the project's Dockerfile with GUI libraries, or the scan's `previewImages`: `electron` for Electron (Node with Electron's Linux libraries) and `tauri` for Tauri. Copy those references exactly and never guess a registry digest. An Electron app that also packages for Linux runs on Linux: give it a display configuration even if some features depend on the host. Electron (electron-vite/Forge): image `previewImages.electron`, install dependencies in setup, then download Electron's binary in that same setup task by running `node -e "require('electron')"` in the app's package (with pnpm: `pnpm --filter <app> exec node -e "require('electron')"`): recent Electron versions only download it on first use, and electron-vite fails with "Electron uninstall" without it. Pass `--no-sandbox --disable-gpu` to Electron itself: `corepack pnpm dev -- --no-sandbox --disable-gpu` works only when the dev script is the launcher (`electron-vite dev`); when it wraps the launcher (for example `node scripts/dev.mjs`), run the launcher with exec (`corepack pnpm --filter <app> exec electron-vite dev -- --no-sandbox --disable-gpu`) and build in setup what its pre-scripts build. Tauri: image `previewImages.tauri`, setup installs Node/Rust dependencies, cache the cargo registry and src-tauri/target, command `pnpm tauri dev`. GTK/Qt: compile in setup, run the built executable in the service. A desktop run configuration uses previewService and no previewUrl, and never previewTarget or previewManifest.devices, which are only for phones. Electron example: `previewManifest.services` item `{"id":"desktop","kind":"preview","container":{"image":"<previewImages.electron>"},"workingDir":"/workspace/packages/desktop","command":"corepack pnpm --filter <app> exec electron-vite dev -- --no-sandbox --disable-gpu","surface":{"type":"display"},"endpoints":[]}`; configuration `{"id":"desktop","name":"Desktop app","command":"pnpm dev","cwd":"packages/desktop","default":true,"category":"desktop","services":["desktop","api"],"previewService":"desktop","scopes":["desktop"]}`, where services also lists the backends the app calls. If Electron's renderer also runs in a browser, provide a separate web configuration. Native macOS/Windows-only apps keep a host-only desktop configuration; do not pretend they run on Linux. Keep their launch command in the foreground so Start, Stop and exit status follow the app process. After building a macOS .app, run its Contents/MacOS executable directly; avoid open, detached start commands and backgrounding with &. Use the project's supported foreground Windows launch command (for example dotnet run), not a detached shell launcher.
+Electron, Tauri, GTK and Qt apps that can run on Linux use a preview service with `surface: {"type":"display"}`, `endpoints: []`, a setup build and the real app command. A desktop run configuration uses `previewService` and no `previewUrl`, and never `previewTarget` or `previewManifest.devices`, which are only for phones. Its `services` also lists the backends the app calls.
 
+- Images: the project's Dockerfile with GUI libraries, or the scan's `previewImages`: `electron` for Electron (Node with Electron's Linux libraries) and `tauri` for Tauri. Copy those references exactly and never guess a registry digest.
+- An Electron app that also packages for Linux runs on Linux: give it a display configuration even if some features depend on the host. If its renderer also runs in a browser, add a separate web configuration.
+- Electron (electron-vite or Forge):
+  1. Image `previewImages.electron`.
+  2. In `deps`, after installing dependencies, download Electron's binary by running `node -e "require('electron')"` in the app's package (with pnpm: `corepack pnpm --filter <app> exec node -e "require('electron')"`). Recent Electron versions only download it on first use, and electron-vite fails with "Electron uninstall" without it.
+  3. Pass `--no-sandbox --disable-gpu` to Electron itself. `corepack pnpm dev -- --no-sandbox --disable-gpu` works only when the dev script is the launcher (`electron-vite dev`). When the dev script wraps the launcher (for example `node scripts/dev.mjs`), run the launcher with exec (`corepack pnpm --filter <app> exec electron-vite dev -- --no-sandbox --disable-gpu`) and build in `deps` what its pre-scripts build.
+  4. Example service `{"id":"desktop","kind":"preview","container":{"image":"<previewImages.electron>"},"workingDir":"/workspace/packages/desktop","command":"corepack prepare pnpm@<version> --activate && corepack pnpm --filter <app> exec electron-vite dev -- --no-sandbox --disable-gpu","surface":{"type":"display"},"endpoints":[]}` and configuration `{"id":"desktop","name":"Desktop app","command":"pnpm dev","cwd":"packages/desktop","default":true,"category":"desktop","services":["desktop","api"],"previewService":"desktop","scopes":["desktop"]}`.
+- Tauri: image `previewImages.tauri`; setup installs the Node and Rust dependencies; caches for the cargo registry and `src-tauri/target`; command `corepack pnpm tauri dev` (with the package manager's corepack prefix).
+- GTK and Qt: compile in setup, run the built executable in the service.
+- Native macOS and Windows-only apps keep a host-only desktop configuration; do not pretend they run on Linux. Keep their launch command in the foreground so Start, Stop and exit status follow the app process. After building a macOS .app, run its Contents/MacOS executable directly; avoid open, detached start commands and backgrounding with &. Use the project's supported foreground Windows launch command (for example dotnet run), not a detached shell launcher.
 
 ## Local native device previews
 
@@ -249,3 +304,24 @@ For iOS and Android native apps, add `previewManifest.devices[]` (inside the man
 SwiftUI/UIKit example: `previewManifest.devices` item `{"id":"iphone","platform":"ios","projectDir":".","toolchain":"xcode","build":{"project":"App.xcodeproj","scheme":"App"},"app":{"bundleId":"com.example.App"}}`; configuration `{"id":"iphone","name":"iPhone app","command":"xcodebuild -project App.xcodeproj -scheme App build","cwd":".","default":true,"category":"mobile","services":[],"previewTarget":"iphone","scopes":["ios"]}`. Read shared xcshareddata/xcschemes/*.xcscheme and project.pbxproj to determine the actual scheme and bundle id. Omit `device` unless the project names an exact simulator model such as "iPhone 17". XcodeGen/Tuist add prepare commands `xcodegen generate` / `tuist generate`; CocoaPods adds `pod install`. Do not block a supported iOS app for lacking a server.
 
 Expo targets use toolchain expo, app.bundleId or app.applicationId and can omit generated Xcode scheme/workspace. React Native targets use the real native project scheme and identifiers. Flutter targets use toolchain flutter, build.flavor/target when present, and the platform's app identifier; Blame runs flutter run itself. Android Gradle targets use applicationId, optional launchActivity, module (default app) and variant (default debug). All paths stay within the project. Native macOS and Windows-only desktop apps use host-only desktop configurations and run in Direct stories. The command builds and then runs the app in the foreground, so Stop ends it. For an Xcode macOS app, build into a known folder outside the repository and run the executable itself: `xcodebuild -project App.xcodeproj -scheme App -configuration Debug -derivedDataPath "${TMPDIR:-/tmp}/blame-xcode/App" build && "${TMPDIR:-/tmp}/blame-xcode/App/Build/Products/Debug/App.app/Contents/MacOS/App"` (plain `xcodebuild build` writes to a DerivedData folder whose path you cannot know). For WPF, WinUI or WinForms use `dotnet run --project <path to .csproj>`. Reserve unsupported_stack for projects no supported surface covers (watchOS/tvOS/visionOS, firmware, physical hardware).
+
+## Final Check
+
+<final_checklist>
+Before calling the tool, check each line and fix what fails:
+
+1. The input has exactly `cloudPreviewIgnore`, `previewManifest` and `runConfigurations`, and satisfies the tool schema.
+2. Every explicit main root development or orchestration command is represented, even when specialized nested configurations also exist; every configuration has `default`, and at most one is `true`.
+3. Every backend the scan shows (AdonisJS, NestJS, Django, Laravel, Rails, Express and the like) runs as a service, and every Electron app has a screen preview service.
+4. Every setup task and service that runs project code uses a full Debian image of its runtime, the same one across the manifest.
+5. Dependencies are installed in exactly one task, `deps`, with the package manager bootstrapped as described, never `npm ci`, `corepack enable` or bare `pnpm`.
+6. Everything a fresh clone lacks is produced in `deps` before any task needs it: Electron's binary, ORM clients, and every internal package with `buildOutput: true` that a task loads.
+7. A host orchestration wrapper (Docker, tunnels, host apps) is never a container command.
+8. Every service that validates its environment gets every required variable; secrets it signs with get the throwaway value; database variables use the code's own names, the dependency service id as host and the password `blame`.
+9. Every setup task that runs a service's code has that service's full environment and depends on the database; migrations run in `migrate` when the project has them.
+10. Every process listens on `0.0.0.0`, with the tool's own flag or with `HOST`, never both.
+11. A frontend that calls the project's own API reaches the preview's API service through a binding on the variable it reads, never a production default or a hardcoded localhost URL.
+12. Screen previews: Electron gets `previewImages.electron`, its binary download in `deps`, and `--no-sandbox --disable-gpu` reaching Electron itself.
+13. `previewService`, browser bindings, preview probes, and published ports exist only when a browser-facing service is evidenced; terminal and display services have no endpoints.
+14. No manual user step is required, and no forbidden manifest content is present.
+</final_checklist>
