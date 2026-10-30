@@ -80,6 +80,7 @@ import { useProjectInitialization } from "@/components/project-initialization/us
 import { KanbanBoard } from "@/components/shared/kanban-board"
 import { BacklogDragDrop } from "@/components/backlog/board/backlog-drag-drop"
 import { useCloudAuth } from "@/context/cloud-auth"
+import { useGitIdentity } from "@/context/git-identity"
 import {
   usePlatform,
   type BacklogStatusPipRequest,
@@ -156,6 +157,7 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
   const backlog = useBacklogStore()
   const auth = useCloudAuth()
   const platform = usePlatform()
+  const gitIdentity = useGitIdentity()
   const projects = useProjects()
   const agentSelection = useModelSelection({ role: "agent" })
   const alternativeSelection = useModelSelection({ role: "alternative" })
@@ -1175,10 +1177,18 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
         return mergedStory
       } catch (error) {
         const message = errorMessage(error)
-        toast.error("Approve & Merge failed", {
-          description: message,
-          position: "bottom-right",
-        })
+        // Git asking who you are gets its dialog, not a raw error.
+        const askedIdentity = gitIdentity?.handleError(message, () =>
+          toast.success("Git name and email saved", {
+            description: "Approve & Merge again to merge the story.",
+            position: "bottom-right",
+          })
+        )
+        if (!askedIdentity)
+          toast.error("Approve & Merge failed", {
+            description: message,
+            position: "bottom-right",
+          })
         return updateStory(runningStory, {
           agentLastError: message,
           agentLastEvent: message,
@@ -1188,6 +1198,7 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
     },
     [
       auth,
+      gitIdentity,
       platform,
       projects,
       alternativeSelection.currentModel,

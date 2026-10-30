@@ -59,6 +59,7 @@ import {
 } from "@/components/backlog/data/agent-run-streams"
 import { pendingTerminalAgentUpdates } from "@/components/backlog/data/agent-terminal-outbox"
 import { storiesInTransition } from "@/pages/backlog/story-transitions"
+import { useGitIdentity } from "@/context/git-identity"
 import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
 import { createCloudApi } from "@/lib/cloud-api"
@@ -129,6 +130,7 @@ export function useBacklogRotation(
 ) {
   const auth = useCloudAuth()
   const platform = usePlatform()
+  const gitIdentity = useGitIdentity()
   const projects = useProjects()
   const selection = useModelSelection({ role: "agent" })
   const premium = auth.license?.licensed === true
@@ -284,6 +286,13 @@ export function useBacklogRotation(
       )
       return
     }
+    // Git won't commit the story's work without a name and an email.
+    const identityReady = await gitIdentity?.ensure({
+      root: projects.activeProject.path,
+      storyTitle: detailedStory.title,
+      onSaved: () => retryStory(detailedStory, 0),
+    })
+    if (identityReady === false) return retryStory(detailedStory, blockerRetryDelay)
 
     const executionId = crypto.randomUUID()
     const storyId = detailedStory.id
@@ -542,6 +551,8 @@ export function useBacklogRotation(
   function reportBlocker(story: UserStory, message: string) {
     const key = `${story.id}:${message}`
     retryStory(story, blockerRetryDelay)
+    // Git asking who you are gets its dialog, not a raw error.
+    if (gitIdentity?.handleError(message, () => retryStory(story, 0))) return
     if (reportedBlockers.current.has(key)) return
     reportedBlockers.current.add(key)
     toast.error("User story stayed in Agent Queue", {

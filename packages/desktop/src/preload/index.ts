@@ -239,6 +239,10 @@ const api: BlameDesktopApi = {
     respond: (id, result) =>
       ipcRenderer.invoke("project-app:respond", { id, result }),
   },
+  gitIdentity: {
+    read: (input) => ipcRenderer.invoke("git-identity:read", input),
+    save: (input) => ipcRenderer.invoke("git-identity:save", input),
+  },
   projectWindows: {
     onMenuAction: (callback) => {
       const handler = (_event: unknown, action: "new" | "open") =>

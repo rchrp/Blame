@@ -120,6 +120,7 @@ export type Platform = {
   projectWindows?: ProjectWindowsClient
   // Desktop: the open project's app beyond Blame's own runner.
   projectApp?: ProjectAppClient
+  gitIdentity?: import("./platform-git-identity").GitIdentityClient
   openDirectoryPickerDialog?(
     options?: OpenDirectoryPickerOptions
   ): Promise<PickerPaths>

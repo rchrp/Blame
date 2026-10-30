@@ -13,6 +13,7 @@ import { registerAppearanceIpcHandlers } from "./appearance-ipc";
 import { registerAgentScreenshotIpcHandlers } from "./ipc/agent-screenshots-ipc";
 import { registerPreviewDevtoolsSettingsIpcHandlers } from "./ipc/preview-devtools-settings-ipc";
 import { registerProjectAppIpcHandlers } from "./ipc/project-app-ipc";
+import { registerGitIdentityIpcHandlers } from "./ipc/git-identity-ipc";
 import { registerBacklogStatusPipIpcHandlers } from "./backlog-status-pip-ipc";
 import { registerCloudAuthIpcHandlers } from "./cloud-auth-ipc";
 import { registerDesktopUpdateIpcHandlers } from "./desktop-update-ipc";
@@ -111,6 +112,7 @@ export function registerDesktopIpcHandlers(options: DesktopIpcOptions) {
   });
   registerAgentScreenshotIpcHandlers({ isAppWindow: options.isAppWindow });
   registerProjectAppIpcHandlers({ isAppWindow: options.isAppWindow });
+  registerGitIdentityIpcHandlers({ isAppWindow: options.isAppWindow });
   registerPreviewDevtoolsSettingsIpcHandlers({
     isAppWindow: options.isAppWindow,
   });

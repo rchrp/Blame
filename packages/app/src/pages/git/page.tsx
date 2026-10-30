@@ -8,6 +8,7 @@ import type {
   WorkspaceClient,
 } from "@/context/platform"
 import { useCloudAuth } from "@/context/cloud-auth"
+import { useGitIdentity } from "@/context/git-identity"
 import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
 import { useModelSelection } from "@/components/model/model-selection"
@@ -292,6 +293,7 @@ export function GitPage() {
 }
 
 function useGitController(root?: string, workspace?: WorkspaceClient) {
+  const gitIdentity = useGitIdentity()
   const [busy, setBusy] = React.useState<string>()
   const [commitMessage, setCommitMessage] = React.useState("")
   const [commits, setCommits] = React.useState<GitLogCommit[]>([])
@@ -440,10 +442,11 @@ function useGitController(root?: string, workspace?: WorkspaceClient) {
         workspace,
         refresh,
         setBusy,
-        setError
+        setError,
+        gitIdentity?.handleError
       )
     },
-    [refresh, root, workspace]
+    [gitIdentity, refresh, root, workspace]
   )
 
   const loadMoreCommits = React.useCallback(
@@ -670,7 +673,9 @@ async function runGitAction(
   workspace: WorkspaceClient | undefined,
   refresh: () => Promise<void>,
   setBusy: (value: string | undefined) => void,
-  setError: (value: string) => void
+  setError: (value: string) => void,
+  // Opens the Git identity dialog for Git asking who you are.
+  askIdentity?: (error: unknown, onSaved: () => void) => boolean
 ) {
   if (!root || !workspace) return
   setBusy(label)
@@ -681,6 +686,17 @@ async function runGitAction(
     toast.success(actionSuccess(label))
   } catch (error) {
     const message = errorText(error)
+    const retry = () =>
+      void runGitAction(
+        label,
+        action,
+        root,
+        workspace,
+        refresh,
+        setBusy,
+        setError
+      )
+    if (askIdentity?.(message, retry)) return
     setError(message)
     toast.error(message)
   } finally {

@@ -156,6 +156,15 @@ export type ProjectApp = {
   ): Promise<boolean>;
 };
 
+export type GitIdentityClient = {
+  read(input?: {
+    root?: string;
+  }): Promise<import("../main/git-identity").GitIdentity>;
+  save(
+    input: import("../main/git-identity").GitIdentityInput,
+  ): Promise<import("../main/git-identity").GitIdentityInput>;
+};
+
 export type ProjectWindows = {
   onMenuAction(callback: (action: "new" | "open") => void): () => void;
   focusProject(path: string): Promise<boolean>;
@@ -286,6 +295,7 @@ export type BlameDesktopApi = {
   mcp: McpServersClient;
   windowControls: WindowControls;
   projectApp: ProjectApp;
+  gitIdentity: GitIdentityClient;
   projectWindows: ProjectWindows;
   agentScreenshots: AgentScreenshotsClient;
   previewDevtools: PreviewDevtoolsSettingsClient;

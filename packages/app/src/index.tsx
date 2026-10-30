@@ -10,8 +10,10 @@ import { Toaster } from "@/components/ui/sonner"
 import { DesktopUpdatesProvider } from "@/components/updates/desktop-updates-provider"
 import { UpdateNotifications } from "@/components/updates/update-notifications"
 import { RuntimeInstallDialog } from "@/components/runtime/runtime-install-dialog"
+import { GitIdentityDialog } from "@/components/git/git-identity-dialog"
 import { BlameRuntimeProvider } from "@/context/blame-runtime"
 import { CloudAuthProvider } from "@/context/cloud-auth-provider"
+import { GitIdentityProvider } from "@/context/git-identity"
 import type { Platform } from "@/context/platform"
 import { PlatformProvider } from "@/context/platform-provider"
 import { ProjectProvider } from "@/context/project-provider"
@@ -67,10 +69,13 @@ export function mountApp(element: HTMLElement, options?: MountAppOptions) {
                     <SpeechToTextProvider>
                       <BlameRuntimeProvider enabled={!secondaryWindow()}>
                         <DesktopUpdatesProvider enabled={!secondaryWindow()}>
-                          <App />
-                          <RuntimeInstallDialog />
-                          <Toaster />
-                          <UpdateNotifications />
+                          <GitIdentityProvider>
+                            <App />
+                            <RuntimeInstallDialog />
+                            <GitIdentityDialog />
+                            <Toaster />
+                            <UpdateNotifications />
+                          </GitIdentityProvider>
                         </DesktopUpdatesProvider>
                       </BlameRuntimeProvider>
                     </SpeechToTextProvider>
