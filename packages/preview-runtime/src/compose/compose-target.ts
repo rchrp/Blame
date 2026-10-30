@@ -2,10 +2,7 @@ import { posix } from "node:path";
 import type {
   CachePlan,
   PreviewExecutionPlan,
-  ServiceLaunchPlan,
-  SetupTaskPlan,
 } from "../domain/execution-plan.js";
-import { installsPackages } from "../compilation/command-normalization.js";
 
 // Where a plan runs. Targets differ only in how the workspace reaches the
 // containers, how endpoints are published and how caches are named; the
@@ -109,20 +106,16 @@ function cacheVolume(cache: CachePlan, target: ComposeTarget): MountedVolume {
 
 // Locally, the node_modules of each package a service works in lives in a
 // volume keyed by the dependency hash, so a new story worktree reuses the
-// install of any worktree with the same lockfile. Services that install
-// packages mount every package's volume; the others mount their own.
+// install of any worktree with the same lockfile. Every task mounts every
+// package's volume: a service also loads its workspace siblings, such as an
+// Electron app whose config imports the web app's Vite config.
 export function packageNodeModulesVolumes(
   plan: PreviewExecutionPlan,
   target: ComposeTarget,
-  item: ServiceLaunchPlan | SetupTaskPlan,
 ): MountedVolume[] {
   if (target.kind !== "local" || !rootNodeModulesCached(plan)) return [];
-  const targets = packageDirectories(plan).map(
-    (directory) => `${directory}/node_modules`,
-  );
-  const own = `${item.workingDir.replace(/\/$/, "")}/node_modules`;
-  return targets
-    .filter((path) => installsPackages(item.command ?? "") || path === own)
+  return packageDirectories(plan)
+    .map((directory) => `${directory}/node_modules`)
     .map((path) => ({
       alias: `deps-${safeId(path.slice("/workspace/".length, -"/node_modules".length))}`,
       name: nodeModulesVolumeName(target, path),

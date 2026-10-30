@@ -47,6 +47,7 @@ services:
       - cache-blame_node_modules:/workspace/node_modules
       - cache-blame_npm_cache:/npm/cache
       - deps-api:/workspace/api/node_modules
+      - deps-web:/workspace/web/node_modules
     user: 1001:1001
     healthcheck:
       test:
@@ -84,6 +85,7 @@ services:
       - /home/blame/.local/share/blame/runtime/worktrees/story:/workspace
       - cache-blame_node_modules:/workspace/node_modules
       - cache-blame_npm_cache:/npm/cache
+      - deps-api:/workspace/api/node_modules
       - deps-web:/workspace/web/node_modules
     user: 1001:1001
     healthcheck:

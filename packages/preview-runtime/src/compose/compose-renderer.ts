@@ -415,7 +415,7 @@ function serviceVolumes(
         ]
       : []),
     ...cacheVolumes(plan, target),
-    ...(workspace ? packageNodeModulesVolumes(plan, target, item) : []),
+    ...(workspace ? packageNodeModulesVolumes(plan, target) : []),
   ];
   for (const volume of volumes) context.mounted.set(volume.alias, volume);
   context.serviceVolumes[serviceId] = volumes.map(({ name }) => name);

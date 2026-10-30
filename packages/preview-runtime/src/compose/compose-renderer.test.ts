@@ -93,6 +93,9 @@ test("renders local services on the worktree with host ports", () => {
     "/home/blame/worktrees/story:/workspace",
     "cache-blame_corepack_cache:/tmp/corepack-cache",
     "cache-blame_node_modules:/workspace/node_modules",
+    // Every service sees every package's dependencies: a workspace app
+    // loads its siblings' code.
+    "deps-apps-api:/workspace/apps/api/node_modules",
     "/home/blame/env/story/.env:/workspace/.env:ro",
   ]);
   assert.ok(
