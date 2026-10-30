@@ -3,6 +3,7 @@ import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 
 import {
   findHostGit,
@@ -147,24 +148,62 @@ test("native Windows Git runs git.exe directly, never through cmd.exe", async ()
 
 // The 2026-10-27 regression: starting a story ran `git init` through
 // cmd.exe and surfaced its localized "not recognized" message.
-test("a story's git init without Git fails with the install instructions", async () => {
-  await assert.rejects(
-    run("git", ["init"], {
-      cwd: String.raw`C:\Projects\app`,
-      env: {
-        Path: String.raw`C:\Windows\System32`,
-        SystemRoot: String.raw`C:\Windows`,
-      },
-      execution: "native",
-      platform: "win32",
-    }),
-    (error: Error) => {
-      assert.ok(isHostGitMissingError(error));
-      assert.match(error.message, /Install Git for Windows/);
-      assert.doesNotMatch(error.message, /cmd\.exe|n'est pas reconnu/);
-      return true;
+test("Windows looks for Git only under the environment's folders", () => {
+  const probed: string[] = [];
+  findHostGit({
+    env: {
+      Path: String.raw`X:\bin`,
+      ProgramFiles: String.raw`X:\Program Files`,
+      SystemDrive: "X:",
     },
+    exists: (path) => {
+      probed.push(path);
+      return false;
+    },
+    listDirectory: () => [],
+    platform: "win32",
+  });
+  assert.ok(probed.includes(String.raw`X:\Program Files\Git\cmd\git.exe`));
+  assert.deepEqual(
+    probed.filter((path) => !path.startsWith("X:\\")),
+    [],
   );
+});
+
+// The 2026-10-27 regression: starting a story ran `git init` through
+// cmd.exe and surfaced its localized "not recognized" message. Every place
+// Git could be installed points at an empty folder, even on a machine (or CI
+// runner) that has Git.
+test("a story's git init without Git fails with the install instructions", async () => {
+  const empty = await mkdtemp(join(tmpdir(), "blame-no-git-"));
+  try {
+    await assert.rejects(
+      run("git", ["init"], {
+        cwd: empty,
+        env: {
+          LOCALAPPDATA: empty,
+          Path: empty,
+          ProgramFiles: empty,
+          "ProgramFiles(x86)": empty,
+          ProgramW6432: empty,
+          SCOOP: empty,
+          SystemDrive: empty,
+          SystemRoot: empty,
+          USERPROFILE: empty,
+        },
+        execution: "native",
+        platform: "win32",
+      }),
+      (error: Error) => {
+        assert.ok(isHostGitMissingError(error), error.message);
+        assert.match(error.message, /Install Git for Windows/);
+        assert.doesNotMatch(error.message, /cmd\.exe|n'est pas reconnu/);
+        return true;
+      },
+    );
+  } finally {
+    await rm(empty, { force: true, recursive: true });
+  }
 });
 
 test("other native Windows commands keep cmd.exe's own quoting", () => {
@@ -206,7 +245,7 @@ test(
 );
 
 test("desktop code starts host Git only through hostGitCommand", async () => {
-  const root = new URL(".", import.meta.url).pathname;
+  const root = fileURLToPath(new URL(".", import.meta.url));
   const offenders: string[] = [];
   for (const file of await sourceFiles(root)) {
     const source = await readFile(file, "utf8");

@@ -96,11 +96,13 @@ function windowsGitInstallPaths(
   listDirectory: (path: string) => string[],
 ) {
   const value = (name: string) => envValue(env, name, "win32");
+  // Every root comes from the environment, so a caller can control the search.
+  const systemDrive = value("SystemDrive");
   const programRoots = unique([
     value("ProgramW6432"),
     value("ProgramFiles"),
     value("ProgramFiles(x86)"),
-    String.raw`C:\Program Files`,
+    systemDrive && win32.join(systemDrive, "\\", "Program Files"),
   ]);
   const localAppData = value("LOCALAPPDATA");
   const userProfile = value("USERPROFILE");
