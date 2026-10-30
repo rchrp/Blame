@@ -225,3 +225,76 @@ async function readBody(request: IncomingMessage) {
   for await (const chunk of request) body += chunk;
   return body;
 }
+
+test("an initialization answer that never ends is stopped and the analysis restarts", { timeout: 20_000 }, async () => {
+  const { InitializationSession } = await import("./initialization-session.js");
+  const { runInitializationSessions } = await import("./initialization-runs.js");
+  const { initializationToolPolicies } = await import("./cline-runtime-configuration.js");
+  let requests = 0;
+  const server = createServer(async (request, response) => {
+    await readBody(request);
+    requests += 1;
+    response.writeHead(200, { "content-type": "text/event-stream" });
+    const base = { id: "init", object: "chat.completion.chunk" };
+    const call = (args: string, first = false) => ({ ...base, choices: [{ index: 0, delta: { ...(first ? { role: "assistant" } : {}), tool_calls: [{ index: 0, ...(first ? { id: `submit-${requests}`, type: "function", function: { name: "submit_project_initialization", arguments: args } } : { function: { arguments: args } }) }] }, finish_reason: null }] });
+    if (requests === 1) {
+      // The model repeats itself inside the submission until it is stopped.
+      response.write(`data: ${JSON.stringify(call('{"ok":true,"},{', true))}\n\n`);
+      const loop = setInterval(() => response.write(`data: ${JSON.stringify(call("},{"))}\n\n`), 20);
+      request.on("close", () => clearInterval(loop));
+      response.on("close", () => clearInterval(loop));
+      return;
+    }
+    if (requests === 2) {
+      response.write(`data: ${JSON.stringify(call('{"ok":true}', true))}\n\n`);
+      response.write(`data: ${JSON.stringify({ ...base, choices: [{ index: 0, delta: {}, finish_reason: "tool_calls" }] })}\n\n`);
+    } else {
+      response.write(`data: ${JSON.stringify({ ...base, choices: [{ index: 0, delta: { role: "assistant", content: "done" }, finish_reason: "stop" }] })}\n\n`);
+    }
+    response.end("data: [DONE]\n\n");
+  });
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const address = server.address();
+  assert.ok(address && typeof address === "object");
+  const workspace = await mkdtemp(join(sandbox, "initialization-"));
+  const core = await ClineCore.create({ backendMode: "local", clientName: "blame-smoke", toolPolicies: toolPolicies(false) });
+  const session = new InitializationSession((input) => input as { ok: boolean });
+  const steps: string[] = [];
+  try {
+    const startedAt = Date.now();
+    const done = await runInitializationSessions({
+      cline: core,
+      session,
+      progress: { tool: (name) => steps.push(name), restarting: () => steps.push("restarting") },
+      responseLimitMs: 1_500,
+      start: (sessionId) => core.start({
+        prompt: "Submit the setup.",
+        config: appendProductionConfig({
+          sessionId,
+          providerId: "openai-compatible",
+          modelId: "smoke-model",
+          apiKey: "offline",
+          baseUrl: `http://127.0.0.1:${address.port}/v1`,
+          cwd: workspace,
+          workspaceRoot: workspace,
+          checkpoint: { enabled: false },
+          enableAgentTeams: false,
+          enableSpawnAgent: false,
+          enableTools: true,
+          extraTools: session.tools(),
+          maxIterations: 4,
+          mode: "act",
+          systemPrompt: "Call submit_project_initialization.",
+        }),
+        interactive: false,
+        source: "blame-project-initialization",
+        toolPolicies: initializationToolPolicies(),
+      }),
+    });
+    assert.deepEqual(done.result, { ok: true });
+    assert.equal(steps.filter((step) => step === "restarting").length, 1);
+    assert.ok(Date.now() - startedAt < 10_000, "the endless answer was not stopped");
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});

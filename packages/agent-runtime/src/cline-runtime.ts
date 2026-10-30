@@ -67,7 +67,10 @@ import {
 } from "./cline-initialization.js";
 import { initializationProgress } from "./initialization-progress.js";
 import {
-  InitializationBlockedError,
+  initializationResponseLimitMs,
+  runInitializationSessions,
+} from "./initialization-runs.js";
+import {
   InitializationSession,
   maxInitializationSubmissions,
 } from "./initialization-session.js";
@@ -2169,10 +2172,13 @@ export class BlameAgentRuntime {
       },
     );
     progress.analyzing();
-    let correction = input.validationFeedback;
-    // A second session only when the first ended without any outcome.
-    for (let run = 1; run <= 2; run += 1) {
-      const started = await progress.follow(cline, (sessionId) =>
+    const { result, sessionId } = await runInitializationSessions({
+      cline,
+      session,
+      progress,
+      correction: input.validationFeedback,
+      responseLimitMs: initializationResponseLimitMs(input.reasoningEffort),
+      start: (sessionId, correction) =>
         this.startProjectInitializationAgent(
           cline,
           input,
@@ -2182,20 +2188,8 @@ export class BlameAgentRuntime {
           correction,
           sessionId,
         ),
-      );
-      const outcome = session.outcome();
-      if (outcome.type === "accepted")
-        return saveProjectInitialization(input.workspaceRoot, outcome.result, started.sessionId);
-      if (outcome.type === "blocked")
-        throw new InitializationBlockedError(outcome.blocked);
-      if (outcome.type === "stopped") throw outcome.error;
-      correction = initializationCorrection(
-        outcome.lastRejection?.input ?? started.result?.text ?? "",
-        outcome.lastRejection?.error ??
-          "The session ended without calling submit_project_initialization.",
-      );
-    }
-    throw new Error("Project initialization agent did not submit a result");
+    });
+    return saveProjectInitialization(input.workspaceRoot, result, sessionId);
   }
 
   private startProjectInitializationAgent(

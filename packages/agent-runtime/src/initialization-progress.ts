@@ -1,6 +1,3 @@
-import { randomUUID } from "node:crypto";
-import type { ClineCore, CoreSessionEvent } from "@cline/sdk";
-import { clineSessionToolEvent } from "./cline-runtime-events.js";
 import type { AgentEvent, InitializeProjectInput } from "./types.js";
 
 // Progress of a project initialization, for the app's progress bar. The
@@ -93,28 +90,14 @@ export class InitializationProgressReporter {
     );
   }
 
-  /**
-   * Starts an agent session under a known id, following its tool calls
-   * while it runs. Without a progress channel, it only starts it.
-   */
-  async follow<T>(
-    cline: ClineCore,
-    start: (sessionId: string | undefined) => Promise<T>,
-  ) {
-    if (!this.emit) return start(undefined);
-    const sessionId = `${Date.now()}_${randomUUID().replaceAll("-", "").slice(0, 5)}`;
-    const unsubscribe = await cline.subscribe(
-      (event: CoreSessionEvent) => {
-        const activity = clineSessionToolEvent(event);
-        if (activity?.phase === "started") this.tool(activity.toolName);
-      },
-      { sessionId },
+  /** Blame stopped a model answer that never ended and starts over. */
+  restarting() {
+    this.send(
+      "analyzing",
+      this.percent,
+      "Starting the analysis again",
+      "The model's last answer never ended, so Blame stopped it.",
     );
-    try {
-      return await start(sessionId);
-    } finally {
-      unsubscribe();
-    }
   }
 
   private send(
