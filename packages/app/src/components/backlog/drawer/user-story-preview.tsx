@@ -517,9 +517,12 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
       ? nativePreviewState
       : undefined
 
+  const previewLogService = surfaceConfiguration?.previewService
   const selectedLogService = services.includes(selectedLogServiceChoice)
     ? selectedLogServiceChoice
-    : (services[0] ?? "")
+    : previewLogService && services.includes(previewLogService)
+      ? previewLogService
+      : (services[0] ?? "")
   const hasNativePreview = Boolean(previewBrowser && source && !previewWaiting)
   const displayedPreviewState = hasNativePreview
     ? nativePreviewStatus(activeNativePreviewState)

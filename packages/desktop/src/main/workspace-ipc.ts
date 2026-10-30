@@ -2374,29 +2374,14 @@ async function archivedProjectServiceLog(worktree: string, service: string) {
   }
 }
 
+// Compose prefixes each line of a service with its container name, such
+// as "api-1  | ": a line that only mentions the service is not its output.
 function archivedServiceLogSection(log: string, service: string) {
-  const normalized = normalizedServiceName(service);
-  const lines = log
-    .split("\n")
-    .filter((line) => archivedServiceLogLine(line, normalized));
+  const prefix = new RegExp(
+    `^${service.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}-\\d+\\s+\\|`,
+  );
+  const lines = log.split("\n").filter((line) => prefix.test(line));
   return lines.length ? `${lines.join("\n")}\n` : "";
-}
-
-function archivedServiceLogLine(line: string, service: string) {
-  const normalized = normalizedServiceName(line);
-  if (service === "deps")
-    return (
-      /\bdeps(?:-|_)?run\b/.test(normalized) ||
-      /\bservice deps\b/.test(normalized)
-    );
-  return normalized.includes(service);
-}
-
-function normalizedServiceName(value: string) {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
 }
 
 async function stopProjectServiceLogs(streamId: string) {

@@ -136,15 +136,20 @@ export function useProjectServiceLog(
           void platform.workspace?.stopProjectServiceLogs?.({ streamId })
           return
         }
-        setState((current) => ({ ...current, loading: false }))
+        // Each stream owns the state of its own service: output of the
+        // previous tab never lands in this one.
+        const own = (current: typeof state) =>
+          current.worktree === worktree && current.service === service
+        setState({ content: "", error: "", loading: false, service, worktree })
         cleanup =
           platform.workspace?.onProjectServiceLog?.(streamId, (event) => {
             if (event.type === "exit") return
             setState((current) => ({
-              ...current,
-              content: `${current.content}${event.data}`,
+              content: `${own(current) ? current.content : ""}${event.data}`,
               error: "",
               loading: false,
+              service,
+              worktree,
             }))
           }) ?? (() => {})
       })
