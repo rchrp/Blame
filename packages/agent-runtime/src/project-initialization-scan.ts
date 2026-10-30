@@ -1,4 +1,5 @@
 import { basename } from "node:path";
+import { publishedPreviewImages } from "@blame/preview-runtime/images";
 import {
   scanProjectCloudTransfer,
   type ProjectCloudTransferScan,
@@ -43,6 +44,8 @@ export type ProjectInitializationScan = {
   files: Record<string, string>;
   gitLog: string[];
   cloudTransfer?: ProjectCloudTransferScan;
+  /** Pinned images with the GUI libraries Linux screen previews need. */
+  previewImages?: { electron?: string; tauri?: string };
   discovery?: {
     scannedFileCount: number;
     scannedDirectoryCount: number;
@@ -103,6 +106,10 @@ export async function scanProjectForInitialization(
     files,
     gitLog,
     cloudTransfer,
+    previewImages: {
+      electron: publishedPreviewImages.node,
+      tauri: publishedPreviewImages.tauri,
+    },
     discovery: initializationDiscovery(discovery),
   };
 }

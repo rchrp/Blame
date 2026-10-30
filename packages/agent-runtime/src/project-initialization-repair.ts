@@ -140,6 +140,7 @@ function repairPrompt(
     `Initialization diagnostics: ${JSON.stringify(input.diagnostics)}`,
     `Project root entries: ${JSON.stringify(scan.topLevelEntries)}`,
     `Project discovery: ${JSON.stringify(scan.discovery ?? null)}`,
+    `Preview images: ${JSON.stringify(scan.previewImages ?? null)}`,
     `Project evidence files: ${JSON.stringify(scan.files)}`,
   ].join("\n");
 }

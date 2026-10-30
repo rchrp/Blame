@@ -57,6 +57,7 @@
     "@blame/harness-core": "workspace:*",
     "@blame/model-catalog": "workspace:*",
     "@blame/preview-contract": "workspace:*",
+    "@blame/preview-runtime": "workspace:*",
     "@blame/telemetry": "workspace:*",
     "@cline/llms": "0.2.0",
     "@cline/sdk": "0.2.0",

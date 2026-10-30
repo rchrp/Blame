@@ -31,6 +31,9 @@ test("discovers nested multi-ecosystem projects from a parent folder", async (co
     ),
   );
   assert.ok("random/server/app/main.py" in scan.files);
+  // Screen previews need images the agent cannot guess.
+  assert.match(scan.previewImages?.electron ?? "", /blame-gui-node@sha256:/);
+  assert.match(scan.previewImages?.tauri ?? "", /blame-gui-tauri@sha256:/);
 });
 
 test("discovers practices without assuming Node or conventional folders", async (context) => {

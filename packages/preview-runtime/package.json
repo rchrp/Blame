@@ -20,6 +20,10 @@
     "./compose": {
       "types": "./src/compose/index.ts",
       "default": "./dist/compose/index.js"
+    },
+    "./images": {
+      "types": "./src/compose/blame-images.ts",
+      "default": "./dist/compose/blame-images.js"
     }
   },
   "scripts": {
