@@ -2,6 +2,7 @@ import { execFile } from "node:child_process";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, resolve } from "node:path";
 import { promisify } from "node:util";
+import { hostGitCommand } from "./host-git.ts";
 import {
   run as runInWorkspace,
   runtimeManagedPath,
@@ -31,7 +32,7 @@ export function excludeFileContent(current: string) {
 export async function excludeComponentPreviewFiles(worktree: string) {
   if (runtimeManagedPath(worktree)) return excludeInRuntime(worktree);
   const { stdout } = await execFileAsync(
-    "git",
+    hostGitCommand(),
     ["rev-parse", "--git-path", "info/exclude"],
     { cwd: worktree },
   );

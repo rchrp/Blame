@@ -1,4 +1,5 @@
 import { withoutTelemetryEnvironment } from "@blame/telemetry";
+import { hostGitCommand } from "./host-git.ts";
 import { agentSurfaceInfo, agentSurfaceCall } from "./preview-surfaces/surface-agent.ts";
 import type { LightWorkspaceExecutionRequest } from "@blame/agent-runtime";
 import { shell } from "electron";
@@ -301,9 +302,10 @@ async function agentGit(input: unknown) {
     throw new Error("Invalid agent Git request");
   }
   if (runtimeManagedPath(cwd)) return runtimeManagedGit(cwd, args);
-  const { stdout } = await execFileAsync("git", args, {
+  const env = withoutTelemetryEnvironment(process.env);
+  const { stdout } = await execFileAsync(hostGitCommand({ env }), args, {
     cwd,
-    env: withoutTelemetryEnvironment(process.env),
+    env,
     maxBuffer: 20 * 1024 * 1024,
   });
   return stdout;

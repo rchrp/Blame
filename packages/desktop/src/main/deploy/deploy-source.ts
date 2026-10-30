@@ -11,6 +11,7 @@ import { createHash } from "node:crypto";
 import { lstat, readFile, realpath } from "node:fs/promises";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { promisify } from "node:util";
+import { hostGitCommand } from "../host-git.ts";
 import { createGzip } from "node:zlib";
 import ignore from "ignore";
 import { pack } from "tar-stream";
@@ -566,10 +567,14 @@ function sha256(content: Buffer) {
 }
 
 async function git(root: string, args: string[]) {
-  const { stdout } = await execFileAsync("git", ["-C", root, ...args], {
-    encoding: "utf8",
-    maxBuffer: 32 * 1024 * 1024,
-  });
+  const { stdout } = await execFileAsync(
+    hostGitCommand(),
+    ["-C", root, ...args],
+    {
+      encoding: "utf8",
+      maxBuffer: 32 * 1024 * 1024,
+    },
+  );
   return stdout.trimEnd();
 }
 

@@ -5,6 +5,7 @@ import { basename, join, posix, resolve } from "node:path";
 import { promisify } from "node:util";
 import { withoutTelemetryEnvironment } from "@blame/telemetry";
 import { pLimit } from "./concurrency.ts";
+import { hostGitCommand } from "./host-git.ts";
 import { workspaceDiffStats } from "./workspace-diff-stats.ts";
 import {
   ignoredGitDiffPathspecs,
@@ -470,16 +471,17 @@ function gitPath(value?: string) {
 
 // Story worktrees of a local container can live inside BlameRuntime, out of
 // reach of the host's git: run Git there for them.
-function runGit(
+async function runGit(
   root: string,
   args: string[],
   environment?: Record<string, string>,
 ) {
   if (runtimeManagedPath(root))
     return runVirtualizedGit(root, args, environment);
-  return execFileAsync("git", args, {
+  const env = { ...withoutTelemetryEnvironment(process.env), ...environment };
+  return execFileAsync(hostGitCommand({ env }), args, {
     cwd: root,
-    env: { ...withoutTelemetryEnvironment(process.env), ...environment },
+    env,
     maxBuffer,
   });
 }
@@ -508,14 +510,21 @@ function runBackgroundGit(
 ) {
   if (runtimeManagedPath(root))
     return runVirtualizedGit(root, args, environment);
+  const env = { ...withoutTelemetryEnvironment(process.env), ...environment };
+  let command: string;
+  try {
+    command = hostGitCommand({ env });
+  } catch (error) {
+    return Promise.reject(error);
+  }
   return new Promise<{ stderr: string; stdout: string }>((resolve, reject) => {
     const child = execFile(
-      "git",
+      command,
       args,
       {
         cwd: root,
         encoding: "utf8",
-        env: { ...withoutTelemetryEnvironment(process.env), ...environment },
+        env,
         maxBuffer,
       },
       (error, stdout, stderr) => {

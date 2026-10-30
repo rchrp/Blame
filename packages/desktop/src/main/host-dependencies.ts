@@ -3,6 +3,7 @@ import { promisify } from "node:util";
 import { withoutTelemetryEnvironment } from "@blame/telemetry";
 import type { RuntimeProfileId } from "@blame/preview-runtime";
 import type { WorkspaceMode } from "./workspace-mode.ts";
+import { hostGitCommand } from "./host-git.ts";
 import {
   createRuntimeManager,
   type RuntimeDependencyIssue,
@@ -428,11 +429,18 @@ async function runCommand(
   args: string[],
   env?: NodeJS.ProcessEnv,
 ) {
-  const { stdout } = await execFileAsync(command, args, {
-    env: withoutTelemetryEnvironment(env ?? process.env),
-    shell: process.platform === "win32",
-    timeout: commandTimeoutMs,
-  });
+  const environment = withoutTelemetryEnvironment(env ?? process.env);
+  // Check Git exactly as Blame runs it, not through the shell.
+  const git = command === "git";
+  const { stdout } = await execFileAsync(
+    git ? hostGitCommand({ env: environment }) : command,
+    args,
+    {
+      env: environment,
+      shell: !git && process.platform === "win32",
+      timeout: commandTimeoutMs,
+    },
+  );
   return stdout;
 }
 

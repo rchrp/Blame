@@ -701,7 +701,12 @@ function runWorkspaceCommand(
 ) {
   if (signal?.aborted)
     return Promise.reject(new Error("Code graph request aborted"));
-  const child = spawnWorkspaceCommand(command, args, cwd);
+  let child: ChildProcessWithoutNullStreams;
+  try {
+    child = spawnWorkspaceCommand(command, args, cwd);
+  } catch (error) {
+    return Promise.reject(error);
+  }
   return new Promise<CommandResult>((resolve, reject) => {
     const state = workspaceCommandState(command, args, child, resolve, reject);
     state.timer = workspaceCommandTimer(state, timeoutMs);
@@ -813,6 +818,7 @@ function spawnWorkspaceCommand(command: string, args: string[], cwd: string) {
     cwd: spec.cwd,
     env,
     shell: false,
+    windowsVerbatimArguments: executable.windowsVerbatimArguments,
   });
 }
 

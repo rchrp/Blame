@@ -231,6 +231,7 @@ export function stopRuntimeInBackground(
       env: environment,
       stdio: "ignore",
       windowsHide: true,
+      windowsVerbatimArguments: spec.windowsVerbatimArguments,
     })
       .on("error", () => undefined)
       .unref();
@@ -730,7 +731,11 @@ async function runCommand(
 }
 
 function executeCommand(
-  commandSpec: { args: string[]; command: string },
+  commandSpec: {
+    args: string[];
+    command: string;
+    windowsVerbatimArguments?: boolean;
+  },
   environment: NodeJS.ProcessEnv,
   timeoutMs: number,
   onOutput?: (output: string) => void,
@@ -744,6 +749,7 @@ function executeCommand(
         env: environment,
         shell: false,
         timeout: timeoutMs,
+        windowsVerbatimArguments: commandSpec.windowsVerbatimArguments,
       },
       (error, stdout) => completeCommand(error, stdout, resolve, reject),
     );
@@ -783,7 +789,7 @@ function executableRuntimeCommand(
   command: string,
   args: string[],
   env: NodeJS.ProcessEnv,
-) {
+): { args: string[]; command: string; windowsVerbatimArguments?: boolean } {
   if (process.platform !== "win32") return { args, command };
   const script = runtimeToolScript(command, { env, platform: "win32" });
   if (script) {
@@ -799,9 +805,11 @@ function executableRuntimeCommand(
       command: "powershell.exe",
     };
   }
+  // cmd.exe reads its own command line: Node must not re-quote it.
   return {
     args: ["/d", "/s", "/c", commandPromptLine(command, args, env)],
     command: "cmd.exe",
+    windowsVerbatimArguments: true,
   };
 }
 

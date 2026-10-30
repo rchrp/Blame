@@ -14,6 +14,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { Transform, type Readable } from "node:stream";
 import { promisify } from "node:util";
+import { hostGitCommand } from "../host-git.ts";
 import { createGzip } from "node:zlib";
 import { pack } from "tar-stream";
 import { pipeline } from "node:stream/promises";
@@ -604,7 +605,7 @@ async function gitObjectMetadata(root: string, entries: CanonicalEntry[]) {
   const symlinkObjects = new Set(
     entries.filter(({ mode }) => mode === "120000").map(({ object }) => object),
   );
-  const child = spawn("git", ["-C", root, "cat-file", "--batch"], {
+  const child = spawn(hostGitCommand(), ["-C", root, "cat-file", "--batch"], {
     stdio: ["pipe", "pipe", "pipe"],
   });
   const stderr: Buffer[] = [];
@@ -847,8 +848,9 @@ async function gitWithInput(
   input: string,
   environment?: Record<string, string>,
 ) {
-  const child = spawn("git", ["-C", root, ...args], {
-    env: { ...process.env, ...environment },
+  const env = { ...process.env, ...environment };
+  const child = spawn(hostGitCommand({ env }), ["-C", root, ...args], {
+    env,
     stdio: ["pipe", "pipe", "pipe"],
   });
   const stdout: Buffer[] = [];
@@ -885,10 +887,15 @@ async function gitOutput(
   args: string[],
   environment?: Record<string, string>,
 ) {
-  const { stdout } = await execFileAsync("git", ["-C", root, ...args], {
-    encoding: "utf8",
-    env: { ...process.env, ...environment },
-    maxBuffer: 64 * 1024 * 1024,
-  });
+  const env = { ...process.env, ...environment };
+  const { stdout } = await execFileAsync(
+    hostGitCommand({ env }),
+    ["-C", root, ...args],
+    {
+      encoding: "utf8",
+      env,
+      maxBuffer: 64 * 1024 * 1024,
+    },
+  );
   return stdout;
 }

@@ -18,6 +18,7 @@ import {
 } from "node:fs/promises";
 import { basename, dirname, join, posix, resolve, win32 } from "node:path";
 import { promisify } from "node:util";
+import { hostGitCommand } from "./host-git.ts";
 import { runtimeToolScript, setupPath } from "./host-tool-path.ts";
 import { runtimeAgentClient, runtimeAgentSupported } from "./runtime-agent.ts";
 import {
@@ -67,6 +68,8 @@ type RuntimeCommandSpec = {
   args: string[];
   command: string;
   cwd?: string;
+  // cmd.exe reads its own command line: Node must not re-quote it.
+  windowsVerbatimArguments?: boolean;
 };
 
 export function worktreeRoot(
@@ -240,6 +243,7 @@ export async function run(
     env,
     maxBuffer: input.maxBuffer,
     shell: false,
+    windowsVerbatimArguments: commandSpec.windowsVerbatimArguments,
   });
   return {
     stderr: String(result.stderr),
@@ -271,6 +275,7 @@ export function spawnRuntime(
     detached: platform !== "win32",
     env,
     shell: false,
+    windowsVerbatimArguments: commandSpec.windowsVerbatimArguments,
   });
 }
 
@@ -551,7 +556,10 @@ export function runtimeExecutableCommand(
   spec: RuntimeCommandSpec,
   platform: NodeJS.Platform,
   env: NodeJS.ProcessEnv,
-) {
+): RuntimeCommandSpec {
+  // Only native Git keeps the bare "git" command: runtime commands are wrapped.
+  if (spec.command === "git")
+    return { ...spec, command: hostGitCommand({ env, platform }) };
   if (platform !== "win32") return spec;
   const script = runtimeToolScript(spec.command, { env, platform });
   if (script) {
@@ -570,6 +578,7 @@ export function runtimeExecutableCommand(
   return {
     args: ["/d", "/s", "/c", commandPromptLine(spec.command, spec.args, env)],
     command: "cmd.exe",
+    windowsVerbatimArguments: true,
   };
 }
 
@@ -650,9 +659,14 @@ export function resetRuntimeGitIdentityConfigured() {
 export const resetRuntimeGitIdentityConfiguredForTesting =
   resetRuntimeGitIdentityConfigured;
 
+// Reads the identity from this machine's Git, then sets it inside the runtime.
+async function hostGitExecFile(command: string, args: string[]) {
+  return execFileAsync(command === "git" ? hostGitCommand() : command, args);
+}
+
 export async function ensureRuntimeGitUserIdentity(
   fns = {
-    execFileAsync,
+    execFileAsync: hostGitExecFile,
     run,
   },
 ) {
