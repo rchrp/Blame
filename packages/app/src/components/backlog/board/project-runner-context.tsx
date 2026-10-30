@@ -14,6 +14,7 @@ import {
 } from "@/components/backlog/board/project-run-configuration"
 import { ProjectRunConfigurationPreviewWarmup } from "@/components/backlog/board/project-run-preview-warmup"
 import type { ProjectRunnerControlStatus } from "@/components/backlog/board/project-runner-types"
+import { useProjectDependencies } from "@/components/backlog/board/use-project-dependencies"
 import {
   type ProjectRunnerStartOptions,
   useProjectRunner,
@@ -103,7 +104,7 @@ export function ProjectRunnerProvider({
       )
   const runnerStart = runner.start
   // Starting an app with a preview also gets its preview page ready.
-  const start = React.useCallback(
+  const startApp = React.useCallback(
     (id: string, options?: ProjectRunnerStartOptions) => {
       const configuration = configurations.find((item) => item.id === id)
       if (configuration && projectRunConfigurationPreviewUrl(configuration)) {
@@ -116,6 +117,13 @@ export function ProjectRunnerProvider({
     },
     [configurations, runnerStart]
   )
+  // Then checks its packages are installed, and offers to install them.
+  const { start } = useProjectDependencies({
+    configurations,
+    projectPath,
+    runner,
+    start: startApp,
+  })
   const statusFor = (id: string): ProjectRunnerControlStatus => {
     const status = runner.sessionFor(id)?.status
     if (status && status !== "stopped") return status

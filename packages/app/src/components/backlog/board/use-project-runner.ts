@@ -83,7 +83,9 @@ export function useProjectRunner(
         runnerActions(),
         options
       ),
-    stop: (id: string) => void stopConfiguration(id, terminal, runnerActions()),
+    stop: (id: string) => stopConfiguration(id, terminal, runnerActions()),
+    runTask: (task: ProjectRunTask, onOutput?: (data: string) => void) =>
+      runProjectTask(task, projectPath, terminal, runnerActions(), onOutput),
   }
 
   function runnerActions(): RunnerActions {
@@ -108,6 +110,73 @@ type RunnerActions = {
 }
 
 export type ProjectRunnerStartOptions = { revealLogs?: boolean }
+
+// A one-off command in the project, such as installing its dependencies.
+export type ProjectRunTask = Pick<
+  ProjectRunConfiguration,
+  "command" | "cwd" | "id" | "name"
+>
+
+// Its logs show beside the configurations'. The shell ends with the
+// command, so its exit code tells whether it worked; a stop counts as a
+// failure.
+async function runProjectTask(
+  task: ProjectRunTask,
+  projectPath: string | undefined,
+  terminal: TerminalClient | undefined,
+  actions: RunnerActions,
+  onOutput?: (data: string) => void
+) {
+  if (!projectPath || !terminal) return false
+  if (actions.runtimes.has(task.id)) {
+    await stopConfiguration(task.id, terminal, actions, false)
+  }
+  openSession(task, projectPath, actions, false)
+  try {
+    const session = await terminal.start({
+      cwd: configurationPath(projectPath, task.cwd),
+    })
+    const done = new Promise<boolean>((resolve) => {
+      const unsubscribe = terminal.onEvent(session.id, (event) => {
+        if (event.type !== "exit") {
+          appendLogs(actions, task.id, event.data)
+          onOutput?.(event.data)
+          return
+        }
+        const succeeded = Number(event.data) === 0
+        resolve(succeeded)
+        appendLogs(
+          actions,
+          task.id,
+          `\n[process exited ${event.data}]\n`,
+          succeeded ? "stopped" : "error"
+        )
+        actions.runtimes.get(task.id)?.unsubscribe()
+        actions.runtimes.delete(task.id)
+      })
+      actions.runtimes.set(task.id, {
+        sessionId: session.id,
+        unsubscribe: () => {
+          unsubscribe()
+          resolve(false)
+        },
+      })
+    })
+    updateSession(actions, task.id, {
+      sessionId: session.id,
+      status: "running",
+    })
+    await writeProjectCommand(
+      terminal,
+      session.id,
+      `${task.command} && exit 0 || exit 1`
+    )
+    return await done
+  } catch (error) {
+    await handleStartFailure(task, projectPath, terminal, actions, error)
+    return false
+  }
+}
 
 async function startConfiguration(
   configuration: ProjectRunConfiguration | undefined,
@@ -164,7 +233,7 @@ async function launchConfiguration(
 }
 
 async function handleStartFailure(
-  configuration: ProjectRunConfiguration,
+  configuration: ProjectRunTask,
   projectPath: string,
   terminal: TerminalClient,
   actions: RunnerActions,
@@ -185,7 +254,7 @@ async function handleStartFailure(
 }
 
 function openSession(
-  configuration: ProjectRunConfiguration,
+  configuration: ProjectRunTask,
   projectPath: string,
   actions: RunnerActions,
   revealLogs: boolean
@@ -334,10 +403,7 @@ function defaultConfiguration(configurations: ProjectRunConfiguration[]) {
   )
 }
 
-function initialLogs(
-  configuration: ProjectRunConfiguration,
-  projectPath: string
-) {
+function initialLogs(configuration: ProjectRunTask, projectPath: string) {
   return `$ cd ${configurationPath(projectPath, configuration.cwd)}\n$ ${configuration.command}\n`
 }
 
