@@ -381,6 +381,15 @@ export function setPreviewBrowserDevtoolsScope(input: {
 export function reloadPreviewBrowser(input: { id: string }) {
   const record = previews.get(input.id);
   if (!record) return false;
+  // A view whose first load never committed has nothing to reload: load its
+  // preview address instead of waiting for a reload that never starts.
+  if (!record.view.webContents.getURL()) {
+    if (!record.previewUrl) return false;
+    void loadPreviewBrowser({ id: input.id, url: record.previewUrl }).catch(
+      () => undefined,
+    );
+    return true;
+  }
   startPreviewLoadTimeout(record, record.view.webContents.getURL());
   sendPreviewBrowserState(record, {
     application: null,

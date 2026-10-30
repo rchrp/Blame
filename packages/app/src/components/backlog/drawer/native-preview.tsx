@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button"
 
 import { type PreviewBrowserClient } from "@/context/platform"
+import { nativePreviewLoadDecision } from "./native-preview-load"
 
 export type PreviewState = "loading" | "loaded" | "error"
 
@@ -461,15 +462,20 @@ function useNativePreviewLoad(
   const sourceRef = React.useRef(source)
 
   React.useEffect(() => {
-    if (!browserId) return
     const session = nativePreviewSessions.get(sessionKey)
-    const sourceChanged = sourceRef.current !== source
+    const decision = nativePreviewLoadDecision({
+      browserId,
+      session,
+      source,
+      sourceChanged: sourceRef.current !== source,
+    })
+    if (decision === "skip" || !browserId || !session) return
     sourceRef.current = source
-    if (session?.source && !sourceChanged && !session.state?.error) {
+    if (decision === "reuse") {
       if (session.state) onState(session.state)
       return
     }
-    if (session) session.source = source
+    session.source = source
     onState({ loading: true, url: source })
     void client
       .load({ id: browserId, url: source })
