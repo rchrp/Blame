@@ -607,6 +607,17 @@ test("includes the selected database mode in the initialization prompt", () => {
   assert.match(prompt, /fixed public throwaway value "blame"/);
 });
 
+test("gives the agent the workspace root for absolute file reads", () => {
+  const prompt = projectInitializationPrompt(
+    { rootName: "project", topLevelEntries: [], files: {}, gitLog: [] },
+    undefined,
+    "/Users/dev/project/",
+  );
+
+  assert.match(prompt, /Workspace root: "\/Users\/dev\/project"/);
+  assert.match(prompt, /"\/Users\/dev\/project\/package.json"/);
+});
+
 test("rejects unsafe commands and invalid run topology", () => {
   const unsafe = canonicalResult();
   unsafe.previewManifest.setup[0]!.command =

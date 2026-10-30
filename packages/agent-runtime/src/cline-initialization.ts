@@ -386,9 +386,16 @@ export function initializationPrompt(
   scan: ProjectInitializationScan,
   correction?: InitializationCorrection,
   preferences?: InitializeProjectInput["preferences"],
+  workspaceRoot?: string,
 ) {
-  if (!correction) return projectInitializationPrompt(scan, preferences);
-  return projectInitializationCorrectionPrompt(scan, correction, preferences);
+  if (!correction)
+    return projectInitializationPrompt(scan, preferences, workspaceRoot);
+  return projectInitializationCorrectionPrompt(
+    scan,
+    correction,
+    preferences,
+    workspaceRoot,
+  );
 }
 
 export function codePracticesPrompt(

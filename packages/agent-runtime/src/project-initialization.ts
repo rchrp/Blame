@@ -333,12 +333,14 @@ export const projectInitializationResultSchema = {
 export function projectInitializationPrompt(
   scan: ProjectInitializationScan,
   preferences?: ProjectInitializationPreferences,
+  workspaceRoot?: string,
 ) {
   return [
     "Analyze this project scan according to your system instructions.",
     "Call submit_project_initialization with the complete result. Blame checks it immediately; fix any rejected problems and submit again.",
     "Do not answer with JSON text.",
-    "Use read_files or search_codebase only when a required runtime fact is absent from this evidence.",
+    "Use read_files or search_codebase when a runtime fact the setup depends on is absent from this evidence.",
+    ...workspaceRootPrompt(workspaceRoot),
     ...databasePreferencePrompt(preferences),
     `Project evidence: ${JSON.stringify(scan)}`,
   ].join("\n");
@@ -348,9 +350,10 @@ export function projectInitializationCorrectionPrompt(
   scan: ProjectInitializationScan,
   correction: ProjectInitializationCorrection,
   preferences?: ProjectInitializationPreferences,
+  workspaceRoot?: string,
 ) {
   return [
-    projectInitializationPrompt(scan, preferences),
+    projectInitializationPrompt(scan, preferences, workspaceRoot),
     "A previous result for this project was not accepted.",
     "Call submit_project_initialization with a complete corrected input.",
     "Read more files only when the problem below needs a fact you do not have.",
@@ -702,6 +705,16 @@ export function validateProjectInitializationOutput(
 function truncateCorrectionPayload(value: string) {
   if (value.length <= maxCorrectionPayloadLength) return value;
   return value.slice(0, maxCorrectionPayloadLength);
+}
+
+// read_files resolves a relative path against the app's own working
+// directory, not the project, so the agent needs absolute paths.
+function workspaceRootPrompt(workspaceRoot: string | undefined) {
+  if (!workspaceRoot) return [];
+  const root = workspaceRoot.replace(/\/+$/, "");
+  return [
+    `Workspace root: ${JSON.stringify(root)}. Pass read_files absolute paths under it, such as ${JSON.stringify(`${root}/package.json`)}.`,
+  ];
 }
 
 function databasePreferencePrompt(

@@ -2212,7 +2212,7 @@ export class BlameAgentRuntime {
       "project_initialization",
       () =>
         cline.start({
-          prompt: initializationPrompt(scan, correction, input.preferences),
+          prompt: initializationPrompt(scan, correction, input.preferences, input.workspaceRoot),
           config: initializationConfig(input, credential, tools, sessionId),
           interactive: false,
           source: "blame-project-initialization",
