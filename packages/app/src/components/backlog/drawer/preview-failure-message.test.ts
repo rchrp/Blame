@@ -24,3 +24,21 @@ test("drops the colors of quoted command output", () => {
     "Compose run failed (exit code 1): ℹ EnvValidationException"
   )
 })
+
+test("keeps the message of a cloud request failure", () => {
+  const raw =
+    "Error invoking remote method 'preview-runtime:command': CloudPreviewRequestError: Cloud preview request failed (422): " +
+    JSON.stringify({
+      failure: {
+        code: "ENGINE_START_FAILED",
+        message:
+          "Compose run failed (exit code 1): Error: getaddrinfo EAI_AGAIN",
+      },
+    })
+  assert.equal(
+    readableFailure(raw),
+    "Compose run failed (exit code 1): Error: getaddrinfo EAI_AGAIN"
+  )
+  // The IPC layer can cut the body short.
+  assert.match(readableFailure(raw.slice(0, -40)), /^Compose run failed \(/)
+})

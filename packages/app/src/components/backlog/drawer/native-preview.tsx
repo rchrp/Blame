@@ -57,6 +57,7 @@ type NativePreviewFrameProps = {
   ambilightColor?: PreviewAmbilightColor
   browserId?: string
   client: PreviewBrowserClient
+  error?: string
   previewState: PreviewState
   surfaceRef: React.RefObject<HTMLDivElement | null>
 }
@@ -145,8 +146,10 @@ export function NativePreviewPanel({
   bare,
 }: NativePreviewPanelProps) {
   const surfaceRef = React.useRef<HTMLDivElement>(null)
+  const [error, setError] = React.useState<string>()
   const handleState = React.useCallback(
     (state: NativePreviewStateInput) => {
+      if ("error" in state) setError(state.error ?? undefined)
       updateNativePreviewSessionState(sessionKey, state)
       onState(state)
     },
@@ -185,6 +188,7 @@ export function NativePreviewPanel({
       ambilightColor={ambilightColor}
       browserId={browserId}
       client={client}
+      error={error}
       previewState={previewState}
       surfaceRef={surfaceRef}
     />
@@ -212,6 +216,7 @@ function NativePreviewFrame({
   ambilightColor,
   browserId,
   client,
+  error,
   previewState,
   surfaceRef,
 }: NativePreviewFrameProps) {
@@ -233,6 +238,7 @@ function NativePreviewFrame({
         {previewState === "loading" && <PreviewLoadingState />}
         {previewState === "error" && (
           <PreviewErrorState
+            message={error}
             onReload={() => reloadNativePreview(client, browserId)}
           />
         )}
@@ -727,24 +733,33 @@ export function PreviewLoadingState() {
   )
 }
 
-export function PreviewErrorState({ onReload }: { onReload: () => void }) {
+export function PreviewErrorState({
+  message,
+  onReload,
+}: {
+  message?: string
+  onReload: () => void
+}) {
   return (
     <div className="absolute inset-0 flex items-center justify-center bg-background/95 p-8">
-      <div className="flex max-w-sm flex-col items-center gap-4 rounded-lg border bg-background px-8 py-7 text-center shadow-sm">
+      <div className="flex max-w-md flex-col items-center gap-4 rounded-lg border bg-background px-8 py-7 text-center shadow-sm">
         <div className="rounded-full bg-destructive/10 p-3 text-destructive">
           <AlertTriangleIcon className="size-6" />
         </div>
         <div className="space-y-1">
           <h3 className="font-heading text-lg font-semibold">
-            Preview indisponible
+            The preview page did not load
           </h3>
-          <p className="text-sm text-muted-foreground">
-            Le serveur ne répond pas pour le moment.
+          <p className="text-sm break-words text-muted-foreground">
+            {message
+              ? `The app did not answer: ${message}`
+              : "The app did not answer."}{" "}
+            Check its Run logs, then reload.
           </p>
         </div>
         <Button size="sm" type="button" variant="outline" onClick={onReload}>
           <RefreshCwIcon />
-          Réessayer
+          Reload
         </Button>
       </div>
     </div>

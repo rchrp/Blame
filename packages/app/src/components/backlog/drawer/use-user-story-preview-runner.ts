@@ -36,6 +36,7 @@ import {
   usePreviewSetupRepair,
   type PreviewSetupRepairAction,
 } from "@/components/backlog/drawer/preview-setup-repair"
+import { readableFailure } from "@/components/backlog/drawer/preview-failure-message"
 import { usePlatform } from "@/context/platform"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { navigate } from "@/components/navigation/navigation"
@@ -566,7 +567,7 @@ function useCloudPreviewRuntime(input: {
         active = updateSession(active)
         return managedPreviewRuntimeState(active, input.localRuntime)
       } catch (error) {
-        const message = errorText(error)
+        const message = readableFailure(errorText(error))
         setError(message)
         toast.error("Unable to control managed preview", {
           description: message,
@@ -645,7 +646,7 @@ async function settleCloudPreviewStop(
     return updateSession(next)
   } catch (error) {
     toast.error("Unable to stop managed preview", {
-      description: errorText(error),
+      description: readableFailure(errorText(error)),
       position: "bottom-right",
     })
     try {
@@ -919,7 +920,7 @@ async function requestPreviewRuntime(
       worktree,
     })
   } catch (error) {
-    const description = errorText(error)
+    const description = readableFailure(errorText(error))
     toast.error("Unable to control preview", {
       action: action === "stop" ? undefined : repairAction(description),
       description,
