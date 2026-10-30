@@ -31,6 +31,12 @@ import {
   hostOrchestratedManifestCommand,
   hostOrchestrationError,
 } from "./project-host-orchestration.js";
+import {
+  backendCoverageIssues,
+  databaseEnvironmentIssues,
+  electronCoverageIssues,
+  prismaImageIssues,
+} from "./project-preview-coverage.js";
 
 // Checks that an initialized manifest can run its project, from what the
 // scan found in the repository. Blame renders and runs the Compose project
@@ -164,6 +170,12 @@ export function previewSetupIssues(
       "No setup task seems to run the database migrations: the backend may start on an empty database.",
     );
   }
+  issues.push(
+    ...prismaImageIssues(manifest, scan),
+    ...databaseEnvironmentIssues(manifest, scan),
+    ...backendCoverageIssues(manifest, scan),
+    ...electronCoverageIssues(manifest, scan),
+  );
   for (const service of manifest.services) {
     if (
       service.surface?.type === "terminal" &&

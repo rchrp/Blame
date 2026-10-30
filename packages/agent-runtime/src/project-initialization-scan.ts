@@ -204,7 +204,33 @@ async function initializationEvidence(
       1_500,
     ),
   ]);
-  return Object.assign({}, ...evidence) as Record<string, string>;
+  return withCompleteEnvTemplates(
+    root,
+    Object.assign({}, ...evidence) as Record<string, string>,
+  );
+}
+
+// An env template names every variable a server reads, often past the
+// share of bytes a file gets: keep all its settings, without comments and
+// with short values, so none is cut off.
+async function withCompleteEnvTemplates(
+  root: string,
+  evidence: Record<string, string>,
+) {
+  const templates = Object.keys(evidence).filter((path) =>
+    /(?:^|\/)\.env[^/]*\.(?:example|sample|template)$/.test(path),
+  );
+  const full = await readBoundedProjectFiles(root, templates, 60_000, 16_000);
+  for (const [path, content] of Object.entries(full)) {
+    evidence[path] = content
+      .split("\n")
+      .filter((line) =>
+        /^\s*(?:export\s+)?[A-Za-z_][A-Za-z0-9_]*\s*=/.test(line),
+      )
+      .map((line) => (line.length > 90 ? `${line.slice(0, 87)}...` : line))
+      .join("\n");
+  }
+  return evidence;
 }
 
 // Package scripts often delegate to local files (`node scripts/dev.mjs`).
