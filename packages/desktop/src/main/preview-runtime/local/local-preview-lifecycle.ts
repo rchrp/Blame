@@ -3,6 +3,7 @@ import type {
   PreviewLifecycleState,
   ProjectPreviewRuntimeState,
 } from "@blame/agent-runtime";
+import { stripTerminalCodes } from "@blame/preview-runtime/compose";
 import type { PreviewRuntimeSelectionState } from "../../preview-run-state.js";
 
 type WritePreviewRuntimeState = (
@@ -124,7 +125,10 @@ export async function persistLocalPreviewFailure(
 ) {
   await writeState(worktree, {
     desiredStatus,
-    lifecycle: failedLocalPreviewLifecycle(errorMessage(error)),
+    // Shown in the app and in toasts: never with terminal codes.
+    lifecycle: failedLocalPreviewLifecycle(
+      stripTerminalCodes(errorMessage(error)),
+    ),
     selectedConfigurationId,
   });
 }

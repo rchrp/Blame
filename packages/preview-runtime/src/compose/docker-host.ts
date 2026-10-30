@@ -1,5 +1,6 @@
 import { PreviewRuntimeError } from "../domain/preview-errors.js";
 import type { PreviewFailureCode } from "../domain/preview-errors.js";
+import { readableCommandOutput } from "./command-output.js";
 
 export type CommandResult = {
   exitCode: number;
@@ -49,13 +50,16 @@ const truncationMarker = "\n... [Compose output truncated] ...\n";
 
 // Errors usually end stderr (Compose's own messages and a container's
 // errors), while tools such as pnpm print their progress on stdout: keep the
-// end of each stream, stderr last.
+// end of each stream, stderr last, as readable lines without terminal codes
+// or progress, so the cause fits.
 export function commandFailureDetail(
   stderr: string,
   stdout: string,
   limit = detailLimit,
 ) {
-  const streams = [stdout, stderr].map((value) => value.trim()).filter(Boolean);
+  const streams = [stdout, stderr]
+    .map((value) => readableCommandOutput(value).trim())
+    .filter(Boolean);
   const detail = streams.join("\n");
   if (detail.length <= limit) return detail;
   const share = Math.floor(
