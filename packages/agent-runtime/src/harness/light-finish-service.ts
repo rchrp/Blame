@@ -43,6 +43,10 @@ type LocalFinishTaskInput = {
   workspaceRoot: string;
 };
 
+type FinalValidationInput =
+  | Extract<LightRunTaskInput, { kind: "project" }>
+  | { kind: "command"; command: string; cwd?: string };
+
 export async function executeLocalFinishTask(
   input: LocalFinishTaskInput,
 ): Promise<LightToolResult<unknown>> {
@@ -127,6 +131,7 @@ export class LightFinishService {
       obligations,
       current.validations.some((item) =>
         item.sourceRevisionId === current.sourceRevisionId && passedExecution(item, "test")),
+      validation.sourceUnsettled,
     );
     await this.recordCompletion(
       summary,
@@ -161,16 +166,19 @@ export class LightFinishService {
   ) {
     const required = await this.requiredValidationInputs();
     if (!state.changedPaths.length && !required.length)
-      return { outcome: "not_applicable" as const };
+      return { outcome: "not_applicable" as const, sourceUnsettled: false };
+    let sourceUnsettled = false;
     // A direct no-emit compiler is a repair lead, never a substitute for any
     // project obligation. Refresh it first; do not replay arbitrary shell.
     for (const failed of failedLiteralCompilerInvocations(this.journal.currentValidations())) {
       if (failed.category !== "code") continue;
-      const result = await this.runValidation({ kind: "command", command: failed.command!,
+      const result = await this.runSettledValidation({ kind: "command", command: failed.command!,
         ...(failed.cwd && failed.cwd !== "." ? { cwd: failed.cwd } : {}) }, context);
+      if (!result) {
+        sourceUnsettled = true;
+        continue;
+      }
       if (result.status === "blocked" && result.category === "code") throw new Error(result.message);
-      if (result.status === "ok" && recordValue(recordValue(result.data).validation).status === "stale")
-        throw new Error("Source changed during compiler repair validation; review and validate again.");
       assertNoFailedValidation(await this.completionSnapshot());
     }
     const inputs = await this.validationInputs(state.changedPaths);
@@ -205,16 +213,13 @@ export class LightFinishService {
         continue;
       if (matching.some((validation) => validation.status === "unknown"))
         continue;
-      const result = await this.runValidation(input, context);
+      const result = await this.runSettledValidation(input, context);
+      if (!result) {
+        sourceUnsettled = true;
+        continue;
+      }
       if (result.status === "blocked" && result.category === "code")
         throw new Error(result.message);
-      if (
-        result.status === "ok" &&
-        recordValue(recordValue(result.data).validation).status === "stale"
-      )
-        throw new Error(
-          "Source changed during final validation. Review the changes and validate again.",
-        );
       // Do not spend another round on green checks while a refreshed code
       // failure still blocks completion. Required obligations remain pending.
       assertNoFailedValidation(await this.completionSnapshot());
@@ -223,7 +228,26 @@ export class LightFinishService {
       outcome: "checked" as const,
       taskIds: inputs.map(({ input }) => input.task),
       required,
+      sourceUnsettled,
     };
+  }
+
+  // Another program, such as a running dev server or an editor, can write to
+  // the project while a final check runs. A check whose source changed proves
+  // nothing, so check the new source once more. If it changes again, return
+  // nothing: the finish goes on and reports the work unverified instead of
+  // failing the whole run.
+  private async runSettledValidation(
+    input: FinalValidationInput,
+    context: AgentToolContext,
+  ) {
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      const result = await this.runValidation(input, context);
+      const stale = result.status === "ok" &&
+        recordValue(recordValue(result.data).validation).status === "stale";
+      if (!stale) return result;
+    }
+    return undefined;
   }
 
   private async requiredValidationInputs() {
@@ -285,7 +309,7 @@ export class LightFinishService {
   }
 
   private async runValidation(
-    input: Extract<LightRunTaskInput, { kind: "project" }> | { kind: "command"; command: string; cwd?: string },
+    input: FinalValidationInput,
     context: AgentToolContext,
   ): Promise<LightToolResult<unknown>> {
     const toolCallId = `${context.toolCallId ?? "finish"}:validation:${++this.validationSequence}`;
@@ -470,6 +494,7 @@ function completionDecision(
   nonMutating: boolean,
   obligations: Array<{ id: string; passed: boolean }>,
   observedPassingTest = false,
+  sourceUnsettled = false,
 ): CompletionDecision {
   return {
     source_revision_id:
@@ -493,9 +518,11 @@ function completionDecision(
         ? [
             {
               code: "VALIDATION_UNAVAILABLE",
-              message: observedPassingTest
-                ? "A test invocation reported a passing result. Its evidence does not establish verification of the current source."
-                : "No current project validation was available.",
+              message: sourceUnsettled
+                ? "Project files changed while the final checks ran, twice in a row, so no check covers the final source. Another program, such as a running dev server or an editor, may be writing to the project."
+                : observedPassingTest
+                  ? "A test invocation reported a passing result. Its evidence does not establish verification of the current source."
+                  : "No current project validation was available.",
               obligation_ids: [],
             },
           ]

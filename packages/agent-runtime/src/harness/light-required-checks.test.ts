@@ -9,6 +9,7 @@ import type { LightCompletionNotification } from "./light-completion.js";
 import { lightRequiredChecksSchema, type RequiredProjectCheck } from "./light-contracts.js";
 import { createInitialTaskBriefing } from "./initial-task-briefing.js";
 import { executeLocalFinishTask } from "./light-finish-service.js";
+import { completionAwareTerminalState } from "./run-lifecycle.js";
 
 const { LightFinishService } = await import(
   process.env.BLAME_REQUIRED_CHECKS_MODULE ?? "./light-finish-service.js"
@@ -225,13 +226,31 @@ test("a nonmutating admitted build executes once rather than looping", async () 
   });
 });
 
-test("source mutation during required validation cannot admit completion", async () => {
+test("a source change during a required check runs the check again on the new source", async () => {
   await fixture(async (root, workspace) => {
     await edit(workspace); await build(workspace);
-    const { service, notifications } = finish(root, [{ id: "source-writer", task: "test" }]);
-    await assert.rejects(service.finish("checked", {} as never), /Source changed during final validation/u);
-    assert.equal(notifications.length, 0);
+    const { service, activities, notifications } = finish(root, [{ id: "source-writer", task: "test" }]);
+    await service.finish("checked", {} as never);
+    assert.deepEqual(activities, [{ kind: "project", task: "test", args: [] }, { kind: "project", task: "test", args: [] }]);
+    assert.ok(notifications[0]?.completion.satisfied_obligations.includes("check:source-writer"));
+    assert.deepEqual(notifications[0]?.completion.missing_obligations, []);
   }, { "suite.test.cjs": "require('node:test').test('writer',()=>{require('node:fs').writeFileSync('value.cjs','exports.value = 3;\\n')});\n" });
+});
+
+test("a check that keeps rewriting the source finishes unverified instead of failing", async () => {
+  await fixture(async (root, workspace) => {
+    await edit(workspace); await build(workspace);
+    const { service, activities, notifications } = finish(root, [{ id: "source-writer", task: "test" }]);
+    await service.finish("checked", {} as never);
+    assert.equal(activities.length, 2);
+    const completion = notifications[0]?.completion;
+    assert.equal(completion?.verification, "unverified");
+    assert.deepEqual(completion?.missing_obligations, ["check:source-writer"]);
+    assert.ok(completion?.reservations.some(({ code, message }) =>
+      code === "VALIDATION_UNAVAILABLE" && /changed while the final checks ran/u.test(message)));
+    // The run then ends as succeeded, so the agent's reply is shown.
+    assert.equal(completionAwareTerminalState("succeeded", completion), "succeeded");
+  }, { "suite.test.cjs": "require('node:test').test('writer',()=>{require('node:fs').writeFileSync('value.cjs','exports.value = '+Math.random()+';\\n')});\n" });
 });
 
 test("multiple obligation IDs share one literal invocation", async () => {
