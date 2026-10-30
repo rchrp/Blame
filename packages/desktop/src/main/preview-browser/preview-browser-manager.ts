@@ -4,11 +4,16 @@ import { randomUUID } from "node:crypto";
 import {
   BrowserWindow,
   type IpcMainInvokeEvent,
+  type WebContents,
   shell,
   WebContentsView,
 } from "electron";
 import { previewSessionPartition } from "./preview-session-partition";
 import { PreviewNetworkBridge } from "./preview-network-bridge";
+import {
+  logPreviewLoadFailure,
+  logStuckPreviewLoad,
+} from "./preview-bridge-activity";
 import type {
   DesktopBridgeGrant,
   PreviewBridgeSource,
@@ -487,8 +492,10 @@ function attachPreviewBrowserEvents(record: PreviewBrowserRecord) {
   );
   record.view.webContents.on(
     "did-fail-load",
-    (_event, _code, description, validatedUrl, isMainFrame) => {
+    (_event, code, description, validatedUrl, isMainFrame) => {
       if (!isMainFrame) return;
+      // An aborted load is a newer navigation, not a failure.
+      if (code !== -3) logPreviewLoadFailure(code, description, validatedUrl);
       clearPreviewLoadTimeout(record);
       sendPreviewBrowserState(record, {
         error: description,
@@ -526,7 +533,9 @@ async function updateApplicationState(record: PreviewBrowserRecord) {
     (source) => record.view.webContents.executeJavaScript(source, true),
     previewApplicationProbeTimeoutMs,
   );
-  if (record.view.webContents.isDestroyed()) return;
+  // The preview can be destroyed while the probe runs.
+  const contents = record.view.webContents as WebContents | undefined;
+  if (!contents || contents.isDestroyed()) return;
   sendPreviewBrowserState(record, {
     application,
     ...(application.status === "ready" ? { error: null } : {}),
@@ -537,6 +546,13 @@ async function updateApplicationState(record: PreviewBrowserRecord) {
 function startPreviewLoadTimeout(record: PreviewBrowserRecord, url: string) {
   clearPreviewLoadTimeout(record);
   record.loadTimeout = setTimeout(() => {
+    const target = url || record.previewUrl || "";
+    logStuckPreviewLoad({
+      url: target,
+      proxy: record.view.webContents.session.resolveProxy(target),
+      visible: record.visible,
+      bridge: record.bridge,
+    });
     record.view.webContents.stop();
     sendPreviewBrowserState(record, {
       error: "Preview loading timed out. Reload to try again.",

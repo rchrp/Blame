@@ -16,8 +16,12 @@ import type {
   PreviewBridgeProvider,
 } from "./preview-bridge-grant";
 import { PreviewRouteTable } from "./preview-route-table";
+import { PreviewBridgeActivity } from "./preview-bridge-activity";
 
 type GrantProvider = () => Promise<DesktopBridgeGrant>;
+type Tracked = ReturnType<PreviewBridgeActivity["start"]>;
+
+const grantRefreshTimeoutMs = 15_000;
 
 const LOOPBACK_REQUEST_PATTERNS = [
   "http://localhost/*",
@@ -36,12 +40,18 @@ export class PreviewNetworkBridge {
   private readonly sockets = new Set<Duplex>();
   private grantExpiresAt = 0;
   private refreshing?: Promise<void>;
+  private readonly activity = new PreviewBridgeActivity(() => this.port);
   private server = createServer((request, response) => {
-    void this.forwardHttp(request, response).catch(() => {
-      if (!response.headersSent)
-        response.writeHead(502, { "cache-control": "no-store" });
-      response.end("Preview unavailable");
-    });
+    const tracked = this.activity.start("http", request.url);
+    void this.forwardHttp(request, response, tracked).then(
+      tracked.done,
+      (error) => {
+        tracked.fail(error);
+        if (!response.headersSent)
+          response.writeHead(502, { "cache-control": "no-store" });
+        response.end("Preview unavailable");
+      },
+    );
   });
   private port?: number;
 
@@ -55,9 +65,13 @@ export class PreviewNetworkBridge {
       socket.once("close", () => this.sockets.delete(socket));
     });
     this.server.on("upgrade", (request, socket, head) => {
-      void this.forwardWebSocket(request, socket, head).catch(() => {
-        socket.end("HTTP/1.1 502 Bad Gateway\r\nConnection: close\r\n\r\n");
-      });
+      const tracked = this.activity.start("websocket", request.url);
+      void this.forwardWebSocket(request, socket, head, tracked).catch(
+        (error) => {
+          tracked.fail(error);
+          socket.end("HTTP/1.1 502 Bad Gateway\r\nConnection: close\r\n\r\n");
+        },
+      );
     });
   }
 
@@ -112,6 +126,11 @@ export class PreviewNetworkBridge {
     return this.routes.isExpectedOrigin(value);
   }
 
+  /** What the proxy is doing, for main.log when a preview is stuck. */
+  diagnostics() {
+    return this.activity.snapshot();
+  }
+
   private installRequestGuards() {
     this.partition.webRequest.onBeforeSendHeaders(
       { urls: LOOPBACK_REQUEST_PATTERNS },
@@ -146,7 +165,9 @@ export class PreviewNetworkBridge {
 
   private refreshRoutes() {
     if (this.refreshing) return this.refreshing;
-    this.refreshing = this.grantProvider()
+    const finished = this.activity.refreshStarted();
+    // A refresh that never settles would hold every request forever.
+    this.refreshing = withTimeout(this.grantProvider(), grantRefreshTimeoutMs)
       .then((grant) => {
         this.routes.replace(grant, this.expectedProvider);
         this.grantExpiresAt = grant.routes.length
@@ -157,6 +178,13 @@ export class PreviewNetworkBridge {
             )
           : 0;
       })
+      .then(
+        () => finished(),
+        (error: unknown) => {
+          finished(error);
+          throw error;
+        },
+      )
       .finally(() => (this.refreshing = undefined));
     return this.refreshing;
   }
@@ -164,9 +192,11 @@ export class PreviewNetworkBridge {
   private async forwardHttp(
     request: IncomingMessage,
     response: import("node:http").ServerResponse,
+    tracked: Tracked,
   ) {
     this.authorize(request);
     await this.ensureFreshRoutes();
+    tracked.stage("upstream");
     const { route, url } = this.routes.resolve(request.url ?? "");
     const provider = providerTarget(route.providerUrl, url);
     const requestProvider =
@@ -178,6 +208,7 @@ export class PreviewNetworkBridge {
     });
     const completed = new Promise<void>((resolve, reject) => {
       upstream.once("response", (result) => {
+        tracked.stage("response");
         response.writeHead(
           result.statusCode ?? 502,
           responseHeaders(result.headers, (value) =>
@@ -199,6 +230,7 @@ export class PreviewNetworkBridge {
     request: IncomingMessage,
     client: Duplex,
     head: Buffer,
+    tracked: Tracked,
   ) {
     this.authorize(request);
     if (
@@ -208,6 +240,7 @@ export class PreviewNetworkBridge {
       throw new Error("Invalid preview WebSocket upgrade");
     }
     await this.ensureFreshRoutes();
+    tracked.stage("upstream");
     const { route, url } = this.routes.resolve(request.url ?? "");
     const provider = providerTarget(route.providerUrl, url);
     const secure = provider.protocol === "https:";
@@ -224,6 +257,7 @@ export class PreviewNetworkBridge {
         });
     upstream.setTimeout(10 * 60_000);
     upstream.once(secure ? "secureConnect" : "connect", () => {
+      tracked.done();
       const headers = providerHeaders(
         request.headers,
         provider,
@@ -246,6 +280,7 @@ export class PreviewNetworkBridge {
       client.pipe(upstream).pipe(client);
     });
     const close = () => {
+      tracked.fail(new Error("Closed before the upstream connected"));
       upstream.destroy();
       client.destroy();
     };
@@ -327,4 +362,15 @@ function responseHeaders(
       return [[name, value]];
     }),
   ) as Record<string, string | string[]>;
+}
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number) {
+  let timer: NodeJS.Timeout | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(
+      () => reject(new Error("Preview routes did not refresh in time")),
+      timeoutMs,
+    );
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
 }
