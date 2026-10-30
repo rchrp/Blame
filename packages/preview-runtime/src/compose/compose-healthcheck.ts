@@ -80,8 +80,11 @@ function knownServiceCheck(service: ServiceLaunchPlan) {
   // anonymous login, so no password is needed.
   if (imageNamed(image, "mysql"))
     return "mysqladmin ping -h 127.0.0.1 --silent";
+  // Without a user, pg_isready connects as root and the server logs
+  // `role "root" does not exist` at every check. `$$` reaches the container
+  // as `$`, so it reads the image's own settings.
   if (imageNamed(image, "postgres") || imageNamed(image, "postgis")) {
-    return "pg_isready -h 127.0.0.1 -q";
+    return 'pg_isready -h 127.0.0.1 -q -U "$${POSTGRES_USER:-postgres}" -d "$${POSTGRES_DB:-$${POSTGRES_USER:-postgres}}"';
   }
   if (imageNamed(image, "redis") || imageNamed(image, "valkey")) {
     return "redis-cli -h 127.0.0.1 ping || valkey-cli -h 127.0.0.1 ping";

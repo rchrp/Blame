@@ -132,7 +132,7 @@ test("orders services with Compose health conditions", () => {
   });
   assert.deepEqual((db!.healthcheck as { test: string[] }).test, [
     "CMD-SHELL",
-    "pg_isready -h 127.0.0.1 -q",
+    'pg_isready -h 127.0.0.1 -q -U "$${POSTGRES_USER:-postgres}" -d "$${POSTGRES_DB:-$${POSTGRES_USER:-postgres}}"',
   ]);
   assert.equal(db!.working_dir, undefined);
   assert.equal(db!.user, undefined);
