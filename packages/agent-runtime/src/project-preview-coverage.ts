@@ -116,18 +116,50 @@ export function electronCoverageIssues(
   if (!scan) return [];
   if (manifest.services.some(({ surface }) => surface?.type === "display"))
     return [];
-  const apps = packageFiles(scan).filter(
+  return electronApps(scan).map(([path]) => ({
+    severity: "warning" as const,
+    rule: `must give the Electron app in ${dirname(path)} a Linux screen preview service (surface display, image previewImages.electron) instead of a host-only configuration`,
+    warning: `The Electron app in ${dirname(path)} has no screen preview.`,
+  }));
+}
+
+// Recent Electron versions download their binary on the first
+// require("electron"), not at install, and electron-vite and Forge only read
+// its path: the setup must trigger that download or the app never starts.
+export function electronBinaryIssues(
+  manifest: PreviewManifest,
+  scan: ProjectInitializationScan | undefined,
+): Issue[] {
+  if (!scan) return [];
+  const downloads = manifest.setup.some(({ command }) =>
+    /require\(\s*\\?["']electron\\?["']\s*\)|install-electron|electron\/install\.js/.test(
+      command ?? "",
+    ),
+  );
+  if (downloads) return [];
+  const services = electronApps(scan).flatMap(([path]) => {
+    const directory = dirname(path);
+    const name = packageName(scan, directory);
+    return manifest.services.filter(
+      (service) =>
+        service.surface?.type === "display" && runsIn(service, directory, name),
+    );
+  });
+  return [...new Set(services.map(({ id }) => id))].map((id) => ({
+    severity: "blocking" as const,
+    rule: `must download Electron's binary in the install setup task, after installing dependencies, by running node -e "require('electron')" in the app's package (with pnpm: pnpm --filter <app> exec node -e "require('electron')"), so ${id} can start: recent Electron versions only download it on first use and electron-vite fails with "Electron uninstall"`,
+    warning: `${id} cannot start Electron without its binary.`,
+  }));
+}
+
+function electronApps(scan: ProjectInitializationScan) {
+  return packageFiles(scan).filter(
     ([path, json]) =>
       !ignoredEvidence(path) &&
       (usesPackage(json, "electron", "electron-vite") ||
         /\belectron-(?:vite|forge)\b/.test(json)) &&
       /"dev"\s*:/.test(json),
   );
-  return apps.map(([path]) => ({
-    severity: "warning" as const,
-    rule: `must give the Electron app in ${dirname(path)} a Linux screen preview service (surface display, image previewImages.electron) instead of a host-only configuration`,
-    warning: `The Electron app in ${dirname(path)} has no screen preview.`,
-  }));
 }
 
 // Scanned package manifests can be cut short: read them as text.

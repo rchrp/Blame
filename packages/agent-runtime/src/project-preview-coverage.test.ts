@@ -37,6 +37,7 @@ function manifest(input: {
   migrate?: Record<string, string>;
   api?: Record<string, string> | false;
   display?: boolean;
+  install?: string;
 }) {
   const image = input.image ?? "node:24-bookworm";
   return parsePreviewManifest({
@@ -47,7 +48,9 @@ function manifest(input: {
         id: "install",
         container: { image },
         workingDir: "/workspace",
-        command: "corepack pnpm install",
+        command:
+          input.install ??
+          `corepack pnpm install && corepack pnpm --filter @blame/desktop exec node -e "require('electron')"`,
       },
       {
         id: "migrate",
@@ -159,5 +162,24 @@ test("refuses Prisma in an image without OpenSSL", () => {
   assert.deepEqual(
     rules(previewSetupIssues(manifest({ api: false }), prismaSite)),
     [],
+  );
+});
+
+test("asks the setup to download Electron's binary", () => {
+  const issues = rules(
+    previewSetupIssues(
+      manifest({
+        migrate: database,
+        api: database,
+        display: true,
+        install: "corepack pnpm install",
+      }),
+      workspace,
+    ),
+  );
+  assert.equal(issues.length, 1);
+  assert.match(
+    issues[0]!,
+    /^blocking: must download Electron's binary in the install setup task/,
   );
 });

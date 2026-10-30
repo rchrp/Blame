@@ -34,6 +34,7 @@ import {
 import {
   backendCoverageIssues,
   databaseEnvironmentIssues,
+  electronBinaryIssues,
   electronCoverageIssues,
   prismaImageIssues,
 } from "./project-preview-coverage.js";
@@ -175,6 +176,7 @@ export function previewSetupIssues(
     ...databaseEnvironmentIssues(manifest, scan),
     ...backendCoverageIssues(manifest, scan),
     ...electronCoverageIssues(manifest, scan),
+    ...electronBinaryIssues(manifest, scan),
   );
   for (const service of manifest.services) {
     if (
