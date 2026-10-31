@@ -44,7 +44,7 @@ export function HarnessSection({
 function HarnessSaving() {
   return (
     <ScrollReveal className="mt-8 text-center lg:mt-10">
-      <p className="font-display text-[clamp(3.5rem,7vw,6rem)] leading-none">
+      <p className="font-display text-[clamp(4.5rem,9vw,8rem)] leading-none">
         <SavingsCountUp value={tokenSavingPercent} />
       </p>
       <p className="mt-2 text-balance text-base text-white/72 sm:text-xl">
