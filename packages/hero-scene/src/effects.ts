@@ -15,6 +15,7 @@ export function createCelebrationWaves(terrain: ResponsiveTerrain) {
       uniforms: {
         uRadius: { value: 0 },
         uOpacity: { value: 0 },
+        uOrigin: { value: new THREE.Vector2(0, -3) },
         uColor: {
           value: new THREE.Color(delay === 0 ? 0xa8e3ff : 0x858cff),
         },
@@ -32,12 +33,13 @@ export function createCelebrationWaves(terrain: ResponsiveTerrain) {
         uniform float uRadius;
         uniform float uOpacity;
         uniform vec3 uColor;
+        uniform vec2 uOrigin;
         varying vec2 vTerrainPosition;
 
         void main() {
-          float distanceFromOrigin = length(vTerrainPosition - vec2(0.0, -3.0));
-          float ring = 1.0 - smoothstep(0.0, 1.15, abs(distanceFromOrigin - uRadius));
-          gl_FragColor = vec4(uColor, ring * uOpacity);
+          float distanceFromOrigin = length(vTerrainPosition - uOrigin);
+          float ring = 1.0 - smoothstep(0.0, 1.8, abs(distanceFromOrigin - uRadius));
+          gl_FragColor = vec4(uColor * 1.6, ring * uOpacity);
         }
       `,
       transparent: true,
@@ -67,11 +69,15 @@ export function updateCelebrationWaveGeometry(
   }
 }
 
+// The waves start in front of the camera: `originX` is where it looks along
+// the ground.
 export function updateCelebrationWaves(
   waves: THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>[],
   time: number,
+  originX = 0,
 ) {
   for (const wave of waves) {
+    wave.material.uniforms.uOrigin.value.set(originX, -3)
     const progress = THREE.MathUtils.clamp(
       (time - 0.58 - Number(wave.userData.celebrationDelay)) / 1.75,
       0,
@@ -80,15 +86,26 @@ export function updateCelebrationWaves(
     const easedProgress = 1 - (1 - progress) ** 3
     wave.material.uniforms.uRadius.value = THREE.MathUtils.lerp(0.2, 42, easedProgress)
     wave.material.uniforms.uOpacity.value =
-      Math.sin(progress * Math.PI) * (1 - progress * 0.58) * 0.72
+      Math.sin(progress * Math.PI) * (1 - progress * 0.58)
     wave.visible = progress > 0 && progress < 1
   }
 
   return time < CELEBRATION_DURATION
 }
 
-export function createSunDirection() {
-  const phi = THREE.MathUtils.degToRad(90 - SUN_ELEVATION_DEGREES)
+// Sets the sun from twilight (0) to below the horizon (1).
+export function setSkyNight(sky: ReturnType<typeof createAtmosphericSky>, night: number) {
+  const uniforms = sky.material.uniforms
+  uniforms.uNight.value = night
+  uniforms.sunPosition.value.copy(
+    createSunDirection(THREE.MathUtils.lerp(SUN_ELEVATION_DEGREES, NIGHT_SUN_ELEVATION_DEGREES, night)),
+  )
+}
+
+const NIGHT_SUN_ELEVATION_DEGREES = -9
+
+export function createSunDirection(elevation = SUN_ELEVATION_DEGREES) {
+  const phi = THREE.MathUtils.degToRad(90 - elevation)
   const theta = THREE.MathUtils.degToRad(SUN_AZIMUTH_DEGREES)
 
   return new THREE.Vector3().setFromSphericalCoords(1, phi, theta)
@@ -107,7 +124,9 @@ export function createAtmosphericSky() {
   uniforms.cloudDensity.value = 0.14
   uniforms.cloudElevation.value = 0.62
   uniforms.sunPosition.value.copy(createSunDirection())
-  sky.material.fragmentShader = sky.material.fragmentShader.replace(
+  // 0 at twilight, 1 once the sun has set (see setSkyNight).
+  uniforms.uNight = { value: 0 }
+  sky.material.fragmentShader = `uniform float uNight;\n${sky.material.fragmentShader}`.replace(
     'gl_FragColor = vec4( texColor, 1.0 );',
     `
       vec3 paletteZenith = vec3(0.024, 0.032, 1);
@@ -118,6 +137,7 @@ export function createAtmosphericSky() {
       vec3 paletteColor = mix(paletteZenith, paletteHorizon, horizonTint);
       paletteColor = mix(paletteColor, paletteSun, sunTint * 0.38);
       texColor = mix(texColor * 0.38, paletteColor, 0.82);
+      texColor *= mix(1.0, 0.36, uNight);
       gl_FragColor = vec4( texColor, 1.0 );
     `,
   )

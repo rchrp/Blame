@@ -109,10 +109,12 @@ export function createTerrain(
   }
 }
 
+// `panRange` widens the ground for a camera that pans sideways over it.
 export function createTerrainLayout(
   quality: SceneQuality,
   viewportWidth: number,
   viewportHeight: number,
+  panRange = 0,
 ): TerrainLayout {
   const aspect = viewportWidth / Math.max(viewportHeight, 1)
   const aspectWidthScale = aspect / TERRAIN_REFERENCE_ASPECT
@@ -121,10 +123,10 @@ export function createTerrainLayout(
       ? 1 + (aspectWidthScale - 1) * TERRAIN_ULTRAWIDE_MARGIN
       : aspectWidthScale
   const width = Math.ceil(
-    Math.max(
+    (Math.max(
       TERRAIN_MIN_WIDTH,
       TERRAIN_REFERENCE_WIDTH * visibleWidthScale,
-    ) / TERRAIN_WIDTH_SNAP,
+    ) + panRange) / TERRAIN_WIDTH_SNAP,
   ) * TERRAIN_WIDTH_SNAP
   const widthSegments = Math.max(
     32,
@@ -145,8 +147,9 @@ export function updateTerrainLayout(
   terrainRelief: TerrainRelief,
   viewportWidth: number,
   viewportHeight: number,
+  panRange = 0,
 ) {
-  const nextLayout = createTerrainLayout(quality, viewportWidth, viewportHeight)
+  const nextLayout = createTerrainLayout(quality, viewportWidth, viewportHeight, panRange)
 
   if (isSameTerrainLayout(terrain.layout, nextLayout)) {
     return
@@ -204,6 +207,12 @@ function createTerrainGeometry(
     layout.depthSegments,
   )
   geometry.rotateX(-Math.PI / 2)
+
+  // The stone texture keeps the same density however wide the ground is.
+  const uvs = geometry.attributes.uv
+  for (let index = 0; index < uvs.count; index += 1) {
+    uvs.setX(index, (uvs.getX(index) * layout.width) / TERRAIN_REFERENCE_WIDTH)
+  }
 
   const positions = geometry.attributes.position
 

@@ -5,6 +5,7 @@ import {
   createSkyEnvironment,
   createSunDirection,
   disposeObject3D,
+  setSkyNight,
   updateCelebrationWaveGeometry,
   updateCelebrationWaves,
 } from './effects'
@@ -57,6 +58,18 @@ const CAMERA_TRAVEL_Z = 9
 const CAMERA_INTRO_TRAVEL = -0.85
 const MOBILE_VIEWPORT_BREAKPOINT = 768
 const SETTLED_EPSILON = 0.0015
+// A camera that pans also drifts a little along the ground, so the
+// landscape never quite stands still behind the page.
+const PAN_DRIFT = 2.4
+const PAN_DRIFT_SPEED = 0.07
+// Night falls over about two seconds: the sun sets, the sky darkens, and the
+// side light turns into a white moonlight under a grey haze. The page shows
+// the night in black and white, where the day's pure blue would turn black:
+// the moonlight keeps the ground's relief in view.
+const NIGHT_RESPONSE = 1.5
+const NIGHT_FOG_COLOR = 0x3a3f4a
+const MOONLIGHT_COLOR = 0xe6eaf4
+const MOONLIGHT_GAIN = 2.4
 
 export type HeroSceneOptions = {
   terrainPreset?: HeroSceneTerrainPreset
@@ -69,6 +82,9 @@ export type HeroSceneOptions = {
   // Raises the camera's gaze by this many degrees, giving the sky more of the
   // frame and lowering the horizon.
   lookUp?: number
+  // How far, in scene units, the camera can pan sideways (setPan). The ground
+  // is built that much wider.
+  panRange?: number
   // 'high-performance' wakes the discrete GPU on dual-GPU laptops. Use
   // 'default' where battery life matters more than headroom.
   powerPreference?: WebGLPowerPreference
@@ -81,6 +97,13 @@ export type HeroSceneController = {
   setTravel(travel: number): void
   // Sends the celebration waves across the terrain.
   celebrate(): void
+  // Places the camera sideways along the ground, within ±panRange / 2.
+  // Immediate: animate it from outside.
+  setPan(x: number): void
+  // Lets the sun set into night, or rise back. Eased.
+  setNight(night: boolean): void
+  // How bright the light that follows the pointer is, from 0 to 1.
+  setPointerLight(strength: number): void
   dispose(): void
 }
 
@@ -152,11 +175,13 @@ export function createHeroScene(
   scene.fog = new THREE.FogExp2(TWILIGHT_FOG_COLOR, lighting.fogDensity)
 
   const terrainTextures = createStoneTextures(renderer, quality)
+  const panRange = Math.max(0, options.panRange ?? 0)
   const initialBounds = container.getBoundingClientRect()
   const terrainLayout = createTerrainLayout(
     quality,
     initialBounds.width,
     initialBounds.height,
+    panRange,
   )
   const terrain = createTerrain(terrainTextures, quality, terrainLayout, terrainRelief)
   scene.add(terrain.group)
@@ -165,7 +190,7 @@ export function createHeroScene(
   let celebrationStart: number | null = null
 
   const plusField = shouldRenderInteractivePlusField
-    ? createPlusField(quality, terrain, lighting.fogDensity)
+    ? createPlusField(quality, terrain, lighting.fogDensity, panRange)
     : null
 
   if (plusField) {
@@ -191,6 +216,31 @@ export function createHeroScene(
   iceLight.position.fromArray(lighting.sideLightPosition)
   scene.add(iceLight)
 
+  const fog = scene.fog
+  const dayFog = new THREE.Color(TWILIGHT_FOG_COLOR)
+  const nightFog = new THREE.Color(NIGHT_FOG_COLOR)
+  const sideDayColor = iceLight.color.clone()
+  const moonlightColor = new THREE.Color(MOONLIGHT_COLOR)
+  const daylight = {
+    sun: sunLight.intensity,
+    fill: sunFill.intensity,
+    side: iceLight.intensity,
+    ambient: ambientLight.intensity,
+    sky: scene.environmentIntensity,
+  }
+  let night = 0
+  let targetNight = 0
+  const applyNight = () => {
+    sunLight.intensity = daylight.sun * (1 - night)
+    sunFill.intensity = daylight.fill * (1 - night)
+    iceLight.intensity = daylight.side * THREE.MathUtils.lerp(1, MOONLIGHT_GAIN, night)
+    iceLight.color.lerpColors(sideDayColor, moonlightColor, night)
+    ambientLight.intensity = daylight.ambient * (1 - night * 0.3)
+    scene.environmentIntensity = daylight.sky * (1 - night * 0.45)
+    fog.color.lerpColors(dayFog, nightFog, night)
+    setSkyNight(sky, night)
+  }
+
   const lookUp = THREE.MathUtils.degToRad(options.lookUp ?? 0)
   const pointer = new THREE.Vector2(0, 0)
   const targetPointer = new THREE.Vector2(0, 0)
@@ -198,6 +248,7 @@ export function createHeroScene(
   const initialTravel = clampTravel(options.travel ?? 0)
   let travel = options.intro && !staticScene ? CAMERA_INTRO_TRAVEL : initialTravel
   let targetTravel = initialTravel
+  let pan = 0
   let elapsed = 0
   let lastFrameTime: number | null = null
   let animationFrame = 0
@@ -218,10 +269,14 @@ export function createHeroScene(
     renderer.domElement.style.height = '100%'
     camera.aspect = width / Math.max(height, 1)
     camera.updateProjectionMatrix()
-    updateTerrainLayout(terrain, quality, terrainRelief, width, height)
+    updateTerrainLayout(terrain, quality, terrainRelief, width, height, panRange)
     updateCelebrationWaveGeometry(celebrationWaves, terrain.mesh.geometry)
     if (plusField) placePlusField(plusField, terrain)
   }
+
+  // Where the camera looks along the ground.
+  const focusX = () =>
+    panRange > 0 ? pan + Math.sin(elapsed * PAN_DRIFT_SPEED) * PAN_DRIFT : 0
 
   const updateCamera = (delta: number) => {
     pointer.lerp(targetPointer, createFrameLerp(CAMERA_POINTER_RESPONSE, delta))
@@ -231,11 +286,12 @@ export function createHeroScene(
       createFrameLerp(CAMERA_TRAVEL_RESPONSE, delta),
     )
 
-    camera.position.x = pointer.x * 1.1
+    const x = focusX()
+    camera.position.x = x + pointer.x * 1.1
     camera.position.y = CAMERA_BASE_Y - pointer.y * 0.32 - travel * CAMERA_TRAVEL_Y
     camera.position.z = CAMERA_BASE_Z - travel * CAMERA_TRAVEL_Z
     camera.lookAt(
-      pointer.x * 1.8,
+      x + pointer.x * 1.8,
       -0.52 - travel * 0.4,
       -8.5 - travel * CAMERA_TRAVEL_Z,
     )
@@ -244,6 +300,7 @@ export function createHeroScene(
 
   const isSettled = () =>
     celebrationStart === null &&
+    Math.abs(night - targetNight) < SETTLED_EPSILON &&
     Math.abs(travel - targetTravel) < SETTLED_EPSILON &&
     pointer.distanceToSquared(targetPointer) < SETTLED_EPSILON ** 2
 
@@ -253,13 +310,24 @@ export function createHeroScene(
     }
     elapsed += delta
     updateCamera(delta)
+    if (night !== targetNight) {
+      night =
+        Math.abs(targetNight - night) < SETTLED_EPSILON
+          ? targetNight
+          : THREE.MathUtils.lerp(night, targetNight, createFrameLerp(NIGHT_RESPONSE, delta))
+      applyNight()
+    }
 
     terrain.group.rotation.z = Math.sin(elapsed * 0.08) * 0.006 + pointer.x * 0.012
     if (plusField) {
-      updatePlusField(plusField, targetPointer, elapsed, delta)
+      updatePlusField(plusField, targetPointer, focusX(), elapsed, delta)
     }
     if (celebrationStart !== null) {
-      const active = updateCelebrationWaves(celebrationWaves, elapsed - celebrationStart)
+      const active = updateCelebrationWaves(
+        celebrationWaves,
+        elapsed - celebrationStart,
+        focusX(),
+      )
       if (!active) {
         celebrationStart = null
       }
@@ -383,6 +451,26 @@ export function createHeroScene(
   const controller: HeroSceneController = {
     setTravel(nextTravel) {
       targetTravel = clampTravel(nextTravel)
+      pacer.markActive(performance.now())
+      startLoop()
+    },
+    setPan(x) {
+      pan = THREE.MathUtils.clamp(x, -panRange / 2, panRange / 2)
+      pacer.markActive(performance.now())
+      startLoop()
+    },
+    setPointerLight(strength) {
+      if (!plusField) return
+      plusField.mesh.material.uniforms.uStrength.value = THREE.MathUtils.clamp(strength, 0, 1)
+      pacer.markActive(performance.now())
+      startLoop()
+    },
+    setNight(nextNight) {
+      targetNight = nextNight ? 1 : 0
+      if (staticScene) {
+        night = targetNight
+        applyNight()
+      }
       pacer.markActive(performance.now())
       startLoop()
     },

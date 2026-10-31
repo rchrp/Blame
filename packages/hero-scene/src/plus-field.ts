@@ -31,8 +31,9 @@ export function createPlusField(
   quality: SceneQuality,
   terrain: ResponsiveTerrain,
   fogDensity: number,
+  panRange = 0,
 ): PlusField {
-  const grid = createGrid(quality.plusFieldStep, terrain)
+  const grid = createGrid(quality.plusFieldStep, terrain, panRange)
   const geometry = createPlusGeometry()
   geometry.setAttribute(
     'aGrid',
@@ -61,9 +62,9 @@ export function createPlusField(
 }
 
 // Grid points, in the terrain group's space, wherever the light can reach and
-// the terrain is drawn.
-function createGrid(step: number, terrain: ResponsiveTerrain) {
-  const reachX = PLUS_FIELD_POINTER_X_RANGE + PLUS_FIELD_RADIUS
+// the terrain is drawn, wherever the camera pans.
+function createGrid(step: number, terrain: ResponsiveTerrain, panRange: number) {
+  const reachX = PLUS_FIELD_POINTER_X_RANGE + PLUS_FIELD_RADIUS + panRange / 2
   const terrainZ = terrain.mesh.position.z
   const nearZ = Math.min(
     PLUS_FIELD_FRONT_Z + PLUS_FIELD_RADIUS,
@@ -116,8 +117,8 @@ export function placePlusField(field: PlusField, terrain: ResponsiveTerrain) {
 
 function createPlusGeometry() {
   const shape = new THREE.Shape()
-  const armLength = 0.42
-  const armWidth = 0.12
+  const armLength = 0.48
+  const armWidth = 0.135
 
   shape.moveTo(-armWidth, -armLength)
   shape.lineTo(armWidth, -armLength)
@@ -143,12 +144,14 @@ function createPlusMaterial(terrainZ: number, fogDensity: number) {
       uCenter: { value: new THREE.Vector2() },
       uRadius: { value: PLUS_FIELD_RADIUS },
       uFogDensity: { value: fogDensity },
+      uStrength: { value: 1 },
     },
     vertexShader: `
       uniform float uTime;
       uniform vec2 uCenter;
       uniform float uRadius;
       uniform float uFogDensity;
+      uniform float uStrength;
       attribute vec2 aGrid;
       varying float vOpacity;
 
@@ -167,7 +170,7 @@ function createPlusMaterial(terrainZ: number, fogDensity: number) {
         float fog = exp(-uFogDensity * uFogDensity * depth * depth);
         float horizon = smoothstep(${TERRAIN_HORIZON_FADE_END_Z.toFixed(1)}, ${TERRAIN_HORIZON_FADE_START_Z.toFixed(1)}, aGrid.y - ${terrainZ.toFixed(1)});
         float pulse = 0.9 + 0.1 * sin(uTime * 1.7 + aGrid.x * 0.26 + aGrid.y * 0.19);
-        vOpacity = light * 0.88 * pulse * mix(0.35, 1.0, fog) * horizon;
+        vOpacity = light * 0.88 * uStrength * pulse * mix(0.35, 1.0, fog) * horizon;
         gl_Position = projectionMatrix * viewPosition;
       }
     `,
@@ -191,14 +194,17 @@ function createPlusMaterial(terrainZ: number, fogDensity: number) {
 
 const target = new THREE.Vector2()
 
+// `focusX` is where the camera looks along the ground: the light follows the
+// pointer around it.
 export function updatePlusField(
   field: PlusField,
   pointer: THREE.Vector2,
+  focusX: number,
   elapsed: number,
   delta: number,
 ) {
   target.set(
-    pointer.x * PLUS_FIELD_POINTER_X_RANGE,
+    focusX + pointer.x * PLUS_FIELD_POINTER_X_RANGE,
     THREE.MathUtils.mapLinear(pointer.y, -1, 1, PLUS_FIELD_BACK_Z, PLUS_FIELD_FRONT_Z),
   )
   field.center.lerp(target, createFrameLerp(PLUS_FIELD_RESPONSE, delta))
