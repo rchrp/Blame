@@ -127,6 +127,7 @@ function HeroFadeOut() {
 function OpeningSection() {
   return (
     <section
+      id="opening"
       data-story-section
       className="flex min-h-[100svh] flex-col justify-center bg-[#050505] px-5 py-24 sm:px-8 lg:px-10"
     >

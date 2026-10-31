@@ -53,6 +53,11 @@ export function useSceneTimeline<T extends HTMLElement>(
     const context = gsap.context(() => {
       const timeline = gsap.timeline({ paused: true });
       build(timeline, root);
+      // A staggered from() only renders its first target's starting state
+      // up front; the others would show their final state until the
+      // playhead reaches them. Render the whole timeline once, end then
+      // start, so every element begins hidden where the scene says so.
+      timeline.progress(1, true).progress(0, true);
 
       if (reducedMotion) {
         timeline.progress(1);
@@ -89,13 +94,15 @@ export function useSceneTimeline<T extends HTMLElement>(
         anticipatePin: 1,
         invalidateOnRefresh: true,
       });
+      // No invalidateOnRefresh here: invalidating the timeline on a refresh
+      // reverts the staggered parts that have not started yet to their
+      // final, visible state.
       ScrollTrigger.create({
         trigger: section,
         start: `top ${100 - approachShare * 100}%`,
         end: () => pin.end,
         scrub: 0.5,
         animation: timeline,
-        invalidateOnRefresh: true,
       });
 
       return () => {
