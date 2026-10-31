@@ -54,15 +54,19 @@ export function LandingRevealStyles() {
         line-height: 1.08;
       }
 
-      /* The label above a story heading, as a badge. */
+      /* The label above a story heading, as a badge: a dark, blue-tinted
+         glass that keeps its label legible over the bright sky. */
       .story-eyebrow {
         display: inline-flex;
         align-items: center;
-        border: 1px solid color-mix(in oklab, var(--primary) 55%, transparent);
+        border: 1px solid color-mix(in oklab, var(--primary) 70%, white 10%);
         border-radius: 999px;
-        background: color-mix(in oklab, var(--primary) 16%, transparent);
+        background: color-mix(in oklab, var(--primary) 34%, rgb(6 8 20 / 78%));
+        -webkit-backdrop-filter: blur(10px);
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 18px rgb(0 0 0 / 28%);
         padding: 0.3125rem 0.875rem;
-        color: color-mix(in oklab, var(--primary) 28%, white);
+        color: color-mix(in oklab, var(--primary) 12%, white);
         font-family: Arial, Helvetica, ui-sans-serif, sans-serif;
         font-size: clamp(0.8125rem, 0.95vw, 0.9375rem);
         font-weight: 400;
@@ -73,10 +77,11 @@ export function LandingRevealStyles() {
       /* Lighter than the video's grey, with a soft shadow, so it reads over
          the bright sky in the middle of the 3D ground. */
       .story-copy {
-        color: rgb(198, 198, 206);
+        color: rgb(228, 228, 234);
         text-shadow:
-          0 1px 2px rgb(0 0 0 / 35%),
-          0 2px 18px rgb(0 0 0 / 45%);
+          0 1px 2px rgb(0 0 0 / 55%),
+          0 0 14px rgb(0 0 0 / 50%),
+          0 2px 30px rgb(0 0 0 / 55%);
         font-family: Arial, Helvetica, ui-sans-serif, sans-serif;
         font-size: clamp(1.125rem, 1.65vw, 1.4375rem);
         font-weight: 400;
