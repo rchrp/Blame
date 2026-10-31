@@ -204,6 +204,7 @@ function SpecialistsSection() {
   return (
     <section
       data-story-section
+      data-fade="parts"
       className="flex min-h-[100svh] flex-col justify-center px-5 py-24 sm:px-8 lg:px-10"
     >
       <div className="mx-auto w-full max-w-7xl">
@@ -216,7 +217,7 @@ function SpecialistsSection() {
 
 function SpecialistsHeading() {
   return (
-    <div className="grid gap-12 lg:grid-cols-[1fr_0.65fr] lg:items-end">
+    <div className="story-fade-part grid gap-12 lg:grid-cols-[1fr_0.65fr] lg:items-end">
       <ScrollReveal>
         <p className="story-eyebrow">Specialist agents</p>
         <h2 className="story-title mt-5 max-w-5xl">
@@ -241,7 +242,7 @@ function AgentRail() {
           key={agent.title}
           as="article"
           delay={index * 70}
-          className="specialist-card group flex min-h-64 flex-col justify-between rounded-3xl border border-white/10 bg-white/[0.045] p-5 backdrop-blur-xl hover:-translate-y-1 hover:bg-white/[0.075] sm:min-h-72 sm:p-6"
+          className="specialist-card story-fade-frosted group flex min-h-64 flex-col justify-between rounded-3xl border border-white/10 bg-white/[0.045] p-5 backdrop-blur-xl hover:-translate-y-1 hover:bg-white/[0.075] sm:min-h-72 sm:p-6"
           style={specialistCardStyle(agent)}
         >
           <AgentPortrait agent={agent} />

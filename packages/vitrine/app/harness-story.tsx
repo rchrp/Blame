@@ -21,21 +21,24 @@ export function HarnessSection({
       id="harness"
       aria-labelledby="harness-title"
       data-story-section
+      data-fade="parts"
       className="flex min-h-[100svh] flex-col justify-center px-5 py-24 sm:px-8 sm:py-28 lg:px-10"
     >
       <div className="mx-auto w-full max-w-7xl">
-        <ScrollReveal className="text-center">
-          <p className="story-eyebrow">Light Semantic Harness</p>
-          <h2 id="harness-title" className="story-title mx-auto mt-5 max-w-5xl">
-            Sharper tools. Smaller bills.
-          </h2>
-          <p className="story-copy mx-auto mt-5 max-w-3xl">
-            Same model, different harness. Blame’s agents find code by its
-            structure, read only what they need, and edit only what they’ve
-            read.
-          </p>
-        </ScrollReveal>
-        <HarnessSaving />
+        <div className="story-fade-part">
+          <ScrollReveal className="text-center">
+            <p className="story-eyebrow">Light Semantic Harness</p>
+            <h2 id="harness-title" className="story-title mx-auto mt-5 max-w-5xl">
+              Sharper tools. Smaller bills.
+            </h2>
+            <p className="story-copy mx-auto mt-5 max-w-3xl">
+              Same model, different harness. Blame’s agents find code by its
+              structure, read only what they need, and edit only what they’ve
+              read.
+            </p>
+          </ScrollReveal>
+          <HarnessSaving />
+        </div>
         <div className="mt-12 lg:mt-14">{showcase}</div>
       </div>
     </section>

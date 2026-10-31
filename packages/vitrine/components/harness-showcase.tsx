@@ -22,7 +22,7 @@ export function HarnessShowcase() {
       <div
         role="tablist"
         aria-label="Light Semantic Harness tools"
-        className="mx-auto grid max-w-5xl grid-cols-5 gap-2 sm:gap-6"
+        className="story-fade-part mx-auto grid max-w-5xl grid-cols-5 gap-2 sm:gap-6"
       >
         {harnessSteps.map((step, index) => (
           <HarnessTab
@@ -44,7 +44,7 @@ export function HarnessShowcase() {
           </div>
           <button
             {...walkthrough.playButtonProps}
-            className="absolute right-2.5 top-2.5 grid size-7 place-items-center rounded-full text-white/56 transition hover:bg-white/[0.08] hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/45"
+            className="story-fade-part absolute right-2.5 top-2.5 grid size-7 place-items-center rounded-full text-white/56 transition hover:bg-white/[0.08] hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/45"
           >
             {isPlaying ? (
               <Pause className="size-3 fill-current" />
@@ -53,7 +53,7 @@ export function HarnessShowcase() {
             )}
           </button>
         </div>
-        <div className="mx-auto mt-6 grid max-w-xl">
+        <div className="story-fade-part mx-auto mt-6 grid max-w-xl">
           {harnessSteps.map((step, index) => (
             <p
               key={index === activeIndex ? `caption-${index}` : step.tool}

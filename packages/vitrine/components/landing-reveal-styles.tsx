@@ -196,6 +196,20 @@ export function LandingRevealStyles() {
           transform 760ms cubic-bezier(0.22, 1, 0.36, 1) var(--story-reveal-delay);
       }
 
+      /* A finished section fades out as it leaves the screen: the story
+         stage sets --leave on it, from 0 to 1, with data-leaving while it
+         does. A section holding frosted cards (data-fade="parts") fades
+         piece by piece, and each card fades itself: a fading parent would
+         switch its backdrop blur off. */
+      [data-story-section][data-leaving]:not([data-fade="parts"]) > *,
+      [data-story-section][data-leaving] .story-fade-part {
+        opacity: calc(1 - var(--leave));
+      }
+
+      [data-story-section][data-leaving] .story-fade-frosted {
+        filter: opacity(calc(1 - var(--leave)));
+      }
+
       @keyframes sceneCanvasReveal {
         to {
           opacity: 1;

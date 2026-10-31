@@ -17,6 +17,11 @@ import { SceneWarmup } from "@/components/scene-warmup";
 // - The light rings run across the ground on the video's moments (see
 //   celebrateStage), and night falls in black and white on the final
 //   section.
+// - A finished section fades out as it leaves the screen, so two sections are
+//   rarely seen at once: it sets --leave on the section (styles in
+//   landing-reveal-styles).
+const leaveFrom = 0.9;
+const leaveOver = 0.5;
 const lookUp = 7;
 const panRange = 110;
 const panDuration = 1.4;
@@ -53,6 +58,7 @@ export function StoryStage() {
     let step = 0;
     let night = false;
     let lastStory = -1;
+    const leaving = new Map<HTMLElement, number>();
     let frame = 0;
 
     const update = () => {
@@ -74,6 +80,17 @@ export function StoryStage() {
         lastStory = story;
         scene.setPointerLight(1 - story * 0.6);
       }
+
+      // Each section fades out from when its end rises past 90% of the
+      // screen to when it reaches 40%.
+      sections.forEach((section, index) => {
+        const travelled = screen * leaveFrom - tops[index].bottom;
+        const leave = Math.round(clamp01(travelled / (screen * leaveOver)) * 100) / 100;
+        if (leaving.get(section) === leave) return;
+        leaving.set(section, leave);
+        section.style.setProperty("--leave", String(leave));
+        section.toggleAttribute("data-leaving", leave > 0);
+      });
 
       // The step is the section across the middle of the screen; the hero
       // is step 0.
@@ -113,6 +130,10 @@ export function StoryStage() {
       window.removeEventListener("scroll", schedule);
       window.removeEventListener("resize", schedule);
       if (frame) cancelAnimationFrame(frame);
+      leaving.forEach((_, section) => {
+        section.style.removeProperty("--leave");
+        section.removeAttribute("data-leaving");
+      });
       gsap.killTweensOf(pan);
       if (stage === scene) stage = null;
       scene.dispose();
