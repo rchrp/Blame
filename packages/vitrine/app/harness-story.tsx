@@ -1,4 +1,5 @@
 import { ArrowUpRight, CircleCheck } from "lucide-react";
+import type { ReactNode } from "react";
 import { HarnessShowcase } from "@/components/harness-showcase";
 import { SavingsCountUp } from "@/components/savings-count-up";
 import { ScrollReveal } from "@/components/scroll-reveal";
@@ -10,7 +11,11 @@ const harnessStudyPdfPath = "/research/light-semantic-harness-study.pdf";
 // Panel F61 of the study: 54.2% fewer tokens than Cline, both at 6/6.
 const tokenSavingPercent = 54;
 
-export function HarnessSection() {
+export function HarnessSection({
+  showcase = <HarnessShowcase />,
+}: {
+  showcase?: ReactNode;
+}) {
   return (
     <section
       id="harness"
@@ -23,16 +28,14 @@ export function HarnessSection() {
           <h2 id="harness-title" className="story-title mx-auto mt-5 max-w-5xl">
             Sharper tools. Smaller bills.
           </h2>
-          <p className="story-copy mx-auto mt-7 max-w-3xl">
+          <p className="story-copy mx-auto mt-5 max-w-3xl">
             Same model, different harness. Blame’s agents find code by its
             structure, read only what they need, and edit only what they’ve
             read.
           </p>
         </ScrollReveal>
         <HarnessSaving />
-        <div className="mt-24 lg:mt-32">
-          <HarnessShowcase />
-        </div>
+        <div className="mt-12 lg:mt-14">{showcase}</div>
         <HarnessFootnote />
       </div>
     </section>
@@ -41,14 +44,14 @@ export function HarnessSection() {
 
 function HarnessSaving() {
   return (
-    <ScrollReveal className="mt-16 text-center lg:mt-20">
-      <p className="font-display text-[clamp(5.5rem,19vw,14rem)] leading-[0.95]">
+    <ScrollReveal className="mt-8 text-center lg:mt-10">
+      <p className="font-display text-[clamp(3.5rem,7vw,6rem)] leading-none">
         <SavingsCountUp value={tokenSavingPercent} />
       </p>
-      <p className="mt-3 text-balance text-lg text-white/72 sm:text-2xl">
+      <p className="mt-2 text-balance text-base text-white/72 sm:text-xl">
         tokens vs. Cline, same model, same tasks
       </p>
-      <p className="mt-5 inline-flex items-center gap-2 text-sm text-white/48 sm:text-base">
+      <p className="mt-4 inline-flex items-center gap-2 text-sm text-white/56">
         <CircleCheck className="size-4 text-[oklch(0.8_0.17_150)]" />
         No quality lost: 6/6 audited runs, same as Cline.
       </p>
