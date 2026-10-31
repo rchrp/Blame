@@ -132,6 +132,27 @@ export function createAtmosphericSky() {
   return sky
 }
 
+// The sky as an environment map, so the stone reflects it: faces turned to
+// the zenith take its deep blue, grazing slopes the paler horizon and the
+// glow round the sun, and faces turned down see a dim blue ground. Rendered
+// once.
+export function createSkyEnvironment(renderer: THREE.WebGLRenderer) {
+  const generator = new THREE.PMREMGenerator(renderer)
+  const skyScene = new THREE.Scene()
+  const sky = createAtmosphericSky()
+  const ground = new THREE.Mesh(
+    new THREE.CircleGeometry(400000, 48),
+    new THREE.MeshBasicMaterial({ color: 0x0a1233 }),
+  )
+  ground.rotation.x = -Math.PI / 2
+  ground.position.y = -40
+  skyScene.add(sky, ground)
+  const environment = generator.fromScene(skyScene, 0.02, 0.1, 1_000_000, { size: 128 })
+  generator.dispose()
+  disposeObject3D(skyScene)
+  return environment
+}
+
 function disposeMaterial(material: THREE.Material | THREE.Material[]) {
   if (Array.isArray(material)) {
     material.forEach((item) => item.dispose())

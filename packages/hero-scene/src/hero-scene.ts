@@ -2,6 +2,7 @@ import * as THREE from 'three'
 import {
   createAtmosphericSky,
   createCelebrationWaves,
+  createSkyEnvironment,
   createSunDirection,
   disposeObject3D,
   updateCelebrationWaveGeometry,
@@ -29,7 +30,23 @@ export { terrainReliefPresets, type HeroSceneTerrainPreset }
 
 const SUN_DIRECTION = createSunDirection()
 const TWILIGHT_FOG_COLOR = 0x3666ff
-const TWILIGHT_FOG_DENSITY = 0.012
+// Two ways to light the terrain. The reflective stone (capable machines) is
+// lit by the sky it reflects and by a blue light raking from the left, which
+// gives every slope its relief; the haze stays light so it doesn't flatten
+// them. The cheaper material keeps a flat blue fill and a denser haze.
+const SKY_LIT = {
+  fogDensity: 0.007,
+  skyReflection: 1.4,
+  ambient: 0.18,
+  sideLight: 2.4,
+  sideLightPosition: [-22, 14, 10],
+} as const
+const FLAT_LIT = {
+  fogDensity: 0.012,
+  ambient: 0.78,
+  sideLight: 0.48,
+  sideLightPosition: [15, 5, 15],
+} as const
 const FRAME_DELTA_MAX = 0.1
 const CAMERA_POINTER_RESPONSE = 7
 const CAMERA_TRAVEL_RESPONSE = 1.6
@@ -97,7 +114,6 @@ export function createHeroScene(
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
   let quality = createSceneQuality(readDeviceProfile())
   const scene = new THREE.Scene()
-  scene.fog = new THREE.FogExp2(TWILIGHT_FOG_COLOR, TWILIGHT_FOG_DENSITY)
 
   const camera = new THREE.PerspectiveCamera(48, 1, 0.1, 500000)
   camera.position.set(0, CAMERA_BASE_Y, CAMERA_BASE_Z)
@@ -125,6 +141,15 @@ export function createHeroScene(
 
   const sky = createAtmosphericSky()
   scene.add(sky)
+  const skyEnvironment = quality.useDetailedTerrainMaterial
+    ? createSkyEnvironment(renderer)
+    : null
+  const lighting = skyEnvironment ? SKY_LIT : FLAT_LIT
+  if (skyEnvironment) {
+    scene.environment = skyEnvironment.texture
+    scene.environmentIntensity = SKY_LIT.skyReflection
+  }
+  scene.fog = new THREE.FogExp2(TWILIGHT_FOG_COLOR, lighting.fogDensity)
 
   const terrainTextures = createStoneTextures(renderer, quality)
   const initialBounds = container.getBoundingClientRect()
@@ -140,14 +165,18 @@ export function createHeroScene(
   let celebrationStart: number | null = null
 
   const plusField = shouldRenderInteractivePlusField
-    ? createPlusField(quality, terrain, TWILIGHT_FOG_DENSITY)
+    ? createPlusField(quality, terrain, lighting.fogDensity)
     : null
 
   if (plusField) {
     terrain.group.add(plusField.group)
   }
 
-  const ambientLight = new THREE.HemisphereLight(0xbdc3fd, 0x07101f, 0.78)
+  const ambientLight = new THREE.HemisphereLight(
+    0xbdc3fd,
+    0x07101f,
+    lighting.ambient,
+  )
   scene.add(ambientLight)
 
   const sunLight = new THREE.DirectionalLight(0xb3acf3, 2.8)
@@ -158,8 +187,8 @@ export function createHeroScene(
   sunFill.position.copy(SUN_DIRECTION).multiplyScalar(38)
   scene.add(sunFill)
 
-  const iceLight = new THREE.DirectionalLight(0x9799fc, 0.48)
-  iceLight.position.set(15, 5, 15)
+  const iceLight = new THREE.DirectionalLight(0x9799fc, lighting.sideLight)
+  iceLight.position.fromArray(lighting.sideLightPosition)
   scene.add(iceLight)
 
   const lookUp = THREE.MathUtils.degToRad(options.lookUp ?? 0)
@@ -384,6 +413,7 @@ export function createHeroScene(
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       disposeObject3D(sky)
       disposeObject3D(terrain.group)
+      skyEnvironment?.dispose()
       terrainTextures.color.dispose()
       terrainTextures.bump?.dispose()
       terrainTextures.roughness?.dispose()

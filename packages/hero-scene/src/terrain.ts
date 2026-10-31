@@ -233,20 +233,24 @@ function createTerrainMaterial(
   }
 
   return applyTerrainHorizonFade(new THREE.MeshStandardMaterial({
-    color: 0x1d2a42,
+    color: TERRAIN_STONE_COLOR,
     map: textures.color,
     bumpMap: textures.bump,
     bumpScale: TERRAIN_BUMP_SCALE,
     roughnessMap: textures.roughness,
-    roughness: 0.92,
+    roughness: 0.85,
     metalness: 0,
-    emissive: 0x071225,
-    emissiveIntensity: 0.12,
+    // Lit by the sky it reflects (see createSkyEnvironment), not by a glow of
+    // its own.
+    emissive: 0x000000,
   }))
 }
 
 // How strongly the stone grain shades the surface.
 const TERRAIN_BUMP_SCALE = 0.12
+// The reflective stone's own colour: a grey slate, so its blue comes from the
+// sky that lights it.
+const TERRAIN_STONE_COLOR = 0x5a6680
 
 // Fades the terrain out towards the horizon, and darkens its steep faces a
 // little, so the slopes read as rock against the gentler ground.
