@@ -1,68 +1,167 @@
+<div align="center">
+
+<a href="https://blame.so"><img src="packages/vitrine/public/icons/blame-icon-256.png" width="96" height="96" alt="Blame"></a>
+
 # Blame
 
-**A desktop development environment for AI agents, from backlog to reviewed merge.**
+### The open-source ADE for AI coding agents
 
-Blame connects tasks, coding agents, isolated Git worktrees, previews, and code review in one workspace. Give an agent a user story, inspect its changes, test the result, and decide what gets merged.
+Hand an agent a user story. Get back a change you can check before it merges.
 
-[Download](https://blame.so/download) · [Website](https://blame.so) · [Features](#features) · [Development](#development) · [Documentation](#documentation) · [Contributing](#contributing)
-
+[![Latest release](https://img.shields.io/github/v/release/rchrp/Blame?label=release&color=3b5bdb)](https://github.com/rchrp/Blame/releases/latest)
 [![CI](https://github.com/rchrp/Blame/actions/workflows/ci.yml/badge.svg)](https://github.com/rchrp/Blame/actions/workflows/ci.yml)
-[![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
+[![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-3b5bdb)](LICENSE)
+[![Platforms](https://img.shields.io/badge/platforms-macOS%20%7C%20Windows%20%7C%20Linux-555)](#install)
+[![GitHub stars](https://img.shields.io/github/stars/rchrp/Blame?color=f7cf83)](https://github.com/rchrp/Blame/stargazers)
 
-[![Watch the Blame demo on YouTube](packages/vitrine/public/demo.gif)](https://youtu.be/cD6jASpIKQw)
+**[Download](#install)** · [Website](https://blame.so) · [Demo video](https://youtu.be/cD6jASpIKQw) · [Discussions](https://github.com/rchrp/Blame/discussions) · [Contributing](CONTRIBUTING.md)
 
-**[Watch the demo on YouTube](https://youtu.be/cD6jASpIKQw)**
+<a href="https://youtu.be/cD6jASpIKQw"><img src="packages/vitrine/public/demo.gif" width="900" alt="A user story goes from the backlog to an agent, a live preview, and a reviewed merge in Blame"></a>
+
+</div>
+
+## Why Blame
+
+Coding agents write code fast. Checking that code is still your job, and most tools leave you to piece it together from a chat log, a terminal, and a branch you never ran.
+
+Blame is an Agentic Development Environment (ADE): one desktop app where each task goes from **backlog → agent → isolated worktree → live preview → review → merge**. Agents work through a harness that records what they read, what they changed, and which checks passed. You see the running app and the evidence side by side, and nothing merges until you approve it.
+
+- **Verifiable, not vibes.** The [Light Semantic Harness](#the-light-semantic-harness) makes every agent show its work.
+- **Isolated by default.** Every story gets its own branch, worktree, environment, port, and preview.
+- **Your models, your machine.** Bring any of 50 AI providers. Agents, worktrees, and previews run on your computer.
+- **Free and open source.** The whole app is AGPL-3.0. [Blame Premium](#free-and-premium) only adds hosted services.
+
+## Install
+
+Download the latest release for your platform:
+
+| Platform                  | Download                                                                                                                                                                                                                                   | Requirements                                |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------- |
+| **macOS** (Apple silicon) | [`blame-mac-arm64.dmg`](https://download.blame.so/latest/blame-mac-arm64.dmg)                                                                                                                                                              | macOS 13 or later                           |
+| **macOS** (Intel)         | [`blame-mac-x64.dmg`](https://download.blame.so/latest/blame-mac-x64.dmg)                                                                                                                                                                  | macOS 13 or later                           |
+| **Windows** (x64)         | [`blame-win-x64.exe`](https://download.blame.so/latest/blame-win-x64.exe)                                                                                                                                                                  | Windows 10 or 11 with WSL 2                 |
+| **Linux** (x86_64)        | [`AppImage`](https://download.blame.so/latest/blame-linux-x86_64.AppImage) · [`.deb`](https://download.blame.so/latest/blame-linux-amd64.deb) · [`.rpm`](https://download.blame.so/latest/blame-linux-x86_64.rpm) | Docker Engine with the Compose plugin       |
+
+You can also pick any version, including betas, from the [releases page](https://github.com/rchrp/Blame/releases) or [blame.so/download](https://blame.so/download). Blame keeps itself up to date from those releases.
+
+<details>
+<summary><strong>Platform notes</strong></summary>
+
+**macOS.** The app is signed and notarized. On first launch, Blame sets up a small Linux VM (based on [Lima](https://lima-vm.io)) where agents, worktrees, and previews run.
+
+**Windows.** The installer is not code-signed yet, so SmartScreen may warn you: choose **More info → Run anyway**. Blame runs agents in its own WSL distribution. If WSL is not installed, run `wsl --install` in an administrator terminal and restart first.
+
+**Linux.** Worktrees stay native, and previews and project services run in Docker on your machine.
+
+```bash
+# AppImage
+chmod +x blame-linux-x86_64.AppImage && ./blame-linux-x86_64.AppImage
+
+# Debian, Ubuntu
+sudo apt install ./blame-linux-amd64.deb
+
+# Fedora, RHEL
+sudo dnf install ./blame-linux-x86_64.rpm
+```
+
+**Verify a download.** Each release ships a `SHA256SUMS` file:
+
+```bash
+shasum -a 256 -c SHA256SUMS --ignore-missing
+```
+
+**Beta channel.** Turn on **Settings → Desktop → Beta channel** to get prereleases as soon as they ship.
+
+</details>
+
+## Quick start
+
+1. Open Blame and sign in, or create a free account.
+2. Open a Git repository, or create a new project from a web stack.
+3. Connect an AI provider with your own API key or subscription.
+4. Write a user story in the backlog and hand it to an agent.
+5. Follow the agent in its own worktree, try the result in the live preview, then request changes, reject it, or approve and merge.
+
+For a quick fix or a question about the code, skip the backlog and use **Quick Chat**.
+
+## The Light Semantic Harness
+
+Most coding agents grep, rewrite whole files, and tell you it should work now. Blame gives every agent five guarded tools instead:
+
+| Tool          | What the agent does               | What the harness guarantees                                                                                         |
+| ------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `search_code` | Finds code by its structure       | Declarations come from the syntax tree and the TypeScript project, not from text matches.                          |
+| `read_code`   | Reads before it writes            | Every read is recorded with the file version it saw. Unread code cannot be edited.                                  |
+| `edit_code`   | Edits declarations and files      | An edit must match the exact text the agent read. Stale or ambiguous targets are refused, and batches are atomic.   |
+| `run_task`    | Runs commands and tests           | Results are bound to the run and the source revision. A failing test stays failed, even behind a script that exits 0. |
+| `finish_task` | Hands the work back               | Required checks run again on the final source. Missing or stale checks are reported as unverified, with the reason. |
+
+**Measured in the open.** On fresh cross-module TypeScript tasks audited by hand, the harness matched Cline's **6/6** with **54% fewer tokens** and a 39% lower estimated cost. That is panel F61 of the [harness study](docs/semantic-harness-study.tex), which details the conditions, the other panels, and the limits of each result. The harness lives in [`packages/agent-runtime/src/harness`](packages/agent-runtime/src/harness).
 
 ## Features
 
-- **Backlog-driven development.** Turn user stories into agent tasks and follow them through the queue, development, review, and merge.
-- **Isolated Git worktrees.** Keep each task's branch and working directory separate, with its own environment and preview lifecycle.
-- **Quick Chat.** Work directly with an agent for smaller changes, debugging, and code exploration.
-- **Project code practices.** Give agents project-level conventions and implementation guidance.
-- **Integrated previews and review.** Inspect the running app, diffs, files, logs, and terminal output before approving a merge.
-- **Your own AI providers.** Connect supported providers with your own credentials rather than tying the workflow to a single model.
-- **Light Semantic Harness.** Use syntax-aware code navigation, guarded edits, and explicit execution and validation evidence. See the [harness study](docs/semantic-harness-study.tex) for implementation details and research limits.
+| Backlog to merge                                                         | Live preview and review                                                     |
+| :----------------------------------------------------------------------: | :-------------------------------------------------------------------------: |
+| ![Blame backlog](packages/vitrine/public/desktop-backlog.png)            | ![Blame live preview](packages/vitrine/public/desktop-preview.png)          |
+| **Code Practices**                                                       | **Project creation**                                                        |
+| ![Blame Code Practices](packages/vitrine/public/desktop-practices.png)   | ![Blame project creation](packages/vitrine/public/desktop-new-project.png)  |
 
-## How it works
+- **Backlog-driven development.** Each user story becomes a lane that keeps its brief, context, agent activity, review notes, and final decision through queue, development, review, and merge.
+- **Smart worktrees.** Blame analyzes the project and prepares a dedicated branch, worktree, environment, port, and runtime for each story before the agent starts.
+- **Live previews.** Run each worktree's app beside its story, with files, diffs, logs, and terminal output. Cloud Previews can also run it in a managed sandbox.
+- **Controlled merge.** Request another pass, reject the work, or approve and merge. The agent moves fast; the decision stays yours.
+- **Parallel agents, any model.** Run several agents at once across 50 AI providers, plus any OpenAI-compatible API.
+- **Code Practices.** Hold every agent to your conventions, or to a stricter engineering standard, project by project.
+- **Specialist agents.** Codebase, story, frontend design, verification, and risk specialists sharpen the work while one lead agent stays responsible for it.
+- **MCP servers.** Connect your MCP servers to every agent.
+- **Project creation.** Start from an empty folder: pick a web stack and Blame generates a project ready for agent work.
+- **Account sync.** Stories, conversations, Code Practices, provider connections, and MCP servers follow you to another computer.
 
-1. Open a Git repository or create a project.
-2. Configure your AI provider and project code practices.
-3. Write a user story and send it to an agent.
-4. Review the implementation in its worktree and preview environment.
-5. Request changes, reject the result, or approve and merge.
+## Free and Premium
 
-Local execution uses native worktrees on Linux, Lima on macOS, and WSL on Windows. Managed cloud previews synchronize a workspace snapshot to a Vercel Sandbox; they are separate from deploying to your own Vercel account.
+Blame is free and open source. Blame Premium pays for hosted services that cost money to run.
 
-## Get started
-
-Download the desktop app for **macOS, Windows, or Linux** from [blame.so/download](https://blame.so/download).
-
-Sign in, open a project, and connect a supported AI provider. Complete the runtime setup for your platform when prompted. The desktop app supplies filesystem, Git, terminal, and local runtime capabilities; the web frontend alone does not provide those capabilities.
-
-### Free core and Premium services
-
-| Available without a Blame subscription | Requires Blame Premium                                        |
+| Free, without a subscription           | Blame Premium                                                 |
 | -------------------------------------- | ------------------------------------------------------------- |
 | Projects, backlog, and conversations   | Cloud voice transcription                                     |
-| Local worktrees and local previews     | Managed Vercel previews                                       |
+| Local worktrees and local previews     | Managed Cloud Previews                                        |
 | Your own AI provider credentials       | New hosted file uploads, including deployment source archives |
 
-Blame Premium is **20 USD/month** or **200 USD/year**, billed once a year for the annual plan, with the existing transcription and cloud preview quotas. AI provider usage is subject to your provider's own pricing and limits. Authentication and data ownership checks apply to both plans.
+Premium is **$20/month** or **$200/year**. Your AI provider bills its own usage. Files stay accessible after a subscription ends. See [blame.so/pricing](https://blame.so/pricing).
 
-Existing files remain accessible after a subscription expires. Cloud cleanup and source recovery also remain available. See [pricing](https://blame.so/pricing) for the hosted offer.
+## FAQ
 
-## Development
+<details>
+<summary><strong>Where does my code run?</strong></summary>
 
-Blame is a TypeScript monorepo using [pnpm](https://pnpm.io) and [Turborepo](https://turbo.build).
+On your computer. Local execution uses a Lima VM on macOS, a WSL distribution on Windows, and native worktrees with Docker on Linux. Code is sent to the AI provider you choose when an agent needs it. Cloud Previews, a Premium feature, sync a workspace snapshot to a managed sandbox.
 
-### Prerequisites
+</details>
 
-- **Node.js 24**, matching CI. The root package declares Node.js 22 or later.
-- **pnpm 10.33.2**, pinned in `package.json`.
-- **Git** and a local **MySQL 8.4** database for the API.
-- A graphical desktop session to run Electron. Local execution also needs the platform's container or VM runtime.
+<details>
+<summary><strong>Which AI providers can I use?</strong></summary>
 
-### Install dependencies
+Any of the 50 supported providers, with your own API key or subscription, plus any OpenAI-compatible endpoint. You can use a different model for each agent.
+
+</details>
+
+<details>
+<summary><strong>Why do I need an account?</strong></summary>
+
+Your account syncs stories, conversations, Code Practices, provider connections, and MCP configuration between computers, and unlocks Premium services. The account is free.
+
+</details>
+
+<details>
+<summary><strong>Can I self-host the backend?</strong></summary>
+
+Not as a turnkey setup yet. The development setup in [CONTRIBUTING.md](CONTRIBUTING.md) runs the whole stack locally, and the [open-source readiness summary](docs/open-source-readiness.tex) tracks what self-hosting still needs.
+
+</details>
+
+## Build from source
+
+Blame is a TypeScript monorepo (pnpm and Turborepo): an Electron desktop app, a React interface, an AdonisJS API, and the agent runtime.
 
 ```bash
 git clone https://github.com/rchrp/Blame.git
@@ -71,141 +170,31 @@ corepack enable
 pnpm install --frozen-lockfile
 ```
 
-If Corepack is unavailable in your Node.js installation, install the pinned pnpm version using the [pnpm installation guide](https://pnpm.io/installation).
-
-### Configure the API
-
-Create a local MySQL database and user, then copy the environment template:
-
-```bash
-cp packages/api/.env.example packages/api/.env
-pnpm --filter @blame/api exec node ace.js generate:key
-```
-
-Edit `packages/api/.env` for your local services:
-
-| Configuration  | Local development setup                                                                                                            |
-| -------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| Database       | Set `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, and `DB_DATABASE` to your local MySQL instance.                                |
-| Origins        | Keep the API on `http://localhost:3333` and allow `http://localhost:5173` in `BETTER_AUTH_TRUSTED_ORIGINS` and `CORS_ORIGIN`.      |
-| Authentication | Set `BETTER_AUTH_SECRET` to a separate random secret of at least 32 characters.                                                    |
-| Telemetry      | Set `BLAME_TELEMETRY_TOKEN_SECRET` to another random secret. Configure the public and upstream endpoints for your own environment. |
-| File storage   | Use `ATTACHMENTS_STORAGE_DRIVER=memory` and `BLAME_WORKSPACE_STORAGE_DRIVER=memory` for disposable development storage.            |
-| Cloud previews | Keep `BLAME_CLOUD_RUNTIME_ENABLED=false` unless you are configuring the managed infrastructure.                                    |
-| Model catalog  | Set `BLAME_MODEL_CATALOG_LIVE_REFRESH=false` to use the bundled catalog without live refresh.                                      |
-
-The memory storage drivers lose uploaded content when the API process stops. Durable deployments need configured object storage.
-
-Email/password registration requires email verification. Configure `RESEND_API_KEY` and `AUTH_EMAIL_FROM` to complete that flow against your own backend. Social sign-in, billing, transcription, and managed previews each require their corresponding service credentials when enabled. The environment template lists these integrations.
-
-Build the API's workspace dependencies and apply migrations:
-
-```bash
-pnpm exec turbo run build --filter='@blame/api^...'
-pnpm --filter @blame/api exec node ace.js migration:run --no-schema-generate
-```
-
-### Run the application
-
-Start the API:
-
-```bash
-pnpm --filter @blame/api dev
-```
-
-In another terminal, start the desktop app:
-
-```bash
-pnpm --filter @blame/desktop dev
-```
-
-For web UI development, run the frontend instead:
-
-```bash
-pnpm exec turbo run build --filter='@blame/app^...'
-pnpm --filter @blame/app dev
-```
-
-The web frontend uses `http://localhost:3333/api/v1` in development. Set `VITE_CLOUD_API_URL` to override that origin when needed.
-
-For local browser sign-in and email verification pages, also run the website:
-
-```bash
-cp packages/vitrine/.env.example packages/vitrine/.env.local
-pnpm --filter @blame/vitrine dev
-```
-
-Set `NEXT_PUBLIC_BLAME_API_URL=http://localhost:3333/api/v1` in the website environment and `BLAME_SITE_URL=http://localhost:3000` in the API environment. Add `http://localhost:3000` to `CORS_ORIGIN` for browser requests.
-
-Use these package commands for local development. The root `pnpm dev` command currently starts the maintainer's SSH database tunnel.
-
-### Checks
-
-Run the checks relevant to your change before opening a pull request:
-
-```bash
-pnpm lint
-pnpm typecheck
-pnpm --filter @blame/app test
-pnpm --filter @blame/desktop test
-pnpm --filter @blame/agent-runtime test
-```
-
-API tests use `packages/api/.env.test`. Configure a dedicated test database before running functional tests: their setup and teardown can migrate, truncate, or reset that database.
-
-```bash
-pnpm --filter @blame/api test
-```
-
-`pnpm build` and `pnpm test` run the monorepo-wide pipelines. Individual packages also expose focused suites. See the [CI workflow](.github/workflows/ci.yml) for the checks run in CI and the [desktop documentation](packages/desktop/README.md) for packaging and runtime images.
-
-### Self-hosting status
-
-The development setup is not yet a turnkey self-hosted distribution. Desktop backend origins, email, telemetry, durable storage, and managed-service configuration still need deployment-specific setup. The [open-source readiness summary](docs/open-source-readiness.tex) tracks these remaining dependencies and release decisions.
-
-## Repository layout
-
-| Path                                                                                                                                                   | Responsibility                                                                        |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------- |
-| [`packages/app`](packages/app)                                                                                                                         | React and Vite interface shared with the desktop app                                  |
-| [`packages/desktop`](packages/desktop)                                                                                                                 | Electron host, preload bridge, Git, filesystem, and runtime integration               |
-| [`packages/api`](packages/api)                                                                                                                         | AdonisJS API, authentication, persistence, encrypted credentials, and hosted services |
-| [`packages/agent-runtime`](packages/agent-runtime)                                                                                                     | Cline SDK integration, agent sessions, and the Light Semantic Harness                 |
-| [`packages/harness-core`](packages/harness-core)                                                                                                       | Framework-independent harness contracts and reference implementations                 |
-| [`packages/preview-contract`](packages/preview-contract), [`packages/preview-runtime`](packages/preview-runtime)                                       | Shared preview contracts and lifecycle coordination                                   |
-| [`packages/sandbox-runner`](packages/sandbox-runner), [`packages/preview-edge`](packages/preview-edge)                                                 | Managed sandbox execution and preview gateway                                         |
-| [`packages/deploy-contract`](packages/deploy-contract), [`packages/model-catalog`](packages/model-catalog), [`packages/telemetry`](packages/telemetry) | Shared deployment, model, and observability support                                   |
-| [`packages/vitrine`](packages/vitrine)                                                                                                                 | Public website and download pages                                                     |
-| [`packages/benchmark-runner`](packages/benchmark-runner), [`tools/terminal_bench`](tools/terminal_bench)                                               | Agent evaluation tools and benchmark evidence                                         |
+You need Node.js 24, Git, and MySQL 8.4 for the API. [CONTRIBUTING.md](CONTRIBUTING.md) walks through configuring the API, running the desktop app, the checks to run, and how the repository is organized. [RELEASING.md](RELEASING.md) covers packaging and releases.
 
 ## Documentation
 
-Engineering summaries are maintained as standalone English LaTeX sources:
+- [Architecture](docs/architecture-summary.tex): package boundaries, workspace execution, and the harness architecture.
+- [Semantic harness study](docs/semantic-harness-study.tex): measured results, implementation guarantees, limitations, and research directions.
+- [Refactoring summary](docs/refactoring-summary.tex): module responsibilities and validation.
+- [Open-source readiness](docs/open-source-readiness.tex): licensing, self-hosting, and release preparation.
+- [Releasing](RELEASING.md): how the desktop app and its runtimes are built and published.
 
-- [Architecture](docs/architecture-summary.tex) — package boundaries, workspace execution, and the harness architecture.
-- [Semantic harness study](docs/semantic-harness-study.tex) — measured results, implementation guarantees, limitations, and research directions.
-- [Refactoring summary](docs/refactoring-summary.tex) — changes to module responsibilities and validation.
-- [Open-source readiness](docs/open-source-readiness.tex) — licensing, self-hosting, and release preparation.
-- [Releasing](RELEASING.md) — how the desktop app and its runtimes are built and published.
+## Community
 
-Each `.tex` document can be compiled independently. Benchmark results describe the versions and conditions under which they were measured; source code and tests define current behavior.
+- **Questions and ideas:** [GitHub Discussions](https://github.com/rchrp/Blame/discussions)
+- **Bugs and feature requests:** [GitHub Issues](https://github.com/rchrp/Blame/issues)
+- **Security reports:** see [SECURITY.md](SECURITY.md). Please do not open a public issue.
+- **Contributing:** start with [CONTRIBUTING.md](CONTRIBUTING.md) and the [code of conduct](CODE_OF_CONDUCT.md).
 
-## Contributing
+If Blame is useful to you, a star helps other developers find it.
 
-Bug reports, documentation improvements, and focused pull requests are welcome. For substantial features or architectural changes, open an [issue](https://github.com/rchrp/Blame/issues) to discuss the approach first.
+## Acknowledgements
 
-- Include reproduction steps, platform information, and relevant logs in bug reports.
-- Keep pull requests scoped; explain the problem, the change, and how you verified it.
-- Follow the existing package boundaries. Renderer code uses the platform and preload interfaces; backend controllers delegate application logic to services.
-- Read any `AGENTS.md` instructions that apply to the files you change.
-- Use [Conventional Commits](https://www.conventionalcommits.org), for example `fix(preview): recover an interrupted session` or `docs: clarify local setup`.
-
-For questions, use [GitHub issues](https://github.com/rchrp/Blame/issues). For security-sensitive reports, contact [support@blame.so](mailto:support@blame.so).
+Blame's agent runtime is built on the [Cline SDK](https://github.com/cline/cline). Its macOS runtime uses [Lima](https://lima-vm.io), and code navigation uses [ast-grep](https://ast-grep.github.io) and [Tree-sitter](https://tree-sitter.github.io).
 
 ## License
 
 Blame is licensed under the [GNU Affero General Public License v3.0](LICENSE) (`AGPL-3.0-only`).
 
-Commercial use is permitted. When distributing covered software, you must provide its corresponding source under the same license. If you modify Blame and let users interact with it over a network, you must offer those users the corresponding source of your modified version, as required by section 13.
-
-Third-party components retain their respective licenses and notices.
+You may use Blame commercially. If you distribute it, you must provide the corresponding source under the same license. If you modify Blame and let users interact with it over a network, you must offer them the source of your modified version, as section 13 requires. Third-party components keep their own licenses and notices.
