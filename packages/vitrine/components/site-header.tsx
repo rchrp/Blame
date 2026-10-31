@@ -3,6 +3,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { GitHubStarsLink } from '@/components/github-stars'
 
 const navigationItems = [
   { label: 'Product', href: '/' },
@@ -68,12 +69,7 @@ export function SiteHeader() {
           })}
         </nav>
 
-        <Link
-          href="/download"
-          className="inline-flex min-h-10 items-center justify-center rounded-full border border-white/14 bg-white/[0.08] px-4 text-sm text-white/90 shadow-2xl shadow-black/20 backdrop-blur-xl transition duration-200 hover:bg-white/[0.14] focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-[#050505]"
-        >
-          Early access
-        </Link>
+        <GitHubStarsLink />
       </div>
     </header>
   )

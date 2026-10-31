@@ -145,6 +145,35 @@ export function LandingRevealStyles() {
         opacity: 1;
       }
 
+      .harness-panel {
+        grid-template-rows: 0fr;
+        opacity: 0;
+        transition:
+          grid-template-rows 520ms cubic-bezier(0.22, 1, 0.36, 1),
+          opacity 320ms ease;
+      }
+
+      .harness-panel[data-expanded="true"] {
+        grid-template-rows: 1fr;
+        opacity: 1;
+        transition:
+          grid-template-rows 520ms cubic-bezier(0.22, 1, 0.36, 1),
+          opacity 420ms ease 120ms;
+      }
+
+      .harness-progress {
+        transform: scaleX(0);
+        animation: harnessProgress var(--harness-step-duration) linear forwards;
+      }
+
+      .harness-pulse {
+        animation: harnessPulse 1.4s ease-in-out infinite;
+      }
+
+      .harness-status-in {
+        animation: harnessStatusIn 520ms cubic-bezier(0.22, 1, 0.36, 1);
+      }
+
       .story-reveal {
         opacity: 1;
         transform: translate3d(0, 0, 0);
@@ -194,6 +223,26 @@ export function LandingRevealStyles() {
         }
       }
 
+      @keyframes harnessProgress {
+        to {
+          transform: scaleX(1);
+        }
+      }
+
+      @keyframes harnessPulse {
+        50% {
+          opacity: 0.3;
+        }
+      }
+
+      @keyframes harnessStatusIn {
+        from {
+          opacity: 0;
+          transform: scale(0.92);
+          filter: blur(4px);
+        }
+      }
+
       @keyframes workspaceSmartSweep {
         from {
           background-position: 100% 0;
@@ -212,6 +261,10 @@ export function LandingRevealStyles() {
         .story-reveal[data-visible="false"],
         .story-reveal[data-visible="true"],
         .specialist-card,
+        .harness-panel,
+        .harness-panel[data-expanded="true"],
+        .harness-pulse,
+        .harness-status-in,
         .workspace-smart-sweep {
           animation: none;
           opacity: 1;

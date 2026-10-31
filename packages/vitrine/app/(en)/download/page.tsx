@@ -2,6 +2,8 @@ import { LandingRevealStyles } from '@/components/landing-reveal-styles'
 import { SceneWarmup } from '@/components/scene-warmup'
 import { SiteHeader } from '@/components/site-header'
 import { HeroScene } from '@/app/scene/hero-scene'
+import { GitHubMark } from '@/components/github-stars'
+import { githubReleasesUrl, githubRepositoryUrl } from '@/lib/github'
 import { createIndexablePageMetadata } from '@/lib/seo'
 import { DownloadClientSection } from './download-client-section'
 import { loadLatestRelease } from './latest-release'
@@ -110,6 +112,7 @@ export default async function DownloadPage() {
                 </h2>
 
                 <DownloadClientSection artifacts={artifacts} mode="cards" />
+                <OpenSourceNotice />
               </div>
             </div>
           </div>
@@ -118,6 +121,29 @@ export default async function DownloadPage() {
         <LandingRevealStyles />
       </section>
     </main>
+  )
+}
+
+function OpenSourceNotice() {
+  const linkClassName =
+    'text-white/86 underline decoration-white/24 underline-offset-4 transition hover:text-white hover:decoration-white/60'
+
+  return (
+    <p className="mt-5 flex gap-3 border-t border-white/12 pt-5 text-sm leading-6 text-white/60">
+      <GitHubMark className="mt-1 size-4 shrink-0 text-white/80" />
+      <span>
+        Blame is open source under the AGPL-3.0. Debian and RPM packages,
+        checksums and every past version are on the{' '}
+        <a className={linkClassName} href={githubReleasesUrl}>
+          releases page
+        </a>
+        , and the{' '}
+        <a className={linkClassName} href={githubRepositoryUrl}>
+          source code
+        </a>{' '}
+        is on GitHub.
+      </span>
+    </p>
   )
 }
 

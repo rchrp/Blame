@@ -10,6 +10,8 @@ import {
   type RefObject,
 } from 'react'
 import { SceneWarmup } from '@/components/scene-warmup'
+import { GitHubMark } from '@/components/github-stars'
+import { githubRepositoryUrl } from '@/lib/github'
 import { HeroBacklogMockup } from '@/components/blame-mockups/backlog-mockup'
 import { HeroScene } from './scene/hero-scene'
 
@@ -96,6 +98,7 @@ function HeroCopy({
       style={heroCopyStyle(progress, reducedMotion)}
     >
       <div className="text-center">
+        <OpenSourceAnnouncement />
         <h1
           id="hero-title"
           className="text-balance font-semibold text-white drop-shadow-[0_20px_70px_rgba(0,0,0,0.55)]"
@@ -120,7 +123,7 @@ function HeroActions() {
         href="/download"
         className="group inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-sm text-[#080808] shadow-[0_18px_60px_rgba(255,255,255,0.22)] transition duration-200 hover:-translate-y-0.5 hover:bg-[#dfe7ff] focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-[#050505]"
       >
-        Request access
+        Download Blame
         <ArrowRight className="h-4 w-4 transition duration-200 group-hover:translate-x-0.5" />
       </a>
       <a
@@ -131,6 +134,23 @@ function HeroActions() {
         See the workflow
       </a>
     </div>
+  )
+}
+
+function OpenSourceAnnouncement() {
+  return (
+    <a
+      href={githubRepositoryUrl}
+      className="group mb-7 inline-flex min-h-9 items-center gap-2.5 rounded-full border border-white/14 bg-[#070a15]/55 py-1.5 pl-3 pr-3.5 text-sm text-white/82 shadow-2xl shadow-black/20 backdrop-blur-xl transition duration-200 hover:bg-[#070a15]/70 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/45 focus:ring-offset-2 focus:ring-offset-[#050505] sm:mb-9"
+    >
+      <GitHubMark className="size-4 shrink-0 text-white" />
+      <span>Blame is now open source</span>
+      <span aria-hidden="true" className="h-3.5 w-px bg-white/20" />
+      <span className="inline-flex items-center gap-1 text-white">
+        Star on GitHub
+        <ArrowRight className="h-3.5 w-3.5 transition duration-200 group-hover:translate-x-0.5" />
+      </span>
+    </a>
   )
 }
 

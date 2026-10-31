@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Geist_Mono } from "next/font/google";
 import localFont from "next/font/local";
+import { GitHubStarsProvider } from "@/components/github-stars";
 import { SiteFooter } from "@/components/site-footer";
+import { loadGitHubStars } from "@/lib/github-stars";
 import { siteUrl } from "@/lib/site";
 import "./globals.css";
 
@@ -49,7 +51,9 @@ type RootDocumentProps = Readonly<{
   language: "en" | "fr";
 }>;
 
-export function RootDocument({ children, language }: RootDocumentProps) {
+export async function RootDocument({ children, language }: RootDocumentProps) {
+  const stars = await loadGitHubStars();
+
   return (
     <html lang={language}>
       <head>
@@ -70,8 +74,10 @@ export function RootDocument({ children, language }: RootDocumentProps) {
             style={{ display: "none", visibility: "hidden" }}
           />
         </noscript>
-        {children}
-        <SiteFooter />
+        <GitHubStarsProvider stars={stars}>
+          {children}
+          <SiteFooter />
+        </GitHubStarsProvider>
       </body>
     </html>
   );

@@ -1,14 +1,20 @@
 import { rootMetadata } from "@/app/root-document";
+import { GitHubStarsProvider } from "@/components/github-stars";
+import { loadGitHubStars } from "@/lib/github-stars";
 import "@/app/globals.css";
 
 export const metadata = rootMetadata;
 
-export default function AuthRootLayout({
+export default async function AuthRootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const stars = await loadGitHubStars();
+
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <GitHubStarsProvider stars={stars}>{children}</GitHubStarsProvider>
+      </body>
     </html>
   );
 }

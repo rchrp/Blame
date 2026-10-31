@@ -1,3 +1,4 @@
+import { githubRepositoryUrl } from "@/lib/github";
 import { absoluteSiteUrl } from "@/lib/site";
 
 const organizationId = absoluteSiteUrl("/#organization");
@@ -18,6 +19,7 @@ const organizationStructuredData = {
     width: 512,
     height: 512,
   },
+  sameAs: [githubRepositoryUrl],
   email: "support@blame.so",
   telephone: "+33 6 67 28 12 29",
   address: {
@@ -53,6 +55,8 @@ const softwareApplicationStructuredData = {
   downloadUrl: absoluteSiteUrl("/download"),
   image: absoluteSiteUrl("/social/blame-social-card.png"),
   applicationCategory: "DeveloperApplication",
+  license: "https://www.gnu.org/licenses/agpl-3.0.html",
+  isAccessibleForFree: true,
   operatingSystem: ["Windows", "macOS", "Linux"],
   publisher: { "@id": organizationId },
   offers: [

@@ -31,6 +31,9 @@ import {
 import { CodePracticesCarousel } from "@/components/code-practices-carousel";
 import { ScrollReveal } from "@/components/scroll-reveal";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { GitHubMark } from "@/components/github-stars";
+import { githubRepositoryUrl } from "@/lib/github";
+import { HarnessSection } from "./harness-story";
 import { FinalCtaScene } from "./scene/final-cta-scene";
 
 const workspaceSignals = [
@@ -118,6 +121,7 @@ export function ProductStory() {
       <HighlightsCarousel />
       <WorkflowSection />
       <WorkspaceSection />
+      <HarnessSection />
       <PreviewSection />
       <ParallelAgentsSection />
       <PracticesSection />
@@ -596,15 +600,21 @@ function FinalCtaSection() {
     <section className="relative isolate flex min-h-[100svh] items-center overflow-hidden bg-black px-5 py-32 sm:px-8 sm:py-40 lg:px-10">
       <FinalCtaBackdrop />
       <ScrollReveal className="relative z-10 mx-auto w-full max-w-7xl text-center">
-        <p className="story-eyebrow">Blame early access</p>
+        <p className="story-eyebrow">Free and open source</p>
         <h2 className="mx-auto mt-6 max-w-5xl text-balance text-[clamp(2.625rem,5.5vw,5.625rem)] font-semibold leading-none text-white">
           Let agents move fast. Keep the final say.
         </h2>
         <p className="story-copy mx-auto mt-10 max-w-2xl text-white/62">
           Available for macOS, Windows, and Linux. Bring the AI provider you
-          already use.
+          already use, and read every line of the code it runs on.
         </p>
         <FinalCtaActions />
+        <Link
+          href="/pricing"
+          className="mt-8 inline-block text-sm text-white/56 underline decoration-white/20 underline-offset-4 transition hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/45"
+        >
+          Compare the free core and Blame Premium
+        </Link>
       </ScrollReveal>
     </section>
   );
@@ -629,12 +639,19 @@ function FinalCtaActions() {
         Download Blame
         <ArrowRight className="h-5 w-5 transition duration-200 group-hover:translate-x-0.5" />
       </Link>
-      <Link
-        href="/pricing"
-        className="inline-flex min-h-14 items-center justify-center rounded-full border border-white/14 bg-white/[0.07] px-7 py-4 text-base text-white/90 backdrop-blur-md transition duration-200 hover:-translate-y-0.5 hover:bg-white/[0.11] focus:outline-none focus:ring-2 focus:ring-white/45 focus:ring-offset-2 focus:ring-offset-[#050505]"
-      >
-        View pricing
-      </Link>
+      <FinalCtaGitHubLink />
     </div>
+  );
+}
+
+function FinalCtaGitHubLink() {
+  return (
+    <a
+      href={githubRepositoryUrl}
+      className="group inline-flex min-h-14 items-center justify-center gap-2.5 rounded-full border border-white/14 bg-white/[0.07] px-7 py-4 text-base text-white/90 backdrop-blur-md transition duration-200 hover:-translate-y-0.5 hover:bg-white/[0.11] focus:outline-none focus:ring-2 focus:ring-white/45 focus:ring-offset-2 focus:ring-offset-[#050505]"
+    >
+      <GitHubMark className="size-5 shrink-0" />
+      Star on GitHub
+    </a>
   );
 }

@@ -1,5 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
+import {
+  githubContributingUrl,
+  githubIssuesUrl,
+  githubLicenseUrl,
+  githubReleasesUrl,
+  githubRepositoryUrl,
+} from "@/lib/github";
 
 const footerGroups = [
   {
@@ -8,6 +15,16 @@ const footerGroups = [
       { href: "/pricing", label: "Pricing" },
       { href: "/download", label: "Download" },
       { href: "/account/privacy", label: "Account data & closure" },
+    ],
+  },
+  {
+    title: "Open source",
+    links: [
+      { href: githubRepositoryUrl, label: "GitHub repository" },
+      { href: githubReleasesUrl, label: "Releases" },
+      { href: githubIssuesUrl, label: "Report an issue" },
+      { href: githubContributingUrl, label: "Contributing" },
+      { href: githubLicenseUrl, label: "AGPL-3.0 license" },
     ],
   },
   {
@@ -37,7 +54,7 @@ const footerGroups = [
 export function SiteFooter() {
   return (
     <footer className="border-t border-white/10 bg-black px-5 py-14 text-white sm:px-8 lg:px-10">
-      <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[1.3fr_2fr]">
+      <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[1.3fr_2fr] xl:grid-cols-[1fr_2.6fr]">
         <PublisherSummary />
         <FooterNavigation />
       </div>
@@ -81,7 +98,7 @@ function PublisherSummary() {
 
 function FooterNavigation() {
   return (
-    <div className="grid gap-10 sm:grid-cols-3">
+    <div className="grid gap-10 sm:grid-cols-2 xl:grid-cols-4">
       {footerGroups.map((group) => (
         <FooterGroup key={group.title} group={group} />
       ))}
@@ -111,8 +128,15 @@ function FooterGroup({ group }: { group: (typeof footerGroups)[number] }) {
 function Copyright() {
   return (
     <p className="mx-auto mt-12 max-w-7xl border-t border-white/8 pt-6 text-xs text-white/34">
-      © {new Date().getFullYear()} Raphael Charpentier EI — MK Holding. All
-      rights reserved.
+      © {new Date().getFullYear()} Raphael Charpentier EI — MK Holding. Blame
+      is free software, licensed under the{" "}
+      <Link
+        className="underline decoration-white/20 underline-offset-4 transition hover:text-white/70"
+        href={githubLicenseUrl}
+      >
+        GNU AGPL v3
+      </Link>
+      .
     </p>
   );
 }
