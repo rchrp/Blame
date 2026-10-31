@@ -296,3 +296,77 @@ a.pill:focus-visible,
 .aside:hover {
   color: #ffffff;
 }
+
+/* ---------- the home hero, which shares the end card's look ---------- */
+
+/* The hero's title is the end card's title, without the lockup above it */
+.scene .heroTitle {
+  margin-top: 0;
+}
+
+/* Its subtitle sits where the end card's tags do */
+.heroCopy {
+  margin: max(1.5rem, calc(42 * var(--px))) auto 0;
+}
+
+/* The hero's page styles set its links in Arial: the buttons keep theirs */
+.scene .button {
+  font-family: var(--ui);
+  font-weight: 600;
+}
+
+/* In the hero, "Open Source" opens on its own once the page shows, the way
+   the end card's timeline opens it */
+.hlIntro {
+  animation: hlOpen 0.7s cubic-bezier(0.87, 0, 0.13, 1) 0.9s both;
+}
+
+.hlIntro .hlBox {
+  animation: hlReveal 0.7s cubic-bezier(0.87, 0, 0.13, 1) 0.9s both;
+}
+
+.hlIntro .hlText {
+  animation: hlSlide 0.7s cubic-bezier(0.87, 0, 0.13, 1) 0.9s both;
+}
+
+@keyframes hlOpen {
+  from {
+    grid-template-columns: minmax(0px, 0fr);
+    opacity: 0;
+  }
+  17% {
+    opacity: 1;
+  }
+  to {
+    grid-template-columns: minmax(0px, 1fr);
+    opacity: 1;
+  }
+}
+
+@keyframes hlReveal {
+  from {
+    clip-path: inset(0% 100% 0% 0% round 0.1875em);
+  }
+  to {
+    clip-path: inset(0% 0% 0% 0% round 0.1875em);
+  }
+}
+
+@keyframes hlSlide {
+  from {
+    transform: translateX(0.625em);
+    filter: blur(10px);
+  }
+  to {
+    transform: none;
+    filter: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hlIntro,
+  .hlIntro .hlBox,
+  .hlIntro .hlText {
+    animation: none;
+  }
+}

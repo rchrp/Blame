@@ -1,6 +1,5 @@
 'use client'
 
-import { ArrowRight } from 'lucide-react'
 import {
   memo,
   useEffect,
@@ -12,6 +11,7 @@ import {
 import { GitHubMark } from '@/components/github-stars'
 import { githubRepositoryUrl } from '@/lib/github'
 import { HeroBacklogMockup } from '@/components/blame-mockups/backlog-mockup'
+import endCard from '@/components/story/cta-scene.module.css'
 
 // The hero re-renders on every scroll frame to update its transforms; this
 // subtree takes no props, so keep it out of that loop. The 3D scene behind
@@ -82,15 +82,25 @@ function HeroCopy({
       className="flex flex-1 items-center justify-center pb-4 pt-8 sm:pb-6 lg:pb-8"
       style={heroCopyStyle(progress, reducedMotion)}
     >
-      <div className="text-center">
-        <h1
-          id="hero-title"
-          className="text-balance font-semibold text-white drop-shadow-[0_20px_70px_rgba(0,0,0,0.55)]"
-        >
-          <span className="block whitespace-nowrap">The ADE that</span>
-          <span className="block whitespace-nowrap">sets the standard</span>
+      {/* The end card's title, highlight, button and spacing (see
+          cta-scene.module.css), with the hero's own subtitle. */}
+      <div className={endCard.scene}>
+        <h1 id="hero-title" className={`${endCard.title} ${endCard.heroTitle}`}>
+          <span className={`${endCard.word} ${endCard.dim}`}>The</span>{' '}
+          <span className={`${endCard.hl} ${endCard.hlIntro}`}>
+            <span className={endCard.hlBox}>
+              <span className={endCard.hlText}>Open Source</span>
+            </span>
+          </span>{' '}
+          <span aria-hidden="true" className={`${endCard.break} ${endCard.phoneBreak}`} />
+          <span className={endCard.word}>ADE</span>{' '}
+          <span className={`${endCard.word} ${endCard.dim}`}>that</span>{' '}
+          <span aria-hidden="true" className={endCard.break} />
+          <span className={endCard.word}>sets</span>{' '}
+          <span className={endCard.word}>the</span>{' '}
+          <span className={endCard.word}>standard</span>
         </h1>
-        <p className="hero-subtitle mx-auto mt-7 max-w-3xl text-balance text-white/76">
+        <p className={`hero-subtitle max-w-3xl text-balance text-white/76 ${endCard.heroCopy}`}>
           From story to controlled merge, one verifiable harness unifies
           agents, Code Practices, smart worktrees, and live Cloud Previews.
         </p>
@@ -102,20 +112,29 @@ function HeroCopy({
 
 function HeroActions() {
   return (
-    <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-      <a
-        href="/download"
-        className="group inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-sm text-[#080808] shadow-[0_18px_60px_rgba(255,255,255,0.22)] transition duration-200 hover:-translate-y-0.5 hover:bg-[#dfe7ff] focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-[#050505]"
-      >
-        Download Blame
-        <ArrowRight className="h-4 w-4 transition duration-200 group-hover:translate-x-0.5" />
+    <div className={endCard.actions}>
+      <a href="/download" className={endCard.button}>
+        <span className={endCard.buttonLabel}>
+          Download Blame
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={endCard.arrow}
+          >
+            <path d="M5 12h14M13 6l6 6-6 6" />
+          </svg>
+        </span>
       </a>
-      <a
-        href={githubRepositoryUrl}
-        className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-white/14 bg-white/[0.06] px-5 py-3 text-sm text-white/90 backdrop-blur-md transition duration-200 hover:-translate-y-0.5 hover:bg-white/[0.1] focus:outline-none focus:ring-2 focus:ring-white/45 focus:ring-offset-2 focus:ring-offset-[#050505]"
-      >
-        <GitHubMark className="h-4 w-4 shrink-0" />
-        Star on GitHub
+      <a href={githubRepositoryUrl} className={endCard.button}>
+        <span className={endCard.buttonLabel}>
+          <GitHubMark className={endCard.arrow} />
+          Star on GitHub
+        </span>
       </a>
     </div>
   )
