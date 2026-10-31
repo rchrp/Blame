@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Geist_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import { GitHubStarsProvider } from "@/components/github-stars";
 import { SiteFooter } from "@/components/site-footer";
@@ -12,12 +11,6 @@ const displayFont = localFont({
   variable: "--font-soehne",
   weight: "700",
   style: "normal",
-  display: "swap",
-});
-
-const monoFont = Geist_Mono({
-  subsets: ["latin"],
-  variable: "--font-geist-mono",
   display: "swap",
 });
 
@@ -64,7 +57,7 @@ export async function RootDocument({ children, language }: RootDocumentProps) {
         />
       </head>
       <body
-        className={`${displayFont.variable} ${monoFont.variable}`}
+        className={displayFont.variable}
       >
         <noscript>
           <iframe

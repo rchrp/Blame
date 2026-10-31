@@ -657,7 +657,7 @@ function CommitRow({
         <p className="line-clamp-2 text-[9px] leading-3.5 text-[#11131a]/78 sm:text-[11px]">
           {commit.message}
         </p>
-        <p className="mt-0.5 font-mono text-[8px] text-black/32">
+        <p className="mt-0.5 text-[8px] text-black/32">
           {commit.hash}
         </p>
       </div>

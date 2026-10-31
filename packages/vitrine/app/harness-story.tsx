@@ -1,30 +1,14 @@
-import {
-  ArrowUpRight,
-  BadgeCheck,
-  BookOpenText,
-  FileSearch,
-  ShieldCheck,
-  SquareTerminal,
-} from "lucide-react";
+import { ArrowUpRight, CircleCheck } from "lucide-react";
+import { HarnessShowcase } from "@/components/harness-showcase";
+import { SavingsCountUp } from "@/components/savings-count-up";
 import { ScrollReveal } from "@/components/scroll-reveal";
 import { harnessSourceUrl } from "@/lib/github";
 
 // Built from docs/semantic-harness-study.tex by `pnpm build:study-pdf`.
 const harnessStudyPdfPath = "/research/light-semantic-harness-study.pdf";
 
-// Panel F61 of the study: audited successes and total tokens against Cline.
-const harnessResults = [
-  { value: "6/6", label: "Tasks completed, same as Cline" },
-  { value: "54%", label: "Fewer tokens than Cline" },
-];
-
-const harnessTools = [
-  { tool: "search_code", label: "Navigates by structure", icon: FileSearch },
-  { tool: "read_code", label: "Reads before editing", icon: BookOpenText },
-  { tool: "edit_code", label: "Refuses stale edits", icon: ShieldCheck },
-  { tool: "run_task", label: "Records every check", icon: SquareTerminal },
-  { tool: "finish_task", label: "Finishes verified", icon: BadgeCheck },
-];
+// Panel F61 of the study: 54.2% fewer tokens than Cline, both at 6/6.
+const tokenSavingPercent = 54;
 
 export function HarnessSection() {
   return (
@@ -36,72 +20,49 @@ export function HarnessSection() {
       <div className="mx-auto max-w-7xl">
         <ScrollReveal className="text-center">
           <p className="story-eyebrow">Light Semantic Harness</p>
-          <h2 id="harness-title" className="story-title mx-auto mt-5 max-w-6xl">
-            Agents that show their work.
+          <h2 id="harness-title" className="story-title mx-auto mt-5 max-w-5xl">
+            Sharper tools. Smaller bills.
           </h2>
           <p className="story-copy mx-auto mt-7 max-w-3xl">
-            Blame’s open-source harness makes every agent read before it edits
-            and prove each check it runs.
+            Same model, different harness. Blame’s agents find code by its
+            structure, read only what they need, and edit only what they’ve
+            read.
           </p>
         </ScrollReveal>
-        <HarnessResults />
-        <HarnessTools />
+        <HarnessSaving />
+        <div className="mt-24 lg:mt-32">
+          <HarnessShowcase />
+        </div>
         <HarnessFootnote />
       </div>
     </section>
   );
 }
 
-function HarnessResults() {
+function HarnessSaving() {
   return (
-    <dl className="mx-auto mt-20 grid max-w-4xl grid-cols-2 lg:mt-28">
-      {harnessResults.map((result, index) => (
-        <ScrollReveal
-          key={result.value}
-          delay={index * 120}
-          className="border-white/12 px-2 text-center even:border-l"
-        >
-          <dt className="sr-only">{result.label}</dt>
-          <dd className="font-display text-[clamp(4.25rem,12vw,10rem)] leading-none text-white">
-            {result.value}
-          </dd>
-          <dd className="mt-4 text-sm text-white/56 sm:text-lg">
-            {result.label}
-          </dd>
-        </ScrollReveal>
-      ))}
-    </dl>
-  );
-}
-
-function HarnessTools() {
-  return (
-    <ol className="mx-auto mt-20 grid max-w-6xl gap-x-6 gap-y-5 border-t border-white/12 pt-10 lg:mt-28 lg:grid-cols-5 lg:pt-12">
-      {harnessTools.map(({ icon: Icon, label, tool }, index) => (
-        <li key={tool}>
-          <ScrollReveal
-            delay={index * 70}
-            className="flex items-center gap-3 lg:flex-col lg:gap-0 lg:text-center"
-          >
-            <Icon className="size-5 shrink-0 text-[#9fd7ff]" />
-            <code className="font-mono text-sm text-white/86 lg:mt-5">
-              {tool}
-            </code>
-            <span className="text-sm text-white/48 lg:mt-1.5">{label}</span>
-          </ScrollReveal>
-        </li>
-      ))}
-    </ol>
+    <ScrollReveal className="mt-16 text-center lg:mt-20">
+      <p className="font-display text-[clamp(5.5rem,19vw,14rem)] leading-[0.95]">
+        <SavingsCountUp value={tokenSavingPercent} />
+      </p>
+      <p className="mt-3 text-balance text-lg text-white/72 sm:text-2xl">
+        tokens vs. Cline, same model, same tasks
+      </p>
+      <p className="mt-5 inline-flex items-center gap-2 text-sm text-white/48 sm:text-base">
+        <CircleCheck className="size-4 text-[oklch(0.8_0.17_150)]" />
+        No quality lost: 6/6 audited runs, same as Cline.
+      </p>
+    </ScrollReveal>
   );
 }
 
 function HarnessFootnote() {
   return (
     <ScrollReveal delay={120}>
-      <div className="mx-auto mt-16 flex max-w-4xl flex-col items-center gap-4 text-center lg:mt-20">
-        <p className="text-xs leading-5 text-white/40">
-          Panel F61, October 2026: new cross-module TypeScript tasks, audited
-          by hand, on the same model as Cline. 39% lower estimated cost.
+      <div className="mx-auto mt-14 flex max-w-4xl flex-col items-center gap-4 text-center lg:mt-16">
+        <p className="text-xs leading-5 text-white/56">
+          Panel F61, October 2026: three new cross-module TypeScript tasks, two
+          runs each, audited by hand. Estimated cost was 39% lower than Cline’s.
         </p>
         <div className="flex flex-wrap justify-center gap-x-7 gap-y-2 text-sm">
           <FootnoteLink href={harnessStudyPdfPath}>Read the study</FootnoteLink>

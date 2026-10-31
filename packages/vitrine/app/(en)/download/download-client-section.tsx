@@ -126,7 +126,7 @@ function DownloadCard({
                 </span>
               ) : null}
             </div>
-            <p className="mt-3 break-all font-mono text-xs text-white/44 group-data-[recommended=true]:text-[#111]/44">
+            <p className="mt-3 break-all text-xs text-white/44 group-data-[recommended=true]:text-[#111]/44">
               {artifact.fileName}
             </p>
           </div>
