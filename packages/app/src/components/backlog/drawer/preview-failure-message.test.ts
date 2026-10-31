@@ -1,7 +1,10 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
-import { readableFailure } from "./preview-failure-message.ts"
+import {
+  lockfileBehindManifest,
+  readableFailure,
+} from "./preview-failure-message.ts"
 
 test("keeps only the failure the desktop reported", () => {
   assert.equal(
@@ -41,4 +44,31 @@ test("keeps the message of a cloud request failure", () => {
   )
   // The IPC layer can cut the body short.
   assert.match(readableFailure(raw.slice(0, -40)), /^Compose run failed \(/)
+})
+
+test("explains a lockfile the agent has not updated yet", () => {
+  const raw =
+    'Error invoking remote method \'workspace:ensure\': Error: Compose run failed (exit code 1): Scope: all 5 workspace projects\nERR_PNPM_OUTDATED_LOCKFILE Cannot install with "frozen-lockfile" because pnpm-lock.yaml is not up to date with <ROOT>/apps/website/package.json\nNote that in CI environments this setting is true by default.'
+  const readable = readableFailure(raw)
+  assert.equal(
+    readable,
+    "This story's apps/website/package.json lists dependencies its lockfile does not have yet, usually because the agent is still adding them. The preview starts again by itself once the lockfile is updated."
+  )
+  // Repair setup is not offered, from the raw or the readable message.
+  assert.equal(lockfileBehindManifest(raw), true)
+  assert.equal(lockfileBehindManifest(readable), true)
+  assert.equal(
+    lockfileBehindManifest(
+      "`npm ci` can only install packages when your package.json and package-lock.json or npm-shrinkwrap.json are in sync. Please update your lock file with `npm install` before continuing."
+    ),
+    true
+  )
+  assert.equal(
+    lockfileBehindManifest("error Your lockfile needs to be updated, but yarn was run with `--frozen-lockfile`."),
+    true
+  )
+  assert.equal(
+    lockfileBehindManifest("Compose run failed (exit code 1): EnvValidationException"),
+    false
+  )
 })

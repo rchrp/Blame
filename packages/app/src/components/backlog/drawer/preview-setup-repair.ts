@@ -12,6 +12,7 @@ import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
 import { createCloudApi } from "@/lib/cloud-api"
 import { databaseModeForInitializationRepair } from "@/pages/backlog/project-initialization-database"
+import { lockfileBehindManifest } from "./preview-failure-message"
 
 // A story preview can fail because the saved project setup no longer matches
 // the code, for example after commits made outside Blame. This lets the user
@@ -54,6 +55,8 @@ export function usePreviewSetupRepair(
     (launchError: string): PreviewSetupRepairAction | undefined => {
       if (!worktree || !storyId || !projectId || !projectPath || !model)
         return undefined
+      // The setup is fine; the agent has not updated the lockfile yet.
+      if (lockfileBehindManifest(launchError)) return undefined
       if (auth.status !== "authenticated") return undefined
       if (
         !platform.agent ||

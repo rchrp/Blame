@@ -9,7 +9,27 @@ export function readableFailure(message: string) {
     .replace(/^Error invoking remote method '[^']+': /, "")
     .replace(/^(?:[A-Za-z]+Error|Error): /, "")
     .trim()
-  return terminalText(cloudFailureMessage(text) ?? text).trim()
+  const failure = terminalText(cloudFailureMessage(text) ?? text).trim()
+  return lockfileBehindMessage(failure) ?? failure
+}
+
+// An install refuses a lockfile that is behind package.json. In a story this
+// means the agent is still adding dependencies, not that the setup is wrong,
+// and Blame starts the preview again once the lockfile changes.
+const outdatedLockfile =
+  /ERR_PNPM_OUTDATED_LOCKFILE|can only install packages when your package\.json and package-lock\.json|Your lockfile needs to be updated|lockfile had changes, but lockfile is frozen/i
+const lockfileBehindNote =
+  "The preview starts again by itself once the lockfile is updated."
+
+export function lockfileBehindManifest(message: string) {
+  return outdatedLockfile.test(message) || message.includes(lockfileBehindNote)
+}
+
+function lockfileBehindMessage(failure: string) {
+  if (!outdatedLockfile.test(failure)) return undefined
+  const manifest =
+    /<ROOT>\/(\S+package\.json)/.exec(failure)?.[1] ?? "package.json"
+  return `This story's ${manifest} lists dependencies its lockfile does not have yet, usually because the agent is still adding them. ${lockfileBehindNote}`
 }
 
 // A cloud request error quotes the API's JSON body: keep its message.
