@@ -5,15 +5,14 @@ import type { CSSProperties } from "react";
 import { HarnessScene } from "@/components/harness-scenes";
 import {
   harnessSteps,
-  harnessStory,
   stepDurationMs,
   useHarnessWalkthrough,
   type HarnessStep,
 } from "@/components/harness-walkthrough";
 
 // The five harness tools as tabs, then the active tool's picture on the
-// section background with one sentence under it, and a quiet story and
-// play/pause line. No frame around the example.
+// section background with one sentence under it. A small play/pause button
+// sits in the picture's corner. No frame around the example.
 export function HarnessShowcase() {
   const walkthrough = useHarnessWalkthrough();
   const { activeIndex, activeStep, isPlaying } = walkthrough;
@@ -39,8 +38,20 @@ export function HarnessShowcase() {
       <div {...walkthrough.panelProps} className="mx-auto mt-8 max-w-3xl sm:mt-10">
         {/* The surface keeps one size for every tool, so nothing around it
             moves while the walkthrough plays. */}
-        <div key={activeIndex} className="h-[15.5rem] sm:h-[16rem]">
-          <HarnessScene scene={activeStep.scene} />
+        <div className="relative mx-auto h-[15.5rem] w-full max-w-md sm:h-[16rem] sm:max-w-[30rem]">
+          <div key={activeIndex} className="h-full">
+            <HarnessScene scene={activeStep.scene} />
+          </div>
+          <button
+            {...walkthrough.playButtonProps}
+            className="absolute right-2.5 top-2.5 grid size-7 place-items-center rounded-full text-white/56 transition hover:bg-white/[0.08] hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/45"
+          >
+            {isPlaying ? (
+              <Pause className="size-3 fill-current" />
+            ) : (
+              <Play className="size-3 translate-x-px fill-current" />
+            )}
+          </button>
         </div>
         <div className="mx-auto mt-6 grid max-w-xl">
           {harnessSteps.map((step, index) => (
@@ -56,22 +67,6 @@ export function HarnessShowcase() {
             </p>
           ))}
         </div>
-      </div>
-
-      <div className="mt-5 flex items-center justify-center gap-3">
-        <button
-          {...walkthrough.playButtonProps}
-          className="grid size-8 shrink-0 place-items-center rounded-full bg-white/[0.07] text-white/72 transition hover:bg-white/[0.12] hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/45"
-        >
-          {isPlaying ? (
-            <Pause className="size-3 fill-current" />
-          ) : (
-            <Play className="size-3 translate-x-px fill-current" />
-          )}
-        </button>
-        <p className="min-w-0 text-sm text-white/56">
-          Example · <span className="text-white/72">{harnessStory}</span>
-        </p>
       </div>
     </div>
   );

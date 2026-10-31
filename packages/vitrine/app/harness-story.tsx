@@ -36,7 +36,6 @@ export function HarnessSection({
         </ScrollReveal>
         <HarnessSaving />
         <div className="mt-12 lg:mt-14">{showcase}</div>
-        <HarnessFootnote />
       </div>
     </section>
   );
@@ -55,28 +54,15 @@ function HarnessSaving() {
         <CircleCheck className="size-4 text-[oklch(0.8_0.17_150)]" />
         No quality lost: 6/6 audited runs, same as Cline.
       </p>
-    </ScrollReveal>
-  );
-}
-
-function HarnessFootnote() {
-  return (
-    <ScrollReveal delay={120}>
-      <div className="mx-auto mt-14 flex max-w-4xl flex-col items-center gap-4 text-center lg:mt-16">
-        <p className="text-xs leading-5 text-white/56">
-          Panel F61, October 2026: three new cross-module TypeScript tasks, two
-          runs each, audited by hand. Estimated cost was 39% lower than Cline’s.
-        </p>
-        <div className="flex flex-wrap justify-center gap-x-7 gap-y-2 text-sm">
-          <FootnoteLink href={harnessStudyPdfPath}>Read the study</FootnoteLink>
-          <FootnoteLink href={harnessSourceUrl}>Browse the source</FootnoteLink>
-        </div>
+      <div className="mt-4 flex flex-wrap justify-center gap-x-7 gap-y-2 text-sm">
+        <StudyLink href={harnessStudyPdfPath}>Read the study</StudyLink>
+        <StudyLink href={harnessSourceUrl}>Browse the source</StudyLink>
       </div>
     </ScrollReveal>
   );
 }
 
-function FootnoteLink({ children, href }: { children: string; href: string }) {
+function StudyLink({ children, href }: { children: string; href: string }) {
   return (
     <a
       href={href}

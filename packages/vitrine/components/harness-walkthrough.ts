@@ -31,8 +31,6 @@ export type HarnessStep = {
 
 export const stepDurationMs = 4200;
 
-export const harnessStory = "Add a discount to the checkout total";
-
 export const harnessSteps: HarnessStep[] = [
   {
     tool: "search_code",
