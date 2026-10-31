@@ -237,21 +237,22 @@ function AgentRail() {
   return (
     <div className="mt-20 grid gap-4 sm:grid-cols-2 lg:mt-28 lg:grid-cols-5">
       {specialistAgents.map((agent, index) => (
-        <ScrollReveal key={agent.title} delay={index * 70}>
-          <article
-            className="specialist-card group flex min-h-64 flex-col justify-between rounded-3xl border border-white/10 bg-white/[0.045] p-5 transition duration-300 hover:-translate-y-1 hover:bg-white/[0.075] sm:min-h-72 sm:p-6"
-            style={specialistCardStyle(agent)}
-          >
-            <AgentPortrait agent={agent} />
-            <div>
-              <h3 className="text-lg font-semibold leading-tight text-white">
-                {agent.title}
-              </h3>
-              <p className="mt-2 text-sm leading-6 text-white/48">
-                {agent.description}
-              </p>
-            </div>
-          </article>
+        <ScrollReveal
+          key={agent.title}
+          as="article"
+          delay={index * 70}
+          className="specialist-card group flex min-h-64 flex-col justify-between rounded-3xl border border-white/10 bg-white/[0.045] p-5 backdrop-blur-xl hover:-translate-y-1 hover:bg-white/[0.075] sm:min-h-72 sm:p-6"
+          style={specialistCardStyle(agent)}
+        >
+          <AgentPortrait agent={agent} />
+          <div>
+            <h3 className="text-lg font-semibold leading-tight text-white">
+              {agent.title}
+            </h3>
+            <p className="mt-2 text-sm leading-6 text-white/48">
+              {agent.description}
+            </p>
+          </div>
         </ScrollReveal>
       ))}
     </div>

@@ -196,9 +196,9 @@ html {
 }
 
 /* The home page's 3D ground (components/story/story-stage.tsx), fixed behind
-   the hero and the whole story. Past the hero, a shade like the presentation
-   video's darkens it and a wider blur rim softens it further; on the final
-   section, night falls in black and white. */
+   the hero and the whole story. Past the hero, the pricing and download
+   pages' dark vignette comes over it and a wider blur rim softens it
+   further; on the final section, night falls in black and white. */
 .story-stage {
   position: fixed;
   inset: 0;
@@ -217,7 +217,15 @@ html {
 }
 
 .story-stage-shade {
-  background: linear-gradient(180deg, rgb(5 5 5 / 76%) 0%, rgb(5 5 5 / 62%) 38%, rgb(5 5 5 / 54%) 60%, rgb(5 5 5 / 74%) 100%);
+  background:
+    linear-gradient(to bottom, rgb(5 7 18 / 64%), transparent 14rem),
+    radial-gradient(
+      ellipse at center,
+      rgb(2 4 10 / 10%) 0%,
+      rgb(2 4 10 / 26%) 42%,
+      rgb(2 4 10 / 58%) 74%,
+      rgb(2 4 10 / 90%) 100%
+    );
 }
 
 .story-stage-rim {

@@ -70,8 +70,13 @@ export function LandingRevealStyles() {
         line-height: 1.3;
       }
 
+      /* Lighter than the video's grey, with a soft shadow, so it reads over
+         the bright sky in the middle of the 3D ground. */
       .story-copy {
-        color: rgb(150, 150, 156);
+        color: rgb(198, 198, 206);
+        text-shadow:
+          0 1px 2px rgb(0 0 0 / 35%),
+          0 2px 18px rgb(0 0 0 / 45%);
         font-family: Arial, Helvetica, ui-sans-serif, sans-serif;
         font-size: clamp(1.125rem, 1.65vw, 1.4375rem);
         font-weight: 400;
@@ -139,6 +144,17 @@ export function LandingRevealStyles() {
         position: absolute;
         transition: opacity 300ms ease;
         z-index: 1;
+      }
+
+      /* The card is its own reveal: its hover transitions join the reveal's. */
+      .specialist-card.story-reveal[data-visible="true"] {
+        transition:
+          opacity 760ms cubic-bezier(0.22, 1, 0.36, 1) var(--story-reveal-delay),
+          transform 760ms cubic-bezier(0.22, 1, 0.36, 1) var(--story-reveal-delay),
+          translate 300ms ease,
+          background-color 300ms ease,
+          border-color 300ms ease,
+          box-shadow 300ms ease;
       }
 
       .specialist-card:hover {

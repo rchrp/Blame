@@ -10,9 +10,13 @@ import {
 
 type ScrollRevealProps = {
   children: ReactNode;
+  // The element revealed. A card with a backdrop blur must be the revealed
+  // element itself: a fading parent would keep the blur off until the end.
+  as?: "div" | "article";
   className?: string;
   delay?: number;
   distance?: number;
+  style?: CSSProperties;
 };
 
 type RevealStyle = CSSProperties & {
@@ -24,9 +28,11 @@ type VisibilitySetter = (isVisible: boolean) => void;
 
 export function ScrollReveal({
   children,
+  as: Element = "div",
   className = "",
   delay = 0,
   distance = 28,
+  style: extraStyle,
 }: ScrollRevealProps) {
   const elementRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState<boolean | null>(null);
@@ -34,19 +40,20 @@ export function ScrollReveal({
   useEffect(() => observeReveal(elementRef.current, setIsVisible), []);
 
   const style: RevealStyle = {
+    ...extraStyle,
     "--story-reveal-delay": `${delay}ms`,
     "--story-reveal-distance": `${distance}px`,
   };
 
   return (
-    <div
+    <Element
       ref={elementRef}
       className={`story-reveal ${className}`}
       data-visible={isVisible ?? undefined}
       style={style}
     >
       {children}
-    </div>
+    </Element>
   );
 }
 

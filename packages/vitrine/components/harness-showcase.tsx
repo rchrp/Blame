@@ -91,7 +91,7 @@ function HarnessTab({
       className="group flex flex-col items-center rounded-2xl pb-1 text-center focus:outline-none focus-visible:ring-2 focus-visible:ring-white/45"
     >
       <span
-        className={`grid size-12 place-items-center rounded-2xl transition duration-300 sm:size-16 ${isActive ? "bg-[#9fd7ff]/[0.14] text-[#9fd7ff] ring-1 ring-[#9fd7ff]/40" : "bg-white/[0.05] text-white/46 group-hover:bg-white/[0.08] group-hover:text-white/80"}`}
+        className={`grid size-12 place-items-center rounded-2xl backdrop-blur-md transition duration-300 sm:size-16 ${isActive ? "bg-[#9fd7ff]/[0.14] text-[#9fd7ff] ring-1 ring-[#9fd7ff]/40" : "bg-white/[0.05] text-white/46 group-hover:bg-white/[0.08] group-hover:text-white/80"}`}
       >
         <Icon className="size-6 sm:size-7" strokeWidth={1.75} />
       </span>

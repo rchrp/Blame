@@ -176,7 +176,7 @@ function FinishScene() {
 
 function Surface({ children, title }: { children: ReactNode; title?: ReactNode }) {
   return (
-    <div className="harness-scene-item mx-auto flex h-full w-full max-w-md flex-col justify-center rounded-[1.25rem] bg-white/[0.045] px-5 py-4 text-sm sm:max-w-[30rem] sm:text-[0.9375rem]">
+    <div className="harness-scene-item mx-auto flex h-full w-full max-w-md flex-col justify-center rounded-[1.25rem] bg-white/[0.045] px-5 py-4 text-sm backdrop-blur-xl sm:max-w-[30rem] sm:text-[0.9375rem]">
       {title && (
         <div className="flex items-center gap-2 pb-2.5 text-xs text-white/56 sm:text-[0.8125rem]">
           {title}
