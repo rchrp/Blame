@@ -1,0 +1,76 @@
+name: Bug report
+description: Something in Blame does not work as expected.
+labels: ["bug", "needs triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. Please search [existing issues](https://github.com/rchrp/Blame/issues) first.
+        For a security problem, do not open an issue: follow [SECURITY.md](https://github.com/rchrp/Blame/blob/main/SECURITY.md) instead.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open a project…
+        2. Send the story to an agent…
+        3. …
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Backlog and user stories
+        - Agents and the harness
+        - Worktrees and runtime setup
+        - Live preview or Cloud Previews
+        - Review and merge
+        - Quick Chat
+        - AI providers and models
+        - MCP servers
+        - Account, sync, or billing
+        - Installation and updates
+        - Website (blame.so)
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - macOS (Apple silicon)
+        - macOS (Intel)
+        - Windows
+        - Linux
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Blame version
+      description: Shown under Settings → Desktop → Current version.
+      placeholder: v1.1.46
+    validations:
+      required: true
+  - type: input
+    id: provider
+    attributes:
+      label: AI provider and model
+      description: If the problem involves an agent.
+      placeholder: Anthropic, Claude Sonnet
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs and screenshots
+      description: Relevant logs, terminal output, or screenshots. Remove API keys and other secrets first.
+      render: text

@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions and help
+    url: https://github.com/rchrp/Blame/discussions/categories/q-a
+    about: Ask how to do something with Blame.
+  - name: Report a security vulnerability
+    url: https://github.com/rchrp/Blame/security/advisories/new
+    about: Report security issues privately, never in a public issue.
+  - name: Billing and account support
+    url: mailto:support@blame.so
+    about: Questions about Blame Premium, invoices, or your account.
