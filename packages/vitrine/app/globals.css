@@ -197,8 +197,8 @@ html {
 
 /* The home page's 3D ground (components/story/story-stage.tsx), fixed behind
    the hero and the whole story. It has the pricing and download pages' dark
-   vignette throughout; past the hero a wider blur rim softens it further;
-   on the final section, night falls in black and white. */
+   vignette and one wide blur rim throughout; on the final section, night
+   falls in black and white. */
 .story-stage {
   position: fixed;
   inset: 0;

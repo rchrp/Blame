@@ -10,8 +10,8 @@ import { SceneWarmup } from "@/components/scene-warmup";
 
 // The home page's ground: one 3D scene fixed behind the hero and the whole
 // story, as in the presentation video.
-// - From the hero on, it has the pricing and download pages' dark vignette;
-//   past the hero its edges blur further, so the story reads over it.
+// - From the hero on, it has the pricing and download pages' dark vignette
+//   and one wide blur towards its edges, so the story reads over it.
 // - The camera pans sideways along the ground, one step per story section,
 //   so the landscape moves on with every section.
 // - The light rings run across the ground on the video's moments (see
@@ -37,13 +37,11 @@ export function celebrateStage() {
 export function StoryStage() {
   const rootRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<HTMLDivElement>(null);
-  const rimRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const root = rootRef.current;
     const container = sceneRef.current;
-    const rim = rimRef.current;
-    if (!root || !container || !rim) return;
+    if (!root || !container) return;
 
     const scene = createHeroScene(container, { lookUp, panRange });
     stage = scene;
@@ -68,11 +66,10 @@ export function StoryStage() {
       const screen = window.innerHeight;
       const tops = sections.map((section) => pageBox(section).getBoundingClientRect());
 
-      // The wider blur comes in as the first section rises over the hero.
+      // Behind the story's text, the pointer's light stays discreet: it dims
+      // as the first section rises over the hero.
       const firstTop = tops[0].top;
       const story = clamp01((screen - firstTop) / (screen * 0.7));
-      rim.style.opacity = story.toFixed(3);
-      // Behind the story's text, the pointer's light stays discreet.
       if (story !== lastStory) {
         lastStory = story;
         scene.setPointerLight(1 - story * 0.6);
@@ -140,10 +137,7 @@ export function StoryStage() {
   return (
     <div ref={rootRef} aria-hidden="true" className="story-stage">
       <div ref={sceneRef} className="absolute inset-0" />
-      <div className="hero-scene-rim absolute inset-0" />
-      {/* Separate layers: a backdrop blur under a fading parent would only
-          blur that parent, not the scene. */}
-      <div ref={rimRef} className="story-stage-rim absolute inset-0" style={{ opacity: 0 }} />
+      <div className="story-stage-rim absolute inset-0" />
       <div className="story-stage-shade absolute inset-0" />
       <SceneWarmup />
     </div>
