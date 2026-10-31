@@ -47,12 +47,15 @@ export function createSceneQuality(profile: DeviceProfile): SceneQuality {
     return createLeanSceneQuality()
   }
 
-  if (profile.cores >= 10 && profile.memory >= 8 && profile.pixelLoad < 3_200_000) {
+  // The machine decides the terrain's surface; the screen's pixel count only
+  // limits how many pixels draw it. A large or high-density screen keeps the
+  // same lit, reflective stone, at a lower resolution.
+  if (profile.cores >= 8 && profile.memory >= 8) {
     return {
       terrainSegments: 176,
       terrainTextureSize: 192,
       plusFieldStep: 1.9,
-      pixelRatioCap: 1.35,
+      pixelRatioCap: profile.cores >= 10 && profile.pixelLoad < 3_200_000 ? 1.35 : 1.1,
       anisotropyCap: 6,
       useNativeAntialias: true,
       useDetailedTerrainMaterial: true,
