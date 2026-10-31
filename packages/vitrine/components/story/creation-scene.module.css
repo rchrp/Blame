@@ -1,0 +1,290 @@
+/* Blame's new project card, drawn like the presentation video's worktree
+   cards. The frame is a size container and the card's em is a 22nd of its
+   width, so every size below keeps the card's proportions at any width. The
+   rules hold the scene's final state; the timeline sets the starting one. */
+
+.frame {
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+  container-type: inline-size;
+}
+
+.scale {
+  position: relative;
+  font-size: calc(100cqi / 22);
+}
+
+.card {
+  position: relative;
+  overflow: hidden;
+  padding: 1em 1.15em 1.15em;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 1.05em;
+  background: #0a0a0a;
+  box-shadow:
+    0 1.8em 4.5em rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(57, 163, 255, 0.25),
+    0 0 16px rgba(0, 145, 255, 0.32);
+  color: #f5f5f7;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  line-height: 1.25;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5em;
+  color: #a1a1a1;
+  font-size: 0.86em;
+}
+
+.label {
+  display: flex;
+  align-items: center;
+  gap: 0.45em;
+}
+
+.label svg {
+  width: 1.05em;
+  height: 1.05em;
+}
+
+.badges {
+  position: relative;
+  display: inline-flex;
+}
+
+.badge {
+  padding: 0.24em 0.7em;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  color: #c4c4c4;
+  font-size: 0.84em;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.empty {
+  position: absolute;
+  top: 0;
+  right: 0;
+  opacity: 0;
+}
+
+.ready {
+  border-color: #10b981;
+  color: #6ee7b7;
+}
+
+.title {
+  margin-top: 0.45em;
+  font-size: 1.24em;
+  font-weight: 600;
+  color: #fafafa;
+}
+
+.stackLabel {
+  margin-top: 0.85em;
+  color: #a1a1a1;
+  font-size: 0.74em;
+}
+
+/* the frontend choice, as Blame's wizard asks for it */
+.stacks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.42em;
+  margin: 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stack {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  height: 2.2em;
+  padding: 0 0.85em;
+  border-radius: 0.6em;
+  background: #1c1c1c;
+  color: #ededed;
+  font-size: 0.78em;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.picked {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border: 0.09em solid #3b82f6;
+  border-radius: inherit;
+  background: #111111;
+  box-shadow: 0 0 1.1em rgba(59, 130, 246, 0.35);
+}
+
+.recommended {
+  padding: 0.18em 0.55em;
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.16);
+  color: #bfdbfe;
+  font-size: 0.82em;
+  font-weight: 600;
+}
+
+.rows {
+  margin: 0.75em 0 0;
+  padding: 0.35em 0 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 0.62em;
+  height: 2.02em;
+  color: #fafafa;
+}
+
+.icon {
+  position: relative;
+  flex: none;
+  width: 1.18em;
+  height: 1.18em;
+  border: 0.09em solid #525252;
+  border-radius: 50%;
+}
+
+.check {
+  position: absolute;
+  inset: -0.09em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #059669;
+}
+
+.check svg {
+  width: 0.7em;
+  height: 0.7em;
+}
+
+.name {
+  white-space: nowrap;
+}
+
+.value {
+  margin-left: auto;
+  color: #d4d4d4;
+  font-size: 0.78em;
+  white-space: nowrap;
+}
+
+.foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6em;
+  margin-top: 0.85em;
+}
+
+.localhost {
+  display: flex;
+  align-items: center;
+  gap: 0.55em;
+  height: 2.3em;
+  padding: 0 0.8em;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.6em;
+  background: #171717;
+  color: #d4d4d4;
+  font-size: 0.8em;
+  white-space: nowrap;
+}
+
+.dot {
+  width: 0.5em;
+  height: 0.5em;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 0.6em #10b981;
+}
+
+/* Blame's green primary action, pressed once and answered */
+.create {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 2.6em;
+  padding: 0 1.3em;
+  border-radius: 0.68em;
+  background: #047857;
+  box-shadow: 0 0.45em 1.4em rgba(5, 150, 105, 0.4);
+  color: #ffffff;
+  font-size: 0.82em;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.flash,
+.created {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.flash {
+  background: #6ee7b7;
+  opacity: 0;
+}
+
+.created {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4em;
+  background: #10b981;
+  color: #04170e;
+}
+
+.created svg {
+  width: 1.05em;
+  height: 1.05em;
+}
+
+/* the person creating the project: a plain white cursor, as in the video */
+.cursor {
+  position: absolute;
+  left: 82%;
+  top: 112%;
+  z-index: 5;
+  width: 1.8em;
+  height: 1.8em;
+  margin: -0.16em 0 0 -0.26em;
+  overflow: visible;
+  opacity: 0;
+  pointer-events: none;
+  filter: drop-shadow(0 0.3em 0.45em rgba(0, 0, 0, 0.6));
+}
+
+.ripple {
+  position: absolute;
+  z-index: 4;
+  width: 3em;
+  height: 3em;
+  margin: -1.5em 0 0 -1.5em;
+  border: 0.12em solid #93c5fd;
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ripple.green {
+  border-color: #6ee7b7;
+}

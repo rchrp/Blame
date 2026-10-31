@@ -1,0 +1,298 @@
+/* The video's end card. Its sizes are the video's pixel counts (a 1920 x 1080
+   frame) times --px, the title's size over the video's 96px title, so the
+   card keeps the video's proportions. On a phone the title wraps onto three
+   rows and the pills and buttons keep readable sizes of their own. */
+
+.scene {
+  --title: min(9.6vw, 3.5rem);
+  --px: calc(var(--title) / 96);
+  --ui: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #f5f5f7;
+  text-align: center;
+}
+
+@media (min-width: 48rem) {
+  .scene {
+    --title: clamp(2.75rem, 5vw, 6rem);
+  }
+}
+
+/* The Blame mark and name lock up above the title */
+.lockup {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(18 * var(--px));
+  height: calc(130 * var(--px));
+}
+
+.markMove {
+  display: block;
+  flex: none;
+}
+
+.mark {
+  display: block;
+  width: calc(119 * var(--px));
+  height: calc(119 * var(--px));
+  filter: drop-shadow(0 calc(13 * var(--px)) calc(35 * var(--px)) rgba(59, 130, 246, 0.55));
+}
+
+.scene .name {
+  display: block;
+  margin: 0;
+  font-family: var(--font-soehne), Arial, sans-serif;
+  font-size: calc(108 * var(--px));
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+}
+
+/* The title: two rows, "The Open Source ADE that" over "sets the standard" */
+.scene .title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  margin: max(1.5rem, calc(71 * var(--px))) 0 0;
+  font-family: var(--font-soehne), Arial, sans-serif;
+  font-size: var(--title);
+  font-weight: 700;
+  line-height: 1.21;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  text-shadow:
+    0 0.042em 0.354em rgba(0, 0, 0, 0.5),
+    0 0.01em 0.031em rgba(0, 0, 0, 0.35);
+}
+
+.word {
+  display: block;
+  flex: none;
+  margin: 0 0.13em;
+}
+
+.dim {
+  color: #dedede;
+}
+
+.break {
+  flex-basis: 100%;
+  height: 0;
+}
+
+@media (min-width: 48rem) {
+  .phoneBreak {
+    display: none;
+  }
+}
+
+/* "Open Source" opens between "The" and "ADE": its column grows from nothing
+   to its full width and pushes them apart while the blue box is revealed */
+.hl {
+  display: grid;
+  flex: none;
+  grid-template-columns: minmax(0, 1fr);
+  filter: drop-shadow(0 0 0.3125em rgba(59, 130, 246, 0.6));
+}
+
+.hlBox {
+  display: flex;
+  align-items: center;
+  justify-self: start;
+  height: 1.146em;
+  margin: 0 0.146em;
+  padding: 0 0.25em;
+  border-radius: 0.1875em;
+  background: #3155df;
+}
+
+.hlText {
+  display: block;
+  flex: none;
+  color: #ffffff;
+  text-shadow: none;
+}
+
+/* The tags that pop out under the title */
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: max(0.5rem, calc(22 * var(--px)));
+  margin: max(1.5rem, calc(42 * var(--px))) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tags > li {
+  display: flex;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.43em;
+  height: 2.43em;
+  padding: 0 1em;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  background: #171717;
+  box-shadow:
+    0 0.57em 1.57em rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  color: #ededed;
+  font-family: var(--ui);
+  font-size: max(0.875rem, calc(28 * var(--px)));
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+a.pill {
+  text-decoration: none;
+  transition:
+    background-color 200ms ease,
+    border-color 200ms ease,
+    color 200ms ease;
+}
+
+a.pill:hover {
+  border-color: rgba(255, 255, 255, 0.32);
+  background: #212121;
+  color: #ffffff;
+}
+
+a.pill:focus-visible,
+.button:focus-visible,
+.aside:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.7);
+  outline-offset: 3px;
+}
+
+.star {
+  width: 0.857em;
+  height: 0.857em;
+  flex: none;
+}
+
+.count {
+  padding-left: 0.43em;
+  border-left: 1px solid rgba(255, 255, 255, 0.18);
+  color: rgba(237, 237, 237, 0.72);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The white button, with the pricing link where the video shows its URL */
+.actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  margin-top: max(1.75rem, calc(64 * var(--px)));
+}
+
+@media (min-width: 48rem) {
+  .actions {
+    flex-direction: row;
+    justify-content: center;
+    gap: calc(37 * var(--px));
+  }
+}
+
+.press {
+  position: relative;
+  display: inline-flex;
+}
+
+.button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 2.81em;
+  padding: 0 1.13em;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 0.67em 2.22em rgba(255, 255, 255, 0.22);
+  color: #08080a;
+  font-family: var(--ui);
+  font-size: max(1rem, calc(27 * var(--px)));
+  font-weight: 600;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background-color 200ms ease,
+    translate 200ms ease;
+}
+
+.button:hover {
+  background: #dfe7ff;
+  translate: 0 -2px;
+}
+
+.flash {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: #93c5fd;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.buttonLabel {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.44em;
+}
+
+.arrow {
+  width: 0.963em;
+  height: 0.963em;
+  flex: none;
+}
+
+.ripple {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(5.5rem, calc(180 * var(--px)));
+  height: max(5.5rem, calc(180 * var(--px)));
+  border: 3px solid #93c5fd;
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+  translate: -50% -50%;
+}
+
+.cursor {
+  position: absolute;
+  z-index: 2;
+  left: calc(50% + 23 * var(--px));
+  top: calc(50% + 8 * var(--px));
+  width: max(1.75rem, calc(46 * var(--px)));
+  height: max(1.75rem, calc(46 * var(--px)));
+  overflow: visible;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.6));
+  opacity: 0;
+  pointer-events: none;
+}
+
+.aside {
+  color: rgba(212, 212, 212, 0.78);
+  font-family: var(--ui);
+  font-size: max(0.875rem, calc(22 * var(--px)));
+  font-weight: 400;
+  line-height: 1.3;
+  text-decoration: underline;
+  text-decoration-color: rgba(255, 255, 255, 0.22);
+  text-underline-offset: 0.25em;
+  transition: color 200ms ease;
+}
+
+.aside:hover {
+  color: #ffffff;
+}

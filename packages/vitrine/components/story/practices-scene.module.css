@@ -1,0 +1,263 @@
+/* Blame's code practices card, drawn like the presentation video's worktree
+   cards. The frame is a size container and the card's em is a 22nd of its
+   width, so every size below keeps the card's proportions at any width. The
+   rules hold the scene's final state; the timeline sets the starting one. */
+
+.frame {
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+  container-type: inline-size;
+}
+
+.scale {
+  position: relative;
+  font-size: calc(100cqi / 22);
+}
+
+.card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 1.05em;
+  background: #0a0a0a;
+  box-shadow:
+    0 1.8em 4.5em rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(57, 163, 255, 0.25),
+    0 0 16px rgba(0, 145, 255, 0.32);
+  color: #f5f5f7;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  line-height: 1.25;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 0.55em;
+  padding: 0.78em 1.05em 0.78em 0.85em;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.tile {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 1.7em;
+  height: 1.7em;
+  border-radius: 0.5em;
+  background: linear-gradient(150deg, #3b82f6, #2446c7);
+  box-shadow:
+    0 0 1.1em rgba(59, 130, 246, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+}
+
+.tile svg {
+  width: 1em;
+  height: 1em;
+}
+
+.title {
+  font-size: 0.96em;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.count {
+  margin-left: auto;
+  padding: 0.3em 0.75em;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  color: #b8b8b8;
+  font-size: 0.72em;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.body {
+  padding: 0.95em 1.15em 0.4em;
+}
+
+/* the standard switch, as on Blame's practices page */
+.segment {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  height: 2.05em;
+  padding: 0.2em;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 0.6em;
+  background: #1c1c1c;
+}
+
+.track {
+  position: absolute;
+  inset: 0.2em;
+}
+
+.thumb {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 50%;
+}
+
+.thumbBase,
+.thumbPro {
+  position: absolute;
+  inset: 0;
+  border-radius: 0.42em;
+}
+
+.thumbBase {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: #2a2a2a;
+}
+
+.thumbPro {
+  background: #3b82f6;
+  box-shadow: 0 0.35em 1.1em rgba(59, 130, 246, 0.45);
+}
+
+.option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.76em;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.codebase {
+  color: #a8a8a8;
+}
+
+.pro {
+  color: #ffffff;
+}
+
+.rows {
+  margin: 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 0.62em;
+  height: 2.02em;
+  color: #fafafa;
+}
+
+.icon {
+  position: relative;
+  flex: none;
+  width: 1.18em;
+  height: 1.18em;
+  border: 0.09em solid #525252;
+  border-radius: 50%;
+}
+
+.check {
+  position: absolute;
+  inset: -0.09em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #059669;
+}
+
+.check svg {
+  width: 0.7em;
+  height: 0.7em;
+}
+
+.name {
+  white-space: nowrap;
+}
+
+.value {
+  margin-left: auto;
+  color: #d4d4d4;
+  font-size: 0.78em;
+  white-space: nowrap;
+}
+
+/* every agent that works on the project follows the same standard */
+.foot {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  margin: 0.45em 1.15em 0;
+  padding: 0.85em 0 1em;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.footLabel {
+  color: #a1a1a1;
+  font-size: 0.78em;
+  white-space: nowrap;
+}
+
+.agents {
+  display: flex;
+  gap: 0.4em;
+  margin: 0 0 0 auto;
+  padding: 0;
+  list-style: none;
+}
+
+.agent {
+  display: flex;
+  align-items: flex-start;
+}
+
+.agent svg {
+  flex: none;
+  width: 1.05em;
+  height: 1.05em;
+  overflow: visible;
+  filter: drop-shadow(0 0.15em 0.25em rgba(0, 0, 0, 0.6));
+}
+
+.agentName {
+  margin: 0.55em 0 0 -0.25em;
+  padding: 0.22em 0.55em;
+  border-radius: 0.35em 0.75em 0.75em 0.75em;
+  color: #0b0b0f;
+  font-size: 0.72em;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* the person choosing the standard: a plain white cursor, as in the video */
+.cursor {
+  position: absolute;
+  left: 84%;
+  top: 112%;
+  z-index: 5;
+  width: 1.8em;
+  height: 1.8em;
+  margin: -0.16em 0 0 -0.26em;
+  overflow: visible;
+  opacity: 0;
+  pointer-events: none;
+  filter: drop-shadow(0 0.3em 0.45em rgba(0, 0, 0, 0.6));
+}
+
+.ripple {
+  position: absolute;
+  z-index: 4;
+  width: 3em;
+  height: 3em;
+  margin: -1.5em 0 0 -1.5em;
+  border: 0.12em solid #93c5fd;
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+}

@@ -1,0 +1,379 @@
+/* The opening scene, ported from the video's "hook" and "name" beats. The
+   default styles are the scene's final state; the GSAP timeline sets the
+   starting states when it is built. */
+
+/* Reaches out to the section's edges so the dealt cards are clipped there,
+   never widening the page. */
+.clip {
+  margin-inline: -1.25rem;
+  padding-inline: 1.25rem;
+  overflow-x: clip;
+}
+
+.stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto auto auto;
+  text-align: center;
+}
+
+/* Rows: 1 "AI can write the code.", 2 "Blame makes it shippable.",
+   3 the workflow chain, 4 the copy line. */
+.heading {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  display: grid;
+  grid-template-rows: subgrid;
+}
+
+.line {
+  display: block;
+  font-size: clamp(2.5rem, 6.4vw, 6rem);
+  line-height: 1.06;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+  text-shadow:
+    0 4px 34px rgb(0 0 0 / 50%),
+    0 1px 3px rgb(0 0 0 / 35%);
+}
+
+.lineA {
+  grid-row: 1;
+  color: #86868b;
+}
+
+.lineB {
+  grid-row: 2;
+  margin-top: 0.14em;
+  color: #dedede;
+}
+
+.brand {
+  display: inline-block;
+  color: #f5f5f7;
+}
+
+.rest {
+  display: inline-block;
+}
+
+/* A typed word: --q is how much of it is typed, --caret shows the caret. */
+.typed {
+  --q: 1;
+  --caret: 0;
+  position: relative;
+  display: inline-block;
+}
+
+.typedText {
+  display: inline-block;
+  clip-path: inset(-25% calc((1 - var(--q)) * 104% - 4%) -25% -4%);
+  /* nothing at all, not even a sliver of shadow, before the first letter */
+  opacity: min(1, calc(var(--q) * 1000));
+}
+
+.caret {
+  position: absolute;
+  top: 0.1em;
+  left: calc(var(--q) * 100%);
+  width: 0.055em;
+  height: 0.9em;
+  margin-left: 0.04em;
+  border-radius: 0.03em;
+  background: #93c5fd;
+  box-shadow: 0 0 0.2em rgb(59 130 246 / 90%);
+  opacity: var(--caret);
+  pointer-events: none;
+}
+
+/* The workflow chain: a column on phones, a row from tablets up. */
+.chainArea {
+  --pill-w: 9.5rem;
+  --pill-h: 2.625rem;
+  --pill-gap: 0.75rem;
+  grid-column: 1;
+  grid-row: 3;
+  position: relative;
+  justify-self: center;
+  margin-top: 2rem;
+}
+
+.chain {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--pill-gap);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.railH,
+.railV {
+  position: absolute;
+  pointer-events: none;
+}
+
+.railH {
+  display: none;
+  top: 50%;
+  left: calc(var(--pill-w) * 0.2);
+  right: calc(var(--pill-w) * 0.2);
+  height: 2px;
+  margin-top: -1px;
+  transform-origin: 0 50%;
+  background: linear-gradient(
+    90deg,
+    rgb(59 130 246 / 0%),
+    rgb(59 130 246 / 75%) 12%,
+    rgb(59 130 246 / 75%) 88%,
+    rgb(59 130 246 / 0%)
+  );
+}
+
+.railV {
+  top: calc(var(--pill-h) * 0.5);
+  bottom: calc(var(--pill-h) * 0.5);
+  left: 50%;
+  width: 2px;
+  margin-left: -1px;
+  transform-origin: 50% 0;
+  background: linear-gradient(
+    180deg,
+    rgb(59 130 246 / 0%),
+    rgb(59 130 246 / 75%) 10%,
+    rgb(59 130 246 / 75%) 90%,
+    rgb(59 130 246 / 0%)
+  );
+}
+
+.step {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
+  width: var(--pill-w);
+  height: var(--pill-h);
+  border: 1px solid rgb(255 255 255 / 16%);
+  border-radius: calc(var(--pill-h) * 0.265);
+  background: rgb(18 20 30 / 94%);
+  box-shadow:
+    0 12px 32px rgb(0 0 0 / 50%),
+    inset 0 1px 0 rgb(255 255 255 / 7%);
+  color: #ededed;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.dot {
+  flex: none;
+  width: 0.44em;
+  height: 0.44em;
+  border-radius: 50%;
+  background: #3b82f6;
+  box-shadow: 0 0 0.56em rgb(59 130 246 / 95%);
+}
+
+.lit {
+  position: absolute;
+  inset: -1px;
+  border: 2px solid #3b82f6;
+  border-radius: inherit;
+  box-shadow:
+    0 0 1.36em rgb(59 130 246 / 70%),
+    inset 0 0 0.88em rgb(59 130 246 / 28%);
+  opacity: 0.25;
+  pointer-events: none;
+}
+
+.copy {
+  grid-column: 1;
+  grid-row: 4;
+  justify-self: center;
+  max-width: 48rem;
+  margin-top: 2rem;
+  text-wrap: balance;
+}
+
+/* The loose ends: dealt over the rows that the second line, the chain and
+   (from tablets up) the copy take once they have collapsed. */
+.deckArea {
+  grid-column: 1;
+  grid-row: 2 / span 2;
+  position: relative;
+  z-index: 2;
+  contain: size;
+  pointer-events: none;
+}
+
+.deck {
+  /* read once by the timeline: phones fan their column of cards half as much */
+  --tilt: 0.5;
+  container-type: inline-size;
+  position: absolute;
+  top: 50%;
+  right: 0;
+  left: 0;
+  max-width: 20rem;
+  margin-inline: auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+  translate: 0 calc(-50% + 1.25rem);
+}
+
+.card {
+  position: relative;
+  padding: 0.7rem 0.85rem 0.8rem;
+  border-radius: 0.75rem;
+  background: #171717;
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 8%),
+    0 22px 60px rgb(0 0 0 / 55%);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  text-align: left;
+  opacity: 0;
+}
+
+.cardTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  color: #a1a1a1;
+  font-size: 0.6875rem;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.cardBody {
+  margin-top: 0.45rem;
+  color: #fafafa;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.cardBodyPlain {
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.badge {
+  padding: 0.15rem 0.45rem;
+  border: 1px solid rgb(244 63 94 / 42%);
+  border-radius: 999px;
+  background: rgb(244 63 94 / 12%);
+  color: #fda4af;
+  font-size: 0.625rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.badgeAmber {
+  border-color: rgb(245 158 11 / 42%);
+  background: rgb(245 158 11 / 12%);
+  color: #fcd34d;
+}
+
+@media (min-width: 640px) {
+  .clip {
+    margin-inline: -2rem;
+    padding-inline: 2rem;
+  }
+
+  .deck {
+    --tilt: 1;
+    max-width: 30rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    translate: 0 -50%;
+  }
+
+  .card {
+    min-height: 6.5rem;
+    padding: 0.75rem 0.8rem;
+  }
+
+  .cardBody {
+    margin-top: 0.7rem;
+  }
+}
+
+/* From tablets up the video's own proportions: four cards in one fanned row
+   (sized from the deck's width) and the chain as a row of pills. */
+@media (min-width: 768px) {
+  .chainArea {
+    --pill-w: clamp(7.5rem, 10.4vw, 9.5rem);
+    --pill-h: clamp(2.75rem, 3.55vw, 3.25rem);
+    --pill-gap: clamp(1.25rem, 2.8vw, 2.5rem);
+    margin-top: clamp(2.5rem, 4.6vw, 4rem);
+  }
+
+  .chain {
+    flex-direction: row;
+  }
+
+  .railH {
+    display: block;
+  }
+
+  .railV {
+    display: none;
+  }
+
+  .step {
+    font-size: clamp(0.95rem, 1.3vw, 1.2rem);
+  }
+
+  .copy {
+    margin-top: clamp(2.5rem, 4vw, 3.25rem);
+  }
+
+  .deckArea {
+    grid-row: 2 / span 3;
+  }
+
+  .deck {
+    right: 0;
+    left: 0;
+    max-width: 76rem;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 2.1%;
+  }
+
+  .card {
+    min-height: 12.08cqw;
+    padding: max(0.65rem, 1.23cqw) max(0.7rem, 1.36cqw);
+    border-radius: max(0.625rem, 0.99cqw);
+  }
+
+  .cardTop {
+    font-size: max(0.6875rem, 1.11cqw);
+  }
+
+  .cardBody {
+    margin-top: max(0.6rem, 1.36cqw);
+    font-size: max(0.8125rem, 1.54cqw);
+  }
+
+  .cardBodyPlain {
+    font-size: max(0.75rem, 1.3cqw);
+  }
+
+  .badge {
+    padding: 0.25cqw 0.74cqw;
+    font-size: max(0.625rem, 0.99cqw);
+  }
+}
+
+@media (min-width: 1024px) {
+  .clip {
+    margin-inline: -2.5rem;
+    padding-inline: 2.5rem;
+  }
+}

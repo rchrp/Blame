@@ -1,0 +1,347 @@
+/* The video's worktree card, drawn on a 500 x 480 canvas. Every size below is
+   that canvas's pixel count times --u, a fifth of a percent of the card's own
+   width, so the card keeps the video's proportions at any width. */
+
+.slot {
+  --u: 0.2cqw;
+  position: relative;
+  container-type: inline-size;
+}
+
+.card {
+  position: relative;
+  overflow: hidden;
+  padding: calc(21 * var(--u)) calc(26 * var(--u)) calc(26 * var(--u));
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: calc(24 * var(--u));
+  background: #0a0a0a;
+  box-shadow:
+    0 calc(40 * var(--u)) calc(100 * var(--u)) rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(57, 163, 255, 0.25),
+    0 0 16px rgba(0, 145, 255, 0.32);
+  color: #f5f5f7;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Blame's in-progress light: it runs round the border of a running story */
+.light {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  padding: 2px;
+  overflow: hidden;
+  border-radius: calc(24 * var(--u));
+  opacity: 0;
+  pointer-events: none;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+}
+
+.spin {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(760 * var(--u));
+  height: calc(760 * var(--u));
+  margin: calc(-380 * var(--u)) 0 0 calc(-380 * var(--u));
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg 245deg,
+    rgba(120, 218, 255, 0.75) 285deg,
+    rgb(0, 139, 255) 325deg,
+    transparent 360deg
+  );
+  animation: spin 2.6s linear infinite;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: calc(28 * var(--u));
+  color: #a1a1a1;
+  font-size: max(11px, calc(19 * var(--u)));
+  line-height: 1;
+}
+
+.badges {
+  position: relative;
+  display: inline-flex;
+}
+
+.badge {
+  padding: calc(4 * var(--u)) calc(12 * var(--u));
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  color: #c4c4c4;
+  font-size: max(10px, calc(16 * var(--u)));
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.running {
+  position: absolute;
+  top: 0;
+  right: 0;
+  border-color: #10b981;
+  color: #6ee7b7;
+  opacity: 0;
+}
+
+/* beats the page-wide heading rule, which sets every heading in Söhne */
+.card .title {
+  margin: calc(19 * var(--u)) 0 0;
+  overflow: hidden;
+  color: #fafafa;
+  font-family: inherit;
+  font-size: max(14px, calc(27 * var(--u)));
+  font-weight: 600;
+  letter-spacing: normal;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rows {
+  display: grid;
+  gap: calc(4 * var(--u));
+  margin: calc(22 * var(--u)) 0 0;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: calc(44 * var(--u));
+  color: #a1a1a1;
+  font-size: max(12px, calc(22 * var(--u)));
+}
+
+.row dt {
+  display: flex;
+  align-items: center;
+  gap: calc(14 * var(--u));
+}
+
+.row dd {
+  margin: 0 0 0 auto;
+  color: #d4d4d4;
+  font-size: max(11px, calc(17 * var(--u)));
+  white-space: nowrap;
+  opacity: 0;
+}
+
+.row .port {
+  color: #93c5fd;
+}
+
+.icon {
+  position: relative;
+  flex: none;
+  width: calc(26 * var(--u));
+  height: calc(26 * var(--u));
+  border: max(1px, calc(2 * var(--u))) solid #525252;
+  border-radius: 50%;
+}
+
+.check {
+  position: absolute;
+  inset: calc(-1 * max(1px, calc(2 * var(--u))));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #059669;
+  opacity: 0;
+}
+
+.check svg {
+  width: calc(16 * var(--u));
+  height: calc(16 * var(--u));
+}
+
+.foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: calc(52 * var(--u));
+  margin-top: calc(44 * var(--u));
+}
+
+.localhost {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(10 * var(--u));
+  height: calc(44 * var(--u));
+  padding: 0 calc(14 * var(--u));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: calc(11 * var(--u));
+  background: #171717;
+  color: #d4d4d4;
+  font-size: max(11px, calc(18 * var(--u)));
+  white-space: nowrap;
+}
+
+.dot {
+  flex: none;
+  width: max(5px, calc(9 * var(--u)));
+  height: max(5px, calc(9 * var(--u)));
+  border-radius: 50%;
+  background: #525252;
+}
+
+.button {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: calc(196 * var(--u));
+  height: calc(52 * var(--u));
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: calc(13 * var(--u));
+  background: #1f1f1f;
+  color: #a1a1a1;
+  font-size: max(11px, calc(20 * var(--u)));
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.buttonOn {
+  position: absolute;
+  inset: -1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: inherit;
+  background: #2446c7;
+  box-shadow: 0 calc(10 * var(--u)) calc(30 * var(--u)) rgba(59, 130, 246, 0.5);
+  color: #fff;
+  opacity: 0;
+}
+
+/* an agent's named cursor; its tip sits on the anchor point */
+.agent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 6;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.agent svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: calc(40 * var(--u));
+  height: calc(40 * var(--u));
+  overflow: visible;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.6));
+}
+
+.agentName {
+  position: absolute;
+  top: calc(34 * var(--u));
+  left: calc(30 * var(--u));
+  display: flex;
+  align-items: center;
+  height: max(22px, calc(38 * var(--u)));
+  padding: 0 max(8px, calc(14 * var(--u)));
+  border-radius: calc(10 * var(--u)) calc(19 * var(--u)) calc(19 * var(--u))
+    calc(19 * var(--u));
+  color: #0b0b0f;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: max(11px, calc(19 * var(--u)));
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.ring {
+  position: absolute;
+  top: calc(-16 * var(--u));
+  left: calc(-16 * var(--u));
+  width: calc(36 * var(--u));
+  height: calc(36 * var(--u));
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  opacity: 0;
+}
+
+/* what the setup adds up to, under the three worktrees */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 44px;
+  padding: 0 20px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  background: #171717;
+  box-shadow:
+    0 16px 44px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  color: #ededed;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+@media (max-width: 639.98px) {
+  .chip {
+    gap: 8px;
+    height: 38px;
+    padding: 0 12px;
+    font-size: 14px;
+  }
+}
+
+.chipDot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 12px #10b981;
+}
+
+/* below the three-column layout: the worktree that gets opened leads the
+   stack in full, the two others shrink to their header */
+@media (max-width: 1023.98px) {
+  .focus {
+    order: -1;
+    margin-bottom: 26px;
+  }
+
+  .compact .rows,
+  .compact .foot,
+  .compact .agent {
+    display: none;
+  }
+}
+
+.focus {
+  z-index: 2;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin {
+    animation: none;
+  }
+}
