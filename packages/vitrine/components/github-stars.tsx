@@ -32,14 +32,14 @@ export function GitHubMark(props: SVGProps<SVGSVGElement>) {
   );
 }
 
-// The header's GitHub entry point: the mark, a "Star" call to action, and the
-// live star count when the server could read it.
+// The header's GitHub entry point: the mark, its name, and the live star
+// count when the server could read it.
 export function GitHubStarsLink({ className = "" }: { className?: string }) {
   const stars = useGitHubStars();
   const label =
     stars === null
-      ? "Star Blame on GitHub"
-      : `Star Blame on GitHub, ${stars} ${stars === 1 ? "star" : "stars"}`;
+      ? "Blame on GitHub"
+      : `Blame on GitHub, ${stars} ${stars === 1 ? "star" : "stars"}`;
 
   return (
     <a
@@ -48,7 +48,7 @@ export function GitHubStarsLink({ className = "" }: { className?: string }) {
       className={`group inline-flex min-h-10 items-center gap-2 rounded-full border border-white/14 bg-white/[0.08] pl-3.5 pr-4 text-sm text-white/90 shadow-2xl shadow-black/20 backdrop-blur-xl transition duration-200 hover:bg-white/[0.14] focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-[#050505] ${className}`}
     >
       <GitHubMark className="size-[1.125rem] shrink-0" />
-      <span>Star</span>
+      <span>GitHub</span>
       {stars !== null && (
         <span className="flex items-center gap-1 border-l border-white/14 pl-2 tabular-nums text-white/72 transition group-hover:text-white">
           <Star className="size-3.5 fill-current text-[#f7cf83]" />

@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowRight, Play } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 import {
   memo,
   useEffect,
@@ -98,7 +98,6 @@ function HeroCopy({
       style={heroCopyStyle(progress, reducedMotion)}
     >
       <div className="text-center">
-        <OpenSourceAnnouncement />
         <h1
           id="hero-title"
           className="text-balance font-semibold text-white drop-shadow-[0_20px_70px_rgba(0,0,0,0.55)]"
@@ -127,30 +126,13 @@ function HeroActions() {
         <ArrowRight className="h-4 w-4 transition duration-200 group-hover:translate-x-0.5" />
       </a>
       <a
-        href="#workflow"
+        href={githubRepositoryUrl}
         className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-white/14 bg-white/[0.06] px-5 py-3 text-sm text-white/90 backdrop-blur-md transition duration-200 hover:-translate-y-0.5 hover:bg-white/[0.1] focus:outline-none focus:ring-2 focus:ring-white/45 focus:ring-offset-2 focus:ring-offset-[#050505]"
       >
-        <Play className="h-4 w-4 fill-current" />
-        See the workflow
+        <GitHubMark className="h-4 w-4 shrink-0" />
+        Star on GitHub
       </a>
     </div>
-  )
-}
-
-function OpenSourceAnnouncement() {
-  return (
-    <a
-      href={githubRepositoryUrl}
-      className="group mb-7 inline-flex min-h-9 items-center gap-2.5 rounded-full border border-white/14 bg-[#070a15]/55 py-1.5 pl-3 pr-3.5 text-sm text-white/82 shadow-2xl shadow-black/20 backdrop-blur-xl transition duration-200 hover:bg-[#070a15]/70 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/45 focus:ring-offset-2 focus:ring-offset-[#050505] sm:mb-9"
-    >
-      <GitHubMark className="size-4 shrink-0 text-white" />
-      <span>Blame is now open source</span>
-      <span aria-hidden="true" className="h-3.5 w-px bg-white/20" />
-      <span className="inline-flex items-center gap-1 text-white">
-        Star on GitHub
-        <ArrowRight className="h-3.5 w-3.5 transition duration-200 group-hover:translate-x-0.5" />
-      </span>
-    </a>
   )
 }
 
