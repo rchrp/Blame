@@ -53,14 +53,20 @@ export function LandingRevealStyles() {
         line-height: 1.08;
       }
 
+      /* The label above a story heading, as a badge. */
       .story-eyebrow {
-        color: var(--primary);
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid color-mix(in oklab, var(--primary) 55%, transparent);
+        border-radius: 999px;
+        background: color-mix(in oklab, var(--primary) 16%, transparent);
+        padding: 0.3125rem 0.875rem;
+        color: color-mix(in oklab, var(--primary) 28%, white);
         font-family: Arial, Helvetica, ui-sans-serif, sans-serif;
-        font-size: clamp(0.875rem, 1.05vw, 1rem);
+        font-size: clamp(0.8125rem, 0.95vw, 0.9375rem);
         font-weight: 400;
-        letter-spacing: 0.1em;
+        letter-spacing: 0;
         line-height: 1.3;
-        text-transform: uppercase;
       }
 
       .story-copy {

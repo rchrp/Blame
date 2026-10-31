@@ -23,7 +23,7 @@ export function LegalPlaceholderPage({
               <div className="grid size-14 place-items-center rounded-2xl bg-[#b3acf3]/12 text-[#dedaff] ring-1 ring-[#b3acf3]/20">
                 <FileText className="size-6" aria-hidden="true" />
               </div>
-              <p className="landing-reveal landing-reveal-eyebrow mt-8 text-xs font-semibold uppercase tracking-[0.34em] text-[#b3acf3]">
+              <p className="landing-reveal landing-reveal-eyebrow mt-8 inline-flex rounded-full border border-[#b3acf3]/30 bg-[#b3acf3]/10 px-3.5 py-1 text-sm text-[#dedaff]">
                 {eyebrow}
               </p>
               <h1 className="landing-reveal landing-reveal-title mt-4 text-balance text-[clamp(3rem,8vw,6rem)] font-semibold leading-[0.92] tracking-[-0.065em]">

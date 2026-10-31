@@ -109,7 +109,7 @@ function FooterNavigation() {
 function FooterGroup({ group }: { group: (typeof footerGroups)[number] }) {
   return (
     <nav aria-label={group.title}>
-      <p className="text-xs uppercase tracking-[0.24em] text-white/38">
+      <p className="text-sm text-white/45">
         {group.title}
       </p>
       <ul className="mt-5 space-y-3 text-sm text-white/62">

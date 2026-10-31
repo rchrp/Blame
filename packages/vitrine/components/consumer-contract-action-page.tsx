@@ -297,7 +297,7 @@ function PageGlow() {
 function ActionHeader({ copy }: { copy: WithdrawalCopy }) {
   return (
     <header>
-      <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#b3acf3]">
+      <p className="inline-flex rounded-full border border-[#b3acf3]/30 bg-[#b3acf3]/10 px-3.5 py-1 text-sm text-[#dedaff]">
         {copy.eyebrow}
       </p>
       <h1 className="mt-4 text-balance text-[clamp(3rem,8vw,5.8rem)] font-semibold leading-[0.92] tracking-[-0.065em]">
