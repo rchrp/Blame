@@ -139,7 +139,7 @@ function OpeningSection() {
 }
 
 // One full-screen step of the story. Its scene pins it while the animation
-// plays, and StoryMagnet settles the page on its top.
+// plays, and StoryScroll settles the page on its top.
 function SceneSection({
   children,
   id,

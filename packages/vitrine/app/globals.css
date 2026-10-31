@@ -186,6 +186,23 @@ html {
   scroll-behavior: smooth;
 }
 
+/* The product story hands the page scroll to Lenis (components/story/story-scroll.tsx).
+   It scrolls the page itself, so the browser must not smooth it again; while a scene
+   holds the page, the page can't scroll, but keeps its scrollbar's room. */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+html.lenis {
+  scroll-behavior: auto;
+  scrollbar-gutter: stable;
+}
+
+html.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
 canvas {
   display: block;
 }

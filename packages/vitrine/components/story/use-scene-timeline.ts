@@ -3,11 +3,7 @@
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useEffect, useRef } from "react";
-import {
-  holdScroll,
-  releaseScroll,
-  type ScrollHold,
-} from "@/components/story/scroll-hold";
+import { registerHold, releaseScroll } from "@/components/story/scroll-hold";
 
 gsap.registerPlugin(ScrollTrigger);
 ScrollTrigger.config({ ignoreMobileResize: true });
@@ -28,9 +24,16 @@ type SceneTimelineOptions = {
 // The timeline starts once the section's top rises past this point of the
 // screen, so its heading is being written as the section settles at the top.
 const playAt = "top 55%";
-// The pin lasts this share of the screen height: room for a scroll that
-// overshoots the pin to land inside it, where nothing moves.
-const pinShare = 0.3;
+// The pin is where the page is held. With a mouse or trackpad, Lenis stops
+// the page exactly on it, so it needs no length. Touch screens scroll
+// natively and paint before the hold can stop them: there the pin lasts a
+// share of the screen, so a swipe's last frames land inside it, where
+// nothing moves.
+const touchPinShare = 0.25;
+const pinLength = () =>
+  ScrollTrigger.isTouch === 1
+    ? Math.round(window.innerHeight * touchPinShare)
+    : 1;
 
 export const storyPinIdPrefix = "story-pin-";
 let pinCount = 0;
@@ -98,9 +101,6 @@ export function useSceneTimeline<T extends HTMLElement>(
       fitToScreen();
       ScrollTrigger.addEventListener("refreshInit", fitToScreen);
 
-      const hold: ScrollHold = { section, timeline, end: () => pin.end };
-      timeline.eventCallback("onComplete", () => releaseScroll(hold));
-
       // A section that still overflows the screen (on phones) pins once its
       // end reaches the bottom of the screen, so the animated picture stays
       // in view; its heading was read on the way.
@@ -109,18 +109,19 @@ export function useSceneTimeline<T extends HTMLElement>(
         trigger: section,
         start: () =>
           section.offsetHeight > window.innerHeight ? "bottom bottom" : "top top",
-        end: () => `+=${Math.round(window.innerHeight * pinShare)}`,
+        end: () => `+=${pinLength()}`,
         pin: true,
-        anticipatePin: 1,
+        anticipatePin: ScrollTrigger.isTouch === 1 ? 1 : 0,
         invalidateOnRefresh: true,
-        onEnter: (self) => {
-          // A jump that shot past the whole pin doesn't stop on the way.
-          if (self.progress >= 1 || timeline.progress() === 1) return;
-          if (timeline.paused()) timeline.play();
-          holdScroll(hold);
-        },
-        onLeaveBack: () => releaseScroll(hold),
       });
+      const hold = {
+        section,
+        timeline,
+        at: () => pin.start,
+        end: () => pin.end,
+      };
+      const unregister = registerHold(hold);
+      timeline.eventCallback("onComplete", () => releaseScroll(hold));
       ScrollTrigger.create({
         trigger: section,
         start: playAt,
@@ -136,7 +137,7 @@ export function useSceneTimeline<T extends HTMLElement>(
       });
 
       return () => {
-        releaseScroll(hold);
+        unregister();
         ScrollTrigger.removeEventListener("refreshInit", fitToScreen);
         if (fit) fit.style.cssText = "";
       };
