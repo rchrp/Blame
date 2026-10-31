@@ -20,9 +20,10 @@ export function HarnessSection({
     <section
       id="harness"
       aria-labelledby="harness-title"
-      className="scroll-mt-24 border-t-[24px] border-[#1d1d1f] bg-black px-5 py-32 sm:border-t-[32px] sm:px-8 sm:py-40 lg:border-t-[48px] lg:px-10 lg:py-48"
+      data-story-section
+      className="flex min-h-[100svh] flex-col justify-center bg-black px-5 py-24 sm:px-8 sm:py-28 lg:px-10"
     >
-      <div className="mx-auto max-w-7xl">
+      <div className="mx-auto w-full max-w-7xl">
         <ScrollReveal className="text-center">
           <p className="story-eyebrow">Light Semantic Harness</p>
           <h2 id="harness-title" className="story-title mx-auto mt-5 max-w-5xl">

@@ -547,9 +547,9 @@ function useStageFit(frameRef: RefObject<HTMLDivElement | null>) {
 }
 
 export function BacklogScene() {
-  const headingRef = useSceneTimeline<HTMLDivElement>(buildHeading);
+  const headingRef = useSceneTimeline<HTMLDivElement>(buildHeading, { mode: "enter" });
   // the stage plays once it is well into the screen, so the typing is seen
-  const frameRef = useSceneTimeline<HTMLDivElement>(buildStage, { rootMargin: "0px 0px -30% 0px" });
+  const frameRef = useSceneTimeline<HTMLDivElement>(buildStage);
   useStageFit(frameRef);
 
   return (

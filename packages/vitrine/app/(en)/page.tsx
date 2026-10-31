@@ -2,6 +2,7 @@ import { LandingRevealStyles } from '@/components/landing-reveal-styles'
 import { JsonLd } from '@/components/json-ld'
 import { SiteHeader } from '@/components/site-header'
 import { ProductStory } from '@/app/product-story'
+import { StoryMagnet } from '@/components/story/story-magnet'
 import { LandingHero } from '@/app/scroll-story'
 import { createIndexablePageMetadata } from '@/lib/seo'
 import { homepageStructuredData } from '@/lib/structured-data'
@@ -21,6 +22,7 @@ export default function Home() {
         <SiteHeader />
         <LandingHero />
         <ProductStory />
+        <StoryMagnet />
         <LandingRevealStyles />
       </main>
     </>

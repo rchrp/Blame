@@ -145,7 +145,7 @@ function Check({ className, stroke, width }: { className?: string; stroke: strin
 }
 
 export function MergeScene() {
-  const ref = useSceneTimeline<HTMLDivElement>(buildMerge, { rootMargin: "0px 0px -35% 0px" });
+  const ref = useSceneTimeline<HTMLDivElement>(buildMerge);
 
   return (
     <div ref={ref} className={`mx-auto max-w-7xl ${styles.scene}`}>

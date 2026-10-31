@@ -239,11 +239,7 @@ function buildOpening(timeline: gsap.core.Timeline, root: HTMLDivElement) {
 }
 
 export function OpeningScene() {
-  // The opening slides up over the hero: start once it sits mid-screen, so
-  // the cards are in view when they are dealt in.
-  const ref = useSceneTimeline<HTMLDivElement>(buildOpening, {
-    rootMargin: "0px 0px -55% 0px",
-  });
+  const ref = useSceneTimeline<HTMLDivElement>(buildOpening);
 
   return (
     <div ref={ref} className="mx-auto max-w-7xl">

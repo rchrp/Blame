@@ -105,7 +105,7 @@ export function ProductStory() {
       </SceneSection>
       <SpecialistsSection />
       <CloudContinuitySection />
-      <SceneSection id="project-creation" bordered={false}>
+      <SceneSection id="project-creation">
         <CreationScene />
       </SceneSection>
       <FinalCtaSection />
@@ -126,28 +126,35 @@ function HeroFadeOut() {
 
 function OpeningSection() {
   return (
-    <section className="flex min-h-[100svh] items-center bg-[#050505] px-5 py-24 sm:px-8 sm:py-32 lg:px-10">
-      <OpeningScene />
+    <section
+      data-story-section
+      className="flex min-h-[100svh] flex-col justify-center bg-[#050505] px-5 py-24 sm:px-8 lg:px-10"
+    >
+      <div className="w-full" data-story-fit>
+        <OpeningScene />
+      </div>
     </section>
   );
 }
 
-// A black band on the page's grey ground, like every story section.
+// One full-screen step of the story. Its scene pins it while the scroll
+// plays the animation, and StoryMagnet settles the page on its top.
 function SceneSection({
-  bordered = true,
   children,
   id,
 }: {
-  bordered?: boolean;
   children: ReactNode;
   id: string;
 }) {
   return (
     <section
       id={id}
-      className={`scroll-mt-24 bg-black px-5 py-28 sm:px-8 sm:py-36 lg:px-10 lg:py-44 ${bordered ? "border-t-[24px] border-[#1d1d1f] sm:border-t-[32px] lg:border-t-[48px]" : ""}`}
+      data-story-section
+      className="flex min-h-[100svh] flex-col justify-center bg-black px-5 py-24 sm:px-8 lg:px-10"
     >
-      {children}
+      <div className="w-full" data-story-fit>
+        {children}
+      </div>
     </section>
   );
 }
@@ -157,9 +164,10 @@ function ParallelAgentsSection() {
     <section
       id="parallel-agents"
       aria-labelledby="parallel-agents-title"
-      className="border-t-[24px] border-[#1d1d1f] bg-black px-5 py-32 sm:border-t-[32px] sm:px-8 sm:py-40 lg:border-t-[48px] lg:px-10 lg:py-48"
+      data-story-section
+      className="flex min-h-[100svh] flex-col justify-center bg-black px-5 py-24 sm:px-8 lg:px-10"
     >
-      <div className="mx-auto max-w-7xl">
+      <div className="mx-auto w-full max-w-7xl">
         <ScrollReveal className="text-center">
           <p className="story-eyebrow">Parallel agents</p>
           <h2
@@ -206,8 +214,11 @@ function ProviderRail() {
 
 function SpecialistsSection() {
   return (
-    <section className="border-y-[24px] border-[#1d1d1f] bg-black px-5 py-32 sm:border-y-[32px] sm:px-8 sm:py-40 lg:border-y-[48px] lg:px-10 lg:py-48">
-      <div className="mx-auto max-w-7xl">
+    <section
+      data-story-section
+      className="flex min-h-[100svh] flex-col justify-center bg-black px-5 py-24 sm:px-8 lg:px-10"
+    >
+      <div className="mx-auto w-full max-w-7xl">
         <SpecialistsHeading />
         <AgentRail />
       </div>
@@ -285,8 +296,11 @@ function specialistCardStyle(agent: (typeof specialistAgents)[number]) {
 
 function CloudContinuitySection() {
   return (
-    <section className="bg-[#1d1d1f] px-5 py-32 sm:px-8 sm:py-40 lg:px-10 lg:py-48">
-      <div className="mx-auto max-w-7xl">
+    <section
+      data-story-section
+      className="flex min-h-[100svh] flex-col justify-center bg-[#1d1d1f] px-5 py-24 sm:px-8 lg:px-10"
+    >
+      <div className="mx-auto w-full max-w-7xl">
         <ScrollReveal className="text-center">
           <p className="story-eyebrow">Blame Cloud</p>
           <h2 className="story-title mx-auto mt-5 max-w-6xl">
@@ -339,7 +353,10 @@ function CloudContinuityItem({
 
 function FinalCtaSection() {
   return (
-    <section className="relative isolate flex min-h-[100svh] items-center overflow-hidden bg-black px-5 py-32 sm:px-8 sm:py-40 lg:px-10">
+    <section
+      data-story-section
+      className="relative isolate flex min-h-[100svh] items-center overflow-hidden bg-black px-5 py-24 sm:px-8 lg:px-10"
+    >
       <FinalCtaBackdrop />
       <CtaScene />
     </section>
