@@ -9,21 +9,16 @@ import {
   type CSSProperties,
   type RefObject,
 } from 'react'
-import { SceneWarmup } from '@/components/scene-warmup'
 import { GitHubMark } from '@/components/github-stars'
 import { githubRepositoryUrl } from '@/lib/github'
 import { HeroBacklogMockup } from '@/components/blame-mockups/backlog-mockup'
-import { HeroScene } from './scene/hero-scene'
 
-// The hero re-renders on every scroll frame to update its transforms; these
-// subtrees take no props, so keep them out of that loop.
-const StaticHeroScene = memo(HeroScene)
-const StaticSceneWarmup = memo(SceneWarmup)
+// The hero re-renders on every scroll frame to update its transforms; this
+// subtree takes no props, so keep it out of that loop. The 3D scene behind
+// the hero is the page's story stage (components/story/story-stage.tsx).
 const StaticHeroBacklogMockup = memo(HeroBacklogMockup)
 
 const heroStageHeight = 180
-// The home hero looks a little higher than the other scenes: more sky.
-const heroLookUp = 7
 const scrollProgressResponse = 14
 
 type ScrollAnimationState = {
@@ -33,33 +28,21 @@ type ScrollAnimationState = {
   target: number
 }
 
-type StoryBackdropProps = {
-  heroProgress: number
-  progress: number
-}
-
 export function LandingHero() {
   const sectionRef = useRef<HTMLElement>(null)
   const progress = useScrollProgress(sectionRef)
   const reducedMotion = useReducedMotion()
-  const backdropProgress = reducedMotion ? reducedMotionProgress(progress) : progress
 
   return (
     <section
       id="top"
       aria-labelledby="hero-title"
       ref={sectionRef}
-      className="hero-stage relative bg-[#050505]"
+      className="hero-stage relative"
       style={{ height: `${heroStageHeight}vh` }}
     >
       <span id="download" className="absolute bottom-0" />
       <div className="sticky top-0 isolate h-screen overflow-hidden">
-        <StaticHeroScene lookUp={heroLookUp} />
-        <StaticSceneWarmup />
-        <StoryBackdrop
-          heroProgress={backdropProgress}
-          progress={backdropProgress}
-        />
         <HeroFrame progress={progress} reducedMotion={reducedMotion} />
       </div>
     </section>
@@ -151,34 +134,6 @@ function HeroMockup({
       style={heroMockupStyle(progress, reducedMotion)}
     >
       <StaticHeroBacklogMockup />
-    </div>
-  )
-}
-
-function StoryBackdrop({ heroProgress, progress }: StoryBackdropProps) {
-  const glow = 0.1 + progress * 0.24
-  const veil = 0.12 + heroProgress * 0.68
-  const blur = heroProgress * 18
-
-  return (
-    <div className="absolute inset-0 -z-10 overflow-hidden">
-      <div
-        className="absolute inset-0"
-        style={{
-          backdropFilter: `blur(${blur}px)`,
-          WebkitBackdropFilter: `blur(${blur}px)`,
-        }}
-      />
-      <div
-        className="absolute inset-0 bg-[#050505]"
-        style={{ opacity: veil }}
-      />
-      <div className="absolute inset-0 bg-[linear-gradient(120deg,rgba(255,255,255,0.08),transparent_28%,rgba(146,216,191,0.08)_52%,transparent_76%,rgba(247,207,131,0.08))]" />
-      <div
-        className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_10%,rgba(255,255,255,0.12),transparent_44%)]"
-        style={{ opacity: glow }}
-      />
-      <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#050505] to-transparent" />
     </div>
   )
 }
@@ -305,10 +260,6 @@ function heroMockupStyle(
 
 function reducedMotionOpacity(progress: number) {
   return progress < 0.72 ? 1 : 0
-}
-
-function reducedMotionProgress(progress: number) {
-  return progress < 0.72 ? 0 : 1
 }
 
 function timelineProgress(progress: number, start: number, end: number) {

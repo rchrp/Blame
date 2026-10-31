@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useLayoutEffect, type RefObject } from "react";
+import { celebrateStage } from "@/components/story/story-stage";
 import { useSceneTimeline } from "@/components/story/use-scene-timeline";
 import styles from "./merge-scene.module.css";
 
@@ -107,7 +108,9 @@ function buildMerge(tl: gsap.core.Timeline, root: HTMLDivElement) {
   tl.fromTo("[data-mg=lift]", { "--mg-lift": 0 }, { "--mg-lift": 1, duration: 0.75, ease: "power3.inOut" }, 4.05);
   tl.fromTo("[data-mg=off]", { opacity: 1 }, { opacity: 0, duration: 0.15, ease: "power2.in" }, 4.35);
 
-  // the answer assembles: check, words with a shimmer, the story as done
+  // the answer assembles: check, words with a shimmer, the story as done,
+  // while the light rings run across the ground
+  tl.call(celebrateStage, [], 4.32);
   tl.fromTo(
     "[data-mg=ok]",
     { scale: 0.5, opacity: 0 },

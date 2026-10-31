@@ -21,7 +21,7 @@ export function HarnessSection({
       id="harness"
       aria-labelledby="harness-title"
       data-story-section
-      className="flex min-h-[100svh] flex-col justify-center bg-black px-5 py-24 sm:px-8 sm:py-28 lg:px-10"
+      className="flex min-h-[100svh] flex-col justify-center px-5 py-24 sm:px-8 sm:py-28 lg:px-10"
     >
       <div className="mx-auto w-full max-w-7xl">
         <ScrollReveal className="text-center">

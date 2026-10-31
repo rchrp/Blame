@@ -195,6 +195,38 @@ html {
   mask-image: radial-gradient(ellipse 62% 62% at 50% 50%, transparent 52%, #000 100%);
 }
 
+/* The home page's 3D ground (components/story/story-stage.tsx), fixed behind
+   the hero and the whole story. Past the hero, a shade like the presentation
+   video's darkens it and a wider blur rim softens it further; on the final
+   section, night falls in black and white. */
+.story-stage {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  transition: filter 2.4s ease;
+}
+
+.story-stage[data-night] {
+  filter: grayscale(1) brightness(1.55) contrast(1.15);
+}
+
+.story-stage-veil {
+  background: rgb(5 5 5 / 12%);
+}
+
+.story-stage-shade {
+  background: linear-gradient(180deg, rgb(5 5 5 / 76%) 0%, rgb(5 5 5 / 62%) 38%, rgb(5 5 5 / 54%) 60%, rgb(5 5 5 / 74%) 100%);
+}
+
+.story-stage-rim {
+  -webkit-backdrop-filter: blur(26px);
+  backdrop-filter: blur(26px);
+  -webkit-mask-image: radial-gradient(ellipse 64% 64% at 50% 50%, transparent 34%, #000 100%);
+  mask-image: radial-gradient(ellipse 64% 64% at 50% 50%, transparent 34%, #000 100%);
+}
+
 /* The product story hands the page scroll to Lenis (components/story/story-scroll.tsx).
    It scrolls the page itself, so the browser must not smooth it again; while a scene
    holds the page, the page can't scroll, but keeps its scrollbar's room. */

@@ -2,6 +2,7 @@
 
 import gsap from "gsap";
 import { Fragment } from "react";
+import { celebrateStage } from "@/components/story/story-stage";
 import { useSceneTimeline } from "@/components/story/use-scene-timeline";
 import styles from "./opening-scene.module.css";
 
@@ -175,7 +176,9 @@ function buildOpening(timeline: gsap.core.Timeline, root: HTMLDivElement) {
     RECEDE_AT,
   );
 
-  // Beat 2: "Blame" crashes down to size, the rest rises in beside it.
+  // Beat 2: "Blame" crashes down to size, the rest rises in beside it, and
+  // the light rings run across the ground behind it.
+  timeline.call(celebrateStage, [], NAME_AT);
   timeline.fromTo(
     brand,
     { scale: 1.7, opacity: 0, filter: "blur(14px)" },

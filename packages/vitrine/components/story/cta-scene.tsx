@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useGitHubStars } from "@/components/github-stars";
+import { celebrateStage } from "@/components/story/story-stage";
 import { useSceneTimeline } from "@/components/story/use-scene-timeline";
 import { formatStarCount, githubRepositoryUrl } from "@/lib/github";
 import styles from "./cta-scene.module.css";
@@ -15,6 +16,9 @@ import styles from "./cta-scene.module.css";
 function buildCta(timeline: gsap.core.Timeline, root: HTMLDivElement) {
   const title = root.querySelector<HTMLElement>('[data-cta="title"]');
   const u = title ? parseFloat(getComputedStyle(title).fontSize) / 96 : 0.75;
+
+  // the light rings open the end card, as night falls behind it
+  timeline.call(celebrateStage, [], 0.1);
 
   // everything under the name keeps rising until the final hold
   timeline.fromTo('[data-cta="glide"]', { y: 38 * u }, { y: 0, duration: 4.36, ease: "none" }, 0);

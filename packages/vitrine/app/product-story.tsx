@@ -14,7 +14,6 @@ import { PracticesScene } from "@/components/story/practices-scene";
 import { WorkspaceScene } from "@/components/story/workspace-scene";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { HarnessSection } from "./harness-story";
-import { FinalCtaScene } from "./scene/final-cta-scene";
 
 const specialistAgents = [
   {
@@ -86,8 +85,7 @@ const cloudContinuityItems = [
 // workspace, review and merge), then what surrounds it, and the end card.
 export function ProductStory() {
   return (
-    <div className="relative z-10 -mt-[48vh] bg-[#1d1d1f]">
-      <HeroFadeOut />
+    <div className="relative z-10 -mt-[48vh]">
       <OpeningSection />
       <SceneSection id="workflow">
         <BacklogScene />
@@ -113,23 +111,12 @@ export function ProductStory() {
   );
 }
 
-// This page slides over the pinned hero; fade its top edge into the hero
-// instead of cutting the mockup with a hard black band.
-function HeroFadeOut() {
-  return (
-    <div
-      aria-hidden="true"
-      className="pointer-events-none absolute inset-x-0 bottom-full h-[45vh] bg-[linear-gradient(to_bottom,rgb(5_5_5/0%)_0%,rgb(5_5_5/18%)_30%,rgb(5_5_5/55%)_62%,rgb(5_5_5/88%)_86%,#050505_100%)]"
-    />
-  );
-}
-
 function OpeningSection() {
   return (
     <section
       id="opening"
       data-story-section
-      className="flex min-h-[100svh] flex-col justify-center bg-[#050505] px-5 py-24 sm:px-8 lg:px-10"
+      className="flex min-h-[100svh] flex-col justify-center px-5 py-24 sm:px-8 lg:px-10"
     >
       <div className="w-full" data-story-fit>
         <OpeningScene />
@@ -151,7 +138,7 @@ function SceneSection({
     <section
       id={id}
       data-story-section
-      className="flex min-h-[100svh] flex-col justify-center bg-black px-5 py-24 sm:px-8 lg:px-10"
+      className="flex min-h-[100svh] flex-col justify-center px-5 py-24 sm:px-8 lg:px-10"
     >
       <div className="w-full" data-story-fit>
         {children}
@@ -166,7 +153,7 @@ function ParallelAgentsSection() {
       id="parallel-agents"
       aria-labelledby="parallel-agents-title"
       data-story-section
-      className="flex min-h-[100svh] flex-col justify-center bg-black px-5 py-24 sm:px-8 lg:px-10"
+      className="flex min-h-[100svh] flex-col justify-center px-5 py-24 sm:px-8 lg:px-10"
     >
       <div className="mx-auto w-full max-w-7xl">
         <ScrollReveal className="text-center">
@@ -217,7 +204,7 @@ function SpecialistsSection() {
   return (
     <section
       data-story-section
-      className="flex min-h-[100svh] flex-col justify-center bg-black px-5 py-24 sm:px-8 lg:px-10"
+      className="flex min-h-[100svh] flex-col justify-center px-5 py-24 sm:px-8 lg:px-10"
     >
       <div className="mx-auto w-full max-w-7xl">
         <SpecialistsHeading />
@@ -299,7 +286,7 @@ function CloudContinuitySection() {
   return (
     <section
       data-story-section
-      className="flex min-h-[100svh] flex-col justify-center bg-[#1d1d1f] px-5 py-24 sm:px-8 lg:px-10"
+      className="flex min-h-[100svh] flex-col justify-center px-5 py-24 sm:px-8 lg:px-10"
     >
       <div className="mx-auto w-full max-w-7xl">
         <ScrollReveal className="text-center">
@@ -356,19 +343,10 @@ function FinalCtaSection() {
   return (
     <section
       data-story-section
-      className="relative isolate flex min-h-[100svh] items-center overflow-hidden bg-black px-5 py-24 sm:px-8 lg:px-10"
+      className="relative isolate flex min-h-[100svh] items-center overflow-hidden px-5 py-24 sm:px-8 lg:px-10"
     >
-      <FinalCtaBackdrop />
       <CtaScene />
     </section>
   );
 }
 
-function FinalCtaBackdrop() {
-  return (
-    <div className="absolute inset-0 -z-10 overflow-hidden bg-black">
-      <FinalCtaScene />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_48%,rgba(0,0,0,0.16)_0%,rgba(0,0,0,0.42)_52%,#050505_92%),linear-gradient(180deg,#050505_0%,rgba(5,5,5,0.3)_34%,rgba(5,5,5,0.72)_100%)]" />
-    </div>
-  );
-}

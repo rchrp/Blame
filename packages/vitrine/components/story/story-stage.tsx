@@ -1,0 +1,145 @@
+"use client";
+
+import {
+  createHeroScene,
+  type HeroSceneController,
+} from "@blame/hero-scene";
+import gsap from "gsap";
+import { useEffect, useRef } from "react";
+import { SceneWarmup } from "@/components/scene-warmup";
+
+// The home page's ground: one 3D scene fixed behind the hero and the whole
+// story, as in the presentation video.
+// - In the hero it shows as it is; past the hero a shade darkens it and its
+//   edges blur further, so the story reads over it.
+// - The camera pans sideways along the ground, one step per story section,
+//   so the landscape moves on with every section.
+// - The light rings run across the ground on the video's moments (see
+//   celebrateStage), and night falls in black and white on the final
+//   section.
+const lookUp = 7;
+const panRange = 110;
+const panDuration = 1.4;
+
+let stage: HeroSceneController | null = null;
+
+// Sends the light rings across the ground, as the video does when the name
+// lands, when a story is merged, and on the end card.
+export function celebrateStage() {
+  stage?.celebrate();
+}
+
+export function StoryStage() {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const sceneRef = useRef<HTMLDivElement>(null);
+  const shadeRef = useRef<HTMLDivElement>(null);
+  const rimRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const root = rootRef.current;
+    const container = sceneRef.current;
+    const shade = shadeRef.current;
+    const rim = rimRef.current;
+    if (!root || !container || !shade || !rim) return;
+
+    const scene = createHeroScene(container, { lookUp, panRange });
+    stage = scene;
+
+    const reducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    const pan = { x: -panRange / 2 };
+    scene.setPan(pan.x);
+    let step = 0;
+    let night = false;
+    let lastStory = -1;
+    let frame = 0;
+
+    const update = () => {
+      frame = 0;
+      const sections = Array.from(
+        document.querySelectorAll<HTMLElement>("[data-story-section]"),
+      );
+      if (!sections.length) return;
+      const screen = window.innerHeight;
+      const tops = sections.map((section) => pageBox(section).getBoundingClientRect());
+
+      // The shade comes in as the first section rises over the hero.
+      const firstTop = tops[0].top;
+      const story = clamp01((screen - firstTop) / (screen * 0.7));
+      shade.style.opacity = story.toFixed(3);
+      rim.style.opacity = story.toFixed(3);
+      // Behind the story's text, the pointer's light stays discreet.
+      if (story !== lastStory) {
+        lastStory = story;
+        scene.setPointerLight(1 - story * 0.6);
+      }
+
+      // The step is the section across the middle of the screen; the hero
+      // is step 0.
+      let current = 0;
+      tops.forEach((box, index) => {
+        if (box.top <= screen / 2) current = index + 1;
+      });
+      if (current !== step) {
+        step = current;
+        const x = -panRange / 2 + (step * panRange) / sections.length;
+        gsap.to(pan, {
+          x,
+          duration: reducedMotion ? 0 : panDuration,
+          ease: "expo.inOut",
+          overwrite: true,
+          onUpdate: () => scene.setPan(pan.x),
+        });
+      }
+
+      // Night falls once the final section holds the middle of the screen.
+      const last = tops[tops.length - 1];
+      const isNight = last.top <= screen / 2;
+      if (isNight !== night) {
+        night = isNight;
+        scene.setNight(night);
+        root.toggleAttribute("data-night", night);
+      }
+    };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+
+    return () => {
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+      if (frame) cancelAnimationFrame(frame);
+      gsap.killTweensOf(pan);
+      if (stage === scene) stage = null;
+      scene.dispose();
+    };
+  }, []);
+
+  return (
+    <div ref={rootRef} aria-hidden="true" className="story-stage">
+      <div ref={sceneRef} className="absolute inset-0" />
+      <div className="hero-scene-rim absolute inset-0" />
+      <div className="story-stage-veil absolute inset-0" />
+      {/* Separate layers: a backdrop blur under a fading parent would only
+          blur that parent, not the scene. */}
+      <div ref={rimRef} className="story-stage-rim absolute inset-0" style={{ opacity: 0 }} />
+      <div ref={shadeRef} className="story-stage-shade absolute inset-0" style={{ opacity: 0 }} />
+      <SceneWarmup />
+    </div>
+  );
+}
+
+// A pinned section is measured by its pin spacer, which stays in the page.
+function pageBox(section: HTMLElement) {
+  return section.parentElement?.classList.contains("pin-spacer")
+    ? section.parentElement
+    : section;
+}
+
+function clamp01(value: number) {
+  return Math.min(1, Math.max(0, value));
+}
