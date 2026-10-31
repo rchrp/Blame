@@ -332,18 +332,28 @@ export async function localPreviewProbesPass(worktree: string) {
 
 /** Whether every service of the selected run configuration can still run. */
 export async function localPreviewHealthy(worktree: string) {
+  const states = await selectedServiceStates(worktree);
+  return (
+    states.length > 0 &&
+    states.every(({ running, health }) => running && health !== "unhealthy")
+  );
+}
+
+/** Whether every service of the selected run configuration is running. */
+export async function localPreviewServicesRunning(worktree: string) {
+  const states = await selectedServiceStates(worktree);
+  return states.length > 0 && states.every(({ running }) => running);
+}
+
+async function selectedServiceStates(worktree: string) {
   try {
     const context = await localPreviewContext(worktree);
     const selected = new Set(selectedServiceIds(context));
-    const states = (
-      await localPreviewEngine(worktree).inspect(context.plan)
-    ).filter(({ id }) => selected.has(id));
-    return (
-      states.length > 0 &&
-      states.every(({ running, health }) => running && health !== "unhealthy")
+    return (await localPreviewEngine(worktree).inspect(context.plan)).filter(
+      ({ id }) => selected.has(id),
     );
   } catch {
-    return false;
+    return [];
   }
 }
 

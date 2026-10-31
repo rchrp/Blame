@@ -60,6 +60,7 @@ import { WorktreeActivity } from "./worktree-activity.ts";
 import { WorktreeLogs } from "./worktree-logs.ts";
 import type { DesktopBridgeGrant } from "./preview-browser/preview-bridge-grant";
 import { previewComposeProjectName } from "./preview-readiness";
+import { PreviewLiveness } from "./preview-liveness";
 import { PreviewRecoveryCircuit } from "./preview-recovery-circuit";
 import { stalePreviewSetupReason } from "./preview-setup-preflight.ts";
 import {
@@ -134,6 +135,7 @@ import {
   localPreviewHealthy,
   localPreviewLogs,
   localPreviewProbesPass,
+  localPreviewServicesRunning,
   assertLocalPreviewHasServices,
   localPreviewServices,
   localPreviewUrl,
@@ -400,6 +402,7 @@ const projectLogStreams = new Map<string, ProjectLogStream>();
 const projectServiceLogStreams = new Map<string, ProjectServiceLogStream>();
 const previewRecoveries = new Map<string, Promise<string | null>>();
 const previewRecoveryCircuit = new PreviewRecoveryCircuit();
+const previewLiveness = new PreviewLiveness();
 const setupEnvironmentCache = new Map<
   string,
   { env?: SetupEnvironment; promise?: Promise<SetupEnvironment>; ts: number }
@@ -1715,10 +1718,14 @@ async function ensureProjectPreviewUrl(input: EnsureProjectPreviewUrlInput) {
   const currentUrl = await resolveProjectPreviewUrl({ worktree });
   if (
     currentUrl &&
-    (await previewResponds(currentUrl)) &&
-    (await previewProbesPass(worktree))
+    (await previewLiveness.serving(worktree, {
+      answers: () => previewAnswers(currentUrl),
+      servicesRunning: () => localPreviewServicesRunning(worktree),
+      probesPass: () => previewProbesPass(worktree),
+    }))
   )
     return currentUrl;
+  previewLiveness.forget(worktree);
   const recovery = previewRecoveries.get(worktree);
   if (recovery) return recovery;
   const configurationFingerprint = previewRecoveryConfigurationFingerprint({
@@ -2894,14 +2901,16 @@ async function projectRuntimeHealthy(worktreeInput: string) {
   return localPreviewHealthy(resolveRuntimePath(worktreeInput));
 }
 
-async function previewResponds(url: string) {
+// Any answer, even a 500 from code the agent is changing, means the server
+// is up: restarting it would not change the page.
+async function previewAnswers(url: string) {
   try {
     const response = await fetch(url, {
       method: "GET",
       signal: AbortSignal.timeout(previewRequestTimeoutMs),
     });
     await response.body?.cancel().catch(() => undefined);
-    return response.status < 500;
+    return true;
   } catch {
     return false;
   }
