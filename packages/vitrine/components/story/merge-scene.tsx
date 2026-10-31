@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useLayoutEffect, type RefObject } from "react";
 import { useSceneTimeline } from "@/components/story/use-scene-timeline";
 import styles from "./merge-scene.module.css";
 
@@ -17,7 +18,9 @@ const checks = ["Code practices followed", "12 tests passed", "Preview checked b
 // The merge beat of the presentation video, compressed from 7.1 s to about
 // 5.5 s: the review fills in, the cursor glides to Approve & Merge, the
 // camera zooms onto it, the click answers, the review leaves and the result
-// assembles word by word with a shimmer.
+// assembles word by word with a shimmer. As the review leaves, the heading
+// fades away and the result rises to the middle of the screen, so the scene
+// ends on "Merged into main" alone.
 function buildMerge(tl: gsap.core.Timeline, root: HTMLDivElement) {
   const stage = root.querySelector("[data-mg=stage]");
 
@@ -92,6 +95,16 @@ function buildMerge(tl: gsap.core.Timeline, root: HTMLDivElement) {
 
   // the review closes: the whole view leaves with the current
   tl.fromTo("[data-mg=off]", { xPercent: 0 }, { xPercent: -130, duration: 0.5, ease: "power3.in" }, 4.0);
+
+  // the heading has said its part: it fades away and the result takes the
+  // middle of the screen (the distance is --mg-shift, see useResultShift)
+  tl.fromTo(
+    "[data-mg=head]",
+    { y: 0, opacity: 1, filter: "blur(0px)" },
+    { y: -28, opacity: 0, filter: "blur(8px)", duration: 0.5, ease: "power2.in" },
+    3.95,
+  );
+  tl.fromTo("[data-mg=lift]", { "--mg-lift": 0 }, { "--mg-lift": 1, duration: 0.75, ease: "power3.inOut" }, 4.05);
   tl.fromTo("[data-mg=off]", { opacity: 1 }, { opacity: 0, duration: 0.15, ease: "power2.in" }, 4.35);
 
   // the answer assembles: check, words with a shimmer, the story as done
@@ -146,10 +159,11 @@ function Check({ className, stroke, width }: { className?: string; stroke: strin
 
 export function MergeScene() {
   const ref = useSceneTimeline<HTMLDivElement>(buildMerge);
+  useResultShift(ref);
 
   return (
     <div ref={ref} className={`mx-auto max-w-7xl ${styles.scene}`}>
-      <header className="text-center">
+      <header className="text-center" data-mg="head">
         <p className="story-eyebrow" data-mg="eyebrow">
           Human decision
         </p>
@@ -169,7 +183,7 @@ export function MergeScene() {
         </p>
       </header>
 
-      <div className={`mt-12 sm:mt-16 ${styles.stageWrap}`}>
+      <div className={`mt-12 sm:mt-16 ${styles.stageWrap}`} data-mg="lift">
         <div className={styles.stage} data-mg="stage">
           <div className={styles.layer} data-mg="off">
             <div className={styles.layer} data-mg="in">
@@ -289,4 +303,39 @@ export function MergeScene() {
       </div>
     </div>
   );
+}
+
+// How far the stage must rise for the result, centred on it, to sit in the
+// middle of the screen once the heading is gone. Layout sizes, unaffected by
+// transforms, so it holds inside a scene scaled to fit the screen: there, and
+// wherever the section fits the screen, the scene's own middle is the
+// screen's. A phone section taller than the screen is pinned by its end, so
+// the screen shows its last screenful.
+function useResultShift(rootRef: RefObject<HTMLDivElement | null>) {
+  useLayoutEffect(() => {
+    const root = rootRef.current;
+    const lift = root?.querySelector<HTMLElement>("[data-mg=lift]");
+    const stage = root?.querySelector<HTMLElement>("[data-mg=stage]");
+    const section = root?.closest<HTMLElement>("[data-story-section]");
+    if (!root || !lift || !stage || !section) return;
+
+    const measure = () => {
+      let middle = root.offsetHeight / 2;
+      if (window.innerWidth < 768 && section.offsetHeight > window.innerHeight) {
+        const rootTop =
+          root.getBoundingClientRect().top - section.getBoundingClientRect().top;
+        middle = section.offsetHeight - window.innerHeight / 2 - rootTop;
+      }
+      const resultMiddle = lift.offsetTop + stage.offsetHeight / 2;
+      root.style.setProperty("--mg-shift", `${Math.round(middle - resultMiddle)}px`);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(root);
+    window.addEventListener("resize", measure);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [rootRef]);
 }
