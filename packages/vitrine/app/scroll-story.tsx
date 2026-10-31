@@ -22,6 +22,8 @@ const StaticSceneWarmup = memo(SceneWarmup)
 const StaticHeroBacklogMockup = memo(HeroBacklogMockup)
 
 const heroStageHeight = 180
+// The home hero looks a little higher than the other scenes: more sky.
+const heroLookUp = 7
 const scrollProgressResponse = 14
 
 type ScrollAnimationState = {
@@ -52,7 +54,7 @@ export function LandingHero() {
     >
       <span id="download" className="absolute bottom-0" />
       <div className="sticky top-0 isolate h-screen overflow-hidden">
-        <StaticHeroScene />
+        <StaticHeroScene lookUp={heroLookUp} />
         <StaticSceneWarmup />
         <StoryBackdrop
           heroProgress={backdropProgress}

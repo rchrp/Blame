@@ -8,7 +8,7 @@ import {
   updateCelebrationWaves,
 } from './effects'
 import { createFramePacer } from './frame-pacing'
-import { createPlusField, updatePlusField } from './plus-field'
+import { createPlusField, placePlusField, updatePlusField } from './plus-field'
 import { createFrameLerp } from './scene-constants'
 import {
   createSceneQuality,
@@ -29,6 +29,7 @@ export { terrainReliefPresets, type HeroSceneTerrainPreset }
 
 const SUN_DIRECTION = createSunDirection()
 const TWILIGHT_FOG_COLOR = 0x3666ff
+const TWILIGHT_FOG_DENSITY = 0.012
 const FRAME_DELTA_MAX = 0.1
 const CAMERA_POINTER_RESPONSE = 7
 const CAMERA_TRAVEL_RESPONSE = 1.6
@@ -48,6 +49,9 @@ export type HeroSceneOptions = {
   intro?: boolean
   // Initial camera travel, from 0 (resting) to 1 (furthest forward).
   travel?: number
+  // Raises the camera's gaze by this many degrees, giving the sky more of the
+  // frame and lowering the horizon.
+  lookUp?: number
   // 'high-performance' wakes the discrete GPU on dual-GPU laptops. Use
   // 'default' where battery life matters more than headroom.
   powerPreference?: WebGLPowerPreference
@@ -93,7 +97,7 @@ export function createHeroScene(
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
   let quality = createSceneQuality(readDeviceProfile())
   const scene = new THREE.Scene()
-  scene.fog = new THREE.FogExp2(TWILIGHT_FOG_COLOR, 0.012)
+  scene.fog = new THREE.FogExp2(TWILIGHT_FOG_COLOR, TWILIGHT_FOG_DENSITY)
 
   const camera = new THREE.PerspectiveCamera(48, 1, 0.1, 500000)
   camera.position.set(0, CAMERA_BASE_Y, CAMERA_BASE_Z)
@@ -136,7 +140,7 @@ export function createHeroScene(
   let celebrationStart: number | null = null
 
   const plusField = shouldRenderInteractivePlusField
-    ? createPlusField(quality, terrainRelief)
+    ? createPlusField(quality, terrain, TWILIGHT_FOG_DENSITY)
     : null
 
   if (plusField) {
@@ -158,6 +162,7 @@ export function createHeroScene(
   iceLight.position.set(15, 5, 15)
   scene.add(iceLight)
 
+  const lookUp = THREE.MathUtils.degToRad(options.lookUp ?? 0)
   const pointer = new THREE.Vector2(0, 0)
   const targetPointer = new THREE.Vector2(0, 0)
   const pacer = createFramePacer()
@@ -186,6 +191,7 @@ export function createHeroScene(
     camera.updateProjectionMatrix()
     updateTerrainLayout(terrain, quality, terrainRelief, width, height)
     updateCelebrationWaveGeometry(celebrationWaves, terrain.mesh.geometry)
+    if (plusField) placePlusField(plusField, terrain)
   }
 
   const updateCamera = (delta: number) => {
@@ -204,6 +210,7 @@ export function createHeroScene(
       -0.52 - travel * 0.4,
       -8.5 - travel * CAMERA_TRAVEL_Z,
     )
+    camera.rotateX(lookUp)
   }
 
   const isSettled = () =>
@@ -220,7 +227,7 @@ export function createHeroScene(
 
     terrain.group.rotation.z = Math.sin(elapsed * 0.08) * 0.006 + pointer.x * 0.012
     if (plusField) {
-      updatePlusField(plusField, targetPointer, elapsed, delta, quality)
+      updatePlusField(plusField, targetPointer, elapsed, delta)
     }
     if (celebrationStart !== null) {
       const active = updateCelebrationWaves(celebrationWaves, elapsed - celebrationStart)

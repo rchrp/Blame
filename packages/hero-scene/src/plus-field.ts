@@ -6,122 +6,112 @@ import {
   PLUS_FIELD_RADIUS,
   PLUS_FIELD_RESPONSE,
   PLUS_FIELD_TERRAIN_CLEARANCE,
-  PLUS_HEIGHT_RESPONSE,
-  PRIMARY_TERRAIN_OFFSET,
-  PRIMARY_TERRAIN_SCALE,
-  PRIMARY_TERRAIN_Y,
-  PRIMARY_TERRAIN_Z,
+  TERRAIN_HORIZON_FADE_END_Z,
+  TERRAIN_HORIZON_FADE_START_Z,
   createFrameLerp,
 } from './scene-constants'
 import type { SceneQuality } from './scene-quality'
-import { hashNoise2 } from './stone-textures'
-import { sampleTerrainHeight, type TerrainRelief } from './terrain'
+import { sampleTerrainSurface, type ResponsiveTerrain } from './terrain'
 
-// The field of "+" markers that follows the pointer across the terrain.
-
-type PlusMarker = {
-  localX: number
-  localZ: number
-  scale: number
-  rotation: number
-  baseOpacity: number
-  pulsePhase: number
-  currentHeight: number
-  targetHeight: number
-}
+// The "+" markers lit around the pointer. They form a fixed grid laid on the
+// terrain, each one resting on the rendered surface and tilted with its
+// slope; a round light follows the pointer across the grid, brightest and
+// largest at its centre, fading out towards its rim. The grid never moves,
+// so only two uniforms change per frame, and the terrain hides the markers a
+// ridge stands in front of.
 
 export type PlusField = {
   group: THREE.Group
   mesh: THREE.InstancedMesh<THREE.BufferGeometry, THREE.ShaderMaterial>
-  markers: PlusMarker[]
-  matrix: THREE.Matrix4
-  position: THREE.Vector3
-  quaternion: THREE.Quaternion
-  scale: THREE.Vector3
-  euler: THREE.Euler
-  lastHeightUpdate: number
-  lastSampleX: number
-  lastSampleZ: number
-  terrainRelief: TerrainRelief
+  center: THREE.Vector2
+  terrainGeometry: THREE.BufferGeometry | null
 }
 
 export function createPlusField(
   quality: SceneQuality,
-  terrainRelief: TerrainRelief,
+  terrain: ResponsiveTerrain,
+  fogDensity: number,
 ): PlusField {
-  const group = new THREE.Group()
-  const markers: PlusMarker[] = []
+  const grid = createGrid(quality.plusFieldStep, terrain)
   const geometry = createPlusGeometry()
+  geometry.setAttribute(
+    'aGrid',
+    new THREE.InstancedBufferAttribute(new Float32Array(grid.flat()), 2),
+  )
 
-  group.position.set(0, PRIMARY_TERRAIN_Y, 0)
-  group.renderOrder = 8
+  const mesh = new THREE.InstancedMesh(
+    geometry,
+    createPlusMaterial(terrain.mesh.position.z, fogDensity),
+    grid.length,
+  )
+  mesh.frustumCulled = false
+  mesh.renderOrder = 8
 
-  for (let localZ = -PLUS_FIELD_RADIUS; localZ <= PLUS_FIELD_RADIUS; localZ += quality.plusFieldStep) {
-    for (let localX = -PLUS_FIELD_RADIUS; localX <= PLUS_FIELD_RADIUS; localX += quality.plusFieldStep) {
-      const distance = Math.sqrt(localX ** 2 + localZ ** 2)
+  const group = new THREE.Group()
+  group.add(mesh)
 
-      if (distance > PLUS_FIELD_RADIUS) {
-        continue
-      }
-
-      const edgeFade = 1 - THREE.MathUtils.smoothstep(
-        PLUS_FIELD_RADIUS * 0.52,
-        PLUS_FIELD_RADIUS,
-        distance,
-      )
-      const jitterX = (hashNoise2(localX * 2.7, localZ * 2.7) - 0.5) * 0.42
-      const jitterZ = (hashNoise2(localX * 3.1 + 17, localZ * 3.1 - 11) - 0.5) * 0.42
-      const markerX = localX + jitterX
-      const markerZ = localZ + jitterZ
-
-      markers.push({
-        localX: markerX,
-        localZ: markerZ,
-        rotation: (hashNoise2(localX + 8, localZ - 6) - 0.5) * 0.16,
-        scale: 0.66 + edgeFade * 0.18,
-        baseOpacity: 0.1 + edgeFade * 0.46,
-        pulsePhase: markerX * 0.26 + markerZ * 0.19,
-        currentHeight: 0,
-        targetHeight: 0,
-      })
-    }
-  }
-
-  const material = createPlusMaterial()
-  const mesh = new THREE.InstancedMesh(geometry, material, markers.length)
-  const baseOpacity = new Float32Array(markers.length)
-  const pulsePhase = new Float32Array(markers.length)
-  const field = {
+  const field: PlusField = {
     group,
     mesh,
-    markers,
-    matrix: new THREE.Matrix4(),
-    position: new THREE.Vector3(),
-    quaternion: new THREE.Quaternion(),
-    scale: new THREE.Vector3(),
-    euler: new THREE.Euler(),
-    lastHeightUpdate: -Infinity,
-    lastSampleX: Infinity,
-    lastSampleZ: Infinity,
-    terrainRelief,
+    center: new THREE.Vector2(0, (PLUS_FIELD_BACK_Z + PLUS_FIELD_FRONT_Z) / 2),
+    terrainGeometry: null,
   }
-
-  for (let index = 0; index < markers.length; index += 1) {
-    const marker = markers[index]
-    baseOpacity[index] = marker.baseOpacity
-    pulsePhase[index] = marker.pulsePhase
-  }
-
-  geometry.setAttribute('aBaseOpacity', new THREE.InstancedBufferAttribute(baseOpacity, 1))
-  geometry.setAttribute('aPulsePhase', new THREE.InstancedBufferAttribute(pulsePhase, 1))
-  mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage)
-  mesh.frustumCulled = false
-  group.add(mesh)
-  updatePlusTargetHeights(field, 0)
-  snapPlusHeightsToTargets(field)
-  updatePlusMatrices(field, 0)
-
+  placePlusField(field, terrain)
   return field
+}
+
+// Grid points, in the terrain group's space, wherever the light can reach and
+// the terrain is drawn.
+function createGrid(step: number, terrain: ResponsiveTerrain) {
+  const reachX = PLUS_FIELD_POINTER_X_RANGE + PLUS_FIELD_RADIUS
+  const terrainZ = terrain.mesh.position.z
+  const nearZ = Math.min(
+    PLUS_FIELD_FRONT_Z + PLUS_FIELD_RADIUS,
+    terrainZ + terrain.layout.depth / 2 - step,
+  )
+  const farZ = Math.max(
+    PLUS_FIELD_BACK_Z - PLUS_FIELD_RADIUS,
+    terrainZ + TERRAIN_HORIZON_FADE_END_Z,
+  )
+  const points: [number, number][] = []
+  for (let z = Math.ceil(farZ / step) * step; z <= nearZ; z += step) {
+    for (let x = Math.ceil(-reachX / step) * step; x <= reachX; x += step) {
+      points.push([x, z])
+    }
+  }
+  return points
+}
+
+// Sets every marker on the terrain as it is drawn. Run again whenever the
+// terrain geometry is rebuilt.
+export function placePlusField(field: PlusField, terrain: ResponsiveTerrain) {
+  const geometry = terrain.mesh.geometry
+  if (field.terrainGeometry === geometry) {
+    return
+  }
+  field.terrainGeometry = geometry
+
+  const grid = field.mesh.geometry.getAttribute('aGrid') as THREE.InstancedBufferAttribute
+  const normal = new THREE.Vector3()
+  const position = new THREE.Vector3()
+  const quaternion = new THREE.Quaternion()
+  const scale = new THREE.Vector3(1, 1, 1)
+  const matrix = new THREE.Matrix4()
+  const facing = new THREE.Vector3(0, 0, 1)
+  const halfWidth = terrain.layout.width / 2 - 1
+
+  for (let index = 0; index < grid.count; index += 1) {
+    const x = THREE.MathUtils.clamp(grid.getX(index), -halfWidth, halfWidth)
+    const z = grid.getY(index)
+    const height = sampleTerrainSurface(terrain, x, z - terrain.mesh.position.z, normal)
+    position
+      .set(x, terrain.mesh.position.y + height, z)
+      .addScaledVector(normal, PLUS_FIELD_TERRAIN_CLEARANCE)
+    quaternion.setFromUnitVectors(facing, normal)
+    matrix.compose(position, quaternion, scale)
+    field.mesh.setMatrixAt(index, matrix)
+  }
+  field.mesh.instanceMatrix.needsUpdate = true
 }
 
 function createPlusGeometry() {
@@ -146,21 +136,39 @@ function createPlusGeometry() {
   return new THREE.ShapeGeometry(shape)
 }
 
-function createPlusMaterial() {
+function createPlusMaterial(terrainZ: number, fogDensity: number) {
   return new THREE.ShaderMaterial({
     uniforms: {
       uTime: { value: 0 },
+      uCenter: { value: new THREE.Vector2() },
+      uRadius: { value: PLUS_FIELD_RADIUS },
+      uFogDensity: { value: fogDensity },
     },
     vertexShader: `
       uniform float uTime;
-      attribute float aBaseOpacity;
-      attribute float aPulsePhase;
+      uniform vec2 uCenter;
+      uniform float uRadius;
+      uniform float uFogDensity;
+      attribute vec2 aGrid;
       varying float vOpacity;
 
       void main() {
-        vOpacity = max(0.02, aBaseOpacity + sin(uTime * 1.7 + aPulsePhase) * 0.08);
-        vec4 instancePosition = instanceMatrix * vec4(position, 1.0);
-        gl_Position = projectionMatrix * modelViewMatrix * instancePosition;
+        float light = 1.0 - smoothstep(0.0, 1.0, distance(aGrid, uCenter) / uRadius);
+        light *= light;
+        // Outside the light: no marker, no fragments.
+        if (light < 0.004) {
+          vOpacity = 0.0;
+          gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+          return;
+        }
+        vec4 viewPosition = modelViewMatrix * instanceMatrix * vec4(position * mix(0.55, 1.0, light), 1.0);
+        // The same fog and horizon fade as the terrain under it.
+        float depth = -viewPosition.z;
+        float fog = exp(-uFogDensity * uFogDensity * depth * depth);
+        float horizon = smoothstep(${TERRAIN_HORIZON_FADE_END_Z.toFixed(1)}, ${TERRAIN_HORIZON_FADE_START_Z.toFixed(1)}, aGrid.y - ${terrainZ.toFixed(1)});
+        float pulse = 0.9 + 0.1 * sin(uTime * 1.7 + aGrid.x * 0.26 + aGrid.y * 0.19);
+        vOpacity = light * 0.88 * pulse * mix(0.35, 1.0, fog) * horizon;
+        gl_Position = projectionMatrix * viewPosition;
       }
     `,
     fragmentShader: `
@@ -172,107 +180,29 @@ function createPlusMaterial() {
     `,
     transparent: true,
     depthWrite: false,
-    depthTest: false,
+    depthTest: true,
+    polygonOffset: true,
+    polygonOffsetFactor: -2,
+    polygonOffsetUnits: -2,
     blending: THREE.AdditiveBlending,
     side: THREE.DoubleSide,
   })
 }
+
+const target = new THREE.Vector2()
 
 export function updatePlusField(
   field: PlusField,
   pointer: THREE.Vector2,
   elapsed: number,
   delta: number,
-  quality: SceneQuality,
 ) {
-  const follow = createFrameLerp(PLUS_FIELD_RESPONSE, delta)
-  const targetZ = THREE.MathUtils.mapLinear(
-    pointer.y,
-    -1,
-    1,
-    PLUS_FIELD_BACK_Z,
-    PLUS_FIELD_FRONT_Z,
-  )
-  field.group.position.x = THREE.MathUtils.lerp(
-    field.group.position.x,
+  target.set(
     pointer.x * PLUS_FIELD_POINTER_X_RANGE,
-    follow,
+    THREE.MathUtils.mapLinear(pointer.y, -1, 1, PLUS_FIELD_BACK_Z, PLUS_FIELD_FRONT_Z),
   )
-  field.group.position.z = THREE.MathUtils.lerp(field.group.position.z, targetZ, follow)
-  field.mesh.material.uniforms.uTime.value = elapsed
-
-  if (!shouldUpdatePlusHeights(field, elapsed, quality)) {
-    updatePlusMatrices(field, delta)
-    return
-  }
-
-  updatePlusTargetHeights(field, elapsed)
-  updatePlusMatrices(field, delta)
-}
-
-function shouldUpdatePlusHeights(
-  field: PlusField,
-  elapsed: number,
-  quality: SceneQuality,
-) {
-  if (elapsed - field.lastHeightUpdate < quality.plusHeightUpdateInterval) {
-    return false
-  }
-
-  const movement = Math.hypot(
-    field.group.position.x - field.lastSampleX,
-    field.group.position.z - field.lastSampleZ,
-  )
-
-  return movement >= quality.plusHeightMoveThreshold
-}
-
-function updatePlusTargetHeights(field: PlusField, elapsed: number) {
-  field.lastHeightUpdate = elapsed
-  field.lastSampleX = field.group.position.x
-  field.lastSampleZ = field.group.position.z
-
-  for (const marker of field.markers) {
-    const terrainX = field.group.position.x + marker.localX
-    const terrainZ = field.group.position.z + marker.localZ - PRIMARY_TERRAIN_Z
-    marker.targetHeight = sampleTerrainHeight(
-      terrainX,
-      terrainZ,
-      PRIMARY_TERRAIN_OFFSET,
-      PRIMARY_TERRAIN_SCALE,
-      field.terrainRelief,
-    )
-  }
-}
-
-function snapPlusHeightsToTargets(field: PlusField) {
-  for (const marker of field.markers) {
-    marker.currentHeight = marker.targetHeight
-  }
-}
-
-function updatePlusMatrices(field: PlusField, delta: number) {
-  const heightFollow = createFrameLerp(PLUS_HEIGHT_RESPONSE, delta)
-
-  for (let index = 0; index < field.markers.length; index += 1) {
-    const marker = field.markers[index]
-    marker.currentHeight = THREE.MathUtils.lerp(
-      marker.currentHeight,
-      marker.targetHeight,
-      heightFollow,
-    )
-
-    field.position.set(
-      marker.localX,
-      marker.currentHeight + PLUS_FIELD_TERRAIN_CLEARANCE,
-      marker.localZ,
-    )
-    field.euler.set(-Math.PI / 2, 0, marker.rotation)
-    field.quaternion.setFromEuler(field.euler)
-    field.scale.setScalar(marker.scale)
-    field.matrix.compose(field.position, field.quaternion, field.scale)
-    field.mesh.setMatrixAt(index, field.matrix)
-  }
-
-  field.mesh.instanceMatrix.needsUpdate = true
+  field.center.lerp(target, createFrameLerp(PLUS_FIELD_RESPONSE, delta))
+  const uniforms = field.mesh.material.uniforms
+  uniforms.uCenter.value.copy(field.center)
+  uniforms.uTime.value = elapsed
 }

@@ -24,6 +24,8 @@ export type TerrainRelief = {
   escarpmentIntensity: number
   foregroundShelfIntensity: number
   stoneMassIntensity: number
+  // Fine crests and gullies over the large folds.
+  detailIntensity: number
   baseDepth: number
 }
 
@@ -36,6 +38,7 @@ export const terrainReliefPresets = {
     escarpmentIntensity: 1,
     foregroundShelfIntensity: 1,
     stoneMassIntensity: 1,
+    detailIntensity: 1,
     baseDepth: 4.65,
   },
   pricing: {
@@ -46,6 +49,7 @@ export const terrainReliefPresets = {
     escarpmentIntensity: 0.48,
     foregroundShelfIntensity: 0.36,
     stoneMassIntensity: 0.62,
+    detailIntensity: 0.7,
     baseDepth: 3.9,
   },
   download: {
@@ -56,6 +60,7 @@ export const terrainReliefPresets = {
     escarpmentIntensity: 0.68,
     foregroundShelfIntensity: 0.52,
     stoneMassIntensity: 0.78,
+    detailIntensity: 0.85,
     baseDepth: 4.18,
   },
 } satisfies Record<string, TerrainRelief>
@@ -220,6 +225,8 @@ function createTerrainMaterial(
     return applyTerrainHorizonFade(new THREE.MeshLambertMaterial({
       color: 0x1d2a42,
       map: textures.color,
+      bumpMap: textures.bump ?? null,
+      bumpScale: TERRAIN_BUMP_SCALE,
       emissive: 0x071225,
       emissiveIntensity: 0.18,
     }))
@@ -229,7 +236,7 @@ function createTerrainMaterial(
     color: 0x1d2a42,
     map: textures.color,
     bumpMap: textures.bump,
-    bumpScale: 0.045,
+    bumpScale: TERRAIN_BUMP_SCALE,
     roughnessMap: textures.roughness,
     roughness: 0.92,
     metalness: 0,
@@ -238,6 +245,11 @@ function createTerrainMaterial(
   }))
 }
 
+// How strongly the stone grain shades the surface.
+const TERRAIN_BUMP_SCALE = 0.12
+
+// Fades the terrain out towards the horizon, and darkens its steep faces a
+// little, so the slopes read as rock against the gentler ground.
 function applyTerrainHorizonFade<
   Material extends THREE.MeshLambertMaterial | THREE.MeshStandardMaterial,
 >(material: Material): Material {
@@ -249,6 +261,7 @@ function applyTerrainHorizonFade<
         `
           #include <common>
           varying float vTerrainLocalZ;
+          varying float vTerrainSlope;
         `,
       )
       .replace(
@@ -256,6 +269,7 @@ function applyTerrainHorizonFade<
         `
           #include <begin_vertex>
           vTerrainLocalZ = position.z;
+          vTerrainSlope = 1.0 - normal.y;
         `,
       )
     shader.fragmentShader = shader.fragmentShader
@@ -264,17 +278,19 @@ function applyTerrainHorizonFade<
         `
           #include <common>
           varying float vTerrainLocalZ;
+          varying float vTerrainSlope;
         `,
       )
       .replace(
         'vec4 diffuseColor = vec4( diffuse, opacity );',
         `
           float terrainHorizonAlpha = smoothstep(${TERRAIN_HORIZON_FADE_END_Z.toFixed(1)}, ${TERRAIN_HORIZON_FADE_START_Z.toFixed(1)}, vTerrainLocalZ);
-          vec4 diffuseColor = vec4( diffuse, opacity * terrainHorizonAlpha );
+          float terrainSteepness = smoothstep(0.16, 0.6, vTerrainSlope);
+          vec4 diffuseColor = vec4( diffuse * mix(1.0, 0.74, terrainSteepness), opacity * terrainHorizonAlpha );
         `,
       )
   }
-  material.customProgramCacheKey = () => 'terrain-horizon-fade-v1'
+  material.customProgramCacheKey = () => 'terrain-horizon-fade-v2'
 
   return material
 }
@@ -314,6 +330,13 @@ export function sampleTerrainHeight(
     (2.2 + Math.sin((x - offset) * 0.24) * 0.55)
   const stoneMass = (packedNoise - 0.5) * 1.55 + (coarseNoise - 0.5) * 1.25
   const windErosion = Math.sin(distanceFromBasin * 0.32 + coarseNoise * 4.2) * 0.16
+  // Low crests along the lines where a noise field crosses its middle, and
+  // shallow gullies between them: texture on the slopes, so they catch the
+  // light instead of reading as smooth hills, without new peaks.
+  const crestNoise = fbm2(x * 0.17 + 7.3, z * 0.17 - 3.1, 3)
+  const crest = Math.max(0, 1 - Math.abs(crestNoise * 2 - 1) * 2.2) ** 2
+  const gully = fbm2(x * 0.34 - 4.4, z * 0.34 + 9.8, 2) - 0.5
+  const detail = crest * 0.42 + gully * 0.5
 
   return (
     (horizonRise * 0.8 +
@@ -323,9 +346,58 @@ export function sampleTerrainHeight(
       striatedRidges * (1.4 + coarseNoise * 1.1) * terrainRelief.ridgeIntensity +
       erodedChannels * 0.76 +
       stoneMass * 0.86 * terrainRelief.stoneMassIntensity +
+      detail * terrainRelief.detailIntensity +
       windErosion -
       terrainRelief.baseDepth) *
     scale *
     terrainRelief.heightScale
+  )
+}
+
+// The terrain's height at (x, z) in the mesh's own space, and its normal,
+// exactly as drawn: interpolated over the triangle of the grid that holds the
+// point, so whatever rests on it sits on the visible surface.
+export function sampleTerrainSurface(
+  terrain: ResponsiveTerrain,
+  x: number,
+  z: number,
+  normal: THREE.Vector3,
+) {
+  const { width, depth, widthSegments, depthSegments } = terrain.layout
+  const geometry = terrain.mesh.geometry
+  const positions = geometry.attributes.position.array
+  const normals = geometry.attributes.normal.array
+  const column = THREE.MathUtils.clamp(
+    ((x + width / 2) / width) * widthSegments,
+    0,
+    widthSegments - 1e-6,
+  )
+  const row = THREE.MathUtils.clamp(
+    ((z + depth / 2) / depth) * depthSegments,
+    0,
+    depthSegments - 1e-6,
+  )
+  const cellX = Math.floor(column)
+  const cellZ = Math.floor(row)
+  const u = column - cellX
+  const v = row - cellZ
+  const stride = widthSegments + 1
+  const a = cellZ * stride + cellX
+  const b = a + stride
+  const c = b + 1
+  const d = a + 1
+  // PlaneGeometry splits each cell into the triangles (a, b, d) and (b, c, d).
+  const [i0, i1, i2, w0, w1, w2] =
+    u + v <= 1 ? [a, d, b, 1 - u - v, u, v] : [c, b, d, u + v - 1, 1 - u, 1 - v]
+
+  normal
+    .set(
+      normals[i0 * 3] * w0 + normals[i1 * 3] * w1 + normals[i2 * 3] * w2,
+      normals[i0 * 3 + 1] * w0 + normals[i1 * 3 + 1] * w1 + normals[i2 * 3 + 1] * w2,
+      normals[i0 * 3 + 2] * w0 + normals[i1 * 3 + 2] * w1 + normals[i2 * 3 + 2] * w2,
+    )
+    .normalize()
+  return (
+    positions[i0 * 3 + 1] * w0 + positions[i1 * 3 + 1] * w1 + positions[i2 * 3 + 1] * w2
   )
 }

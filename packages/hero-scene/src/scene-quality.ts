@@ -1,13 +1,14 @@
 export type SceneQuality = {
   terrainSegments: number
   terrainTextureSize: number
+  // Spacing of the grid of "+" markers lit around the pointer.
   plusFieldStep: number
   pixelRatioCap: number
   anisotropyCap: number
   useNativeAntialias: boolean
-  plusHeightUpdateInterval: number
-  plusHeightMoveThreshold: number
   useDetailedTerrainMaterial: boolean
+  // Shades the terrain with the stone grain, on the cheaper material too.
+  useTerrainBump: boolean
 }
 
 export type DeviceProfile = {
@@ -48,42 +49,39 @@ export function createSceneQuality(profile: DeviceProfile): SceneQuality {
 
   if (profile.cores >= 10 && profile.memory >= 8 && profile.pixelLoad < 3_200_000) {
     return {
-      terrainSegments: 128,
+      terrainSegments: 176,
       terrainTextureSize: 192,
-      plusFieldStep: 2.55,
+      plusFieldStep: 1.9,
       pixelRatioCap: 1.35,
       anisotropyCap: 6,
       useNativeAntialias: true,
-      plusHeightUpdateInterval: 1 / 45,
-      plusHeightMoveThreshold: 0.1,
       useDetailedTerrainMaterial: true,
+      useTerrainBump: true,
     }
   }
 
   return {
-    terrainSegments: 96,
+    terrainSegments: 128,
     terrainTextureSize: 160,
-    plusFieldStep: 2.95,
+    plusFieldStep: 2.1,
     pixelRatioCap: 1.1,
     anisotropyCap: 4,
     useNativeAntialias: true,
-    plusHeightUpdateInterval: 1 / 36,
-    plusHeightMoveThreshold: 0.14,
     useDetailedTerrainMaterial: false,
+    useTerrainBump: true,
   }
 }
 
 export function createLeanSceneQuality(): SceneQuality {
   return {
-    terrainSegments: 64,
+    terrainSegments: 88,
     terrainTextureSize: 128,
-    plusFieldStep: 3.45,
+    plusFieldStep: 2.4,
     pixelRatioCap: 1,
     anisotropyCap: 2,
     useNativeAntialias: true,
-    plusHeightUpdateInterval: 1 / 30,
-    plusHeightMoveThreshold: 0.18,
     useDetailedTerrainMaterial: false,
+    useTerrainBump: true,
   }
 }
 
@@ -95,8 +93,7 @@ export function createSoftwareSceneQuality(): SceneQuality {
     pixelRatioCap: 0.75,
     anisotropyCap: 1,
     useNativeAntialias: false,
-    plusHeightUpdateInterval: 1 / 24,
-    plusHeightMoveThreshold: 0.24,
     useDetailedTerrainMaterial: false,
+    useTerrainBump: false,
   }
 }

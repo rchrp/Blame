@@ -28,46 +28,46 @@ export function createStoneTextures(
   const pixels = cachedStonePixels(
     quality.terrainTextureSize,
     quality.useDetailedTerrainMaterial,
+    quality.useTerrainBump,
   )
   const color = createStoneTexture('color', pixels.size, pixels.color, renderer, quality)
 
-  if (!pixels.bump || !pixels.roughness) {
-    return { color }
-  }
-
   return {
     color,
-    bump: createStoneTexture('bump', pixels.size, pixels.bump, renderer, quality),
-    roughness: createStoneTexture(
-      'roughness',
-      pixels.size,
-      pixels.roughness,
-      renderer,
-      quality,
-    ),
+    bump: pixels.bump
+      ? createStoneTexture('bump', pixels.size, pixels.bump, renderer, quality)
+      : undefined,
+    roughness: pixels.roughness
+      ? createStoneTexture('roughness', pixels.size, pixels.roughness, renderer, quality)
+      : undefined,
   }
 }
 
-function cachedStonePixels(size: number, detailed: boolean) {
-  const key = `${size}:${detailed ? 'detailed' : 'color'}`
+function cachedStonePixels(size: number, detailed: boolean, bump: boolean) {
+  const key = `${size}:${detailed ? 'detailed' : bump ? 'bump' : 'color'}`
   const cached = stonePixelCache.get(key)
 
   if (cached) {
     return cached
   }
 
-  const pixels = computeStonePixels(size, detailed)
+  const pixels = computeStonePixels(size, detailed, bump)
   stonePixelCache.set(key, pixels)
   return pixels
 }
 
 // Computes every requested map in a single pass. The color, bump and roughness
 // maps share the same noise fields, so sampling them once instead of once per
-// map divides the work by three without changing a single pixel.
-export function computeStonePixels(size: number, detailed: boolean): StonePixels {
+// map divides the work by three without changing a single pixel. `detailed`
+// adds the bump and roughness maps; `withBump` the bump map alone.
+export function computeStonePixels(
+  size: number,
+  detailed: boolean,
+  withBump = detailed,
+): StonePixels {
   const length = size * size * 4
   const color = new Uint8ClampedArray(length)
-  const bump = detailed ? new Uint8ClampedArray(length) : undefined
+  const bump = detailed || withBump ? new Uint8ClampedArray(length) : undefined
   const roughness = detailed ? new Uint8ClampedArray(length) : undefined
 
   for (let y = 0; y < size; y += 1) {
@@ -99,7 +99,7 @@ export function computeStonePixels(size: number, detailed: boolean): StonePixels
       color[index + 2] = stoneValue * 0.9
       color[index + 3] = 255
 
-      if (!bump || !roughness) {
+      if (!bump) {
         continue
       }
 
@@ -112,6 +112,10 @@ export function computeStonePixels(size: number, detailed: boolean): StonePixels
       bump[index + 1] = bumpValue
       bump[index + 2] = bumpValue
       bump[index + 3] = 255
+
+      if (!roughness) {
+        continue
+      }
 
       const roughnessValue = THREE.MathUtils.clamp(
         194 + weathering * 38 - mineralFleck * 0.18,
