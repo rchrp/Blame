@@ -5,7 +5,6 @@ export const githubIssuesUrl = `${githubRepositoryUrl}/issues`;
 export const githubContributingUrl = `${githubRepositoryUrl}/blob/main/CONTRIBUTING.md`;
 export const githubLicenseUrl = `${githubRepositoryUrl}/blob/main/LICENSE`;
 export const harnessSourceUrl = `${githubRepositoryUrl}/tree/main/packages/agent-runtime/src/harness`;
-export const harnessStudyUrl = `${githubRepositoryUrl}/blob/main/docs/semantic-harness-study.tex`;
 
 const starCountFormat = new Intl.NumberFormat("en", {
   notation: "compact",

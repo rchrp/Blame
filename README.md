@@ -96,7 +96,7 @@ Most coding agents grep, rewrite whole files, and tell you it should work now. B
 | `run_task`    | Runs commands and tests           | Results are bound to the run and the source revision. A failing test stays failed, even behind a script that exits 0. |
 | `finish_task` | Hands the work back               | Required checks run again on the final source. Missing or stale checks are reported as unverified, with the reason. |
 
-**Measured in the open.** On fresh cross-module TypeScript tasks audited by hand, the harness matched Cline's **6/6** with **54% fewer tokens** and a 39% lower estimated cost. That is panel F61 of the [harness study](docs/semantic-harness-study.tex), which details the conditions, the other panels, and the limits of each result. The harness lives in [`packages/agent-runtime/src/harness`](packages/agent-runtime/src/harness).
+**Measured in the open.** On fresh cross-module TypeScript tasks audited by hand, the harness matched Cline's **6/6** with **54% fewer tokens** and a 39% lower estimated cost. That is panel F61 of the [harness study](https://blame.so/research/light-semantic-harness-study.pdf) ([LaTeX source](docs/semantic-harness-study.tex)), which details the conditions, the other panels, and the limits of each result. The harness lives in [`packages/agent-runtime/src/harness`](packages/agent-runtime/src/harness).
 
 ## Features
 
@@ -175,7 +175,7 @@ You need Node.js 24, Git, and MySQL 8.4 for the API. [CONTRIBUTING.md](CONTRIBUT
 ## Documentation
 
 - [Architecture](docs/architecture-summary.tex): package boundaries, workspace execution, and the harness architecture.
-- [Semantic harness study](docs/semantic-harness-study.tex): measured results, implementation guarantees, limitations, and research directions.
+- [Semantic harness study](https://blame.so/research/light-semantic-harness-study.pdf) ([LaTeX source](docs/semantic-harness-study.tex)): measured results, implementation guarantees, limitations, and research directions. Rebuild the PDF with `pnpm build:study-pdf` after editing the source.
 - [Refactoring summary](docs/refactoring-summary.tex): module responsibilities and validation.
 - [Open-source readiness](docs/open-source-readiness.tex): licensing, self-hosting, and release preparation.
 - [Releasing](RELEASING.md): how the desktop app and its runtimes are built and published.

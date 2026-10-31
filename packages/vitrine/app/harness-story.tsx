@@ -1,7 +1,10 @@
 import { ArrowUpRight } from "lucide-react";
 import { HarnessTrace } from "@/components/harness-trace";
 import { ScrollReveal } from "@/components/scroll-reveal";
-import { harnessSourceUrl, harnessStudyUrl } from "@/lib/github";
+import { harnessSourceUrl } from "@/lib/github";
+
+// Built from docs/semantic-harness-study.tex by `pnpm build:study-pdf`.
+const harnessStudyPdfPath = "/research/light-semantic-harness-study.pdf";
 
 // Panel F61 of docs/semantic-harness-study.tex: audited successes and total
 // tokens per arm over the same six runs.
@@ -76,7 +79,7 @@ function HarnessProof() {
           at a 39% lower estimated cost.
         </p>
         <div className="mt-9 flex flex-wrap gap-x-7 gap-y-3 text-sm">
-          <ProofLink href={harnessStudyUrl}>Read the study</ProofLink>
+          <ProofLink href={harnessStudyPdfPath}>Read the study (PDF)</ProofLink>
           <ProofLink href={harnessSourceUrl}>Browse the harness source</ProofLink>
         </div>
       </ScrollReveal>
