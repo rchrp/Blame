@@ -299,9 +299,11 @@ a.pill:focus-visible,
 
 /* ---------- the home hero, which shares the end card's look ---------- */
 
-/* The hero's title is the end card's title, without the lockup above it */
+/* The hero's title is the end card's title, without the lockup above it,
+   and all in pure white */
 .scene .heroTitle {
   margin-top: 0;
+  color: #ffffff;
 }
 
 /* Its subtitle sits where the end card's tags do */

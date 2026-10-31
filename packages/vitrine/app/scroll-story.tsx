@@ -86,7 +86,7 @@ function HeroCopy({
           cta-scene.module.css), with the hero's own subtitle. */}
       <div className={endCard.scene}>
         <h1 id="hero-title" className={`${endCard.title} ${endCard.heroTitle}`}>
-          <span className={`${endCard.word} ${endCard.dim}`}>The</span>{' '}
+          <span className={endCard.word}>The</span>{' '}
           <span className={`${endCard.hl} ${endCard.hlIntro}`}>
             <span className={endCard.hlBox}>
               <span className={endCard.hlText}>Open Source</span>
@@ -94,7 +94,7 @@ function HeroCopy({
           </span>{' '}
           <span aria-hidden="true" className={`${endCard.break} ${endCard.phoneBreak}`} />
           <span className={endCard.word}>ADE</span>{' '}
-          <span className={`${endCard.word} ${endCard.dim}`}>that</span>{' '}
+          <span className={endCard.word}>that</span>{' '}
           <span aria-hidden="true" className={endCard.break} />
           <span className={endCard.word}>sets</span>{' '}
           <span className={endCard.word}>the</span>{' '}
