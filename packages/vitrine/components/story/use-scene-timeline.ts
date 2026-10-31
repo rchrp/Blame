@@ -3,6 +3,11 @@
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useEffect, useRef } from "react";
+import {
+  holdScroll,
+  releaseScroll,
+  type ScrollHold,
+} from "@/components/story/scroll-hold";
 
 gsap.registerPlugin(ScrollTrigger);
 ScrollTrigger.config({ ignoreMobileResize: true });
@@ -14,28 +19,31 @@ export type SceneTimelineBuilder<T extends HTMLElement> = (
 
 type SceneTimelineOptions = {
   // "pin" (default): the scene's story section stays fixed on screen while
-  // scrolling plays the timeline, then the page scrolls on.
+  // the timeline plays, then the page scrolls on.
   // "enter": the timeline plays once the element scrolls into view, for
   // small parts that live outside a pinned section's animation.
   mode?: "pin" | "enter";
 };
 
-// Scroll for one second of animation, as a share of the screen height.
-const scrollPerSecond = 0.26;
-// The timeline starts while the section rises into view, so its heading is
-// already written when the section reaches the top and pins.
-const approachShare = 0.6;
+// The timeline starts once the section's top rises past this point of the
+// screen, so its heading is being written as the section settles at the top.
+const playAt = "top 55%";
+// The pin lasts this share of the screen height: room for a scroll that
+// overshoots the pin to land inside it, where nothing moves.
+const pinShare = 0.3;
 
 export const storyPinIdPrefix = "story-pin-";
 let pinCount = 0;
 
-// Drives a GSAP timeline, ported from the Blame presentation video, from the
-// page scroll. The story section (the closest [data-story-section]) pins at
-// the top of the screen for as long as the animation needs, and the scroll
-// position is the animation's progress, so a scene can't be skipped half
-// played. With reduced motion the scene shows its final state and nothing
-// pins. `build` must be a module-level function: it adds the tweens to the
-// timeline, and its selectors are scoped to the root.
+// Plays a GSAP timeline, ported from the Blame presentation video, when the
+// scroll reaches its scene. The timeline runs on its own clock, as in the
+// video, never scrubbed by the scroll. The story section (the closest
+// [data-story-section]) pins at the top of the screen and the page is held
+// there until the animation ends; scrolling down meanwhile only speeds it up.
+// It plays again after the section has left the screen downwards. With
+// reduced motion the scene shows its final state and nothing pins. `build`
+// must be a module-level function: it adds the tweens to the timeline, and
+// its selectors are scoped to the root.
 export function useSceneTimeline<T extends HTMLElement>(
   build: SceneTimelineBuilder<T>,
   { mode = "pin" }: SceneTimelineOptions = {},
@@ -64,22 +72,34 @@ export function useSceneTimeline<T extends HTMLElement>(
         return;
       }
 
+      // Rewinds the scene once it is off screen below, so it plays again
+      // the next time the visitor scrolls down to it.
+      const rewind = () => {
+        gsap.killTweensOf(timeline);
+        timeline.timeScale(1).pause(0);
+      };
+
       if (mode === "enter" || !section) {
         ScrollTrigger.create({
           trigger: root,
           start: "top 80%",
           onEnter: () => timeline.play(),
-          onLeaveBack: () => timeline.pause(0),
+        });
+        ScrollTrigger.create({
+          trigger: root,
+          start: "top bottom",
+          onLeaveBack: rewind,
         });
         return;
       }
 
-      const pinDistance = () =>
-        Math.round(timeline.duration() * scrollPerSecond * window.innerHeight);
       const fit = section.querySelector<HTMLElement>("[data-story-fit]");
       const fitToScreen = () => fitSceneToScreen(section, fit);
       fitToScreen();
       ScrollTrigger.addEventListener("refreshInit", fitToScreen);
+
+      const hold: ScrollHold = { section, timeline, end: () => pin.end };
+      timeline.eventCallback("onComplete", () => releaseScroll(hold));
 
       // A section that still overflows the screen (on phones) pins once its
       // end reaches the bottom of the screen, so the animated picture stays
@@ -89,23 +109,34 @@ export function useSceneTimeline<T extends HTMLElement>(
         trigger: section,
         start: () =>
           section.offsetHeight > window.innerHeight ? "bottom bottom" : "top top",
-        end: () => `+=${pinDistance()}`,
+        end: () => `+=${Math.round(window.innerHeight * pinShare)}`,
         pin: true,
         anticipatePin: 1,
         invalidateOnRefresh: true,
+        onEnter: (self) => {
+          // A jump that shot past the whole pin doesn't stop on the way.
+          if (self.progress >= 1 || timeline.progress() === 1) return;
+          if (timeline.paused()) timeline.play();
+          holdScroll(hold);
+        },
+        onLeaveBack: () => releaseScroll(hold),
       });
-      // No invalidateOnRefresh here: invalidating the timeline on a refresh
-      // reverts the staggered parts that have not started yet to their
-      // final, visible state.
       ScrollTrigger.create({
         trigger: section,
-        start: `top ${100 - approachShare * 100}%`,
-        end: () => pin.end,
-        scrub: 0.5,
-        animation: timeline,
+        start: playAt,
+        onEnter: () => timeline.play(),
+      });
+      ScrollTrigger.create({
+        trigger: section,
+        start: "top bottom",
+        onLeaveBack: () => {
+          releaseScroll(hold);
+          rewind();
+        },
       });
 
       return () => {
+        releaseScroll(hold);
         ScrollTrigger.removeEventListener("refreshInit", fitToScreen);
         if (fit) fit.style.cssText = "";
       };

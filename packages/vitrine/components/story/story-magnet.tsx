@@ -6,7 +6,7 @@ import { storyPinIdPrefix } from "@/components/story/use-scene-timeline";
 
 // Magnetic scrolling for the product story, applied when scrolling stops:
 // - inside a pinned scene, the page carries on in the same direction to the
-//   end of the scene (or back to its start), so its animation always finishes;
+//   end of the pin (or back to its start);
 // - when the boundary between two story sections is on screen, the page
 //   moves on to the next section's top (or back to the previous section's
 //   bottom when scrolling up), so no two sections rest half on screen;
