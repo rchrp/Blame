@@ -16,14 +16,26 @@ export type ScrollHold = {
   end: () => number;
 };
 
-// How much faster a scene plays while the visitor keeps scrolling down.
+// How much faster a scene plays while the visitor keeps scrolling down:
+// 2.5 times for an ordinary scroll, then more the harder they scroll, up to
+// the point where a visitor racing for the bottom of the page sees a scene in
+// half a second. The push is the scroll they asked for recently, fading out
+// over `pushFade` seconds (a steady scroll of about 15 wheel notches a second
+// holds it near `sprintPush`); past that, every `pushPerStep` pixels add one
+// to the pace.
 const hurryScale = 2.5;
+const maxHurryScale = 10;
+const pushFade = 0.35;
+const sprintPush = 550;
+const pushPerStep = 110;
 
 const holds = new Set<ScrollHold>();
 let lenis: Lenis | null = null;
 let lastScroll = 0;
 let current: ScrollHold | null = null;
 let relax: gsap.core.Tween | null = null;
+let push = 0;
+let lastPushTime = 0;
 // Where the finger is, and the highest it went in this gesture.
 let touchY = 0;
 let touchTopY = 0;
@@ -107,10 +119,18 @@ function setPace(timeline: gsap.core.Timeline, scale: number, duration: number) 
   });
 }
 
-function hurry() {
+// `amount` is the scroll asked for, in pixels.
+function hurry(amount: number) {
   if (!current) return;
+  const now = performance.now();
+  push = push * Math.exp(-(now - lastPushTime) / 1000 / pushFade) + amount;
+  lastPushTime = now;
+  const scale = Math.min(
+    maxHurryScale,
+    hurryScale + Math.max(0, push - sprintPush) / pushPerStep,
+  );
   const { timeline } = current;
-  setPace(timeline, hurryScale, 0.3);
+  setPace(timeline, scale, 0.25);
   relax?.kill();
   relax = gsap.delayedCall(0.35, () => setPace(timeline, 1, 0.6));
 }
@@ -119,8 +139,16 @@ function hurry() {
 // time for Lenis to scroll it up.
 function onWheel(event: WheelEvent) {
   if (!current || event.ctrlKey) return;
-  if (event.deltaY > 0) hurry();
+  if (event.deltaY > 0) hurry(wheelPixels(event));
   else if (event.deltaY < -2) releaseScroll();
+}
+
+function wheelPixels(event: WheelEvent) {
+  if (event.deltaMode === WheelEvent.DOM_DELTA_LINE) return event.deltaY * 16;
+  if (event.deltaMode === WheelEvent.DOM_DELTA_PAGE) {
+    return event.deltaY * window.innerHeight;
+  }
+  return event.deltaY;
 }
 
 function onTouchStart(event: TouchEvent) {
@@ -130,13 +158,13 @@ function onTouchStart(event: TouchEvent) {
 function onTouchMove(event: TouchEvent) {
   if (event.touches.length > 1) return;
   const y = event.touches[0]?.clientY ?? touchY;
-  const forward = y < touchY;
+  const moved = touchY - y;
   touchY = y;
   touchTopY = Math.min(touchTopY, y);
   if (!current) return;
   // Pulling the page down is going back up.
   if (y - touchTopY > 24) releaseScroll();
-  else if (forward) hurry();
+  else if (moved > 0) hurry(moved);
 }
 
 const forwardKeys = new Set(["ArrowDown", "PageDown", "End", " "]);
@@ -147,7 +175,7 @@ function onKeyDown(event: KeyboardEvent) {
   if (backKeys.has(event.key) || (event.key === " " && event.shiftKey)) {
     releaseScroll();
   } else if (forwardKeys.has(event.key)) {
-    hurry();
+    hurry(event.key === "ArrowDown" ? 100 : window.innerHeight * 0.8);
   }
 }
 
