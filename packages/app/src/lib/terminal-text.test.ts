@@ -11,3 +11,12 @@ test("terminal text drops escape sequences and overwritten text", () => {
     "Build ok\n100%\ndone"
   )
 })
+
+test("a move back to the first column overwrites the line", () => {
+  assert.equal(
+    terminalText(
+      "\u28d9\u001b[1G\u001b[0K\u28b9\u001b[1G\u001b[0Kadded 12 packages\n"
+    ),
+    "added 12 packages\n"
+  )
+})

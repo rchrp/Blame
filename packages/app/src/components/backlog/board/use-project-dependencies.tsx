@@ -44,6 +44,9 @@ type Offer = {
   toastId: string
   // Configurations to start again once it worked.
   waiting: Set<string>
+  // Those Blame stopped for an earlier step (the install before an
+  // approval): started again whatever their status.
+  stopped: Set<string>
 }
 
 const toastOptions = {
@@ -85,7 +88,8 @@ export function useProjectDependencies(input: {
     (
       dependencies: ProjectDependencies,
       waiting: Iterable<string>,
-      reason: Reason
+      reason: Reason,
+      stopped: Iterable<string> = []
     ) => {
       const key = `${projectPath}:${dependencies.root}`
       const current = offers.current.get(key)
@@ -108,6 +112,7 @@ export function useProjectDependencies(input: {
         running: false,
         toastId,
         waiting: new Set([...(current?.waiting ?? []), ...waiting]),
+        stopped: new Set([...(current?.stopped ?? []), ...stopped]),
       }
       offers.current.set(key, offer)
       const later = () => {
@@ -169,10 +174,11 @@ export function useProjectDependencies(input: {
     // The apps waiting on it go first: pnpm 11 may be installing for them.
     const restarting = configurations.filter(
       (configuration) =>
-        offer.waiting.has(configuration.id) &&
-        ["running", "starting", "error"].includes(
-          runner.sessionFor(configuration.id)?.status ?? ""
-        )
+        offer.stopped.has(configuration.id) ||
+        (offer.waiting.has(configuration.id) &&
+          ["running", "starting", "error"].includes(
+            runner.sessionFor(configuration.id)?.status ?? ""
+          ))
     )
     await Promise.all(restarting.map((item) => runner.stop(item.id)))
     const taskId = `dependencies:${root || "."}`
@@ -196,10 +202,12 @@ export function useProjectDependencies(input: {
     if (blocked.length && !builds.length) {
       // Installed, but pnpm 11 waits on build scripts before any start.
       declined.current.delete(`${key}:builds`)
-      return present(offer.dependencies, offer.waiting, {
-        kind: "builds",
-        packages: blocked,
-      })
+      return present(
+        offer.dependencies,
+        offer.waiting,
+        { kind: "builds", packages: blocked },
+        restarting.map((item) => item.id)
+      )
     }
     if (!succeeded) {
       toast.error(

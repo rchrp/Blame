@@ -92,22 +92,25 @@ export async function projectDependencies(
     lockManager ??
     commandManager(input.command) ??
     "npm"
+  // node_modules alone proves nothing (Vite keeps its cache there): one of
+  // the package's own dependencies must be in it, where the manager links
+  // it (the package's folder for pnpm, the root when hoisted).
+  const ownPackages = declaredPackages(packageManifest)
+  const probes = (
+    ownPackages.length ? ownPackages : declaredPackages(rootManifest)
+  ).slice(0, 3)
   const installed =
-    (await files.exists(join(root, "node_modules"))) ||
     (await files.exists(join(root, ".pnp.cjs"))) ||
-    (await files.exists(join(root, ".pnp.js")))
-  // pnpm links a workspace package's own dependencies in its folder.
-  const packageMissing =
-    manager === "pnpm" &&
-    packageDir !== root &&
-    declaredPackages(packageManifest).length > 0 &&
-    !(await files.exists(join(packageDir, "node_modules")))
+    (await files.exists(join(root, ".pnp.js"))) ||
+    (probes.length
+      ? await anyInstalled(files, [packageDir, root], probes)
+      : await files.exists(join(root, "node_modules")))
   return {
     manager,
     root,
     packageDir,
     declared,
-    missing: !installed || packageMissing,
+    missing: !installed,
   }
 }
 
@@ -206,7 +209,8 @@ export function packageName(specifier: string) {
 export function dependencyInstallProgress(output: string) {
   const lines = terminalText(output.slice(-8_000))
     .split("\n")
-    .map((line) => line.trim())
+    // npm and others draw a spinner before what they are doing.
+    .map((line) => line.replace(/^[\u2800-\u28ff]+/, "").trim())
     .filter(Boolean)
   const detail = lines.at(-1)?.slice(0, 120)
   const total = lastNumber(lines, /^Packages: \+(\d+)/)
@@ -238,6 +242,17 @@ function lastNumber(lines: string[], pattern: RegExp) {
     if (match) return Number(match[1])
   }
   return undefined
+}
+
+async function anyInstalled(
+  files: DependencyFiles,
+  folders: string[],
+  names: string[]
+) {
+  for (const folder of new Set(folders))
+    for (const name of names)
+      if (await files.exists(join(folder, `node_modules/${name}`))) return true
+  return false
 }
 
 async function readManifest(files: DependencyFiles, folder: string) {

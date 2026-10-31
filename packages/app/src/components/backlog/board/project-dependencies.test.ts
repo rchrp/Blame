@@ -106,6 +106,17 @@ test("the manager comes from the manifest, then the lockfile, then the command",
   assert.equal(fallback?.manager, "npm")
 })
 
+test("a node_modules holding only Vite's cache is not an install", async () => {
+  const result = await projectDependencies(
+    files({
+      "package.json": app,
+      "node_modules/.vite/deps/_metadata.json": "{}",
+    }),
+    { cwd: ".", command: "npm run dev" }
+  )
+  assert.equal(result?.missing, true)
+})
+
 test("Yarn Plug'n'Play installs have no node_modules", async () => {
   const result = await projectDependencies(
     files({ "package.json": app, "yarn.lock": "", ".pnp.cjs": "" }),
@@ -231,9 +242,15 @@ test("follows pnpm's install progress", () => {
     ].join("\n")
   )
   assert.equal(adding.percent, 75)
-  const npm = dependencyInstallProgress("⠙ idealTree: timing arborist\r⠹ reify")
+  const npm = dependencyInstallProgress(
+    "npm warn deprecated glob@7\r\n⠙\u001b[1G\u001b[0K⠹\u001b[1G\u001b[0K"
+  )
   assert.equal(npm.percent, undefined)
-  assert.equal(npm.detail, "⠹ reify")
+  assert.equal(npm.detail, "npm warn deprecated glob@7")
+  assert.equal(
+    dependencyInstallProgress("⠙ idealTree: timing arborist\r⠹ reify").detail,
+    "reify"
+  )
 })
 
 test("a failed install tells its error line", () => {
