@@ -247,7 +247,7 @@ function createTerrainMaterial(
 }
 
 // How strongly the stone grain shades the surface.
-const TERRAIN_BUMP_SCALE = 0.12
+const TERRAIN_BUMP_SCALE = 0.06
 // The reflective stone's own colour: a grey slate, so its blue comes from the
 // sky that lights it.
 const TERRAIN_STONE_COLOR = 0x5a6680
@@ -340,7 +340,7 @@ export function sampleTerrainHeight(
   const crestNoise = fbm2(x * 0.17 + 7.3, z * 0.17 - 3.1, 3)
   const crest = Math.max(0, 1 - Math.abs(crestNoise * 2 - 1) * 2.2) ** 2
   const gully = fbm2(x * 0.34 - 4.4, z * 0.34 + 9.8, 2) - 0.5
-  const detail = crest * 0.42 + gully * 0.5
+  const detail = crest * 0.26 + gully * 0.18
 
   return (
     (horizonRise * 0.8 +
