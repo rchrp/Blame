@@ -65,9 +65,18 @@
   display: inline-block;
 }
 
+/* The clip reaches 48px past the word, so the line's soft shadow (34px blur)
+   is never cut into a box round each word. While the word types, its right
+   edge stays on the last typed letter; once typed (--q at 1), it opens too. */
 .typedText {
+  --shadow-room: 48px;
+  --typed: clamp(0, calc((var(--q) - 0.999) * 1000), 1);
   display: inline-block;
-  clip-path: inset(-25% calc((1 - var(--q)) * 104% - 4%) -25% -4%);
+  clip-path: inset(
+    calc(-1 * var(--shadow-room))
+      calc((1 - var(--q)) * 100% - var(--typed) * var(--shadow-room))
+      calc(-1 * var(--shadow-room)) calc(-1 * var(--shadow-room))
+  );
   /* nothing at all, not even a sliver of shadow, before the first letter */
   opacity: min(1, calc(var(--q) * 1000));
 }
