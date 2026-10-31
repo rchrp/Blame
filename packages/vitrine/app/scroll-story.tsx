@@ -112,7 +112,7 @@ function HeroCopy({
 
 function HeroActions() {
   return (
-    <div className={endCard.actions}>
+    <div className={`${endCard.actions} ${endCard.heroActions}`}>
       <a href="/download" className={endCard.button}>
         <span className={endCard.buttonLabel}>
           Download Blame
@@ -130,7 +130,7 @@ function HeroActions() {
           </svg>
         </span>
       </a>
-      <a href={githubRepositoryUrl} className={endCard.button}>
+      <a href={githubRepositoryUrl} className={`${endCard.button} ${endCard.buttonSecondary}`}>
         <span className={endCard.buttonLabel}>
           <GitHubMark className={endCard.arrow} />
           Star on GitHub
