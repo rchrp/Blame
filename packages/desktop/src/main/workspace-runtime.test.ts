@@ -538,6 +538,7 @@ test("ensureRuntimeGitUserIdentity: reads host identity and configures global co
       }
       return { stdout: "", stderr: "" };
     },
+    platform: "darwin" as const,
     run: async (cmd: string, args: string[]) => {
       runCalls.push([cmd, args]);
       return { stdout: "", stderr: "" };
@@ -576,6 +577,7 @@ test("ensureRuntimeGitUserIdentity: falls back to defaults if host reads fail", 
       execFileAsync: async () => {
         throw new Error("config not found");
       },
+      platform: "win32" as const,
       run: async (cmd: string, args: string[]) => {
         runCalls.push([cmd, args]);
         return { stdout: "", stderr: "" };
@@ -592,6 +594,24 @@ test("ensureRuntimeGitUserIdentity: falls back to defaults if host reads fail", 
     process.env.USER = originalUser;
     process.env.USERNAME = originalUsername;
   }
+});
+
+test("ensureRuntimeGitUserIdentity: leaves the user's Git config alone on Linux", async () => {
+  resetRuntimeGitIdentityConfiguredForTesting();
+  const calls: string[][] = [];
+  const record = async (cmd: string, args: string[]) => {
+    calls.push([cmd, ...args]);
+    return { stdout: "", stderr: "" };
+  };
+
+  // Git runs natively on Linux, so a global write would land in ~/.gitconfig.
+  await ensureRuntimeGitUserIdentity({
+    execFileAsync: record,
+    platform: "linux",
+    run: record,
+  });
+
+  assert.deepEqual(calls, []);
 });
 
 test("resolves Windows worktrees in the selected development distribution", () => {

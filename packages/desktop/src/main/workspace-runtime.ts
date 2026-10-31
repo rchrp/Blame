@@ -664,13 +664,21 @@ async function hostGitExecFile(command: string, args: string[]) {
   return execFileAsync(command === "git" ? hostGitCommand() : command, args);
 }
 
+type RuntimeGitIdentityDeps = {
+  execFileAsync: typeof hostGitExecFile;
+  platform?: NodeJS.Platform;
+  run: typeof run;
+};
+
+// Only macOS and Windows run Git inside the runtime VM. Elsewhere the same
+// command would write to the user's own ~/.gitconfig, so leave it alone: the
+// Git identity dialog asks for a missing name or email instead.
 export async function ensureRuntimeGitUserIdentity(
-  fns = {
-    execFileAsync: hostGitExecFile,
-    run,
-  },
+  fns: RuntimeGitIdentityDeps = { execFileAsync: hostGitExecFile, run },
 ) {
   if (runtimeGitIdentityConfigured) return;
+  const platform = fns.platform ?? process.platform;
+  if (platform !== "darwin" && platform !== "win32") return;
   try {
     let name = "";
     let email = "";
