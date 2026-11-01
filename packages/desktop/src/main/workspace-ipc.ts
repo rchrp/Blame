@@ -225,6 +225,7 @@ import {
   type GitPathInput,
   type GitResolveConflictFileInput,
 } from "./workspaces/workspace-git-service";
+import { resolveStoryBranch } from "./workspaces/story-branch-identity.ts";
 
 const previewRequestTimeoutMs = 5_000;
 const repositoryLanguageCohorts = new Set([
@@ -282,6 +283,8 @@ type ExecutionContextInput = {
 };
 
 type CreateWorktreeInput = ExecutionContextInput & {
+  // The branch the story recorded on an earlier run, if any.
+  branch?: string | null;
   // Run in the project folder instead of a new worktree.
   direct?: boolean;
   repositoryRoot: string;
@@ -776,7 +779,7 @@ async function createWorktree(input: CreateWorktreeInput) {
 
 async function createWorktreeOperation(input: CreateWorktreeInput) {
   if (input.direct) return directWorkspace(input);
-  const context = worktreeCreationContext(input);
+  const context = await worktreeCreationContext(input);
   if (removingWorktrees.has(context.worktree))
     throw new Error("The workspace is still being removed.");
   if (worktreeActivity.isClosed(context.worktree))
@@ -791,17 +794,24 @@ async function createWorktreeOperation(input: CreateWorktreeInput) {
   });
 }
 
-function worktreeCreationContext(
+async function worktreeCreationContext(
   input: CreateWorktreeInput,
-): WorktreeCreationContext {
+): Promise<WorktreeCreationContext> {
   const mode = workspaceMode(input.runtimeProfile);
+  const repositoryRoot = resolveRuntimePath(input.repositoryRoot);
+  const { branch, suffix } = await resolveStoryBranch({
+    base: storyBranch(input.storyReference, input.title),
+    exists: (name) => branchExists(repositoryRoot, name, mode),
+    recordedBranch: input.branch,
+    storyId: input.storyId,
+  });
   return {
-    branch: storyBranch(input.storyReference, input.title),
+    branch,
     mode,
-    repositoryRoot: resolveRuntimePath(input.repositoryRoot),
+    repositoryRoot,
     startedAt: Date.now(),
     timings: [],
-    worktree: createWorktreePath(input),
+    worktree: `${createWorktreePath(input)}${suffix}`,
   };
 }
 

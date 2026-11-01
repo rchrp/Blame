@@ -856,6 +856,7 @@ export type WorkspaceClient = {
     path: string
   }>
   createWorktree(input: {
+    branch?: string | null // recorded by the story on an earlier run
     // Run in the project folder instead of a new worktree.
     direct?: boolean
     executionId: string

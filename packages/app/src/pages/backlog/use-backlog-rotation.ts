@@ -302,6 +302,7 @@ export function useBacklogRotation(
       selection.currentModel.provider.id
     )
     const worktree = await workspace.createWorktree({
+      branch: detailedStory.branch,
       // Direct runs in the project folder: no new worktree or branch.
       direct,
       executionId,

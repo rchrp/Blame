@@ -460,6 +460,8 @@ export type BlameDesktopApi = {
       path: string;
     }>;
     createWorktree(input: {
+      // The branch the story recorded on an earlier run, if any.
+      branch?: string | null;
       // Run in the project folder instead of a new worktree.
       direct?: boolean;
       executionId: string;
