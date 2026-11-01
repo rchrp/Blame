@@ -26,6 +26,7 @@ import type { LiveSyncState, LiveSyncStatus } from "@blame/preview-runtime";
 import { currentWorkspaceSnapshotPolicy } from "@blame/preview-runtime/workspace-ignore";
 import { applyWorkspaceDelta } from "./workspace-delta.ts";
 import { assertWorkspaceFitsTransfer } from "./workspace-transfer-limit.ts";
+import { syncProjectCloudIgnore } from "./project-cloud-ignore-sync.ts";
 import { WorkspaceSyncConflict } from "./workspace-sync-conflict.ts";
 import { workspaceSourceMode } from "./baseline-transfer.ts";
 import {
@@ -93,6 +94,7 @@ export class WorkspaceSyncService {
 
   async prepareInitial(localPath: string) {
     const root = await realpath(localPath);
+    await syncProjectCloudIgnore(root);
     const prepared = await measureWorkspacePhase("workspace.capture", () =>
       prepareWorkspaceSource(root),
     );
@@ -112,6 +114,7 @@ export class WorkspaceSyncService {
     beforeTransfer?: (root: string) => void | Promise<void>,
   ) {
     const root = await realpath(localPath);
+    await syncProjectCloudIgnore(root);
     await beforeTransfer?.(root);
     const prepared =
       this.preparedSources.get(root) ??
