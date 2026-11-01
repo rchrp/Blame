@@ -1,4 +1,3 @@
-import { LandingRevealStyles } from '@/components/landing-reveal-styles'
 import { SceneWarmup } from '@/components/scene-warmup'
 import { SiteHeader } from '@/components/site-header'
 import { HeroScene } from '@/app/scene/hero-scene'
@@ -118,7 +117,6 @@ export default async function DownloadPage() {
           </div>
         </div>
 
-        <LandingRevealStyles />
       </section>
     </main>
   )

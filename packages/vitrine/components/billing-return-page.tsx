@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { ArrowRight, ExternalLink } from "lucide-react";
 
-import { LandingRevealStyles } from "@/components/landing-reveal-styles";
 import { SceneWarmup } from "@/components/scene-warmup";
 import { SiteHeader } from "@/components/site-header";
 import { buttonVariants } from "@/components/ui/button";
@@ -102,7 +101,6 @@ export function BillingReturnPage({
           </div>
         </div>
 
-        <LandingRevealStyles />
         {variant === "success" ? (
           <style>{`
             .billing-success-title {

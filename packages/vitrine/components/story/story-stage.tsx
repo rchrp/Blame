@@ -19,7 +19,7 @@ import { SceneWarmup } from "@/components/scene-warmup";
 //   section.
 // - A finished section fades out as it leaves the screen, so two sections are
 //   rarely seen at once: it sets --leave on the section (styles in
-//   landing-reveal-styles).
+//   globals.css).
 const leaveFrom = 0.9;
 const leaveOver = 0.5;
 const lookUp = 7;

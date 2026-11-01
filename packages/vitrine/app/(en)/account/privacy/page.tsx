@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, Download, Mail, ShieldCheck } from "lucide-react";
 
-import { LandingRevealStyles } from "@/components/landing-reveal-styles";
 import { SiteHeader } from "@/components/site-header";
 import { buttonVariants } from "@/components/ui/button";
 
@@ -21,7 +20,6 @@ export default function AccountPrivacyPage() {
         <div className="pointer-events-none absolute inset-0 -z-20 bg-[radial-gradient(circle_at_48%_12%,rgba(179,172,243,0.14),transparent_34%),linear-gradient(180deg,#070a17_0%,#050712_72%)]" />
         <AccountPrivacyCard />
       </section>
-      <LandingRevealStyles />
     </main>
   );
 }

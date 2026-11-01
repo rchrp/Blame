@@ -2,7 +2,6 @@ import type { ReactNode } from "react";
 import { LoaderCircle } from "lucide-react";
 
 import { HeroScene } from "@/app/scene/hero-scene";
-import { LandingRevealStyles } from "@/components/landing-reveal-styles";
 import { SceneWarmup } from "@/components/scene-warmup";
 import { SiteHeader } from "@/components/site-header";
 
@@ -36,7 +35,6 @@ export function AuthPageShell({
         <div className="relative z-10 mx-auto flex min-h-[calc(100vh-6rem)] w-full max-w-5xl items-center justify-center py-12 text-center">
           {children}
         </div>
-        <LandingRevealStyles />
       </section>
     </main>
   );

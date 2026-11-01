@@ -1,4 +1,3 @@
-import { LandingRevealStyles } from "@/components/landing-reveal-styles";
 import { PricingCard } from "@/components/pricing-card";
 import { SceneWarmup } from "@/components/scene-warmup";
 import { SiteHeader } from "@/components/site-header";
@@ -49,7 +48,6 @@ export default function PricingPage() {
           <PricingCard />
         </div>
 
-        <LandingRevealStyles />
       </section>
     </main>
   );

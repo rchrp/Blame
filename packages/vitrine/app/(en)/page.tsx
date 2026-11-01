@@ -1,4 +1,3 @@
-import { LandingRevealStyles } from '@/components/landing-reveal-styles'
 import { JsonLd } from '@/components/json-ld'
 import { SiteHeader } from '@/components/site-header'
 import { ProductStory } from '@/app/product-story'
@@ -26,7 +25,6 @@ export default function Home() {
         <LandingHero />
         <ProductStory />
         <StoryScroll />
-        <LandingRevealStyles />
       </main>
     </>
   )

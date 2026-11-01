@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, CheckCircle2, Download, ShieldCheck } from "lucide-react";
 
-import { LandingRevealStyles } from "@/components/landing-reveal-styles";
 import { LanguageSelector } from "@/components/language-selector";
 import { SiteHeader } from "@/components/site-header";
 
@@ -236,7 +235,6 @@ function ContractActionLayout({
           <Assistance copy={copy} />
         </div>
       </section>
-      <LandingRevealStyles />
     </main>
   );
 }

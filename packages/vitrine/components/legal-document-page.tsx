@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
-import { LandingRevealStyles } from "@/components/landing-reveal-styles";
 import { LanguageSelector } from "@/components/language-selector";
 import { SiteHeader } from "@/components/site-header";
 import { buttonVariants } from "@/components/ui/button";
@@ -54,7 +53,6 @@ export function LegalDocumentPage(props: LegalDocumentPageProps) {
         language={props.language ?? "en"}
         sections={props.sections}
       />
-      <LandingRevealStyles />
     </main>
   );
 }

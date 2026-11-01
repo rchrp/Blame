@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { ArrowLeft, FileText } from "lucide-react";
 
-import { LandingRevealStyles } from "@/components/landing-reveal-styles";
 import { SiteHeader } from "@/components/site-header";
 import { buttonVariants } from "@/components/ui/button";
 
@@ -51,7 +50,6 @@ export function LegalPlaceholderPage({
           </div>
         </article>
       </section>
-      <LandingRevealStyles />
     </main>
   );
 }
