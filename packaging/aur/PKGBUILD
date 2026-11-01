@@ -1,0 +1,29 @@
+# Maintainer: Raphael Charpentier <raph.chrp@gmail.com>
+
+pkgname=blame-bin
+_pkgname=blame
+pkgver={{VERSION}}
+pkgrel=1
+pkgdesc="The open-source ADE for AI coding agents"
+arch=('x86_64')
+url="https://blame.so"
+license=('AGPL-3.0-only')
+depends=('alsa-lib' 'at-spi2-core' 'docker' 'docker-compose' 'git' 'gtk3' 'libnotify'
+         'libsecret' 'libxss' 'libxtst' 'nss' 'util-linux-libs' 'xdg-utils')
+provides=("$_pkgname")
+conflicts=("$_pkgname")
+options=('!strip' '!debug')
+source=("$_pkgname-$pkgver.deb::https://github.com/rchrp/Blame/releases/download/v$pkgver/blame-linux-amd64.deb")
+sha256sums=('{{SHA256_LINUX_DEB}}')
+
+package() {
+  bsdtar -xf data.tar.xz -C "$pkgdir"
+
+  # pacman updates the app: without this marker, the in-app updater stays off
+  # instead of trying to install a .deb with dpkg.
+  rm -f "$pkgdir/opt/Blame/resources/package-type"
+  rm -rf "$pkgdir/usr/share/doc"
+
+  install -d "$pkgdir/usr/bin"
+  ln -s /opt/Blame/blame "$pkgdir/usr/bin/$_pkgname"
+}

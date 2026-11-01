@@ -1,0 +1,28 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.12.0.schema.json
+
+PackageIdentifier: Blame.Blame
+PackageVersion: {{VERSION}}
+InstallerType: nullsoft
+InstallerSwitches:
+  Upgrade: --updated
+UpgradeBehavior: install
+Protocols:
+- blame
+# electron-builder's NSIS uninstall key: UUID v5 of the appId dev.blame.desktop.
+ProductCode: 073ed748-ed4d-5201-9f01-b11846990cf5
+Installers:
+- Architecture: x64
+  Scope: user
+  InstallerUrl: https://github.com/rchrp/Blame/releases/download/v{{VERSION}}/blame-win-x64.exe
+  InstallerSha256: {{SHA256_WIN_X64}}
+  InstallerSwitches:
+    Custom: /currentuser
+- Architecture: x64
+  Scope: machine
+  InstallerUrl: https://github.com/rchrp/Blame/releases/download/v{{VERSION}}/blame-win-x64.exe
+  InstallerSha256: {{SHA256_WIN_X64}}
+  InstallerSwitches:
+    Custom: /allusers
+  ElevationRequirement: elevatesSelf
+ManifestType: installer
+ManifestVersion: 1.12.0
