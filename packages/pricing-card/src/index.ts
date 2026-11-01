@@ -1,8 +1,11 @@
 export {
   PricingCard,
-  pricingBillingOptions,
   pricingCardActionClassName,
   pricingLegalLinkClassName,
-  type PricingBillingCycle,
   type PricingCardProps,
 } from './pricing-card'
+export {
+  premiumBenefits,
+  pricingBillingOptions,
+  type PricingBillingCycle,
+} from './offer'

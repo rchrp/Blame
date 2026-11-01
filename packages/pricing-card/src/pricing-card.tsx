@@ -1,23 +1,13 @@
 import { useState, type ReactNode } from 'react'
+import {
+  premiumBenefits,
+  pricingBillingOptions,
+  type PricingBillingCycle,
+} from './offer'
 
 // The Blame Premium pricing card, shared by the website and the desktop app so
 // both show exactly the same offer. Styles are Tailwind classes: each host
 // lists this package as a Tailwind source.
-
-export const pricingBillingOptions = {
-  monthly: { label: 'Monthly', price: '20', suffix: 'USD /month' },
-  yearly: { label: 'Yearly', price: '200', suffix: 'USD /year' },
-} as const
-
-export type PricingBillingCycle = keyof typeof pricingBillingOptions
-
-const premiumBenefits = [
-  'Managed cloud previews',
-  'Cloud voice transcription',
-  'Hosted file uploads',
-  'Existing usage limits apply',
-  'Cancel anytime',
-] as const
 
 // Matches the website's dark button, so hosts can style their own call to
 // action (a link on the website, a checkout button in the app) identically.
