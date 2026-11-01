@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import Script from "next/script";
 import { GitHubStarsProvider } from "@/components/github-stars";
 import { SiteFooter } from "@/components/site-footer";
 import { loadGitHubStars } from "@/lib/github-stars";
@@ -15,6 +16,9 @@ const displayFont = localFont({
 });
 
 const googleTagManagerId = "GTM-P4TLSMCV";
+// Google's snippet, run once the page is interactive (next/script's
+// afterInteractive) rather than from the <head>, so the tag manager's
+// scripts never compete with the page's own while it loads.
 const googleTagManagerScript = `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
 j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
@@ -49,16 +53,12 @@ export async function RootDocument({ children, language }: RootDocumentProps) {
 
   return (
     <html lang={language}>
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: googleTagManagerScript,
-          }}
-        />
-      </head>
       <body
         className={displayFont.variable}
       >
+        <Script id="google-tag-manager" strategy="afterInteractive">
+          {googleTagManagerScript}
+        </Script>
         <noscript>
           <iframe
             src={`https://www.googletagmanager.com/ns.html?id=${googleTagManagerId}`}
