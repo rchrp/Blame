@@ -32,6 +32,9 @@ export default function PricingPage() {
         <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_center,rgba(2,4,10,0.1)_0%,rgba(2,4,10,0.26)_42%,rgba(2,4,10,0.58)_74%,rgba(2,4,10,0.9)_100%)]" />
         <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-56 bg-gradient-to-b from-[#050712]/64 to-transparent" />
         <div className="pointer-events-none absolute bottom-0 left-1/2 -z-10 h-[32rem] w-[44rem] -translate-x-1/2 rounded-full bg-[#b3acf3]/10 blur-3xl" />
+        {/* The scene fades into the page's ground, so the questions below
+            follow on without an edge. */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-72 bg-gradient-to-t from-[#050712] via-[#050712]/75 to-transparent" />
 
         <SiteHeader />
 
