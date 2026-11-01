@@ -13,7 +13,7 @@ export function PricingFaq({ entries }: { entries: readonly FaqEntry[] }) {
     <section
       id="faq"
       aria-labelledby="faq-title"
-      className="scroll-mt-28 px-5 pb-24 sm:px-8 sm:pb-32 lg:px-10"
+      className="scroll-mt-8 px-5 pb-24 pt-16 sm:px-8 sm:pb-32 sm:pt-28 lg:px-10"
     >
       <div className="mx-auto w-full max-w-3xl">
         <h2
