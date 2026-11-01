@@ -33,7 +33,27 @@ Blame is an Agentic Development Environment (ADE): one desktop app where each ta
 
 ## Install
 
-Download the latest release for your platform:
+Install with one command:
+
+**macOS** (Homebrew)
+
+```bash
+brew install --cask rchrp/tap/blame
+```
+
+**Windows** (winget)
+
+```powershell
+winget install Blame.Blame
+```
+
+**Arch Linux** (AUR, with any AUR helper)
+
+```bash
+yay -S blame-bin
+```
+
+Or download the latest release for your platform:
 
 | Platform                  | Download                                                                                                                                                                                                                                   | Requirements                                |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------- |
@@ -51,7 +71,7 @@ You can also pick any version, including betas, from the [releases page](https:/
 
 **Windows.** The installer is not code-signed yet, so SmartScreen may warn you: choose **More info → Run anyway**. Blame runs agents in its own WSL distribution. If WSL is not installed, run `wsl --install` in an administrator terminal and restart first.
 
-**Linux.** Worktrees stay native, and previews and project services run in Docker on your machine.
+**Linux.** Worktrees stay native, and previews and project services run in Docker on your machine. The AUR package installs Docker and Compose; start Docker with `sudo systemctl enable --now docker`, and pacman updates Blame instead of the app.
 
 ```bash
 # AppImage
