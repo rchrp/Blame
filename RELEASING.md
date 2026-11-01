@@ -49,11 +49,11 @@ If a job fails, use **Re-run failed jobs** on the workflow run. To abandon a rel
 
 ### Package managers
 
-| Channel  | Install command                       | Updated by                                                                                                    |
-| -------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| Homebrew | `brew install --cask rchrp/tap/blame` | A commit to `Casks/blame.rb` in [rchrp/homebrew-tap](https://github.com/rchrp/homebrew-tap)                   |
-| winget   | `winget install Blame.Blame`          | A pull request to [microsoft/winget-pkgs](https://github.com/microsoft/winget-pkgs), merged by its moderators |
-| AUR      | `yay -S blame-bin`                    | A push to [blame-bin](https://aur.archlinux.org/packages/blame-bin)                                           |
+| Channel  | Install command                        | Updated by                                                                                                    |
+| -------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Homebrew | `brew install --cask rchrp/tap/blame`  | A commit to `Casks/blame.rb` in [rchrp/homebrew-tap](https://github.com/rchrp/homebrew-tap)                   |
+| winget   | `winget install Blame.Blame`           | A pull request to [microsoft/winget-pkgs](https://github.com/microsoft/winget-pkgs), merged by its moderators |
+| AUR      | `yay -S blame-bin` (not published yet) | A push to [blame-bin](https://aur.archlinux.org/packages/blame-bin)                                           |
 
 The package sources are templates in [`packaging/`](packaging). [`scripts/packaging.mjs`](scripts/packaging.mjs) fills them with the version and the SHA-256 sums from the release's `SHA256SUMS`, and refuses anything but an `x.y.z` version:
 
@@ -64,6 +64,13 @@ node scripts/packaging.mjs render 1.2.0 SHA256SUMS out
 **Release packages** runs when a release is published as stable (`released`), never for a prerelease, and checks again that the release is neither a draft nor a prerelease. Each channel whose secret is missing is skipped with a notice in the run summary. To retry a channel or backfill a version, run the workflow manually with the tag. A version already in the tap, winget-pkgs or AUR is left alone.
 
 Homebrew and AUR update right away. winget users get the version once the pull request passes validation and is merged, usually within a day. The app updates itself from Homebrew and winget installs; on Arch, pacman updates it, and the AUR package removes the marker that the in-app updater uses on Linux.
+
+**AUR is not published yet**: AUR account registration was closed in November 2026. Until `AUR_SSH_PRIVATE_KEY` exists, the AUR job is skipped and the README lists no AUR command. Once registration reopens:
+
+1. Create the AUR account and add the public half of an AUR-only SSH key (**My Account → SSH Public Key**).
+2. Add the private half as the `AUR_SSH_PRIVATE_KEY` secret.
+3. Run **Release packages** manually with the latest stable tag: pushing to `blame-bin` creates the package.
+4. Add `yay -S blame-bin` to the Install section of the README.
 
 The official `homebrew/cask` repository needs a more notable GitHub repository; until then, the tap is the Homebrew channel.
 
