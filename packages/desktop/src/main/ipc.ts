@@ -58,6 +58,13 @@ export type DesktopIpcOptions = {
   onRuntimeReady(): void;
 };
 
+let previewService: PreviewService | undefined;
+
+/** Suspends the cloud previews this desktop started; used on quit. */
+export function suspendStartedCloudPreviews() {
+  return previewService?.suspendStarted() ?? Promise.resolve();
+}
+
 export function registerDesktopIpcHandlers(options: DesktopIpcOptions) {
   const setProjectMenuReady = installApplicationMenu();
   ipcMain.on("project-menu:ready", (event, ready: unknown) => {
@@ -70,6 +77,7 @@ export function registerDesktopIpcHandlers(options: DesktopIpcOptions) {
     localAgentOwnsWorkspace,
     options.packaged,
   );
+  previewService = previews;
   const deploy = new DeployService(options.packaged);
   registerPreviewDevicesIpc({ isAppWindow: options.isAppWindow });
   registerPreviewSurfacesIpc({ service: previews, isAppWindow: options.isAppWindow });

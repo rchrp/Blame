@@ -45,7 +45,7 @@ import { stopRuntimeInBackground } from "./runtime-manager";
 import { stopAllDevices } from "./preview-devices/device-registry";
 import { runtimeHostPath, runtimeVmInternalPath } from "./workspace-runtime";
 import { registerAppActivityIpc } from "./app-activity-ipc";
-import { registerDesktopIpcHandlers } from "./ipc";
+import { registerDesktopIpcHandlers, suspendStartedCloudPreviews } from "./ipc";
 import { configureHyprlandWindow } from "./hyprland-window";
 import {
   isMainWindowRole,
@@ -680,6 +680,7 @@ function shutdownApplication() {
 async function cleanupApplication() {
   destroyAllPreviewBrowsers();
   const runtimeShutdown = Promise.allSettled([
+    suspendStartedCloudPreviews(),
     shutdownTerminalSessions(),
     shutdownWorkspaceProcesses(),
     shutdownAgentRuntime(),

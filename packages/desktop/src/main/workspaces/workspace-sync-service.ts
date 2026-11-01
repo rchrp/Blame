@@ -25,6 +25,7 @@ import {
 import type { LiveSyncState, LiveSyncStatus } from "@blame/preview-runtime";
 import { currentWorkspaceSnapshotPolicy } from "@blame/preview-runtime/workspace-ignore";
 import { applyWorkspaceDelta } from "./workspace-delta.ts";
+import { assertWorkspaceFitsTransfer } from "./workspace-transfer-limit.ts";
 import { WorkspaceSyncConflict } from "./workspace-sync-conflict.ts";
 import { workspaceSourceMode } from "./baseline-transfer.ts";
 import {
@@ -95,6 +96,8 @@ export class WorkspaceSyncService {
     const prepared = await measureWorkspacePhase("workspace.capture", () =>
       prepareWorkspaceSource(root),
     );
+    // Fail before the API creates a sandbox that could never get the files.
+    assertWorkspaceFitsTransfer(prepared.snapshot.files, maximumArtifactBytes);
     this.preparedSources.set(root, prepared);
     const delta = buildWorkspaceDeltaArtifact(root, prepared);
     this.preparedDeltas.set(root, delta);

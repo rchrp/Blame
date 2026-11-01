@@ -13,9 +13,12 @@ import { app } from "electron";
 import log from "electron-log";
 import { join } from "node:path";
 import { launchExternalPreview } from "./external-preview-launcher";
+import { suspendStartedPreviews } from "./suspend-started-previews";
 
 export class PreviewService {
   private cloud?: CloudPreviewClient;
+  // Cloud sessions this desktop created or started, suspended on quit.
+  private readonly started = new Set<string>();
   private readonly sync = new WorkspaceSyncService(
     join(app.getPath("userData"), "preview-runtime", "workspace-index.json"),
     (error) => log.warn("Cloud preview live sync failed; retrying", error),
@@ -41,7 +44,17 @@ export class PreviewService {
   async create(input: ManagedPreviewCreateInput) {
     const sourceMetadata = await this.sync.prepareInitial(input.localPath);
     const { localPath: _localPath, ...cloudInput } = input;
-    return this.cloudClient().create({ ...cloudInput, sourceMetadata });
+    const session = await this.cloudClient().create({
+      ...cloudInput,
+      sourceMetadata,
+    });
+    this.started.add(session.id);
+    return session;
+  }
+
+  /** Suspends the cloud previews this desktop started; used on quit. */
+  async suspendStarted() {
+    if (this.cloud) await suspendStartedPreviews(this.cloud, this.started);
   }
 
   async command(
@@ -66,6 +79,12 @@ export class PreviewService {
       await this.sync.flushLive(sessionId);
     }
     const session = await client.command(sessionId, command, operationId);
+    if (["suspend-host", "destroy-host"].includes(command.type))
+      this.started.delete(sessionId);
+    else if (
+      ["resume-host", "start-services", "start-agent"].includes(command.type)
+    )
+      this.started.add(sessionId);
     if (command.type === "destroy-host") this.sync.detachLive(sessionId);
     if (command.type === "resume-host" || command.type === "start-services") {
       this.sync.wakeLive(sessionId);

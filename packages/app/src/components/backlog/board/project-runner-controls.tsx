@@ -220,7 +220,9 @@ function RunnerStartButton(props: SelectedRunnerControlsProps) {
 }
 
 function RunnerStopButton(props: SelectedRunnerControlsProps) {
-  const running = props.status === "running"
+  // A preview that is starting or failed still holds its runtime, a cloud
+  // sandbox included: it can be stopped too.
+  const running = props.status !== "stopped"
   const loading = isPendingStop(props.pending, props.selected.id)
   return (
     <RunnerIconTooltip

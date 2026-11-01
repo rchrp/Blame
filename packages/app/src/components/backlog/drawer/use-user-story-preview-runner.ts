@@ -419,8 +419,9 @@ function useCloudPreviewRuntime(input: {
       }
       updatePendingOperation({ action, configurationId })
       setError(undefined)
+      let active = session
+      let servicesRequested = false
       try {
-        let active = session
         let importedCurrentWorkspace = false
         const cancelAutoStartIfRequested = async () => {
           if (
@@ -550,6 +551,7 @@ function useCloudPreviewRuntime(input: {
               })
             ).session
           }
+          servicesRequested = true
           active = await client.command({
             sessionId: active.id,
             command: {
@@ -567,6 +569,24 @@ function useCloudPreviewRuntime(input: {
         active = updateSession(active)
         return managedPreviewRuntimeState(active, input.localRuntime)
       } catch (error) {
+        // A start that fails before its services run leaves nothing worth
+        // keeping in the sandbox: suspend it now instead of after the idle
+        // timeout. A failed setup or app keeps its sandbox for its logs.
+        if (
+          active &&
+          (action === "start" || action === "restart") &&
+          !servicesRequested &&
+          active.desired.services !== "running"
+        ) {
+          void client
+            .command({
+              sessionId: active.id,
+              command: managedPreviewStopCommand("stop"),
+              operationId: crypto.randomUUID(),
+            })
+            .then(updateSession)
+            .catch(() => undefined)
+        }
         const message = readableFailure(errorText(error))
         setError(message)
         toast.error("Unable to control managed preview", {
