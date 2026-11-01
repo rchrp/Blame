@@ -37,6 +37,7 @@ import {
   PreviewRuntimeError,
   compilePreviewManifest,
   previewFailure,
+  previewResourceSize,
   type PreviewRuntimeDriver,
   type PreviewSessionCommand,
   type PreviewSessionRecord,
@@ -180,7 +181,8 @@ export default class PreviewSessionService {
       await this.releaseSuspendedSnapshots(
         Math.max(10, this.config.maxRetainedSuspended + 1)
       ).catch(() => undefined)
-      const requestedVcpus = input.resourceSize?.vcpus ?? 2
+      const resourceSize = input.resourceSize ?? previewResourceSize(plan)
+      const requestedVcpus = resourceSize.vcpus
       await this.quota.assertCanCreate(ownerUserId, requestedVcpus)
       const baseline = input.sourceMetadata
         ? await this.baselines.lookupForProject(story.projectId, planHash, input.sourceMetadata)
@@ -197,7 +199,7 @@ export default class PreviewSessionService {
         provisionSource: baseline?.providerSnapshotId
           ? { type: 'snapshot', snapshotId: baseline.providerSnapshotId }
           : undefined,
-        resourceSize: input.resourceSize,
+        resourceSize,
         cloudUploadConsentAt: consentAt,
       })
       if (baseline?.providerSnapshotId && !session.baselineId) {

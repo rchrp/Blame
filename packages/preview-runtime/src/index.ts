@@ -1,6 +1,7 @@
 export * from "./application/preview-commands.js";
 export * from "./application/preview-orchestrator.js";
 export * from "./application/preview-reconciler.js";
+export * from "./application/preview-resource-size.js";
 export * from "./compilation/capability-resolver.js";
 export * from "./compilation/manifest-compiler.js";
 export * from "./domain/endpoint-map.js";

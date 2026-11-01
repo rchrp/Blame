@@ -15,6 +15,7 @@ import type { PreviewEventSink } from "../ports/preview-event-sink.js";
 import type { SessionRepository } from "../ports/session-repository.js";
 import { applyPreviewCommand } from "./preview-commands.js";
 import { PreviewReconciler } from "./preview-reconciler.js";
+import { previewResourceSize } from "./preview-resource-size.js";
 
 export class PreviewOrchestrator implements PreviewSessionBackend {
   private readonly repository: SessionRepository;
@@ -60,7 +61,7 @@ export class PreviewOrchestrator implements PreviewSessionBackend {
       workspaceHash: input.workspaceHash,
       baselineId: input.baselineId,
       provisionSource: input.provisionSource,
-      resourceSize: input.resourceSize ?? defaultResourceSize(),
+      resourceSize: input.resourceSize ?? previewResourceSize(input.plan),
       lastActivityAt: now,
       stateChangedAt: now,
       createdAt: now,
@@ -164,8 +165,4 @@ export class PreviewOrchestrator implements PreviewSessionBackend {
     }
     return record;
   }
-}
-
-function defaultResourceSize() {
-  return { vcpus: 2, memoryGb: 4 };
 }
