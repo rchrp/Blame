@@ -18,7 +18,6 @@ import {
   readDeviceProfile,
   type SceneQuality,
 } from './scene-quality'
-import { createStoneTextures } from './stone-textures'
 import {
   createTerrain,
   createTerrainLayout,
@@ -174,7 +173,6 @@ export function createHeroScene(
   }
   scene.fog = new THREE.FogExp2(TWILIGHT_FOG_COLOR, lighting.fogDensity)
 
-  const terrainTextures = createStoneTextures(renderer, quality)
   const panRange = Math.max(0, options.panRange ?? 0)
   const initialBounds = container.getBoundingClientRect()
   const terrainLayout = createTerrainLayout(
@@ -183,7 +181,7 @@ export function createHeroScene(
     initialBounds.height,
     panRange,
   )
-  const terrain = createTerrain(terrainTextures, quality, terrainLayout, terrainRelief)
+  const terrain = createTerrain(quality, terrainLayout, terrainRelief)
   scene.add(terrain.group)
 
   let celebrationWaves: THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>[] = []
@@ -502,9 +500,6 @@ export function createHeroScene(
       disposeObject3D(sky)
       disposeObject3D(terrain.group)
       skyEnvironment?.dispose()
-      terrainTextures.color.dispose()
-      terrainTextures.bump?.dispose()
-      terrainTextures.roughness?.dispose()
       renderer.dispose()
       renderer.domElement.remove()
     },

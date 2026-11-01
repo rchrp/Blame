@@ -14,7 +14,7 @@ import {
   TERRAIN_WIDTH_SNAP,
 } from './scene-constants'
 import type { SceneQuality } from './scene-quality'
-import { fbm2, type TerrainTextures } from './stone-textures'
+import { fbm2 } from './noise'
 
 export type TerrainRelief = {
   heightScale: number
@@ -84,14 +84,12 @@ export type ResponsiveTerrain = {
 }
 
 export function createTerrain(
-  textures: TerrainTextures,
   quality: SceneQuality,
   layout: TerrainLayout,
   terrainRelief: TerrainRelief,
 ): ResponsiveTerrain {
   const terrain = new THREE.Group()
   const mesh = createTerrainMesh(
-    textures,
     quality,
     layout,
     PRIMARY_TERRAIN_OFFSET,
@@ -175,7 +173,6 @@ function isSameTerrainLayout(current: TerrainLayout, next: TerrainLayout) {
 }
 
 function createTerrainMesh(
-  textures: TerrainTextures,
   quality: SceneQuality,
   layout: TerrainLayout,
   offset: number,
@@ -185,7 +182,7 @@ function createTerrainMesh(
   terrainRelief: TerrainRelief,
 ) {
   const geometry = createTerrainGeometry(layout, offset, scale, terrainRelief)
-  const material = createTerrainMaterial(textures, quality)
+  const material = createTerrainMaterial(quality)
 
   const mesh = new THREE.Mesh(geometry, material)
   mesh.receiveShadow = true
@@ -207,12 +204,8 @@ function createTerrainGeometry(
     layout.depthSegments,
   )
   geometry.rotateX(-Math.PI / 2)
-
-  // The stone texture keeps the same density however wide the ground is.
-  const uvs = geometry.attributes.uv
-  for (let index = 0; index < uvs.count; index += 1) {
-    uvs.setX(index, (uvs.getX(index) * layout.width) / TERRAIN_REFERENCE_WIDTH)
-  }
+  // The ground has no texture: no material reads its UVs.
+  geometry.deleteAttribute('uv')
 
   const positions = geometry.attributes.position
 
@@ -226,28 +219,18 @@ function createTerrainGeometry(
   return geometry
 }
 
-function createTerrainMaterial(
-  textures: TerrainTextures,
-  quality: SceneQuality,
-) {
+function createTerrainMaterial(quality: SceneQuality) {
   if (!quality.useDetailedTerrainMaterial) {
     return applyTerrainHorizonFade(new THREE.MeshLambertMaterial({
-      color: 0x1d2a42,
-      map: textures.color,
-      bumpMap: textures.bump ?? null,
-      bumpScale: TERRAIN_BUMP_SCALE,
+      color: withStoneAverage(0x1d2a42),
       emissive: 0x071225,
       emissiveIntensity: 0.18,
     }))
   }
 
   return applyTerrainHorizonFade(new THREE.MeshStandardMaterial({
-    color: TERRAIN_STONE_COLOR,
-    map: textures.color,
-    bumpMap: textures.bump,
-    bumpScale: TERRAIN_BUMP_SCALE,
-    roughnessMap: textures.roughness,
-    roughness: 0.85,
+    color: withStoneAverage(TERRAIN_STONE_COLOR),
+    roughness: TERRAIN_STONE_ROUGHNESS,
     metalness: 0,
     // Lit by the sky it reflects (see createSkyEnvironment), not by a glow of
     // its own.
@@ -255,11 +238,26 @@ function createTerrainMaterial(
   }))
 }
 
-// How strongly the stone grain shades the surface.
-const TERRAIN_BUMP_SCALE = 0.06
 // The reflective stone's own colour: a grey slate, so its blue comes from the
 // sky that lights it.
 const TERRAIN_STONE_COLOR = 0x5a6680
+// The ground was tiled with a generated stone texture (colour, bump and
+// roughness maps). Under the fog and the page's blur its grain didn't show,
+// so the ground takes the texture's average instead: the same tone, with no
+// maps to compute at start-up or to sample for every pixel. The colour is the
+// map's mean in linear light, the roughness the roughness map's mean.
+const STONE_AVERAGE = new THREE.Color().setRGB(
+  103 / 255,
+  125 / 255,
+  145 / 255,
+  THREE.SRGBColorSpace,
+)
+const TERRAIN_STONE_ROUGHNESS = 0.85 * (214 / 255)
+
+// The colour as the stone texture used to tint it.
+function withStoneAverage(color: THREE.ColorRepresentation) {
+  return new THREE.Color(color).multiply(STONE_AVERAGE)
+}
 
 // Fades the terrain out towards the horizon, and darkens its steep faces a
 // little, so the slopes read as rock against the gentler ground.

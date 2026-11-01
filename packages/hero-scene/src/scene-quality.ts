@@ -1,14 +1,10 @@
 export type SceneQuality = {
   terrainSegments: number
-  terrainTextureSize: number
   // Spacing of the grid of "+" markers lit around the pointer.
   plusFieldStep: number
   pixelRatioCap: number
-  anisotropyCap: number
   useNativeAntialias: boolean
   useDetailedTerrainMaterial: boolean
-  // Shades the terrain with the stone grain, on the cheaper material too.
-  useTerrainBump: boolean
 }
 
 export type DeviceProfile = {
@@ -53,50 +49,38 @@ export function createSceneQuality(profile: DeviceProfile): SceneQuality {
   if (profile.cores >= 8 && profile.memory >= 8) {
     return {
       terrainSegments: 176,
-      terrainTextureSize: 192,
       plusFieldStep: 1.9,
       pixelRatioCap: profile.cores >= 10 && profile.pixelLoad < 3_200_000 ? 1.35 : 1.1,
-      anisotropyCap: 6,
       useNativeAntialias: true,
       useDetailedTerrainMaterial: true,
-      useTerrainBump: true,
     }
   }
 
   return {
     terrainSegments: 128,
-    terrainTextureSize: 160,
     plusFieldStep: 2.1,
     pixelRatioCap: 1.1,
-    anisotropyCap: 4,
     useNativeAntialias: true,
     useDetailedTerrainMaterial: false,
-    useTerrainBump: true,
   }
 }
 
 export function createLeanSceneQuality(): SceneQuality {
   return {
     terrainSegments: 88,
-    terrainTextureSize: 128,
     plusFieldStep: 2.4,
     pixelRatioCap: 1,
-    anisotropyCap: 2,
     useNativeAntialias: true,
     useDetailedTerrainMaterial: false,
-    useTerrainBump: true,
   }
 }
 
 export function createSoftwareSceneQuality(): SceneQuality {
   return {
     terrainSegments: 48,
-    terrainTextureSize: 96,
     plusFieldStep: 4.4,
     pixelRatioCap: 0.75,
-    anisotropyCap: 1,
     useNativeAntialias: false,
     useDetailedTerrainMaterial: false,
-    useTerrainBump: false,
   }
 }
