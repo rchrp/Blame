@@ -6,7 +6,7 @@ import { test } from '@japa/runner'
 import { createHash } from 'node:crypto'
 
 test.group('project agent memories', (group) => {
-  group.setup(() => testUtils.db().migrate())
+  group.setup(() => testUtils.db().truncate())
   group.each.setup(() => testUtils.db().truncate())
 
   test('stores validated project memory idempotently', async ({ client, assert }) => {

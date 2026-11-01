@@ -11,6 +11,8 @@ export type CloudMcpServer = {
 }
 
 export default class UserMcpConfiguration extends BaseModel {
+  static selfAssignPrimaryKey = true
+
   @column({ isPrimary: true })
   declare userId: string
 

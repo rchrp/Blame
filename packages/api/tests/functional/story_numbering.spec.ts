@@ -109,8 +109,8 @@ test.group('persistent story numbering', (group) => {
     await assert.rejects(() =>
       new UserStoriesService().create(context.user.id, {
         projectId: context.project.id,
-        title: 'x'.repeat(256),
-        summary: 'Too long for the title column',
+        title: null as unknown as string,
+        summary: 'Stories require a title',
       })
     )
     assert.equal((await context.project.refresh()).lastStoryNumber, 0)

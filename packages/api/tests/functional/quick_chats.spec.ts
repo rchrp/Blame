@@ -45,7 +45,7 @@ type QuickChatAgentRunBody = {
 }
 
 test.group('quick chats', (group) => {
-  group.setup(() => testUtils.db().migrate())
+  group.setup(() => testUtils.db().truncate())
   group.each.setup(() => testUtils.db().truncate())
 
   test('lists quick chat summaries without detail payloads', async ({ client, assert }) => {

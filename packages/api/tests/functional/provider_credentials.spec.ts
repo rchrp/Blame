@@ -21,7 +21,7 @@ type CredentialListBody = {
 }
 
 test.group('provider credentials', (group) => {
-  group.setup(() => testUtils.db().migrate())
+  group.setup(() => testUtils.db().truncate())
   group.each.setup(() => testUtils.db().truncate())
 
   test('stores encrypted credentials and hides secrets from list responses', async ({

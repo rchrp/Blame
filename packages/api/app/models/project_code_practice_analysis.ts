@@ -4,6 +4,8 @@ import { DateTime } from 'luxon'
 export type ProjectCodePracticeAnalysisStatus = 'pending' | 'running' | 'done' | 'error'
 
 export default class ProjectCodePracticeAnalysis extends BaseModel {
+  static selfAssignPrimaryKey = true
+
   @column({ isPrimary: true })
   declare projectId: string
 

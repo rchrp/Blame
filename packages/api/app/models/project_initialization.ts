@@ -42,6 +42,8 @@ export function consumePreviewManifest(value: unknown) {
 }
 
 export default class ProjectInitialization extends BaseModel {
+  static selfAssignPrimaryKey = true
+
   @column({ isPrimary: true })
   declare projectId: string
 

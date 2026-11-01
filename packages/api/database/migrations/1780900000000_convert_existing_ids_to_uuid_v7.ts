@@ -1,5 +1,6 @@
 import { uuidV7 } from '#lib/uuid_v7'
 import { BaseSchema } from '@adonisjs/lucid/schema'
+import { isSqlite } from '#database/sql_dialect'
 import type { QueryClientContract } from '@adonisjs/lucid/types/database'
 
 type IndexDefinition = {
@@ -311,6 +312,8 @@ export default class extends BaseSchema {
 
   async up() {
     this.defer(async (db) => {
+      // SQLite databases are created after the switch to UUIDs: nothing to convert.
+      if (isSqlite(db)) return
       await db.rawQuery('SET FOREIGN_KEY_CHECKS=0')
       try {
         await convertIdTargets(db)

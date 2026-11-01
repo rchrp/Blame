@@ -4,6 +4,8 @@ import { DateTime } from 'luxon'
 export type FileAttachmentStatus = 'pending' | 'ready'
 
 export default class FileAttachment extends BaseModel {
+  static selfAssignPrimaryKey = true
+
   @column({ isPrimary: true })
   declare id: string
 

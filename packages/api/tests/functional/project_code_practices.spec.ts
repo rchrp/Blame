@@ -25,7 +25,7 @@ type AnalysisBody = {
 }
 
 test.group('project code practices', (group) => {
-  group.setup(() => testUtils.db().migrate())
+  group.setup(() => testUtils.db().truncate())
   group.each.setup(() => testUtils.db().truncate())
 
   test('lists practices for a project', async ({ client, assert }) => {

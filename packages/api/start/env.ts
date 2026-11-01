@@ -118,11 +118,14 @@ export default await Env.create(new URL('../', import.meta.url), {
   VERCEL_INTEGRATION_REDIRECT_URI: Env.schema.string.optional({ format: 'url', tld: false }),
 
   SEARXNG_URL: Env.schema.string.optional({ format: 'url', tld: false }),
-  DB_HOST: Env.schema.string({ format: 'host' }),
-  DB_PORT: Env.schema.number(),
-  DB_USER: Env.schema.string(),
+  // Database: MySQL for the hosted API, SQLite for the API on the desktop
+  DB_CONNECTION: Env.schema.enum.optional(['mysql', 'sqlite'] as const),
+  DB_HOST: Env.schema.string.optional({ format: 'host' }),
+  DB_PORT: Env.schema.number.optional(),
+  DB_USER: Env.schema.string.optional(),
   DB_PASSWORD: Env.schema.string.optional(),
-  DB_DATABASE: Env.schema.string(),
+  DB_DATABASE: Env.schema.string.optional(),
+  DB_SQLITE_FILE: Env.schema.string.optional(),
 
   // Session
   SESSION_DRIVER: Env.schema.enum(['cookie', 'memory', 'database'] as const),

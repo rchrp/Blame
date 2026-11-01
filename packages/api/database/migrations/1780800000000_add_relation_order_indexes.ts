@@ -1,5 +1,6 @@
 import { BaseSchema } from '@adonisjs/lucid/schema'
 import type { QueryClientContract } from '@adonisjs/lucid/types/database'
+import { isSqlite } from '#database/sql_dialect'
 
 type RelationOrderIndex = {
   columns: string[]
@@ -49,6 +50,15 @@ export default class extends BaseSchema {
 }
 
 async function addIndexIfMissing(db: QueryClientContract, index: RelationOrderIndex) {
+  if (isSqlite(db)) {
+    const columns = columnPlaceholders(index.columns)
+    await db.rawQuery(`CREATE INDEX IF NOT EXISTS ?? ON ?? (${columns})`, [
+      index.name,
+      index.table,
+      ...index.columns,
+    ])
+    return
+  }
   if (await indexExists(db, index.table, index.name)) return
   await db.rawQuery(`ALTER TABLE ?? ADD INDEX ?? (${columnPlaceholders(index.columns)})`, [
     index.table,
@@ -58,6 +68,10 @@ async function addIndexIfMissing(db: QueryClientContract, index: RelationOrderIn
 }
 
 async function dropIndexIfExists(db: QueryClientContract, index: RelationOrderIndex) {
+  if (isSqlite(db)) {
+    await db.rawQuery('DROP INDEX IF EXISTS ??', [index.name])
+    return
+  }
   if (!(await indexExists(db, index.table, index.name))) return
   await db.rawQuery('ALTER TABLE ?? DROP INDEX ??', [index.table, index.name])
 }

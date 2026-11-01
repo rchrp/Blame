@@ -25,7 +25,7 @@ const encryptedApiKey = 'encrypted-api-key-must-not-export'
 const encryptedOauthCredentials = 'encrypted-oauth-must-not-export'
 
 test.group('account privacy', (group) => {
-  group.setup(() => testUtils.db().migrate())
+  group.setup(() => testUtils.db().truncate())
   group.each.setup(() => testUtils.db().truncate())
 
   test('requires the current password for an account export', async ({ client }) => {

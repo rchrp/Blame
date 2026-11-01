@@ -9,7 +9,7 @@ type TelemetrySession = {
 }
 
 test.group('telemetry', (group) => {
-  group.setup(() => testUtils.db().migrate())
+  group.setup(() => testUtils.db().truncate())
   group.each.setup(() => testUtils.db().truncate())
 
   test('requires an authenticated account for telemetry sessions', async ({ client }) => {
