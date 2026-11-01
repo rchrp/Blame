@@ -1,4 +1,4 @@
-import type { DownloadArtifact } from './page'
+import type { DownloadArtifact } from './artifacts'
 
 // download.blame.so/latest redirects to this repository's latest published
 // release, so its tag, sizes and dates describe exactly what users get.

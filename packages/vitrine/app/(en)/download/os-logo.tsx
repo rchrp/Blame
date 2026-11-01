@@ -1,6 +1,6 @@
 import type { SVGProps } from 'react'
 
-import type { DownloadArtifact } from './page'
+import type { DownloadArtifact } from './artifacts'
 
 // Brand marks from Simple Icons (CC0). Windows is drawn from its four panes,
 // which Simple Icons no longer ships.

@@ -1,19 +1,24 @@
+import { pricingBillingOptions } from "@blame/pricing-card/offer";
+import { JsonLd } from "@/components/json-ld";
 import { PricingCard } from "@/components/pricing-card";
 import { SceneWarmup } from "@/components/scene-warmup";
 import { SiteHeader } from "@/components/site-header";
 import { HeroScene } from "@/app/scene/hero-scene";
 import { createIndexablePageMetadata } from "@/lib/seo";
+import { pricingStructuredData } from "@/lib/structured-data";
+
+const { monthly, yearly } = pricingBillingOptions;
 
 export const metadata = createIndexablePageMetadata({
-  title: "Pricing · Blame",
-  description:
-    "Free local development with optional Blame Premium cloud services at 20 USD per month or 200 USD per year.",
+  title: `Blame Pricing — Free and Open Source, Premium $${monthly.price}/month`,
+  description: `Blame is free and open source. Blame Premium adds managed Cloud Previews, cloud voice transcription, and hosted file uploads for $${monthly.price}/month or $${yearly.price}/year.`,
   canonicalPath: "/pricing",
 });
 
 export default function PricingPage() {
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#050712] text-white">
+      <JsonLd id="pricing-structured-data" data={pricingStructuredData} />
       <section
         id="pricing"
         aria-labelledby="pricing-title"

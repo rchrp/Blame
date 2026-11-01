@@ -1,22 +1,36 @@
 import type { MetadataRoute } from "next";
 
+import {
+  isoLegalDate,
+  legalDocumentList,
+} from "@/content/legal-documents";
 import { absoluteSiteUrl } from "@/lib/site";
 
-const indexablePaths = [
-  "/",
-  "/pricing",
-  "/download",
-  "/fr/conditions-generales-de-service",
-  "/legal-notice",
-  "/legal/dpa",
-  "/legal/subprocessors",
-  "/privacy",
-  "/refund-policy",
-  "/terms-of-service",
-] as const;
+// Product pages first, then every legal document with the date it last
+// changed and, for the Terms, its other language.
+const productPaths = ["/", "/pricing", "/download"] as const;
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  return indexablePaths.map((pathname) => ({
+  const products = productPaths.map((pathname) => ({
     url: absoluteSiteUrl(pathname),
+    changeFrequency: "weekly" as const,
+    priority: pathname === "/" ? 1 : 0.8,
   }));
+  const legal = legalDocumentList
+    .filter((document) => document.readyForPublication)
+    .map((document) => ({
+      url: absoluteSiteUrl(document.path),
+      lastModified: isoLegalDate(document.lastUpdated),
+      changeFrequency: "yearly" as const,
+      priority: 0.3,
+      alternates: document.translations
+        ? {
+            languages: {
+              en: absoluteSiteUrl(document.translations.en),
+              fr: absoluteSiteUrl(document.translations.fr),
+            },
+          }
+        : undefined,
+    }));
+  return [...products, ...legal];
 }

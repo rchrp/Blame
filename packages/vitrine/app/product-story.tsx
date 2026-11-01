@@ -336,9 +336,9 @@ function CloudContinuityItem({
   return (
     <li className="border-b border-white/10 p-8 last:border-b-0 sm:border-r sm:p-10 sm:even:border-r-0 sm:[&:nth-last-child(-n+2)]:border-b-0">
       <Icon className="size-6 text-[#9fd7ff]" />
-      <h4 className="mt-6 text-xl font-semibold text-white">
+      <h3 className="mt-6 text-xl font-semibold text-white">
         {item.title}
-      </h4>
+      </h3>
       <p className="mt-3 text-sm leading-6 text-white/48">
         {item.description}
       </p>

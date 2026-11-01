@@ -28,8 +28,10 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 export const rootMetadata: Metadata = {
   metadataBase: siteUrl,
   title: "Blame",
+  applicationName: "Blame",
+  category: "technology",
   description:
-    "Blame is the ADE for verifiable agentic development: Code Practices, isolated smart worktrees, live Cloud Previews, and controlled merges.",
+    "Blame is the open-source ADE for AI coding agents: a verifiable harness, isolated smart worktrees, live Cloud Previews, and controlled merges.",
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },

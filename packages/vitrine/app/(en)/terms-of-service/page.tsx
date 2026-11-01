@@ -1,45 +1,11 @@
-import { notFound } from "next/navigation";
+import { LegalDocumentRoute } from "@/components/legal-document-route";
+import { legalDocuments } from "@/content/legal-documents";
+import { createLegalDocumentMetadata } from "@/lib/seo";
 
-import { LegalDocumentPage } from "@/components/legal-document-page";
-import {
-  termsEffectiveDate,
-  termsIntroduction,
-  termsLastUpdated,
-  termsReadyForPublication,
-  termsSections,
-  termsVersion,
-} from "@/content/terms-of-service";
-import { createIndexablePageMetadata } from "@/lib/seo";
+const legalDocument = legalDocuments.termsOfService;
 
-export const metadata = createIndexablePageMetadata({
-  title: "Terms of Service · Blame",
-  description:
-    "Terms governing access to and use of Blame Desktop and related services.",
-  canonicalPath: "/terms-of-service",
-  languageAlternates: {
-    en: "/terms-of-service",
-    fr: "/fr/conditions-generales-de-service",
-    "x-default": "/terms-of-service",
-  },
-});
+export const metadata = createLegalDocumentMetadata(legalDocument);
 
 export default function TermsOfServicePage() {
-  if (process.env.NODE_ENV === "production" && !termsReadyForPublication) {
-    notFound();
-  }
-
-  return (
-    <LegalDocumentPage
-      languageRoutes={{
-        englishHref: "/terms-of-service",
-        frenchHref: "/fr/conditions-generales-de-service",
-      }}
-      effectiveDate={termsEffectiveDate}
-      introduction={termsIntroduction}
-      lastUpdated={termsLastUpdated}
-      sections={termsSections}
-      title="Terms of Service"
-      version={termsVersion}
-    />
-  );
+  return <LegalDocumentRoute document={legalDocument} />;
 }

@@ -9,9 +9,7 @@ import { AnimatedBorderFrame } from '@/components/animated-border/animated-borde
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { OsLogo } from './os-logo'
-import type { DownloadArtifact } from './page'
-
-const downloadBaseUrl = 'https://download.blame.so/latest'
+import { artifactUrl, type DownloadArtifact } from './artifacts'
 
 type DetectedOs = DownloadArtifact['os']
 
@@ -278,6 +276,3 @@ function artifactArchitectureRank(artifact: DownloadArtifact) {
   return 0
 }
 
-function artifactUrl(fileName: string) {
-  return `${downloadBaseUrl}/${fileName}`
-}

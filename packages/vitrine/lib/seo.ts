@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 
+import type { LegalDocument } from "@/content/legal-documents";
+import { isMarkdownPagePath, markdownUrlPath } from "@/lib/markdown-paths";
 import { absoluteSiteUrl } from "@/lib/site";
 
 const socialImageUrl = absoluteSiteUrl("/social/blame-social-card.jpg");
@@ -36,10 +38,26 @@ export function createIndexablePageMetadata({
     alternates: {
       canonical: canonicalUrl,
       languages: resolveLanguageAlternates(languageAlternates),
+      // The page's Markdown version, for AI agents.
+      types: isMarkdownPagePath(canonicalPath)
+        ? { "text/markdown": absoluteSiteUrl(markdownUrlPath(canonicalPath)) }
+        : undefined,
     },
     openGraph: createOpenGraphMetadata(socialMetadata),
     twitter: createTwitterMetadata(socialMetadata),
   };
+}
+
+export function createLegalDocumentMetadata(document: LegalDocument): Metadata {
+  return createIndexablePageMetadata({
+    title: `${document.title} · Blame`,
+    description: document.description,
+    canonicalPath: document.path,
+    locale: document.language === "fr" ? "fr_FR" : "en_US",
+    languageAlternates: document.translations
+      ? { ...document.translations, "x-default": document.translations.en }
+      : undefined,
+  });
 }
 
 function resolveLanguageAlternates(languageAlternates?: Record<string, string>) {

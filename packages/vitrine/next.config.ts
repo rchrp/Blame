@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  markdownPagePaths,
+  markdownRoutePath,
+  markdownUrlPath,
+} from "./lib/markdown-paths";
 
 const packageRoot = dirname(fileURLToPath(import.meta.url));
 const workspaceRoot = join(packageRoot, "../..");
@@ -23,6 +28,13 @@ const nextConfig: NextConfig = {
   transpilePackages: ["@blame/hero-scene", "@blame/pricing-card"],
   turbopack: {
     root: workspaceRoot,
+  },
+  // Every page's Markdown version for AI agents: /pricing.md, /index.md...
+  async rewrites() {
+    return markdownPagePaths.map((path) => ({
+      source: markdownUrlPath(path),
+      destination: markdownRoutePath(path),
+    }));
   },
   async headers() {
     return [

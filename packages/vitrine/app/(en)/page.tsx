@@ -8,9 +8,9 @@ import { createIndexablePageMetadata } from '@/lib/seo'
 import { homepageStructuredData } from '@/lib/structured-data'
 
 export const metadata = createIndexablePageMetadata({
-  title: 'Blame — The ADE That Sets the Standard',
+  title: 'Blame — The Open Source ADE That Sets the Standard',
   description:
-    'Blame is the ADE for verifiable agentic development: Code Practices, isolated smart worktrees, live Cloud Previews, and controlled merges.',
+    'Blame is the open-source ADE for AI coding agents: a verifiable harness, isolated smart worktrees, live Cloud Previews, and controlled merges.',
   canonicalPath: '/',
 })
 

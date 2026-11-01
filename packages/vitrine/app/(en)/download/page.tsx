@@ -2,72 +2,33 @@ import { SceneWarmup } from '@/components/scene-warmup'
 import { SiteHeader } from '@/components/site-header'
 import { HeroScene } from '@/app/scene/hero-scene'
 import { GitHubMark } from '@/components/github-stars'
+import { JsonLd } from '@/components/json-ld'
 import { githubReleasesUrl, githubRepositoryUrl } from '@/lib/github'
 import { createIndexablePageMetadata } from '@/lib/seo'
+import { downloadStructuredData } from '@/lib/structured-data'
 import { DownloadClientSection } from './download-client-section'
 import { loadLatestRelease } from './latest-release'
+import { artifactUrl, primaryArtifacts } from './artifacts'
 
 export const metadata = createIndexablePageMetadata({
-  title: 'Download · Blame',
+  title: 'Download Blame for macOS, Windows, and Linux',
   description:
-    'Download the latest Blame desktop app for macOS, Windows, and Linux.',
+    'Download the open-source Blame desktop app for macOS (Apple silicon and Intel), Windows x64, and Linux (AppImage, Debian, and RPM packages).',
   canonicalPath: '/download',
 })
-
-type DownloadArtifact = {
-  id: 'macos-arm64' | 'macos-x64' | 'windows-x64' | 'linux-x86_64'
-  os: 'macos' | 'windows' | 'linux'
-  platform: string
-  architecture: string
-  fileName: string
-  size: string
-  updatedAt: string
-}
-
-const primaryArtifacts = [
-  {
-    id: 'macos-arm64',
-    os: 'macos',
-    platform: 'macOS',
-    architecture: 'Apple silicon',
-    fileName: 'blame-mac-arm64.dmg',
-    size: '269M',
-    updatedAt: '16 Jun 2026',
-  },
-  {
-    id: 'macos-x64',
-    os: 'macos',
-    platform: 'macOS',
-    architecture: 'Intel',
-    fileName: 'blame-mac-x64.dmg',
-    size: '277M',
-    updatedAt: '16 Jun 2026',
-  },
-  {
-    id: 'windows-x64',
-    os: 'windows',
-    platform: 'Windows',
-    architecture: 'x64',
-    fileName: 'blame-win-x64.exe',
-    size: '215M',
-    updatedAt: '28 Jun 2026',
-  },
-  {
-    id: 'linux-x86_64',
-    os: 'linux',
-    platform: 'Linux',
-    architecture: 'x86_64',
-    fileName: 'blame-linux-x86_64.AppImage',
-    size: '295M',
-    updatedAt: '28 Jun 2026',
-  },
-] satisfies DownloadArtifact[]
 
 export default async function DownloadPage() {
   const { tag, artifacts } = await loadLatestRelease(primaryArtifacts)
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#050712] text-white">
+      <JsonLd
+        id="download-structured-data"
+        data={downloadStructuredData({
+          tag,
+          downloadUrls: artifacts.map((artifact) => artifactUrl(artifact.fileName)),
+        })}
+      />
       <section
         id="download"
         aria-labelledby="download-title"
@@ -145,4 +106,3 @@ function OpenSourceNotice() {
   )
 }
 
-export type { DownloadArtifact }
