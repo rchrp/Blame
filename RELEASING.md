@@ -7,6 +7,7 @@ Everything is built on GitHub-hosted runners and published as a GitHub Release. 
 | [CI](.github/workflows/ci.yml)                             | Pull requests, pushes to `main` | Line budgets, typecheck, and tests                                       |
 | [Release desktop](.github/workflows/release-desktop.yml)   | Tag `v<semver>`                 | **Draft** release with the installers, update metadata, and `SHA256SUMS` |
 | [Release cache](.github/workflows/release-cache.yml)       | Lockfile changes, twice a week  | pnpm store caches on `main` for the macOS and Windows release runners    |
+| [Release packages](.github/workflows/release-packages.yml) | Stable release published        | Homebrew tap commit, winget-pkgs pull request, and AUR push              |
 | [Release runtime](.github/workflows/release-runtime.yml)   | Tag `runtime-v<version>`        | Published release with the four runtime images and their `manifest.json` |
 | [Update Cline SDK](.github/workflows/cline-sdk-update.yml) | Every Monday, or manually       | Pull request updating every `@cline/*` package and the runtime version   |
 
@@ -31,6 +32,7 @@ Users never download from GitHub URLs directly. [`download.blame.so`](deploy/dow
 3. The workflow checks that the runtime referenced by `packages/desktop/resources/runtime/*/manifest.json` is published while it builds macOS (x64 and arm64, both packaged on Apple Silicon, signed and notarized), Windows, and Linux, and then creates a draft release.
 4. **Pre-production test.** Only maintainers can see a draft. Download the installers from the draft on the [releases page](https://github.com/rchrp/Blame/releases) and test them.
 5. Edit the generated notes and click **Publish release**. From then on, `download.blame.so/latest`, the download page, and the in-app updater serve this version.
+6. Publishing starts **Release packages**, which updates the package managers (see below).
 
 ### Beta channel
 
@@ -44,6 +46,26 @@ git push origin v1.2.0-beta.1
 A tag with a suffix is published right away as a prerelease, without a draft. GitHub never treats a prerelease as the latest release, so `download.blame.so/latest` and apps on the stable channel never see it. Apps with **Settings → Desktop → Beta channel** turned on update to the newest published release, prereleases included, by reading its update metadata from GitHub. Once `v1.2.0` is published, they move to it, since it is newer than its betas. Turning the channel off keeps the installed beta until a newer stable release ships.
 
 If a job fails, use **Re-run failed jobs** on the workflow run. To abandon a release, delete the draft and the tag (`git push origin :v1.2.0`).
+
+### Package managers
+
+| Channel  | Install command                       | Updated by                                                                                                    |
+| -------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Homebrew | `brew install --cask rchrp/tap/blame` | A commit to `Casks/blame.rb` in [rchrp/homebrew-tap](https://github.com/rchrp/homebrew-tap)                   |
+| winget   | `winget install Blame.Blame`          | A pull request to [microsoft/winget-pkgs](https://github.com/microsoft/winget-pkgs), merged by its moderators |
+| AUR      | `yay -S blame-bin`                    | A push to [blame-bin](https://aur.archlinux.org/packages/blame-bin)                                           |
+
+The package sources are templates in [`packaging/`](packaging). [`scripts/packaging.mjs`](scripts/packaging.mjs) fills them with the version and the SHA-256 sums from the release's `SHA256SUMS`, and refuses anything but an `x.y.z` version:
+
+```bash
+node scripts/packaging.mjs render 1.2.0 SHA256SUMS out
+```
+
+**Release packages** runs when a release is published as stable (`released`), never for a prerelease, and checks again that the release is neither a draft nor a prerelease. Each channel whose secret is missing is skipped with a notice in the run summary. To retry a channel or backfill a version, run the workflow manually with the tag. A version already in the tap, winget-pkgs or AUR is left alone.
+
+Homebrew and AUR update right away. winget users get the version once the pull request passes validation and is merged, usually within a day. The app updates itself from Homebrew and winget installs; on Arch, pacman updates it, and the AUR package removes the marker that the in-app updater uses on Linux.
+
+The official `homebrew/cask` repository needs a more notable GitHub repository; until then, the tap is the Homebrew channel.
 
 ## Desktop runtime
 
@@ -112,6 +134,12 @@ For Cline SDK update pull requests:
 
 - Allow GitHub Actions to open pull requests: **Settings → Actions → General → Allow GitHub Actions to create and approve pull requests**.
 - Optional secret `CLINE_SDK_UPDATE_TOKEN`: a fine-grained token with **Contents** and **Pull requests** write access on this repository. Pull requests opened with the default token do not trigger CI. Without this secret, close and reopen the pull request to start CI.
+
+For the package managers (each one is optional):
+
+- `HOMEBREW_TAP_TOKEN`: a fine-grained token limited to `rchrp/homebrew-tap`, with **Contents** read and write access.
+- `WINGET_TOKEN`: a classic token with the `public_repo` scope only. winget-pkgs belongs to Microsoft, which fine-grained tokens cannot open pull requests on. `wingetcreate` pushes the manifests to the token owner's fork of winget-pkgs and opens the pull request from it.
+- `AUR_SSH_PRIVATE_KEY`: the private half of an SSH key without a passphrase, used only for AUR. Add its public half to the AUR account that maintains `blame-bin` (**My Account → SSH Public Key**).
 
 ## Sandbox runner image
 
