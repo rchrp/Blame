@@ -16,7 +16,7 @@ Hand an agent a user story. Get back a change you can check before it merges.
 
 **[Download](#install)** · [Website](https://blame.so) · [Demo video](https://youtu.be/cD6jASpIKQw) · [Discussions](https://github.com/rchrp/Blame/discussions) · [Contributing](CONTRIBUTING.md)
 
-<a href="https://youtu.be/cD6jASpIKQw"><img src="packages/vitrine/public/demo.gif" width="900" alt="A user story goes from the backlog to an agent, a live preview, and a reviewed merge in Blame"></a>
+<a href="https://youtu.be/cD6jASpIKQw"><img src="docs/media/demo.gif" width="900" alt="A user story goes from the backlog to an agent, a live preview, and a reviewed merge in Blame"></a>
 
 </div>
 
@@ -102,9 +102,9 @@ Most coding agents grep, rewrite whole files, and tell you it should work now. B
 
 | Backlog to merge                                                         | Live preview and review                                                     |
 | :----------------------------------------------------------------------: | :-------------------------------------------------------------------------: |
-| ![Blame backlog](packages/vitrine/public/desktop-backlog.png)            | ![Blame live preview](packages/vitrine/public/desktop-preview.png)          |
+| ![Blame backlog](docs/media/desktop-backlog.png)                         | ![Blame live preview](docs/media/desktop-preview.png)                       |
 | **Code Practices**                                                       | **Project creation**                                                        |
-| ![Blame Code Practices](packages/vitrine/public/desktop-practices.png)   | ![Blame project creation](packages/vitrine/public/desktop-new-project.png)  |
+| ![Blame Code Practices](docs/media/desktop-practices.png)                | ![Blame project creation](docs/media/desktop-new-project.png)               |
 
 - **Backlog-driven development.** Each user story becomes a lane that keeps its brief, context, agent activity, review notes, and final decision through queue, development, review, and merge.
 - **Smart worktrees.** Blame analyzes the project and prepares a dedicated branch, worktree, environment, port, and runtime for each story before the agent starts.
