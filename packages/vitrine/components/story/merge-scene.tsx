@@ -35,7 +35,7 @@ function buildMerge(tl: gsap.core.Timeline, root: HTMLDivElement) {
   tl.fromTo(
     "[data-mg=word]",
     { y: 38, opacity: 0, filter: "blur(8px)" },
-    { y: 0, opacity: 1, filter: "blur(0px)", duration: 0.45, ease: "power3.out", stagger: 0.06 },
+    { y: 0, opacity: 1, filter: "blur(0px)", clearProps: "filter", duration: 0.45, ease: "power3.out", stagger: 0.06 },
     0.05,
   );
   tl.fromTo(
@@ -49,7 +49,7 @@ function buildMerge(tl: gsap.core.Timeline, root: HTMLDivElement) {
   tl.fromTo(
     "[data-mg=in]",
     { scale: 0.75, opacity: 0.35, filter: "blur(18px)" },
-    { scale: 1, opacity: 1, filter: "blur(0px)", duration: 0.6, ease: "expo.out" },
+    { scale: 1, opacity: 1, filter: "blur(0px)", clearProps: "filter", duration: 0.6, ease: "expo.out" },
     0.3,
   );
 
@@ -120,7 +120,7 @@ function buildMerge(tl: gsap.core.Timeline, root: HTMLDivElement) {
   tl.fromTo(
     "[data-mg=done]",
     { y: 34, opacity: 0, filter: "blur(10px)" },
-    { y: 0, opacity: 1, filter: "blur(0px)", duration: 0.38, ease: "power3.out", stagger: 0.07 },
+    { y: 0, opacity: 1, filter: "blur(0px)", clearProps: "filter", duration: 0.38, ease: "power3.out", stagger: 0.07 },
     4.4,
   );
   tl.fromTo(

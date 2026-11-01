@@ -92,6 +92,7 @@ function buildCreation(timeline: gsap.core.Timeline, root: HTMLElement) {
       x: 0,
       opacity: 1,
       filter: "blur(0px)",
+      clearProps: "filter",
       duration: 0.42,
       ease: "power4.out",
       stagger: 0.045,
@@ -101,7 +102,7 @@ function buildCreation(timeline: gsap.core.Timeline, root: HTMLElement) {
   timeline.fromTo(
     ".cr-copy",
     { y: 16, opacity: 0, filter: "blur(6px)" },
-    { y: 0, opacity: 1, filter: "blur(0px)", duration: 0.6, ease: "power3.out" },
+    { y: 0, opacity: 1, filter: "blur(0px)", clearProps: "filter", duration: 0.6, ease: "power3.out" },
     0.34,
   );
 
@@ -114,6 +115,7 @@ function buildCreation(timeline: gsap.core.Timeline, root: HTMLElement) {
       scale: 1,
       opacity: 1,
       filter: "blur(0px)",
+      clearProps: "filter",
       duration: 0.6,
       ease: "power3.out",
     },

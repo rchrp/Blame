@@ -116,6 +116,7 @@ function buildOpening(timeline: gsap.core.Timeline, root: HTMLDivElement) {
         rotation: tilt,
         opacity: 1,
         filter: "blur(0px)",
+        clearProps: "filter",
         duration: 0.6,
         ease: "power3.out",
       },
@@ -182,7 +183,7 @@ function buildOpening(timeline: gsap.core.Timeline, root: HTMLDivElement) {
   timeline.fromTo(
     brand,
     { scale: 1.7, opacity: 0, filter: "blur(14px)" },
-    { scale: 1, opacity: 1, filter: "blur(0px)", duration: 0.5, ease: "expo.out" },
+    { scale: 1, opacity: 1, filter: "blur(0px)", clearProps: "filter", duration: 0.5, ease: "expo.out" },
     NAME_AT,
   );
   timeline.fromTo(
@@ -192,6 +193,7 @@ function buildOpening(timeline: gsap.core.Timeline, root: HTMLDivElement) {
       yPercent: 0,
       opacity: 1,
       filter: "blur(0px)",
+      clearProps: "filter",
       duration: 0.5,
       ease: "power3.out",
       stagger: 0.09,

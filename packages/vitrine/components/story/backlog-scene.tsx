@@ -70,7 +70,7 @@ function buildHeading(tl: gsap.core.Timeline) {
   tl.fromTo(
     "[data-bk=word]",
     { x: 90, opacity: 0, filter: "blur(8px)" },
-    { x: 0, opacity: 1, filter: "blur(0px)", duration: 0.5, ease: "power4.out", stagger: 0.06 },
+    { x: 0, opacity: 1, filter: "blur(0px)", clearProps: "filter", duration: 0.5, ease: "power4.out", stagger: 0.06 },
     0.06,
   );
   tl.fromTo(
