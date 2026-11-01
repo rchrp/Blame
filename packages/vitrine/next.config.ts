@@ -14,6 +14,10 @@ const publicAssetCacheControl =
 const publicAssetFolders = ["agents", "icons", "research", "social", "story"];
 
 const nextConfig: NextConfig = {
+  // The Docker image runs .next/standalone: the server and only the
+  // node_modules files it uses, traced from the workspace root.
+  output: "standalone",
+  outputFileTracingRoot: workspaceRoot,
   poweredByHeader: false,
   // Workspace packages that ship TypeScript sources.
   transpilePackages: ["@blame/hero-scene", "@blame/pricing-card"],

@@ -53,35 +53,22 @@ FROM node:22-alpine AS production
 
 WORKDIR /app
 
-RUN apk add --no-cache libc6-compat \
-    && corepack enable \
-    && corepack prepare pnpm@10.33.2 --activate
+RUN apk add --no-cache libc6-compat
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV HOSTNAME=0.0.0.0
 ENV PORT=3000
 
-# Copy workspace configuration
-COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
-COPY patches/ ./patches/
-COPY packages/vitrine/package.json ./packages/vitrine/package.json
-COPY packages/hero-scene/package.json ./packages/hero-scene/package.json
-COPY packages/pricing-card/package.json ./packages/pricing-card/package.json
-
-# Install production dependencies only for the vitrine app
-RUN pnpm install --prod --frozen-lockfile --filter @blame/vitrine...
-
-# Copy the built Next.js app and runtime assets
-COPY --from=builder --chown=node:node /app/packages/vitrine/.next ./packages/vitrine/.next
+# The standalone build holds the server and only the node_modules files it
+# uses (next.config.ts sets output: "standalone"); the static chunks and the
+# public files go beside it, as the server expects.
+COPY --from=builder --chown=node:node /app/packages/vitrine/.next/standalone ./
+COPY --from=builder --chown=node:node /app/packages/vitrine/.next/static ./packages/vitrine/.next/static
 COPY --from=builder --chown=node:node /app/packages/vitrine/public ./packages/vitrine/public
-COPY --from=builder --chown=node:node /app/packages/vitrine/next.config.ts ./packages/vitrine/next.config.ts
-COPY --from=builder --chown=node:node /app/packages/vitrine/package.json ./packages/vitrine/package.json
 
 USER node
 
-WORKDIR /app/packages/vitrine
-
 EXPOSE 3000
 
-CMD ["node", "node_modules/next/dist/bin/next", "start"]
+CMD ["node", "packages/vitrine/server.js"]
