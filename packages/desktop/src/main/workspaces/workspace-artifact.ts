@@ -15,6 +15,7 @@ import { dirname, join } from "node:path";
 import { Transform, type Readable } from "node:stream";
 import { promisify } from "node:util";
 import { hostGitCommand } from "../host-git.ts";
+import { workspaceTooLargeMessage } from "./workspace-transfer-limit.ts";
 import { createGzip } from "node:zlib";
 import { pack } from "tar-stream";
 import { pipeline } from "node:stream/promises";
@@ -241,8 +242,16 @@ export async function buildWorkspaceArtifact(
       );
     }
     const content = Buffer.concat(chunks);
-    if (content.byteLength < 1 || content.byteLength > maximumArtifactBytes) {
-      throw new Error("Workspace artifact exceeds the managed transfer limit");
+    if (content.byteLength < 1)
+      throw new Error("The cloud workspace archive came out empty");
+    if (content.byteLength > maximumArtifactBytes) {
+      throw new Error(
+        workspaceTooLargeMessage(
+          content.byteLength,
+          maximumArtifactBytes,
+          snapshot.files,
+        ),
+      );
     }
     return {
       content,
