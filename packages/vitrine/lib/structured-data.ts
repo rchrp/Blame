@@ -53,7 +53,7 @@ const softwareApplicationStructuredData = {
     "Blame is an Agentic Development Environment (ADE) with a verifiable harness for AI coding agents, Code Practices, isolated smart worktrees, live Cloud Previews, and controlled merges.",
   url: absoluteSiteUrl("/"),
   downloadUrl: absoluteSiteUrl("/download"),
-  image: absoluteSiteUrl("/social/blame-social-card.png"),
+  image: absoluteSiteUrl("/social/blame-social-card.jpg"),
   applicationCategory: "DeveloperApplication",
   license: "https://www.gnu.org/licenses/agpl-3.0.html",
   isAccessibleForFree: true,
