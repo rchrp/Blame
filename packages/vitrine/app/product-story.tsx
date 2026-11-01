@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
+import Image from "next/image";
 import { KeyRound, ListChecks, MessagesSquare, ServerCog } from "lucide-react";
 import {
   parallelAgentProviders,
@@ -12,7 +13,6 @@ import { MergeScene } from "@/components/story/merge-scene";
 import { OpeningScene } from "@/components/story/opening-scene";
 import { PracticesScene } from "@/components/story/practices-scene";
 import { WorkspaceScene } from "@/components/story/workspace-scene";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { HarnessSection } from "./harness-story";
 
 const specialistAgents = [
@@ -266,14 +266,19 @@ function AgentPortrait({
   agent: (typeof specialistAgents)[number];
 }) {
   return (
-    <Avatar className="size-18">
-      <AvatarImage
+    // A plain image, rendered on the server: the 32px pixel art needs no
+    // optimizing, and it loads with the page instead of after hydration.
+    <span className="relative flex size-18 shrink-0 overflow-hidden rounded-full">
+      <Image
         src={agent.image}
         alt=""
+        width={32}
+        height={32}
+        unoptimized
+        className="aspect-square size-full object-cover"
         style={{ imageRendering: "pixelated" }}
       />
-      <AvatarFallback aria-label={agent.title}>A</AvatarFallback>
-    </Avatar>
+    </span>
   );
 }
 
