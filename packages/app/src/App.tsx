@@ -117,15 +117,22 @@ export function App() {
   const premiumOfferPending = usePremiumOfferPending()
   const runtime = useBlameRuntime()
   const runtimeOfferOpen = useRuntimeOfferPending(runtime.phase)
+  // Premium is offered to accounts; a local workspace is offered to sign in
+  // when it reaches for a hosted service.
   const premiumOfferOpen =
     premiumOfferPending &&
-    auth.status === "authenticated" &&
+    auth.mode === "account" &&
     auth.aiPreferences !== null &&
     auth.license?.licensed !== true
+  const signInOpen = auth.signIn.open || (premiumOpen && auth.mode === "local")
   const windowRole = appWindowRole({
     activeProject: projects.activeProject,
     aiPreferences: auth.aiPreferences,
-    authStatus: loading ? "loading" : auth.status,
+    authStatus: loading
+      ? "loading"
+      : signInOpen
+        ? "unauthenticated"
+        : auth.status,
     premiumOpen: premiumOpen || premiumOfferOpen,
     statusPipOpen,
   })
@@ -166,6 +173,7 @@ export function App() {
     premiumOfferOpen,
     premiumOpen,
     runtimeOfferOpen,
+    signInOpen,
   })
   if (onboardingScreen) {
     return (
@@ -205,9 +213,11 @@ function resolveOnboardingScreen(input: {
   premiumOfferOpen: boolean
   premiumOpen: boolean
   runtimeOfferOpen: boolean
+  signInOpen: boolean
 }): OnboardingScreen | undefined {
   if (input.loading || input.authStatus === "loading") return "loading"
-  if (input.authStatus === "unauthenticated") return "connect"
+  if (input.authStatus === "unauthenticated" || input.signInOpen)
+    return "connect"
   if (input.premiumOpen) return "premium"
   if (input.aiPreferencesMissing) return "ai-setup"
   if (input.premiumOfferOpen) return "premium-offer"

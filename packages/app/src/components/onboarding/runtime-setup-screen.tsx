@@ -73,7 +73,7 @@ export function RuntimeSetupScreen() {
 
   return (
     <section className="mx-auto flex min-h-full w-full max-w-5xl flex-col px-8 pt-10 pb-12">
-      <OnboardingProgress current={4} className="mb-4" />
+      <OnboardingProgress step="runtime" className="mb-4" />
       <div className="grid flex-1 items-center gap-10 md:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]">
         <motion.div
           className="max-w-md"

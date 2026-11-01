@@ -11,6 +11,7 @@ import {
   CopyIcon,
   ExternalLinkIcon,
   LoaderCircleIcon,
+  LogInIcon,
   XIcon,
 } from "lucide-react"
 
@@ -85,6 +86,28 @@ export function DeployEmptyState({
           ? "Complete the connection in your browser to continue."
           : "Choose your account or team in the next step."}
       </p>
+    </FeatureStart>
+  )
+}
+
+/** Deploying goes through hosted services: a local workspace signs in first. */
+export function DeploySignInState({ onSignIn }: { onSignIn(): void }) {
+  return (
+    <FeatureStart
+      title="Deploy"
+      description="Publish your current workspace with Vercel."
+      heading="Take your project from local to live."
+      steps={deploymentSetupSteps}
+      footer="Deployments and usage stay in your Vercel account."
+    >
+      <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
+        Deploying links Vercel to a Blame account and uploads your source
+        through Blame. Sign in to deploy; your workspace moves into the account.
+      </p>
+      <Button onClick={onSignIn}>
+        <LogInIcon />
+        Sign in to deploy
+      </Button>
     </FeatureStart>
   )
 }

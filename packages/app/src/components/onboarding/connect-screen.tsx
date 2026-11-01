@@ -17,6 +17,7 @@ import { Kbd } from "@/components/ui/kbd"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { LegalLink } from "@/components/legal/legal-link"
 import { useCloudAuth } from "@/context/cloud-auth"
+import { navigate, navigationPathname } from "@/components/navigation/navigation"
 import { easeOutExpo, springSoft, stepVariants } from "@/lib/motion"
 
 type AuthMode = "login" | "signup" | "forgot" | "verify" | "two-factor"
@@ -119,7 +120,43 @@ export function ConnectScreen() {
           </GlassPanel>
         </ShakeContext.Provider>
       </div>
+      <LocalWorkspaceChoice />
     </section>
+  )
+}
+
+/**
+ * Signing in is optional. From a local workspace, says what happens to it
+ * and lets the person go back to it.
+ */
+function LocalWorkspaceChoice() {
+  const auth = useCloudAuth()
+  if (auth.mode !== "local") return null
+  if (auth.signIn.transferring) {
+    return (
+      <p className="flex items-center justify-center gap-2 text-sm text-foreground/70">
+        <LoaderCircleIcon className="size-4 animate-spin" aria-hidden />
+        Moving your local workspace into your account…
+      </p>
+    )
+  }
+  return (
+    <div className="flex flex-col items-center gap-1 text-center">
+      <p className="max-w-[22rem] text-xs leading-5 text-balance text-foreground/60">
+        Your projects, stories and provider connections move into the account
+        when you sign in, and stay on this computer too.
+      </p>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => {
+          auth.closeSignIn()
+          if (navigationPathname() === "/premium") navigate("/backlog")
+        }}
+      >
+        Continue without an account
+      </Button>
+    </div>
   )
 }
 

@@ -9,7 +9,6 @@ import {
   type LucideIcon,
 } from "lucide-react"
 import * as React from "react"
-import { toast } from "sonner"
 
 import {
   Popover,
@@ -17,8 +16,11 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
-import { navigate } from "@/components/navigation/navigation"
 import { useCloudAuth } from "@/context/cloud-auth"
+import {
+  openHostedServicesOffer,
+  requestHostedService,
+} from "@/lib/hosted-services"
 import { useOptionalBlameRuntime } from "@/context/blame-runtime"
 import { usePlatform, type RuntimeProgress } from "@/context/platform"
 import {
@@ -131,12 +133,7 @@ export const RuntimeProfileSelector = React.memo(
       }
       if (profile === "vercel-compose" && !premium) {
         setOpen(false)
-        toast.info("Cloud previews require Blame Premium.", {
-          action: {
-            label: "View Premium",
-            onClick: () => navigate("/premium"),
-          },
-        })
+        requestHostedService(auth, "cloud-preview")
         return
       }
       if (profile === "local-container" && runtimeNeedsSetup(runtime?.phase)) {
@@ -196,10 +193,10 @@ export const RuntimeProfileSelector = React.memo(
                 type="button"
                 onClick={() => {
                   setOpen(false)
-                  navigate("/premium")
+                  openHostedServicesOffer(auth)
                 }}
               >
-                View Premium
+                {auth.mode === "account" ? "View Premium" : "Sign in"}
               </button>
             </p>
           )}

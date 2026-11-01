@@ -97,6 +97,7 @@ export type Platform = {
   agent?: AgentClient
   agentScreenshots?: AgentScreenshotsClient
   api?: ApiConnection
+  localApi?: import("./platform-local-api").LocalApiClient
   previewDevtools?: PreviewDevtoolsSettingsClient
   appStatus?: AppStatusClient
   appearance?: AppearanceClient

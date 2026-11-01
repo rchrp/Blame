@@ -2,7 +2,7 @@ import * as React from "react"
 
 import { NavMain } from "@/components/sidebar/nav-main"
 import { NavSecondary } from "@/components/sidebar/nav-secondary"
-import { NavUser } from "@/components/sidebar/nav-user"
+import { NavLocalWorkspace, NavUser } from "@/components/sidebar/nav-user"
 import { ProjectSelector } from "@/components/sidebar/project-selector"
 import {
   Sidebar,
@@ -143,7 +143,11 @@ export function AppSidebar({
         />
       </SidebarContent>
       <SidebarFooter>
-        {auth.user ? <NavUser user={auth.user} onLogout={auth.logout} /> : null}
+        {auth.mode === "local" ? (
+          <NavLocalWorkspace />
+        ) : auth.user ? (
+          <NavUser user={auth.user} onLogout={auth.logout} />
+        ) : null}
       </SidebarFooter>
     </Sidebar>
   )

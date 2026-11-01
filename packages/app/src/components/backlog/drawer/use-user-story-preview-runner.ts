@@ -39,7 +39,7 @@ import {
 import { readableFailure } from "@/components/backlog/drawer/preview-failure-message"
 import { usePlatform } from "@/context/platform"
 import { useCloudAuth } from "@/context/cloud-auth"
-import { navigate } from "@/components/navigation/navigation"
+import { requestHostedService } from "@/lib/hosted-services"
 import {
   recordRuntimeSessionState,
   useRuntimePreference,
@@ -231,6 +231,7 @@ function useCloudPreviewRuntime(input: {
   autoStart?: boolean
   premium: boolean
 }) {
+  const auth = useCloudAuth()
   const [session, setSession] = React.useState<PreviewSessionView>()
   const [error, setError] = React.useState<string>()
   const [pendingOperation, setPendingOperation] =
@@ -389,12 +390,7 @@ function useCloudPreviewRuntime(input: {
   const control = React.useCallback(
     async (action: PreviewRunnerAction, configurationId?: string) => {
       if (action !== "stop" && !input.premium) {
-        toast.info("Cloud previews require Blame Premium.", {
-          action: {
-            label: "View Premium",
-            onClick: () => navigate("/premium"),
-          },
-        })
+        requestHostedService(auth, "cloud-preview")
         return undefined
       }
       if (
@@ -600,6 +596,7 @@ function useCloudPreviewRuntime(input: {
       }
     },
     [
+      auth,
       client,
       input.localRuntime,
       input.platform.workspace,

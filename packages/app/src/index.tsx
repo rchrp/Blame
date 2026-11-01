@@ -44,6 +44,7 @@ export type {
   SecurityAuditClient,
   TelemetryExportSession,
 } from "./context/platform"
+export type { LocalApiClient } from "./context/platform-local-api"
 
 export type MountAppOptions = {
   platform?: Platform

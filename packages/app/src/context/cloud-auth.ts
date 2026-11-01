@@ -142,9 +142,21 @@ export type SignupInput = LoginInput & {
   passwordConfirmation: string
 }
 
+/**
+ * Where the workspace lives: in the API this computer runs, without an
+ * account, or in a Blame account, which syncs it and unlocks hosted services.
+ */
+export type WorkspaceMode = "local" | "account"
+
 export type CloudAuthContextValue = {
+  // "authenticated" means a workspace session is open, local or account.
   status: "loading" | "authenticated" | "unauthenticated"
+  mode?: WorkspaceMode
   apiConnection: ApiConnection
+  // Signing in from a local workspace, which then moves into the account.
+  signIn: { open: boolean; transferring?: boolean }
+  openSignIn(): void
+  closeSignIn(): void
   aiPreferences?: CloudAiPreferences | null
   mcpConfiguration?: CloudMcpConfiguration | null
   license?: CloudLicense

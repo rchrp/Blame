@@ -43,6 +43,7 @@ import { useCloudAuth } from "@/context/cloud-auth"
 import { cn } from "@/lib/utils"
 import { McpSettingsPanel } from "./mcp-settings-panel"
 import { AccountPrivacyPanel } from "./account-privacy-panel"
+import { LocalAccountPanel } from "./local-account-panel"
 import { navigate } from "@/components/navigation/navigation"
 import {
   EmptySettingsState,
@@ -101,7 +102,7 @@ const settingsSections: SettingsSection[] = [
     title: "Desktop",
   },
   {
-    description: "Signed-in user and session actions.",
+    description: "Your Blame account and session.",
     icon: UserRoundIcon,
     id: "account",
     title: "Account",
@@ -719,6 +720,7 @@ function ModelVisibilityDialog({
 function AccountSettingsPanel() {
   const auth = useCloudAuth()
   const user = auth.user
+  if (auth.mode === "local") return <LocalAccountPanel />
 
   return (
     <SettingsPanel>

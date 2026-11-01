@@ -110,7 +110,7 @@ export function AiPreferencesSetupScreen() {
   async function save() {
     if (auth.status !== "authenticated" || !ready || saving) return
     setSaving(true)
-    const offerPremium = auth.license?.licensed !== true
+    const offerPremium = auth.mode === "account" && auth.license?.licensed !== true
     if (offerPremium) queuePremiumOffer()
     try {
       await auth.saveAiPreferences({
@@ -177,7 +177,10 @@ export function AiPreferencesSetupScreen() {
 
   return (
     <section className="mx-auto flex min-h-full w-full max-w-3xl flex-col px-6 pt-10 pb-12">
-      <OnboardingProgress current={step === 0 ? 1 : 2} className="mb-4" />
+      <OnboardingProgress
+        step={step === 0 ? "provider" : "models"}
+        className="mb-4"
+      />
       <GlassPanel
         layout
         transition={{ layout: springSoft }}

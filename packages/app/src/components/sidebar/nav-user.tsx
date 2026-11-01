@@ -20,7 +20,9 @@ import {
   EllipsisVerticalIcon,
   CircleUserRoundIcon,
   CreditCardIcon,
+  LogInIcon,
   LogOutIcon,
+  MonitorIcon,
 } from "lucide-react"
 import { toast } from "sonner"
 import { type CloudUser, useCloudAuth } from "@/context/cloud-auth"
@@ -130,4 +132,33 @@ export function NavUser({
 
 function PremiumBadge() {
   return <Badge className="h-4 px-1.5 text-[10px] leading-none">Premium</Badge>
+}
+
+/** The footer of a workspace kept on this computer, without an account. */
+export function NavLocalWorkspace() {
+  const auth = useCloudAuth()
+  return (
+    <SidebarMenu>
+      <SidebarMenuItem className="flex min-w-0 items-center gap-1">
+        <SidebarMenuButton
+          size="lg"
+          className="min-w-0 flex-1"
+          onClick={auth.openSignIn}
+          tooltip="Sign in to sync across computers and use hosted services"
+        >
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-accent">
+            <MonitorIcon className="size-4" />
+          </span>
+          <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
+            <span className="truncate font-medium">On this computer</span>
+            <span className="truncate text-xs text-muted-foreground">
+              Sign in to sync
+            </span>
+          </div>
+          <LogInIcon className="ml-auto size-4" />
+        </SidebarMenuButton>
+        <SidebarUpdateButton />
+      </SidebarMenuItem>
+    </SidebarMenu>
+  )
 }
