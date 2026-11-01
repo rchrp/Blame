@@ -5,9 +5,17 @@
   "type": "module",
   "license": "AGPL-3.0-only",
   "exports": {
-    "./data": "./.adonisjs/client/data.d.ts",
-    "./registry": "./.adonisjs/client/registry/index.ts"
+    "./data": {
+      "types": "./.adonisjs/client/data.d.ts"
+    },
+    "./registry": {
+      "types": "./.adonisjs/client/registry/index.ts"
+    },
+    "./local": "./build/bin/local.js"
   },
+  "files": [
+    "build"
+  ],
   "scripts": {
     "start": "node bin/server.js",
     "predev": "pnpm --filter @blame/model-catalog build && pnpm --filter @blame/deploy-contract build && pnpm --filter @blame/preview-contract build && pnpm --filter @blame/telemetry build",

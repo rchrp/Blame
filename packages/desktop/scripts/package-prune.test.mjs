@@ -39,6 +39,10 @@ const files = [
   "node_modules/pty/prebuilds/darwin-arm64/pty.node",
   "node_modules/pty/prebuilds/darwin-x64/pty.node",
   "node_modules/pty/prebuilds/win32-x64/pty.node",
+  "node_modules/.pnpm/next@16.0.0/node_modules/next/dist/server.js",
+  "node_modules/.pnpm/next@16.0.0/node_modules/@next/env/index.js",
+  "node_modules/.pnpm/@next+swc-darwin-arm64@16.0.0/node_modules/@next/swc-darwin-arm64/next-swc.node",
+  "node_modules/.pnpm/sharp@0.34.0/node_modules/@img/sharp-libvips-darwin-arm64/libvips.dylib",
 ];
 
 async function fixture(action) {
@@ -89,6 +93,7 @@ test("removes files the packaged app never loads", async () => {
       "node_modules/native/prebuilds/prebuild-Linux-X64/addon.node",
       "node_modules/pty/prebuilds/darwin-arm64/pty.node",
       "node_modules/linked/target/index.js",
+      "node_modules/.pnpm/next@16.0.0/node_modules/@next/env/index.js",
     ];
     const gone = [
       "node_modules/plain/index.js.map",
@@ -103,13 +108,16 @@ test("removes files the packaged app never loads", async () => {
       "node_modules/grammar/prebuilds/prebuild-Linux-X64",
       "node_modules/pty/prebuilds/darwin-x64",
       "node_modules/pty/prebuilds/win32-x64",
+      "node_modules/.pnpm/next@16.0.0/node_modules/next",
+      "node_modules/.pnpm/@next+swc-darwin-arm64@16.0.0/node_modules/@next/swc-darwin-arm64",
+      "node_modules/.pnpm/sharp@0.34.0/node_modules/@img/sharp-libvips-darwin-arm64",
     ];
     for (const file of kept)
       assert.ok(await present(root, file), `kept ${file}`);
     for (const file of gone)
       assert.ok(!(await present(root, file)), `removed ${file}`);
-    assert.equal(removed.files, 12);
-    assert.equal(removed.bytes, 12 * "content".length);
+    assert.equal(removed.files, 15);
+    assert.equal(removed.bytes, 15 * "content".length);
   });
 });
 

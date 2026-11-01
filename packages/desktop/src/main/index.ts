@@ -1,5 +1,6 @@
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { shutdownBlameTelemetry } from "@blame/telemetry";
 import contextMenu from "electron-context-menu";
 import windowState from "electron-window-state";
@@ -8,6 +9,7 @@ import {
   BrowserWindow,
   dialog,
   ipcMain,
+  safeStorage,
   screen,
   shell,
   type BrowserWindowConstructorOptions,
@@ -45,7 +47,11 @@ import { stopRuntimeInBackground } from "./runtime-manager";
 import { stopAllDevices } from "./preview-devices/device-registry";
 import { runtimeHostPath, runtimeVmInternalPath } from "./workspace-runtime";
 import { registerAppActivityIpc } from "./app-activity-ipc";
-import { registerDesktopIpcHandlers, suspendStartedCloudPreviews } from "./ipc";
+import {
+  registerDesktopIpcHandlers,
+  shutdownLocalApi,
+  suspendStartedCloudPreviews,
+} from "./ipc";
 import { configureHyprlandWindow } from "./hyprland-window";
 import {
   isMainWindowRole,
@@ -144,6 +150,11 @@ void app.whenReady().then(() => {
     agentRuntime: {
       modulePath: desktopResources.agentRuntime,
       serviceVersion: app.getVersion(),
+    },
+    localApi: {
+      modulePath: fileURLToPath(import.meta.resolve("@blame/api/local")),
+      dataDirectory: join(app.getPath("userData"), "local-api"),
+      secrets: safeStorage,
     },
     telemetry: {
       configure: configureAgentRuntimeTelemetry,
@@ -688,6 +699,7 @@ async function cleanupApplication() {
     stopAllDevices(),
   ]).then(() => undefined);
   await settleWithin(runtimeShutdown, runtimeShutdownTimeoutMs);
+  await settleWithin(shutdownLocalApi(), runtimeShutdownTimeoutMs);
   stopRuntimeInBackground({ ...process.env, PATH: setupPath() });
   await settleWithin(shutdownBlameTelemetry(), telemetryShutdownTimeoutMs);
   await settleWithin(flushLiveLogs(), telemetryShutdownTimeoutMs);

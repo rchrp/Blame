@@ -15,6 +15,7 @@ mountApp(root, {
     agentScreenshots: window.blame.agentScreenshots,
     previewDevtools: window.blame.previewDevtools,
     billing: window.blame.billing,
+    localApi: window.blame.localApi,
     deploy: window.blame.deploy,
     mcp: window.blame.mcp,
     backlogStatusPip: window.blame.backlogStatusPip,
