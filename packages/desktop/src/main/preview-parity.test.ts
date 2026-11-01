@@ -19,6 +19,7 @@ import { parse as parseYaml } from "yaml";
 
 const corpus = join(import.meta.dirname, "preview-parity-corpus");
 const sandboxOnlyKeys = new Set([
+  "cap_add",
   "cap_drop",
   "pids_limit",
   "read_only",

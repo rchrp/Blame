@@ -9,7 +9,7 @@ import type {
   SetupTaskPlan,
 } from "../domain/execution-plan.js";
 import { ComposeEngineError } from "./docker-host.js";
-import { serviceHealthcheck } from "./compose-healthcheck.js";
+import { imageNamed, serviceHealthcheck } from "./compose-healthcheck.js";
 import {
   cacheVolumes,
   packageNodeModulesVolumes,
@@ -190,6 +190,10 @@ function runtimeService(service: ServiceLaunchPlan, context: RenderContext) {
         ? "1g"
         : undefined,
     user: serviceUser(service, context.target),
+    cap_add:
+      context.target.kind === "sandbox" && ownsItsDataDirectory(service)
+        ? databaseCapabilities
+        : undefined,
     healthcheck: context.healthchecks.get(service.id),
     // Locally the desktop restarts the previews people want running: a
     // Docker policy would also bring back stopped ones whenever the Blame
@@ -198,14 +202,43 @@ function runtimeService(service: ServiceLaunchPlan, context: RenderContext) {
   });
 }
 
-// Project code runs as the user that owns the workspace. Locally, an image
-// that only runs a dependency, such as a database, keeps its own user: its
-// entrypoint prepares its data directory. The sandbox drops every
-// capability, so it runs all containers as the project user.
+// Project code runs as the user that owns the workspace. An image that only
+// runs a dependency, such as a database, keeps its own user locally: its
+// entrypoint prepares its data directory. The sandbox drops every capability
+// and runs other containers as the project user, but a database entrypoint
+// must give its data directory to its own user and switch to it: known
+// database images keep their user there with just the capabilities that
+// takes, and no-new-privileges still applies.
 function serviceUser(service: ServiceLaunchPlan, target: ComposeTarget) {
   if (service.user) return service.user;
   if (target.kind === "local" && !needsWorkspace(service)) return undefined;
+  if (ownsItsDataDirectory(service)) return undefined;
   return target.projectUser;
+}
+
+const databaseCapabilities = [
+  "CHOWN",
+  "DAC_OVERRIDE",
+  "FOWNER",
+  "SETGID",
+  "SETUID",
+];
+
+function ownsItsDataDirectory(service: ServiceLaunchPlan) {
+  const image = service.container.image ?? "";
+  return (
+    !service.user &&
+    !needsWorkspace(service) &&
+    [
+      "postgres",
+      "postgis",
+      "mysql",
+      "mariadb",
+      "redis",
+      "valkey",
+      "mongo",
+    ].some((name) => imageNamed(image, name))
+  );
 }
 
 // `init` gives every container a PID 1 that forwards signals, so services

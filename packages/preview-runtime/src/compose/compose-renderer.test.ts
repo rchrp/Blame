@@ -170,6 +170,24 @@ test("renders setup tasks as one-shot services of the setup profile", () => {
   );
 });
 
+test("the sandbox lets a database image prepare its own data directory", () => {
+  const { frontend, db } = render(plan(), sandbox).services;
+  // Postgres gives its data directory to its own user, then switches to it.
+  assert.equal(db!.user, undefined);
+  assert.deepEqual(db!.cap_drop, ["ALL"]);
+  assert.deepEqual(db!.cap_add, [
+    "CHOWN",
+    "DAC_OVERRIDE",
+    "FOWNER",
+    "SETGID",
+    "SETUID",
+  ]);
+  assert.deepEqual(db!.security_opt, ["no-new-privileges:true"]);
+  // Project code keeps the project user and no capability.
+  assert.equal(frontend!.user, "1234:1234");
+  assert.equal(frontend!.cap_add, undefined);
+});
+
 test("one plan renders the same services and wiring for both targets", () => {
   const cloud = render(plan(), sandbox);
   const vm = render(plan(), local);
