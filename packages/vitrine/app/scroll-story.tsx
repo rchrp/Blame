@@ -1,25 +1,38 @@
 'use client'
 
-import {
-  memo,
-  useEffect,
-  useRef,
-  useState,
-  type CSSProperties,
-  type RefObject,
-} from 'react'
+import { useEffect, useRef, useState, type RefObject } from 'react'
 import { GitHubMark } from '@/components/github-stars'
 import { githubRepositoryUrl } from '@/lib/github'
 import { HeroBacklogMockup } from '@/components/blame-mockups/backlog-mockup'
 import endCard from '@/components/story/cta-scene.module.css'
 
-// The hero re-renders on every scroll frame to update its transforms; this
-// subtree takes no props, so keep it out of that loop. The 3D scene behind
-// the hero is the page's story stage (components/story/story-stage.tsx).
-const StaticHeroBacklogMockup = memo(HeroBacklogMockup)
+// The hero follows the scroll: its copy rises and fades, then the mockup
+// tilts up and fades. Those styles are written straight to the frame, copy
+// and mockup elements on each frame, so React renders again only when the
+// hero hides or shows. The 3D scene behind the hero is the page's story
+// stage (components/story/story-stage.tsx).
 
 const heroStageHeight = 180
 const scrollProgressResponse = 14
+// From this point of its scroll on, the hero has faded and takes no input.
+const hiddenFrom = 0.72
+
+type LayerStyle = {
+  opacity: number
+  pointerEvents?: 'auto' | 'none'
+  transform?: string
+}
+
+type HeroLayers = {
+  copy: RefObject<HTMLDivElement | null>
+  frame: RefObject<HTMLDivElement | null>
+  mockup: RefObject<HTMLDivElement | null>
+}
+
+// The server renders the top of the scroll; the browser takes over from there.
+const initialFrameStyle = heroFrameStyle(0, false)
+const initialCopyStyle = heroCopyStyle(0, false)
+const initialMockupStyle = heroMockupStyle(0, false)
 
 type ScrollAnimationState = {
   current: number
@@ -30,8 +43,20 @@ type ScrollAnimationState = {
 
 export function LandingHero() {
   const sectionRef = useRef<HTMLElement>(null)
-  const progress = useScrollProgress(sectionRef)
-  const reducedMotion = useReducedMotion()
+  const frameRef = useRef<HTMLDivElement>(null)
+  const copyRef = useRef<HTMLDivElement>(null)
+  const mockupRef = useRef<HTMLDivElement>(null)
+  const [hidden, setHidden] = useState(false)
+
+  useEffect(
+    () =>
+      connectHeroScroll(
+        sectionRef,
+        { copy: copyRef, frame: frameRef, mockup: mockupRef },
+        setHidden,
+      ),
+    [],
+  )
 
   return (
     <section
@@ -43,69 +68,58 @@ export function LandingHero() {
     >
       <span id="download" className="absolute bottom-0" />
       <div className="sticky top-0 isolate h-screen overflow-hidden">
-        <HeroFrame progress={progress} reducedMotion={reducedMotion} />
+        <div
+          ref={frameRef}
+          aria-hidden={hidden || undefined}
+          className="absolute inset-0 z-10 mx-auto flex w-full max-w-9xl flex-col px-5 pb-0 pt-24 sm:px-8 lg:px-10"
+          inert={hidden || undefined}
+          style={initialFrameStyle}
+        >
+          <div
+            ref={copyRef}
+            className="flex flex-1 items-center justify-center pb-4 pt-8 sm:pb-6 lg:pb-8"
+            style={initialCopyStyle}
+          >
+            <HeroCopy />
+          </div>
+          <div
+            ref={mockupRef}
+            className="z-20 mx-auto mb-4 w-[90%] max-w-[61.2rem]"
+            style={initialMockupStyle}
+          >
+            <HeroBacklogMockup />
+          </div>
+        </div>
       </div>
     </section>
   )
 }
 
-function HeroFrame({
-  progress,
-  reducedMotion,
-}: {
-  progress: number
-  reducedMotion: boolean
-}) {
-  const hidden = progress >= 0.72
+function HeroCopy() {
   return (
-    <div
-      aria-hidden={hidden || undefined}
-      className="absolute inset-0 z-10 mx-auto flex w-full max-w-9xl flex-col px-5 pb-0 pt-24 sm:px-8 lg:px-10"
-      inert={hidden || undefined}
-      style={heroFrameStyle(progress, reducedMotion)}
-    >
-      <HeroCopy progress={progress} reducedMotion={reducedMotion} />
-      <HeroMockup progress={progress} reducedMotion={reducedMotion} />
-    </div>
-  )
-}
-
-function HeroCopy({
-  progress,
-  reducedMotion,
-}: {
-  progress: number
-  reducedMotion: boolean
-}) {
-  return (
-    <div
-      className="flex flex-1 items-center justify-center pb-4 pt-8 sm:pb-6 lg:pb-8"
-      style={heroCopyStyle(progress, reducedMotion)}
-    >
-      {/* The end card's title, highlight, button and spacing (see
-          cta-scene.module.css), with the hero's own subtitle. */}
-      <div className={endCard.scene}>
-        <h1 id="hero-title" className={`${endCard.title} ${endCard.heroTitle}`}>
-          <span className={endCard.word}>The</span>{' '}
-          <span className={`${endCard.hl} ${endCard.hlIntro}`}>
-            <span className={endCard.hlBox}>
-              <span className={endCard.hlText}>Open Source</span>
-            </span>
-          </span>{' '}
-          <span aria-hidden="true" className={`${endCard.break} ${endCard.phoneBreak}`} />
-          <span className={endCard.word}>ADE</span>{' '}
-          <span className={endCard.word}>that</span>{' '}
-          <span aria-hidden="true" className={endCard.break} />
-          <span className={endCard.word}>sets</span>{' '}
-          <span className={endCard.word}>the</span>{' '}
-          <span className={endCard.word}>standard</span>
-        </h1>
-        <p className={`hero-subtitle max-w-3xl text-balance text-white/76 ${endCard.heroCopy}`}>
-          From story to controlled merge, one verifiable harness unifies
-          agents, Code Practices, smart worktrees, and live Cloud Previews.
-        </p>
-        <HeroActions />
-      </div>
+    // The end card's title, highlight, button and spacing (see
+    // cta-scene.module.css), with the hero's own subtitle.
+    <div className={endCard.scene}>
+      <h1 id="hero-title" className={`${endCard.title} ${endCard.heroTitle}`}>
+        <span className={endCard.word}>The</span>{' '}
+        <span className={`${endCard.hl} ${endCard.hlIntro}`}>
+          <span className={endCard.hlBox}>
+            <span className={endCard.hlText}>Open Source</span>
+          </span>
+        </span>{' '}
+        <span aria-hidden="true" className={`${endCard.break} ${endCard.phoneBreak}`} />
+        <span className={endCard.word}>ADE</span>{' '}
+        <span className={endCard.word}>that</span>{' '}
+        <span aria-hidden="true" className={endCard.break} />
+        <span className={endCard.word}>sets</span>{' '}
+        <span className={endCard.word}>the</span>{' '}
+        <span className={endCard.word}>standard</span>
+      </h1>
+      <p className={`hero-subtitle max-w-3xl text-balance text-white/76 ${endCard.heroCopy}`}>
+        From story to controlled merge, one verifiable harness unifies
+        agents, Code Practices, smart worktrees, and live Cloud Previews.
+      </p>
+      <HeroActions />
     </div>
   )
 }
@@ -140,67 +154,60 @@ function HeroActions() {
   )
 }
 
-function HeroMockup({
-  progress,
-  reducedMotion,
-}: {
-  progress: number
-  reducedMotion: boolean
-}) {
-  return (
-    <div
-      className="z-20 mx-auto mb-4 w-[90%] max-w-[61.2rem]"
-      style={heroMockupStyle(progress, reducedMotion)}
-    >
-      <StaticHeroBacklogMockup />
-    </div>
-  )
-}
-
-function useScrollProgress(ref: RefObject<HTMLElement | null>) {
-  const [progress, setProgress] = useState(0)
-  useEffect(() => connectScrollProgress(ref, setProgress), [ref])
-  return progress
-}
-
-function useReducedMotion() {
-  const [reducedMotion, setReducedMotion] = useState(false)
-  useEffect(() => {
-    const media = window.matchMedia('(prefers-reduced-motion: reduce)')
-    const update = () => setReducedMotion(media.matches)
-    update()
-    media.addEventListener('change', update)
-    return () => media.removeEventListener('change', update)
-  }, [])
-  return reducedMotion
-}
-
-function connectScrollProgress(
-  ref: RefObject<HTMLElement | null>,
-  setProgress: (progress: number) => void,
+// Follows the hero's scroll, smoothed, and writes each frame's styles to its
+// layers. React only hears about it when the hero hides or shows again.
+function connectHeroScroll(
+  section: RefObject<HTMLElement | null>,
+  layers: HeroLayers,
+  setHidden: (hidden: boolean) => void,
 ) {
-  const initial = readScrollProgress(ref.current)
+  const media = window.matchMedia('(prefers-reduced-motion: reduce)')
+  let reducedMotion = media.matches
+  let hidden = false
+  const render = (progress: number) => {
+    applyLayerStyle(layers.frame.current, heroFrameStyle(progress, reducedMotion))
+    applyLayerStyle(layers.copy.current, heroCopyStyle(progress, reducedMotion))
+    applyLayerStyle(layers.mockup.current, heroMockupStyle(progress, reducedMotion))
+    if (progress >= hiddenFrom !== hidden) {
+      hidden = !hidden
+      setHidden(hidden)
+    }
+  }
+  const initial = readScrollProgress(section.current)
   const state = createScrollAnimationState(initial)
   const animate = (time: number) =>
-    animateScrollProgress(state, setProgress, animate, time)
+    animateScrollProgress(state, render, animate, time)
   const update = () => {
-    state.target = readScrollProgress(ref.current)
+    state.target = readScrollProgress(section.current)
     requestScrollFrame(state, animate)
   }
+  const updateMotion = () => {
+    reducedMotion = media.matches
+    render(state.current)
+  }
 
-  setProgress(initial)
+  render(initial)
   window.addEventListener('scroll', update, { passive: true })
   window.addEventListener('resize', update)
+  media.addEventListener('change', updateMotion)
   return () => {
     if (state.frame) window.cancelAnimationFrame(state.frame)
     window.removeEventListener('scroll', update)
     window.removeEventListener('resize', update)
+    media.removeEventListener('change', updateMotion)
   }
+}
+
+function applyLayerStyle(node: HTMLElement | null, style: LayerStyle) {
+  if (!node) return
+  node.style.opacity = String(style.opacity)
+  node.style.transform = style.transform ?? ''
+  if (style.pointerEvents) node.style.pointerEvents = style.pointerEvents
 }
 
 function animateScrollProgress(
   state: ScrollAnimationState,
-  setProgress: (progress: number) => void,
+  render: (progress: number) => void,
   animate: (time: number) => void,
   time: number,
 ) {
@@ -212,7 +219,7 @@ function animateScrollProgress(
       ? state.target
       : state.current + distance * amount
   state.lastFrameTime = time
-  setProgress(state.current)
+  render(state.current)
   state.frame =
     state.current === state.target ? 0 : window.requestAnimationFrame(animate)
 }
@@ -245,17 +252,17 @@ function readScrollProgress(node: HTMLElement | null) {
 function heroFrameStyle(
   progress: number,
   reducedMotion: boolean,
-): CSSProperties {
+): LayerStyle {
   const opacity = reducedMotion
     ? reducedMotionOpacity(progress)
-    : 1 - smoothstep(0.72, 0.98, progress)
-  return { opacity, pointerEvents: progress < 0.72 ? 'auto' : 'none' }
+    : 1 - smoothstep(hiddenFrom, 0.98, progress)
+  return { opacity, pointerEvents: progress < hiddenFrom ? 'auto' : 'none' }
 }
 
 function heroCopyStyle(
   progress: number,
   reducedMotion: boolean,
-): CSSProperties {
+): LayerStyle {
   if (reducedMotion) return { opacity: reducedMotionOpacity(progress) }
   const amount = easeOut(timelineProgress(progress, 0, 0.68))
   return {
@@ -267,7 +274,7 @@ function heroCopyStyle(
 function heroMockupStyle(
   progress: number,
   reducedMotion: boolean,
-): CSSProperties {
+): LayerStyle {
   if (reducedMotion) return { opacity: reducedMotionOpacity(progress) }
   const lift = easeOut(timelineProgress(progress, 0, 0.9))
   const fade = smoothstep(0.34, 0.72, progress)
@@ -278,7 +285,7 @@ function heroMockupStyle(
 }
 
 function reducedMotionOpacity(progress: number) {
-  return progress < 0.72 ? 1 : 0
+  return progress < hiddenFrom ? 1 : 0
 }
 
 function timelineProgress(progress: number, start: number, end: number) {
