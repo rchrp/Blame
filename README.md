@@ -76,13 +76,14 @@ shasum -a 256 -c SHA256SUMS --ignore-missing
 
 ## Quick start
 
-1. Open Blame and sign in, or create a free account.
+1. Open Blame and connect an AI provider with your own API key, or your Claude Code or Codex subscription. No account needed.
 2. Open a Git repository, or create a new project from a web stack.
-3. Connect an AI provider with your own API key or subscription.
-4. Write a user story in the backlog and hand it to an agent.
-5. Follow the agent in its own worktree, try the result in the live preview, then request changes, reject it, or approve and merge.
+3. Write a user story in the backlog and hand it to an agent.
+4. Follow the agent in its own worktree, try the result in the live preview, then request changes, reject it, or approve and merge.
 
 For a quick fix or a question about the code, skip the backlog and use **Quick Chat**.
+
+Everything above stays on your computer. [Sign in](#faq) later to sync across computers or use hosted services: your workspace moves into the account.
 
 ## The Light Semantic Harness
 
@@ -115,17 +116,19 @@ Most coding agents grep, rewrite whole files, and tell you it should work now. B
 - **Specialist agents.** Codebase, story, frontend design, verification, and risk specialists sharpen the work while one lead agent stays responsible for it.
 - **MCP servers.** Connect your MCP servers to every agent.
 - **Project creation.** Start from an empty folder: pick a web stack and Blame generates a project ready for agent work.
-- **Account sync.** Stories, conversations, Code Practices, provider connections, and MCP servers follow you to another computer.
+- **Optional account sync.** Sign in to have stories, conversations, Code Practices, provider connections, and MCP servers follow you to another computer.
 
 ## Free and Premium
 
 Blame is free and open source. Blame Premium pays for hosted services that cost money to run.
 
-| Free, without a subscription           | Blame Premium                                                 |
+| Free, no account needed                | Blame Premium (with an account)                               |
 | -------------------------------------- | ------------------------------------------------------------- |
 | Projects, backlog, and conversations   | Cloud voice transcription                                     |
 | Local worktrees and local previews     | Managed Cloud Previews                                        |
 | Your own AI provider credentials       | New hosted file uploads, including deployment source archives |
+
+A free account adds sync between computers, web research for agents, and deployment to Vercel.
 
 Premium is **$20/month** or **$200/year**. Your AI provider bills its own usage. Files stay accessible after a subscription ends. See [blame.so/pricing](https://blame.so/pricing).
 
@@ -146,16 +149,18 @@ Any of the 50 supported providers, with your own API key or subscription, plus a
 </details>
 
 <details>
-<summary><strong>Why do I need an account?</strong></summary>
+<summary><strong>Do I need an account?</strong></summary>
 
-Your account syncs stories, conversations, Code Practices, provider connections, and MCP configuration between computers, and unlocks Premium services. The account is free.
+No. Without an account, Blame keeps your projects, stories, conversations, Code Practices, and provider connections on your computer, in a local database. Provider keys are encrypted with a key held by your system keychain. Agents, worktrees, previews, review, and merge work without Blame's servers: agents only call your AI provider.
+
+A free account adds what needs a server: sync between computers, web research for agents, deployment to Vercel, and the Premium services. When you sign in, your local workspace is copied into the account and stays on your computer too. Signing in again later only adds what is missing.
 
 </details>
 
 <details>
 <summary><strong>Can I self-host the backend?</strong></summary>
 
-Not as a turnkey setup yet. The development setup in [CONTRIBUTING.md](CONTRIBUTING.md) runs the whole stack locally, and the [open-source readiness summary](docs/open-source-readiness.tex) tracks what self-hosting still needs.
+For one person, it already is: without an account, the desktop app runs the same API on your computer, on SQLite. Hosting it for a team is not turnkey yet. The development setup in [CONTRIBUTING.md](CONTRIBUTING.md) runs the whole stack locally, and the [open-source readiness summary](docs/open-source-readiness.tex) tracks what self-hosting still needs.
 
 </details>
 
