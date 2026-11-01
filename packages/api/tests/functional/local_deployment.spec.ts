@@ -1,4 +1,3 @@
-import Project from '#models/project'
 import User from '#models/user'
 import { deployment } from '#lib/deployment'
 import LocalSessionService from '#services/local_session_service'
@@ -94,9 +93,5 @@ test.group('local API', (group) => {
     const workspace = await client.get('/api/v1/account/workspace').bearerToken(token)
     workspace.assertStatus(200)
     assert.lengthOf(workspace.body().data.tables.user_stories, 1)
-
-    const cleared = await client.delete('/api/v1/account/workspace').bearerToken(token)
-    cleared.assertStatus(204)
-    assert.isNull(await Project.find(projectId))
   })
 })

@@ -121,17 +121,6 @@ export default class WorkspaceTransferService {
       return result
     })
   }
-
-  /** Empties the local workspace once an account holds a copy of it. */
-  async clear(userId: string) {
-    await db.transaction(async (transaction) => {
-      for (const table of ['projects', 'provider_credentials'] as const) {
-        await transaction.from(table).where('user_id', userId).delete()
-      }
-      await transaction.from('user_ai_preferences').where('user_id', userId).delete()
-      await transaction.from('user_mcp_configurations').where('user_id', userId).delete()
-    })
-  }
 }
 
 class WorkspaceImporter {

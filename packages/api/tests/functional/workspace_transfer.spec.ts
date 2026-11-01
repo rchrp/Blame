@@ -7,6 +7,10 @@ import testUtils from '@adonisjs/core/services/test_utils'
 import db from '@adonisjs/lucid/services/db'
 import { test } from '@japa/runner'
 import { randomUUID } from 'node:crypto'
+import { deployment } from '#lib/deployment'
+
+// Accounts receive workspaces on the hosted API only.
+const accountApi = deployment.hostedServices ? false : 'Runs against the hosted API only'
 
 function createUser() {
   return User.create({ email: `${randomUUID()}@example.com`, password: 'password123' })
@@ -30,11 +34,14 @@ async function localWorkspace() {
   return { user, project }
 }
 
-/** Exports then clears, as the local API does: the account lives in another database. */
+/**
+ * Exports a workspace, then removes it here: the local API and the account
+ * live in different databases, so imported rows must not find the originals.
+ */
 async function handOver(userId: string) {
-  const transfer = new WorkspaceTransferService()
-  const bundle = await transfer.export(userId)
-  await transfer.clear(userId)
+  const bundle = await new WorkspaceTransferService().export(userId)
+  await db.from('projects').where('user_id', userId).delete()
+  await db.from('provider_credentials').where('user_id', userId).delete()
   return bundle
 }
 
@@ -141,12 +148,26 @@ test.group('workspace transfer', (group) => {
     assert.equal(await count('user_stories', 'project_id', accountProject.id), 0)
   })
 
-  test('clears the local workspace after the handover', async ({ assert }) => {
+  test('imports through the account API, idempotently', async ({ client, assert }) => {
     const local = await localWorkspace()
-    await new WorkspaceTransferService().clear(local.user.id)
+    const account = await createUser()
+    const bundle = JSON.parse(JSON.stringify(await handOver(local.user.id)))
 
-    assert.equal(await count('projects', 'user_id', local.user.id), 0)
-    assert.equal(await count('provider_credentials', 'user_id', local.user.id), 0)
-    assert.equal(await count('user_stories', 'project_id', local.project.id), 0)
-  })
+    const first = await client.put('/api/v1/account/workspace').loginAs(account).json(bundle)
+    const again = await client.put('/api/v1/account/workspace').loginAs(account).json(bundle)
+
+    first.assertStatus(200)
+    first.assertBodyContains({ data: { projects: 1, user_stories: 2 } })
+    again.assertBodyContains({ data: { projects: 0, user_stories: 0 } })
+    assert.equal(await count('projects', 'user_id', account.id), 1)
+  }).skip(Boolean(accountApi), accountApi || undefined)
+
+  test('refuses something that is not a workspace', async ({ client }) => {
+    const account = await createUser()
+    const response = await client
+      .put('/api/v1/account/workspace')
+      .loginAs(account)
+      .json({ format: 'other', version: 1, tables: {} })
+    response.assertStatus(422)
+  }).skip(Boolean(accountApi), accountApi || undefined)
 })

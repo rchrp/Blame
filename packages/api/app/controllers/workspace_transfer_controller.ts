@@ -5,8 +5,9 @@ import { importWorkspaceValidator } from '#validators/workspace_transfer'
 import type { HttpContext } from '@adonisjs/core/http'
 
 /**
- * Moves the workspace of the local API into an account: the app exports it
- * from the local API, imports it into the hosted API, then clears it locally.
+ * Copies the workspace of the local API into an account: the app exports it
+ * from the local API and imports it into the hosted API. The local copy stays
+ * on the computer.
  */
 export default class WorkspaceTransferController {
   async export({ auth, response }: HttpContext) {
@@ -17,10 +18,5 @@ export default class WorkspaceTransferController {
   async import({ auth, request }: HttpContext) {
     const bundle = (await request.validateUsing(importWorkspaceValidator)) as WorkspaceBundle
     return { data: await new WorkspaceTransferService().import(auth.getUserOrFail().id, bundle) }
-  }
-
-  async clear({ auth, response }: HttpContext) {
-    await new WorkspaceTransferService().clear(auth.getUserOrFail().id)
-    return response.noContent()
   }
 }

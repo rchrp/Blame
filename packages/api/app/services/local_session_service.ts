@@ -1,5 +1,6 @@
 import User from '#models/user'
 import db from '@adonisjs/lucid/services/db'
+import { userInfo } from 'node:os'
 
 const localUserEmail = 'local@blame.invalid'
 
@@ -22,6 +23,15 @@ export default class LocalSessionService {
   private async user() {
     const existing = await User.findBy('email', localUserEmail)
     if (existing) return existing
-    return User.create({ email: localUserEmail, emailVerified: true, fullName: null })
+    return User.create({ email: localUserEmail, emailVerified: true, fullName: systemUserName() })
+  }
+}
+
+/** The name of the person signed in to this computer, shown on their work. */
+function systemUserName() {
+  try {
+    return userInfo().username || null
+  } catch {
+    return null
   }
 }
