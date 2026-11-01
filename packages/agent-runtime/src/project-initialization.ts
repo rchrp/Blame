@@ -5,6 +5,7 @@ import type {
 } from "./types.js";
 import { previewDevicesSchema } from "./preview-device-schema.js";
 import { validateRunConfigurationPreview } from "./project-preview-validation.js";
+import { cloudTransferIssues } from "./project-cloud-transfer-size.js";
 import {
   isDatabaseEnvironmentKey,
   normalizeLocalPreviewDatabaseEnvironmentValue,
@@ -408,7 +409,14 @@ export function parseProjectInitializationPayload(
     runConfigurations,
     scan,
     manifest,
-    options,
+    {
+      ...options,
+      extraIssues: cloudTransferIssues(
+        scan?.cloudTransfer?.transfer,
+        scan?.cloudTransfer?.existingBlameignore,
+        cloudPreviewIgnore,
+      ),
+    },
   );
   return {
     previewManifest: manifestWithWarnings(manifest, warnings),
@@ -696,7 +704,9 @@ export function validateProjectInitializationOutput(
   configurations: ProjectRunConfiguration[],
   scan: ProjectInitializationScan | undefined,
   manifest: PreviewManifest,
-  options: ProjectInitializationParseOptions = {},
+  options: ProjectInitializationParseOptions & {
+    extraIssues?: PreviewSetupIssue[];
+  } = {},
 ) {
   validateRunConfigurationTopology(configurations, manifest);
   return validatePreviewSetup(manifest, scan, options);

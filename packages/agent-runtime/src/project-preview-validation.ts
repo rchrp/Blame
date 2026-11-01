@@ -79,14 +79,20 @@ export class PreviewSetupError extends Error {
 export function validatePreviewSetup(
   manifest: PreviewManifest,
   scan?: ProjectInitializationScan,
-  options: { acceptWarnings?: boolean } = {},
+  options: {
+    acceptWarnings?: boolean;
+    extraIssues?: PreviewSetupIssue[];
+  } = {},
 ) {
   const hostOrchestration =
     scan && hostOrchestratedManifestCommand(manifest, scan.files);
   if (hostOrchestration) {
     throw new Error(hostOrchestrationError(hostOrchestration));
   }
-  const issues = previewSetupIssues(manifest, scan);
+  const issues = [
+    ...previewSetupIssues(manifest, scan),
+    ...(options.extraIssues ?? []),
+  ];
   const blocking = issues.filter(({ severity }) => severity === "blocking");
   const warnings = issues.filter(({ severity }) => severity === "warning");
   if (blocking.length || (warnings.length && !options.acceptWarnings)) {

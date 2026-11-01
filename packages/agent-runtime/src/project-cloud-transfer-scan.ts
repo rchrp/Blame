@@ -1,10 +1,16 @@
 import { lstat } from "node:fs/promises";
 import { join } from "node:path";
 import { readProjectCloudIgnore } from "./project-cloud-ignore.js";
+import {
+  measureCloudTransfer,
+  type CloudTransferSize,
+} from "./project-cloud-transfer-size.js";
 
 type SizedPath = { path: string; bytes: number };
 export type ProjectCloudTransferScan = {
   existingBlameignore?: string;
+  /** What a cloud preview would send, measured from Git's file list. */
+  transfer?: CloudTransferSize;
   largestFiles: SizedPath[];
   largestDirectories: (SizedPath & { files: number })[];
   /** Discovery is bounded; these totals may be partial. */
@@ -53,6 +59,7 @@ export async function scanProjectCloudTransfer(
   }
   return {
     existingBlameignore: await readProjectCloudIgnore(root),
+    transfer: await measureCloudTransfer(root),
     discoveredBytes,
     largestFiles,
     largestDirectories: [...directories]
