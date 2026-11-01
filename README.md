@@ -16,7 +16,7 @@ Hand an agent a user story. Get back a change you can check before it merges.
 
 **[Download](#install)** · [Website](https://blame.so) · [Demo video](https://youtu.be/cD6jASpIKQw) · [Discussions](https://github.com/rchrp/Blame/discussions) · [Contributing](CONTRIBUTING.md)
 
-<a href="https://youtu.be/cD6jASpIKQw"><img src="docs/media/demo.gif" width="900" alt="A user story goes from the backlog to an agent, a live preview, and a reviewed merge in Blame"></a>
+<a href="https://youtu.be/cD6jASpIKQw"><img src="docs/media/demo.gif" width="900" alt="Three agents work on three stories of the Blame website at once in Blame; each story's Preview tab shows its own running copy of the site, then the story in review is approved and merged"></a>
 
 </div>
 
