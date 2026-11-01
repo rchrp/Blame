@@ -11,18 +11,23 @@ export async function resolveStoryBranch(input: {
   recordedBranch?: string | null;
   storyId: string;
 }) {
-  const { base } = input;
-  if (input.recordedBranch === base) return { branch: base, suffix: "" };
+  const { base, recordedBranch } = input;
+  // The story's own branch, plain or made unique on an earlier run.
+  if (recordedBranch === base || recordedBranch?.startsWith(`${base}-`)) {
+    const suffix = recordedBranch.slice(base.length);
+    return { branch: recordedBranch, suffix };
+  }
   const suffix = `-${storyIdSuffix(input.storyId)}`;
   const own = `${base}${suffix}`;
-  if (input.recordedBranch === own || (await input.exists(own)))
-    return { branch: own, suffix };
+  if (await input.exists(own)) return { branch: own, suffix };
   return (await input.exists(base))
     ? { branch: own, suffix }
     : { branch: base, suffix: "" };
 }
 
+// Story ids are UUIDv7: their first digits are a timestamp that stories
+// created minutes apart share, their last ones are random.
 function storyIdSuffix(storyId: string) {
   const compact = storyId.toLowerCase().replace(/[^a-z0-9]/g, "");
-  return compact.slice(0, 8) || "story";
+  return compact.slice(-8) || "story";
 }
