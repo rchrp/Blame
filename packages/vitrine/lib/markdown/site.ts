@@ -1,10 +1,12 @@
 import { premiumBenefits, pricingBillingOptions } from "@blame/pricing-card/offer";
 import { artifactUrl, type DownloadArtifact } from "@/app/(en)/download/artifacts";
+import { pricingFaq, type FaqEntry } from "@/content/faq";
 import {
   githubReleasesUrl,
   githubRepositoryUrl,
   harnessSourceUrl,
 } from "@/lib/github";
+import { isMarkdownPagePath, markdownUrlPath } from "@/lib/markdown-paths";
 import { absoluteSiteUrl } from "@/lib/site";
 
 // The product pages as Markdown for AI agents. The text follows the pages
@@ -116,25 +118,7 @@ Choose a web stack. Blame generates the structure, tooling, environment files, a
 
 ## Frequently asked questions
 
-### Is Blame free?
-
-Yes. The whole app is free and open source under the AGPL-3.0. Blame Premium (${premiumPrice}) only adds hosted services: managed Cloud Previews, cloud voice transcription, and hosted file uploads. Your AI provider bills its own usage.
-
-### Where does my code run?
-
-On your computer. Local execution uses a Lima VM on macOS, a WSL distribution on Windows, and native worktrees with Docker on Linux. Code is sent to the AI provider you choose when an agent needs it. Cloud Previews, a Premium feature, sync a workspace snapshot to a managed sandbox.
-
-### Which AI providers can I use?
-
-Any of the 50 supported providers, with your own API key or subscription, plus any OpenAI-compatible endpoint. You can use a different model for each agent.
-
-### Why do I need an account?
-
-Your account syncs stories, conversations, Code Practices, provider connections, and MCP configuration between computers, and unlocks Premium services. The account is free.
-
-### Can I self-host the backend?
-
-Not as a turnkey setup yet. The development setup in the repository's CONTRIBUTING.md runs the whole stack locally.
+${faqMarkdown(pricingFaq)}
 
 ### How is Blame built?
 
@@ -168,6 +152,10 @@ ${monthly.label}: $${monthly.price} (${monthly.suffix}). ${yearly.label}: $${yea
 ${premiumBenefits.map((benefit) => `- ${benefit}`).join("\n")}
 
 Your AI provider bills its own usage. Files stay accessible after a subscription ends.
+
+## Frequently asked questions
+
+${faqMarkdown(pricingFaq)}
 
 ## Policies
 
@@ -227,4 +215,21 @@ shasum -a 256 -c SHA256SUMS --ignore-missing
 
 Blame is open source under the AGPL-3.0; the source code is on GitHub: ${githubRepositoryUrl}.
 `;
+}
+
+// The questions as Markdown, each linking to the Markdown version of the
+// page it points to when there is one.
+function faqMarkdown(entries: readonly FaqEntry[]) {
+  return entries
+    .map((entry) => {
+      const link = entry.link
+        ? ` ${entry.link.label}: ${absoluteSiteUrl(
+            isMarkdownPagePath(entry.link.path)
+              ? markdownUrlPath(entry.link.path)
+              : entry.link.path,
+          )}`
+        : "";
+      return `### ${entry.question}\n\n${entry.answer}${link}`;
+    })
+    .join("\n\n");
 }

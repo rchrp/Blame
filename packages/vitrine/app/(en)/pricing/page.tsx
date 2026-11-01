@@ -1,9 +1,11 @@
 import { pricingBillingOptions } from "@blame/pricing-card/offer";
 import { JsonLd } from "@/components/json-ld";
 import { PricingCard } from "@/components/pricing-card";
+import { PricingFaq } from "@/components/pricing-faq";
 import { SceneWarmup } from "@/components/scene-warmup";
 import { SiteHeader } from "@/components/site-header";
 import { HeroScene } from "@/app/scene/hero-scene";
+import { pricingFaq } from "@/content/faq";
 import { createIndexablePageMetadata } from "@/lib/seo";
 import { pricingStructuredData } from "@/lib/structured-data";
 
@@ -54,6 +56,7 @@ export default function PricingPage() {
         </div>
 
       </section>
+      <PricingFaq entries={pricingFaq} />
     </main>
   );
 }

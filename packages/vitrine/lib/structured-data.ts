@@ -2,6 +2,7 @@ import {
   pricingBillingOptions,
   type PricingBillingCycle,
 } from "@blame/pricing-card/offer";
+import { pricingFaq } from "@/content/faq";
 import {
   isoLegalDate,
   type LegalDocument,
@@ -204,8 +205,20 @@ export const pricingStructuredData = {
         "Blame pricing",
         "Blame is free and open source. Blame Premium adds hosted services.",
       ),
+      // The page ends on its questions (content/faq.ts).
+      "@type": ["WebPage", "FAQPage"],
       about: { "@id": applicationId },
       breadcrumb: { "@id": `${pricingUrl}#breadcrumb` },
+      mainEntity: pricingFaq.map((entry) => ({
+        "@type": "Question",
+        name: entry.question,
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: entry.link
+            ? `${entry.answer} ${entry.link.label}: ${absoluteSiteUrl(entry.link.path)}`
+            : entry.answer,
+        },
+      })),
     },
     breadcrumb("/pricing", "Pricing"),
   ],
