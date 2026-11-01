@@ -59,7 +59,7 @@ async function readLimitedPayload(stream: AdonisRequest['request'], maximumBytes
 }
 
 function upstreamUrl(signal: TelemetrySignal) {
-  const url = new URL(env.get('BLAME_TELEMETRY_UPSTREAM_ENDPOINT'))
+  const url = new URL(requiredTelemetrySetting('BLAME_TELEMETRY_UPSTREAM_ENDPOINT'))
   url.pathname = `${url.pathname.replace(/\/+$/, '')}/v1/${signal}`
   return url.toString()
 }
@@ -89,5 +89,13 @@ function decodeHeader(value: string) {
 function positiveInteger(value: number | undefined, fallback: number) {
   if (value === undefined) return fallback
   if (!Number.isInteger(value) || value < 1) throw new Error('Telemetry limit must be positive')
+  return value
+}
+
+export function requiredTelemetrySetting(
+  name: 'BLAME_TELEMETRY_PUBLIC_ENDPOINT' | 'BLAME_TELEMETRY_UPSTREAM_ENDPOINT'
+) {
+  const value = env.get(name)
+  if (!value) throw new Error(`${name} is required to serve telemetry`)
   return value
 }

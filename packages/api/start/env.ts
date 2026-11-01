@@ -19,6 +19,7 @@ export default await Env.create(new URL('../', import.meta.url), {
   LOG_LEVEL: Env.schema.string(),
 
   // App
+  BLAME_DEPLOYMENT: Env.schema.enum.optional(['cloud', 'local'] as const),
   APP_KEY: Env.schema.secret(),
   APP_KEY_PREVIOUS: Env.schema.secret.optional(),
   APP_URL: Env.schema.string({ format: 'url', tld: false }),
@@ -46,14 +47,15 @@ export default await Env.create(new URL('../', import.meta.url), {
   MICROSOFT_TENANT_ID: Env.schema.string.optional(),
   ACCOUNT_CLOSURE_LEDGER_DIRECTORY: Env.schema.string.optional(),
   BLAME_TELEMETRY_MAX_PAYLOAD_BYTES: Env.schema.number.optional(),
-  BLAME_TELEMETRY_PUBLIC_ENDPOINT: Env.schema.string({ format: 'url', tld: false }),
+  // Telemetry is a hosted service: the local API does not ingest it.
+  BLAME_TELEMETRY_PUBLIC_ENDPOINT: Env.schema.string.optional({ format: 'url', tld: false }),
   BLAME_TELEMETRY_REQUESTS_PER_MINUTE: Env.schema.number.optional(),
-  BLAME_TELEMETRY_TOKEN_SECRET: Env.schema.secret(),
+  BLAME_TELEMETRY_TOKEN_SECRET: Env.schema.secret.optional(),
   BLAME_TELEMETRY_TOKEN_TTL_SECONDS: Env.schema.number.optional(),
-  BLAME_TELEMETRY_UPSTREAM_ENDPOINT: Env.schema.string({ format: 'url', tld: false }),
+  BLAME_TELEMETRY_UPSTREAM_ENDPOINT: Env.schema.string.optional({ format: 'url', tld: false }),
   BLAME_TELEMETRY_UPSTREAM_HEADERS: Env.schema.secret.optional(),
   BLAME_TELEMETRY_UPSTREAM_TIMEOUT_MS: Env.schema.number.optional(),
-  ATTACHMENTS_STORAGE_DRIVER: Env.schema.enum.optional(['s3', 'memory'] as const),
+  ATTACHMENTS_STORAGE_DRIVER: Env.schema.enum.optional(['s3', 'memory', 'filesystem'] as const),
   ATTACHMENTS_MAX_BYTES: Env.schema.number.optional(),
   ATTACHMENTS_DOWNLOAD_URL_TTL_SECONDS: Env.schema.number.optional(),
   ATTACHMENTS_UPLOAD_URL_TTL_SECONDS: Env.schema.number.optional(),
@@ -66,7 +68,9 @@ export default await Env.create(new URL('../', import.meta.url), {
   ATTACHMENTS_S3_FORCE_PATH_STYLE: Env.schema.boolean.optional(),
 
   // Managed preview workspace artifacts (server-only, separate from conversation attachments)
-  BLAME_WORKSPACE_STORAGE_DRIVER: Env.schema.enum.optional(['s3', 'memory'] as const),
+  BLAME_WORKSPACE_STORAGE_DRIVER: Env.schema.enum.optional(['s3', 'memory', 'filesystem'] as const),
+  // Where the filesystem driver keeps objects, on the local API
+  BLAME_LOCAL_STORAGE_DIRECTORY: Env.schema.string.optional(),
   BLAME_WORKSPACE_DOWNLOAD_URL_TTL_SECONDS: Env.schema.number.optional(),
   BLAME_WORKSPACE_UPLOAD_URL_TTL_SECONDS: Env.schema.number.optional(),
   BLAME_WORKSPACE_S3_ENDPOINT: Env.schema.string.optional({ format: 'url', tld: false }),

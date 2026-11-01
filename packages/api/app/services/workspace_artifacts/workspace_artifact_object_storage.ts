@@ -1,4 +1,6 @@
 import { workspaceArtifactsConfig } from '#config/workspace_artifacts'
+import { localStorageDirectory } from '#config/attachments'
+import { FileObjectStorage } from '#services/file_object_storage'
 import {
   MemoryObjectStorage,
   S3EncryptedObjectStorage,
@@ -17,6 +19,9 @@ function createWorkspaceArtifactObjectStorage(): BlameObjectStorage {
   const config = workspaceArtifactsConfig()
   if (config.driver === 'memory') {
     return new MemoryObjectStorage(config.uploadUrlTtlSeconds, 'workspace-artifacts')
+  }
+  if (config.driver === 'filesystem') {
+    return new FileObjectStorage(localStorageDirectory('workspace-artifacts'))
   }
   return new EncryptedWorkspaceObjectStorage(
     new S3EncryptedObjectStorage({

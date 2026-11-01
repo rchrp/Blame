@@ -15,7 +15,6 @@
     "dev": "node ace.js serve --hmr",
     "email:dev": "email dev --dir app/mails",
     "test": "node ace.js test",
-    "test:sqlite": "DB_CONNECTION=sqlite node ace.js test",
     "lint": "eslint .",
     "format": "prettier --write .",
     "typecheck": "tsc --noEmit"

@@ -1,5 +1,5 @@
 import TelemetryTokenService from '#services/telemetry_token_service'
-import env from '#start/env'
+import { requiredTelemetrySetting } from '#services/telemetry_ingestion_service'
 import type { HttpContext } from '@adonisjs/core/http'
 
 export default class TelemetrySessionsController {
@@ -7,7 +7,7 @@ export default class TelemetrySessionsController {
     const user = auth.getUserOrFail()
     response.header('Cache-Control', 'private, no-store')
     return {
-      endpoint: env.get('BLAME_TELEMETRY_PUBLIC_ENDPOINT'),
+      endpoint: requiredTelemetrySetting('BLAME_TELEMETRY_PUBLIC_ENDPOINT'),
       ...new TelemetryTokenService().issue(user.id),
     }
   }

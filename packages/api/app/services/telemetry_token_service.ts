@@ -75,7 +75,7 @@ export default class TelemetryTokenService {
 }
 
 function configuredOptions(): TelemetryTokenOptions {
-  const secret = env.get('BLAME_TELEMETRY_TOKEN_SECRET').release()
+  const secret = env.get('BLAME_TELEMETRY_TOKEN_SECRET')?.release() ?? ''
   const ttlSeconds = env.get('BLAME_TELEMETRY_TOKEN_TTL_SECONDS') ?? 900
   if (Buffer.byteLength(secret) < 32) throw new Error('Telemetry token secret is too short')
   if (!Number.isInteger(ttlSeconds) || ttlSeconds < 300 || ttlSeconds > 3600) {
