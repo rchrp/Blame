@@ -3,7 +3,10 @@ import test from "node:test";
 
 import type { ProjectInitializationScan } from "./project-initialization-scan.js";
 import { previewSetupIssues } from "./project-preview-validation.js";
-import { parsePreviewManifest } from "./preview-manifest.js";
+import {
+  normalizePreviewManifest,
+  parsePreviewManifest,
+} from "./preview-manifest.js";
 
 // Shaped on the scans and submissions of 2026-10-30: a pnpm workspace with
 // an AdonisJS API and an Electron app, and a Next.js site using Prisma.
@@ -211,4 +214,24 @@ test("asks to pass --no-sandbox to Electron itself", () => {
     ),
     [],
   );
+});
+
+test("keeps the throwaway credentials an app needs to start", () => {
+  // AmazonScrapper's API validates its OAuth and Keepa settings at boot:
+  // dropping their throwaway values stopped `node ace migration:run`.
+  const api = {
+    ...database,
+    GOOGLE_CLIENT_ID: "placeholder",
+    KEEPA_ACCESS_KEY: "preview",
+    APP_KEY: "short",
+  };
+  const normalized = normalizePreviewManifest(manifest({ migrate: api, api }));
+  for (const id of ["api", "migrate"]) {
+    const environment = [...normalized.setup, ...normalized.services].find(
+      (item) => item.id === id,
+    )!.environment!;
+    assert.equal(environment.GOOGLE_CLIENT_ID, "placeholder");
+    assert.equal(environment.KEEPA_ACCESS_KEY, "preview");
+    assert.equal(environment.APP_KEY, "blame-preview-not-secret-0000000000");
+  }
 });

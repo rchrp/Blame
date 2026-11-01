@@ -36,6 +36,7 @@ services:
     environment:
       HOME: /tmp/blame-home
       XDG_CACHE_HOME: /tmp/blame-home/.cache
+      APP_KEY: blame-preview-not-secret-0000000000
       API_TOKEN: local
       COREPACK_HOME: /tmp/corepack-cache
       npm_config_store_dir: /pnpm/store

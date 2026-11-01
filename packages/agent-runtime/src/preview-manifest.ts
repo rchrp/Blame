@@ -540,29 +540,14 @@ function normalizedMysqlEnvironment(environment: PreviewManifestEnvironment) {
   };
 }
 
+// A value that looks like a placeholder stays: an app that validates its
+// environment at startup needs every required variable, and a throwaway
+// value lets it start without the integration. A short APP_KEY becomes a
+// throwaway of a length AdonisJS accepts.
 function normalizedAppEnvironment(environment: PreviewManifestEnvironment) {
-  const normalized: PreviewManifestEnvironment = {};
-  for (const [key, value] of Object.entries(environment)) {
-    if (key === "APP_KEY" && value.length < 16) continue;
-    if (placeholderEnvironmentValue(value)) continue;
-    normalized[key] = value;
-  }
-  return normalized;
-}
-
-function placeholderEnvironmentValue(value: string) {
-  const normalized = value.trim().toLowerCase();
-  return (
-    [
-      "preview",
-      "placeholder",
-      "preview-app-key",
-      "blame-dev-app-key",
-      "changeme",
-      "change-me",
-      "replace-me",
-    ].includes(normalized) || normalized.startsWith("your_")
-  );
+  if (!("APP_KEY" in environment) || environment.APP_KEY!.length >= 16)
+    return environment;
+  return { ...environment, APP_KEY: "blame-preview-not-secret-0000000000" };
 }
 
 function normalizedCaches(manifest: PreviewManifest) {
