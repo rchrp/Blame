@@ -1,0 +1,192 @@
+# When a stable desktop release is published, update the package managers:
+# the Homebrew tap, winget-pkgs and AUR. Prereleases never reach them.
+# Each channel is skipped, with a notice, while its secret is not configured.
+# To retry or backfill a release, run it manually with the tag.
+name: Release packages
+
+on:
+  release:
+    types: [released]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Published stable release tag, for example v1.2.0
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-packages
+
+jobs:
+  prepare:
+    name: Render packages
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.release.outputs.version }}
+      homebrew: ${{ steps.channels.outputs.homebrew }}
+      winget: ${{ steps.channels.outputs.winget }}
+      aur: ${{ steps.channels.outputs.aur }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - id: release
+        name: Check that the release is stable and published
+        run: |
+          release=$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft,isPrerelease)
+          if [[ "$(jq -r '.isDraft or .isPrerelease' <<< "$release")" == true ]]; then
+            echo "::error::$TAG is a draft or a prerelease: package managers only get published stable releases"
+            exit 1
+          fi
+          version="${TAG#v}"
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::$TAG is not a stable v<major>.<minor>.<patch> tag"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Render packages from SHA256SUMS
+        run: |
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern SHA256SUMS --dir release
+          node scripts/packaging.mjs render "${{ steps.release.outputs.version }}" release/SHA256SUMS packages
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: packages
+          path: packages
+          retention-days: 7
+
+      - id: channels
+        name: Check which channels are configured
+        env:
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
+          AUR_SSH_PRIVATE_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+        run: |
+          channel() {
+            if [[ -n "$2" ]]; then
+              echo "$1=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "::notice title=$1 skipped::Secret $3 is not configured: $1 is not updated. See RELEASING.md."
+              echo "$1=false" >> "$GITHUB_OUTPUT"
+            fi
+          }
+          channel homebrew "$HOMEBREW_TAP_TOKEN" HOMEBREW_TAP_TOKEN
+          channel winget "$WINGET_TOKEN" WINGET_TOKEN
+          channel aur "$AUR_SSH_PRIVATE_KEY" AUR_SSH_PRIVATE_KEY
+
+  homebrew:
+    name: Homebrew tap
+    needs: prepare
+    if: needs.prepare.outputs.homebrew == 'true'
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: packages
+          path: packages
+
+      - name: Commit the cask to rchrp/homebrew-tap
+        env:
+          TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          git clone --depth 1 "https://x-access-token:${TOKEN}@github.com/rchrp/homebrew-tap.git" tap
+          mkdir -p tap/Casks
+          cp packages/homebrew/Casks/blame.rb tap/Casks/blame.rb
+          cd tap
+          git add Casks/blame.rb
+          if git diff --cached --quiet; then
+            echo "::notice::The tap already has Blame $VERSION"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "blame $VERSION"
+          git push origin HEAD
+
+  winget:
+    name: winget-pkgs pull request
+    needs: prepare
+    if: needs.prepare.outputs.winget == 'true'
+    runs-on: windows-latest
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: packages
+          path: packages
+
+      - name: Skip a version winget-pkgs already has
+        id: existing
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh api "repos/microsoft/winget-pkgs/contents/manifests/b/Blame/Blame/$VERSION" > /dev/null 2>&1; then
+            echo "::notice::winget-pkgs already has Blame.Blame $VERSION"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Opens the pull request from the token owner's fork of winget-pkgs.
+      - name: Submit the manifests with wingetcreate
+        if: steps.existing.outputs.skip != 'true'
+        shell: pwsh
+        env:
+          WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
+        run: |
+          Invoke-WebRequest https://aka.ms/wingetcreate/latest -OutFile wingetcreate.exe
+          .\wingetcreate.exe submit --prtitle "New version: Blame.Blame version $env:VERSION" --token $env:WINGET_TOKEN packages\winget
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+  aur:
+    name: AUR blame-bin
+    needs: prepare
+    if: needs.prepare.outputs.aur == 'true'
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: packages
+          path: packages
+
+      - name: Check the PKGBUILD and write .SRCINFO
+        run: |
+          pacman -Syu --noconfirm --needed git openssh
+          useradd --create-home builder
+          cp -r packages/aur /home/builder/aur
+          chown -R builder /home/builder/aur
+          # Downloads the release .deb and checks its SHA-256.
+          su builder -c "cd ~/aur && makepkg --verifysource && makepkg --printsrcinfo > .SRCINFO"
+
+      - name: Push to aur.archlinux.org
+        env:
+          AUR_SSH_PRIVATE_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$AUR_SSH_PRIVATE_KEY" > ~/.ssh/aur
+          chmod 600 ~/.ssh/aur
+          # Host key published on https://aur.archlinux.org (SHA256:RFzBCUItH9LZS0cKB5UE6ceAYhBD5C8GeOBip8Z11+4).
+          echo "aur.archlinux.org ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEuBKrPzbawxA/k2g6NcyV5jmqwJ2s+zpgZGZ7tpLIcN" > ~/.ssh/known_hosts
+          export GIT_SSH_COMMAND="ssh -i ~/.ssh/aur -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes"
+          git clone ssh://aur@aur.archlinux.org/blame-bin.git aur-repo
+          cp /home/builder/aur/PKGBUILD /home/builder/aur/.SRCINFO aur-repo/
+          cd aur-repo
+          git config user.name "Raphael Charpentier"
+          git config user.email "raph.chrp@gmail.com"
+          git add PKGBUILD .SRCINFO
+          if git diff --cached --quiet; then
+            echo "::notice::AUR already has blame-bin $VERSION"
+            exit 0
+          fi
+          git commit -m "Update to $VERSION"
+          git push origin HEAD:master
