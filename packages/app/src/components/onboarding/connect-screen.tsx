@@ -1,5 +1,5 @@
 import * as React from "react"
-import { KeyRoundIcon, LaptopIcon, LoaderCircleIcon } from "lucide-react"
+import { KeyRoundIcon, LoaderCircleIcon } from "lucide-react"
 import { AnimatePresence, motion, useAnimate } from "motion/react"
 import { toast } from "sonner"
 
@@ -18,6 +18,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { LegalLink } from "@/components/legal/legal-link"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { signInTitle } from "@/context/workspace-start"
+import { altEnterLabel, useAltEnter } from "@/lib/keyboard"
 import { navigate, navigationPathname } from "@/components/navigation/navigation"
 import { easeOutExpo, springSoft, stepVariants } from "@/lib/motion"
 
@@ -140,7 +141,8 @@ function TransferStatus() {
 
 /**
  * Signing in is optional: continuing without an account sits right under the
- * sign-in button, as wide as it, and the title says what each choice means.
+ * sign-in button, as wide as it, with its own key (Alt+Enter), and the title
+ * says what each choice means.
  */
 function LocalWorkspaceOption({ disabled }: { disabled: boolean }) {
   const auth = useCloudAuth()
@@ -152,24 +154,28 @@ function LocalWorkspaceOption({ disabled }: { disabled: boolean }) {
         if (navigationPathname() === "/premium") navigate("/backlog")
       }
     : auth.continueLocally
+  const busy = disabled || opening || auth.signIn.transferring
+  const choose = () => {
+    if (!open) return
+    setOpening(true)
+    void open().finally(() => setOpening(false))
+  }
+  useAltEnter(choose, Boolean(open) && !busy)
   if (!open) return null
   return (
     <Button
-      className="h-9 bg-background/60 transition-[transform,background-color,box-shadow] duration-200 hover:-translate-y-px hover:bg-background hover:shadow-md"
-      disabled={disabled || opening || auth.signIn.transferring}
+      aria-keyshortcuts="Alt+Enter"
+      className="relative h-9 bg-background/60 px-14 transition-[transform,background-color,box-shadow] duration-200 hover:-translate-y-px hover:bg-background hover:shadow-md"
+      disabled={busy}
       type="button"
       variant="outline"
-      onClick={() => {
-        setOpening(true)
-        void open().finally(() => setOpening(false))
-      }}
+      onClick={choose}
     >
       {opening ? (
         <LoaderCircleIcon className="animate-spin" aria-hidden />
-      ) : (
-        <LaptopIcon aria-hidden />
-      )}
+      ) : null}
       Continue without an account
+      <Kbd className="absolute right-2.5">{altEnterLabel}</Kbd>
     </Button>
   )
 }
