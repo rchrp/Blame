@@ -193,10 +193,10 @@ export const RuntimeProfileSelector = React.memo(
                 type="button"
                 onClick={() => {
                   setOpen(false)
-                  openHostedServicesOffer(auth)
+                  openHostedServicesOffer()
                 }}
               >
-                {auth.mode === "account" ? "View Premium" : "Sign in"}
+                View Premium
               </button>
             </p>
           )}

@@ -13,12 +13,12 @@ const license = (licensed: boolean) => ({
   cancelAtPeriodEnd: false,
 })
 
-test("asks a local workspace to sign in before any hosted service", () => {
+test("asks a local workspace for an account, and names Premium as the step", () => {
   const local = { mode: "local" as const }
   assert.equal(hostedServiceAccess(local, "cloud-preview"), "account-required")
   assert.equal(
     hostedServiceRequirement(local, "voice-transcription"),
-    "Cloud voice transcription needs a Blame account"
+    "Cloud voice transcription requires Blame Premium"
   )
 })
 

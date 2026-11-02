@@ -40,13 +40,22 @@ export function hostedServiceAccess(
   return "available"
 }
 
-/** Why the service cannot be used now, as a short sentence. */
+/** Whether Blame Premium pays for the service. */
+export function hostedServiceIsPremium(service: HostedService) {
+  return hostedServices[service].premium
+}
+
+/**
+ * Why the service cannot be used now, as a short sentence. A Premium service
+ * names Premium even without an account: Premium is the next step, and it
+ * comes with one.
+ */
 export function hostedServiceRequirement(
   auth: SessionAccess,
   service: HostedService
 ) {
-  const { name, plural } = hostedServices[service]
-  return hostedServiceAccess(auth, service) === "account-required"
+  const { name, plural, premium } = hostedServices[service]
+  return hostedServiceAccess(auth, service) === "account-required" && !premium
     ? `${name} ${plural ? "need" : "needs"} a Blame account`
     : `${name} ${plural ? "require" : "requires"} Blame Premium`
 }
