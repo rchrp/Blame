@@ -18,7 +18,7 @@ import { easeOutExpo } from "@/lib/motion"
 import { cn } from "@/lib/utils"
 import { PremiumPanel } from "@/pages/premium/page"
 
-type AccountView = "sign-in" | "premium"
+export type AccountView = "sign-in" | "premium"
 
 const viewTitles: Record<AccountView, string> = {
   "sign-in": "Sign in to Blame",
@@ -26,18 +26,12 @@ const viewTitles: Record<AccountView, string> = {
 }
 
 /**
- * Signing in and Blame Premium as a popup over the app, built from the same
- * panels as the first-run screens. The app stays where it was: closing the
- * popup returns to it, and closing sign-in opened from Premium goes back to
- * Premium.
+ * Signing in or Blame Premium, asked for once the workspace is open. During
+ * first-run setup they show as setup steps; in the app, as a popup
+ * (AccountDialog). Without an account, getting Premium signs in first and
+ * keeps the chosen cycle, so the checkout opens once signed in.
  */
-export function AccountDialog({
-  premiumOpen,
-  onPremiumClose,
-}: {
-  premiumOpen: boolean
-  onPremiumClose(): void
-}) {
+export function useAccountFlow(premiumOpen: boolean) {
   const auth = useCloudAuth()
   const view: AccountView | null =
     auth.status !== "authenticated"
@@ -47,15 +41,45 @@ export function AccountDialog({
         : premiumOpen
           ? "premium"
           : null
-  // The content stays while the popup fades out.
-  const [shown, setShown] = React.useState(view)
-  if (view && view !== shown) setShown(view)
   const [resumeCheckout, setResumeCheckout] =
     React.useState<PricingBillingCycle | null>(null)
 
   // Leaving sign-in without an account drops the checkout it was for.
   if (resumeCheckout && !auth.signIn.open && auth.mode !== "account")
     setResumeCheckout(null)
+
+  return {
+    view,
+    premium: {
+      onSignInFirst(cycle: PricingBillingCycle) {
+        setResumeCheckout(cycle)
+        auth.openSignIn()
+      },
+      resumeCheckout,
+      onCheckoutResumed: () => setResumeCheckout(null),
+    },
+  }
+}
+
+export type AccountFlow = ReturnType<typeof useAccountFlow>
+
+/**
+ * The account flow as a popup over the app, built from the same panels as
+ * the setup steps. Closing it returns to the app; closing sign-in opened from
+ * Premium goes back to Premium.
+ */
+export function AccountDialog({
+  flow,
+  onPremiumClose,
+}: {
+  flow: AccountFlow
+  onPremiumClose(): void
+}) {
+  const auth = useCloudAuth()
+  const { view } = flow
+  // The content stays while the popup fades out.
+  const [shown, setShown] = React.useState(view)
+  if (view && view !== shown) setShown(view)
 
   function close() {
     // The local workspace is moving into the account: let it finish.
@@ -91,12 +115,7 @@ export function AccountDialog({
                   <PremiumPanel
                     variant="dialog"
                     onLeave={close}
-                    onSignInFirst={(cycle) => {
-                      setResumeCheckout(cycle)
-                      auth.openSignIn()
-                    }}
-                    resumeCheckout={resumeCheckout}
-                    onCheckoutResumed={() => setResumeCheckout(null)}
+                    {...flow.premium}
                   />
                 </GlassPanel>
               )}

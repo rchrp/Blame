@@ -53,9 +53,10 @@ export function PremiumOfferScreen() {
 }
 
 type PremiumPanelProps = {
-  // "offer" is the first-run step; "dialog" is the popup over the app,
-  // reached from settings or a Premium-only feature (AccountDialog).
-  variant: "offer" | "dialog"
+  // "offer" is the one-time step at the end of first-run setup. Reached from
+  // settings or a Premium-only feature, Premium is a setup step ("page")
+  // while setup is not finished, and a popup over the app ("dialog") after.
+  variant: "offer" | "page" | "dialog"
   onLeave(): void
   // Premium comes with an account: without one, getting Premium signs in
   // first, then the checkout opens for the chosen cycle.
@@ -82,10 +83,11 @@ export function PremiumPanel({
   React.useEffect(() => {
     if (premium && !wasPremium.current) {
       stage.celebrate()
-      if (!offer) toast.success("Blame Premium is active", { position: "bottom-right" })
+      if (variant === "dialog")
+        toast.success("Blame Premium is active", { position: "bottom-right" })
     }
     wasPremium.current = premium
-  }, [offer, premium, stage])
+  }, [premium, stage, variant])
 
   const resume = React.useEffectEvent((cycle: BillingCycle) => {
     onCheckoutResumed?.()
@@ -106,9 +108,9 @@ export function PremiumPanel({
   return (
     <section
       className={
-        offer
-          ? "mx-auto flex min-h-full w-full max-w-5xl flex-col px-8 pt-10 pb-12"
-          : "flex w-full flex-col px-8 py-9"
+        variant === "dialog"
+          ? "flex w-full flex-col px-8 py-9"
+          : "mx-auto flex min-h-full w-full max-w-5xl flex-col px-8 pt-10 pb-12"
       }
     >
       {offer ? <OnboardingProgress step="premium" className="mb-4" /> : null}

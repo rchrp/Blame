@@ -31,8 +31,13 @@ import {
   OnboardingStage,
   type OnboardingScreen,
 } from "@/components/onboarding/stage/onboarding-stage"
-import { PremiumOfferScreen } from "@/pages/premium/page"
-import { AccountDialog } from "@/components/onboarding/account-dialog"
+import { PremiumOfferScreen, PremiumPanel } from "@/pages/premium/page"
+import {
+  AccountDialog,
+  useAccountFlow,
+  type AccountFlow,
+  type AccountView,
+} from "@/components/onboarding/account-dialog"
 import { WelcomeScreen } from "@/components/onboarding/welcome-screen"
 import { RuntimeSetupScreen } from "@/components/onboarding/runtime-setup-screen"
 import { useBlameRuntime } from "@/context/blame-runtime"
@@ -126,6 +131,8 @@ export function App() {
     auth.mode === "account" &&
     auth.aiPreferences !== null &&
     auth.license?.licensed !== true
+  const accountFlow = useAccountFlow(premiumOpen)
+  const closePremium = () => navigate(previousRoute.path)
   const windowRole = appWindowRole({
     activeProject: projects.activeProject,
     aiPreferences: auth.aiPreferences,
@@ -162,29 +169,24 @@ export function App() {
     )
   }
 
-  // Signing in and Premium open as a popup over whatever is in front.
-  const accountDialog = (
-    <AccountDialog
-      premiumOpen={premiumOpen}
-      onPremiumClose={() => navigate(previousRoute.path)}
-    />
+  // Signing in or Premium: a setup step while setup is not finished, a
+  // popup over the app after.
+  const onboardingScreen = withAccountStep(
+    resolveOnboardingScreen({
+      activeProject: Boolean(projects.activeProject),
+      aiPreferencesMissing: auth.aiPreferences === null,
+      authStatus: auth.status,
+      loading,
+      premiumOfferOpen,
+      runtimeOfferOpen,
+    }),
+    accountFlow.view
   )
-  const onboardingScreen = resolveOnboardingScreen({
-    activeProject: Boolean(projects.activeProject),
-    aiPreferencesMissing: auth.aiPreferences === null,
-    authStatus: auth.status,
-    loading,
-    premiumOfferOpen,
-    runtimeOfferOpen,
-  })
   if (onboardingScreen) {
     return (
-      <>
-        <OnboardingStage screen={onboardingScreen}>
-          {onboardingElement(onboardingScreen)}
-        </OnboardingStage>
-        {accountDialog}
-      </>
+      <OnboardingStage screen={onboardingScreen}>
+        {onboardingElement(onboardingScreen, accountFlow, closePremium)}
+      </OnboardingStage>
     )
   }
 
@@ -204,7 +206,7 @@ export function App() {
             {backlogActive ? null : activeRoute.element}
           </AppLayout>
           <SettingsDialog open={settingsOpen} onOpenChange={closeSettings} />
-          {accountDialog}
+          <AccountDialog flow={accountFlow} onPremiumClose={closePremium} />
         </QuickChatStoreProvider>
       </BacklogStoreProvider>
     </TooltipProvider>
@@ -228,9 +230,30 @@ function resolveOnboardingScreen(input: {
   return undefined
 }
 
-function onboardingElement(screen: OnboardingScreen) {
+function withAccountStep(
+  screen: OnboardingScreen | undefined,
+  view: AccountView | null
+): OnboardingScreen | undefined {
+  if (!screen || screen === "loading" || !view) return screen
+  return view === "sign-in" ? "connect" : "premium"
+}
+
+function onboardingElement(
+  screen: OnboardingScreen,
+  accountFlow: AccountFlow,
+  closePremium: () => void
+) {
   if (screen === "loading") return <LoadingScreen />
   if (screen === "connect") return <ConnectScreen />
+  if (screen === "premium") {
+    return (
+      <PremiumPanel
+        variant="page"
+        onLeave={closePremium}
+        {...accountFlow.premium}
+      />
+    )
+  }
   if (screen === "ai-setup") return <AiPreferencesSetupScreen />
   if (screen === "premium-offer") return <PremiumOfferScreen />
   if (screen === "runtime-setup") return <RuntimeSetupScreen />
