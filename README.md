@@ -47,6 +47,10 @@ brew install --cask rchrp/tap/blame
 winget install Blame.Blame
 ```
 
+**Arch Linux** (AUR, coming soon)
+
+The `blame-bin` package is ready and waits for AUR account registration to reopen. I use Arch, btw: it is coming.
+
 Or download the latest release for your platform:
 
 | Platform                  | Download                                                                                                                                                                                                                                   | Requirements                                |
