@@ -31,7 +31,8 @@ import {
   OnboardingStage,
   type OnboardingScreen,
 } from "@/components/onboarding/stage/onboarding-stage"
-import { PremiumOfferScreen, PremiumScreen } from "@/pages/premium/page"
+import { PremiumOfferScreen } from "@/pages/premium/page"
+import { AccountDialog } from "@/components/onboarding/account-dialog"
 import { WelcomeScreen } from "@/components/onboarding/welcome-screen"
 import { RuntimeSetupScreen } from "@/components/onboarding/runtime-setup-screen"
 import { useBlameRuntime } from "@/context/blame-runtime"
@@ -107,7 +108,8 @@ export function App() {
   const premiumOpen = pathname === premiumPath
   const statusPipOpen = pathname === backlogStatusPipPath
   const previousRoute = resolvePreviousRoute(previousPathname)
-  const activeRoute = settingsOpen ? previousRoute : route
+  // Settings and Premium open over the page that was in front.
+  const activeRoute = settingsOpen || premiumOpen ? previousRoute : route
   // The backlog page stays mounted: it runs the agents and the story queue.
   const backlogActive = activeRoute.path === "/backlog"
   const loading = useMinimumDuration(
@@ -117,23 +119,18 @@ export function App() {
   const premiumOfferPending = usePremiumOfferPending()
   const runtime = useBlameRuntime()
   const runtimeOfferOpen = useRuntimeOfferPending(runtime.phase)
-  // Premium is offered to accounts; a local workspace is offered to sign in
-  // when it reaches for a hosted service.
+  // First-run setup offers Premium to accounts only: a local workspace sees
+  // it when it reaches for a hosted service, in the account popup.
   const premiumOfferOpen =
     premiumOfferPending &&
     auth.mode === "account" &&
     auth.aiPreferences !== null &&
     auth.license?.licensed !== true
-  const signInOpen = auth.signIn.open || (premiumOpen && auth.mode === "local")
   const windowRole = appWindowRole({
     activeProject: projects.activeProject,
     aiPreferences: auth.aiPreferences,
-    authStatus: loading
-      ? "loading"
-      : signInOpen
-        ? "unauthenticated"
-        : auth.status,
-    premiumOpen: premiumOpen || premiumOfferOpen,
+    authStatus: loading ? "loading" : auth.status,
+    premiumOpen: premiumOfferOpen,
     statusPipOpen,
   })
 
@@ -165,21 +162,29 @@ export function App() {
     )
   }
 
+  // Signing in and Premium open as a popup over whatever is in front.
+  const accountDialog = (
+    <AccountDialog
+      premiumOpen={premiumOpen}
+      onPremiumClose={() => navigate(previousRoute.path)}
+    />
+  )
   const onboardingScreen = resolveOnboardingScreen({
     activeProject: Boolean(projects.activeProject),
     aiPreferencesMissing: auth.aiPreferences === null,
     authStatus: auth.status,
     loading,
     premiumOfferOpen,
-    premiumOpen,
     runtimeOfferOpen,
-    signInOpen,
   })
   if (onboardingScreen) {
     return (
-      <OnboardingStage screen={onboardingScreen}>
-        {onboardingElement(onboardingScreen)}
-      </OnboardingStage>
+      <>
+        <OnboardingStage screen={onboardingScreen}>
+          {onboardingElement(onboardingScreen)}
+        </OnboardingStage>
+        {accountDialog}
+      </>
     )
   }
 
@@ -199,6 +204,7 @@ export function App() {
             {backlogActive ? null : activeRoute.element}
           </AppLayout>
           <SettingsDialog open={settingsOpen} onOpenChange={closeSettings} />
+          {accountDialog}
         </QuickChatStoreProvider>
       </BacklogStoreProvider>
     </TooltipProvider>
@@ -211,14 +217,10 @@ function resolveOnboardingScreen(input: {
   authStatus: "authenticated" | "loading" | "unauthenticated"
   loading: boolean
   premiumOfferOpen: boolean
-  premiumOpen: boolean
   runtimeOfferOpen: boolean
-  signInOpen: boolean
 }): OnboardingScreen | undefined {
   if (input.loading || input.authStatus === "loading") return "loading"
-  if (input.authStatus === "unauthenticated" || input.signInOpen)
-    return "connect"
-  if (input.premiumOpen) return "premium"
+  if (input.authStatus === "unauthenticated") return "connect"
   if (input.aiPreferencesMissing) return "ai-setup"
   if (input.premiumOfferOpen) return "premium-offer"
   if (!input.activeProject && input.runtimeOfferOpen) return "runtime-setup"
@@ -229,7 +231,6 @@ function resolveOnboardingScreen(input: {
 function onboardingElement(screen: OnboardingScreen) {
   if (screen === "loading") return <LoadingScreen />
   if (screen === "connect") return <ConnectScreen />
-  if (screen === "premium") return <PremiumScreen />
   if (screen === "ai-setup") return <AiPreferencesSetupScreen />
   if (screen === "premium-offer") return <PremiumOfferScreen />
   if (screen === "runtime-setup") return <RuntimeSetupScreen />

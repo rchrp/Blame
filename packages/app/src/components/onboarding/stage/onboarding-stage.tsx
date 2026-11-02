@@ -12,7 +12,6 @@ export type OnboardingScreen =
   | "connect"
   | "ai-setup"
   | "premium-offer"
-  | "premium"
   | "runtime-setup"
   | "welcome"
 
@@ -24,7 +23,6 @@ const screenTravel: Record<OnboardingScreen, number> = {
   "ai-setup": 0.3,
   "premium-offer": 0.78,
   "runtime-setup": 0.9,
-  premium: 0.6,
   welcome: 1,
 }
 

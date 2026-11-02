@@ -18,7 +18,7 @@ export function LocalAccountPanel() {
           title="No account"
           description="Sign in to sync this workspace across computers and to use hosted services: Cloud Previews, cloud voice transcription and hosted uploads. Your workspace moves into the account."
         >
-          {/* Settings close so the sign-in screen is in front. */}
+          {/* Settings close, so the sign-in popup is the only one open. */}
           <DialogClose asChild>
             <Button variant="outline" onClick={auth.openSignIn}>
               <LogInIcon />

@@ -48,6 +48,23 @@ const modeDepth: Record<AuthMode, number> = {
 const ShakeContext = React.createContext<() => void>(() => undefined)
 
 export function ConnectScreen() {
+  return (
+    <section className="relative flex min-h-full flex-col px-7 py-10">
+      <div className="absolute top-7 left-7">
+        <AppLogo />
+      </div>
+      <div className="flex flex-1 items-center justify-center">
+        <ConnectPanel />
+      </div>
+    </section>
+  )
+}
+
+/**
+ * The sign-in card. It is the first screen, and the sign-in popup over the
+ * app (AccountDialog).
+ */
+export function ConnectPanel() {
   const [mode, setModeState] = React.useState<AuthMode>("login")
   const [direction, setDirection] = React.useState(1)
   const [verificationEmail, setVerificationEmail] = React.useState("")
@@ -73,57 +90,50 @@ export function ConnectScreen() {
   }, [animateCard, card])
 
   return (
-    <section className="relative flex min-h-full flex-col px-7 py-10">
-      <div className="absolute top-7 left-7">
-        <AppLogo />
-      </div>
-      <div className="flex flex-1 items-center justify-center">
-        <ShakeContext.Provider value={shake}>
-          <GlassPanel
-            ref={card}
-            layout
-            transition={{ layout: springSoft }}
-            initial={{ opacity: 0, y: 24, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            className="w-full max-w-[22rem] overflow-hidden px-6 py-6"
+    <ShakeContext.Provider value={shake}>
+      <GlassPanel
+        ref={card}
+        layout
+        transition={{ layout: springSoft }}
+        initial={{ opacity: 0, y: 24, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        className="w-full max-w-[22rem] overflow-hidden px-6 py-6"
+      >
+        <AnimatePresence mode="wait" initial={false} custom={direction}>
+          <motion.div
+            key={mode}
+            layout="position"
+            custom={direction}
+            variants={stepVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
           >
-            <AnimatePresence mode="wait" initial={false} custom={direction}>
-              <motion.div
-                key={mode}
-                layout="position"
-                custom={direction}
-                variants={stepVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-              >
-                {mode === "login" ? (
-                  <LoginForm
-                    onModeChange={setMode}
-                    onVerificationRequired={showVerification}
-                  />
-                ) : mode === "signup" ? (
-                  <SignupForm
-                    onModeChange={setMode}
-                    onVerificationRequired={showVerification}
-                  />
-                ) : mode === "forgot" ? (
-                  <ForgotPasswordForm onModeChange={setMode} />
-                ) : mode === "verify" ? (
-                  <VerificationForm
-                    email={verificationEmail}
-                    onModeChange={setMode}
-                  />
-                ) : (
-                  <EmailTwoFactorForm onModeChange={setMode} />
-                )}
-              </motion.div>
-            </AnimatePresence>
-          </GlassPanel>
-        </ShakeContext.Provider>
-      </div>
-      <TransferStatus />
-    </section>
+            {mode === "login" ? (
+              <LoginForm
+                onModeChange={setMode}
+                onVerificationRequired={showVerification}
+              />
+            ) : mode === "signup" ? (
+              <SignupForm
+                onModeChange={setMode}
+                onVerificationRequired={showVerification}
+              />
+            ) : mode === "forgot" ? (
+              <ForgotPasswordForm onModeChange={setMode} />
+            ) : mode === "verify" ? (
+              <VerificationForm
+                email={verificationEmail}
+                onModeChange={setMode}
+              />
+            ) : (
+              <EmailTwoFactorForm onModeChange={setMode} />
+            )}
+          </motion.div>
+        </AnimatePresence>
+        <TransferStatus />
+      </GlassPanel>
+    </ShakeContext.Provider>
   )
 }
 
@@ -132,7 +142,7 @@ function TransferStatus() {
   const auth = useCloudAuth()
   if (!auth.signIn.transferring) return null
   return (
-    <p className="flex items-center justify-center gap-2 text-sm text-foreground/70">
+    <p className="mt-4 flex items-center justify-center gap-2 text-sm text-foreground/70">
       <LoaderCircleIcon className="size-4 animate-spin" aria-hidden />
       Moving your local workspace into your account…
     </p>
@@ -147,6 +157,7 @@ function TransferStatus() {
 function LocalWorkspaceOption({ disabled }: { disabled: boolean }) {
   const auth = useCloudAuth()
   const [opening, setOpening] = React.useState(false)
+  const button = React.useRef<HTMLButtonElement>(null)
   const fromLocalWorkspace = auth.mode === "local"
   const open = fromLocalWorkspace
     ? async () => {
@@ -160,10 +171,11 @@ function LocalWorkspaceOption({ disabled }: { disabled: boolean }) {
     setOpening(true)
     void open().finally(() => setOpening(false))
   }
-  useAltEnter(choose, Boolean(open) && !busy)
+  useAltEnter(button, choose, Boolean(open) && !busy)
   if (!open) return null
   return (
     <Button
+      ref={button}
       aria-keyshortcuts="Alt+Enter"
       className="relative h-9 bg-background/60 px-14 transition-[transform,background-color,box-shadow] duration-200 hover:-translate-y-px hover:bg-background hover:shadow-md"
       disabled={busy}
