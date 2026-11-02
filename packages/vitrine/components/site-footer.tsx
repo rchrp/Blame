@@ -26,6 +26,7 @@ const footerGroups = [
       { href: githubIssuesUrl, label: "Report an issue" },
       { href: githubContributingUrl, label: "Contributing" },
       { href: githubLicenseUrl, label: "AGPL-3.0 license" },
+      { href: "/code-signing-policy", label: "Code signing policy" },
     ],
   },
   {

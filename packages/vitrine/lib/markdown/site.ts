@@ -28,6 +28,7 @@ const keyLinks = [
   `- Pricing: ${absoluteSiteUrl("/pricing")} — free and open source; Blame Premium adds hosted services for ${premiumPrice}`,
   `- Source code: ${githubRepositoryUrl} (AGPL-3.0-only)`,
   `- Releases: ${githubReleasesUrl}`,
+  `- Code signing policy: ${absoluteSiteUrl("/code-signing-policy")}`,
   `- Demo video: ${demoVideoUrl}`,
 ].join("\n");
 
@@ -161,6 +162,7 @@ ${faqMarkdown(pricingFaq)}
 
 - Terms of Service: ${absoluteSiteUrl("/terms-of-service.md")}
 - Privacy Policy: ${absoluteSiteUrl("/privacy.md")}
+- Code signing policy: ${absoluteSiteUrl("/code-signing-policy.md")}
 - Refund Policy: ${absoluteSiteUrl("/refund-policy.md")}
 - Withdrawal (14-day consumer right): ${absoluteSiteUrl("/withdraw")}
 `;
@@ -213,7 +215,7 @@ sudo dnf install ./blame-linux-x86_64.rpm
 shasum -a 256 -c SHA256SUMS --ignore-missing
 \`\`\`
 
-Blame is open source under the AGPL-3.0; the source code is on GitHub: ${githubRepositoryUrl}.
+Blame is open source under the AGPL-3.0; the source code is on GitHub: ${githubRepositoryUrl}. How releases are signed: [Code signing policy](${absoluteSiteUrl("/code-signing-policy")}).
 `;
 }
 

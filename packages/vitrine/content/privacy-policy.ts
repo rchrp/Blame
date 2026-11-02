@@ -13,8 +13,8 @@ const notice = (
 ): LegalBlock => ({ type: "notice", title, paragraphs, items });
 
 export const privacyEffectiveDate = "13 July 2026";
-export const privacyLastUpdated = "19 July 2026";
-export const privacyVersion = "1.2";
+export const privacyLastUpdated = "2 November 2026";
+export const privacyVersion = "1.3";
 
 export const privacyIntroduction = [
   'This Privacy Policy explains how Raphael Charpentier EI, a French individual entrepreneur applying the micro-enterprise regime and operating under the trade name MK Holding ("Blame", "we", "us", or "our"), collects, uses, stores, discloses, and otherwise processes personal data in connection with Blame Desktop, the blame.so website, cloud services, accounts, billing, updates, and support (together, the "Services").',
@@ -240,7 +240,22 @@ export const privacySections = [
         "Depending on the operation, the telemetry may contain app, operating-system, architecture and runtime versions; opaque execution, story and worktree identifiers; operation, phase, outcome and duration; runtime and bounded dependency states; provider, model and authentication-method categories; token usage and estimated cost; tool names and categories; bounded error types; dominant repository-language and repository-size buckets; task-complexity buckets derived from prompt length and attachment count; and technical request metadata. The gateway authenticates the short-lived telemetry session and may process the Account identifier and IP address for access control, abuse prevention and rate limiting.",
         "Automatic telemetry is designed not to include prompts, source code, file content or paths, repository URLs, commands or arguments, stdout or stderr, tool arguments or results, reusable credentials, cookies or tokens, free-form error messages, or stack traces. Warning and error records sent through OpenTelemetry contain stable event names and bounded metadata rather than the underlying local log message. Redaction and allowlists are applied in the Desktop App and again by the collector. Opaque and pseudonymous identifiers are not described as anonymous.",
         "Blame processes this telemetry on the basis of its legitimate interests in securing, operating, diagnosing and improving a reliable service. It is not used for advertising, cross-service tracking, individual employee-performance monitoring, automated decisions producing legal or similarly significant effects, or AI-model training. You may object to legitimate-interest processing as described in Section 20.",
+        "You can turn automatic telemetry off at any time in Settings > Desktop > Privacy, and on Windows when you install Blame. When it is off, the Desktop App does not start its telemetry exporter and sends no automatic telemetry.",
       ]),
+      notice(
+        "What the Desktop App sends without you choosing the destination",
+        [
+          "Besides the AI providers, integrations and repositories you choose, the Desktop App contacts the systems below. The Windows installer shows this summary before installing and lets you turn off the first two items; Settings > Desktop > Privacy does the same on every platform.",
+        ],
+        [
+          "Update check: each time it starts, the Desktop App asks download.blame.so (hosted by OVHcloud) whether a newer version exists. The request carries your IP address and the app's user agent, and no Account identifier. You can turn it off and still check for updates by hand. On the beta channel, which you choose in Settings, the app reads the list of releases from GitHub (api.github.com and github.com) instead.",
+          "Operational telemetry, described above, while you are signed in.",
+          "Account services: while you are signed in, the Desktop App exchanges the data described in Sections 3 and 4 with api.blame.so. Signing out stops it.",
+          "Web search: when an agent searches the web for a task, its search query is sent to api.blame.so, which forwards it through a self-hosted SearXNG instance to public search engines (Brave, Google, Bing, Qwant, DuckDuckGo and Yahoo). The engines receive the query from Blame's servers, not your IP address or Account. A query can repeat words from your prompt or code.",
+          "Runtime downloads: on macOS and Windows, installing, updating or repairing Blame's runtime downloads Ubuntu images (cloud-images.ubuntu.com or download.blame.so), Docker (download.docker.com), Node.js (nodejs.org) and container images (ghcr.io). Device previews download Android tools from dl.google.com and iOS tools from github.com when you start them. These requests carry your IP address and no Account identifier.",
+          "Speech-to-text: when you use the microphone button, the recording is sent to api.blame.so, which transcribes it through OpenRouter (openrouter.ai) and does not keep the audio.",
+        ],
+      ),
       notice("Runtime diagnostic sent only after your explicit action", [
         "If a runtime setup, repair or reset operation fails, the Desktop App may display the failure detail and offer a Send diagnostic action. No detailed runtime diagnostic is sent merely because the failure occurred. Selecting that action explicitly sends the displayed operation type, runtime type, bounded error category and failure detail to Blame for investigation. The submitted detail is limited in length but can reproduce paths, configuration, command output, project information or other personal or confidential information contained in the error.",
         "Review the displayed detail before sending it. Do not send the diagnostic if it contains secrets, credentials, unrelated source code or unnecessary personal data. You are not required to submit a diagnostic to continue using the Services or obtain general support. Blame will not ask for a password, complete API key or reusable OAuth token in a support request.",
@@ -275,6 +290,8 @@ export const privacySections = [
         "OVHcloud's authorised affiliates and service-specific subprocessors may remotely process hosted personal data where necessary for security, support, or maintenance under OVHcloud's Data Processing Agreement and subprocessor terms available at https://www.ovhcloud.com/fr/terms-and-conditions/contracts/.",
         "Stripe, its affiliates, banks, payment networks, and service providers for checkout, billing, fraud prevention, disputes, refunds, and compliance.",
         "The AI provider, OAuth service, model gateway, or custom endpoint that you select, together with its subprocessors under its terms.",
+        "Public web search engines (Brave, Google, Bing, Qwant, DuckDuckGo and Yahoo), which receive agent search queries from Blame's servers, and OpenRouter, which transcribes speech-to-text recordings, as described in Section 13.",
+        "GitHub, Canonical, Docker, the Node.js project and Google, which serve the updates, runtime components and device tools that the Desktop App downloads, as described in Section 13.",
         "MCP servers, local commands, repository hosts, package registries, APIs, browser targets, and other integrations that you enable or direct the agent to use.",
         "Professional advisers, auditors, insurers, courts, regulators, law-enforcement bodies, tax authorities, and other public authorities where access is necessary and lawful.",
         "A potential buyer, successor, financing source, or adviser in a genuine restructuring, financing, sale, merger, or transfer of all or part of the business, subject to confidentiality and applicable notice requirements.",

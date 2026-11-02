@@ -1,5 +1,13 @@
 import type { LegalSection } from "@/components/legal-document-page";
 import {
+  codeSigningEffectiveDate,
+  codeSigningIntroduction,
+  codeSigningLastUpdated,
+  codeSigningReadyForPublication,
+  codeSigningSections,
+  codeSigningVersion,
+} from "@/content/code-signing-policy";
+import {
   dpaEffectiveDate,
   dpaIntroduction,
   dpaLastUpdated,
@@ -123,6 +131,19 @@ export const legalDocuments = {
     introduction: privacyIntroduction,
     sections: privacySections,
     readyForPublication: privacyReadyForPublication,
+  },
+  codeSigningPolicy: {
+    path: "/code-signing-policy",
+    title: "Code signing policy",
+    description:
+      "How Blame's Windows and macOS releases are built and signed, who approves each signature, and where to find what the app sends.",
+    language: "en",
+    effectiveDate: codeSigningEffectiveDate,
+    lastUpdated: codeSigningLastUpdated,
+    version: codeSigningVersion,
+    introduction: codeSigningIntroduction,
+    sections: codeSigningSections,
+    readyForPublication: codeSigningReadyForPublication,
   },
   refundPolicy: {
     path: "/refund-policy",

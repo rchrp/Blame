@@ -35,8 +35,10 @@ type LegalDocumentPageProps = {
   version: string;
 };
 
+// Named links are written [label](https://…); bare URLs and emails link too.
 const inlineReferencePattern =
-  /(https?:\/\/[^\s<>()]*[^\s<>().,;:!?]|[\w.+-]+@[\w.-]+\.[A-Za-z]{2,})/g;
+  /(\[[^\]]+\]\(https?:\/\/[^\s()]+\)|https?:\/\/[^\s<>()]*[^\s<>().,;:!?]|[\w.+-]+@[\w.-]+\.[A-Za-z]{2,})/g;
+const namedLinkPattern = /^\[([^\]]+)\]\((https?:\/\/[^\s()]+)\)$/;
 const emailAddressPattern = /^[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}$/;
 const inlineReferenceClassName =
   "text-[#dedaff] underline decoration-[#b3acf3]/45 underline-offset-4 transition hover:decoration-[#dedaff]";
@@ -239,6 +241,14 @@ function LegalText({ text }: { text: string }) {
 }
 
 function LegalTextSegment({ value }: { value: string }) {
+  const namedLink = namedLinkPattern.exec(value);
+  if (namedLink) {
+    return (
+      <a className={inlineReferenceClassName} href={namedLink[2]}>
+        {namedLink[1]}
+      </a>
+    );
+  }
   if (value.startsWith("http://") || value.startsWith("https://")) {
     return (
       <a className={inlineReferenceClassName} href={value}>

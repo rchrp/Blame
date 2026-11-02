@@ -9,6 +9,7 @@ export const markdownPagePaths = [
   "/terms-of-service",
   "/fr/conditions-generales-de-service",
   "/privacy",
+  "/code-signing-policy",
   "/refund-policy",
   "/legal-notice",
   "/legal/dpa",

@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { SceneWarmup } from '@/components/scene-warmup'
 import { SiteHeader } from '@/components/site-header'
 import { HeroScene } from '@/app/scene/hero-scene'
@@ -100,7 +101,11 @@ function OpenSourceNotice() {
         <a className={linkClassName} href={githubRepositoryUrl}>
           source code
         </a>{' '}
-        is on GitHub.
+        is on GitHub. How releases are signed:{' '}
+        <Link className={linkClassName} href="/code-signing-policy">
+          Code signing policy
+        </Link>
+        .
       </span>
     </p>
   )
