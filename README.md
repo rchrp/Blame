@@ -76,10 +76,11 @@ shasum -a 256 -c SHA256SUMS --ignore-missing
 
 ## Quick start
 
-1. Open Blame and connect an AI provider with your own API key, or your Claude Code or Codex subscription. No account needed.
-2. Open a Git repository, or create a new project from a web stack.
-3. Write a user story in the backlog and hand it to an agent.
-4. Follow the agent in its own worktree, try the result in the live preview, then request changes, reject it, or approve and merge.
+1. Open Blame. Sign in, or choose **Continue without an account**: Blame remembers the choice and opens your workspace directly next time.
+2. Connect an AI provider with your own API key, or your Claude Code or Codex subscription.
+3. Open a Git repository, or create a new project from a web stack.
+4. Write a user story in the backlog and hand it to an agent.
+5. Follow the agent in its own worktree, try the result in the live preview, then request changes, reject it, or approve and merge.
 
 For a quick fix or a question about the code, skip the backlog and use **Quick Chat**.
 
@@ -151,7 +152,7 @@ Any of the 50 supported providers, with your own API key or subscription, plus a
 <details>
 <summary><strong>Do I need an account?</strong></summary>
 
-No. Without an account, Blame keeps your projects, stories, conversations, Code Practices, and provider connections on your computer, in a local database. Provider keys are encrypted with a key held by your system keychain. Agents, worktrees, previews, review, and merge work without Blame's servers: agents only call your AI provider.
+No. The first screen offers to sign in or to continue without an account, in the same panel. Without an account, Blame keeps your projects, stories, conversations, Code Practices, and provider connections on your computer, in a local database. Provider keys are encrypted with a key held by your system keychain. Agents, worktrees, previews, review, and merge work without Blame's servers: agents only call your AI provider.
 
 A free account adds what needs a server: sync between computers, web research for agents, deployment to Vercel, and the Premium services. When you sign in, your local workspace is copied into the account and stays on your computer too. Signing in again later only adds what is missing.
 
