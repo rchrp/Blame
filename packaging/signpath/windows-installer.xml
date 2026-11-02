@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SignPath artifact configuration "windows-installer": the NSIS installer,
+  built around the Blame.exe signed with "windows-app". The artifact is a ZIP
+  with blame-win-x64.exe at its root. productVersion is the release version
+  (1.2.0 or 1.2.0-beta.1), the ProductVersion string electron-builder gives
+  the installer.
+-->
+<artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+  <parameters>
+    <parameter name="productVersion" required="true" />
+  </parameters>
+  <zip-file>
+    <pe-file path="blame-win-x64.exe" product-name="Blame" product-version="${productVersion}">
+      <authenticode-sign />
+    </pe-file>
+  </zip-file>
+</artifact-configuration>

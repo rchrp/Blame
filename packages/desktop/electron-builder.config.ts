@@ -28,6 +28,10 @@ const maintainerEmail =
   text(process.env.BLAME_MAINTAINER_EMAIL) ?? "hello@blame.dev"
 const maintainerName = text(process.env.BLAME_MAINTAINER_NAME) ?? "Blame"
 const releaseVersion = text(process.env.BLAME_VERSION)
+// Set by the release workflow when SignPath signs the Windows app. The app then
+// installs only updates signed for this publisher, so unsigned builds never set
+// it: their updater must keep accepting the first signed version.
+const windowsPublisherName = text(process.env.BLAME_WINDOWS_PUBLISHER_NAME)
 const rebuildNativeDependencies =
   text(process.env.BLAME_DESKTOP_NPM_REBUILD) !== "false"
 const projectDir = dirname(fileURLToPath(import.meta.url))
@@ -352,6 +356,9 @@ const config: Configuration = {
   publish,
   win: {
     icon: "icons/prod/icon.ico",
+    ...(windowsPublisherName
+      ? { signtoolOptions: { publisherName: [windowsPublisherName] } }
+      : {}),
     target: ["nsis"],
   },
 }

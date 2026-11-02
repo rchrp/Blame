@@ -3,6 +3,9 @@
 # in-app updater follow the latest published release.
 # A `v<version>-beta.<n>` tag is published right away as a prerelease. Only
 # desktop apps on the beta channel update to it.
+# Once the SIGNPATH_API_TOKEN secret exists, SignPath signs the Windows app and
+# its installer, and each signing request waits for a maintainer's approval in
+# SignPath. Without the secret, Windows builds stay unsigned, with a notice.
 name: Release desktop
 
 on:
@@ -40,7 +43,7 @@ jobs:
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
-      - run: node --test scripts/macos-signing.test.mjs
+      - run: node --test scripts/macos-signing.test.mjs scripts/windows-signing.test.mjs
       - run: pnpm --filter @blame/desktop test:package
 
       - id: runtime
@@ -68,6 +71,10 @@ jobs:
           - name: linux-x64
             runner: ubuntu-latest
             args: --linux --x64
+    # SignPath downloads the unsigned files from this run's artifacts.
+    permissions:
+      actions: read
+      contents: read
     env:
       BLAME_REQUIRE_PREBUILT_RUNTIME: true
       BLAME_HOMEPAGE: ${{ vars.BLAME_HOMEPAGE }}
@@ -109,9 +116,106 @@ jobs:
           MAC_CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
           MAC_CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
 
+      - id: signing
+        name: Check Windows signing
+        if: runner.os == 'Windows'
+        shell: bash
+        env:
+          SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
+          SIGNPATH_ORGANIZATION_ID: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+        run: |
+          if [[ -z "$SIGNPATH_API_TOKEN" ]]; then
+            echo "::notice title=Windows signing skipped::Secret SIGNPATH_API_TOKEN is not configured: the Windows installer is not signed. See RELEASING.md."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [[ -z "$SIGNPATH_ORGANIZATION_ID" ]]; then
+            echo "::error::Variable SIGNPATH_ORGANIZATION_ID is required with SIGNPATH_API_TOKEN. See RELEASING.md."
+            exit 1
+          fi
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
+          echo "product-version=$(node scripts/windows-signing.mjs version "$BLAME_VERSION")" >> "$GITHUB_OUTPUT"
+
       - name: Build installers
-        if: runner.os != 'macOS'
+        if: runner.os != 'macOS' && steps.signing.outputs.enabled != 'true'
         run: node scripts/desktop-release.mjs build ${{ matrix.args }}
+
+      # Signed Windows release: build the app, have SignPath sign Blame.exe,
+      # package the installer around it, then have SignPath sign the installer.
+      - name: Build the Windows app
+        if: steps.signing.outputs.enabled == 'true'
+        run: node scripts/desktop-release.mjs build ${{ matrix.args }} --dir
+        env:
+          BLAME_WINDOWS_PUBLISHER_NAME: SignPath Foundation
+
+      - id: unsigned-app
+        if: steps.signing.outputs.enabled == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-unsigned-app
+          if-no-files-found: error
+          retention-days: 1
+          path: packages/desktop/dist/win-unpacked/Blame.exe
+
+      - name: Sign Blame.exe with SignPath (approve the request in SignPath)
+        if: steps.signing.outputs.enabled == 'true'
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG || 'blame' }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG || 'release-signing' }}
+          artifact-configuration-slug: windows-app
+          github-artifact-id: ${{ steps.unsigned-app.outputs.artifact-id }}
+          wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 7200
+          output-artifact-directory: ${{ runner.temp }}/signed-app
+          parameters: |
+            productVersion: ${{ toJSON(steps.signing.outputs.product-version) }}
+
+      - name: Build the installer around the signed app
+        if: steps.signing.outputs.enabled == 'true'
+        shell: bash
+        run: |
+          pwsh -NoProfile -File scripts/windows-signature-check.ps1 "$RUNNER_TEMP/signed-app/Blame.exe"
+          node scripts/windows-signing.mjs installer "$RUNNER_TEMP/signed-app/Blame.exe" "$RUNNER_TEMP/win-unpacked"
+        env:
+          BLAME_WINDOWS_PUBLISHER_NAME: SignPath Foundation
+
+      - id: unsigned-installer
+        if: steps.signing.outputs.enabled == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-unsigned-installer
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 1
+          path: packages/desktop/dist/blame-win-x64.exe
+
+      - name: Sign the installer with SignPath (approve the request in SignPath)
+        if: steps.signing.outputs.enabled == 'true'
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG || 'blame' }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG || 'release-signing' }}
+          artifact-configuration-slug: windows-installer
+          github-artifact-id: ${{ steps.unsigned-installer.outputs.artifact-id }}
+          wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 7200
+          output-artifact-directory: ${{ runner.temp }}/signed-installer
+          parameters: |
+            productVersion: ${{ toJSON(env.BLAME_VERSION) }}
+
+      # The update metadata must describe the signed installer: electron-updater
+      # checks its sha512 and size, and SHA256SUMS is computed from these files.
+      - name: Update the metadata for the signed installer
+        if: steps.signing.outputs.enabled == 'true'
+        shell: bash
+        run: |
+          pwsh -NoProfile -File scripts/windows-signature-check.ps1 "$RUNNER_TEMP/signed-installer/blame-win-x64.exe"
+          node scripts/windows-signing.mjs update-info "$RUNNER_TEMP/signed-installer/blame-win-x64.exe"
 
       - uses: actions/upload-artifact@v7
         with:

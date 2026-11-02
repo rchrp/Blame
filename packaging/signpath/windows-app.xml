@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SignPath artifact configuration "windows-app": Blame.exe, the Electron
+  executable that electron-builder renames and stamps with Blame's metadata.
+  The release workflow uploads it alone, so the artifact is a ZIP with
+  Blame.exe at its root. productVersion is major.minor.patch.0, the version
+  electron-builder writes into Blame.exe.
+-->
+<artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+  <parameters>
+    <parameter name="productVersion" required="true" />
+  </parameters>
+  <zip-file>
+    <pe-file path="Blame.exe" product-name="Blame" product-version="${productVersion}">
+      <authenticode-sign />
+    </pe-file>
+  </zip-file>
+</artifact-configuration>
