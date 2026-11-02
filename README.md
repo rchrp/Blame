@@ -2,11 +2,14 @@
 
 <a href="https://blame.so"><img src="packages/vitrine/public/icons/blame-icon-256.png" width="96" height="96" alt="Blame"></a>
 
-# Blame
+# Blame ADE
 
-### The open-source ADE for AI coding agents
+### Run coding agents in parallel, each with its own live preview. No conflicts.
 
-Hand an agent a user story. Get back a change you can check before it merges.
+Three agents, one `localhost:3000`, one shared database: that is where parallel agents break.<br>
+Blame gives each agent its own worktree, ports, services, and running app, so you try every change before it merges.
+
+**Free and open source** · **No account needed** · **Works with your Claude or ChatGPT plan**
 
 [![Latest release](https://img.shields.io/github/v/release/rchrp/Blame?label=release&color=3b5bdb)](https://github.com/rchrp/Blame/releases/latest)
 [![CI](https://github.com/rchrp/Blame/actions/workflows/ci.yml/badge.svg)](https://github.com/rchrp/Blame/actions/workflows/ci.yml)
@@ -14,44 +17,96 @@ Hand an agent a user story. Get back a change you can check before it merges.
 [![Platforms](https://img.shields.io/badge/platforms-macOS%20%7C%20Windows%20%7C%20Linux-555)](#install)
 [![GitHub stars](https://img.shields.io/github/stars/rchrp/Blame?color=f7cf83)](https://github.com/rchrp/Blame/stargazers)
 
-**[Download](#install)** · [Website](https://blame.so) · [Demo video](https://youtu.be/cD6jASpIKQw) · [Discussions](https://github.com/rchrp/Blame/discussions) · [Contributing](CONTRIBUTING.md) · [Code signing policy](CODE_SIGNING_POLICY.md)
+**[Install](#install)** · [Website](https://blame.so) · [Demo video](https://youtu.be/cD6jASpIKQw) · [Discussions](https://github.com/rchrp/Blame/discussions) · [Contributing](CONTRIBUTING.md) · [Code signing policy](CODE_SIGNING_POLICY.md)
 
 <a href="https://youtu.be/cD6jASpIKQw"><img src="docs/media/demo.gif" width="900" alt="Three agents work on three stories of the Blame website at once in Blame; each story's Preview tab shows its own running copy of the site, then the story in review is approved and merged"></a>
 
 </div>
 
-## Why Blame
-
-Coding agents write code fast. Checking that code is still your job, and most tools leave you to piece it together from a chat log, a terminal, and a branch you never ran.
-
-Blame is an Agentic Development Environment (ADE): one desktop app where each task goes from **backlog → agent → isolated worktree → live preview → review → merge**. Agents work through a harness that records what they read, what they changed, and which checks passed. You see the running app and the evidence side by side, and nothing merges until you approve it.
-
-- **Verifiable, not vibes.** The [Light Semantic Harness](#the-light-semantic-harness) makes every agent show its work.
-- **Isolated by default.** Every story gets its own branch, worktree, environment, port, and preview.
-- **Your models, your machine.** Bring any of 50 AI providers. Agents, worktrees, and previews run on your computer.
-- **Free and open source.** The whole app is AGPL-3.0. [Blame Premium](#free-and-premium) only adds hosted services.
-
 ## Install
 
-Install with one command:
-
-**macOS** (Homebrew)
+**macOS**
 
 ```bash
 brew install --cask rchrp/tap/blame
 ```
 
-**Windows** (winget)
+**Windows**
 
 ```powershell
 winget install Blame.Blame
 ```
 
-**Arch Linux** (AUR, coming soon)
+**Linux:** download the [AppImage, `.deb` or `.rpm`](#downloads). The AUR package (`blame-bin`) is ready and waits for AUR account registration to reopen. I use Arch, btw: it is coming.
 
-The `blame-bin` package is ready and waits for AUR account registration to reopen. I use Arch, btw: it is coming.
+Then open Blame and choose **Continue without an account**. [Quick start](#quick-start) takes you from there to your first merge.
 
-Or download the latest release for your platform:
+## Why Blame
+
+Git worktrees stop parallel agents from editing the same files. They do not stop them from fighting over everything else: the dev server port, the database, the cache, the `.env`. Run three agents and you get three branches, but only one app you can open.
+
+**Blame isolates the running app, not just the code.** Each story gets:
+
+- its own branch and worktree;
+- its own containers for the app and its services (database, cache, workers), on their own ports;
+- its own live preview, next to the agent's files, diffs, logs, and terminal.
+
+You try each change in its running app, then request changes, reject it, or approve and merge. Nothing merges until you say so.
+
+- **Agents that show their work.** Agents run through the [Light Semantic Harness](#the-light-semantic-harness): every read, edit, and check is recorded, and checks run again before hand-off. On six hand-audited TypeScript tasks, it matched Cline's results with 54% fewer tokens.
+- **Your models, your machine.** Use your Claude Code or Codex plan, or any of 50 AI providers with your own key. Agents, worktrees, and previews run on your computer.
+- **Free and open source.** The whole app is AGPL-3.0, and works without an account. [Blame Premium](#free-and-premium) only adds hosted services, such as Cloud Previews.
+
+## Quick start
+
+1. Open Blame and choose **Continue without an account**, or sign in. Blame remembers the choice.
+2. Connect an AI provider: sign in with your Claude or ChatGPT plan (through Claude Code or Codex), or paste an API key.
+3. Open a Git repository, or create a new project from a web stack. Blame prepares how the project runs in a preview.
+4. Write two or three user stories in the backlog and start an agent on each. They run at the same time.
+5. Open each story's **Preview** tab to try its own running copy of the app. Request changes, reject the work, or approve and merge.
+
+For a quick fix or a question about the code, skip the backlog and use **Quick Chat**.
+
+Everything above stays on your computer. [Sign in](#faq) later to sync across computers or use hosted services: your workspace moves into the account.
+
+## What it can preview
+
+When you open a repository, a setup agent reads it and writes down how the project runs: the app, its services (PostgreSQL, Redis, workers, and so on), and how to start them. Each story then gets its own copy of that setup.
+
+| Project                                | Preview                                                                         |
+| -------------------------------------- | ------------------------------------------------------------------------------- |
+| Web apps and APIs that run on Linux    | The page in a built-in browser, with desktop, tablet, and phone frames          |
+| CLI tools and scripts                  | An interactive terminal                                                         |
+| Linux GUI, Electron, and Tauri apps    | A screen of the running app                                                     |
+| iOS apps                               | The iOS Simulator (macOS with Xcode)                                            |
+| Android apps                           | An Android emulator, one isolated instance per story                            |
+| Native macOS and Windows apps          | Direct mode: the app runs in your project folder, without isolation             |
+
+New projects start from **Next.js, React + Vite, Nuxt, Vue + Vite, or SvelteKit**, with **PostgreSQL, MySQL, SQLite, or MongoDB**.
+
+A stack that does not preview well? [Open an issue](https://github.com/rchrp/Blame/issues) with the project's stack: that list is the one we fix first.
+
+## How it compares
+
+These are good tools, and all of them run agents in parallel git worktrees. The difference is what happens to the running app: who gets which database, which ports, which services.
+
+|                                         | **Blame**                                      | [Emdash](https://github.com/generalaction/emdash) | [Conductor](https://www.conductor.build) | [Claude Squad](https://github.com/smtg-ai/claude-squad) | [Vibe Kanban](https://github.com/BloopAI/vibe-kanban)\* |
+| --------------------------------------- | ---------------------------------------------- | ------------------------------------------------- | ---------------------------------------- | ------------------------------------------------------- | ------------------------------------------------------- |
+| Open source                             | AGPL-3.0                                       | Apache-2.0                                        | No                                       | AGPL-3.0                                                | Apache-2.0                                              |
+| Platforms                               | macOS, Windows, Linux                          | macOS, Windows, Linux                             | macOS                                    | macOS, Linux                                            | macOS, Windows, Linux                                   |
+| Interface                               | Desktop app                                    | Desktop app                                       | Desktop app                              | Terminal (tmux)                                         | Web UI                                                  |
+| One worktree per agent                  | ✓                                              | ✓                                                 | ✓                                        | ✓                                                       | ✓                                                       |
+| Live preview of each task's app         | ✓                                              | ✓                                                 | ✓                                        | —                                                       | ✓                                                       |
+| Ports per task                          | Automatic                                      | A range per task                                  | A range per task                         | —                                                       | Set by hand                                             |
+| Database and services per task, locally | **Automatic, in containers**                   | Your own Docker Compose setup                     | Shared (docs suggest one run at a time)  | —                                                       | Your own scripts                                        |
+| Agents                                  | Its own agent, on your Claude or ChatGPT plan or 50 providers | 35 CLI agents                      | Claude Code, Codex, OpenCode, Cursor     | Claude Code, Codex, Gemini, Aider                       | 10+ CLI agents                                          |
+| Account required                        | No                                             | No                                                | GitHub login                             | No                                                      | No                                                      |
+
+Checked on November 2, 2026, against each project's own docs. \*Bloop wound down Vibe Kanban in April 2026; it is community-maintained since, without its kanban board. Something wrong or out of date? [Open an issue](https://github.com/rchrp/Blame/issues) and it gets fixed.
+
+## Downloads
+
+Download the latest release for your platform:
 
 | Platform                  | Download                                                                                                                                                                                                                                   | Requirements                                |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------- |
@@ -91,18 +146,6 @@ shasum -a 256 -c SHA256SUMS --ignore-missing
 **Beta channel.** Turn on **Settings → Desktop → Beta channel** to get prereleases as soon as they ship.
 
 </details>
-
-## Quick start
-
-1. Open Blame. Sign in, or choose **Continue without an account**: Blame remembers the choice and opens your workspace directly next time.
-2. Connect an AI provider with your own API key, or your Claude Code or Codex subscription.
-3. Open a Git repository, or create a new project from a web stack.
-4. Write a user story in the backlog and hand it to an agent.
-5. Follow the agent in its own worktree, try the result in the live preview, then request changes, reject it, or approve and merge.
-
-For a quick fix or a question about the code, skip the backlog and use **Quick Chat**.
-
-Everything above stays on your computer. [Sign in](#faq) later to sync across computers or use hosted services: your workspace moves into the account.
 
 ## The Light Semantic Harness
 
@@ -150,6 +193,14 @@ Blame is free and open source. Blame Premium pays for hosted services that cost 
 A free account adds sync between computers, web research for agents, and deployment to Vercel.
 
 Premium is **$20/month** or **$200/year**. Your AI provider bills its own usage. Files stay accessible after a subscription ends. See [blame.so/pricing](https://blame.so/pricing).
+
+## Privacy and telemetry
+
+- **Without an account, Blame sends no usage telemetry.** Agents call only the AI provider you pick, and the app checks for updates at launch.
+- **With an account,** the app sends usage metrics to `api.blame.so`: durations, token counts, error types, and outcomes, used to make agents and previews more reliable. It never sends prompts, code, file paths, commands or their output, tool arguments, or keys, and the server filters them out a second time.
+- **Turn it off** in **Settings → Desktop → Privacy**, which also turns off the update check. The Windows installer offers the same switches.
+
+The [privacy policy](https://blame.so/privacy) lists everything the app sends and where. The telemetry code is in [`packages/telemetry`](packages/telemetry).
 
 ## FAQ
 
