@@ -54,13 +54,19 @@ import {
   getAccountClosureReceipt,
   subscribeToAccountClosureReceipt,
 } from "@/lib/account-closure-receipt-storage"
-import { appWindowRole } from "@/lib/app-window-role"
+import {
+  appWindowRole,
+  loadedWindowRole,
+  windowAwaitsReplacement,
+} from "@/lib/app-window-role"
 
 const settingsPath = "/settings"
 const premiumPath = "/premium"
 const backlogStatusPipPath = "/backlog-status-pip"
 // Long enough for the mark to draw itself and one loading line to be read.
 const minimumLoadingMs = 1600
+// Fixed for the life of the window: a new role means a new window.
+const loadedRole = loadedWindowRole(window.location.search)
 
 const routes = [
   { path: "/backlog", title: "Backlog", element: null },
@@ -166,6 +172,14 @@ export function App() {
       <TooltipProvider>
         <BacklogStatusPipPage />
       </TooltipProvider>
+    )
+  }
+
+  if (windowAwaitsReplacement(loadedRole, windowRole)) {
+    return (
+      <OnboardingStage screen="loading">
+        <LoadingScreen />
+      </OnboardingStage>
     )
   }
 
