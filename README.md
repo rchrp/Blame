@@ -16,8 +16,9 @@ Blame gives each agent its own worktree, ports, services, and running app, so yo
 [![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-3b5bdb)](LICENSE)
 [![Platforms](https://img.shields.io/badge/platforms-macOS%20%7C%20Windows%20%7C%20Linux-555)](#install)
 [![GitHub stars](https://img.shields.io/github/stars/rchrp/Blame?color=f7cf83)](https://github.com/rchrp/Blame/stargazers)
+[![Discord](https://img.shields.io/badge/chat-Discord-5865F2?logo=discord&logoColor=white)](https://discord.gg/AfjG6aUyxe)
 
-**[Install](#install)** · [Website](https://blame.so) · [Demo video](https://youtu.be/cD6jASpIKQw) · [Discussions](https://github.com/rchrp/Blame/discussions) · [Contributing](CONTRIBUTING.md) · [Code signing policy](CODE_SIGNING_POLICY.md)
+**[Install](#install)** · [Website](https://blame.so) · [Discord](https://discord.gg/AfjG6aUyxe) · [Demo video](https://youtu.be/cD6jASpIKQw) · [Discussions](https://github.com/rchrp/Blame/discussions) · [Contributing](CONTRIBUTING.md) · [Code signing policy](CODE_SIGNING_POLICY.md)
 
 <a href="https://youtu.be/cD6jASpIKQw"><img src="docs/media/demo.gif" width="900" alt="Three agents work on three stories of the Blame website at once in Blame; each story's Preview tab shows its own running copy of the site, then the story in review is approved and merged"></a>
 
@@ -257,6 +258,7 @@ You need Node.js 24, Git, and MySQL 8.4 for the API. [CONTRIBUTING.md](CONTRIBUT
 
 ## Community
 
+- **Chat, help, and show what you built:** [Discord](https://discord.gg/AfjG6aUyxe)
 - **Questions and ideas:** [GitHub Discussions](https://github.com/rchrp/Blame/discussions)
 - **Bugs and feature requests:** [GitHub Issues](https://github.com/rchrp/Blame/issues)
 - **Security reports:** see [SECURITY.md](SECURITY.md). Please do not open a public issue.
