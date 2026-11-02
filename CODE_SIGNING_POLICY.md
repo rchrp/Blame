@@ -38,7 +38,7 @@ Contributions from anyone else arrive as pull requests, which a reviewer checks 
 
 ## Privacy
 
-Blame's [privacy policy](https://blame.so/privacy) describes the data the app sends, where it goes, and how to turn it off. The Windows installer shows a summary of it before installing. Blame never sends your code or prompts to Blame's servers unless you use a hosted service that needs them, such as Cloud Previews.
+Blame's [privacy policy](https://blame.so/privacy) describes the data the app sends, where it goes, and how to turn it off. The Windows installer shows a summary of it before installing and lets you turn off usage telemetry and the update check at launch; **Settings → Desktop → Privacy** has the same switches.
 
 ## Reporting a problem
 
