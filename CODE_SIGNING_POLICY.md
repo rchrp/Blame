@@ -29,10 +29,10 @@ Every release is built from a tag in this public repository by [GitHub Actions o
 
 Blame has one maintainer, who holds every role:
 
-| Role | Members |
-| --- | --- |
+| Role                     | Members                                         |
+| ------------------------ | ----------------------------------------------- |
 | Committers and reviewers | [Raphael Charpentier](https://github.com/rchrp) |
-| Approvers | [Raphael Charpentier](https://github.com/rchrp) |
+| Approvers                | [Raphael Charpentier](https://github.com/rchrp) |
 
 Contributions from anyone else arrive as pull requests, which a reviewer checks before they are merged. Every team member uses multi-factor authentication on GitHub and SignPath.
 

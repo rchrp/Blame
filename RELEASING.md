@@ -30,9 +30,37 @@ Users never download from GitHub URLs directly. [`download.blame.so`](deploy/dow
    ```
 
 3. The workflow checks that the runtime referenced by `packages/desktop/resources/runtime/*/manifest.json` is published while it builds macOS (x64 and arm64, both packaged on Apple Silicon, signed and notarized), Windows, and Linux, and then creates a draft release.
+   Once Windows signing is configured, **approve two signing requests in SignPath** while the Windows job runs: `Blame.exe` first, then the installer (see [Windows signing](#windows-signing)).
 4. **Pre-production test.** Only maintainers can see a draft. Download the installers from the draft on the [releases page](https://github.com/rchrp/Blame/releases) and test them.
 5. Edit the generated notes and click **Publish release**. From then on, `download.blame.so/latest`, the download page, and the in-app updater serve this version.
 6. Publishing starts **Release packages**, which updates the package managers (see below).
+
+### Windows signing
+
+[SignPath Foundation](https://signpath.org) signs the Windows app for free, as an open-source project; the [Code signing policy](CODE_SIGNING_POLICY.md) is the public side of it. Until the `SIGNPATH_API_TOKEN` secret exists, the Windows job builds an unsigned installer and says so in a notice. Once it exists, the Windows job of **Release desktop**:
+
+1. builds the app folder only, with the publisher check on (below);
+2. uploads `Blame.exe` and submits it to SignPath with the `windows-app` artifact configuration;
+3. waits for the request to be approved and signed, checks the signature, and packages the installer around the signed `Blame.exe` (`scripts/windows-signing.mjs installer`);
+4. uploads the installer and submits it with the `windows-installer` configuration;
+5. waits again, checks the signature, and rebuilds `latest.yml` (sha512, size) and the blockmap for the signed installer (`scripts/windows-signing.mjs update-info`). `SHA256SUMS` is computed afterwards from these files, so the in-app updater, Homebrew and winget all see the signed installer.
+
+**Every release, betas included, needs two approvals** in SignPath (**Signing requests**, or the link in the job log): the app, then the installer, a few minutes apart. Each one waits up to two hours; after that the job fails, and **Re-run failed jobs** submits new requests. SignPath requires a manual approval for every request: there is no way to automate it.
+
+**Publisher check.** Signed builds record `SignPath Foundation` as the only publisher whose updates they install (electron-updater's `publisherName`). Today's unsigned versions have no such check, so they update to the first signed version normally. From then on:
+
+- never publish an unsigned Windows build again: signed installs would refuse it and stay on their version;
+- if the certificate's publisher ever changes, first ship a version that lists both names (`BLAME_WINDOWS_PUBLISHER_NAME` in the workflow, `win.signtoolOptions.publisherName` in `packages/desktop/electron-builder.config.ts`).
+
+**Set up once SignPath approves Blame:**
+
+1. In SignPath, enable multi-factor authentication for every member, add the predefined trusted build system **GitHub.com** to the organization and link it to the project, and install the SignPath GitHub App on this repository.
+2. Create the project (slug `blame`) with the signing policy `release-signing`, and two artifact configurations whose slugs and contents come from [`packaging/signpath/`](packaging/signpath): `windows-app` and `windows-installer`. They restrict signing to files whose product name is `Blame` and whose product version is the release's.
+3. Create a CI user with the **Submitter** role on that signing policy, and add its API token as the `SIGNPATH_API_TOKEN` secret.
+4. Add the organization ID as the `SIGNPATH_ORGANIZATION_ID` variable. If the project or signing policy slug differs, set `SIGNPATH_PROJECT_SLUG` or `SIGNPATH_SIGNING_POLICY_SLUG`.
+5. Push a beta tag and approve both requests. If SignPath rejects a file over its product version, compare it with the file's properties (`Blame.exe` carries `1.2.0.0`, the installer `1.2.0` or `1.2.0-beta.1`) and adjust the configuration.
+6. Install that beta over an unsigned version and check that it updates, then that the next beta updates too.
+7. Once a signed version is published, set `windowsSigningApproved` to `true` in `packages/vitrine/content/code-signing-policy.ts`, and update the Windows status in [CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md) and the Windows platform note in the README.
 
 ### Beta channel
 
@@ -124,6 +152,12 @@ pnpm build:runtime                         # runtime images for this machine, in
 Local desktop builds use the same update feed and published runtime as production builds. To sign macOS builds locally, put the signing variables listed below in the ignored root `.env.local`. [packages/desktop/README.md](packages/desktop/README.md) lists the runtime build prerequisites.
 
 ## Repository configuration
+
+For Windows signing (optional until SignPath approves Blame; see [Windows signing](#windows-signing)):
+
+- Secret `SIGNPATH_API_TOKEN`: the API token of a SignPath user with the **Submitter** role on the signing policy.
+- Variable `SIGNPATH_ORGANIZATION_ID`: the SignPath organization ID.
+- Optional variables `SIGNPATH_PROJECT_SLUG` (default `blame`) and `SIGNPATH_SIGNING_POLICY_SLUG` (default `release-signing`).
 
 Secrets used for macOS signing and notarization:
 

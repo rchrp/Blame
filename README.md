@@ -14,7 +14,7 @@ Hand an agent a user story. Get back a change you can check before it merges.
 [![Platforms](https://img.shields.io/badge/platforms-macOS%20%7C%20Windows%20%7C%20Linux-555)](#install)
 [![GitHub stars](https://img.shields.io/github/stars/rchrp/Blame?color=f7cf83)](https://github.com/rchrp/Blame/stargazers)
 
-**[Download](#install)** · [Website](https://blame.so) · [Demo video](https://youtu.be/cD6jASpIKQw) · [Discussions](https://github.com/rchrp/Blame/discussions) · [Contributing](CONTRIBUTING.md)
+**[Download](#install)** · [Website](https://blame.so) · [Demo video](https://youtu.be/cD6jASpIKQw) · [Discussions](https://github.com/rchrp/Blame/discussions) · [Contributing](CONTRIBUTING.md) · [Code signing policy](CODE_SIGNING_POLICY.md)
 
 <a href="https://youtu.be/cD6jASpIKQw"><img src="docs/media/demo.gif" width="900" alt="Three agents work on three stories of the Blame website at once in Blame; each story's Preview tab shows its own running copy of the site, then the story in review is approved and merged"></a>
 
@@ -56,14 +56,14 @@ Or download the latest release for your platform:
 | **Windows** (x64)         | [`blame-win-x64.exe`](https://download.blame.so/latest/blame-win-x64.exe)                                                                                                                                                                  | Windows 10 or 11 with WSL 2                 |
 | **Linux** (x86_64)        | [`AppImage`](https://download.blame.so/latest/blame-linux-x86_64.AppImage) · [`.deb`](https://download.blame.so/latest/blame-linux-amd64.deb) · [`.rpm`](https://download.blame.so/latest/blame-linux-x86_64.rpm) | Docker Engine with the Compose plugin       |
 
-You can also pick any version, including betas, from the [releases page](https://github.com/rchrp/Blame/releases) or [blame.so/download](https://blame.so/download). Blame keeps itself up to date from those releases.
+You can also pick any version, including betas, from the [releases page](https://github.com/rchrp/Blame/releases) or [blame.so/download](https://blame.so/download). Blame keeps itself up to date from those releases. The [Code signing policy](CODE_SIGNING_POLICY.md) explains how releases are built and signed.
 
 <details>
 <summary><strong>Platform notes</strong></summary>
 
 **macOS.** The app is signed and notarized. On first launch, Blame sets up a small Linux VM (based on [Lima](https://lima-vm.io)) where agents, worktrees, and previews run.
 
-**Windows.** The installer is not code-signed yet, so SmartScreen may warn you: choose **More info → Run anyway**. Blame runs agents in its own WSL distribution. If WSL is not installed, run `wsl --install` in an administrator terminal and restart first.
+**Windows.** The installer is not code-signed yet (signing through SignPath Foundation is [pending](CODE_SIGNING_POLICY.md)), so SmartScreen may warn you: choose **More info → Run anyway**. The installer lets you turn off usage telemetry and the update check at launch; Settings → Desktop → Privacy has the same switches. Blame runs agents in its own WSL distribution. If WSL is not installed, run `wsl --install` in an administrator terminal and restart first.
 
 **Linux.** Worktrees stay native, and previews and project services run in Docker on your machine.
 
