@@ -139,8 +139,8 @@ function TransferStatus() {
 }
 
 /**
- * Signing in is optional, and this says so in the panel itself: a full-width
- * choice under the sign-in options, with what each choice means.
+ * Signing in is optional: continuing without an account sits right under the
+ * sign-in button, as wide as it, and the title says what each choice means.
  */
 function LocalWorkspaceOption({ disabled }: { disabled: boolean }) {
   const auth = useCloudAuth()
@@ -154,30 +154,23 @@ function LocalWorkspaceOption({ disabled }: { disabled: boolean }) {
     : auth.continueLocally
   if (!open) return null
   return (
-    <Field className="gap-2 border-t border-foreground/15 pt-4">
-      <Button
-        className="h-9 bg-background/60 transition-[transform,background-color,box-shadow] duration-200 hover:-translate-y-px hover:bg-background hover:shadow-md"
-        disabled={disabled || opening || auth.signIn.transferring}
-        type="button"
-        variant="outline"
-        onClick={() => {
-          setOpening(true)
-          void open().finally(() => setOpening(false))
-        }}
-      >
-        {opening ? (
-          <LoaderCircleIcon className="animate-spin" aria-hidden />
-        ) : (
-          <LaptopIcon aria-hidden />
-        )}
-        Continue without an account
-      </Button>
-      <FieldDescription className="text-center text-xs leading-5 text-balance text-foreground/70">
-        {fromLocalWorkspace
-          ? "Your projects, stories and provider connections move into the account when you sign in, and stay on this computer too."
-          : "Everything runs on this computer. Sign in later to sync across computers and use Cloud Previews."}
-      </FieldDescription>
-    </Field>
+    <Button
+      className="h-9 bg-background/60 transition-[transform,background-color,box-shadow] duration-200 hover:-translate-y-px hover:bg-background hover:shadow-md"
+      disabled={disabled || opening || auth.signIn.transferring}
+      type="button"
+      variant="outline"
+      onClick={() => {
+        setOpening(true)
+        void open().finally(() => setOpening(false))
+      }}
+    >
+      {opening ? (
+        <LoaderCircleIcon className="animate-spin" aria-hidden />
+      ) : (
+        <LaptopIcon aria-hidden />
+      )}
+      Continue without an account
+    </Button>
   )
 }
 
@@ -238,6 +231,7 @@ function LoginForm({
         />
         <AuthErrorToast error={form.error ?? auth.error} />
         <SubmitButton loading={form.loading}>Login</SubmitButton>
+        <LocalWorkspaceOption disabled={form.loading} />
         <button
           className="text-sm font-medium text-foreground/70 underline-offset-4 hover:text-foreground hover:underline"
           type="button"
@@ -254,7 +248,6 @@ function LoginForm({
         <ModePrompt action="Sign up" onClick={() => onModeChange("signup")}>
           Don&apos;t have an account?
         </ModePrompt>
-        <LocalWorkspaceOption disabled={form.loading} />
       </FieldGroup>
     </form>
   )

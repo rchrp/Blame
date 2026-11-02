@@ -53,7 +53,7 @@ export function signInTitle(input: {
     return {
       title: "Sign in to Blame",
       description:
-        "Sync your workspace across computers and use hosted services.",
+        "Your workspace moves into the account to sync across computers, and stays on this one too.",
     }
   }
   if (input.greeting === "signed-out") {
