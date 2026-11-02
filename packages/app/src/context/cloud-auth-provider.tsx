@@ -23,6 +23,12 @@ import { createCloudApi } from "@/lib/cloud-api"
 import { useCloudTelemetry } from "@/context/cloud-telemetry"
 import { defaultCloudApiUrl } from "@/context/cloud-api-origin"
 import { transferLocalWorkspace } from "@/context/local-workspace"
+import {
+  initialWorkspace,
+  readWorkspaceStart,
+  writeWorkspaceStart,
+  type SignInGreeting,
+} from "@/context/workspace-start"
 
 const defaultApiUrl = defaultCloudApiUrl(
   import.meta.env.VITE_CLOUD_API_URL,
@@ -42,8 +48,9 @@ type SessionState = {
 
 type CloudAuthState =
   | { status: "loading" }
-  // Only where no local API runs, such as the web build.
-  | { status: "unauthenticated"; error?: string }
+  // The sign-in screen: before the first choice, after signing out, or
+  // where no local API runs, such as the web build.
+  | { status: "unauthenticated"; greeting: SignInGreeting; error?: string }
   | SessionState
 
 type SignInState = { open: boolean; error?: string; transferring?: boolean }
@@ -102,7 +109,8 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
   const openLocalSession = React.useCallback(async (): Promise<
     CloudAuthState
   > => {
-    if (!platform.localApi) return { status: "unauthenticated" }
+    if (!platform.localApi)
+      return { status: "unauthenticated", greeting: "first-launch" }
     const local = await platform.localApi.session()
     const api = createCloudApi(local)
     return hydrateSession(api, { token: local.token, user: await api.profile() }, {
@@ -110,6 +118,35 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
       apiUrl: local.url,
     })
   }, [platform.localApi])
+
+  // Started while the sign-in screen shows, so continuing without an
+  // account opens the workspace at once.
+  const pendingLocal = React.useRef<Promise<CloudAuthState> | null>(null)
+  const prepareLocalSession = React.useCallback(() => {
+    if (!platform.localApi) return
+    pendingLocal.current ??= openLocalSession()
+    pendingLocal.current.catch(() => {
+      pendingLocal.current = null
+    })
+  }, [openLocalSession, platform.localApi])
+
+  const showSignIn = React.useCallback(
+    (greeting: SignInGreeting): CloudAuthState => {
+      prepareLocalSession()
+      return { status: "unauthenticated", greeting }
+    },
+    [prepareLocalSession]
+  )
+
+  const openStartWorkspace = React.useCallback(() => {
+    const start = initialWorkspace({
+      localAvailable: Boolean(platform.localApi),
+      start: readWorkspaceStart(),
+    })
+    return start.open === "local"
+      ? openLocalSession()
+      : Promise.resolve(showSignIn(start.greeting))
+  }, [openLocalSession, platform.localApi, showSignIn])
 
   const localConnection = React.useCallback(async () => {
     if (!platform.localApi) return undefined
@@ -132,13 +169,15 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
           .catch(() => {
             void platform.mcp?.detachCloud(stored.user.id)
             removeCloudSession()
-            return openLocalSession()
+            writeWorkspaceStart("signed-out")
+            return showSignIn("signed-out")
           })
-      : openLocalSession()
+      : openStartWorkspace()
     void restore
       .catch(
         (error): CloudAuthState => ({
           status: "unauthenticated",
+          greeting: "first-launch",
           error: errorMessage(error, "Blame could not open your workspace."),
         })
       )
@@ -148,15 +187,17 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       alive = false
     }
-  }, [accountUrl, apiForToken, openLocalSession, platform.mcp])
+  }, [accountUrl, apiForToken, openStartWorkspace, platform.mcp, showSignIn])
 
   const failSignIn = React.useCallback((error: unknown, fallback: string) => {
     const message = errorMessage(error, fallback)
     setSignIn((current) => ({ ...current, error: message, transferring: false }))
     setState((current) =>
-      current.status === "authenticated"
-        ? current
-        : { status: "unauthenticated", error: message }
+      current.status === "unauthenticated"
+        ? { ...current, error: message }
+        : current.status === "authenticated"
+          ? current
+          : { status: "unauthenticated", greeting: "first-launch", error: message }
     )
   }, [])
 
@@ -180,6 +221,7 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
         })
       }
       writeCloudSession(next.session)
+      pendingLocal.current = null
       setState(next)
       setSignIn({ open: false })
     },
@@ -363,7 +405,26 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
     [sessionApi, token, updateSession]
   )
 
-  /** Leaves the account and goes back to the workspace on this computer. */
+  /** Opens the workspace on this computer and remembers the choice. */
+  const continueLocally = React.useCallback(async () => {
+    const pending = pendingLocal.current ?? openLocalSession()
+    pendingLocal.current = null
+    writeWorkspaceStart("local")
+    setState(
+      await pending.catch(
+        (error): CloudAuthState => ({
+          status: "unauthenticated",
+          greeting: "first-launch",
+          error: errorMessage(error, "Blame could not open your workspace."),
+        })
+      )
+    )
+  }, [openLocalSession])
+
+  /**
+   * Leaves the account for the sign-in screen, where the workspace on this
+   * computer is one choice away.
+   */
   const logout = React.useCallback(async () => {
     if (!session || session.mode !== "account") return
     try {
@@ -373,14 +434,10 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
       return
     } finally {
       removeCloudSession()
-      setState({ status: "loading" })
-      setState(
-        await openLocalSession().catch(
-          (): CloudAuthState => ({ status: "unauthenticated" })
-        )
-      )
+      writeWorkspaceStart("signed-out")
+      setState(showSignIn("signed-out"))
     }
-  }, [openLocalSession, platform.mcp, session, sessionApi])
+  }, [platform.mcp, session, sessionApi, showSignIn])
 
   const openSignIn = React.useCallback(() => setSignIn({ open: true }), [])
   const closeSignIn = React.useCallback(() => setSignIn({ open: false }), [])
@@ -393,6 +450,9 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
         mcpConfiguration: session?.mcpConfiguration,
         license: session?.license,
         mode: session?.mode,
+        greeting:
+          state.status === "unauthenticated" ? state.greeting : "first-launch",
+        continueLocally: platform.localApi ? continueLocally : undefined,
         error:
           state.status === "unauthenticated" ? state.error : signIn.error,
         signIn,

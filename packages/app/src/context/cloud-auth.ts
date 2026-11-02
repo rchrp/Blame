@@ -6,6 +6,7 @@ import type {
   ProjectRunConfiguration,
 } from "@blame/agent-runtime"
 import type { ReasoningSelection } from "@blame/agent-runtime"
+import type { SignInGreeting } from "./workspace-start"
 
 export type CloudUser = {
   id: string
@@ -155,6 +156,10 @@ export type CloudAuthContextValue = {
   apiConnection: ApiConnection
   // Signing in from a local workspace, which then moves into the account.
   signIn: { open: boolean; transferring?: boolean }
+  // How the sign-in screen greets someone with no session open.
+  greeting: SignInGreeting
+  // Opens the workspace on this computer; absent where none runs.
+  continueLocally?(): Promise<void>
   openSignIn(): void
   closeSignIn(): void
   aiPreferences?: CloudAiPreferences | null

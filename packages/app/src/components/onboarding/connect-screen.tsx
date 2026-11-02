@@ -1,5 +1,5 @@
 import * as React from "react"
-import { KeyRoundIcon, LoaderCircleIcon } from "lucide-react"
+import { KeyRoundIcon, LaptopIcon, LoaderCircleIcon } from "lucide-react"
 import { AnimatePresence, motion, useAnimate } from "motion/react"
 import { toast } from "sonner"
 
@@ -17,6 +17,7 @@ import { Kbd } from "@/components/ui/kbd"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { LegalLink } from "@/components/legal/legal-link"
 import { useCloudAuth } from "@/context/cloud-auth"
+import { signInTitle } from "@/context/workspace-start"
 import { navigate, navigationPathname } from "@/components/navigation/navigation"
 import { easeOutExpo, springSoft, stepVariants } from "@/lib/motion"
 
@@ -120,43 +121,63 @@ export function ConnectScreen() {
           </GlassPanel>
         </ShakeContext.Provider>
       </div>
-      <LocalWorkspaceChoice />
+      <TransferStatus />
     </section>
   )
 }
 
-/**
- * Signing in is optional. From a local workspace, says what happens to it
- * and lets the person go back to it.
- */
-function LocalWorkspaceChoice() {
+/** Signing in from a local workspace first copies it into the account. */
+function TransferStatus() {
   const auth = useCloudAuth()
-  if (auth.mode !== "local") return null
-  if (auth.signIn.transferring) {
-    return (
-      <p className="flex items-center justify-center gap-2 text-sm text-foreground/70">
-        <LoaderCircleIcon className="size-4 animate-spin" aria-hidden />
-        Moving your local workspace into your account…
-      </p>
-    )
-  }
+  if (!auth.signIn.transferring) return null
   return (
-    <div className="flex flex-col items-center gap-1 text-center">
-      <p className="max-w-[22rem] text-xs leading-5 text-balance text-foreground/60">
-        Your projects, stories and provider connections move into the account
-        when you sign in, and stay on this computer too.
-      </p>
+    <p className="flex items-center justify-center gap-2 text-sm text-foreground/70">
+      <LoaderCircleIcon className="size-4 animate-spin" aria-hidden />
+      Moving your local workspace into your account…
+    </p>
+  )
+}
+
+/**
+ * Signing in is optional, and this says so in the panel itself: a full-width
+ * choice under the sign-in options, with what each choice means.
+ */
+function LocalWorkspaceOption({ disabled }: { disabled: boolean }) {
+  const auth = useCloudAuth()
+  const [opening, setOpening] = React.useState(false)
+  const fromLocalWorkspace = auth.mode === "local"
+  const open = fromLocalWorkspace
+    ? async () => {
+        auth.closeSignIn()
+        if (navigationPathname() === "/premium") navigate("/backlog")
+      }
+    : auth.continueLocally
+  if (!open) return null
+  return (
+    <Field className="gap-2 border-t border-foreground/15 pt-4">
       <Button
-        variant="ghost"
-        size="sm"
+        className="h-9 bg-background/60 transition-[transform,background-color,box-shadow] duration-200 hover:-translate-y-px hover:bg-background hover:shadow-md"
+        disabled={disabled || opening || auth.signIn.transferring}
+        type="button"
+        variant="outline"
         onClick={() => {
-          auth.closeSignIn()
-          if (navigationPathname() === "/premium") navigate("/backlog")
+          setOpening(true)
+          void open().finally(() => setOpening(false))
         }}
       >
+        {opening ? (
+          <LoaderCircleIcon className="animate-spin" aria-hidden />
+        ) : (
+          <LaptopIcon aria-hidden />
+        )}
         Continue without an account
       </Button>
-    </div>
+      <FieldDescription className="text-center text-xs leading-5 text-balance text-foreground/70">
+        {fromLocalWorkspace
+          ? "Your projects, stories and provider connections move into the account when you sign in, and stay on this computer too."
+          : "Everything runs on this computer. Sign in later to sync across computers and use Cloud Previews."}
+      </FieldDescription>
+    </Field>
   )
 }
 
@@ -203,7 +224,12 @@ function LoginForm({
       })}
     >
       <FieldGroup className="onboarding-stagger gap-3.5">
-        <FormTitle title="Welcome back" description="Sign in to pick up where your agents left off." />
+        <FormTitle
+          {...signInTitle({
+            greeting: auth.greeting,
+            fromLocalWorkspace: auth.mode === "local",
+          })}
+        />
         <LoginFields
           email={email}
           password={password}
@@ -228,6 +254,7 @@ function LoginForm({
         <ModePrompt action="Sign up" onClick={() => onModeChange("signup")}>
           Don&apos;t have an account?
         </ModePrompt>
+        <LocalWorkspaceOption disabled={form.loading} />
       </FieldGroup>
     </form>
   )
