@@ -156,6 +156,14 @@ export type ProjectApp = {
   ): Promise<boolean>;
 };
 
+// What the app sends on its own; see main/privacy-preferences.ts.
+export type PrivacyPreferences = { telemetry: boolean; updateChecks: boolean };
+
+export type PrivacyClient = {
+  get(): Promise<PrivacyPreferences>;
+  set(preferences: PrivacyPreferences): Promise<PrivacyPreferences>;
+};
+
 export type GitIdentityClient = {
   read(input?: {
     root?: string;
@@ -296,6 +304,7 @@ export type BlameDesktopApi = {
   windowControls: WindowControls;
   projectApp: ProjectApp;
   gitIdentity: GitIdentityClient;
+  privacy: PrivacyClient;
   projectWindows: ProjectWindows;
   agentScreenshots: AgentScreenshotsClient;
   previewDevtools: PreviewDevtoolsSettingsClient;

@@ -349,6 +349,8 @@ const config: Configuration = {
   },
   nsis: {
     allowToChangeInstallationDirectory: true,
+    // Shows the privacy notice and its opt-outs (see the file).
+    include: "resources/installer/privacy.nsh",
     installerHeaderIcon: "icons/prod/icon.ico",
     installerIcon: "icons/prod/icon.ico",
     oneClick: false,

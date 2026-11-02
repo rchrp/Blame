@@ -116,6 +116,10 @@ const api: BlameDesktopApi = {
     preflight: (input) => ipcRenderer.invoke("deploy:preflight", input),
     start: (input, onProgress) => invokeDeploy(input, onProgress),
   },
+  privacy: {
+    get: () => ipcRenderer.invoke("privacy:get"),
+    set: (preferences) => ipcRenderer.invoke("privacy:set", preferences),
+  },
   telemetry: {
     configure: (session) => ipcRenderer.invoke("telemetry:configure", session),
     disable: () => ipcRenderer.invoke("telemetry:disable"),

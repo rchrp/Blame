@@ -12,6 +12,7 @@ import {
   writeUpdateChannel,
   type DesktopUpdateChannel,
 } from "./desktop-update-channel";
+import { privacyPreferences } from "./privacy-settings";
 
 const { autoUpdater } = electronUpdater;
 
@@ -73,8 +74,9 @@ export function registerDesktopUpdateIpcHandlers(
   });
 }
 
+// Settings → Desktop can turn this off; the user can still check by hand.
 export function checkForUpdatesOnStartup() {
-  if (!isUpdaterSupported()) return;
+  if (!isUpdaterSupported() || !privacyPreferences().updateChecks) return;
   setTimeout(() => {
     void checkForUpdates();
   }, 2_000);

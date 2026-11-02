@@ -112,6 +112,7 @@ export type Platform = {
   previewTerminal?: import("./platform-preview-surfaces").PreviewTerminalClient
   previewSurfaces?: import("./platform-preview-surfaces").PreviewSurfacesClient
   telemetry?: TelemetryClient
+  privacy?: import("./platform-privacy").PrivacyClient
   updates?: DesktopUpdatesClient
   mcp?: McpServersClient
   workspace?: WorkspaceClient

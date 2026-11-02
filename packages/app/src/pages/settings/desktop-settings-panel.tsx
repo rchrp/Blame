@@ -12,6 +12,7 @@ import {
 import { useSystemNotificationsEnabled } from "@/lib/system-notifications"
 import { RuntimeSettingsGroup } from "./runtime-settings-group"
 import { BrowserDiagnosticsGroup } from "./browser-diagnostics-group"
+import { PrivacySettingsGroup } from "./privacy-settings-group"
 import { Switch } from "@/components/ui/switch"
 import * as React from "react"
 import { cn } from "@/lib/utils"
@@ -41,6 +42,7 @@ export function DesktopSettingsPanel() {
   return (
     <SettingsPanel>
       <DesktopUpdatesGroup platform={platform} updates={updates} />
+      <PrivacySettingsGroup />
       <RuntimeSettingsGroup />
       <BrowserDiagnosticsGroup />
       <DesktopIntegrationGroup platform={platform} />
