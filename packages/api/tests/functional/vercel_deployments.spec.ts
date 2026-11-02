@@ -6,7 +6,7 @@ import { test } from '@japa/runner'
 import { createLicensedUser } from '#tests/helpers/create_licensed_user'
 
 test.group('Vercel deployments', (group) => {
-  group.setup(() => testUtils.db().migrate())
+  group.setup(() => testUtils.db().truncate())
   group.each.setup(() => testUtils.db().truncate())
 
   test('lists only safe installation metadata and no provider token', async ({

@@ -17,6 +17,9 @@ import { Kbd } from "@/components/ui/kbd"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { LegalLink } from "@/components/legal/legal-link"
 import { useCloudAuth } from "@/context/cloud-auth"
+import { signInTitle } from "@/context/workspace-start"
+import { altEnterLabel, useAltEnter } from "@/lib/keyboard"
+import { navigate, navigationPathname } from "@/components/navigation/navigation"
 import { easeOutExpo, springSoft, stepVariants } from "@/lib/motion"
 
 type AuthMode = "login" | "signup" | "forgot" | "verify" | "two-factor"
@@ -45,6 +48,23 @@ const modeDepth: Record<AuthMode, number> = {
 const ShakeContext = React.createContext<() => void>(() => undefined)
 
 export function ConnectScreen() {
+  return (
+    <section className="relative flex min-h-full flex-col px-7 py-10">
+      <div className="absolute top-7 left-7">
+        <AppLogo />
+      </div>
+      <div className="flex flex-1 items-center justify-center">
+        <ConnectPanel />
+      </div>
+    </section>
+  )
+}
+
+/**
+ * The sign-in card. It is the first screen, and the sign-in popup over the
+ * app (AccountDialog).
+ */
+export function ConnectPanel() {
   const [mode, setModeState] = React.useState<AuthMode>("login")
   const [direction, setDirection] = React.useState(1)
   const [verificationEmail, setVerificationEmail] = React.useState("")
@@ -70,56 +90,105 @@ export function ConnectScreen() {
   }, [animateCard, card])
 
   return (
-    <section className="relative flex min-h-full flex-col px-7 py-10">
-      <div className="absolute top-7 left-7">
-        <AppLogo />
-      </div>
-      <div className="flex flex-1 items-center justify-center">
-        <ShakeContext.Provider value={shake}>
-          <GlassPanel
-            ref={card}
-            layout
-            transition={{ layout: springSoft }}
-            initial={{ opacity: 0, y: 24, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            className="w-full max-w-[22rem] overflow-hidden px-6 py-6"
+    <ShakeContext.Provider value={shake}>
+      <GlassPanel
+        ref={card}
+        layout
+        transition={{ layout: springSoft }}
+        initial={{ opacity: 0, y: 24, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        className="w-full max-w-[22rem] overflow-hidden px-6 py-6"
+      >
+        <AnimatePresence mode="wait" initial={false} custom={direction}>
+          <motion.div
+            key={mode}
+            layout="position"
+            custom={direction}
+            variants={stepVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
           >
-            <AnimatePresence mode="wait" initial={false} custom={direction}>
-              <motion.div
-                key={mode}
-                layout="position"
-                custom={direction}
-                variants={stepVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-              >
-                {mode === "login" ? (
-                  <LoginForm
-                    onModeChange={setMode}
-                    onVerificationRequired={showVerification}
-                  />
-                ) : mode === "signup" ? (
-                  <SignupForm
-                    onModeChange={setMode}
-                    onVerificationRequired={showVerification}
-                  />
-                ) : mode === "forgot" ? (
-                  <ForgotPasswordForm onModeChange={setMode} />
-                ) : mode === "verify" ? (
-                  <VerificationForm
-                    email={verificationEmail}
-                    onModeChange={setMode}
-                  />
-                ) : (
-                  <EmailTwoFactorForm onModeChange={setMode} />
-                )}
-              </motion.div>
-            </AnimatePresence>
-          </GlassPanel>
-        </ShakeContext.Provider>
-      </div>
-    </section>
+            {mode === "login" ? (
+              <LoginForm
+                onModeChange={setMode}
+                onVerificationRequired={showVerification}
+              />
+            ) : mode === "signup" ? (
+              <SignupForm
+                onModeChange={setMode}
+                onVerificationRequired={showVerification}
+              />
+            ) : mode === "forgot" ? (
+              <ForgotPasswordForm onModeChange={setMode} />
+            ) : mode === "verify" ? (
+              <VerificationForm
+                email={verificationEmail}
+                onModeChange={setMode}
+              />
+            ) : (
+              <EmailTwoFactorForm onModeChange={setMode} />
+            )}
+          </motion.div>
+        </AnimatePresence>
+        <TransferStatus />
+      </GlassPanel>
+    </ShakeContext.Provider>
+  )
+}
+
+/** Signing in from a local workspace first copies it into the account. */
+function TransferStatus() {
+  const auth = useCloudAuth()
+  if (!auth.signIn.transferring) return null
+  return (
+    <p className="mt-4 flex items-center justify-center gap-2 text-sm text-foreground/70">
+      <LoaderCircleIcon className="size-4 animate-spin" aria-hidden />
+      Moving your local workspace into your account…
+    </p>
+  )
+}
+
+/**
+ * Signing in is optional: continuing without an account sits right under the
+ * sign-in button, as wide as it, with its own key (Alt+Enter), and the title
+ * says what each choice means.
+ */
+function LocalWorkspaceOption({ disabled }: { disabled: boolean }) {
+  const auth = useCloudAuth()
+  const [opening, setOpening] = React.useState(false)
+  const button = React.useRef<HTMLButtonElement>(null)
+  const fromLocalWorkspace = auth.mode === "local"
+  const open = fromLocalWorkspace
+    ? async () => {
+        auth.closeSignIn()
+        if (navigationPathname() === "/premium") navigate("/backlog")
+      }
+    : auth.continueLocally
+  const busy = disabled || opening || auth.signIn.transferring
+  const choose = () => {
+    if (!open) return
+    setOpening(true)
+    void open().finally(() => setOpening(false))
+  }
+  useAltEnter(button, choose, Boolean(open) && !busy)
+  if (!open) return null
+  return (
+    <Button
+      ref={button}
+      aria-keyshortcuts="Alt+Enter"
+      className="relative h-9 bg-background/60 px-14 transition-[transform,background-color,box-shadow] duration-200 hover:-translate-y-px hover:bg-background hover:shadow-md"
+      disabled={busy}
+      type="button"
+      variant="outline"
+      onClick={choose}
+    >
+      {opening ? (
+        <LoaderCircleIcon className="animate-spin" aria-hidden />
+      ) : null}
+      Continue without an account
+      <Kbd className="absolute right-2.5">{altEnterLabel}</Kbd>
+    </Button>
   )
 }
 
@@ -155,6 +224,14 @@ function LoginForm({
   const [email, setEmail] = React.useState("")
   const [password, setPassword] = React.useState("")
   const form = useAuthForm()
+  // Read once: continuing without an account opens a local workspace while
+  // this form fades out, and the title must not change under the animation.
+  const [title] = React.useState(() =>
+    signInTitle({
+      greeting: auth.greeting,
+      fromLocalWorkspace: auth.mode === "local",
+    })
+  )
 
   return (
     <form
@@ -166,7 +243,7 @@ function LoginForm({
       })}
     >
       <FieldGroup className="onboarding-stagger gap-3.5">
-        <FormTitle title="Welcome back" description="Sign in to pick up where your agents left off." />
+        <FormTitle {...title} />
         <LoginFields
           email={email}
           password={password}
@@ -175,6 +252,7 @@ function LoginForm({
         />
         <AuthErrorToast error={form.error ?? auth.error} />
         <SubmitButton loading={form.loading}>Login</SubmitButton>
+        <LocalWorkspaceOption disabled={form.loading} />
         <button
           className="text-sm font-medium text-foreground/70 underline-offset-4 hover:text-foreground hover:underline"
           type="button"

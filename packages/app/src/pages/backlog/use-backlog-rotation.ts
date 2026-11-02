@@ -48,6 +48,7 @@ import { storyPreviewDevtoolsScope } from "@/components/backlog/shared/preview-d
 import { directStoryPreviewScope } from "@/components/backlog/board/project-run-configuration"
 import { useModelSelection } from "@/components/model/model-selection"
 import { useCloudAuth } from "@/context/cloud-auth"
+import { hostedServiceRequirement } from "@/lib/hosted-service-access"
 import type { HostDependencyReport } from "@/context/platform"
 import { useRuntimeGate } from "@/pages/backlog/use-runtime-gate"
 import { deadAgentRuns } from "@/pages/backlog/agent-run-liveness"
@@ -533,7 +534,7 @@ export function useBacklogRotation(
         })
         .catch(reportAgentPersistenceError)
     }
-    toast.error("Cloud Preview needs Blame Premium", {
+    toast.error(hostedServiceRequirement(auth, "cloud-preview"), {
       action: { label: "Run Direct", onClick: () => switchTo("direct") },
       cancel: { label: "Local Container", onClick: () => switchTo("local-container") },
       description: `${story.title} is waiting. Run it on this computer instead?`,

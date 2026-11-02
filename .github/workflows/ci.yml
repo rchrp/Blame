@@ -47,6 +47,35 @@ jobs:
       - run: pnpm --filter @blame/api exec node ace.js test --files='tests/functional/auth.spec.ts'
       - run: pnpm --filter @blame/api exec node ace.js test --files='tests/functional/consumer_contracts.spec.ts'
       - run: pnpm --filter @blame/api exec node ace.js test --files='tests/functional/story_numbering.spec.ts'
+      - run: pnpm --filter @blame/api exec node ace.js test --files='tests/functional/workspace_transfer.spec.ts'
+
+  api-local:
+    name: API on SQLite, as the desktop runs it
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Without an account the desktop app runs the API on SQLite: keep it working.
+    env:
+      BLAME_DEPLOYMENT: local
+      DB_CONNECTION: sqlite
+      BLAME_LOCAL_STORAGE_DIRECTORY: /tmp/blame-local-storage
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+        with:
+          node-version: 24
+      - run: pnpm exec turbo run build --filter="@blame/api^..."
+      - run: pnpm --filter @blame/api exec node ace.js test unit
+      - run: >-
+          pnpm --filter @blame/api exec node ace.js test
+          --files='tests/functional/local_deployment.spec.ts'
+          --files='tests/functional/workspace_transfer.spec.ts'
+          --files='tests/functional/projects.spec.ts'
+          --files='tests/functional/project_agent_memories.spec.ts'
+          --files='tests/functional/project_code_practices.spec.ts'
+          --files='tests/functional/security_audits.spec.ts'
+          --files='tests/functional/story_numbering.spec.ts'
+          --files='tests/functional/user_ai_preferences.spec.ts'
+          --files='tests/functional/user_mcp_configurations.spec.ts'
 
   windows-runtime:
     name: Windows PowerShell runtime tests

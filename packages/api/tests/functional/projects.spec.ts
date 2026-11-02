@@ -12,7 +12,7 @@ type ProjectBody = {
 }
 
 test.group('projects', (group) => {
-  group.setup(() => testUtils.db().migrate())
+  group.setup(() => testUtils.db().truncate())
   group.each.setup(() => testUtils.db().truncate())
 
   test('reuses a legacy project without repository fingerprint', async ({ client, assert }) => {

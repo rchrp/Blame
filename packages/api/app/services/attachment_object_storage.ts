@@ -1,4 +1,5 @@
-import { attachmentsConfig } from '#config/attachments'
+import { attachmentsConfig, localStorageDirectory } from '#config/attachments'
+import { FileObjectStorage } from '#services/file_object_storage'
 import {
   MemoryObjectStorage,
   S3EncryptedObjectStorage,
@@ -22,6 +23,9 @@ function createAttachmentObjectStorage(): AttachmentObjectStorage {
   const config = attachmentsConfig()
   if (config.driver === 'memory') {
     return new MemoryObjectStorage(config.uploadUrlTtlSeconds, 'attachments')
+  }
+  if (config.driver === 'filesystem') {
+    return new FileObjectStorage(localStorageDirectory('attachments'))
   }
   return new S3EncryptedObjectStorage({
     ...config.s3!,

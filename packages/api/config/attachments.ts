@@ -1,10 +1,12 @@
+import { join } from 'node:path'
 import env from '#start/env'
 import app from '@adonisjs/core/services/app'
+import { deployment } from '#lib/deployment'
 
 export type AttachmentsConfig = ReturnType<typeof attachmentsConfig>
 
 export function attachmentsConfig() {
-  const driver = env.get('ATTACHMENTS_STORAGE_DRIVER') ?? (app.inTest ? 'memory' : 's3')
+  const driver = env.get('ATTACHMENTS_STORAGE_DRIVER') ?? defaultStorageDriver()
   return {
     driver,
     downloadUrlTtlSeconds: env.get('ATTACHMENTS_DOWNLOAD_URL_TTL_SECONDS') ?? 900,
@@ -38,4 +40,17 @@ function secretValue(name: 'ATTACHMENTS_S3_ACCESS_KEY_ID' | 'ATTACHMENTS_S3_SECR
   const value = env.get(name)?.release().trim()
   if (!value) throw new Error(`${name} is required when ATTACHMENTS_STORAGE_DRIVER=s3`)
   return value
+}
+
+/** Hosted storage for the hosted API, files on disk for the local one. */
+export function defaultStorageDriver() {
+  if (!deployment.hostedServices) return 'filesystem' as const
+  return app.inTest ? ('memory' as const) : ('s3' as const)
+}
+
+export function localStorageDirectory(area: string) {
+  const directory = env.get('BLAME_LOCAL_STORAGE_DIRECTORY')?.trim()
+  if (!directory)
+    throw new Error('BLAME_LOCAL_STORAGE_DIRECTORY is required by the filesystem driver')
+  return join(directory, area)
 }

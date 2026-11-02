@@ -755,6 +755,9 @@ importers:
       '@blame/agent-runtime':
         specifier: workspace:*
         version: link:../agent-runtime
+      '@blame/api':
+        specifier: workspace:*
+        version: link:../api
       '@blame/deploy-contract':
         specifier: workspace:*
         version: link:../deploy-contract

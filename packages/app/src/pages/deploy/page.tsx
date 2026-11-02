@@ -4,12 +4,13 @@ import { toast } from "sonner"
 import { DeploymentSource } from "./deploy-source"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useCloudAuth } from "@/context/cloud-auth"
-import { navigate } from "@/components/navigation/navigation"
+import { requestHostedService } from "@/lib/hosted-services"
 
 import {
   BuildLogsDialog,
   DeployConfirmationDialog,
   DeployEmptyState,
+  DeploySignInState,
   DeployLoading,
   DeploymentCard,
   RecentDeployments,
@@ -22,9 +23,14 @@ import {
 } from "./use-deploy-page"
 
 export function DeployPage() {
+  const auth = useCloudAuth()
   return (
     <div className="flex h-svh min-h-0 min-w-0 flex-col overflow-hidden md:h-[calc(100svh_-_1rem)]">
-      <DeployPageContent />
+      {auth.mode === "local" ? (
+        <DeploySignInState onSignIn={auth.openSignIn} />
+      ) : (
+        <DeployPageContent />
+      )}
     </div>
   )
 }
@@ -53,12 +59,7 @@ function DeployPageContent() {
   }
 
   const prepareDeployment = async () => {
-    if (!auth.license?.licensed) {
-      toast.info("Hosted deployment uploads require Blame Premium.", {
-        action: { label: "View Premium", onClick: () => navigate("/premium") },
-      })
-      return
-    }
+    if (!requestHostedService(auth, "deployment")) return
     try {
       const preflight = await deploy.refreshPreflight()
       if (!preflight) {

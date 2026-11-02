@@ -10,7 +10,7 @@ import {
 import { appendComposerDraftText } from "./composer-draft-storage"
 import { useLatestCallback } from "@/lib/use-latest-callback"
 import { useCloudAuth } from "@/context/cloud-auth"
-import { navigate } from "@/components/navigation/navigation"
+import { requestHostedService } from "@/lib/hosted-services"
 import { toast } from "sonner"
 
 const SpeechContext = React.createContext<ReturnType<
@@ -141,12 +141,7 @@ export function SpeechToTextControl(properties: SpeechControlProps) {
   const key = properties.sessionKey ?? fallbackKey
   const slot = useSpeechSlot(key, properties)
   const startRecording = () => {
-    if (!auth.license?.licensed) {
-      toast.info("Cloud voice transcription requires Blame Premium.", {
-        action: { label: "View Premium", onClick: () => navigate("/premium") },
-      })
-      return
-    }
+    if (!requestHostedService(auth, "voice-transcription")) return
     properties.onStartRecording?.()
     session.setActiveKey(key)
   }

@@ -31,7 +31,13 @@ import {
   OnboardingStage,
   type OnboardingScreen,
 } from "@/components/onboarding/stage/onboarding-stage"
-import { PremiumOfferScreen, PremiumScreen } from "@/pages/premium/page"
+import { PremiumOfferScreen, PremiumPanel } from "@/pages/premium/page"
+import {
+  AccountDialog,
+  useAccountFlow,
+  type AccountFlow,
+  type AccountView,
+} from "@/components/onboarding/account-dialog"
 import { WelcomeScreen } from "@/components/onboarding/welcome-screen"
 import { RuntimeSetupScreen } from "@/components/onboarding/runtime-setup-screen"
 import { useBlameRuntime } from "@/context/blame-runtime"
@@ -48,13 +54,19 @@ import {
   getAccountClosureReceipt,
   subscribeToAccountClosureReceipt,
 } from "@/lib/account-closure-receipt-storage"
-import { appWindowRole } from "@/lib/app-window-role"
+import {
+  appWindowRole,
+  loadedWindowRole,
+  windowAwaitsReplacement,
+} from "@/lib/app-window-role"
 
 const settingsPath = "/settings"
 const premiumPath = "/premium"
 const backlogStatusPipPath = "/backlog-status-pip"
 // Long enough for the mark to draw itself and one loading line to be read.
 const minimumLoadingMs = 1600
+// Fixed for the life of the window: a new role means a new window.
+const loadedRole = loadedWindowRole(window.location.search)
 
 const routes = [
   { path: "/backlog", title: "Backlog", element: null },
@@ -107,7 +119,8 @@ export function App() {
   const premiumOpen = pathname === premiumPath
   const statusPipOpen = pathname === backlogStatusPipPath
   const previousRoute = resolvePreviousRoute(previousPathname)
-  const activeRoute = settingsOpen ? previousRoute : route
+  // Settings and Premium open over the page that was in front.
+  const activeRoute = settingsOpen || premiumOpen ? previousRoute : route
   // The backlog page stays mounted: it runs the agents and the story queue.
   const backlogActive = activeRoute.path === "/backlog"
   const loading = useMinimumDuration(
@@ -117,16 +130,20 @@ export function App() {
   const premiumOfferPending = usePremiumOfferPending()
   const runtime = useBlameRuntime()
   const runtimeOfferOpen = useRuntimeOfferPending(runtime.phase)
+  // First-run setup offers Premium to accounts only: a local workspace sees
+  // it when it reaches for a hosted service, in the account popup.
   const premiumOfferOpen =
     premiumOfferPending &&
-    auth.status === "authenticated" &&
+    auth.mode === "account" &&
     auth.aiPreferences !== null &&
     auth.license?.licensed !== true
+  const accountFlow = useAccountFlow(premiumOpen)
+  const closePremium = () => navigate(previousRoute.path)
   const windowRole = appWindowRole({
     activeProject: projects.activeProject,
     aiPreferences: auth.aiPreferences,
     authStatus: loading ? "loading" : auth.status,
-    premiumOpen: premiumOpen || premiumOfferOpen,
+    premiumOpen: premiumOfferOpen,
     statusPipOpen,
   })
 
@@ -158,19 +175,31 @@ export function App() {
     )
   }
 
-  const onboardingScreen = resolveOnboardingScreen({
-    activeProject: Boolean(projects.activeProject),
-    aiPreferencesMissing: auth.aiPreferences === null,
-    authStatus: auth.status,
-    loading,
-    premiumOfferOpen,
-    premiumOpen,
-    runtimeOfferOpen,
-  })
+  if (windowAwaitsReplacement(loadedRole, windowRole)) {
+    return (
+      <OnboardingStage screen="loading">
+        <LoadingScreen />
+      </OnboardingStage>
+    )
+  }
+
+  // Signing in or Premium: a setup step while setup is not finished, a
+  // popup over the app after.
+  const onboardingScreen = withAccountStep(
+    resolveOnboardingScreen({
+      activeProject: Boolean(projects.activeProject),
+      aiPreferencesMissing: auth.aiPreferences === null,
+      authStatus: auth.status,
+      loading,
+      premiumOfferOpen,
+      runtimeOfferOpen,
+    }),
+    accountFlow.view
+  )
   if (onboardingScreen) {
     return (
       <OnboardingStage screen={onboardingScreen}>
-        {onboardingElement(onboardingScreen)}
+        {onboardingElement(onboardingScreen, accountFlow, closePremium)}
       </OnboardingStage>
     )
   }
@@ -191,6 +220,7 @@ export function App() {
             {backlogActive ? null : activeRoute.element}
           </AppLayout>
           <SettingsDialog open={settingsOpen} onOpenChange={closeSettings} />
+          <AccountDialog flow={accountFlow} onPremiumClose={closePremium} />
         </QuickChatStoreProvider>
       </BacklogStoreProvider>
     </TooltipProvider>
@@ -203,12 +233,10 @@ function resolveOnboardingScreen(input: {
   authStatus: "authenticated" | "loading" | "unauthenticated"
   loading: boolean
   premiumOfferOpen: boolean
-  premiumOpen: boolean
   runtimeOfferOpen: boolean
 }): OnboardingScreen | undefined {
   if (input.loading || input.authStatus === "loading") return "loading"
   if (input.authStatus === "unauthenticated") return "connect"
-  if (input.premiumOpen) return "premium"
   if (input.aiPreferencesMissing) return "ai-setup"
   if (input.premiumOfferOpen) return "premium-offer"
   if (!input.activeProject && input.runtimeOfferOpen) return "runtime-setup"
@@ -216,10 +244,30 @@ function resolveOnboardingScreen(input: {
   return undefined
 }
 
-function onboardingElement(screen: OnboardingScreen) {
+function withAccountStep(
+  screen: OnboardingScreen | undefined,
+  view: AccountView | null
+): OnboardingScreen | undefined {
+  if (!screen || screen === "loading" || !view) return screen
+  return view === "sign-in" ? "connect" : "premium"
+}
+
+function onboardingElement(
+  screen: OnboardingScreen,
+  accountFlow: AccountFlow,
+  closePremium: () => void
+) {
   if (screen === "loading") return <LoadingScreen />
   if (screen === "connect") return <ConnectScreen />
-  if (screen === "premium") return <PremiumScreen />
+  if (screen === "premium") {
+    return (
+      <PremiumPanel
+        variant="page"
+        onLeave={closePremium}
+        {...accountFlow.premium}
+      />
+    )
+  }
   if (screen === "ai-setup") return <AiPreferencesSetupScreen />
   if (screen === "premium-offer") return <PremiumOfferScreen />
   if (screen === "runtime-setup") return <RuntimeSetupScreen />

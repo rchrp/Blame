@@ -24,6 +24,11 @@ const declaration = /\.d\.[cm]?ts$/;
 const documentation = /\.(?:md|markdown)$/i;
 const licence = /^(?:licen[cs]e|copying|notice)/i;
 
+// Packages installed for optional peers of server libraries the local API
+// bundles (better-auth links Next.js, which brings sharp): never loaded by the
+// desktop app, and together about 200 MB.
+const unloadedPackage = /^(?:next|sharp|@next\/swc-[\w-]+|@img\/[\w.-]+)$/;
+
 // Native binaries per platform, as node-gyp-build and node-pty resolve them:
 // prebuilds/<process.platform>-<process.arch>.
 const platformPrebuild = /^(?:darwin|linux|win32)-(?:arm64|ia32|x64)$/;
@@ -47,18 +52,21 @@ export async function pruneNodeModules(root, target) {
 }
 
 // A node_modules directory: its children are packages, scopes or pnpm's store.
-async function pruneModules(directory, context) {
+async function pruneModules(directory, context, scope) {
   for (const entry of await readdir(directory, { withFileTypes: true })) {
     if (!entry.isDirectory() || entry.isSymbolicLink()) continue;
     const path = join(directory, entry.name);
-    if (entry.name === ".pnpm") {
+    const name = scope ? `${scope}/${entry.name}` : entry.name;
+    if (unloadedPackage.test(name)) {
+      await remove(path, context.removed);
+    } else if (entry.name === ".pnpm") {
       for (const store of await readdir(path, { withFileTypes: true })) {
         const modules = join(path, store.name, "node_modules");
         if (store.isDirectory() && (await exists(modules)))
           await pruneModules(modules, context);
       }
-    } else if (entry.name.startsWith("@")) {
-      await pruneModules(path, context);
+    } else if (!scope && entry.name.startsWith("@")) {
+      await pruneModules(path, context, entry.name);
     } else {
       await prunePackage(path, context);
     }

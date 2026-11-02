@@ -100,6 +100,9 @@ const api: BlameDesktopApi = {
       return () => authCallbacks.delete(callback);
     },
   },
+  localApi: {
+    session: () => ipcRenderer.invoke("local-api:session"),
+  },
   billing: {
     ready: () => ipcRenderer.send("billing:renderer-ready"),
     onRefreshLicense: (callback) => {

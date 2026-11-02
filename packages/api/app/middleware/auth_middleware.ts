@@ -3,6 +3,7 @@ import type { NextFn } from '@adonisjs/core/types/http'
 import type { Authenticators } from '@adonisjs/auth/types'
 import AccountClosureLedgerService from '#services/account_closure_ledger_service'
 import { authenticateBetterAuthSession } from '#lib/authenticate_better_auth_session'
+import { deployment } from '#lib/deployment'
 
 /**
  * Auth middleware is used authenticate HTTP requests and deny
@@ -26,6 +27,8 @@ export default class AuthMiddleware {
         }
       }
     }
+    // The local API has a single user and no account to close.
+    if (!deployment.hostedServices) return next()
     const user = ctx.auth.getUserOrFail()
     const closureLedger = new AccountClosureLedgerService()
     if (user.closureRequestedAt || (await closureLedger.hasUser(user.id))) {

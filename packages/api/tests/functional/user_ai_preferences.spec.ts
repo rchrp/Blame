@@ -21,7 +21,7 @@ type PreferenceBody = {
 }
 
 test.group('user ai preferences', (group) => {
-  group.setup(() => testUtils.db().migrate())
+  group.setup(() => testUtils.db().truncate())
   group.each.setup(() => testUtils.db().truncate())
 
   test('returns null when preferences are missing', async ({ client, assert }) => {

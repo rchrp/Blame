@@ -1,5 +1,6 @@
 import env from '#start/env'
 import app from '@adonisjs/core/services/app'
+import { defaultStorageDriver } from '#config/attachments'
 
 export type WorkspaceArtifactsConfig = ReturnType<typeof workspaceArtifactsConfig>
 
@@ -43,7 +44,7 @@ export function workspaceArtifactTransferHosts() {
 }
 
 function workspaceStorageDriver() {
-  return env.get('BLAME_WORKSPACE_STORAGE_DRIVER') ?? (app.inTest ? 'memory' : 's3')
+  return env.get('BLAME_WORKSPACE_STORAGE_DRIVER') ?? defaultStorageDriver()
 }
 
 function s3Config() {

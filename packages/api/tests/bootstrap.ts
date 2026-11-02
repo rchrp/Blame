@@ -41,8 +41,18 @@ export const plugins: Config['plugins'] = [
  * The teardown functions are executed after all the tests
  */
 export const runnerHooks: Required<Pick<Config, 'setup' | 'teardown'>> = {
-  setup: [],
+  setup: [migrateDatabase],
   teardown: [],
+}
+
+/**
+ * Migrates once for the whole run. Groups truncate their data instead of
+ * resetting migrations, since the Better Auth data migration cannot roll back.
+ * The SQLite test database starts empty in memory, like the database of the
+ * API on the desktop.
+ */
+async function migrateDatabase() {
+  await testUtils.db().migrate()
 }
 
 /**

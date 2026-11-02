@@ -44,6 +44,48 @@ function dialogOpen() {
   )
 }
 
+// "⌥↵" on macOS, "Alt+↵" elsewhere.
+export const altEnterLabel = isMac ? "⌥↵" : "Alt+↵"
+
+// Alt+Enter anywhere on the screen, a focused field included: the key is
+// caught before the field, so it does not submit the field's form. While a
+// dialog is open, only the control inside the top dialog answers it.
+export function useAltEnter(
+  control: React.RefObject<HTMLElement | null>,
+  onPress: () => void,
+  enabled = true
+) {
+  const handler = React.useRef(onPress)
+
+  React.useEffect(() => {
+    handler.current = onPress
+  })
+
+  React.useEffect(() => {
+    if (!enabled) return
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Enter" || !event.altKey) return
+      if (event.metaKey || event.ctrlKey || event.shiftKey) return
+      if (event.repeat || event.isComposing) return
+      const dialog = topDialog()
+      if (dialog && !(control.current && dialog.contains(control.current)))
+        return
+      event.preventDefault()
+      event.stopPropagation()
+      handler.current()
+    }
+    window.addEventListener("keydown", handleKeyDown, true)
+    return () => window.removeEventListener("keydown", handleKeyDown, true)
+  }, [control, enabled])
+}
+
+function topDialog() {
+  const dialogs = document.querySelectorAll(
+    "[role='dialog'][data-state='open'], [role='alertdialog'][data-state='open']"
+  )
+  return dialogs[dialogs.length - 1]
+}
+
 export type WizardKeys = {
   // Enter, when no field, list or button owns it: next step.
   onNext?: () => void

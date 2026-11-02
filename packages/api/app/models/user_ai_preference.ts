@@ -5,6 +5,8 @@ export type AiReasoningEffort =
   'none' | 'enabled' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh' | 'max'
 
 export default class UserAiPreference extends BaseModel {
+  static selfAssignPrimaryKey = true
+
   @column({ isPrimary: true })
   declare userId: string
 

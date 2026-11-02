@@ -1,6 +1,7 @@
 import app from '@adonisjs/core/services/app'
 import { defineConfig } from '@adonisjs/cors'
 import env from '#start/env'
+import { deployment } from '#lib/deployment'
 
 const siteOrigin = new URL(env.get('BLAME_SITE_URL', 'https://blame.so')).origin
 const allowedOrigins = Array.from(
@@ -31,7 +32,9 @@ const corsConfig = defineConfig({
    * In production, keep an explicit allowlist (empty by default, so no
    * cross-origin browser access is allowed until configured).
    */
-  origin: app.inDev ? true : allowedOrigins,
+  // The local API listens on the loopback interface and requires the token
+  // the desktop app received at startup, whatever page it serves.
+  origin: app.inDev || !deployment.hostedServices ? true : allowedOrigins,
 
   /**
    * HTTP methods accepted for cross-origin requests.

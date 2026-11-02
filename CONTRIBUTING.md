@@ -33,7 +33,7 @@ Blame is a TypeScript monorepo using [pnpm](https://pnpm.io) and [Turborepo](htt
 
 - **Node.js 24**, matching CI. The root package declares Node.js 22 or later.
 - **pnpm 10.33.2**, pinned in `package.json`.
-- **Git** and a local **MySQL 8.4** database for the API.
+- **Git**. A local **MySQL 8.4** database is only needed to work on accounts and hosted services: without an account, the desktop app runs the API on SQLite by itself.
 - A graphical desktop session to run Electron. Local execution also needs the platform's container or VM runtime.
 
 ### Install dependencies
@@ -93,6 +93,8 @@ In another terminal, start the desktop app:
 pnpm --filter @blame/desktop dev
 ```
 
+To work without an account, skip the API: the desktop app starts the build of `@blame/api` on SQLite (`packages/api/bin/local.ts`). `BLAME_DEPLOYMENT=local` is the switch that leaves accounts and hosted services out of the API.
+
 For web UI development, run the frontend instead:
 
 ```bash
@@ -129,6 +131,13 @@ API tests use `packages/api/.env.test`. Configure a dedicated test database befo
 
 ```bash
 pnpm --filter @blame/api test
+```
+
+The API tests also run on SQLite, the way the desktop app runs the API without an account. That needs no database server:
+
+```bash
+BLAME_DEPLOYMENT=local DB_CONNECTION=sqlite BLAME_LOCAL_STORAGE_DIRECTORY=/tmp/blame-local-storage pnpm --filter @blame/api exec node ace.js test unit
+pnpm --filter @blame/desktop test:local-api
 ```
 
 `pnpm build` and `pnpm test` run the monorepo-wide pipelines. Individual packages also expose focused suites. See the [CI workflow](.github/workflows/ci.yml) for the checks run in CI and the [desktop documentation](packages/desktop/README.md) for packaging and runtime images.

@@ -2,6 +2,8 @@ import { BaseModel, column } from '@adonisjs/lucid/orm'
 import { DateTime } from 'luxon'
 
 export default class UserSubscription extends BaseModel {
+  static selfAssignPrimaryKey = true
+
   static table = 'user_subscriptions'
 
   @column({ isPrimary: true })

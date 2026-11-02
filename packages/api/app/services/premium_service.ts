@@ -1,4 +1,5 @@
 import BillingService from '#services/billing_service'
+import { accountRequired, deployment } from '#lib/deployment'
 import { Exception } from '@adonisjs/core/exceptions'
 import type { PreviewSessionCommand } from '@blame/preview-runtime'
 
@@ -12,6 +13,13 @@ export type PremiumFeature = keyof typeof premiumFeatures
 
 export default class PremiumService {
   async denial(userId: string, feature: PremiumFeature) {
+    if (!deployment.hostedServices) {
+      return {
+        code: accountRequired.code,
+        feature,
+        message: 'Sign in to a Blame account to use ' + premiumFeatures[feature] + '.',
+      }
+    }
     const status = await new BillingService().status(userId)
     if (status.licensed) return
     return {

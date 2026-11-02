@@ -12,6 +12,8 @@ export type SecurityAuditSnapshot = Record<string, unknown> & {
 }
 
 export default class SecurityAudit extends BaseModel {
+  static selfAssignPrimaryKey = true
+
   @column({ isPrimary: true })
   declare id: string
 

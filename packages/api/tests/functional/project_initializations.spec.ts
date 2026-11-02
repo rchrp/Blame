@@ -37,7 +37,7 @@ type InitializationBody = {
 }
 
 test.group('project initializations', (group) => {
-  group.setup(() => testUtils.db().migrate())
+  group.setup(() => testUtils.db().truncate())
   group.each.setup(() => testUtils.db().truncate())
 
   test('tracks initialization independently from practices', async ({ client, assert }) => {

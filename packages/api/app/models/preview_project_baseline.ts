@@ -5,6 +5,8 @@ import { DateTime } from 'luxon'
 export type PreviewProjectBaselineStatus = 'building' | 'ready' | 'failed' | 'expired' | 'deleting'
 
 export default class PreviewProjectBaseline extends BaseModel {
+  static selfAssignPrimaryKey = true
+
   @column({ isPrimary: true })
   declare id: string
 

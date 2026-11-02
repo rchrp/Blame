@@ -16,6 +16,8 @@ import { registerProjectAppIpcHandlers } from "./ipc/project-app-ipc";
 import { registerGitIdentityIpcHandlers } from "./ipc/git-identity-ipc";
 import { registerBacklogStatusPipIpcHandlers } from "./backlog-status-pip-ipc";
 import { registerCloudAuthIpcHandlers } from "./cloud-auth-ipc";
+import { registerLocalApiIpcHandlers } from "./local-api/local-api-ipc";
+import { LocalApiService } from "./local-api/local-api-service";
 import { registerDesktopUpdateIpcHandlers } from "./desktop-update-ipc";
 import { DeployService } from "./deploy/deploy-service";
 import { registerDeployIpcHandlers } from "./ipc/deploy-ipc";
@@ -46,6 +48,8 @@ export type DesktopIpcOptions = {
     modulePath: string;
     serviceVersion: string;
   };
+  // The API this computer runs for use without an account.
+  localApi: ConstructorParameters<typeof LocalApiService>[0];
   telemetry: {
     configure: NonNullable<
       Parameters<typeof registerTelemetryIpcHandlers>[0]
@@ -59,6 +63,12 @@ export type DesktopIpcOptions = {
 };
 
 let previewService: PreviewService | undefined;
+let localApi: LocalApiService | undefined;
+
+/** Stops the local API; used on quit, once agents have stopped writing. */
+export function shutdownLocalApi() {
+  return localApi?.shutdown() ?? Promise.resolve();
+}
 
 /** Suspends the cloud previews this desktop started; used on quit. */
 export function suspendStartedCloudPreviews() {
@@ -93,6 +103,11 @@ export function registerDesktopIpcHandlers(options: DesktopIpcOptions) {
   registerCloudAuthIpcHandlers({
     isAppWindow: options.isAppWindow,
     packaged: options.packaged,
+  });
+  localApi = new LocalApiService(options.localApi);
+  registerLocalApiIpcHandlers({
+    isAppWindow: options.isAppWindow,
+    service: localApi,
   });
   registerBacklogStatusPipIpcHandlers({
     ...options.backlogStatusPip,

@@ -16,7 +16,6 @@ import {
 } from "@blame/pricing-card"
 
 import { LegalLink } from "@/components/legal/legal-link"
-import { navigate } from "@/components/navigation/navigation"
 import { dismissPremiumOffer } from "@/components/onboarding/onboarding-flow"
 import { OnboardingProgress } from "@/components/onboarding/onboarding-progress"
 import { useOnboardingStage } from "@/components/onboarding/stage/onboarding-stage"
@@ -48,39 +47,73 @@ const premiumFeatures = [
 type BillingCycle = PricingBillingCycle
 type PendingAction = BillingCycle | "refresh" | "portal"
 
-// The Premium page, reached from settings or a Premium-only feature.
-export function PremiumScreen() {
-  return <PremiumPanel variant="page" />
-}
-
 // The one-time Premium step at the end of first-run setup.
 export function PremiumOfferScreen() {
-  return <PremiumPanel variant="offer" />
+  return <PremiumPanel variant="offer" onLeave={dismissPremiumOffer} />
 }
 
-function PremiumPanel({ variant }: { variant: "offer" | "page" }) {
+type PremiumPanelProps = {
+  // "offer" is the one-time step at the end of first-run setup. Reached from
+  // settings or a Premium-only feature, Premium is a setup step ("page")
+  // while setup is not finished, and a popup over the app ("dialog") after.
+  variant: "offer" | "page" | "dialog"
+  onLeave(): void
+  // Premium comes with an account: without one, getting Premium signs in
+  // first, then the checkout opens for the chosen cycle.
+  onSignInFirst?(cycle: BillingCycle): void
+  resumeCheckout?: BillingCycle | null
+  onCheckoutResumed?(): void
+}
+
+export function PremiumPanel({
+  variant,
+  onLeave,
+  onSignInFirst,
+  resumeCheckout,
+  onCheckoutResumed,
+}: PremiumPanelProps) {
   const auth = useCloudAuth()
   const stage = useOnboardingStage()
+  const account = auth.mode === "account"
   const premium = auth.license?.licensed === true
   const actions = useLicenseActions()
   const offer = variant === "offer"
   const wasPremium = React.useRef(premium)
 
   React.useEffect(() => {
-    if (premium && !wasPremium.current) stage.celebrate()
+    if (premium && !wasPremium.current) {
+      stage.celebrate()
+      if (variant === "dialog")
+        toast.success("Blame Premium is active", { position: "bottom-right" })
+    }
     wasPremium.current = premium
-  }, [premium, stage])
+  }, [premium, stage, variant])
 
-  function leave() {
-    if (offer) dismissPremiumOffer()
-    else navigate("/backlog")
+  const resume = React.useEffectEvent((cycle: BillingCycle) => {
+    onCheckoutResumed?.()
+    if (!premium) actions.checkout(cycle)
+  })
+  React.useEffect(() => {
+    if (resumeCheckout && account) resume(resumeCheckout)
+  }, [account, resumeCheckout])
+
+  function getPremium(cycle: BillingCycle) {
+    if (premium) actions.manage()
+    else if (!account && onSignInFirst) onSignInFirst(cycle)
+    else actions.checkout(cycle)
   }
 
-  useWizardKeys({ onBack: leave })
+  useWizardKeys({ onBack: onLeave })
 
   return (
-    <section className="mx-auto flex min-h-full w-full max-w-5xl flex-col px-8 pt-10 pb-12">
-      {offer ? <OnboardingProgress current={3} className="mb-4" /> : null}
+    <section
+      className={
+        variant === "dialog"
+          ? "flex w-full flex-col px-8 py-9"
+          : "mx-auto flex min-h-full w-full max-w-5xl flex-col px-8 pt-10 pb-12"
+      }
+    >
+      {offer ? <OnboardingProgress step="premium" className="mb-4" /> : null}
       <div className="grid flex-1 items-center gap-10 md:grid-cols-[minmax(0,1fr)_minmax(0,27.5rem)]">
         <motion.div
           className="max-w-md"
@@ -127,28 +160,32 @@ function PremiumPanel({ variant }: { variant: "offer" | "page" }) {
             <Button
               variant="outline"
               className="h-10 rounded-full bg-background/60 px-4 backdrop-blur"
-              onClick={leave}
+              onClick={onLeave}
             >
               {offer ? "Continue with free" : "Continue using Blame"}
               <Kbd>Esc</Kbd>
             </Button>
-            <Button
-              variant="link"
-              className="h-10 px-0 dark:text-indigo-300"
-              disabled={actions.pending !== null}
-              onClick={actions.refresh}
-            >
-              I completed payment
-              {actions.pending === "refresh" ? (
-                <LoaderCircleIcon className="animate-spin" />
-              ) : (
-                <ArrowRightIcon />
-              )}
-            </Button>
+            {account ? (
+              <Button
+                variant="link"
+                className="h-10 px-0 dark:text-indigo-300"
+                disabled={actions.pending !== null}
+                onClick={actions.refresh}
+              >
+                I completed payment
+                {actions.pending === "refresh" ? (
+                  <LoaderCircleIcon className="animate-spin" />
+                ) : (
+                  <ArrowRightIcon />
+                )}
+              </Button>
+            ) : null}
           </motion.div>
-          {offer ? (
+          {offer || !account ? (
             <motion.p variants={riseIn} className="mt-2 text-xs text-foreground/50">
-              You can upgrade anytime from Settings.
+              {offer
+                ? "You can upgrade anytime from Settings."
+                : "Premium comes with a free Blame account: you sign in or create one first, and your workspace moves into it."}
             </motion.p>
           ) : null}
         </motion.div>
@@ -175,9 +212,7 @@ function PremiumPanel({ variant }: { variant: "offer" | "page" }) {
                   type="button"
                   className={pricingCardActionClassName}
                   disabled={actions.pending !== null}
-                  onClick={() =>
-                    premium ? actions.manage() : actions.checkout(cycle)
-                  }
+                  onClick={() => getPremium(cycle)}
                 >
                   {loading ? <LoaderCircleIcon className="size-4 animate-spin" /> : null}
                   {loading

@@ -2,6 +2,7 @@ export type { PreviewDevicesClient } from "./context/platform-preview-devices"
 import type { Root } from "react-dom/client"
 import type { ComponentType } from "react"
 import type { Platform } from "./context/platform"
+export type { LocalApiClient } from "./context/platform-local-api"
 export type {
   PreviewTerminalClient,
   PreviewSurfacesClient,

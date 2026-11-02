@@ -280,6 +280,7 @@ export type BlameDesktopApi = {
     onRefreshLicense(callback: () => void): () => void;
     ready(): void;
   };
+  localApi: import("@blame/app").LocalApiClient;
   deploy: DeployClient;
   telemetry: {
     configure(session: TelemetryExportSession): Promise<boolean>;

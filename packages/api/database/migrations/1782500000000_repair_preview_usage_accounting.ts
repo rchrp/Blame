@@ -1,8 +1,11 @@
 import { BaseSchema } from '@adonisjs/lucid/schema'
+import { isSqlite } from '#database/sql_dialect'
 
 export default class extends BaseSchema {
   async up() {
     this.defer(async (db) => {
+      // Repairs rows written by the hosted API; a new SQLite database has none.
+      if (isSqlite(db)) return
       await db.rawQuery(`
         UPDATE preview_usage_samples AS sample
         JOIN (
