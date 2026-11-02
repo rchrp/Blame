@@ -224,6 +224,14 @@ function LoginForm({
   const [email, setEmail] = React.useState("")
   const [password, setPassword] = React.useState("")
   const form = useAuthForm()
+  // Read once: continuing without an account opens a local workspace while
+  // this form fades out, and the title must not change under the animation.
+  const [title] = React.useState(() =>
+    signInTitle({
+      greeting: auth.greeting,
+      fromLocalWorkspace: auth.mode === "local",
+    })
+  )
 
   return (
     <form
@@ -235,12 +243,7 @@ function LoginForm({
       })}
     >
       <FieldGroup className="onboarding-stagger gap-3.5">
-        <FormTitle
-          {...signInTitle({
-            greeting: auth.greeting,
-            fromLocalWorkspace: auth.mode === "local",
-          })}
-        />
+        <FormTitle {...title} />
         <LoginFields
           email={email}
           password={password}
