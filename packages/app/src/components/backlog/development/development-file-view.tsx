@@ -1,6 +1,6 @@
 import * as React from "react"
 import { File as PierreFile } from "@pierre/diffs/react"
-import { FileIcon } from "lucide-react"
+import { ChevronRightIcon, FileIcon } from "lucide-react"
 
 import { DevelopmentDiffView } from "@/components/backlog/development/development-diff-view"
 import { DevelopmentScrollArea } from "@/components/backlog/development/development-scroll-area"
@@ -189,12 +189,20 @@ function ImagePreview({
   )
 }
 
+// The file's place in the tree, its name already on the open tab.
 function FileHeader({ path }: { path: string }) {
+  const folders = path.split("/").slice(0, -1).filter(Boolean)
   return (
-    <div className="flex min-w-0 items-center gap-2 border-b px-4 py-2">
-      <FileIcon className="size-4 shrink-0 text-muted-foreground" />
-      <span className="truncate font-medium">{filename(path)}</span>
-      <span className="truncate text-xs text-muted-foreground">{path}</span>
+    <div className="flex min-w-0 shrink-0 items-center gap-1 px-4 pt-3 pb-1.5 text-xs text-muted-foreground">
+      {folders.map((folder, index) => (
+        <React.Fragment key={`${folder}-${index}`}>
+          <span className="shrink-0 truncate">{folder}</span>
+          <ChevronRightIcon className="size-3 shrink-0 opacity-60" />
+        </React.Fragment>
+      ))}
+      <span className="truncate font-medium text-foreground">
+        {filename(path)}
+      </span>
     </div>
   )
 }

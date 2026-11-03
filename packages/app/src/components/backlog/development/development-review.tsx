@@ -1,16 +1,15 @@
 import * as React from "react"
 import type { VcsFileDiff } from "@/components/backlog/development/development-workspace"
-import {
-  ChevronDownIcon,
-  ChevronRightIcon,
-  FileDiffIcon,
-  FileIcon,
-} from "lucide-react"
+import { ChevronDownIcon, ChevronRightIcon, FileDiffIcon } from "lucide-react"
 import { Collapsible } from "radix-ui"
 
 import { DiffStats } from "@/components/backlog/development/development-diff-stats"
 import { DevelopmentDiffView } from "@/components/backlog/development/development-diff-view"
-import { DevelopmentGraph } from "@/components/backlog/development/development-graph"
+import {
+  DevelopmentGraph,
+  reviewSurfaceClassName,
+} from "@/components/backlog/development/development-graph"
+import { DevelopmentFileIcon } from "@/components/backlog/development/development-file-icon"
 import { DevelopmentScrollArea } from "@/components/backlog/development/development-scroll-area"
 import {
   diffKindClassName,
@@ -96,7 +95,11 @@ function ReviewDiffCard({
 
   return (
     <Collapsible.Root open={open} onOpenChange={setOpen}>
-      <Card className="min-w-0 scroll-mt-3 gap-0 py-0" ref={cardRef} size="sm">
+      <Card
+        className={reviewSurfaceClassName("min-w-0 scroll-mt-3 gap-0 py-0")}
+        ref={cardRef}
+        size="sm"
+      >
         <CardHeader className="min-w-0 px-0">
           <Collapsible.Trigger asChild>
             <button
@@ -109,7 +112,10 @@ function ReviewDiffCard({
                 ) : (
                   <ChevronRightIcon className="size-4 shrink-0 text-muted-foreground" />
                 )}
-                <FileIcon className="size-4 shrink-0 text-muted-foreground" />
+                <DevelopmentFileIcon
+                  className="shrink-0"
+                  node={{ path: diff.file, type: "file" }}
+                />
                 <div className="min-w-0">
                   <CardTitle className="truncate">
                     {filename(diff.file)}

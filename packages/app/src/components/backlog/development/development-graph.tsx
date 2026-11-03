@@ -155,7 +155,7 @@ export function DevelopmentGraph({
   }, [diffs, isDark, onOpenFile])
 
   return (
-    <Card className="gap-0 py-0" size="sm">
+    <Card className={reviewSurfaceClassName("gap-0 py-0")} size="sm">
       <CardHeader className="border-b px-3 py-3">
         <CardTitle className="flex items-center gap-2 text-sm">
           <FolderTreeIcon className="size-4 text-muted-foreground" />
@@ -195,5 +195,13 @@ function LegendDot({ className, label }: { className: string; label: string }) {
       <span className={cn("size-2 rounded-full", className)} />
       {label}
     </span>
+  )
+}
+
+// A light surface inside the editor's frame, never a second frame.
+export function reviewSurfaceClassName(className: string) {
+  return cn(
+    className,
+    "rounded-lg bg-foreground/[0.025] ring-foreground/[0.07] dark:bg-white/[0.02]"
   )
 }
