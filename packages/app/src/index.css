@@ -108,6 +108,17 @@
   --scrollbar-track: transparent;
 }
 
+/* The neutral a preview's launch clouds melt into before its page shows:
+   a plain color, which the page also covers itself in, then fades. */
+:root,
+.light {
+  --preview-reveal: oklch(0.94 0 0);
+}
+
+.dark {
+  --preview-reveal: oklch(0.22 0 0);
+}
+
 @theme inline {
   --font-sans: "Source Sans 3 Variable", sans-serif;
   --font-heading: "Nunito Sans Variable", sans-serif;

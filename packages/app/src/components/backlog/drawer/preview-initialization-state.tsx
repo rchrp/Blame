@@ -30,7 +30,8 @@ export function PreviewInitializationState({
   const steps = next.steps.slice(-visibleSteps)
   const startedAt = lifecycle?.since ? Date.parse(lifecycle.since) : undefined
   return (
-    <div className="flex h-full w-full flex-col items-center justify-center gap-5 bg-background p-8 text-center">
+    // No background of its own: its frame's, or the launch clouds behind.
+    <div className="flex h-full w-full flex-col items-center justify-center gap-5 p-8 text-center">
       <div className="space-y-1">
         <h3 className="font-heading text-lg font-semibold">{copy.title}</h3>
         <p className="text-sm text-muted-foreground">{copy.description}</p>
