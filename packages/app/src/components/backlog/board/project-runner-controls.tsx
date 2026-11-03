@@ -1,11 +1,11 @@
 import type { ProjectRunConfiguration } from "@blame/agent-runtime"
 import {
   AppWindowIcon,
-  BracesIcon,
   ChevronDownIcon,
   LoaderCircleIcon,
   PlayIcon,
   RotateCwIcon,
+  SquareAsteriskIcon,
   SquareIcon,
   SquareTerminalIcon,
   type LucideIcon,
@@ -41,6 +41,9 @@ export type RunnerViewId = "preview" | "logs" | "variables"
 export type RunnerView = {
   id: RunnerViewId
   active?: boolean
+  // Something to see there now, such as a preview whose app answers: a
+  // blue dot, selected or not.
+  ready?: boolean
   // Why the view cannot show now.
   unavailable?: string
   onSelect: () => void
@@ -84,7 +87,11 @@ const runnerViewMeta: Record<
     label: "Run logs",
     show: "Show run logs",
   },
-  variables: { icon: BracesIcon, label: "Variables", show: "Show variables" },
+  variables: {
+    icon: SquareAsteriskIcon,
+    label: "Variables",
+    show: "Show variables",
+  },
 }
 
 export const runnerViewIcon = (id: RunnerViewId) => runnerViewMeta[id].icon
@@ -102,10 +109,7 @@ export function ProjectRunnerControls(props: ProjectRunnerControlsProps) {
         <RunnerStartButton {...props} selected={selected} status={status} />
         <RunnerStopButton {...props} selected={selected} status={status} />
         {props.views?.length ? (
-          <>
-            <RunnerViewDivider />
-            <RunnerViewButtons views={props.views} />
-          </>
+          <RunnerViewSwitch className="ml-1" views={props.views} />
         ) : null}
       </ButtonGroup>
     </TooltipProvider>
@@ -118,24 +122,41 @@ export function RunnerViewGroup({ views }: { views: RunnerView[] }) {
   return (
     <TooltipProvider>
       <ButtonGroup className={runnerGroupClassName}>
-        <RunnerViewButtons views={views} />
+        <RunnerViewSwitch views={views} />
       </ButtonGroup>
     </TooltipProvider>
   )
 }
 
-function RunnerViewDivider() {
-  return (
-    <span
-      aria-hidden="true"
-      className="mx-1 my-2 w-px shrink-0 bg-foreground/15"
-    />
-  )
-}
+// The views sit in a recess of the group, a switch whose knob slides to
+// the one showing.
+const runnerViewStep = "(1.75rem + 0.125rem)"
 
-function RunnerViewButtons({ views }: { views: RunnerView[] }) {
+function RunnerViewSwitch({
+  className,
+  views,
+}: {
+  className?: string
+  views: RunnerView[]
+}) {
+  const active = views.findIndex((view) => view.active)
   return (
-    <div className="flex items-center gap-0.5">
+    <div
+      className={cn(
+        "relative flex items-center gap-0.5 rounded-md! bg-foreground/[0.07] p-0.5 shadow-[inset_0_1px_2px_rgb(0_0_0/0.16)] dark:bg-black/35 dark:shadow-[inset_0_1px_3px_rgb(0_0_0/0.45)]",
+        className
+      )}
+    >
+      <span
+        aria-hidden="true"
+        className={cn(
+          "pointer-events-none absolute top-0.5 left-0.5 size-7 rounded-[5px] border border-transparent bg-background shadow-sm transition-[translate,opacity] duration-200 ease-out motion-reduce:transition-none dark:border-white/10 dark:bg-muted",
+          active < 0 && "opacity-0"
+        )}
+        style={{
+          translate: `calc(${Math.max(active, 0)} * ${runnerViewStep}) 0`,
+        }}
+      />
       {views.map((view) => (
         <RunnerViewButton key={view.id} view={view} />
       ))}
@@ -151,14 +172,14 @@ function RunnerViewButton({ view }: { view: RunnerView }) {
       label={view.unavailable ?? (view.active ? meta.label : meta.show)}
     >
       {/* A disabled button gets no pointer events: its tooltip needs one. */}
-      <span className="inline-flex">
+      <span className="relative inline-flex">
         <Button
-          aria-label={meta.label}
+          aria-label={view.ready ? `${meta.label}, ready` : meta.label}
           aria-pressed={Boolean(view.active)}
           className={cn(
-            "rounded-md border border-transparent text-muted-foreground hover:text-foreground",
+            "relative size-7 rounded-[5px] text-muted-foreground hover:bg-foreground/5 hover:text-foreground dark:hover:bg-white/5",
             view.active &&
-              "bg-background text-foreground shadow-sm hover:bg-background dark:border-input dark:bg-input/30 dark:hover:bg-input/40"
+              "text-foreground hover:bg-transparent dark:hover:bg-transparent"
           )}
           disabled={Boolean(view.unavailable)}
           size="icon"
@@ -167,6 +188,12 @@ function RunnerViewButton({ view }: { view: RunnerView }) {
           onClick={view.onSelect}
         >
           <Icon />
+          {view.ready ? (
+            <span
+              aria-hidden="true"
+              className="absolute top-1 right-1 size-1.5 rounded-full bg-sky-500 shadow-[0_0_0_1.5px_var(--muted)]"
+            />
+          ) : null}
         </Button>
       </span>
     </RunnerIconTooltip>

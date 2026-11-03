@@ -16,17 +16,14 @@ import type { ProjectRunPreview } from "@/components/backlog/drawer/user-story-p
 
 // The logs of the project's own apps, run from the shared runner.
 export function ProjectRunLogPanel({
-  actions,
   logs,
   notice,
 }: {
-  actions: React.ReactNode
   logs: ProjectRunPreview["logs"]
   notice?: React.ReactNode
 }) {
   return (
     <RunLogPanel
-      actions={actions}
       empty={logs.empty}
       items={logs.items}
       notice={notice}
@@ -40,7 +37,6 @@ export function ProjectRunLogPanel({
 
 // The logs of a story preview's services, one tab each, running first.
 export function ServiceLogPanel({
-  actions,
   items,
   managed,
   managedError,
@@ -49,7 +45,6 @@ export function ServiceLogPanel({
   worktree,
   onServiceChange,
 }: {
-  actions: React.ReactNode
   items: RunLogItem[]
   managed: boolean
   managedError?: string
@@ -68,7 +63,6 @@ export function ServiceLogPanel({
     : runtimeLog.loading
   return (
     <RunLogPanel
-      actions={actions}
       empty={
         stopped
           ? {

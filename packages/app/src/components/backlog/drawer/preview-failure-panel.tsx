@@ -32,7 +32,7 @@ export function PreviewFailurePanel({
     Boolean(onOpenVariables) && /\bVariables tab\b/.test(message)
   const repair = missingVariable ? undefined : repairAction
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-muted/20 px-4 pt-[72px] pb-4">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-muted/20 px-4 pt-16 pb-4">
       <div
         className="flex min-h-0 flex-1 flex-col items-center justify-center gap-5 overflow-auto rounded-lg border bg-background p-8 text-center"
         role="alert"

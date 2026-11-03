@@ -29,7 +29,10 @@ import {
   sortRunLogItems,
   type RunLogItem,
 } from "@/components/backlog/board/run-log-items"
-import type { RunLogEmpty } from "@/components/backlog/board/run-log-panel"
+import {
+  PreviewActionsSpace,
+  type RunLogEmpty,
+} from "@/components/backlog/board/run-log-panel"
 import type { UserStory } from "@/components/backlog/data/backlog-data"
 import { managedPresentedPreviewUrl } from "@/components/backlog/drawer/managed-preview-url"
 import { ManagedRuntimeSummary } from "@/components/backlog/drawer/managed-runtime-summary"
@@ -132,8 +135,9 @@ export type ProjectRunPreview = {
     manifest?: import("@blame/agent-runtime").PreviewManifest
   }
   // Hides the native preview while a menu of the controls is open; the
-  // views switch between the preview and its logs.
-  controls: (props: {
+  // views switch between the preview and its logs. Left out where the
+  // controls show elsewhere (the header, over its drawer).
+  controls?: (props: {
     onMenuOpenChange: (open: boolean) => void
     views: RunnerView[]
   }) => React.ReactNode
@@ -158,8 +162,6 @@ export type ProjectRunPreview = {
 export type PreviewView = "preview" | "setup-log" | "variables"
 
 type PreviewIslandProps = {
-  // The runner's controls and views, always at the right end.
-  actions: React.ReactNode
   /** Terminal, screen and device previews have no address or page actions. */
   browserSurface: boolean
   captureDisabled?: boolean
@@ -321,6 +323,7 @@ function CloudPreviewAutoStart({ story }: { story: UserStory }) {
 }
 
 export const UserStoryPreview = React.memo(function UserStoryPreview({
+  covered = false,
   onCapture,
   onRunConfigurationChange,
   previewSessionKey,
@@ -334,6 +337,9 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
   worktree,
   onViewChange,
 }: {
+  // Something drawn over the preview from outside, such as a menu of the
+  // header's controls: the native page, drawn above the app, steps aside.
+  covered?: boolean
   onCapture?: (file: File) => void
   onRunConfigurationChange?: (
     configurationId: string,
@@ -759,6 +765,10 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
     {
       id: "preview",
       active: activeTab === "preview",
+      // The page is there to see: its app answers.
+      ready: Boolean(
+        source && !previewWaiting && !runtimeStarting && !previewFailure
+      ),
       unavailable: hasPreviewSurface
         ? undefined
         : "Start the app to see its preview",
@@ -780,15 +790,23 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
         ]
       : []),
   ]
-  const actions = (
-    <PreviewRunnerActions
-      projectRun={projectRun}
-      runner={projectRunMode ? undefined : previewRunner}
-      views={views}
-      onConfigurationChange={onRunConfigurationChange}
-      onMenuOpenChange={setRunnerMenuOpen}
-    />
-  )
+  const actions =
+    projectRun && !projectRun.controls ? null : (
+      <PreviewRunnerActions
+        projectRun={projectRun}
+        runner={projectRunMode ? undefined : previewRunner}
+        views={views}
+        onConfigurationChange={onRunConfigurationChange}
+        onMenuOpenChange={setRunnerMenuOpen}
+      />
+    )
+  // A parent showing the view (the header) follows the one shown, which
+  // differs when the one asked for is not there.
+  const shownView = view ? activeTab : undefined
+  React.useEffect(() => {
+    if (shownView && shownView !== view) onViewChange?.(shownView)
+  }, [onViewChange, shownView, view])
+  const [actionsRef, actionsWidth] = useElementWidth<HTMLDivElement>()
 
   if (hasPreviewSurface || hasSetupLog) {
     return (
@@ -796,10 +814,26 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
         <Tabs
           value={activeTab}
           className="preview-toolbar-container relative h-full min-h-0 gap-0 bg-muted/20"
+          style={
+            {
+              "--preview-actions-space": actions
+                ? `${actionsWidth + 8}px`
+                : "0px",
+            } as React.CSSProperties
+          }
         >
+          {/* One element whatever the view, so its switch slides between
+              them: the toolbar of each view leaves it room. */}
+          {actions ? (
+            <div
+              ref={actionsRef}
+              className="pointer-events-auto absolute top-4 right-4 z-30 flex h-10 items-center gap-1.5"
+            >
+              {actions}
+            </div>
+          ) : null}
           {activeTab !== "setup-log" && (
             <PreviewIsland
-              actions={actions}
               browserSurface={browserSurface}
               captureDisabled={previewWaiting || !previewCapture}
               locationBlocked={displayedLocationBlocked}
@@ -866,6 +900,7 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
                       visible &&
                       activeTab === "preview" &&
                       !runnerMenuOpen &&
+                      !covered &&
                       !runtimeStarting &&
                       !previewFailure
                     }
@@ -919,13 +954,11 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
             >
               {projectRun ? (
                 <ProjectRunLogPanel
-                  actions={actions}
                   logs={projectRun.logs}
                   notice={projectRun.notice}
                 />
               ) : (
                 <ServiceLogPanel
-                  actions={actions}
                   items={serviceItems}
                   managed={managedPreview}
                   managedError={previewRunner.error}
@@ -985,7 +1018,7 @@ function PreviewPanel({
   title,
 }: PreviewPanelProps) {
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-muted/20 px-4 pt-[72px] pb-4">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-muted/20 px-4 pt-16 pb-4">
       <div
         className="relative min-h-0 flex-1 overflow-hidden rounded-lg border bg-background transition-shadow duration-700"
         style={{ boxShadow: previewAmbilightShadow(undefined) }}
@@ -1008,7 +1041,7 @@ function PreviewPanel({
 
 function StartedAppWaitingPanel({ source }: { source: string }) {
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-muted/20 px-4 pt-[72px] pb-4">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-muted/20 px-4 pt-16 pb-4">
       <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-4 rounded-lg border bg-background p-8 text-center">
         <LoaderCircleIcon className="size-8 animate-spin text-muted-foreground" />
         <div className="space-y-1">
@@ -1038,7 +1071,7 @@ function PreviewWaitingPanel({
   lifecycle?: PreviewLifecycleState
 } = {}) {
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-muted/20 px-4 pt-[72px] pb-4">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-muted/20 px-4 pt-16 pb-4">
       <div className="relative min-h-0 flex-1 overflow-hidden rounded-lg border bg-background">
         <PreviewInitializationState lifecycle={lifecycle} />
       </div>
@@ -1047,7 +1080,6 @@ function PreviewWaitingPanel({
 }
 
 function PreviewIsland({
-  actions,
   browserSurface,
   captureDisabled,
   locationBlocked,
@@ -1088,9 +1120,7 @@ function PreviewIsland({
       ) : (
         <span className="min-w-0 flex-1" />
       )}
-      <div className="pointer-events-auto ml-1 flex shrink-0 items-center gap-1.5">
-        {actions}
-      </div>
+      <PreviewActionsSpace />
     </div>
   )
 }
@@ -1108,7 +1138,7 @@ function PreviewRunnerActions({
     <>
       {runner && <ManagedRuntimeSummary runner={runner} />}
       {projectRun ? (
-        projectRun.controls({ onMenuOpenChange, views })
+        projectRun.controls?.({ onMenuOpenChange, views })
       ) : runner?.runtime ? (
         <UserStoryPreviewRunnerControls
           runner={runner}
@@ -1386,6 +1416,21 @@ function BlockedLocationBadge() {
       URL interne masquée
     </span>
   )
+}
+
+// The width of an element, kept current as it changes.
+function useElementWidth<T extends HTMLElement>() {
+  const [element, setElement] = React.useState<T | null>(null)
+  const [width, setWidth] = React.useState(0)
+  React.useLayoutEffect(() => {
+    if (!element) return
+    const observer = new ResizeObserver(([entry]) =>
+      setWidth(Math.ceil(entry?.borderBoxSize[0]?.inlineSize ?? 0))
+    )
+    observer.observe(element)
+    return () => observer.disconnect()
+  }, [element])
+  return [setElement, width] as const
 }
 
 // The service the logs open on: the page's own unless another one runs

@@ -15,9 +15,6 @@ export type RunLogEmpty = {
 }
 
 type RunLogPanelProps = {
-  // The runner's controls, right of the tabs: where they sit in the
-  // preview's toolbar.
-  actions?: React.ReactNode
   empty: RunLogEmpty
   items: RunLogItem[]
   // Shown in place of the tabs while there are none.
@@ -31,7 +28,6 @@ type RunLogPanelProps = {
 // A run's logs: one tab per service or app, the selected one joined to
 // the terminal under it.
 export function RunLogPanel({
-  actions,
   empty,
   items,
   notice,
@@ -45,6 +41,8 @@ export function RunLogPanel({
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-muted/20 p-4">
       <div className="flex h-12 shrink-0 items-start gap-2">
+        {/* Tabs start level with the runner's controls, their labels on
+            its line, and run down into the terminal. */}
         <div className="min-w-0 flex-1 self-end">
           {items.length ? (
             <RunLogTabs
@@ -58,11 +56,7 @@ export function RunLogPanel({
             </p>
           )}
         </div>
-        {actions ? (
-          <div className="flex h-10 shrink-0 items-center gap-1.5">
-            {actions}
-          </div>
-        ) : null}
+        <PreviewActionsSpace />
       </div>
       <RunLogTerminal
         // The first tab, selected, carries the terminal's left edge up.
@@ -72,6 +66,18 @@ export function RunLogPanel({
         output={text}
       />
     </div>
+  )
+}
+
+// Room for the preview's run controls, which stay over the toolbar's right
+// end whatever the view (see UserStoryPreview).
+export function PreviewActionsSpace() {
+  return (
+    <span
+      aria-hidden="true"
+      className="h-full shrink-0"
+      style={{ width: "var(--preview-actions-space, 0px)" }}
+    />
   )
 }
 
@@ -98,7 +104,7 @@ function RunLogTabs({
           <TabsPrimitive.Trigger
             key={item.id}
             className={cn(
-              "run-log-tab relative flex h-8 max-w-56 shrink-0 items-center gap-2 rounded-t-lg border border-b-0 border-transparent px-3 text-sm font-medium whitespace-nowrap text-muted-foreground outline-none hover:bg-foreground/5 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset",
+              "run-log-tab relative flex h-12 max-w-60 shrink-0 items-center gap-2 rounded-t-lg border border-b-0 border-transparent px-4 pb-2.5 text-sm font-medium whitespace-nowrap text-muted-foreground outline-none hover:bg-foreground/5 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset",
               "data-[state=active]:border-border data-[state=active]:bg-zinc-950 data-[state=active]:text-zinc-100 data-[state=active]:hover:bg-zinc-950",
               // The selected tab stays dark in both themes: a gray that shows on it.
               "data-[state=active]:[&_[data-status=stopped]]:bg-zinc-500"

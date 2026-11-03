@@ -225,7 +225,7 @@ function NativePreviewFrame({
     <div
       className={cn(
         "flex h-full min-h-0 flex-col overflow-hidden",
-        !bare && "bg-muted/20 px-4 pt-[72px] pb-4"
+        !bare && "bg-muted/20 px-4 pt-16 pb-4"
       )}
     >
       <div
