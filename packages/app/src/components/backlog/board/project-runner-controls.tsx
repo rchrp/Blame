@@ -430,10 +430,14 @@ function isTransitioning(status: ProjectRunnerControlStatus | undefined) {
   return status === "starting" || status === "stopping"
 }
 
+// Rounded on its left, as Stop is on its right: the two read as a pair.
 function runnerStartClassName(running: boolean) {
-  return running
-    ? "bg-emerald-600 text-white hover:bg-emerald-500"
-    : "bg-muted text-emerald-500 hover:bg-muted/80 hover:text-emerald-400"
+  return cn(
+    "rounded-l-lg!",
+    running
+      ? "bg-emerald-600 text-white hover:bg-emerald-500"
+      : "bg-muted text-emerald-500 hover:bg-muted/80 hover:text-emerald-400"
+  )
 }
 
 function runnerStopClassName(running: boolean) {
