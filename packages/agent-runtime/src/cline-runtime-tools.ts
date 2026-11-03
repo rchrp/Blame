@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { previewEnvironmentTool } from "./preview-environment-tool.js";
 import { attachmentTools } from "./attachment-tools.js";
 
 import type { ClineCore, CoreCompactionConfig } from "@cline/sdk";
@@ -172,6 +173,7 @@ export function runtimeTools(
           componentPreviewTool(options, previewContext),
           previewInitializationRepairTool(options, previewContext),
           previewContainerLogsTool(options, previewContext),
+          previewEnvironmentTool(options, previewContext),
         ]),
     ...previewMcpTools,
   ].filter((tool): tool is AgentTool => Boolean(tool));

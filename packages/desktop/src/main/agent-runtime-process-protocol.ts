@@ -55,6 +55,7 @@ export const agentHostMethods = [
   "previewScreenshotKnown",
   "previewDevtoolsTools",
   "previewContainerLogs",
+  "previewEnvironment",
   "refreshPreviewDependencies",
   "applyPreviewInitialization",
   "projectScanRoot",

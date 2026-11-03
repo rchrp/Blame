@@ -46,7 +46,13 @@ export type EnvFileInput = {
 
 export type StoredVariable = { key: string; value: string; serviceId?: string };
 
-export type EnvDeclaration = { key: string; required: boolean; file: string };
+export type EnvDeclaration = {
+  key: string;
+  required: boolean;
+  file: string;
+  /** The app refuses an empty value too, as AdonisJS does. */
+  rejectsEmpty?: boolean;
+};
 
 export type ResolveEnvironmentInput = {
   plan: Pick<PreviewExecutionPlan, "services" | "setup">;
@@ -72,6 +78,7 @@ export type ResolvedVariable = {
   locked: boolean;
   status: PreviewVariableStatus;
   required?: boolean;
+  rejectsEmpty?: boolean;
 };
 
 export type ResolvedItem = {
@@ -224,8 +231,11 @@ function resolveItem(
     a.localeCompare(b),
   )) {
     const winner = withPreviewOrigin(input, key, strongest(list));
-    const required = declared.get(key)?.required;
-    variables.push(resolvedVariable(key, winner, required));
+    const declaration = declared.get(key);
+    variables.push({
+      ...resolvedVariable(key, winner, declaration?.required),
+      ...(declaration?.rejectsEmpty ? { rejectsEmpty: true } : {}),
+    });
     if (winner.removed || winner.expectedOnly) continue;
     // Env files get the origin from their own rewrite, which also names it
     // NEXT_PUBLIC_APP_URL.

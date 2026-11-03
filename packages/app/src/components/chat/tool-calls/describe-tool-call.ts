@@ -1,5 +1,6 @@
 import { describeEdit, describeRead, describeSearch } from "./describe-code.ts"
 import { describeWebResearch } from "./describe-web-research.ts"
+import { describePreviewEnvironment } from "./describe-preview-environment.ts"
 import {
   describeCommand,
   describeFinish,
@@ -66,6 +67,7 @@ const describers: Record<string, (source: ToolCallSource) => ToolCallView> = {
   open_component_preview: describeComponentPreview,
   get_preview_container_logs: describePreview,
   repair_preview_initialization: describePreview,
+  preview_environment: describePreviewEnvironment,
   get_code_minimal_context: describeGraph,
   get_code_review_context: describeGraph,
   get_code_impact_radius: describeGraph,

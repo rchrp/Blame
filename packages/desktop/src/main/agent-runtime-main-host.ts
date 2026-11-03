@@ -78,6 +78,11 @@ async function handleAgentHostRequest(
   if (method === "previewContainerLogs") {
     return previewContainerLogs(input, signal, harness);
   }
+  if (method === "previewEnvironment") {
+    const { agentPreviewEnvironment } =
+      await import("./preview-environment/agent-environment.ts");
+    return agentPreviewEnvironment(input);
+  }
   if (method === "refreshPreviewDependencies") {
     return refreshPreviewDependencies(input, signal, harness, previews);
   }
@@ -212,7 +217,12 @@ async function previewContainerLogs(
 ) {
   const request = { ...recordInput(input), signal } as never;
   const preview = await harness.inspect(request);
-  return previewLogService.read(request, preview);
+  const logs = await previewLogService.read(request, preview);
+  // The agent reads the logs: the preview's secret values stay out.
+  const { redactForWorktree } =
+    await import("./preview-environment/secret-redaction.ts");
+  const worktree = String(recordInput(input).worktree ?? "");
+  return worktree ? redactForWorktree(worktree, logs) : logs;
 }
 
 async function previewDevtoolsCall(

@@ -28,6 +28,7 @@ import {
   previewExtraHosts,
   type PreviewHostGateway,
 } from "../../preview-environment/host-gateway.ts";
+import { worktreeEnvDeclarations } from "../../preview-environment/env-declarations.ts";
 import {
   environmentFingerprints,
   environmentLabel,
@@ -67,12 +68,13 @@ export async function renderLocalPreview(input: {
 }) {
   const { worktree, plan } = input;
   const databaseMode = previewDatabaseMode(plan, input.databaseMode);
-  const [projectUser, hostPorts, dependencyKey, symlinkMounts] =
+  const [projectUser, hostPorts, dependencyKey, symlinkMounts, declarations] =
     await Promise.all([
       worktreeOwner(worktree),
       allocatePreviewHostPorts(worktree, plan, input.ownPorts),
       dependencyHash(worktree, plan),
       envHostFileMounts(worktree),
+      worktreeEnvDeclarations(worktree),
     ]);
   const target = {
     kind: "local" as const,
@@ -93,6 +95,7 @@ export async function renderLocalPreview(input: {
     previewOrigin: origin,
     databaseMode,
     hostGateway: input.hostGateway,
+    declarations,
     write: true,
   });
   const materialized = await materializedPreviewEnvHostFileMounts(

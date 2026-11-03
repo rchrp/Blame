@@ -848,6 +848,9 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
                   <PreviewFailurePanel
                     message={previewFailure}
                     onOpenLogs={() => setTab("setup-log")}
+                    onOpenVariables={
+                      hasVariables ? () => setTab("variables") : undefined
+                    }
                     onRestart={() =>
                       void previewRunner.control(
                         "restart",

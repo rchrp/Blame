@@ -17,6 +17,7 @@ import {
 } from "../preview-runtime/local/local-preview-runner.ts";
 import type { PreviewDatabaseMode } from "./database-environment.ts";
 import { maskedEnvValue } from "./dotenv.ts";
+import { worktreeEnvDeclarations } from "./env-declarations.ts";
 import { worktreeRepositoryRoot } from "./env-file-sources.ts";
 import type { ResolvedItem } from "./environment-resolver.ts";
 import {
@@ -68,7 +69,7 @@ export async function describePreviewEnvironment(input: {
   };
 }
 
-async function resolveForView(input: {
+export async function resolveForView(input: {
   worktree: string;
   databaseMode?: PreviewDatabaseMode | null;
 }) {
@@ -99,6 +100,7 @@ async function resolveForView(input: {
     databaseMode:
       input.databaseMode ?? (await readLocalDatabaseMode(input.worktree)),
     hostGateway: await currentHostGateway(),
+    declarations: await worktreeEnvDeclarations(input.worktree),
   });
   return { context, environment };
 }

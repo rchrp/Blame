@@ -33,6 +33,7 @@ export type LocalPreviewErrorCode =
   | "preview_configuration_host_only"
   | "preview_container_stopped"
   | "preview_dependency_timeout"
+  | "preview_environment_missing"
   | "preview_manifest_invalid"
   | "preview_probe_failed"
   | "preview_response_timeout"

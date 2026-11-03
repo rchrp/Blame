@@ -1,6 +1,10 @@
 import type { ProjectInitializationDiagnostics } from "@blame/agent-runtime";
 import { localPreviewEngine } from "./preview-runtime/local/local-preview-runner.ts";
 import {
+  redactDeep,
+  redactForWorktree,
+} from "./preview-environment/secret-redaction.ts";
+import {
   joinWorkspacePath,
   readFile as readWorkspaceFile,
   resolveWorkspacePath,
@@ -21,6 +25,8 @@ export type CollectProjectInitializationDiagnosticsInput = {
 
 type CollectProjectInitializationDiagnosticsOptions = {
   compose?: ComposeCommand;
+  /** Secret values to hide, instead of the story's resolved ones. */
+  secrets?: Map<string, string>;
 };
 
 export async function collectProjectInitializationDiagnostics(
@@ -38,13 +44,18 @@ export async function collectProjectInitializationDiagnostics(
         true,
       ));
   const services = await commandOutput(compose, ["config", "--services"]);
-  return {
+  const diagnostics = {
     setupLog: await setupLog(worktree),
     launchError: sanitizeProjectDiagnostic(input.launchError),
     composeConfig: await commandOutput(compose, ["config"]),
     composePs: await commandOutput(compose, ["ps", "--all"]),
     serviceLogs: await serviceLogOutputs(compose, serviceNames(services)),
   };
+  // A repair agent reads these: the Compose file now holds the preview's
+  // variables, so every secret value of the story is replaced by its name.
+  return options.secrets
+    ? redactDeep(diagnostics, options.secrets)
+    : redactForWorktree(worktree, diagnostics);
 }
 
 async function serviceLogOutputs(compose: ComposeCommand, services: string[]) {
@@ -121,7 +132,7 @@ function truncate(value: string) {
 export function sanitizeProjectDiagnostic(value: string) {
   return value
     .replace(
-      /((?:^|[\s{,])["']?[A-Za-z_][A-Za-z0-9_]*(?:PASSWORD|SECRET|TOKEN|API_KEY|APP_KEY|CREDENTIAL|COOKIE)[A-Za-z0-9_]*["']?\s*[:=]\s*)(?:"[^"\r\n]*"|'[^'\r\n]*'|[^\s,}\]]+)/gim,
+      /((?:^|[\s{,])["']?[A-Za-z_][A-Za-z0-9_]*(?:PASSWORD|PASSWD|SECRET|TOKEN(?!S)|API_?KEY|APP_KEY|ACCESS_KEY|AUTH_KEY|PRIVATE|CREDENTIAL|COOKIE|DSN|SALT|SIGNING|WEBHOOK|CSC_LINK)[A-Za-z0-9_]*["']?\s*[:=]\s*)(?:"[^"\r\n]*"|'[^'\r\n]*'|[^\s,}\]]+)/gim,
       "$1[REDACTED]",
     )
     .replace(/([a-z][a-z0-9+.-]*:\/\/)[^\s/:@]+:[^\s/@]+@/gi, "$1[REDACTED]@")

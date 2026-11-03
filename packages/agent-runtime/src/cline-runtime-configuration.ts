@@ -1,4 +1,5 @@
 import { basename } from "node:path";
+import { envFileGuardExtension } from "./env-file-guard.js";
 
 import { fileURLToPath } from "node:url";
 
@@ -198,6 +199,7 @@ export function initializationRepairConfig(
     enableSpawnAgent: false,
     enableAgentTeams: false,
     extraTools: [submitTool],
+    extensions: [envFileGuardExtension()],
     maxIterations: 4,
   });
 }

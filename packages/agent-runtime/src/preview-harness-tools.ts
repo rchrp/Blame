@@ -104,6 +104,7 @@ type PreviewContainerLogsInput = PreviewRuntimeContext & {
 };
 
 export type PreviewToolRuntimeOptions = {
+  previewEnvironment?: import("./preview-environment-tool.js").PreviewEnvironmentToolOptions["previewEnvironment"];
   previewSurfaceInfo?(
     input: PreviewRuntimeContext,
   ): Promise<PreviewSurfaceInfo | undefined>;

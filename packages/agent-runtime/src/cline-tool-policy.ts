@@ -13,6 +13,7 @@ export const readTools: string[] = [
   "read_web_page",
   "get_preview_devtools",
   "get_preview_container_logs",
+  "preview_environment",
   ...lightReadToolNames,
   ...storyHistoryToolNames,
 ];
