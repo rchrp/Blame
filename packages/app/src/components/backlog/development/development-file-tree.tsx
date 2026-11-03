@@ -498,13 +498,7 @@ function TreeRow({
       ) : (
         <span className="w-4 shrink-0" />
       )}
-      <TreeIcon
-        kindColor={kindColor}
-        marked={marked}
-        node={node}
-        open={open}
-        type={type}
-      />
+      <TreeIcon kindColor={kindColor} marked={marked} node={node} open={open} />
       <span
         className={cn(
           "min-w-0 flex-1 truncate font-medium whitespace-nowrap",
@@ -538,13 +532,11 @@ function TreeIcon({
   marked,
   node,
   open,
-  type,
 }: {
   kindColor?: string
   marked: boolean
   node: FileNode
   open?: boolean
-  type: "directory" | "file"
 }) {
   if (node.ignored || marked) {
     return (
@@ -561,24 +553,8 @@ function TreeIcon({
     )
   }
 
-  if (type === "directory") {
-    return (
-      <DevelopmentFileIcon className="shrink-0" expanded={open} node={node} />
-    )
-  }
-
   return (
-    <span className="relative size-4 shrink-0">
-      <DevelopmentFileIcon
-        className="absolute inset-0 opacity-0 transition-opacity group-hover/filetree:opacity-100"
-        node={node}
-      />
-      <DevelopmentFileIcon
-        className="absolute inset-0 text-muted-foreground transition-opacity group-hover/filetree:opacity-0"
-        mono
-        node={node}
-      />
-    </span>
+    <DevelopmentFileIcon className="shrink-0" expanded={open} node={node} />
   )
 }
 
