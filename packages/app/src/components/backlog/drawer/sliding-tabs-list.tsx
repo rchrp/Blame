@@ -31,11 +31,25 @@ export function SlidingTabsList({
     const frame = window.requestAnimationFrame(() => {
       knob.dataset.placed = ""
     })
+    // A tab that comes or goes (Preview, once the story runs) resizes the
+    // others while the list keeps its width: each tab is followed.
     const observer = new ResizeObserver(place)
-    observer.observe(list)
+    const follow = () => {
+      observer.observe(list)
+      list
+        .querySelectorAll('[data-slot="tabs-trigger"]')
+        .forEach((trigger) => observer.observe(trigger))
+    }
+    follow()
+    const tabsChange = new MutationObserver(() => {
+      follow()
+      place()
+    })
+    tabsChange.observe(list, { childList: true })
     return () => {
       window.cancelAnimationFrame(frame)
       observer.disconnect()
+      tabsChange.disconnect()
     }
   }, [value])
   return (
