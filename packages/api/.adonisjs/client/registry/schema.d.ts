@@ -215,6 +215,19 @@ export interface Registry {
       rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/preview_sessions_controller').default['action']>>>
     }
   }
+  'preview_sessions.preview_surfaces.action': {
+    methods: ["POST"]
+    pattern: '/api/v1/preview-sessions/:id/surface-action'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/preview_surfaces_controller').default['action']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/preview_surfaces_controller').default['action']>>>
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/preview_surfaces_controller').default['action']>>>
+    }
+  }
   'preview_sessions.preview_sessions.source_import': {
     methods: ["POST"]
     pattern: '/api/v1/preview-sessions/:id/source/import'
@@ -423,6 +436,162 @@ export interface Registry {
       rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/better_auth_controller').default['handle']>>>
     }
   }
+  'speech.speech_transcription.store': {
+    methods: ["POST"]
+    pattern: '/api/v1/speech/transcriptions'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/speech_transcription').transcribeSpeechValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/speech_transcription').transcribeSpeechValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/speech_transcription_controller').default['store']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/speech_transcription_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/speech_transcription_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'account_privacy.account_privacy.download': {
+    methods: ["POST"]
+    pattern: '/api/v1/account/export'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/account_privacy').accountExportValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/account_privacy').accountExportValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/account_privacy_controller').default['download']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/account_privacy_controller').default['download']>>> | { status: 422; response: { errors: SimpleError[] } }
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/account_privacy_controller').default['download']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'account_privacy.account_privacy.close': {
+    methods: ["POST"]
+    pattern: '/api/v1/account/closure'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/account_privacy').accountClosureValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/account_privacy').accountClosureValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/account_privacy_controller').default['close']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/account_privacy_controller').default['close']>>> | { status: 422; response: { errors: SimpleError[] } }
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/account_privacy_controller').default['close']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'account_privacy.workspace_transfer.import': {
+    methods: ["PUT"]
+    pattern: '/api/v1/account/workspace'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/workspace_transfer').importWorkspaceValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/workspace_transfer').importWorkspaceValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/workspace_transfer_controller').default['import']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/workspace_transfer_controller').default['import']>>> | { status: 422; response: { errors: SimpleError[] } }
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/workspace_transfer_controller').default['import']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'project_deployments.deploy_targets.show': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/projects/:projectId/deploy-target'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { projectId: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/deploy_targets_controller').default['show']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/deploy_targets_controller').default['show']>>>
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/deploy_targets_controller').default['show']>>>
+    }
+  }
+  'project_deployments.deploy_targets.update': {
+    methods: ["PUT"]
+    pattern: '/api/v1/projects/:projectId/deploy-target'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/deployment').updateDeployTargetValidator)>>
+      paramsTuple: [ParamValue]
+      params: { projectId: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/deployment').updateDeployTargetValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/deploy_targets_controller').default['update']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/deploy_targets_controller').default['update']>>> | { status: 422; response: { errors: SimpleError[] } }
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/deploy_targets_controller').default['update']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'project_deployments.project_deployments.index': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/projects/:projectId/deployments'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { projectId: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/project_deployments_controller').default['index']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_deployments_controller').default['index']>>>
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/project_deployments_controller').default['index']>>>
+    }
+  }
+  'project_deployments.project_deployments.store': {
+    methods: ["POST"]
+    pattern: '/api/v1/projects/:projectId/deployments'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/deployment').createDeploymentValidator)>>
+      paramsTuple: [ParamValue]
+      params: { projectId: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/deployment').createDeploymentValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/project_deployments_controller').default['store']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_deployments_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/project_deployments_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'project_deployments.project_deployments.show': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/projects/:projectId/deployments/:id'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue, ParamValue]
+      params: { projectId: ParamValue; id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/project_deployments_controller').default['show']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_deployments_controller').default['show']>>>
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/project_deployments_controller').default['show']>>>
+    }
+  }
+  'project_deployments.project_deployments.complete_source': {
+    methods: ["POST"]
+    pattern: '/api/v1/projects/:projectId/deployments/:id/source/complete'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/deployment').completeDeploymentSourceValidator)>>
+      paramsTuple: [ParamValue, ParamValue]
+      params: { projectId: ParamValue; id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/deployment').completeDeploymentSourceValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/project_deployments_controller').default['completeSource']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_deployments_controller').default['completeSource']>>> | { status: 422; response: { errors: SimpleError[] } }
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/project_deployments_controller').default['completeSource']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'project_deployments.project_deployments.logs': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/projects/:projectId/deployments/:id/logs'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue, ParamValue]
+      params: { projectId: ParamValue; id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/project_deployments_controller').default['logs']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_deployments_controller').default['logs']>>>
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/project_deployments_controller').default['logs']>>>
+    }
+  }
+  'project_deployments.project_deployments.cancel': {
+    methods: ["POST"]
+    pattern: '/api/v1/projects/:projectId/deployments/:id/cancel'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue, ParamValue]
+      params: { projectId: ParamValue; id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/project_deployments_controller').default['cancel']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_deployments_controller').default['cancel']>>>
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/project_deployments_controller').default['cancel']>>>
+    }
+  }
   'profile.profile.show': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/account/profile'
@@ -486,32 +655,6 @@ export interface Registry {
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/user_mcp_configurations_controller').default['update']>>>
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/user_mcp_configurations_controller').default['update']>>> | { status: 422; response: { errors: SimpleError[] } }
       rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/user_mcp_configurations_controller').default['update']>>> | { status: 422; response: { errors: SimpleError[] } }
-    }
-  }
-  'profile.account_privacy.download': {
-    methods: ["POST"]
-    pattern: '/api/v1/account/export'
-    types: {
-      body: ExtractBody<InferInput<(typeof import('#validators/account_privacy').accountExportValidator)>>
-      paramsTuple: []
-      params: {}
-      query: ExtractQuery<InferInput<(typeof import('#validators/account_privacy').accountExportValidator)>>
-      response: ExtractResponse<Awaited<ReturnType<import('#controllers/account_privacy_controller').default['download']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/account_privacy_controller').default['download']>>> | { status: 422; response: { errors: SimpleError[] } }
-      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/account_privacy_controller').default['download']>>> | { status: 422; response: { errors: SimpleError[] } }
-    }
-  }
-  'profile.account_privacy.close': {
-    methods: ["POST"]
-    pattern: '/api/v1/account/closure'
-    types: {
-      body: ExtractBody<InferInput<(typeof import('#validators/account_privacy').accountClosureValidator)>>
-      paramsTuple: []
-      params: {}
-      query: ExtractQuery<InferInput<(typeof import('#validators/account_privacy').accountClosureValidator)>>
-      response: ExtractResponse<Awaited<ReturnType<import('#controllers/account_privacy_controller').default['close']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/account_privacy_controller').default['close']>>> | { status: 422; response: { errors: SimpleError[] } }
-      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/account_privacy_controller').default['close']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
   'profile.access_tokens.destroy': {
@@ -761,110 +904,6 @@ export interface Registry {
       rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/project_initializations_controller').default['repair']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
-  'projects.deploy_targets.show': {
-    methods: ["GET","HEAD"]
-    pattern: '/api/v1/projects/:projectId/deploy-target'
-    types: {
-      body: {}
-      paramsTuple: [ParamValue]
-      params: { projectId: ParamValue }
-      query: {}
-      response: ExtractResponse<Awaited<ReturnType<import('#controllers/deploy_targets_controller').default['show']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/deploy_targets_controller').default['show']>>>
-      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/deploy_targets_controller').default['show']>>>
-    }
-  }
-  'projects.deploy_targets.update': {
-    methods: ["PUT"]
-    pattern: '/api/v1/projects/:projectId/deploy-target'
-    types: {
-      body: ExtractBody<InferInput<(typeof import('#validators/deployment').updateDeployTargetValidator)>>
-      paramsTuple: [ParamValue]
-      params: { projectId: ParamValue }
-      query: ExtractQuery<InferInput<(typeof import('#validators/deployment').updateDeployTargetValidator)>>
-      response: ExtractResponse<Awaited<ReturnType<import('#controllers/deploy_targets_controller').default['update']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/deploy_targets_controller').default['update']>>> | { status: 422; response: { errors: SimpleError[] } }
-      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/deploy_targets_controller').default['update']>>> | { status: 422; response: { errors: SimpleError[] } }
-    }
-  }
-  'projects.project_deployments.index': {
-    methods: ["GET","HEAD"]
-    pattern: '/api/v1/projects/:projectId/deployments'
-    types: {
-      body: {}
-      paramsTuple: [ParamValue]
-      params: { projectId: ParamValue }
-      query: {}
-      response: ExtractResponse<Awaited<ReturnType<import('#controllers/project_deployments_controller').default['index']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_deployments_controller').default['index']>>>
-      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/project_deployments_controller').default['index']>>>
-    }
-  }
-  'projects.project_deployments.store': {
-    methods: ["POST"]
-    pattern: '/api/v1/projects/:projectId/deployments'
-    types: {
-      body: ExtractBody<InferInput<(typeof import('#validators/deployment').createDeploymentValidator)>>
-      paramsTuple: [ParamValue]
-      params: { projectId: ParamValue }
-      query: ExtractQuery<InferInput<(typeof import('#validators/deployment').createDeploymentValidator)>>
-      response: ExtractResponse<Awaited<ReturnType<import('#controllers/project_deployments_controller').default['store']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_deployments_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
-      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/project_deployments_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
-    }
-  }
-  'projects.project_deployments.show': {
-    methods: ["GET","HEAD"]
-    pattern: '/api/v1/projects/:projectId/deployments/:id'
-    types: {
-      body: {}
-      paramsTuple: [ParamValue, ParamValue]
-      params: { projectId: ParamValue; id: ParamValue }
-      query: {}
-      response: ExtractResponse<Awaited<ReturnType<import('#controllers/project_deployments_controller').default['show']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_deployments_controller').default['show']>>>
-      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/project_deployments_controller').default['show']>>>
-    }
-  }
-  'projects.project_deployments.complete_source': {
-    methods: ["POST"]
-    pattern: '/api/v1/projects/:projectId/deployments/:id/source/complete'
-    types: {
-      body: ExtractBody<InferInput<(typeof import('#validators/deployment').completeDeploymentSourceValidator)>>
-      paramsTuple: [ParamValue, ParamValue]
-      params: { projectId: ParamValue; id: ParamValue }
-      query: ExtractQuery<InferInput<(typeof import('#validators/deployment').completeDeploymentSourceValidator)>>
-      response: ExtractResponse<Awaited<ReturnType<import('#controllers/project_deployments_controller').default['completeSource']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_deployments_controller').default['completeSource']>>> | { status: 422; response: { errors: SimpleError[] } }
-      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/project_deployments_controller').default['completeSource']>>> | { status: 422; response: { errors: SimpleError[] } }
-    }
-  }
-  'projects.project_deployments.logs': {
-    methods: ["GET","HEAD"]
-    pattern: '/api/v1/projects/:projectId/deployments/:id/logs'
-    types: {
-      body: {}
-      paramsTuple: [ParamValue, ParamValue]
-      params: { projectId: ParamValue; id: ParamValue }
-      query: {}
-      response: ExtractResponse<Awaited<ReturnType<import('#controllers/project_deployments_controller').default['logs']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_deployments_controller').default['logs']>>>
-      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/project_deployments_controller').default['logs']>>>
-    }
-  }
-  'projects.project_deployments.cancel': {
-    methods: ["POST"]
-    pattern: '/api/v1/projects/:projectId/deployments/:id/cancel'
-    types: {
-      body: {}
-      paramsTuple: [ParamValue, ParamValue]
-      params: { projectId: ParamValue; id: ParamValue }
-      query: {}
-      response: ExtractResponse<Awaited<ReturnType<import('#controllers/project_deployments_controller').default['cancel']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_deployments_controller').default['cancel']>>>
-      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/project_deployments_controller').default['cancel']>>>
-    }
-  }
   'providers.model_catalog.show': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/providers/catalog'
@@ -967,19 +1006,6 @@ export interface Registry {
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/provider_credentials_controller').default['destroy']>>>
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/provider_credentials_controller').default['destroy']>>>
       rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/provider_credentials_controller').default['destroy']>>>
-    }
-  }
-  'speech.speech_transcription.store': {
-    methods: ["POST"]
-    pattern: '/api/v1/speech/transcriptions'
-    types: {
-      body: ExtractBody<InferInput<(typeof import('#validators/speech_transcription').transcribeSpeechValidator)>>
-      paramsTuple: []
-      params: {}
-      query: ExtractQuery<InferInput<(typeof import('#validators/speech_transcription').transcribeSpeechValidator)>>
-      response: ExtractResponse<Awaited<ReturnType<import('#controllers/speech_transcription_controller').default['store']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/speech_transcription_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
-      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/speech_transcription_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
   'attachments.file_attachments.create_upload': {

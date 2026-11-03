@@ -20,6 +20,7 @@ export type ScannedRoutes = {
     'preview_sessions.preview_sessions.store': { paramsTuple?: []; params?: {} }
     'preview_sessions.preview_sessions.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'preview_sessions.preview_sessions.action': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'preview_sessions.preview_surfaces.action': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'preview_sessions.preview_sessions.source_import': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'preview_sessions.preview_sessions.source_export': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'preview_sessions.preview_sessions.logs': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -36,13 +37,23 @@ export type ScannedRoutes = {
     'desktop_auth.exchange': { paramsTuple?: []; params?: {} }
     'desktop_auth.exchange_device_token': { paramsTuple?: []; params?: {} }
     'auth.better': { paramsTuple: [...ParamValue[]]; params: {'*': ParamValue[]} }
+    'speech.speech_transcription.store': { paramsTuple?: []; params?: {} }
+    'account_privacy.account_privacy.download': { paramsTuple?: []; params?: {} }
+    'account_privacy.account_privacy.close': { paramsTuple?: []; params?: {} }
+    'account_privacy.workspace_transfer.import': { paramsTuple?: []; params?: {} }
+    'project_deployments.deploy_targets.show': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
+    'project_deployments.deploy_targets.update': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
+    'project_deployments.project_deployments.index': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
+    'project_deployments.project_deployments.store': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
+    'project_deployments.project_deployments.show': { paramsTuple: [ParamValue,ParamValue]; params: {'projectId': ParamValue,'id': ParamValue} }
+    'project_deployments.project_deployments.complete_source': { paramsTuple: [ParamValue,ParamValue]; params: {'projectId': ParamValue,'id': ParamValue} }
+    'project_deployments.project_deployments.logs': { paramsTuple: [ParamValue,ParamValue]; params: {'projectId': ParamValue,'id': ParamValue} }
+    'project_deployments.project_deployments.cancel': { paramsTuple: [ParamValue,ParamValue]; params: {'projectId': ParamValue,'id': ParamValue} }
     'profile.profile.show': { paramsTuple?: []; params?: {} }
     'profile.user_ai_preferences.show': { paramsTuple?: []; params?: {} }
     'profile.user_ai_preferences.update': { paramsTuple?: []; params?: {} }
     'profile.user_mcp_configurations.show': { paramsTuple?: []; params?: {} }
     'profile.user_mcp_configurations.update': { paramsTuple?: []; params?: {} }
-    'profile.account_privacy.download': { paramsTuple?: []; params?: {} }
-    'profile.account_privacy.close': { paramsTuple?: []; params?: {} }
     'profile.access_tokens.destroy': { paramsTuple?: []; params?: {} }
     'projects.projects.index': { paramsTuple?: []; params?: {} }
     'projects.projects.store': { paramsTuple?: []; params?: {} }
@@ -62,14 +73,6 @@ export type ScannedRoutes = {
     'projects.project_initializations.complete': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_initializations.fail': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_initializations.repair': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
-    'projects.deploy_targets.show': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
-    'projects.deploy_targets.update': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
-    'projects.project_deployments.index': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
-    'projects.project_deployments.store': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
-    'projects.project_deployments.show': { paramsTuple: [ParamValue,ParamValue]; params: {'projectId': ParamValue,'id': ParamValue} }
-    'projects.project_deployments.complete_source': { paramsTuple: [ParamValue,ParamValue]; params: {'projectId': ParamValue,'id': ParamValue} }
-    'projects.project_deployments.logs': { paramsTuple: [ParamValue,ParamValue]; params: {'projectId': ParamValue,'id': ParamValue} }
-    'projects.project_deployments.cancel': { paramsTuple: [ParamValue,ParamValue]; params: {'projectId': ParamValue,'id': ParamValue} }
     'providers.model_catalog.show': { paramsTuple?: []; params?: {} }
     'providers.model_catalog.model': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.index': { paramsTuple?: []; params?: {} }
@@ -78,7 +81,6 @@ export type ScannedRoutes = {
     'providers.provider_credentials.store_local': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.resolve': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
-    'speech.speech_transcription.store': { paramsTuple?: []; params?: {} }
     'attachments.file_attachments.create_upload': { paramsTuple?: []; params?: {} }
     'attachments.file_attachments.complete': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'attachments.file_attachments.upload_content': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -131,6 +133,10 @@ export type ScannedRoutes = {
     'desktop_auth.reset_password': { paramsTuple?: []; params?: {} }
     'desktop_auth.verified': { paramsTuple?: []; params?: {} }
     'auth.better': { paramsTuple: [...ParamValue[]]; params: {'*': ParamValue[]} }
+    'project_deployments.deploy_targets.show': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
+    'project_deployments.project_deployments.index': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
+    'project_deployments.project_deployments.show': { paramsTuple: [ParamValue,ParamValue]; params: {'projectId': ParamValue,'id': ParamValue} }
+    'project_deployments.project_deployments.logs': { paramsTuple: [ParamValue,ParamValue]; params: {'projectId': ParamValue,'id': ParamValue} }
     'profile.profile.show': { paramsTuple?: []; params?: {} }
     'profile.user_ai_preferences.show': { paramsTuple?: []; params?: {} }
     'profile.user_mcp_configurations.show': { paramsTuple?: []; params?: {} }
@@ -140,10 +146,6 @@ export type ScannedRoutes = {
     'projects.project_code_practice_analyses.show': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.security_audits.index': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_initializations.show': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
-    'projects.deploy_targets.show': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
-    'projects.project_deployments.index': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
-    'projects.project_deployments.show': { paramsTuple: [ParamValue,ParamValue]; params: {'projectId': ParamValue,'id': ParamValue} }
-    'projects.project_deployments.logs': { paramsTuple: [ParamValue,ParamValue]; params: {'projectId': ParamValue,'id': ParamValue} }
     'providers.model_catalog.show': { paramsTuple?: []; params?: {} }
     'providers.model_catalog.model': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.index': { paramsTuple?: []; params?: {} }
@@ -174,6 +176,10 @@ export type ScannedRoutes = {
     'desktop_auth.reset_password': { paramsTuple?: []; params?: {} }
     'desktop_auth.verified': { paramsTuple?: []; params?: {} }
     'auth.better': { paramsTuple: [...ParamValue[]]; params: {'*': ParamValue[]} }
+    'project_deployments.deploy_targets.show': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
+    'project_deployments.project_deployments.index': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
+    'project_deployments.project_deployments.show': { paramsTuple: [ParamValue,ParamValue]; params: {'projectId': ParamValue,'id': ParamValue} }
+    'project_deployments.project_deployments.logs': { paramsTuple: [ParamValue,ParamValue]; params: {'projectId': ParamValue,'id': ParamValue} }
     'profile.profile.show': { paramsTuple?: []; params?: {} }
     'profile.user_ai_preferences.show': { paramsTuple?: []; params?: {} }
     'profile.user_mcp_configurations.show': { paramsTuple?: []; params?: {} }
@@ -183,10 +189,6 @@ export type ScannedRoutes = {
     'projects.project_code_practice_analyses.show': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.security_audits.index': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_initializations.show': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
-    'projects.deploy_targets.show': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
-    'projects.project_deployments.index': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
-    'projects.project_deployments.show': { paramsTuple: [ParamValue,ParamValue]; params: {'projectId': ParamValue,'id': ParamValue} }
-    'projects.project_deployments.logs': { paramsTuple: [ParamValue,ParamValue]; params: {'projectId': ParamValue,'id': ParamValue} }
     'providers.model_catalog.show': { paramsTuple?: []; params?: {} }
     'providers.model_catalog.model': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.index': { paramsTuple?: []; params?: {} }
@@ -210,6 +212,7 @@ export type ScannedRoutes = {
     'integrations.vercel.vercel_connections.create_intent': { paramsTuple?: []; params?: {} }
     'preview_sessions.preview_sessions.store': { paramsTuple?: []; params?: {} }
     'preview_sessions.preview_sessions.action': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'preview_sessions.preview_surfaces.action': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'preview_sessions.preview_sessions.source_import': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'preview_sessions.preview_sessions.source_export': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'preview_sessions.preview_sessions.access_ticket': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -219,8 +222,12 @@ export type ScannedRoutes = {
     'desktop_auth.exchange': { paramsTuple?: []; params?: {} }
     'desktop_auth.exchange_device_token': { paramsTuple?: []; params?: {} }
     'auth.better': { paramsTuple: [...ParamValue[]]; params: {'*': ParamValue[]} }
-    'profile.account_privacy.download': { paramsTuple?: []; params?: {} }
-    'profile.account_privacy.close': { paramsTuple?: []; params?: {} }
+    'speech.speech_transcription.store': { paramsTuple?: []; params?: {} }
+    'account_privacy.account_privacy.download': { paramsTuple?: []; params?: {} }
+    'account_privacy.account_privacy.close': { paramsTuple?: []; params?: {} }
+    'project_deployments.project_deployments.store': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
+    'project_deployments.project_deployments.complete_source': { paramsTuple: [ParamValue,ParamValue]; params: {'projectId': ParamValue,'id': ParamValue} }
+    'project_deployments.project_deployments.cancel': { paramsTuple: [ParamValue,ParamValue]; params: {'projectId': ParamValue,'id': ParamValue} }
     'profile.access_tokens.destroy': { paramsTuple?: []; params?: {} }
     'projects.projects.store': { paramsTuple?: []; params?: {} }
     'projects.project_agent_memories.store': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
@@ -232,14 +239,10 @@ export type ScannedRoutes = {
     'projects.project_initializations.complete': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_initializations.fail': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_initializations.repair': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
-    'projects.project_deployments.store': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
-    'projects.project_deployments.complete_source': { paramsTuple: [ParamValue,ParamValue]; params: {'projectId': ParamValue,'id': ParamValue} }
-    'projects.project_deployments.cancel': { paramsTuple: [ParamValue,ParamValue]; params: {'projectId': ParamValue,'id': ParamValue} }
     'providers.provider_credentials.store': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.store_o_auth': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.store_local': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.resolve': { paramsTuple?: []; params?: {} }
-    'speech.speech_transcription.store': { paramsTuple?: []; params?: {} }
     'attachments.file_attachments.create_upload': { paramsTuple?: []; params?: {} }
     'attachments.file_attachments.complete': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'attachments.file_attachments.upload_content': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -270,10 +273,11 @@ export type ScannedRoutes = {
   }
   PUT: {
     'auth.better': { paramsTuple: [...ParamValue[]]; params: {'*': ParamValue[]} }
+    'account_privacy.workspace_transfer.import': { paramsTuple?: []; params?: {} }
+    'project_deployments.deploy_targets.update': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'profile.user_ai_preferences.update': { paramsTuple?: []; params?: {} }
     'profile.user_mcp_configurations.update': { paramsTuple?: []; params?: {} }
     'projects.security_audits.update': { paramsTuple: [ParamValue,ParamValue]; params: {'projectId': ParamValue,'auditId': ParamValue} }
-    'projects.deploy_targets.update': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.quick_chats.quick_chats.store_screenshot': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'screenshotId': ParamValue} }
     'projects.user_stories.user_stories.store_screenshot': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'screenshotId': ParamValue} }
   }

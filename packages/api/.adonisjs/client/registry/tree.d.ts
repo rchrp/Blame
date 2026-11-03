@@ -8,6 +8,13 @@ export interface ApiDefinition {
   stripeWebhooks: typeof routes['stripe_webhooks']
   accountPrivacy: {
     status: typeof routes['account_privacy.status']
+    accountPrivacy: {
+      download: typeof routes['account_privacy.account_privacy.download']
+      close: typeof routes['account_privacy.account_privacy.close']
+    }
+    workspaceTransfer: {
+      import: typeof routes['account_privacy.workspace_transfer.import']
+    }
   }
   consumerContracts: {
     withdraw: typeof routes['consumer_contracts.withdraw']
@@ -45,6 +52,9 @@ export interface ApiDefinition {
       accessTicket: typeof routes['preview_sessions.preview_sessions.access_ticket']
       bridgeGrant: typeof routes['preview_sessions.preview_sessions.bridge_grant']
     }
+    previewSurfaces: {
+      action: typeof routes['preview_sessions.preview_surfaces.action']
+    }
   }
   billing: {
     billing: {
@@ -64,6 +74,25 @@ export interface ApiDefinition {
   auth: {
     better: typeof routes['auth.better']
   }
+  speech: {
+    speechTranscription: {
+      store: typeof routes['speech.speech_transcription.store']
+    }
+  }
+  projectDeployments: {
+    deployTargets: {
+      show: typeof routes['project_deployments.deploy_targets.show']
+      update: typeof routes['project_deployments.deploy_targets.update']
+    }
+    projectDeployments: {
+      index: typeof routes['project_deployments.project_deployments.index']
+      store: typeof routes['project_deployments.project_deployments.store']
+      show: typeof routes['project_deployments.project_deployments.show']
+      completeSource: typeof routes['project_deployments.project_deployments.complete_source']
+      logs: typeof routes['project_deployments.project_deployments.logs']
+      cancel: typeof routes['project_deployments.project_deployments.cancel']
+    }
+  }
   profile: {
     profile: {
       show: typeof routes['profile.profile.show']
@@ -75,10 +104,6 @@ export interface ApiDefinition {
     userMcpConfigurations: {
       show: typeof routes['profile.user_mcp_configurations.show']
       update: typeof routes['profile.user_mcp_configurations.update']
-    }
-    accountPrivacy: {
-      download: typeof routes['profile.account_privacy.download']
-      close: typeof routes['profile.account_privacy.close']
     }
     accessTokens: {
       destroy: typeof routes['profile.access_tokens.destroy']
@@ -114,18 +139,6 @@ export interface ApiDefinition {
       complete: typeof routes['projects.project_initializations.complete']
       fail: typeof routes['projects.project_initializations.fail']
       repair: typeof routes['projects.project_initializations.repair']
-    }
-    deployTargets: {
-      show: typeof routes['projects.deploy_targets.show']
-      update: typeof routes['projects.deploy_targets.update']
-    }
-    projectDeployments: {
-      index: typeof routes['projects.project_deployments.index']
-      store: typeof routes['projects.project_deployments.store']
-      show: typeof routes['projects.project_deployments.show']
-      completeSource: typeof routes['projects.project_deployments.complete_source']
-      logs: typeof routes['projects.project_deployments.logs']
-      cancel: typeof routes['projects.project_deployments.cancel']
     }
     quickChats: {
       quickChats: {
@@ -185,11 +198,6 @@ export interface ApiDefinition {
       storeLocal: typeof routes['providers.provider_credentials.store_local']
       resolve: typeof routes['providers.provider_credentials.resolve']
       destroy: typeof routes['providers.provider_credentials.destroy']
-    }
-  }
-  speech: {
-    speechTranscription: {
-      store: typeof routes['speech.speech_transcription.store']
     }
   }
   attachments: {

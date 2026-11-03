@@ -16,6 +16,7 @@ export const controllers = {
   NewAccount: () => import('#controllers/new_account_controller'),
   PreviewEdgeInternal: () => import('#controllers/preview_edge_internal_controller'),
   PreviewSessions: () => import('#controllers/preview_sessions_controller'),
+  PreviewSurfaces: () => import('#controllers/preview_surfaces_controller'),
   Profile: () => import('#controllers/profile_controller'),
   ProjectAgentMemories: () => import('#controllers/project_agent_memories_controller'),
   ProjectCodePracticeAnalyses: () => import('#controllers/project_code_practice_analyses_controller'),
@@ -39,4 +40,5 @@ export const controllers = {
   UserStoryComments: () => import('#controllers/user_story_comments_controller'),
   VercelConnections: () => import('#controllers/vercel_connections_controller'),
   WebSearch: () => import('#controllers/web_search_controller'),
+  WorkspaceTransfer: () => import('#controllers/workspace_transfer_controller'),
 }
