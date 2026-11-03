@@ -28,8 +28,9 @@ export function DrawerResizeHandle({
 
   function handlePointerDown(event: React.PointerEvent<HTMLDivElement>) {
     if (event.button !== 0) return
+    // Not stopped: the drawer's outside-click tracking must see this press,
+    // or it takes the next click outside for one inside and stays open.
     event.preventDefault()
-    event.stopPropagation()
     const handle = event.currentTarget
     handle.setPointerCapture(event.pointerId)
     setDragging(true)
