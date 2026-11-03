@@ -335,6 +335,7 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
   view,
   visible = true,
   worktree,
+  onReadyChange,
   onViewChange,
 }: {
   // Something drawn over the preview from outside, such as a menu of the
@@ -355,6 +356,8 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
   view?: PreviewView
   visible?: boolean
   worktree?: string
+  // Whether the page is there to see, for a tab that shows it too.
+  onReadyChange?: (ready: boolean) => void
   onViewChange?: (view: PreviewView) => void
 }) {
   const platform = usePlatform()
@@ -761,14 +764,19 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
     if (justStarted) setTab("preview")
   }, [runtimeStarting, setTab])
 
+  // The page is there to see: its app answers.
+  const previewReady = Boolean(
+    source && !previewWaiting && !runtimeStarting && !previewFailure
+  )
+  React.useEffect(() => {
+    onReadyChange?.(previewReady)
+    return () => onReadyChange?.(false)
+  }, [onReadyChange, previewReady])
   const views: RunnerView[] = [
     {
       id: "preview",
       active: activeTab === "preview",
-      // The page is there to see: its app answers.
-      ready: Boolean(
-        source && !previewWaiting && !runtimeStarting && !previewFailure
-      ),
+      ready: previewReady,
       unavailable: hasPreviewSurface
         ? undefined
         : "Start the app to see its preview",

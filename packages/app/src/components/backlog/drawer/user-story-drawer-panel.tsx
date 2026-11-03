@@ -81,7 +81,8 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsContent, TabsTrigger } from "@/components/ui/tabs"
+import { SlidingTabsList, slidingTabsTrigger, TabReadyIcon } from "@/components/backlog/drawer/sliding-tabs-list"
 import { cn } from "@/lib/utils"
 import {
   isBoolean,
@@ -229,6 +230,7 @@ export function UserStoryDrawerPanel({
       ? recallForItem(drawerTabsMemoryKey, userStory.id, isRememberedDrawerTabs)
       : undefined
   )
+  const [previewReady, setPreviewReady] = React.useState(false)
   const [tabChoice, setTab] = React.useState<UserStoryDrawerTab>(
     initialDrawerTab(
       hasDevelopment,
@@ -692,22 +694,22 @@ export function UserStoryDrawerPanel({
             </DrawerDescription>
           </div>
           {hasDevelopment && (
-            <TabsList className="mt-2 min-w-100">
-              <TabsTrigger value="user-story">
+            <SlidingTabsList className="mt-2 min-w-100" value={tab}>
+              <TabsTrigger className={slidingTabsTrigger} value="user-story">
                 <BookOpenIcon />
                 User Story
               </TabsTrigger>
               {hasPreview && (
-                <TabsTrigger value="preview">
-                  <AppWindowIcon />
+                <TabsTrigger className={slidingTabsTrigger} value="preview">
+                  <TabReadyIcon ready={previewReady}><AppWindowIcon /></TabReadyIcon>
                   Preview
                 </TabsTrigger>
               )}
-              <TabsTrigger value="development">
+              <TabsTrigger className={slidingTabsTrigger} value="development">
                 <CodeIcon />
                 Code
               </TabsTrigger>
-            </TabsList>
+            </SlidingTabsList>
           )}
         </DrawerHeader>
         <TabsContent value="user-story" className="min-h-0 overflow-hidden">
@@ -791,6 +793,7 @@ export function UserStoryDrawerPanel({
                 storyId={userStory.id}
                 visible={tab === "preview"}
                 onCapture={handlePreviewCapture}
+                onReadyChange={setPreviewReady}
               />
             ) : (
               <UserStoryPreview
@@ -799,6 +802,7 @@ export function UserStoryDrawerPanel({
                 visible={tab === "preview"}
                 onRunConfigurationChange={handlePreviewRunConfigurationChange}
                 onCapture={handlePreviewCapture}
+                onReadyChange={setPreviewReady}
               />
             )}
           </TabsContent>

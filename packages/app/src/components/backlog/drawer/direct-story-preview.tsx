@@ -13,11 +13,13 @@ import { useProjectInitialization } from "@/components/project-initialization/us
 // the same runner as the header's controls, or found already running.
 export function DirectStoryPreview({
   onCapture,
+  onReadyChange,
   visible,
   storyId,
 }: {
   storyId: string
   onCapture?: (file: File) => void
+  onReadyChange?: (ready: boolean) => void
   visible: boolean
 }) {
   const runner = useSharedProjectRunner()
@@ -71,6 +73,7 @@ export function DirectStoryPreview({
       projectRun={preview.projectRun}
       visible={visible}
       onCapture={onCapture}
+      onReadyChange={onReadyChange}
     />
   )
 }
