@@ -6,7 +6,10 @@ import {
   finishInputError,
   type LightCompletionNotification,
 } from "./light-completion.js";
-import { finishTaskInputSchema } from "./light-contracts.js";
+import {
+  finishSummaryLimit,
+  finishTaskInputSchema,
+} from "./light-contracts.js";
 import {
   recordSessionScreenshots,
   sessionScreenshotIds,
@@ -163,11 +166,15 @@ test("a finish without images is unchanged", async () => {
 });
 
 test("a summary over the limit is refused with its length so the agent can shorten it", () => {
-  const input = { summary: "a".repeat(9_000) };
+  assert.equal(
+    finishTaskInputSchema.safeParse({ summary: "a".repeat(20_000) }).success,
+    true,
+  );
+  const input = { summary: "a".repeat(finishSummaryLimit + 1) };
   const parsed = finishTaskInputSchema.safeParse(input);
   assert.equal(parsed.success, false);
   assert.equal(
     finishInputError(input, parsed.error!),
-    "finish_task was not accepted: summary is 9000 characters, the limit is 8000; shorten it. Fix this and call finish_task again.",
+    `finish_task was not accepted: summary is ${finishSummaryLimit + 1} characters, the limit is ${finishSummaryLimit}; shorten it. Fix this and call finish_task again.`,
   );
 });

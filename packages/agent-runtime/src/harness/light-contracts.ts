@@ -131,9 +131,13 @@ const [, inspectTask, projectTask, commandTask, dependencyTask] = lightRunTaskIn
 export const lightDefaultRunTaskInputSchema = z.discriminatedUnion("kind",
   [inspectTask, projectTask, commandTask, dependencyTask]);
 
+// The final reply can be a long analysis. This only stops a runaway answer;
+// project memory keeps its own short excerpt.
+export const finishSummaryLimit = 100_000;
+
 export const finishTaskInputSchema = z
   .object({
-    summary: z.string().trim().min(1).max(8_000),
+    summary: z.string().trim().min(1).max(finishSummaryLimit),
     images: z
       .array(
         z
