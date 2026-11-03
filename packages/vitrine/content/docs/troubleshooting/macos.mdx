@@ -1,0 +1,33 @@
+---
+title: macOS
+description: Fix Blame Runtime, the Linux VM where agents and previews run on macOS, and find the logs.
+---
+
+Blame needs macOS 13 or later, on Apple silicon or Intel. The app is signed and notarized.
+
+## Blame Runtime
+
+On first launch, Blame sets up a small Linux VM, based on [Lima](https://lima-vm.io), where agents, worktrees, and previews run. Blame calls it **Blame Runtime**, and manages it in **Settings → Desktop → Blame Runtime**:
+
+- **Install**, **Repair**, or **Check again**, depending on its state;
+- **Start over → Reset** deletes the sandbox and installs a fresh one. Your projects are not touched; running local previews stop.
+
+If Blame Runtime can't start, install, or update, Blame first repairs it by itself. If that fails, it shows **Blame Runtime needs a repair**: **Repair** reinstalls the parts that are broken, and your projects are not touched. **Start over** resets it.
+
+While the runtime is not ready, you can still work: choose **Use Direct instead** to run a story in your project folder, without isolation, or use a [Cloud Preview](/docs/guides/previews#where-a-story-runs).
+
+### "Local containers aren't available on this computer"
+
+Blame Runtime needs macOS 13 or later. On an older version, run stories in the cloud or directly in your project.
+
+## Logs
+
+- The app's log: `~/Library/Application Support/dev.blame.desktop/logs/blame-live.log`
+- Each story's setup, agent, and merge logs: `.blame/logs/` in its worktree
+- A story's preview: its **Run logs** tab
+
+{/* TODO(Raphael): add the macOS issues people actually hit (VM disk space, project folders outside your home folder, Rosetta on Intel...), once you have them. */}
+
+## Still stuck?
+
+Ask on [Discord](https://discord.gg/AfjG6aUyxe) or in [GitHub Discussions](https://github.com/rchrp/Blame/discussions), or [open an issue](https://github.com/rchrp/Blame/issues/new/choose) with your macOS and Blame versions and the relevant logs.

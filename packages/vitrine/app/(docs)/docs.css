@@ -65,6 +65,11 @@
   letter-spacing: normal;
 }
 
+/* Arial has no medium weight: the UI labels in bold need a real bold. */
+.prose :where(strong) {
+  font-weight: 700;
+}
+
 ::selection {
   background: rgba(251, 191, 36, 0.35);
 }

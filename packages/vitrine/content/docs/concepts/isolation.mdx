@@ -1,0 +1,45 @@
+---
+title: Isolation
+description: How each story gets its own worktree, ports, services, and running app, and where they run on each platform.
+---
+
+Git worktrees stop parallel agents from editing the same files. They do not stop them from fighting over the dev server port, the database, the cache, or the `.env`. Blame isolates the running app, not just the code.
+
+## What each story gets
+
+When a story starts, Blame prepares, before the agent begins:
+
+- **a branch and a worktree**, so the agent's edits never touch your checkout or another story's;
+- **its own ports**, assigned automatically, so every story's app can run at the same time;
+- **its own containers** for the app and its services (database, cache, workers);
+- **its own environment and runtime**, from what Blame learned about the project.
+
+Each story then gets its own live [preview](/docs/guides/previews), next to the agent's files, diffs, logs, and terminal.
+
+## How Blame learns how a project runs
+
+When you open a repository, a setup agent reads it and writes down how the project runs: the app, its services (PostgreSQL, Redis, workers, and so on), and how to start them. Each story then gets its own copy of that setup. The result is on the **Preview Environment** page, in the sidebar.
+
+## Where it runs
+
+Agents, worktrees, and previews run on your computer:
+
+| Platform | Where agents and previews run                                                      |
+| -------- | ---------------------------------------------------------------------------------- |
+| macOS    | A small Linux VM, based on [Lima](https://lima-vm.io), that Blame sets up on first launch |
+| Windows  | Blame's own WSL distribution (WSL 2)                                               |
+| Linux    | Native worktrees; previews and project services run in Docker on your machine     |
+
+Code is sent to the AI provider you choose when an agent needs it.
+
+## Run modes
+
+Each story has a run mode, chosen in its description's toolbar:
+
+- **Local Container**, the isolated sandbox described above, on your computer.
+- **Cloud Preview**, a [Premium](/docs/account/free-and-premium) feature: the agent and the worktree stay on your computer, and a snapshot of the workspace syncs to a managed sandbox, where the app runs.
+- **Direct**: the story runs right in your project folder, the fastest and lightest, but without isolation, so agents can collide on files and ports. Only one Direct story runs at a time. Native macOS and Windows apps are worked on this way.
+
+## Compared with other tools
+
+Several good tools run agents in parallel git worktrees. The difference is what happens to the running app: who gets which database, which ports, which services. In Blame, ports are assigned per story automatically, and each story's database and services run in their own containers. The [README](https://github.com/rchrp/Blame#how-it-compares) compares Blame with Emdash, Conductor, Claude Squad, and Vibe Kanban.

@@ -1,0 +1,29 @@
+---
+title: Using Blame without an account
+description: Everything you need runs on your computer. An account is optional and adds what needs a server.
+---
+
+You do not need an account. The first screen offers to sign in or to continue without an account, in the same panel, and Blame remembers the choice.
+
+## What stays on your computer
+
+Without an account, Blame keeps your projects, stories, conversations, Code Practices, and provider connections on your computer, in a local database. Provider keys are encrypted with a key held by your system keychain.
+
+Agents, worktrees, previews, review, and merge work without Blame's servers: agents only call your AI provider. Under the hood, the desktop app runs the same API as the hosted service, on your computer, on SQLite.
+
+## What an account adds
+
+A free account adds what needs a server:
+
+- sync between computers: stories, conversations, Code Practices, provider connections, and MCP servers follow you to another computer;
+- web research for agents;
+- deployment to Vercel;
+- the [Premium](/docs/account/free-and-premium) services, if you subscribe.
+
+## Signing in later
+
+When you sign in, your local workspace is copied into the account and stays on your computer too. Signing in again later only adds what is missing.
+
+## Self-hosting
+
+For one person, the backend is already self-hosted: without an account, the desktop app runs the API on your computer. Hosting it for a team is not turnkey yet. The development setup in [CONTRIBUTING.md](https://github.com/rchrp/Blame/blob/main/CONTRIBUTING.md) runs the whole stack locally, and the [open-source readiness summary](https://github.com/rchrp/Blame/blob/main/docs/open-source-readiness.tex) tracks what self-hosting still needs.

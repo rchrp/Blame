@@ -1,0 +1,59 @@
+---
+title: Backlog and stories
+description: Write user stories, send them to agents, and follow each one from draft to merge.
+---
+
+Each user story becomes a lane that keeps its brief, context, agent activity, review notes, and final decision, from first draft to merge.
+
+## The board
+
+The backlog is a board with one column per stage:
+
+| Column          | What it holds              |
+| --------------- | -------------------------- |
+| **Backlog**     | Draft user stories         |
+| **Agent Queue** | Stories ready for agents   |
+| **In Progress** | Stories an agent works on, each in its own worktree |
+| **In Review**   | Work waiting for your review |
+| **Done**        | Merged user stories        |
+| **Discarded**   | Rejected or cancelled stories |
+
+You can also drag a story from one column to another: it runs the same action as the button.
+
+## Write a story
+
+Choose **New User Story**, in the toolbar or at the bottom of the Backlog column. A story has a title and a description in Markdown: describe the user story, the expected behavior, and the acceptance criteria. **Enhance** asks the AI to improve the description.
+
+The description's toolbar also sets the story's [run mode](/docs/guides/previews#where-a-story-runs) and its [model](/docs/guides/ai-providers#choose-the-models).
+
+Not sure how to split the work? **Plan Mode**, in the toolbar, lets you describe what you need: your agent proposes user stories that you review and add to the backlog.
+
+## Send it to an agent
+
+Choose **Save as Draft** to keep the story in the backlog, or **Send to Dev Agent** to queue it. Up to three agents work at the same time, each on its own story; the other stories wait in **Agent Queue** (use **Dequeue** to take one back). Only one Direct story runs at a time.
+
+While an agent works, the story's tabs show its progress:
+
+- **User Story**: the brief and the agent's activity;
+- **Preview**: the running app and its **Run logs**;
+- **Code**: the worktree's **Files**, the **Diff**, and a **Terminal**.
+
+To stop an agent, open **Stop Agent** on the story: **Pause**, **Pause & Give Feedback**, **Stop & Send Back to Backlog**, or **Discard Worktree**. A paused story shows **Unpause Agent**.
+
+When the agent hands the work back, the story moves to **In Review**. See [Review and merge](/docs/guides/review-and-merge).
+
+## Specialist agents
+
+One lead agent stays responsible for each story. When you ask for it, in the story or in a comment, the lead agent can consult a specialist, who advises without editing:
+
+- **Codebase Analyst**: finds the right context.
+- **Story Analyst**: tightens the brief.
+- **Frontend Design Specialist**: refines the interface.
+- **Test & Verification Analyst**: plans the proof.
+- **Risk & Review Analyst**: challenges merge readiness.
+
+The story's activity shows **Consulted** and the specialist's name; open it to read the exchange.
+
+## Quick changes: Chat
+
+For a quick fix or a question about the code, skip the backlog: open **Chat** in the sidebar and ask for a focused code change.

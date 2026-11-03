@@ -1,0 +1,31 @@
+---
+title: Privacy and telemetry
+description: What Blame sends, when, and how to turn it off.
+---
+
+## Without an account
+
+Without an account, Blame sends no usage telemetry. Agents call only the AI provider you pick, and the app checks for updates at launch.
+
+## With an account
+
+With an account, the app sends usage metrics to `api.blame.so`: durations, token counts, error types, and outcomes, used to make agents and previews more reliable.
+
+It never sends prompts, code, file paths, commands or their output, tool arguments, or keys, and the server filters them out a second time.
+
+## Turn it off
+
+Open **Settings → Desktop → Privacy**. It turns off usage telemetry, and also the update check at launch.
+
+On Windows, the installer offers the same switches before installing.
+
+## Where your code goes
+
+- Agents, worktrees, and previews run on your computer (see [Isolation](/docs/concepts/isolation)).
+- Code is sent to the AI provider you choose when an agent needs it.
+- Cloud Previews, a Premium feature, sync a workspace snapshot to a managed sandbox.
+
+## More
+
+- The [privacy policy](/privacy) lists everything the app sends and where.
+- The telemetry code is in [`packages/telemetry`](https://github.com/rchrp/Blame/tree/main/packages/telemetry).

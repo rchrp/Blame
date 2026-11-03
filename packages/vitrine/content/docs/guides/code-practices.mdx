@@ -1,0 +1,28 @@
+---
+title: Code Practices
+description: Hold every agent to your project's current habits, or to a stricter professional standard, practice by practice.
+---
+
+Code Practices tell every agent how to write code in a project: follow the project's current habits, or apply a stricter professional standard. They are set project by project.
+
+Open **Code Practices** in the sidebar.
+
+## The practices
+
+For each practice, choose:
+
+- **Match codebase**: the agent follows what the project already does;
+- **Pro standard**: the agent applies the standard below.
+
+| Practice                      | Pro standard                                                                                                          | Default        |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------- | -------------- |
+| **Coding style**              | Write explicit, typed, focused code with deliberate error handling and no temporary, duplicated, or unsafe patterns. | Pro standard   |
+| **Unit tests**                | Use a TDD loop and ZOMBIES cases for behavior, state, validation, data flows, boundaries, and failures.              | Match codebase |
+| **Layered architecture**      | Apply Clean, Onion, and Hexagonal Architecture with use cases, domain core, ports, adapters, and inward dependencies. | Match codebase |
+| **Commit message convention** | Produce exact Conventional Commits such as `feat:`, `fix:`, `refactor:`, `docs:`, `test:`, `chore:`, `build:`, or `ci:`. | Match codebase |
+
+## Detection
+
+Blame analyzes the project to see which practices it already follows. Each practice shows **Detected** or **Not detected**, and its **Detection comment** explains what the analysis found. The analysis runs by itself, with your **Alternative model** (see [AI providers](/docs/guides/ai-providers#choose-the-models)).
+
+With an account, your Code Practices sync between your computers.

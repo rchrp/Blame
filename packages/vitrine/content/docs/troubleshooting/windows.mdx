@@ -1,0 +1,54 @@
+---
+title: Windows
+description: SmartScreen warnings, WSL 2, Blame Runtime, and where the logs are on Windows.
+---
+
+Blame needs Windows 10 or 11 with WSL 2. It runs agents in its own WSL distribution, **Blame Runtime**.
+
+## SmartScreen warns about the installer
+
+The installer is not code-signed yet: signing through SignPath Foundation is [pending](/code-signing-policy). SmartScreen may warn you: choose **More info → Run anyway**.
+
+You can check the download against the release's `SHA256SUMS` file first (see [Install](/docs/install#verify-a-download)).
+
+## WSL is not installed
+
+Run this in an administrator terminal, then restart:
+
+```powershell
+wsl --install
+```
+
+If Blame says to enable WSL2, enable it in Windows, restart if prompted, then run the Blame Runtime setup again from **Settings → Desktop → Blame Runtime**.
+
+## Blame Runtime runs on WSL 1
+
+Blame Runtime needs WSL 2. Convert it, then retry:
+
+```powershell
+wsl --set-version BlameRuntime 2
+```
+
+## Repair Blame Runtime
+
+**Settings → Desktop → Blame Runtime** shows **Install**, **Repair**, or **Check again**, depending on its state. **Start over → Reset** deletes the sandbox and installs a fresh one: your projects are not touched, and running local previews stop. When the automatic repair fails, Blame shows **Blame Runtime needs a repair**: **Repair** reinstalls the parts that are broken, and your projects are not touched.
+
+While the runtime is not ready, choose **Use Direct instead** to run a story in your project folder, without isolation.
+
+## Claude Code in stories
+
+On Windows, stories that run in Blame Runtime can't use Claude Code yet. **Chat** can. For stories, connect another provider: see [AI providers](/docs/guides/ai-providers).
+
+## Telemetry and update check
+
+The installer lets you turn off usage telemetry and the update check at launch. **Settings → Desktop → Privacy** has the same switches.
+
+## Logs
+
+- The app's log: `%APPDATA%\dev.blame.desktop\logs\blame-live.log`
+- Each story's setup, agent, and merge logs: `.blame\logs\` in its worktree
+- A story's preview: its **Run logs** tab
+
+## Still stuck?
+
+Ask on [Discord](https://discord.gg/AfjG6aUyxe) or in [GitHub Discussions](https://github.com/rchrp/Blame/discussions), or [open an issue](https://github.com/rchrp/Blame/issues/new/choose) with your Windows and Blame versions and the relevant logs.

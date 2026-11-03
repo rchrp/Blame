@@ -1,0 +1,47 @@
+---
+title: The Light Semantic Harness
+description: The five guarded tools every Blame agent works through, what they guarantee, and how they were measured.
+---
+
+Most coding agents grep, rewrite whole files, and tell you it should work now. Blame gives every agent five guarded tools instead. Every read, edit, and check is recorded, and checks run again before the agent hands the work back.
+
+## The five tools
+
+| Tool          | What the agent does          | What the harness guarantees                                                                                           |
+| ------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `search_code` | Finds code by its structure  | Declarations come from the syntax tree and the TypeScript project, not from text matches.                            |
+| `read_code`   | Reads before it writes       | Every read is recorded with the file version it saw. Unread code cannot be edited.                                    |
+| `edit_code`   | Edits declarations and files | An edit must match the exact text the agent read. Stale or ambiguous targets are refused, and batches are atomic.     |
+| `run_task`    | Runs commands and tests      | Results are bound to the run and the source revision. A failing test stays failed, even behind a script that exits 0. |
+| `finish_task` | Hands the work back          | Required checks run again on the final source. Missing or stale checks are reported as unverified, with the reason.   |
+
+Preview and other configured tools can extend an agent's session.
+
+## Measured in the open
+
+On fresh cross-module TypeScript tasks audited by hand, the harness matched Cline's **6/6** with **54% fewer tokens** and a **39% lower estimated cost**, with the same model. That is panel F61 of the study, which also reports where the harness fell short: in that panel, agents took 27% longer than with Cline.
+
+<Cards>
+  <Card
+    title="Light Semantic Harness: Applied Study (PDF)"
+    href="/research/light-semantic-harness-study.pdf"
+  >
+    Measured results, implementation guarantees, limitations, and research directions.
+  </Card>
+  <Card
+    title="Harness source code"
+    href="https://github.com/rchrp/Blame/tree/main/packages/agent-runtime/src/harness"
+  >
+    The harness lives in `packages/agent-runtime/src/harness`.
+  </Card>
+</Cards>
+
+The study's [LaTeX source](https://github.com/rchrp/Blame/blob/main/docs/semantic-harness-study.tex) is in the repository. These are small panels: the study details the conditions, the other panels, and the limits of each result.
+
+## Limits
+
+- Reference search currently falls back to text matches: it is not a compiler-level reference graph.
+- A "verified" hand-off means the required checks passed under the current validation policy. It does not prove arbitrary functional requirements, and free-text acceptance criteria are not checked mechanically.
+- The edit lock protects against cooperating writers. It does not isolate files from programs that ignore it.
+
+The [architecture summary](https://github.com/rchrp/Blame/blob/main/docs/architecture-summary.tex) describes how the harness is built.

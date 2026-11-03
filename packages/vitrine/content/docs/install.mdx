@@ -1,0 +1,80 @@
+---
+title: Install
+description: Install Blame on macOS, Windows, or Linux, with a package manager or a direct download.
+---
+
+Blame is a desktop app for macOS, Windows, and Linux. Install it with your package manager, or download it from [blame.so/download](/download).
+
+## macOS
+
+```bash
+brew install --cask rchrp/tap/blame
+```
+
+Or download the disk image for your Mac:
+
+- Apple silicon: [`blame-mac-arm64.dmg`](https://download.blame.so/latest/blame-mac-arm64.dmg)
+- Intel: [`blame-mac-x64.dmg`](https://download.blame.so/latest/blame-mac-x64.dmg)
+
+Blame needs macOS 13 or later. The app is signed and notarized. On first launch, Blame sets up a small Linux VM (based on [Lima](https://lima-vm.io)) where agents, worktrees, and previews run.
+
+## Windows
+
+```powershell
+winget install Blame.Blame
+```
+
+Or download the installer: [`blame-win-x64.exe`](https://download.blame.so/latest/blame-win-x64.exe).
+
+Blame needs Windows 10 or 11 with WSL 2. It runs agents in its own WSL distribution. If WSL is not installed, run this in an administrator terminal, then restart:
+
+```powershell
+wsl --install
+```
+
+The installer is not code-signed yet (signing through SignPath Foundation is [pending](/code-signing-policy)), so SmartScreen may warn you: choose **More info → Run anyway**. The installer lets you turn off usage telemetry and the update check at launch.
+
+## Linux
+
+Download the package for your distribution (x86_64):
+
+- [`AppImage`](https://download.blame.so/latest/blame-linux-x86_64.AppImage)
+- [`.deb`](https://download.blame.so/latest/blame-linux-amd64.deb) for Debian and Ubuntu
+- [`.rpm`](https://download.blame.so/latest/blame-linux-x86_64.rpm) for Fedora and RHEL
+
+```bash
+# AppImage
+chmod +x blame-linux-x86_64.AppImage && ./blame-linux-x86_64.AppImage
+
+# Debian, Ubuntu
+sudo apt install ./blame-linux-amd64.deb
+
+# Fedora, RHEL
+sudo dnf install ./blame-linux-x86_64.rpm
+```
+
+Blame needs Docker Engine with the Compose plugin. Worktrees stay native, and previews and project services run in Docker on your machine.
+
+<Callout title="Arch Linux">
+  An AUR package (`blame-bin`) is coming soon: it is ready and waits for AUR account registration to reopen. Until then, use the AppImage.
+</Callout>
+
+## Verify a download
+
+Each release ships a `SHA256SUMS` file. Download it next to the installer, then run:
+
+```bash
+shasum -a 256 -c SHA256SUMS --ignore-missing
+```
+
+The [code signing policy](/code-signing-policy) explains how releases are built and signed.
+
+## Updates and betas
+
+Blame keeps itself up to date from its [GitHub releases](https://github.com/rchrp/Blame/releases). You can also pick any version there, including betas.
+
+To get prereleases as soon as they ship, turn on **Settings → Desktop → Beta channel**.
+
+## Next
+
+Open Blame and choose **Continue without an account**. The [quick start](/docs/quick-start) takes you from there to your first merge.
