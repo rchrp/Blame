@@ -55,13 +55,13 @@ Git worktrees stop parallel agents from editing the same files. They do not stop
 You try each change in its running app, then request changes, reject it, or approve and merge. Nothing merges until you say so.
 
 - **Agents that show their work.** Agents run through the [Light Semantic Harness](#the-light-semantic-harness): every read, edit, and check is recorded, and checks run again before hand-off. On six hand-audited TypeScript tasks, it matched Cline's results with 54% fewer tokens.
-- **Your models, your machine.** Use your Claude Code or Codex plan, or any of 50 AI providers with your own key. Agents, worktrees, and previews run on your computer.
+- **Your models, your machine.** Sign in with your Claude or ChatGPT plan, or use any of 50 AI providers with your own key. Agents, worktrees, and previews run on your computer.
 - **Free and open source.** The whole app is AGPL-3.0, and works without an account. [Blame Premium](#free-and-premium) only adds hosted services, such as Cloud Previews.
 
 ## Quick start
 
 1. Open Blame and choose **Continue without an account**, or sign in. Blame remembers the choice.
-2. Connect an AI provider: sign in with your Claude or ChatGPT plan (through Claude Code or Codex), or paste an API key.
+2. Connect an AI provider: sign in with your Claude or ChatGPT plan, or paste an API key.
 3. Open a Git repository, or create a new project from a web stack. Blame prepares how the project runs in a preview.
 4. Write two or three user stories in the backlog and start an agent on each. They run at the same time.
 5. Open each story's **Preview** tab to try its own running copy of the app. Request changes, reject the work, or approve and merge.
@@ -76,12 +76,11 @@ When you open a repository, a setup agent reads it and writes down how the proje
 
 | Project                                | Preview                                                                         |
 | -------------------------------------- | ------------------------------------------------------------------------------- |
-| Web apps and APIs that run on Linux    | The page in a built-in browser, with desktop, tablet, and phone frames          |
-| CLI tools and scripts                  | An interactive terminal                                                         |
+| Web apps and APIs that run on Linux    | The page in a built-in browser                                                  |
 | Linux GUI, Electron, and Tauri apps    | A screen of the running app                                                     |
-| iOS apps                               | The iOS Simulator (macOS with Xcode)                                            |
-| Android apps                           | An Android emulator, one isolated instance per story                            |
-| Native macOS and Windows apps          | Direct mode: the app runs in your project folder, without isolation             |
+| Apps that cannot run in a container    | Direct mode: the app runs in your project folder, without isolation             |
+
+**In development:** terminal previews for CLI tools, phone and tablet frames, the iOS Simulator, and the Android emulator.
 
 New projects start from **Next.js, React + Vite, Nuxt, Vue + Vite, or SvelteKit**, with **PostgreSQL, MySQL, SQLite, or MongoDB**.
 
