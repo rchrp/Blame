@@ -47,13 +47,18 @@ export function docsMarkdownPath(page: Pick<DocsPage, "url">) {
   return `${page.url}.md`;
 }
 
+// The page as plain Markdown for an AI agent: without Fumadocs' heading
+// anchors ("## Install [#install]"), and with the site's links absolute.
 export async function docsPageMarkdown(page: DocsPage) {
   const description = page.data.description
     ? `> ${page.data.description}\n\n`
     : "";
+  const body = (await page.data.getText("processed"))
+    .replace(/^(#{1,6} .*?) \[#[^\]\s]+\]$/gm, "$1")
+    .replace(/(\]\(|href=")\/(?!\/)/g, `$1${absoluteSiteUrl("/")}`);
   return `# ${page.data.title}
 
 ${description}Page: ${absoluteSiteUrl(page.url)}
 
-${await page.data.getText("processed")}`;
+${body}`;
 }

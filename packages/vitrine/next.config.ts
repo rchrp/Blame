@@ -39,7 +39,7 @@ const nextConfig: NextConfig = {
         destination: markdownRoutePath(path),
       })),
       { source: "/docs.md", destination: "/md/docs" },
-      { source: "/docs/:path+.md", destination: "/md/docs/:path+" },
+      { source: "/docs/:path*/:page.md", destination: "/md/docs/:path*/:page" },
     ];
   },
   async headers() {
