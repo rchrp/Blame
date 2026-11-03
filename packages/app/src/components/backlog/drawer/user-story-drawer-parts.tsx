@@ -100,15 +100,15 @@ export function DrawerBody({
       ? "pt-42 sm:pt-28"
       : "pt-28"
   // While the stats panel is expanded, the thread and the composer keep
-  // clear of it, with the same gap as on the left (px-8). The action
+  // clear of it, with the same gap as on the left (px-4). The action
   // buttons still span the whole width, on the right.
   const contentClassName = cn(
-    "flex flex-col gap-6 px-8 transition-[margin] duration-500 ease-out lg:mr-(--story-panel-inset)",
+    "flex flex-col gap-6 px-4 transition-[margin] duration-500 ease-out lg:mr-(--story-panel-inset)",
     topPaddingClassName
   )
   const fixedSectionClassName =
     "pointer-events-none absolute right-0 bottom-0 left-0 z-20"
-  const fixedSectionContentClassName = "w-full px-8"
+  const fixedSectionContentClassName = "w-full px-4"
   // Leave room for the composer’s raised turn metrics above its border.
   const bottomInset = Math.max(fixedSectionHeight + 16, 24)
 

@@ -245,7 +245,7 @@ export const UserStoryFixedSection = React.memo(function UserStoryFixedSection({
         {actions ? (
           // On the right edge, lined up with the stats panel and with the
           // actions of the other tabs.
-          <div className="-mr-4 flex justify-end">{actions}</div>
+          <div className="flex justify-end">{actions}</div>
         ) : null}
       </div>
     </div>
@@ -368,9 +368,9 @@ function commentPlaceholder(status: BacklogColumnId) {
 
 function fixedSectionClassName(commentComposerVisible: boolean) {
   if (commentComposerVisible) {
-    return "pointer-events-auto relative -mx-8 px-8 pt-4 pb-6"
+    return "pointer-events-auto relative -mx-4 px-4 pt-4 pb-4"
   }
-  return "pointer-events-auto relative -mx-8 px-8 pt-6 pb-6"
+  return "pointer-events-auto relative -mx-4 px-4 pt-6 pb-4"
 }
 
 function useFileMentionDirectory(
