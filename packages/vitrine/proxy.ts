@@ -1,21 +1,28 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { isMarkdownPagePath, markdownRoutePath } from "@/lib/markdown-paths";
+import {
+  docsMarkdownRoutePath,
+  isMarkdownPagePath,
+  markdownRoutePath,
+} from "@/lib/markdown-paths";
 
 // Content negotiation for AI agents: a page requested with an Accept header
 // that prefers text/markdown to text/html gets its Markdown version, at the
 // page's own URL. Browsers never ask for Markdown, so they are unaffected.
 export function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
-  if (!isMarkdownPagePath(path) || !prefersMarkdown(request.headers.get("accept"))) {
+  const markdownRoute = isMarkdownPagePath(path)
+    ? markdownRoutePath(path)
+    : docsMarkdownRoutePath(path);
+  if (!markdownRoute || !prefersMarkdown(request.headers.get("accept"))) {
     return NextResponse.next();
   }
-  return NextResponse.rewrite(new URL(markdownRoutePath(path), request.url));
+  return NextResponse.rewrite(new URL(markdownRoute, request.url));
 }
 
 // Page requests only: not Next.js assets, the Markdown routes themselves, or
 // files (paths with a dot). The pages with a Markdown version are checked
-// above, against lib/markdown-paths.ts.
+// above, against lib/markdown-paths.ts; for the docs, every /docs page.
 export const config = {
   matcher: ["/((?!_next/|md/|md$|.*\\.).*)"],
 };

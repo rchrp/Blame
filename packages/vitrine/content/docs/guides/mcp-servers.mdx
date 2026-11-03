@@ -1,0 +1,35 @@
+---
+title: MCP servers
+description: Give every Blame agent access to external tools and context through MCP servers.
+---
+
+MCP servers give Blame agents access to external tools and context. Blame keeps one list of servers, used by every agent in every project.
+
+## Add a server
+
+Open **Settings → MCP Servers** and choose **Add server**. Give it a **Name** (for example "GitHub"), then pick a **Connection**:
+
+| Connection             | What to enter                                       |
+| ---------------------- | --------------------------------------------------- |
+| **Local command**      | The **Command** that starts the server, such as `npx` |
+| **HTTP server**        | The **Server URL** (streamable HTTP)                |
+| **SSE server (legacy)** | The **Server URL**                                 |
+
+**Advanced options** add a **Timeout** (1 to 3,600 seconds), and:
+
+- for a local command: its **Arguments**, **Working directory**, and **Environment variables**;
+- for an HTTP or SSE server: **Request headers**.
+
+## Manage servers
+
+Each server has a switch to turn it on or off, and can be edited or removed. A server that signs in with OAuth shows **Connect** and **Disconnect**.
+
+The list is stored on your computer in `~/.cline/data/settings/cline_mcp_settings.json`.
+
+## With an account
+
+When you are signed in, your MCP servers sync to your other computers, without their local arguments or credentials. On another computer, such a server shows **Setup required**: choose **Complete setup** to fill them in.
+
+<Callout title="Security">
+  An MCP server runs with the access you give it. Connect servers you trust: vulnerabilities in third-party MCP servers are outside the scope of [Blame's security policy](https://github.com/rchrp/Blame/blob/main/SECURITY.md).
+</Callout>

@@ -1,0 +1,46 @@
+---
+title: Review and merge
+description: Try each story's work in its running app, then request changes, reject it, or approve and merge.
+---
+
+The agent moves fast; the decision stays yours. Nothing merges until you approve it.
+
+## Review a story
+
+When an agent hands its work back, the story moves to **In Review**. Open it:
+
+- **Preview** runs the story's own copy of the app: try the change there.
+- **Code → Diff** shows what changed, and **Files** and **Terminal** let you look around the worktree.
+- **User Story** has the brief and the agent's conversation and activity. Before handing the work back, the agent runs its required checks again (see [the Light Semantic Harness](/docs/concepts/light-semantic-harness)).
+
+## Decide
+
+| Action              | What happens                                                                                   |
+| ------------------- | ---------------------------------------------------------------------------------------------- |
+| **Request Changes** | Write a comment: the story goes back to **In Progress** and the agent takes another pass.      |
+| **Reject**          | Choose **Request Changes** after all, or **Discard User Story**, which moves it to **Discarded**. Discarding a Direct story keeps the files the agent changed in your project folder. |
+| **Approve & Merge** | Blame merges the story's branch, and the story moves to **Done**.                              |
+
+The approve button reads **Approve** for a Direct story, which already works in your project folder, and **Mark as Done** when the story changed nothing.
+
+## What a merge does
+
+Blame merges into the branch checked out in your project folder:
+
+1. If that branch has an upstream, Blame pulls it first.
+2. It commits the story's work with a message written by an agent.
+3. It brings the story's branch up to date with yours, then fast-forwards your branch to it.
+4. If your branch has an upstream, Blame pushes it.
+
+<Callout type="warn" title="Merging pushes">
+  When the checked-out branch tracks a remote branch, Approve & Merge pushes the merged result to it. To review before anything is pushed, check out a local branch without an upstream.
+</Callout>
+
+Merge conflicts are resolved by an agent, with up to three attempts; if conflicts remain, the merge stops and says so. Uncommitted changes in your project folder are set aside during the merge and put back afterwards. If they conflict with the story's changes, the merge stops before your branch moves.
+
+The merge runs with your **Alternative model**, set in **Settings → Models & Providers**.
+
+## After the merge
+
+- A **Done** story can start a follow-up: **New story with this context**.
+- A **Discarded** story can come back with **Rework as Draft**, or go for good with **Delete Permanently**.

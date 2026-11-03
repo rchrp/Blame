@@ -1,0 +1,47 @@
+---
+title: Previews
+description: What Blame can preview, how it learns to run your project, and where each story's app runs.
+---
+
+Each story gets its own running copy of your app, with its own ports and services. Open the story and choose its **Preview** tab to try it while the agent works, and before you merge.
+
+## How Blame learns to run your project
+
+When you open a repository, a setup agent reads it and writes down how the project runs: the app, its services (PostgreSQL, Redis, workers, and so on), and how to start them. Each story then gets its own copy of that setup.
+
+This analysis runs by itself when a project has no setup yet. Its result is on the **Preview Environment** page, in the sidebar, which also has **Run again** and **Edit setup**. Until the setup is ready, only stories in Direct mode can start.
+
+## What it can preview
+
+{/* TODO(Raphael): the README's "What it can preview" table also lists phone and tablet frames, CLI terminals, the iOS Simulator, Android emulators, and native app windows. In the code, those preview surfaces are still behind BLAME_EXPERIMENTAL_SURFACES (packages/desktop/src/main/preview-surfaces/experimental-surfaces.ts), so this page lists them as in development. Update the table when they ship, or align the README. */}
+
+| Project                             | Preview                                                          | Status         |
+| ----------------------------------- | ---------------------------------------------------------------- | -------------- |
+| Web apps and APIs that run on Linux | The page in a built-in browser                                   | Available      |
+| Linux GUI, Electron, and Tauri apps | A screen of the running app                                      | Available      |
+| Web apps on phones and tablets      | Phone and tablet frames around the page                          | In development |
+| CLI tools and scripts               | An interactive terminal                                          | In development |
+| iOS apps                            | The iOS Simulator (macOS with Xcode)                             | In development |
+| Android apps                        | An Android emulator, one isolated instance per story             | In development |
+| Native macOS and Windows apps       | The app's window, from a **Direct** story (in your project folder, without isolation) | In development |
+
+New projects start from **Next.js, React + Vite, Nuxt, Vue + Vite, or SvelteKit**, with **PostgreSQL, MySQL, SQLite, or MongoDB**.
+
+A stack that does not preview well? [Open an issue](https://github.com/rchrp/Blame/issues) with the project's stack: that list is the one we fix first.
+
+## Where a story runs
+
+Each story has a run mode, chosen in the toolbar of its description. Your choice also becomes the default for the next story.
+
+| Run mode          | What it does                                                                                     |
+| ----------------- | ------------------------------------------------------------------------------------------------ |
+| **Local Container** | Runs the story in an isolated sandbox on this computer.                                         |
+| **Cloud Preview**   | Runs the story in an isolated managed sandbox. Available with [Blame Cloud](/docs/account/free-and-blame-cloud). |
+| **Direct**          | Runs right in your project folder: the fastest and lightest. No isolation, so agents can collide on files and ports. Only one Direct story runs at a time. |
+
+[Isolation](/docs/concepts/isolation) explains what a story's sandbox contains on each platform.
+
+## The Preview tab
+
+- **Preview** shows the running app. Its toolbar can refresh the preview, capture it, copy its URL, and open it in your browser.
+- **Run logs** has the logs of the story's run: the first place to look when a preview does not start.

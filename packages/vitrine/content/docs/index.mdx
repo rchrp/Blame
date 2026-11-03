@@ -1,0 +1,45 @@
+---
+title: Introduction
+description: Run coding agents in parallel, each with its own live preview. No conflicts.
+---
+
+Blame ADE is a free, open-source desktop app for macOS, Windows, and Linux. It runs coding agents in parallel and gives each one its own worktree, ports, services, and running app, so you try every change before it merges.
+
+## The problem
+
+Three agents, one `localhost:3000`, one shared database: that is where parallel agents break.
+
+Git worktrees stop parallel agents from editing the same files. They do not stop them from fighting over everything else: the dev server port, the database, the cache, the `.env`. Run three agents and you get three branches, but only one app you can open.
+
+## What Blame does
+
+Blame isolates the running app, not just the code. Each story gets:
+
+- its own branch and worktree;
+- its own containers for the app and its services (database, cache, workers), on their own ports;
+- its own live preview, next to the agent's files, diffs, logs, and terminal.
+
+You try each change in its running app, then request changes, reject it, or approve and merge. Nothing merges until you say so.
+
+- **Agents that show their work.** Agents run through the [Light Semantic Harness](/docs/concepts/light-semantic-harness): every read, edit, and check is recorded, and checks run again before hand-off.
+- **Your models, your machine.** Use your Claude Code or Codex plan, or any of 50 AI providers with your own key. Agents, worktrees, and previews run on your computer.
+- **Free and open source.** The whole app is AGPL-3.0 and works without an account. [Blame Cloud](/docs/account/free-and-blame-cloud) only adds hosted services, such as Cloud Previews.
+
+The [demo video](https://youtu.be/cD6jASpIKQw) follows three agents working on three stories of the Blame website at once, each with its own running copy of the site, until one story is approved and merged.
+
+## Next steps
+
+<Cards>
+  <Card title="Install" href="/docs/install">
+    Homebrew, winget, or a direct download for macOS, Windows, and Linux.
+  </Card>
+  <Card title="Quick start" href="/docs/quick-start">
+    From the first launch to your first merge.
+  </Card>
+  <Card title="Previews" href="/docs/guides/previews">
+    What Blame can preview, and where each story runs.
+  </Card>
+  <Card title="Isolation" href="/docs/concepts/isolation">
+    How each story gets its own worktree, ports, and services.
+  </Card>
+</Cards>

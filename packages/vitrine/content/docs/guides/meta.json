@@ -1,0 +1,11 @@
+{
+  "title": "Guides",
+  "pages": [
+    "previews",
+    "ai-providers",
+    "backlog-and-stories",
+    "review-and-merge",
+    "code-practices",
+    "mcp-servers"
+  ]
+}

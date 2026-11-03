@@ -1,0 +1,84 @@
+@import "tailwindcss";
+@import "fumadocs-ui/css/neutral.css";
+@import "fumadocs-ui/css/preset.css";
+
+@source "./";
+@source "../../components/docs";
+@source "../../lib/docs";
+@source "../../content/docs";
+
+/* The docs in the website's colors: its night-blue background and lavender
+   links when dark (the default), and a light theme to match. Fonts are the
+   website's too: Arial for text, Söhne for titles. */
+
+@theme {
+  --font-sans: Arial, Helvetica, ui-sans-serif, sans-serif;
+  --font-display: var(--font-soehne), Arial, sans-serif;
+
+  --color-fd-background: #fbfbfe;
+  --color-fd-foreground: #0b0e1a;
+  --color-fd-muted: #f1f1f7;
+  --color-fd-muted-foreground: #5b5f72;
+  --color-fd-popover: #ffffff;
+  --color-fd-popover-foreground: #0b0e1a;
+  --color-fd-card: #ffffff;
+  --color-fd-card-foreground: #0b0e1a;
+  --color-fd-border: rgb(11 14 26 / 11%);
+  --color-fd-primary: oklch(0.488 0.243 264.376);
+  --color-fd-primary-foreground: #ffffff;
+  --color-fd-secondary: #f1f1f7;
+  --color-fd-secondary-foreground: #0b0e1a;
+  --color-fd-accent: #ececf5;
+  --color-fd-accent-foreground: #0b0e1a;
+  --color-fd-ring: oklch(0.488 0.243 264.376);
+}
+
+.dark {
+  --color-fd-background: #050712;
+  --color-fd-foreground: rgb(255 255 255 / 92%);
+  --color-fd-muted: #0b0f1f;
+  --color-fd-muted-foreground: rgb(255 255 255 / 58%);
+  --color-fd-popover: #0a0d1b;
+  --color-fd-popover-foreground: rgb(255 255 255 / 92%);
+  --color-fd-card: #080b18;
+  --color-fd-card-foreground: rgb(255 255 255 / 92%);
+  --color-fd-border: rgb(255 255 255 / 10%);
+  --color-fd-primary: #dedaff;
+  --color-fd-primary-foreground: #070a15;
+  --color-fd-secondary: #0f1326;
+  --color-fd-secondary-foreground: rgb(255 255 255 / 92%);
+  --color-fd-accent: rgb(255 255 255 / 7%);
+  --color-fd-accent-foreground: #ffffff;
+  --color-fd-ring: #b3acf3;
+}
+
+.dark #nd-sidebar {
+  --color-fd-muted: #0b0f1f;
+  --color-fd-secondary: #0f1326;
+  --color-fd-muted-foreground: rgb(255 255 255 / 62%);
+}
+
+.font-display,
+.prose :is(h2, h3) {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: normal;
+}
+
+/* Arial has no medium weight: the UI labels in bold need a real bold. */
+.prose :where(strong) {
+  font-weight: 700;
+}
+
+::selection {
+  background: rgba(251, 191, 36, 0.35);
+}
+
+html {
+  scrollbar-gutter: stable;
+}
+
+html > body[data-scroll-locked] {
+  margin-right: 0px !important;
+  --removed-body-scroll-bar-size: 0px !important;
+}

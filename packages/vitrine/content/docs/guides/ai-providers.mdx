@@ -1,0 +1,79 @@
+---
+title: AI providers
+description: Connect your Claude or ChatGPT plan, an API key, or any OpenAI-compatible endpoint, and choose the models Blame uses.
+---
+
+Blame runs on your own credentials, and your provider bills you directly. It supports 50 AI providers, plus any OpenAI-compatible API. You can connect several, and use a different model for each story.
+
+Connections live in **Settings → Models & Providers**, under **Provider connections**. Choose **Connect provider**, then pick a provider: the dialog groups them under **Use your subscription**, **API keys**, and **More providers**. The first-launch setup offers the same choice.
+
+## Use your Claude plan
+
+Blame uses your Claude Pro or Max plan through Claude Code, running on your computer, and keeps its own tools and checks.
+
+<Steps>
+<Step>
+
+### Install Claude Code
+
+On macOS and Linux:
+
+```bash
+curl -fsSL https://claude.ai/install.sh | bash
+```
+
+On Windows (PowerShell):
+
+```powershell
+irm https://claude.ai/install.ps1 | iex
+```
+
+</Step>
+<Step>
+
+### Sign in with your Claude account
+
+```bash
+claude auth login
+```
+
+If Claude Code is signed in with an API key instead, usage is billed to that key: sign in again to use your subscription.
+
+</Step>
+<Step>
+
+### Connect to Blame
+
+In **Connect Claude Code**, choose **Connect Claude Code**. Usage counts against your Claude plan limits.
+
+</Step>
+</Steps>
+
+<Callout type="warn" title="Windows">
+  On Windows, stories that run in the Blame runtime can't use Claude Code yet. Chat can.
+</Callout>
+
+## Use your ChatGPT plan
+
+{/* TODO(Raphael): the README says the ChatGPT plan works "through Codex". In the code (packages/agent-runtime/src/provider-catalog.ts), the Codex CLI provider is not wired yet, and the subscription goes through the "OpenAI ChatGPT Subscription" OAuth provider. This section follows the code; align the README, or this page once Codex is wired. */}
+
+Under **Use your subscription**, choose **OpenAI ChatGPT Subscription**. Give the connection a name, then choose **Continue with OAuth** and sign in with your ChatGPT account.
+
+## Use an API key
+
+Pick the provider under **API keys** or **More providers**, give the connection a name (for example "Work"), and paste the key. A provider can have several connections: use **Add connection** for another key.
+
+Provider keys are encrypted. Without an account, the key that encrypts them is held by your system keychain.
+
+## Use an OpenAI-compatible endpoint
+
+Choose **OpenAI Compatible**, then enter the endpoint's **Base URL** (for example `https://provider.example/v1`) and at least one **Model ID**.
+
+## Choose the models
+
+**Settings → Models & Providers → Default models** sets two models:
+
+- **Agent model**: development sessions, backlog execution, and chat.
+- **Alternative model**: project setup, security audits, and prompt optimization. Blame also uses it to approve and merge a story.
+
+To change the model of one story, use the model picker in the story's comment box: it picks the model and reasoning of that story's next turn, without changing the default for new stories.

@@ -1,0 +1,47 @@
+---
+title: Contributing
+description: Where to get help, share ideas, report bugs, and contribute to Blame.
+---
+
+Blame is open source (AGPL-3.0), and bug reports, documentation fixes, and focused pull requests are all welcome. This documentation lives in the repository too: every page has an **Edit this page on GitHub** link.
+
+## Where to talk
+
+- **Chat, help, and show what you built:** [Discord](https://discord.gg/AfjG6aUyxe)
+- **Questions and ideas:** [GitHub Discussions](https://github.com/rchrp/Blame/discussions), in Q&A or Ideas
+- **Bugs and feature requests:** [GitHub Issues](https://github.com/rchrp/Blame/issues/new/choose). For a bug, include the steps to reproduce it, your platform and Blame version, and the relevant logs.
+- **Security reports:** privately, as described in [SECURITY.md](https://github.com/rchrp/Blame/blob/main/SECURITY.md). Please do not open a public issue.
+
+## Contribute code
+
+Start with [CONTRIBUTING.md](https://github.com/rchrp/Blame/blob/main/CONTRIBUTING.md): it covers the development setup, the checks to run, and how the repository is organized. In short:
+
+- For a substantial feature or an architectural change, open an issue or a discussion first, so we can agree on the approach before you write the code.
+- Keep each pull request focused on one problem. Explain the problem, the change, and how you verified it.
+- Add or update tests for the behavior you change, and run the checks before opening the pull request.
+- Use [Conventional Commits](https://www.conventionalcommits.org) for commit messages and pull request titles, for example `fix(preview): recover an interrupted session`.
+
+Issues labeled [`good first issue`](https://github.com/rchrp/Blame/labels/good%20first%20issue) and [`help wanted`](https://github.com/rchrp/Blame/labels/help%20wanted) are good places to start. Contributions are accepted under the project's AGPL-3.0 license, and everyone taking part follows the [code of conduct](https://github.com/rchrp/Blame/blob/main/CODE_OF_CONDUCT.md).
+
+## Build from source
+
+Blame is a TypeScript monorepo (pnpm and Turborepo): an Electron desktop app, a React interface, an AdonisJS API, and the agent runtime.
+
+```bash
+git clone https://github.com/rchrp/Blame.git
+cd Blame
+corepack enable
+pnpm install --frozen-lockfile
+```
+
+You need Node.js 24 and Git. A local MySQL 8.4 database is only needed to work on accounts and hosted services: without an account, the desktop app runs the API on SQLite by itself. [CONTRIBUTING.md](https://github.com/rchrp/Blame/blob/main/CONTRIBUTING.md#development-setup) walks through the rest, and [RELEASING.md](https://github.com/rchrp/Blame/blob/main/RELEASING.md) covers packaging and releases.
+
+## Edit these docs
+
+The pages are MDX files in [`packages/vitrine/content/docs`](https://github.com/rchrp/Blame/tree/main/packages/vitrine/content/docs), and each folder's `meta.json` sets the order of the sidebar. To preview your change, run the website:
+
+```bash
+pnpm --filter @blame/vitrine dev
+```
+
+then open [localhost:3000/docs](http://localhost:3000/docs).

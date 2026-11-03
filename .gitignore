@@ -25,6 +25,7 @@ __pycache__/
 
 # Build Outputs
 .next/
+.source/
 out/
 build
 dist

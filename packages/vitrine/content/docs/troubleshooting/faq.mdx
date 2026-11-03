@@ -1,0 +1,44 @@
+---
+title: FAQ
+description: Answers to the questions people ask most about Blame.
+---
+
+## Is Blame really free?
+
+Yes. The whole desktop app is free and open source under the AGPL-3.0: projects, the backlog, conversations, agents, local worktrees, and local previews, with your own AI providers. [Blame Cloud](/docs/account/free-and-blame-cloud) only pays for services that Blame hosts.
+
+## Do I need an account?
+
+No. The first screen offers to sign in or to continue without an account. Without an account, everything stays on your computer; a free account adds sync between computers, web research for agents, deployment to Vercel, and the Blame Cloud services. See [Using Blame without an account](/docs/account/without-an-account).
+
+## Where does my code run?
+
+On your computer. Local execution uses a Lima VM on macOS, a WSL distribution on Windows, and native worktrees with Docker on Linux. Code is sent to the AI provider you choose when an agent needs it. Cloud Previews, part of Blame Cloud, sync a workspace snapshot to a managed sandbox. See [Isolation](/docs/concepts/isolation).
+
+## Which AI providers can I use?
+
+Any of the 50 supported providers, with your own API key or subscription, plus any OpenAI-compatible endpoint. You can sign in with your Claude or ChatGPT plan, and use a different model for each agent. See [AI providers](/docs/guides/ai-providers).
+
+## Who pays for the AI models?
+
+Your AI provider bills its own usage, with or without Blame Cloud.
+
+## What can Blame preview?
+
+Web apps and APIs that run on Linux, in a built-in browser, and Linux GUI, Electron, and Tauri apps, as a screen of the running app. Previews for CLI tools, iOS and Android apps, and native macOS and Windows apps are in development. See [Previews](/docs/guides/previews).
+
+## Does Blame send telemetry?
+
+Not without an account. With an account, the app sends usage metrics, never prompts, code, or keys, and you can turn them off. See [Privacy and telemetry](/docs/account/privacy-and-telemetry).
+
+## Can I self-host the backend?
+
+For one person, it already is: without an account, the desktop app runs the same API on your computer, on SQLite. Hosting it for a team is not turnkey yet. The development setup in [CONTRIBUTING.md](https://github.com/rchrp/Blame/blob/main/CONTRIBUTING.md) runs the whole stack locally.
+
+## Can I use Blame commercially?
+
+Yes. If you distribute Blame, you must provide the corresponding source under the same license. If you modify Blame and let users interact with it over a network, you must offer them the source of your modified version, as section 13 of the [AGPL-3.0](https://github.com/rchrp/Blame/blob/main/LICENSE) requires.
+
+## How do I report a bug?
+
+Open an [issue](https://github.com/rchrp/Blame/issues/new/choose) with the steps to reproduce it, your platform and Blame version, and the relevant logs. For questions, use [GitHub Discussions](https://github.com/rchrp/Blame/discussions) or [Discord](https://discord.gg/AfjG6aUyxe).

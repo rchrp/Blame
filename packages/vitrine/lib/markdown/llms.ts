@@ -2,6 +2,7 @@ import { pricingBillingOptions } from "@blame/pricing-card/offer";
 import { primaryArtifacts } from "@/app/(en)/download/artifacts";
 import { loadLatestRelease } from "@/app/(en)/download/latest-release";
 import { legalDocumentList } from "@/content/legal-documents";
+import { docsMarkdownPath, docsPagesInOrder } from "@/lib/docs/source";
 import { githubReleasesUrl, githubRepositoryUrl } from "@/lib/github";
 import { markdownUrlPath } from "@/lib/markdown-paths";
 import {
@@ -24,6 +25,10 @@ export function llmsTxt() {
       (document) =>
         `- [${document.title}](${absoluteSiteUrl(markdownUrlPath(document.path))}): ${document.description}`,
     );
+  const docs = docsPagesInOrder().map(
+    (page) =>
+      `- [${page.data.title}](${absoluteSiteUrl(docsMarkdownPath(page))})${page.data.description ? `: ${page.data.description}` : ""}`,
+  );
 
   return `# Blame
 
@@ -39,6 +44,12 @@ Every page below is plain Markdown. A page of the website also answers in Markdo
 - [Blame Cloud](${absoluteSiteUrl("/cloud.md")}): what is free and what Blame Cloud adds
 - [Download](${absoluteSiteUrl("/download.md")}): the latest release for macOS, Windows, and Linux, with requirements
 - [Full product text](${absoluteSiteUrl("/llms-full.txt")}): the three pages above in one file
+
+## Docs
+
+How to install Blame, run agents in parallel, preview, review, and merge. Each page is also at its own URL without \`.md\`, under ${absoluteSiteUrl("/docs")}.
+
+${docs.join("\n")}
 
 ## Source and research
 

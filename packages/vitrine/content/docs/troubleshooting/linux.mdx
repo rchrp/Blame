@@ -1,0 +1,40 @@
+---
+title: Linux
+description: Set up Docker for Blame's previews and project services, and find the logs on Linux.
+---
+
+On Linux, worktrees stay native, and previews and project services run in Docker on your machine. Blame needs Docker Engine with the Compose plugin, on x86_64.
+
+## "Missing development requirements"
+
+Blame uses Docker Engine and Docker Compose from your system. Install Docker Engine with the Docker Compose plugin ([Docker's instructions](https://docs.docker.com/engine/install/)), start it, then choose **Check again**.
+
+### "Docker Engine is not running"
+
+Start Docker Engine, then check again.
+
+### "Docker Engine is running, but Blame cannot access its socket"
+
+Add your user to the `docker` group, or set up rootless Docker, then check again. Docker's [post-installation steps](https://docs.docker.com/engine/install/linux-postinstall/) explain both.
+
+## The AppImage does not start
+
+Make it executable first:
+
+```bash
+chmod +x blame-linux-x86_64.AppImage && ./blame-linux-x86_64.AppImage
+```
+
+On Arch Linux, use the AppImage until the AUR package is published.
+
+## Logs
+
+- The app's log: `~/.config/dev.blame.desktop/logs/blame-live.log`
+- Each story's setup, agent, and merge logs: `.blame/logs/` in its worktree
+- A story's preview: its **Run logs** tab
+
+{/* TODO(Raphael): add the Linux issues people actually hit (distributions, Wayland, Docker Desktop instead of Docker Engine...), once you have them. */}
+
+## Still stuck?
+
+Ask on [Discord](https://discord.gg/AfjG6aUyxe) or in [GitHub Discussions](https://github.com/rchrp/Blame/discussions), or [open an issue](https://github.com/rchrp/Blame/issues/new/choose) with your distribution, Blame version, and the relevant logs.

@@ -4,10 +4,11 @@ import {
   isoLegalDate,
   legalDocumentList,
 } from "@/content/legal-documents";
+import { docsPagesInOrder } from "@/lib/docs/source";
 import { absoluteSiteUrl } from "@/lib/site";
 
-// Product pages first, then every legal document with the date it last
-// changed and, for the Terms, its other language.
+// Product pages first, then the docs, then every legal document with the
+// date it last changed and, for the Terms, its other language.
 const productPaths = ["/", "/cloud", "/download"] as const;
 
 export default function sitemap(): MetadataRoute.Sitemap {
@@ -15,6 +16,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
     url: absoluteSiteUrl(pathname),
     changeFrequency: "weekly" as const,
     priority: pathname === "/" ? 1 : 0.8,
+  }));
+  const docs = docsPagesInOrder().map((page) => ({
+    url: absoluteSiteUrl(page.url),
+    changeFrequency: "weekly" as const,
+    priority: page.url === "/docs" ? 0.8 : 0.6,
   }));
   const legal = legalDocumentList
     .filter((document) => document.readyForPublication)
@@ -32,5 +38,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
           }
         : undefined,
     }));
-  return [...products, ...legal];
+  return [...products, ...docs, ...legal];
 }
