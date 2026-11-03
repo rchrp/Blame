@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 
 import { type PreviewBrowserClient } from "@/context/platform"
 import { nativePreviewLoadDecision } from "./native-preview-load"
+import { useLatestCallback } from "@/lib/use-latest-callback"
 import {
   PreviewAmbilightCloud,
   previewAmbilightShadow,
@@ -49,6 +50,9 @@ type NativePreviewPanelProps = {
   visible: boolean
   /** Fills its container without the page margins, inside a device frame. */
   bare?: boolean
+  // Set while the page appears out of a loading screen ending on this
+  // color: the page shows covered in it, then fades it out.
+  revealColor?: string
 }
 
 export type PreviewCaptureHandler = () => Promise<File | undefined>
@@ -145,8 +149,11 @@ export function NativePreviewPanel({
   storageKey,
   visible,
   bare,
+  revealColor,
 }: NativePreviewPanelProps) {
   const surfaceRef = React.useRef<HTMLDivElement>(null)
+  // Read when the page appears, without placing it again when it changes.
+  const currentRevealColor = useLatestCallback(() => revealColor)
   const [error, setError] = React.useState<string>()
   const handleState = React.useCallback(
     (state: NativePreviewStateInput) => {
@@ -180,7 +187,8 @@ export function NativePreviewPanel({
     client,
     browserId,
     surfaceRef,
-    visible && previewState === "loaded"
+    visible && previewState === "loaded",
+    currentRevealColor
   )
 
   return (
@@ -540,7 +548,8 @@ function useNativePreviewBounds(
   client: PreviewBrowserClient,
   browserId: string | undefined,
   surfaceRef: React.RefObject<HTMLDivElement | null>,
-  visible: boolean
+  visible: boolean,
+  revealColor: () => string | undefined
 ) {
   const lastBoundsRef = React.useRef<string>("")
   const stabilityRef = React.useRef<NativePreviewBoundsStability>({
@@ -557,7 +566,8 @@ function useNativePreviewBounds(
         surfaceRef,
         visible,
         lastBoundsRef,
-        stabilityRef
+        stabilityRef,
+        revealColor
       )
     updateBounds()
     const stopFrameSync = syncNativePreviewBoundsDuringLayout(
@@ -582,7 +592,7 @@ function useNativePreviewBounds(
       })
       stabilityRef.current = { boundsKey: "", stableFrames: 0 }
     }
-  }, [browserId, client, surfaceRef, visible])
+  }, [browserId, client, revealColor, surfaceRef, visible])
 }
 
 function syncNativePreviewBoundsDuringLayout(
@@ -623,7 +633,8 @@ function syncNativePreviewBounds(
   surfaceRef: React.RefObject<HTMLDivElement | null>,
   visible: boolean,
   lastBoundsRef: React.MutableRefObject<string>,
-  stabilityRef: React.MutableRefObject<NativePreviewBoundsStability>
+  stabilityRef: React.MutableRefObject<NativePreviewBoundsStability>,
+  revealColor: () => string | undefined
 ) {
   const bounds = nativePreviewSurfaceBounds(surfaceRef.current)
   const boundsKey = `${bounds.x}:${bounds.y}:${bounds.width}:${bounds.height}`
@@ -636,8 +647,14 @@ function syncNativePreviewBounds(
   const key = `${bounds.x}:${bounds.y}:${bounds.width}:${bounds.height}:${shouldShow}`
   if (lastBoundsRef.current === key) return
   lastBoundsRef.current = key
+  const color = shouldShow ? revealColor() : undefined
   void client
-    .setBounds({ bounds, id: browserId, visible: shouldShow })
+    .setBounds({
+      bounds,
+      id: browserId,
+      reveal: color ? { color } : undefined,
+      visible: shouldShow,
+    })
     .then((applied) => {
       if (!applied && lastBoundsRef.current === key) {
         lastBoundsRef.current = ""

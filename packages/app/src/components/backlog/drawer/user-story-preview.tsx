@@ -4,6 +4,7 @@ import { ProjectRunLogPanel, ServiceLogPanel } from "./preview-run-logs"
 import { previewAmbilightShadow } from "./preview-ambilight"
 import {
   PreviewIdleFrame,
+  PreviewLaunchClouds,
   PreviewNotStarted,
   PreviewStartArrow,
   StartedAppWaiting,
@@ -590,6 +591,23 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
     : previewWaiting
       ? "loading"
       : previewState
+  // A start seen from here: the clouds stay up until the page has loaded,
+  // fill the frame and melt into a neutral, and the page appears out of it.
+  const launching = startPending || runtimeStarting || projectRunWaiting
+  const [launch, setLaunch] = React.useState<PreviewLaunch>()
+  if (launching && launch !== "loading") setLaunch("loading")
+  else if (!launching && launch === "loading") {
+    if (!source || previewFailure) setLaunch(undefined)
+    else if (displayedPreviewState !== "loading") setLaunch("filling")
+  }
+  React.useEffect(() => {
+    const next = nextPreviewLaunch(launch, launching)
+    if (!next) return
+    const timer = window.setTimeout(() => setLaunch(next.launch), next.after)
+    return () => window.clearTimeout(timer)
+  }, [launch, launching])
+  const pageCovered = launch === "loading" || launch === "filling"
+  const revealColor = launch === "revealing" ? previewRevealColor() : undefined
   const displayedPreviewLocation = hasNativePreview
     ? activeNativePreviewState?.url
     : previewLocation
@@ -934,6 +952,7 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
                     previewSessionId={previewRunner.previewSessionId}
                     previewWorktree={previewWorktree}
                     reloadKey={reloadKey}
+                    revealColor={revealColor}
                     sessionKey={nativePreviewSessionKey}
                     source={source ?? ""}
                     storageKey={nativePreviewStorageKey}
@@ -942,6 +961,7 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
                       activeTab === "preview" &&
                       !runnerMenuOpen &&
                       !covered &&
+                      !pageCovered &&
                       !startPending &&
                       !runtimeStarting &&
                       !previewFailure
@@ -961,28 +981,55 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
                 ))}
               {/* One frame from "not started" to the page: what it says
                   changes, it stays. */}
-              {(previewNotStarted ||
-                startPending ||
-                runtimeStarting ||
-                projectRunWaiting) && (
-                <div className="absolute inset-0 z-10">
-                  <PreviewIdleFrame>
-                    {previewNotStarted ? (
-                      <PreviewNotStarted key="not-started" />
-                    ) : projectRunWaiting ? (
-                      <StartedAppWaiting key="app" source={source ?? ""} />
-                    ) : (
-                      <div
-                        key="starting"
-                        className="h-full animate-in duration-500 fade-in-0 motion-reduce:animate-none"
-                      >
-                        <PreviewInitializationState
-                          lifecycle={
-                            runtimeStarting ? runtimeLifecycle : undefined
+              {(previewNotStarted || launching || launch) && (
+                <div
+                  className={cn(
+                    "absolute inset-0 z-10 transition-opacity duration-[450ms] ease-out",
+                    // Over a page in the app's own frame, the cover fades
+                    // here; a native page fades its own (revealColor).
+                    launch === "revealing" && !previewBrowser && "opacity-0"
+                  )}
+                >
+                  <PreviewIdleFrame
+                    backdrop={
+                      launching || launch ? (
+                        <PreviewLaunchClouds
+                          filling={
+                            launch === "filling" || launch === "revealing"
                           }
                         />
-                      </div>
-                    )}
+                      ) : null
+                    }
+                  >
+                    <div
+                      className={cn(
+                        "h-full transition-opacity duration-300",
+                        (launch === "filling" || launch === "revealing") &&
+                          "opacity-0"
+                      )}
+                    >
+                      {previewNotStarted ? (
+                        <PreviewNotStarted key="not-started" />
+                      ) : projectRunMode ? (
+                        <StartedAppWaiting key="app" source={source ?? ""} />
+                      ) : (
+                        <div
+                          key="starting"
+                          className="h-full animate-in duration-500 fade-in-0 motion-reduce:animate-none"
+                        >
+                          <PreviewInitializationState
+                            lifecycle={launchLifecycle(
+                              runtimeLifecycle,
+                              runtimeStarting
+                                ? "starting"
+                                : launch && !launching
+                                  ? "opening"
+                                  : undefined
+                            )}
+                          />
+                        </div>
+                      )}
+                    </div>
                   </PreviewIdleFrame>
                   {previewNotStarted && actionsSize.start ? (
                     <PreviewStartArrow />
@@ -1499,6 +1546,46 @@ function useRunnerActionsSize() {
 type RunnerActionsSize = {
   start?: { half: number; right: number; top: number }
   width: number
+}
+
+// How a start goes on from each step, and after how long: the page that
+// takes too long to load is shown anyway.
+type PreviewLaunch = "loading" | "filling" | "revealing"
+
+function nextPreviewLaunch(
+  launch: PreviewLaunch | undefined,
+  launching: boolean
+): { after: number; launch: PreviewLaunch | undefined } | undefined {
+  if (launch === "filling") return { after: 700, launch: "revealing" }
+  if (launch === "revealing") return { after: 450, launch: undefined }
+  if (launch === "loading" && !launching)
+    return { after: 15_000, launch: "filling" }
+  return undefined
+}
+
+// The steps of a start, then, once it is done and its page loads, one
+// more that says so.
+function launchLifecycle(
+  lifecycle: PreviewLifecycleState | undefined,
+  phase: "starting" | "opening" | undefined
+): PreviewLifecycleState | undefined {
+  if (phase === "starting") return lifecycle
+  if (phase !== "opening" || !lifecycle) return undefined
+  return {
+    ...lifecycle,
+    phase: "loading",
+    status: "pending",
+    step: "Opening the page",
+  }
+}
+
+// The neutral the clouds end on, which the native page covers itself in.
+function previewRevealColor() {
+  return (
+    getComputedStyle(document.documentElement)
+      .getPropertyValue("--preview-reveal")
+      .trim() || undefined
+  )
 }
 
 // The service the logs open on: the page's own unless another one runs
