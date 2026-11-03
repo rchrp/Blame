@@ -121,7 +121,8 @@ export function StarInviteCard({
                 size="sm"
               >
                 Star on GitHub
-                <ArrowUpRightIcon data-icon="inline-end" />
+                {/* No data-icon: toasts color those with the text color. */}
+                <ArrowUpRightIcon />
               </Button>
               <Button onClick={onClose} size="sm" variant="outline">
                 Not now
