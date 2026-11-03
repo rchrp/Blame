@@ -11,14 +11,14 @@ import { Button } from "@/components/ui/button"
 
 import { type PreviewBrowserClient } from "@/context/platform"
 import { nativePreviewLoadDecision } from "./native-preview-load"
+import {
+  PreviewAmbilightCloud,
+  previewAmbilightShadow,
+  useNativePreviewAmbilight,
+  type PreviewAmbilight,
+} from "./preview-ambilight"
 
 export type PreviewState = "loading" | "loaded" | "error"
-
-type PreviewAmbilightColor = {
-  blue: number
-  green: number
-  red: number
-}
 
 export type NativePreviewState = {
   error?: string
@@ -55,7 +55,7 @@ export type PreviewCaptureHandler = () => Promise<File | undefined>
 
 type NativePreviewFrameProps = {
   bare?: boolean
-  ambilightColor?: PreviewAmbilightColor
+  ambilight?: PreviewAmbilight
   browserId?: string
   client: PreviewBrowserClient
   error?: string
@@ -164,7 +164,7 @@ export function NativePreviewPanel({
     previewSessionId,
     previewWorktree
   )
-  const ambilightColor = useNativePreviewAmbilightColor(
+  const ambilight = useNativePreviewAmbilight(
     client,
     browserId,
     previewKey,
@@ -186,7 +186,7 @@ export function NativePreviewPanel({
   return (
     <NativePreviewFrame
       bare={bare}
-      ambilightColor={ambilightColor}
+      ambilight={ambilight}
       browserId={browserId}
       client={client}
       error={error}
@@ -214,7 +214,7 @@ function useNativePreviewCapture(
 
 function NativePreviewFrame({
   bare,
-  ambilightColor,
+  ambilight,
   browserId,
   client,
   error,
@@ -222,27 +222,31 @@ function NativePreviewFrame({
   surfaceRef,
 }: NativePreviewFrameProps) {
   return (
+    // Not clipped: the page's colors glow past it, up under the header.
     <div
       className={cn(
-        "flex h-full min-h-0 flex-col overflow-hidden",
-        !bare && "px-4 pt-16 pb-4"
+        "flex h-full min-h-0 flex-col",
+        bare ? "overflow-hidden" : "px-4 pt-16 pb-4"
       )}
     >
-      <div
-        className={cn(
-          "relative min-h-0 flex-1 overflow-hidden bg-background transition-shadow duration-700",
-          !bare && "rounded-lg border"
-        )}
-        style={{ boxShadow: previewAmbilightShadow(ambilightColor) }}
-      >
-        <div ref={surfaceRef} className="h-full w-full" />
-        {previewState === "loading" && <PreviewLoadingState />}
-        {previewState === "error" && (
-          <PreviewErrorState
-            message={error}
-            onReload={() => reloadNativePreview(client, browserId)}
-          />
-        )}
+      <div className="relative min-h-0 flex-1">
+        {!bare && <PreviewAmbilightCloud ambilight={ambilight} />}
+        <div
+          className={cn(
+            "relative h-full overflow-hidden bg-background",
+            !bare && "rounded-lg border"
+          )}
+          style={{ boxShadow: bare ? undefined : previewAmbilightShadow() }}
+        >
+          <div ref={surfaceRef} className="h-full w-full" />
+          {previewState === "loading" && <PreviewLoadingState />}
+          {previewState === "error" && (
+            <PreviewErrorState
+              message={error}
+              onReload={() => reloadNativePreview(client, browserId)}
+            />
+          )}
+        </div>
       </div>
     </div>
   )
@@ -658,51 +662,6 @@ function stableNativePreviewBounds(
   return stableFrames >= nativePreviewStableFrames
 }
 
-function useNativePreviewAmbilightColor(
-  client: PreviewBrowserClient,
-  browserId: string | undefined,
-  previewKey: string,
-  visible: boolean
-) {
-  const [sample, setSample] = React.useState<{
-    color?: PreviewAmbilightColor
-    key: string
-  }>()
-
-  React.useEffect(() => {
-    if (!browserId || !visible) return
-    let cancelled = false
-    const sampleFrame = async () => {
-      const color = await captureNativePreviewAmbilight(client, browserId)
-      if (cancelled) return
-      setSample((current) =>
-        current?.key === previewKey && sameAmbilightColor(current.color, color)
-          ? current
-          : { color, key: previewKey }
-      )
-    }
-    const timeout = window.setTimeout(sampleFrame, 350)
-    return () => {
-      cancelled = true
-      window.clearTimeout(timeout)
-    }
-  }, [browserId, client, previewKey, visible])
-
-  return sample?.key === previewKey ? sample.color : undefined
-}
-
-async function captureNativePreviewAmbilight(
-  client: PreviewBrowserClient,
-  browserId: string
-) {
-  try {
-    const image = await client.capture({ id: browserId, size: "thumbnail" })
-    return image ? await readImageAmbilightColor(image) : undefined
-  } catch {
-    return undefined
-  }
-}
-
 async function captureNativePreview(
   client: PreviewBrowserClient,
   browserId: string,
@@ -772,95 +731,6 @@ export function PreviewErrorState({
   )
 }
 
-function averageAmbilightColor(colors: PreviewAmbilightColor[]) {
-  if (!colors.length) return undefined
-  const total = colors.reduce<{
-    blue: number
-    green: number
-    red: number
-    weight: number
-  }>(
-    (result, color) => {
-      const weight = ambilightColorWeight(color)
-      return {
-        blue: result.blue + color.blue * weight,
-        green: result.green + color.green * weight,
-        red: result.red + color.red * weight,
-        weight: result.weight + weight,
-      }
-    },
-    { blue: 0, green: 0, red: 0, weight: 0 }
-  )
-  if (!total.weight) return undefined
-  return {
-    blue: Math.round(total.blue / total.weight),
-    green: Math.round(total.green / total.weight),
-    red: Math.round(total.red / total.weight),
-  }
-}
-
-function isUsefulAmbilightColor(color: PreviewAmbilightColor) {
-  const luminance =
-    (0.2126 * color.red + 0.7152 * color.green + 0.0722 * color.blue) / 255
-  return (
-    luminance > 0.05 && luminance < 0.96 && ambilightSaturation(color) > 0.04
-  )
-}
-
-function ambilightColorWeight(color: PreviewAmbilightColor) {
-  return 0.4 + ambilightSaturation(color) * 2
-}
-
-function ambilightSaturation(color: PreviewAmbilightColor) {
-  const red = color.red / 255
-  const green = color.green / 255
-  const blue = color.blue / 255
-  const max = Math.max(red, green, blue)
-  const min = Math.min(red, green, blue)
-  if (!max) return 0
-  return (max - min) / max
-}
-
-function clampColorValue(value: number) {
-  if (Number.isNaN(value)) return 0
-  return Math.max(0, Math.min(255, Math.round(value)))
-}
-
-function readImageAmbilightColor(dataUrl: string) {
-  return new Promise<PreviewAmbilightColor | undefined>((resolve) => {
-    const image = new Image()
-    image.onload = () => {
-      const canvas = document.createElement("canvas")
-      canvas.width = image.naturalWidth
-      canvas.height = image.naturalHeight
-      const context = canvas.getContext("2d")
-      if (!context) {
-        resolve(undefined)
-        return
-      }
-      context.drawImage(image, 0, 0)
-      const data = context.getImageData(0, 0, canvas.width, canvas.height).data
-      resolve(averageAmbilightColor(readImageAmbilightPixels(data)))
-    }
-    image.onerror = () => resolve(undefined)
-    image.src = dataUrl
-  })
-}
-
-function readImageAmbilightPixels(data: Uint8ClampedArray) {
-  const colors: PreviewAmbilightColor[] = []
-  for (let index = 0; index < data.length; index += 4) {
-    if (data[index + 3] < 60) continue
-    const color = {
-      blue: clampColorValue(data[index + 2]),
-      green: clampColorValue(data[index + 1]),
-      red: clampColorValue(data[index]),
-    }
-    if (isUsefulAmbilightColor(color)) colors.push(color)
-  }
-  return colors
-}
-
 function dataUrlFile(dataUrl: string, filename: string) {
   const [header, data] = dataUrl.split(",")
   const type = header?.match(/^data:([^;]+)/)?.[1] ?? "image/png"
@@ -903,28 +773,4 @@ function nativePreviewSurfaceBounds(element: HTMLDivElement | null) {
   return element
     ? previewBrowserBounds(element.getBoundingClientRect())
     : { height: 0, width: 0, x: 0, y: 0 }
-}
-
-function sameAmbilightColor(
-  current: PreviewAmbilightColor | undefined,
-  next: PreviewAmbilightColor | undefined
-) {
-  if (!current || !next) return current === next
-  return (
-    current.red === next.red &&
-    current.green === next.green &&
-    current.blue === next.blue
-  )
-}
-
-export function previewAmbilightShadow(
-  color: PreviewAmbilightColor | undefined
-) {
-  if (!color) return "0 24px 80px rgb(0 0 0 / 0.34)"
-  return [
-    `0 32px 120px rgb(${color.red} ${color.green} ${color.blue} / 0.58)`,
-    `0 0 70px rgb(${color.red} ${color.green} ${color.blue} / 0.42)`,
-    `0 0 28px rgb(${color.red} ${color.green} ${color.blue} / 0.5)`,
-    "0 16px 44px rgb(0 0 0 / 0.28)",
-  ].join(", ")
 }

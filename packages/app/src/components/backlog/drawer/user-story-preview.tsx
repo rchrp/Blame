@@ -1,6 +1,7 @@
 import { isHostWindowConfiguration } from "./surfaces/host-window-kind"
 import { useProjectServices } from "./preview-service-logs"
 import { ProjectRunLogPanel, ServiceLogPanel } from "./preview-run-logs"
+import { previewAmbilightShadow } from "./preview-ambilight"
 import {
   PreviewSurface,
   previewSurfaceType,
@@ -93,7 +94,6 @@ import {
   nativePreviewRetainedSessionLimit,
   nativePreviewStatus,
   NativePreviewWarmup,
-  previewAmbilightShadow,
   PreviewErrorState,
   PreviewLoadingState,
   type NativePreviewState,
@@ -810,7 +810,8 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
 
   if (hasPreviewSurface || hasSetupLog) {
     return (
-      <div className="h-full min-h-0 overflow-hidden">
+      // Not clipped: the page's glow reaches up under the drawer's header.
+      <div className="h-full min-h-0">
         <Tabs
           value={activeTab}
           className="preview-toolbar-container relative h-full min-h-0 gap-0"
@@ -855,7 +856,7 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
               forceMount
               value="preview"
               className={cn(
-                "relative h-full min-h-0 overflow-hidden",
+                "relative h-full min-h-0",
                 activeTab !== "preview" && "hidden"
               )}
             >
@@ -1021,7 +1022,7 @@ function PreviewPanel({
     <div className="flex h-full min-h-0 flex-col overflow-hidden px-4 pt-16 pb-4">
       <div
         className="relative min-h-0 flex-1 overflow-hidden rounded-lg border bg-background transition-shadow duration-700"
-        style={{ boxShadow: previewAmbilightShadow(undefined) }}
+        style={{ boxShadow: previewAmbilightShadow() }}
       >
         <iframe
           ref={frameRef}
