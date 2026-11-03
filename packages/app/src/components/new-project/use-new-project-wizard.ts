@@ -81,7 +81,10 @@ export function useNewProjectWizard(input: {
   const platform = usePlatform()
   const projects = useProjects()
   const auth = useCloudAuth()
+  // Talking with the agent uses the agent model; creating and setting up
+  // the project uses the alternative model.
   const modelSelection = useModelSelection({ role: "alternative" })
+  const planningSelection = useModelSelection({ role: "agent" })
   const [mode, setMode] = React.useState<NewProjectMode>()
   const steps = newProjectSteps(mode)
   const [step, setStepState] = React.useState<NewProjectStep>("location")
@@ -91,7 +94,7 @@ export function useNewProjectWizard(input: {
     open: input.open,
     parentPath,
     projectName,
-    selection: modelSelection,
+    selection: planningSelection,
   })
   const [ownedTargetKey, setOwnedTargetKey] = React.useState<string>()
   const nameError = projectNameError(projectName)
@@ -442,6 +445,7 @@ export function useNewProjectWizard(input: {
     chooseMode,
     mode,
     planning,
+    planningSelection,
     configuration: normalizedConfiguration,
     createProject,
     createProjectAvailable,

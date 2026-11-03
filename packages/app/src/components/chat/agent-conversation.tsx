@@ -86,6 +86,9 @@ import {
 } from "./screenshots/agent-screenshot-context"
 import { ResponseImageCarousel } from "./screenshots/response-image-carousel"
 import { WebResearchProvider } from "./web-research/web-research-context"
+import { ProposalCard } from "./proposals/proposal-card"
+import { StoryProposalsProvider } from "./proposals/proposal-context"
+import { isProposalActivity } from "./proposals/proposal-tools"
 import { SourcesSummary } from "./web-research/web-sources"
 import type { ScreenshotOwner } from "@/lib/agent-screenshot-sync"
 
@@ -249,39 +252,45 @@ export function AgentConversationTimeline({
   return (
     <AgentScreenshotOwnerProvider owner={screenshotOwner}>
       <WebResearchProvider runs={runs} loadDetail={loadActivityDetail}>
-        <div
-          className="grid gap-10"
-          aria-busy={runs.some((run) => run.status === "running")}
-        >
-          {runs.map((run, index) => (
-            <AgentConversationTurn
-              key={run.id}
-              checkpointRunCount={checkpointTargets[index]?.checkpointRunCount}
-              loadChangedFileDiffs={loadChangedFileDiffs}
-              comment={runComment(run, commentsById)}
-              highlightFinalResponse={run.id === highlightedFinalResponseRunId}
-              lastVisibleMessage={lastVisibleMessage}
-              onFileLinkClick={onFileLinkClick}
-              onChangedFileClick={onChangedFileClick}
-              onLoadActivityDetail={(activity) =>
-                loadActivityDetail(run, activity)
-              }
-              onUserMessageUndo={onUserMessageUndo}
-              modelSwitch={modelSwitched(runs[index - 1], run)}
-              responseHeader={responseHeaderForRun?.(run) ?? responseHeader}
-              run={run}
-            />
-          ))}
-          {unsentComments.map((comment) => (
-            <RunCommentItem
-              key={comment.id}
-              alwaysVisible
-              comment={comment}
-              onFileLinkClick={onFileLinkClick}
-            />
-          ))}
-          {queued}
-        </div>
+        <StoryProposalsProvider runs={runs}>
+          <div
+            className="grid gap-10"
+            aria-busy={runs.some((run) => run.status === "running")}
+          >
+            {runs.map((run, index) => (
+              <AgentConversationTurn
+                key={run.id}
+                checkpointRunCount={
+                  checkpointTargets[index]?.checkpointRunCount
+                }
+                loadChangedFileDiffs={loadChangedFileDiffs}
+                comment={runComment(run, commentsById)}
+                highlightFinalResponse={
+                  run.id === highlightedFinalResponseRunId
+                }
+                lastVisibleMessage={lastVisibleMessage}
+                onFileLinkClick={onFileLinkClick}
+                onChangedFileClick={onChangedFileClick}
+                onLoadActivityDetail={(activity) =>
+                  loadActivityDetail(run, activity)
+                }
+                onUserMessageUndo={onUserMessageUndo}
+                modelSwitch={modelSwitched(runs[index - 1], run)}
+                responseHeader={responseHeaderForRun?.(run) ?? responseHeader}
+                run={run}
+              />
+            ))}
+            {unsentComments.map((comment) => (
+              <RunCommentItem
+                key={comment.id}
+                alwaysVisible
+                comment={comment}
+                onFileLinkClick={onFileLinkClick}
+              />
+            ))}
+            {queued}
+          </div>
+        </StoryProposalsProvider>
       </WebResearchProvider>
     </AgentScreenshotOwnerProvider>
   )
@@ -764,10 +773,16 @@ function AgentWorkDetails(props: AgentWorkDetailsProps) {
     return props.run.status === "running" ? <AgentThinkingTimelineItem /> : null
   }
   const responseActivityId = terminalResponseActivityId(props, registry)
+  // Proposals (stories, a stack) are cards under the reply, not steps.
+  const proposals = registry.activityIds
+    .map((activityId) => registry.persistedById.get(activityId))
+    .filter((activity) => isProposalActivity(activity))
+    .filter((activity) => activity!.status !== "failed")
   // A specialist's steps and answer live on its card, not in the main list.
   const workActivityIds = registry.activityIds.filter(
     (activityId) =>
       activityId !== responseActivityId &&
+      !proposals.some((activity) => activity!.id === activityId) &&
       !isSpecialistThreadActivityId(activityId) &&
       !isSpecialistResponseActivityId(activityId)
   )
@@ -788,6 +803,14 @@ function AgentWorkDetails(props: AgentWorkDetailsProps) {
           {...props}
         />
       ) : null}
+      {proposals.map((activity) => (
+        <ProposalCard
+          key={activity!.id}
+          activity={activity!}
+          onLoadDetail={props.onLoadDetail}
+          run={props.run}
+        />
+      ))}
     </div>
   )
 }

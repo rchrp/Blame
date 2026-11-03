@@ -23,34 +23,12 @@ export type StartNewProjectGenerationInput = {
   storyId?: string;
 };
 
-export type NewProjectPlanMessage = {
-  role: "user" | "assistant";
-  text: string;
-  configuration?: NewProjectGenerationConfiguration;
-};
-
-export type PlanNewProjectInput = Omit<
-  StartNewProjectGenerationInput,
-  "configuration"
-> & {
-  messages: NewProjectPlanMessage[];
-  notes?: string;
-};
-
-export type PlanNewProjectResult = {
-  sessionId: string;
-  message: string;
-  configuration?: NewProjectGenerationConfiguration;
-  notes?: string;
-};
-
 export type NewProjectGenerationResult = {
   path: string;
   sessionId: string;
 };
 
 export type NewProjectsClient = {
-  plan(input: PlanNewProjectInput): Promise<PlanNewProjectResult>;
   generate(
     input: StartNewProjectGenerationInput,
   ): Promise<NewProjectGenerationResult>;

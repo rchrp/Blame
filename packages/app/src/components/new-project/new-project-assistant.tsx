@@ -1,16 +1,42 @@
-import { replaceFileAttachments } from "@/components/backlog/drawer/user-story-attachment-files"
 import * as React from "react"
-import { ArrowLeftIcon, LightbulbIcon, RotateCcwIcon } from "lucide-react"
+import { ArrowLeftIcon, LightbulbIcon } from "lucide-react"
+
 import type { UserStoryFileAttachment } from "@/components/backlog/data/backlog-data"
-import { pendingFileAttachments } from "@/components/backlog/drawer/user-story-attachment-files"
-import { planAttachmentContext } from "@/components/backlog/planning/plan-mode-data"
-import { MarkdownPreview } from "@/components/backlog/drawer/markdown-preview"
-import { AgentConversationComposer } from "@/components/chat/agent-conversation"
+import {
+  pendingFileAttachments,
+  replaceFileAttachments,
+} from "@/components/backlog/drawer/user-story-attachment-files"
+import {
+  AgentConversationComposer,
+  AgentConversationTimeline,
+} from "@/components/chat/agent-conversation"
+import { agentConversationResponseHeader } from "@/components/chat/agent-conversation-header"
 import { PlanningConversation } from "@/components/chat/planning-conversation"
+import {
+  ProposalHostProvider,
+  type ProposalCardProps,
+} from "@/components/chat/proposals/proposal-context"
+import { projectStackProposalToolName } from "@/components/chat/proposals/proposal-tools"
 import { ModelSelector } from "@/components/model/model-selector"
 import { Button } from "@/components/ui/button"
-import type { NewProjectWizard } from "./use-new-project-wizard"
+
 import { NewProjectSummary } from "./new-project-summary"
+import { stackProposal } from "./use-new-project-planning"
+import type { NewProjectWizard } from "./use-new-project-wizard"
+
+// The stack a turn proposed, shown in the thread as the wizard's summary.
+const stackCards = {
+  [projectStackProposalToolName]: function ProposedStack({
+    activity,
+  }: ProposalCardProps) {
+    const configuration = stackProposal(activity.detail)
+    return configuration ? (
+      <section aria-label="Proposed stack">
+        <NewProjectSummary configuration={configuration} />
+      </section>
+    ) : null
+  },
+}
 
 export function NewProjectAssistant({ wizard }: { wizard: NewProjectWizard }) {
   const plan = wizard.planning
@@ -18,7 +44,16 @@ export function NewProjectAssistant({ wizard }: { wizard: NewProjectWizard }) {
   const [draft, setDraft] = React.useState("")
   const [editorKey, setEditorKey] = React.useState(0)
   const editorRef = React.useRef<HTMLDivElement>(null)
-  const empty = plan.messages.length === 0
+  const { comments, runs } = plan.conversation
+  const empty = runs.length === 0
+  const latestRun = runs.at(-1)
+  const responseHeader = agentConversationResponseHeader({
+    modelId: latestRun?.modelId ?? wizard.planningSelection.currentModel?.id,
+    providerId:
+      latestRun?.providerId ??
+      wizard.planningSelection.currentModel?.provider.id,
+    providers: wizard.planningSelection.allProviders,
+  })
   function focusComposer() {
     requestAnimationFrame(() =>
       editorRef.current
@@ -27,11 +62,10 @@ export function NewProjectAssistant({ wizard }: { wizard: NewProjectWizard }) {
     )
   }
   function submit() {
-    const extra = planAttachmentContext([], files)
     const text =
       draft.trim() ||
-      (extra.context ? "Please take these files into account." : "")
-    if (!plan.send(text, extra)) return
+      (files.length ? "Please take these files into account." : "")
+    if (!plan.send({ text, fileAttachments: files })) return
     setFiles([])
     setDraft("")
     setEditorKey((key) => key + 1)
@@ -117,14 +151,14 @@ export function NewProjectAssistant({ wizard }: { wizard: NewProjectWizard }) {
             submitLabel="Send"
             toolbarEnd={
               <div className="w-44 max-w-full min-w-0 sm:w-[22rem]">
-                <ModelSelector role="alternative" />
+                <ModelSelector role="agent" />
               </div>
             }
           />
         </>
       }
     >
-      {empty && (
+      {empty ? (
         <div className="grid place-items-center gap-3 pb-8 text-center">
           <LightbulbIcon className="size-7 text-muted-foreground" />
           <div className="grid max-w-md gap-2">
@@ -138,68 +172,14 @@ export function NewProjectAssistant({ wizard }: { wizard: NewProjectWizard }) {
             </p>
           </div>
         </div>
-      )}
-      {plan.messages.map((message) =>
-        message.role === "user" ? (
-          <div
-            key={message.id}
-            className="chat-enter-user grid justify-items-end gap-2"
-          >
-            <div className="max-w-[85%] rounded-2xl rounded-br-md bg-muted px-3.5 py-2.5 text-sm break-words whitespace-pre-wrap">
-              {message.text}
-            </div>
-            {message.attachments?.length ? (
-              <p className="max-w-[85%] text-xs break-words text-muted-foreground">
-                {message.attachments.join(", ")}
-              </p>
-            ) : null}
-            {message.error && (
-              <div
-                role="alert"
-                className="grid justify-items-end gap-2 text-sm text-destructive"
-              >
-                <p className="break-words">{message.error}</p>
-                <Button
-                  type="button"
-                  size="xs"
-                  variant="outline"
-                  disabled={plan.pending || Boolean(plan.unavailableReason)}
-                  onClick={() => plan.retry(message.id)}
-                >
-                  <RotateCcwIcon />
-                  Retry
-                </Button>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div key={message.id} className="chat-enter-agent flex gap-3">
-            <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full border bg-muted text-muted-foreground">
-              <LightbulbIcon className="size-3.5" />
-            </span>
-            <div className="grid min-w-0 flex-1 gap-3">
-              <MarkdownPreview
-                className="text-sm"
-                markdown={message.text}
-                placeholder=""
-              />
-              {message.configuration && (
-                <section aria-label="Proposed stack">
-                  <NewProjectSummary configuration={message.configuration} />
-                </section>
-              )}
-            </div>
-          </div>
-        )
-      )}
-      {plan.pending && (
-        <div
-          role="status"
-          className="flex items-center gap-3 text-sm text-muted-foreground"
-        >
-          <span className="agent-thinking-mark" aria-hidden="true" />
-          Choosing the right stack for your project…
-        </div>
+      ) : (
+        <ProposalHostProvider cards={stackCards}>
+          <AgentConversationTimeline
+            comments={comments}
+            responseHeader={responseHeader}
+            runs={runs}
+          />
+        </ProposalHostProvider>
       )}
     </PlanningConversation>
   )

@@ -14,6 +14,7 @@ import {
 } from "@cline/sdk";
 
 import { loadPrompt } from "./prompt-loader.js";
+import { newProjectStackCatalogPrompt } from "./new-project-planning.js";
 
 import {
   blameSpecialistRoutingSystemPrompt,
@@ -353,15 +354,37 @@ export function newAttachmentDirectory(cwd: string) {
   return join(cwd, attachmentDirectoryName, randomUUID());
 }
 
+const purposePrompts = {
+  development: "code-agent-system",
+  plan: "plan-agent-system",
+  "new-project": "new-project-agent-system",
+} as const;
+
 export async function buildDevelopmentSystemPrompt(
   input: StartDevelopmentSessionInput,
 ) {
-  const metadata = await buildWorkspaceMetadata(input.cwd);
+  const purpose = input.purpose ?? "development";
+  const prompt = renderPrompt(loadPrompt(purposePrompts[purpose]), {
+    ...(await developmentPromptValues(input)),
+  });
+  return purpose === "new-project"
+    ? `${prompt}\n\n${newProjectStackCatalogPrompt(input.title)}`
+    : prompt;
+}
+
+async function developmentPromptValues(input: StartDevelopmentSessionInput) {
+  const metadata =
+    input.purpose === "new-project"
+      ? ""
+      : await buildWorkspaceMetadata(input.cwd);
   const practices = input.codePractices ?? [];
-  return renderPrompt(loadPrompt("code-agent-system"), {
+  return {
     BLAME_ENVIRONMENT: developmentEnvironmentPrompt(input),
     BLAME_PRACTICES: developmentPracticePrompts(practices),
     BLAME_PREVIEW: developmentPreviewPrompt(input),
+    BLAME_PROPOSALS: input.projectId
+      ? "When follow-up work deserves its own user story, or the person asks for stories, suggest them with `propose_user_stories` instead of doing that work now."
+      : "",
     BLAME_SPECIALISTS: developmentSpecialistConsultEnabled(input)
       ? blameSpecialistRoutingSystemPrompt()
       : "",
@@ -372,7 +395,7 @@ export async function buildDevelopmentSystemPrompt(
     WORKSPACE_METADATA: metadata,
     WORKSPACE_NAME: basename(input.workspaceRoot),
     WORKSPACE_ROOT: input.workspaceRoot,
-  });
+  };
 }
 
 function developmentEnvironmentPrompt(input: StartDevelopmentSessionInput) {

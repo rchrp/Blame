@@ -1477,7 +1477,7 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
         onOpenStatusPip={platform.backlogStatusPip ? openStatusPip : undefined}
         onCreateUserStory={openCreateDrawer}
         planAction={
-          platform.agent?.planning ? (
+          platform.agent ? (
             <PlanModeLauncher
               key={backlog.projectId}
               disabled={!backlog.projectPath}

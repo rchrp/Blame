@@ -18,6 +18,7 @@ import {
   isPreviewDevtoolsTool,
 } from "./describe-preview-devtools.ts"
 import {
+  describeProposal,
   describeStoryRead,
   describeStorySearch,
 } from "./describe-story-history.ts"
@@ -61,6 +62,8 @@ const describers: Record<string, (source: ToolCallSource) => ToolCallView> = {
   attempt_completion: describeFinish,
   search_user_stories: describeStorySearch,
   read_user_story: describeStoryRead,
+  propose_user_stories: describeProposal,
+  propose_project_stack: describeProposal,
   consult_specialist: describeSpecialist,
   spawn_agent: describeSpecialist,
   get_preview_devtools: describePreview,

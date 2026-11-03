@@ -36,3 +36,23 @@ export function describeStoryRead(source: ToolCallSource): ToolCallView {
     failed: false,
   }
 }
+
+// Shown while the call streams; once done, it becomes a card under the reply.
+export function describeProposal(source: ToolCallSource): ToolCallView {
+  const stories = list(record(source.input).stories).length
+  const stack = source.toolName === "propose_project_stack"
+  return {
+    family: "other",
+    verb: source.running ? "Proposing" : "Proposed",
+    target: {
+      text: stack
+        ? "a stack"
+        : stories === 1
+          ? "1 story"
+          : `${stories || "user"} stories`,
+    },
+    chips: [],
+    bodies: [],
+    failed: false,
+  }
+}

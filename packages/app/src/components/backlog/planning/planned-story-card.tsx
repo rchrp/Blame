@@ -32,8 +32,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 
-import type { PlanStory } from "./plan-mode-data"
-import type { PlanStoryEdit } from "./use-plan-mode"
+import type { PlanStory, PlanStoryEdit } from "./story-proposal-data"
 
 const priorities = ["High", "Medium", "Low"] as const
 const priorityTone: Record<PlanStory["priority"], string> = {

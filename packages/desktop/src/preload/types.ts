@@ -18,8 +18,6 @@ import type {
   GenerateCommitMessageResult,
   GenerateTitleInput,
   GenerateTitleResult,
-  PlanUserStoriesInput,
-  PlanUserStoriesResult,
   InitializeProjectInput,
   InitializeProjectResult,
   ProjectInitializationDiagnostics,
@@ -652,9 +650,6 @@ export type BlameDesktopApi = {
         input: OptimizeUserStoryPromptInput,
       ): Promise<OptimizeUserStoryPromptResult>;
       generateTitle(input: GenerateTitleInput): Promise<GenerateTitleResult>;
-    };
-    planning: {
-      reply(input: PlanUserStoriesInput): Promise<PlanUserStoriesResult>;
     };
     approveAndMerge(
       input: ApproveAndMergeInput,

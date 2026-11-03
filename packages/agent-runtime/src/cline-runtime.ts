@@ -254,9 +254,11 @@ import { developmentSpecialistConsultEnabled } from "./specialist-agents.js";
 import { taskComplexityBucket } from "./telemetry-cohorts.js";
 import { generateTitle } from "./title-generation.js";
 import { sessionStoryHistoryTools } from "./story-history-tools.js";
-import { runNewProjectPlanning } from "./new-project-planning.js";
-import type { PlanningHost, RuntimeCredentialInput } from "./planning-host.js";
-import { runStoryPlanning } from "./story-planning.js";
+import type { RuntimeCredentialInput } from "./runtime-credential.js";
+import {
+  conversationSessionOptions,
+  conversationWorkspace,
+} from "./conversation-purpose.js";
 import type {
   AgentApprovalRequest,
   AgentBackendConfig,
@@ -289,8 +291,6 @@ import type {
   NewProjectGenerationResult,
   OAuthCredentials,
   OptimizeUserStoryPromptInput,
-  PlanUserStoriesInput,
-  PlanNewProjectInput,
   OptimizeUserStoryPromptResult,
   RepairProjectInitializationInput,
   RepairProjectInitializationResult,
@@ -583,8 +583,6 @@ export class BlameAgentRuntime {
   };
 
   newProjects = {
-    plan: (input: PlanNewProjectInput) =>
-      runNewProjectPlanning(input, this.planningHost()),
     generate: (input: StartNewProjectGenerationInput) =>
       this.generateNewProject(input),
   };
@@ -594,22 +592,6 @@ export class BlameAgentRuntime {
       this.optimizeUserStoryPrompt(input),
     generateTitle: (input: GenerateTitleInput) => this.generateTitle(input),
   };
-
-  planning = {
-    reply: (input: PlanUserStoriesInput) =>
-      runStoryPlanning(input, this.planningHost()),
-  };
-
-  private planningHost(): PlanningHost {
-    return {
-      core: (backend) => this.core(backend),
-      credential: (input) => this.runtimeCredential(input),
-      git: this.options.git,
-      subscribe: (id, backend) => this.subscribeSession(id, backend),
-      telemetry: this.agentTelemetry,
-      unsubscribe: (id) => this.unsubscribeSession(id),
-    };
-  }
 
   approveAndMerge = (input: ApproveAndMergeInput) =>
     this.approveAndMergeStory(input);
@@ -962,7 +944,8 @@ export class BlameAgentRuntime {
         ...(standardTools ?? []),
         ...(specialistTool ? [specialistTool] : []),
         ...sessionStoryHistoryTools(input, this.options.git),
-      ];
+        ...(input.conversationTools ?? []),
+      ].filter((tool) => input.toolFilter?.(tool.name) ?? true);
       const systemPrompt =
         (input.systemPrompt ?? loadPrompt("default-agent-system")) + webResearchGuidance +
         (input.nativeCompletion && !input.clineDefaultTools
@@ -3865,7 +3848,9 @@ export class BlameAgentRuntime {
     );
   }
 
-  private async startDevelopmentSession(input: StartDevelopmentSessionInput) {
+  private async startDevelopmentSession(request: StartDevelopmentSessionInput) {
+    const id = request.resumeSessionId?.trim() || request.sessionId?.trim() || createBlameSessionId();
+    const input = await conversationWorkspace({ ...request, sessionId: id }, id);
     if (this.options.developmentHarness === "cline") {
       return this.startClineDevelopmentSession(input);
     }
@@ -3900,14 +3885,15 @@ export class BlameAgentRuntime {
       input.maxIterations ?? developmentSessionMaxIterations;
     const compaction = blameCompactionConfig(this.productionConfig);
     const enableSpecialistConsult = developmentSpecialistConsultEnabled(input);
+    const conversation = conversationSessionOptions(input);
     const session = await this.startSession({
+      ...conversation,
       apiConnection: input.apiConnection,
       providerId: input.providerId,
       modelId: input.modelId,
       credentialLabel: input.credentialLabel,
       reasoningEffort: input.reasoningEffort,
       maxInputTokens: input.maxInputTokens,
-      checkpointEnabled: input.checkpointEnabled,
       configExtensions: input.configExtensions,
       disableMcpSettingsTools: input.disableMcpSettingsTools,
       autoApproveWriteTools: true,

@@ -319,9 +319,6 @@ function registerAnalysisWorkflowIpcHandlers(
 function registerDeliveryWorkflowIpcHandlers(
   beforeDelivery?: (worktree: string) => Promise<void>,
 ) {
-  ipcMain.handle("agent:new-projects:plan", (_event, input) =>
-    agentRuntime().run("newProjects.plan", input),
-  );
   ipcMain.handle("agent:new-projects:generate", (_event, input) =>
     agentRuntime().run("newProjects.generate", input),
   );
@@ -335,11 +332,6 @@ function registerDeliveryWorkflowIpcHandlers(
   ipcMain.handle("agent:prompt-optimizer:generate-title", (_event, input) =>
     agentWorkspaceInput(input).then((resolved) =>
       agentRuntime().run("promptOptimizer.generateTitle", resolved),
-    ),
-  );
-  ipcMain.handle("agent:planning:reply", (_event, input) =>
-    agentWorkspaceInput(input).then((resolved) =>
-      agentRuntime().run("planning.reply", resolved),
     ),
   );
   ipcMain.handle("agent:approve-and-merge", async (_event, input) => {

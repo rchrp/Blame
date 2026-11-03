@@ -1,15 +1,4 @@
-import { randomUUID } from "node:crypto";
-import type { ClineCore, CoreSessionConfig } from "@cline/sdk";
-import {
-  legacyDirectWorkspaceTools,
-  readTools,
-  writeTools,
-} from "./cline-tool-policy.js";
-import { appendProductionConfig, assertWorkspacePath } from "./production.js";
-import { loadPrompt } from "./prompt-loader.js";
-import { reasoningConfig } from "./reasoning.js";
-import type { PlanningHost } from "./planning-host.js";
-import type { PlanNewProjectInput, PlanNewProjectResult } from "./types.js";
+import type { AgentTool } from "./cline-initialization.js";
 import {
   advancedOptionLabels,
   backendOptions,
@@ -24,123 +13,43 @@ import {
   uiLibraryOptions,
 } from "./new-project-options.js";
 
-type Reply = Omit<PlanNewProjectResult, "sessionId">;
-type Credential = {
-  apiKey: string;
-  baseUrl: string | null;
-  authMethod?: string;
-};
-export const newProjectPlanningSubmitToolName = "submit_project_stack";
+// The new-project assistant is a regular agent conversation. It proposes a
+// stack from Blame's catalog with this tool; the app shows the proposal as
+// the same summary as the manual wizard.
 
-export async function runNewProjectPlanning(
-  input: PlanNewProjectInput,
-  host: PlanningHost,
-) {
-  assertWorkspacePath(input.cwd, input.workspaceRoot, "cwd");
-  const credential = await host.credential(input);
-  const core = await host.core(input.backend);
-  const sessionId = input.sessionId || `project_plan_${randomUUID()}`;
-  await host.subscribe(sessionId, input.backend);
-  try {
-    return await host.telemetry.runOperation(
-      input,
-      "new_project_planning",
-      () => planNewProject(input, core, credential, sessionId),
-      credential.authMethod,
-    );
-  } finally {
-    await host.unsubscribe(sessionId).catch(() => undefined);
-  }
-}
+export const projectStackProposalToolName = "propose_project_stack";
 
-export async function planNewProject(
-  input: PlanNewProjectInput,
-  core: ClineCore,
-  credential: Credential,
-  sessionId: string,
-): Promise<PlanNewProjectResult> {
-  if (
-    !input.messages.length ||
-    input.messages.at(-1)?.role !== "user" ||
-    !input.messages.at(-1)?.text.trim()
-  )
-    throw new Error(
-      "Describe your project before asking the agent to choose a stack.",
-    );
-  let submitted: Reply | undefined;
-  const submit: NonNullable<CoreSessionConfig["extraTools"]>[number] = {
-    name: newProjectPlanningSubmitToolName,
+export function projectStackProposalTool(): AgentTool {
+  return {
+    name: projectStackProposalToolName,
     description:
-      "Reply to the person. Ask focused questions with configuration null, or propose a complete compatible stack. Call exactly once, last.",
-    inputSchema: projectPlanReplySchema(),
-    lifecycle: { completesRun: true },
+      "Propose the complete stack for the new project, using only the catalog in your instructions. The person reviews it in the wizard summary before the project is created. Call it again with the full configuration to revise it. An invalid choice returns an error that names it.",
+    inputSchema: projectStackSchema(),
     execute(value: unknown) {
-      submitted = projectPlanReply(value);
-      return { accepted: true, ready: Boolean(submitted.configuration) };
+      const configuration = parseNewProjectConfiguration(
+        recordValue(value).configuration,
+      );
+      return { accepted: true, configuration };
     },
   };
-  const session = (await core.start({
-    prompt: newProjectPlanningPrompt(input),
-    config: appendProductionConfig({
-      sessionId,
-      providerId: input.providerId,
-      modelId: input.modelId,
-      apiKey: credential.apiKey,
-      baseUrl: credential.baseUrl ?? undefined,
-      ...reasoningConfig(input.reasoningEffort),
-      systemPrompt: loadPrompt("new-project-planner-system"),
-      cwd: input.cwd,
-      workspaceRoot: input.workspaceRoot,
-      enableTools: true,
-      enableSpawnAgent: false,
-      enableAgentTeams: false,
-      extraTools: [submit],
-      maxIterations: 8,
-    }),
-    interactive: false,
-    source: "blame-new-project-planning",
-    toolPolicies: newProjectPlanningToolPolicies(),
-  })) as { sessionId?: string; result?: { text?: unknown } };
-  const fallback =
-    typeof session.result?.text === "string" ? session.result.text.trim() : "";
-  if (!submitted && !fallback)
-    throw new Error(
-      "The project planning agent did not reply. Please try again.",
-    );
-  return {
-    sessionId: session.sessionId ?? sessionId,
-    ...(submitted ?? { message: fallback }),
-  };
 }
 
-export function newProjectPlanningToolPolicies() {
-  return Object.fromEntries([
-    ...[
-      ...readTools,
-      ...writeTools,
-      ...legacyDirectWorkspaceTools,
-      "ask_question",
-      "skills",
-    ].map((name) => [name, { enabled: false, autoApprove: false }]),
-    [newProjectPlanningSubmitToolName, { enabled: true, autoApprove: true }],
-  ]);
+/** The catalog the assistant must choose from, for its system prompt. */
+export function newProjectStackCatalogPrompt(projectName?: string) {
+  return [
+    projectName?.trim()
+      ? `<project_name>${projectName.trim()}</project_name>`
+      : "",
+    `<available_stack>\n${JSON.stringify(configurationCatalog())}\n</available_stack>`,
+  ]
+    .filter(Boolean)
+    .join("\n\n");
 }
 
-export function projectPlanReply(value: unknown): Reply {
-  if (!value || typeof value !== "object")
-    throw new Error("Invalid project planning reply.");
-  const reply = value as Record<string, unknown>;
-  if (typeof reply.message !== "string" || !reply.message.trim())
-    throw new Error("The project planning agent did not explain its proposal.");
-  return {
-    message: reply.message.trim(),
-    ...(reply.configuration == null
-      ? {}
-      : { configuration: parseNewProjectConfiguration(reply.configuration) }),
-    ...(typeof reply.notes === "string" && reply.notes.trim()
-      ? { notes: reply.notes.trim().slice(0, 3000) }
-      : {}),
-  };
+function recordValue(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
 }
 
 const values = (options: { value: string; disabled?: boolean }[]) =>
@@ -198,26 +107,7 @@ function configurationCatalog() {
   };
 }
 
-export function newProjectPlanningPrompt(input: PlanNewProjectInput) {
-  // Retain the original brief and the latest turns. Notes carry resolved requirements.
-  const messages = input.messages;
-  const recent: typeof messages = [];
-  let length = 0;
-  for (const message of messages.slice(1).reverse()) {
-    const size = JSON.stringify(message).length;
-    if (length + size > 24000 && recent.length) break;
-    recent.unshift(message);
-    length += size;
-  }
-  return JSON.stringify({
-    projectName: input.projectName,
-    availableStack: configurationCatalog(),
-    notes: input.notes?.slice(0, 3000),
-    messages: [messages[0], ...recent],
-  });
-}
-
-function projectPlanReplySchema() {
+function projectStackSchema() {
   const defaults = newProjectConfigurationChoices(
     defaultNewProjectConfiguration,
   );
@@ -251,38 +141,23 @@ function projectPlanReplySchema() {
   return {
     type: "object",
     properties: {
-      message: {
-        type: "string",
-        description:
-          "Questions or a concise explanation of the proposed stack, in the person's language.",
-      },
-      notes: {
-        type: "string",
-        description:
-          "Compact project brief and resolved requirements for the next turn.",
-      },
       configuration: {
-        anyOf: [
-          { type: "null" },
-          {
-            type: "object",
-            properties: {
-              ...properties,
-              advancedOptions: {
-                type: "array",
-                items: {
-                  type: "string",
-                  enum: Object.keys(advancedOptionLabels),
-                },
-              },
+        type: "object",
+        properties: {
+          ...properties,
+          advancedOptions: {
+            type: "array",
+            items: {
+              type: "string",
+              enum: Object.keys(advancedOptionLabels),
             },
-            required: [...Object.keys(properties), "advancedOptions"],
-            additionalProperties: false,
           },
-        ],
+        },
+        required: [...Object.keys(properties), "advancedOptions"],
+        additionalProperties: false,
       },
     },
-    required: ["message", "configuration", "notes"],
+    required: ["configuration"],
     additionalProperties: false,
   };
 }

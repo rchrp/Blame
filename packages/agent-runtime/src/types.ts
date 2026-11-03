@@ -274,7 +274,12 @@ export type FileAttachment = {
   type: string;
 };
 
+// What an agent conversation is for: coding (chats and user stories),
+// planning user stories, or choosing the stack of a new project.
+export type AgentConversationPurpose = "development" | "plan" | "new-project";
+
 export type StartDevelopmentSessionInput = {
+  purpose?: AgentConversationPurpose;
   requiredChecks?: RequiredProjectCheck[];
   isolatedEnvironment?: boolean;
   apiConnection: ApiConnection;
@@ -699,9 +704,6 @@ export type RepairProjectInitializationResult = {
 export type {
   NewProjectGenerationConfiguration,
   StartNewProjectGenerationInput,
-  NewProjectPlanMessage,
-  PlanNewProjectInput,
-  PlanNewProjectResult,
   NewProjectGenerationResult,
   NewProjectsClient,
 } from "./new-project-types.js";
@@ -728,7 +730,7 @@ export type OptimizeUserStoryPromptResult = {
 
 export type StoryPlanPriority = "Low" | "Medium" | "High";
 
-/** A user story the planning agent proposes; nothing is created until the person adds it. */
+/** A user story an agent proposes; nothing is created until the person adds it. */
 export type PlannedUserStory = {
   // Stable within one reply (P1, P2…); dependencies point at these keys or
   // at existing stories (US-012).
@@ -740,38 +742,6 @@ export type PlannedUserStory = {
   // Set by the app once the person added it to the backlog.
   addedAs?: string;
   dismissed?: boolean;
-};
-
-export type StoryPlanMessage = {
-  role: "user" | "assistant";
-  text: string;
-  stories?: PlannedUserStory[];
-};
-
-export type PlanUserStoriesInput = {
-  apiConnection: ApiConnection;
-  providerId: string;
-  modelId: string;
-  credentialLabel?: string;
-  reasoningEffort?: ReasoningSelection;
-  backend?: AgentBackendConfig;
-  cwd: string;
-  workspaceRoot: string;
-  projectId: string;
-  // Chosen by the app so it can follow the agent's steps while it plans.
-  sessionId?: string;
-  executionId?: string;
-  // The conversation so far, ending with the person's latest message.
-  messages: StoryPlanMessage[];
-  // The planner's private notes from its previous reply.
-  notes?: string;
-};
-
-export type PlanUserStoriesResult = {
-  sessionId: string;
-  message: string;
-  stories: PlannedUserStory[];
-  notes?: string;
 };
 
 export type AgentSessionRecord = {

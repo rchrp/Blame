@@ -4,7 +4,7 @@ import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
-import type { PlanStory } from "./plan-mode-data"
+import type { PlanStory } from "./story-proposal-data"
 import {
   PlannedStoryCard,
   PlannedStoryDetail,

@@ -612,7 +612,6 @@ const api: BlameDesktopApi = {
       run: (input) => ipcRenderer.invoke("agent:code-practices:run", input),
     },
     newProjects: {
-      plan: (input) => ipcRenderer.invoke("agent:new-projects:plan", input),
       generate: (input) =>
         ipcRenderer.invoke("agent:new-projects:generate", input),
     },
@@ -621,9 +620,6 @@ const api: BlameDesktopApi = {
         ipcRenderer.invoke("agent:prompt-optimizer:optimize-user-story", input),
       generateTitle: (input) =>
         ipcRenderer.invoke("agent:prompt-optimizer:generate-title", input),
-    },
-    planning: {
-      reply: (input) => ipcRenderer.invoke("agent:planning:reply", input),
     },
     approveAndMerge: (input) =>
       ipcRenderer.invoke("agent:approve-and-merge", input),

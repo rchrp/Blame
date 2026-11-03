@@ -82,6 +82,9 @@ export type RuntimeStartSessionInput = StartSessionInput & {
   initialCompactionState?: import("@cline/sdk").SessionCompactionState;
   clineDefaultTools?: boolean;
   compaction?: CoreCompactionConfig;
+  // Tools a conversation adds, and the ones it keeps (see conversation-purpose).
+  conversationTools?: AgentTool[];
+  toolFilter?: (name: string) => boolean;
   enableAgentTeams?: boolean;
   enableBuiltInSkills?: boolean;
   enableSpecialistConsult?: boolean;
