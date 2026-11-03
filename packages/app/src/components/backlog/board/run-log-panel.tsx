@@ -104,7 +104,7 @@ function RunLogTabs({
           <TabsPrimitive.Trigger
             key={item.id}
             className={cn(
-              "run-log-tab relative flex h-12 max-w-60 shrink-0 items-center gap-2 rounded-t-lg border border-b-0 border-transparent px-4 pb-2.5 text-sm font-medium whitespace-nowrap text-muted-foreground outline-none hover:bg-foreground/5 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset",
+              "run-log-tab relative flex h-12 max-w-60 min-w-32 shrink-0 items-center justify-center gap-2 rounded-t-lg border border-b-0 border-transparent px-4 pb-2.5 text-sm font-medium whitespace-nowrap text-muted-foreground outline-none hover:bg-foreground/5 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset",
               "data-[state=active]:border-border data-[state=active]:bg-zinc-950 data-[state=active]:text-zinc-100 data-[state=active]:hover:bg-zinc-950",
               // The selected tab stays dark in both themes: a gray that shows on it.
               "data-[state=active]:[&_[data-status=stopped]]:bg-zinc-500"
