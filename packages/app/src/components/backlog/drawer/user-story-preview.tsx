@@ -474,9 +474,8 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
     projectRunMode || Boolean(setupLogWorktree && !setupInitializing)
   const [selectedLogServiceChoice, setSelectedLogService] = React.useState("")
   const [runnerMenuOpen, setRunnerMenuOpen] = React.useState(false)
-  const [tabChoice, setTabChoice] = React.useState<PreviewView>(
-    source ? "preview" : "setup-log"
-  )
+  // The page first, even before its app runs.
+  const [tabChoice, setTabChoice] = React.useState<PreviewView>("preview")
   const tab = view ?? tabChoice
   const setTab = useLatestCallback((next: PreviewView) => {
     setTabChoice(next)
