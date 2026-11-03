@@ -102,16 +102,33 @@ export const UserStoryDrawer = React.memo(function UserStoryDrawer({
   setupInitializing,
   titleGenerating,
 }: UserStoryDrawerProps) {
-  const status = userStory?.status ?? "backlog"
+  // The page lets go of its story as soon as the drawer closes: while it
+  // slides away, the drawer keeps showing what it showed open.
+  const live: DrawerView = {
+    diffStats,
+    focusComment,
+    initialDevelopmentTab,
+    initialDraft,
+    initialTab,
+    mode,
+    setupInitializing,
+    titleGenerating,
+    userStory,
+  }
+  const [lastOpen, setLastOpen] = React.useState(live)
+  if (open && !sameDrawerView(lastOpen, live)) setLastOpen(live)
+  const view = open ? live : lastOpen
+
+  const status = view.userStory?.status ?? "backlog"
   // The status is left out: a story that moves on stays where the person
   // is (same tab, scroll and drafts), it does not reopen.
   const drawerKey = [
-    mode,
-    userStory?.id ?? "draft",
-    initialDraftKey(initialDraft),
-    initialTab,
-    initialDevelopmentTab,
-    focusComment ? "comment" : "default",
+    view.mode,
+    view.userStory?.id ?? "draft",
+    initialDraftKey(view.initialDraft),
+    view.initialTab,
+    view.initialDevelopmentTab,
+    view.focusComment ? "comment" : "default",
   ].join(":")
 
   return (
@@ -124,12 +141,12 @@ export const UserStoryDrawer = React.memo(function UserStoryDrawer({
     >
       <UserStoryDrawerPanel
         key={drawerKey}
-        diffStats={diffStats}
-        focusComment={focusComment}
-        initialDevelopmentTab={initialDevelopmentTab}
-        initialDraft={initialDraft}
-        initialTab={initialTab}
-        mode={mode}
+        diffStats={view.diffStats}
+        focusComment={view.focusComment}
+        initialDevelopmentTab={view.initialDevelopmentTab}
+        initialDraft={view.initialDraft}
+        initialTab={view.initialTab}
+        mode={view.mode}
         open={open}
         onCancel={() => onOpenChange(false)}
         onApproveAndMerge={onApproveAndMerge}
@@ -144,14 +161,34 @@ export const UserStoryDrawer = React.memo(function UserStoryDrawer({
         onStopAgent={onStopAgent}
         onUndoUserStoryComment={onUndoUserStoryComment}
         onUpdateUserStory={onUpdateUserStory}
-        setupInitializing={setupInitializing}
+        setupInitializing={view.setupInitializing}
         status={status}
-        titleGenerating={titleGenerating}
-        userStory={userStory}
+        titleGenerating={view.titleGenerating}
+        userStory={view.userStory}
       />
     </Drawer>
   )
 })
+
+type DrawerView = Pick<
+  UserStoryDrawerProps,
+  | "diffStats"
+  | "focusComment"
+  | "initialDraft"
+  | "mode"
+  | "setupInitializing"
+  | "titleGenerating"
+  | "userStory"
+> & {
+  initialDevelopmentTab: UserStoryDevelopmentTab
+  initialTab: UserStoryDrawerTab
+}
+
+function sameDrawerView(left: DrawerView, right: DrawerView) {
+  return (Object.keys(right) as (keyof DrawerView)[]).every(
+    (key) => left[key] === right[key]
+  )
+}
 
 function initialDraftKey(
   initialDraft: Partial<Omit<UserStoryDraft, "projectId">> | undefined
