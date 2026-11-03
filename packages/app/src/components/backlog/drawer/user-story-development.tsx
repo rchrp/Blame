@@ -101,14 +101,15 @@ export function DevelopmentContent({
         }
       >
         {/* One element whatever the view, so its knob slides between them:
-            each view's toolbar leaves it room. */}
+            each view's toolbar leaves it room. As tall as the switch group
+            (38px), like the search field beside it. */}
         {tabs.length > 1 || hasChanges ? (
           <div
             ref={actionsRef}
-            className="absolute top-4 right-4 z-30 flex h-10 items-center gap-2"
+            className="absolute top-4 right-4 z-30 flex h-[2.375rem] items-center gap-2"
           >
             {hasChanges && diffStats ? (
-              <span className="flex h-8 items-center rounded-full border bg-background/95 px-3 shadow-sm backdrop-blur">
+              <span className="flex h-full items-center rounded-full border bg-background/95 px-3 shadow-sm backdrop-blur">
                 <DiffStats compact diff={diffStats} />
               </span>
             ) : null}

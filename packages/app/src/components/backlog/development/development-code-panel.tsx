@@ -245,7 +245,7 @@ function CodeSearchField({
   onChange: (value: string) => void
 }) {
   return (
-    <label className="flex h-10 w-72 shrink-0 cursor-text items-center gap-2 rounded-full border bg-background/95 pr-1.5 pl-3.5 shadow-sm backdrop-blur focus-within:ring-2 focus-within:ring-ring/40">
+    <label className="flex h-[2.375rem] w-72 shrink-0 cursor-text items-center gap-2 rounded-full border bg-background/95 pr-1.5 pl-3.5 shadow-sm backdrop-blur focus-within:ring-2 focus-within:ring-ring/40">
       <SearchIcon className="size-4 shrink-0 text-muted-foreground" />
       <input
         aria-label={placeholder}
