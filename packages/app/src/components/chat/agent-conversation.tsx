@@ -253,8 +253,10 @@ export function AgentConversationTimeline({
     <AgentScreenshotOwnerProvider owner={screenshotOwner}>
       <WebResearchProvider runs={runs} loadDetail={loadActivityDetail}>
         <StoryProposalsProvider runs={runs}>
+          {/* Room for the avatars beside the messages (-left-10 and
+              -right-10): whatever holds the thread, they stay inside it. */}
           <div
-            className="grid gap-10"
+            className="grid gap-10 px-10"
             aria-busy={runs.some((run) => run.status === "running")}
           >
             {runs.map((run, index) => (

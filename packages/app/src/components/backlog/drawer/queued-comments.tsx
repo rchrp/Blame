@@ -25,7 +25,8 @@ export function QueuedComments({
   // Bottom room so the last message's buttons clear the composer; only
   // while something is queued, so the usual layout stays the same.
   return (
-    <div className="grid gap-10 pb-8">
+    // The thread's room for avatars, so queued messages line up with it.
+    <div className="grid gap-10 px-10 pb-8">
       <AnimatePresence initial={false}>
         {queued.map((comment) => (
           <motion.div
