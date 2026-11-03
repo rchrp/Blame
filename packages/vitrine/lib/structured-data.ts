@@ -18,7 +18,7 @@ const organizationId = absoluteSiteUrl("/#organization");
 const websiteId = absoluteSiteUrl("/#website");
 const applicationId = absoluteSiteUrl("/#software-application");
 const sourceCodeId = absoluteSiteUrl("/#source-code");
-const pricingUrl = absoluteSiteUrl("/pricing");
+const pricingUrl = absoluteSiteUrl("/cloud");
 const licenseUrl = "https://www.gnu.org/licenses/agpl-3.0.html";
 
 const organizationStructuredData = {
@@ -69,7 +69,7 @@ function premiumOffer(cycle: PricingBillingCycle) {
   const option = pricingBillingOptions[cycle];
   return {
     "@type": "Offer",
-    name: `${option.label} Blame Premium`,
+    name: `${option.label} Blame Cloud`,
     description: `${premiumOfferDescription}, billed ${cycle === "monthly" ? "monthly" : "once a year"}.`,
     url: pricingUrl,
     price: Number(option.price),
@@ -201,9 +201,9 @@ export const pricingStructuredData = {
     ...sharedGraph,
     {
       ...webPage(
-        "/pricing",
-        "Blame pricing",
-        "Blame is free and open source. Blame Premium adds hosted services.",
+        "/cloud",
+        "Blame Cloud",
+        "Blame is free and open source. Blame Cloud adds hosted services.",
       ),
       // The page ends on its questions (content/faq.ts).
       "@type": ["WebPage", "FAQPage"],
@@ -220,7 +220,7 @@ export const pricingStructuredData = {
         },
       })),
     },
-    breadcrumb("/pricing", "Pricing"),
+    breadcrumb("/cloud", "Blame Cloud"),
   ],
 };
 

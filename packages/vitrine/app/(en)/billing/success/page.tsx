@@ -4,7 +4,7 @@ import { BillingReturnPage } from "@/components/billing-return-page";
 
 export const metadata: Metadata = {
   title: "Payment confirmed · Blame",
-  description: "Return to Blame and activate Premium cloud services.",
+  description: "Return to Blame and activate Blame Cloud.",
   robots: { index: false, follow: false },
 };
 

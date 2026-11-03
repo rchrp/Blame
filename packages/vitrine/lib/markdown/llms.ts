@@ -29,14 +29,14 @@ export function llmsTxt() {
 
 > ${productSummary}
 
-Blame is free and open source (AGPL-3.0-only). Blame Premium adds hosted services (managed Cloud Previews, cloud voice transcription, hosted file uploads) for $${monthly.price}/month or $${yearly.price}/year. Agents run on your machine with your own AI provider: 50 providers are supported, plus any OpenAI-compatible API.
+Blame is free and open source (AGPL-3.0-only). Blame Cloud adds hosted services (managed Cloud Previews, cloud voice transcription, hosted file uploads) for $${monthly.price}/month or $${yearly.price}/year. Agents run on your machine with your own AI provider: 50 providers are supported, plus any OpenAI-compatible API.
 
 Every page below is plain Markdown. A page of the website also answers in Markdown when requested with \`Accept: text/markdown\`.
 
 ## Product
 
 - [Overview](${absoluteSiteUrl("/index.md")}): what Blame is, how a story goes from backlog to merge, the Light Semantic Harness, platforms, and FAQ
-- [Pricing](${absoluteSiteUrl("/pricing.md")}): what is free and what Blame Premium adds
+- [Blame Cloud](${absoluteSiteUrl("/cloud.md")}): what is free and what Blame Cloud adds
 - [Download](${absoluteSiteUrl("/download.md")}): the latest release for macOS, Windows, and Linux, with requirements
 - [Full product text](${absoluteSiteUrl("/llms-full.txt")}): the three pages above in one file
 

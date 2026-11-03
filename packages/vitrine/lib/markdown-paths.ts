@@ -1,10 +1,10 @@
 // The pages that have a Markdown version for AI agents, and where it is
-// served: /pricing.md for /pricing, /index.md for the home page. next.config
+// served: /cloud.md for /cloud, /index.md for the home page. next.config
 // imports this file, so it uses relative imports only.
 
 export const markdownPagePaths = [
   "/",
-  "/pricing",
+  "/cloud",
   "/download",
   "/terms-of-service",
   "/fr/conditions-generales-de-service",

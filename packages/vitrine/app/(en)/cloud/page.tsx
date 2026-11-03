@@ -12,9 +12,9 @@ import { pricingStructuredData } from "@/lib/structured-data";
 const { monthly, yearly } = pricingBillingOptions;
 
 export const metadata = createIndexablePageMetadata({
-  title: `Blame Pricing — Free and Open Source, Premium $${monthly.price}/month`,
-  description: `Blame is free and open source. Blame Premium adds managed Cloud Previews, cloud voice transcription, and hosted file uploads for $${monthly.price}/month or $${yearly.price}/year.`,
-  canonicalPath: "/pricing",
+  title: `Blame Cloud — Free and Open Source, Hosted Services $${monthly.price}/month`,
+  description: `Blame is free and open source. Blame Cloud adds managed Cloud Previews, cloud voice transcription, and hosted file uploads for $${monthly.price}/month or $${yearly.price}/year.`,
+  canonicalPath: "/cloud",
 });
 
 export default function PricingPage() {
@@ -46,12 +46,12 @@ export default function PricingPage() {
             >
               Free to build.
               <br />
-              Premium for the cloud.
+              Cloud when you need it.
             </h1>
             <p className="landing-reveal landing-reveal-copy mx-auto mt-7 max-w-2xl text-balance text-base leading-7 text-white/76 sm:text-lg md:text-xl">
               Run AI coding agents with your own providers, preview locally, and
-              review your changes for free. Add Premium for services hosted by
-              Blame.
+              review your changes for free. Add Blame Cloud for services hosted
+              by Blame.
             </p>
           </div>
 

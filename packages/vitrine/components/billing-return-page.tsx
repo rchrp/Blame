@@ -14,19 +14,19 @@ const content = {
   success: {
     title: "Checkout complete",
     description:
-      "Open Blame to verify your subscription and activate Premium cloud services.",
+      "Open Blame to verify your subscription and activate Blame Cloud.",
     action: "Open Blame and verify",
   },
   cancelled: {
     title: "Checkout closed.",
     description:
-      "Your Premium subscription remains unchanged. You can continue using Blame for free.",
+      "Your Blame Cloud subscription remains unchanged. You can continue using Blame for free.",
     action: "Return to Blame",
   },
   portal: {
     title: "Portal closed.",
     description:
-      "Open Blame to refresh your Premium status after reviewing your billing settings.",
+      "Open Blame to refresh your Blame Cloud status after reviewing your billing settings.",
     action: "Open Blame and refresh",
   },
 } as const;

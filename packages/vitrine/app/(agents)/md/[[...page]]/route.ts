@@ -5,8 +5,8 @@ import {
 import { pageMarkdown } from "@/lib/markdown/pages";
 import { markdownResponse } from "@/lib/markdown/response";
 
-// The Markdown version of each page. /pricing.md is rewritten here (see
-// next.config.ts), and so is /pricing when an agent asks for Markdown (see
+// The Markdown version of each page. /cloud.md is rewritten here (see
+// next.config.ts), and so is /cloud when an agent asks for Markdown (see
 // proxy.ts). The download page's release is refreshed like the page's.
 export const revalidate = 600;
 export const dynamicParams = false;

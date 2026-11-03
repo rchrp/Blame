@@ -7,7 +7,7 @@ import { GitHubStarsLink } from '@/components/github-stars'
 
 const navigationItems = [
   { label: 'Product', href: '/' },
-  { label: 'Pricing', href: '/pricing' },
+  { label: 'Cloud', href: '/cloud' },
   { label: 'Download', href: '/download' },
 ]
 

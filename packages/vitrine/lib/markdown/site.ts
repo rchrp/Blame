@@ -25,7 +25,7 @@ export const productSummary =
 const keyLinks = [
   `- Website: ${absoluteSiteUrl("/")}`,
   `- Download: ${absoluteSiteUrl("/download")} (Markdown: ${absoluteSiteUrl("/download.md")})`,
-  `- Pricing: ${absoluteSiteUrl("/pricing")} — free and open source; Blame Premium adds hosted services for ${premiumPrice}`,
+  `- Blame Cloud: ${absoluteSiteUrl("/cloud")} — the app is free and open source; Blame Cloud adds hosted services for ${premiumPrice}`,
   `- Source code: ${githubRepositoryUrl} (AGPL-3.0-only)`,
   `- Releases: ${githubReleasesUrl}`,
   `- Code signing policy: ${absoluteSiteUrl("/code-signing-policy")}`,
@@ -78,7 +78,7 @@ Isolated by default. Blame analyzes your project, works out what each story need
 
 ## Live previews and review: merge when it earns it
 
-Open the running app beside the story, read the diff and the checks, then approve, request changes, or reject. The agent moves fast. The decision stays yours. Cloud Previews, a Premium feature, can also run a worktree's app in a managed sandbox.
+Open the running app beside the story, read the diff and the checks, then approve, request changes, or reject. The agent moves fast. The decision stays yours. Cloud Previews, part of Blame Cloud, can also run a worktree's app in a managed sandbox.
 
 ## Parallel agents: run every agent on the model that fits
 
@@ -132,11 +132,11 @@ Blame is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0-onl
 }
 
 export function pricingMarkdown() {
-  return `# Blame pricing
+  return `# Blame Cloud
 
-> Free to build. Premium for the cloud. Run AI coding agents with your own providers, preview locally, and review your changes for free. Add Blame Premium for services hosted by Blame.
+> Free to build. Cloud when you need it. Run AI coding agents with your own providers, preview locally, and review your changes for free. Add Blame Cloud for services hosted by Blame.
 
-Page: ${absoluteSiteUrl("/pricing")}
+Page: ${absoluteSiteUrl("/cloud")}
 
 ## Free, without a subscription
 
@@ -146,7 +146,7 @@ The whole app is free and open source (AGPL-3.0).
 - Local worktrees and local previews
 - Your own AI provider credentials (API key or subscription)
 
-## Blame Premium
+## Blame Cloud
 
 ${monthly.label}: $${monthly.price} (${monthly.suffix}). ${yearly.label}: $${yearly.price} (${yearly.suffix}).
 

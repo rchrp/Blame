@@ -8,7 +8,7 @@ import { absoluteSiteUrl } from "@/lib/site";
 
 // Product pages first, then every legal document with the date it last
 // changed and, for the Terms, its other language.
-const productPaths = ["/", "/pricing", "/download"] as const;
+const productPaths = ["/", "/cloud", "/download"] as const;
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const products = productPaths.map((pathname) => ({

@@ -231,8 +231,8 @@ export function CtaScene() {
               />
             </svg>
           </span>
-          <Link data-cta="aside" href="/pricing" className={styles.aside}>
-            Compare the free core and Blame Premium
+          <Link data-cta="aside" href="/cloud" className={styles.aside}>
+            Compare the free core and Blame Cloud
           </Link>
         </div>
       </div>

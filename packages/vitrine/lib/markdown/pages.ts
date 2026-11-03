@@ -12,7 +12,7 @@ import {
 // The Markdown version of a page, or null when the page is not published.
 export async function pageMarkdown(path: MarkdownPagePath) {
   if (path === "/") return homeMarkdown();
-  if (path === "/pricing") return pricingMarkdown();
+  if (path === "/cloud") return pricingMarkdown();
   if (path === "/download") {
     return downloadMarkdown(await loadLatestRelease(primaryArtifacts));
   }

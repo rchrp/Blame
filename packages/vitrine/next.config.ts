@@ -29,7 +29,15 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: workspaceRoot,
   },
-  // Every page's Markdown version for AI agents: /pricing.md, /index.md...
+  // The plan page was /pricing until the plan became Blame Cloud: old links
+  // and bookmarks keep working.
+  async redirects() {
+    return [
+      { source: "/pricing", destination: "/cloud", permanent: true },
+      { source: "/pricing.md", destination: "/cloud.md", permanent: true },
+    ];
+  },
+  // Every page's Markdown version for AI agents: /cloud.md, /index.md...
   async rewrites() {
     return markdownPagePaths.map((path) => ({
       source: markdownUrlPath(path),
