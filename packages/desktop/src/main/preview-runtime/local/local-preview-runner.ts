@@ -29,6 +29,7 @@ import {
 } from "./local-preview-files.ts";
 import { previewEndpoint, renderLocalPreview } from "./local-preview-render.ts";
 import { blameRuntimeDockerHost } from "./vm-docker-host.ts";
+import { localPreviewHostGateway } from "../../preview-environment/host-gateway.ts";
 
 // Runs a worktree's local preview on the shared Compose engine: Docker
 // orders the services by health, the engine skips setup that is still
@@ -161,6 +162,7 @@ export async function startLocalPreview(
     plan: context.plan,
     selected: context.selected,
     ownPorts,
+    hostGateway: await hostGateway(),
   });
   if (context.plan.tools?.ttyd && dockerHost === blameRuntimeDockerHost) {
     const installed = await dockerHost.run(
@@ -217,6 +219,7 @@ export async function prefetchLocalPreview(
     plan: context.plan,
     selected: context.selected,
     ownPorts: await runningPorts(engine, context.plan),
+    hostGateway: await hostGateway(),
   });
   await engine.prepare(local.rendered, local.owner);
   await engine.prefetch(context.plan, {
@@ -499,6 +502,14 @@ async function withLogExcerpt(
     `${logs?.stdout ?? ""}\n${logs?.stderr ?? ""}`,
   );
   return excerpt ? `${message}: ${excerpt}` : message;
+}
+
+// Without a gateway, values that point at the developer's computer stay as
+// they are: the start goes on and the service's own error says why.
+function hostGateway() {
+  return localPreviewHostGateway((command, args) =>
+    dockerHost.run(command, args, { timeoutMs: 15_000 }),
+  ).catch(() => undefined);
 }
 
 async function wanted(options: LocalPreviewRunOptions) {

@@ -30,6 +30,8 @@ export type LocalComposeTarget = {
   dependencyKey: string;
   /** Host files mounted over workspace paths, such as materialized env files. */
   fileMounts?: Array<{ source: string; target: string }>;
+  /** Names every container resolves, such as the developer's computer. */
+  extraHosts?: Record<string, string>;
   /** Native Linux keeps downloaded tools in the desktop user's data folder. */
   toolsPath?: string;
 };

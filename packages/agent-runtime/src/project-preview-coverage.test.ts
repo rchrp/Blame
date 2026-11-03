@@ -142,6 +142,19 @@ test("asks for the database settings a backend reads, under its names", () => {
   );
 });
 
+test("lets a preview on the project's database read its settings from the env files", () => {
+  const existing = manifest({ api: {}, display: true });
+  existing.services = existing.services.filter(({ id }) => id !== "mysql");
+  for (const item of [...existing.setup, ...existing.services])
+    item.dependsOn = (item.dependsOn ?? []).filter((id) => id !== "mysql");
+  existing.setup = existing.setup.filter(({ id }) => id !== "migrate");
+  const issues = rules(previewSetupIssues(existing, workspace));
+  assert.equal(
+    issues.filter((rule) => rule.includes("database settings")).length,
+    0,
+  );
+});
+
 test("asks to run a backend and an Electron app the project has", () => {
   const issues = rules(
     previewSetupIssues(manifest({ migrate: database, api: false }), workspace),

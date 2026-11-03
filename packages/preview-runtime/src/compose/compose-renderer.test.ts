@@ -345,3 +345,21 @@ function plan(options: { loopback?: boolean } = {}): PreviewExecutionPlan {
     };
   }
 }
+
+test("maps the developer's computer into every local container but loopback members", () => {
+  const extraHosts = { "host.docker.internal": "192.168.5.2" };
+  const shared = render(plan({ loopback: true }), { ...local, extraHosts });
+  assert.deepEqual(shared.services.frontend!.extra_hosts, [
+    "host.docker.internal:192.168.5.2",
+  ]);
+  // A service in another's network shares its hosts file; Docker refuses both.
+  assert.equal(shared.services.backend!.extra_hosts, undefined);
+  const separate = render(plan(), { ...local, extraHosts });
+  for (const service of Object.values(separate.services))
+    assert.deepEqual(service.extra_hosts, ["host.docker.internal:192.168.5.2"]);
+  assert.equal(
+    render(plan(), sandbox).services.frontend!.extra_hosts,
+    undefined,
+  );
+  assert.equal(render(plan(), local).services.frontend!.extra_hosts, undefined);
+});

@@ -21,13 +21,23 @@ import {
   runtimeManagedPath,
 } from "../../workspace-runtime.ts";
 import { allocatePreviewHostPorts } from "./local-preview-ports.ts";
+import {
+  previewDatabaseMode,
+  type PreviewDatabaseMode,
+} from "../../preview-environment/database-environment.ts";
+import {
+  previewExtraHosts,
+  type PreviewHostGateway,
+} from "../../preview-environment/host-gateway.ts";
 
 // Renders a worktree's plan for the Blame Runtime: the worktree is mounted
 // at /workspace, every endpoint gets a port on this computer, worktrees with
 // the same dependency manifests share their node_modules volumes, and env
 // files are materialized for the preview and mounted over the originals:
-// with the preview origin, its bindings and the manifest's values, and
-// without the developer's database settings.
+// with the preview origin, its bindings and the manifest's values, and the
+// developer's database settings only when the preview uses the project's
+// database. Every container reaches the developer's computer at the host
+// gateway's alias.
 
 const dependencyManifestFiles = [
   "package.json",
@@ -47,8 +57,11 @@ export async function renderLocalPreview(input: {
   plan: PreviewExecutionPlan;
   selected?: ProjectRunConfiguration;
   ownPorts?: ReadonlySet<number>;
+  databaseMode?: PreviewDatabaseMode | null;
+  hostGateway?: PreviewHostGateway;
 }) {
   const { worktree, plan } = input;
+  const databaseMode = previewDatabaseMode(plan, input.databaseMode);
   const [projectUser, hostPorts, dependencyKey, symlinkMounts] =
     await Promise.all([
       worktreeOwner(worktree),
@@ -64,6 +77,7 @@ export async function renderLocalPreview(input: {
     hostPorts,
     dependencyKey,
     toolsPath: localPreviewToolsPath(),
+    extraHosts: previewExtraHosts(input.hostGateway),
   };
   const draft = renderCompose(plan, target);
   const origin = previewOrigin(plan, hostPorts, input.selected);
@@ -72,6 +86,7 @@ export async function renderLocalPreview(input: {
     worktree,
     origin,
     overrides,
+    { mode: databaseMode, hostAlias: input.hostGateway?.alias },
   );
   const rendered = renderCompose(plan, {
     ...target,
@@ -87,6 +102,7 @@ export async function renderLocalPreview(input: {
     hostPorts,
     dependencyKey,
     previewOrigin: origin,
+    databaseMode,
   };
 }
 

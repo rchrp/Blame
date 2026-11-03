@@ -143,6 +143,7 @@ function setupService(task: SetupTaskPlan, context: RenderContext) {
       context,
     ),
     volumes: serviceVolumes(task, setupServiceId(task.id), context, true),
+    extra_hosts: extraHosts(context.target),
     user: task.runAs === "root" ? "0:0" : context.target.projectUser,
     restart: "no",
   });
@@ -165,6 +166,8 @@ function runtimeService(service: ServiceLaunchPlan, context: RenderContext) {
       context,
     ),
     network_mode: sharesLoopback ? `service:${anchor}` : undefined,
+    // A service in another's network shares its hosts file.
+    extra_hosts: sharesLoopback ? undefined : extraHosts(context.target),
     // The window manager adds the app's host name to every window title when
     // it differs from the screen's.
     hostname:
@@ -470,6 +473,14 @@ function serviceVolumes(
     ...volumes.map(({ alias, target: path }) => `${alias}:${path}`),
     ...files,
   ]);
+}
+
+function extraHosts(target: ComposeTarget) {
+  if (target.kind !== "local") return undefined;
+  const entries = Object.entries(target.extraHosts ?? {});
+  return entries.length
+    ? entries.map(([name, address]) => `${name}:${address}`)
+    : undefined;
 }
 
 function baseVolumes(target: ComposeTarget) {

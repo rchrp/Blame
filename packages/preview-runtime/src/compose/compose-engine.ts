@@ -120,8 +120,8 @@ export class ComposeEngine {
     if (!serviceIds.length) return;
     await this.runSetup(plan, serviceIds, fingerprints);
     await this.prepareImages(plan, serviceIds, fingerprints);
-    await this.measure("services.start", () =>
-      this.compose(
+    await this.measure("services.start", async () => {
+      const result = await this.compose(
         [
           "up",
           "--detach",
@@ -133,8 +133,10 @@ export class ComposeEngine {
           ...serviceIds,
         ],
         { timeoutMs: this.startTimeoutMs + 30_000 },
-      ),
-    );
+        true,
+      );
+      if (result.exitCode !== 0) throw await this.startFailure(plan, result);
+    });
     await waitForDisplayWindows(
       plan,
       serviceIds,
@@ -144,6 +146,64 @@ export class ComposeEngine {
         stopped: (id) => this.stoppedReason(plan, id),
       },
     );
+  }
+
+  /**
+   * Why `up` failed. Compose only says a container "is unhealthy" or
+   * "exited"; the service's own last lines say why, such as a missing
+   * setting or a database it cannot reach.
+   */
+  private async startFailure(
+    plan: PreviewExecutionPlan,
+    result: CommandResult,
+  ) {
+    const compose = `Compose up failed (exit code ${result.exitCode}): ${commandFailureDetail(result.stderr, result.stdout)}`;
+    const states = await this.inspect(plan).catch(() => []);
+    const failed = states
+      .filter(
+        ({ health, state, exitCode }) =>
+          health === "unhealthy" ||
+          state === "dead" ||
+          (state === "exited" && exitCode !== 0),
+      )
+      .slice(0, 2);
+    const causes = await Promise.all(
+      failed.map((service) => this.serviceFailure(service)),
+    );
+    if (!causes.length)
+      return new ComposeEngineError("COMPOSE_COMMAND_FAILED", compose);
+    return new ComposeEngineError(
+      "SERVICE_FAILED",
+      `${causes.join("\n")}\n(${compose.slice(0, 300)})`,
+    );
+  }
+
+  private async serviceFailure(service: ServiceState) {
+    const what =
+      service.health === "unhealthy"
+        ? "failed its healthcheck"
+        : `stopped (${service.exitCode === undefined ? service.state : `exit code ${service.exitCode}`})`;
+    const logs = await this.logs(service.id, { tail: 80, timeoutMs: 15_000 })
+      .then(({ stdout, stderr }) => `${stdout}\n${stderr}`)
+      .catch(() => "");
+    const probe =
+      service.health === "unhealthy" && !errorExcerpt(logs)
+        ? await this.healthcheckOutput(service.id)
+        : "";
+    const excerpt = errorExcerpt(logs) || probe;
+    return excerpt
+      ? `Service ${service.id} ${what}. Its last lines: ${excerpt}`
+      : `Service ${service.id} ${what} and printed nothing.`;
+  }
+
+  /** What the last healthcheck runs printed, when the service printed nothing. */
+  private async healthcheckOutput(serviceId: string) {
+    const project = await this.prepared();
+    if (!project) return "";
+    const result = await this.options.host
+      .run("sh", ["-c", healthLogScript, "sh", project.projectName, serviceId])
+      .catch(() => undefined);
+    return result?.exitCode === 0 ? errorExcerpt(result.stdout, 2) : "";
   }
 
   /** Why a service container stopped, from its exit code and last errors. */
@@ -552,6 +612,11 @@ function imageItem(plan: PreviewExecutionPlan, id: string) {
 const inspectScript = `
 ids="$(docker ps --all --quiet --no-trunc --filter "label=com.docker.compose.project=$1")"
 [ -z "$ids" ] || docker inspect --format '{{index .Config.Labels "com.docker.compose.service"}}\t{{index .Config.Labels "com.docker.compose.oneoff"}}\t{{.State.Status}}\t{{.State.ExitCode}}\t{{if .State.Health}}{{.State.Health.Status}}{{end}}' $ids
+`;
+
+const healthLogScript = `
+ids="$(docker ps --all --quiet --no-trunc --filter "label=com.docker.compose.project=$1" --filter "label=com.docker.compose.service=$2")"
+[ -z "$ids" ] || docker inspect --format '{{if .State.Health}}{{range .State.Health.Log}}{{.Output}}{{end}}{{end}}' $ids
 `;
 
 function parseContainerRows(value: string) {

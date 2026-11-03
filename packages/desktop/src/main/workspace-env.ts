@@ -32,6 +32,13 @@ import {
   writeFile as writeRuntimeFile,
 } from "./workspace-runtime.ts";
 import { runtimeAgentClient, runtimeAgentSupported } from "./runtime-agent.ts";
+import {
+  localDatabaseHostRewrite,
+  previewDatabaseEnvironmentKey,
+  type PreviewDatabaseMode,
+} from "./preview-environment/database-environment.ts";
+
+export { previewDatabaseEnvironmentKey };
 
 const ignoredEnvDirectories = new Set([
   ".git",
@@ -66,16 +73,18 @@ export type EnvFileOverride = {
   replacements?: Record<string, string>;
 };
 
-// Settings that connect to a database, cache or queue. A developer's env
-// file points them at their own data (a local server, a tunnel to
-// production): a preview never reads them from there, only from the
-// manifest, which gives it its own database.
-const databaseEnvironmentKey =
-  /^(?:DB|DATABASE|MYSQL|MARIADB|POSTGRES|POSTGRESQL|PG|MONGO|MONGODB|REDIS|MSSQL|SQL)(?:_|$)|^(?:PGHOST|PGPORT|PGUSER|PGPASSWORD|PGDATABASE|DIRECT_URL)$|_(?:DATABASE_URL|DB_URL|DSN)$/;
+/**
+ * How an env file treats database settings. With an isolated database the
+ * developer's settings, which point at their own data, are left out; with
+ * the project's database they are kept, a host on the developer's computer
+ * renamed to `hostAlias`.
+ */
+export type PreviewEnvDatabase = {
+  mode: PreviewDatabaseMode;
+  hostAlias?: string;
+};
 
-export function previewDatabaseEnvironmentKey(key: string) {
-  return databaseEnvironmentKey.test(key);
-}
+const isolatedDatabase: PreviewEnvDatabase = { mode: "compose" };
 
 const publicOriginEnvironmentKeys = new Set([
   "APP_URL",
@@ -161,6 +170,7 @@ export async function materializedPreviewEnvHostFileMounts(
   worktree: string,
   previewOrigin: string | undefined,
   overrides: EnvFileOverride[] = [],
+  database: PreviewEnvDatabase = isolatedDatabase,
 ) {
   const files = await projectEnvFiles(worktree);
   const mounts = await Promise.all(
@@ -170,6 +180,7 @@ export async function materializedPreviewEnvHostFileMounts(
         path,
         previewOrigin,
         overrides,
+        database,
       ),
     ),
   );
@@ -180,6 +191,7 @@ export async function materializedPreviewEnvFilesMatch(
   worktree: string,
   previewOrigin: string | undefined,
   overrides: EnvFileOverride[] = [],
+  database: PreviewEnvDatabase = isolatedDatabase,
 ) {
   const files = await projectEnvFiles(worktree);
   const matches = await Promise.all(
@@ -189,6 +201,7 @@ export async function materializedPreviewEnvFilesMatch(
         path,
         previewOrigin,
         overrides,
+        database,
       ),
     ),
   );
@@ -200,6 +213,7 @@ async function materializedPreviewEnvHostFileMount(
   path: string,
   previewOrigin: string | undefined,
   overrides: EnvFileOverride[],
+  database: PreviewEnvDatabase,
 ) {
   const content = await readWorkspaceEnvFile(path);
   const override = envFileOverride(worktree, path, overrides);
@@ -208,6 +222,7 @@ async function materializedPreviewEnvHostFileMount(
     previewOrigin,
     override.values,
     override.replacements,
+    database,
   );
   if (materialized === content) return null;
   const relativePath = relativeWorkspacePath(worktree, path);
@@ -229,6 +244,7 @@ async function materializedPreviewEnvFileMatches(
   path: string,
   previewOrigin: string | undefined,
   overrides: EnvFileOverride[],
+  database: PreviewEnvDatabase,
 ) {
   const content = await readWorkspaceEnvFile(path);
   const override = envFileOverride(worktree, path, overrides);
@@ -237,6 +253,7 @@ async function materializedPreviewEnvFileMatches(
     previewOrigin,
     override.values,
     override.replacements,
+    database,
   );
   if (materialized === content) return true;
   const relativePath = relativeWorkspacePath(worktree, path);
@@ -258,6 +275,7 @@ export function materializePreviewEnvValues(
   previewOrigin: string | undefined,
   overrides: Record<string, string> = {},
   replacements: Record<string, string> = {},
+  database: PreviewEnvDatabase = isolatedDatabase,
 ) {
   let hasPublicOrigin = false;
   let hasNextPublicAppUrl = false;
@@ -270,8 +288,14 @@ export function materializePreviewEnvValues(
     const value = overrides[parsed.key] ?? replacements[parsed.key];
     if (value !== undefined)
       return materializedEnvLine(parsed.key, parsed.value, value);
-    if (previewDatabaseEnvironmentKey(parsed.key))
-      return `# ${parsed.key} left out by Blame: a preview uses its own database.`;
+    if (previewDatabaseEnvironmentKey(parsed.key)) {
+      if (database.mode === "compose")
+        return `# ${parsed.key} left out by Blame: a preview uses its own database.`;
+      const rewritten =
+        database.hostAlias &&
+        localDatabaseHostRewrite(parsed.key, parsed.value, database.hostAlias);
+      return rewritten ? `${parsed.key}=${rewritten}` : line;
+    }
     if (!previewOrigin || !publicOriginEnvironmentKeys.has(parsed.key))
       return line;
     hasPublicOrigin = true;
