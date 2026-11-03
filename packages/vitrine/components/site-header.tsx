@@ -7,9 +7,9 @@ import { GitHubStarsLink } from '@/components/github-stars'
 
 const navigationItems = [
   { label: 'Product', href: '/' },
+  { label: 'Docs', href: '/docs' },
   { label: 'Pricing', href: '/pricing' },
   { label: 'Download', href: '/download' },
-  { label: 'Docs', href: '/docs' },
 ]
 
 function isNavigationItemActive(pathname: string, href: string) {

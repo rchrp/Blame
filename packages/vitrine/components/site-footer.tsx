@@ -12,10 +12,10 @@ const footerGroups = [
   {
     title: "Product",
     links: [
+      { href: "/docs", label: "Documentation" },
       { href: "/pricing", label: "Pricing" },
       { href: "/pricing#faq", label: "FAQ" },
       { href: "/download", label: "Download" },
-      { href: "/docs", label: "Documentation" },
       { href: "/account/privacy", label: "Account data & closure" },
     ],
   },
