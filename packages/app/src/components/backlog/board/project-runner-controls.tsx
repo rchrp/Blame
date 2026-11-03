@@ -331,6 +331,8 @@ function RunnerStartButton(props: SelectedRunnerControlsProps) {
     >
       <Button
         aria-label={running ? "Restart" : "Start"}
+        // Where the preview's "not started" arrow points.
+        data-runner-start=""
         className={runnerStartClassName(running)}
         disabled={disabled}
         size="icon"

@@ -3,6 +3,12 @@ import { useProjectServices } from "./preview-service-logs"
 import { ProjectRunLogPanel, ServiceLogPanel } from "./preview-run-logs"
 import { previewAmbilightShadow } from "./preview-ambilight"
 import {
+  PreviewIdleFrame,
+  PreviewNotStarted,
+  PreviewStartArrow,
+  StartedAppWaiting,
+} from "./preview-idle-state"
+import {
   PreviewSurface,
   previewSurfaceType,
   usePreviewSurfaceManifest,
@@ -12,7 +18,6 @@ import {
   CopyIcon,
   ExternalLinkIcon,
   FocusIcon,
-  LoaderCircleIcon,
   LockIcon,
   MonitorIcon,
   NetworkIcon,
@@ -507,6 +512,27 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
   )
   const browserSurface =
     previewSurfaceType(surfaceConfiguration, surfaceManifest) === "web"
+  // Asked to start, before the runtime says it is starting.
+  const startPending = Boolean(
+    !projectRunMode &&
+    previewRunner.pendingOperation &&
+    previewRunner.pendingOperation.action !== "stop"
+  )
+  // Nothing runs that could show a page: the page says how to start one.
+  const previewNotStarted = Boolean(
+    !source &&
+    !setupInitializing &&
+    !runtimeStarting &&
+    !startPending &&
+    !previewFailure &&
+    (surfaceConfiguration?.previewService ||
+      surfaceConfiguration?.previewTarget ||
+      surfaceConfiguration?.previewUrl ||
+      isHostWindowConfiguration(surfaceConfiguration)) &&
+    (projectRunMode ||
+      (previewRunner.runtime &&
+        previewRunner.runtime.desiredStatus !== "running"))
+  )
   const hasPreviewSurface =
     Boolean(
       source ||
@@ -514,6 +540,8 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
       surfaceConfiguration?.previewTarget ||
       isHostWindowConfiguration(surfaceConfiguration)
     ) ||
+    previewNotStarted ||
+    startPending ||
     runtimeStarting ||
     Boolean(previewFailure)
   const hasVariables = Boolean(setupLogWorktree)
@@ -746,16 +774,15 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
     setTab("preview")
   }, [previewWaiting, setTab, source])
 
-  // Started from this preview: its logs show while the app starts, then
-  // the preview once the app answers.
+  // Started from this preview: the view showing stays, and the page takes
+  // over once the app answers.
   const startRequest = projectRun?.startRequest ?? 0
   const startRequestRef = React.useRef(startRequest)
   React.useEffect(() => {
     if (startRequestRef.current === startRequest) return
     startRequestRef.current = startRequest
     autoSelectedPreviewSourceRef.current = undefined
-    setTab("setup-log")
-  }, [setTab, startRequest])
+  }, [startRequest])
 
   React.useEffect(() => {
     const justStarted = runtimeStarting && !runtimeStartingRef.current
@@ -813,7 +840,7 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
   React.useEffect(() => {
     if (shownView && shownView !== view) onViewChange?.(shownView)
   }, [onViewChange, shownView, view])
-  const [actionsRef, actionsWidth] = useElementWidth<HTMLDivElement>()
+  const [actionsRef, actionsSize] = useRunnerActionsSize()
 
   if (hasPreviewSurface || hasSetupLog) {
     return (
@@ -825,8 +852,15 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
           style={
             {
               "--preview-actions-space": actions
-                ? `${actionsWidth + 8}px`
+                ? `${actionsSize.width + 8}px`
                 : "0px",
+              ...(actionsSize.start
+                ? {
+                    "--preview-start-half": `${actionsSize.start.half}px`,
+                    "--preview-start-right": `${actionsSize.start.right}px`,
+                    "--preview-start-top": `${actionsSize.start.top}px`,
+                  }
+                : {}),
             } as React.CSSProperties
           }
         >
@@ -867,13 +901,12 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
                 activeTab !== "preview" && "hidden"
               )}
             >
-              {(source ||
-                surfaceConfiguration?.previewService ||
-                surfaceConfiguration?.previewTarget ||
-                isHostWindowConfiguration(surfaceConfiguration)) &&
-                (projectRunWaiting ? (
-                  <StartedAppWaitingPanel source={source ?? ""} />
-                ) : setupPreviewWaiting ? (
+              {!previewNotStarted &&
+                (source ||
+                  surfaceConfiguration?.previewService ||
+                  surfaceConfiguration?.previewTarget ||
+                  isHostWindowConfiguration(surfaceConfiguration)) &&
+                (projectRunWaiting ? null : setupPreviewWaiting ? (
                   <PreviewWaitingPanel />
                 ) : previewBrowser ? (
                   <PreviewSurface
@@ -909,6 +942,7 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
                       activeTab === "preview" &&
                       !runnerMenuOpen &&
                       !covered &&
+                      !startPending &&
                       !runtimeStarting &&
                       !previewFailure
                     }
@@ -925,9 +959,34 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
                     title={`${previewLabel} preview`}
                   />
                 ))}
-              {runtimeStarting && (
+              {/* One frame from "not started" to the page: what it says
+                  changes, it stays. */}
+              {(previewNotStarted ||
+                startPending ||
+                runtimeStarting ||
+                projectRunWaiting) && (
                 <div className="absolute inset-0 z-10">
-                  <PreviewWaitingPanel lifecycle={runtimeLifecycle} />
+                  <PreviewIdleFrame>
+                    {previewNotStarted ? (
+                      <PreviewNotStarted key="not-started" />
+                    ) : projectRunWaiting ? (
+                      <StartedAppWaiting key="app" source={source ?? ""} />
+                    ) : (
+                      <div
+                        key="starting"
+                        className="h-full animate-in duration-500 fade-in-0 motion-reduce:animate-none"
+                      >
+                        <PreviewInitializationState
+                          lifecycle={
+                            runtimeStarting ? runtimeLifecycle : undefined
+                          }
+                        />
+                      </div>
+                    )}
+                  </PreviewIdleFrame>
+                  {previewNotStarted && actionsSize.start ? (
+                    <PreviewStartArrow />
+                  ) : null}
                 </div>
               )}
               {previewFailure && (
@@ -1045,32 +1104,6 @@ function PreviewPanel({
       </div>
     </div>
   )
-}
-
-function StartedAppWaitingPanel({ source }: { source: string }) {
-  return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden px-4 pt-16 pb-4">
-      <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-4 rounded-lg border bg-background p-8 text-center">
-        <LoaderCircleIcon className="size-8 animate-spin text-muted-foreground" />
-        <div className="space-y-1">
-          <h3 className="font-heading text-lg font-semibold">
-            Starting the app
-          </h3>
-          <p className="text-sm text-muted-foreground">
-            The preview opens as soon as {previewHost(source)} answers.
-          </p>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function previewHost(source: string) {
-  try {
-    return new URL(source).host
-  } catch {
-    return source
-  }
 }
 
 function PreviewWaitingPanel({
@@ -1426,19 +1459,46 @@ function BlockedLocationBadge() {
   )
 }
 
-// The width of an element, kept current as it changes.
-function useElementWidth<T extends HTMLElement>() {
-  const [element, setElement] = React.useState<T | null>(null)
-  const [width, setWidth] = React.useState(0)
+// The run controls' width, and where their Start button is from the
+// toolbar's right and top (where the "not started" arrow points), kept
+// current as they change.
+function useRunnerActionsSize() {
+  const [element, setElement] = React.useState<HTMLDivElement | null>(null)
+  const [size, setSize] = React.useState<RunnerActionsSize>({ width: 0 })
   React.useLayoutEffect(() => {
     if (!element) return
-    const observer = new ResizeObserver(([entry]) =>
-      setWidth(Math.ceil(entry?.borderBoxSize[0]?.inlineSize ?? 0))
-    )
+    const observer = new ResizeObserver(() => {
+      const box = element.getBoundingClientRect()
+      const frame = element.parentElement?.getBoundingClientRect()
+      const button = element
+        .querySelector("[data-runner-start]")
+        ?.getBoundingClientRect()
+      const next: RunnerActionsSize = {
+        start:
+          button && frame
+            ? {
+                half: Math.round(button.height / 2),
+                right: Math.round(
+                  frame.right - (button.left + button.width / 2)
+                ),
+                top: Math.round(button.top + button.height / 2 - frame.top),
+              }
+            : undefined,
+        width: Math.ceil(box.width),
+      }
+      setSize((current) =>
+        JSON.stringify(current) === JSON.stringify(next) ? current : next
+      )
+    })
     observer.observe(element)
     return () => observer.disconnect()
   }, [element])
-  return [setElement, width] as const
+  return [setElement, size] as const
+}
+
+type RunnerActionsSize = {
+  start?: { half: number; right: number; top: number }
+  width: number
 }
 
 // The service the logs open on: the page's own unless another one runs
