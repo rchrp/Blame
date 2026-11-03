@@ -227,7 +227,7 @@ export function previewSurfaceType(
 // Leaves room for the floating preview toolbar, like the web preview.
 function SurfaceFrame({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-muted/20 px-4 pt-16 pb-4">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden px-4 pt-16 pb-4">
       <div className="min-h-0 flex-1 overflow-hidden rounded-lg border bg-background">
         {children}
       </div>

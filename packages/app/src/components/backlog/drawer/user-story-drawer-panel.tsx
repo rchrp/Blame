@@ -782,7 +782,8 @@ export function UserStoryDrawerPanel({
             className={cn(
               "min-h-0 overflow-hidden",
               tab !== "preview" && "hidden",
-              hasDevelopment ? "pt-36" : "pt-28"
+              // The toolbar starts where the story's thread does.
+              hasDevelopment ? "pt-32" : "pt-24"
             )}
           >
             {directPreview ? (

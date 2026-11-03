@@ -27,7 +27,7 @@ export function PhoneFrame({
     return () => observer.disconnect()
   }, [width, height])
   return (
-    <div className="flex h-full min-h-0 flex-col bg-muted/20 pt-[64px]">
+    <div className="flex h-full min-h-0 flex-col pt-[64px]">
       <div
         ref={element}
         className="flex min-h-0 flex-1 items-center justify-center overflow-hidden p-3"

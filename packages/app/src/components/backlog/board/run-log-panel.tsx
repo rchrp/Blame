@@ -39,7 +39,7 @@ export function RunLogPanel({
   // Raw terminal output: colors and spinners dropped, as a terminal shows it.
   const text = React.useMemo(() => terminalText(output), [output])
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-muted/20 p-4">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden p-4">
       <div className="flex h-12 shrink-0 items-start gap-2">
         {/* Tabs start level with the runner's controls, their labels on
             its line, and run down into the terminal. */}

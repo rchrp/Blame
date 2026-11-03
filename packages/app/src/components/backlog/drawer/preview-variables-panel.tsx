@@ -241,7 +241,7 @@ export function PreviewVariablesPanel({
 
 function PanelFrame({ children }: { children: React.ReactNode }) {
   return (
-    <div className="h-full min-h-0 overflow-y-auto bg-muted/20 px-4 pt-16 pb-6">
+    <div className="h-full min-h-0 overflow-y-auto px-4 pt-16 pb-6">
       <div className="mx-auto grid w-full max-w-4xl gap-3">{children}</div>
     </div>
   )

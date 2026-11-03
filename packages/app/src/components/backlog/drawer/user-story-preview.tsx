@@ -813,7 +813,7 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
       <div className="h-full min-h-0 overflow-hidden">
         <Tabs
           value={activeTab}
-          className="preview-toolbar-container relative h-full min-h-0 gap-0 bg-muted/20"
+          className="preview-toolbar-container relative h-full min-h-0 gap-0"
           style={
             {
               "--preview-actions-space": actions
@@ -1018,7 +1018,7 @@ function PreviewPanel({
   title,
 }: PreviewPanelProps) {
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-muted/20 px-4 pt-16 pb-4">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden px-4 pt-16 pb-4">
       <div
         className="relative min-h-0 flex-1 overflow-hidden rounded-lg border bg-background transition-shadow duration-700"
         style={{ boxShadow: previewAmbilightShadow(undefined) }}
@@ -1041,7 +1041,7 @@ function PreviewPanel({
 
 function StartedAppWaitingPanel({ source }: { source: string }) {
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-muted/20 px-4 pt-16 pb-4">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden px-4 pt-16 pb-4">
       <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-4 rounded-lg border bg-background p-8 text-center">
         <LoaderCircleIcon className="size-8 animate-spin text-muted-foreground" />
         <div className="space-y-1">
@@ -1071,7 +1071,7 @@ function PreviewWaitingPanel({
   lifecycle?: PreviewLifecycleState
 } = {}) {
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-muted/20 px-4 pt-16 pb-4">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden px-4 pt-16 pb-4">
       <div className="relative min-h-0 flex-1 overflow-hidden rounded-lg border bg-background">
         <PreviewInitializationState lifecycle={lifecycle} />
       </div>
