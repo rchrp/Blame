@@ -1,6 +1,7 @@
 import User from '#models/user'
 import { deployment } from '#lib/deployment'
 import LocalSessionService from '#services/local_session_service'
+import type { WorkspaceBundle } from '#services/workspace_transfer_service'
 import testUtils from '@adonisjs/core/services/test_utils'
 import { test } from '@japa/runner'
 
@@ -92,6 +93,9 @@ test.group('local API', (group) => {
 
     const workspace = await client.get('/api/v1/account/workspace').bearerToken(token)
     workspace.assertStatus(200)
-    assert.lengthOf(workspace.body().data.tables.user_stories, 1)
+    // Only the local API registers this export: the typed client, made from
+    // the hosted routes, takes it for the import that shares its path.
+    const bundle = workspace.body() as unknown as { data: WorkspaceBundle }
+    assert.lengthOf(bundle.data.tables.user_stories ?? [], 1)
   })
 })

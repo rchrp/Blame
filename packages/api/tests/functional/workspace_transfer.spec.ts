@@ -2,7 +2,9 @@ import Project from '#models/project'
 import User from '#models/user'
 import ProviderCredentialsService from '#services/provider_credentials_service'
 import UserStoriesService from '#services/user_stories_service'
-import WorkspaceTransferService from '#services/workspace_transfer_service'
+import WorkspaceTransferService, {
+  type WorkspaceBundle,
+} from '#services/workspace_transfer_service'
 import testUtils from '@adonisjs/core/services/test_utils'
 import db from '@adonisjs/lucid/services/db'
 import { test } from '@japa/runner'
@@ -167,7 +169,8 @@ test.group('workspace transfer', (group) => {
     const response = await client
       .put('/api/v1/account/workspace')
       .loginAs(account)
-      .json({ format: 'other', version: 1, tables: {} })
+      // Not a workspace on purpose: the server, not the types, refuses it.
+      .json({ format: 'other', version: 1, tables: {} } as unknown as WorkspaceBundle)
     response.assertStatus(422)
   }).skip(Boolean(accountApi), accountApi || undefined)
 })
