@@ -109,14 +109,14 @@
 }
 
 /* The neutral a preview's launch clouds melt into before its page shows:
-   a plain color, which the page also covers itself in, then fades. */
+   a plain hex color, which the native page then fades in over. */
 :root,
 .light {
-  --preview-reveal: oklch(0.94 0 0);
+  --preview-reveal: #e8e8e8;
 }
 
 .dark {
-  --preview-reveal: oklch(0.22 0 0);
+  --preview-reveal: #1b1b1b;
 }
 
 @theme inline {

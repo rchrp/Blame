@@ -1,68 +1,63 @@
-import type { WebContents } from "electron";
+import type { WebContentsView } from "electron";
 
 // A preview page drawn above the app cannot be covered by it: to appear
-// out of the app's loading screen, the page covers itself, in the color
-// that screen ends on, then fades that cover out. Only CSS the page's own
-// compositor runs, for half a second.
+// out of the app's loading screen, the page shows nothing over a view
+// painted in the color that screen ends on, then fades in. Only CSS the
+// page's own compositor runs, for half a second, on its root element (a
+// pseudo-element would keep its style once its rule is gone).
 
 export const previewRevealDuration = 450;
 
-// Waits on screen under its cover before fading, so the first frame shown
-// is the cover, never the bare page.
+// Waits on screen hidden before fading in, so the first frame shown is the
+// color, never the bare page.
 const coverHoldMs = 50;
 
-const revealColorPattern =
-  /^(?:#[0-9a-f]{3,8}|(?:rgba?|hsla?|oklch|oklab|lab|lch)\([0-9a-z.,%\s/+-]+\))$/i;
+// A page with no background of its own shows the view's, white by default.
+const viewBackground = "#ffffff";
+
+const revealColorPattern = /^#[0-9a-f]{6}$/i;
 
 export function isRevealColor(color: string) {
-  return color.length <= 64 && revealColorPattern.test(color.trim());
+  return revealColorPattern.test(color);
 }
 
-function coverRule(color: string, declarations: string) {
-  return `:root::after{content:""!important;position:fixed!important;inset:0!important;z-index:2147483647!important;pointer-events:none!important;background:${color}!important;${declarations}}`;
+export function previewCoverCss() {
+  return "html{opacity:0!important}";
 }
 
-export function previewCoverCss(color: string) {
-  return coverRule(color, "opacity:1!important;");
+// Not important on opacity: the animation has to run on it.
+export function previewRevealCss(name: string) {
+  return `@keyframes ${name}{from{opacity:0}to{opacity:1}}html{animation:${name} ${previewRevealDuration}ms ease-out both!important}`;
 }
 
-// Not important on opacity: the animation has to win over it.
-export function previewRevealCss(color: string) {
-  return `@keyframes blame-preview-reveal{from{opacity:1}to{opacity:0}}${coverRule(
-    color,
-    `animation:blame-preview-reveal ${previewRevealDuration}ms ease-out forwards!important;`,
-  )}`;
-}
-
-// Covers the page now; the returned call, once it shows, fades the cover.
-export async function coverPreviewPage(contents: WebContents, color: string) {
+// Hides the page over the color now; the returned call, once the view
+// shows, fades the page in and puts everything back.
+export async function coverPreviewPage(view: WebContentsView, color: string) {
   const none = () => undefined;
+  const contents = view.webContents;
   if (!isRevealColor(color) || contents.isDestroyed()) return none;
   const cover = await contents
-    .insertCSS(previewCoverCss(color), { cssOrigin: "user" })
+    .insertCSS(previewCoverCss())
     .catch(() => undefined);
   if (!cover) return none;
+  view.setBackgroundColor(color);
   return () => {
-    setTimeout(
-      () => void fadePreviewCover(contents, color, cover),
-      coverHoldMs,
-    );
+    setTimeout(() => void revealPreviewPage(view, cover), coverHoldMs);
   };
 }
 
-async function fadePreviewCover(
-  contents: WebContents,
-  color: string,
-  cover: string,
-) {
+async function revealPreviewPage(view: WebContentsView, cover: string) {
+  const contents = view.webContents;
   if (contents.isDestroyed()) return;
+  // Named for this reveal: never a page's own keyframes.
+  const name = `blame-preview-reveal-${Date.now().toString(36)}`;
   const fade = await contents
-    .insertCSS(previewRevealCss(color), { cssOrigin: "user" })
+    .insertCSS(previewRevealCss(name))
     .catch(() => undefined);
   await contents.removeInsertedCSS(cover).catch(() => undefined);
-  if (!fade) return;
   setTimeout(() => {
-    if (!contents.isDestroyed())
-      void contents.removeInsertedCSS(fade).catch(() => undefined);
+    if (contents.isDestroyed()) return;
+    view.setBackgroundColor(viewBackground);
+    if (fade) void contents.removeInsertedCSS(fade).catch(() => undefined);
   }, previewRevealDuration + 100);
 }

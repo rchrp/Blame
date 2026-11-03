@@ -362,10 +362,7 @@ export async function setPreviewBrowserBounds(input: {
   const visible = input.visible && bounds.width > 0 && bounds.height > 0;
   let uncover: (() => void) | undefined;
   if (visible && !record.visible && input.reveal) {
-    const covering = coverPreviewPage(
-      record.view.webContents,
-      input.reveal.color,
-    );
+    const covering = coverPreviewPage(record.view, input.reveal.color);
     record.revealing = covering;
     uncover = await covering;
     record.revealing = undefined;
