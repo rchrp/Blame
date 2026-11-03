@@ -98,7 +98,8 @@ export type Platform = {
   agentScreenshots?: AgentScreenshotsClient
   api?: ApiConnection
   localApi?: import("./platform-local-api").LocalApiClient
-  previewDevtools?: PreviewDevtoolsSettingsClient
+  previewDevtools?: import("./platform-preview-devtools").PreviewDevtoolsSettingsClient
+  previewEnvironment?: import("./platform-preview-environment").PreviewEnvironmentClient
   appStatus?: AppStatusClient
   appearance?: AppearanceClient
   backlogStatusPip?: BacklogStatusPipClient
@@ -686,15 +687,6 @@ export type AgentScreenshotsClient = {
   saveAs(input: { id: string }): Promise<boolean>
 }
 
-// Per-project settings of the agent's browser tools.
-export type PreviewDevtoolsSettingsClient = {
-  getAdvancedDiagnostics(input: { projectId: string }): Promise<boolean>
-  setAdvancedDiagnostics(input: {
-    enabled: boolean
-    projectId: string
-  }): Promise<boolean>
-}
-
 export type PreviewBrowserClient = {
   capture(input: {
     id: string
@@ -877,6 +869,8 @@ export type WorkspaceClient = {
     setupScript?: string
     worktree?: string
   }): Promise<HostDependencyReport>
+  /** What in a project shows it uses a database, for the database choice. */
+  databaseEvidence?(input: { root: string }): Promise<{ evidence: string[] }>
   prepareProjectPreview(input: {
     executionId: string
     storyId: string
@@ -887,6 +881,7 @@ export type WorkspaceClient = {
     runConfigurationId?: string | null
     hostDependenciesChecked?: boolean
     runtimeProfile: RuntimeProfileId
+    databaseMode?: "compose" | "existing" | null
   }): Promise<{ prepared: true }>
   runProjectSetup(input: {
     executionId: string

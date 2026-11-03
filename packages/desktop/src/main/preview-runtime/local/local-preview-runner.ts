@@ -23,12 +23,19 @@ import {
   errorText,
   LocalPreviewError,
   localPreviewPaths,
+  readLocalDatabaseMode,
   readLocalPreviewManifest,
   readLocalRunConfigurations,
   readLocalRuntimeState,
 } from "./local-preview-files.ts";
-import { previewEndpoint, renderLocalPreview } from "./local-preview-render.ts";
+import {
+  previewEndpoint,
+  renderLocalPreview,
+  type LocalRender,
+} from "./local-preview-render.ts";
 import { blameRuntimeDockerHost } from "./vm-docker-host.ts";
+import { localPreviewHostGateway } from "../../preview-environment/host-gateway.ts";
+import { environmentPreflightFailure } from "../../preview-environment/environment-preflight.ts";
 
 // Runs a worktree's local preview on the shared Compose engine: Docker
 // orders the services by health, the engine skips setup that is still
@@ -161,7 +168,13 @@ export async function startLocalPreview(
     plan: context.plan,
     selected: context.selected,
     ownPorts,
+    hostGateway: await currentHostGateway(),
+    databaseMode: await readLocalDatabaseMode(worktree),
   });
+  logEnvironment(local.environment, options);
+  const missing = environmentPreflightFailure(local.environment, serviceIds);
+  if (missing)
+    throw new LocalPreviewError("preview_environment_missing", missing);
   if (context.plan.tools?.ttyd && dockerHost === blameRuntimeDockerHost) {
     const installed = await dockerHost.run(
       "sh",
@@ -217,6 +230,8 @@ export async function prefetchLocalPreview(
     plan: context.plan,
     selected: context.selected,
     ownPorts: await runningPorts(engine, context.plan),
+    hostGateway: await currentHostGateway(),
+    databaseMode: await readLocalDatabaseMode(worktree),
   });
   await engine.prepare(local.rendered, local.owner);
   await engine.prefetch(context.plan, {
@@ -499,6 +514,53 @@ async function withLogExcerpt(
     `${logs?.stdout ?? ""}\n${logs?.stderr ?? ""}`,
   );
   return excerpt ? `${message}: ${excerpt}` : message;
+}
+
+/** The environment hash each running service's container started with. */
+// What the run log says about the environment: env files read again from
+// the project, and what may keep a service from reaching its database.
+function logEnvironment(
+  environment: LocalRender["environment"],
+  options: LocalPreviewRunOptions,
+) {
+  if (environment.fromProject.length)
+    options.log?.(
+      `Using the project's current ${environment.fromProject.join(", ")}.\n`,
+    );
+  for (const warning of environment.warnings) options.log?.(`${warning}\n`);
+}
+
+export async function localPreviewEnvironmentLabels(
+  worktree: string,
+): Promise<Record<string, string>> {
+  const project = await localPreviewEngine(worktree).prepared();
+  if (!project) return {};
+  const result = await dockerHost
+    .run("sh", ["-c", environmentLabelsScript, "sh", project.projectName], {
+      timeoutMs: 15_000,
+    })
+    .catch(() => undefined);
+  if (result?.exitCode !== 0) return {};
+  return Object.fromEntries(
+    result.stdout
+      .split("\n")
+      .map((line) => line.split("\t"))
+      .filter(([service]) => Boolean(service))
+      .map(([service, label]) => [service!, label ?? ""]),
+  );
+}
+
+const environmentLabelsScript = `
+ids="$(docker ps --quiet --no-trunc --filter "label=com.docker.compose.project=$1")"
+[ -z "$ids" ] || docker inspect --format '{{index .Config.Labels "com.docker.compose.service"}}\t{{index .Config.Labels "blame.environment"}}' $ids
+`;
+
+// Without a gateway, values that point at the developer's computer stay as
+// they are: the start goes on and the service's own error says why.
+export function currentHostGateway() {
+  return localPreviewHostGateway((command, args) =>
+    dockerHost.run(command, args, { timeoutMs: 15_000 }),
+  ).catch(() => undefined);
 }
 
 async function wanted(options: LocalPreviewRunOptions) {

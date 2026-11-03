@@ -1,4 +1,5 @@
 import type { ClineCore, CoreSessionConfig } from "@cline/sdk";
+import { envFileGuardExtension } from "./env-file-guard.js";
 import { updateProjectCloudIgnore } from "./project-cloud-ignore.js";
 
 import { asRecord, errorMessage, stringValue } from "./cline-runtime-events.js";
@@ -104,6 +105,7 @@ export function initializationConfig(
     enableSpawnAgent: false,
     enableAgentTeams: false,
     extraTools: tools?.length ? tools : undefined,
+    extensions: [envFileGuardExtension()],
     // Room to read a few files and fix rejected submissions in one session.
     maxIterations: 40,
   });

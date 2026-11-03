@@ -144,7 +144,8 @@ import {
   startLocalPreview,
   stopLocalPreview,
 } from "./preview-runtime/local/local-preview-runner.ts";
-import { syncProjectEnvFiles } from "./workspace-env";
+import { prepareStoryEnvFiles } from "./preview-environment/env-file-sources.ts";
+import { forgetStoryVariables } from "./preview-environment/variables-store.ts";
 import {
   ensureGitRepository,
   gitDiffBetween,
@@ -302,6 +303,7 @@ type RunProjectSetupInput = ExecutionContextInput & {
   runConfigurationId?: string | null;
   hostDependenciesChecked?: boolean;
   runtimeProfile: RuntimeProfileId;
+  databaseMode?: ApplyPreviewInitializationInput["databaseMode"] | null;
 };
 
 type PrepareProjectPreviewInput = RunProjectSetupInput;
@@ -880,7 +882,7 @@ async function addStoryWorktree(context: WorktreeCreationContext) {
 async function completeWorktreeCreation(context: WorktreeCreationContext) {
   const { repositoryRoot, startedAt, timings, worktree } = context;
   await timedWorktreeCreateStep(timings, "env sync", () =>
-    syncProjectEnvFiles(repositoryRoot, worktree),
+    prepareStoryEnvFiles(repositoryRoot, worktree),
   );
   invalidateSetupEnvironment(worktree);
   removedWorktrees.delete(worktree);
@@ -1196,6 +1198,7 @@ async function writeProjectPreviewArtifacts(input: PrepareProjectPreviewInput) {
       manifest,
       runConfigurations,
       input.runConfigurationId,
+      input.databaseMode,
     ),
   );
   return { env, worktree };
@@ -1601,6 +1604,7 @@ async function removeWorktree(input: RemoveWorktreeInput) {
         "Unable to completely remove the worktree. Please retry deletion.",
       );
     removedWorktrees.add(worktree);
+    void forgetStoryVariables(worktree);
     return true;
   } finally {
     removingWorktrees.delete(worktree);
@@ -1970,6 +1974,7 @@ export async function applyProjectPreviewInitialization(
           : undefined,
       hostDependenciesChecked: true,
       runtimeProfile: "local-container",
+      databaseMode: input.databaseMode,
     });
     if (state.desiredStatus === "running") {
       await controlProjectPreview({ action: "start", worktree });

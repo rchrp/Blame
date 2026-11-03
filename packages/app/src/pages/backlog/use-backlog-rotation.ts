@@ -345,6 +345,7 @@ export function useBacklogRotation(
         runConfigurationId: detailedStory.runConfigurationId,
         hostDependenciesChecked: true,
         runtimeProfile: previewProfile,
+        databaseMode: initialization.databaseMode,
       })
       sessionPromise = agent.sessions.startDevelopment({
         apiConnection: auth.apiConnection,

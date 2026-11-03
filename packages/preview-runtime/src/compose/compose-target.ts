@@ -11,15 +11,27 @@ import type {
 /** A Vercel sandbox: the runner owns `/workspace` and a gateway fronts it. */
 export type SandboxComposeTarget = {
   kind: "sandbox";
+  /** Labels of each service's container, such as its environment's hash. */
+  serviceLabels?: Record<string, Record<string, string>>;
   projectUser: string;
   proxyCertificatePath: string;
   /** Public URL of each browser-bound endpoint, keyed `service:endpoint`. */
   browserBindingUrls: Record<string, string>;
+  /**
+   * The resolved environment of a service, kept in a file outside the
+   * Compose file and the workspace, keyed by Compose service name. It
+   * replaces the plan's environment of that service.
+   */
+  environmentFiles?: Record<string, string>;
+  /** Env files mounted over workspace paths, as locally. */
+  fileMounts?: Array<{ source: string; target: string }>;
 };
 
 /** The Blame Runtime VM: the story worktree is bind-mounted. */
 export type LocalComposeTarget = {
   kind: "local";
+  /** Labels of each service's container, such as its environment's hash. */
+  serviceLabels?: Record<string, Record<string, string>>;
   projectName: string;
   /** The worktree path on the Docker host. */
   workspacePath: string;
@@ -30,6 +42,8 @@ export type LocalComposeTarget = {
   dependencyKey: string;
   /** Host files mounted over workspace paths, such as materialized env files. */
   fileMounts?: Array<{ source: string; target: string }>;
+  /** Names every container resolves, such as the developer's computer. */
+  extraHosts?: Record<string, string>;
   /** Native Linux keeps downloaded tools in the desktop user's data folder. */
   toolsPath?: string;
 };

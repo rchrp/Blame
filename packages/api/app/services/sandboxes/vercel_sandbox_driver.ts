@@ -1,4 +1,6 @@
 import { previewRuntimeConfig, type PreviewRuntimeConfig } from '#config/preview_runtime'
+import { loadPreviewEnvironment } from '#services/preview_sessions/preview_environment_secrets'
+import type { PreviewEnvironmentSecrets } from '@blame/preview-runtime'
 import PreviewEdgeRouteService from '#services/preview_gateway/preview_edge_route_service'
 import { vercelNetworkPolicy } from '#services/sandboxes/vercel_network_policy'
 import WorkspaceArtifactService from '#services/workspace_artifacts/workspace_artifact_service'
@@ -88,7 +90,11 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
   constructor(
     private readonly config: PreviewRuntimeConfig = previewRuntimeConfig(),
     private readonly routes: PreviewEdgeRouteService = new PreviewEdgeRouteService(config),
-    private readonly artifacts: WorkspaceArtifactService = new WorkspaceArtifactService()
+    private readonly artifacts: WorkspaceArtifactService = new WorkspaceArtifactService(),
+    // The preview's variables, decrypted only for the runner request.
+    private readonly environment: (
+      sessionId: string
+    ) => Promise<PreviewEnvironmentSecrets | undefined> = loadPreviewEnvironment
   ) {}
 
   limits() {
@@ -306,10 +312,12 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
   async prepareEngine(handle: RuntimeHandle, plan: PreviewExecutionPlan) {
     const payload = vercelHandle(handle)
     const { browserBindingUrls, routeIds } = await this.publishPlannedRoutes(payload, plan)
+    const environment = await this.environment(payload.sessionId)
     await measureRuntimePhase('compose.prepare', () =>
       this.runnerCall(handle, {
         operation: 'prepare-engine',
         plan,
+        environment,
         browserBindingUrls,
         routeIds,
         capabilityPublicKey: this.config.capabilityPublicKey,
@@ -333,6 +341,7 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
     const payload = vercelHandle(handle)
     const { browserBindingUrls, routeIds } = await this.publishPlannedRoutes(payload, plan)
     const sandbox = await this.sandbox(payload, true)
+    const environment = await this.environment(payload.sessionId)
     const started = await measureRuntimePhase('preview.start', () =>
       this.runnerCallWithSandbox<{
         observation: RuntimeObservation
@@ -341,6 +350,7 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
         operation: 'start-preview',
         plan,
         selection,
+        environment,
         browserBindingUrls,
         routeIds,
         capabilityPublicKey: this.config.capabilityPublicKey,

@@ -135,7 +135,13 @@ function setupService(task: SetupTaskPlan, context: RenderContext) {
     entrypoint: task.entrypoint,
     command: shellCommand(task.command),
     working_dir: task.workingDir,
-    environment: containerEnvironment(task.environment, context.target),
+    environment: containerEnvironment(
+      environmentFile(setupServiceId(task.id), context.target)
+        ? {}
+        : task.environment,
+      context.target,
+    ),
+    env_file: environmentFile(setupServiceId(task.id), context.target),
     depends_on: dependencyConditions(
       task.dependsOn.filter((id) =>
         context.plan.services.some((service) => service.id === id),
@@ -143,6 +149,7 @@ function setupService(task: SetupTaskPlan, context: RenderContext) {
       context,
     ),
     volumes: serviceVolumes(task, setupServiceId(task.id), context, true),
+    extra_hosts: extraHosts(context.target),
     user: task.runAs === "root" ? "0:0" : context.target.projectUser,
     restart: "no",
   });
@@ -159,12 +166,20 @@ function runtimeService(service: ServiceLaunchPlan, context: RenderContext) {
       service.kind === "dependency" && !service.command
         ? undefined
         : service.workingDir,
-    environment: serviceEnvironment(service, context),
+    environment: serviceEnvironment(
+      environmentFile(service.id, context.target)
+        ? { ...service, environment: {} }
+        : service,
+      context,
+    ),
+    env_file: environmentFile(service.id, context.target),
     depends_on: dependencyConditions(
       [...service.dependsOn, ...(sharesLoopback ? [anchor!] : [])],
       context,
     ),
     network_mode: sharesLoopback ? `service:${anchor}` : undefined,
+    // A service in another's network shares its hosts file.
+    extra_hosts: sharesLoopback ? undefined : extraHosts(context.target),
     // The window manager adds the app's host name to every window title when
     // it differs from the screen's.
     hostname:
@@ -199,6 +214,9 @@ function runtimeService(service: ServiceLaunchPlan, context: RenderContext) {
     // Docker policy would also bring back stopped ones whenever the Blame
     // Runtime restarts.
     restart: context.target.kind === "sandbox" ? "unless-stopped" : "no",
+    // A changed label recreates the container, as a changed environment
+    // does: env files are mounted, so their content is hashed here.
+    labels: context.target.serviceLabels?.[service.id],
   });
 }
 
@@ -255,11 +273,15 @@ function container(context: RenderContext, service: Record<string, unknown>) {
           read_only: false,
         }
       : {};
+  const { labels, ...rest } = service;
   return withoutEmpty({
-    ...service,
+    ...rest,
     init: true,
     stop_grace_period: "5s",
-    labels: { "blame.preview": "true" },
+    labels: {
+      ...(labels as Record<string, string> | undefined),
+      "blame.preview": "true",
+    },
     ...hardened,
   });
 }
@@ -457,19 +479,36 @@ function serviceVolumes(
     : target.kind === "sandbox"
       ? ["/workspace:/workspace:rw", "/workspace/.git:/workspace/.git:ro"]
       : [`${target.workspacePath}:/workspace`];
-  const files =
-    workspace && target.kind === "local"
-      ? (target.fileMounts ?? []).map(
-          ({ source: path, target: file }) =>
-            `${path}:${posix.join("/workspace", file)}:ro`,
-        )
-      : [];
+  const files = workspace
+    ? (target.fileMounts ?? []).map(
+        ({ source: path, target: file }) =>
+          `${path}:${posix.join("/workspace", file)}:ro`,
+      )
+    : [];
   return nonEmpty([
     ...source,
     ...baseVolumes(target),
     ...volumes.map(({ alias, target: path }) => `${alias}:${path}`),
     ...files,
   ]);
+}
+
+// Compose reads it when it creates the container, and `raw` keeps values as
+// written. The runner writes it at every start, before Compose runs.
+function environmentFile(serviceId: string, target: ComposeTarget) {
+  const path =
+    target.kind === "sandbox"
+      ? target.environmentFiles?.[serviceId]
+      : undefined;
+  return path ? [{ path, format: "raw" }] : undefined;
+}
+
+function extraHosts(target: ComposeTarget) {
+  if (target.kind !== "local") return undefined;
+  const entries = Object.entries(target.extraHosts ?? {});
+  return entries.length
+    ? entries.map(([name, address]) => `${name}:${address}`)
+    : undefined;
 }
 
 function baseVolumes(target: ComposeTarget) {

@@ -40,14 +40,16 @@ export function prismaImageIssues(
   ];
 }
 
-// Previews never read a developer's env files for their database: every
-// task that runs a backend gets the database settings its env example
-// lists, under those exact names.
+// With an isolated database, previews never read a developer's env files
+// for their database: every task that runs a backend gets the database
+// settings its env example lists, under those exact names. A preview that
+// uses the project's database declares no database service and reads them
+// from the developer's env files.
 export function databaseEnvironmentIssues(
   manifest: PreviewManifest,
   scan: ProjectInitializationScan | undefined,
 ): Issue[] {
-  if (!scan) return [];
+  if (!scan || !declaresDatabaseService(manifest)) return [];
   const issues: Issue[] = [];
   for (const [path, content] of Object.entries(scan.files)) {
     if (!/(?:^|\/)\.env\.(?:example|sample|template)$/.test(path)) continue;
@@ -284,6 +286,16 @@ export function runsIn(
 
 const databaseEnvironmentKey =
   /^(?:DB|DATABASE|MYSQL|MARIADB|POSTGRES|POSTGRESQL|PG|MONGO|MONGODB|REDIS|MSSQL)(?:_|$)|^(?:PGHOST|PGPORT|PGUSER|PGPASSWORD|PGDATABASE)$|_DATABASE_URL$/;
+
+const databaseImage =
+  /(?:^|\/)(?:postgres|postgis|mysql|mariadb|mongo)(?::|@|$)/;
+
+function declaresDatabaseService(manifest: PreviewManifest) {
+  return manifest.services.some(
+    ({ kind, container }) =>
+      kind === "dependency" && databaseImage.test(container.image ?? ""),
+  );
+}
 
 function databaseKey(key: string) {
   return databaseEnvironmentKey.test(key);

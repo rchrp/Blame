@@ -2,6 +2,7 @@ import {
   RotateCwIcon,
   ScrollTextIcon,
   TriangleAlertIcon,
+  VariableIcon,
   WrenchIcon,
 } from "lucide-react"
 
@@ -14,16 +15,23 @@ import { readableFailure } from "./preview-failure-message"
 export function PreviewFailurePanel({
   message,
   onOpenLogs,
+  onOpenVariables,
   onRestart,
-  repair,
+  repair: repairAction,
   restarting,
 }: {
   message: string
   onOpenLogs: () => void
+  /** Shown when a variable the app needs is missing. */
+  onOpenVariables?: () => void
   onRestart: () => void
   repair?: { label: string; onClick: () => void }
   restarting?: boolean
 }) {
+  // A missing variable is the person's to set: repairing the setup cannot.
+  const missingVariable =
+    Boolean(onOpenVariables) && /\bVariables tab\b/.test(message)
+  const repair = missingVariable ? undefined : repairAction
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-muted/20 px-4 pt-[72px] pb-4">
       <div
@@ -40,6 +48,12 @@ export function PreviewFailurePanel({
           </p>
         </div>
         <div className="flex flex-wrap items-center justify-center gap-2">
+          {missingVariable && (
+            <Button size="sm" onClick={onOpenVariables}>
+              <VariableIcon />
+              Open Variables
+            </Button>
+          )}
           {repair && (
             <Button size="sm" onClick={repair.onClick}>
               <WrenchIcon />
@@ -49,7 +63,7 @@ export function PreviewFailurePanel({
           <Button
             disabled={restarting}
             size="sm"
-            variant={repair ? "outline" : "default"}
+            variant={repair || missingVariable ? "outline" : "default"}
             onClick={onRestart}
           >
             <RotateCwIcon />

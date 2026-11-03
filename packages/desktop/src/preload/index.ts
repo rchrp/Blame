@@ -285,6 +285,13 @@ const api: BlameDesktopApi = {
     setAdvancedDiagnostics: (input) =>
       ipcRenderer.invoke("preview-devtools:set-advanced", input),
   },
+  previewEnvironment: {
+    describe: (input) =>
+      ipcRenderer.invoke("preview-environment:describe", input),
+    set: (input) => ipcRenderer.invoke("preview-environment:set", input),
+    dismissRequest: (input) =>
+      ipcRenderer.invoke("preview-environment:dismiss-request", input),
+  },
   agentScreenshots: {
     cache: (input) => ipcRenderer.invoke("agent-screenshots:cache", input),
     copy: (input) => ipcRenderer.invoke("agent-screenshots:copy", input),
@@ -445,6 +452,8 @@ const api: BlameDesktopApi = {
       ipcRenderer.invoke("workspace:create-worktree", input),
     checkHostDependencies: (input) =>
       ipcRenderer.invoke("workspace:check-host-dependencies", input),
+    databaseEvidence: (input) =>
+      ipcRenderer.invoke("preview-environment:database-evidence", input),
     prepareProjectPreview: (input) =>
       ipcRenderer.invoke("workspace:prepare-project-preview", input),
     runProjectSetup: (input) =>

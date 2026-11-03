@@ -283,3 +283,59 @@ test("reads service states from the Docker Engine, without one-off containers", 
   const query = host.commands.at(-1)!;
   assert.equal(query.at(-1), "blame_storya");
 });
+
+// Compose only says "dependency api failed to start: container is
+// unhealthy"; the failure names the service and quotes its own error.
+class FailingUpHost extends FakeHost {
+  override async run(command: string, args: string[]): Promise<CommandResult> {
+    if (args.includes("up")) {
+      this.commands.push([command, ...args]);
+      return {
+        exitCode: 1,
+        stdout: "",
+        stderr:
+          "dependency failed to start: container blame_storya-web-1 is unhealthy",
+      };
+    }
+    if (args.includes("logs") && args.includes("web")) {
+      this.commands.push([command, ...args]);
+      return ok(
+        [
+          "web-1  | [info] starting HTTP server",
+          "web-1  | Error: connect ECONNREFUSED 127.0.0.1:5432",
+        ].join("\n"),
+      );
+    }
+    return super.run(command, args);
+  }
+}
+
+test("a failed start names the unhealthy service and quotes its last error", async () => {
+  const host = new FailingUpHost();
+  const engine = engineFor(host, "story-a");
+  await engine.prepare(renderCompose(plan(), target("story-a")), owner);
+  host.containers = [
+    "web\tFalse\trunning\t0\tunhealthy",
+    "db\tFalse\trunning\t0\thealthy",
+  ];
+  await assert.rejects(
+    engine.start(plan(), ["web"], fingerprints),
+    (error: Error & { runnerCode?: string }) =>
+      error.runnerCode === "SERVICE_FAILED" &&
+      error.message.startsWith(
+        "Service web failed its healthcheck. Its last lines: Error: connect ECONNREFUSED 127.0.0.1:5432",
+      ) &&
+      error.message.includes("container blame_storya-web-1 is unhealthy"),
+  );
+});
+
+test("a failed start without a failed service keeps Compose's message", async () => {
+  const host = new FailingUpHost();
+  const engine = engineFor(host, "story-a");
+  await engine.prepare(renderCompose(plan(), target("story-a")), owner);
+  host.containers = ["web\tFalse\trunning\t0\thealthy"];
+  await assert.rejects(
+    engine.start(plan(), ["web"], fingerprints),
+    /Compose up failed \(exit code 1\): dependency failed to start/,
+  );
+});

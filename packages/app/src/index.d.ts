@@ -3,6 +3,8 @@ import type { Root } from "react-dom/client"
 import type { ComponentType } from "react"
 import type { Platform } from "./context/platform"
 export type { LocalApiClient } from "./context/platform-local-api"
+export type { PreviewEnvironmentClient } from "./context/platform-preview-environment"
+export type { PreviewDevtoolsSettingsClient } from "./context/platform-preview-devtools"
 export type {
   PreviewTerminalClient,
   PreviewSurfacesClient,
@@ -15,7 +17,6 @@ export type {
   AgentScreenshotData,
   AgentScreenshotMetadata,
   AgentScreenshotsClient,
-  PreviewDevtoolsSettingsClient,
   BacklogStatusPipRequest,
   BacklogStatusPipSnapshot,
   CloudAuthRequestClient,

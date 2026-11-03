@@ -1,3 +1,4 @@
+import { cloudPreviewEnvironment } from "../preview-environment/cloud-environment.ts";
 import type {
   PreviewSessionCommand,
   PreviewSessionEvent,
@@ -44,9 +45,14 @@ export class PreviewService {
   async create(input: ManagedPreviewCreateInput) {
     const sourceMetadata = await this.sync.prepareInitial(input.localPath);
     const { localPath: _localPath, ...cloudInput } = input;
+    // Without a readable setup, the preview starts with the manifest alone.
+    const environment = await cloudPreviewEnvironment(input.localPath).catch(
+      () => undefined,
+    );
     const session = await this.cloudClient().create({
       ...cloudInput,
       sourceMetadata,
+      ...(environment ? { environment } : {}),
     });
     this.started.add(session.id);
     return session;

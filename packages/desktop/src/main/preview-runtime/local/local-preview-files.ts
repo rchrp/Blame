@@ -2,6 +2,7 @@ import {
   parsePreviewManifest,
   parseRunConfigurations,
   type PreviewManifest,
+  type ProjectInitializationDatabaseMode,
   type ProjectRunConfiguration,
 } from "@blame/agent-runtime";
 import {
@@ -32,6 +33,7 @@ export type LocalPreviewErrorCode =
   | "preview_configuration_host_only"
   | "preview_container_stopped"
   | "preview_dependency_timeout"
+  | "preview_environment_missing"
   | "preview_manifest_invalid"
   | "preview_probe_failed"
   | "preview_response_timeout"
@@ -64,6 +66,7 @@ export function localPreviewPaths(worktree: string) {
       initialization,
       "preview-runtime-state.json",
     ),
+    environment: joinWorkspacePath(initialization, "preview-environment.json"),
     engineState: joinWorkspacePath(worktree, ".blame", "preview"),
     setupLog: joinWorkspacePath(worktree, ".blame", "logs", "setup.log"),
     timingLog: joinWorkspacePath(worktree, ".blame", "logs", "timing.jsonl"),
@@ -75,6 +78,7 @@ export async function writeLocalPreviewInitialization(
   manifest: PreviewManifest,
   runConfigurations: ProjectRunConfiguration[],
   runConfigurationId?: string | null,
+  databaseMode?: ProjectInitializationDatabaseMode | null,
 ) {
   const paths = localPreviewPaths(worktree);
   const initialization = dirnameWorkspacePath(paths.manifest);
@@ -94,12 +98,35 @@ export async function writeLocalPreviewInitialization(
     worktree,
     initialPreviewRuntimeSelection(runConfigurations, runConfigurationId),
   );
+  // The database mode chosen for the project; without it, the env layer
+  // reads it from the manifest.
+  if (databaseMode)
+    await writeFileAtomic(
+      paths.environment,
+      `${JSON.stringify({ databaseMode })}\n`,
+    );
   // Files of the previous local engine.
   await Promise.all(
     ["docker-compose.yml", "setup.sh"].map((file) =>
       rm(joinWorkspacePath(initialization, file)).catch(() => undefined),
     ),
   );
+}
+
+/** The database mode saved with the story's setup, if any. */
+export async function readLocalDatabaseMode(
+  worktree: string,
+): Promise<ProjectInitializationDatabaseMode | undefined> {
+  try {
+    const value = JSON.parse(
+      await readFile(localPreviewPaths(worktree).environment),
+    ) as { databaseMode?: unknown };
+    return value.databaseMode === "compose" || value.databaseMode === "existing"
+      ? value.databaseMode
+      : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 export async function readLocalPreviewManifest(worktree: string) {

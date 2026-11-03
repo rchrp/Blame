@@ -4,9 +4,11 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { dirname } from "node:path";
 import type {
+  PreviewEnvironmentSecrets,
   PreviewExecutionPlan,
   RuntimeSelection,
 } from "@blame/preview-runtime";
+import { writeEnvironmentFiles } from "./environment-files.js";
 import { previewEnvironmentValueRejection } from "@blame/preview-runtime";
 import {
   ComposeEngine,
@@ -61,6 +63,7 @@ export class ComposeSupervisor {
   async prepare(
     plan: PreviewExecutionPlan,
     browserBindingUrls: Record<string, string>,
+    environment?: PreviewEnvironmentSecrets,
   ) {
     validateComposePlan(plan);
     if (!existsSync(proxyCertificatePath)) {
@@ -70,11 +73,18 @@ export class ComposeSupervisor {
       );
     }
     const identity = await projectIdentity();
+    const secrets = await writeEnvironmentFiles(environment, identity);
+    for (const skipped of secrets.skipped)
+      appendSetupLog(
+        `Variable ${skipped} spans several lines and was left out of the preview.\n`,
+      );
     const rendered = renderCompose(plan, {
       kind: "sandbox",
       projectUser: `${identity.uid}:${identity.gid}`,
       proxyCertificatePath,
       browserBindingUrls,
+      environmentFiles: secrets.environmentFiles,
+      fileMounts: secrets.fileMounts,
     });
     await ensureDockerEngine();
     await engine.prepare(rendered, identity);

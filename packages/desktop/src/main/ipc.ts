@@ -1,3 +1,4 @@
+import { dirname, join } from "node:path";
 import { registerPreviewDevicesIpc } from "./ipc/preview-devices-ipc";
 import {
   ipcMain,
@@ -28,6 +29,8 @@ import { registerPreviewRuntimeIpcHandlers } from "./ipc/preview-runtime-ipc";
 import { registerTelemetryIpcHandlers } from "./telemetry-ipc";
 import { registerTerminalIpcHandlers } from "./terminal-ipc";
 import { registerPreviewSurfacesIpc } from "./ipc/preview-surfaces-ipc";
+import { configurePreviewVariables } from "./preview-environment/variables-store";
+import { registerPreviewEnvironmentIpcHandlers } from "./ipc/preview-environment-ipc";
 import {
   localPreviewBridgeGrant,
   registerWorkspaceIpcHandlers,
@@ -105,6 +108,10 @@ export function registerDesktopIpcHandlers(options: DesktopIpcOptions) {
     packaged: options.packaged,
   });
   localApi = new LocalApiService(options.localApi);
+  configurePreviewVariables(
+    join(dirname(options.localApi.dataDirectory), "preview-variables.json"),
+    options.localApi.secrets,
+  );
   registerLocalApiIpcHandlers({
     isAppWindow: options.isAppWindow,
     service: localApi,
@@ -139,6 +146,7 @@ export function registerDesktopIpcHandlers(options: DesktopIpcOptions) {
   registerPreviewDevtoolsSettingsIpcHandlers({
     isAppWindow: options.isAppWindow,
   });
+  registerPreviewEnvironmentIpcHandlers({ isAppWindow: options.isAppWindow });
   registerMcpIpcHandlers();
   registerTerminalIpcHandlers();
   registerTelemetryIpcHandlers(options.telemetry);

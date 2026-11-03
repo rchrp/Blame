@@ -1,12 +1,10 @@
 import {
-  copyFile,
   link,
   lstat,
   mkdir,
   readFile,
   readdir,
   readlink,
-  rm,
   stat,
   symlink,
   writeFile,
@@ -32,15 +30,32 @@ import {
   writeFile as writeRuntimeFile,
 } from "./workspace-runtime.ts";
 import { runtimeAgentClient, runtimeAgentSupported } from "./runtime-agent.ts";
+import {
+  localDatabaseHostRewrite,
+  previewDatabaseEnvironmentKey,
+  type PreviewDatabaseMode,
+} from "./preview-environment/database-environment.ts";
+
+export { previewDatabaseEnvironmentKey };
 
 const ignoredEnvDirectories = new Set([
   ".git",
   ".blame",
+  ".claude",
+  ".next",
+  ".nuxt",
+  ".output",
+  ".svelte-kit",
+  ".turbo",
+  ".venv",
   "build",
   "coverage",
   "dist",
   "node_modules",
   "out",
+  "target",
+  "vendor",
+  "venv",
 ]);
 
 const envTemplateSuffixes = [".example", ".sample", ".template"];
@@ -49,7 +64,7 @@ type Linker = (sourcePath: string, destinationPath: string) => Promise<void>;
 
 export type SyncedEnvFile = {
   destinationPath: string;
-  linkedAs: "hardlink" | "symlink" | "runtime-copy";
+  linkedAs: "hardlink" | "symlink" | "runtime-copy" | "kept";
   sourcePath: string;
 };
 
@@ -66,16 +81,18 @@ export type EnvFileOverride = {
   replacements?: Record<string, string>;
 };
 
-// Settings that connect to a database, cache or queue. A developer's env
-// file points them at their own data (a local server, a tunnel to
-// production): a preview never reads them from there, only from the
-// manifest, which gives it its own database.
-const databaseEnvironmentKey =
-  /^(?:DB|DATABASE|MYSQL|MARIADB|POSTGRES|POSTGRESQL|PG|MONGO|MONGODB|REDIS|MSSQL|SQL)(?:_|$)|^(?:PGHOST|PGPORT|PGUSER|PGPASSWORD|PGDATABASE|DIRECT_URL)$|_(?:DATABASE_URL|DB_URL|DSN)$/;
+/**
+ * How an env file treats database settings. With an isolated database the
+ * developer's settings, which point at their own data, are left out; with
+ * the project's database they are kept, a host on the developer's computer
+ * renamed to `hostAlias`.
+ */
+export type PreviewEnvDatabase = {
+  mode: PreviewDatabaseMode;
+  hostAlias?: string;
+};
 
-export function previewDatabaseEnvironmentKey(key: string) {
-  return databaseEnvironmentKey.test(key);
-}
+const isolatedDatabase: PreviewEnvDatabase = { mode: "compose" };
 
 const publicOriginEnvironmentKeys = new Set([
   "APP_URL",
@@ -89,6 +106,10 @@ const publicOriginEnvironmentKeys = new Set([
   "SITE_URL",
 ]);
 
+// A new story starts with the project's env files. Previews read them again
+// at each start (see preview-environment/env-file-sources.ts); this copy is
+// for the agent's own commands. Nothing is written into the project: an
+// example stays an example, and a story's own env file stays its own.
 export async function syncProjectEnvFiles(
   repositoryRoot: string,
   worktree: string,
@@ -96,8 +117,11 @@ export async function syncProjectEnvFiles(
     isManaged: runtimeManagedPath,
     write: writeRuntimeEnvFile,
   },
+  include: (paths: string[]) => Promise<string[]> = async (paths) => paths,
 ) {
-  const files = await prepareProjectEnvFiles(repositoryRoot);
+  const files = await include(
+    uniqueStrings((await projectEnvFiles(repositoryRoot)).runtime),
+  );
   return Promise.all(
     files.map((path) =>
       linkWorktreeEnvFile(repositoryRoot, worktree, path, runtimeFiles),
@@ -124,10 +148,8 @@ async function linkWorktreeEnvFile(
   }
   if (await sameFile(sourcePath, destinationPath))
     return { destinationPath, linkedAs: "hardlink", sourcePath };
-  if (await pathExists(destinationPath)) {
-    await mergeEnvFileValues(destinationPath, sourcePath);
-    await rm(destinationPath, { force: true });
-  }
+  if (await pathExists(destinationPath))
+    return { destinationPath, linkedAs: "kept", sourcePath };
   await mkdir(dirname(destinationPath), { recursive: true });
   const linkedAs = await linkEnvFile(sourcePath, destinationPath);
   return { destinationPath, linkedAs, sourcePath };
@@ -161,6 +183,7 @@ export async function materializedPreviewEnvHostFileMounts(
   worktree: string,
   previewOrigin: string | undefined,
   overrides: EnvFileOverride[] = [],
+  database: PreviewEnvDatabase = isolatedDatabase,
 ) {
   const files = await projectEnvFiles(worktree);
   const mounts = await Promise.all(
@@ -170,6 +193,7 @@ export async function materializedPreviewEnvHostFileMounts(
         path,
         previewOrigin,
         overrides,
+        database,
       ),
     ),
   );
@@ -180,6 +204,7 @@ export async function materializedPreviewEnvFilesMatch(
   worktree: string,
   previewOrigin: string | undefined,
   overrides: EnvFileOverride[] = [],
+  database: PreviewEnvDatabase = isolatedDatabase,
 ) {
   const files = await projectEnvFiles(worktree);
   const matches = await Promise.all(
@@ -189,6 +214,7 @@ export async function materializedPreviewEnvFilesMatch(
         path,
         previewOrigin,
         overrides,
+        database,
       ),
     ),
   );
@@ -200,6 +226,7 @@ async function materializedPreviewEnvHostFileMount(
   path: string,
   previewOrigin: string | undefined,
   overrides: EnvFileOverride[],
+  database: PreviewEnvDatabase,
 ) {
   const content = await readWorkspaceEnvFile(path);
   const override = envFileOverride(worktree, path, overrides);
@@ -208,6 +235,7 @@ async function materializedPreviewEnvHostFileMount(
     previewOrigin,
     override.values,
     override.replacements,
+    database,
   );
   if (materialized === content) return null;
   const relativePath = relativeWorkspacePath(worktree, path);
@@ -229,6 +257,7 @@ async function materializedPreviewEnvFileMatches(
   path: string,
   previewOrigin: string | undefined,
   overrides: EnvFileOverride[],
+  database: PreviewEnvDatabase,
 ) {
   const content = await readWorkspaceEnvFile(path);
   const override = envFileOverride(worktree, path, overrides);
@@ -237,6 +266,7 @@ async function materializedPreviewEnvFileMatches(
     previewOrigin,
     override.values,
     override.replacements,
+    database,
   );
   if (materialized === content) return true;
   const relativePath = relativeWorkspacePath(worktree, path);
@@ -258,6 +288,7 @@ export function materializePreviewEnvValues(
   previewOrigin: string | undefined,
   overrides: Record<string, string> = {},
   replacements: Record<string, string> = {},
+  database: PreviewEnvDatabase = isolatedDatabase,
 ) {
   let hasPublicOrigin = false;
   let hasNextPublicAppUrl = false;
@@ -270,8 +301,14 @@ export function materializePreviewEnvValues(
     const value = overrides[parsed.key] ?? replacements[parsed.key];
     if (value !== undefined)
       return materializedEnvLine(parsed.key, parsed.value, value);
-    if (previewDatabaseEnvironmentKey(parsed.key))
-      return `# ${parsed.key} left out by Blame: a preview uses its own database.`;
+    if (previewDatabaseEnvironmentKey(parsed.key)) {
+      if (database.mode === "compose")
+        return `# ${parsed.key} left out by Blame: a preview uses its own database.`;
+      const rewritten =
+        database.hostAlias &&
+        localDatabaseHostRewrite(parsed.key, parsed.value, database.hostAlias);
+      return rewritten ? `${parsed.key}=${rewritten}` : line;
+    }
     if (!previewOrigin || !publicOriginEnvironmentKeys.has(parsed.key))
       return line;
     hasPublicOrigin = true;
@@ -364,27 +401,6 @@ async function writeRuntimeEnvFile(
   await writeRuntimeFile(destinationPath, content);
 }
 
-async function prepareProjectEnvFiles(root: string) {
-  const files = await projectEnvFiles(root);
-  await Promise.all(
-    files.templates.map(async (templatePath) => {
-      const runtimePath = runtimeEnvPath(templatePath);
-      if (!runtimePath || (await pathExists(runtimePath))) return;
-      await copyFile(templatePath, runtimePath);
-      files.runtime.push(runtimePath);
-    }),
-  );
-  return uniqueStrings(files.runtime);
-}
-
-function runtimeEnvPath(path: string) {
-  const suffix = envTemplateSuffixes.find((suffix) => path.endsWith(suffix));
-  if (!suffix) return undefined;
-  const runtimePath = path.slice(0, -suffix.length);
-  if (!runtimeEnvFile(basename(runtimePath))) return undefined;
-  return runtimePath;
-}
-
 async function sameFile(left: string, right: string) {
   try {
     const [leftStat, rightStat] = await Promise.all([stat(left), stat(right)]);
@@ -401,13 +417,6 @@ async function pathExists(path: string) {
   } catch {
     return false;
   }
-}
-
-async function mergeEnvFileValues(sourcePath: string, destinationPath: string) {
-  const source = await readFile(sourcePath, "utf8");
-  const destination = await readFile(destinationPath, "utf8");
-  const merged = mergeEnvValues(source, destination);
-  if (merged !== destination) await writeFile(destinationPath, merged, "utf8");
 }
 
 export function mergeEnvValues(source: string, destination: string) {
@@ -459,7 +468,7 @@ export function crossDeviceLinkError(error: unknown) {
   );
 }
 
-async function projectEnvFiles(root: string) {
+export async function projectEnvFiles(root: string) {
   if (runtimeManagedPath(root) && runtimeAgentSupported(process.platform)) {
     try {
       return await runtimeAgentClient().scanEnvFiles(root);
@@ -554,12 +563,12 @@ export function relativeWorkspacePath(
   return paths.relative(root, path).replace(/\\/g, "/");
 }
 
-async function readWorkspaceEnvFile(path: string) {
+export async function readWorkspaceEnvFile(path: string) {
   if (runtimeManagedPath(path)) return readRuntimeFile(path);
   return readFile(path, "utf8");
 }
 
-async function writeWorkspaceEnvFile(path: string, content: string) {
+export async function writeWorkspaceEnvFile(path: string, content: string) {
   if (await workspaceEnvFileMatches(path, content)) return;
   if (!runtimeManagedPath(path)) {
     await mkdir(dirname(path), { recursive: true });

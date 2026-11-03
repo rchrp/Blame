@@ -188,7 +188,7 @@ test("renders the worktree with its env files bound to the published ports", asy
   const override = join(worktree, ".blame/env-overrides/.env");
   assert.equal(
     await readFile(override, "utf8"),
-    `NEXTAUTH_URL=http://localhost:${webPort}\nPUBLIC_API_URL=http://localhost:${apiPort}\nNEXT_PUBLIC_APP_URL=http://localhost:${webPort}\n`,
+    `NEXTAUTH_URL=http://localhost:${webPort}\nPUBLIC_API_URL=http://localhost:${apiPort}\nHOST=0.0.0.0\nPORT=3000\nNEXT_PUBLIC_APP_URL=http://localhost:${webPort}\n`,
   );
   assert.ok(
     compose.services.web!.volumes!.includes(`${override}:/workspace/.env:ro`),

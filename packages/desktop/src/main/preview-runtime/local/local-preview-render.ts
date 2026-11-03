@@ -10,7 +10,6 @@ import { previewComposeProjectName } from "../../preview-readiness.ts";
 import {
   envHostFileMounts,
   materializedPreviewEnvHostFileMounts,
-  type EnvFileOverride,
 } from "../../workspace-env.ts";
 import {
   findProjectFilesByName,
@@ -21,13 +20,30 @@ import {
   runtimeManagedPath,
 } from "../../workspace-runtime.ts";
 import { allocatePreviewHostPorts } from "./local-preview-ports.ts";
+import {
+  previewDatabaseMode,
+  type PreviewDatabaseMode,
+} from "../../preview-environment/database-environment.ts";
+import {
+  previewExtraHosts,
+  type PreviewHostGateway,
+} from "../../preview-environment/host-gateway.ts";
+import { worktreeEnvDeclarations } from "../../preview-environment/env-declarations.ts";
+import {
+  environmentFingerprints,
+  environmentLabel,
+  planWithResolvedEnvironment,
+  renderedBindingValues,
+  resolveWorktreeEnvironment,
+} from "../../preview-environment/worktree-environment.ts";
 
 // Renders a worktree's plan for the Blame Runtime: the worktree is mounted
 // at /workspace, every endpoint gets a port on this computer, worktrees with
 // the same dependency manifests share their node_modules volumes, and env
-// files are materialized for the preview and mounted over the originals:
-// with the preview origin, its bindings and the manifest's values, and
-// without the developer's database settings.
+// variables are resolved from their layers (see preview-environment/), and
+// env files are materialized for the preview and mounted over the
+// originals, with the stronger values written in. Every container reaches
+// the developer's computer at the host gateway's alias.
 
 const dependencyManifestFiles = [
   "package.json",
@@ -47,14 +63,18 @@ export async function renderLocalPreview(input: {
   plan: PreviewExecutionPlan;
   selected?: ProjectRunConfiguration;
   ownPorts?: ReadonlySet<number>;
+  databaseMode?: PreviewDatabaseMode | null;
+  hostGateway?: PreviewHostGateway;
 }) {
   const { worktree, plan } = input;
-  const [projectUser, hostPorts, dependencyKey, symlinkMounts] =
+  const databaseMode = previewDatabaseMode(plan, input.databaseMode);
+  const [projectUser, hostPorts, dependencyKey, symlinkMounts, declarations] =
     await Promise.all([
       worktreeOwner(worktree),
       allocatePreviewHostPorts(worktree, plan, input.ownPorts),
       dependencyHash(worktree, plan),
       envHostFileMounts(worktree),
+      worktreeEnvDeclarations(worktree),
     ]);
   const target = {
     kind: "local" as const,
@@ -64,22 +84,45 @@ export async function renderLocalPreview(input: {
     hostPorts,
     dependencyKey,
     toolsPath: localPreviewToolsPath(),
+    extraHosts: previewExtraHosts(input.hostGateway),
   };
   const draft = renderCompose(plan, target);
   const origin = previewOrigin(plan, hostPorts, input.selected);
-  const overrides = environmentOverrides(plan, draft.yaml);
+  const environment = await resolveWorktreeEnvironment({
+    worktree,
+    plan,
+    bindings: renderedBindingValues(plan, draft.yaml),
+    previewOrigin: origin,
+    databaseMode,
+    hostGateway: input.hostGateway,
+    declarations,
+    write: true,
+  });
   const materialized = await materializedPreviewEnvHostFileMounts(
     worktree,
     origin,
-    overrides,
+    Object.entries(environment.resolved.fileValues).map(
+      ([directory, values]) => ({ directory, values }),
+    ),
+    { mode: databaseMode, hostAlias: input.hostGateway?.alias },
   );
-  const rendered = renderCompose(plan, {
-    ...target,
-    fileMounts: [...symlinkMounts, ...materialized].map((mount) => ({
-      source: mount.hostPath,
-      target: mount.containerPath,
-    })),
-  });
+  const fingerprints = environmentFingerprints(environment.resolved);
+  const rendered = renderCompose(
+    planWithResolvedEnvironment(plan, environment.resolved),
+    {
+      ...target,
+      fileMounts: [...symlinkMounts, ...materialized].map((mount) => ({
+        source: mount.hostPath,
+        target: mount.containerPath,
+      })),
+      serviceLabels: Object.fromEntries(
+        Object.entries(fingerprints).map(([id, hash]) => [
+          id,
+          { [environmentLabel]: hash },
+        ]),
+      ),
+    },
+  );
   await createMountTargets(worktree, rendered.yaml);
   return {
     rendered,
@@ -87,6 +130,8 @@ export async function renderLocalPreview(input: {
     hostPorts,
     dependencyKey,
     previewOrigin: origin,
+    databaseMode,
+    environment,
   };
 }
 
@@ -150,61 +195,6 @@ type ComposeDocument = {
     }
   >;
 };
-
-// The values bound for each directory, so an env file there names them
-// too, and the values the manifest sets there, so a loader that lets the
-// env file win still reads the manifest's.
-function environmentOverrides(
-  plan: PreviewExecutionPlan,
-  yaml: string,
-): EnvFileOverride[] {
-  const services = (parseYaml(yaml) as ComposeDocument).services ?? {};
-  const bound = new Map<string, Record<string, string>>();
-  const set = new Map<string, Record<string, string>>();
-  for (const service of plan.services) {
-    const directory = workspaceDirectory(service.workingDir);
-    if (!directory || !service.bindings.length) continue;
-    const environment = services[service.id]?.environment ?? {};
-    for (const { targetKey } of service.bindings) {
-      const value = environment[targetKey]?.replace(/\$\$/g, "$");
-      if (value !== undefined) merge(bound, directory, targetKey, value);
-    }
-  }
-  for (const task of [...plan.setup, ...plan.services]) {
-    const directory = workspaceDirectory(task.workingDir);
-    if (!directory) continue;
-    for (const [key, value] of Object.entries(task.environment))
-      merge(set, directory, key, value.replace(/\$\$/g, "$"));
-  }
-  return [...new Set([...bound.keys(), ...set.keys()])].map((directory) => ({
-    directory,
-    values: settled(bound.get(directory)),
-    replacements: settled(set.get(directory)),
-  }));
-}
-
-// Two tasks of one directory with different values: neither can be
-// written to their shared env file.
-function merge(
-  byDirectory: Map<string, Record<string, string>>,
-  directory: string,
-  key: string,
-  value: string,
-) {
-  const values = byDirectory.get(directory) ?? {};
-  values[key] = key in values && values[key] !== value ? "" : value;
-  byDirectory.set(directory, values);
-}
-
-function settled(values: Record<string, string> = {}) {
-  return Object.fromEntries(Object.entries(values).filter(([, v]) => v));
-}
-
-function workspaceDirectory(workingDir: string) {
-  if (workingDir === "/workspace") return ".";
-  if (!workingDir.startsWith("/workspace/")) return undefined;
-  return workingDir.slice("/workspace/".length).replace(/\/+$/g, "");
-}
 
 const owners = new Map<string, Promise<{ uid: number; gid: number }>>();
 

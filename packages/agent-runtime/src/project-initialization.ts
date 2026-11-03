@@ -738,7 +738,7 @@ function databasePreferencePrompt(
   }
   if (preferences?.database?.mode === "existing") {
     return [
-      "Database preference: use the project's configured database. Do not declare a database dependency service or copy database credentials into the manifest.",
+      "Database preference: use the project's configured database. Do not declare a database dependency service or copy database credentials into the manifest: Blame gives each preview the developer's database settings from their env files, with localhost renamed so containers reach it.",
     ];
   }
   return [];

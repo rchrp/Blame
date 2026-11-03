@@ -21,20 +21,31 @@ export function subscribeProjectInitializationUpdated(
 const projectInitializationRunRequestedEvent =
   "project-initialization:run-requested"
 
+type RunRequest = {
+  projectId: string
+  /** A database mode chosen up front: the run does not ask for it. */
+  databaseMode?: "compose" | "existing"
+}
+
 /** Asks the mounted initialization runner to run this project again. */
-export function requestProjectInitializationRun(projectId: string) {
+export function requestProjectInitializationRun(
+  projectId: string,
+  options: { databaseMode?: "compose" | "existing" } = {}
+) {
   window.dispatchEvent(
-    new CustomEvent(projectInitializationRunRequestedEvent, {
-      detail: projectId,
+    new CustomEvent<RunRequest>(projectInitializationRunRequestedEvent, {
+      detail: { projectId, ...options },
     })
   )
 }
 
 export function subscribeProjectInitializationRunRequested(
-  callback: (projectId: string) => void
+  callback: (projectId: string, options: Omit<RunRequest, "projectId">) => void
 ) {
-  const handleRequest = (event: Event) =>
-    callback((event as CustomEvent<string>).detail)
+  const handleRequest = (event: Event) => {
+    const { projectId, ...options } = (event as CustomEvent<RunRequest>).detail
+    callback(projectId, options)
+  }
   window.addEventListener(projectInitializationRunRequestedEvent, handleRequest)
   return () =>
     window.removeEventListener(

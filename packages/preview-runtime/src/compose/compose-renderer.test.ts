@@ -345,3 +345,48 @@ function plan(options: { loopback?: boolean } = {}): PreviewExecutionPlan {
     };
   }
 }
+
+test("maps the developer's computer into every local container but loopback members", () => {
+  const extraHosts = { "host.docker.internal": "192.168.5.2" };
+  const shared = render(plan({ loopback: true }), { ...local, extraHosts });
+  assert.deepEqual(shared.services.frontend!.extra_hosts, [
+    "host.docker.internal:192.168.5.2",
+  ]);
+  // A service in another's network shares its hosts file; Docker refuses both.
+  assert.equal(shared.services.backend!.extra_hosts, undefined);
+  const separate = render(plan(), { ...local, extraHosts });
+  for (const service of Object.values(separate.services))
+    assert.deepEqual(service.extra_hosts, ["host.docker.internal:192.168.5.2"]);
+  assert.equal(
+    render(plan(), sandbox).services.frontend!.extra_hosts,
+    undefined,
+  );
+  assert.equal(render(plan(), local).services.frontend!.extra_hosts, undefined);
+});
+
+test("gives a sandbox service its resolved environment from a file outside the Compose file", () => {
+  const compose = render(plan(), {
+    ...sandbox,
+    environmentFiles: { backend: "/run/blame/environment/backend.env" },
+    fileMounts: [
+      { source: "/run/blame/environment/files/.env", target: ".env" },
+    ],
+  });
+  const backend = compose.services.backend!;
+  assert.deepEqual(backend.env_file, [
+    { path: "/run/blame/environment/backend.env", format: "raw" },
+  ]);
+  const environment = backend.environment as Record<string, string>;
+  // The plan's literals give way to the file; Blame's own values stay.
+  assert.equal(environment.HOME, "/tmp/blame-home");
+  assert.equal(environment.NODE_EXTRA_CA_CERTS, "/etc/proxy-ca.pem");
+  assert.ok(
+    (backend.volumes as string[]).includes(
+      "/run/blame/environment/files/.env:/workspace/.env:ro",
+    ),
+  );
+  assert.equal(compose.services.frontend!.env_file, undefined);
+  assert.ok(
+    Object.keys(compose.services.frontend!.environment as object).length > 2,
+  );
+});
