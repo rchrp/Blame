@@ -210,6 +210,16 @@ test("the project's database keeps the developer's settings, renamed to reach th
   );
   // The env file carries them; the container environment does not repeat them.
   assert.equal(result.items[0]!.environment.DATABASE_URL, undefined);
+  // A value someone set in the Variables tab is renamed the same way.
+  const overridden = resolve({
+    databaseMode: "existing",
+    hostAlias: "host.docker.internal",
+    story: [{ key: "DATABASE_URL", value: "mysql://u:p@127.0.0.1:3306/app" }],
+  });
+  assert.equal(
+    overridden.items[0]!.environment.DATABASE_URL,
+    "mysql://u:p@host.docker.internal:3306/app",
+  );
 });
 
 test("keeps the addresses and ports the preview needs over the developer's", () => {

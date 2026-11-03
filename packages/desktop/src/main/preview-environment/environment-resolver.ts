@@ -206,7 +206,11 @@ function resolveItem(
     [2, "story", input.story],
   ] as const) {
     for (const variable of scopedVariables(variables, task.id))
-      add(variable.key, { layer, source, value: variable.value });
+      add(variable.key, {
+        ...computerHostRewrite(input, variable.key, variable.value),
+        layer,
+        source,
+      });
   }
   const declared = new Map(
     (directory === undefined
@@ -265,17 +269,27 @@ function envFileCandidate(
       removed: true,
       note: "Left out: this preview uses its own isolated database.",
     };
+  return { ...computerHostRewrite(input, key, value), layer, source, file };
+}
+
+// The project's own database on the developer's computer, as the env file
+// or a person wrote it, renamed to what containers reach.
+function computerHostRewrite(
+  input: ResolveEnvironmentInput,
+  key: string,
+  value: string,
+) {
   const rewritten =
-    input.hostAlias && localDatabaseHostRewrite(key, value, input.hostAlias);
+    input.databaseMode === "existing" &&
+    previewDatabaseEnvironmentKey(key) &&
+    input.hostAlias &&
+    localDatabaseHostRewrite(key, value, input.hostAlias);
   return rewritten
     ? {
-        layer,
-        source,
         value: rewritten,
-        file,
         note: `Points at your computer: localhost became ${input.hostAlias}.`,
       }
-    : { layer, source, value, file };
+    : { value };
 }
 
 // Values of the setup that only work as written: the address of another
