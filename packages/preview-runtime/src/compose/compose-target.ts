@@ -17,6 +17,14 @@ export type SandboxComposeTarget = {
   proxyCertificatePath: string;
   /** Public URL of each browser-bound endpoint, keyed `service:endpoint`. */
   browserBindingUrls: Record<string, string>;
+  /**
+   * The resolved environment of a service, kept in a file outside the
+   * Compose file and the workspace, keyed by Compose service name. It
+   * replaces the plan's environment of that service.
+   */
+  environmentFiles?: Record<string, string>;
+  /** Env files mounted over workspace paths, as locally. */
+  fileMounts?: Array<{ source: string; target: string }>;
 };
 
 /** The Blame Runtime VM: the story worktree is bind-mounted. */

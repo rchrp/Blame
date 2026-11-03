@@ -106,6 +106,7 @@ test("fails a start that lacks a required key, in words a person can act on", ()
     databaseMode: "existing" as const,
     repositoryRoot: "/project",
     fromProject: [],
+    files: [],
     warnings: [],
     resolved: resolvePreviewEnvironment({
       plan: { services: [api], setup: [] },

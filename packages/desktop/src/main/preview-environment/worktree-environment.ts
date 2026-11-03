@@ -24,6 +24,8 @@ export type WorktreeEnvironment = {
   repositoryRoot: string;
   /** Env files whose content came fresh from the project. */
   fromProject: string[];
+  /** The story's env files and examples as they were read. */
+  files: Array<{ path: string; content: string }>;
   warnings: string[];
 };
 
@@ -83,6 +85,7 @@ export async function resolveWorktreeEnvironment(input: {
     databaseMode,
     repositoryRoot: sources.repositoryRoot,
     fromProject: sources.fromProject,
+    files: sources.files,
     warnings,
   };
 }

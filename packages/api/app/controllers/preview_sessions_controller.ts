@@ -2,6 +2,7 @@ import PreviewSessionService from '#services/preview_sessions/preview_session_se
 import PremiumService, { previewCommandRequiresPremium } from '#services/premium_service'
 import {
   PreviewRuntimeError,
+  parsePreviewEnvironmentSecrets,
   isRuntimeProfileId,
   type PreviewSessionCommand,
 } from '@blame/preview-runtime'
@@ -53,6 +54,7 @@ export default class PreviewSessionsController {
               ? undefined
               : previewSourceMetadata(body.sourceMetadata),
           resourceSize: resourceSize(body.resourceSize),
+          environment: previewEnvironment(body.environment),
         },
         requiredString(body.operationId ?? context.request.header('idempotency-key'), 'operationId')
       )
@@ -363,4 +365,14 @@ function invalidRequest(message: string) {
 
 function delay(milliseconds: number) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds))
+}
+
+// The resolved variables of the preview; a malformed value is refused.
+function previewEnvironment(value: unknown) {
+  if (value === undefined || value === null) return undefined
+  try {
+    return parsePreviewEnvironmentSecrets(value)
+  } catch (error) {
+    throw invalidRequest(error instanceof Error ? error.message : 'environment is invalid')
+  }
 }

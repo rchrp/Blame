@@ -135,7 +135,13 @@ function setupService(task: SetupTaskPlan, context: RenderContext) {
     entrypoint: task.entrypoint,
     command: shellCommand(task.command),
     working_dir: task.workingDir,
-    environment: containerEnvironment(task.environment, context.target),
+    environment: containerEnvironment(
+      environmentFile(setupServiceId(task.id), context.target)
+        ? {}
+        : task.environment,
+      context.target,
+    ),
+    env_file: environmentFile(setupServiceId(task.id), context.target),
     depends_on: dependencyConditions(
       task.dependsOn.filter((id) =>
         context.plan.services.some((service) => service.id === id),
@@ -160,7 +166,13 @@ function runtimeService(service: ServiceLaunchPlan, context: RenderContext) {
       service.kind === "dependency" && !service.command
         ? undefined
         : service.workingDir,
-    environment: serviceEnvironment(service, context),
+    environment: serviceEnvironment(
+      environmentFile(service.id, context.target)
+        ? { ...service, environment: {} }
+        : service,
+      context,
+    ),
+    env_file: environmentFile(service.id, context.target),
     depends_on: dependencyConditions(
       [...service.dependsOn, ...(sharesLoopback ? [anchor!] : [])],
       context,
@@ -467,19 +479,28 @@ function serviceVolumes(
     : target.kind === "sandbox"
       ? ["/workspace:/workspace:rw", "/workspace/.git:/workspace/.git:ro"]
       : [`${target.workspacePath}:/workspace`];
-  const files =
-    workspace && target.kind === "local"
-      ? (target.fileMounts ?? []).map(
-          ({ source: path, target: file }) =>
-            `${path}:${posix.join("/workspace", file)}:ro`,
-        )
-      : [];
+  const files = workspace
+    ? (target.fileMounts ?? []).map(
+        ({ source: path, target: file }) =>
+          `${path}:${posix.join("/workspace", file)}:ro`,
+      )
+    : [];
   return nonEmpty([
     ...source,
     ...baseVolumes(target),
     ...volumes.map(({ alias, target: path }) => `${alias}:${path}`),
     ...files,
   ]);
+}
+
+// Compose reads it when it creates the container, and `raw` keeps values as
+// written. The runner writes it at every start, before Compose runs.
+function environmentFile(serviceId: string, target: ComposeTarget) {
+  const path =
+    target.kind === "sandbox"
+      ? target.environmentFiles?.[serviceId]
+      : undefined;
+  return path ? [{ path, format: "raw" }] : undefined;
 }
 
 function extraHosts(target: ComposeTarget) {

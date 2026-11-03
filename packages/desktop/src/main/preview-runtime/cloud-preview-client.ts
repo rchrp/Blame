@@ -1,3 +1,4 @@
+import type { PreviewEnvironmentSecrets } from "@blame/preview-runtime";
 import type {
   PreviewLogEvent,
   PreviewSessionBackend,
@@ -63,6 +64,8 @@ export type CloudManagedPreviewCreateInput = {
     workspaceHash: string;
   };
   resourceSize?: { vcpus: number; memoryGb: number };
+  /** The story's resolved variables; the API keeps them encrypted. */
+  environment?: PreviewEnvironmentSecrets;
 };
 export class CloudPreviewClient implements PreviewSessionBackend<CloudManagedPreviewCreateInput> {
   private readonly connection: CloudApiConnection;
@@ -98,6 +101,7 @@ export class CloudPreviewClient implements PreviewSessionBackend<CloudManagedPre
         sourceRevision: input.sourceRevision,
         sourceMetadata: input.sourceMetadata,
         resourceSize: input.resourceSize,
+        environment: input.environment,
       },
     });
   }

@@ -332,6 +332,7 @@ test("normalizes stored manifests before creating a cloud session", async (conte
     previewManifest?: {
       services?: Array<{ id?: string; command?: string; dependsOn?: string[] }>;
     };
+    environment?: unknown;
   } = {};
   context.mock.method(globalThis, "fetch", async (_url, init) => {
     requestBody = JSON.parse(String(init?.body));
@@ -398,8 +399,18 @@ test("normalizes stored manifests before creating a cloud session", async (conte
       risks: [],
       probes: [],
     },
+    environment: {
+      variables: { api: { STRIPE_SECRET_KEY: "sk_test_1" } },
+      files: [],
+    },
   });
 
+  // The variables travel with the request, apart from the manifest.
+  assert.deepEqual(requestBody.environment, {
+    variables: { api: { STRIPE_SECRET_KEY: "sk_test_1" } },
+    files: [],
+  });
+  assert.doesNotMatch(JSON.stringify(requestBody.previewManifest), /sk_test_1/);
   const vitrine = requestBody.previewManifest?.services?.find(
     ({ id }) => id === "vitrine",
   );

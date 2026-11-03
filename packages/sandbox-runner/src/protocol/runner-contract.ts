@@ -1,4 +1,5 @@
 import type {
+  PreviewEnvironmentSecrets,
   PreviewExecutionPlan,
   RuntimeObservation,
   RuntimeProtocolHandshake,
@@ -50,6 +51,7 @@ export type RunnerRequest = (
   | {
       operation: "prepare-engine";
       plan: PreviewExecutionPlan;
+      environment?: PreviewEnvironmentSecrets;
       browserBindingUrls?: Record<string, string>;
       routeIds?: Record<string, string>;
       capabilityPublicKey?: string;
@@ -59,6 +61,7 @@ export type RunnerRequest = (
   | {
       operation: "start-preview";
       plan: PreviewExecutionPlan;
+      environment?: PreviewEnvironmentSecrets;
       selection: RuntimeSelection;
       browserBindingUrls?: Record<string, string>;
       routeIds?: Record<string, string>;

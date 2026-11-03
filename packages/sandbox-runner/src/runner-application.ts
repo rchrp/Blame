@@ -15,6 +15,8 @@ import type {
   RuntimeObservation,
   RuntimeSelection,
 } from "@blame/preview-runtime";
+import { parsePreviewEnvironmentSecrets } from "@blame/preview-runtime";
+import { removeEnvironmentFiles } from "./supervisor/environment-files.js";
 import type {
   RunnerPreviewStartResult,
   RunnerRequest,
@@ -144,7 +146,12 @@ export class RunnerApplication {
         "ENGINE_RUNNING",
         "Stop services before changing the plan.",
       );
-    await compose.prepare(request.plan, request.browserBindingUrls ?? {});
+    await compose.prepare(
+      request.plan,
+      request.browserBindingUrls ?? {},
+      request.environment &&
+        parsePreviewEnvironmentSecrets(request.environment),
+    );
     if (request.capabilityPublicKey) {
       await writeFile(
         runtimePaths.capabilityPublicKey,
@@ -273,6 +280,7 @@ export class RunnerApplication {
       rm(runtimePaths.requestDirectory, { recursive: true, force: true }),
       rm("/var/log/blame", { recursive: true, force: true }),
       rm(runtimePaths.exports, { recursive: true, force: true }),
+      removeEnvironmentFiles(),
     ]);
     await writeRuntimeState(sanitizeRuntimeStateForSnapshot(state));
     return { sanitized: true };

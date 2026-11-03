@@ -363,3 +363,30 @@ test("maps the developer's computer into every local container but loopback memb
   );
   assert.equal(render(plan(), local).services.frontend!.extra_hosts, undefined);
 });
+
+test("gives a sandbox service its resolved environment from a file outside the Compose file", () => {
+  const compose = render(plan(), {
+    ...sandbox,
+    environmentFiles: { backend: "/run/blame/environment/backend.env" },
+    fileMounts: [
+      { source: "/run/blame/environment/files/.env", target: ".env" },
+    ],
+  });
+  const backend = compose.services.backend!;
+  assert.deepEqual(backend.env_file, [
+    { path: "/run/blame/environment/backend.env", format: "raw" },
+  ]);
+  const environment = backend.environment as Record<string, string>;
+  // The plan's literals give way to the file; Blame's own values stay.
+  assert.equal(environment.HOME, "/tmp/blame-home");
+  assert.equal(environment.NODE_EXTRA_CA_CERTS, "/etc/proxy-ca.pem");
+  assert.ok(
+    (backend.volumes as string[]).includes(
+      "/run/blame/environment/files/.env:/workspace/.env:ro",
+    ),
+  );
+  assert.equal(compose.services.frontend!.env_file, undefined);
+  assert.ok(
+    Object.keys(compose.services.frontend!.environment as object).length > 2,
+  );
+});

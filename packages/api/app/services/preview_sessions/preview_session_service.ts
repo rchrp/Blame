@@ -43,6 +43,8 @@ import {
   type PreviewSessionRecord,
   type RuntimeProfileId,
 } from '@blame/preview-runtime'
+import type { PreviewEnvironmentSecrets } from '@blame/preview-runtime'
+import { storePreviewEnvironment } from '#services/preview_sessions/preview_environment_secrets'
 import type { PreviewManifest } from '@blame/preview-contract'
 import {
   baselineImportAction,
@@ -57,6 +59,8 @@ export type CreateManagedPreviewInput = {
   sourceRevision?: string
   sourceMetadata?: PreviewBaselineSourceMetadata
   resourceSize?: { vcpus: number; memoryGb: number }
+  /** The resolved variables, kept encrypted apart from the plan. */
+  environment?: PreviewEnvironmentSecrets
 }
 
 export type PreviewSessionServiceDependencies = {
@@ -121,6 +125,8 @@ export default class PreviewSessionService {
     const planHash = stableHash(plan)
     const sessionId = idempotentSessionId(ownerUserId, operationId)
     return this.quota.withCreationLock(ownerUserId, async () => {
+      // Stored first: a session the orchestrator starts at once reads it.
+      await storePreviewEnvironment(sessionId, input.environment)
       const existing = await this.repository.get(sessionId)
       if (existing) {
         if (
@@ -160,6 +166,8 @@ export default class PreviewSessionService {
         input.profile
       )
       if (reusable?.planHash === planHash && usesCurrentRunner(reusable, this.config.sandbox)) {
+        // The variables may have changed: the next start uses these.
+        await storePreviewEnvironment(reusable.id, input.environment)
         if (
           ['failed', 'provisioning', 'resuming', 'suspended', 'unprovisioned'].includes(
             reusable.state.host
