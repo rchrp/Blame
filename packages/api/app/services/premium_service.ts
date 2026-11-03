@@ -25,7 +25,7 @@ export default class PremiumService {
     return {
       code: 'PREMIUM_REQUIRED',
       feature,
-      message: 'Blame Premium is required for ' + premiumFeatures[feature] + '.',
+      message: 'Blame Cloud is required for ' + premiumFeatures[feature] + '.',
     }
   }
 
