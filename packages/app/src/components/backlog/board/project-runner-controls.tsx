@@ -106,8 +106,11 @@ export function ProjectRunnerControls(props: ProjectRunnerControlsProps) {
     <TooltipProvider>
       <ButtonGroup className={runnerGroupClassName}>
         <RunnerConfigurationMenu {...props} selected={selected} />
-        <RunnerStartButton {...props} selected={selected} status={status} />
-        <RunnerStopButton {...props} selected={selected} status={status} />
+        {/* Start and Stop as one pair, the size of the views' buttons. */}
+        <div data-slot="runner-actions" className="flex items-center p-0.5">
+          <RunnerStartButton {...props} selected={selected} status={status} />
+          <RunnerStopButton {...props} selected={selected} status={status} />
+        </div>
         {props.views?.length ? (
           <RunnerViewSwitch className="ml-1" views={props.views} />
         ) : null}
@@ -460,7 +463,7 @@ function isTransitioning(status: ProjectRunnerControlStatus | undefined) {
 // Rounded on its left, as Stop is on its right: the two read as a pair.
 function runnerStartClassName(running: boolean) {
   return cn(
-    "rounded-l-lg!",
+    "size-7 rounded-l-[5px] rounded-r-none",
     running
       ? "bg-emerald-600 text-white hover:bg-emerald-500"
       : "bg-muted text-emerald-500 hover:bg-muted/80 hover:text-emerald-400"
@@ -468,9 +471,12 @@ function runnerStartClassName(running: boolean) {
 }
 
 function runnerStopClassName(running: boolean) {
-  return running
-    ? "bg-destructive/10 text-destructive hover:bg-destructive/20"
-    : "bg-muted text-destructive hover:bg-muted/80"
+  return cn(
+    "size-7 rounded-l-none rounded-r-[5px]",
+    running
+      ? "bg-destructive/10 text-destructive hover:bg-destructive/20"
+      : "bg-muted text-destructive hover:bg-muted/80"
+  )
 }
 
 function selectedConfiguration(
