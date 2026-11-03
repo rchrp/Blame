@@ -22,7 +22,8 @@ export function SiteHeader({ title }: { title: string }) {
         style={siteHeaderBlurMask}
       />
       <div className="pointer-events-auto relative flex h-(--header-height) items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
-        <div className="flex min-w-0 flex-1 items-center gap-1 px-4 lg:gap-2 lg:px-6">
+        {/* The runner keeps as much room on its right as above it. */}
+        <div className="flex min-w-0 flex-1 items-center gap-1 pr-[calc((var(--header-height)-2.375rem)/2)] pl-4 lg:gap-2 lg:pl-6">
           <SidebarTrigger className="-ml-1" />
           <Separator
             orientation="vertical"
