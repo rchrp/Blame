@@ -443,26 +443,27 @@ export async function capturePreviewBrowser(
 ) {
   const record = previews.get(id);
   if (!record || !record.view.getVisible()) return null;
-  const image = await record.view.webContents.capturePage(
-    size === "thumbnail" ? previewThumbnailBounds(record) : undefined,
-  );
+  const image = await record.view.webContents.capturePage();
   if (image.isEmpty()) return null;
-  if (size === "thumbnail")
-    return image.resize({ height: 24, quality: "good", width: 24 }).toDataURL();
+  if (size === "thumbnail") {
+    // The whole page, small: the preview's glow reads the colors along its
+    // edges, where a page's center says nothing about them.
+    const { height, width } = image.getSize();
+    return image
+      .resize({
+        height: Math.max(
+          1,
+          Math.round((previewThumbnailWidth * height) / width),
+        ),
+        quality: "better",
+        width: previewThumbnailWidth,
+      })
+      .toDataURL();
+  }
   return image.toDataURL();
 }
 
-function previewThumbnailBounds(record: PreviewBrowserRecord) {
-  const bounds = record.view.getBounds();
-  const width = Math.max(1, Math.min(96, bounds.width));
-  const height = Math.max(1, Math.min(96, bounds.height));
-  return {
-    height,
-    width,
-    x: Math.max(0, Math.round((bounds.width - width) / 2)),
-    y: Math.max(0, Math.round((bounds.height - height) / 2)),
-  };
-}
+const previewThumbnailWidth = 64;
 
 function attachPreviewBrowserEvents(record: PreviewBrowserRecord) {
   record.view.webContents.on("will-navigate", (_event, url) => {
