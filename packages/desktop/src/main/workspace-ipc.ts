@@ -145,6 +145,7 @@ import {
   stopLocalPreview,
 } from "./preview-runtime/local/local-preview-runner.ts";
 import { prepareStoryEnvFiles } from "./preview-environment/env-file-sources.ts";
+import { forgetStoryVariables } from "./preview-environment/variables-store.ts";
 import {
   ensureGitRepository,
   gitDiffBetween,
@@ -1603,6 +1604,7 @@ async function removeWorktree(input: RemoveWorktreeInput) {
         "Unable to completely remove the worktree. Please retry deletion.",
       );
     removedWorktrees.add(worktree);
+    void forgetStoryVariables(worktree);
     return true;
   } finally {
     removingWorktrees.delete(worktree);

@@ -212,3 +212,8 @@ export function configurePreviewVariables(
 export function previewVariablesStore() {
   return store;
 }
+
+/** A removed story's overrides and requests go with it. */
+export function forgetStoryVariables(worktree: string) {
+  return store?.forgetStory(worktree).catch(() => undefined);
+}
