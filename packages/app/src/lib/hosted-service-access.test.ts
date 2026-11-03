@@ -13,12 +13,12 @@ const license = (licensed: boolean) => ({
   cancelAtPeriodEnd: false,
 })
 
-test("asks a local workspace for an account, and names Premium as the step", () => {
+test("asks a local workspace for an account, and names Blame Cloud as the step", () => {
   const local = { mode: "local" as const }
   assert.equal(hostedServiceAccess(local, "cloud-preview"), "account-required")
   assert.equal(
     hostedServiceRequirement(local, "voice-transcription"),
-    "Cloud voice transcription requires Blame Premium"
+    "Cloud voice transcription requires Blame Cloud"
   )
 })
 
@@ -28,7 +28,7 @@ test("asks an account for Premium, and opens hosted services to Premium", () => 
   assert.equal(hostedServiceAccess(free, "cloud-preview"), "premium-required")
   assert.equal(
     hostedServiceRequirement(free, "cloud-preview"),
-    "Cloud Previews require Blame Premium"
+    "Cloud Previews require Blame Cloud"
   )
   assert.equal(hostedServiceAccess(premium, "deployment"), "available")
 })

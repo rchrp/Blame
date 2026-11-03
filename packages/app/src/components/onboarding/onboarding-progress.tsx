@@ -9,7 +9,7 @@ const steps = [
   { id: "account", label: "Account" },
   { id: "provider", label: "Provider" },
   { id: "models", label: "Models" },
-  { id: "premium", label: "Premium" },
+  { id: "premium", label: "Cloud" },
   { id: "runtime", label: "Runtime" },
 ] as const
 

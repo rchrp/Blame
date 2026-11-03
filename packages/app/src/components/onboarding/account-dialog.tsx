@@ -22,7 +22,7 @@ export type AccountView = "sign-in" | "premium"
 
 const viewTitles: Record<AccountView, string> = {
   "sign-in": "Sign in to Blame",
-  premium: "Blame Premium",
+  premium: "Blame Cloud",
 }
 
 /**

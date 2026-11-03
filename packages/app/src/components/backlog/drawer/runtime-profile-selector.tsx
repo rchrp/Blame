@@ -196,7 +196,7 @@ export const RuntimeProfileSelector = React.memo(
                   openHostedServicesOffer()
                 }}
               >
-                View Premium
+                View Blame Cloud
               </button>
             </p>
           )}
@@ -264,7 +264,7 @@ function RuntimeProfileOption({
           {disabled
             ? "Sign in from the desktop app to use cloud previews."
             : option.profile === "vercel-compose" && !premium
-              ? "Available with Blame Premium."
+              ? "Available with Blame Cloud."
               : (runtimeNote ?? option.description)}
         </span>
       </span>
@@ -278,7 +278,7 @@ function RuntimeProfileOption({
 }
 
 const cloudFallbackNote =
-  "Your default is Cloud Preview, which needs Blame Premium, so stories run in a Local Container until then."
+  "Your default is Cloud Preview, which needs Blame Cloud, so stories run in a Local Container until then."
 
 function runtimeNeedsSetup(phase?: RuntimePhase) {
   return (

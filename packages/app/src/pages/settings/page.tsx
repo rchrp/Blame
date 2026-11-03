@@ -725,15 +725,15 @@ function AccountSettingsPanel() {
   return (
     <SettingsPanel>
       <SettingsGroup
-        title="Blame Premium"
+        title="Blame Cloud"
         description="Local development and your own AI providers are available without a Blame subscription."
       >
         <SettingsRow
-          title={auth.license?.licensed ? "Premium active" : "Free"}
+          title={auth.license?.licensed ? "Blame Cloud active" : "Free"}
           description="Cloud voice transcription, managed previews, and hosted file uploads."
         >
           <Button variant="outline" onClick={() => navigate("/premium")}>
-            {auth.license?.licensed ? "Manage Premium" : "View Premium"}
+            {auth.license?.licensed ? "Manage Blame Cloud" : "View Blame Cloud"}
           </Button>
         </SettingsRow>
       </SettingsGroup>

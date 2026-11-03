@@ -59,7 +59,7 @@ export function RuntimeSetupScreen() {
       icon: CloudIcon,
       iconClassName: "bg-sky-500/12 text-sky-600 dark:text-sky-300",
       title: "Cloud Preview",
-      tag: premium ? "Included" : "Premium",
+      tag: premium ? "Included" : "Blame Cloud",
     },
     {
       description:

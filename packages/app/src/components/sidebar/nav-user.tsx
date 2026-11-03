@@ -131,7 +131,7 @@ export function NavUser({
 }
 
 function PremiumBadge() {
-  return <Badge className="h-4 px-1.5 text-[10px] leading-none">Premium</Badge>
+  return <Badge className="h-4 px-1.5 text-[10px] leading-none">Cloud</Badge>
 }
 
 /** The footer of a workspace kept on this computer, without an account. */

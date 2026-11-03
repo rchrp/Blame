@@ -8,7 +8,7 @@ import {
   PlusIcon,
   SettingsIcon,
   SunIcon,
-  CrownIcon,
+  CloudIcon,
 } from "lucide-react"
 
 import { backlogColumns } from "@/components/backlog/data/backlog-data"
@@ -131,8 +131,8 @@ export function CommandPalette({
             <KeyboardIcon /> Keyboard shortcuts
             <CommandShortcut>{modKeyLabel}/</CommandShortcut>
           </CommandItem>
-          <CommandItem value="premium billing subscription" onSelect={() => run(() => navigate("/premium"))}>
-            <CrownIcon /> Blame Premium
+          <CommandItem value="blame cloud billing subscription premium" onSelect={() => run(() => navigate("/premium"))}>
+            <CloudIcon /> Blame Cloud
           </CommandItem>
         </CommandGroup>
         <CommandGroup heading="Go to">

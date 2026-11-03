@@ -57,5 +57,5 @@ export function hostedServiceRequirement(
   const { name, plural, premium } = hostedServices[service]
   return hostedServiceAccess(auth, service) === "account-required" && !premium
     ? `${name} ${plural ? "need" : "needs"} a Blame account`
-    : `${name} ${plural ? "require" : "requires"} Blame Premium`
+    : `${name} ${plural ? "require" : "requires"} Blame Cloud`
 }

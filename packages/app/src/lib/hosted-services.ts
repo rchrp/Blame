@@ -26,8 +26,8 @@ export function requestHostedService(
       description:
         auth.mode === "account"
           ? undefined
-          : "Premium comes with a free account. Everything else keeps working without one.",
-      action: { label: "View Premium", onClick: openHostedServicesOffer },
+          : "Blame Cloud comes with a free account. Everything else keeps working without one.",
+      action: { label: "View Blame Cloud", onClick: openHostedServicesOffer },
     })
   } else {
     toast.info(message, {

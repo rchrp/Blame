@@ -84,7 +84,7 @@ export function PremiumPanel({
     if (premium && !wasPremium.current) {
       stage.celebrate()
       if (variant === "dialog")
-        toast.success("Blame Premium is active", { position: "bottom-right" })
+        toast.success("Blame Cloud is active", { position: "bottom-right" })
     }
     wasPremium.current = premium
   }, [premium, stage, variant])
@@ -185,7 +185,7 @@ export function PremiumPanel({
             <motion.p variants={riseIn} className="mt-2 text-xs text-foreground/50">
               {offer
                 ? "You can upgrade anytime from Settings."
-                : "Premium comes with a free Blame account: you sign in or create one first, and your workspace moves into it."}
+                : "Blame Cloud comes with a free Blame account: you sign in or create one first, and your workspace moves into it."}
             </motion.p>
           ) : null}
         </motion.div>
@@ -219,7 +219,7 @@ export function PremiumPanel({
                     ? "Opening billing"
                     : premium
                       ? "Manage subscription"
-                      : "Get Premium"}
+                      : "Get Blame Cloud"}
                 </button>
               )
             }}
