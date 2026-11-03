@@ -3,6 +3,11 @@ import { ServerOffIcon, SquareIcon, TerminalIcon } from "lucide-react"
 import * as React from "react"
 
 import type { UserStory } from "@/components/backlog/data/backlog-data"
+import {
+  CodeActionsSpace,
+  DevelopmentEmptyState,
+} from "@/components/backlog/development/development-code-panel"
+import { AttachedTabs } from "@/components/backlog/shared/attached-tabs"
 import { Button } from "@/components/ui/button"
 import { usePlatform } from "@/context/platform"
 
@@ -74,7 +79,7 @@ export function DevelopmentTerminal({ userStory }: { userStory?: UserStory }) {
 
   if (!userStory?.worktree) {
     return (
-      <TerminalEmptyState
+      <DevelopmentEmptyState
         description="This user story does not have a worktree yet."
         icon={TerminalIcon}
         title="No worktree"
@@ -84,7 +89,7 @@ export function DevelopmentTerminal({ userStory }: { userStory?: UserStory }) {
 
   if (!platform.terminal) {
     return (
-      <TerminalEmptyState
+      <DevelopmentEmptyState
         description="The desktop terminal bridge is unavailable."
         icon={ServerOffIcon}
         title="Terminal unavailable"
@@ -92,46 +97,46 @@ export function DevelopmentTerminal({ userStory }: { userStory?: UserStory }) {
     )
   }
 
+  // As a preview's run logs: its tab set on a dark terminal.
   return (
-    <div className="relative h-full min-h-96 bg-background">
-      <div
-        aria-label="Development terminal"
-        className="min-h-0 overflow-hidden bg-zinc-950 p-3"
-        ref={terminalElement}
-        role="application"
-      />
-      {sessionId ? (
-        <Button
-          aria-label="Stop terminal"
-          className="absolute top-3 right-3 size-7 bg-zinc-800/80 text-zinc-100 hover:bg-zinc-700"
-          size="icon"
-          title="Stop terminal"
-          type="button"
-          variant="secondary"
-          onClick={() => void platform.terminal?.stop(sessionId)}
-        >
-          <SquareIcon />
-        </Button>
-      ) : null}
-    </div>
-  )
-}
-
-function TerminalEmptyState({
-  description,
-  icon: Icon,
-  title,
-}: {
-  description: string
-  icon: React.ComponentType<{ className?: string }>
-  title: string
-}) {
-  return (
-    <div className="flex h-full min-h-96 flex-col items-center justify-center gap-3 bg-muted/20 p-8 text-center">
-      <Icon className="size-8 text-muted-foreground" />
-      <div>
-        <h3 className="font-heading text-lg font-semibold">{title}</h3>
-        <p className="text-sm text-muted-foreground">{description}</p>
+    <div className="flex h-full min-h-0 flex-col p-4">
+      <div className="flex h-12 shrink-0 items-start gap-3">
+        <div className="min-w-0 flex-1 self-end">
+          <AttachedTabs
+            items={[
+              {
+                id: "terminal",
+                label: "Terminal",
+                status: sessionId ? "running" : "stopped",
+              },
+            ]}
+            label="Terminals"
+            value="terminal"
+            onValueChange={() => undefined}
+          />
+        </div>
+        <CodeActionsSpace />
+      </div>
+      <div className="relative min-h-0 flex-1 overflow-hidden rounded-lg rounded-tl-none border bg-zinc-950">
+        <div
+          aria-label="Development terminal"
+          className="h-full min-h-0 overflow-hidden p-3"
+          ref={terminalElement}
+          role="application"
+        />
+        {sessionId ? (
+          <Button
+            aria-label="Stop terminal"
+            className="absolute top-3 right-3 size-7 bg-zinc-800/80 text-zinc-100 hover:bg-zinc-700"
+            size="icon"
+            title="Stop terminal"
+            type="button"
+            variant="secondary"
+            onClick={() => void platform.terminal?.stop(sessionId)}
+          >
+            <SquareIcon />
+          </Button>
+        ) : null}
       </div>
     </div>
   )

@@ -1,5 +1,9 @@
 import * as React from "react"
-import { FolderIcon, GitMergeIcon, TerminalIcon } from "lucide-react"
+import {
+  FolderTreeIcon,
+  GitCompareArrowsIcon,
+  SquareTerminalIcon,
+} from "lucide-react"
 
 import type {
   BacklogColumnId,
@@ -10,32 +14,44 @@ import { DiffStats } from "@/components/backlog/development/development-diff-sta
 import { DevelopmentTerminal } from "@/components/backlog/development/development-terminal"
 import type { UserStoryDiffStats } from "@/components/backlog/development/user-story-diff-stats"
 import type { VcsFileDiff } from "@/components/backlog/development/development-workspace"
-import type { UserStoryDevelopmentTab } from "@/components/backlog/shared/backlog-types"
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarInset,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarProvider,
-} from "@/components/ui/sidebar"
+  InsetSwitch,
+  insetSwitchGroupClassName,
+  useElementWidth,
+} from "@/components/backlog/shared/inset-switch"
+import type { UserStoryDevelopmentTab } from "@/components/backlog/shared/backlog-types"
+import { TooltipProvider } from "@/components/ui/tooltip"
 
 const developmentTabs = [
-  { id: "files", label: "Files", icon: FolderIcon },
-  { id: "diff", label: "Diff", icon: GitMergeIcon },
-  { id: "terminal", label: "Terminal", icon: TerminalIcon },
+  {
+    id: "files",
+    icon: FolderTreeIcon,
+    label: "Files",
+    tooltip: "Show the files",
+  },
+  {
+    id: "diff",
+    icon: GitCompareArrowsIcon,
+    label: "Changes",
+    tooltip: "Show the changes",
+  },
+  {
+    id: "terminal",
+    icon: SquareTerminalIcon,
+    label: "Terminal",
+    tooltip: "Open a terminal",
+  },
 ] satisfies {
   id: UserStoryDevelopmentTab
+  icon: typeof FolderTreeIcon
   label: string
-  icon: React.ComponentType<{ className?: string }>
+  tooltip: string
 }[]
 
 const rootDevelopmentStatuses = new Set<BacklogColumnId>(["backlog", "ready"])
 
+// A story's code, laid out as its preview: views over the drawer's own
+// background, switched from the right end of their toolbar.
 export function DevelopmentContent({
   diffStats,
   initialDiffPath,
@@ -62,6 +78,10 @@ export function DevelopmentContent({
       : developmentTabs
 
   const activeTab = tabs.some((item) => item.id === tab) ? tab : tabs[0].id
+  const [actionsRef, actionsWidth] = useElementWidth<HTMLDivElement>()
+  const hasChanges = Boolean(
+    diffStats && (diffStats.additions || diffStats.deletions)
+  )
 
   React.useEffect(() => {
     if (activeTab === tab) return
@@ -69,40 +89,42 @@ export function DevelopmentContent({
   }, [activeTab, onTabChange, tab])
 
   return (
-    <SidebarProvider
-      className="h-full min-h-0 bg-transparent"
-      style={
-        {
-          "--sidebar-width": "12rem",
-        } as React.CSSProperties
-      }
-    >
-      <Sidebar collapsible="none" className="border-r bg-muted/20">
-        <SidebarContent>
-          <SidebarGroup>
-            <SidebarGroupLabel>Code</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {tabs.map((item) => (
-                  <SidebarMenuItem key={item.id}>
-                    <SidebarMenuButton
-                      isActive={activeTab === item.id}
-                      onClick={() => onTabChange(item.id)}
-                    >
-                      <item.icon />
-                      <span>{item.label}</span>
-                      {item.id === "diff" && diffStats && (
-                        <DiffStats compact diff={diffStats} />
-                      )}
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        </SidebarContent>
-      </Sidebar>
-      <SidebarInset className="min-h-0 min-w-0 bg-transparent">
+    <TooltipProvider>
+      <div
+        className="relative h-full min-h-0"
+        style={
+          {
+            "--code-actions-space": actionsWidth
+              ? `${actionsWidth + 8}px`
+              : "0px",
+          } as React.CSSProperties
+        }
+      >
+        {/* One element whatever the view, so its knob slides between them:
+            each view's toolbar leaves it room. */}
+        {tabs.length > 1 || hasChanges ? (
+          <div
+            ref={actionsRef}
+            className="absolute top-4 right-4 z-30 flex h-10 items-center gap-2"
+          >
+            {hasChanges && diffStats ? (
+              <span className="flex h-8 items-center rounded-full border bg-background/95 px-3 shadow-sm backdrop-blur">
+                <DiffStats compact diff={diffStats} />
+              </span>
+            ) : null}
+            {tabs.length > 1 ? (
+              <div className={insetSwitchGroupClassName}>
+                <InsetSwitch
+                  items={tabs.map((item) => ({
+                    ...item,
+                    active: item.id === activeTab,
+                    onSelect: () => onTabChange(item.id),
+                  }))}
+                />
+              </div>
+            ) : null}
+          </div>
+        ) : null}
         {activeTab === "files" && (
           <DevelopmentCodePanel
             fallbackToProjectRoot={rootDevelopmentStatuses.has(status)}
@@ -122,7 +144,7 @@ export function DevelopmentContent({
         {activeTab === "terminal" && (
           <DevelopmentTerminal userStory={userStory} />
         )}
-      </SidebarInset>
-    </SidebarProvider>
+      </div>
+    </TooltipProvider>
   )
 }

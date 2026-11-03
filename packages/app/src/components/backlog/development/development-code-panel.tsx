@@ -1,10 +1,16 @@
 import * as React from "react"
 import type { VcsFileDiff } from "@/components/backlog/development/development-workspace"
-import { FileDiffIcon, FolderIcon, ServerOffIcon } from "lucide-react"
+import { FolderIcon, SearchIcon, ServerOffIcon, XIcon } from "lucide-react"
 
 import type { UserStory } from "@/components/backlog/data/backlog-data"
 import { DevelopmentFileTree } from "@/components/backlog/development/development-file-tree"
-import { DevelopmentTabs } from "@/components/backlog/development/development-tabs"
+import {
+  DevelopmentEditorContent,
+  developmentEditorTabs,
+} from "@/components/backlog/development/development-tabs"
+import { AttachedTabs } from "@/components/backlog/shared/attached-tabs"
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import {
   buildDiffKinds,
   useDevelopmentWorkspace,
@@ -45,6 +51,7 @@ export function DevelopmentCodePanel({
   const [activeTab, setActiveTab] = React.useState(
     initialFilePath ?? (mode === "diff" ? "review" : "empty")
   )
+  const [query, setQuery] = React.useState("")
   const initialDiffLoad = React.useRef(true)
 
   React.useEffect(() => {
@@ -135,20 +142,41 @@ export function DevelopmentCodePanel({
     )
   }
 
+  const editorTabs = developmentEditorTabs(mode, tabs, diffs.length)
+  const shownTab = editorTabs.some((tab) => tab.id === activeTab)
+    ? activeTab
+    : (editorTabs[0]?.id ?? "empty")
+
+  // As a story's preview: a toolbar over the drawer's own background, the
+  // tree beside a framed editor whose open files sit on it as tabs.
   return (
-    <div className="grid h-full min-h-0 grid-cols-[18rem_minmax(0,1fr)] overflow-hidden bg-background">
-      <div className="flex min-h-0 flex-col border-r bg-muted/20">
-        <div className="flex h-10 shrink-0 items-center gap-2 border-b px-3 text-sm font-medium">
-          {mode === "files" ? (
-            <FolderIcon className="size-4" />
-          ) : (
-            <FileDiffIcon className="size-4" />
-          )}
-          <span>
-            {mode === "files" ? "All files" : `${diffs.length} Changes`}
-          </span>
+    <div className="flex h-full min-h-0 flex-col p-4">
+      <div className="flex h-12 shrink-0 items-start gap-3">
+        <CodeSearchField
+          placeholder={
+            mode === "diff"
+              ? `Search ${diffs.length} changed ${diffs.length === 1 ? "file" : "files"}`
+              : "Search files"
+          }
+          value={query}
+          onChange={setQuery}
+        />
+        <div className="min-w-0 flex-1 self-end">
+          {editorTabs.length ? (
+            <AttachedTabs
+              items={editorTabs}
+              label="Open files"
+              surface="panel"
+              value={shownTab}
+              onClose={closeTab}
+              onValueChange={setActiveTab}
+            />
+          ) : null}
         </div>
-        <ScrollArea className="min-h-0 flex-1">
+        <CodeActionsSpace />
+      </div>
+      <div className="flex min-h-0 flex-1 gap-3">
+        <ScrollArea className="min-h-0 w-72 shrink-0">
           {/* Without the diff the file tree still works, minus change marks. */}
           {mode === "diff" && diffError ? (
             <div className="p-3 text-sm text-muted-foreground">{diffError}</div>
@@ -156,41 +184,100 @@ export function DevelopmentCodePanel({
             <TreeLoading />
           ) : (
             <DevelopmentFileTree
-              active={activeTab}
+              active={shownTab}
               allowed={
                 mode === "diff" ? diffs.map((diff) => diff.file) : undefined
               }
+              className="py-0"
               kinds={kinds}
               listDirectory={workspace.listDirectory}
               modified={diffs.map((diff) => diff.file)}
+              query={query}
               reloadKey={workspace.reloadKey}
               searchFiles={workspace.searchFiles}
               onFileClick={openFile}
             />
           )}
         </ScrollArea>
-      </div>
-      <div className="min-h-0 min-w-0">
-        <DevelopmentTabs
-          activeTab={activeTab}
-          diffByPath={diffByPath}
-          diffs={diffs}
-          mode={mode}
-          initialReviewFilePath={initialDiffPath}
-          readFile={workspace.readFile}
-          reloadKey={workspace.reloadKey}
-          reviewLoading={diffLoading}
-          tabs={tabs}
-          onActiveTabChange={setActiveTab}
-          onCloseTab={closeTab}
-          onOpenFile={openFile}
-        />
+        <div
+          className={cn(
+            "min-h-0 min-w-0 flex-1 overflow-hidden rounded-lg border bg-background shadow-[0_16px_44px_rgb(0_0_0/0.18)]",
+            // The first tab, selected, carries the panel's left edge up.
+            editorTabs[0]?.id === shownTab && "rounded-tl-none"
+          )}
+        >
+          <DevelopmentEditorContent
+            active={shownTab}
+            diffByPath={diffByPath}
+            diffs={diffs}
+            initialReviewFilePath={initialDiffPath}
+            mode={mode}
+            readFile={workspace.readFile}
+            reloadKey={workspace.reloadKey}
+            reviewLoading={diffLoading}
+            onOpenFile={openFile}
+          />
+        </div>
       </div>
     </div>
   )
 }
 
-function DevelopmentEmptyState({
+// Room for the Code tab's view switch, which stays over the toolbar's
+// right end whatever the view (see DevelopmentContent).
+export function CodeActionsSpace() {
+  return (
+    <span
+      aria-hidden="true"
+      className="h-full shrink-0"
+      style={{ width: "var(--code-actions-space, 0px)" }}
+    />
+  )
+}
+
+function CodeSearchField({
+  placeholder,
+  value,
+  onChange,
+}: {
+  placeholder: string
+  value: string
+  onChange: (value: string) => void
+}) {
+  return (
+    <label className="flex h-10 w-72 shrink-0 cursor-text items-center gap-2 rounded-full border bg-background/95 pr-1.5 pl-3.5 shadow-sm backdrop-blur focus-within:ring-2 focus-within:ring-ring/40">
+      <SearchIcon className="size-4 shrink-0 text-muted-foreground" />
+      <input
+        aria-label={placeholder}
+        className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/70"
+        placeholder={placeholder}
+        spellCheck={false}
+        type="text"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") onChange("")
+        }}
+      />
+      {value ? (
+        <Button
+          aria-label="Clear the search"
+          className="size-7 shrink-0 rounded-full"
+          size="icon"
+          type="button"
+          variant="ghost"
+          onClick={() => onChange("")}
+        >
+          <XIcon />
+        </Button>
+      ) : null}
+    </label>
+  )
+}
+
+// Nothing to show in the Code tab: said in the frame where the code goes,
+// under its toolbar.
+export function DevelopmentEmptyState({
   description,
   icon: Icon,
   title,
@@ -200,11 +287,15 @@ function DevelopmentEmptyState({
   title: string
 }) {
   return (
-    <div className="flex h-full min-h-96 flex-col items-center justify-center gap-3 rounded-lg bg-muted/20 p-8 text-center">
-      <Icon className="size-8 text-muted-foreground" />
-      <div>
-        <h3 className="font-heading text-lg font-semibold">{title}</h3>
-        <p className="text-sm text-muted-foreground">{description}</p>
+    <div className="flex h-full min-h-0 flex-col p-4 pt-16">
+      <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 rounded-lg border bg-background p-8 text-center">
+        <Icon className="size-8 text-muted-foreground" />
+        <div className="space-y-1">
+          <h3 className="font-heading text-lg font-semibold">{title}</h3>
+          <p className="text-sm text-pretty text-muted-foreground">
+            {description}
+          </p>
+        </div>
       </div>
     </div>
   )

@@ -43,6 +43,7 @@ export function DevelopmentFileTree({
   listDirectory,
   modified,
   onFileClick,
+  query: controlledQuery,
   reloadKey,
   searchFiles,
 }: {
@@ -53,6 +54,9 @@ export function DevelopmentFileTree({
   listDirectory: (path: string) => Promise<FileNode[]>
   modified?: string[]
   onFileClick: (path: string) => void
+  // Searched from a field of its own above the tree (the Code tab's
+  // toolbar); the tree shows its own field otherwise.
+  query?: string
   reloadKey?: number
   searchFiles?: (query: string) => Promise<FileNode[] | undefined>
 }) {
@@ -60,7 +64,8 @@ export function DevelopmentFileTree({
   const [directories, setDirectories] = React.useState<
     Record<string, DirectoryState>
   >({})
-  const [query, setQuery] = React.useState("")
+  const [ownQuery, setQuery] = React.useState("")
+  const query = controlledQuery ?? ownQuery
   const [remoteSearchMatches, setRemoteSearchMatches] = React.useState<
     string[] | null
   >(null)
@@ -227,39 +232,41 @@ export function DevelopmentFileTree({
         className
       )}
     >
-      <div className="px-2 pb-1">
-        <InputGroup className="h-8! bg-background/60">
-          <InputGroupAddon className="pl-2">
-            <SearchIcon className="size-3.5" />
-          </InputGroupAddon>
-          <InputGroupInput
-            aria-label="Search files"
-            className="h-7 text-xs"
-            placeholder="Search files"
-            type="text"
-            value={query}
-            onChange={(event) => {
-              setRemoteSearchMatches(null)
-              setQuery(event.target.value)
-            }}
-          />
-          {query && (
-            <InputGroupAddon align="inline-end" className="pr-1">
-              <InputGroupButton
-                aria-label="Clear file search"
-                className="text-muted-foreground hover:text-foreground"
-                size="icon-xs"
-                onClick={() => {
-                  setRemoteSearchMatches(null)
-                  setQuery("")
-                }}
-              >
-                <XIcon className="size-3" />
-              </InputGroupButton>
+      {controlledQuery === undefined && (
+        <div className="px-2 pb-1">
+          <InputGroup className="h-8! bg-background/60">
+            <InputGroupAddon className="pl-2">
+              <SearchIcon className="size-3.5" />
             </InputGroupAddon>
-          )}
-        </InputGroup>
-      </div>
+            <InputGroupInput
+              aria-label="Search files"
+              className="h-7 text-xs"
+              placeholder="Search files"
+              type="text"
+              value={query}
+              onChange={(event) => {
+                setRemoteSearchMatches(null)
+                setQuery(event.target.value)
+              }}
+            />
+            {query && (
+              <InputGroupAddon align="inline-end" className="pr-1">
+                <InputGroupButton
+                  aria-label="Clear file search"
+                  className="text-muted-foreground hover:text-foreground"
+                  size="icon-xs"
+                  onClick={() => {
+                    setRemoteSearchMatches(null)
+                    setQuery("")
+                  }}
+                >
+                  <XIcon className="size-3" />
+                </InputGroupButton>
+              </InputGroupAddon>
+            )}
+          </InputGroup>
+        </div>
+      )}
       {searchLoading ? (
         <TreeSkeleton />
       ) : searching && searchMatches.length === 0 ? (

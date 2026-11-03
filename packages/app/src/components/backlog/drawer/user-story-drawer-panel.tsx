@@ -810,7 +810,7 @@ export function UserStoryDrawerPanel({
         {hasDevelopment && (
           <TabsContent
             value="development"
-            className="min-h-0 overflow-hidden pt-36"
+            className="min-h-0 overflow-hidden pt-32"
           >
             <DevelopmentContent
               key={developmentFileTarget?.id ?? "development"}
