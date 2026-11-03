@@ -285,6 +285,13 @@ const api: BlameDesktopApi = {
     setAdvancedDiagnostics: (input) =>
       ipcRenderer.invoke("preview-devtools:set-advanced", input),
   },
+  previewEnvironment: {
+    describe: (input) =>
+      ipcRenderer.invoke("preview-environment:describe", input),
+    set: (input) => ipcRenderer.invoke("preview-environment:set", input),
+    dismissRequest: (input) =>
+      ipcRenderer.invoke("preview-environment:dismiss-request", input),
+  },
   agentScreenshots: {
     cache: (input) => ipcRenderer.invoke("agent-screenshots:cache", input),
     copy: (input) => ipcRenderer.invoke("agent-screenshots:copy", input),

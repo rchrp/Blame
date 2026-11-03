@@ -62,6 +62,7 @@ import type {
   AgentScreenshotsClient,
   McpServersClient,
   PreviewDevtoolsSettingsClient,
+  PreviewEnvironmentClient,
 } from "@blame/app";
 import type { RuntimeDiagnosticInput, RuntimeProgress } from "@blame/app";
 import type { TelemetryExportSession } from "@blame/app";
@@ -309,6 +310,7 @@ export type BlameDesktopApi = {
   projectWindows: ProjectWindows;
   agentScreenshots: AgentScreenshotsClient;
   previewDevtools: PreviewDevtoolsSettingsClient;
+  previewEnvironment: PreviewEnvironmentClient;
   previewBrowser: {
     capture(input: {
       id: string;

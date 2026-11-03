@@ -30,6 +30,7 @@ import { registerTelemetryIpcHandlers } from "./telemetry-ipc";
 import { registerTerminalIpcHandlers } from "./terminal-ipc";
 import { registerPreviewSurfacesIpc } from "./ipc/preview-surfaces-ipc";
 import { configurePreviewVariables } from "./preview-environment/variables-store";
+import { registerPreviewEnvironmentIpcHandlers } from "./ipc/preview-environment-ipc";
 import {
   localPreviewBridgeGrant,
   registerWorkspaceIpcHandlers,
@@ -145,6 +146,7 @@ export function registerDesktopIpcHandlers(options: DesktopIpcOptions) {
   registerPreviewDevtoolsSettingsIpcHandlers({
     isAppWindow: options.isAppWindow,
   });
+  registerPreviewEnvironmentIpcHandlers({ isAppWindow: options.isAppWindow });
   registerMcpIpcHandlers();
   registerTerminalIpcHandlers();
   registerTelemetryIpcHandlers(options.telemetry);

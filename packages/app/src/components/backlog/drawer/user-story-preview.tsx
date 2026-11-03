@@ -20,6 +20,7 @@ import {
   NetworkIcon,
   PlayIcon,
   RefreshCwIcon,
+  VariableIcon,
 } from "lucide-react"
 import * as React from "react"
 import { toast } from "sonner"
@@ -67,6 +68,7 @@ import {
   type UserStoryPreviewRunner,
 } from "@/components/backlog/drawer/use-user-story-preview-runner"
 import { UserStoryPreviewRunnerControls } from "@/components/backlog/drawer/user-story-preview-runner"
+import { PreviewVariablesPanel } from "@/components/backlog/drawer/preview-variables-panel"
 import { storyPreviewDevtoolsScope } from "@/components/backlog/shared/preview-devtools-scope"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -155,6 +157,7 @@ type PreviewIslandProps = {
   captureDisabled?: boolean
   hasPreview: boolean
   hasSetupLog: boolean
+  hasVariables: boolean
   logService?: string
   logServices: string[]
   locationBlocked: boolean
@@ -178,8 +181,7 @@ type PreviewIslandProps = {
 }
 type PreviewLogToolbarProps = {
   projectRun?: ProjectRunPreview
-  hasPreview: boolean
-  hasSetupLog: boolean
+  tabs: React.ReactNode
   onConfigurationChange?: (configurationId: string, previewUrl?: string) => void
   onMenuOpenChange: (open: boolean) => void
   onServiceChange: (service: string) => void
@@ -498,7 +500,13 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
     ) ||
     runtimeStarting ||
     Boolean(previewFailure)
-  const activeTab = activePreviewTab(tab, hasPreviewSurface, hasSetupLog)
+  const hasVariables = Boolean(setupLogWorktree)
+  const activeTab = activePreviewTab(
+    tab,
+    hasPreviewSurface,
+    hasSetupLog,
+    hasVariables
+  )
   const localServices = useProjectServices(
     visible && activeTab === "setup-log" && !managedPreview
       ? setupLogWorktree
@@ -745,6 +753,7 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
             captureDisabled={previewWaiting || !previewCapture}
             hasPreview={hasPreviewSurface}
             hasSetupLog={hasSetupLog}
+            hasVariables={hasVariables}
             logService={selectedLogService}
             logServices={services}
             locationBlocked={displayedLocationBlocked}
@@ -878,6 +887,23 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
               )}
             </TabsContent>
           )}
+          {hasVariables && (
+            <TabsContent
+              value="variables"
+              className="h-full min-h-0 overflow-hidden"
+            >
+              <PreviewVariablesPanel
+                worktree={setupLogWorktree}
+                active={visible && activeTab === "variables"}
+                onApply={
+                  !managedPreview && previewRunner.selectedId
+                    ? () =>
+                        previewRunner.control("start", previewRunner.selectedId)
+                    : undefined
+                }
+              />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     )
@@ -977,6 +1003,7 @@ function PreviewIsland({
   captureDisabled,
   hasPreview,
   hasSetupLog,
+  hasVariables,
   logService,
   logServices,
   locationBlocked,
@@ -995,12 +1022,33 @@ function PreviewIsland({
   syncStatus,
   updateNotice,
 }: PreviewIslandProps) {
+  const tabs = (
+    <PreviewTabSelector
+      hasPreview={hasPreview}
+      hasSetupLog={hasSetupLog}
+      hasVariables={hasVariables}
+    />
+  )
+  if (activeTab === "variables") {
+    return (
+      <div className="pointer-events-none absolute inset-x-4 top-4 z-20 flex h-10 items-center gap-2">
+        <span className="min-w-0 flex-1" />
+        {previewRunner?.runtime && (
+          <UserStoryPreviewRunnerControls
+            runner={previewRunner}
+            onConfigurationChange={onRunConfigurationChange}
+            onMenuOpenChange={onRunnerMenuOpenChange}
+          />
+        )}
+        {tabs}
+      </div>
+    )
+  }
   if (activeTab === "setup-log") {
     return (
       <PreviewLogToolbar
         projectRun={projectRun}
-        hasPreview={hasPreview}
-        hasSetupLog={hasSetupLog}
+        tabs={tabs}
         onConfigurationChange={onRunConfigurationChange}
         onMenuOpenChange={onRunnerMenuOpenChange}
         onServiceChange={onLogServiceChange}
@@ -1047,15 +1095,14 @@ function PreviewIsland({
       ) : null}
       {previewRunner && <ManagedRuntimeSummary runner={previewRunner} />}
       <div className="preview-toolbar-spacer min-w-2 flex-1" />
-      <PreviewTabSelector hasPreview={hasPreview} hasSetupLog={hasSetupLog} />
+      {tabs}
     </div>
   )
 }
 
 function PreviewLogToolbar({
   projectRun,
-  hasPreview,
-  hasSetupLog,
+  tabs,
   onConfigurationChange,
   onMenuOpenChange,
   onServiceChange,
@@ -1099,7 +1146,7 @@ function PreviewLogToolbar({
         />
       )}
       {runner && <ManagedRuntimeSummary runner={runner} />}
-      <PreviewTabSelector hasPreview={hasPreview} hasSetupLog={hasSetupLog} />
+      {tabs}
     </div>
   )
 }
@@ -1386,9 +1433,11 @@ function PreviewProxyBadge({ proxy }: { proxy: PreviewProxyInfo }) {
 function PreviewTabSelector({
   hasPreview,
   hasSetupLog,
+  hasVariables,
 }: {
   hasPreview: boolean
   hasSetupLog: boolean
+  hasVariables: boolean
 }) {
   return (
     <TabsList className="pointer-events-auto h-10 shrink-0 rounded-full border bg-background/95 p-1 shadow-sm backdrop-blur">
@@ -1402,6 +1451,12 @@ function PreviewTabSelector({
         <TabsTrigger className="rounded-full px-3" value="setup-log">
           <PlayIcon />
           <span className="preview-tab-label">Run logs</span>
+        </TabsTrigger>
+      )}
+      {hasVariables && (
+        <TabsTrigger className="rounded-full px-3" value="variables">
+          <VariableIcon />
+          <span className="preview-tab-label">Variables</span>
         </TabsTrigger>
       )}
     </TabsList>
@@ -1511,10 +1566,12 @@ function serviceLogContent(
 function activePreviewTab(
   tab: string,
   hasPreview: boolean,
-  hasSetupLog: boolean
+  hasSetupLog: boolean,
+  hasVariables: boolean
 ) {
   if (tab === "preview" && hasPreview) return tab
   if (tab === "setup-log" && hasSetupLog) return tab
+  if (tab === "variables" && hasVariables) return tab
   if (hasPreview) return "preview"
   return "setup-log"
 }

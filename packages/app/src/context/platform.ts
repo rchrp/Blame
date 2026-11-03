@@ -99,6 +99,7 @@ export type Platform = {
   api?: ApiConnection
   localApi?: import("./platform-local-api").LocalApiClient
   previewDevtools?: PreviewDevtoolsSettingsClient
+  previewEnvironment?: import("./platform-preview-environment").PreviewEnvironmentClient
   appStatus?: AppStatusClient
   appearance?: AppearanceClient
   backlogStatusPip?: BacklogStatusPipClient
