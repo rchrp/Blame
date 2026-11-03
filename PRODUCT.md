@@ -40,9 +40,9 @@ Site language in use: "the ADE for verifiable agentic development"; "From story 
 - Core features: backlog-driven development, isolated Git worktrees, Quick Chat, project Code Practices, integrated previews and review, bring-your-own AI providers, Light Semantic Harness, MCP servers, and a security audit area.
 - Specialist agent roles named on the site include Frontend Design Specialist, Test & Verification Analyst, and Risk & Review Analyst.
 - Account sync restores stories and conversations, Code Practices and preferences, provider connections, and configured MCP servers on another computer.
-- Plans: the free core covers projects, backlog, conversations, local worktrees, local previews and own provider credentials. **Blame Premium is $20/month** and adds cloud voice transcription, managed Vercel previews and new hosted file uploads. Existing files stay accessible after a subscription ends.
+- Plans: the free core covers projects, backlog, conversations, local worktrees, local previews and own provider credentials. **Blame Cloud is $20/month** and pays for hosted services: cloud voice transcription, managed Vercel previews and new hosted file uploads. Existing files stay accessible after a subscription ends.
 - Licence: AGPL-3.0-only, open source at github.com/rchrp/Blame. Self-hosting is not yet turnkey (see `docs/open-source-readiness.tex`).
-- Terminology to keep: ADE, user story, Code Practices, smart worktrees, Cloud Previews, Quick Chat, Light Semantic Harness, controlled merge, Blame Premium.
+- Terminology to keep: ADE, user story, Code Practices, smart worktrees, Cloud Previews, Quick Chat, Light Semantic Harness, controlled merge, Blame Cloud (never "Premium": the plan pays for hosting, not for features).
 - Languages: the product and website are in English. The website also has French legal pages (`app/fr`); no full French UI has been confirmed.
 
 ## Brand Commitments
@@ -65,4 +65,4 @@ Site language in use: "the ADE for verifiable agentic development"; "From story 
 2. **The human decides.** Agents propose and the developer disposes. Approve, request changes and reject are first-class actions, never buried.
 3. **One workspace, end to end.** The story, conversation, worktree, preview, diff and merge stay connected. Avoid flows that send the user to another tool to finish the job.
 4. **Solo first, team-ready.** Design for one developer running several agents in parallel; keep review and status legible enough that a second person could pick them up.
-5. **Your providers, your code.** Bring-your-own models, local-first execution and an open-source core. Premium sells hosted convenience, never lock-in.
+5. **Your providers, your code.** Bring-your-own models, local-first execution and an open-source core. Blame Cloud sells hosted convenience, never lock-in.
