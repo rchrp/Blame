@@ -141,7 +141,7 @@ function CardHeader({ compact, logo }: { compact: boolean; logo: ReactNode }) {
         <div className="shrink-0 [&>*]:h-11 [&>*]:w-11">{logo}</div>
         <div>
           <h2 className="text-xl font-semibold tracking-[-0.04em] text-[#111]">
-            Blame Premium
+            Blame Cloud
           </h2>
           <p className="mt-1 text-[13px] leading-5 text-[#111]/70">{description}</p>
         </div>
@@ -156,7 +156,7 @@ function CardHeader({ compact, logo }: { compact: boolean; logo: ReactNode }) {
       </div>
       <div className="mt-7">
         <h2 className="text-2xl font-semibold tracking-[-0.04em] text-[#111]">
-          Blame Premium
+          Blame Cloud
         </h2>
         <p className="mt-3 text-base leading-6 text-[#111]/70">{description}</p>
       </div>
