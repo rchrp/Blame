@@ -1,0 +1,19 @@
+{
+  "title": "Blame Docs",
+  "pages": [
+    "---Getting started---",
+    "index",
+    "install",
+    "quick-start",
+    "---Guides---",
+    "...guides",
+    "---Concepts---",
+    "...concepts",
+    "---Account and privacy---",
+    "...account",
+    "---Troubleshooting---",
+    "...troubleshooting",
+    "---Community---",
+    "contributing"
+  ]
+}

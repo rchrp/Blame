@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { createMDX } from "fumadocs-mdx/next";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -29,12 +30,17 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: workspaceRoot,
   },
-  // Every page's Markdown version for AI agents: /pricing.md, /index.md...
+  // Every page's Markdown version for AI agents: /pricing.md, /index.md,
+  // and for the docs /docs.md, /docs/install.md...
   async rewrites() {
-    return markdownPagePaths.map((path) => ({
-      source: markdownUrlPath(path),
-      destination: markdownRoutePath(path),
-    }));
+    return [
+      ...markdownPagePaths.map((path) => ({
+        source: markdownUrlPath(path),
+        destination: markdownRoutePath(path),
+      })),
+      { source: "/docs.md", destination: "/md/docs" },
+      { source: "/docs/:path+.md", destination: "/md/docs/:path+" },
+    ];
   },
   async headers() {
     return [
@@ -47,4 +53,7 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Fumadocs MDX compiles the docs (content/docs) and its defineDocs macro.
+const withMDX = createMDX();
+
+export default withMDX(nextConfig);

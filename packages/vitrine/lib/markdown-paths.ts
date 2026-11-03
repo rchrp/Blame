@@ -31,3 +31,9 @@ export function markdownUrlPath(pagePath: MarkdownPagePath) {
 export function markdownRoutePath(pagePath: MarkdownPagePath) {
   return pagePath === "/" ? "/md" : `/md${pagePath}`;
 }
+
+// The docs pages (app/(docs)/docs) answer in Markdown from
+// app/(agents)/md/docs, which also answers 404 for an unknown page.
+export function docsMarkdownRoutePath(path: string) {
+  return path === "/docs" || path.startsWith("/docs/") ? `/md${path}` : null;
+}
