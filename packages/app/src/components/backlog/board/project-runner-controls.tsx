@@ -32,6 +32,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import {
+  InsetSwitch,
+  insetSwitchGroupClassName,
+} from "@/components/backlog/shared/inset-switch"
 import { cn } from "@/lib/utils"
 
 // What the runner shows of its app: the same buttons, in the same order,
@@ -96,7 +100,7 @@ const runnerViewMeta: Record<
 
 export const runnerViewIcon = (id: RunnerViewId) => runnerViewMeta[id].icon
 
-const runnerGroupClassName = "rounded-lg border bg-muted p-0.5"
+const runnerGroupClassName = insetSwitchGroupClassName
 
 export function ProjectRunnerControls(props: ProjectRunnerControlsProps) {
   const selected = selectedConfiguration(props.configurations, props.selectedId)
@@ -133,8 +137,6 @@ export function RunnerViewGroup({ views }: { views: RunnerView[] }) {
 
 // The views sit in a recess of the group, a switch whose knob slides to
 // the one showing.
-const runnerViewStep = "(1.75rem + 0.125rem)"
-
 function RunnerViewSwitch({
   className,
   views,
@@ -142,64 +144,23 @@ function RunnerViewSwitch({
   className?: string
   views: RunnerView[]
 }) {
-  const active = views.findIndex((view) => view.active)
   return (
-    <div
-      className={cn(
-        "relative flex items-center gap-0.5 rounded-md! bg-foreground/[0.07] p-0.5 shadow-[inset_0_1px_2px_rgb(0_0_0/0.16)] dark:bg-black/35 dark:shadow-[inset_0_1px_3px_rgb(0_0_0/0.45)]",
-        className
-      )}
-    >
-      <span
-        aria-hidden="true"
-        className={cn(
-          "pointer-events-none absolute top-0.5 left-0.5 size-7 rounded-[5px] border border-transparent bg-background shadow-sm transition-[translate,opacity] duration-200 ease-out motion-reduce:transition-none dark:border-white/10 dark:bg-muted",
-          active < 0 && "opacity-0"
-        )}
-        style={{
-          translate: `calc(${Math.max(active, 0)} * ${runnerViewStep}) 0`,
-        }}
-      />
-      {views.map((view) => (
-        <RunnerViewButton key={view.id} view={view} />
-      ))}
-    </div>
-  )
-}
-
-function RunnerViewButton({ view }: { view: RunnerView }) {
-  const meta = runnerViewMeta[view.id]
-  const Icon = meta.icon
-  return (
-    <RunnerIconTooltip
-      label={view.unavailable ?? (view.active ? meta.label : meta.show)}
-    >
-      {/* A disabled button gets no pointer events: its tooltip needs one. */}
-      <span className="relative inline-flex">
-        <Button
-          aria-label={view.ready ? `${meta.label}, ready` : meta.label}
-          aria-pressed={Boolean(view.active)}
-          className={cn(
-            "relative size-7 rounded-[5px] text-muted-foreground hover:bg-foreground/5 hover:text-foreground dark:hover:bg-white/5",
-            view.active &&
-              "text-foreground hover:bg-transparent dark:hover:bg-transparent"
-          )}
-          disabled={Boolean(view.unavailable)}
-          size="icon"
-          type="button"
-          variant="ghost"
-          onClick={view.onSelect}
-        >
-          <Icon />
-          {view.ready ? (
-            <span
-              aria-hidden="true"
-              className="absolute top-1 right-1 size-1.5 rounded-full bg-sky-500 shadow-[0_0_0_1.5px_var(--muted)]"
-            />
-          ) : null}
-        </Button>
-      </span>
-    </RunnerIconTooltip>
+    <InsetSwitch
+      className={className}
+      items={views.map((view) => {
+        const meta = runnerViewMeta[view.id]
+        return {
+          id: view.id,
+          icon: meta.icon,
+          label: meta.label,
+          active: view.active,
+          ready: view.ready,
+          tooltip: meta.show,
+          unavailable: view.unavailable,
+          onSelect: view.onSelect,
+        }
+      })}
+    />
   )
 }
 

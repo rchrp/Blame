@@ -1,9 +1,8 @@
 import { PlayIcon } from "lucide-react"
-import { Tabs as TabsPrimitive } from "radix-ui"
 import * as React from "react"
 
-import { ProjectRunnerStatusDot } from "@/components/backlog/board/project-runner-controls"
 import type { RunLogItem } from "@/components/backlog/board/run-log-items"
+import { AttachedTabs } from "@/components/backlog/shared/attached-tabs"
 import { Button } from "@/components/ui/button"
 import { terminalText } from "@/lib/terminal-text"
 import { cn } from "@/lib/utils"
@@ -44,8 +43,9 @@ export function RunLogPanel({
         {/* Tabs as tall as the runner's controls, on the terminal. */}
         <div className="min-w-0 flex-1 self-end">
           {items.length ? (
-            <RunLogTabs
+            <AttachedTabs
               items={items}
+              label="Run logs"
               value={value}
               onValueChange={onValueChange}
             />
@@ -77,47 +77,6 @@ export function PreviewActionsSpace() {
       className="h-full shrink-0"
       style={{ width: "var(--preview-actions-space, 0px)" }}
     />
-  )
-}
-
-function RunLogTabs({
-  items,
-  value,
-  onValueChange,
-}: {
-  items: RunLogItem[]
-  value?: string
-  onValueChange: (id: string) => void
-}) {
-  return (
-    <TabsPrimitive.Root
-      activationMode="manual"
-      value={value}
-      onValueChange={onValueChange}
-    >
-      <TabsPrimitive.List
-        aria-label="Run logs"
-        className="relative z-10 -mb-px no-scrollbar flex items-end gap-0.5 overflow-x-auto pr-2"
-      >
-        {items.map((item) => (
-          <TabsPrimitive.Trigger
-            key={item.id}
-            className={cn(
-              "run-log-tab relative flex h-[2.375rem] max-w-60 min-w-32 shrink-0 items-center justify-center gap-2 rounded-t-lg border border-b-0 border-transparent px-4 text-sm font-medium whitespace-nowrap text-muted-foreground outline-none hover:bg-foreground/5 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset",
-              "data-[state=active]:border-border data-[state=active]:bg-zinc-950 data-[state=active]:text-zinc-100 data-[state=active]:hover:bg-zinc-950",
-              // The selected tab stays dark in both themes: a gray that shows on it.
-              "data-[state=active]:[&_[data-status=stopped]]:bg-zinc-500"
-            )}
-            value={item.id}
-          >
-            {item.status ? (
-              <ProjectRunnerStatusDot status={item.status} />
-            ) : null}
-            <span className="truncate">{item.label}</span>
-          </TabsPrimitive.Trigger>
-        ))}
-      </TabsPrimitive.List>
-    </TabsPrimitive.Root>
   )
 }
 
