@@ -3,7 +3,10 @@ import { FoldVerticalIcon, LoaderCircleIcon } from "lucide-react"
 
 import type { UserStory } from "@/components/backlog/data/backlog-data"
 import { storyMaxInputTokens } from "@/components/backlog/data/story-context-limit"
-import { useStoryModelChoice } from "@/components/backlog/data/story-model-choice"
+import {
+  type StoryModelSource,
+  useStoryModelChoice,
+} from "@/components/backlog/data/story-model-choice"
 import { compactTokens } from "@/components/backlog/drawer/story-context-usage"
 import { useModelSelection } from "@/components/model/model-selection"
 import { Button } from "@/components/ui/button"
@@ -22,8 +25,12 @@ export type StoryContextCompaction =
   | { status: "unchanged" }
   | { compact: () => void; message: string; status: "failed" }
 
+// A story, or a quick chat: both resume the same kind of agent session.
+export type CompactableAgent = StoryModelSource &
+  Pick<UserStory, "agentStatus" | "clineSessionId">
+
 export function useStoryContextCompaction(
-  userStory?: UserStory
+  userStory?: CompactableAgent
 ): StoryContextCompaction {
   const platform = usePlatform()
   const auth = useCloudAuth()

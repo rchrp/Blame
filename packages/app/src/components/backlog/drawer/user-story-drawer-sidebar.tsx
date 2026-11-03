@@ -51,32 +51,42 @@ import {
 import { usePlatform } from "@/context/platform"
 import {
   CompactContextButton,
+  type CompactableAgent,
   compactionNote,
   type StoryContextCompaction,
   useStoryContextCompaction,
 } from "@/components/backlog/drawer/story-context-compaction"
 import { cn } from "@/lib/utils"
 
-// The story's agent at a glance, floating at the top right of the drawer:
-// the full panel, or a small pill with the context donut.
+// A story, or a quick chat: the island reads the same agent fields of both.
+export type AgentStatsSource = CompactableAgent & Pick<UserStory, "agentUsage">
+
+// The agent at a glance, floating at the top right of the story drawer or
+// the chat: the full panel, or a small pill with the context donut.
 export function StoryStatsIsland({
+  buttons = 2,
+  className,
   contextLimitKey,
   diffStats,
   expanded,
   onExpand,
   preparing = false,
+  source,
   useEditorModel = false,
-  userStory,
 }: {
+  // The host's own buttons over the island's top right end: the drawer's
+  // toggle and close, or the chat's toggle. The toggle hides while preparing.
+  buttons?: number
+  className?: string
   contextLimitKey?: string
   diffStats?: UserStoryDiffStats
   expanded: boolean
   onExpand(): void
   preparing?: boolean
+  source?: AgentStatsSource
   useEditorModel?: boolean
-  userStory?: UserStory
 }) {
-  const stats = useStoryStats(userStory, contextLimitKey, useEditorModel)
+  const stats = useStoryStats(source, contextLimitKey, useEditorModel)
   const reduceMotion = useReducedMotion()
   // The full face stays mounted so the island always knows its height and
   // can move between two known sizes.
@@ -95,12 +105,15 @@ export function StoryStatsIsland({
   const fullFaceInFlow = expanded && fullHeight === undefined
   return (
     <motion.div
-      className="absolute top-4 right-4 z-20 max-w-[calc(100%-2rem)] overflow-hidden rounded-xl bg-input/40 shadow-xl ring-1 shadow-black/10 ring-foreground/20 backdrop-blur-xl dark:bg-muted"
+      className={cn(
+        "absolute top-4 right-4 z-20 max-w-[calc(100%-2rem)] overflow-hidden rounded-xl bg-input/40 shadow-xl ring-1 shadow-black/10 ring-foreground/20 backdrop-blur-xl dark:bg-muted",
+        className
+      )}
       initial={false}
       animate={
         expanded
           ? { height: fullHeight ?? "auto", width: expandedWidth }
-          : { height: compactHeight, width: pillWidth(stats) }
+          : { height: compactHeight, width: pillWidth(stats, buttons) }
       }
       transition={islandTransition(expanded, reduceMotion)}
     >
@@ -115,9 +128,10 @@ export function StoryStatsIsland({
           style={{ width: expandedWidth }}
         >
           <DrawerSidebar
+            buttons={buttons}
             diffStats={diffStats}
+            source={source}
             stats={stats}
-            userStory={userStory}
           />
         </div>
       </IslandFace>
@@ -126,26 +140,41 @@ export function StoryStatsIsland({
         revealDelay={0.5}
         shown={!expanded && !preparing}
       >
-        <CompactStats diffStats={diffStats} stats={stats} onExpand={onExpand} />
+        <CompactStats
+          buttons={buttons}
+          diffStats={diffStats}
+          stats={stats}
+          onExpand={onExpand}
+        />
       </IslandFace>
       <IslandFace
         className="absolute top-0 right-0"
         revealDelay={0.5}
         shown={preparing}
       >
-        <PreparationStats stats={stats} />
+        <PreparationStats buttons={buttons} stats={stats} />
       </IslandFace>
     </motion.div>
   )
 }
 
 const expandedWidth = 320
-const compactWidth = 192
+// The pill's context donut and figures.
+const compactContentWidth = 104
 // Room for the plan usage donut and its two percentages.
 const planUsageWidth = 92
 
-function pillWidth(stats: StoryStats) {
-  return compactWidth + (stats.planUsage ? planUsageWidth : 0)
+// Kept clear for the host's buttons: 40px each, past an 8px edge gap.
+function buttonsWidth(buttons: number) {
+  return 8 + Math.max(0, buttons) * 40
+}
+
+function pillWidth(stats: StoryStats, buttons: number) {
+  return (
+    compactContentWidth +
+    buttonsWidth(buttons) +
+    (stats.planUsage ? planUsageWidth : 0)
+  )
 }
 const compactHeight = 48
 
@@ -219,12 +248,14 @@ const popVariants = {
 function Pop({
   children,
   className,
+  style,
 }: {
   children: React.ReactNode
   className?: string
+  style?: React.CSSProperties
 }) {
   return (
-    <motion.div className={className} variants={popVariants}>
+    <motion.div className={className} style={style} variants={popVariants}>
       {children}
     </motion.div>
   )
@@ -233,15 +264,15 @@ function Pop({
 type StoryStats = ReturnType<typeof useStoryStats>
 
 function useStoryStats(
-  userStory: UserStory | undefined,
+  source: AgentStatsSource | undefined,
   contextLimitKey: string | undefined,
   useEditorModel: boolean
 ) {
   const sessionUsage = useSessionUsage(
-    userStory?.agentUsage ? undefined : userStory?.clineSessionId
+    source?.agentUsage ? undefined : source?.clineSessionId
   )
   const selection = useModelSelection()
-  const choiceOfModel = useStoryModelChoice(useEditorModel ? undefined : userStory)
+  const choiceOfModel = useStoryModelChoice(useEditorModel ? undefined : source)
   const provider = choiceOfModel
     ? selection.allProviders.find((item) => item.id === choiceOfModel.providerId)
     : selection.currentModel?.provider
@@ -249,18 +280,18 @@ function useStoryStats(
     ? provider?.models[choiceOfModel.modelId]
     : selection.currentModel
   const budget = useStoryContextBudget(
-    contextLimitKey ?? userStory?.id,
+    contextLimitKey ?? source?.id,
     model,
     selection.allProviders
   )
-  const compaction = useStoryContextCompaction(userStory)
+  const compaction = useStoryContextCompaction(source)
   const totals =
-    usageTotalsFromAgentUsage(userStory?.agentUsage) ?? sessionUsage.totals
-  const context = storyContextUsage(userStory?.agentUsage, budget.limit)
+    usageTotalsFromAgentUsage(source?.agentUsage) ?? sessionUsage.totals
+  const context = storyContextUsage(source?.agentUsage, budget.limit)
   const plan = usePlanUsage(
     selection,
     provider?.id,
-    userStory?.agentUsage,
+    source?.agentUsage,
     choiceOfModel?.credentialLabel ?? undefined
   )
   const planUsage = (plan.enabled && plan.usage) || undefined
@@ -269,12 +300,18 @@ function useStoryStats(
 
 // Before execution there is no context usage or run total to display.
 // Keep the plan usage and the next run's context budget beside Close.
-function PreparationStats({ stats }: { stats: StoryStats }) {
+function PreparationStats({
+  buttons,
+  stats,
+}: {
+  buttons: number
+  stats: StoryStats
+}) {
   const { budget, planUsage } = stats
   return (
     <div
       className="flex items-center gap-2 pl-2.5"
-      style={{ height: compactHeight, width: pillWidth(stats) }}
+      style={{ height: compactHeight, width: pillWidth(stats, buttons) }}
     >
       {planUsage ? (
         <Pop className="flex shrink-0 items-center gap-2">
@@ -302,23 +339,30 @@ function PreparationStats({ stats }: { stats: StoryStats }) {
           <span className="text-xs text-muted-foreground">—</span>
         ) : null}
       </Pop>
-      <span aria-hidden className="w-12 shrink-0" />
+      {/* The toggle hides while preparing: only the other buttons remain. */}
+      <span
+        aria-hidden
+        className="shrink-0"
+        style={{ width: buttonsWidth(buttons - 1) }}
+      />
     </div>
   )
 }
 
 function DrawerSidebar({
+  buttons,
   diffStats,
+  source,
   stats: { budget, compaction, context, planUsage, totals },
-  userStory,
 }: {
+  buttons: number
   diffStats?: UserStoryDiffStats
+  source?: AgentStatsSource
   stats: StoryStats
-  userStory?: UserStory
 }) {
   return (
     <aside className="grid gap-4 p-4">
-      <ModelHeader userStory={userStory} />
+      <ModelHeader buttons={buttons} source={source} />
       <ContextGauge budget={budget} compaction={compaction} context={context} />
       {planUsage ? <PlanUsageSection usage={planUsage} /> : null}
       <div className="grid grid-cols-3 gap-2">
@@ -377,10 +421,12 @@ function DiffCounts({ diffStats }: { diffStats: UserStoryDiffStats }) {
 // The pill: how full the context is and what changed, the rest on hover. The drawer's own
 // toggle and close buttons sit on its right end.
 function CompactStats({
+  buttons,
   diffStats,
   onExpand,
   stats,
 }: {
+  buttons: number
   diffStats?: UserStoryDiffStats
   onExpand(): void
   stats: StoryStats
@@ -390,7 +436,7 @@ function CompactStats({
   return (
     <div
       className="flex items-center"
-      style={{ height: compactHeight, width: pillWidth(stats) }}
+      style={{ height: compactHeight, width: pillWidth(stats, buttons) }}
     >
       <Tooltip>
         <TooltipTrigger asChild>
@@ -451,7 +497,11 @@ function CompactStats({
           ) : null}
         </TooltipContent>
       </Tooltip>
-      <span aria-hidden className="w-[5.5rem] shrink-0" />
+      <span
+        aria-hidden
+        className="shrink-0"
+        style={{ width: buttonsWidth(buttons) }}
+      />
     </div>
   )
 }
@@ -504,14 +554,24 @@ function ContextDonut({
   )
 }
 
-function ModelHeader({ userStory }: { userStory?: UserStory }) {
+function ModelHeader({
+  buttons,
+  source,
+}: {
+  buttons: number
+  source?: AgentStatsSource
+}) {
   const names = useModelDisplayNames()
-  const providerId = userStory?.agentProviderId
-  const modelId = userStory?.agentModelId
-  const effort = latestReasoningEffort(userStory)
+  const providerId = source?.agentProviderId
+  const modelId = source?.agentModelId
+  const effort = latestReasoningEffort(source)
   if (!providerId || !modelId) return null
   return (
-    <Pop className="flex min-w-0 items-center gap-2 pr-[4.75rem]">
+    <Pop
+      className="flex min-w-0 items-center gap-2"
+      // Past the panel's own padding, clear of the host's buttons.
+      style={{ paddingRight: buttonsWidth(buttons) - 12 }}
+    >
       <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-foreground/[0.06] ring-1 ring-foreground/10">
         <ProviderIcon className="size-4" providerId={providerId} />
       </span>
@@ -804,8 +864,8 @@ function TokensStat({ totals }: { totals?: AgentUsageTotals }) {
   )
 }
 
-function latestReasoningEffort(userStory?: UserStory) {
-  const runs = userStory?.agentRuns ?? []
+function latestReasoningEffort(source?: AgentStatsSource) {
+  const runs = source?.agentRuns ?? []
   const latest = [...runs]
     .sort((left, right) => left.createdAt.localeCompare(right.createdAt))
     .at(-1)

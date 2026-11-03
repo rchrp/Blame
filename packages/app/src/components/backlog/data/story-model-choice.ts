@@ -1,6 +1,9 @@
 import * as React from "react"
 
-import type { UserStory } from "@/components/backlog/data/backlog-data"
+import type {
+  UserStory,
+  UserStoryAgentRun,
+} from "@/components/backlog/data/backlog-data"
 import type { CloudAiModelPreference } from "@/context/cloud-auth"
 import type { ReasoningSelection } from "@blame/agent-runtime"
 
@@ -39,10 +42,16 @@ export function saveStoryModelChoice(
   for (const listener of listeners) listener()
 }
 
-type StoryModelSource = Pick<
+// A story, or a quick chat, which keeps the same agent fields.
+export type StoryModelSource = Pick<
   UserStory,
-  "agentModelId" | "agentProviderId" | "agentRuns" | "id"
->
+  "agentModelId" | "agentProviderId" | "id"
+> & {
+  agentRuns?: Pick<
+    UserStoryAgentRun,
+    "createdAt" | "modelId" | "providerId" | "reasoningEffort"
+  >[]
+}
 
 export function storyModelChoice(
   story: StoryModelSource,

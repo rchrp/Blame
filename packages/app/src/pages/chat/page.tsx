@@ -78,6 +78,7 @@ import { useQuickChatStore } from "@/components/chat/data/quick-chat-store"
 import { agentConversationResponseHeader } from "@/components/chat/agent-conversation-header"
 import { composerDraftStorageKey } from "@/components/backlog/drawer/composer-draft-storage"
 import { useModelSelection } from "@/components/model/model-selection"
+import { storyMaxInputTokens } from "@/components/backlog/data/story-context-limit"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
@@ -116,6 +117,7 @@ const agentEventPersistDelayMs = 1_500
 const agentCompletionRecoveryIntervalMs = 10_000
 
 type QuickChatDevelopmentSessionInput = {
+  chatId: string
   codeAttachments: PendingCodeSelectionAttachment[]
   executionId: string
   fileAttachments: UserStoryFileAttachment[]
@@ -770,6 +772,7 @@ function QuickChatProjectPage() {
     const title = quickChatTitle(chat, message.body, project?.name)
     const summary = quickChatDevelopmentSummary(chat, message.body)
     const session = await startQuickChatDevelopmentSession({
+      chatId: chat.id,
       codeAttachments,
       executionId,
       fileAttachments,
@@ -827,6 +830,12 @@ function QuickChatProjectPage() {
       modelId: selection.currentModel!.id,
       credentialLabel: selection.currentModel!.credentialLabel,
       reasoningEffort: selection.currentVariant,
+      // The cap picked in the chat's stats panel, like a story's.
+      maxInputTokens: storyMaxInputTokens(
+        input.chatId,
+        selection.currentModel,
+        selection.allProviders
+      ),
       autoSendPrompt: false,
       title: input.title,
       summary: input.summary,
@@ -1057,6 +1066,7 @@ function QuickChatProjectPage() {
         turnMetrics,
       }}
       preview={{ configuration: previewConfiguration, devtoolsTarget: true, scope: project?.path }}
+      stats={emptyConversation ? undefined : activeConversation}
     />
   )
 }

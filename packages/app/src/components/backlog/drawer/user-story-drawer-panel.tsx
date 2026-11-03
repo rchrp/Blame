@@ -831,8 +831,8 @@ export function UserStoryDrawerPanel({
           contextLimitKey={contextLimitKey}
           expanded={statsShownExpanded}
           preparing={!statsExpandable}
+          source={userStory}
           useEditorModel={summaryEditable}
-          userStory={userStory}
           onExpand={() => setStatsExpanded(true)}
         />
       )}
