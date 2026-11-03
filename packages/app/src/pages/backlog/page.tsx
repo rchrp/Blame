@@ -96,6 +96,7 @@ import {
 import { projectCodePractices } from "@/lib/project-code-practices"
 import { showSystemNotification } from "@/lib/system-notifications"
 import { celebrateStory } from "@/lib/celebrate"
+import { inviteToStarAfter } from "@/components/star-invite/star-invite"
 import { notifyCommentResponseCompleted } from "@/pages/backlog/backlog-rotation-helpers"
 import { OpenProjectEmptyState } from "@/components/shared/open-project-empty-state"
 import { backlogStatusPipStories } from "@/pages/backlog/backlog-status-pip-snapshot"
@@ -1144,6 +1145,7 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
           position: "bottom-right",
         })
         celebrateStory(story.id)
+        inviteToStarAfter("merged")
         const mergedStory = await updateStory(
           runningStory,
           {
