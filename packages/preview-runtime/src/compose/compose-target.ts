@@ -11,6 +11,8 @@ import type {
 /** A Vercel sandbox: the runner owns `/workspace` and a gateway fronts it. */
 export type SandboxComposeTarget = {
   kind: "sandbox";
+  /** Labels of each service's container, such as its environment's hash. */
+  serviceLabels?: Record<string, Record<string, string>>;
   projectUser: string;
   proxyCertificatePath: string;
   /** Public URL of each browser-bound endpoint, keyed `service:endpoint`. */
@@ -20,6 +22,8 @@ export type SandboxComposeTarget = {
 /** The Blame Runtime VM: the story worktree is bind-mounted. */
 export type LocalComposeTarget = {
   kind: "local";
+  /** Labels of each service's container, such as its environment's hash. */
+  serviceLabels?: Record<string, Record<string, string>>;
   projectName: string;
   /** The worktree path on the Docker host. */
   workspacePath: string;

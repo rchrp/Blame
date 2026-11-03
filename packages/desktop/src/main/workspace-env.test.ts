@@ -56,7 +56,7 @@ test("syncs nested host env files to their corresponding runtime paths", async (
   );
 });
 
-test("links runtime env files from repository root and fills blank main values", async () => {
+test("links runtime env files from the repository root, never writing into it", async () => {
   const root = await mkdtemp(join(tmpdir(), "blame-env-source-"));
   const worktree = await mkdtemp(join(tmpdir(), "blame-env-worktree-"));
 
@@ -86,15 +86,15 @@ test("links runtime env files from repository root and fills blank main values",
 
     await syncProjectEnvFiles(root, worktree);
 
+    // The story's own file stays its own, and the project's is untouched.
     assert.equal(
       await readFile(join(worktree, ".env"), "utf8"),
-      "ROOT_SECRET=source\nONLY_SOURCE=source\nWORKTREE_SECRET=worktree\n",
+      "ROOT_SECRET=\nWORKTREE_SECRET=worktree\n",
     );
     assert.equal(
       await readFile(join(root, ".env"), "utf8"),
-      "ROOT_SECRET=source\nONLY_SOURCE=source\nWORKTREE_SECRET=worktree\n",
+      "ROOT_SECRET=source\nONLY_SOURCE=source\n",
     );
-    await assertSameFile(join(root, ".env"), join(worktree, ".env"));
     assert.equal(
       await readFile(join(worktree, ".env.local"), "utf8"),
       "LOCAL_SECRET=source\n",
@@ -107,11 +107,6 @@ test("links runtime env files from repository root and fills blank main values",
       await readFile(join(worktree, "apps", "backend", ".env"), "utf8"),
       "BACKEND_SECRET=source\n",
     );
-    await writeFile(join(worktree, ".env"), "ROOT_SECRET=edited\n");
-    assert.equal(
-      await readFile(join(root, ".env"), "utf8"),
-      "ROOT_SECRET=edited\n",
-    );
     await assert.rejects(
       () => stat(join(worktree, "apps", "extension", "dist", ".env")),
       /ENOENT/,
@@ -122,7 +117,7 @@ test("links runtime env files from repository root and fills blank main values",
   }
 });
 
-test("creates main runtime env files from templates before linking", async () => {
+test("leaves an example as an example instead of creating .env in the project", async () => {
   const root = await mkdtemp(join(tmpdir(), "blame-env-template-source-"));
   const worktree = await mkdtemp(
     join(tmpdir(), "blame-env-template-worktree-"),
@@ -132,21 +127,11 @@ test("creates main runtime env files from templates before linking", async () =>
     await writeFile(join(root, ".env.example"), "SECRET=template\n");
     await writeFile(join(root, ".env.local.example"), "LOCAL=template\n");
 
-    await syncProjectEnvFiles(root, worktree);
+    assert.deepEqual(await syncProjectEnvFiles(root, worktree), []);
 
-    assert.equal(
-      await readFile(join(root, ".env"), "utf8"),
-      "SECRET=template\n",
-    );
-    assert.equal(
-      await readFile(join(root, ".env.local"), "utf8"),
-      "LOCAL=template\n",
-    );
-    await assertSameFile(join(root, ".env"), join(worktree, ".env"));
-    await assertSameFile(
-      join(root, ".env.local"),
-      join(worktree, ".env.local"),
-    );
+    await assert.rejects(() => stat(join(root, ".env")), /ENOENT/);
+    await assert.rejects(() => stat(join(root, ".env.local")), /ENOENT/);
+    await assert.rejects(() => stat(join(worktree, ".env")), /ENOENT/);
   } finally {
     await rm(root, { force: true, recursive: true });
     await rm(worktree, { force: true, recursive: true });

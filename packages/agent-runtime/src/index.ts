@@ -20,6 +20,7 @@ export {
 } from "./harness/workspace-revisions.js";
 export { taskComplexityBucket } from "./telemetry-cohorts.js";
 export * from "./preview-devtools-policy.js";
+export type * from "./preview-environment-types.js";
 export type { TaskComplexityBucket } from "./telemetry-cohorts.js";
 export { commandWithNextWebpackFallback } from "./next-webpack-fallback.js";
 export {

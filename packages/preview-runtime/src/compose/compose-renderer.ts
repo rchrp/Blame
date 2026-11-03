@@ -202,6 +202,9 @@ function runtimeService(service: ServiceLaunchPlan, context: RenderContext) {
     // Docker policy would also bring back stopped ones whenever the Blame
     // Runtime restarts.
     restart: context.target.kind === "sandbox" ? "unless-stopped" : "no",
+    // A changed label recreates the container, as a changed environment
+    // does: env files are mounted, so their content is hashed here.
+    labels: context.target.serviceLabels?.[service.id],
   });
 }
 
@@ -258,11 +261,15 @@ function container(context: RenderContext, service: Record<string, unknown>) {
           read_only: false,
         }
       : {};
+  const { labels, ...rest } = service;
   return withoutEmpty({
-    ...service,
+    ...rest,
     init: true,
     stop_grace_period: "5s",
-    labels: { "blame.preview": "true" },
+    labels: {
+      ...(labels as Record<string, string> | undefined),
+      "blame.preview": "true",
+    },
     ...hardened,
   });
 }

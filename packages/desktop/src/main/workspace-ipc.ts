@@ -144,7 +144,7 @@ import {
   startLocalPreview,
   stopLocalPreview,
 } from "./preview-runtime/local/local-preview-runner.ts";
-import { syncProjectEnvFiles } from "./workspace-env";
+import { prepareStoryEnvFiles } from "./preview-environment/env-file-sources.ts";
 import {
   ensureGitRepository,
   gitDiffBetween,
@@ -880,7 +880,7 @@ async function addStoryWorktree(context: WorktreeCreationContext) {
 async function completeWorktreeCreation(context: WorktreeCreationContext) {
   const { repositoryRoot, startedAt, timings, worktree } = context;
   await timedWorktreeCreateStep(timings, "env sync", () =>
-    syncProjectEnvFiles(repositoryRoot, worktree),
+    prepareStoryEnvFiles(repositoryRoot, worktree),
   );
   invalidateSetupEnvironment(worktree);
   removedWorktrees.delete(worktree);
