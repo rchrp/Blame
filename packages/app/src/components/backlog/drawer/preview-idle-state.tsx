@@ -23,35 +23,36 @@ export function PreviewIdleFrame({
   )
 }
 
-// Colored clouds drifting behind the launch steps, kept small. Filling,
+// Clouds in the blues of a story card's glow (use-animated-border-effect)
+// drifting behind the launch steps, kept small. Filling,
 // they swell over the whole frame and melt into the neutral the page then
 // appears out of (--preview-reveal). Only transforms and colors change,
 // on a few blurred layers.
 const launchClouds = [
   {
     className: "top-[22%] left-[20%] h-[34%] w-[30%]",
-    color: "oklch(0.62 0.19 255)",
+    color: "oklch(0.7 0.21 245)",
     radius: "58% 42% 63% 37% / 46% 55% 45% 54%",
     duration: 11,
     delay: -2,
   },
   {
     className: "top-[28%] left-[46%] h-[30%] w-[28%]",
-    color: "oklch(0.6 0.21 295)",
+    color: "oklch(0.62 0.22 255)",
     radius: "41% 59% 38% 62% / 57% 39% 61% 43%",
     duration: 13,
     delay: -7,
   },
   {
     className: "top-[44%] left-[28%] h-[30%] w-[30%]",
-    color: "oklch(0.7 0.14 200)",
+    color: "oklch(0.85 0.12 235)",
     radius: "63% 37% 52% 48% / 38% 61% 39% 62%",
     duration: 9,
     delay: -4,
   },
   {
     className: "top-[46%] left-[52%] h-[26%] w-[24%]",
-    color: "oklch(0.66 0.18 340)",
+    color: "oklch(0.8 0.16 240)",
     radius: "37% 63% 46% 54% / 59% 42% 58% 41%",
     duration: 15,
     delay: -10,
