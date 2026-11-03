@@ -127,7 +127,7 @@ class WorkspaceImporter {
   /** Imported project id → project id on this API. */
   private projects = new Map<string, string>()
   private present = new Map<WorkspaceTable, Set<string>>()
-  private columns = new Map<WorkspaceTable, Set<string>>()
+  private columns = new Map<WorkspaceTable, Map<string, string>>()
   private activeRuns: { storyId: string; runId: unknown }[] = []
 
   constructor(
@@ -192,9 +192,10 @@ class WorkspaceImporter {
     table: WorkspaceTable,
     spec: TableSpec,
     source: WorkspaceRow,
-    columns: Set<string>
+    columns: ReadonlyMap<string, string>
   ) {
     const row = pick(table === 'provider_credentials' ? await sealSecrets(source) : source, columns)
+    readDates(row, columns)
     if (spec.parent === 'users') row[spec.owner] = this.userId
     else if (spec.parent === 'projects') {
       const projectId = this.projects.get(String(row[spec.owner]))
@@ -270,20 +271,38 @@ class WorkspaceImporter {
     return Boolean(project)
   }
 
-  /** Columns of this API's schema: an older or newer client may send others. */
+  /**
+   * Columns of this API's schema and their types: an older or newer client
+   * may send others.
+   */
   private async tableColumns(table: WorkspaceTable) {
     const cached = this.columns.get(table)
     if (cached) return cached
     // Lucid's transaction columnsInfo() selects no table: ask knex directly.
     const info = await this.transaction.knexQuery().table(table).columnInfo()
-    const columns = new Set(Object.keys(info))
+    const columns = new Map(Object.entries(info).map(([name, column]) => [name, column.type]))
     this.columns.set(table, columns)
     return columns
   }
 }
 
-function pick(row: WorkspaceRow, columns: Set<string>) {
+function pick(row: WorkspaceRow, columns: ReadonlyMap<string, string>) {
   return Object.fromEntries(Object.entries(row).filter(([column]) => columns.has(column)))
+}
+
+const isoDateTime = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})$/
+
+/**
+ * The bundle carries dates as JSON ISO strings, which MySQL refuses in a
+ * DATETIME or TIMESTAMP column. As dates, each driver writes them the way
+ * Lucid does.
+ */
+function readDates(row: WorkspaceRow, columns: ReadonlyMap<string, string>) {
+  for (const [column, value] of Object.entries(row)) {
+    const type = columns.get(column)?.toLowerCase() ?? ''
+    if (typeof value !== 'string' || !/datetime|timestamp/.test(type)) continue
+    if (isoDateTime.test(value)) row[column] = new Date(value)
+  }
 }
 
 /** Secrets are encrypted with each API's own key, so they travel decrypted. */
