@@ -1,13 +1,12 @@
-import {
-  RotateCwIcon,
-  ScrollTextIcon,
-  TriangleAlertIcon,
-  VariableIcon,
-  WrenchIcon,
-} from "lucide-react"
+import { RotateCwIcon, TriangleAlertIcon, WrenchIcon } from "lucide-react"
 
+import { runnerViewIcon } from "@/components/backlog/board/project-runner-controls"
 import { Button } from "@/components/ui/button"
 import { readableFailure } from "./preview-failure-message"
+
+// The same icons as the runner's views.
+const LogsIcon = runnerViewIcon("logs")
+const VariablesIcon = runnerViewIcon("variables")
 
 // A failed preview start stays explained in the preview itself, with the
 // actions that can fix it, instead of only in a toast that disappears.
@@ -50,7 +49,7 @@ export function PreviewFailurePanel({
         <div className="flex flex-wrap items-center justify-center gap-2">
           {missingVariable && (
             <Button size="sm" onClick={onOpenVariables}>
-              <VariableIcon />
+              <VariablesIcon />
               Open Variables
             </Button>
           )}
@@ -70,7 +69,7 @@ export function PreviewFailurePanel({
             Restart
           </Button>
           <Button size="sm" variant="ghost" onClick={onOpenLogs}>
-            <ScrollTextIcon />
+            <LogsIcon />
             Run logs
           </Button>
         </div>

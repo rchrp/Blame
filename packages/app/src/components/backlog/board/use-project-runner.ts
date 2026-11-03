@@ -46,6 +46,8 @@ export function useProjectRunner(
     sessionFor(sessions, activeSessionId) ?? selectedSession ?? sessions[0]
   return {
     activeSession,
+    // The logs picked, which may belong to an app not started yet.
+    activeSessionId,
     logsOpen,
     pendingOperation,
     runningCount: sessions.filter((session) => session.status === "running")

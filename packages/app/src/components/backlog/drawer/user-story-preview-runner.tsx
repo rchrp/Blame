@@ -1,4 +1,7 @@
-import { ProjectRunnerControls } from "@/components/backlog/board/project-runner-controls"
+import {
+  ProjectRunnerControls,
+  type RunnerView,
+} from "@/components/backlog/board/project-runner-controls"
 import type { ProjectRunnerControlStatus } from "@/components/backlog/board/project-runner-types"
 import type {
   PreviewRunnerAction,
@@ -9,10 +12,12 @@ export function UserStoryPreviewRunnerControls({
   onConfigurationChange,
   onMenuOpenChange,
   runner,
+  views,
 }: {
   onConfigurationChange?: (configurationId: string, previewUrl?: string) => void
   onMenuOpenChange?: (open: boolean) => void
   runner: UserStoryPreviewRunner
+  views?: RunnerView[]
 }) {
   if (!runner.runtime) return null
   const control = previewRunnerControl(runner, onConfigurationChange)
@@ -23,6 +28,7 @@ export function UserStoryPreviewRunnerControls({
         pending={runner.pendingOperation}
         selectedId={runner.selectedId}
         statusFor={(id) => previewConfigurationStatus(runner, id)}
+        views={views}
         onMenuOpenChange={onMenuOpenChange}
         onSelect={runner.select}
         onStart={(id, restart) =>

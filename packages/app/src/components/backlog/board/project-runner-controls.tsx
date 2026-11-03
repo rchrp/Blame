@@ -1,10 +1,14 @@
 import type { ProjectRunConfiguration } from "@blame/agent-runtime"
 import {
+  AppWindowIcon,
+  BracesIcon,
   ChevronDownIcon,
   LoaderCircleIcon,
   PlayIcon,
   RotateCwIcon,
   SquareIcon,
+  SquareTerminalIcon,
+  type LucideIcon,
 } from "lucide-react"
 import * as React from "react"
 
@@ -22,17 +26,27 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { cn } from "@/lib/utils"
+
+// What the runner shows of its app: the same buttons, in the same order,
+// in the header and in a story's preview. Variables belong to a story.
+export type RunnerViewId = "preview" | "logs" | "variables"
+
+export type RunnerView = {
+  id: RunnerViewId
+  active?: boolean
+  // Why the view cannot show now.
+  unavailable?: string
+  onSelect: () => void
+}
 
 type ProjectRunnerControlsProps = {
-  afterStart?: React.ReactNode
-  afterStop?: React.ReactNode
   configurations: ProjectRunConfiguration[]
   disabled?: boolean
   pending?: ProjectRunnerPendingOperation
@@ -48,6 +62,8 @@ type ProjectRunnerControlsProps = {
   // Why the selected app cannot start now (its port is held by another
   // app, which a dev server would silently step around).
   startBlocked?: string
+  // Shown after the start and stop buttons.
+  views?: RunnerView[]
 }
 type SelectedRunnerControlsProps = ProjectRunnerControlsProps & {
   selected: ProjectRunConfiguration
@@ -57,11 +73,23 @@ type RunnerConfigurationActionProps = ProjectRunnerControlsProps & {
   configuration: ProjectRunConfiguration
   status: ProjectRunnerControlStatus
 }
-type ProjectRunnerLogTabsProps = {
-  items: { id: string; label: string; status?: ProjectRunnerControlStatus }[]
-  value?: string
-  onValueChange: (value: string) => void
+
+const runnerViewMeta: Record<
+  RunnerViewId,
+  { icon: LucideIcon; label: string; show: string }
+> = {
+  preview: { icon: AppWindowIcon, label: "Preview", show: "Show preview" },
+  logs: {
+    icon: SquareTerminalIcon,
+    label: "Run logs",
+    show: "Show run logs",
+  },
+  variables: { icon: BracesIcon, label: "Variables", show: "Show variables" },
 }
+
+export const runnerViewIcon = (id: RunnerViewId) => runnerViewMeta[id].icon
+
+const runnerGroupClassName = "rounded-lg border bg-muted p-0.5"
 
 export function ProjectRunnerControls(props: ProjectRunnerControlsProps) {
   const selected = selectedConfiguration(props.configurations, props.selectedId)
@@ -69,14 +97,79 @@ export function ProjectRunnerControls(props: ProjectRunnerControlsProps) {
   const status = props.statusFor(selected.id)
   return (
     <TooltipProvider>
-      <ButtonGroup className="rounded-lg border bg-muted p-0.5">
+      <ButtonGroup className={runnerGroupClassName}>
         <RunnerConfigurationMenu {...props} selected={selected} />
         <RunnerStartButton {...props} selected={selected} status={status} />
-        {props.afterStart}
         <RunnerStopButton {...props} selected={selected} status={status} />
-        {props.afterStop}
+        {props.views?.length ? (
+          <>
+            <RunnerViewDivider />
+            <RunnerViewButtons views={props.views} />
+          </>
+        ) : null}
       </ButtonGroup>
     </TooltipProvider>
+  )
+}
+
+// The views alone, while the runner's controls are not there yet.
+export function RunnerViewGroup({ views }: { views: RunnerView[] }) {
+  if (!views.length) return null
+  return (
+    <TooltipProvider>
+      <ButtonGroup className={runnerGroupClassName}>
+        <RunnerViewButtons views={views} />
+      </ButtonGroup>
+    </TooltipProvider>
+  )
+}
+
+function RunnerViewDivider() {
+  return (
+    <span
+      aria-hidden="true"
+      className="mx-1 my-2 w-px shrink-0 bg-foreground/15"
+    />
+  )
+}
+
+function RunnerViewButtons({ views }: { views: RunnerView[] }) {
+  return (
+    <div className="flex items-center gap-0.5">
+      {views.map((view) => (
+        <RunnerViewButton key={view.id} view={view} />
+      ))}
+    </div>
+  )
+}
+
+function RunnerViewButton({ view }: { view: RunnerView }) {
+  const meta = runnerViewMeta[view.id]
+  const Icon = meta.icon
+  return (
+    <RunnerIconTooltip
+      label={view.unavailable ?? (view.active ? meta.label : meta.show)}
+    >
+      {/* A disabled button gets no pointer events: its tooltip needs one. */}
+      <span className="inline-flex">
+        <Button
+          aria-label={meta.label}
+          aria-pressed={Boolean(view.active)}
+          className={cn(
+            "rounded-md border border-transparent text-muted-foreground hover:text-foreground",
+            view.active &&
+              "bg-background text-foreground shadow-sm hover:bg-background dark:border-input dark:bg-input/30 dark:hover:bg-input/40"
+          )}
+          disabled={Boolean(view.unavailable)}
+          size="icon"
+          type="button"
+          variant="ghost"
+          onClick={view.onSelect}
+        >
+          <Icon />
+        </Button>
+      </span>
+    </RunnerIconTooltip>
   )
 }
 
@@ -202,11 +295,12 @@ function RunnerStartButton(props: SelectedRunnerControlsProps) {
           : props.startBlocked && !running
             ? props.startBlocked
             : running
-              ? "Rerun configuration"
-              : "Run configuration"
+              ? "Restart"
+              : "Start"
       }
     >
       <Button
+        aria-label={running ? "Restart" : "Start"}
         className={runnerStartClassName(running)}
         disabled={disabled}
         size="icon"
@@ -225,10 +319,9 @@ function RunnerStopButton(props: SelectedRunnerControlsProps) {
   const running = props.status !== "stopped"
   const loading = isPendingStop(props.pending, props.selected.id)
   return (
-    <RunnerIconTooltip
-      label={loading ? "Stopping configuration" : "Stop configuration"}
-    >
+    <RunnerIconTooltip label={loading ? "Stopping" : "Stop"}>
       <Button
+        aria-label="Stop"
         className={runnerStopClassName(running || loading)}
         disabled={
           props.disabled ||
@@ -250,29 +343,6 @@ function RunnerStopButton(props: SelectedRunnerControlsProps) {
   )
 }
 
-export function ProjectRunnerLogTabs({
-  items,
-  value,
-  onValueChange,
-}: ProjectRunnerLogTabsProps) {
-  return (
-    <Tabs
-      value={value}
-      className="overflow-y-hidden"
-      onValueChange={onValueChange}
-    >
-      <TabsList>
-        {items.map((item) => (
-          <TabsTrigger key={item.id} value={item.id}>
-            {item.status && <ProjectRunnerStatusDot status={item.status} />}
-            {item.label}
-          </TabsTrigger>
-        ))}
-      </TabsList>
-    </Tabs>
-  )
-}
-
 export function ProjectRunnerStatusDot({
   status,
 }: {
@@ -286,7 +356,12 @@ export function ProjectRunnerStatusDot({
         : isTransitioning(status)
           ? "animate-pulse bg-amber-500"
           : "bg-muted-foreground/45"
-  return <span className={`size-2 shrink-0 rounded-full ${tone}`} />
+  return (
+    <span
+      className={`size-2 shrink-0 rounded-full ${tone}`}
+      data-status={status ?? "stopped"}
+    />
+  )
 }
 
 export function RunnerIconTooltip({

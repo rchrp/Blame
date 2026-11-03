@@ -220,10 +220,49 @@
     background-position: right center;
   }
 
+  /* The selected log tab flows into the terminal under it: a curve on
+     each side, filled with the terminal's color by the shadow of a
+     rounded corner, carries the border down to the terminal's edge. */
+  .run-log-tab {
+    --run-log-curve: 0.5rem;
+    --run-log-half: calc(var(--run-log-curve) / 2);
+  }
+
+  .run-log-tab[data-state="active"]::before,
+  .run-log-tab[data-state="active"]::after {
+    position: absolute;
+    bottom: 0;
+    width: var(--run-log-curve);
+    height: var(--run-log-curve);
+    border: 0 solid var(--border);
+    border-bottom-width: 1px;
+    pointer-events: none;
+    content: "";
+  }
+
+  /* The first tab starts on the terminal's left edge: no curve there. */
+  .run-log-tab[data-state="active"]:first-child::before {
+    display: none;
+  }
+
+  .run-log-tab[data-state="active"]::before {
+    left: calc(var(--run-log-curve) * -1);
+    border-right-width: 1px;
+    border-bottom-right-radius: var(--run-log-curve);
+    box-shadow: var(--run-log-half) var(--run-log-half) 0 var(--run-log-half)
+      var(--color-zinc-950);
+  }
+
+  .run-log-tab[data-state="active"]::after {
+    right: calc(var(--run-log-curve) * -1);
+    border-left-width: 1px;
+    border-bottom-left-radius: var(--run-log-curve);
+    box-shadow: calc(var(--run-log-half) * -1) var(--run-log-half) 0
+      var(--run-log-half) var(--color-zinc-950);
+  }
+
   @container (max-width: 72rem) {
-    .preview-toolbar-spacer,
-    .preview-runtime-summary-label,
-    .preview-tab-label {
+    .preview-runtime-summary-label {
       display: none;
     }
   }

@@ -1,43 +1,63 @@
-import { MonitorIcon, SquareIcon, TerminalIcon } from "lucide-react"
 import * as React from "react"
 
-import { Button } from "@/components/ui/button"
-import { Drawer, DrawerContent, DrawerHeader } from "@/components/ui/drawer"
-import {
-  ProjectRunnerControls,
-  ProjectRunnerLogTabs,
-  RunnerIconTooltip,
-} from "@/components/backlog/board/project-runner-controls"
-import type { ProjectRunSession } from "@/components/backlog/board/use-project-runner"
+import { projectRunConfigurationPreviewUrl } from "@/components/backlog/board/project-run-configuration"
 import {
   type SharedProjectRunner,
   useSharedProjectRunner,
 } from "@/components/backlog/board/project-runner-context"
 import {
-  projectRunConfigurationPreviewKey,
-  projectRunConfigurationPreviewUrl,
-} from "@/components/backlog/board/project-run-configuration"
-import { UserStoryPreview } from "@/components/backlog/drawer/user-story-preview"
+  ProjectRunnerControls,
+  type RunnerView,
+} from "@/components/backlog/board/project-runner-controls"
+import {
+  runningOutside,
+  startBlocked,
+  useProjectRunPreview,
+} from "@/components/backlog/drawer/project-run-preview"
+import {
+  UserStoryPreview,
+  type PreviewView,
+} from "@/components/backlog/drawer/user-story-preview"
+import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer"
 
-type Runner = SharedProjectRunner
+type RunnerDrawer = { open: boolean; view: PreviewView }
 
 // The header's controls for the open project's app. The runner itself is
 // shared (ProjectRunnerProvider), so a story running in the project folder
-// drives the same processes from its preview.
+// drives the same processes from its preview. Its preview and logs open in
+// one drawer, laid out as a story's preview tab.
 export function ProjectRunnerButton() {
   const runner = useSharedProjectRunner()
-  const [previewOpen, setPreviewOpen] = React.useState(false)
+  const [drawer, setDrawer] = React.useState<RunnerDrawer>({
+    open: false,
+    view: "preview",
+  })
+  // A start from here, or an install to look into, opens the logs.
+  const shown: RunnerDrawer = runner?.logsOpen
+    ? { open: true, view: "setup-log" }
+    : drawer
+  const show = (next: RunnerDrawer) => {
+    runner?.setLogsOpen(false)
+    setDrawer(next)
+  }
   if (!runner?.selected) return null
+  const previewUrl = projectRunConfigurationPreviewUrl(runner.selected)
+  const views: RunnerView[] = [
+    {
+      id: "preview",
+      active: shown.open && shown.view === "preview",
+      unavailable: previewUrl ? undefined : "This app has no preview",
+      onSelect: () => show({ open: true, view: "preview" }),
+    },
+    {
+      id: "logs",
+      active: shown.open && shown.view === "setup-log",
+      onSelect: () => show({ open: true, view: "setup-log" }),
+    },
+  ]
   return (
     <>
       <ProjectRunnerControls
-        afterStart={
-          <RunnerPreviewButton
-            runner={runner}
-            onOpen={() => setPreviewOpen(true)}
-          />
-        }
-        afterStop={<RunnerLogsButton runner={runner} />}
         configurations={runner.configurations}
         disabled={!runner.projectPath || !runner.terminal}
         pending={runner.pendingOperation}
@@ -45,187 +65,58 @@ export function ProjectRunnerButton() {
         runningOutside={runningOutside(runner, runner.selected.id)}
         startBlocked={startBlocked(runner, runner.selected.id)}
         statusFor={runner.statusFor}
+        views={views}
         onSelect={runner.select}
         onStart={(id) => runner.start(id)}
         onStop={runner.stop}
       />
-      <RunnerLogsDrawer runner={runner} />
-      <RunnerPreviewDrawer
-        open={previewOpen}
-        projectPath={runner.projectPath}
-        runner={runner}
-        onOpenChange={setPreviewOpen}
-      />
+      <Drawer
+        direction="bottom"
+        open={shown.open}
+        onOpenChange={(open) => show({ ...shown, open })}
+      >
+        {/* The preview lays two muted/20 veils over the drawer: its handle's
+            band gets the same, so the drawer reads as one surface. */}
+        <DrawerContent className="h-[80vh] overflow-hidden bg-[linear-gradient(to_bottom,color-mix(in_oklab,var(--muted)_36%,transparent)_1.25rem,transparent_1.25rem)] p-0">
+          <DrawerTitle className="sr-only">{runner.selected.name}</DrawerTitle>
+          <RunnerDrawerPreview
+            runner={runner}
+            view={shown.view}
+            visible={shown.open}
+            onViewChange={(view) => show({ ...shown, view })}
+          />
+        </DrawerContent>
+      </Drawer>
     </>
   )
 }
 
-export function runningOutside(runner: SharedProjectRunner, id: string) {
-  return (
-    runner.external.kind === "project" &&
-    id === runner.previewConfiguration?.id &&
-    !["running", "starting"].includes(runner.sessionFor(id)?.status ?? "")
-  )
-}
-
-export function startBlocked(runner: SharedProjectRunner, id: string) {
-  if (id !== runner.previewConfiguration?.id) return undefined
-  if (runner.external.kind === "other") return "Its port is used by another app"
-  if (runner.external.kind === "unknown")
-    return "Something already runs on its port"
-  return undefined
-}
-
-function RunnerPreviewButton({
+function RunnerDrawerPreview({
   runner,
-  onOpen,
+  view,
+  visible,
+  onViewChange,
 }: {
-  runner: Runner
-  onOpen: () => void
+  runner: SharedProjectRunner
+  view: PreviewView
+  visible: boolean
+  onViewChange: (view: PreviewView) => void
 }) {
-  const previewUrl = projectRunConfigurationPreviewUrl(runner.selected)
+  const preview = useProjectRunPreview(runner)
+  if (!preview) return null
+  // Host windows and devices show in a story only: here, their logs.
+  const web = Boolean(projectRunConfigurationPreviewUrl(runner.selected))
   return (
-    <RunnerIconTooltip label="Open preview">
-      <Button
-        disabled={!previewUrl}
-        size="icon"
-        type="button"
-        variant="ghost"
-        onClick={onOpen}
-      >
-        <MonitorIcon />
-      </Button>
-    </RunnerIconTooltip>
-  )
-}
-
-function RunnerLogsButton({ runner }: { runner: Runner }) {
-  return (
-    <RunnerIconTooltip label="Open run logs">
-      <Button
-        disabled={runner.sessions.length === 0}
-        size="icon"
-        type="button"
-        variant="ghost"
-        onClick={() => runner.setLogsOpen(true)}
-      >
-        <TerminalIcon />
-      </Button>
-    </RunnerIconTooltip>
-  )
-}
-
-function RunnerPreviewDrawer({
-  open,
-  projectPath,
-  runner,
-  onOpenChange,
-}: {
-  open: boolean
-  projectPath?: string
-  runner: Runner
-  onOpenChange: (open: boolean) => void
-}) {
-  const previewUrl = projectRunConfigurationPreviewUrl(runner.selected)
-  const previewSessionKey = projectRunConfigurationPreviewKey(
-    runner.selected,
-    projectPath
-  )
-  return (
-    <Drawer direction="bottom" open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="h-[80vh] overflow-hidden p-0">
-        {previewUrl ? (
-          <UserStoryPreview
-            previewSessionKey={previewSessionKey}
-            previewTitle={runner.selected?.name}
-            previewUrl={previewUrl}
-            visible={open}
-          />
-        ) : null}
-      </DrawerContent>
-    </Drawer>
-  )
-}
-
-function RunnerLogsDrawer({ runner }: { runner: Runner }) {
-  const activeSession = runner.activeSession
-  return (
-    <Drawer
-      direction="bottom"
-      open={runner.logsOpen}
-      onOpenChange={runner.setLogsOpen}
-    >
-      <DrawerContent className="h-[50vh]">
-        <RunnerLogsHeader runner={runner} session={activeSession} />
-        {activeSession ? (
-          <RunnerLogOutput
-            key={activeSession.configurationId}
-            session={activeSession}
-          />
-        ) : null}
-      </DrawerContent>
-    </Drawer>
-  )
-}
-
-function RunnerLogsHeader({
-  runner,
-  session,
-}: {
-  runner: Runner
-  session?: ProjectRunSession
-}) {
-  return (
-    <DrawerHeader className="gap-3 border-b px-5 py-3 text-left">
-      <div className="flex items-center gap-2 overflow-x-auto">
-        <RunnerSessionTabs runner={runner} session={session} />
-        <Button
-          disabled={session?.status !== "running"}
-          size="icon-sm"
-          type="button"
-          variant="destructive"
-          onClick={() => session && runner.stop(session.configurationId)}
-        >
-          <SquareIcon />
-          <span className="sr-only">Stop selected run</span>
-        </Button>
-      </div>
-    </DrawerHeader>
-  )
-}
-
-function RunnerSessionTabs({
-  runner,
-  session,
-}: {
-  runner: Runner
-  session?: ProjectRunSession
-}) {
-  return (
-    <ProjectRunnerLogTabs
-      items={runner.sessions.map((item) => ({
-        id: item.configurationId,
-        label: item.name,
-        status: item.status,
-      }))}
-      value={session?.configurationId}
-      onValueChange={runner.selectSession}
+    <UserStoryPreview
+      previewSessionKey={preview.sessionKey}
+      previewTitle={preview.title}
+      previewUrl={preview.previewUrl}
+      projectRun={
+        web ? preview.projectRun : { ...preview.projectRun, surface: undefined }
+      }
+      view={view}
+      visible={visible}
+      onViewChange={onViewChange}
     />
-  )
-}
-
-function RunnerLogOutput({ session }: { session: ProjectRunSession }) {
-  const outputRef = React.useRef<HTMLPreElement>(null)
-  React.useEffect(() => {
-    const output = outputRef.current
-    if (output) output.scrollTop = output.scrollHeight
-  }, [session.logs])
-  return (
-    <pre
-      ref={outputRef}
-      className="min-h-0 flex-1 overflow-auto bg-zinc-950 p-4 font-mono text-xs whitespace-pre-wrap text-zinc-100 select-text"
-    >
-      {session.logs || "No output yet."}
-    </pre>
   )
 }
