@@ -18,7 +18,7 @@ Blame gives each agent its own worktree, ports, services, and running app, so yo
 [![GitHub stars](https://img.shields.io/github/stars/rchrp/Blame?color=f7cf83)](https://github.com/rchrp/Blame/stargazers)
 [![Discord](https://img.shields.io/badge/chat-Discord-5865F2?logo=discord&logoColor=white)](https://discord.gg/AfjG6aUyxe)
 
-**[Install](#install)** · [Website](https://blame.so) · [Discord](https://discord.gg/AfjG6aUyxe) · [Demo video](https://youtu.be/cD6jASpIKQw) · [Discussions](https://github.com/rchrp/Blame/discussions) · [Contributing](CONTRIBUTING.md) · [Code signing policy](CODE_SIGNING_POLICY.md)
+**[Install](#install)** · [Website](https://blame.so) · [Docs](https://blame.so/docs) · [Discord](https://discord.gg/AfjG6aUyxe) · [Demo video](https://youtu.be/cD6jASpIKQw) · [Discussions](https://github.com/rchrp/Blame/discussions) · [Contributing](CONTRIBUTING.md) · [Code signing policy](CODE_SIGNING_POLICY.md)
 
 <a href="https://youtu.be/cD6jASpIKQw"><img src="docs/media/demo.gif" width="900" alt="Three agents work on three stories of the Blame website at once in Blame; each story's Preview tab shows its own running copy of the site, then the story in review is approved and merged"></a>
 
@@ -250,6 +250,7 @@ You need Node.js 24, Git, and MySQL 8.4 for the API. [CONTRIBUTING.md](CONTRIBUT
 
 ## Documentation
 
+- [User documentation](https://blame.so/docs): install, guides, concepts, and troubleshooting. Its pages live in [`packages/vitrine/content/docs`](packages/vitrine/content/docs).
 - [Architecture](docs/architecture-summary.tex): package boundaries, workspace execution, and the harness architecture.
 - [Semantic harness study](https://blame.so/research/light-semantic-harness-study.pdf) ([LaTeX source](docs/semantic-harness-study.tex)): measured results, implementation guarantees, limitations, and research directions. Rebuild the PDF with `pnpm build:study-pdf` after editing the source.
 - [Refactoring summary](docs/refactoring-summary.tex): module responsibilities and validation.
