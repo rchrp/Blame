@@ -95,7 +95,7 @@ export const legalDocuments = {
     path: "/terms-of-service",
     title: "Terms of Service",
     description:
-      "Terms governing access to and use of Blame Desktop, Blame accounts, Blame Premium subscriptions, and related cloud services.",
+      "Terms governing access to and use of Blame Desktop, Blame accounts, Blame Cloud subscriptions, and related cloud services.",
     language: "en",
     translations: termsTranslations,
     effectiveDate: termsEffectiveDate,
@@ -109,7 +109,7 @@ export const legalDocuments = {
     path: "/fr/conditions-generales-de-service",
     title: "Conditions Générales de Service et de Vente",
     description:
-      "Conditions contractuelles françaises applicables à Blame Desktop, aux comptes Blame, à l’abonnement Blame Premium et aux services cloud associés.",
+      "Conditions contractuelles françaises applicables à Blame Desktop, aux comptes Blame, à l’abonnement Blame Cloud et aux services cloud associés.",
     language: "fr",
     translations: termsTranslations,
     effectiveDate: frenchTermsEffectiveDate,
