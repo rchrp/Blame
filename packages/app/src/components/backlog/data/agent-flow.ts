@@ -210,13 +210,22 @@ function eventActivity(
 ) {
   if (event.type === "error") return errorActivities(activities, event)
   if (event.type === "notice" && eventPayload(event).recoverable === true)
-    return errorActivities(activities, event)
+    return failedToolsNotice(event)
+      ? undefined
+      : errorActivities(activities, event)
   if (event.type === "reasoning") return reasoningActivities(activities, event)
   if (event.type === "text") return messageActivities(activities, event)
   if (event.type === "tool") return toolActivities(activities, event)
   if (event.type === "approval") return approvalActivities(activities, event)
   if (event.type === "done")
     return closeRunningActivities(activities, ["message", "reasoning", "tool"])
+}
+
+// Cline reports every turn whose tool calls all failed. The agent receives
+// those errors and keeps working, and each failed tool card already shows its
+// error, so a red error card here would only read as a crash.
+function failedToolsNotice(event: AgentEvent) {
+  return /^\d+ tool call\(s\) failed\b/.test(agentEventText(event))
 }
 
 function errorActivities(

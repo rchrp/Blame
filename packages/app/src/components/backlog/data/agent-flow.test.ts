@@ -37,6 +37,22 @@ test("keeps recoverable diagnostics visible without ending the run or hiding its
   assert.equal(completed.agentFinalResponse, "Final response after recovery")
 })
 
+test("failed tool calls the agent recovers from add no error card", () => {
+  const running = updateStory(story(), toolEvent("tool_call", "finish_task", 4))
+  const notice: AgentEvent = {
+    type: "notice",
+    payload: {
+      message:
+        '1 tool call(s) failed: [finish_task] {"error":"summary is too long"}',
+      recoverable: true,
+      iteration: 4,
+    },
+  }
+  const update = agentFlowUpdate(running, notice)
+  assert.equal(terminalAgentRunEvent(notice), false)
+  assert.equal(update.agentActivities, undefined)
+})
+
 test("completes a running tool when a fallback result has no tool call id", () => {
   const started = updateStory(
     story(),
