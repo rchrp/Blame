@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { rm } from "node:fs/promises";
 import test from "node:test";
 
 import {
@@ -122,6 +123,7 @@ test("the new-project assistant works in a scratch folder with web, commands and
   assert.notEqual(input.cwd, "/parent");
   assert.equal(input.workspaceRoot, input.cwd);
   assert.match(input.cwd, /blame-new-project-assistant/u);
+  await rm(input.cwd, { recursive: true, force: true });
   assert.equal(input.projectId, undefined);
   const options = conversationSessionOptions(input);
   assert.deepEqual(
