@@ -3,6 +3,7 @@ import test from "node:test";
 import { createFinishTaskTool } from "./finish-task.js";
 import {
   finishImages,
+  finishInputError,
   type LightCompletionNotification,
 } from "./light-completion.js";
 import { finishTaskInputSchema } from "./light-contracts.js";
@@ -159,4 +160,14 @@ test("a finish without images is unchanged", async () => {
   const tool = remoteFinish([], completions, []);
   await tool.execute({ summary: "Done." }, context);
   assert.equal("images" in completions[0], false);
+});
+
+test("a summary over the limit is refused with its length so the agent can shorten it", () => {
+  const input = { summary: "a".repeat(9_000) };
+  const parsed = finishTaskInputSchema.safeParse(input);
+  assert.equal(parsed.success, false);
+  assert.equal(
+    finishInputError(input, parsed.error!),
+    "finish_task was not accepted: summary is 9000 characters, the limit is 8000; shorten it. Fix this and call finish_task again.",
+  );
 });

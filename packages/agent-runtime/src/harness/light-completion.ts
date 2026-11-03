@@ -1,5 +1,6 @@
 import type { CompletionDecision } from "@blame/harness-core";
 import { createTool, type AgentTool, type AgentToolContext } from "@cline/sdk";
+import type { z } from "zod";
 import {
   finishTaskInputSchema,
   type FinishTaskImage,
@@ -44,10 +45,33 @@ export function createLightCompletionTool(
     retryable: false,
     maxRetries: 0,
     execute(input: unknown, context: AgentToolContext) {
-      const parsed = finishTaskInputSchema.parse(input);
-      return submit(parsed.summary, finishImages(parsed.images), context);
+      const parsed = finishTaskInputSchema.safeParse(input);
+      if (!parsed.success)
+        throw new Error(finishInputError(input, parsed.error));
+      return submit(
+        parsed.data.summary,
+        finishImages(parsed.data.images),
+        context,
+      );
     },
   });
+}
+
+// Tells the agent what to fix in plain words, with the summary's length when
+// it is too long, so it can call finish_task again instead of guessing.
+export function finishInputError(input: unknown, error: z.ZodError) {
+  const summary = (input as { summary?: unknown } | undefined)?.summary;
+  const problems = error.issues.slice(0, 5).map((issue) => {
+    const field = issue.path.join(".") || "input";
+    if (
+      field === "summary" &&
+      issue.code === "too_big" &&
+      typeof summary === "string"
+    )
+      return `summary is ${summary.trim().length} characters, the limit is ${issue.maximum}; shorten it`;
+    return `${field}: ${issue.message}`;
+  });
+  return `finish_task was not accepted: ${problems.join("; ")}. Fix this and call finish_task again.`;
 }
 
 // Drops repeated screenshots and keeps the agent's order.

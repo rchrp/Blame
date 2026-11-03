@@ -298,3 +298,63 @@ test("an initialization answer that never ends is stopped and the analysis resta
     await new Promise((resolve) => server.close(resolve));
   }
 });
+
+test("failing tool calls go back to the model and never stop the run", { timeout: 20_000 }, async () => {
+  const run = await runFailingTool({ failures: 4, sameCall: false });
+  assert.equal(run.result?.text, "recovered");
+  assert.equal(run.requests.length, 5);
+  const messages = run.requests[4]!.messages as Array<{ role: string; content: unknown }>;
+  assert.match(JSON.stringify(messages.filter(message => message.role === "tool")), /Too big: attempt 4/);
+});
+
+test("the same failing call repeated still stops as a loop", { timeout: 20_000 }, async () => {
+  const run = await runFailingTool({ failures: 12, sameCall: true });
+  assert.equal(run.result?.finishReason, "aborted");
+  assert.ok(run.requests.length < 12, `the loop ran ${run.requests.length} turns`);
+});
+
+async function runFailingTool({ failures, sameCall }: { failures: number; sameCall: boolean }) {
+  const { createTool } = await import("@cline/sdk");
+  const requests: Record<string, unknown>[] = [];
+  const server = createServer(async (request, response) => {
+    requests.push(JSON.parse(await readBody(request)));
+    response.writeHead(200, { "content-type": "text/event-stream" });
+    const turn = requests.length;
+    const chunks = turn <= failures ? [
+      { id: "failing", object: "chat.completion.chunk", choices: [{ index: 0, delta: { role: "assistant", tool_calls: [{ index: 0, id: `fail-${turn}`, type: "function", function: { name: "fragile", arguments: JSON.stringify({ attempt: sameCall ? 1 : turn }) } }] }, finish_reason: null }] },
+      { id: "failing", object: "chat.completion.chunk", choices: [{ index: 0, delta: {}, finish_reason: "tool_calls" }] },
+    ] : streamedCompletion(["recovered"]);
+    for (const chunk of chunks) response.write(`data: ${JSON.stringify(chunk)}\n\n`);
+    response.end("data: [DONE]\n\n");
+  });
+  await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
+  const address = server.address();
+  assert.ok(address && typeof address === "object");
+  const workspace = await mkdtemp(join(sandbox, "failing-tool-"));
+  const fragile = createTool({
+    name: "fragile",
+    description: "Always fails.",
+    inputSchema: { type: "object", properties: { attempt: { type: "number" } }, required: ["attempt"] },
+    execute: (input: unknown) => {
+      throw new Error(`Too big: attempt ${(input as { attempt: number }).attempt}`);
+    },
+  });
+  const core = await ClineCore.create({ backendMode: "local", clientName: "failing-tool-smoke", fetch: createProviderCompatibleFetch(globalThis.fetch), toolPolicies: toolPolicies(false) });
+  const sessionId = `failing-tool-${sameCall ? "loop" : "varied"}`;
+  try {
+    const started = await core.start({
+      prompt: "Use the fragile tool.",
+      config: appendProductionConfig({
+        sessionId, providerId: "openai-compatible", modelId: "smoke-model", apiKey: "offline",
+        baseUrl: `http://127.0.0.1:${address.port}/v1`, cwd: workspace, workspaceRoot: workspace,
+        checkpoint: { enabled: false }, enableAgentTeams: false, enableSpawnAgent: false,
+        enableTools: true, extraTools: [fragile], maxIterations: failures + 2, mode: "act", systemPrompt: "Use the tool.",
+      }),
+      interactive: false, source: "failing-tool-smoke",
+    });
+    return { requests, result: started.result };
+  } finally {
+    await core.delete(sessionId).catch(() => undefined);
+    await new Promise(resolve => server.close(resolve));
+  }
+}

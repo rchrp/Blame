@@ -225,6 +225,12 @@ export function promptMetadata(prompt: string) {
   };
 }
 
+// A failed tool call goes back to the model as its result, so the agent reads
+// the error and keeps working; failures alone never end a run. Cline's loop
+// detection (the same call repeated) still stops it, because it jumps straight
+// to this limit, and maxIterations bounds everything else.
+const consecutiveMistakeLimit = 1_000;
+
 export function appendProductionConfig<T extends CoreSessionConfig>(
   config: T,
   production: ProductionConfig = loadProductionConfig(),
@@ -243,9 +249,11 @@ export function appendProductionConfig<T extends CoreSessionConfig>(
         hardThreshold: 5,
         softThreshold: 3,
       },
-      maxConsecutiveMistakes: config.execution?.maxConsecutiveMistakes ?? 3,
+      maxConsecutiveMistakes:
+        config.execution?.maxConsecutiveMistakes ?? consecutiveMistakeLimit,
     },
-    maxConsecutiveMistakes: configWithLimits.maxConsecutiveMistakes ?? 3,
+    maxConsecutiveMistakes:
+      configWithLimits.maxConsecutiveMistakes ?? consecutiveMistakeLimit,
     maxParallelToolCalls:
       configWithLimits.maxParallelToolCalls ??
       production.maxParallelToolCalls,
