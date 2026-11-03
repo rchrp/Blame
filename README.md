@@ -56,7 +56,7 @@ You try each change in its running app, then request changes, reject it, or appr
 
 - **Agents that show their work.** Agents run through the [Light Semantic Harness](#the-light-semantic-harness): every read, edit, and check is recorded, and checks run again before hand-off. On six hand-audited TypeScript tasks, it matched Cline's results with 54% fewer tokens.
 - **Your models, your machine.** Sign in with your Claude or ChatGPT plan, or use any of 50 AI providers with your own key. Agents, worktrees, and previews run on your computer.
-- **Free and open source.** The whole app is AGPL-3.0, and works without an account. [Blame Premium](#free-and-premium) only adds hosted services, such as Cloud Previews.
+- **Free and open source.** The whole app is AGPL-3.0, and works without an account. [Blame Cloud](#free-and-blame-cloud) only adds hosted services, such as Cloud Previews.
 
 ## Quick start
 
@@ -180,11 +180,11 @@ Most coding agents grep, rewrite whole files, and tell you it should work now. B
 - **Project creation.** Start from an empty folder: pick a web stack and Blame generates a project ready for agent work.
 - **Optional account sync.** Sign in to have stories, conversations, Code Practices, provider connections, and MCP servers follow you to another computer.
 
-## Free and Premium
+## Free and Blame Cloud
 
-Blame is free and open source. Blame Premium pays for hosted services that cost money to run.
+Blame is free and open source. Blame Cloud pays for hosted services that cost money to run.
 
-| Free, no account needed                | Blame Premium (with an account)                               |
+| Free, no account needed                | Blame Cloud (with an account)                                 |
 | -------------------------------------- | ------------------------------------------------------------- |
 | Projects, backlog, and conversations   | Cloud voice transcription                                     |
 | Local worktrees and local previews     | Managed Cloud Previews                                        |
@@ -192,7 +192,7 @@ Blame is free and open source. Blame Premium pays for hosted services that cost 
 
 A free account adds sync between computers, web research for agents, and deployment to Vercel.
 
-Premium is **$20/month** or **$200/year**. Your AI provider bills its own usage. Files stay accessible after a subscription ends. See [blame.so/pricing](https://blame.so/pricing).
+Blame Cloud is **$20/month** or **$200/year**. Your AI provider bills its own usage. Files stay accessible after a subscription ends. See [blame.so/cloud](https://blame.so/cloud).
 
 ## Privacy and telemetry
 
@@ -207,7 +207,7 @@ The [privacy policy](https://blame.so/privacy) lists everything the app sends an
 <details>
 <summary><strong>Where does my code run?</strong></summary>
 
-On your computer. Local execution uses a Lima VM on macOS, a WSL distribution on Windows, and native worktrees with Docker on Linux. Code is sent to the AI provider you choose when an agent needs it. Cloud Previews, a Premium feature, sync a workspace snapshot to a managed sandbox.
+On your computer. Local execution uses a Lima VM on macOS, a WSL distribution on Windows, and native worktrees with Docker on Linux. Code is sent to the AI provider you choose when an agent needs it. Cloud Previews, part of Blame Cloud, sync a workspace snapshot to a managed sandbox.
 
 </details>
 
@@ -223,7 +223,7 @@ Any of the 50 supported providers, with your own API key or subscription, plus a
 
 No. The first screen offers to sign in or to continue without an account, in the same panel. Without an account, Blame keeps your projects, stories, conversations, Code Practices, and provider connections on your computer, in a local database. Provider keys are encrypted with a key held by your system keychain. Agents, worktrees, previews, review, and merge work without Blame's servers: agents only call your AI provider.
 
-A free account adds what needs a server: sync between computers, web research for agents, deployment to Vercel, and the Premium services. When you sign in, your local workspace is copied into the account and stays on your computer too. Signing in again later only adds what is missing.
+A free account adds what needs a server: sync between computers, web research for agents, deployment to Vercel, and Blame Cloud. When you sign in, your local workspace is copied into the account and stays on your computer too. Signing in again later only adds what is missing.
 
 </details>
 
