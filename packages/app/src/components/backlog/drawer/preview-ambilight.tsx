@@ -1,67 +1,86 @@
 import * as React from "react"
 
+import {
+  glowColor,
+  glowOpacity,
+  imageAmbilight,
+  sameAmbilight,
+  type AmbilightColor,
+  type AmbilightEdge,
+  type PreviewAmbilight,
+} from "@/components/backlog/drawer/preview-ambilight-colors"
 import type { PreviewBrowserClient } from "@/context/platform"
 import { cn } from "@/lib/utils"
 
-type PreviewAmbilightColor = {
-  blue: number
-  green: number
-  red: number
-}
+export type { PreviewAmbilight }
 
-// The page's colors along its edges near each corner, and along its top,
-// with their mix where a part has none worth showing.
-export type PreviewAmbilight = {
-  average: PreviewAmbilightColor
-  top: PreviewAmbilightColor
-  corners: [
-    topLeft: PreviewAmbilightColor,
-    topRight: PreviewAmbilightColor,
-    bottomLeft: PreviewAmbilightColor,
-    bottomRight: PreviewAmbilightColor,
-  ]
-}
-
-// Soft, irregular patches of the page's colors around its frame, drifting
-// slowly like a lit cloud. Above the frame they reach past the toolbar,
-// under the header that blurs them.
-const ambilightPatches = [
+// Soft, irregular patches around the page's frame, each by the edge whose
+// color it takes, drifting slowly like a lit cloud. Above the frame they
+// reach past the toolbar, under the header that blurs them.
+const ambilightPatches: {
+  edge: AmbilightEdge
+  className: string
+  radius: string
+  duration: number
+  delay: number
+}[] = [
   {
-    corner: 0,
-    className: "-top-16 -left-10 h-[46%] w-[48%]",
+    edge: "topLeft",
+    className: "-top-14 -left-10 h-[30%] w-[40%]",
     radius: "58% 42% 63% 37% / 46% 55% 45% 54%",
     duration: 19,
     delay: -3,
   },
   {
-    corner: 1,
-    className: "-top-12 -right-10 h-[44%] w-[46%]",
+    edge: "top",
+    className: "-top-16 left-[30%] h-[26%] w-[40%]",
+    radius: "50% 50% 43% 57% / 62% 48% 52% 38%",
+    duration: 29,
+    delay: -19,
+  },
+  {
+    edge: "topRight",
+    className: "-top-12 -right-10 h-[30%] w-[40%]",
     radius: "41% 59% 38% 62% / 57% 39% 61% 43%",
     duration: 23,
     delay: -11,
   },
   {
-    corner: 2,
-    className: "-bottom-12 -left-8 h-[44%] w-[44%]",
-    radius: "63% 37% 52% 48% / 38% 61% 39% 62%",
-    duration: 21,
-    delay: -7,
+    edge: "right",
+    className: "top-[22%] -right-14 h-[56%] w-[24%]",
+    radius: "44% 56% 61% 39% / 52% 37% 63% 48%",
+    duration: 27,
+    delay: -5,
   },
   {
-    corner: 3,
-    className: "-right-8 -bottom-14 h-[46%] w-[48%]",
+    edge: "bottomRight",
+    className: "-right-8 -bottom-14 h-[30%] w-[40%]",
     radius: "37% 63% 46% 54% / 59% 42% 58% 41%",
     duration: 25,
     delay: -15,
   },
   {
-    corner: undefined,
-    className: "-top-20 left-[24%] h-[28%] w-[52%]",
-    radius: "50% 50% 43% 57% / 62% 48% 52% 38%",
-    duration: 29,
-    delay: -19,
+    edge: "bottom",
+    className: "-bottom-16 left-[30%] h-[26%] w-[40%]",
+    radius: "55% 45% 38% 62% / 41% 58% 42% 59%",
+    duration: 31,
+    delay: -23,
   },
-] as const
+  {
+    edge: "bottomLeft",
+    className: "-bottom-12 -left-8 h-[30%] w-[40%]",
+    radius: "63% 37% 52% 48% / 38% 61% 39% 62%",
+    duration: 21,
+    delay: -7,
+  },
+  {
+    edge: "left",
+    className: "top-[22%] -left-14 h-[56%] w-[24%]",
+    radius: "57% 43% 40% 60% / 44% 63% 37% 56%",
+    duration: 33,
+    delay: -13,
+  },
+]
 
 export function PreviewAmbilightCloud({
   ambilight,
@@ -73,31 +92,31 @@ export function PreviewAmbilightCloud({
       aria-hidden="true"
       className={cn(
         "pointer-events-none absolute inset-0 transition-opacity duration-1000",
-        ambilight ? "opacity-55 dark:opacity-80" : "opacity-0"
+        ambilight ? "opacity-60 dark:opacity-85" : "opacity-0"
       )}
     >
       {ambilight
-        ? ambilightPatches.map((patch, index) => (
-            <span
-              key={index}
-              className={cn(
-                "preview-ambilight-patch absolute blur-[56px] transition-[background-color] duration-700",
-                patch.className
-              )}
-              style={{
-                animationDelay: `${patch.delay}s`,
-                animationDuration: `${patch.duration}s`,
-                backgroundColor: ambilightRgb(
-                  vividAmbilightColor(
-                    patch.corner === undefined
-                      ? ambilight.top
-                      : ambilight.corners[patch.corner]
-                  )
-                ),
-                borderRadius: patch.radius,
-              }}
-            />
-          ))
+        ? ambilightPatches.map((patch) => {
+            const glow = ambilight[patch.edge]
+            return (
+              <span
+                key={patch.edge}
+                className={cn(
+                  "preview-ambilight-patch absolute blur-[56px] transition-[background-color,opacity] duration-700",
+                  patch.className
+                )}
+                style={{
+                  animationDelay: `${patch.delay}s`,
+                  animationDuration: `${patch.duration}s`,
+                  backgroundColor: glow
+                    ? ambilightRgb(glowColor(glow.color))
+                    : "transparent",
+                  borderRadius: patch.radius,
+                  opacity: glowOpacity(glow),
+                }}
+              />
+            )
+          })
         : null}
     </div>
   )
@@ -154,6 +173,7 @@ export function useNativePreviewAmbilight(
   return sample?.key === previewKey ? sample.ambilight : undefined
 }
 
+// A small capture of the whole page (see the desktop's thumbnail size).
 async function captureNativePreviewAmbilight(
   client: PreviewBrowserClient,
   browserId: string
@@ -192,121 +212,6 @@ function readImageAmbilight(dataUrl: string) {
   })
 }
 
-function imageAmbilight(
-  data: Uint8ClampedArray,
-  width: number,
-  height: number
-): PreviewAmbilight | null {
-  const all: PreviewAmbilightColor[] = []
-  // Like a screen's ambilight, the colors that count are along the edges.
-  const edges: PreviewAmbilightColor[][] = [[], [], [], []]
-  const quarters: PreviewAmbilightColor[][] = [[], [], [], []]
-  const top: PreviewAmbilightColor[] = []
-  for (let index = 0; index < data.length; index += 4) {
-    if (data[index + 3] < 60) continue
-    const color = {
-      blue: clampColorValue(data[index + 2]),
-      green: clampColorValue(data[index + 1]),
-      red: clampColorValue(data[index]),
-    }
-    if (!isUsefulAmbilightColor(color)) continue
-    const pixel = index / 4
-    const x = (pixel % width) / width
-    const y = Math.floor(pixel / width) / height
-    const quarter = (y >= 0.5 ? 2 : 0) + (x >= 0.5 ? 1 : 0)
-    all.push(color)
-    quarters[quarter]?.push(color)
-    if (x < 0.3 || x > 0.7 || y < 0.3 || y > 0.7) edges[quarter]?.push(color)
-    if (y < 0.3 && x > 0.2 && x < 0.8) top.push(color)
-  }
-  const average = averageAmbilightColor(all)
-  if (!average) return null
-  const corner = (index: number) =>
-    averageAmbilightColor(edges[index] ?? []) ??
-    averageAmbilightColor(quarters[index] ?? []) ??
-    average
-  return {
-    average,
-    corners: [corner(0), corner(1), corner(2), corner(3)],
-    top: averageAmbilightColor(top) ?? average,
-  }
-}
-
-function averageAmbilightColor(colors: PreviewAmbilightColor[]) {
-  if (!colors.length) return undefined
-  const total = colors.reduce<PreviewAmbilightColor & { weight: number }>(
-    (result, color) => {
-      const weight = ambilightColorWeight(color)
-      return {
-        blue: result.blue + color.blue * weight,
-        green: result.green + color.green * weight,
-        red: result.red + color.red * weight,
-        weight: result.weight + weight,
-      }
-    },
-    { blue: 0, green: 0, red: 0, weight: 0 }
-  )
-  if (!total.weight) return undefined
-  return {
-    blue: Math.round(total.blue / total.weight),
-    green: Math.round(total.green / total.weight),
-    red: Math.round(total.red / total.weight),
-  }
-}
-
-function isUsefulAmbilightColor(color: PreviewAmbilightColor) {
-  const luminance =
-    (0.2126 * color.red + 0.7152 * color.green + 0.0722 * color.blue) / 255
-  return (
-    luminance > 0.05 && luminance < 0.96 && ambilightSaturation(color) > 0.04
-  )
-}
-
-function ambilightColorWeight(color: PreviewAmbilightColor) {
-  return 0.4 + ambilightSaturation(color) * 2
-}
-
-function ambilightSaturation(color: PreviewAmbilightColor) {
-  const red = color.red / 255
-  const green = color.green / 255
-  const blue = color.blue / 255
-  const max = Math.max(red, green, blue)
-  const min = Math.min(red, green, blue)
-  if (!max) return 0
-  return (max - min) / max
-}
-
-function clampColorValue(value: number) {
-  if (Number.isNaN(value)) return 0
-  return Math.max(0, Math.min(255, Math.round(value)))
-}
-
-// A little more vivid than the page: the glow reads as its light.
-function vividAmbilightColor(color: PreviewAmbilightColor) {
-  const gray = (color.red + color.green + color.blue) / 3
-  const boost = (value: number) => clampColorValue(gray + (value - gray) * 1.35)
-  return {
-    blue: boost(color.blue),
-    green: boost(color.green),
-    red: boost(color.red),
-  }
-}
-
-function ambilightRgb(color: PreviewAmbilightColor) {
+function ambilightRgb(color: AmbilightColor) {
   return `rgb(${color.red} ${color.green} ${color.blue})`
-}
-
-function sameAmbilight(
-  current: PreviewAmbilight | undefined,
-  next: PreviewAmbilight | undefined
-) {
-  if (!current || !next) return current === next
-  return [current.top, ...current.corners].every((color, index) => {
-    const other = [next.top, ...next.corners][index]
-    return (
-      color.red === other?.red &&
-      color.green === other.green &&
-      color.blue === other.blue
-    )
-  })
 }
