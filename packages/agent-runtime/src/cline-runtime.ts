@@ -187,6 +187,7 @@ import {
   type LightCompletionNotification,
   type LightValidationActivity,
 } from "./harness/light-completion.js";
+import { type FinalReply, unverifiedReply } from "./harness/light-finish-service.js";
 import {
   managedLightWorkspaceExecutor,
   writeSessionJournal,
@@ -465,10 +466,7 @@ export class BlameAgentRuntime {
   private sessionToolInputs = new Map<string, unknown>();
   private sessionToolSequences = new Map<string, number>();
   private sessionCompletedToolIds = new Map<string, Set<string>>();
-  private sessionSubmittedSummaries = new Map<
-    string,
-    LightCompletionNotification
-  >();
+  private sessionSubmittedSummaries = new Map<string, FinalReply>();
   private sessionNativeFinish = new Map<
     string,
     (summary: string) => Promise<unknown>
@@ -1639,12 +1637,13 @@ export class BlameAgentRuntime {
     ) {
       const finish = this.sessionNativeFinish.get(input.sessionId);
       if (finish) {
-        const summary =
-          stringValue(asRecord(input.event?.payload).text) ?? "Task completed.";
+        const reply = stringValue(asRecord(input.event?.payload).text);
         try {
-          await finish(summary);
+          await finish(reply ?? "Task completed.");
         } catch (error) {
-          nativeFailure = errorMessage(error);
+          // The run is over: a refused reply stays, with why it is unverified.
+          if (reply?.trim()) this.sessionSubmittedSummaries.set(input.sessionId, unverifiedReply(reply, errorMessage(error)));
+          else nativeFailure = errorMessage(error);
         }
       }
     }

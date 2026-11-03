@@ -548,6 +548,25 @@ function assertNoFailedValidation(
     );
 }
 
+/** A run's final reply: a finish notification, or a refused plain reply. */
+export type FinalReply = Omit<LightCompletionNotification, "completion"> & {
+  completion?: CompletionDecision;
+};
+
+/**
+ * A run that ended with a plain reply keeps it when the finish checks refuse
+ * it, followed by this note, which says why in the user's terms.
+ */
+export function unverifiedReply(reply: string, refusal: string): FinalReply {
+  const failing = /^Current validation is still failing: (.+?)\. Resolve it/su.exec(refusal)?.[1];
+  const reason = failing ? `the last run of \`${failing}\` failed.` : refusal;
+  return {
+    submission_outcome: "blocked",
+    summary: `${reply.trimEnd()}\n\n> **Not verified:** ${reason}`,
+    verified: false,
+  };
+}
+
 function latestFailedTasks(
   validations: ReturnType<SessionJournal["currentValidations"]>,
 ) {

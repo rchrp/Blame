@@ -1,9 +1,7 @@
 import type { CoreSessionEvent, SessionUsageSummary } from "@cline/sdk";
 
-import {
-  lightCompletionToolName,
-  type LightCompletionNotification,
-} from "./harness/light-completion.js";
+import { lightCompletionToolName } from "./harness/light-completion.js";
+import type { FinalReply } from "./harness/light-finish-service.js";
 
 import { type RunTerminalState } from "./harness/run-lifecycle.js";
 
@@ -454,7 +452,7 @@ export function terminalProductMessage(status: string) {
 
 export function completionFailureEvent(
   sessionId: string,
-  notification: LightCompletionNotification | undefined,
+  notification: FinalReply | undefined,
 ): AgentEvent {
   return {
     type: "error",

@@ -2504,10 +2504,14 @@ for (const failed of [false, true]) {
       await internals.finalizeSessionTermination({ sessionId: "native-test", executionId: "execution",
         terminalState: "succeeded", display: true, cline: { getAccumulatedUsage: async () => undefined },
         event: { type: "done", sessionId: "native-test", payload: { text: "Done" } } });
-      assert.equal(internals.runLifecycles.state("native-test")?.state, failed ? "failed" : "succeeded");
+      // A refused plain reply is kept, with why it is unverified.
+      assert.equal(internals.runLifecycles.state("native-test")?.state, "succeeded");
       const terminal = emitted.filter((event) => event.type === "done" || event.type === "error");
       assert.equal(terminal.length, 1);
-      if (!failed) assert.equal((terminal[0]!.payload as { verified: boolean }).verified, false);
+      const payload = terminal[0]!.payload as { text: string; verified: boolean };
+      assert.equal(payload.verified, false);
+      assert.equal(payload.text, failed
+        ? "Done\n\n> **Not verified:** the last run of `node --test` failed." : "Done");
     } finally { await runtime.shutdown(); await rm(root, { recursive: true, force: true }); }
   });
 }
@@ -2575,4 +2579,24 @@ test("keeps a still-valid OAuth token when a forced refresh fails", async () => 
     internals.refreshOAuthCredential({}, credential(Date.now() - 1), { force: true }),
     /refresh endpoint unavailable/,
   );
+});
+
+test("fails a run that ends without a reply when finish refuses it", async () => {
+  const emitted: AgentEvent[] = [];
+  const runtime = new BlameAgentRuntime({ emit: (event) => emitted.push(event) });
+  const internals = runtime as unknown as {
+    runLifecycles: RunLifecycleRegistry;
+    sessionNativeFinish: Map<string, (summary: string) => Promise<unknown>>;
+    finalizeSessionTermination(input: unknown): Promise<void>;
+  };
+  internals.sessionNativeFinish.set("session", async () => {
+    throw new Error("Current validation is still failing: npm test. Resolve it and run the relevant check before finishing.");
+  });
+  internals.runLifecycles.begin("session", "execution");
+  await internals.finalizeSessionTermination({ sessionId: "session", executionId: "execution",
+    terminalState: "succeeded", display: true, cline: { getAccumulatedUsage: async () => undefined },
+    event: { type: "done", sessionId: "session", payload: {} } });
+  assert.equal(internals.runLifecycles.state("session")?.state, "failed");
+  assert.equal(emitted.at(-1)?.type, "error");
+  await runtime.shutdown();
 });
