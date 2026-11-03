@@ -41,8 +41,7 @@ export function RunLogPanel({
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden p-4">
       <div className="flex h-12 shrink-0 items-start gap-2">
-        {/* Tabs start level with the runner's controls, their labels on
-            its line, and run down into the terminal. */}
+        {/* Tabs as tall as the runner's controls, on the terminal. */}
         <div className="min-w-0 flex-1 self-end">
           {items.length ? (
             <RunLogTabs
@@ -104,7 +103,7 @@ function RunLogTabs({
           <TabsPrimitive.Trigger
             key={item.id}
             className={cn(
-              "run-log-tab relative flex h-12 max-w-60 min-w-32 shrink-0 items-center justify-center gap-2 rounded-t-lg border border-b-0 border-transparent px-4 pb-2.5 text-sm font-medium whitespace-nowrap text-muted-foreground outline-none hover:bg-foreground/5 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset",
+              "run-log-tab relative flex h-[2.375rem] max-w-60 min-w-32 shrink-0 items-center justify-center gap-2 rounded-t-lg border border-b-0 border-transparent px-4 text-sm font-medium whitespace-nowrap text-muted-foreground outline-none hover:bg-foreground/5 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset",
               "data-[state=active]:border-border data-[state=active]:bg-zinc-950 data-[state=active]:text-zinc-100 data-[state=active]:hover:bg-zinc-950",
               // The selected tab stays dark in both themes: a gray that shows on it.
               "data-[state=active]:[&_[data-status=stopped]]:bg-zinc-500"
