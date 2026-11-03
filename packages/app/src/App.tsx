@@ -49,6 +49,7 @@ import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
 import { AppLayout } from "@/layouts/app-layout"
 import { SettingsDialog } from "@/pages/settings/page"
+import { StarInvite } from "@/components/star-invite/star-invite"
 import { AccountClosureReceiptPage } from "@/pages/account-privacy/account-closure-receipt-page"
 import {
   getAccountClosureReceipt,
@@ -221,6 +222,7 @@ export function App() {
           </AppLayout>
           <SettingsDialog open={settingsOpen} onOpenChange={closeSettings} />
           <AccountDialog flow={accountFlow} onPremiumClose={closePremium} />
+          <StarInvite />
         </QuickChatStoreProvider>
       </BacklogStoreProvider>
     </TooltipProvider>
