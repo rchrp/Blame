@@ -558,7 +558,7 @@ test("starts development sessions with native skills and private specialist cons
     assert.ok(capturedStart.config.extraTools?.some((tool: { name: string }) => tool.name === "search_web"));
     assert.ok(capturedStart.config.extraTools?.some((tool: { name: string }) => tool.name === "read_web_page"));
     assert.equal(capturedStart.localRuntime?.hooks?.beforeModel, undefined);
-    assert.equal(capturedStart.config.maxIterations, 64);
+    assert.equal(capturedStart.config.maxIterations, undefined, "A story run has no turn limit");
     assert.equal(capturedStart.config.enableSpawnAgent, false);
     assert.ok(capturedStart.localRuntime?.configExtensions?.includes("skills"));
     assert.ok(
@@ -1736,6 +1736,18 @@ type TransportTestRuntime = {
   subscribeCoreSession(sessionId: string, core: unknown): Promise<void>;
 };
 
+test("restarts a noninteractive run without a turn limit and keeps it unlimited", async () => {
+  const fixture = await noninteractiveRecoveryFixture(false, {});
+  try {
+    fixture.publishFailure();
+    await fixture.internals.completeSessionStartResult(fixture.core,
+      { sessionId: "session", result: { finishReason: "error" } }, "execution");
+    assert.equal(fixture.starts.length, 1);
+    assert.equal(fixture.starts[0]!.config.maxIterations, undefined);
+    assert.equal(fixture.internals.runLifecycles.state("session")?.state, "succeeded");
+  } finally { await fixture.runtime.shutdown(); }
+});
+
 test("restarts noninteractive Light transport failure with persisted effects and remaining iterations", async () => {
   const fixture = await noninteractiveRecoveryFixture();
   try {
@@ -1820,7 +1832,7 @@ test("refuses a restart if persisted history omits an observed completed tool", 
   } finally { await fixture.runtime.shutdown(); }
 });
 
-async function noninteractiveRecoveryFixture(repeated = false) {
+async function noninteractiveRecoveryFixture(repeated = false, limit: { maxIterations?: number } = { maxIterations: 5 }) {
   const fixture = await transportEventFixture(false);
   const starts: ClineCoreStartInput[] = [];
   const messages = [{ role: "user" as const, content: "Implement feature" },
@@ -1857,7 +1869,7 @@ async function noninteractiveRecoveryFixture(repeated = false) {
   fixture.internals.sessionIterations.set("session", 2);
   fixture.internals.sessionCompletedToolIds.set("session", new Set(["edit"]));
   fixture.internals.sessionStartInputs.set("session", { interactive: false, config: {
-    maxIterations: 5, extraTools: [{ name: "finish_task" }] } });
+    ...limit, extraTools: [{ name: "finish_task" }] } });
   return { ...fixture, core, starts, messages, compaction };
 }
 

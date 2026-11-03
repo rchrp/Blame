@@ -352,8 +352,6 @@ export {
   shouldDisplayClineSessionEvent,
   terminalToolEvent,
 } from "./cline-runtime-events.js";
-const defaultSessionMaxIterations = 32;
-const developmentSessionMaxIterations = 64;
 const maxInitializationAttempts = 3;
 const maxMergeConflictResolutionAttempts = 3;
 const runtimeArtifactPaths = [".blame", ".blame-preview", ".pnpm-store"];
@@ -1013,7 +1011,7 @@ export class BlameAgentRuntime {
                 blameCheckpointConfig(this.productionConfig).enabled,
             },
             mode: input.mode ?? "act",
-            maxIterations: input.maxIterations ?? defaultSessionMaxIterations,
+            maxIterations: input.maxIterations,
             disableMcpSettingsTools:
               input.disableMcpSettingsTools ??
               this.productionConfig.disableMcpSettingsTools,
@@ -2989,13 +2987,13 @@ export class BlameAgentRuntime {
     if (start?.interactive !== true) {
       // A noninteractive SDK run is destroyed when it ends. Only Light
       // development runs can restart their persisted conversation, and only
-      // when the observed iteration count leaves an explicit remaining budget.
+      // after an observed iteration, with turns left when the run has a limit.
       const consumed = this.sessionIterations.get(sessionId);
       const maximum = start?.config.maxIterations;
       if (start?.interactive !== false || this.clineDefaultSessions.has(sessionId) ||
         !start.config.extraTools?.some((tool: AgentTool) => tool.name === "finish_task") ||
-        consumed === undefined || consumed < 1 || maximum === undefined ||
-        consumed >= maximum) return false;
+        consumed === undefined || consumed < 1 ||
+        (maximum !== undefined && consumed >= maximum)) return false;
     }
     if (!this.runLifecycles.canInvoke(sessionId, executionId)) return false;
     if (this.sessionSubmittedSummaries.has(sessionId)) return false;
@@ -3037,7 +3035,8 @@ export class BlameAgentRuntime {
         throw new Error("Provider recovery refused: persisted history omits a completed tool result.");
       restart = { ...start, prompt: transportRecoveryPrompt, initialMessages,
         initialCompactionState, userImages: undefined, userFiles: undefined,
-        config: { ...start.config, maxIterations: start.config.maxIterations! - consumed } };
+        config: { ...start.config, maxIterations: start.config.maxIterations === undefined
+          ? undefined : start.config.maxIterations - consumed } };
       this.sessionTransportRecoveries.set(sessionId, {
         attempts, executionId, iterationOffset: consumed,
         message: current?.message ?? "Provider stream interrupted",
@@ -3880,8 +3879,6 @@ export class BlameAgentRuntime {
       newAttachmentDirectory(input.workspaceRoot),
       this.developmentAttachmentStorage(input),
     );
-    const iterationBudget =
-      input.maxIterations ?? developmentSessionMaxIterations;
     const compaction = blameCompactionConfig(this.productionConfig);
     const enableSpecialistConsult = developmentSpecialistConsultEnabled(input);
     const conversation = conversationSessionOptions(input);
@@ -3901,7 +3898,7 @@ export class BlameAgentRuntime {
       initialMessages,
       initialCompactionState,
       mode: "act",
-      maxIterations: iterationBudget,
+      maxIterations: input.maxIterations,
       prompt: developmentInput.prompt,
       taskObjective: developmentInput.prompt,
       requiredChecks: input.requiredChecks,
@@ -4792,7 +4789,7 @@ function startContext(input: StartSessionInput) {
     configExtensions: input.configExtensions?.join(","),
     disableMcpSettingsTools: input.disableMcpSettingsTools,
     mode: input.mode ?? "act",
-    maxIterations: input.maxIterations ?? defaultSessionMaxIterations,
+    maxIterations: input.maxIterations,
     pluginPathCount: input.pluginPaths?.length ?? 0,
     ...promptMetadata(input.prompt),
   };
@@ -4803,7 +4800,7 @@ function sessionContext(
   sessionId: string,
 ): ProductionSessionContext {
   return {
-    maxIterations: input.maxIterations ?? defaultSessionMaxIterations,
+    maxIterations: input.maxIterations,
     mode: input.mode ?? "act",
     modelId: input.modelId,
     providerId: input.providerId,

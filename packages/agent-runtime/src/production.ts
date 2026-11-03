@@ -228,7 +228,8 @@ export function promptMetadata(prompt: string) {
 // A failed tool call goes back to the model as its result, so the agent reads
 // the error and keeps working; failures alone never end a run. Cline's loop
 // detection (the same call repeated) still stops it, because it jumps straight
-// to this limit, and maxIterations bounds everything else.
+// to this limit. Stories and chats have no turn limit: agents work for hours,
+// and the user stops them. Small internal agents set their own maxIterations.
 const consecutiveMistakeLimit = 1_000;
 
 export function appendProductionConfig<T extends CoreSessionConfig>(
