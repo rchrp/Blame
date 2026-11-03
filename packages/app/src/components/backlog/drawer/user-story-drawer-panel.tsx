@@ -619,7 +619,8 @@ export function UserStoryDrawerPanel({
 
   return (
     <DrawerContent
-      className="inset-y-2 right-2 h-[calc(100svh-1rem)] overflow-hidden rounded-xl border bg-[oklch(1_0_0)] text-foreground data-[vaul-drawer-direction=right]:w-[min(var(--story-drawer-width,90rem),calc(100vw-1rem))] data-[vaul-drawer-direction=right]:sm:max-w-none dark:bg-[oklch(0.16_0_0)]"
+      className="overflow-hidden bg-[oklch(1_0_0)] text-foreground outline-none data-[vaul-drawer-direction=right]:w-[min(var(--story-drawer-width,90rem),calc(100vw-1rem))] data-[vaul-drawer-direction=right]:sm:max-w-none dark:bg-[oklch(0.16_0_0)]"
+      overlayClassName="supports-backdrop-filter:backdrop-blur-sm"
       style={drawerWidth.style}
     >
       <DrawerResizeHandle onWidthChange={drawerWidth.setWidth} />

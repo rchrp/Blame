@@ -4,7 +4,9 @@ import { isFiniteNumber, readUiMemory, writeUiMemory } from "@/lib/ui-memory"
 
 const widthKey = "story-drawer-width"
 const minWidthPx = 640
-const edgeGapPx = 8
+// The drawer sits against the window's right edge and leaves the app at
+// least this much on the left.
+const leftGapPx = 16
 
 // The story drawer remembers the width the user dragged it to.
 export function useStoryDrawerWidth() {
@@ -33,7 +35,7 @@ export function DrawerResizeHandle({
     setDragging(true)
     let latest: number | undefined
     const move = (moveEvent: PointerEvent) => {
-      latest = clampWidth(window.innerWidth - edgeGapPx - moveEvent.clientX)
+      latest = clampWidth(window.innerWidth - moveEvent.clientX)
       onWidthChange(latest)
     }
     const stop = () => {
@@ -80,6 +82,6 @@ export function DrawerResizeHandle({
 }
 
 function clampWidth(width: number) {
-  const max = window.innerWidth - edgeGapPx * 2
+  const max = window.innerWidth - leftGapPx
   return Math.round(Math.max(Math.min(width, max), Math.min(minWidthPx, max)))
 }
