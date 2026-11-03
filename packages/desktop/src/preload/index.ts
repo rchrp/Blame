@@ -452,6 +452,8 @@ const api: BlameDesktopApi = {
       ipcRenderer.invoke("workspace:create-worktree", input),
     checkHostDependencies: (input) =>
       ipcRenderer.invoke("workspace:check-host-dependencies", input),
+    databaseEvidence: (input) =>
+      ipcRenderer.invoke("preview-environment:database-evidence", input),
     prepareProjectPreview: (input) =>
       ipcRenderer.invoke("workspace:prepare-project-preview", input),
     runProjectSetup: (input) =>

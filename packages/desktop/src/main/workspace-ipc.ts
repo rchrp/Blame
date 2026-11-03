@@ -302,6 +302,7 @@ type RunProjectSetupInput = ExecutionContextInput & {
   runConfigurationId?: string | null;
   hostDependenciesChecked?: boolean;
   runtimeProfile: RuntimeProfileId;
+  databaseMode?: ApplyPreviewInitializationInput["databaseMode"] | null;
 };
 
 type PrepareProjectPreviewInput = RunProjectSetupInput;
@@ -1196,6 +1197,7 @@ async function writeProjectPreviewArtifacts(input: PrepareProjectPreviewInput) {
       manifest,
       runConfigurations,
       input.runConfigurationId,
+      input.databaseMode,
     ),
   );
   return { env, worktree };
@@ -1970,6 +1972,7 @@ export async function applyProjectPreviewInitialization(
           : undefined,
       hostDependenciesChecked: true,
       runtimeProfile: "local-container",
+      databaseMode: input.databaseMode,
     });
     if (state.desiredStatus === "running") {
       await controlProjectPreview({ action: "start", worktree });

@@ -1,5 +1,4 @@
 import * as React from "react"
-import { ChevronRightIcon, DatabaseIcon, ServerIcon } from "lucide-react"
 import { toast } from "sonner"
 
 import {
@@ -36,6 +35,10 @@ import {
   subscribeProjectInitializationRunRequested,
 } from "@/components/project-initialization/project-initialization-events"
 import { blockedInitialization } from "@/components/project-initialization/initialization-blocked"
+import {
+  DatabaseModeOptions,
+  databaseEvidenceSentence,
+} from "@/components/project-initialization/database-mode-options"
 import { readableInitializationError } from "@/pages/initialization/initialization-setup-draft"
 import {
   initializationRunningHere,
@@ -70,6 +73,8 @@ type InitializationRunInput = {
       mode: ProjectInitializationDatabaseMode
     }
   }
+  /** What showed the project uses a database, for the dialog. */
+  databaseEvidence?: string[]
 }
 
 type InitializationValidationFeedback = {
@@ -155,6 +160,7 @@ function initializationController(input: {
 
   return {
     databaseDialogOpen: input.databaseDialog.open,
+    databaseEvidence: input.databaseDialog.pendingRun?.databaseEvidence,
     hostDependenciesDialog: input.hostDependenciesDialog.dialog,
     cancelDatabaseChoice,
     selectDatabaseMode: input.databaseDialog.selectDatabaseMode,
@@ -264,33 +270,13 @@ function InitializationDatabaseDialog({
     >
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Database for this preview</DialogTitle>
+          <DialogTitle>Database for this project's previews</DialogTitle>
           <DialogDescription>
-            This project already has database configuration in its environment.
+            {databaseEvidenceSentence(controller.databaseEvidence)} You can
+            change this later on the Preview Environment page.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            className="h-auto justify-start gap-3 px-3 py-3 text-left"
-            onClick={() => controller.selectDatabaseMode("existing")}
-          >
-            <ServerIcon className="size-4 text-muted-foreground" />
-            <span className="min-w-0 flex-1">Use configured database</span>
-            <ChevronRightIcon className="size-4 text-muted-foreground" />
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className="h-auto justify-start gap-3 px-3 py-3 text-left"
-            onClick={() => controller.selectDatabaseMode("compose")}
-          >
-            <DatabaseIcon className="size-4 text-muted-foreground" />
-            <span className="min-w-0 flex-1">Create isolated database</span>
-            <ChevronRightIcon className="size-4 text-muted-foreground" />
-          </Button>
-        </div>
+        <DatabaseModeOptions onSelect={controller.selectDatabaseMode} />
         <DialogFooter>
           <Button
             type="button"
@@ -348,7 +334,7 @@ function useInitializationRunRequests(
   latest.current = input
   React.useEffect(
     () =>
-      subscribeProjectInitializationRunRequested((projectId) => {
+      subscribeProjectInitializationRunRequested((projectId, options) => {
         const current = latest.current
         if (current.activeProject?.id !== projectId) return
         if (initializationRunningHere(projectId)) return
@@ -368,7 +354,12 @@ function useInitializationRunRequests(
           return
         }
         void startInitialization(
-          run,
+          options.databaseMode
+            ? {
+                ...run,
+                preferences: { database: { mode: options.databaseMode } },
+              }
+            : run,
           current.workspace,
           current.openDatabaseDialog,
           current.openHostDependenciesDialog
@@ -521,9 +512,12 @@ async function startInitialization(
     openHostDependenciesDialog?.(input, report)
     return
   }
-  if (await projectNeedsDatabaseChoice(input.project, workspace)) {
-    openDatabaseDialog(input)
-    return
+  if (!input.preferences?.database) {
+    const evidence = await projectDatabaseEvidence(input.project, workspace)
+    if (evidence.length) {
+      openDatabaseDialog({ ...input, databaseEvidence: evidence })
+      return
+    }
   }
   await runInitialization(input)
 }
@@ -627,17 +621,29 @@ function validationFeedback(
   }
 }
 
-async function projectNeedsDatabaseChoice(
+// What shows the project uses a database: the desktop scans the whole
+// project (dependencies, env keys, Compose services, migrations); elsewhere
+// a few well-known files are read.
+async function projectDatabaseEvidence(
   project: InitializationRunInput["project"],
   workspace: WorkspaceClient | undefined
 ) {
-  if (!workspace) return false
+  if (!workspace) return []
+  if (workspace.databaseEvidence) {
+    try {
+      return (await workspace.databaseEvidence({ root: project.path })).evidence
+    } catch {
+      // Read the well-known files instead.
+    }
+  }
   const files = await Promise.all(
     databaseDetectionFiles.map((path) =>
       readWorkspaceFile(workspace, project.path, path)
     )
   )
   return files.some((content) => databaseContentPattern.test(content))
+    ? ["database settings in the project's files"]
+    : []
 }
 
 async function readWorkspaceFile(

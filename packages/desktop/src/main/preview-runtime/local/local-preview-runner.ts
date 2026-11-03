@@ -23,6 +23,7 @@ import {
   errorText,
   LocalPreviewError,
   localPreviewPaths,
+  readLocalDatabaseMode,
   readLocalPreviewManifest,
   readLocalRunConfigurations,
   readLocalRuntimeState,
@@ -163,6 +164,7 @@ export async function startLocalPreview(
     selected: context.selected,
     ownPorts,
     hostGateway: await currentHostGateway(),
+    databaseMode: await readLocalDatabaseMode(worktree),
   });
   if (context.plan.tools?.ttyd && dockerHost === blameRuntimeDockerHost) {
     const installed = await dockerHost.run(
@@ -220,6 +222,7 @@ export async function prefetchLocalPreview(
     selected: context.selected,
     ownPorts: await runningPorts(engine, context.plan),
     hostGateway: await currentHostGateway(),
+    databaseMode: await readLocalDatabaseMode(worktree),
   });
   await engine.prepare(local.rendered, local.owner);
   await engine.prefetch(context.plan, {

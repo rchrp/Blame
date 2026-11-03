@@ -32,6 +32,7 @@ import {
   type SavedSetup,
 } from "./initialization-setup-draft"
 import { InitializationStatus } from "./initialization-status"
+import { DatabaseModeReminder } from "./database-mode-reminder"
 
 export function InitializationPage() {
   const auth = useCloudAuth()
@@ -62,7 +63,10 @@ export function InitializationPage() {
       return
     }
     setConfirmRun(false)
-    requestProjectInitializationRun(project.id)
+    // The saved database choice stands: Blame asks only when there is none.
+    requestProjectInitializationRun(project.id, {
+      databaseMode: initialization?.databaseMode ?? undefined,
+    })
   }
 
   const copySetup = () => {
@@ -155,6 +159,15 @@ export function InitializationPage() {
               progress={progress}
               setup={setup}
             />
+            {initialization?.databaseMode && !editing && project ? (
+              <DatabaseModeReminder
+                mode={initialization.databaseMode}
+                disabled={running}
+                onChange={(databaseMode) =>
+                  requestProjectInitializationRun(project.id, { databaseMode })
+                }
+              />
+            ) : null}
             {editing ? (
               <InitializationSetupEditor
                 saved={editing}

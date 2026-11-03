@@ -5,6 +5,7 @@ import {
   setPreviewVariable,
 } from "../preview-environment/environment-view";
 import { previewVariablesStore } from "../preview-environment/variables-store";
+import { projectDatabaseEvidence } from "../preview-environment/database-evidence";
 import { resolveWorkspacePath } from "../workspace-runtime";
 
 // The Variables tab of a story preview: read the resolved environment, set
@@ -40,6 +41,10 @@ export function registerPreviewEnvironmentIpcHandlers(input: {
     };
     await setPreviewVariable(input);
     return true;
+  });
+  ipcMain.handle("preview-environment:database-evidence", (event, value) => {
+    guard(event.sender);
+    return projectDatabaseEvidence(text(record(value).root, "root"));
   });
   ipcMain.handle(
     "preview-environment:dismiss-request",

@@ -9,6 +9,7 @@ import { renderCompose } from "@blame/preview-runtime/compose";
 import { previewComposeProjectName } from "../preview-readiness.ts";
 import { rememberedHostPorts } from "../preview-runtime/local/local-preview-ports.ts";
 import { previewOrigin } from "../preview-runtime/local/local-preview-render.ts";
+import { readLocalDatabaseMode } from "../preview-runtime/local/local-preview-files.ts";
 import {
   currentHostGateway,
   localPreviewContext,
@@ -95,7 +96,8 @@ async function resolveForView(input: {
     plan: context.plan,
     bindings: renderedBindingValues(context.plan, draft.yaml),
     previewOrigin: origin?.endsWith(`:${unknownPort}`) ? undefined : origin,
-    databaseMode: input.databaseMode,
+    databaseMode:
+      input.databaseMode ?? (await readLocalDatabaseMode(input.worktree)),
     hostGateway: await currentHostGateway(),
   });
   return { context, environment };

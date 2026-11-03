@@ -491,6 +491,7 @@ export type BlameDesktopApi = {
       setupScript?: string;
       worktree?: string;
     }): Promise<HostDependencyReport>;
+    databaseEvidence(input: { root: string }): Promise<{ evidence: string[] }>;
     prepareProjectPreview(input: {
       executionId: string;
       storyId: string;
@@ -501,6 +502,7 @@ export type BlameDesktopApi = {
       runConfigurationId?: string | null;
       hostDependenciesChecked?: boolean;
       runtimeProfile: RuntimeProfileId;
+      databaseMode?: "compose" | "existing" | null;
     }): Promise<{ prepared: true }>;
     runProjectSetup(input: {
       executionId: string;
