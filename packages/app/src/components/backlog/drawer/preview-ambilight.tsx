@@ -9,10 +9,11 @@ type PreviewAmbilightColor = {
   red: number
 }
 
-// The page's colors near each corner, with their mix where a corner has
-// none worth showing.
+// The page's colors along its edges near each corner, and along its top,
+// with their mix where a part has none worth showing.
 export type PreviewAmbilight = {
   average: PreviewAmbilightColor
+  top: PreviewAmbilightColor
   corners: [
     topLeft: PreviewAmbilightColor,
     topRight: PreviewAmbilightColor,
@@ -72,7 +73,7 @@ export function PreviewAmbilightCloud({
       aria-hidden="true"
       className={cn(
         "pointer-events-none absolute inset-0 transition-opacity duration-1000",
-        ambilight ? "opacity-40 dark:opacity-60" : "opacity-0"
+        ambilight ? "opacity-55 dark:opacity-80" : "opacity-0"
       )}
     >
       {ambilight
@@ -80,16 +81,18 @@ export function PreviewAmbilightCloud({
             <span
               key={index}
               className={cn(
-                "preview-ambilight-patch absolute blur-[56px] transition-[background-color] duration-1000",
+                "preview-ambilight-patch absolute blur-[56px] transition-[background-color] duration-700",
                 patch.className
               )}
               style={{
                 animationDelay: `${patch.delay}s`,
                 animationDuration: `${patch.duration}s`,
                 backgroundColor: ambilightRgb(
-                  patch.corner === undefined
-                    ? ambilight.average
-                    : ambilight.corners[patch.corner]
+                  vividAmbilightColor(
+                    patch.corner === undefined
+                      ? ambilight.top
+                      : ambilight.corners[patch.corner]
+                  )
                 ),
                 borderRadius: patch.radius,
               }}
@@ -105,6 +108,8 @@ export function previewAmbilightShadow() {
   return "0 16px 44px rgb(0 0 0 / 0.28)"
 }
 
+const ambilightSampleInterval = 2_000
+
 export function useNativePreviewAmbilight(
   client: PreviewBrowserClient,
   browserId: string | undefined,
@@ -116,23 +121,33 @@ export function useNativePreviewAmbilight(
     key: string
   }>()
 
+  // Sampled again and again while the page shows, so the glow follows what
+  // it shows as it scrolls, navigates or changes.
   React.useEffect(() => {
     if (!browserId || !visible) return
     let cancelled = false
+    let sampling = false
     const sampleFrame = async () => {
+      if (sampling) return
+      sampling = true
       const ambilight = await captureNativePreviewAmbilight(client, browserId)
-      if (cancelled) return
+      sampling = false
+      // A capture that failed keeps the glow; a page with no color to
+      // spread (null) puts it out.
+      if (cancelled || ambilight === undefined) return
       setSample((current) =>
         current?.key === previewKey &&
-        sameAmbilight(current.ambilight, ambilight)
+        sameAmbilight(current.ambilight, ambilight ?? undefined)
           ? current
-          : { ambilight, key: previewKey }
+          : { ambilight: ambilight ?? undefined, key: previewKey }
       )
     }
-    const timeout = window.setTimeout(sampleFrame, 350)
+    const first = window.setTimeout(sampleFrame, 350)
+    const again = window.setInterval(sampleFrame, ambilightSampleInterval)
     return () => {
       cancelled = true
-      window.clearTimeout(timeout)
+      window.clearTimeout(first)
+      window.clearInterval(again)
     }
   }, [browserId, client, previewKey, visible])
 
@@ -152,7 +167,7 @@ async function captureNativePreviewAmbilight(
 }
 
 function readImageAmbilight(dataUrl: string) {
-  return new Promise<PreviewAmbilight | undefined>((resolve) => {
+  return new Promise<PreviewAmbilight | null | undefined>((resolve) => {
     const image = new Image()
     image.onload = () => {
       const canvas = document.createElement("canvas")
@@ -181,9 +196,12 @@ function imageAmbilight(
   data: Uint8ClampedArray,
   width: number,
   height: number
-): PreviewAmbilight | undefined {
+): PreviewAmbilight | null {
   const all: PreviewAmbilightColor[] = []
-  const corners: PreviewAmbilightColor[][] = [[], [], [], []]
+  // Like a screen's ambilight, the colors that count are along the edges.
+  const edges: PreviewAmbilightColor[][] = [[], [], [], []]
+  const quarters: PreviewAmbilightColor[][] = [[], [], [], []]
+  const top: PreviewAmbilightColor[] = []
   for (let index = 0; index < data.length; index += 4) {
     if (data[index + 3] < 60) continue
     const color = {
@@ -193,16 +211,25 @@ function imageAmbilight(
     }
     if (!isUsefulAmbilightColor(color)) continue
     const pixel = index / 4
-    const right = pixel % width >= width / 2
-    const bottom = Math.floor(pixel / width) >= height / 2
+    const x = (pixel % width) / width
+    const y = Math.floor(pixel / width) / height
+    const quarter = (y >= 0.5 ? 2 : 0) + (x >= 0.5 ? 1 : 0)
     all.push(color)
-    corners[(bottom ? 2 : 0) + (right ? 1 : 0)]?.push(color)
+    quarters[quarter]?.push(color)
+    if (x < 0.3 || x > 0.7 || y < 0.3 || y > 0.7) edges[quarter]?.push(color)
+    if (y < 0.3 && x > 0.2 && x < 0.8) top.push(color)
   }
   const average = averageAmbilightColor(all)
-  if (!average) return undefined
+  if (!average) return null
   const corner = (index: number) =>
-    averageAmbilightColor(corners[index] ?? []) ?? average
-  return { average, corners: [corner(0), corner(1), corner(2), corner(3)] }
+    averageAmbilightColor(edges[index] ?? []) ??
+    averageAmbilightColor(quarters[index] ?? []) ??
+    average
+  return {
+    average,
+    corners: [corner(0), corner(1), corner(2), corner(3)],
+    top: averageAmbilightColor(top) ?? average,
+  }
 }
 
 function averageAmbilightColor(colors: PreviewAmbilightColor[]) {
@@ -254,6 +281,17 @@ function clampColorValue(value: number) {
   return Math.max(0, Math.min(255, Math.round(value)))
 }
 
+// A little more vivid than the page: the glow reads as its light.
+function vividAmbilightColor(color: PreviewAmbilightColor) {
+  const gray = (color.red + color.green + color.blue) / 3
+  const boost = (value: number) => clampColorValue(gray + (value - gray) * 1.35)
+  return {
+    blue: boost(color.blue),
+    green: boost(color.green),
+    red: boost(color.red),
+  }
+}
+
 function ambilightRgb(color: PreviewAmbilightColor) {
   return `rgb(${color.red} ${color.green} ${color.blue})`
 }
@@ -263,8 +301,8 @@ function sameAmbilight(
   next: PreviewAmbilight | undefined
 ) {
   if (!current || !next) return current === next
-  return [current.average, ...current.corners].every((color, index) => {
-    const other = [next.average, ...next.corners][index]
+  return [current.top, ...current.corners].every((color, index) => {
+    const other = [next.top, ...next.corners][index]
     return (
       color.red === other?.red &&
       color.green === other.green &&
