@@ -334,6 +334,7 @@ export type BlameDesktopApi = {
     setBounds(input: {
       bounds: PreviewBrowserBounds;
       id: string;
+      reveal?: { color: string };
       visible: boolean;
     }): Promise<boolean>;
   };

@@ -707,6 +707,8 @@ export type PreviewBrowserClient = {
   setBounds(input: {
     bounds: PreviewBrowserBounds
     id: string
+    // Appearing out of a loading screen that ends on this color.
+    reveal?: { color: string }
     visible: boolean
   }): Promise<boolean>
 }

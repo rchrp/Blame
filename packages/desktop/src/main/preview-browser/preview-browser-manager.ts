@@ -1,4 +1,5 @@
 import { emulatePreviewDevice } from "./device-emulation";
+import { coverPreviewPage } from "./preview-reveal";
 import { surfaceEnabled } from "../preview-surfaces/experimental-surfaces";
 import { randomUUID } from "node:crypto";
 import {
@@ -56,6 +57,8 @@ type PreviewBrowserRecord = {
   applicationProbe?: Promise<void>;
   bridge?: PreviewNetworkBridge;
   ownerClosed: () => void;
+  // The page covering itself before it appears out of a loading screen.
+  revealing?: Promise<unknown>;
 };
 
 type PreviewBrowserBounds = {
@@ -342,15 +345,31 @@ export async function loadPreviewBrowser(input: { id: string; url: string }) {
   return true;
 }
 
-export function setPreviewBrowserBounds(input: {
+export async function setPreviewBrowserBounds(input: {
   bounds: PreviewBrowserBounds;
   id: string;
+  // The color the app's loading screen ends on: the page appears covered
+  // in it, then fades it out.
+  reveal?: { color: string };
   visible: boolean;
 }) {
+  const found = previews.get(input.id);
+  // A page covering itself appears only once covered.
+  if (found?.revealing) await found.revealing;
   const record = previews.get(input.id);
   if (!record) return false;
   const bounds = normalizedBounds(input.bounds);
   const visible = input.visible && bounds.width > 0 && bounds.height > 0;
+  let uncover: (() => void) | undefined;
+  if (visible && !record.visible && input.reveal) {
+    const covering = coverPreviewPage(
+      record.view.webContents,
+      input.reveal.color,
+    );
+    record.revealing = covering;
+    uncover = await covering;
+    record.revealing = undefined;
+  }
   record.visible = visible;
   record.view.setBounds(bounds);
   if (record.device && bounds.width > 0 && bounds.height > 0)
@@ -361,6 +380,7 @@ export function setPreviewBrowserBounds(input: {
   );
   record.view.webContents.setAudioMuted(!visible);
   syncPreviewDevtoolsTargets(record, previewBrowserState(record));
+  uncover?.();
   return true;
 }
 
