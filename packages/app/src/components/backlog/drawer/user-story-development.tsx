@@ -116,6 +116,7 @@ export function DevelopmentContent({
             {tabs.length > 1 ? (
               <div className={insetSwitchGroupClassName}>
                 <InsetSwitch
+                  labeled
                   items={tabs.map((item) => ({
                     ...item,
                     active: item.id === activeTab,

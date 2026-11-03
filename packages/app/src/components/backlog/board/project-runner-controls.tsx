@@ -86,15 +86,11 @@ const runnerViewMeta: Record<
   { icon: LucideIcon; label: string; show: string }
 > = {
   preview: { icon: AppWindowIcon, label: "Preview", show: "Show preview" },
-  logs: {
-    icon: SquareTerminalIcon,
-    label: "Run logs",
-    show: "Show run logs",
-  },
+  logs: { icon: SquareTerminalIcon, label: "Logs", show: "Show run logs" },
   variables: {
     icon: SquareAsteriskIcon,
-    label: "Variables",
-    show: "Show variables",
+    label: "Env",
+    show: "Show environment variables",
   },
 }
 
@@ -147,6 +143,7 @@ function RunnerViewSwitch({
   return (
     <InsetSwitch
       className={className}
+      labeled
       items={views.map((view) => {
         const meta = runnerViewMeta[view.id]
         return {
