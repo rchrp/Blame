@@ -9,6 +9,7 @@ import { summarizeUsage } from "./production.js";
 import { withScreenshotRefs } from "./preview-screenshots.js";
 
 import type { AgentEvent, AgentUsageSummary } from "./types.js";
+import { totalsWithReasoning, usageWithReasoning } from "./reasoning-usage.js";
 
 export function streamingAgentEvent(event: AgentEvent) {
   return event.type === "text" || event.type === "reasoning";
@@ -228,7 +229,7 @@ export function normalizeClineAgentPayload(
         reason,
         status: stringValue(payload.status),
         text: stringValue(payload.text),
-        usage: doneUsagePayload(payload.usage),
+        usage: totalsWithReasoning(sessionId, doneUsagePayload(payload.usage)),
         raw,
       },
     };
@@ -238,7 +239,7 @@ export function normalizeClineAgentPayload(
     return {
       type: "usage",
       sessionId,
-      payload: { usage: payload, raw },
+      payload: { usage: usageWithReasoning(sessionId, payload), raw },
     };
   }
 
@@ -318,7 +319,7 @@ export function normalizeClineAgentPayload(
     return {
       type: "usage",
       sessionId,
-      payload: { usage: payload.usage, raw },
+      payload: { usage: totalsWithReasoning(sessionId, payload.usage), raw },
     };
   }
 
