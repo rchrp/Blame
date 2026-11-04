@@ -36,7 +36,6 @@ import {
 import { agentStreamStore } from "@/components/backlog/data/agent-stream-store"
 import { persistTerminalAgentUpdate } from "@/components/backlog/data/agent-terminal-outbox"
 import { replayTerminalAgentUpdates } from "@/components/backlog/data/agent-terminal-replay"
-import { afterRendererPaint } from "@/components/backlog/data/agent-transition-scheduling"
 import type {
   BacklogAction,
   BacklogColumnId,
@@ -60,7 +59,6 @@ import {
 import { useBacklogStore } from "@/components/backlog/data/backlog-store"
 import { storyContextAttachment } from "@/components/backlog/data/user-story-context"
 import { useUserStoryDiffStats } from "@/components/backlog/development/user-story-diff-stats"
-import { stopManagedCloudPreview } from "@/components/backlog/drawer/use-user-story-preview-runner"
 import { UserStoryDrawer } from "@/components/backlog/drawer/user-story-drawer"
 import { UserStoryPreviewWarmup } from "@/components/backlog/drawer/user-story-preview"
 import { drawerTargetForAction } from "@/components/backlog/shared/backlog-helpers"
@@ -101,11 +99,6 @@ import { notifyCommentResponseCompleted } from "@/pages/backlog/backlog-rotation
 import { OpenProjectEmptyState } from "@/components/shared/open-project-empty-state"
 import { backlogStatusPipStories } from "@/pages/backlog/backlog-status-pip-snapshot"
 import { HostDependenciesDialog } from "@/pages/backlog/host-dependencies-dialog"
-import { parseProjectPreviewRepairCandidate } from "@/pages/backlog/project-initialization-database"
-import {
-  type PreviewEnvironmentSyncInput,
-  syncPreviewEnvironment,
-} from "@/pages/backlog/preview-environment-sync"
 import { currentReviewDiffEmpty } from "@/pages/backlog/review-diff-evidence"
 import { useBacklogRotation } from "@/pages/backlog/use-backlog-rotation"
 import {
@@ -127,10 +120,14 @@ import {
 } from "./backlog-title-generation"
 import { shouldCloseDrawerAfterDelete } from "./drawer-delete"
 import {
-  abortStoryAgent,
+  approveAndMergeValidationError,
+  runPostMergeTasks,
+} from "./story-post-merge"
+import {
+  asyncInactiveStoryCleanup,
+  cleanupInactiveStory,
   deleteUserStoryWithRuntime,
-  removeStoryWorktree,
-  stopStoryProjectSetup,
+  inactiveStoryCleanup,
 } from "./story-runtime-cleanup"
 import { activeStory, inactiveStoryFields } from "./story-runtime-state"
 import {
@@ -148,6 +145,7 @@ import {
 import { useResumeSlots } from "./use-resume-slots"
 import { useNewUserStoryExcerpts } from "./use-new-story-excerpts"
 import { withStoryTransition } from "./story-transitions"
+import { optimizeUserStoryPrompt } from "./user-story-prompt-optimizer"
 
 const agentEventPersistDelayMs = 1_500
 const terminalAgentRetryIntervalMs = 60_000
@@ -1586,158 +1584,6 @@ function useLatestCallback<Arguments extends unknown[], Result>(
   )
 }
 
-function approveAndMergeValidationError(
-  story: UserStory,
-  auth: ReturnType<typeof useCloudAuth>,
-  platform: ReturnType<typeof usePlatform>,
-  repositoryRoot: string | undefined,
-  model: unknown
-) {
-  if (!story.worktree) return "This user story has no active worktree."
-  if (!story.branch) return "This user story has no feature branch."
-  if (!repositoryRoot) return "Unable to resolve the active project."
-  if (auth.status !== "authenticated")
-    return "Reconnect the provider before approving the merge."
-  if (!model) return "Select a model before approving the merge."
-  if (!platform.agent?.approveAndMerge)
-    return "Desktop agent runtime is not available."
-}
-
-function optimizeUserStoryValidationError(
-  summary: string,
-  auth: ReturnType<typeof useCloudAuth>,
-  platform: ReturnType<typeof usePlatform>,
-  repositoryRoot: string | undefined,
-  model: unknown
-) {
-  if (!summary.trim()) return "Write a user story before optimizing it."
-  if (!repositoryRoot) return "Unable to resolve the active project."
-  if (auth.status !== "authenticated")
-    return "Reconnect the provider before optimizing the user story."
-  if (!model) return "Select a model before optimizing the user story."
-  if (!platform.agent?.promptOptimizer)
-    return "Desktop agent runtime is not available."
-}
-
-type OptimizeUserStoryPromptRequest = {
-  input: {
-    summary: string
-    title: string
-  }
-  auth: ReturnType<typeof useCloudAuth>
-  platform: ReturnType<typeof usePlatform>
-  projectPath?: string
-  model: ReturnType<typeof useModelSelection>["currentModel"]
-  reasoningEffort: ReturnType<typeof useModelSelection>["currentVariant"]
-}
-
-async function optimizeUserStoryPrompt(
-  request: OptimizeUserStoryPromptRequest
-) {
-  const validationError = optimizeUserStoryValidationError(
-    request.input.summary,
-    request.auth,
-    request.platform,
-    request.projectPath,
-    request.model
-  )
-  if (validationError) throw optimizationValidationError(validationError)
-  const toastId = "user-story-prompt-optimizer"
-  toast.loading("Optimizing user story", {
-    id: toastId,
-    position: "bottom-right",
-  })
-  try {
-    const result = await runPromptOptimizer(request)
-    toast.success("User story optimized", {
-      id: toastId,
-      position: "bottom-right",
-    })
-    return result
-  } catch (error) {
-    toast.error("User story optimization failed", {
-      description: errorMessage(error),
-      id: toastId,
-      position: "bottom-right",
-    })
-    throw error
-  }
-}
-
-function optimizationValidationError(message: string) {
-  toast.error("Unable to optimize user story", {
-    description: message,
-    position: "bottom-right",
-  })
-  return new Error(message)
-}
-
-async function runPromptOptimizer(request: OptimizeUserStoryPromptRequest) {
-  const result =
-    await request.platform.agent!.promptOptimizer.optimizeUserStory({
-      apiConnection: request.auth.apiConnection,
-      providerId: request.model!.provider.id,
-      modelId: request.model!.id,
-      credentialLabel: request.model!.credentialLabel,
-      reasoningEffort: request.reasoningEffort,
-      prompt: request.input.summary,
-      title: request.input.title,
-      cwd: request.projectPath!,
-      workspaceRoot: request.projectPath!,
-    })
-  return result.markdown
-}
-
-async function inactiveStoryCleanup(
-  story: UserStory,
-  input: UserStoryUpdate,
-  platform: ReturnType<typeof usePlatform>,
-  repositoryRoot: string | undefined
-): Promise<UserStoryUpdate> {
-  const nextStatus = input.status ?? story.status
-  if (!leavesRuntimeStatus(story.status, nextStatus)) return {}
-  await stopStoryRuntime(story, platform)
-  await removeStoryWorktree(story, platform, repositoryRoot)
-  return inactiveStoryFields()
-}
-
-function asyncInactiveStoryCleanup(story: UserStory, input: UserStoryUpdate) {
-  const nextStatus = input.status ?? story.status
-  return (
-    nextStatus === "discarded" && leavesRuntimeStatus(story.status, nextStatus)
-  )
-}
-
-async function cleanupInactiveStory(
-  story: UserStory,
-  platform: ReturnType<typeof usePlatform>,
-  repositoryRoot: string | undefined,
-  backlog: ReturnType<typeof useBacklogStore>
-) {
-  backlog.setStoryCleanup(story, true)
-  try {
-    await stopStoryRuntime(story, platform)
-    await removeStoryWorktree(story, platform, repositoryRoot)
-    await backlog.update(story, inactiveStoryFields())
-  } catch (error) {
-    toast.error("Discarded story cleanup failed", {
-      description: errorMessage(error),
-      position: "bottom-right",
-    })
-  } finally {
-    backlog.setStoryCleanup(story, false)
-  }
-}
-
-const runtimeStatuses = new Set<BacklogColumnId>(["in-progress", "in-review"])
-
-function leavesRuntimeStatus(
-  currentStatus: BacklogColumnId,
-  nextStatus: BacklogColumnId
-) {
-  return runtimeStatuses.has(currentStatus) && !runtimeStatuses.has(nextStatus)
-}
-
 function notifyStoriesMovedToReview(
   stories: UserStory[],
   previousStatuses: Map<string, BacklogColumnId> | undefined,
@@ -1758,91 +1604,6 @@ function notifyStoriesMovedToReview(
 
 function storyStatusMap(stories: UserStory[]) {
   return new Map(stories.map((story) => [story.id, story.status]))
-}
-
-async function stopStoryRuntime(
-  story: UserStory,
-  platform: ReturnType<typeof usePlatform>
-) {
-  await Promise.all([
-    abortStoryAgent(story, platform),
-    stopStoryProjectSetup(story, platform),
-    stopManagedCloudPreview(platform, story.id),
-    platform.previewDevices?.stop({ storyId: story.id, destroy: true }),
-  ])
-}
-
-async function cleanupMergedStory(
-  story: UserStory,
-  platform: ReturnType<typeof usePlatform>,
-  repositoryRoot: string | undefined
-) {
-  try {
-    const [, projectSetupStopped] = await Promise.all([
-      measurePerformanceOperation("agent.transition.cleanup.agent_abort", () =>
-        abortStoryAgent(story, platform)
-      ),
-      measurePerformanceOperation("agent.transition.cleanup.runtime_stop", () =>
-        stopStoryProjectSetup(story, platform)
-      ),
-      measurePerformanceOperation(
-        "agent.transition.cleanup.cloud_preview_stop",
-        () => stopManagedCloudPreview(platform, story.id)
-      ),
-    ])
-    await measurePerformanceOperation(
-      "agent.transition.cleanup.worktree_remove",
-      () =>
-        removeStoryWorktree(
-          story,
-          platform,
-          repositoryRoot,
-          projectSetupStopped
-        )
-    )
-  } catch (error) {
-    toast.error("Merged story cleanup failed", {
-      description: errorMessage(error),
-      position: "bottom-right",
-    })
-  }
-}
-
-// The merge moved the project branch: its preview environment is checked
-// against the merged commits now, with the story's own repair if it made one.
-async function runPostMergeTasks(
-  story: UserStory,
-  platform: ReturnType<typeof usePlatform>,
-  repositoryRoot: string,
-  previewEnvironment: PreviewEnvironmentSyncInput
-) {
-  const previewRepairCandidate = await storyPreviewRepairCandidate(
-    story,
-    platform
-  )
-  await cleanupMergedStory(story, platform, repositoryRoot)
-  await afterRendererPaint()
-  await measurePerformanceOperation(
-    "agent.transition.initialization_impact",
-    () =>
-      syncPreviewEnvironment({ ...previewEnvironment, previewRepairCandidate })
-  )
-}
-
-async function storyPreviewRepairCandidate(
-  story: UserStory,
-  platform: ReturnType<typeof usePlatform>
-) {
-  if (!story.worktree || !platform.workspace) return undefined
-  try {
-    const content = await platform.workspace.readFile({
-      root: story.worktree,
-      path: ".blame/initialization/preview-repair.json",
-    })
-    return parseProjectPreviewRepairCandidate(content)
-  } catch {
-    return undefined
-  }
 }
 
 function replaceStoryAfterUndo(
