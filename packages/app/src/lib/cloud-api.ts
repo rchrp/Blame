@@ -438,6 +438,7 @@ export function createCloudApi(connection: CloudApiConnection) {
         previewManifest: PreviewManifest
         runConfigurations: ProjectRunConfiguration[]
         databaseMode?: "existing" | "compose" | null
+        checkedCommit?: string | null
       }
     ) {
       return request<unknown>(
@@ -466,12 +467,21 @@ export function createCloudApi(connection: CloudApiConnection) {
         runConfigurations: ProjectRunConfiguration[]
         databaseMode?: "existing" | "compose" | null
         reason: string
+        checkedCommit?: string | null
       }
     ) {
       return request<unknown>(
         connection,
         baseUrl,
         `/projects/${encodeURIComponent(projectId)}/initialization/repair`,
+        { body: JSON.stringify(input), method: "POST" }
+      ).then(cloudProjectInitializationSnapshot)
+    },
+    checkProjectInitialization(projectId: string, input: { commit: string }) {
+      return request<unknown>(
+        connection,
+        baseUrl,
+        `/projects/${encodeURIComponent(projectId)}/initialization/check`,
         { body: JSON.stringify(input), method: "POST" }
       ).then(cloudProjectInitializationSnapshot)
     },

@@ -75,6 +75,8 @@ type InitializationRunInput = {
   }
   /** What showed the project uses a database, for the dialog. */
   databaseEvidence?: string[]
+  /** The project commit the analysis starts from. */
+  checkedCommit?: string
 }
 
 type InitializationValidationFeedback = {
@@ -500,11 +502,12 @@ function showProgress(projectName: string, projectId: string) {
 }
 
 async function startInitialization(
-  input: InitializationRunInput,
+  run: InitializationRunInput,
   workspace: WorkspaceClient | undefined,
   openDatabaseDialog: (run: InitializationRunInput) => void,
   openHostDependenciesDialog: OpenHostDependenciesDialog | undefined
 ) {
+  const input = { ...run, checkedCommit: await headCommit(run, workspace) }
   const report = workspace
     ? await checkInitializationHostDependencies(workspace)
     : undefined
@@ -520,6 +523,18 @@ async function startInitialization(
     }
   }
   await runInitialization(input)
+}
+
+// The preview environment counts as checked against it.
+async function headCommit(
+  input: InitializationRunInput,
+  workspace: WorkspaceClient | undefined
+) {
+  if (!workspace) return undefined
+  const history = await workspace
+    .gitLog({ root: input.project.path, limit: 1, currentBranchOnly: true })
+    .catch(() => [])
+  return history[0]?.hash
 }
 
 function checkInitializationHostDependencies(workspace: WorkspaceClient) {
@@ -594,6 +609,7 @@ async function completeProjectInitialization(
     previewManifest: result.previewManifest,
     runConfigurations: result.runConfigurations,
     databaseMode: input.preferences?.database?.mode ?? null,
+    checkedCommit: input.checkedCommit ?? null,
   })
   notifyProjectInitializationUpdated(input.project.id)
 }

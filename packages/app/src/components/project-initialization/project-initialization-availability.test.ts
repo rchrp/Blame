@@ -26,6 +26,7 @@ function initialization(
     databaseMode: null,
     error: null,
     repairReason: null,
+    checkedCommit: null,
     createdAt: new Date(now - 60 * 60_000).toISOString(),
     updatedAt: new Date(now - minutesAgo * 60_000).toISOString(),
   } as Parameters<typeof projectInitializationAvailability>[0]

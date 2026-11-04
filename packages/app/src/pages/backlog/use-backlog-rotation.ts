@@ -66,7 +66,7 @@ import { useProjects } from "@/context/projects"
 import { createCloudApi } from "@/lib/cloud-api"
 import { effectiveProjectCodePractices } from "@/lib/project-code-practice-preferences"
 import { storyMaxInputTokens } from "@/components/backlog/data/story-context-limit"
-import { refreshDriftedProjectInitialization } from "@/pages/backlog/project-initialization-drift"
+import { syncPreviewEnvironment } from "@/pages/backlog/preview-environment-sync"
 import {
   notifyDirectFallback,
   storyInitializationGate,
@@ -232,18 +232,17 @@ export function useBacklogRotation(
     )
     if (gate === "wait") return retryStory(detailedStory)
     if (gate === "run-direct") return runDirectWithoutInitialization(detailedStory)
-    // Commits made outside Blame can leave the saved preview setup stale.
+    // Checked against the latest commits, whoever made them.
     const ready =
       savedInitialization?.status === "done" && savedInitialization.previewManifest
         ? { ...savedInitialization, previewManifest: savedInitialization.previewManifest }
         : undefined
     const refreshed = ready
-      ? await refreshDriftedProjectInitialization({
+      ? await syncPreviewEnvironment({
           apiConnection: auth.apiConnection,
           platform,
           projectId: projects.activeProject.id,
           repositoryRoot: projects.activeProject.path,
-          initialization: ready,
           providerId: selection.currentModel.provider.id,
           modelId: selection.currentModel.id,
           credentialLabel: selection.currentModel.credentialLabel,
