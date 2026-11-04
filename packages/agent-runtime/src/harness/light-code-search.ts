@@ -177,7 +177,8 @@ export class LightCodeSearch {
     const mode = request.mode === "regex" ? "regex" : "text";
     const searched = await this.lexical(request, mode, candidates, signal);
     const excluded = request.excludeLine;
-    const items = excluded ? searched.items.filter((match) => !excluded(presentedLine(match))) : searched.items;
+    // File listings filter paths, as `grep -l ... | grep -v` filters grep's path lines.
+    const items = excluded ? searched.items.filter((match) => !excluded(match.path)) : searched.items;
     const files = rankedFiles(items, searchTerms(request.query), mode === "text");
     const totals = { totalFiles: files.length, totalMatchingLines: items.length };
     const base = { mode, engine: searched.engine, output: request.output, candidateCount: candidates.length };

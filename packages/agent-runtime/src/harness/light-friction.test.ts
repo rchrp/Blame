@@ -818,8 +818,17 @@ test("successful known validations expose concise output and a complete log with
 
 test("inspection output and failed validation diagnostics are not shortened by success projection", async () => {
   await fixture(validationFixture(), async (_root, workspace) => {
-    const inspected = await workspace.runTask(
+    // A plain cat is answered by read_code; a pipeline the router keeps runs in the shell.
+    const routed = await workspace.runTask(
       { kind: "command", command: "cat inspection.txt" },
+      {},
+    );
+    assert.equal(routed.status, "ok", JSON.stringify(routed));
+    const read = routed.data as { content: string; servedBy: string };
+    assert.equal(read.servedBy, "read_code");
+    assert.ok(read.content.length > 1_200);
+    const inspected = await workspace.runTask(
+      { kind: "command", command: "cat inspection.txt | cat" },
       {},
     );
     assert.equal(inspected.status, "ok", JSON.stringify(inspected));

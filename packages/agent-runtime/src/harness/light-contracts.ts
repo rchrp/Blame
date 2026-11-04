@@ -99,8 +99,8 @@ export const lightRunTaskInputSchema = z.discriminatedUnion("kind", [
     .strict(),
   z
     .object({
-      kind: z.literal("inspect"),
-      run: z.string().regex(/^r[1-9]\d*$/u),
+      kind: z.literal("inspect").describe("Polls a command that is still running; it does not run a new command."),
+      run: z.string().regex(/^r[1-9]\d*$/u).describe("The rN id returned by run_task for a command still running."),
       cursor: z.string().regex(/^\d+$/u).optional(),
     })
     .strict(),

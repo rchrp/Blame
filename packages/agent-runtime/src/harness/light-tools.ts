@@ -141,15 +141,25 @@ function runTaskTool(workspace: LightWorkspacePort, environment?: LightTaskContr
   return harnessTool({
     name: "run_task",
     description:
-      "Run project tasks, inspections, generators, formatters, or requested setup. A command still running after the initial wait returns a session-bound rN id; inspect that id with the returned cursor to receive only new output without relaunching it. Source changes are journaled and require a subsequent check. Explicit calls execute; finish_task reuses fresh validation. Use the dependency operation for Node packages and native commands for other ecosystems. " +
+      "Run project tasks, validations, generators, formatters, or requested setup. Source inspection belongs to search_code and read_code; simple grep, rg, cat, head, tail and sed -n commands are answered by them. A command still running after the initial wait returns a session-bound rN id; poll it with kind inspect, that id and the returned cursor to receive only new output without relaunching it. Source changes are journaled and require a subsequent check. Explicit calls execute; finish_task reuses fresh validation. Use the dependency operation for Node packages and native commands for other ecosystems. " +
       (environment?.managedPreview === false
         ? "For requested services, detach the process and redirect its input/output so the command can finish. "
         : "Use the managed preview for services. ") +
       "Prettier on explicit files uses atomic edits. Test results include reporting counters; null is unknown and pending is distinct from skipped. Returns bounded output and code/environment diagnostics." +
       (reasoningEnabled ? ' Optional kind analyze uses a local Z3 executable (BLAME_Z3_PATH or z3) to search for counterexamples in a pure typed TypeScript scalar function: target is sN or path#functionName, inputs maps each parameter to {min,max} safe-integer bounds or {type:"boolean"}, assertion is a boolean expression over inputs and result. Unsupported constructs or unavailable solver return unknown. Example: {"kind":"analyze","target":"src/math.ts#difference","inputs":{"a":{"min":0,"max":100},"b":{"min":0,"max":100}},"assertion":"result === a - b"}. Bounded absence of counterexamples is not project verification; reproduce witnesses with real tests.' : ""),
     schema: reasoningEnabled ? lightRunTaskInputSchema : lightDefaultRunTaskInputSchema,
+    normalize: commandInspectInput,
     execute: (input, context) => workspace.runTask(input, context),
   });
+}
+
+/** `kind: "inspect"` only polls a running command; a command sent with it is meant to run. */
+function commandInspectInput(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return value;
+  const input: Record<string, unknown> = { ...value };
+  if (input.kind !== "inspect" || typeof input.command !== "string" || input.run !== undefined) return value;
+  delete input.cursor;
+  return { ...input, kind: "command" };
 }
 
 type ToolDefinition<TSchema extends z.ZodTypeAny> = {
@@ -159,6 +169,8 @@ type ToolDefinition<TSchema extends z.ZodTypeAny> = {
     context: AgentToolContext,
   ): Promise<LightToolResult<unknown>>;
   name: string;
+  /** Repairs a known model misreading before validation. */
+  normalize?: (value: unknown) => unknown;
   schema: TSchema;
 };
 
@@ -172,7 +184,7 @@ function harnessTool<TSchema extends z.ZodTypeAny>(
     retryable: false,
     maxRetries: 0,
     async execute(value: unknown, context: AgentToolContext) {
-      const parsed = definition.schema.safeParse(value);
+      const parsed = definition.schema.safeParse(definition.normalize ? definition.normalize(value) : value);
       if (!parsed.success) return invalidInput(parsed.error);
       const response = modelToolResponse(await definition.execute(parsed.data, context));
       return definition.name === "run_task" ? feedbackEnvelope(response) : response;

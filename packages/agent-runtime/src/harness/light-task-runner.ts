@@ -20,6 +20,7 @@ import {
   failedCommandResult,
   type FailureAssessment,
 } from "./command-failure.js";
+import { readOnlyInspection } from "./shell-inspection.js";
 import type { FormattedFileReplacement, LightEditService } from "./light-edit.js";
 import { sha256 } from "./light-identity.js";
 import type { SessionJournal } from "./session-journal.js";
@@ -536,6 +537,8 @@ export class LightTaskRunner {
         ...(scope ? { testValidationScope: scope } : {}),
       } };
     }
+    const inspection = !metadata.taskKind && !changedPaths.length ? readOnlyInspection(command) : undefined;
+    if (inspection) return this.inspectionResult(command, result, output, inspection);
     const status = result.failed ? "failed" : "passed";
     const failure =
       result.interruption ? commandFailure() : result.failed
@@ -576,6 +579,27 @@ export class LightTaskRunner {
       this.environment.target(),
       validation,
     );
+  }
+
+  /**
+   * Read-only inspection is no validation evidence: it stays out of the check
+   * journal, and grep's exit status 1 ("no line matched") is not a failure.
+   */
+  private async inspectionResult(command: string, result: WorkspaceCommandResult, output: string,
+    inspection: "read" | "search"): Promise<LightToolResult<unknown>> {
+    const tolerated = result.exitCode === 0 || (inspection === "search" && result.exitCode === 1);
+    if (result.interruption || !tolerated)
+      return failedCommandResult(result.exitCode, output, result.interruption
+        ? commandFailure() : await commandFailureAssessment(output, this.files, undefined, result.exitCode));
+    return { status: "ok", data: {
+      command,
+      exitCode: result.exitCode,
+      output: boundedDiagnostic(output, "", 4_000),
+      environment: this.environment.target(),
+      ...(/\b(?:grep|rg|cat|sed|head|tail)\b/u.test(command) && !command.includes("node_modules")
+        ? { guidance: "search_code (regex, files output, context lines) and read_code (line ranges) answer source inspection with sN aliases and read coverage." }
+        : {}),
+    } };
   }
 
   private async recordCommandValidation(

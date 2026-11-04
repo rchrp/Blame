@@ -12,7 +12,6 @@ import type {
   LightEditCodeInput,
   LightReadCodeInput,
   LightRunTaskInput,
-  LightSearchCodeInput,
   LightTaskContract,
   LightToolResult,
 } from "./light-contracts.js";
@@ -30,7 +29,8 @@ import {
   type EditTarget,
 } from "./light-navigation.js";
 import { LightTaskRunner } from "./light-task-runner.js";
-import { LightCodeSearch } from "./light-code-search.js";
+import { LightCodeSearch, type CodeSearchRequest } from "./light-code-search.js";
+import { answerShellInspection, shellInspectionRoutes } from "./shell-inspection.js";
 import { LightReferenceSearch } from "./light-reference-search.js";
 import { readDependencyDeclaration } from "./light-dependency-read.js";
 import { withMissingPathRecovery } from "./light-path-recovery.js";
@@ -159,7 +159,21 @@ export class LightWorkspace {
   }
 
   async runTask(input: LightRunTaskInput, context: AgentToolContext) {
+    const inspection = input.kind === "command" ? await this.shellInspection(input, context) : undefined;
+    if (inspection) return inspection;
     return this.withCheckRepair(await this.withValidationState(await this.runTaskWithDiagnostics(input, context)));
+  }
+
+  /** Answers grep/cat-style source inspection with search_code and read_code observations. */
+  private async shellInspection(input: Extract<LightRunTaskInput, { kind: "command" }>, context: AgentToolContext) {
+    if (process.platform === "win32" || process.env.BLAME_AGENT_SHELL_INSPECTION_ROUTING === "false") return undefined;
+    const routes = shellInspectionRoutes(input.command, { cwd: input.cwd, root: this.files.root });
+    if (!routes) return undefined;
+    return answerShellInspection(input.command, routes, {
+      lineCount: async (path) => (await this.files.read(path)).content.toString("utf8").split(/(?<=\n)/u).length,
+      read: (readInput) => this.readCode(readInput, context),
+      search: (request) => this.searchCode(request, context.signal),
+    });
   }
 
   private async withCheckRepair(result: LightToolResult<unknown>): Promise<LightToolResult<unknown>> {
@@ -201,7 +215,7 @@ export class LightWorkspace {
   }
 
   async searchCode(
-    input: LightSearchCodeInput,
+    input: CodeSearchRequest,
     signal?: AbortSignal,
   ): Promise<LightToolResult<unknown>> {
     try {
