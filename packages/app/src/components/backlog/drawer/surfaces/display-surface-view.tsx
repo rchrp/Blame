@@ -16,6 +16,12 @@ export function DisplaySurfaceView({
   onRestart?: () => void
 }) {
   const client = usePlatform().previewSurfaces
+  // An equivalent object must not cause the screen connection to restart.
+  const latestScope = React.useRef(scope)
+  React.useLayoutEffect(() => {
+    latestScope.current = scope
+  }, [scope])
+  const { storyId, serviceId, worktree, sessionId } = scope
   const container = React.useRef<HTMLDivElement>(null)
   const connection = React.useRef<RFB | undefined>(undefined)
   const [message, setMessage] = React.useState<string>()
@@ -26,7 +32,7 @@ export function DisplaySurfaceView({
     let rfb: RFB | undefined
     setMessage(undefined)
     void client
-      .open(scope)
+      .open(latestScope.current)
       .then(({ url }) => {
         if (cancelled || !container.current) return
         rfb = new RFB(container.current, url)
@@ -48,10 +54,10 @@ export function DisplaySurfaceView({
     }
   }, [
     client,
-    scope.storyId,
-    scope.serviceId,
-    scope.worktree,
-    scope.sessionId,
+    storyId,
+    serviceId,
+    worktree,
+    sessionId,
     active,
     attempt,
   ])

@@ -37,6 +37,14 @@ export function DeviceSurfaceView({
   running: boolean
 }) {
   const client = usePlatform().previewDevices
+  // The parent recreates scope during render; keep the current request payload
+  // without restarting device work for an equivalent scope object.
+  const latestScope = React.useRef(scope)
+  React.useLayoutEffect(() => {
+    latestScope.current = scope
+  }, [scope])
+  const { storyId, projectId, worktree, targetId, workspaceMode, manifest } =
+    scope
   const [availability, setAvailability] =
     React.useState<PreviewDeviceAvailability>()
   const [state, setState] = React.useState<PreviewDeviceState>({
@@ -52,21 +60,21 @@ export function DeviceSurfaceView({
   const canvas = React.useRef<HTMLCanvasElement>(null)
   const socket = React.useRef<WebSocket | undefined>(undefined)
   const autoStarted = React.useRef("")
-  const identity = `${scope.storyId}:${scope.targetId}`
+  const identity = `${storyId}:${targetId}`
   const build = React.useCallback(() => {
     setError(undefined)
     void client
-      ?.start(scope)
+      ?.start(latestScope.current)
       .then(setState)
       .catch((e: Error) => setError(e.message))
   }, [
     client,
-    scope.storyId,
-    scope.projectId,
-    scope.worktree,
-    scope.targetId,
-    scope.workspaceMode,
-    scope.manifest,
+    storyId,
+    projectId,
+    worktree,
+    targetId,
+    workspaceMode,
+    manifest,
   ])
   React.useEffect(() => {
     if (!active || !client) return
@@ -77,8 +85,8 @@ export function DeviceSurfaceView({
       polling = true
       try {
         const [ready, current] = await Promise.all([
-          client.availability(scope),
-          client.state(scope),
+          client.availability(latestScope.current),
+          client.state(latestScope.current),
         ])
         if (cancelled) return
         setAvailability(ready)
@@ -118,7 +126,7 @@ export function DeviceSurfaceView({
       decoding = false
     let connection: WebSocket | undefined
     void client
-      .channel(scope)
+      .channel(latestScope.current)
       .then(({ url }) => {
         if (cancelled) return
         connection = new WebSocket(url)

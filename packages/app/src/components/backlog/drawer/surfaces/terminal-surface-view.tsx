@@ -17,6 +17,13 @@ export function TerminalSurfaceView({
   active?: boolean
 }) {
   const client = usePlatform().previewTerminal
+  // Attachment is keyed by session identity, not by each new scope object.
+  // Keep optional terminal dimensions current without reattaching on changes.
+  const latestScope = React.useRef(scope)
+  React.useLayoutEffect(() => {
+    latestScope.current = scope
+  }, [scope])
+  const { storyId, serviceId, worktree, sessionId } = scope
   const element = React.useRef<HTMLDivElement>(null)
   // The attached session, for the toolbar.
   const [session, setSession] = React.useState<string>()
@@ -45,7 +52,7 @@ export function TerminalSurfaceView({
       }
     )
     void client
-      .attach(scope)
+      .attach(latestScope.current)
       .then((result) => {
         if (cancelled) {
           void client.detach(result.id)
@@ -81,10 +88,10 @@ export function TerminalSurfaceView({
     }
   }, [
     client,
-    scope.storyId,
-    scope.serviceId,
-    scope.worktree,
-    scope.sessionId,
+    storyId,
+    serviceId,
+    worktree,
+    sessionId,
     active,
     attempt,
   ])
