@@ -158,6 +158,7 @@ jobs:
       # App tests import the compiled runtime; the separate agent job has its
       # own checkout, and typecheck does not emit JavaScript here.
       - run: pnpm exec turbo run build --filter="@blame/agent-runtime..."
+      - run: pnpm --filter @blame/app lint
       - run: pnpm --filter @blame/app test
       - run: pnpm --filter @blame/desktop test
       - run: pnpm --filter @blame/desktop test:performance
