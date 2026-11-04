@@ -20,7 +20,6 @@ const legacy = new Map(Object.entries({
   "packages/app/src/pages/chat/page.tsx": budget(1149, 1100),
   "packages/app/src/components/backlog/drawer/user-story-drawer-panel.tsx": budget(1112, 1050),
   "packages/app/src/pages/git/page.tsx": budget(1068, 1000),
-  "packages/app/src/components/git/git-conflict-dialog.tsx": budget(1059, 1000),
   "packages/desktop/src/main/project-creation.ts": budget(1040, 1000),
   "packages/desktop/src/main/workspace-runtime.ts": budget(1036, 1000),
   "packages/agent-runtime/src/project-discovery.ts": budget(1006, 1000),
