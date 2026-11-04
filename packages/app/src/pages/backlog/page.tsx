@@ -128,6 +128,7 @@ import {
   runQueuedStoryTitleGeneration,
   titleGenerationStoryIds,
 } from "./backlog-title-generation"
+import { shouldCloseDrawerAfterDelete } from "./drawer-delete"
 import {
   abortStoryAgent,
   deleteUserStoryWithRuntime,
@@ -185,6 +186,16 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
   const storiesRef = React.useRef(backlog.stories)
   const openDrawerRef = React.useRef<(target: DrawerTarget) => void>(() => {})
   const drawerLoadRequestId = React.useRef(0)
+  const closeDrawer = useLatestCallback((open: boolean) => {
+    if (open) return
+    drawerLoadRequestId.current += 1
+    setDrawerTarget(undefined)
+    selectBacklogStory(undefined)
+  })
+  const closeDrawerIfDeleted = useLatestCallback((storyId: string) => {
+    if (shouldCloseDrawerAfterDelete(drawerTarget?.userStory?.id, storyId))
+      closeDrawer(false)
+  })
   const previousStoryStatuses = React.useRef<
     Map<string, BacklogColumnId> | undefined
   >(undefined)
@@ -1300,13 +1311,16 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
   const runStoryAction = React.useCallback(
     async (story: UserStory, action: BacklogAction) => {
       const currentStory = await detailedStoryForAction(story, action, backlog)
-      if (action === "Delete Permanently")
-        return deleteUserStoryWithRuntime(
+      if (action === "Delete Permanently") {
+        await deleteUserStoryWithRuntime(
           currentStory,
           platform,
           projects.activeProject?.path,
           backlog.remove
         )
+        closeDrawerIfDeleted(currentStory.id)
+        return
+      }
       if (action === "Send to Dev Agent") {
         const generatedStory = await generateQueuedStoryTitle(
           currentStory,
@@ -1337,6 +1351,7 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
       if (action === "Approve & Merge") return completeReviewStory(currentStory)
     },
     [
+      closeDrawerIfDeleted,
       completeReviewStory,
       generateQueuedStoryTitle,
       backlog,
@@ -1415,26 +1430,21 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
     })
   }, [platform.backlogStatusPip])
   const columnAction = useLatestCallback(runStoryAction)
-  const deleteStory = useLatestCallback(async (story: UserStory) =>
-    deleteUserStoryWithRuntime(
+  const deleteStory = useLatestCallback(async (story: UserStory) => {
+    await deleteUserStoryWithRuntime(
       await detailedStory(story, backlog),
       platform,
       projects.activeProject?.path,
       backlog.remove
     )
-  )
+    closeDrawerIfDeleted(story.id)
+  })
   const columnDeleteStory = deleteStory
   const columnOpenDrawer = useLatestCallback(openDrawer)
   const columnOpenWorktree = useLatestCallback(openWorktree)
   const columnRejectStory = useLatestCallback(rejectStory)
   const columnStopAgent = useLatestCallback(stopAgent)
   const columnUnpauseAgent = useLatestCallback(unpauseAgent)
-  const closeDrawer = useLatestCallback((open: boolean) => {
-    if (open) return
-    drawerLoadRequestId.current += 1
-    setDrawerTarget(undefined)
-    selectBacklogStory(undefined)
-  })
   const createDrawerStory = useLatestCallback(
     async (input: Omit<UserStoryDraft, "projectId">, contextLimit?: number) => {
       const story = await backlog.create(input, contextLimit)
