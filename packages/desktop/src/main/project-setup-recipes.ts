@@ -369,7 +369,7 @@ function containerPackageCommand(packageManager: PackageManager) {
 
 function containerCorepackCommand(packageManager: PackageManager) {
   if (packageManager === "pnpm")
-    return "corepack prepare pnpm@10.33.2 --activate";
+    return "corepack prepare pnpm@10.34.9 --activate";
   if (packageManager === "yarn")
     return "corepack prepare yarn@stable --activate";
   return "true";
