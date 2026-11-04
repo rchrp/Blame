@@ -31,8 +31,8 @@ Blame is a TypeScript monorepo using [pnpm](https://pnpm.io) and [Turborepo](htt
 
 ### Prerequisites
 
-- **Node.js 24**, matching CI. The root package declares Node.js 22 or later.
-- **pnpm 10.33.2**, pinned in `package.json`.
+- **Node.js 24**, matching CI. The root package declares Node.js 24.15 or later.
+- **pnpm 12.15.0**, pinned in `package.json`.
 - **Git**. A local **MySQL 8.4** database is only needed to work on accounts and hosted services: without an account, the desktop app runs the API on SQLite by itself.
 - A graphical desktop session to run Electron. Local execution also needs the platform's container or VM runtime.
 
