@@ -332,41 +332,41 @@ function useInitializationEffect(
 function useInitializationRunRequests(
   input: Parameters<typeof initializationEffect>[0]
 ) {
-  const latest = React.useRef(input)
-  latest.current = input
+  // An effect event reads the latest input without resubscribing.
+  const onRunRequested = React.useEffectEvent<
+    Parameters<typeof subscribeProjectInitializationRunRequested>[0]
+  >((projectId, options) => {
+    if (input.activeProject?.id !== projectId) return
+    if (initializationRunningHere(projectId)) return
+    const run = runInput(
+      input.activeProject,
+      input.auth,
+      input.agent,
+      input.currentModel,
+      input.currentVariant
+    )
+    if (!run) {
+      toast.error("The analysis needs a model", {
+        description: "Choose a model in Settings, then run it again.",
+        id: toastId,
+        position: "bottom-right",
+      })
+      return
+    }
+    void startInitialization(
+      options.databaseMode
+        ? {
+            ...run,
+            preferences: { database: { mode: options.databaseMode } },
+          }
+        : run,
+      input.workspace,
+      input.openDatabaseDialog,
+      input.openHostDependenciesDialog
+    )
+  })
   React.useEffect(
-    () =>
-      subscribeProjectInitializationRunRequested((projectId, options) => {
-        const current = latest.current
-        if (current.activeProject?.id !== projectId) return
-        if (initializationRunningHere(projectId)) return
-        const run = runInput(
-          current.activeProject,
-          current.auth,
-          current.agent,
-          current.currentModel,
-          current.currentVariant
-        )
-        if (!run) {
-          toast.error("The analysis needs a model", {
-            description: "Choose a model in Settings, then run it again.",
-            id: toastId,
-            position: "bottom-right",
-          })
-          return
-        }
-        void startInitialization(
-          options.databaseMode
-            ? {
-                ...run,
-                preferences: { database: { mode: options.databaseMode } },
-              }
-            : run,
-          current.workspace,
-          current.openDatabaseDialog,
-          current.openHostDependenciesDialog
-        )
-      }),
+    () => subscribeProjectInitializationRunRequested(onRunRequested),
     []
   )
 }

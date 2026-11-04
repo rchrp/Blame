@@ -27,6 +27,7 @@ export function useQuickChatSnapshotReplay({
   projectId,
   quickChatsRef,
 }: QuickChatSnapshotReplayInput) {
+  const clearRunStream = React.useEffectEvent(clearStream)
   React.useEffect(() => {
     if (!projectId || loading) return
     const replay = async () => {
@@ -50,7 +51,7 @@ export function useQuickChatSnapshotReplay({
             | QuickChatAgentRunUpdate
           if ((run.lastSequenceNumber ?? 0) >= snapshot.event.sequenceNumber) {
             if (terminalAgentStatus(update.status)) {
-              clearStream(detailed, run)
+              clearRunStream(detailed, run)
             }
             return
           }
@@ -60,7 +61,7 @@ export function useQuickChatSnapshotReplay({
               run,
               update as QuickChatAgentRunFinalization
             )
-            clearStream(detailed, run)
+            clearRunStream(detailed, run)
             return
           }
           await chatStore.updateAgentRun(detailed, run, update)
@@ -77,5 +78,5 @@ export function useQuickChatSnapshotReplay({
       window.clearInterval(timer)
       window.removeEventListener("online", replay)
     }
-  }, [loading, projectId])
+  }, [chatsRef, loading, projectId, quickChatsRef])
 }
