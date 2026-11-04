@@ -3,7 +3,7 @@ import { projectImageContext } from "./image-context.js";
 import { compactRepairAdvice } from "./repair-advice-projection.js";
 
 const harnessNames = new Set(["read_code", "search_code", "edit_code", "run_task"]);
-const textKeys = new Set(["content", "body", "imports", "signature", "snippet", "output", "message"]);
+const textKeys = new Set(["content", "body", "context", "imports", "signature", "snippet", "output", "message"]);
 
 export function presentToolResults(messages: Message[]): Message[] {
   const names = new Map<string, string>();

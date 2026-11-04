@@ -121,6 +121,7 @@ export function symbolContentResult(
       editTarget: resolved.alias,
       kind: resolved.materialized.kind,
       qualifiedName: resolved.materialized.qualified_name,
+      lines: resolved.symbol.line_range,
       ...symbolProjectedContent(resolved, signature, body, imports, uncovered),
     },
   };
@@ -158,10 +159,11 @@ export function contentResult(
 ): LightToolResult<unknown> {
   const segments = intervals.map(([start, end]) => ({
     range: [start, end],
+    lines: intervalLines(content, [start, end]),
     content: content.subarray(start, end).toString("utf8"),
   }));
   const projected =
-    segments.length === 1 ? { content: segments[0]!.content } : { segments };
+    segments.length === 1 ? { lines: segments[0]!.lines, content: segments[0]!.content } : { segments };
   return {
     status: "ok",
     receipt,
@@ -179,6 +181,19 @@ export function contentResult(
       ...(truncated ? truncatedReadGuidance(path, content, intervals) : {}),
     },
   };
+}
+
+/** First and last line numbers covered by a byte interval, for range reads and edits. */
+export function intervalLines(content: Buffer, [start, end]: ByteInterval): [number, number] {
+  const first = newlineCount(content, 0, start) + 1;
+  const trailing = end > start && content[end - 1] === 10 ? 1 : 0;
+  return [first, Math.max(first, first + newlineCount(content, start, end) - trailing)];
+}
+
+function newlineCount(content: Buffer, start: number, end: number) {
+  let count = 0;
+  for (let index = content.indexOf(10, start); index >= 0 && index < end; index = content.indexOf(10, index + 1)) count += 1;
+  return count;
 }
 
 function truncatedReadGuidance(path: string, content: Buffer, intervals: ByteInterval[]) {
