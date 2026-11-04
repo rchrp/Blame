@@ -18,7 +18,8 @@ export function TerminalSurfaceView({
 }) {
   const client = usePlatform().previewTerminal
   const element = React.useRef<HTMLDivElement>(null)
-  const session = React.useRef<string | undefined>(undefined)
+  // The attached session, for the toolbar.
+  const [session, setSession] = React.useState<string>()
   const [state, setState] = React.useState<PreviewTerminalState>({
     status: "starting",
     message: "Connecting to the program",
@@ -27,19 +28,20 @@ export function TerminalSurfaceView({
   React.useEffect(() => {
     if (!client || !element.current || !active) return
     let cancelled = false
+    let attached: string | undefined
     let unsubscribe: (() => void) | undefined
     const view = createTerminalView(
       element.current,
       (cols, rows) => {
-        if (session.current)
+        if (attached)
           void client.resize({
-            id: session.current,
+            id: attached,
             cols: Math.min(300, cols),
             rows: Math.min(100, rows),
           })
       },
       (data) => {
-        if (session.current) void client.write({ id: session.current, data })
+        if (attached) void client.write({ id: attached, data })
       }
     )
     void client
@@ -49,7 +51,8 @@ export function TerminalSurfaceView({
           void client.detach(result.id)
           return
         }
-        session.current = result.id
+        attached = result.id
+        setSession(result.id)
         setState(result)
         view.terminal.write(result.replay, () => {
           if (!cancelled) view.resize()
@@ -72,8 +75,8 @@ export function TerminalSurfaceView({
     return () => {
       cancelled = true
       unsubscribe?.()
-      if (session.current) void client.detach(session.current)
-      session.current = undefined
+      if (attached) void client.detach(attached)
+      setSession(undefined)
       view.dispose()
     }
   }, [
@@ -94,11 +97,11 @@ export function TerminalSurfaceView({
         <Button
           variant="ghost"
           size="sm"
-          disabled={!session.current}
+          disabled={!session}
           onClick={() => {
-            if (session.current)
+            if (session)
               void client
-                ?.restart(session.current)
+                ?.restart(session)
                 .catch((error: Error) =>
                   setState({ status: "failed", message: error.message })
                 )
@@ -110,11 +113,11 @@ export function TerminalSurfaceView({
         <Button
           variant="ghost"
           size="sm"
-          disabled={!session.current}
+          disabled={!session}
           onClick={() => {
-            if (session.current)
+            if (session)
               void client
-                ?.read(session.current)
+                ?.read(session)
                 .then((screen) =>
                   navigator.clipboard.writeText(screen.text ?? "")
                 )
