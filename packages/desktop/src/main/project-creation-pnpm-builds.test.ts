@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { createServer } from "node:http";
+import type { AddressInfo } from "node:net";
 import { dirname, join } from "node:path";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
@@ -39,6 +42,39 @@ async function fixture(
     JSON.stringify({ name: "app", ...manifest }),
   );
   return cwd;
+}
+
+/** Serves one tarball as a registry package: pnpm 10.34+ ignores name-based build approvals for local tarballs. */
+async function serveRegistryPackage(
+  t: { after(fn: () => Promise<void>): void },
+  manifest: { name: string; version: string; scripts: Record<string, string> },
+  tarball: Buffer,
+) {
+  const integrity = `sha512-${createHash("sha512").update(tarball).digest("base64")}`;
+  const registry = () => `http://127.0.0.1:${(server.address() as AddressInfo).port}/`;
+  const server = createServer((request, response) => {
+    if (request.url?.endsWith(".tgz")) return response.end(tarball);
+    if (decodeURIComponent(request.url ?? "") !== `/${manifest.name}`) return response.writeHead(404).end();
+    const tarballUrl = `${registry()}${manifest.name}/-/package-${manifest.version}.tgz`;
+    response.setHeader("content-type", "application/json");
+    response.end(
+      JSON.stringify({
+        name: manifest.name,
+        "dist-tags": { latest: manifest.version },
+        versions: { [manifest.version]: { ...manifest, dist: { tarball: tarballUrl, integrity } } },
+        time: { [manifest.version]: "2020-01-01T00:00:00.000Z" },
+      }),
+    );
+  });
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  t.after(
+    () =>
+      new Promise<void>((resolve) => {
+        server.closeAllConnections();
+        server.close(() => resolve());
+      }),
+  );
+  return registry();
 }
 
 test("resolves pnpm 11 Prisma placeholders and preserves explicit decisions and workspace settings", async (t) => {
@@ -117,41 +153,46 @@ test("creates modern build permissions when no workspace file exists", async (t)
 });
 
 test("installs and actually runs a previously blocked Prisma build script", async (t) => {
-  const cwd = await fixture(t, { packageManager: "pnpm@10.33.2" });
-  const dependency = join(cwd, "fixture-package");
-  await mkdir(dependency);
-  await writeFile(
-    join(dependency, "package.json"),
-    JSON.stringify({
-      name: "@prisma/client",
-      version: "1.0.0",
-      scripts: { postinstall: "node build.cjs" },
-    }),
-  );
+  // This fixture exercises the bundled pnpm 10 against a local registry, independently of the host CLI.
+  const runtimeRequire = createRequire(new URL("../../../agent-runtime/package.json", import.meta.url));
+  const pnpm10Root = dirname(runtimeRequire.resolve("pnpm-legacy"));
+  const pnpm10 = join(pnpm10Root, "bin/pnpm.cjs");
+  // Pin the bundled version, or pnpm 10 may switch to another cached pnpm and test that one.
+  const { version } = JSON.parse(await readFile(join(pnpm10Root, "package.json"), "utf8"));
+  const packageManager = `pnpm@${version}`;
+  const cwd = await fixture(t, { packageManager });
+  const dependency = await mkdtemp(join(tmpdir(), "blame-prisma-package-"));
+  t.after(() => rm(dependency, { recursive: true, force: true }));
+  const manifest = {
+    name: "@prisma/client",
+    version: "1.0.0",
+    scripts: { postinstall: "node build.cjs" },
+  };
+  await writeFile(join(dependency, "package.json"), JSON.stringify(manifest));
   await writeFile(
     join(dependency, "build.cjs"),
     'require("node:fs").writeFileSync("built.txt", "build script ran");',
   );
   await execFileAsync(
     "npm",
-    ["pack", "--ignore-scripts", "--pack-destination", cwd],
+    ["pack", "--ignore-scripts", "--pack-destination", dependency],
     { cwd: dependency },
   );
-  // Keep fixture sources out of the generated project's independent-package discovery.
-  await rm(dependency, { recursive: true });
+  const registry = await serveRegistryPackage(
+    t,
+    manifest,
+    await readFile(join(dependency, "prisma-client-1.0.0.tgz")),
+  );
   await writeFile(
     join(cwd, "package.json"),
     JSON.stringify({
       name: "app",
-      packageManager: "pnpm@10.33.2",
-      dependencies: { "@prisma/client": "file:./prisma-client-1.0.0.tgz" },
+      packageManager,
+      dependencies: { "@prisma/client": manifest.version },
     }),
   );
   await writeFile(join(cwd, "pnpm-workspace.yaml"), "strictDepBuilds: true\n");
   const logs: string[] = [];
-  // This fixture exercises pnpm 10 policy offline, independently of the host CLI.
-  const runtimeRequire = createRequire(new URL("../../../agent-runtime/package.json", import.meta.url));
-  const pnpm10 = join(dirname(runtimeRequire.resolve("pnpm-legacy")), "bin/pnpm.cjs");
   const run = (
     command: Parameters<typeof runProjectCommand>[0],
     emit: Parameters<typeof runProjectCommand>[1],
@@ -163,7 +204,8 @@ test("installs and actually runs a previously blocked Prisma build script", asyn
         args: [
           pnpm10,
           ...command.args,
-          "--offline",
+          "--registry",
+          registry,
           "--store-dir",
           join(cwd, ".store"),
         ],
