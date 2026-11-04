@@ -139,6 +139,7 @@ export interface ApiDefinition {
       complete: typeof routes['projects.project_initializations.complete']
       fail: typeof routes['projects.project_initializations.fail']
       repair: typeof routes['projects.project_initializations.repair']
+      check: typeof routes['projects.project_initializations.check']
     }
     quickChats: {
       quickChats: {

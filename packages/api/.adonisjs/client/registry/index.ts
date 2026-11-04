@@ -420,6 +420,12 @@ const routes = {
     tokens: [[0,"api"],[0,"v1"],[0,"projects"],[1,"projectId"],[0,"initialization"],[0,"repair"]],
     types: placeholder as Registry['projects.project_initializations.repair']['types'],
   },
+  'projects.project_initializations.check': {
+    methods: ["POST"],
+    pattern: '/api/v1/projects/:projectId/initialization/check',
+    tokens: [[0,"api"],[0,"v1"],[0,"projects"],[1,"projectId"],[0,"initialization"],[0,"check"]],
+    types: placeholder as Registry['projects.project_initializations.check']['types'],
+  },
   'providers.model_catalog.show': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/providers/catalog',

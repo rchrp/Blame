@@ -23,6 +23,7 @@ export default class ProjectInitializationTransformer extends BaseTransformer<Pr
             databaseMode: this.resource.initialization.databaseMode,
             error: this.resource.initialization.error,
             repairReason: this.resource.initialization.repairReason,
+            checkedCommit: this.resource.initialization.checkedCommit,
             createdAt: this.resource.initialization.createdAt,
             updatedAt: this.resource.initialization.updatedAt,
           }

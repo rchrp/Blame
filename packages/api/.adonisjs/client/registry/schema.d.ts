@@ -904,6 +904,19 @@ export interface Registry {
       rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/project_initializations_controller').default['repair']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
+  'projects.project_initializations.check': {
+    methods: ["POST"]
+    pattern: '/api/v1/projects/:projectId/initialization/check'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/project_initialization').checkProjectInitializationValidator)>>
+      paramsTuple: [ParamValue]
+      params: { projectId: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/project_initialization').checkProjectInitializationValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/project_initializations_controller').default['check']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_initializations_controller').default['check']>>> | { status: 422; response: { errors: SimpleError[] } }
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/project_initializations_controller').default['check']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
   'providers.model_catalog.show': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/providers/catalog'

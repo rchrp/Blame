@@ -1,6 +1,7 @@
 import ProjectInitializationsService from '#services/project_initializations_service'
 import ProjectInitializationTransformer from '#transformers/project_initialization_transformer'
 import {
+  checkProjectInitializationValidator,
   completeProjectInitializationValidator,
   failProjectInitializationValidator,
   repairProjectInitializationValidator,
@@ -60,6 +61,18 @@ export default class ProjectInitializationsController {
           auth.getUserOrFail().id,
           params.projectId,
           await request.validateUsing(repairProjectInitializationValidator)
+        )
+      )
+    )
+  }
+
+  async check({ auth, params, request, serialize }: HttpContext) {
+    return serialize(
+      ProjectInitializationTransformer.transform(
+        await new ProjectInitializationsService().check(
+          auth.getUserOrFail().id,
+          params.projectId,
+          await request.validateUsing(checkProjectInitializationValidator)
         )
       )
     )

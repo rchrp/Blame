@@ -5,6 +5,7 @@ import type { Infer } from '@vinejs/vine/types'
 import { Exception } from '@adonisjs/core/exceptions'
 import { parsePreviewManifest, type PreviewManifest } from '@blame/preview-contract'
 import type {
+  checkProjectInitializationValidator,
   completeProjectInitializationValidator,
   failProjectInitializationValidator,
   repairProjectInitializationValidator,
@@ -15,6 +16,7 @@ type StartInput = Infer<typeof startProjectInitializationValidator>
 type CompleteInput = Infer<typeof completeProjectInitializationValidator>
 type FailInput = Infer<typeof failProjectInitializationValidator>
 type RepairInput = Infer<typeof repairProjectInitializationValidator>
+type CheckInput = Infer<typeof checkProjectInitializationValidator>
 
 export default class ProjectInitializationsService {
   async show(userId: string, projectId: string) {
@@ -35,6 +37,7 @@ export default class ProjectInitializationsService {
       runConfigurations: null,
       error: null,
       repairReason: null,
+      checkedCommit: null,
     })
     await initialization.save()
     return this.snapshot(projectId)
@@ -55,6 +58,7 @@ export default class ProjectInitializationsService {
       databaseMode: input.databaseMode ?? null,
       error: null,
       repairReason: null,
+      checkedCommit: input.checkedCommit ?? null,
     })
     await initialization.save()
     return this.snapshot(projectId)
@@ -88,7 +92,23 @@ export default class ProjectInitializationsService {
       databaseMode: input.databaseMode ?? initialization.databaseMode,
       error: null,
       repairReason: input.reason,
+      checkedCommit: input.checkedCommit ?? initialization.checkedCommit,
     })
+    await initialization.save()
+    return this.snapshot(projectId)
+  }
+
+  /** Records that the setup still fits the project at this commit. */
+  async check(userId: string, projectId: string, input: CheckInput) {
+    await new ProjectsService().findForUser(userId, projectId)
+    const initialization = await ProjectInitialization.find(projectId)
+    if (initialization?.status !== 'done') {
+      throw new Exception('The project has no preview environment to check', {
+        status: 409,
+        code: 'E_PROJECT_INITIALIZATION_NOT_READY',
+      })
+    }
+    initialization.checkedCommit = input.commit
     await initialization.save()
     return this.snapshot(projectId)
   }
