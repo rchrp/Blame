@@ -3,6 +3,7 @@ import { useProjectServices } from "./preview-service-logs"
 import { ProjectRunLogPanel, ServiceLogPanel } from "./preview-run-logs"
 import { previewAmbilightShadow } from "./preview-ambilight"
 import {
+  PreviewEnvironmentCheck,
   PreviewIdleFrame,
   PreviewLaunchClouds,
   PreviewNotStarted,
@@ -41,6 +42,7 @@ import {
   type RunLogEmpty,
 } from "@/components/backlog/board/run-log-panel"
 import type { UserStory } from "@/components/backlog/data/backlog-data"
+import { useStoryPreviewWaiting } from "@/components/backlog/data/preview-environment-waits"
 import { managedPresentedPreviewUrl } from "@/components/backlog/drawer/managed-preview-url"
 import { ManagedRuntimeSummary } from "@/components/backlog/drawer/managed-runtime-summary"
 import { PreviewInitializationState } from "@/components/backlog/drawer/preview-initialization-state"
@@ -368,6 +370,7 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
 }) {
   const platform = usePlatform()
   const previewBrowser = platform.previewBrowser
+  const environmentChecking = useStoryPreviewWaiting(userStory?.id)
   const [recoveredPreviewUrl, setRecoveredPreviewUrl] = React.useState<
     string | undefined
   >()
@@ -860,6 +863,7 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
   }, [onViewChange, shownView, view])
   const [actionsRef, actionsSize] = useRunnerActionsSize()
 
+  if (environmentChecking) return <PreviewEnvironmentCheck />
   if (hasPreviewSurface || hasSetupLog) {
     return (
       // Not clipped: the page's glow reaches up under the drawer's header.

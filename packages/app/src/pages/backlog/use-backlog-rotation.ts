@@ -66,7 +66,10 @@ import { useProjects } from "@/context/projects"
 import { createCloudApi } from "@/lib/cloud-api"
 import { effectiveProjectCodePractices } from "@/lib/project-code-practice-preferences"
 import { storyMaxInputTokens } from "@/components/backlog/data/story-context-limit"
-import { syncPreviewEnvironment } from "@/pages/backlog/preview-environment-sync"
+import {
+  prepareStartingStoryPreview,
+  useStoryPreviewPreparation,
+} from "@/pages/backlog/story-preview-preparation"
 import {
   notifyDirectFallback,
   storyInitializationGate,
@@ -186,6 +189,7 @@ export function useBacklogRotation(
     stories: backlog.stories,
   })
   const previewRecoveryState = previewRecoveryStateKey(backlog.stories)
+  useStoryPreviewPreparation(backlog)
 
   React.useEffect(() => {
     storiesRef.current = backlog.stories
@@ -232,26 +236,12 @@ export function useBacklogRotation(
     )
     if (gate === "wait") return retryStory(detailedStory)
     if (gate === "run-direct") return runDirectWithoutInitialization(detailedStory)
-    // Checked against the latest commits, whoever made them.
-    const ready =
+    // The agent starts with the saved preview environment; the story's
+    // preview waits for it to be checked against the latest commits.
+    const initialization =
       savedInitialization?.status === "done" && savedInitialization.previewManifest
         ? { ...savedInitialization, previewManifest: savedInitialization.previewManifest }
         : undefined
-    const refreshed = ready
-      ? await syncPreviewEnvironment({
-          apiConnection: auth.apiConnection,
-          platform,
-          projectId: projects.activeProject.id,
-          repositoryRoot: projects.activeProject.path,
-          providerId: selection.currentModel.provider.id,
-          modelId: selection.currentModel.id,
-          credentialLabel: selection.currentModel.credentialLabel,
-          reasoningEffort: selection.currentVariant,
-        })
-      : undefined
-    const initialization = refreshed?.previewManifest
-      ? { ...refreshed, previewManifest: refreshed.previewManifest }
-      : ready
 
     const workspace = platform.workspace
     const agent = platform.agent
@@ -313,6 +303,7 @@ export function useBacklogRotation(
       telemetryCohorts,
       title: detailedStory.title,
     })
+    if (!direct) prepareStartingStoryPreview(storyId, { id: executionId, telemetryCohorts })
     await backlog.update(detailedStory, {
       agentLastEvent: "Worktree ready.",
       baseCommit:
@@ -332,20 +323,6 @@ export function useBacklogRotation(
     let sessionPromise: ReturnType<typeof agent.sessions.startDevelopment> | undefined
     let started: { run: UserStoryAgentRun; sessionId: string } | undefined
     try {
-      const preparationPromise = direct || !initialization
-        ? Promise.resolve()
-        : workspace.prepareProjectPreview({
-        executionId,
-        storyId,
-        telemetryCohorts,
-        worktree: worktree.worktree,
-        previewManifest: initialization.previewManifest,
-        runConfigurations: initialization.runConfigurations,
-        runConfigurationId: detailedStory.runConfigurationId,
-        hostDependenciesChecked: true,
-        runtimeProfile: previewProfile,
-        databaseMode: initialization.databaseMode,
-      })
       sessionPromise = agent.sessions.startDevelopment({
         apiConnection: auth.apiConnection,
         providerId: selection.currentModel.provider.id,
@@ -385,28 +362,6 @@ export function useBacklogRotation(
         projectId: detailedStory.projectId,
         storyId,
       })
-      void sessionPromise.catch(() => undefined)
-      await preparationPromise
-      if (
-        worktree.workspaceMode === "local-container" &&
-        typeof detailedStory.runConfigurationId === "string" &&
-        workspace.controlProjectPreview
-      ) {
-        void workspace
-          .controlProjectPreview({
-            action: "start",
-            configurationId: detailedStory.runConfigurationId,
-            worktree: worktree.worktree,
-          })
-          .then((runtime) => {
-            if (runtime.previewUrl) {
-              return backlog.update(detailedStory, {
-                previewUrl: runtime.previewUrl,
-              })
-            }
-          })
-          .catch(() => undefined)
-      }
       const session = await sessionPromise
       startedSessionId = session.sessionId
       // Stopped, dequeued or discarded while it was starting: let it go.

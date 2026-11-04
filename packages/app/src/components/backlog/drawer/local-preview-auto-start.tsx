@@ -1,6 +1,7 @@
 import * as React from "react"
 
 import type { UserStory } from "@/components/backlog/data/backlog-data"
+import { useStoryPreviewWaiting } from "@/components/backlog/data/preview-environment-waits"
 import { isPreviewAutoStartDisabled } from "@/components/backlog/drawer/use-user-story-preview-runner"
 import { usePlatform } from "@/context/platform"
 
@@ -14,10 +15,12 @@ const startedPreviews = new Set<string>()
 export function LocalPreviewAutoStart({ story }: { story: UserStory }) {
   const workspace = usePlatform().workspace
   const worktree = story.worktree
+  // Its setup is written once the preview environment is checked.
+  const environmentChecking = useStoryPreviewWaiting(story.id)
   React.useEffect(() => {
     const readState = workspace?.projectPreviewRuntimeState
     const control = workspace?.controlProjectPreview
-    if (!worktree || !readState || !control) return
+    if (!worktree || !readState || !control || environmentChecking) return
     if (isPreviewAutoStartDisabled(story.id)) return
     const key = `${story.id}:${worktree}`
     if (startedPreviews.has(key)) return
@@ -27,7 +30,9 @@ export function LocalPreviewAutoStart({ story }: { story: UserStory }) {
         worktree,
         workspaceMode: "local-container",
       })
-      if (cancelled || startedPreviews.has(key)) return
+      // No setup yet: it comes with the preview environment check.
+      if (cancelled || startedPreviews.has(key) || !state.configurations.length)
+        return
       // A suspended preview was started once and left unused: it starts
       // again when opened.
       if (
@@ -52,6 +57,12 @@ export function LocalPreviewAutoStart({ story }: { story: UserStory }) {
     return () => {
       cancelled = true
     }
-  }, [story.id, story.runConfigurationId, workspace, worktree])
+  }, [
+    environmentChecking,
+    story.id,
+    story.runConfigurationId,
+    workspace,
+    worktree,
+  ])
   return null
 }
