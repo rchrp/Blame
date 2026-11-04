@@ -1,5 +1,4 @@
 import * as React from "react"
-import { MessageSquareIcon } from "lucide-react"
 import {
   diffLineKind,
   diffLines,
@@ -8,6 +7,10 @@ import {
 import type { VcsFileDiff } from "@/components/backlog/development/development-workspace"
 import { PatchDiff } from "@pierre/diffs/react"
 
+import {
+  pierreShadowHostSelector,
+  selectedCodeExcerpt,
+} from "@/components/backlog/development/code-excerpt"
 import { DiffStats } from "@/components/backlog/development/development-diff-stats"
 import {
   diffKindClassName,
@@ -18,19 +21,13 @@ import {
   usePierreSyntaxHighlighting,
 } from "@/components/backlog/development/pierre-syntax-highlighting"
 import {
-  labelPierreGutterUtility,
-  pierreGutterUtilityCSS,
-} from "@/components/backlog/development/pierre-gutter-utility"
-import { dispatchCodeSelectionAttachment } from "@/components/backlog/shared/comment-attachment-events"
+  SelectionExcerptActions,
+  type TextSelection,
+} from "@/components/backlog/shared/selection-excerpt-actions"
 import { Badge } from "@/components/ui/badge"
 import { useTheme } from "@/components/providers/theme-provider"
 import { runWorkerTask, workerTaskAborted } from "@/lib/worker-task"
 import { cn } from "@/lib/utils"
-
-type LineSelection = {
-  anchor: number
-  focus: number
-}
 
 const diffLineHeight = 20
 const diffVirtualizationThreshold = 400
@@ -46,6 +43,14 @@ export function DevelopmentDiffView({
   scroll?: boolean
   title?: string
 }) {
+  const containerRef = React.useRef<HTMLDivElement>(null)
+  const path = diff?.file
+  const readExcerpt = React.useCallback(
+    (selection: TextSelection) =>
+      path ? selectedCodeExcerpt(path, selection) : undefined,
+    [path]
+  )
+
   if (!diff?.patch) {
     return (
       <div className="flex h-full items-center justify-center p-8 text-sm text-muted-foreground">
@@ -55,7 +60,11 @@ export function DevelopmentDiffView({
   }
 
   return (
-    <div className="flex h-full min-h-0 max-w-full min-w-0 flex-col overflow-hidden">
+    // The story drawer turns text selection off; code stays selectable.
+    <div
+      ref={containerRef}
+      className="flex h-full min-h-0 max-w-full min-w-0 flex-col overflow-hidden select-text"
+    >
       {title && (
         <div className="flex min-w-0 shrink-0 items-center gap-2 border-b bg-background/95 px-4 py-2 backdrop-blur">
           <span className="truncate font-medium">{title}</span>
@@ -67,6 +76,11 @@ export function DevelopmentDiffView({
       ) : (
         <PierreDiff patch={diff.patch} path={diff.file} />
       )}
+      <SelectionExcerptActions
+        containerRef={containerRef}
+        readExcerpt={readExcerpt}
+        shadowHostSelector={pierreShadowHostSelector}
+      />
     </div>
   )
 }
@@ -88,44 +102,21 @@ function PierreDiff({
         ? "dark"
         : "light"
       : theme
-  const lines = React.useMemo(() => diffLines(patch), [patch])
-  const commentSelection = React.useCallback(
-    (range: { end: number; start: number }) => {
-      const start = Math.max(1, range.start)
-      const end = Math.min(lines.length, Math.max(start, range.end))
-      dispatchCodeSelectionAttachment({
-        content: lines
-          .slice(start - 1, end)
-          .map((line) => line.content)
-          .join("\n"),
-        endLine: end,
-        path,
-        startLine: start,
-      })
-    },
-    [lines, path]
-  )
   const options = React.useMemo(
     () => ({
       diffIndicators: "bars" as const,
       diffStyle: "unified" as const,
       disableFileHeader: true,
-      enableGutterUtility: true,
-      enableLineSelection: true,
       lineHoverHighlight: "line" as const,
-      onGutterUtilityClick: commentSelection,
-      onPostRender: (node: HTMLElement) =>
-        labelPierreGutterUtility(node, `Comment ${path} diff selection`),
       overflow: scroll ? ("scroll" as const) : ("wrap" as const),
       theme: pierreSyntaxThemes,
       themeType,
-      unsafeCSS: pierreGutterUtilityCSS,
     }),
-    [commentSelection, path, scroll, themeType]
+    [scroll, themeType]
   )
 
   if (!patch.includes("@@")) {
-    return <DiffCode patch={patch} path={path} scroll={scroll} />
+    return <DiffCode patch={patch} scroll={scroll} />
   }
 
   if (!syntaxHighlightingReady) {
@@ -168,92 +159,31 @@ export function DiffFileHeader({ diff }: { diff: VcsFileDiff }) {
   )
 }
 
-function DiffLine({
-  line,
-  lineNumber,
-  newLineNumber,
-  oldLineNumber,
-  onDragLine,
-  onSelectLine,
-  onSendComment,
-  path,
-  selectedRange,
-  showCommentButton,
-}: {
-  line: string
-  lineNumber: number
-  newLineNumber?: number
-  oldLineNumber?: number
-  onDragLine: (line: number) => void
-  onSelectLine: (line: number) => void
-  onSendComment: (line: number) => void
-  path: string
-  selectedRange?: { end: number; start: number }
-  showCommentButton: boolean
-}) {
-  const kind = lineKind(line)
-  const selected = Boolean(
-    selectedRange &&
-    lineNumber >= selectedRange.start &&
-    lineNumber <= selectedRange.end
-  )
+function DiffLine({ line }: { line: DiffCodeLine }) {
+  const kind = lineKind(line.content)
 
   return (
     <div
       className={cn(
-        "group/diff-line grid min-w-full cursor-default grid-cols-[3rem_2.75rem_1.5rem_max-content] border-l-2 transition-colors select-none",
+        "grid min-w-full grid-cols-[3rem_2.75rem_1.5rem_max-content] border-l-2 transition-colors",
         lineClassName(kind),
-        "hover:bg-black/5 dark:hover:bg-white/8",
-        selected &&
-          "bg-blue-500/10 hover:bg-blue-500/15 dark:bg-blue-400/15 dark:hover:bg-blue-400/20"
+        "hover:bg-black/5 dark:hover:bg-white/8"
       )}
-      onMouseDown={(event) => {
-        if (event.button !== 0) return
-        onSelectLine(lineNumber)
-      }}
-      onMouseEnter={() => onDragLine(lineNumber)}
     >
-      <span className="sticky left-0 z-10 grid h-5 grid-cols-1 items-center bg-inherit px-1.5">
-        <span
-          className={cn(
-            "pointer-events-none col-start-1 row-start-1 text-right text-muted-foreground/70 transition-opacity",
-            "group-hover/diff-line:opacity-0",
-            selectedRange && showCommentButton && "opacity-0"
-          )}
-        >
-          {oldLineNumber ?? newLineNumber ?? ""}
-        </span>
-        <button
-          type="button"
-          aria-label={`Comment ${path} diff line ${lineNumber}`}
-          className={cn(
-            "pointer-events-none z-10 col-start-1 row-start-1 flex size-5 items-center justify-center justify-self-center rounded-md bg-blue-500 text-white opacity-0 shadow-sm transition-opacity hover:bg-blue-600",
-            !selectedRange &&
-              "group-hover/diff-line:pointer-events-auto group-hover/diff-line:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100",
-            selectedRange &&
-              showCommentButton &&
-              "pointer-events-auto opacity-100 focus-visible:opacity-100",
-            selectedRange &&
-              !showCommentButton &&
-              "pointer-events-none invisible"
-          )}
-          onClick={(event) => {
-            event.stopPropagation()
-            onSendComment(lineNumber)
-          }}
-          onMouseDown={(event) => event.stopPropagation()}
-        >
-          <MessageSquareIcon className="size-3" />
-        </button>
+      <span className="sticky left-0 z-10 h-5 bg-inherit px-1.5 text-right text-muted-foreground/70 select-none">
+        {line.oldLineNumber ?? line.newLineNumber ?? ""}
       </span>
       <span className="px-1.5 text-right text-muted-foreground/70 select-none">
-        {newLineNumber ?? ""}
+        {line.newLineNumber ?? ""}
       </span>
       <span className="px-1 text-center text-muted-foreground/70 select-none">
-        {diffMarker(line)}
+        {diffMarker(line.content)}
       </span>
-      <code className="px-3 whitespace-pre">
-        {diffLineContent(line) || " "}
+      <code
+        className="px-3 whitespace-pre"
+        data-line={line.newLineNumber ?? line.oldLineNumber}
+      >
+        {diffLineContent(line.content) || " "}
       </code>
     </div>
   )
@@ -261,76 +191,39 @@ function DiffLine({
 
 function DiffCode({
   patch,
-  path,
   scroll = false,
 }: {
   patch: string
-  path: string
   scroll?: boolean
 }) {
   const lines = useDiffLines(patch)
-  const [dragging, setDragging] = React.useState(false)
-  const [selection, setSelection] = React.useState<LineSelection>()
-  const selectedRange = selectionRange(selection)
-
-  React.useEffect(() => {
-    if (!dragging) return
-    const stopDragging = () => setDragging(false)
-    window.addEventListener("mouseup", stopDragging)
-    return () => window.removeEventListener("mouseup", stopDragging)
-  }, [dragging])
-
-  const lineProps = diffLineHandlers({
-    dragging,
-    lines,
-    path,
-    selectedRange,
-    selection,
-    setDragging,
-    setSelection,
-  })
 
   if (scroll && lines.length > diffVirtualizationThreshold) {
-    return <VirtualDiffCode lineProps={lineProps} lines={lines} />
+    return <VirtualDiffCode lines={lines} />
   }
 
   if (scroll) {
     return (
       <div className={diffScrollClassName}>
-        <DiffCodeLines lineProps={lineProps} lines={lines} />
+        <DiffCodeLines lines={lines} />
       </div>
     )
   }
 
-  return <DiffCodeLines lineProps={lineProps} lines={lines} />
+  return <DiffCodeLines lines={lines} />
 }
 
-function DiffCodeLines({
-  lineProps,
-  lines,
-}: {
-  lineProps: DiffLineHandlers
-  lines: DiffCodeLine[]
-}) {
+function DiffCodeLines({ lines }: { lines: DiffCodeLine[] }) {
   return (
     <pre className="w-max min-w-full p-0 font-mono text-xs leading-5">
       {lines.map((line, index) => (
-        <DiffLine
-          key={`${index}:${line.content}`}
-          {...lineProps(line, index)}
-        />
+        <DiffLine key={`${index}:${line.content}`} line={line} />
       ))}
     </pre>
   )
 }
 
-function VirtualDiffCode({
-  lineProps,
-  lines,
-}: {
-  lineProps: DiffLineHandlers
-  lines: DiffCodeLine[]
-}) {
+function VirtualDiffCode({ lines }: { lines: DiffCodeLine[] }) {
   const container = React.useRef<HTMLDivElement>(null)
   const [scrollTop, setScrollTop] = React.useState(0)
   const height = useElementHeight(container)
@@ -346,22 +239,16 @@ function VirtualDiffCode({
         className="relative w-max min-w-full p-0"
         style={{ height: lines.length * diffLineHeight }}
       >
-        <VirtualDiffLines
-          lineProps={lineProps}
-          lines={lines}
-          visibleRange={visibleRange}
-        />
+        <VirtualDiffLines lines={lines} visibleRange={visibleRange} />
       </pre>
     </div>
   )
 }
 
 function VirtualDiffLines({
-  lineProps,
   lines,
   visibleRange,
 }: {
-  lineProps: DiffLineHandlers
   lines: DiffCodeLine[]
   visibleRange: { end: number; start: number }
 }) {
@@ -373,12 +260,7 @@ function VirtualDiffLines({
     >
       {lines.slice(visibleRange.start, visibleRange.end).map((line, offset) => {
         const index = visibleRange.start + offset
-        return (
-          <DiffLine
-            key={`${index}:${line.content}`}
-            {...lineProps(line, index)}
-          />
-        )
+        return <DiffLine key={`${index}:${line.content}`} line={line} />
       })}
     </div>
   )
@@ -398,59 +280,6 @@ function useElementHeight(ref: React.RefObject<HTMLElement | null>) {
   }, [ref])
 
   return height
-}
-
-type DiffLineHandlers = (
-  line: DiffCodeLine,
-  index: number
-) => React.ComponentProps<typeof DiffLine>
-
-function diffLineHandlers({
-  dragging,
-  lines,
-  path,
-  selectedRange,
-  selection,
-  setDragging,
-  setSelection,
-}: {
-  dragging: boolean
-  lines: DiffCodeLine[]
-  path: string
-  selectedRange?: { end: number; start: number }
-  selection?: LineSelection
-  setDragging: React.Dispatch<React.SetStateAction<boolean>>
-  setSelection: React.Dispatch<React.SetStateAction<LineSelection | undefined>>
-}): DiffLineHandlers {
-  return (line, index) => ({
-    line: line.content,
-    lineNumber: index + 1,
-    newLineNumber: line.newLineNumber,
-    oldLineNumber: line.oldLineNumber,
-    path,
-    selectedRange,
-    showCommentButton: showCommentButton(selectedRange, index + 1),
-    onDragLine: (lineNumber) => {
-      if (!dragging || !selection) return
-      setSelection({ ...selection, focus: lineNumber })
-    },
-    onSelectLine: (lineNumber) => {
-      setDragging(true)
-      setSelection({ anchor: lineNumber, focus: lineNumber })
-    },
-    onSendComment: (lineNumber) => {
-      const range = selectedLineRange(selectedRange, lineNumber)
-      dispatchCodeSelectionAttachment({
-        content: lines
-          .slice(range.start - 1, range.end)
-          .map((line) => line.content)
-          .join("\n"),
-        endLine: range.end,
-        path,
-        startLine: range.start,
-      })
-    },
-  })
 }
 
 function visibleDiffWindow(
@@ -494,33 +323,6 @@ function useDiffLines(patch: string) {
   }, [patch])
 
   return result.patch === patch ? result.lines : []
-}
-
-function showCommentButton(
-  selectedRange: { end: number; start: number } | undefined,
-  lineNumber: number
-) {
-  if (!selectedRange) return true
-  return lineNumber === selectedRange.start
-}
-
-function selectionRange(selection?: LineSelection) {
-  if (!selection) return undefined
-  return {
-    end: Math.max(selection.anchor, selection.focus),
-    start: Math.min(selection.anchor, selection.focus),
-  }
-}
-
-function selectedLineRange(
-  selectedRange: { end: number; start: number } | undefined,
-  lineNumber: number
-) {
-  if (!selectedRange) return { end: lineNumber, start: lineNumber }
-  if (lineNumber < selectedRange.start || lineNumber > selectedRange.end) {
-    return { end: lineNumber, start: lineNumber }
-  }
-  return selectedRange
 }
 
 function lineKind(line: string) {

@@ -90,3 +90,77 @@ test("a story built on a finished one tells the agent to read it first", async (
   assert.match(prompt, /Earlier stories mentioned: US-007\./u);
   assert.doesNotMatch(prompt, /mentioned: US-042/u);
 });
+
+test("a code excerpt names its file and lines", async () => {
+  const prompt = (
+    await developmentUserInput(
+      {
+        codeSelectionAttachments: [
+          { content: "return value", endLine: 14, path: "src/a.ts", startLine: 12 },
+        ],
+        summary: "Explain this",
+        title: "Explain",
+      },
+      "/tmp",
+    )
+  ).prompt;
+  assert.match(prompt, /### src\/a\.ts \(Lines 12-14\)\n\n```\nreturn value\n```/u);
+});
+
+test("a conversation excerpt names its message without line numbers", async () => {
+  const prompt = (
+    await developmentUserInput(
+      {
+        feedback: "Why did you say this?",
+        feedbackCodeSelectionAttachments: [
+          {
+            content: "Good night.",
+            endLine: 1,
+            origin: "message",
+            path: "Agent message",
+            startLine: 1,
+          },
+        ],
+        feedbackOnly: true,
+        summary: "",
+        title: "Chat",
+      },
+      "/tmp",
+    )
+  ).prompt;
+  assert.match(
+    prompt,
+    /### Conversation excerpt: Agent message\n\n```\nGood night\.\n```/u,
+  );
+  assert.doesNotMatch(prompt, /Line 1/u);
+});
+
+test("a story attached as context is read with the story tools, not quoted", async () => {
+  const prompt = (
+    await developmentUserInput(
+      {
+        codeSelectionAttachments: [
+          {
+            content: "Add OAuth login",
+            endLine: 1,
+            id: "story-context:story-42",
+            origin: "story",
+            path: "US-042",
+            startLine: 1,
+            storyId: "story-42",
+          },
+        ],
+        projectId: "project",
+        summary: "Add a logout button, like US-7.",
+        title: "Logout",
+      },
+      "/tmp",
+    )
+  ).prompt;
+  assert.match(
+    prompt,
+    /This story builds on US-042: start by reading it with read_user_story/u,
+  );
+  assert.match(prompt, /Earlier stories mentioned: US-007\./u);
+  assert.doesNotMatch(prompt, /Attached code selections|### US-042/u);
+});

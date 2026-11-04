@@ -58,7 +58,7 @@ import {
   takeSelectedBacklogStoryAction,
 } from "@/components/backlog/data/backlog-navigation"
 import { useBacklogStore } from "@/components/backlog/data/backlog-store"
-import { completedStoryReference } from "@/components/backlog/data/user-story-context"
+import { storyContextAttachment } from "@/components/backlog/data/user-story-context"
 import { useUserStoryDiffStats } from "@/components/backlog/development/user-story-diff-stats"
 import { stopManagedCloudPreview } from "@/components/backlog/drawer/use-user-story-preview-runner"
 import { UserStoryDrawer } from "@/components/backlog/drawer/user-story-drawer"
@@ -69,6 +69,10 @@ import { storyPreviewDevtoolsScope } from "@/components/backlog/shared/preview-d
 import { directStoryPreviewScope } from "@/components/backlog/board/project-run-configuration"
 import type { AgentConversationUserMessageUndo } from "@/components/chat/agent-conversation"
 import { newUserStoryEvent } from "@/components/navigation/command-palette"
+import {
+  subscribeToNewUserStoryExcerpts,
+  takeNewUserStoryExcerpts,
+} from "@/components/backlog/shared/excerpt-actions"
 import { nextCheckpointRunCount } from "@/components/chat/agent-run-checkpoints"
 import {
   modelForPreference,
@@ -298,6 +302,23 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
     window.addEventListener(newUserStoryEvent, handleNewStory)
     return () => window.removeEventListener(newUserStoryEvent, handleNewStory)
   }, [openCreateDrawer])
+  // "Add to new user story" on selected code or conversation text. The
+  // excerpts wait for the project when the page opens with them.
+  React.useEffect(() => {
+    const openCreateDrawerWithExcerpts = () => {
+      if (!backlog.projectPath) return
+      const excerpts = takeNewUserStoryExcerpts()
+      if (excerpts.length === 0) return
+      drawerLoadRequestId.current += 1
+      setDrawerTarget({
+        initialDraft: { codeSelectionAttachments: excerpts },
+        initialTab: "user-story",
+        mode: "create",
+      })
+    }
+    openCreateDrawerWithExcerpts()
+    return subscribeToNewUserStoryExcerpts(openCreateDrawerWithExcerpts)
+  }, [backlog.projectPath])
   React.useEffect(() => {
     const openSelectedStory = () => {
       const selectedStoryId = selectedBacklogStoryId()
@@ -1329,7 +1350,9 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
       if (action === "Use Context") {
         drawerLoadRequestId.current += 1
         setDrawerTarget({
-          initialDraft: { summary: completedStoryReference(currentStory) },
+          initialDraft: {
+            codeSelectionAttachments: [storyContextAttachment(currentStory)],
+          },
           initialTab: "user-story",
           mode: "create",
         })

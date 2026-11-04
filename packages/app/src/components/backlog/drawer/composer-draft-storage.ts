@@ -80,6 +80,26 @@ export function appendComposerDraftText(
   })
 }
 
+// Excerpts sent to a composer that is not open land in its draft.
+export function appendComposerDraftCodeSelections(
+  storage: Pick<Storage, "getItem" | "removeItem" | "setItem">,
+  key: string,
+  attachments: UserStoryCodeSelectionAttachment[]
+) {
+  const draft = readComposerDraft(storage, key) ?? {
+    codeSelectionAttachments: [],
+    fileAttachments: [],
+    markdown: "",
+  }
+  writeComposerDraft(storage, key, {
+    ...draft,
+    codeSelectionAttachments: [
+      ...draft.codeSelectionAttachments,
+      ...attachments,
+    ],
+  })
+}
+
 export function removeComposerDraft(
   storage: Pick<Storage, "removeItem">,
   key: string

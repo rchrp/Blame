@@ -3,6 +3,7 @@ import test from "node:test"
 
 import {
   appendComposerDraftText,
+  appendComposerDraftCodeSelections,
   composerDraftStorageKey,
   readComposerDraft,
   writeComposerDraft,
@@ -117,4 +118,35 @@ test("appends a dictation to an existing or missing draft", () => {
   const updated = readComposerDraft(storage, "draft")
   assert.equal(updated?.markdown, "Work in progress Then ship.")
   assert.deepEqual(updated?.fileAttachments, draft.fileAttachments)
+})
+
+test("adds selected excerpts after the ones a draft already holds", () => {
+  const values = new Map<string, string>()
+  const storage = {
+    getItem: (key: string) => values.get(key) ?? null,
+    removeItem: (key: string) => void values.delete(key),
+    setItem: (key: string, value: string) => void values.set(key, value),
+  }
+  const excerpt = {
+    id: "excerpt",
+    content: "Good night",
+    endLine: 1,
+    origin: "message" as const,
+    path: "Agent message",
+    startLine: 1,
+  }
+  appendComposerDraftCodeSelections(storage, "empty", [excerpt])
+  assert.deepEqual(readComposerDraft(storage, "empty"), {
+    codeSelectionAttachments: [excerpt],
+    fileAttachments: [],
+    markdown: "",
+  })
+  writeComposerDraft(storage, "draft", draft)
+  appendComposerDraftCodeSelections(storage, "draft", [excerpt])
+  const updated = readComposerDraft(storage, "draft")
+  assert.equal(updated?.markdown, draft.markdown)
+  assert.deepEqual(updated?.codeSelectionAttachments, [
+    ...draft.codeSelectionAttachments,
+    excerpt,
+  ])
 })

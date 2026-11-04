@@ -4,11 +4,7 @@ import {
   type FileAttachmentReplacement,
 } from "@/components/backlog/drawer/user-story-attachment-files"
 import type { UserStoryFileAttachment } from "@/components/backlog/data/backlog-data"
-import {
-  codeSelectionAttachmentEvent,
-  type CodeSelectionAttachment,
-  type PendingCodeSelectionAttachment,
-} from "@/components/backlog/shared/comment-attachment-events"
+import type { PendingCodeSelectionAttachment } from "@/components/backlog/shared/comment-attachment-events"
 import {
   readComposerDraft,
   removeComposerDraft,
@@ -44,25 +40,17 @@ export function useQuickChatDraft(storageKey: string) {
     })
   }, [draft, draftCodeAttachments, draftFileAttachments, storageKey])
 
-  React.useEffect(() => {
-    const addAttachment = (event: Event) => {
-      setDraftCodeAttachments((current) => [
-        ...current,
-        {
-          ...(event as CustomEvent<CodeSelectionAttachment>).detail,
-          id: crypto.randomUUID(),
-        },
-      ])
+  const addDraftCodeAttachments = React.useCallback(
+    (attachments: PendingCodeSelectionAttachment[]) => {
+      setDraftCodeAttachments((current) => [...current, ...attachments])
       requestAnimationFrame(() => {
         draftRef.current
           ?.querySelector<HTMLElement>("[data-markdown-editor-input='true']")
           ?.focus()
       })
-    }
-    window.addEventListener(codeSelectionAttachmentEvent, addAttachment)
-    return () =>
-      window.removeEventListener(codeSelectionAttachmentEvent, addAttachment)
-  }, [])
+    },
+    []
+  )
 
   const addDraftFileAttachments = React.useCallback(
     (attachments: UserStoryFileAttachment[]) => {
@@ -99,6 +87,7 @@ export function useQuickChatDraft(storageKey: string) {
   }
 
   return {
+    addDraftCodeAttachments,
     addDraftFileAttachments,
     removeDraftFileAttachment,
     replaceDraftFileAttachments,

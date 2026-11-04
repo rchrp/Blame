@@ -261,8 +261,13 @@ export type CodeSelectionAttachment = {
   id?: string;
   content: string;
   endLine: number;
+  // A conversation message is named by path and has no file lines. A story
+  // attached as context is named by its number (US-042) and read with the
+  // story history tools.
+  origin?: "code" | "message" | "story";
   path: string;
   startLine: number;
+  storyId?: string;
 };
 
 export type FileAttachment = {

@@ -74,8 +74,13 @@ export type UserStoryCodeSelectionAttachment = {
   id: string
   content: string
   endLine: number
+  // Where the excerpt was selected: a source file unless it says otherwise.
+  // A story attached as context keeps its number in path, its title in
+  // content and its id in storyId.
+  origin?: "code" | "message" | "story"
   path: string
   startLine: number
+  storyId?: string
 }
 
 export type UserStoryFileAttachment = {

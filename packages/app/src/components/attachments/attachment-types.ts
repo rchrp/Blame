@@ -6,8 +6,10 @@ export type ComposerAttachment = {
   id: string
   file: File
   previewUrl?: string
-  source: "code" | "file"
+  source: "code" | "file" | "story"
   storedAttachment?: UserStoryFileAttachment
+  // The story a "story" attachment opens.
+  storyId?: string
   subtitle?: string
   title?: string
 }

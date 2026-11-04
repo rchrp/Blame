@@ -76,7 +76,17 @@ import {
 } from "@/components/chat/data/quick-chat-data"
 import { useQuickChatStore } from "@/components/chat/data/quick-chat-store"
 import { agentConversationResponseHeader } from "@/components/chat/agent-conversation-header"
-import { composerDraftStorageKey } from "@/components/backlog/drawer/composer-draft-storage"
+import {
+  appendComposerDraftCodeSelections,
+  composerDraftStorageKey,
+} from "@/components/backlog/drawer/composer-draft-storage"
+import type { CodeSelectionAttachment } from "@/components/backlog/shared/comment-attachment-events"
+import {
+  subscribeToNewChatExcerpts,
+  takeNewChatExcerpts,
+} from "@/components/backlog/shared/excerpt-actions"
+import { ExcerptTargetProvider } from "@/components/backlog/shared/selection-excerpt-actions"
+import { useLatestCallback } from "@/lib/use-latest-callback"
 import { useModelSelection } from "@/components/model/model-selection"
 import { storyMaxInputTokens } from "@/components/backlog/data/story-context-limit"
 import { useCloudAuth } from "@/context/cloud-auth"
@@ -176,6 +186,7 @@ function QuickChatProjectPage() {
     activeConversation?.id
   )
   const {
+    addDraftCodeAttachments,
     clearDraft,
     draft,
     draftCodeAttachments,
@@ -191,6 +202,31 @@ function QuickChatProjectPage() {
     removeDraftFileAttachment,
     replaceDraftFileAttachments,
   } = useQuickChatDraft(draftStorageKey)
+  const attachExcerptAsContext = React.useCallback(
+    (excerpt: CodeSelectionAttachment) =>
+      addDraftCodeAttachments([{ ...excerpt, id: crypto.randomUUID() }]),
+    [addDraftCodeAttachments]
+  )
+  // "Add to new chat" on selected code or conversation text: the excerpts
+  // land in the draft of a new conversation.
+  const openNewChatWithExcerpts = useLatestCallback(() => {
+    const excerpts = takeNewChatExcerpts()
+    if (excerpts.length === 0) return
+    if (!quickChats.activeChat) {
+      addDraftCodeAttachments(excerpts)
+      return
+    }
+    appendComposerDraftCodeSelections(
+      localStorage,
+      composerDraftStorageKey(project?.id ?? "project", "chat"),
+      excerpts
+    )
+    quickChats.setActiveId(undefined)
+  })
+  React.useEffect(() => {
+    openNewChatWithExcerpts()
+    return subscribeToNewChatExcerpts(openNewChatWithExcerpts)
+  }, [openNewChatWithExcerpts])
   const applySuggestion = useComposerShortcuts({
     draftRef,
     setDraft,
@@ -1008,66 +1044,68 @@ function QuickChatProjectPage() {
     activeConversationLoaded && !activeConversation?.agentRuns?.length
 
   return (
-    <QuickChatView
-      conversationId={activeConversation?.id}
-      emptyConversation={emptyConversation}
-      status={{
-        error: quickChats.error,
-        loading: quickChats.loading || !activeConversationLoaded,
-        projectPath: project?.path,
-      }}
-      timeline={activeConversationLoaded && activeConversation?.agentRuns?.length ? {
-        screenshotOwner: screenshotOwnerFor("quickChat", activeConversation.id),
-        comments: activeConversation.messages ?? [],
-        loadChangedFileDiffs,
-        onChangedFileClick: (path) => openProjectPath(project?.path, path, platform.openPath),
-        onFileLinkClick: (path) => openProjectPath(project?.path, path, platform.openPath),
-        onLoadActivityDetail: (run, activity) =>
-          quickChats.agentRunActivityDetail(activeConversation, run, activity),
-        onUserMessageUndo: undoQuickChatMessage,
-        responseHeader,
-        queued: (
-          <QueuedComments
-            author={activeConversation.messages?.at(-1)?.author ?? "You"}
-            storyId={messageQueue.key}
-          />
-        ),
-        runs: activeConversation.agentRuns,
-      } : undefined}
-      onSuggestion={project ? applySuggestion : undefined}
-      composer={{
-        speechSessionKey: draftStorageKey,
-        speechTarget: chatSpeechTarget(draftStorageKey),
-        agentRunning,
-        cancelingAgent,
-        codeSelectionAttachments: draftCodeAttachments,
-        disabled: !project || !activeConversationLoaded,
-        submitting: sending && !agentRunning,
-        queueWhileRunning: true,
-        editorKey: draftEditorKey,
-        editorRef: draftRef,
-        fileAttachments: pendingFileAttachments(draftFileAttachments),
-        mentionDirectory,
-        message: draft,
-        onCodeSelectionAttachmentRemove: (id) =>
-          setDraftCodeAttachments((current) => current.filter((attachment) => attachment.id !== id)),
-        onFileAttachmentRemove: removeDraftFileAttachment,
-        onFileAttachmentsReplace: replaceDraftFileAttachments,
-        onFileAttachmentsAdd: addDraftFileAttachments,
-        onFileLinkClick: (path) => openProjectPath(project?.path, path, platform.openPath),
-        onMessageChange: setDraft,
-        onMessageSubmit: () => void submitDraft(),
-        onMessageSendNow: () => void submitDraft(true),
-        onAgentCancel: cancelAgent,
-        placeholder: agentRunning
-          ? "Message the agent: ↵ when it finishes, ⌘↵ right now"
-          : "Ask for a focused code change",
-        submitLabel: agentRunning ? "Queue message" : "Send",
-        turnMetrics,
-      }}
-      preview={{ configuration: previewConfiguration, devtoolsTarget: true, scope: project?.path }}
-      stats={emptyConversation ? undefined : activeConversation}
-    />
+    <ExcerptTargetProvider attachAsContext={attachExcerptAsContext}>
+      <QuickChatView
+        conversationId={activeConversation?.id}
+        emptyConversation={emptyConversation}
+        status={{
+          error: quickChats.error,
+          loading: quickChats.loading || !activeConversationLoaded,
+          projectPath: project?.path,
+        }}
+        timeline={activeConversationLoaded && activeConversation?.agentRuns?.length ? {
+          screenshotOwner: screenshotOwnerFor("quickChat", activeConversation.id),
+          comments: activeConversation.messages ?? [],
+          loadChangedFileDiffs,
+          onChangedFileClick: (path) => openProjectPath(project?.path, path, platform.openPath),
+          onFileLinkClick: (path) => openProjectPath(project?.path, path, platform.openPath),
+          onLoadActivityDetail: (run, activity) =>
+            quickChats.agentRunActivityDetail(activeConversation, run, activity),
+          onUserMessageUndo: undoQuickChatMessage,
+          responseHeader,
+          queued: (
+            <QueuedComments
+              author={activeConversation.messages?.at(-1)?.author ?? "You"}
+              storyId={messageQueue.key}
+            />
+          ),
+          runs: activeConversation.agentRuns,
+        } : undefined}
+        onSuggestion={project ? applySuggestion : undefined}
+        composer={{
+          speechSessionKey: draftStorageKey,
+          speechTarget: chatSpeechTarget(draftStorageKey),
+          agentRunning,
+          cancelingAgent,
+          codeSelectionAttachments: draftCodeAttachments,
+          disabled: !project || !activeConversationLoaded,
+          submitting: sending && !agentRunning,
+          queueWhileRunning: true,
+          editorKey: draftEditorKey,
+          editorRef: draftRef,
+          fileAttachments: pendingFileAttachments(draftFileAttachments),
+          mentionDirectory,
+          message: draft,
+          onCodeSelectionAttachmentRemove: (id) =>
+            setDraftCodeAttachments((current) => current.filter((attachment) => attachment.id !== id)),
+          onFileAttachmentRemove: removeDraftFileAttachment,
+          onFileAttachmentsReplace: replaceDraftFileAttachments,
+          onFileAttachmentsAdd: addDraftFileAttachments,
+          onFileLinkClick: (path) => openProjectPath(project?.path, path, platform.openPath),
+          onMessageChange: setDraft,
+          onMessageSubmit: () => void submitDraft(),
+          onMessageSendNow: () => void submitDraft(true),
+          onAgentCancel: cancelAgent,
+          placeholder: agentRunning
+            ? "Message the agent: ↵ when it finishes, ⌘↵ right now"
+            : "Ask for a focused code change",
+          submitLabel: agentRunning ? "Queue message" : "Send",
+          turnMetrics,
+        }}
+        preview={{ configuration: previewConfiguration, devtoolsTarget: true, scope: project?.path }}
+        stats={emptyConversation ? undefined : activeConversation}
+      />
+    </ExcerptTargetProvider>
   )
 }
 

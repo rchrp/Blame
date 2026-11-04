@@ -1,13 +1,28 @@
-import { userStoryDisplayId, type UserStory } from "./backlog-data.ts"
+import {
+  userStoryDisplayId,
+  type UserStory,
+  type UserStoryCodeSelectionAttachment,
+} from "./backlog-data.ts"
 
 // "Use Context" starts a new story that names the finished one. The coding
 // agent then loads what it needs from it (request, outcome, changed files,
 // discussion) with its story history tools, instead of carrying a snapshot.
-export function completedStoryReference(
-  story: Pick<UserStory, "storyNumber" | "title">
-) {
-  const title = story.title.trim().replace(/\s+/g, " ")
-  return `Builds on ${userStoryDisplayId(story)}${title ? ` · ${title}` : ""}.\n\n`
+// "Use Context" starts a new story with the finished one attached. The
+// coding agent then loads what it needs from it (request, outcome, changed
+// files, discussion) with its story history tools, instead of carrying a
+// snapshot. One story is attached once, whatever its title became.
+export function storyContextAttachment(
+  story: Pick<UserStory, "id" | "storyNumber" | "title">
+): UserStoryCodeSelectionAttachment {
+  return {
+    id: `story-context:${story.id}`,
+    content: story.title.trim().replace(/\s+/g, " "),
+    endLine: 1,
+    origin: "story",
+    path: userStoryDisplayId(story),
+    startLine: 1,
+    storyId: story.id,
+  }
 }
 
 /**

@@ -48,10 +48,8 @@ import {
   fileAttachment,
   type FileAttachmentReplacement,
 } from "@/components/backlog/drawer/user-story-attachment-files"
-import {
-  codeSelectionLineLabel,
-  type PendingCodeSelectionAttachment,
-} from "@/components/backlog/shared/comment-attachment-events"
+import type { PendingCodeSelectionAttachment } from "@/components/backlog/shared/comment-attachment-events"
+import { excerptCard } from "@/components/backlog/shared/excerpt-model"
 import { Button } from "@/components/ui/button"
 import {
   Command,
@@ -1513,7 +1511,7 @@ export const MarkdownEditor = React.forwardRef<
 
   function removeAttachment(attachment: PastedAttachment) {
     revokeAttachmentUrls(attachment)
-    if (attachment.source === "code")
+    if (attachment.source === "code" || attachment.source === "story")
       onCodeSelectionAttachmentRemove?.(attachment.id)
     if (attachment.source === "file") onFileAttachmentRemove?.(attachment.id)
     setAttachments((currentAttachments) =>
@@ -1920,6 +1918,7 @@ export const MarkdownEditor = React.forwardRef<
           initialId={documentId}
           attachments={attachments.filter(
             (item) =>
+              item.source !== "story" &&
               !item.previewUrl &&
               !["audio", "video"].includes(attachmentFormat(item.file))
           )}
@@ -2048,14 +2047,27 @@ function equalFileMentionState(
 function codeSelectionAttachment(
   attachment: PendingCodeSelectionAttachment
 ): PastedAttachment {
+  if (attachment.origin === "story") {
+    return {
+      id: attachment.id,
+      file: new File([attachment.content], `${attachment.path}.md`, {
+        type: "text/markdown",
+      }),
+      source: "story",
+      storyId: attachment.storyId,
+      subtitle: attachment.content || undefined,
+      title: attachment.path,
+    }
+  }
+  const card = excerptCard(attachment)
   return {
     id: attachment.id,
-    file: new File([attachment.content], attachment.path, {
-      type: "text/plain",
+    file: new File([attachment.content], card.fileName, {
+      type: card.mimeType,
     }),
     source: "code",
-    subtitle: codeSelectionLineLabel(attachment),
-    title: attachment.path,
+    subtitle: card.subtitle,
+    title: card.title,
   }
 }
 

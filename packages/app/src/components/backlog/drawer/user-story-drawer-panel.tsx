@@ -69,10 +69,11 @@ import {
   writeComposerDraft,
 } from "@/components/backlog/drawer/composer-draft-storage"
 import {
-  codeSelectionAttachmentEvent,
   type CodeSelectionAttachment,
   type PendingCodeSelectionAttachment,
 } from "@/components/backlog/shared/comment-attachment-events"
+import { storyAcceptsExcerpts } from "@/components/backlog/shared/excerpt-model"
+import { ExcerptTargetProvider } from "@/components/backlog/shared/selection-excerpt-actions"
 import { Button } from "@/components/ui/button"
 import {
   DrawerClose,
@@ -262,9 +263,11 @@ export function UserStoryDrawerPanel({
   const [summaryCodeSelectionAttachments, setSummaryCodeSelectionAttachments] =
     React.useState<PendingCodeSelectionAttachment[]>(
       mode === "create"
-        ? (storedDraft?.codeSelectionAttachments ??
-            initialDraft?.codeSelectionAttachments ??
-            [])
+        ? // An excerpt sent to a new story joins the draft already started.
+          mergeAttachments(
+            storedDraft?.codeSelectionAttachments ?? [],
+            initialDraft?.codeSelectionAttachments ?? []
+          )
         : (userStory?.codeSelectionAttachments ?? [])
     )
   const [summaryFileAttachments, setSummaryFileAttachments] = React.useState<
@@ -447,8 +450,10 @@ export function UserStoryDrawerPanel({
     return () => window.removeEventListener("keydown", handleKeyDown)
   })
 
-  React.useEffect(() => {
-    const addCodeSelectionAttachment = (event: Event) => {
+  // An excerpt goes to the request while the story has no conversation yet,
+  // to the next comment once it has one.
+  const attachExcerptAsContext = React.useCallback(
+    (excerpt: CodeSelectionAttachment) => {
       const targetSummary = summaryEditable || status === "ready"
       const updateAttachments = targetSummary
         ? setSummaryCodeSelectionAttachments
@@ -457,28 +462,16 @@ export function UserStoryDrawerPanel({
       setTab("user-story")
       updateAttachments((current) => [
         ...current,
-        {
-          ...(event as CustomEvent<CodeSelectionAttachment>).detail,
-          id: crypto.randomUUID(),
-        },
+        { ...excerpt, id: crypto.randomUUID() },
       ])
       requestAnimationFrame(() => {
         targetRef.current
           ?.querySelector<HTMLElement>("[data-markdown-editor-input='true']")
           ?.focus()
       })
-    }
-    window.addEventListener(
-      codeSelectionAttachmentEvent,
-      addCodeSelectionAttachment
-    )
-    return () => {
-      window.removeEventListener(
-        codeSelectionAttachmentEvent,
-        addCodeSelectionAttachment
-      )
-    }
-  }, [status, summaryEditable])
+    },
+    [setTab, status, summaryEditable]
+  )
 
   const pendingSummaryFileAttachments = React.useMemo(
     () => pendingFileAttachments(summaryFileAttachments),
@@ -618,236 +611,242 @@ export function UserStoryDrawerPanel({
   )
 
   return (
-    <DrawerContent
-      // Round on every corner with a full border: in Chromium, without them
-      // the header's masked blur loses its fade and cuts the thread.
-      className="overflow-hidden rounded-xl border bg-[oklch(1_0_0)] text-foreground outline-none data-[vaul-drawer-direction=right]:w-[min(var(--story-drawer-width,90rem),calc(100vw-1rem))] data-[vaul-drawer-direction=right]:sm:max-w-none dark:bg-[oklch(0.16_0_0)]"
-      overlayClassName="bg-black/30 dark:bg-black/50"
-      style={drawerWidth.style}
+    <ExcerptTargetProvider
+      attachAsContext={
+        storyAcceptsExcerpts(status) ? attachExcerptAsContext : undefined
+      }
     >
-      <DrawerResizeHandle onWidthChange={drawerWidth.setWidth} />
-      {mode !== "create" ? <StoryStatusGlow status={status} /> : null}
-      {tab === "user-story" && statsExpandable && (
-        <Button
-          type="button"
-          className="absolute top-6 right-16 z-30 border bg-background/90 shadow-sm"
-          size="icon-sm"
-          variant="outline"
-          onClick={() => setStatsExpanded((expanded) => !expanded)}
-          aria-label={
-            statsExpanded ? "Minimize agent stats" : "Show agent stats"
-          }
-          title={statsExpanded ? "Minimize" : "Expand"}
-        >
-          {statsExpanded ? <Minimize2Icon /> : <Maximize2Icon />}
-        </Button>
-      )}
-      <DrawerClose asChild>
-        <Button
-          className="absolute top-6 right-6 z-30 border bg-background/90 shadow-sm"
-          size="icon-sm"
-          variant="outline"
-        >
-          <XIcon />
-          <span className="sr-only">Close</span>
-        </Button>
-      </DrawerClose>
-      <Tabs
-        value={tab}
-        onValueChange={(value) => setTab(value as UserStoryDrawerTab)}
-        className="relative min-h-0 flex-1 gap-0 overflow-hidden"
+      <DrawerContent
+        // Round on every corner with a full border: in Chromium, without them
+        // the header's masked blur loses its fade and cuts the thread.
+        className="overflow-hidden rounded-xl border bg-[oklch(1_0_0)] text-foreground outline-none data-[vaul-drawer-direction=right]:w-[min(var(--story-drawer-width,90rem),calc(100vw-1rem))] data-[vaul-drawer-direction=right]:sm:max-w-none dark:bg-[oklch(0.16_0_0)]"
+        overlayClassName="bg-black/30 dark:bg-black/50"
+        style={drawerWidth.style}
       >
-        <DrawerHeader
-          className={cn(
-            // The blur spans the whole width, under the stats panel too;
-            // only the title and tabs keep clear of it.
-            "absolute top-0 right-0 left-0 isolate z-[15] gap-4 overflow-hidden px-6 pt-6 pr-14 pb-6 transition-[padding] duration-500 ease-out",
-            tab === "user-story" &&
-              (statsShownExpanded
-                ? "lg:pr-[23rem]"
-                : "pt-20 sm:pt-6 sm:pr-[20rem]")
-          )}
+        <DrawerResizeHandle onWidthChange={drawerWidth.setWidth} />
+        {mode !== "create" ? <StoryStatusGlow status={status} /> : null}
+        {tab === "user-story" && statsExpandable && (
+          <Button
+            type="button"
+            className="absolute top-6 right-16 z-30 border bg-background/90 shadow-sm"
+            size="icon-sm"
+            variant="outline"
+            onClick={() => setStatsExpanded((expanded) => !expanded)}
+            aria-label={
+              statsExpanded ? "Minimize agent stats" : "Show agent stats"
+            }
+            title={statsExpanded ? "Minimize" : "Expand"}
+          >
+            {statsExpanded ? <Minimize2Icon /> : <Maximize2Icon />}
+          </Button>
+        )}
+        <DrawerClose asChild>
+          <Button
+            className="absolute top-6 right-6 z-30 border bg-background/90 shadow-sm"
+            size="icon-sm"
+            variant="outline"
+          >
+            <XIcon />
+            <span className="sr-only">Close</span>
+          </Button>
+        </DrawerClose>
+        <Tabs
+          value={tab}
+          onValueChange={(value) => setTab(value as UserStoryDrawerTab)}
+          className="relative min-h-0 flex-1 gap-0 overflow-hidden"
         >
-          <div
-            className="absolute inset-0 -z-10 bg-popover/20 backdrop-blur-sm"
-            style={drawerHeaderSoftBlurMask}
-          />
-          <div
-            className="absolute inset-0 -z-10 bg-popover/20 backdrop-blur-2xl backdrop-saturate-150"
-            style={drawerHeaderStrongBlurMask}
-          />
-          <div className="min-w-0 flex-1">
-            <DrawerTitle asChild>
-              <DrawerHeaderTitle
-                mode={mode}
-                title={title}
-                titleGenerating={titleGenerating}
-                userStory={userStory}
-                onTitleChange={setTitle}
-              />
-            </DrawerTitle>
-            <DrawerDescription asChild>
-              <div className="flex flex-wrap items-center gap-2">
-                <ColumnStatusBadge status={status} />
-                <span>{userStory?.owner ?? "Product"} created this</span>
-                <span>{createdAtLabel(userStory)}</span>
-              </div>
-            </DrawerDescription>
-          </div>
-          {hasDevelopment && (
-            <SlidingTabsList className="mt-2 min-w-100" value={tab}>
-              <TabsTrigger className={slidingTabsTrigger} value="user-story">
-                <BookOpenIcon />
-                User Story
-              </TabsTrigger>
-              {hasPreview && (
-                <TabsTrigger className={slidingTabsTrigger} value="preview">
-                  <TabReadyIcon ready={previewReady}><AppWindowIcon /></TabReadyIcon>
-                  Preview
+          <DrawerHeader
+            className={cn(
+              // The blur spans the whole width, under the stats panel too;
+              // only the title and tabs keep clear of it.
+              "absolute top-0 right-0 left-0 isolate z-[15] gap-4 overflow-hidden px-6 pt-6 pr-14 pb-6 transition-[padding] duration-500 ease-out",
+              tab === "user-story" &&
+                (statsShownExpanded
+                  ? "lg:pr-[23rem]"
+                  : "pt-20 sm:pt-6 sm:pr-[20rem]")
+            )}
+          >
+            <div
+              className="absolute inset-0 -z-10 bg-popover/20 backdrop-blur-sm"
+              style={drawerHeaderSoftBlurMask}
+            />
+            <div
+              className="absolute inset-0 -z-10 bg-popover/20 backdrop-blur-2xl backdrop-saturate-150"
+              style={drawerHeaderStrongBlurMask}
+            />
+            <div className="min-w-0 flex-1">
+              <DrawerTitle asChild>
+                <DrawerHeaderTitle
+                  mode={mode}
+                  title={title}
+                  titleGenerating={titleGenerating}
+                  userStory={userStory}
+                  onTitleChange={setTitle}
+                />
+              </DrawerTitle>
+              <DrawerDescription asChild>
+                <div className="flex flex-wrap items-center gap-2">
+                  <ColumnStatusBadge status={status} />
+                  <span>{userStory?.owner ?? "Product"} created this</span>
+                  <span>{createdAtLabel(userStory)}</span>
+                </div>
+              </DrawerDescription>
+            </div>
+            {hasDevelopment && (
+              <SlidingTabsList className="mt-2 min-w-100" value={tab}>
+                <TabsTrigger className={slidingTabsTrigger} value="user-story">
+                  <BookOpenIcon />
+                  User Story
                 </TabsTrigger>
-              )}
-              <TabsTrigger className={slidingTabsTrigger} value="development">
-                <CodeIcon />
-                Code
-              </TabsTrigger>
-            </SlidingTabsList>
-          )}
-        </DrawerHeader>
-        <TabsContent value="user-story" className="min-h-0 overflow-hidden">
-          <DrawerBody
-            resetKey={userStory?.id ?? mode}
-            fixedSection={
-              <UserStoryFixedSection
-                actions={drawerActionButtons}
-                commentCodeSelectionAttachments={
-                  commentCodeSelectionAttachments
-                }
-                commentFileAttachments={pendingCommentFileAttachments}
-                comment={comment}
-                commentEditorKey={commentEditorKey}
-                commentRef={commentRef}
-                commentSubmitting={pendingAction === "Request Changes"}
+                {hasPreview && (
+                  <TabsTrigger className={slidingTabsTrigger} value="preview">
+                    <TabReadyIcon ready={previewReady}><AppWindowIcon /></TabReadyIcon>
+                    Preview
+                  </TabsTrigger>
+                )}
+                <TabsTrigger className={slidingTabsTrigger} value="development">
+                  <CodeIcon />
+                  Code
+                </TabsTrigger>
+              </SlidingTabsList>
+            )}
+          </DrawerHeader>
+          <TabsContent value="user-story" className="min-h-0 overflow-hidden">
+            <DrawerBody
+              resetKey={userStory?.id ?? mode}
+              fixedSection={
+                <UserStoryFixedSection
+                  actions={drawerActionButtons}
+                  commentCodeSelectionAttachments={
+                    commentCodeSelectionAttachments
+                  }
+                  commentFileAttachments={pendingCommentFileAttachments}
+                  comment={comment}
+                  commentEditorKey={commentEditorKey}
+                  commentRef={commentRef}
+                  commentSubmitting={pendingAction === "Request Changes"}
+                  mode={mode}
+                  onCommentChange={handleCommentChange}
+                  onCommentCodeSelectionAttachmentRemove={
+                    removeCommentCodeSelectionAttachment
+                  }
+                  onCommentFileAttachmentRemove={removeCommentFileAttachment}
+                  onCommentFileAttachmentsAdd={addCommentFileAttachments}
+                  onCommentFileAttachmentsReplace={(replacements) => setCommentFileAttachments((current) => replaceFileAttachments(current, replacements))}
+                  onCommentSubmit={handleCommentSubmit}
+                  onCommentSendNow={handleCommentSendNow}
+                  onAgentPause={
+                    userStory
+                      ? () => void onStopAgent(userStory, "pause")
+                      : undefined
+                  }
+                  onFileLinkClick={handleOpenDevelopmentFile}
+                  status={status}
+                  userStory={userStory}
+                />
+              }
+              headerTabsVisible={hasDevelopment}
+              headerStacked={!statsShownExpanded}
+              sidebarOpen={statsShownExpanded}
+            >
+              <UserStoryContent
+                loadChangedFileDiffs={loadChangedFileDiffs}
                 mode={mode}
-                onCommentChange={handleCommentChange}
-                onCommentCodeSelectionAttachmentRemove={
-                  removeCommentCodeSelectionAttachment
+                onCommentUndo={handleCommentUndo}
+                onSummaryCodeSelectionAttachmentRemove={
+                  removeSummaryCodeSelectionAttachment
                 }
-                onCommentFileAttachmentRemove={removeCommentFileAttachment}
-                onCommentFileAttachmentsAdd={addCommentFileAttachments}
-                onCommentFileAttachmentsReplace={(replacements) => setCommentFileAttachments((current) => replaceFileAttachments(current, replacements))}
-                onCommentSubmit={handleCommentSubmit}
-                onCommentSendNow={handleCommentSendNow}
-                onAgentPause={
-                  userStory
-                    ? () => void onStopAgent(userStory, "pause")
-                    : undefined
+                onSummaryFileAttachmentRemove={removeSummaryFileAttachment}
+                onSummaryFileAttachmentsAdd={addSummaryFileAttachments}
+                  onSummaryFileAttachmentsReplace={(replacements) => setSummaryFileAttachments((current) => replaceFileAttachments(current, replacements))}
+                onSummaryChange={handleSummaryChange}
+                onSummaryOptimize={
+                  onOptimizeUserStory ? handleSummaryOptimize : undefined
                 }
                 onFileLinkClick={handleOpenDevelopmentFile}
+                onChangedFileClick={handleOpenDevelopmentDiff}
+                onRunModeChange={changeRunMode}
+                runMode={runMode}
                 status={status}
+                summary={summary}
+                summaryCodeSelectionAttachments={summaryCodeSelectionAttachments}
+                summaryFileAttachments={pendingSummaryFileAttachments}
+                summaryRef={summaryRef}
                 userStory={userStory}
               />
-            }
-            headerTabsVisible={hasDevelopment}
-            headerStacked={!statsShownExpanded}
-            sidebarOpen={statsShownExpanded}
-          >
-            <UserStoryContent
-              loadChangedFileDiffs={loadChangedFileDiffs}
-              mode={mode}
-              onCommentUndo={handleCommentUndo}
-              onSummaryCodeSelectionAttachmentRemove={
-                removeSummaryCodeSelectionAttachment
-              }
-              onSummaryFileAttachmentRemove={removeSummaryFileAttachment}
-              onSummaryFileAttachmentsAdd={addSummaryFileAttachments}
-                onSummaryFileAttachmentsReplace={(replacements) => setSummaryFileAttachments((current) => replaceFileAttachments(current, replacements))}
-              onSummaryChange={handleSummaryChange}
-              onSummaryOptimize={
-                onOptimizeUserStory ? handleSummaryOptimize : undefined
-              }
-              onFileLinkClick={handleOpenDevelopmentFile}
-              onChangedFileClick={handleOpenDevelopmentDiff}
-              onRunModeChange={changeRunMode}
-              runMode={runMode}
-              status={status}
-              summary={summary}
-              summaryCodeSelectionAttachments={summaryCodeSelectionAttachments}
-              summaryFileAttachments={pendingSummaryFileAttachments}
-              summaryRef={summaryRef}
-              userStory={userStory}
-            />
-          </DrawerBody>
-        </TabsContent>
-        {hasPreview && (
-          <TabsContent
-            forceMount
-            value="preview"
-            className={cn(
-              "min-h-0 overflow-hidden",
-              tab !== "preview" && "hidden",
-              // The toolbar starts where the story's thread does.
-              hasDevelopment ? "pt-32" : "pt-24"
-            )}
-          >
-            {directPreview ? (
-              <DirectStoryPreview
-                storyId={userStory.id}
-                visible={tab === "preview"}
-                onCapture={handlePreviewCapture}
-                onReadyChange={setPreviewReady}
-              />
-            ) : (
-              <UserStoryPreview
-                setupInitializing={setupInitializing}
+            </DrawerBody>
+          </TabsContent>
+          {hasPreview && (
+            <TabsContent
+              forceMount
+              value="preview"
+              className={cn(
+                "min-h-0 overflow-hidden",
+                tab !== "preview" && "hidden",
+                // The toolbar starts where the story's thread does.
+                hasDevelopment ? "pt-32" : "pt-24"
+              )}
+            >
+              {directPreview ? (
+                <DirectStoryPreview
+                  storyId={userStory.id}
+                  visible={tab === "preview"}
+                  onCapture={handlePreviewCapture}
+                  onReadyChange={setPreviewReady}
+                />
+              ) : (
+                <UserStoryPreview
+                  setupInitializing={setupInitializing}
+                  userStory={userStory}
+                  visible={tab === "preview"}
+                  onRunConfigurationChange={handlePreviewRunConfigurationChange}
+                  onCapture={handlePreviewCapture}
+                  onReadyChange={setPreviewReady}
+                />
+              )}
+            </TabsContent>
+          )}
+          {hasDevelopment && (
+            <TabsContent
+              value="development"
+              className="min-h-0 overflow-hidden pt-32"
+            >
+              <DevelopmentContent
+                key={developmentFileTarget?.id ?? "development"}
+                diffStats={diffStats}
+                initialDiffPath={
+                  developmentTab === "diff"
+                    ? developmentFileTarget?.path
+                    : undefined
+                }
+                initialFilePath={developmentFileTarget?.path}
+                selectedDiffs={developmentFileTarget?.diffs}
+                status={status}
+                tab={developmentTab}
                 userStory={userStory}
-                visible={tab === "preview"}
-                onRunConfigurationChange={handlePreviewRunConfigurationChange}
-                onCapture={handlePreviewCapture}
-                onReadyChange={setPreviewReady}
+                onTabChange={setDevelopmentTab}
               />
-            )}
-          </TabsContent>
+            </TabsContent>
+          )}
+        </Tabs>
+        {tab === "user-story" && (
+          <StoryStatsIsland
+            diffStats={diffStats}
+            contextLimitKey={contextLimitKey}
+            expanded={statsShownExpanded}
+            preparing={!statsExpandable}
+            source={userStory}
+            useEditorModel={summaryEditable}
+            onExpand={() => setStatsExpanded(true)}
+          />
         )}
-        {hasDevelopment && (
-          <TabsContent
-            value="development"
-            className="min-h-0 overflow-hidden pt-32"
-          >
-            <DevelopmentContent
-              key={developmentFileTarget?.id ?? "development"}
-              diffStats={diffStats}
-              initialDiffPath={
-                developmentTab === "diff"
-                  ? developmentFileTarget?.path
-                  : undefined
-              }
-              initialFilePath={developmentFileTarget?.path}
-              selectedDiffs={developmentFileTarget?.diffs}
-              status={status}
-              tab={developmentTab}
-              userStory={userStory}
-              onTabChange={setDevelopmentTab}
-            />
-          </TabsContent>
+        {tab !== "user-story" && (
+          <div className="pointer-events-none absolute right-4 bottom-4 z-20 p-0">
+            {drawerActionButtons}
+          </div>
         )}
-      </Tabs>
-      {tab === "user-story" && (
-        <StoryStatsIsland
-          diffStats={diffStats}
-          contextLimitKey={contextLimitKey}
-          expanded={statsShownExpanded}
-          preparing={!statsExpandable}
-          source={userStory}
-          useEditorModel={summaryEditable}
-          onExpand={() => setStatsExpanded(true)}
-        />
-      )}
-      {tab !== "user-story" && (
-        <div className="pointer-events-none absolute right-4 bottom-4 z-20 p-0">
-          {drawerActionButtons}
-        </div>
-      )}
-    </DrawerContent>
+      </DrawerContent>
+    </ExcerptTargetProvider>
   )
 
   // Applies right away to an existing story; a new one takes it on create.

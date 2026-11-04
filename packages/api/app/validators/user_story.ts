@@ -61,8 +61,10 @@ export const codeSelectionAttachment = vine.object({
   id: vine.string().trim().minLength(1).maxLength(255),
   content: vine.string().maxLength(262144),
   endLine: vine.number(),
+  origin: vine.enum(['code', 'message', 'story']).optional(),
   path: vine.string().trim().minLength(1).maxLength(2048),
   startLine: vine.number(),
+  storyId: vine.string().trim().minLength(1).maxLength(255).optional(),
 })
 export const fileAttachment = vine.object({
   id: vine.string().trim().minLength(1).maxLength(36),

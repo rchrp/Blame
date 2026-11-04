@@ -1,5 +1,17 @@
 import { useEffect, useRef, useState } from "react"
-import { LoaderCircleIcon, PenLineIcon, XIcon } from "lucide-react"
+import {
+  ArrowUpRightIcon,
+  LoaderCircleIcon,
+  PenLineIcon,
+  Table2Icon,
+  XIcon,
+} from "lucide-react"
+import { selectBacklogStory } from "@/components/backlog/data/backlog-navigation"
+import {
+  navigate,
+  navigationPathname,
+} from "@/components/navigation/navigation"
+import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { attachmentFormat, hasDocumentPreview } from "./attachment-format"
 import { AttachmentIcon } from "./attachment-icon"
@@ -8,17 +20,31 @@ import { DocumentContent } from "./document-content"
 import { useDocumentPreview } from "./use-document-preview"
 import { useAttachmentActions } from "./use-attachment-actions"
 
-export function AttachmentPreview({
-  attachment,
-  onOpenImage,
-  onOpenDocument,
-  onRemove,
-}: {
+type AttachmentPreviewProps = {
   attachment: ComposerAttachment
   onOpenImage: (id: string) => void
   onOpenDocument: (id: string) => void
   onRemove?: (attachment: ComposerAttachment) => void
-}) {
+}
+
+export function AttachmentPreview(props: AttachmentPreviewProps) {
+  if (props.attachment.source === "story") {
+    return (
+      <StoryAttachmentPreview
+        attachment={props.attachment}
+        onRemove={props.onRemove}
+      />
+    )
+  }
+  return <FileAttachmentPreview {...props} />
+}
+
+function FileAttachmentPreview({
+  attachment,
+  onOpenImage,
+  onOpenDocument,
+  onRemove,
+}: AttachmentPreviewProps) {
   const ref = useRef<HTMLDivElement>(null)
   const [visible, setVisible] = useState(false)
   const format = attachmentFormat(attachment.file)
@@ -113,6 +139,14 @@ export function AttachmentPreview({
             <div className="flex h-10 w-full shrink-0 items-center gap-2 bg-background/85 px-3">
               <AttachmentIcon format={format} />
               <span className="truncate text-xs font-medium">{title}</span>
+              {attachment.source === "code" ? (
+                <Badge
+                  variant="secondary"
+                  className="ml-auto h-5 shrink-0 px-1.5 text-[10px]"
+                >
+                  Excerpt
+                </Badge>
+              ) : null}
             </div>
           </>
         )}
@@ -132,15 +166,89 @@ export function AttachmentPreview({
         </div>
       )}
       {onRemove && (
-        <button
-          type="button"
-          aria-label={`Remove ${title}`}
-          onClick={() => onRemove(attachment)}
-          className="absolute top-1.5 right-1.5 flex size-7 items-center justify-center rounded-full bg-background/95 text-foreground shadow-sm transition-opacity outline-none group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring [@media(hover:hover)]:opacity-0"
-        >
-          <XIcon className="size-3.5" />
-        </button>
+        <RemoveAttachmentButton
+          title={title}
+          onRemove={() => onRemove(attachment)}
+        />
       )}
     </div>
   )
+}
+
+// A story attached as context: it opens the story, it has no preview.
+function StoryAttachmentPreview({
+  attachment,
+  onRemove,
+}: Pick<AttachmentPreviewProps, "attachment" | "onRemove">) {
+  const displayId = attachment.title ?? attachment.file.name
+  const storyTitle = attachment.subtitle
+  const label = storyTitle ? `${displayId} · ${storyTitle}` : displayId
+  const { storyId } = attachment
+  return (
+    <div className="group relative shrink-0">
+      <button
+        type="button"
+        title={label}
+        aria-label={`Open ${label}`}
+        disabled={!storyId}
+        onClick={() => {
+          if (storyId) openBacklogStory(storyId)
+        }}
+        className="relative flex h-40 w-56 flex-col overflow-hidden rounded-xl border border-border/70 bg-muted/40 text-left transition-colors outline-none hover:border-foreground/30 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-60"
+      >
+        <div className="flex min-h-0 w-full flex-1 flex-col gap-2 p-3">
+          <span className="line-clamp-4 text-sm leading-5 font-medium text-foreground">
+            {storyTitle ?? displayId}
+          </span>
+          <span className="mt-auto flex items-center gap-1 text-[11px] text-muted-foreground">
+            Open the story
+            <ArrowUpRightIcon className="size-3" />
+          </span>
+        </div>
+        <div className="flex h-10 w-full shrink-0 items-center gap-2 bg-background/85 px-3">
+          <Table2Icon className="size-4 shrink-0 text-muted-foreground" />
+          <span className="truncate font-mono text-xs font-medium">
+            {displayId}
+          </span>
+          <Badge
+            variant="secondary"
+            className="ml-auto h-5 shrink-0 px-1.5 text-[10px]"
+          >
+            Context
+          </Badge>
+        </div>
+      </button>
+      {onRemove && (
+        <RemoveAttachmentButton
+          title={displayId}
+          onRemove={() => onRemove(attachment)}
+        />
+      )}
+    </div>
+  )
+}
+
+function RemoveAttachmentButton({
+  onRemove,
+  title,
+}: {
+  onRemove: () => void
+  title: string
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={`Remove ${title}`}
+      onClick={onRemove}
+      className="absolute top-1.5 right-1.5 flex size-7 items-center justify-center rounded-full bg-background/95 text-foreground shadow-sm transition-opacity outline-none group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring [@media(hover:hover)]:opacity-0"
+    >
+      <XIcon className="size-3.5" />
+    </button>
+  )
+}
+
+// From any page: the backlog opens the story in its drawer.
+function openBacklogStory(storyId: string) {
+  if (navigationPathname() !== "/backlog") navigate("/backlog")
+  selectBacklogStory(storyId)
 }

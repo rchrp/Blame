@@ -3,18 +3,39 @@ import assert from "node:assert/strict"
 
 import {
   changedFilesFromDiff,
-  completedStoryReference,
   mergeDraftSummary,
+  storyContextAttachment,
 } from "./user-story-context.ts"
 
-test("a story built on a finished one names it by id and title", () => {
-  assert.equal(
-    completedStoryReference({ storyNumber: 42, title: " Add  OAuth login " }),
-    "Builds on US-042 · Add OAuth login.\n\n"
+test("a story built on a finished one attaches it by id and title", () => {
+  assert.deepEqual(
+    storyContextAttachment({
+      id: "story-42",
+      storyNumber: 42,
+      title: " Add  OAuth login ",
+    }),
+    {
+      id: "story-context:story-42",
+      content: "Add OAuth login",
+      endLine: 1,
+      origin: "story",
+      path: "US-042",
+      startLine: 1,
+      storyId: "story-42",
+    }
   )
   assert.equal(
-    completedStoryReference({ storyNumber: 7, title: "" }),
-    "Builds on US-007.\n\n"
+    storyContextAttachment({ id: "story-7", storyNumber: 7, title: "" })
+      .content,
+    ""
+  )
+})
+
+test("the same story attached twice keeps one reference", () => {
+  const story = { id: "story-42", storyNumber: 42, title: "Login" }
+  assert.equal(
+    storyContextAttachment(story).id,
+    storyContextAttachment({ ...story, title: "Renamed" }).id
   )
 })
 

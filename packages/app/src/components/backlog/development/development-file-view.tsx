@@ -9,15 +9,18 @@ import {
   filename,
   parseGitDiff,
 } from "@/components/backlog/development/development-workspace"
-import { dispatchCodeSelectionAttachment } from "@/components/backlog/shared/comment-attachment-events"
+import {
+  pierreShadowHostSelector,
+  selectedCodeExcerpt,
+} from "@/components/backlog/development/code-excerpt"
+import {
+  SelectionExcerptActions,
+  type TextSelection,
+} from "@/components/backlog/shared/selection-excerpt-actions"
 import {
   pierreSyntaxThemes,
   usePierreSyntaxHighlighting,
 } from "@/components/backlog/development/pierre-syntax-highlighting"
-import {
-  labelPierreGutterUtility,
-  pierreGutterUtilityCSS,
-} from "@/components/backlog/development/pierre-gutter-utility"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useTheme } from "@/components/providers/theme-provider"
 
@@ -113,19 +116,10 @@ export function DevelopmentFileView({
 function FileSource({ path, source }: { path: string; source: string }) {
   const syntaxHighlightingReady = usePierreSyntaxHighlighting(path)
   const { theme } = useTheme()
-  const sourceLines = React.useMemo(() => source.split("\n"), [source])
-  const commentSelection = React.useCallback(
-    (range: { end: number; start: number }) => {
-      const start = Math.max(1, range.start)
-      const end = Math.min(sourceLines.length, Math.max(start, range.end))
-      dispatchCodeSelectionAttachment({
-        content: sourceLines.slice(start - 1, end).join("\n"),
-        endLine: end,
-        path,
-        startLine: start,
-      })
-    },
-    [path, sourceLines]
+  const sourceRef = React.useRef<HTMLDivElement>(null)
+  const readExcerpt = React.useCallback(
+    (selection: TextSelection) => selectedCodeExcerpt(path, selection),
+    [path]
   )
   const themeType =
     theme === "system"
@@ -136,18 +130,12 @@ function FileSource({ path, source }: { path: string; source: string }) {
   const options = React.useMemo(
     () => ({
       disableFileHeader: true,
-      enableGutterUtility: true,
-      enableLineSelection: true,
       lineHoverHighlight: "line" as const,
-      onGutterUtilityClick: commentSelection,
-      onPostRender: (node: HTMLElement) =>
-        labelPierreGutterUtility(node, `Comment ${path} source selection`),
       overflow: "scroll" as const,
       theme: pierreSyntaxThemes,
       themeType,
-      unsafeCSS: pierreGutterUtilityCSS,
     }),
-    [commentSelection, path, themeType]
+    [themeType]
   )
 
   if (!syntaxHighlightingReady) return <FileSkeleton />
@@ -156,12 +144,20 @@ function FileSource({ path, source }: { path: string; source: string }) {
     <div className="flex h-full min-h-0 min-w-0 max-w-full flex-col overflow-hidden">
       <FileHeader path={path} />
       <DevelopmentScrollArea className="min-h-0 w-full max-w-full flex-1">
-        <PierreFile
-          className="blame-pierre-file"
-          file={{ contents: source, name: path }}
-          options={options}
-        />
+        {/* The story drawer turns text selection off; code stays selectable. */}
+        <div ref={sourceRef} className="select-text">
+          <PierreFile
+            className="blame-pierre-file"
+            file={{ contents: source, name: path }}
+            options={options}
+          />
+        </div>
       </DevelopmentScrollArea>
+      <SelectionExcerptActions
+        containerRef={sourceRef}
+        readExcerpt={readExcerpt}
+        shadowHostSelector={pierreShadowHostSelector}
+      />
     </div>
   )
 }

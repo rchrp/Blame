@@ -141,7 +141,13 @@ function developmentStoryPrompt(
     prompt.push("", "Review feedback files:", "", feedbackFiles);
   }
   const storyHint = input.projectId
-    ? earlierStoriesHint(`${input.summary}\n${input.feedback ?? ""}`)
+    ? earlierStoriesHint(
+        `${input.summary}\n${input.feedback ?? ""}`,
+        storyContextIds(
+          input.codeSelectionAttachments,
+          input.feedbackCodeSelectionAttachments,
+        ),
+      )
     : undefined;
   if (storyHint) prompt.push("", storyHint);
   if (attachments.userImages.length) {
@@ -192,8 +198,22 @@ function attachedFileInstructions(paths: string[]) {
 function codeSelectionAttachmentsMarkdown(
   attachments: StartDevelopmentSessionInput["codeSelectionAttachments"],
 ) {
-  if (!attachments?.length) return "";
-  return attachments.map(codeSelectionAttachmentMarkdown).join("\n\n");
+  const selections = (attachments ?? []).filter(
+    (attachment) => attachment.origin !== "story",
+  );
+  if (!selections.length) return "";
+  return selections.map(codeSelectionAttachmentMarkdown).join("\n\n");
+}
+
+// Stories attached as context (Use Context), by number: the agent reads
+// them with its story tools rather than from a quote.
+function storyContextIds(
+  ...lists: StartDevelopmentSessionInput["codeSelectionAttachments"][]
+) {
+  return lists
+    .flatMap((attachments) => attachments ?? [])
+    .filter((attachment) => attachment.origin === "story")
+    .map((attachment) => attachment.path);
 }
 
 function codeSelectionAttachmentMarkdown(
@@ -203,7 +223,9 @@ function codeSelectionAttachmentMarkdown(
 ) {
   const fence = markdownFence(attachment.content);
   return [
-    `### ${attachment.path} (${codeSelectionLineLabel(attachment)})`,
+    attachment.origin === "message"
+      ? `### Conversation excerpt: ${attachment.path}`
+      : `### ${attachment.path} (${codeSelectionLineLabel(attachment)})`,
     "",
     fence,
     attachment.content,
@@ -552,10 +574,15 @@ export function referencedStories(text: string) {
 
 // Stories this one builds on ("Builds on US-042", from Use Context) are read
 // first; others it merely names are left to the agent's judgement.
-function earlierStoriesHint(text: string) {
+// Stories this one builds on (attached with Use Context, or named as
+// "Builds on US-042" by stories written before) are read first; others it
+// merely names are left to the agent's judgement.
+function earlierStoriesHint(text: string, contextStories: string[]) {
   const basis = referencedStories(
-    Array.from(text.matchAll(/\bbuilds on\s+(US-\d+)/giu), (match) => match[1])
-      .join(" "),
+    [
+      ...Array.from(text.matchAll(/\bbuilds on\s+(US-\d+)/giu), (match) => match[1]),
+      ...contextStories,
+    ].join(" "),
   );
   const others = referencedStories(text).filter((id) => !basis.includes(id));
   return [

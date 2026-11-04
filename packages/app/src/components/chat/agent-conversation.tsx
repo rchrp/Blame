@@ -48,6 +48,12 @@ import {
   type FileAttachmentReplacement,
 } from "@/components/backlog/drawer/user-story-attachment-files"
 import type { PendingCodeSelectionAttachment } from "@/components/backlog/shared/comment-attachment-events"
+import { messageExcerpt } from "@/components/backlog/shared/excerpt-model"
+import {
+  nodeElement,
+  SelectionExcerptActions,
+  type TextSelection,
+} from "@/components/backlog/shared/selection-excerpt-actions"
 import type { AgentConversationResponseHeader } from "@/components/chat/agent-conversation-header"
 import { checkpointRunTargets } from "@/components/chat/agent-run-checkpoints"
 import type { AgentTurnMetrics } from "@/components/chat/agent-turn-metrics"
@@ -91,6 +97,24 @@ import { StoryProposalsProvider } from "./proposals/proposal-context"
 import { isProposalActivity } from "./proposals/proposal-tools"
 import { SourcesSummary } from "./web-research/web-sources"
 import type { ScreenshotOwner } from "@/lib/agent-screenshot-sync"
+
+// Text selected in one message, the person's or the agent's. A selection
+// running past the message keeps its part inside it.
+function selectedMessageExcerpt({ range, text }: TextSelection) {
+  const start = nodeElement(range.startContainer)
+  const message = start?.closest<HTMLElement>("[data-conversation-message]")
+  if (!start || !message || start.closest("[contenteditable='true']")) {
+    return undefined
+  }
+  const author =
+    message.dataset.conversationMessage === "user" ? "user" : "agent"
+  if (message.contains(range.endContainer)) {
+    return messageExcerpt({ author, text })
+  }
+  const withinMessage = range.cloneRange()
+  withinMessage.setEnd(message, message.childNodes.length)
+  return messageExcerpt({ author, text: withinMessage.toString() })
+}
 
 // Where a conversation's screenshots are fetched from, and cached under.
 export function screenshotOwnerFor(
@@ -246,6 +270,7 @@ export function AgentConversationTimeline({
     () => checkpointRunTargets(runs),
     [runs]
   )
+  const timelineRef = React.useRef<HTMLDivElement>(null)
 
   if (runs.length === 0 && unsentComments.length === 0 && !queued) return null
 
@@ -256,6 +281,7 @@ export function AgentConversationTimeline({
           {/* Room for the avatars beside the messages (-left-10 and
               -right-10): whatever holds the thread, they stay inside it. */}
           <div
+            ref={timelineRef}
             className="grid gap-10 px-10"
             aria-busy={runs.some((run) => run.status === "running")}
           >
@@ -292,6 +318,10 @@ export function AgentConversationTimeline({
             ))}
             {queued}
           </div>
+          <SelectionExcerptActions
+            containerRef={timelineRef}
+            readExcerpt={selectedMessageExcerpt}
+          />
         </StoryProposalsProvider>
       </WebResearchProvider>
     </AgentScreenshotOwnerProvider>
@@ -611,6 +641,7 @@ function RunCommentItem({
     >
       <div className="ml-auto grid w-full max-w-3xl min-w-0 gap-2 overflow-hidden">
         <div
+          data-conversation-message="user"
           className={cn(
             // Same inner spacing as agent messages.
             "max-w-full min-w-0 overflow-hidden rounded-3xl [&>div]:max-w-full [&>div]:min-w-0 [&>div]:bg-transparent [&>div]:p-0 [&>div]:shadow-none [&>div]:ring-0",
@@ -1554,6 +1585,7 @@ function AgentMarkdownTimelineItem({
         >
           <div
             ref={contentRef}
+            data-conversation-message="agent"
             className={cn(
               "relative [&>div]:bg-transparent [&>div]:p-0 [&>div]:shadow-none [&>div]:ring-0",
               effectColor && "sub-agent-response-content",

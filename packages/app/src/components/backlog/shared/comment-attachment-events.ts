@@ -1,18 +1,19 @@
 export type CodeSelectionAttachment = {
   content: string
   endLine: number
+  // Where the excerpt was selected: a source file unless it says otherwise.
+  // A story attached as context keeps its number in path, its title in
+  // content and its id in storyId.
+  origin?: CodeSelectionOrigin
   path: string
   startLine: number
+  storyId?: string
 }
+
+export type CodeSelectionOrigin = "code" | "message" | "story"
 
 export type PendingCodeSelectionAttachment = CodeSelectionAttachment & {
   id: string
-}
-
-export const codeSelectionAttachmentEvent = "backlog:code-selection-attachment"
-
-export function dispatchCodeSelectionAttachment(attachment: CodeSelectionAttachment) {
-  window.dispatchEvent(new CustomEvent(codeSelectionAttachmentEvent, { detail: attachment }))
 }
 
 export function codeSelectionLineLabel(attachment: Pick<CodeSelectionAttachment, "endLine" | "startLine">) {
