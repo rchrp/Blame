@@ -203,7 +203,8 @@ export function setupFromJson(text: string): SavedSetup {
     value = JSON.parse(text)
   } catch (error) {
     throw new Error(
-      `The JSON is not valid: ${error instanceof Error ? error.message : "parse error"}.`
+      `The JSON is not valid: ${error instanceof Error ? error.message : "parse error"}.`,
+      { cause: error }
     )
   }
   if (!value || typeof value !== "object" || Array.isArray(value))
