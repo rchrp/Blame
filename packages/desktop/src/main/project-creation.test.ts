@@ -285,7 +285,7 @@ test("pins package manager in generated package manifest", async () => {
   const parsed = JSON.parse(
     await readFile(join(target, "package.json"), "utf8"),
   );
-  assert.equal(parsed.packageManager, "pnpm@10.33.2");
+  assert.equal(parsed.packageManager, "pnpm@10.34.9");
   assert.deepEqual(parsed.pnpm.onlyBuiltDependencies, [
     "@prisma/client",
     "@prisma/engines",
@@ -639,7 +639,7 @@ test("builds package-manager specific setup commands", () => {
 test("builds container-safe package manager commands", () => {
   assert.match(
     dockerCompose(baseConfiguration),
-    /corepack prepare pnpm@10\.33\.2 --activate/,
+    /corepack prepare pnpm@10\.34\.9 --activate/,
   );
   assert.match(dockerCompose(baseConfiguration), /corepack pnpm install/);
   assert.match(

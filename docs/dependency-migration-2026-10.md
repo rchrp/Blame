@@ -47,6 +47,13 @@ and Buildx 0.38.1. macOS bundles Lima 2.2.1. Download checksums are pinned for
 both architectures. Images contain npm 12.2.1, npm 11.6.4, pnpm 12.15.0, pnpm 10.33.2 and
 Yarn 1.22.22. Their health checks verify both npm and pnpm generations.
 
+**November 2026 follow-up:** pnpm 10.33.2 can write outside a project during an
+install and leak secrets through proxy settings read from `pnpm-workspace.yaml`
+(fixed in 10.34.5). The runtime after v13 bundles and provisions pnpm 10.34.9
+instead, and provisioning removes every other pnpm 10 from upgraded VMs.
+Projects pinned to 10.33.2 run 10.34.9 as the same major. New projects pin
+pnpm 10.34.9.
+
 After CI passes and the PR is merged, the `runtime-v13` tag builds and verifies
 the four runtime images before the publication job runs. Publication must be
 checked through `https://download.blame.so/runtime/v13/manifest.json` and all

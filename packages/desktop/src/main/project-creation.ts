@@ -867,7 +867,7 @@ function defaultBuildScript(frontend: FrontendFramework) {
 }
 
 function packageManagerVersion(packageManager: PackageManager) {
-  if (packageManager === "pnpm") return "pnpm@10.33.2";
+  if (packageManager === "pnpm") return "pnpm@10.34.9";
   if (packageManager === "npm") return "npm@11.6.4";
   if (packageManager === "yarn") return "yarn@1.22.22";
   if (packageManager === "bun") return "bun@1.3.4";

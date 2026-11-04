@@ -11,7 +11,7 @@ test("builds dependency script for recommended Next.js project creation", () => 
   assert.match(script, /docker --version/)
   assert.match(script, /pnpm create next-app --help/)
   assert.match(script, /pnpm install --help/)
-  assert.match(script, /corepack prepare pnpm@10\.33\.2 --activate/)
+  assert.match(script, /corepack prepare pnpm@10\.34\.9 --activate/)
   assert.match(script, /corepack pnpm install --help/)
 })
 

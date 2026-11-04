@@ -38,7 +38,7 @@ function packageInstallCommands(packageManager: PackageManager) {
   if (manager === "pnpm")
     return [
       "pnpm install --help",
-      "corepack prepare pnpm@10.33.2 --activate",
+      "corepack prepare pnpm@10.34.9 --activate",
       "corepack pnpm install --help",
     ]
   if (manager === "yarn")
