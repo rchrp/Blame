@@ -66,3 +66,12 @@ test("has nothing to compare without a usable history or date", () => {
     undefined
   )
 })
+
+test("falls back to the merge base without an older commit", () => {
+  const environment = { checkedCommit: null, updatedAt: "2026-01-01T00:00:00Z" }
+  assert.equal(previewEnvironmentCheckBase(history, environment, "c2"), "c2")
+  assert.equal(
+    previewEnvironmentCheckBase(history, environment, "c3"),
+    undefined
+  )
+})

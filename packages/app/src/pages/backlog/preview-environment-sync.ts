@@ -19,6 +19,8 @@ import {
 // made outside Blame), the impact agent looks at the commits in between and
 // the repair agent updates the environment when they need it. A merge checks
 // right away; a story preview waits for the check, its agent never does.
+// A check that does not settle (an error, an update the repair could not
+// make) records nothing: it runs again on a new commit or a new app session.
 
 export type PreviewEnvironmentSyncInput = {
   apiConnection: ReturnType<typeof useCloudAuth>["apiConnection"]
@@ -31,6 +33,8 @@ export type PreviewEnvironmentSyncInput = {
   reasoningEffort?: ReasoningSelection
   /** The merged story's own repair of the environment, if it made one. */
   previewRepairCandidate?: ProjectPreviewRepairCandidate
+  /** A commit known to precede the head: the base of a merge. */
+  fallbackBase?: string
 }
 
 type SyncResult = Promise<CloudProjectInitialization | undefined>
@@ -47,6 +51,8 @@ const position = "bottom-right" as const
 // meanwhile.
 type QueuedCheck = { input: PreviewEnvironmentSyncInput; result: SyncResult }
 const queues = new Map<string, { last: SyncResult; next?: QueuedCheck }>()
+// The head of each project whose check did not settle in this session.
+const unsettledHeads = new Map<string, string>()
 
 /** The project's preview environment, checked against its branch head. */
 export function syncPreviewEnvironment(
@@ -61,10 +67,12 @@ export function syncPreviewEnvironment(
     return queue.next.result
   }
   const next = { input } as QueuedCheck
-  next.result = queue.last.then(() => {
-    queue.next = undefined
-    return checkPreviewEnvironment(next.input)
-  })
+  next.result = queue.last
+    .catch(() => undefined)
+    .then(() => {
+      queue.next = undefined
+      return checkPreviewEnvironment(next.input)
+    })
   queue.next = next
   queue.last = next.result
   return next.result
@@ -73,10 +81,11 @@ export function syncPreviewEnvironment(
 // Never rejects: without a check, previews run with the saved environment
 // and a failing one offers "Repair setup".
 async function checkPreviewEnvironment(input: PreviewEnvironmentSyncInput) {
-  const cloud = createCloudApi(input.apiConnection)
   const toastId = `preview-environment-check-${input.projectId}`
   let saved: CloudProjectInitialization | undefined
+  let headCommit: string | undefined
   try {
+    const cloud = createCloudApi(input.apiConnection)
     saved =
       (await cloud.projectInitialization(input.projectId)).initialization ??
       undefined
@@ -87,13 +96,19 @@ async function checkPreviewEnvironment(input: PreviewEnvironmentSyncInput) {
     const branch = { root: input.repositoryRoot, currentBranchOnly: true }
     const [head] = await workspace.gitLog({ ...branch, limit: 1 })
     if (!head || head.hash === saved.checkedCommit) return saved
+    if (unsettledHeads.get(input.projectId) === head.hash) return saved
     const history = await workspace.gitLog({ ...branch, limit: historyLimit })
-    const headCommit = history[0]?.hash ?? head.hash
-    const baseCommit = previewEnvironmentCheckBase(history, saved)
+    headCommit = history[0]?.hash ?? head.hash
+    const baseCommit = previewEnvironmentCheckBase(
+      history,
+      saved,
+      input.fallbackBase
+    )
     // Nothing on the branch to compare with: the environment stands as is.
     if (!baseCommit) return await recordCheck(input, headCommit, saved)
     return await checkCommits(input, saved, baseCommit, headCommit, toastId)
   } catch (error) {
+    if (headCommit) unsettledHeads.set(input.projectId, headCommit)
     toast.warning("Could not check the preview environment", {
       id: toastId,
       description: error instanceof Error ? error.message : String(error),
@@ -127,11 +142,14 @@ async function checkCommits(
       baseCommit,
       headCommit,
     })
-    // A repair saves the head as checked; any other verdict is recorded.
-    const environment =
-      result.repaired ?? (await recordCheck(input, headCommit, saved))
     showCheckResult(toastId, result, progressShown)
-    return environment
+    // A repair saves the head as checked.
+    if (result.repaired) return result.repaired
+    if (result.assessment.classification === "initialization_update_required") {
+      unsettledHeads.set(input.projectId, headCommit)
+      return saved
+    }
+    return await recordCheck(input, headCommit, saved)
   } finally {
     clearTimeout(progress)
   }

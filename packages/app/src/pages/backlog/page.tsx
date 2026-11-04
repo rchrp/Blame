@@ -1166,6 +1166,7 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
           projects.activeProject!.path,
           {
             apiConnection: auth.apiConnection,
+            fallbackBase: result.baseCommit,
             modelId: alternativeSelection.currentModel!.id,
             credentialLabel: alternativeSelection.currentModel!.credentialLabel,
             platform,
