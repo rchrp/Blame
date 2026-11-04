@@ -53,18 +53,22 @@ export function usePreviewEnvironment(
   const client = usePlatform().previewEnvironment
   const [view, setView] = React.useState<PreviewEnvironmentView>()
   const [error, setError] = React.useState<string>()
+  // The state updates run once describe settles, never synchronously, so the
+  // polling effect below can call refresh directly.
   const refresh = React.useCallback(async () => {
     if (!client || !worktree) return
-    try {
-      setView(await client.describe({ worktree }))
-      setError(undefined)
-    } catch (failure) {
-      setError(
-        readableFailure(
-          failure instanceof Error ? failure.message : String(failure)
+    await client.describe({ worktree }).then(
+      (next) => {
+        setView(next)
+        setError(undefined)
+      },
+      (failure: unknown) =>
+        setError(
+          readableFailure(
+            failure instanceof Error ? failure.message : String(failure)
+          )
         )
-      )
-    }
+    )
   }, [client, worktree])
   React.useEffect(() => {
     if (!active) return
