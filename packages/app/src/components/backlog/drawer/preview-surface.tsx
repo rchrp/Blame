@@ -152,13 +152,14 @@ function PhonePreview({
   native: React.ComponentProps<typeof NativePreviewPanel>
   device: "phone" | "tablet"
 }) {
+  const nativeClient = native.client
   const client = React.useMemo(
     () => ({
-      ...native.client,
-      create: (input: Parameters<typeof native.client.create>[0]) =>
-        native.client.create({ ...input, device }),
+      ...nativeClient,
+      create: (input: Parameters<typeof nativeClient.create>[0]) =>
+        nativeClient.create({ ...input, device }),
     }),
-    [native.client, device]
+    [nativeClient, device]
   )
   return (
     <PhoneFrame device={device}>
@@ -181,13 +182,9 @@ export function usePreviewSurfaceManifest(
   refreshKey?: string
 ) {
   const platform = usePlatform()
-  const [manifest, setManifest] = React.useState(provided)
+  const [read, setRead] = React.useState<PreviewManifest>()
   React.useEffect(() => {
-    if (provided) {
-      setManifest(provided)
-      return
-    }
-    if (!worktree) return
+    if (provided || !worktree) return
     let cancelled = false
     void platform.workspace
       ?.readFile({
@@ -197,19 +194,20 @@ export function usePreviewSurfaceManifest(
       .then((text) => {
         if (cancelled || !text) return
         try {
-          setManifest(JSON.parse(text))
+          setRead(JSON.parse(text))
         } catch {
-          setManifest(undefined)
+          setRead(undefined)
         }
       })
       .catch(() => {
-        if (!cancelled) setManifest(undefined)
+        if (!cancelled) setRead(undefined)
       })
     return () => {
       cancelled = true
     }
   }, [platform, worktree, provided, refreshKey])
-  return manifest
+  // A provided manifest wins over the one read from the worktree.
+  return provided ?? read
 }
 
 export function previewSurfaceType(
