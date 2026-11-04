@@ -10,6 +10,8 @@ buildx_version="${BLAME_BUILDX_VERSION:-0.38.1}"
 node_version="${BLAME_NODE_VERSION:-24.22.1}"
 npm_version="${BLAME_NPM_VERSION:-12.2.1}"
 pnpm_version="${BLAME_PNPM_VERSION:-12.15.0}"
+# The newest pnpm 10, for projects that still pin pnpm 10.
+pnpm_legacy_version="10.34.9"
 yarn_version="${BLAME_YARN_VERSION:-1.22.22}"
 preview_display_image="ghcr.io/rchrp/blame-preview-display@sha256:ff979c4dd3b0df001f26252d2da11949f86c820ff7dde8fbbb94bc1d7bd98e2b" # Filled from the signed preview-image release.
 runtime_packages="bubblewrap ca-certificates curl dbus-user-session git gzip iptables procps python3 tar xz-utils"
@@ -121,8 +123,20 @@ ensure_package_managers() {
   ensure_package_manager npm "11.6.4"
   ensure_package_manager pnpm "$pnpm_version"
   # Existing projects can keep their pnpm 10 pin when the runtime upgrades.
-  ensure_package_manager pnpm "10.33.2"
+  ensure_package_manager pnpm "$pnpm_legacy_version"
+  remove_retired_pnpm_10
   ensure_package_manager yarn "$yarn_version"
+}
+
+# An upgraded VM keeps the pnpm 10 of its previous runtime, and older pnpm 10
+# releases can write outside a project during an install. Keep only the
+# current one: a project pinned to another pnpm 10 runs it as the same major.
+remove_retired_pnpm_10() {
+  for directory in "$package_manager_root"/pnpm/10.*; do
+    [ -d "$directory" ] || continue
+    [ "${directory##*/}" = "$pnpm_legacy_version" ] && continue
+    rm -rf "$directory"
+  done
 }
 
 ensure_package_manager() {

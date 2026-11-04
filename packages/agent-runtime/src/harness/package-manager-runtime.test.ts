@@ -9,7 +9,7 @@ import { resolvePackageManager } from "./package-manager-runtime.js";
 
 for (const [name, version] of [
   ["pnpm", "12.15.0"],
-  ["pnpm", "10.33.2"],
+  ["pnpm", "10.34.9"],
   ["npm", "12.2.1"],
   ["npm", "11.6.4"],
 ] as const) {
@@ -43,3 +43,14 @@ for (const [name, version] of [
     }
   });
 }
+
+test("runs the bundled pnpm 10 for a project pinned to a retired pnpm 10", async () => {
+  // Runtime upgrades remove pnpm 10.33.2, which projects created before may pin.
+  const manager = await resolvePackageManager({
+    name: "pnpm",
+    version: "10.33.2",
+    compatibility: "pnpm_same_major",
+  });
+  assert.equal(manager.resolvedVersion, "10.34.9");
+  assert.equal(manager.resolutionStrategy, "compatible_same_major");
+});

@@ -33,7 +33,7 @@ test("fresh npm installation starts the distributed harness and verifies its SDK
       const manager = await resolvePackageManager({ name: process.argv[2], version: process.argv[3] });
       process.stdout.write(execFileSync(manager.executable, [...manager.argsPrefix, '--version']));
     `;
-    for (const [name, version] of [["pnpm", "12.15.0"], ["pnpm", "10.33.2"], ["npm", "12.2.1"], ["npm", "11.6.4"]]) {
+    for (const [name, version] of [["pnpm", "12.15.0"], ["pnpm", "10.34.9"], ["npm", "12.2.1"], ["npm", "11.6.4"]]) {
       const result = await execute(process.execPath, ["--input-type=module", "-e", managerScript,
         pathToFileURL(join(packageRoot, "harness/package-manager-runtime.js")).href, name, version], {
         cwd: workspace,

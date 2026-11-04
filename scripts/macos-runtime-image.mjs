@@ -217,7 +217,7 @@ async function verifyRuntime(bundle, instanceName, environment) {
     "command -v blame-semantic-harness",
     "test -s /etc/blame-semantic-harness-sha256",
     "test \"$(/opt/blame/package-managers/pnpm/12.15.0/bin/pnpm --version)\" = \"12.15.0\"",
-    "test \"$(/opt/blame/package-managers/pnpm/10.33.2/bin/pnpm --version)\" = \"10.33.2\"",
+    "test \"$(/opt/blame/package-managers/pnpm/10.34.9/bin/pnpm --version)\" = \"10.34.9\"",
     "test \"$(/opt/blame/package-managers/npm/12.2.1/bin/npm --version)\" = \"12.2.1\"",
     "test \"$(/opt/blame/package-managers/npm/11.6.4/bin/npm --version)\" = \"11.6.4\"",
     "test \"$(/opt/blame/package-managers/yarn/1.22.22/bin/yarn --version)\" = \"1.22.22\"",

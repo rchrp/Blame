@@ -294,8 +294,8 @@ importers:
         specifier: 12.15.0
         version: 12.15.0
       pnpm-legacy:
-        specifier: npm:pnpm@10.33.2
-        version: pnpm@10.33.2
+        specifier: npm:pnpm@10.34.9
+        version: pnpm@10.34.9
       proper-lockfile:
         specifier: 4.1.2
         version: 4.1.2
@@ -9954,8 +9954,8 @@ packages:
     resolution: {integrity: sha512-Nc3IT5yHzflTfbjgqWcCPpo7DaKy4FnpB0l/zCAW0Tc7jxAiuqSxHasntB3D7887LSrA93kDJ9IXovxJYxyLCA==}
     engines: {node: '>=4'}
 
-  pnpm@10.33.2:
-    resolution: {integrity: sha512-qQ+vb+6rca1sblf5Tg/hoS9dzCLNdU20CulZPraj4LaxLjVAIYuzeuCDQEsfLObbKkEh6XmCm0r/lLmfSdoc+A==}
+  pnpm@10.34.9:
+    resolution: {integrity: sha512-9JtajqD97bRLs8DB1ldQkqU8KVDZW3rRXfEfF5dId6LeOgHAfpNOmyjOcW5RwJqUlixzBtCb4uHksYqMh2L9Mg==}
     engines: {node: '>=18.12'}
     hasBin: true
 
@@ -21267,7 +21267,7 @@ snapshots:
 
   pluralize@8.0.0: {}
 
-  pnpm@10.33.2: {}
+  pnpm@10.34.9: {}
 
   pnpm@12.15.0:
     optionalDependencies:
