@@ -6,7 +6,11 @@ import type { UserStory } from "@/components/backlog/data/backlog-data"
 import type { useBacklogStore } from "@/components/backlog/data/backlog-store"
 import { setStoryPreviewWaiting } from "@/components/backlog/data/preview-environment-waits"
 import { useModelSelection } from "@/components/model/model-selection"
-import { useCloudAuth } from "@/context/cloud-auth"
+import { useBlameRuntime } from "@/context/blame-runtime"
+import {
+  type CloudProjectInitialization,
+  useCloudAuth,
+} from "@/context/cloud-auth"
 import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
 import { storyTelemetryCohorts } from "./backlog-rotation-helpers"
@@ -14,9 +18,8 @@ import { syncPreviewEnvironment } from "./preview-environment-sync"
 
 // A story's worktree gets its preview setup from the project's preview
 // environment once that is checked against the latest commits. Until then
-// its preview pane waits; its agent works meanwhile. Each worktree is
-// prepared once per app session: when its story starts, or, if the app quit
-// before it could, once the backlog loads again.
+// its preview pane waits; its agent works meanwhile. A story is prepared
+// when it starts, and again after the app quit in the middle of it.
 
 type Preparation = {
   auth: ReturnType<typeof useCloudAuth>
@@ -26,26 +29,33 @@ type Preparation = {
   selection: ReturnType<typeof useModelSelection>
 }
 
-type Execution = { id: string; telemetryCohorts?: ExecutionTelemetryCohorts }
+type StoryStart = {
+  executionId: string
+  telemetryCohorts?: ExecutionTelemetryCohorts
+  /** The environment the story started with, if the check cannot load one. */
+  environment?: CloudProjectInitialization
+}
 
 type PreviewStory = UserStory & {
   worktree: string
   workspaceMode: "local-container" | "cloud-mirror"
 }
 
-const preparedWorktrees = new Set<string>()
-const startingStories = new Map<string, Execution>()
-const previewManifestPath = ".blame/initialization/preview-manifest.json"
+const startingStories = new Map<string, StoryStart>()
+const preparing = new Set<string>()
+const interruptedStorageKey = "blame.story-preview-preparations.v1"
+// Written when the agent repaired the story's own setup.
+const previewRepairPath = ".blame/initialization/preview-repair.json"
 
-/** Prepares the preview of a story starting now within its start. */
+/** Prepares the preview of a story starting now, as part of its start. */
 export function prepareStartingStoryPreview(
   storyId: string,
-  execution: Execution
+  start: StoryStart
 ) {
-  startingStories.set(storyId, execution)
+  startingStories.set(storyId, start)
 }
 
-/** Prepares the preview of every active story whose worktree needs it. */
+/** Prepares the preview of each active story that needs it. */
 export function useStoryPreviewPreparation(
   backlog: ReturnType<typeof useBacklogStore>
 ) {
@@ -54,6 +64,10 @@ export function useStoryPreviewPreparation(
   const project = useProjects().activeProject
   // The model of the setup agents, as for a merge.
   const selection = useModelSelection({ role: "alternative" })
+  // Local Container worktrees live in the Blame Runtime.
+  const runtimePhase = useBlameRuntime().phase
+  const runtimeReady =
+    runtimePhase === "ready" || runtimePhase === "unavailable"
   const ready = Boolean(
     project && selection.currentModel && platform.workspace && !backlog.loading
   )
@@ -67,43 +81,50 @@ export function useStoryPreviewPreparation(
   }))
   React.useEffect(() => {
     if (!ready) return
+    const interrupted = readInterrupted()
+    for (const key of interrupted) {
+      const story = backlog.stories.find(({ id }) => key.startsWith(`${id}:`))
+      // Left in progress since: a new start prepares it again.
+      if (story && !(previewStory(story) && worktreeKey(story) === key))
+        writeInterrupted(key, false)
+    }
     for (const story of backlog.stories) {
       if (!previewStory(story)) continue
-      const key = `${story.id}:${story.worktree}`
-      if (preparedWorktrees.has(key)) continue
-      preparedWorktrees.add(key)
-      const started = startingStories.get(story.id)
+      const key = worktreeKey(story)
+      const start = startingStories.get(story.id)
+      if (preparing.has(key) || (!start && !interrupted.has(key))) continue
+      if (story.workspaceMode === "local-container" && !runtimeReady) continue
       startingStories.delete(story.id)
-      void prepareStoryPreview(current, story, started)
+      void prepareStoryPreview(current, story, start)
     }
-  }, [backlog.stories, ready])
+  }, [backlog.stories, ready, runtimeReady])
 }
 
 async function prepareStoryPreview(
   current: () => Preparation,
   story: PreviewStory,
-  started: Execution | undefined
+  start: StoryStart | undefined
 ) {
-  const workspace = current().platform.workspace
-  if (!workspace) return
-  // A worktree from an earlier session usually has its setup already.
-  if (!started && (await previewSetupWritten(workspace, story.worktree))) return
+  const key = worktreeKey(story)
+  preparing.add(key)
+  writeInterrupted(key, true)
   setStoryPreviewWaiting(story.id, true)
   try {
-    const environment = await checkedEnvironment(current())
+    const environment =
+      (await checkedEnvironment(current(), story)) ?? start?.environment
     // Still active on this worktree: not stopped, discarded or merged.
     const fresh = current().backlog.stories.find(({ id }) => id === story.id)
+    const workspace = current().platform.workspace
     if (environment?.status !== "done" || !environment.previewManifest) return
-    if (!fresh || !previewStory(fresh) || fresh.worktree !== story.worktree) {
-      // Back in the queue, it is prepared when it starts again.
-      preparedWorktrees.delete(`${story.id}:${story.worktree}`)
+    if (!fresh || !previewStory(fresh) || fresh.worktree !== story.worktree)
       return
-    }
+    if (!workspace || (await fileExists(workspace, story, previewRepairPath)))
+      return
     await workspace.prepareProjectPreview({
-      executionId: started?.id ?? crypto.randomUUID(),
+      executionId: start?.executionId ?? crypto.randomUUID(),
       storyId: story.id,
       telemetryCohorts:
-        started?.telemetryCohorts ??
+        start?.telemetryCohorts ??
         storyTelemetryCohorts(story, story.agentModelId, story.agentProviderId),
       worktree: story.worktree,
       previewManifest: environment.previewManifest,
@@ -118,40 +139,34 @@ async function prepareStoryPreview(
     })
     setStoryPreviewWaiting(story.id, false)
     // A start that fails explains itself in the preview pane.
-    if (started)
-      void startRequestedPreview(current(), fresh).catch(() => undefined)
+    void startRequestedPreview(current(), fresh).catch(() => undefined)
   } catch (error) {
     toast.error("Couldn't prepare the preview", {
       description: `${story.title}: ${error instanceof Error ? error.message : String(error)}`,
       position: "bottom-right",
     })
   } finally {
+    preparing.delete(key)
+    writeInterrupted(key, false)
     setStoryPreviewWaiting(story.id, false)
   }
 }
 
-function checkedEnvironment(preparation: Preparation) {
-  const model = preparation.selection.currentModel!
+function checkedEnvironment(preparation: Preparation, story: UserStory) {
+  const { project, selection } = preparation
+  const model = selection.currentModel
+  // The project switched meanwhile: its own stories get their turn.
+  if (!model || project?.id !== story.projectId) return undefined
   return syncPreviewEnvironment({
     apiConnection: preparation.auth.apiConnection,
     platform: preparation.platform,
-    projectId: preparation.project!.id,
-    repositoryRoot: preparation.project!.path,
+    projectId: project.id,
+    repositoryRoot: project.path,
     providerId: model.provider.id,
     modelId: model.id,
     credentialLabel: model.credentialLabel,
-    reasoningEffort: preparation.selection.currentVariant,
+    reasoningEffort: selection.currentVariant,
   })
-}
-
-function previewSetupWritten(
-  workspace: NonNullable<Preparation["platform"]["workspace"]>,
-  worktree: string
-) {
-  return workspace.readFile({ root: worktree, path: previewManifestPath }).then(
-    () => true,
-    () => false
-  )
 }
 
 // A Local Container story started on a run configuration runs it at once.
@@ -172,6 +187,17 @@ async function startRequestedPreview(
   }
 }
 
+function fileExists(
+  workspace: NonNullable<Preparation["platform"]["workspace"]>,
+  story: PreviewStory,
+  path: string
+) {
+  return workspace.readFile({ root: story.worktree, path }).then(
+    () => true,
+    () => false
+  )
+}
+
 function previewStory(story: UserStory): story is PreviewStory {
   return (
     (story.status === "in-progress" || story.status === "in-review") &&
@@ -179,4 +205,32 @@ function previewStory(story: UserStory): story is PreviewStory {
     (story.workspaceMode === "local-container" ||
       story.workspaceMode === "cloud-mirror")
   )
+}
+
+function worktreeKey(story: PreviewStory) {
+  return `${story.id}:${story.worktree}`
+}
+
+// Preparations under way, kept so the next app session resumes those the
+// app quit in the middle of.
+function readInterrupted() {
+  try {
+    const value = JSON.parse(
+      localStorage.getItem(interruptedStorageKey) ?? "[]"
+    )
+    return new Set<string>(Array.isArray(value) ? value : [])
+  } catch {
+    return new Set<string>()
+  }
+}
+
+function writeInterrupted(key: string, pending: boolean) {
+  const keys = readInterrupted()
+  if (pending) keys.add(key)
+  else keys.delete(key)
+  try {
+    localStorage.setItem(interruptedStorageKey, JSON.stringify([...keys]))
+  } catch {
+    // Without storage, a preparation the app quit in is not resumed.
+  }
 }

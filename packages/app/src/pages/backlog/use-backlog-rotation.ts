@@ -303,7 +303,8 @@ export function useBacklogRotation(
       telemetryCohorts,
       title: detailedStory.title,
     })
-    if (!direct) prepareStartingStoryPreview(storyId, { id: executionId, telemetryCohorts })
+    if (!direct)
+      prepareStartingStoryPreview(storyId, { executionId, telemetryCohorts, environment: initialization })
     await backlog.update(detailedStory, {
       agentLastEvent: "Worktree ready.",
       baseCommit:
