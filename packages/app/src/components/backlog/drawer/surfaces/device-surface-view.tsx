@@ -67,15 +67,7 @@ export function DeviceSurfaceView({
       ?.start(latestScope.current)
       .then(setState)
       .catch((e: Error) => setError(e.message))
-  }, [
-    client,
-    storyId,
-    projectId,
-    worktree,
-    targetId,
-    workspaceMode,
-    manifest,
-  ])
+  }, [client])
   React.useEffect(() => {
     if (!active || !client) return
     let cancelled = false,
@@ -119,7 +111,17 @@ export function DeviceSurfaceView({
       window.clearInterval(timer)
       window.removeEventListener("focus", check)
     }
-  }, [client, active, identity, running, build])
+  }, [
+    client,
+    active,
+    identity,
+    running,
+    build,
+    projectId,
+    worktree,
+    workspaceMode,
+    manifest,
+  ])
   React.useEffect(() => {
     if (!active || !client || state.status !== "ready") return
     let cancelled = false,
