@@ -22,7 +22,7 @@ const runConfiguration = vine.object({
 const commit = vine
   .string()
   .trim()
-  .regex(/^[a-f0-9]{40,64}$/)
+  .regex(/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/)
 
 export const startProjectInitializationValidator = vine.create({
   providerId: vine.string().trim().minLength(1).maxLength(80),

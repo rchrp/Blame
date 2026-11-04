@@ -27,6 +27,7 @@ type InitializationBody = {
       error: string | null
       repairReason: string | null
       checkedCommit: string | null
+      updatedAt: string | null
     } | null
     practices: Array<{
       practice: string
@@ -199,6 +200,11 @@ test.group('project initializations', (group) => {
     const body = checked.body() as InitializationBody
     assert.equal(body.data.initialization?.checkedCommit, mergeCommit)
     assert.equal(body.data.initialization?.previewManifest?.confidence, 'medium')
+    // A check is not a save of the setup.
+    assert.equal(
+      body.data.initialization?.updatedAt,
+      (completed.body() as InitializationBody).data.initialization?.updatedAt
+    )
 
     const repaired = await client
       .post(`/api/v1/projects/${project.id}/initialization/repair`)
@@ -229,6 +235,12 @@ test.group('project initializations', (group) => {
       .loginAs(user)
       .json({ commit: 'main' })
     invalid.assertStatus(422)
+
+    const truncated = await client
+      .post(`/api/v1/projects/${project.id}/initialization/check`)
+      .loginAs(user)
+      .json({ commit: 'c'.repeat(41) })
+    truncated.assertStatus(422)
   })
 
   test('rejects initialization repair for another user project', async ({ client }) => {

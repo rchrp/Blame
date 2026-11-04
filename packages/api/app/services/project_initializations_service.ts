@@ -1,6 +1,7 @@
 import ProjectCodePractice from '#models/project_code_practice'
 import ProjectInitialization from '#models/project_initialization'
 import ProjectsService from '#services/projects_service'
+import db from '@adonisjs/lucid/services/db'
 import type { Infer } from '@vinejs/vine/types'
 import { Exception } from '@adonisjs/core/exceptions'
 import { parsePreviewManifest, type PreviewManifest } from '@blame/preview-contract'
@@ -108,8 +109,11 @@ export default class ProjectInitializationsService {
         code: 'E_PROJECT_INITIALIZATION_NOT_READY',
       })
     }
-    initialization.checkedCommit = input.commit
-    await initialization.save()
+    // Not a change of the setup: its updated_at stays the time it was saved.
+    await db
+      .from('project_initializations')
+      .where('project_id', projectId)
+      .update({ checked_commit: input.commit })
     return this.snapshot(projectId)
   }
 
