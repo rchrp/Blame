@@ -16,7 +16,7 @@ const notice = (title: string, paragraphs: readonly string[]): LegalBlock => ({
 // free: linked as "Code signing policy" from the home and download pages.
 // Mirrors CODE_SIGNING_POLICY.md at the repository root.
 export const codeSigningEffectiveDate = "2 November 2026";
-export const codeSigningLastUpdated = "2 November 2026";
+export const codeSigningLastUpdated = "4 November 2026";
 export const codeSigningVersion = "1.0";
 
 // Until SignPath Foundation approves Blame, the attribution is announced, not
@@ -38,8 +38,8 @@ export const codeSigningSections = [
     blocks: windowsSigningApproved
       ? [paragraph(`${attribution}.`)]
       : [
-          notice("Pending", [
-            "Blame has applied to SignPath Foundation for free code signing for open-source projects. Until the application is approved, the Windows installer is not signed and Windows SmartScreen may warn about it.",
+          notice("Not signed yet", [
+            "Blame plans to apply to SignPath Foundation for free code signing for open-source projects. Until Windows releases are signed, the installer is not signed and Windows SmartScreen may warn about it.",
             `Once approved, Windows releases will carry this attribution: ${attribution}.`,
           ]),
         ],

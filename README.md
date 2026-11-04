@@ -122,7 +122,7 @@ You can also pick any version, including betas, from the [releases page](https:/
 
 **macOS.** The app is signed and notarized. On first launch, Blame sets up a small Linux VM (based on [Lima](https://lima-vm.io)) where agents, worktrees, and previews run.
 
-**Windows.** The installer is not code-signed yet (signing through SignPath Foundation is [pending](CODE_SIGNING_POLICY.md)), so SmartScreen may warn you: choose **More info → Run anyway**. The installer lets you turn off usage telemetry and the update check at launch; Settings → Desktop → Privacy has the same switches. Blame runs agents in its own WSL distribution. If WSL is not installed, run `wsl --install` in an administrator terminal and restart first.
+**Windows.** The installer is not code-signed yet (signing through SignPath Foundation is [planned](CODE_SIGNING_POLICY.md)), so SmartScreen may warn you: choose **More info → Run anyway**. The installer lets you turn off usage telemetry and the update check at launch; Settings → Desktop → Privacy has the same switches. Blame runs agents in its own WSL distribution. If WSL is not installed, run `wsl --install` in an administrator terminal and restart first.
 
 **Linux.** Worktrees stay native, and previews and project services run in Docker on your machine.
 

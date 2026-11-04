@@ -4,7 +4,7 @@ This page describes how Blame's releases are signed. It is also published at [bl
 
 ## Windows
 
-**Status: pending.** Blame has applied to [SignPath Foundation](https://signpath.org) for free code signing for open-source projects. Until the application is approved, the Windows installer is not signed and SmartScreen may warn about it.
+**Status: not signed yet.** Blame plans to apply to [SignPath Foundation](https://signpath.org) for free code signing for open-source projects. Until Windows releases are signed, the installer is not signed and SmartScreen may warn about it.
 
 Once approved, Windows releases will carry this attribution:
 
