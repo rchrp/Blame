@@ -18,7 +18,7 @@ Blame gives each agent its own worktree, ports, services, and running app, so yo
 [![GitHub stars](https://img.shields.io/github/stars/rchrp/Blame?color=f7cf83)](https://github.com/rchrp/Blame/stargazers)
 [![Discord](https://img.shields.io/badge/chat-Discord-5865F2?logo=discord&logoColor=white)](https://discord.gg/AfjG6aUyxe)
 
-**[Install](#install)** · [Website](https://blame.so) · [Docs](https://blame.so/docs) · [Discord](https://discord.gg/AfjG6aUyxe) · [Demo video](https://youtu.be/cD6jASpIKQw) · [Discussions](https://github.com/rchrp/Blame/discussions) · [Contributing](CONTRIBUTING.md) · [Code signing policy](CODE_SIGNING_POLICY.md)
+**[Install](#install)** · [Website](https://blame.so) · [Docs](https://blame.so/docs) · [Discord](https://discord.gg/AfjG6aUyxe) · [Demo video](https://youtu.be/cD6jASpIKQw) · [Discussions](https://github.com/rchrp/Blame/discussions) · [Roadmap](https://github.com/users/rchrp/projects/7) · [Contributing](CONTRIBUTING.md) · [Code signing policy](CODE_SIGNING_POLICY.md)
 
 <a href="https://youtu.be/cD6jASpIKQw"><img src="docs/media/demo.gif" width="900" alt="Three agents work on three stories of the Blame website at once in Blame; each story's Preview tab shows its own running copy of the site, then the story in review is approved and merged"></a>
 
@@ -262,7 +262,8 @@ You need Node.js 24, Git, and MySQL 8.4 for the API. [CONTRIBUTING.md](CONTRIBUT
 - **Questions and ideas:** [GitHub Discussions](https://github.com/rchrp/Blame/discussions)
 - **Bugs and feature requests:** [GitHub Issues](https://github.com/rchrp/Blame/issues)
 - **Security reports:** see [SECURITY.md](SECURITY.md). Please do not open a public issue.
-- **Contributing:** start with [CONTRIBUTING.md](CONTRIBUTING.md) and the [code of conduct](CODE_OF_CONDUCT.md).
+- **Roadmap:** what's planned now, next, and later, on the [Blame ADE Roadmap](https://github.com/users/rchrp/projects/7).
+- **Contributing:** start with [CONTRIBUTING.md](CONTRIBUTING.md) and the [code of conduct](CODE_OF_CONDUCT.md), then pick one of the [good first issues](https://github.com/rchrp/Blame/issues?q=is%3Aissue%20is%3Aopen%20label%3A%22good%20first%20issue%22).
 
 If Blame is useful to you, a star helps other developers find it.
 
