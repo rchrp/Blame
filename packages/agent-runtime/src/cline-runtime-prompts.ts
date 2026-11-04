@@ -9,9 +9,9 @@ import {
 } from "./development-attachments.js";
 
 import {
-  buildWorkspaceMetadata,
   getClineDefaultSystemPrompt,
 } from "@cline/sdk";
+import { workspacePromptMetadata } from "./workspace-prompt-metadata.js";
 
 import { loadPrompt } from "./prompt-loader.js";
 import { newProjectStackCatalogPrompt } from "./new-project-planning.js";
@@ -398,7 +398,7 @@ async function developmentPromptValues(input: StartDevelopmentSessionInput) {
   const metadata =
     input.purpose === "new-project"
       ? ""
-      : await buildWorkspaceMetadata(input.cwd);
+      : await workspacePromptMetadata(input.cwd);
   const practices = input.codePractices ?? [];
   return {
     BLAME_ENVIRONMENT: developmentEnvironmentPrompt(input),
@@ -447,7 +447,7 @@ export async function clineDefaultSystemPrompt(
 ) {
   return getClineDefaultSystemPrompt({
     ide: "Cline",
-    metadata: await buildWorkspaceMetadata(input.cwd),
+    metadata: await workspacePromptMetadata(input.cwd),
     mode: "act",
     platform: process.platform,
     providerId: input.providerId,

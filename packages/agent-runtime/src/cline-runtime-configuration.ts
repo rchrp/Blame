@@ -9,10 +9,10 @@ import type {
 } from "@cline/sdk";
 
 import {
-  buildWorkspaceMetadata,
   getClineDefaultSystemPrompt,
   mergeRulesForSystemPrompt,
 } from "@cline/sdk";
+import { workspacePromptMetadata } from "./workspace-prompt-metadata.js";
 
 import { type AgentTool } from "./cline-initialization.js";
 
@@ -286,7 +286,7 @@ export async function newProjectGenerationConfig(
   sessionId: string,
   productionConfig: ReturnType<typeof loadProductionConfig>,
 ) {
-  const metadata = await buildWorkspaceMetadata(input.cwd);
+  const metadata = await workspacePromptMetadata(input.cwd);
   return appendProductionConfig({
     sessionId,
     providerId: input.providerId,

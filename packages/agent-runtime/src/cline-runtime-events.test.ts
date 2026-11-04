@@ -2268,10 +2268,8 @@ test("renders the compact native Cline development prompt", async () => {
     prompt,
     /Prefer symbol operations when they reduce ambiguity or text/,
   );
-  assert.match(
-    prompt,
-    /`run_task` for inspection, validation, generation/,
-  );
+  assert.match(prompt, /Inspect source with `search_code`/);
+  assert.match(prompt, /`run_task` for validation, generation/);
   assert.match(prompt, /call `finish_task`/);
   assert.doesNotMatch(prompt, /complete_turn/);
   assert.doesNotMatch(prompt, /continuity_update|change_receipt_refs/);
