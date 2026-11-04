@@ -78,7 +78,12 @@ jobs:
           branch="release/sandbox-runner-$VERSION"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git switch -c "$branch"
+          # Cut the branch from the latest main: main may have moved while the
+          # job waited for approval, and a branch from the older commit would
+          # revert newer workflow changes, which GitHub refuses from this token.
+          git fetch --no-tags --depth=1 origin main
+          git switch --discard-changes -c "$branch" FETCH_HEAD
+          node scripts/sandbox-runner-pin.mjs "$IMAGE" "$VERSION"
           git add packages/api/config/sandbox_runner_pin.ts
           git commit -m "chore(api): pin sandbox runner $VERSION"
           git push origin "$branch"
