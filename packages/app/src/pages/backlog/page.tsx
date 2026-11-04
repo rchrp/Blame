@@ -186,14 +186,15 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
   const storiesRef = React.useRef(backlog.stories)
   const openDrawerRef = React.useRef<(target: DrawerTarget) => void>(() => {})
   const drawerLoadRequestId = React.useRef(0)
-  const closeDrawerIfDeleted = useLatestCallback((storyId: string) => {
-    if (
-      !shouldCloseDrawerAfterDelete(drawerTarget?.userStory?.id, storyId)
-    )
-      return
+  const closeDrawer = useLatestCallback((open: boolean) => {
+    if (open) return
     drawerLoadRequestId.current += 1
     setDrawerTarget(undefined)
     selectBacklogStory(undefined)
+  })
+  const closeDrawerIfDeleted = useLatestCallback((storyId: string) => {
+    if (shouldCloseDrawerAfterDelete(drawerTarget?.userStory?.id, storyId))
+      closeDrawer(false)
   })
   const previousStoryStatuses = React.useRef<
     Map<string, BacklogColumnId> | undefined
@@ -1444,12 +1445,6 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
   const columnRejectStory = useLatestCallback(rejectStory)
   const columnStopAgent = useLatestCallback(stopAgent)
   const columnUnpauseAgent = useLatestCallback(unpauseAgent)
-  const closeDrawer = useLatestCallback((open: boolean) => {
-    if (open) return
-    drawerLoadRequestId.current += 1
-    setDrawerTarget(undefined)
-    selectBacklogStory(undefined)
-  })
   const createDrawerStory = useLatestCallback(
     async (input: Omit<UserStoryDraft, "projectId">, contextLimit?: number) => {
       const story = await backlog.create(input, contextLimit)
