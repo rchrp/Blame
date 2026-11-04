@@ -24,22 +24,35 @@ type ProviderWork = { models: ModelWork[]; providerId: string }
 const stackSpring = { type: "spring", stiffness: 420, damping: 30 } as const
 // Matches the card background so stacked avatars read as cut out.
 const avatarRing = "ring-2 ring-white dark:ring-neutral-900"
+// The pointer must rest on the avatars this long before the panel opens, so
+// passing over them on the way to clicking the card does not trigger it.
+const hoverOpenDelayMs = 350
+const closeDelayMs = 120
 
 // Who worked on a story: the person first, then every AI provider whose
 // models ran its turns. Hovering spreads the stack and lists the models.
 export function StoryContributors({ story }: { story: UserStory }) {
   const providers = React.useMemo(() => storyProviders(story), [story])
   const [open, setOpen] = React.useState(false)
-  const closeTimer = React.useRef<number | undefined>(undefined)
-  const show = () => {
-    window.clearTimeout(closeTimer.current)
+  const timer = React.useRef<number | undefined>(undefined)
+  const cancelPending = () => window.clearTimeout(timer.current)
+  const showAfterHover = () => {
+    cancelPending()
+    if (!open)
+      timer.current = window.setTimeout(() => setOpen(true), hoverOpenDelayMs)
+  }
+  // Keyboard focus opens at once; a mouse click on the avatars is meant for
+  // the card, so its focus does not open the panel.
+  const showOnKeyboardFocus = (event: React.FocusEvent<HTMLElement>) => {
+    if (!event.currentTarget.matches(":focus-visible")) return
+    cancelPending()
     setOpen(true)
   }
   const hide = () => {
-    window.clearTimeout(closeTimer.current)
-    closeTimer.current = window.setTimeout(() => setOpen(false), 120)
+    cancelPending()
+    timer.current = window.setTimeout(() => setOpen(false), closeDelayMs)
   }
-  React.useEffect(() => () => window.clearTimeout(closeTimer.current), [])
+  React.useEffect(() => () => window.clearTimeout(timer.current), [])
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -48,9 +61,10 @@ export function StoryContributors({ story }: { story: UserStory }) {
           aria-label="Who worked on this story"
           className="flex shrink-0 items-center"
           onBlur={hide}
-          onFocus={show}
-          onMouseEnter={show}
+          onFocus={showOnKeyboardFocus}
+          onMouseEnter={showAfterHover}
           onMouseLeave={hide}
+          onPointerDown={cancelPending}
           role="group"
           tabIndex={0}
         >
@@ -89,7 +103,7 @@ export function StoryContributors({ story }: { story: UserStory }) {
         align="start"
         className="w-64 gap-0 p-1.5"
         onCloseAutoFocus={(event) => event.preventDefault()}
-        onMouseEnter={show}
+        onMouseEnter={showAfterHover}
         onMouseLeave={hide}
         onOpenAutoFocus={(event) => event.preventDefault()}
         side="bottom"
