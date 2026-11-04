@@ -411,8 +411,10 @@ const discovery = (value: Record<string, unknown>) => value.declarationDiscovery
 
 test("bare references discover exact declarations beyond saturated lexical callers without choosing one", async () => {
   await fixture(async (workspace, root) => {
-    await writeFile(join(root, "a.ts"), 'import { calculate } from "./original.js";\n' +
-      Array.from({ length: 10 }, (_, index) => `export function caller${index}() { return calculate(${index}); }`).join("\n"));
+    // Callers in many files fill the first lexical page even though each file shows only its best lines.
+    for (let index = 0; index < 10; index += 1)
+      await writeFile(join(root, `a${index}.ts`), 'import { calculate } from "./original.js";\n' +
+        `export function caller${index}() { return calculate(${index}); }\n`);
     const result = data(await references(workspace, "calculate"));
     assert.equal(result.engine, "lexical_fallback");
     assert.equal(result.semanticFallback, "symbol_target_required");

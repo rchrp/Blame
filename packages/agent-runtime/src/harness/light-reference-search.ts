@@ -8,8 +8,8 @@ import { sha256 } from "./light-identity.js";
 import {
   enclosingSymbol,
   qualifiedTarget,
-  searchSymbolResult,
 } from "./light-navigation.js";
+import { searchSymbolResult } from "./light-search-results.js";
 import {
   querySemanticReferences,
   referenceFootprintIsCurrent,

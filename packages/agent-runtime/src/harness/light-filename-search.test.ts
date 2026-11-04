@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { pathMatches } from "./light-navigation.js";
+import { pathMatches } from "./light-search-results.js";
 import { data, fixture } from "./light-agent-guidance-fixture.js";
 
 test("file-like queries do not turn test.ts into combineLatest.ts or tokenize filename fragments", () => {

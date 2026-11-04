@@ -1,11 +1,8 @@
 import { outlineSymbol, type ParsedSymbol, symbolEditRange } from "./code-intelligence.js";
 import type { LightReadCodeInput, LightToolResult } from "./light-contracts.js";
 import { type EditTarget, outlineCandidates, symbolicPath } from "./light-navigation.js";
-import { type ResolvedLightSymbol, SymbolResolutionError } from "./light-aliases.js";
+import { type LightAliasRegistry, type ResolvedLightSymbol, SymbolResolutionError } from "./light-aliases.js";
 import type { ByteInterval } from "./read-coverage.js";
-import type { LightAliasRegistry } from "./light-aliases.js";
-import type { WorkspaceFiles } from "./workspace-files.js";
-import { firstTermIndex, lineRange, matchedTerm, pathMatches, searchTerms, sourceLine } from "./light-navigation.js";
 import { lightCapabilityDescription, runtimeCapabilityRegistry } from "./light-capabilities.js";
 import { isUtf8 } from "node:buffer";
 import type { AgentToolContext } from "@cline/sdk";
@@ -295,51 +292,6 @@ export function readableSource(content: Buffer) {
   if (content.includes(0) || !isUtf8(content) || content.subarray(0, 5).toString("ascii") === "%PDF-")
     throw new Error("Binary or PDF content is not source text. Use run_task to extract text or render images, then read the output.");
   return content.toString("utf8");
-}
-
-export async function nodeTextSearch(
-  files: WorkspaceFiles,
-  aliases: LightAliasRegistry,
-  query: string,
-  candidates: string[],
-  signal?: AbortSignal,
-) {
-  const results: unknown[] = [];
-  const terms = searchTerms(query);
-  for (const path of candidates) {
-    signal?.throwIfAborted();
-    if (results.length >= 8) break;
-    if (await files.fileSize(path) > 2 * 1024 * 1024) continue;
-    const content = (await files.read(path)).content;
-    const source = content.toString("utf8");
-    const index = firstTermIndex(source, terms, query);
-    if (index < 0) continue;
-    const matched = matchedTerm(source, index, terms, query);
-    const start = Buffer.byteLength(source.slice(0, index));
-    const range: [number, number] = [
-      start,
-      start + Buffer.byteLength(matched),
-    ];
-    results.push({
-      alias: aliases.registerRange(path, content, range),
-      kind: "text",
-      path,
-      lines: lineRange(content, range),
-      snippet: sourceLine(source, index),
-      reason: terms.length > 1 ? "lexical_regex" : "lexical_exact",
-    });
-  }
-  return results;
-}
-
-export function pathSearch(aliases: LightAliasRegistry, query: string, candidates: string[]) {
-  return pathMatches(query, candidates).map((path) => ({
-    alias: aliases.registerPath(path),
-    kind: "path",
-    path,
-    reason: "path_name",
-    target: path,
-  }));
 }
 
 export function outlineItems(

@@ -100,7 +100,12 @@ function searchCodeTool(workspace: LightWorkspacePort) {
   return harnessTool({
     name: "search_code",
     description:
-      'Find source by path, text, symbol, or references. For JS/TS semantic references, set mode to references and query to a symbol sN alias or path#qualifiedName; results state compiler project scope and any lexical fallback. Bare-name fallback proposes nextSearches; choose the intended declaration. Search results do not authorize edits: read the target first. Whitespace separates query terms; punctuation stays literal. Scope accepts paths and *, **, ?, or {a,b} globs; multiple scopes use an array such as ["src","spec"]. Spaces in a scope string are literal. Returns up to eight short results; generated outputs and node_modules are excluded.',
+      "The workspace grep, ripgrep-backed: use it instead of grep, rg or find in run_task. Find source by path, text, regex, symbol, or references. " +
+      "text: whitespace-separated terms match any term, punctuation stays literal, and files containing more terms rank first. regex: one ripgrep regex such as foo|bar or \\bLineSelection\\b. auto picks symbol for a bare identifier. " +
+      "For JS/TS semantic references, set mode to references and query to a symbol sN alias or path#qualifiedName; results state compiler project scope and any lexical fallback. Bare-name fallback proposes nextSearches; choose the intended declaration. " +
+      "output files lists every matching file with its matching-line count; count returns totals. context adds surrounding lines to text matches. A match inside a declaration returns that declaration's sN alias with matchLine. " +
+      "Results come in pages (8 matches or 50 files by default); a limited result carries nextSearch. Case is ignored unless caseSensitive. Search results do not authorize edits: read the target first. " +
+      'Scope accepts paths and *, **, ?, or {a,b} globs; multiple scopes use an array such as ["src","spec"]. Spaces in a scope string are literal. Generated outputs and node_modules are excluded.',
     schema: lightSearchCodeInputSchema,
     execute: (input, context) => workspace.searchCode(input, context.signal),
   });

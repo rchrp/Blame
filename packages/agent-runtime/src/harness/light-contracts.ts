@@ -9,7 +9,16 @@ export const lightSearchCodeInputSchema = z
     query: z.string().trim().min(1).max(1_000),
     scope: z.union([relativePath, z.array(relativePath).max(100)]).optional()
       .describe('One literal path/glob, or multiple scopes as an array, e.g. ["src","spec"]. A space in one string belongs to that path.'),
-    mode: z.enum(["auto", "text", "symbol", "references"]).optional(),
+    mode: z.enum(["auto", "text", "regex", "symbol", "references"]).optional(),
+    output: z.enum(["matches", "files", "count"]).optional()
+      .describe("matches (default): located hits with aliases; files: every matching path with its matching-line count; count: totals only."),
+    caseSensitive: z.boolean().optional().describe("Text and regex searches ignore case unless true."),
+    context: z.number().int().min(0).max(30).optional()
+      .describe("Lines of surrounding source shown with each text match, grep -C style (12: match, 11- context)."),
+    limit: z.number().int().min(1).max(100).optional()
+      .describe("Results per page: 8 matches or 50 files by default."),
+    offset: z.number().int().min(0).max(5_000).optional()
+      .describe("Results to skip; a limited result returns the next page as nextSearch."),
   })
   .strict();
 

@@ -105,13 +105,14 @@ for (const engine of ["ripgrep", "node"])
       await writeFile(join(root, "z-small.txt"), "needle");
       const result = data(await workspace.searchCode({ query: "needle", mode: "text" }));
       assert.deepEqual((result.results as Array<{ path: string }>).map(item => item.path), ["z-small.txt"]);
-      assert.equal(result.limited === true, engine === "node");
+      // Both engines scan every eligible file, so neither result is partial.
+      assert.notEqual(result.limited, true);
     });
   });
 
 test("the lexical collection limit stays visible after symbol deduplication", async () => {
   await searchFixture("ripgrep", searches[0]!, async (workspace, root) => {
-    await writeFile(join(root, "functions.ts"), `function first() { ${"needle(); ".repeat(40)} }\n`);
+    await writeFile(join(root, "functions.ts"), `function first() {\n${"  needle();\n".repeat(600)}}\n`);
     const result = data(await workspace.searchCode({ query: "needle()" }));
     assert.equal((result.results as unknown[]).length, 1);
     assert.equal(result.limited, true);
