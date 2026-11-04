@@ -13,7 +13,9 @@ import {
   mcpToolResult,
   parseMessagesRequest,
   requestEffort,
+  systemPromptForClaudeCode,
 } from "./claude-code-protocol.js";
+import { withoutCommitHash } from "../workspace-prompt-metadata.js";
 
 test("parses the Messages request Cline sends and keeps custom tools only", () => {
   const request = parseMessagesRequest({
@@ -153,4 +155,17 @@ test("sends Claude Code models through Cline's Anthropic provider at no token co
   assert.ok((config.knownModels?.sonnet?.contextWindow ?? 0) > 0);
   const other = { providerId: "anthropic", modelId: "claude-sonnet-5-5" };
   assert.equal(claudeCodeModelConfig(other), other);
+});
+
+test("Claude Code learns that Blame's tools replace its own shell and file tools", () => {
+  const prompt = systemPromptForClaudeCode({ model: "opus", messages: [], system: "# Blame" });
+  assert.match(prompt, /^# Blame/u);
+  assert.match(prompt, /`search_code` is the grep/u);
+  assert.match(prompt, /several tool calls in one response/u);
+});
+
+test("workspace metadata in the prompt leaves out the commit hash so commits keep the prompt cache", () => {
+  const metadata = JSON.stringify({ workspaces: { "/repo": { hint: "repo", latestGitCommitHash: "abc123", latestGitBranchName: "main" } } }, null, 2);
+  assert.deepEqual(JSON.parse(withoutCommitHash(metadata)), { workspaces: { "/repo": { hint: "repo", latestGitBranchName: "main" } } });
+  assert.equal(withoutCommitHash("plain text"), "plain text");
 });

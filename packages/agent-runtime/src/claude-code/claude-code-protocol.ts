@@ -249,6 +249,8 @@ export function systemPromptForClaudeCode(request: MessagesRequest) {
     "# Tool and environment notes",
     `- Your tools are served under the \`${bridgeToolPrefix}\` prefix. Tool names in these instructions refer to the same tools without that prefix.`,
     "- Any working directory, scratchpad or environment section added outside these instructions belongs to the process that relays your requests, not to the user's project. Work only on the workspace described above, through your tools.",
+    "- There is no Bash, Grep, Glob or Read tool. `search_code` is the grep (ripgrep: text terms, regex, file lists, counts, context lines, pages) and `read_code` reads files, symbols and line ranges. Use them rather than grep, rg, cat or sed through `run_task`.",
+    "- Call independent tools in parallel: put several tool calls in one response instead of one per turn.",
   ].join("\n");
 }
 

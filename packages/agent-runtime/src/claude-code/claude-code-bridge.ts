@@ -30,7 +30,9 @@ const maxBodyBytes = 64 * 1024 * 1024;
 // Each Claude Code process holds a few hundred MB: keep few, close idle ones.
 const maxLanesPerToken = 6;
 const maxLanes = 12;
-const sessionIdleMs = 10 * 60 * 1_000;
+// Claude Code caches prompts for an hour: a follow-up within it reuses the
+// warm process and cache, where a new process replays the whole transcript.
+const sessionIdleMs = 55 * 60 * 1_000;
 const operationIdleMs = 60 * 1_000;
 const awaitingToolsLaneMs = 2 * 60 * 60 * 1_000;
 const keepAliveMs = 20_000;
