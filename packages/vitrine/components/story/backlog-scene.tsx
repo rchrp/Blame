@@ -138,15 +138,19 @@ function buildStage(tl: gsap.core.Timeline, root: HTMLDivElement) {
 
   // the cursor makes one calm arc to Send
   tl.fromTo("[data-bk=cursor]", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power2.out" }, 0.8);
-  tl.fromTo("[data-bk=cursor-path]", { "--px": 0 }, { "--px": 1, duration: 1.7, ease: "power2.inOut" }, 0.8);
-  tl.fromTo("[data-bk=cursor-path]", { "--py": 0 }, { "--py": 1, duration: 1.7, ease: "power1.inOut" }, 0.8);
+  tl.fromTo("[data-bk=cursor-path]", { "--bk-px": 0 }, { "--bk-px": 1, duration: 1.7, ease: "power2.inOut" }, 0.8);
+  tl.fromTo("[data-bk=cursor-path]", { "--bk-py": 0 }, { "--bk-py": 1, duration: 1.7, ease: "power1.inOut" }, 0.8);
 
-  // the camera whips into a close view of the Send button
-  tl.set(cam, { attr: { "data-whip": "on" } }, 2.0);
-  tl.fromTo(cam, { "--zoom": 0 }, { "--zoom": 1, duration: 0.6, ease: "expo.inOut" }, 2.0);
-  tl.fromTo(cam, { "--whip": 0 }, { "--whip": 1, duration: 0.3, ease: "power2.in" }, 2.0);
-  tl.to(cam, { "--whip": 0, duration: 0.3, ease: "power2.out" }, 2.3);
-  tl.set(cam, { attr: { "data-whip": "off" } }, 2.62);
+  // the camera whips into a close view of the Send button. While it moves,
+  // it is its own compositor layer, so the board isn't redrawn, blur and
+  // all, on every frame. A layer keeps the resolution it was drawn at: the
+  // camera only goes back into the page, drawn sharp, once it holds the
+  // close view.
+  tl.set(cam, { attr: { "data-whip": "on" }, willChange: "translate, scale, filter" }, 2.0);
+  tl.fromTo(cam, { "--bk-zoom": 0 }, { "--bk-zoom": 1, duration: 0.6, ease: "expo.inOut" }, 2.0);
+  tl.fromTo(cam, { "--bk-whip": 0 }, { "--bk-whip": 1, duration: 0.3, ease: "power2.in" }, 2.0);
+  tl.to(cam, { "--bk-whip": 0, duration: 0.3, ease: "power2.out" }, 2.3);
+  tl.set(cam, { attr: { "data-whip": "off" }, willChange: "auto" }, 2.62);
 
   // click Send: the button answers
   tl.to("[data-bk=cursor]", { scale: 0.86, transformOrigin: "14% 9%", duration: 0.08, ease: "power2.in" }, 2.66);
@@ -169,30 +173,36 @@ function buildStage(tl: gsap.core.Timeline, root: HTMLDivElement) {
   // the story leaves the composer and lands as a card in the Agent Queue:
   // the sheet itself shrinks into the card while the camera pulls back
   const FLY = 2.9;
-  tl.to(cam, { "--zoom": 0, duration: 0.8, ease: "expo.inOut" }, FLY);
-  tl.fromTo("[data-bk=composer-fly]", { "--fly": 0 }, { "--fly": 1, duration: 0.8, ease: "expo.inOut" }, FLY);
+  // the camera and the sheet are layers again while they pull back, drawn
+  // at the close view's size; the sheet stays one until it has gone
+  tl.set(cam, { willChange: "translate, scale" }, FLY);
+  tl.set("[data-bk=composer-fly]", { willChange: "translate, scale" }, FLY);
+  tl.to(cam, { "--bk-zoom": 0, duration: 0.8, ease: "expo.inOut" }, FLY);
+  tl.set(cam, { willChange: "auto" }, FLY + 0.8);
+  tl.fromTo("[data-bk=composer-fly]", { "--bk-fly": 0 }, { "--bk-fly": 1, duration: 0.8, ease: "expo.inOut" }, FLY);
   tl.to("[data-bk=composer-in]", { opacity: 0, duration: 0.22, ease: "power2.in" }, FLY);
   tl.to(
     "[data-bk=composer]",
     { backgroundColor: "#171717", borderColor: "rgba(255, 255, 255, 0.12)", duration: 0.4, ease: "power2.out" },
     FLY,
   );
-  tl.fromTo("[data-bk=composer]", { "--flyh": 0 }, { "--flyh": 1, duration: 0.45, ease: "power3.out" }, FLY + 0.25);
+  tl.fromTo("[data-bk=composer]", { "--bk-flyh": 0 }, { "--bk-flyh": 1, duration: 0.45, ease: "power3.out" }, FLY + 0.25);
   tl.to("[data-bk=cursor]", { x: 110, y: 130, duration: 1.1, ease: "power2.inOut" }, FLY);
   tl.to("[data-bk=cursor]", { opacity: 0, duration: 0.3, ease: "power2.in" }, FLY + 0.45);
   // the board slides in behind it, lane after lane
   tl.fromTo(
     "[data-bk=lane]",
-    { "--lane-p": 0, opacity: 0 },
-    { "--lane-p": 1, opacity: 1, duration: 0.6, ease: "power3.out", stagger: 0.08 },
+    { "--bk-lane": 0, opacity: 0 },
+    { "--bk-lane": 1, opacity: 1, duration: 0.6, ease: "power3.out", stagger: 0.08 },
     FLY + 0.45,
   );
   tl.fromTo("[data-bk=story]", { opacity: 0 }, { opacity: 1, duration: 0.25, ease: "power2.out" }, FLY + 0.6);
   tl.to("[data-bk=composer]", { autoAlpha: 0, duration: 0.12, ease: "none" }, FLY + 0.85);
+  tl.set("[data-bk=composer-fly]", { willChange: "auto" }, FLY + 1);
 
   // an agent picks it up: the card moves to In Progress and turns to Running
   const PICK = 4.1;
-  tl.fromTo("[data-bk=story-move]", { "--mv": 0 }, { "--mv": 1, duration: 0.7, ease: "power3.inOut" }, PICK);
+  tl.fromTo("[data-bk=story-move]", { "--bk-mv": 0 }, { "--bk-mv": 1, duration: 0.7, ease: "power3.inOut" }, PICK);
   tl.to("[data-bk=queued]", { opacity: 0, duration: 0.2, ease: "power2.in" }, PICK + 0.4);
   tl.to("[data-bk=story-queue]", { opacity: 0, duration: 0.2, ease: "power2.in" }, PICK + 0.4);
   tl.fromTo("[data-bk=running]", { opacity: 0 }, { opacity: 1, duration: 0.25, ease: "power2.out" }, PICK + 0.5);

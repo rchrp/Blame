@@ -184,7 +184,11 @@ export function createHeroScene(
   const terrain = createTerrain(quality, terrainLayout, terrainRelief)
   scene.add(terrain.group)
 
-  let celebrationWaves: THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>[] = []
+  // Built hidden now, before the shaders compile (see createCelebrationWaves).
+  const celebrationWaves = staticScene ? [] : createCelebrationWaves(terrain)
+  for (const wave of celebrationWaves) {
+    terrain.group.add(wave)
+  }
   let celebrationStart: number | null = null
 
   const plusField = shouldRenderInteractivePlusField
@@ -437,7 +441,11 @@ export function createHeroScene(
     }
     ready = true
     applyResize()
+    // The first frame also draws the light rings, fully transparent, so the
+    // GPU sets up their pipeline now rather than on the first celebration.
+    for (const wave of celebrationWaves) wave.visible = true
     renderFrame(0)
+    for (const wave of celebrationWaves) wave.visible = false
     if (options.celebration && !staticScene) {
       controller.celebrate()
     }
@@ -475,12 +483,6 @@ export function createHeroScene(
     celebrate() {
       if (staticScene || disposed) {
         return
-      }
-      if (celebrationWaves.length === 0) {
-        celebrationWaves = createCelebrationWaves(terrain)
-        for (const wave of celebrationWaves) {
-          terrain.group.add(wave)
-        }
       }
       celebrationStart = elapsed
       pacer.markActive(performance.now())

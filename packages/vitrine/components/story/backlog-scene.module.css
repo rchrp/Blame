@@ -7,10 +7,61 @@
  *   phone   (< 640px)   360 wide, Agent Queue above In Progress
  *   tablet  (640-1279)  1000 wide, Backlog, Agent Queue, In Progress
  *   wide    (>= 1280)   1680 wide, the video's five lanes
- * The moves are driven by progress variables (--fly, --flyh, --mv, --px, --py,
- * --zoom, --whip) that the timeline tweens from 0 to 1, so each canvas keeps
- * its own geometry and the same timeline serves all of them.
+ * The moves are driven by progress variables (--bk-fly, --bk-flyh, --bk-mv,
+ * --bk-px, --bk-py, --bk-zoom, --bk-whip, --bk-lane) that the timeline tweens
+ * from 0 to 1, so each canvas keeps its own geometry and the same timeline
+ * serves all of them. They are registered below as numbers that don't
+ * inherit: a tween on the camera or a lane restyles that element alone, not
+ * every card, icon and typed letter inside it, on each frame.
  */
+
+@property --bk-zoom {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
+}
+
+@property --bk-whip {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
+}
+
+@property --bk-fly {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
+}
+
+@property --bk-flyh {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
+}
+
+@property --bk-mv {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
+}
+
+@property --bk-px {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
+}
+
+@property --bk-py {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
+}
+
+@property --bk-lane {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 1;
+}
 
 .frame {
   /* phone canvas */
@@ -131,12 +182,12 @@
   position: absolute;
   inset: 0;
   transform-origin: var(--zoom-ox) var(--zoom-oy);
-  translate: calc(var(--zoom, 0) * var(--zoom-x)) calc(var(--zoom, 0) * var(--zoom-y));
-  scale: calc(1 + var(--zoom, 0) * var(--zoom-k));
+  translate: calc(var(--bk-zoom, 0) * var(--zoom-x)) calc(var(--bk-zoom, 0) * var(--zoom-y));
+  scale: calc(1 + var(--bk-zoom, 0) * var(--zoom-k));
 }
 
 .cam[data-whip="on"] {
-  filter: blur(calc(var(--whip, 0) * var(--whip-blur)));
+  filter: blur(calc(var(--bk-whip, 0) * var(--whip-blur)));
 }
 
 .sym {
@@ -154,12 +205,14 @@
   position: absolute;
   top: var(--lane-top);
   left: 0;
-  translate: calc((1 - var(--lane-p, 1)) * var(--lane-dx)) 0;
+  translate: calc((1 - var(--bk-lane, 1)) * var(--lane-dx)) 0;
   width: 360px;
   border-radius: 18px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: #0a0a0a;
   box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
+  /* its own layer, drawn once: sliding in and fading never redraw it */
+  will-change: translate, opacity;
 }
 
 .laneHead {
@@ -488,7 +541,8 @@
 }
 
 .storyMove {
-  translate: calc(var(--mv, 0) * var(--mv-x)) calc(var(--mv, 0) * var(--mv-y));
+  translate: calc(var(--bk-mv, 0) * var(--mv-x)) calc(var(--bk-mv, 0) * var(--mv-y));
+  will-change: translate;
 }
 
 /* ---------------------------------------------------------------- composer */
@@ -500,14 +554,14 @@
   width: var(--c-w);
   z-index: 3;
   transform-origin: 0 0;
-  translate: calc(var(--fly, 0) * var(--fly-x)) calc(var(--fly, 0) * var(--fly-y));
-  scale: calc(1 - var(--fly, 0) * var(--fly-k));
+  translate: calc(var(--bk-fly, 0) * var(--fly-x)) calc(var(--bk-fly, 0) * var(--fly-y));
+  scale: calc(1 - var(--bk-fly, 0) * var(--fly-k));
 }
 
 .composer {
   position: relative;
-  height: calc(var(--c-h0) + var(--flyh, 0) * (var(--c-h1) - var(--c-h0)));
-  border-radius: calc(var(--c-r0) + var(--flyh, 0) * (var(--c-r1) - var(--c-r0)));
+  height: calc(var(--c-h0) + var(--bk-flyh, 0) * (var(--c-h1) - var(--c-h0)));
+  border-radius: calc(var(--c-r0) + var(--bk-flyh, 0) * (var(--c-r1) - var(--c-r0)));
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: #0a0a0a;
   box-shadow:
@@ -1101,8 +1155,8 @@
   top: 0;
   z-index: 5;
   pointer-events: none;
-  translate: calc(var(--cx0) + var(--px, 0) * (var(--cx1) - var(--cx0)))
-    calc(var(--cy0) + var(--py, 0) * (var(--cy1) - var(--cy0)));
+  translate: calc(var(--cx0) + var(--bk-px, 0) * (var(--cx1) - var(--cx0)))
+    calc(var(--cy0) + var(--bk-py, 0) * (var(--cy1) - var(--cy0)));
 }
 
 .cursor {

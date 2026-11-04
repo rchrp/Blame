@@ -465,10 +465,13 @@ canvas {
    stage sets --leave on it, from 0 to 1, with data-leaving while it
    does. A section holding frosted cards (data-fade="parts") fades
    piece by piece, and each card fades itself: a fading parent would
-   switch its backdrop blur off. */
+   switch its backdrop blur off. While it fades, each fading piece is its
+   own compositor layer, so its opacity changes without repainting its
+   text and shadows on every frame of the scroll. */
 [data-story-section][data-leaving]:not([data-fade="parts"]) > *,
 [data-story-section][data-leaving] .story-fade-part {
   opacity: calc(1 - var(--leave));
+  will-change: opacity;
 }
 
 [data-story-section][data-leaving] .story-fade-frosted {

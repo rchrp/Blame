@@ -9,6 +9,9 @@ import type { ResponsiveTerrain } from './terrain'
 
 // Sky, celebration waves and disposal helpers.
 
+// The light rings that run across the ground. They are built with the scene,
+// hidden, so their shader compiles with the others and the first celebration
+// costs no frame. They draw the terrain's own geometry, already on the GPU.
 export function createCelebrationWaves(terrain: ResponsiveTerrain) {
   return [0, 0.42].map((delay) => {
     const material = new THREE.ShaderMaterial({
@@ -47,25 +50,23 @@ export function createCelebrationWaves(terrain: ResponsiveTerrain) {
       blending: THREE.AdditiveBlending,
       side: THREE.DoubleSide,
     })
-    const wave = new THREE.Mesh(terrain.mesh.geometry.clone(), material)
+    const wave = new THREE.Mesh(terrain.mesh.geometry, material)
     wave.position.copy(terrain.mesh.position)
     wave.renderOrder = 12
+    wave.visible = false
     wave.userData.celebrationDelay = delay
     return wave
   })
 }
 
+// The waves follow the terrain when it is rebuilt for a new screen size. The
+// geometry stays the terrain's: the terrain disposes of it.
 export function updateCelebrationWaveGeometry(
   waves: THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>[],
   terrainGeometry: THREE.PlaneGeometry,
 ) {
   for (const wave of waves) {
-    if (wave.userData.terrainGeometry === terrainGeometry) {
-      continue
-    }
-    wave.geometry.dispose()
-    wave.geometry = terrainGeometry.clone()
-    wave.userData.terrainGeometry = terrainGeometry
+    wave.geometry = terrainGeometry
   }
 }
 
