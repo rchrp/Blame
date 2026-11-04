@@ -1,4 +1,4 @@
-import { withError } from "./describe-code.ts"
+import { describeRead, describeSearch, withError } from "./describe-code.ts"
 import {
   firstLine,
   formatDuration,
@@ -101,14 +101,42 @@ export function describeCommand(source: ToolCallSource): ToolCallView {
   }
 
   const command = str(input.command) ?? str(data.command) ?? taskLabel(input)
+  const target = { text: command ? firstLine(command, 90) : "command", mono: Boolean(command), title: command }
+  const answers = servedAnswers(data)
+  if (answers.length)
+    return {
+      family: "command",
+      verb: source.running ? "Running" : "Ran",
+      target,
+      chips: [{ label: "via search_code / read_code" }, ...statusChips(harness, undefined, duration)],
+      bodies: withError(harness, answers.flatMap((answer) => servedBodies(source, answer))),
+      failed: Boolean(harness?.failed),
+    }
+  // grep's exit status 1 means that no line matched.
+  const noMatch = data.noMatch === true
   return {
     family: "command",
     verb: source.running ? "Running" : "Ran",
-    target: { text: command ? firstLine(command, 90) : "command", mono: Boolean(command), title: command },
-    chips: statusChips(harness, exitCode, duration),
+    target,
+    chips: noMatch
+      ? [{ label: "No match", tone: "warning" }, ...statusChips(harness, undefined, duration)]
+      : statusChips(harness, exitCode, duration),
     bodies: withError(harness, terminal(command, output, exitCode, str(input.cwd))),
-    failed: Boolean(harness?.failed) || (exitCode !== undefined && exitCode !== 0),
+    failed: Boolean(harness?.failed) || (!noMatch && exitCode !== undefined && exitCode !== 0),
   }
+}
+
+// run_task answers simple grep/cat-style commands with search_code and read_code.
+function servedAnswers(data: Record<string, unknown>) {
+  const answers = Array.isArray(data.answers) ? list(data.answers).map(record) : [data]
+  return answers.filter((answer) => answer.servedBy === "search_code" || answer.servedBy === "read_code")
+}
+
+function servedBodies(source: ToolCallSource, answer: Record<string, unknown>): ToolCallBody[] {
+  const output = { status: "ok", data: answer }
+  return answer.servedBy === "read_code"
+    ? describeRead({ ...source, toolName: "read_code", input: { target: str(answer.path) ?? "" }, output }).bodies
+    : describeSearch({ ...source, toolName: "search_code", input: {}, output }).bodies
 }
 
 function describeClineCommands(source: ToolCallSource): ToolCallView {

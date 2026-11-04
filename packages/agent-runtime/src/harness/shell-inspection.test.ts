@@ -127,6 +127,7 @@ test("an unrouted read-only command that matched nothing is not a failure", asyn
     const result = await workspace.runTask({ kind: "command", command: "grep -c missing notes.txt | sort" }, {} as never);
     assert.equal(result.status, "ok", JSON.stringify(result));
     assert.equal((result as { data: { exitCode: number } }).data.exitCode, 1);
+    assert.equal((result as { data: { noMatch: boolean } }).data.noMatch, true);
     assert.equal(data(await workspace.readCode({ target: "@checks" }, {})).total, 0);
   });
 });

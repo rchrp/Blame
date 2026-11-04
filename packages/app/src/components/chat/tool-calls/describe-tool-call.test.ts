@@ -514,3 +514,28 @@ test("story history lookups name the search and the story read", () => {
     "Read story US-012 files"
   )
 })
+
+test("a grep answered by search_code shows the search hits with their matching lines", () => {
+  const result = view("run_task", { kind: "command", command: 'grep -rn "selectLines" src' }, {
+    status: "ok",
+    data: {
+      command: 'grep -rn "selectLines" src',
+      servedBy: "search_code",
+      mode: "regex",
+      results: [{ alias: "s3", path: "src/view.ts", lines: [1, 3], kind: "function", qualifiedName: "view", reason: "lexical_symbol", matchLine: 2, snippet: "  return selectLines();" }],
+      candidateCount: 1,
+    },
+  })
+  assert.match(row(result), /^Ran grep -rn "selectLines" src via search_code \/ read_code 1\.3/u)
+  assert.equal(result.failed, false)
+  assert.deepEqual(result.bodies, [{ type: "search", more: 0, hits: [{ path: "src/view.ts", line: 2, kind: "function", name: "view", snippet: "  return selectLines();" }] }])
+})
+
+test("a grep that matched nothing is not shown as a failure", () => {
+  const result = view("run_task", { kind: "command", command: "grep -c missing notes.txt | sort" }, {
+    status: "ok",
+    data: { command: "grep -c missing notes.txt | sort", exitCode: 1, noMatch: true, output: "0" },
+  })
+  assert.match(row(result), /^Ran grep -c missing notes\.txt \| sort No match 1\.3/u)
+  assert.equal(result.failed, false)
+})

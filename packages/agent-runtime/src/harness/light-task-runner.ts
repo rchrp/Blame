@@ -594,6 +594,7 @@ export class LightTaskRunner {
     return { status: "ok", data: {
       command,
       exitCode: result.exitCode,
+      ...(result.exitCode === 1 ? { noMatch: true } : {}),
       output: boundedDiagnostic(output, "", 4_000),
       environment: this.environment.target(),
       ...(/\b(?:grep|rg|cat|sed|head|tail)\b/u.test(command) && !command.includes("node_modules")

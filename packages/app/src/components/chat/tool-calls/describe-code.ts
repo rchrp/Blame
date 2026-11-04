@@ -205,22 +205,26 @@ export function describeSearch(source: ToolCallSource): ToolCallView {
   const data = harness?.data ?? {}
   const query = str(input.query) ?? str(record(input.query).name) ?? str(record(input.query).pattern) ?? ""
   const mode = str(input.mode) ?? str(data.mode)
-  const hits: SearchHit[] = list(data.results ?? data.matches).flatMap((entry): SearchHit[] => {
+  const hits: SearchHit[] = list(data.results ?? data.matches ?? data.files).flatMap((entry): SearchHit[] => {
     const item = record(entry)
     const path = str(item.path)
     if (!path) return []
     const lines = pair(item.lines)
+    const matchingLines = num(item.matchingLines)
     return [
       {
         path,
-        line: lines?.[0] ?? num(item.line),
+        // A match inside a declaration names the declaration and keeps its own line.
+        line: num(item.matchLine) ?? lines?.[0] ?? num(item.line),
         kind: str(item.kind),
         name: str(item.qualifiedName) ?? str(item.name),
-        snippet: str(item.signature) ?? str(item.preview) ?? str(item.text),
+        snippet:
+          str(item.snippet) ?? str(item.signature) ?? str(item.preview) ?? str(item.text) ??
+          (matchingLines !== undefined ? plural(matchingLines, "matching line") : undefined),
       },
     ]
   })
-  const total = num(data.candidateCount) ?? hits.length
+  const total = num(data.totalFiles) ?? num(data.candidateCount) ?? hits.length
   const scope = strings(Array.isArray(input.scope) ? input.scope : input.scope ? [input.scope] : [])
   const chips: ToolCallChip[] = []
   if (harness && !harness.failed) {
