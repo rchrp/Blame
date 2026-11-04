@@ -170,6 +170,22 @@ test("cancels a security audit on every active worker", async () => {
   }
 });
 
+test("reports whether the worker running an initialization cancelled it", async () => {
+  const harness = poolHarness(2);
+  await harness.pool.startSession("sessions.start", {});
+  await harness.pool.startSession("sessions.start", {});
+  harness.processes[1].runningInitializations.add("run-1");
+
+  assert.equal(await harness.pool.cancelInitialization("run-1"), true);
+  assert.equal(await harness.pool.cancelInitialization("run-2"), false);
+  for (const process of harness.processes) {
+    assert.deepEqual(process.calls.at(-1), {
+      input: "run-2",
+      method: "initializations.cancel",
+    });
+  }
+});
+
 type FakeCall = {
   input?: unknown;
   method: AgentRuntimeMethod;
@@ -178,6 +194,7 @@ type FakeCall = {
 class FakeAgentRuntimeProcess implements AgentRuntimeProcessLike {
   readonly calls: FakeCall[] = [];
   readonly id: number;
+  readonly runningInitializations = new Set<string>();
   readonly sessionIds = new Set<string>();
   alive = true;
   private readonly callbacks: AgentRuntimeProcessCallbacks;
@@ -203,6 +220,9 @@ class FakeAgentRuntimeProcess implements AgentRuntimeProcessLike {
       return [...this.sessionIds].map((sessionId) => ({ sessionId })) as Result;
     }
     if (method === "approvals.resolve") return true as Result;
+    if (method === "initializations.cancel") {
+      return this.runningInitializations.has(input as string) as Result;
+    }
     return undefined as Result;
   }
 

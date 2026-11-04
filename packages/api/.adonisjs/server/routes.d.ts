@@ -72,6 +72,7 @@ export type ScannedRoutes = {
     'projects.project_initializations.start': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_initializations.complete': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_initializations.fail': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
+    'projects.project_initializations.cancel': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_initializations.repair': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_initializations.check': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'providers.model_catalog.show': { paramsTuple?: []; params?: {} }
@@ -239,6 +240,7 @@ export type ScannedRoutes = {
     'projects.project_initializations.start': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_initializations.complete': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_initializations.fail': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
+    'projects.project_initializations.cancel': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_initializations.repair': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_initializations.check': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'providers.provider_credentials.store': { paramsTuple?: []; params?: {} }

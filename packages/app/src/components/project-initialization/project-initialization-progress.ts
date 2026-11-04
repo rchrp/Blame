@@ -10,6 +10,8 @@ export type ProjectInitializationProgress = {
   percent: number
   label: string
   detail?: string
+  /** The person cancelled the run: it is stopping. */
+  cancelling?: boolean
   startedAt: number
 }
 

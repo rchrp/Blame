@@ -478,6 +478,8 @@ export type AgentClient = {
   }
   initializations: {
     run(input: InitializeProjectInput): Promise<InitializeProjectResult>
+    /** Stops the run started with this progress id; false once it ended. */
+    cancel(progressId: string): Promise<boolean>
     repair(
       input: RepairProjectInitializationInput
     ): Promise<RepairProjectInitializationResult>

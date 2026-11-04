@@ -47,6 +47,8 @@ export function InitializationStatus({
       <FailedStatus initialization={initialization} />
     )
   }
+  if (initialization?.status === "cancelled")
+    return <CancelledStatus initialization={initialization} />
   if (initialization?.status === "running")
     return (
       <StatusBlock
@@ -163,6 +165,27 @@ function ReadyStatus({
         the analysis again.
       </p>
       {repaired ? <p>Last repaired by Blame: {repaired}</p> : null}
+    </StatusBlock>
+  )
+}
+
+function CancelledStatus({
+  initialization,
+}: {
+  initialization: CloudProjectInitialization
+}) {
+  const cancelledAt = initialization.updatedAt ?? initialization.createdAt
+  return (
+    <StatusBlock
+      tone="neutral"
+      title="The last analysis was cancelled"
+      meta={`Cancelled ${relativeDate(cancelledAt)}`}
+    >
+      <p>
+        Blame does not run it again by itself. Run it again when you are ready
+        to give this project a preview setup. Until then, stories run in Direct
+        mode, in your project folder.
+      </p>
     </StatusBlock>
   )
 }

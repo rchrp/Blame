@@ -27,16 +27,56 @@ type InitializationRuns<T> = {
   progress: Pick<InitializationProgressReporter, "tool" | "restarting">;
   correction?: InitializationCorrection;
   responseLimitMs: number;
+  /** Cancels the run: its current session stops and no other one starts. */
+  signal?: AbortSignal;
   start: (
     sessionId: string,
     correction: InitializationCorrection | undefined,
   ) => Promise<RuntimeClineResult>;
 };
 
+/** The person cancelled the analysis: no session of it runs any more. */
+export class InitializationCancelledError extends Error {
+  constructor() {
+    super("Project initialization cancelled");
+    this.name = "InitializationCancelledError";
+  }
+}
+
+/**
+ * The initialization runs of a runtime by their progress id, the id the app
+ * chose for the run: the app cancels the run it started with it.
+ */
+export class InitializationCancellations {
+  private readonly runs = new Map<string, AbortController>();
+
+  /** Follows a run until `release`. A run without a progress id cannot be cancelled. */
+  track(progressId: string | undefined) {
+    const controller = new AbortController();
+    if (progressId) this.runs.set(progressId, controller);
+    return {
+      signal: controller.signal,
+      release: () => {
+        if (progressId && this.runs.get(progressId) === controller)
+          this.runs.delete(progressId);
+      },
+    };
+  }
+
+  /** False when no run with this id is in progress, or it already ended. */
+  cancel(progressId: string) {
+    const controller = this.runs.get(progressId);
+    if (!controller) return false;
+    controller.abort();
+    return true;
+  }
+}
+
 /**
  * Runs the initialization agent until Blame accepts its setup or it reports
  * what blocks it. A second session starts only when the first ended without
- * an outcome, including a response stopped for running past its limit.
+ * an outcome, including a response stopped for running past its limit. A
+ * cancelled run stops its session and starts none.
  */
 export async function runInitializationSessions<T>(
   runs: InitializationRuns<T>,
@@ -44,8 +84,10 @@ export async function runInitializationSessions<T>(
   let correction = runs.correction;
   let timedOut = false;
   for (let run = 1; run <= 2; run += 1) {
+    throwIfCancelled(runs.signal);
     const sessionId = `${Date.now()}_${randomUUID().replaceAll("-", "").slice(0, 5)}`;
     const ran = await followSession(runs, sessionId, correction);
+    throwIfCancelled(runs.signal);
     const outcome = runs.session.outcome();
     if (outcome.type === "accepted") return { result: outcome.result, sessionId };
     if (outcome.type === "blocked")
@@ -80,12 +122,15 @@ async function followSession<T>(
     clearTimeout(timer);
     timer = setTimeout(() => {
       timedOut = true;
-      void Promise.allSettled([
-        runs.cline.stop(sessionId),
-        runs.cline.abort(sessionId, "The model response ran past its time limit"),
-      ]);
+      stopSession(
+        runs.cline,
+        sessionId,
+        "The model response ran past its time limit",
+      );
     }, runs.responseLimitMs);
   };
+  const cancel = () =>
+    stopSession(runs.cline, sessionId, "The analysis was cancelled");
   const unsubscribe = await runs.cline.subscribe(
     (event: CoreSessionEvent) => {
       const activity = clineSessionToolEvent(event);
@@ -95,17 +140,36 @@ async function followSession<T>(
     },
     { sessionId },
   );
+  runs.signal?.addEventListener("abort", cancel, { once: true });
   limit();
   try {
+    throwIfCancelled(runs.signal);
     const result = await runs.start(sessionId, correction);
     return { result, timedOut };
   } catch (error) {
+    if (runs.signal?.aborted) throw new InitializationCancelledError();
     if (timedOut) return { result: undefined, timedOut };
     throw error;
   } finally {
     clearTimeout(timer);
+    runs.signal?.removeEventListener("abort", cancel);
     unsubscribe();
   }
+}
+
+function stopSession(
+  cline: InitializationRuns<unknown>["cline"],
+  sessionId: string,
+  reason: string,
+) {
+  void Promise.allSettled([
+    cline.stop(sessionId),
+    cline.abort(sessionId, reason),
+  ]);
+}
+
+function throwIfCancelled(signal: AbortSignal | undefined) {
+  if (signal?.aborted) throw new InitializationCancelledError();
 }
 
 function minutes(milliseconds: number) {

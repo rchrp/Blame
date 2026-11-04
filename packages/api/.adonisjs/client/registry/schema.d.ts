@@ -891,6 +891,19 @@ export interface Registry {
       rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/project_initializations_controller').default['fail']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
+  'projects.project_initializations.cancel': {
+    methods: ["POST"]
+    pattern: '/api/v1/projects/:projectId/initialization/cancel'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/project_initialization').cancelProjectInitializationValidator)>>
+      paramsTuple: [ParamValue]
+      params: { projectId: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/project_initialization').cancelProjectInitializationValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/project_initializations_controller').default['cancel']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_initializations_controller').default['cancel']>>> | { status: 422; response: { errors: SimpleError[] } }
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/project_initializations_controller').default['cancel']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
   'projects.project_initializations.repair': {
     methods: ["POST"]
     pattern: '/api/v1/projects/:projectId/initialization/repair'

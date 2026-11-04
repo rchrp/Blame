@@ -4,6 +4,8 @@ import test from "node:test";
 import type { CoreSessionEvent } from "@cline/sdk";
 import type { InitializationCorrection } from "./cline-initialization.js";
 import {
+  InitializationCancellations,
+  InitializationCancelledError,
   initializationResponseLimitMs,
   runInitializationSessions,
 } from "./initialization-runs.js";
@@ -181,4 +183,106 @@ test("gives high reasoning efforts more time per answer", () => {
   assert.equal(initializationResponseLimitMs(), 240_000);
   assert.equal(initializationResponseLimitMs("medium"), 240_000);
   assert.equal(initializationResponseLimitMs("xhigh"), 600_000);
+});
+
+test("cancelling stops the running answer and starts no other session", async () => {
+  const cancellation = new AbortController();
+  const fake = fakeCline(async ({ tool, stopped }) => {
+    tool("read_files");
+    cancellation.abort();
+    return stopped;
+  });
+
+  await assert.rejects(
+    runInitializationSessions({
+      cline: fake.cline,
+      session: accepting(),
+      progress: progress(),
+      responseLimitMs: 1_000,
+      signal: cancellation.signal,
+      start: fake.start,
+    }),
+    InitializationCancelledError,
+  );
+  assert.equal(fake.stoppedSessions.length, 1);
+  assert.equal(fake.corrections.length, 1);
+});
+
+test("a cancelled answer that throws reports the cancellation", async () => {
+  const cancellation = new AbortController();
+  const fake = fakeCline(async ({ stopped }) => {
+    cancellation.abort();
+    await stopped;
+    throw new Error("aborted");
+  });
+
+  await assert.rejects(
+    runInitializationSessions({
+      cline: fake.cline,
+      session: accepting(),
+      progress: progress(),
+      responseLimitMs: 1_000,
+      signal: cancellation.signal,
+      start: fake.start,
+    }),
+    InitializationCancelledError,
+  );
+  assert.equal(fake.corrections.length, 1);
+});
+
+test("keeps no result the model submitted after the cancellation", async () => {
+  const cancellation = new AbortController();
+  const session = accepting();
+  const fake = fakeCline(async () => {
+    cancellation.abort();
+    session.submit({ ok: true });
+  });
+
+  await assert.rejects(
+    runInitializationSessions({
+      cline: fake.cline,
+      session,
+      progress: progress(),
+      responseLimitMs: 1_000,
+      signal: cancellation.signal,
+      start: fake.start,
+    }),
+    InitializationCancelledError,
+  );
+});
+
+test("a run cancelled before its first answer starts no session", async () => {
+  const cancellation = new AbortController();
+  cancellation.abort();
+  const fake = fakeCline(async () => {});
+
+  await assert.rejects(
+    runInitializationSessions({
+      cline: fake.cline,
+      session: accepting(),
+      progress: progress(),
+      responseLimitMs: 1_000,
+      signal: cancellation.signal,
+      start: fake.start,
+    }),
+    InitializationCancelledError,
+  );
+  assert.equal(fake.corrections.length, 0);
+});
+
+test("cancels a run by its progress id only while it runs", () => {
+  const cancellations = new InitializationCancellations();
+  const first = cancellations.track("run-1");
+  const second = cancellations.track("run-2");
+  const untracked = cancellations.track(undefined);
+
+  assert.equal(cancellations.cancel("run-1"), true);
+  assert.equal(first.signal.aborted, true);
+  assert.equal(second.signal.aborted, false);
+  assert.equal(untracked.signal.aborted, false);
+  assert.equal(cancellations.cancel("unknown"), false);
+
+  second.release();
+  assert.equal(cancellations.cancel("run-2"), false);
+  assert.equal(second.signal.aborted, false);
 });

@@ -67,6 +67,7 @@ import {
 } from "./cline-initialization.js";
 import { initializationProgress } from "./initialization-progress.js";
 import {
+  InitializationCancellations,
   initializationResponseLimitMs,
   runInitializationSessions,
 } from "./initialization-runs.js";
@@ -444,6 +445,8 @@ export class BlameAgentRuntime {
     Map<string, ClineCore>
   >();
   private cancelledSecurityAudits = new Set<string>();
+  private readonly initializationCancellations =
+    new InitializationCancellations();
   private sessionBackendKeys = new Map<string, string>();
   private readonly agentTelemetry = new AgentTelemetry();
   private unsubscribers = new Map<string, () => void>();
@@ -557,6 +560,9 @@ export class BlameAgentRuntime {
 
   initializations = {
     run: (input: InitializeProjectInput) => this.initializeProject(input),
+    /** Stops the run started with this progress id; false once it ended. */
+    cancel: (progressId: string) =>
+      this.initializationCancellations.cancel(progressId),
     repair: (input: RepairProjectInitializationInput) =>
       this.repairProjectInitialization(input),
     assessImpact: (input: AssessProjectInitializationImpactInput) =>
@@ -1996,11 +2002,18 @@ export class BlameAgentRuntime {
   private async initializeProject(
     input: InitializeProjectInput,
   ): Promise<InitializeProjectResult> {
-    return this.agentTelemetry.runBusinessOperation(
-      input,
-      "project_initialization",
-      () => this.initializeProjectWorkflow(input),
-    );
+    // Tracked before anything is awaited: once the app receives the run's
+    // first progress notice, it can cancel the run by its progress id.
+    const run = this.initializationCancellations.track(input.progressId);
+    try {
+      return await this.agentTelemetry.runBusinessOperation(
+        input,
+        "project_initialization",
+        () => this.initializeProjectWorkflow(input, run.signal),
+      );
+    } finally {
+      run.release();
+    }
   }
 
   private async analyzeProjectCodePractices(
@@ -2120,6 +2133,7 @@ export class BlameAgentRuntime {
 
   private async initializeProjectWorkflow(
     input: InitializeProjectInput,
+    signal: AbortSignal,
   ): Promise<InitializeProjectResult> {
     assertWorkspacePath(input.cwd, input.workspaceRoot, "cwd");
     const resolvedCredential = await this.initializationCredential(input);
@@ -2158,6 +2172,7 @@ export class BlameAgentRuntime {
       progress,
       correction: input.validationFeedback,
       responseLimitMs: initializationResponseLimitMs(input.reasoningEffort),
+      signal,
       start: (sessionId, correction) =>
         this.startProjectInitializationAgent(
           cline,

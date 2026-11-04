@@ -603,6 +603,8 @@ const api: BlameDesktopApi = {
     },
     initializations: {
       run: (input) => ipcRenderer.invoke("agent:initializations:run", input),
+      cancel: (progressId) =>
+        ipcRenderer.invoke("agent:initializations:cancel", progressId),
       repair: (input) =>
         ipcRenderer.invoke("agent:initializations:repair", input),
       assessImpact: (input) =>

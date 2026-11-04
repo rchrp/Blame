@@ -138,6 +138,7 @@ export interface ApiDefinition {
       start: typeof routes['projects.project_initializations.start']
       complete: typeof routes['projects.project_initializations.complete']
       fail: typeof routes['projects.project_initializations.fail']
+      cancel: typeof routes['projects.project_initializations.cancel']
       repair: typeof routes['projects.project_initializations.repair']
       check: typeof routes['projects.project_initializations.check']
     }

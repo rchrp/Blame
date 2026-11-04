@@ -16,10 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import {
-  useCloudAuth,
-  type CloudProjectInitialization,
-} from "@/context/cloud-auth"
+import { useCloudAuth } from "@/context/cloud-auth"
 import {
   usePlatform,
   type HostDependencyReport,
@@ -31,7 +28,9 @@ import { navigate } from "@/components/navigation/navigation"
 import { ProgressNotificationBody } from "@/components/shared/progress-notification"
 import {
   notifyProjectInitializationUpdated,
+  requestProjectInitializationCancel,
   requestProjectInitializationRun,
+  subscribeProjectInitializationCancelRequested,
   subscribeProjectInitializationRunRequested,
 } from "@/components/project-initialization/project-initialization-events"
 import { blockedInitialization } from "@/components/project-initialization/initialization-blocked"
@@ -41,8 +40,8 @@ import {
 } from "@/components/project-initialization/database-mode-options"
 import { readableInitializationError } from "@/pages/initialization/initialization-setup-draft"
 import {
+  initializationStartsAutomatically,
   initializationRunningHere,
-  initializationStale,
   markInitializationRunning,
 } from "@/components/project-initialization/project-initialization-availability"
 import {
@@ -93,6 +92,20 @@ type OpenHostDependenciesDialog = (
   report: HostDependencyReport
 ) => void
 
+// The run this app has in progress for a project, so Cancel can stop it.
+type ActiveInitializationRun = {
+  project: InitializationRunInput["project"]
+  agent: InitializationRunInput["agent"]
+  /** The channel of the run's progress: the agent runtime cancels the run by it. */
+  progressId: string
+  /** The person cancelled it: it saves nothing and starts no other agent run. */
+  cancelled: boolean
+  /** The agent runtime stopped the analysis after the cancellation. */
+  agentStopped: boolean
+}
+
+const activeRuns = new Map<string, ActiveInitializationRun>()
+
 export function ProjectInitializationRunner() {
   const controller = useProjectInitializationController()
   return (
@@ -141,6 +154,10 @@ function useProjectInitializationController() {
     openHostDependenciesDialog:
       hostDependenciesDialog.openHostDependenciesDialog,
   })
+  React.useEffect(
+    () => subscribeProjectInitializationCancelRequested(cancelInitialization),
+    []
+  )
 
   return initializationController({
     databaseDialog,
@@ -397,7 +414,9 @@ async function maybeInitializeProject(
   const snapshot = await cloud.projectInitialization(input.activeProject.id)
   if (
     signal.aborted ||
-    !initializesAutomatically(input.activeProject.id, snapshot.initialization)
+    !initializationStartsAutomatically(snapshot.initialization, {
+      runningHere: initializationRunningHere(input.activeProject.id),
+    })
   )
     return
   const run = runInput(
@@ -439,46 +458,74 @@ async function runInitialization(input: InitializationRunInput) {
   const projectId = input.project.id
   if (initializationRunningHere(projectId)) return
   const cloud = createCloudApi(input.auth.apiConnection)
-  const progressId = crypto.randomUUID()
+  const run: ActiveInitializationRun = {
+    project: input.project,
+    agent: input.agent,
+    progressId: crypto.randomUUID(),
+    cancelled: false,
+    agentStopped: false,
+  }
   const progress = (update: {
     percent: number
     label: string
     detail?: string
   }) => {
+    // A cancelled run says it is stopping until it ends.
+    if (run.cancelled) return
     setInitializationProgress(projectId, update)
     showProgress(input.project.name, projectId)
   }
   const stopFollowing = input.agent.sessions.onEvent(
-    initializationProgressChannel(progressId),
+    initializationProgressChannel(run.progressId),
     (event) => {
+      // The agent runtime knows the run once it reports on it: a
+      // cancellation sent before then reaches it now.
+      if (run.cancelled) void stopAgentRun(run)
       const update = agentInitializationProgress(event)
       if (update) progress(update)
     }
   )
+  activeRuns.set(projectId, run)
   markInitializationRunning(projectId, true)
   progress({ percent: 2, label: "Starting the analysis" })
   try {
-    await persistInitializationResult(input, cloud, progressId, progress)
+    await persistInitializationResult(input, cloud, run, progress)
   } catch (error) {
-    await persistInitializationError(input, cloud, error)
+    if (run.cancelled) await persistInitializationCancellation(input, cloud)
+    else await persistInitializationError(input, cloud, error)
   } finally {
     stopFollowing()
+    activeRuns.delete(projectId)
     setInitializationProgress(projectId, undefined)
     markInitializationRunning(projectId, false)
   }
 }
 
-// Runs by itself only for a project never initialized, or whose last run
-// stopped reporting. After a failure the person decides: Run again.
-function initializesAutomatically(
-  projectId: string,
-  initialization: CloudProjectInitialization | null | undefined
-) {
-  if (initializationRunningHere(projectId)) return false
-  if (!initialization || initialization.status === "pending") return true
-  return (
-    initialization.status === "running" && initializationStale(initialization)
-  )
+// Cancel, from the toast or the Initialization page.
+function cancelInitialization(projectId: string) {
+  const run = activeRuns.get(projectId)
+  if (!run || run.cancelled) return
+  setInitializationProgress(projectId, {
+    percent: initializationProgressFor(projectId)?.percent ?? 0,
+    label: "Cancelling the analysis",
+    cancelling: true,
+  })
+  run.cancelled = true
+  showProgress(run.project.name, projectId)
+  void stopAgentRun(run)
+}
+
+// False until the agent runtime runs the analysis: the next progress
+// notice of the run sends the cancellation again.
+async function stopAgentRun(run: ActiveInitializationRun) {
+  if (run.agentStopped) return
+  run.agentStopped = await run.agent.initializations
+    .cancel(run.progressId)
+    .catch(() => false)
+}
+
+function assertNotCancelled(run: ActiveInitializationRun) {
+  if (run.cancelled) throw new Error("Project initialization cancelled")
 }
 
 function showProgress(projectName: string, projectId: string) {
@@ -491,6 +538,16 @@ function showProgress(projectName: string, projectId: string) {
     className: "progress-notification-toast",
     closeButton: false,
     dismissible: true,
+    action: current.cancelling
+      ? undefined
+      : {
+          label: "Cancel",
+          onClick: (event) => {
+            // The toast stays: it says the analysis is stopping.
+            event.preventDefault()
+            requestProjectInitializationCancel(projectId)
+          },
+        },
     description: (
       <ProgressNotificationBody
         label={current.label}
@@ -544,7 +601,7 @@ function checkInitializationHostDependencies(workspace: WorkspaceClient) {
 async function persistInitializationResult(
   input: InitializationRunInput,
   cloud: ReturnType<typeof createCloudApi>,
-  progressId: string,
+  run: ActiveInitializationRun,
   progress: (update: {
     percent: number
     label: string
@@ -558,11 +615,14 @@ async function persistInitializationResult(
   notifyProjectInitializationUpdated(input.project.id)
   let feedback: InitializationValidationFeedback | undefined
   for (let attempt = 1; attempt <= maxBackendCompletionAttempts; attempt += 1) {
+    assertNotCancelled(run)
     const result = await runProjectInitializationAgent(
       input,
-      progressId,
+      run.progressId,
       feedback
     )
+    // A setup the agent submitted as the person cancelled is not saved.
+    assertNotCancelled(run)
     progress({ percent: 95, label: "Saving the setup" })
     try {
       await completeProjectInitialization(input, cloud, result)
@@ -707,6 +767,34 @@ async function persistInitializationError(
     .catch(() => undefined)
   notifyProjectInitializationUpdated(input.project.id)
   showError(input.project.id, error)
+}
+
+async function persistInitializationCancellation(
+  input: InitializationRunInput,
+  cloud: ReturnType<typeof createCloudApi>
+) {
+  await cloud
+    .cancelProjectInitialization(input.project.id)
+    .catch(() => undefined)
+  notifyProjectInitializationUpdated(input.project.id)
+  showCancelled(input)
+}
+
+function showCancelled(input: InitializationRunInput) {
+  toast.info("Preview environment setup cancelled", {
+    description: "Stories run in Direct mode until you run the setup again.",
+    id: toastId,
+    position: "bottom-right",
+    duration: 10_000,
+    className: undefined,
+    action: {
+      label: "Run again",
+      onClick: () =>
+        requestProjectInitializationRun(input.project.id, {
+          databaseMode: input.preferences?.database?.mode,
+        }),
+    },
+  })
 }
 
 function showError(projectId: string, error: unknown) {

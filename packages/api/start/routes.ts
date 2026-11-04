@@ -100,6 +100,10 @@ router
           'complete',
         ])
         router.post('/:projectId/initialization/fail', [ProjectInitializationsController, 'fail'])
+        router.post('/:projectId/initialization/cancel', [
+          ProjectInitializationsController,
+          'cancel',
+        ])
         router.post('/:projectId/initialization/repair', [
           ProjectInitializationsController,
           'repair',

@@ -414,6 +414,12 @@ const routes = {
     tokens: [[0,"api"],[0,"v1"],[0,"projects"],[1,"projectId"],[0,"initialization"],[0,"fail"]],
     types: placeholder as Registry['projects.project_initializations.fail']['types'],
   },
+  'projects.project_initializations.cancel': {
+    methods: ["POST"],
+    pattern: '/api/v1/projects/:projectId/initialization/cancel',
+    tokens: [[0,"api"],[0,"v1"],[0,"projects"],[1,"projectId"],[0,"initialization"],[0,"cancel"]],
+    types: placeholder as Registry['projects.project_initializations.cancel']['types'],
+  },
   'projects.project_initializations.repair': {
     methods: ["POST"],
     pattern: '/api/v1/projects/:projectId/initialization/repair',

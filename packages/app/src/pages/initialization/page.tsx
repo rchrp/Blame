@@ -1,5 +1,11 @@
 import * as React from "react"
-import { CopyIcon, PencilIcon, RefreshCwIcon } from "lucide-react"
+import {
+  CopyIcon,
+  LoaderCircleIcon,
+  PencilIcon,
+  RefreshCwIcon,
+  SquareIcon,
+} from "lucide-react"
 import { toast } from "sonner"
 
 import {
@@ -16,6 +22,7 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   notifyProjectInitializationUpdated,
+  requestProjectInitializationCancel,
   requestProjectInitializationRun,
 } from "@/components/project-initialization/project-initialization-events"
 import { useInitializationProgress } from "@/components/project-initialization/project-initialization-progress"
@@ -133,6 +140,25 @@ export function InitializationPage() {
                 >
                   <PencilIcon data-icon="inline-start" />
                   Edit setup
+                </Button>
+              ) : null}
+              {/* Only the window that runs the analysis can stop it. */}
+              {project && progress ? (
+                <Button
+                  variant="outline"
+                  className="text-destructive hover:text-destructive"
+                  disabled={progress.cancelling}
+                  onClick={() => requestProjectInitializationCancel(project.id)}
+                >
+                  {progress.cancelling ? (
+                    <LoaderCircleIcon
+                      data-icon="inline-start"
+                      className="animate-spin motion-reduce:animate-none"
+                    />
+                  ) : (
+                    <SquareIcon data-icon="inline-start" />
+                  )}
+                  {progress.cancelling ? "Cancelling…" : "Cancel"}
                 </Button>
               ) : null}
               <Button onClick={runAgain} disabled={running}>

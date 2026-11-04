@@ -3,6 +3,7 @@ import ProjectCodePractice from '#models/project_code_practice'
 import User from '#models/user'
 import UserSubscription from '#models/user_subscription'
 import testUtils from '@adonisjs/core/services/test_utils'
+import type { ApiClient } from '@japa/api-client'
 import { test } from '@japa/runner'
 import { DateTime } from 'luxon'
 
@@ -113,6 +114,105 @@ test.group('project initializations', (group) => {
     const body = response.body() as InitializationBody
     assert.equal(body.data.initialization?.status, 'error')
     assert.equal(body.data.initialization?.error, 'Agent failed')
+  })
+
+  test('cancels a running initialization and runs it again', async ({ client, assert }) => {
+    const user = await createUser()
+    const project = await createProject(user.id, 'Alpha')
+    await startInitialization(client, user, project.id)
+
+    const cancelled = await client
+      .post(`/api/v1/projects/${project.id}/initialization/cancel`)
+      .loginAs(user)
+      .json({ clineSessionId: 'session-1' })
+
+    cancelled.assertStatus(200)
+    const body = cancelled.body() as InitializationBody
+    assert.equal(body.data.initialization?.status, 'cancelled')
+    assert.equal(body.data.initialization?.clineSessionId, 'session-1')
+    assert.isNull(body.data.initialization?.previewManifest)
+    assert.isNull(body.data.initialization?.error)
+
+    const shown = await client.get(`/api/v1/projects/${project.id}/initialization`).loginAs(user)
+    assert.equal((shown.body() as InitializationBody).data.initialization?.status, 'cancelled')
+
+    const restarted = await startInitialization(client, user, project.id)
+    restarted.assertStatus(200)
+    assert.equal((restarted.body() as InitializationBody).data.initialization?.status, 'running')
+  })
+
+  test('cancelling a cancelled initialization changes nothing', async ({ client, assert }) => {
+    const user = await createUser()
+    const project = await createProject(user.id, 'Alpha')
+    await startInitialization(client, user, project.id)
+    await client.post(`/api/v1/projects/${project.id}/initialization/cancel`).loginAs(user).json({})
+
+    const again = await client
+      .post(`/api/v1/projects/${project.id}/initialization/cancel`)
+      .loginAs(user)
+      .json({})
+
+    again.assertStatus(200)
+    assert.equal((again.body() as InitializationBody).data.initialization?.status, 'cancelled')
+  })
+
+  test('refuses to cancel an initialization that is not running', async ({ client, assert }) => {
+    const user = await createUser()
+    const project = await createProject(user.id, 'Alpha')
+
+    const missing = await client
+      .post(`/api/v1/projects/${project.id}/initialization/cancel`)
+      .loginAs(user)
+      .json({})
+    missing.assertStatus(409)
+    missing.assertBodyContains({ code: 'E_PROJECT_INITIALIZATION_NOT_RUNNING' })
+
+    await client
+      .post(`/api/v1/projects/${project.id}/initialization/complete`)
+      .loginAs(user)
+      .json({ previewManifest: previewManifest('high'), runConfigurations: [] })
+    const done = await client
+      .post(`/api/v1/projects/${project.id}/initialization/cancel`)
+      .loginAs(user)
+      .json({})
+    done.assertStatus(409)
+
+    const shown = await client.get(`/api/v1/projects/${project.id}/initialization`).loginAs(user)
+    const initialization = (shown.body() as InitializationBody).data.initialization
+    assert.equal(initialization?.status, 'done')
+    assert.equal(initialization?.previewManifest?.confidence, 'high')
+  })
+
+  test('validates the cancellation of an initialization', async ({ client }) => {
+    const user = await createUser()
+    const project = await createProject(user.id, 'Alpha')
+    await startInitialization(client, user, project.id)
+
+    const response = await client
+      .post(`/api/v1/projects/${project.id}/initialization/cancel`)
+      .loginAs(user)
+      .json({ clineSessionId: 's'.repeat(256) })
+
+    response.assertStatus(422)
+  })
+
+  test('rejects initialization cancellation for another user project', async ({
+    client,
+    assert,
+  }) => {
+    const owner = await createUser()
+    const user = await createUser()
+    const project = await createProject(owner.id, 'Alpha')
+    await startInitialization(client, owner, project.id)
+
+    const response = await client
+      .post(`/api/v1/projects/${project.id}/initialization/cancel`)
+      .loginAs(user)
+      .json({})
+
+    response.assertStatus(404)
+    const shown = await client.get(`/api/v1/projects/${project.id}/initialization`).loginAs(owner)
+    assert.equal((shown.body() as InitializationBody).data.initialization?.status, 'running')
   })
 
   test('repairs initialization artifacts without changing practices', async ({
@@ -448,4 +548,11 @@ function createCodePractice(projectId: string) {
     enabled: true,
     comment: 'Strict linting and typing are configured.',
   })
+}
+
+function startInitialization(client: ApiClient, user: User, projectId: string) {
+  return client
+    .post(`/api/v1/projects/${projectId}/initialization/start`)
+    .loginAs(user)
+    .json({ providerId: 'anthropic', modelId: 'claude' })
 }

@@ -296,6 +296,11 @@ function registerAnalysisWorkflowIpcHandlers(
       agentRuntime().run("initializations.run", resolved),
     );
   });
+  ipcMain.handle("agent:initializations:cancel", (_event, progressId) =>
+    typeof progressId === "string" && runtime
+      ? agentRuntime().cancelInitialization(progressId)
+      : false,
+  );
   ipcMain.handle("agent:initializations:repair", async (_event, input) => {
     const resolved = await agentWorkspaceInput(input);
     const workspace = agentWorkspacePath(resolved);

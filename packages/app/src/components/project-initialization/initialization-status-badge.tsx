@@ -57,6 +57,11 @@ function environmentStatus(
       color:
         "bg-rose-500/15 text-rose-800 dark:bg-rose-500/15 dark:text-rose-300",
     }
+  if (initialization?.status === "cancelled")
+    return {
+      label: "Cancelled",
+      description: "The last analysis was cancelled",
+    }
   if (initialization?.status === "running")
     return {
       label: "Interrupted",

@@ -2,7 +2,7 @@ import { BaseModel, column } from '@adonisjs/lucid/orm'
 import { DateTime } from 'luxon'
 import { parsePreviewManifest, type PreviewManifest } from '@blame/preview-contract'
 
-export type ProjectInitializationStatus = 'pending' | 'running' | 'done' | 'error'
+export type ProjectInitializationStatus = 'pending' | 'running' | 'done' | 'error' | 'cancelled'
 export type ProjectInitializationDatabaseMode = 'existing' | 'compose'
 
 type ProjectRunConfiguration = {

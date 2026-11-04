@@ -38,6 +38,23 @@ export function initializationStale(
 }
 
 /**
+ * Whether the app starts the analysis by itself when the project opens:
+ * only for a project never analyzed, or whose last run stopped reporting.
+ * After a failure or a cancellation, the person decides with Run again.
+ */
+export function initializationStartsAutomatically(
+  initialization: CloudProjectInitialization | null | undefined,
+  options: { runningHere: boolean; now?: number }
+) {
+  if (options.runningHere) return false
+  if (!initialization || initialization.status === "pending") return true
+  return (
+    initialization.status === "running" &&
+    initializationStale(initialization, options.now ?? Date.now())
+  )
+}
+
+/**
  * What a queued story does with the project's initialization. Direct
  * stories need none: they run the project's own app in its folder. The
  * others wait while it runs, and without one (it failed, never ran, or

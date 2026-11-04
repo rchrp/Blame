@@ -53,3 +53,31 @@ export function subscribeProjectInitializationRunRequested(
       handleRequest
     )
 }
+
+const projectInitializationCancelRequestedEvent =
+  "project-initialization:cancel-requested"
+
+/** Asks the mounted initialization runner to cancel this project's run. */
+export function requestProjectInitializationCancel(projectId: string) {
+  window.dispatchEvent(
+    new CustomEvent<string>(projectInitializationCancelRequestedEvent, {
+      detail: projectId,
+    })
+  )
+}
+
+export function subscribeProjectInitializationCancelRequested(
+  callback: (projectId: string) => void
+) {
+  const handleRequest = (event: Event) =>
+    callback((event as CustomEvent<string>).detail)
+  window.addEventListener(
+    projectInitializationCancelRequestedEvent,
+    handleRequest
+  )
+  return () =>
+    window.removeEventListener(
+      projectInitializationCancelRequestedEvent,
+      handleRequest
+    )
+}

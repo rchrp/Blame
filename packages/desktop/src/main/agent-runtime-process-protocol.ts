@@ -23,6 +23,7 @@ export const agentRuntimeMethods = [
   "sessions.releaseWorkspace",
   "approvals.resolve",
   "initializations.run",
+  "initializations.cancel",
   "initializations.repair",
   "initializations.assessImpact",
   "codePractices.run",

@@ -244,6 +244,8 @@ function workflowHandlers(runtime: BlameAgentRuntime) {
   return {
     "initializations.run": (input: unknown) =>
       runtime.initializations.run(input as never),
+    "initializations.cancel": (input: unknown) =>
+      runtime.initializations.cancel(input as string),
     "initializations.repair": (input: unknown) =>
       runtime.initializations.repair(input as never),
     "initializations.assessImpact": (input: unknown) =>

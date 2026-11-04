@@ -74,6 +74,7 @@ export type CloudProjectInitializationStatus =
   | "running"
   | "done"
   | "error"
+  | "cancelled"
 
 export type CloudProjectCodePracticeAnalysisStatus =
   | "pending"

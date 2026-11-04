@@ -43,6 +43,10 @@ export const failProjectInitializationValidator = vine.create({
   error: vine.string().trim().minLength(1).maxLength(4096),
 })
 
+export const cancelProjectInitializationValidator = vine.create({
+  clineSessionId: vine.string().trim().maxLength(255).nullable().optional(),
+})
+
 export const repairProjectInitializationValidator = vine.create({
   clineSessionId: vine.string().trim().maxLength(255).nullable().optional(),
   previewManifest: vine.any(),

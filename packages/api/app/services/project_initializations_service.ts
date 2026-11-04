@@ -6,6 +6,7 @@ import type { Infer } from '@vinejs/vine/types'
 import { Exception } from '@adonisjs/core/exceptions'
 import { parsePreviewManifest, type PreviewManifest } from '@blame/preview-contract'
 import type {
+  cancelProjectInitializationValidator,
   checkProjectInitializationValidator,
   completeProjectInitializationValidator,
   failProjectInitializationValidator,
@@ -16,6 +17,7 @@ import type {
 type StartInput = Infer<typeof startProjectInitializationValidator>
 type CompleteInput = Infer<typeof completeProjectInitializationValidator>
 type FailInput = Infer<typeof failProjectInitializationValidator>
+type CancelInput = Infer<typeof cancelProjectInitializationValidator>
 type RepairInput = Infer<typeof repairProjectInitializationValidator>
 type CheckInput = Infer<typeof checkProjectInitializationValidator>
 
@@ -73,6 +75,30 @@ export default class ProjectInitializationsService {
       step: 'failed',
       clineSessionId: input.clineSessionId ?? initialization.clineSessionId,
       error: input.error,
+    })
+    await initialization.save()
+    return this.snapshot(projectId)
+  }
+
+  /**
+   * The person stopped the running analysis. The project keeps no setup, so
+   * its stories run in Direct mode until an analysis runs again.
+   */
+  async cancel(userId: string, projectId: string, input: CancelInput) {
+    await new ProjectsService().findForUser(userId, projectId)
+    const initialization = await ProjectInitialization.find(projectId)
+    if (initialization?.status === 'cancelled') return this.snapshot(projectId)
+    if (initialization?.status !== 'running') {
+      throw new Exception('The project has no initialization running', {
+        status: 409,
+        code: 'E_PROJECT_INITIALIZATION_NOT_RUNNING',
+      })
+    }
+    initialization.merge({
+      status: 'cancelled',
+      step: 'cancelled',
+      clineSessionId: input.clineSessionId ?? initialization.clineSessionId,
+      error: null,
     })
     await initialization.save()
     return this.snapshot(projectId)

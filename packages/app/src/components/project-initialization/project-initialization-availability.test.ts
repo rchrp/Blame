@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import test from "node:test"
 
 import {
+  initializationStartsAutomatically,
   projectInitializationAvailability,
   staleInitializationMs,
   storyInitializationDecision,
@@ -10,7 +11,7 @@ import {
 const now = Date.parse("2026-10-28T12:00:00Z")
 
 function initialization(
-  status: "pending" | "running" | "done" | "error",
+  status: "pending" | "running" | "done" | "error" | "cancelled",
   minutesAgo = 1,
   previewManifest: unknown = status === "done" ? {} : null
 ) {
@@ -51,6 +52,10 @@ test("only a finished initialization with a manifest is ready", () => {
     projectInitializationAvailability(initialization("pending"), options),
     "unavailable"
   )
+  assert.equal(
+    projectInitializationAvailability(initialization("cancelled"), options),
+    "unavailable"
+  )
 })
 
 test("a run counts while it runs here or still reports", () => {
@@ -84,4 +89,55 @@ test("stories never wait on a missing initialization", () => {
   assert.equal(storyInitializationDecision("running", "direct"), "start")
   assert.equal(storyInitializationDecision("running", "vercel-compose"), "wait")
   assert.equal(storyInitializationDecision("ready", "local-container"), "start")
+})
+
+test("starts by itself only for a project never analyzed or a run that stopped reporting", () => {
+  const options = { runningHere: false, now }
+  const stale = staleInitializationMs / 60_000 + 1
+  assert.equal(initializationStartsAutomatically(null, options), true)
+  assert.equal(
+    initializationStartsAutomatically(initialization("pending"), options),
+    true
+  )
+  assert.equal(
+    initializationStartsAutomatically(
+      initialization("running", stale),
+      options
+    ),
+    true
+  )
+  assert.equal(
+    initializationStartsAutomatically(initialization("running"), options),
+    false
+  )
+  assert.equal(
+    initializationStartsAutomatically(initialization("done"), options),
+    false
+  )
+  assert.equal(
+    initializationStartsAutomatically(initialization("error"), options),
+    false
+  )
+  assert.equal(
+    initializationStartsAutomatically(null, { runningHere: true, now }),
+    false
+  )
+})
+
+test("never starts again by itself after the person cancelled it", () => {
+  const longAgo = staleInitializationMs / 60_000 + 60
+  assert.equal(
+    initializationStartsAutomatically(initialization("cancelled"), {
+      runningHere: false,
+      now,
+    }),
+    false
+  )
+  assert.equal(
+    initializationStartsAutomatically(initialization("cancelled", longAgo), {
+      runningHere: false,
+      now,
+    }),
+    false
+  )
 })

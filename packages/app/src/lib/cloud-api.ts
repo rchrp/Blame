@@ -459,6 +459,17 @@ export function createCloudApi(connection: CloudApiConnection) {
         { body: JSON.stringify(input), method: "POST" }
       ).then(cloudProjectInitializationSnapshot)
     },
+    cancelProjectInitialization(
+      projectId: string,
+      input: { clineSessionId?: string | null } = {}
+    ) {
+      return request<unknown>(
+        connection,
+        baseUrl,
+        `/projects/${encodeURIComponent(projectId)}/initialization/cancel`,
+        { body: JSON.stringify(input), method: "POST" }
+      ).then(cloudProjectInitializationSnapshot)
+    },
     repairProjectInitialization(
       projectId: string,
       input: {
