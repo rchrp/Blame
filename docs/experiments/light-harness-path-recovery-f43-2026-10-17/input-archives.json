@@ -1,9 +1,0 @@
-{
-  "artifacts": {
-    "frozen-reference.tar.gz": "bf71214de276722c7e6e384b77e14e92bbcd02d1a29eb4336a280dcc06ed13d1",
-    "frozen-recovery.tar.gz": "f4de27477141aa3ead0975dfae5bc6e3daae898f624f6b8d9f5427988168a2c4",
-    "valibot.tar.gz": "efbec73e76ea2b62c9cf33878bd5d79e887421e6b0ffb150d6587ccd204d2ceb",
-    "workspace-pnpm-lock.yaml": "b69a3c0c76fafb0c333ebc5ccaa63f032c1288695a1ba7e65853c82ff609d1e5"
-  },
-  "note": "Frozen executable bytes and prompt/assets; dependencies reconstructed from the workspace lock plus dependency-package-lock.json. Excluded node_modules links must be reattached to those installations. No reference solution is present in measured workspaces."
-}

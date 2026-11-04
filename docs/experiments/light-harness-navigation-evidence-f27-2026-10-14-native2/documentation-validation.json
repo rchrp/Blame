@@ -1,9 +1,0 @@
-{
-  "checkedAtUTC": "2026-10-14T18:08:05.038163+00:00",
-  "sourcePath": "docs/semantic-harness-study.tex",
-  "sourceSha256": "8298fe60f9b433bb4fe904efdc6248fd1cd9e2e5f695abe87dd4ed4eac2f619f",
-  "nativeEditorOpenRequested": true,
-  "nativeCompileRequested": true,
-  "nativeOutcome": "No diagnostic response from native editor/compiler; requests bounded and source preserved. PDF compilation remains unverified.",
-  "terminalTexInstallationAttempted": false
-}

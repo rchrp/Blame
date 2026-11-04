@@ -1,6 +1,0 @@
-{
-  "at": "2026-10-09T01:10:00.962026+00:00",
-  "completedTrialsWhenHelperFinalized": 14,
-  "helperSha256": "cacbf5b42000eff2367446df3809da505405719e103dc9e55a5a57dd4581b557",
-  "method": "Protocol task-cluster uncertainty operationalized as exploratory 10000-draw percentile bootstrap with fixed seed 20261009. All three arm comparisons, all/diagnostic/confirmation partitions and all resource fields reported, with successes/failures and missing usage retained. Full-panel quality and conditional both-success efficiency cohorts kept separate. No significance-based model rerun or task substitution."
-}

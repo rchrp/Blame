@@ -33,7 +33,7 @@ My earlier claim that project tasks executed Rollup/tsc directly was wrong. Froz
 this mechanism, including hooks. Historical invocations are **reconstructed from
 frozen code and recorded inputs**, not historical spawn logs.
 
-[corrected-f31-audit.json](corrected-f31-audit.json) supersedes that interpretation.
+[corrected-f31-audit.json](https://github.com/rchrp/blame-research/blob/f910066559be27eb6202062c65a88cc344abff11/experiments/light-harness-invocation-f33-2026-10-16/corrected-f31-audit.json) supersedes that interpretation.
 It retains four restored full-delivery judgments, a rejected check-only judgment,
 a narrower failure reason, a note-only correction, all 18 rows, evidence hashes
 and unchanged consumption. The exact-wrapper criterion is unchanged. Original F31
@@ -77,5 +77,5 @@ F31/F32 public verifiers still apply to their unchanged historical publications.
 
 The direct API probe failed DNS; using the runner's `NODE_USE_ENV_PROXY=1` returned
 HTTP 200. No missing-credential conclusion is drawn. The separately registered
-[F34 known-task diagnostic](../light-harness-invocation-model-f34-2026-10-16/protocol.json)
+[F34 known-task diagnostic](https://github.com/rchrp/blame-research/blob/f910066559be27eb6202062c65a88cc344abff11/experiments/light-harness-invocation-model-f34-2026-10-16/protocol.json)
 isolates this display change in model runs; it is not fresh confirmation.

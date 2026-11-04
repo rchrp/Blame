@@ -1,8 +1,0 @@
-{
-  "sourceSha256": "20e1332438f79323b35a80eae12c6381f85da08fd8dd81382b3f0b695c8d4389",
-  "nativeEditor": "Open request did not respond; no close request sent. Native compile did not respond within40 seconds.",
-  "fallback": "Existing /usr/bin/pdflatex; no installation.",
-  "exitCode": 0,
-  "pages": 16,
-  "log": "latex-compile.log.gz"
-}

@@ -1,9 +1,0 @@
-{
-  "method": "Unchanged zero-model controls copied from budget-stopped F24, run before any model trial; task/source/criteria unchanged.",
-  "sourceDirectory": "docs/experiments/light-harness-navigation-evidence-f24-2026-10-13-declarations",
-  "artifacts": {
-    "local-summary.json": "474c983c604eea86e6a6d56ae80e93df2c02fc172bb7d4f736a0ee45077f3403",
-    "local-controls.json.gz": "cc7c13f5c3acc5b0459f8887378b4b9d1336322aca9b6f171e5c5b82a86c5e41"
-  },
-  "paidRequests": 0
-}

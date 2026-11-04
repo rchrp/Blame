@@ -1,9 +1,0 @@
-{
-  "focusedRuntimePassed": 169,
-  "preExistingSkipped": 1,
-  "newDefaultControlPassed": 1,
-  "packagedPassed": 3,
-  "typescriptPassed": true,
-  "changedModuleEslintPassed": true,
-  "preModelTestSourceRepair": "New default integration test initially omitted mandatory context argument; fixed TS2554 before any F12 model call. Runtime implementation unchanged by this repair."
-}

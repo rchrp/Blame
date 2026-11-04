@@ -1,8 +1,0 @@
-{
-  "baselineProduction": "5155d3d9eee21d862b384cef1f6d57653c578f8a",
-  "baselineIncludes": "F9 configured compiler identity plus F10 guarded native rename",
-  "candidateLocalBuild": "c5759e0d105d947e9eba6a5025b61ff06ce85f46",
-  "candidatePublishedIdenticalTree": "e8446930c4ee0998cd426bc855d451d2667f13bd",
-  "candidateTree": "63f393e33ce23ed1073d857a84f61adcf422ecf3",
-  "intervention": "Only search_code description changed; runtime/schema/matcher/rename/validation/cache logic identical. Frozen local source identity remains unchanged in bindings."
-}

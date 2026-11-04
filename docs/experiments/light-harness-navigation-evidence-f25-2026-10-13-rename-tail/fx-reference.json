@@ -1,7 +1,0 @@
-{
-  "source": "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/eur.json",
-  "retrievedAtUTC": "2026-10-13T13:28:59.578073+00:00",
-  "quoteDate": "2026-10-12",
-  "usdPerEur": 1.12004391,
-  "invoiceExchangeRateVerified": false
-}

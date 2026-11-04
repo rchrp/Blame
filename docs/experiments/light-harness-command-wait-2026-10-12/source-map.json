@@ -1,7 +1,0 @@
-{
-  "baselineRuntimeSource": "5155d3d9eee21d862b384cef1f6d57653c578f8a",
-  "candidateLocalBuild": "34b34d43bbbe6fd4432095daff627573f1012f54",
-  "candidatePublishedIdenticalTree": "8e7c1f1baca1de6710f082c807d48ecbe847c6a3",
-  "candidateTree": "bc710c7e6103f4201391504078621215567cb10f",
-  "productionIntervention": "Only the default initialCommandWaitMs is 15000 instead of 5000; scope description equals baseline. New meaningful integration test and npm test registration do not enter model tools."
-}

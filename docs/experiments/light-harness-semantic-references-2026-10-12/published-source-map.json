@@ -1,6 +1,0 @@
-{
-  "localBuiltCommit": "8f79dff629036dd6171edae23b373dcdc9983ec6",
-  "publishedCommit": "c0a68a18bd09b8aee5357fbbf2af0de98f6e0cb0",
-  "identicalSourceTree": "6a11cfc32e031af6b5b673863951f0c206d52a98",
-  "reason": "Git-data publication preserves exactly the local committed tree; frozen runtimes were built before publication. No frozen file or execution binding is changed."
-}

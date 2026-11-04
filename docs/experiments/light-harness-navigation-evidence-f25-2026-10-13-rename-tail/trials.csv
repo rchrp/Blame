@@ -1,2 +1,0 @@
-registration,trial,task,repetition,arm,status,official,functional,agent_checks,strict_audit,verification,input_tokens,output_tokens,cache_read_observed,cache_write_observed,token_cost_reconciled,full_cache_accounting,estimated_usd,runner_seconds,outer_agent_seconds
-rename-tail,2-date-fns-normalizeInterval-multifile-baseline,date-fns-normalizeInterval-multifile,2,baseline,succeeded,True,True,True,True,unverified,81487,3155,62976,0,True,False,0.00874772,78.351,80.219935842

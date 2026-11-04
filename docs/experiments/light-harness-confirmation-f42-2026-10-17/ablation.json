@@ -1,8 +1,0 @@
-{
-  "file": "harness/task-catalog.js",
-  "beforeSha256": "ce4178078685398632c61e476633d19d3e8e4fb363b29a3bdb59039340348b5a",
-  "afterSha256": "b7326e75b60a77b238a8789eb28338f42da04d07687e2684b09bd603f60c4580",
-  "needle": "const compilerOnly = inferredKind !== \"service\" && plainCompilerCheck(command);",
-  "replacement": "const compilerOnly = false; // Registered research ablation of F41 classification.",
-  "meaning": "Only recognition of literal compiler invocations is disabled. All other current code, scopes and journals remain common; this is not a historical release comparison."
-}

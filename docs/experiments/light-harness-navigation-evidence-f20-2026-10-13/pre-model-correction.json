@@ -1,6 +1,0 @@
-{
-  "recordedAtUTC": "2026-10-12T22:45:28.541983+00:00",
-  "supersededSha256": "25b0ace3492a7390ccd4d14acc45c789f14248f74724381e3cda99134554550e",
-  "reason": "Lodash retains yarn.lock and the automatic catalog chooses unavailable yarn. Before any F20 model call, explicitly pin npm@11.9.0 in the common frozen task-input manifest to expose the supported pure-Node npm project route. This is benchmark setup, not a production manager-selection repair. Both arms share the F18 conditional-guidance release repair; only Node evidence differs.",
-  "modelRequestsBeforeCorrection": 0
-}

@@ -1,6 +1,0 @@
-{
-  "frozenLocalBuildCommit": "d69e45ed10aeedd457cd9357bf4865942d6f6252",
-  "publishedMainCommit": "cb7e5e1c1c2d3788d868addcc1fa218f3e988c38",
-  "identicalSourceTree": "144f26ad9089308418cee9bcb4cc1ea0beea5520",
-  "explanation": "Git data publication preserves exact source tree; original local build retained as research/semantic-rename-local-d69e45ed."
-}

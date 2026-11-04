@@ -1,6 +1,0 @@
-{
-  "agent-runtime": [
-    "harness/deterministic-formatter.js"
-  ],
-  "benchmark-runner": []
-}

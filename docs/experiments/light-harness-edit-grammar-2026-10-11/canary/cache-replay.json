@@ -1,5 +1,0 @@
-{
-  "selection": "Prospective supplemental audit: old-rejection interleaving selected from the known webhook diagnosis before any async-cache model trial. Applied uniformly; original scorer unchanged and no solution repair.",
-  "criterion": "After clear, rejection of an older load must not release the current pending load's reservation and permit duplicate concurrent loading.",
-  "rows": []
-}

@@ -1,5 +1,0 @@
-{
-  "selection": "Exploratory after inspecting the first-repetition modified slug source; applied uniformly to every available arm/repetition. Not a preregistered endpoint, no score replacement or task-agent feedback.",
-  "criterion": "Remove extended combining diacritics U+1AB0 and U+FE20 as well as ordinary decomposed Latin accents.",
-  "rows": []
-}

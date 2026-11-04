@@ -1,8 +1,0 @@
-{
-  "checkedAt": "2026-10-11T16:50:47.395814+00:00",
-  "source": "docs/semantic-harness-study.tex",
-  "sourceSha256": "c465d86dd99687c4e6acb8fd10fef28ea3423640f5ba518bc4fb57bc65f674b9",
-  "compiler": "Codex built-in LaTeX editor",
-  "result": "success",
-  "scope": "Local F3 and complete T4 canary; global/fresh model panels pending."
-}

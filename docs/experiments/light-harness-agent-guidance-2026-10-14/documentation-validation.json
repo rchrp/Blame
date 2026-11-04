@@ -1,9 +1,0 @@
-{
-  "path": "docs/semantic-harness-study.tex",
-  "sha256": "a2253908ad7e665c7c1faca309e53c847268e624cf0b2144279c4373ed582270",
-  "editorOpen": "queued",
-  "compiler": "Codex desktop built-in compiler",
-  "status": "success",
-  "message": "The current source compiled successfully with the desktop editor's compiler.",
-  "pdfExported": false
-}

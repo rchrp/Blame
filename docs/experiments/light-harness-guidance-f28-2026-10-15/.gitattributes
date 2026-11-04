@@ -1,2 +1,0 @@
-# Unified-diff context markers are evidence bytes, not source whitespace.
-*.patch whitespace=-blank-at-eol,-blank-at-eof

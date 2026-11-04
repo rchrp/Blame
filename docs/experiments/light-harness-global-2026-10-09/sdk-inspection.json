@@ -1,8 +1,0 @@
-{
-  "inspectedAt": "2026-10-09T02:03:43.783609+00:00",
-  "integratedSdk": "0.0.82",
-  "installedCoreBundleSha256": "886a031891a1c2b7aa2c607bdb8a3b5cba80818b7a8bae18315bec892058d0d3",
-  "packageJsonSha256": "3490a246ac2bc0d57a513703f418fd66ca2f182f92aef91d97d806f106b6680e",
-  "repositoryPatchSha256": "665ef19d061692c5ab9c0a36bd3b5f581a67a3aaeb96cca9c9f7e2b901e96d71",
-  "nativeRunCommandsInputObservation": "Installed core calls WZ(input) to validate/normalize the commands field; command cwd and timeout come from tool configuration. Unknown top-level fields, including generated timeout/timeout_ms and malformed enormous keys, are inert for execution. Preserve them as model interface/usage evidence in raw events. This inspection makes no execution or pricing override."
-}

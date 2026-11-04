@@ -1,4 +1,0 @@
-{
-  "method": "Independent static AST audit of every literal entry and exact id/title/status sequence; comments and type declarations do not count as data. Additional literal fields are reported, since the instruction does not prohibit them. Exported type, source scope, readability and executed build remain manual audit obligations.",
-  "rows": []
-}

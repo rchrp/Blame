@@ -1,4 +1,0 @@
-{
-  "recordedAfterCompletedTrials": 3,
-  "note": "The frozen runner scopeFeedbackFollowed counter only recognizes named delivered scripts. The first candidate used direct Vitest after scope feedback, so that counter is incomplete for the registered broader-validation mechanism. Preserve it unchanged; supplement it with manually reviewed report/validation indices and paths, independently verified against raw ledger chronology and successful test/compiler command output. Retention uses this observed follow-up as specified by the original prose criterion; no threshold or task selection changed. It is temporal exposure, not proof of causal mediation."
-}

@@ -1,8 +1,0 @@
-{
-  "observedAtUTC": "2026-10-17T01:02:01.937Z",
-  "module": "prettier",
-  "version": "3.8.3",
-  "resolvedPath": "/workspace/Blame/node_modules/.pnpm/prettier@3.8.3/node_modules/prettier/package.json",
-  "method": "Read-only Node resolution from the original trial workspace location after completion; the measured command used unversioned npx. This demonstrates ancestor dependency reachability, not a traced proof of the exact npx resolution path.",
-  "scope": "Ancestor repository dependencies are not part of the F42 fixed task dependency manifest."
-}

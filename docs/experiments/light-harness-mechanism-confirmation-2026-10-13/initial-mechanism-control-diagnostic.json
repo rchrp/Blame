@@ -1,6 +1,0 @@
-{
-  "paidRequests": 0,
-  "status": "supervisor fixture assertion failure",
-  "reason": "Expected direct typed readCode to revalidate the public schema; it instead falls back to full symbol when bypassing schema. Public ablated schema rejects view=signature and direct read contains full body.",
-  "correction": "Assert public schema availability and actual rendered view separately. No frozen runtime or model task changed."
-}

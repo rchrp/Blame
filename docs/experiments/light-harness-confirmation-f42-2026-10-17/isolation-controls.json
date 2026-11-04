@@ -1,9 +1,0 @@
-{
-  "modelRequests": 0,
-  "sourceBase": "9a0c2d581df66b80b2afbacf848fc9993c4575bc",
-  "head": "c7637694385b2800518cb817e96b0e12c939f8a1",
-  "changedExecutableFiles": [
-    "agent-runtime/dist/harness/task-catalog.js"
-  ],
-  "common": "Current main including F39/F40 and subsequent module refactors; only compiler recognition is ablated in reference."
-}

@@ -1,9 +1,0 @@
-{
-  "source": "docs/semantic-harness-study.tex",
-  "openedSuccessfullyConfirmed": false,
-  "initialOpenAndCompile": "No response before bounded execution cancellation; source preserved.",
-  "finalSourceCompile": "This app tool is no longer available through dynamic tools. Use the codex_app MCP server.",
-  "alternateCompilerExposed": false,
-  "compiledSuccessfullyConfirmed": false,
-  "installedTexOrPlugin": false
-}

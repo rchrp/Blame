@@ -1,9 +1,0 @@
-{
-  "registeredAt": "2026-10-09T01:14:44.475502+00:00",
-  "originalProtocolSha256": "8b901505ef3e7fc840ab49141152d4d7ab23e8d9904f159edf0782feeacafcad",
-  "completedTrials": 14,
-  "beforeTargetTrials": true,
-  "method": "Prospective supplemental audit selected from the known webhook counterexample, before any async-cache model outcome: old load pending, clear, new load pending, old rejects, third same-id request. Apply uniformly to all six async-cache solutions; no prompt, scorer, runtime, tasks, order or budgets changed. Keep registered build/scorer endpoints separate from expanded audit.",
-  "scriptSha256": "285040dcfb3adb6a55fcfea68f21677a6fd807cd60a986aba9e215175ed746dd",
-  "criterion": "A stale failure must not release a current-generation reservation and permit duplicate loads."
-}

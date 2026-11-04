@@ -1,9 +1,0 @@
-{
-  "selectedAfterCompletedTrials": 6,
-  "selection": "All nine Remeda endpoints and pristine baseline; original take/pipe runtime and type tests plus exact added tests. Selected before the first Remeda endpoint result, based on the requested pipeline semantics and positive control touching pipe. Supplemental acceptance evidence; original selected checks unchanged.",
-  "execution": "After all model workers, no repair or model feedback.",
-  "postHocWitness": {
-    "selectedAfterCompletedTrials": 7,
-    "diagnostic": "First Cline Remeda patch bypasses the final isSingle conversion when short-circuiting an empty sequence. Test original integer behavior pipe([1,2],map(identity),take(0 or -1),first()) === undefined, plus positive first control, uniformly on pristine and all nine unchanged endpoints. This is post-hoc diagnostic evidence, not a fresh preregistered confirmation."
-  }
-}

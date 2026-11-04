@@ -1,7 +1,0 @@
-{
-  "observedAtUTC": "2026-10-17T00:48:03Z",
-  "declaredManifestVersion": "11.6.4",
-  "hostExecutable": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/npm",
-  "hostVersion": "11.9.0",
-  "scope": "Direct npm execution in the driver and normal task shell; manifest metadata is not an enforced executable pin. Recorded during F42 without changing frozen PATH or inputs."
-}

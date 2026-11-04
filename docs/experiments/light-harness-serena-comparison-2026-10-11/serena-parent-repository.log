@@ -1,4 +1,0 @@
-Could not find containing symbol for src/consumer.ts:0:9. Returning file symbol instead
-Could not find containing symbol for src/consumer.ts:0:22. Returning file symbol instead
-Could not find containing symbol for src/consumer.ts:1:39. Returning file symbol instead
-{"arm": "Serena LSP", "calls": 6, "compiler": [0, 0], "error": null}

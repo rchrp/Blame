@@ -1,6 +1,0 @@
-{
-  "atUTC": "2026-10-13T18:06:28.991026+00:00",
-  "paidRequests": 0,
-  "rawArtifactsChanged": false,
-  "reason": "Verifier incorrectly expected literal wire prompt hashes to match across distinct workspace roots. Archived actual prompt diff after registered workspace normalization is empty; both arms share identical normalized-contract sets. Correct verifier to compare tool schemas and the already-captured workspace-normalized contract hashes, preserving raw hashes and recorded failure."
-}

@@ -1,9 +1,0 @@
-{
-  "observedAfterTrials": true,
-  "changesToTrialPolicy": false,
-  "clarification": "protocol budget.toolTimeoutMs=120000 describes Blame commands; native Cline keeps its SDK default of 30000 ms (tool wrapper 60000 ms). Model timeout_ms extra fields are outside the native run_commands schema. Task/global budgets and frozen runtime inputs are unchanged.",
-  "sdk": "0.0.82",
-  "sourceFile": "node_modules/.pnpm/@cline+core@0.0.82_patch_hash=665ef19d061692c5ab9c0a36bd3b5f581a67a3aaeb96cca9c9f7e2b90_398bf9d878ac208840b74bff046890c0/node_modules/@cline/core/dist/index.js",
-  "sha256": "886a031891a1c2b7aa2c607bdb8a3b5cba80818b7a8bae18315bec892058d0d3",
-  "excerpt": " that you can read from later.`}function yJ($,Z={}){let Q=Z.bashTimeoutMs??30000,J=Z.bashTimeoutMs===void 0?\"default_setting\":\"configured_setting\",X=Z.cwd??process.cwd(),W=process.platform===\"win32\",Y=Z.shell,j=typeof Y===\"function\"?Y:()=>Y"
-}

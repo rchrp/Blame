@@ -1,9 +1,0 @@
-{
-  "observedCost": 0.18820444,
-  "priorObservedCost": 0.08252644,
-  "remainingFrom": {
-    "repetition": 1,
-    "id": "lodash-baseLt-comparison",
-    "arm": "baseline"
-  }
-}

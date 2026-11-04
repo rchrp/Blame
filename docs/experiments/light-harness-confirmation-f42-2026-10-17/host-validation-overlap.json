@@ -1,9 +1,0 @@
-{
-  "fullRuntimeLogCreatedUTC": "2026-10-17T00:17:30.163Z",
-  "lastLogWriteUTC": "2026-10-17T00:19:41.335Z",
-  "tests": 912,
-  "passed": 910,
-  "skipped": 2,
-  "failed": 0,
-  "modelTimingCaveat": "Runtime test execution overlapped the early F42 model block on the shared host. Retain these outcomes; report duration as observational, with overlap sensitivity. Do not rerun or remove those assignments."
-}

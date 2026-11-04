@@ -1,9 +1,0 @@
-{
-  "paidRequests": 0,
-  "artifact": "local-controls.json",
-  "sha256": "ab292f28765383cfda31bcf48c6c7e7c1570fce86e66c45e8fb9ff1e2064ca45",
-  "constructedControls": 16,
-  "realRecordedQueryReplays": 8,
-  "sourceNotMutatedBySearch": true,
-  "discoveryGrantsNoReadCoverage": true
-}

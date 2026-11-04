@@ -1,9 +1,0 @@
-{
-  "rawGzipArtifacts": [
-    {
-      "artifact": "cross-campaign-replay.json.gz",
-      "uncompressedSha256": "7b5cf66cf4b2f0a55356080991da36f23a2a29b7e9e487a8438c8f73ca71b9ab"
-    }
-  ],
-  "helperSha256": "91cca3cbcae44757d30404b0226b16fc63e4263bf5c52f7a978ce4eb60c654bd"
-}

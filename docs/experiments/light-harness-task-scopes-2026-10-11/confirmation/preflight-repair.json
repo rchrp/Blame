@@ -1,6 +1,0 @@
-{
-  "checkedAt": "2026-10-11T15:49:38.483211+00:00",
-  "freshModelTrialsStarted": 0,
-  "firstPreflight": "rejected before any calls: Python Path component ordering differed from Node string-path ordering when hashing the identical frozen tree",
-  "repair": "Hash files in full pathname string order, matching the existing registered driver. No snapshot, protocol, grader or model input changed."
-}

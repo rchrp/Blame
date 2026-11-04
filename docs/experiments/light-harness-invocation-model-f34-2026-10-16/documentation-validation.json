@@ -1,9 +1,0 @@
-{
-  "recordedAtUTC": "2026-10-16T02:26:32.206094+00:00",
-  "source": "docs/semantic-harness-study.tex",
-  "sourceSha256": "b8ad0fad74ec90fee91dc530f689eb2164e09520f65b085f1955020266241991",
-  "compiler": "native compile_latex_document",
-  "status": "unverified",
-  "reason": "Native compiler did not return within the25-second bounded check. Source preserved; no local TeX/plugin installed.",
-  "nativeEditor": "Open request attempted earlier without a returned receipt; no close requested."
-}

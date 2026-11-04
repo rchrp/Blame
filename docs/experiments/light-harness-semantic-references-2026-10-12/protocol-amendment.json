@@ -1,7 +1,0 @@
-{
-  "registeredAtUTC": "2026-10-11T21:26:43.901522+00:00",
-  "originalProtocolSha256": "5545933a2551a2d459e0c74e1f11532238ad78b4b7e801152e92d4a082a3f88f",
-  "reason": "Before model calls, clarify mechanical test binding updates: both helpers have direct test imports, so forbidding every test edit would contradict the selected rename. Assertions/cases remain unchanged; identifier-token equivalence is audited. Add those two helper test files to requested checks. Task selection and expected behavior unchanged.",
-  "modelCallsBeforeAmendment": 0,
-  "finalPreModelReason": "Before model calls, clarify mechanical test binding updates: both helpers have direct test imports, so forbidding every test edit would contradict the selected rename. Assertions/cases remain unchanged; identifier-token equivalence is audited. Add those two helper test files to requested checks. Task selection and expected behavior unchanged. Clarify that function/import/call identifiers use the new name; preserve existing aliases. This makes the token-equivalence audit match explicit criteria rather than excluding a previously allowed newly introduced alias."
-}

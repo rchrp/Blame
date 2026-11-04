@@ -1,9 +1,0 @@
-{
-  "modelRequests": 0,
-  "sourceHead": "73ea0dc9202d591ab6aabf181343fe1f820f3b0b",
-  "changedExecutableFiles": [
-    "agent-runtime/dist/harness/light-workspace.js"
-  ],
-  "baseline": "Current compiler-enabled Light with the F42 light-workspace.js call site; the uncalled recovery helper is present in both snapshots.",
-  "mechanism": "Only missing literal path reads can return indexed exact-basename candidates. No prompt/schema change, automatic target choice or observation coverage."
-}

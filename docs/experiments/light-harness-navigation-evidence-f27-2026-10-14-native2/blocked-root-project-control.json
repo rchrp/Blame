@@ -1,9 +1,0 @@
-{
-  "paidRequests": 0,
-  "task": "rxjs-array-removal-migration",
-  "arm": "modified",
-  "status": "blocked",
-  "message": "Semantic rename blocked: incomplete_rename_project: unresolved_imports. Use inspected focused edits if appropriate.",
-  "codeGuardUnchanged": true,
-  "failedControlRoot": ".blame/research/navigation-evidence-native2/local-controls/rxjs-array-removal-migration-modified"
-}

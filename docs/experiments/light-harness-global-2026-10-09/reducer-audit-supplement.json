@@ -1,8 +1,0 @@
-{
-  "recordedAt": "2026-10-09T02:53:34.137732+00:00",
-  "helperSha256": "174066d82dc5802115e31413a83a4b15c1ccf2b327f3b2e786a5547c9cccc11c",
-  "selection": "Exploratory uniform replay after all six reducer sources were observed; motivated by native optional-property failures. Original registered scores and strict audit unchanged.",
-  "cases": "Start clears previous error; stale success/failure preserve identity; active success saves current title and clears request/error; active failure restores saved title/message and clears request; inputs remain unchanged.",
-  "result": "All six satisfy value-level behavior; both Cline solutions fail one or more physical-absence checks.",
-  "interpretation": "Report both conventions without repairing solutions, task-agent feedback or selecting favorable endpoints."
-}

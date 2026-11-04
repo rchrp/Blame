@@ -1,9 +1,0 @@
-{
-  "status": "prepaid local build configuration failure",
-  "paidRequests": 0,
-  "compilerExit": 2,
-  "diagnosticCode": "TS2322",
-  "affectedTests": "light-signature-read.test.ts:15,26,32,39,46",
-  "reason": "Counterfactual removes signature from its public API, so current feature tests using the removed typed enum cannot compile unchanged.",
-  "correction": "Apply identical production-only TypeScript build configuration excluding **/*.test.ts in every arm; no production source or old trace is repaired. Initial source directories preserved separately."
-}

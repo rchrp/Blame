@@ -1,9 +1,0 @@
-{
-  "time": "2026-10-16T01:49:49.176Z",
-  "paidRequests": 0,
-  "configured": true,
-  "proxyMode": "NODE_USE_ENV_PROXY=1, as in benchmark runner",
-  "httpStatus": 200,
-  "responseShape": "object",
-  "providerConfigured": true
-}

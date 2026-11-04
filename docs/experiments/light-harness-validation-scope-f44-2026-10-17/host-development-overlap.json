@@ -1,4 +1,0 @@
-{
-  "activities": [],
-  "caveat": "Sequential model workers on a nonexclusive host; light trace review can overlap. No other benchmark, compile or test workload is scheduled during F44 workers. Unknown external contention is not excluded."
-}

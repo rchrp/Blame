@@ -1,7 +1,0 @@
-{
-  "referenceRuntimeCommit": "d08138cd8a711cfa7afd965a37eabed885191a51",
-  "candidateLocalCommit": "f67cedb6e2093f14676c09185b7f4c4031ad5ddc",
-  "candidatePublishedCommit": "4d1cb684ee5a7704180597cbb13c1f973d937ddf",
-  "identicalCandidateTree": "759cbad4a643ef3985dc097a8de62686bc9fb4b6",
-  "commonRunner": "New metadata transport at candidate tree; no model-facing user instruction differences. Frozen reference runtime ignores requiredChecks."
-}

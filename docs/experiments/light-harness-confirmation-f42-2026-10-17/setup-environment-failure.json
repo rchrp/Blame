@@ -1,6 +1,0 @@
-{
-  "stage": "freeze before models",
-  "error": "ENOSPC: inode exhaustion",
-  "modelRequests": 0,
-  "recovery": "Archive/remove generated control trees; archive each finished trial workspace before removing extracted copies."
-}

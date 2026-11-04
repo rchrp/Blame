@@ -1,8 +1,0 @@
-{
-  "checkedAt": "2026-10-09T03:06:23.702812+00:00",
-  "source": "docs/semantic-harness-study.tex",
-  "sourceSha256": "72a04de7e349654715fd986f26a9c649a77958f1fc433cbd1d379a8aeef837b4",
-  "sourceDiffCheck": "passed",
-  "nativeEditor": "Source remains open in the built-in editor.",
-  "nativeCompilation": "Unverified: compile_latex_document returned no diagnostics within the final bounded 30-second attempt. Source preserved; no confirmed final PDF or reported source error. Earlier source compilation does not verify this revision."
-}

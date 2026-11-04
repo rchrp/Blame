@@ -1,9 +1,0 @@
-{
-  "sequenceRestart": 1,
-  "firstCommand": "npm run test -- --test-reporter=spec --test-reporter=/workspace/Blame/packages/agent-runtime/dist/harness/node-event-reporter.js --test-reporter-destination=stdout --test-reporter-destination=/tmp/blame-report-ownership-FU3YC4/.blame/harness/test-results/node-114904-1/events.jsonl case.test.cjs",
-  "newCommand": "npm run test -- --test-reporter=spec --test-reporter=/workspace/Blame/packages/agent-runtime/dist/harness/node-event-reporter.js --test-reporter-destination=stdout --test-reporter-destination=/tmp/blame-report-ownership-FU3YC4/.blame/harness/test-results/node-114904-1/events.jsonl case.test.cjs",
-  "newReportAvailableBeforeItsInvocation": true,
-  "sameReportBytes": true,
-  "priorReportSha256": "1c0760ab4d8caaa07e35b32a1ecfe3038488a5ec701c6a43cefd24fa1c995690",
-  "method": "Two independent runner instances can restart their sequence at one in the same process/workspace. The second newly prepared invocation must not read the first report before it runs."
-}

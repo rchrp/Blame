@@ -1,7 +1,0 @@
-{
-  "source": "docs/semantic-harness-study.tex",
-  "sourceSha256": "82ac9a6ad4f16518c1233892c2ec16665f93655097742de85bf121fb90299b1f",
-  "compiler": "Codex native desktop editor",
-  "status": "success",
-  "message": "The current source compiled successfully with the desktop editor compiler."
-}

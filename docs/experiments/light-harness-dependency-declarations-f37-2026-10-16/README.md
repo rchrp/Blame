@@ -2,7 +2,7 @@
 
 This is a completed local mechanism cycle, not a model-task success or token-efficiency campaign. The protocol was committed as `9977de17` before implementation. Production reference: `8ceb9139`. F35/F36 artifacts and accounting remain unchanged.
 
-The current defect is observable in F31's `2-fast-glob-dynamic-filter-baseline` zero-based tool indices22–24 and candidate indices24–25: dependency declaration navigation is refused, followed by shell discovery. F31's original [tool ledger](../light-harness-edit-boundaries-f31-2026-10-16/tool-ledger.json) is authoritative. The previous `LightWorkspace.readPath` applies the mutation-path exclusion to navigation too. Current compiler references/rename already resolve configured identity; this change extends that worker rather than adding a second index.
+The current defect is observable in F31's `2-fast-glob-dynamic-filter-baseline` zero-based tool indices22–24 and candidate indices24–25: dependency declaration navigation is refused, followed by shell discovery. F31's original [tool ledger](https://github.com/rchrp/blame-research/blob/f910066559be27eb6202062c65a88cc344abff11/experiments/light-harness-edit-boundaries-f31-2026-10-16/tool-ledger.json) is authoritative. The previous `LightWorkspace.readPath` applies the mutation-path exclusion to navigation too. Current compiler references/rename already resolve configured identity; this change extends that worker rather than adding a second index.
 
 ## Implemented behavior
 

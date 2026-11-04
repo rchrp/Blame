@@ -1,6 +1,0 @@
-{
-  "paidRequests": 0,
-  "status": "prepaid source-binding lookup failure",
-  "reason": "CJS require.resolve cannot resolve import-only @cline/core from the lexical SDK symlink path.",
-  "correction": "Resolve the physical SDK installation, locate its actual patched core dependency and hash the entire core dist. No SDK or production behavior changed."
-}

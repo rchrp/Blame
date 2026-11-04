@@ -1,8 +1,0 @@
-{
-  "source": "docs/semantic-harness-study.tex",
-  "sourceSha256": "488c86d6ec7783eb7f5c48e97a4546e146d43099bb22a6793dd85fc72aa9a658",
-  "staticBraceAndEnvironmentBalance": true,
-  "nativeCompiler": "unverified",
-  "nativeCompilerAttempt": "compile_latex_document did not return diagnostics during the bounded attempt; the orchestrator cell was terminated. The source remains in the existing native editor. No local TeX/plugin was installed.",
-  "limitation": "Static structural balance does not confirm LaTeX compilation or PDF layout."
-}

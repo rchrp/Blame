@@ -1,7 +1,0 @@
-{
-  "number": 265,
-  "title": "Feature request: dynamically ignore files or directories",
-  "body": "It would be useful if the user would be able to pass a callback to fast-glob that, when called with paths to files or directories, returns whether or not fast-glob should include them in the results. If the callback returns false for a directory, then the directory is not iterated at all.\r\n\r\nOne use case for this would be would be improving [globby](https://github.com/sindresorhus/globby) performance when the [gitignore option](https://github.com/sindresorhus/globby#gitignore) is enabled. Currently, this option works by globbing the given path twice: once with a `**/.gitignore` pattern to find and read the gitignore files, and again with the users' globs. While this could be improved upon, I cannot see a way that both a) avoids the initial glob for gitignore files and b) makes fast-glob not iterate gitignored directories. Adding a callback would make that possible.\r\n\r\nIf I am not aware of some relevant fast-glob feature, let me know.\r\nGlobby issue: https://github.com/sindresorhus/globby/issues/50\r\n",
-  "createdAt": "2020-03-11T11:57:29Z",
-  "url": "https://github.com/mrmlnc/fast-glob/issues/265"
-}

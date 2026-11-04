@@ -1,8 +1,0 @@
-{
-  "paidRequests": 0,
-  "differentExecutableFiles": [
-    "provider-schema-compatibility.js"
-  ],
-  "fixedPromptsAndSchemas": true,
-  "treatment": "Only explicit per-request cap restoration. No semantic-tool,edit,admission or default-cap change."
-}

@@ -1,8 +1,0 @@
-{
-  "referenceRuntimeCommit": "c42da0340a7743adc1a124dae4d498b04d769e72",
-  "candidateLocalCommit": "a88e41046efc1697251689c67af8fc9eb0d1d333",
-  "candidatePublishedCommit": "8bc56b4270d72624ce2273812529ac1b5018426b",
-  "identicalCandidateTree": "aa32f8c465cdf328d92052885938649622bb8096",
-  "originalPreregisterLocalCommit": "7317e0f5def3d0a0b1d12b9b5793c1031105f880",
-  "preModelDescriptorCorrection": "Freezer text corrected before model requests. Both reference and candidate already support identical required-check metadata. Original pre-model binding retained; no compiled module, task, actual prompt or schema changes."
-}

@@ -1,9 +1,0 @@
-{
-  "time": "2026-10-16T01:47:34.203Z",
-  "paidRequests": 0,
-  "configured": true,
-  "error": {
-    "name": "TypeError",
-    "code": "EAI_AGAIN"
-  }
-}

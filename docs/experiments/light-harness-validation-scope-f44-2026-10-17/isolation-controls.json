@@ -1,9 +1,0 @@
-{
-  "modelRequests": 0,
-  "sourceHead": "6cda01c6c1c1a015bd1b6c2103fae00053fe4ac4",
-  "changedExecutableFiles": [
-    "agent-runtime/dist/harness/light-task-runner.js"
-  ],
-  "baseline": "Current Light including the independently fixed invocation-only typecheck guard. Both trees contain the same scope helper; only its invocation in light-task-runner differs.",
-  "mechanism": "Only compiler file-membership instrumentation and its bounded feedback differ. No tool-schema/prompt change, automatic check expansion, extra command, source admission or completion gate."
-}

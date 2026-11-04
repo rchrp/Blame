@@ -1,7 +1,0 @@
-{
-  "artifact": "expanded-notes.tex.gz",
-  "bytes": 153680,
-  "sha256": "13525a4b110b8a0cf92cbad965dfa2c60b15821ef4558d125b17768e030519e4",
-  "sourceGitCommit": "ac25e4dcfaf72a2fbe27715679280a4e15a66585",
-  "description": "Verbatim expanded phase-by-phase notes before compact consolidation. Historical proposals and incomplete measurements remain historical; use the active study for current conclusions."
-}

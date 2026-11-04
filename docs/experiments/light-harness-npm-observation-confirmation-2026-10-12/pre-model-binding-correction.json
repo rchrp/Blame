@@ -1,6 +1,0 @@
-{
-  "reason": "Freezer descriptive runner text inherited an incorrect statement that the older reference ignored requiredChecks. Both F16 and F17 support the same F15 contract. Corrected before any model requests; runtime/runner modules and task/actual prompt/schema bytes unchanged. Preserve original descriptor and binding hashes as superseded pre-model preparation, outside outcomes.",
-  "modelCallsBeforeCorrection": 0,
-  "supersededBinding": "superseded-pre-model-bindings.json",
-  "activeBinding": "execution-bindings.json"
-}
