@@ -82,6 +82,8 @@ async function checkPreviewEnvironment(input: PreviewEnvironmentSyncInput) {
       undefined
     const workspace = input.platform.workspace
     if (!isReady(saved) || !workspace || !input.platform.agent) return saved
+    // An API too old to record checks sends no checkedCommit at all.
+    if (saved.checkedCommit === undefined) return saved
     const branch = { root: input.repositoryRoot, currentBranchOnly: true }
     const [head] = await workspace.gitLog({ ...branch, limit: 1 })
     if (!head || head.hash === saved.checkedCommit) return saved
