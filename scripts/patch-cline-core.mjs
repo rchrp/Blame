@@ -16,6 +16,8 @@ import { fileURLToPath } from "node:url"
 const id = "[\\w$]+"
 const patchMarker = "dist/blame-patch.json"
 const bundles = ["dist/index.js", "dist/hub/index.js", "dist/hub/daemon/entry.js"]
+// Keep in step with the "@cline/core>simple-git" override in pnpm-workspace.yaml.
+const simpleGitVersion = "4.0.2"
 
 /** A transformation: files it applies to, how often per file, and the rewrite. */
 const changes = [
@@ -109,6 +111,20 @@ const changes = [
       "g",
     ),
     replace: (_match, head, time) => `${head}${Number(time) + 1})?${Number(time) + 1}:void 0}`,
+  },
+  {
+    // simple-git 4 removed the default export; 3.x has the named one too.
+    name: "simple-git 4: named simpleGit import",
+    files: Object.fromEntries([...bundles, "dist/cloud/index.js"].map((file) => [file, 1])),
+    pattern: new RegExp(`import (${id}) from"simple-git"`, "g"),
+    replace: (_match, name) => `import{simpleGit as ${name}}from"simple-git"`,
+  },
+  {
+    // The runtime payload installs core's own dependencies (scripts/semantic-harness-payload.mjs).
+    name: "manifest: simple-git 4 dependency",
+    files: { "package.json": 1 },
+    pattern: /"simple-git": "3\.[^"]+"/g,
+    replace: () => `"simple-git": "${simpleGitVersion}"`,
   },
 ]
 

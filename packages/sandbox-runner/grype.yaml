@@ -24,8 +24,9 @@ ignore:
     package:
       location: /usr/local/lib/docker/cli-plugins/*
   # simple-git unsafe-option guard bypasses. @cline/core pins simple-git 3.36.0
-  # and imports its default export, which simple-git 4 removed, so the fix
-  # cannot be overridden. Remove when Cline moves to simple-git >= 4.0.1.
+  # and imports its default export, which simple-git 4 removed. The workspace
+  # patch fixes that, but this image installs the unpatched npm release.
+  # Remove when Cline moves to simple-git >= 4.0.1.
   - vulnerability: GHSA-x6jw-m9v5-85vh
     reason: Pinned by @cline/core; simple-git 4 breaks Cline's import.
     package:

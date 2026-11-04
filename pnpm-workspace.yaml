@@ -33,6 +33,9 @@ overrides:
   "@ai-sdk/provider-utils@3>undici": ^6.29.1
   # Electron 45 needs an ABI registry newer than rebuild's existing lock entry.
   "@electron/rebuild>node-abi": 4.40.0
+  # Cline core pins the vulnerable simple-git 3.36.0. Its patch switches the
+  # default import, which simple-git 4 removed, to the named simpleGit export.
+  "@cline/core>simple-git": 4.0.2
 
 patchedDependencies:
   '@cline/core@0.2.0': patches/@cline__core@0.2.0.patch
