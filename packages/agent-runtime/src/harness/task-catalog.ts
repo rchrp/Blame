@@ -348,3 +348,9 @@ export function plainCompilerCheck(command: string) {
   // This establishes the compiler invocation, not which source files it checks.
   return /^(?:tsc|node[ \t]+(?:\.\/)?node_modules\/typescript\/bin\/tsc)[ \t]+--noEmit(?:[ \t]+(?:-p|--project)[ \t]+[A-Za-z0-9_./-]+)?$/u.test(command.trim());
 }
+
+export function isValidationKind(
+  value: string | undefined,
+): value is TaskCatalogItem["kind"] {
+  return ["build", "test", "typecheck", "lint"].includes(value ?? "");
+}
