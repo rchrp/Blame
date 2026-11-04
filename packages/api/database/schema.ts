@@ -466,6 +466,19 @@ export class PreviewProjectBaselineSchema extends BaseModel {
   declare status: string
 }
 
+export class PreviewSessionEnvironmentSchema extends BaseModel {
+  static $columns = ['createdAt', 'environmentEncrypted', 'sessionId', 'updatedAt'] as const
+  $columns = PreviewSessionEnvironmentSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare environmentEncrypted: string
+  @column({ isPrimary: true })
+  declare sessionId: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+}
+
 export class PreviewSessionSchema extends BaseModel {
   static $columns = ['baselineId', 'createdAt', 'desired', 'endpointMapEncrypted', 'failure', 'fencingToken', 'generation', 'id', 'idleDeadlineAt', 'imageDigest', 'lastAcknowledgedRemoteRevision', 'lastActivityAt', 'lastAppliedLocalRevision', 'lastExportedJournalRevision', 'leaseExpiresAt', 'ownerUserId', 'pendingDeltaArtifactId', 'plan', 'planHash', 'planVersion', 'profile', 'protocolVersion', 'providerHandleEncrypted', 'provisionSource', 'resourceMemoryGb', 'resourceVcpus', 'revision', 'runnerVersion', 'selection', 'sourceArtifactId', 'sourceRevision', 'state', 'stateChangedAt', 'stoppedAt', 'updatedAt', 'userStoryId', 'workspaceHash'] as const
   $columns = PreviewSessionSchema.$columns

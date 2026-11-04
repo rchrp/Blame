@@ -1,0 +1,40 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "vitrine",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "--filter",
+        "@blame/vitrine",
+        "dev",
+        "--port",
+        "3100"
+      ],
+      "port": 3100
+    },
+    {
+      "name": "runner-ui-harness",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "--dir",
+        "packages/app",
+        "exec",
+        "vite",
+        "--config",
+        "/private/tmp/claude-501/-Users-azerko-Dev-web-Blame/ecfb8d9d-70ab-44a1-bdf6-e237461c1246/scratchpad/harness/vite.config.mjs"
+      ],
+      "port": 5198
+    },
+    {
+      "name": "desktop-dev",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "--filter",
+        "@blame/desktop",
+        "dev"
+      ],
+      "port": 5173
+    }
+  ]
+}

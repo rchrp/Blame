@@ -1,5 +1,7 @@
 # BEGIN BLAME GENERATED CLOUD EXCLUSIONS
 # Updated by project analysis. Put manual rules below this block; they take precedence.
-# Historical harness experiment reports and archives; not used by application installation, builds or previews.
+# Historical experiment inputs and outputs are not used by installs, builds, or runtime previews
 /docs/experiments/**
+# Packaged release artifacts are unnecessary for source-based desktop development
+/packages/desktop/dist/**
 # END BLAME GENERATED CLOUD EXCLUSIONS
