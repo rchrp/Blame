@@ -76,17 +76,8 @@ import {
 } from "@/components/chat/data/quick-chat-data"
 import { useQuickChatStore } from "@/components/chat/data/quick-chat-store"
 import { agentConversationResponseHeader } from "@/components/chat/agent-conversation-header"
-import {
-  appendComposerDraftCodeSelections,
-  composerDraftStorageKey,
-} from "@/components/backlog/drawer/composer-draft-storage"
-import type { CodeSelectionAttachment } from "@/components/backlog/shared/comment-attachment-events"
-import {
-  subscribeToNewChatExcerpts,
-  takeNewChatExcerpts,
-} from "@/components/backlog/shared/excerpt-actions"
+import { composerDraftStorageKey } from "@/components/backlog/drawer/composer-draft-storage"
 import { ExcerptTargetProvider } from "@/components/backlog/shared/selection-excerpt-actions"
-import { useLatestCallback } from "@/lib/use-latest-callback"
 import { useModelSelection } from "@/components/model/model-selection"
 import { storyMaxInputTokens } from "@/components/backlog/data/story-context-limit"
 import { useCloudAuth } from "@/context/cloud-auth"
@@ -119,6 +110,7 @@ import {
   titleFromMessage,
 } from "./quick-chat-helpers"
 import { useComposerShortcuts } from "./use-composer-shortcuts"
+import { useChatExcerpts } from "./use-chat-excerpts"
 import { useQuickChatDraft } from "./use-quick-chat-draft"
 import { useQuickChatSnapshotReplay } from "./use-quick-chat-snapshot-replay"
 import { QuickChatView } from "./quick-chat-view"
@@ -202,31 +194,12 @@ function QuickChatProjectPage() {
     removeDraftFileAttachment,
     replaceDraftFileAttachments,
   } = useQuickChatDraft(draftStorageKey)
-  const attachExcerptAsContext = React.useCallback(
-    (excerpt: CodeSelectionAttachment) =>
-      addDraftCodeAttachments([{ ...excerpt, id: crypto.randomUUID() }]),
-    [addDraftCodeAttachments]
-  )
-  // "Add to new chat" on selected code or conversation text: the excerpts
-  // land in the draft of a new conversation.
-  const openNewChatWithExcerpts = useLatestCallback(() => {
-    const excerpts = takeNewChatExcerpts()
-    if (excerpts.length === 0) return
-    if (!quickChats.activeChat) {
-      addDraftCodeAttachments(excerpts)
-      return
-    }
-    appendComposerDraftCodeSelections(
-      localStorage,
-      composerDraftStorageKey(project?.id ?? "project", "chat"),
-      excerpts
-    )
-    quickChats.setActiveId(undefined)
+  const attachExcerptAsContext = useChatExcerpts({
+    addDraftCodeAttachments,
+    hasActiveChat: Boolean(quickChats.activeChat),
+    projectId: project?.id,
+    startNewChat: () => quickChats.setActiveId(undefined),
   })
-  React.useEffect(() => {
-    openNewChatWithExcerpts()
-    return subscribeToNewChatExcerpts(openNewChatWithExcerpts)
-  }, [openNewChatWithExcerpts])
   const applySuggestion = useComposerShortcuts({
     draftRef,
     setDraft,

@@ -69,10 +69,6 @@ import { storyPreviewDevtoolsScope } from "@/components/backlog/shared/preview-d
 import { directStoryPreviewScope } from "@/components/backlog/board/project-run-configuration"
 import type { AgentConversationUserMessageUndo } from "@/components/chat/agent-conversation"
 import { newUserStoryEvent } from "@/components/navigation/command-palette"
-import {
-  subscribeToNewUserStoryExcerpts,
-  takeNewUserStoryExcerpts,
-} from "@/components/backlog/shared/excerpt-actions"
 import { nextCheckpointRunCount } from "@/components/chat/agent-run-checkpoints"
 import {
   modelForPreference,
@@ -152,6 +148,7 @@ import {
   useStoryComments,
 } from "./use-story-comments"
 import { useResumeSlots } from "./use-resume-slots"
+import { useNewUserStoryExcerpts } from "./use-new-story-excerpts"
 import { withStoryTransition } from "./story-transitions"
 
 const agentEventPersistDelayMs = 1_500
@@ -288,37 +285,23 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
   React.useEffect(() => {
     openDrawerRef.current = openDrawer
   }, [openDrawer])
-  const openCreateDrawer = React.useCallback(() => {
-    if (!backlog.projectPath) return
-    drawerLoadRequestId.current += 1
-    setDrawerTarget({
-      mode: "create",
-      initialTab: "user-story",
-    })
-  }, [backlog.projectPath])
+  const openCreateDrawerWithDraft = React.useCallback(
+    (initialDraft?: DrawerTarget["initialDraft"]) => {
+      if (!backlog.projectPath) return
+      drawerLoadRequestId.current += 1
+      setDrawerTarget({ mode: "create", initialTab: "user-story", ...(initialDraft ? { initialDraft } : {}) })
+    },
+    [backlog.projectPath]
+  )
+  // Buttons pass their click event: the plain create action takes no draft.
+  const openCreateDrawer = React.useCallback(() => openCreateDrawerWithDraft(), [openCreateDrawerWithDraft])
   // "New user story" from the command palette.
   React.useEffect(() => {
     const handleNewStory = () => openCreateDrawer()
     window.addEventListener(newUserStoryEvent, handleNewStory)
     return () => window.removeEventListener(newUserStoryEvent, handleNewStory)
   }, [openCreateDrawer])
-  // "Add to new user story" on selected code or conversation text. The
-  // excerpts wait for the project when the page opens with them.
-  React.useEffect(() => {
-    const openCreateDrawerWithExcerpts = () => {
-      if (!backlog.projectPath) return
-      const excerpts = takeNewUserStoryExcerpts()
-      if (excerpts.length === 0) return
-      drawerLoadRequestId.current += 1
-      setDrawerTarget({
-        initialDraft: { codeSelectionAttachments: excerpts },
-        initialTab: "user-story",
-        mode: "create",
-      })
-    }
-    openCreateDrawerWithExcerpts()
-    return subscribeToNewUserStoryExcerpts(openCreateDrawerWithExcerpts)
-  }, [backlog.projectPath])
+  useNewUserStoryExcerpts(backlog.projectPath, openCreateDrawerWithDraft)
   React.useEffect(() => {
     const openSelectedStory = () => {
       const selectedStoryId = selectedBacklogStoryId()
@@ -1348,14 +1331,7 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
         })
       }
       if (action === "Use Context") {
-        drawerLoadRequestId.current += 1
-        setDrawerTarget({
-          initialDraft: {
-            codeSelectionAttachments: [storyContextAttachment(currentStory)],
-          },
-          initialTab: "user-story",
-          mode: "create",
-        })
+        openCreateDrawerWithDraft({ codeSelectionAttachments: [storyContextAttachment(currentStory)] })
         return
       }
       if (action === "Approve & Merge") return completeReviewStory(currentStory)
@@ -1364,6 +1340,7 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
       completeReviewStory,
       generateQueuedStoryTitle,
       backlog,
+      openCreateDrawerWithDraft,
       platform,
       projects.activeProject?.path,
       updateStory,
