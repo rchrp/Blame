@@ -31,6 +31,7 @@ const projectInitializationColumns = [
   'database_mode',
   'error',
   'repair_reason',
+  'checked_commit',
   'created_at',
   'updated_at',
 ]

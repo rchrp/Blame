@@ -26,6 +26,8 @@ type InitializationBody = {
       databaseMode: 'existing' | 'compose' | null
       error: string | null
       repairReason: string | null
+      checkedCommit: string | null
+      updatedAt: string | null
     } | null
     practices: Array<{
       practice: string
@@ -166,6 +168,79 @@ test.group('project initializations', (group) => {
     assert.equal(body.data.initialization?.runConfigurations[0]?.command, 'corepack pnpm dev')
     assert.lengthOf(body.data.practices, 1)
     assert.equal(body.data.practices[0].comment, 'Strict linting and typing are configured.')
+  })
+
+  test('records the commit the preview environment was checked against', async ({
+    client,
+    assert,
+  }) => {
+    const user = await createUser()
+    const project = await createProject(user.id, 'Alpha')
+    const setupCommit = 'a'.repeat(40)
+    const mergeCommit = 'b'.repeat(40)
+    const completed = await client
+      .post(`/api/v1/projects/${project.id}/initialization/complete`)
+      .loginAs(user)
+      .json({
+        previewManifest: previewManifest('medium'),
+        runConfigurations: [],
+        checkedCommit: setupCommit,
+      })
+    assert.equal(
+      (completed.body() as InitializationBody).data.initialization?.checkedCommit,
+      setupCommit
+    )
+
+    const checked = await client
+      .post(`/api/v1/projects/${project.id}/initialization/check`)
+      .loginAs(user)
+      .json({ commit: mergeCommit })
+
+    checked.assertStatus(200)
+    const body = checked.body() as InitializationBody
+    assert.equal(body.data.initialization?.checkedCommit, mergeCommit)
+    assert.equal(body.data.initialization?.previewManifest?.confidence, 'medium')
+    // A check is not a save of the setup.
+    assert.equal(
+      body.data.initialization?.updatedAt,
+      (completed.body() as InitializationBody).data.initialization?.updatedAt
+    )
+
+    const repaired = await client
+      .post(`/api/v1/projects/${project.id}/initialization/repair`)
+      .loginAs(user)
+      .json({
+        previewManifest: previewManifest('high'),
+        runConfigurations: [],
+        reason: 'A migration step was added.',
+      })
+    assert.equal(
+      (repaired.body() as InitializationBody).data.initialization?.checkedCommit,
+      mergeCommit
+    )
+  })
+
+  test('refuses to check a project without a preview environment', async ({ client }) => {
+    const user = await createUser()
+    const project = await createProject(user.id, 'Alpha')
+
+    const missing = await client
+      .post(`/api/v1/projects/${project.id}/initialization/check`)
+      .loginAs(user)
+      .json({ commit: 'c'.repeat(40) })
+    missing.assertStatus(409)
+
+    const invalid = await client
+      .post(`/api/v1/projects/${project.id}/initialization/check`)
+      .loginAs(user)
+      .json({ commit: 'main' })
+    invalid.assertStatus(422)
+
+    const truncated = await client
+      .post(`/api/v1/projects/${project.id}/initialization/check`)
+      .loginAs(user)
+      .json({ commit: 'c'.repeat(41) })
+    truncated.assertStatus(422)
   })
 
   test('rejects initialization repair for another user project', async ({ client }) => {

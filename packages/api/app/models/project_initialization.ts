@@ -83,6 +83,10 @@ export default class ProjectInitialization extends BaseModel {
   @column()
   declare repairReason: string | null
 
+  /** The last project commit this setup was checked against. */
+  @column()
+  declare checkedCommit: string | null
+
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
 

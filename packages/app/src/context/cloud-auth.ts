@@ -99,6 +99,11 @@ export type CloudProjectInitialization = {
   databaseMode: "existing" | "compose" | null
   error: string | null
   repairReason: string | null
+  /**
+   * The last project commit the preview environment was checked against.
+   * Absent from an API too old to record it.
+   */
+  checkedCommit?: string | null
   createdAt: string
   updatedAt: string | null
 }

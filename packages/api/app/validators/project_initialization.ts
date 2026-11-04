@@ -18,6 +18,12 @@ const runConfiguration = vine.object({
   previewUrl: vine.string().trim().minLength(1).maxLength(2048).nullable().optional(),
 })
 
+// A full Git object name: SHA-1 or SHA-256.
+const commit = vine
+  .string()
+  .trim()
+  .regex(/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/)
+
 export const startProjectInitializationValidator = vine.create({
   providerId: vine.string().trim().minLength(1).maxLength(80),
   modelId: vine.string().trim().minLength(1).maxLength(255),
@@ -29,6 +35,7 @@ export const completeProjectInitializationValidator = vine.create({
   previewManifest: vine.any(),
   runConfigurations: vine.array(runConfiguration).maxLength(20),
   databaseMode: vine.enum(['existing', 'compose']).nullable().optional(),
+  checkedCommit: commit.clone().nullable().optional(),
 })
 
 export const failProjectInitializationValidator = vine.create({
@@ -42,4 +49,9 @@ export const repairProjectInitializationValidator = vine.create({
   runConfigurations: vine.array(runConfiguration).maxLength(20),
   reason: vine.string().trim().minLength(1).maxLength(4096),
   databaseMode: vine.enum(['existing', 'compose']).nullable().optional(),
+  checkedCommit: commit.clone().nullable().optional(),
+})
+
+export const checkProjectInitializationValidator = vine.create({
+  commit,
 })

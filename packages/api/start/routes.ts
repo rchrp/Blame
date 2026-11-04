@@ -104,6 +104,7 @@ router
           ProjectInitializationsController,
           'repair',
         ])
+        router.post('/:projectId/initialization/check', [ProjectInitializationsController, 'check'])
       })
       .prefix('projects')
       .as('projects')

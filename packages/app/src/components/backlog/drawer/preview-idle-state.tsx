@@ -126,6 +126,29 @@ export function StartedAppWaiting({ source }: { source: string }) {
   )
 }
 
+// The story's preview waits for the project's preview environment to be
+// checked against the latest commits; its agent does not.
+export function PreviewEnvironmentCheck() {
+  return (
+    <div className="h-full min-h-0 p-6">
+      <div className="h-full min-h-96 rounded-lg bg-muted/20">
+        <PreviewIdleMessage>
+          <LoaderCircleIcon className="size-8 animate-spin text-muted-foreground" />
+          <div className="space-y-1">
+            <h3 className="font-heading text-lg font-semibold">
+              Checking the preview environment
+            </h3>
+            <p className="max-w-sm text-sm text-pretty text-muted-foreground">
+              The preview starts once the environment matches the commits made
+              since its last check. The agent is already working.
+            </p>
+          </div>
+        </PreviewIdleMessage>
+      </div>
+    </div>
+  )
+}
+
 // Each message fades in where the last one was.
 export function PreviewIdleMessage({
   children,

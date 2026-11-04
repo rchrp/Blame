@@ -126,7 +126,8 @@ function useProjectState(
         await completeGeneratedProjectInitialization(
           auth,
           project.id,
-          initialization
+          initialization,
+          await headCommit(platform, path)
         )
         setState((current) => persistedProjectState(current, project))
       } finally {
@@ -221,7 +222,8 @@ function useProjectState(
 async function completeGeneratedProjectInitialization(
   auth: ReturnType<typeof useCloudAuth>,
   projectId: string,
-  initialization: GeneratedProjectInitialization
+  initialization: GeneratedProjectInitialization,
+  checkedCommit: string | undefined
 ) {
   if (auth.status !== "authenticated") return
   await createCloudApi(auth.apiConnection).completeProjectInitialization(
@@ -230,9 +232,21 @@ async function completeGeneratedProjectInitialization(
       clineSessionId: initialization.clineSessionId,
       previewManifest: initialization.previewManifest,
       runConfigurations: initialization.runConfigurations,
+      checkedCommit: checkedCommit ?? null,
     }
   )
   notifyProjectInitializationUpdated(projectId)
+}
+
+// The commit the generated setup describes.
+async function headCommit(
+  platform: ReturnType<typeof usePlatform>,
+  root: string
+) {
+  const history = await platform.workspace
+    ?.gitLog({ root, limit: 1, currentBranchOnly: true })
+    .catch(() => [])
+  return history?.[0]?.hash
 }
 
 async function resolveProject(

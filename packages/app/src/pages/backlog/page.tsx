@@ -1,5 +1,5 @@
 import { createDebouncedUpdateQueue } from "@/lib/debounced-update-queue"
-import type { AgentEvent, ReasoningSelection } from "@blame/agent-runtime"
+import type { AgentEvent } from "@blame/agent-runtime"
 import * as React from "react"
 import { toast } from "sonner"
 
@@ -101,14 +101,11 @@ import { notifyCommentResponseCompleted } from "@/pages/backlog/backlog-rotation
 import { OpenProjectEmptyState } from "@/components/shared/open-project-empty-state"
 import { backlogStatusPipStories } from "@/pages/backlog/backlog-status-pip-snapshot"
 import { HostDependenciesDialog } from "@/pages/backlog/host-dependencies-dialog"
+import { parseProjectPreviewRepairCandidate } from "@/pages/backlog/project-initialization-database"
 import {
-  parseProjectPreviewRepairCandidate,
-  type ProjectPreviewRepairCandidate,
-} from "@/pages/backlog/project-initialization-database"
-import {
-  assessAndRepairProjectInitializationImpact,
-  type ProjectInitializationImpactRepairResult,
-} from "@/pages/backlog/project-initialization-impact"
+  type PreviewEnvironmentSyncInput,
+  syncPreviewEnvironment,
+} from "@/pages/backlog/preview-environment-sync"
 import { currentReviewDiffEmpty } from "@/pages/backlog/review-diff-evidence"
 import { useBacklogRotation } from "@/pages/backlog/use-backlog-rotation"
 import {
@@ -1179,9 +1176,8 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
           platform,
           projects.activeProject!.path,
           {
-            auth,
-            baseCommit: result.baseCommit,
-            mergeCommit: result.mergeCommit,
+            apiConnection: auth.apiConnection,
+            fallbackBase: result.baseCommit,
             modelId: alternativeSelection.currentModel!.id,
             credentialLabel: alternativeSelection.currentModel!.credentialLabel,
             platform,
@@ -1692,105 +1688,6 @@ async function runPromptOptimizer(request: OptimizeUserStoryPromptRequest) {
   return result.markdown
 }
 
-type CheckInitializationImpactInput = {
-  auth: ReturnType<typeof useCloudAuth>
-  platform: ReturnType<typeof usePlatform>
-  projectId: string
-  providerId: string
-  modelId: string
-  credentialLabel?: string
-  reasoningEffort?: ReasoningSelection
-  repositoryRoot: string
-  baseCommit: string
-  mergeCommit: string
-  previewRepairCandidate?: ProjectPreviewRepairCandidate
-}
-
-async function checkProjectInitializationImpact(
-  input: CheckInitializationImpactInput
-) {
-  const toastId = `project-initialization-impact-${input.mergeCommit}`
-  toast.loading("Checking the preview environment", {
-    id: toastId,
-    position: "bottom-right",
-  })
-  try {
-    const result = await assessAndRepairProjectInitializationImpact({
-      apiConnection: input.auth.apiConnection,
-      platform: input.platform,
-      projectId: input.projectId,
-      providerId: input.providerId,
-      modelId: input.modelId,
-      credentialLabel: input.credentialLabel,
-      reasoningEffort: input.reasoningEffort,
-      repositoryRoot: input.repositoryRoot,
-      baseCommit: input.baseCommit,
-      mergeCommit: input.mergeCommit,
-      previewRepairCandidate: input.previewRepairCandidate,
-    })
-    showInitializationImpactResult(toastId, result)
-  } catch (error) {
-    toast.error("Story merged, preview environment check failed", {
-      description: errorMessage(error),
-      id: toastId,
-      position: "bottom-right",
-    })
-  }
-}
-
-function showInitializationImpactResult(
-  toastId: string,
-  result: ProjectInitializationImpactRepairResult | undefined
-) {
-  const options = { id: toastId, position: "bottom-right" as const }
-  if (!result) return void toast.dismiss(toastId)
-  if (result.repair?.classification === "repairable_initialization") {
-    toast.success("Preview environment updated", {
-      ...options,
-      description:
-        "It now matches the merged changes.",
-    })
-    return
-  }
-  if (showUnchangedInitializationImpactResult(toastId, result)) return
-  if (result.assessment.classification === "initialization_update_required") {
-    toast.error("Story merged, preview environment update failed", {
-      ...options,
-      description: result.repair?.reason ?? result.assessment.reason,
-    })
-    return
-  }
-  toast.dismiss(toastId)
-}
-
-function showUnchangedInitializationImpactResult(
-  toastId: string,
-  result: ProjectInitializationImpactRepairResult
-) {
-  const classification =
-    result.repair?.classification ?? result.assessment.classification
-  if (
-    classification !== "unknown" &&
-    classification !== "initialization_still_valid"
-  ) {
-    return false
-  }
-  const unconfirmed = classification === "unknown"
-  toast.info(
-    unconfirmed
-      ? "Preview environment kept unchanged"
-      : "Preview environment already up to date",
-    {
-      description: unconfirmed
-        ? "The review did not confirm a needed update. Your current configuration was kept."
-        : "Your current configuration is compatible with the merged changes.",
-      id: toastId,
-      position: "bottom-right",
-    }
-  )
-  return true
-}
-
 async function inactiveStoryCleanup(
   story: UserStory,
   input: UserStoryUpdate,
@@ -1911,11 +1808,13 @@ async function cleanupMergedStory(
   }
 }
 
+// The merge moved the project branch: its preview environment is checked
+// against the merged commits now, with the story's own repair if it made one.
 async function runPostMergeTasks(
   story: UserStory,
   platform: ReturnType<typeof usePlatform>,
   repositoryRoot: string,
-  initializationImpactInput: CheckInitializationImpactInput
+  previewEnvironment: PreviewEnvironmentSyncInput
 ) {
   const previewRepairCandidate = await storyPreviewRepairCandidate(
     story,
@@ -1926,10 +1825,7 @@ async function runPostMergeTasks(
   await measurePerformanceOperation(
     "agent.transition.initialization_impact",
     () =>
-      checkProjectInitializationImpact({
-        ...initializationImpactInput,
-        previewRepairCandidate,
-      })
+      syncPreviewEnvironment({ ...previewEnvironment, previewRepairCandidate })
   )
 }
 
