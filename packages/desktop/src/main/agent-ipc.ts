@@ -23,6 +23,7 @@ import {
   type AgentRuntimeProcessCallbacks,
 } from "./agent-runtime-process-client";
 import { createAgentHostRequestHandler } from "./agent-runtime-main-host";
+import { setupPath } from "./host-tool-path";
 import { getRuntimeStatus } from "./runtime-manager";
 import { runtimeAgentClient } from "./runtime-agent";
 import { registerSecurityAuditIpcHandlers } from "./security-audit-ipc";
@@ -485,6 +486,10 @@ export function disableAgentRuntimeTelemetry() {
 function createAgentRuntimePool(input: AgentRuntimeRegistration) {
   const environment = {
     ...process.env,
+    // An app opened from the Finder inherits launchd's minimal PATH: agent
+    // commands need the same Node, package manager and tool directories as
+    // the other runtimes Blame starts.
+    PATH: setupPath(),
     BLAME_AGENT_PACKAGED: String(input.packaged),
     BLAME_AGENT_SERVICE_VERSION: input.serviceVersion,
     BLAME_CLAUDE_CODE_STATE_DIR: join(app.getPath("userData"), "claude-code"),
