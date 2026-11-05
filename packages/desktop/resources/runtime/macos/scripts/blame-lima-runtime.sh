@@ -362,11 +362,53 @@ wait_for_process() {
   done
 }
 
+# Lima's default is 4 CPUs and 4 GiB whatever the Mac. Idle vCPUs cost the
+# Mac nothing, so give installs and dev servers about half of its cores. The
+# VM keeps every page it touches until it stops: take a quarter of the RAM.
+vm_cpus() {
+  host_cpus="$(sysctl -n hw.ncpu 2>/dev/null || echo 8)"
+  clamp $((host_cpus / 2 + 1)) 4 8
+}
+
+vm_memory_gib() {
+  host_bytes="$(sysctl -n hw.memsize 2>/dev/null || echo 17179869184)"
+  clamp $((host_bytes / 1073741824 / 4)) 4 8
+}
+
+clamp() {
+  if [ "$1" -lt "$2" ]; then
+    printf '%s\n' "$2"
+  elif [ "$1" -gt "$3" ]; then
+    printf '%s\n' "$3"
+  else
+    printf '%s\n' "$1"
+  fi
+}
+
+vm_json_number() {
+  vm_json | sed -n "s/.*\"$1\"[[:space:]]*:[[:space:]]*\([0-9][0-9]*\).*/\1/p" | head -n 1
+}
+
+# A VM created before this sizing, or on a Mac since upgraded, takes the new
+# size at its next start. Lima can only change a stopped VM.
+resize_stopped_vm() {
+  cpus="$(vm_cpus)"
+  memory_gib="$(vm_memory_gib)"
+  if [ "$(vm_json_number cpus)" = "$cpus" ] &&
+    [ "$(vm_json_number memory)" = "$((memory_gib * 1073741824))" ]; then
+    return
+  fi
+  with_lima_environment edit --tty=false --cpus "$cpus" --memory "$memory_gib" "$vm_name" >/dev/null ||
+    printf '%s\n' "Could not resize Blame Runtime; starting it at its current size." >&2
+}
+
 create_vm() {
   write_runtime_progress "downloading"
   with_lima_environment create \
     --name "$vm_name" \
     --tty=false \
+    --cpus "$(vm_cpus)" \
+    --memory "$(vm_memory_gib)" \
     "$runtime_home/lima/blame-runtime.yaml" &
   create_process_id=$!
   monitor_lima_download "$create_process_id"
@@ -422,6 +464,7 @@ ensure_vm() {
   fi
   if ! test_vm_running; then
     write_runtime_progress "starting"
+    resize_stopped_vm
     with_lima_environment start "$vm_name"
   fi
   wait_for_guest

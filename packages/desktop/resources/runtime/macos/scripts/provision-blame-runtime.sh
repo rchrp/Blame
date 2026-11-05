@@ -511,6 +511,57 @@ trim_guest_services() {
   systemctl enable fstrim.timer >/dev/null 2>&1 || true
 }
 
+# A preview's install and two dev servers can briefly need more than the VM's
+# memory. Without swap, Linux drops its file cache until it rereads code from
+# disk nonstop, then kills a process. The file is made at boot, sized to the
+# memory, so images stay small and a resized VM gets a matching one.
+ensure_swap() {
+  cat >/usr/local/sbin/blame-swap <<'EOF'
+#!/bin/sh
+set -eu
+swap_file=/var/lib/blame/swapfile
+if swapon --show=NAME --noheadings | grep -qx "$swap_file"; then
+  exit 0
+fi
+memory_mib="$(awk '/^MemTotal:/ { print int($2 / 1024) }' /proc/meminfo)"
+size_bytes=$((memory_mib * 1048576))
+if [ "$(stat -c %s "$swap_file" 2>/dev/null || echo 0)" != "$size_bytes" ]; then
+  rm -f "$swap_file"
+  # Leave previews their disk: skip swap rather than fill it.
+  free_mib="$(df -Pm /var/lib | awk 'NR == 2 { print $4 }')"
+  if [ "$free_mib" -lt $((memory_mib * 2 + 4096)) ]; then
+    printf '%s\n' "Not enough free disk for a swap file." >&2
+    exit 0
+  fi
+  mkdir -p "$(dirname "$swap_file")"
+  fallocate -l "$size_bytes" "$swap_file"
+  chmod 600 "$swap_file"
+  mkswap "$swap_file" >/dev/null
+fi
+swapon "$swap_file"
+EOF
+  chmod 755 /usr/local/sbin/blame-swap
+  cat >/etc/systemd/system/blame-swap.service <<'UNIT'
+[Unit]
+Description=Swap file for Blame previews
+After=local-fs.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/blame-swap
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+  if [ -d /run/systemd/system ]; then
+    systemctl daemon-reload >/dev/null 2>&1 || true
+    systemctl enable --now blame-swap.service >/dev/null 2>&1 || true
+  else
+    systemctl enable blame-swap.service >/dev/null 2>&1 || true
+  fi
+}
+
 ensure_runtime_paths() {
   mkdir -p \
     "$runtime_root/repos" \
@@ -549,7 +600,7 @@ json_worker_count = max(1, min(2, os.cpu_count() or 1))
 large_json_threshold = 64 * 1024
 ignored_env_directories = {".git", ".blame", "build", "coverage", "dist", "node_modules", "out"}
 env_template_suffixes = (".example", ".sample", ".template")
-runtime_agent_version = "13"
+runtime_agent_version = "14"
 
 def serialize_json_line(value):
     return json.dumps(value, separators=(",", ":")) + "\n"
@@ -1371,4 +1422,5 @@ prefetch_preview_display
 migrate_legacy_volumes
 remove_legacy_container_stack
 trim_guest_services
+ensure_swap
 write_marker
