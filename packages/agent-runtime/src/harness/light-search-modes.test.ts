@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { data, fixture } from "./light-agent-guidance-fixture.js";
+import { literalBraces } from "./lexical-search.js";
 
 type Result = Record<string, unknown> & { path: string };
 
@@ -24,7 +25,24 @@ const attachmentsFolder = Object.fromEntries(
   ]),
 );
 
+test("a brace that opens no repetition is searched as itself", () => {
+  assert.equal(literalBraces("initializations: {|initializations = {"), "initializations: \\{|initializations = \\{");
+  for (const kept of ["a{2}", "a{2,}", "a{2,5}", "[{]", "\\{", "x\\{2}"]) assert.equal(literalBraces(kept), kept);
+  assert.equal(literalBraces("{2}"), "\\{2}");
+  assert.equal(literalBraces("x{,3}"), "x\\{,3}");
+  assert.equal(literalBraces("(foo|{bar})"), "(foo|\\{bar})");
+});
+
 for (const engine of engines) {
+  test(`${engine}: regex searches read a literal brace as grep -E does`, async () => {
+    await withEngine(engine, () => fixture({
+      "src/state.ts": "const initializations = {\n  running: 1,\n};\nexport type State = { initializations: { running: number } };\n",
+    }, async (workspace) => {
+      const found = data(await workspace.searchCode({ query: "initializations: {|initializations = {", mode: "regex", scope: "src" }));
+      assert.deepEqual((found.results as Result[]).map((item) => (item.lines as number[])[0]), [1, 4]);
+    }));
+  });
+
   test(`${engine}: a page too large for one result stops early and continues where it stopped`, async () => {
     const source = `${Array.from({ length: 400 }, (_, index) => `export const needle${index} = "${"x".repeat(90)}";`).join("\n")}\n`;
     await withEngine(engine, () => fixture({ "src/long.ts": source }, async (workspace) => {

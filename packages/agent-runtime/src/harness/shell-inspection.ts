@@ -1,7 +1,7 @@
 import { posix } from "node:path";
 import type { LightReadCodeInput, LightToolResult } from "./light-contracts.js";
 import type { CodeSearchRequest } from "./light-code-search.js";
-import { escapeRegex } from "./lexical-search.js";
+import { escapeRegex, literalBraces } from "./lexical-search.js";
 import { recordValue } from "./light-navigation.js";
 import {
   literalShellStatements,
@@ -403,7 +403,7 @@ function rustPattern(pattern: string, flavor: Flavor) {
   if (flavor === "fixed") return escapeRegex(pattern);
   if (/\\[1-9]/u.test(pattern) || /\(\?<?[=!]/u.test(pattern)) return undefined;
   const words = pattern.replaceAll("\\<", "\\b").replaceAll("\\>", "\\b");
-  return flavor === "basic" ? basicToExtended(words) : words;
+  return literalBraces(flavor === "basic" ? basicToExtended(words) : words);
 }
 
 /** Basic regex escapes ( ) { } | + ? to make them operators; bare ones are literal. Bracket expressions are copied. */

@@ -1,6 +1,6 @@
 import type { materializeSymbol } from "./code-intelligence.js";
 import type { LightSearchCodeInput, LightToolResult } from "./light-contracts.js";
-import { escapeRegex, type LexicalSearchMatch, type TextQuery } from "./lexical-search.js";
+import { escapeRegex, literalBraces, type LexicalSearchMatch, type TextQuery } from "./lexical-search.js";
 import { recordValue, stringValue } from "./light-navigation.js";
 import type { WorkspaceFiles } from "./workspace-files.js";
 
@@ -36,7 +36,7 @@ export function searchTerms(query: string) {
 }
 
 export function lexicalQuery(query: string, mode: SearchMode, caseSensitive = false): TextQuery {
-  if (mode === "regex") return { pattern: query, regex: true, case_sensitive: caseSensitive };
+  if (mode === "regex") return { pattern: literalBraces(query), regex: true, case_sensitive: caseSensitive };
   const terms = caseSensitive ? [...new Set(query.split(/\s+/u).filter(Boolean))].slice(0, 12) : searchTerms(query);
   if (terms.length < 2) return { pattern: query, case_sensitive: caseSensitive };
   return { pattern: terms.map(escapeRegex).join("|"), regex: true, case_sensitive: caseSensitive };

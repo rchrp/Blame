@@ -336,6 +336,41 @@ export function escapeRegex(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
 }
 
+/**
+ * Escapes each `{` that does not open a repetition (`{n}`, `{n,}`, `{n,m}`
+ * after something to repeat). ripgrep rejects those, while grep -E and
+ * agents read them as the brace itself, as in `initializations: {`.
+ */
+export function literalBraces(pattern: string) {
+  let output = "";
+  let inClass = false;
+  let repeatable = false;
+  for (let index = 0; index < pattern.length; index += 1) {
+    const character = pattern[index]!;
+    if (character === "\\") {
+      output += pattern.slice(index, index + 2);
+      index += 1;
+      repeatable = true;
+    } else if (inClass) {
+      output += character;
+      if (character === "]") inClass = false;
+    } else if (character === "[") {
+      const opening = /^\[\^?\]?/u.exec(pattern.slice(index))![0];
+      output += opening;
+      index += opening.length - 1;
+      inClass = true;
+      repeatable = true;
+    } else if (character === "{" && !(repeatable && /^\{\d+(?:,\d*)?\}/u.test(pattern.slice(index)))) {
+      output += "\\{";
+      repeatable = true;
+    } else {
+      output += character;
+      repeatable = !"(|".includes(character);
+    }
+  }
+  return output;
+}
+
 function errorCode(error: unknown) {
   return error && typeof error === "object" && "code" in error ? String(error.code) : undefined;
 }
