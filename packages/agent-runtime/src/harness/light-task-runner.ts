@@ -1,7 +1,7 @@
 import { invocationTestReport } from "./invocation-test-report.js";
 import { relative } from "node:path";
 import { isTestInvocation, observeCheck, type CheckObservation } from "./check-observation.js";
-import { LightCommitService } from "./light-commit.js";
+import { LightCommitService, type LockHolder } from "./light-commit.js";
 import { redactSecuritySecrets } from "../security-secret-redaction.js";
 import { EnvironmentAdapter } from "./environment-adapter.js";
 import { blockedCommandReason } from "./command-policy.js";
@@ -96,6 +96,8 @@ export class LightTaskRunner {
   private readonly refreshPreviewDependencies?: () => Promise<unknown>;
   private readonly runs = new Map<string, ManagedRun>();
   private runSequence = 0;
+  /** Settles when the latest command started here has finished. */
+  private commandTurn: Promise<unknown> = Promise.resolve();
   private reportSequence = 0;
 
   constructor(options: LightTaskRunnerOptions) {
@@ -362,29 +364,48 @@ export class LightTaskRunner {
     context: RunnerContext,
     metadata: ValidationMetadata = {},
   ): Promise<LightToolResult<unknown>> {
+    // Commands take turns: one sent while another runs (often in the same
+    // response) starts when it ends, instead of failing on the lock.
+    const previous = this.commandTurn;
+    let finished!: () => void;
+    const mine = new Promise<void>((resolve) => {
+      finished = resolve;
+    });
+    this.commandTurn = previous.then(() => mine);
+    try {
+      await abortable(previous, context.signal);
+    } catch {
+      finished();
+      return blocked("environment", "The command was cancelled while it waited for the previous command to finish.");
+    }
     let publishHandle!: (handle: CommandHandle) => void;
     const started = new Promise<CommandHandle>((resolve) => {
       publishHandle = resolve;
     });
+    const holder: LockHolder = { label: `the command \`${command.slice(0, 120)}\`` };
     const completion = new LightCommitService(this.files)
-      .exclusive(() =>
-        this.executeLocked(
-          executable,
-          args,
-          cwd,
-          command,
-          context,
-          metadata,
-          publishHandle,
-        ),
+      .exclusive(
+        () =>
+          this.executeLocked(
+            executable,
+            args,
+            cwd,
+            command,
+            context,
+            metadata,
+            publishHandle,
+          ),
+        holder,
       )
-      .catch((error) => blocked("environment", errorMessage(error)));
+      .catch((error) => blocked("environment", errorMessage(error)))
+      .finally(finished);
     const first = await Promise.race([
       completion.then((result) => ({ kind: "complete" as const, result })),
       started.then((handle) => ({ kind: "started" as const, handle })),
     ]);
     if (first.kind === "complete") return first.result;
     const runId = `r${++this.runSequence}`;
+    holder.label = `run ${runId} (\`${command.slice(0, 120)}\`)`;
     const managed: ManagedRun = { command, completion, handle: first.handle };
     this.runs.set(runId, managed);
     void completion.then((result) => {
@@ -398,6 +419,8 @@ export class LightTaskRunner {
       this.runs.delete(runId);
       return initial.result;
     }
+    // From here the model watches a long run; other work fails fast while it holds the workspace.
+    holder.run = runId;
     return this.inspect({ kind: "inspect", run: runId });
   }
 
@@ -770,6 +793,20 @@ function formattedResult(
       paths,
     },
   };
+}
+
+/** Waits for a promise unless the signal aborts first; never rejects for the promise itself. */
+function abortable(promise: Promise<unknown>, signal: AbortSignal | undefined) {
+  if (!signal) return promise.then(() => undefined, () => undefined);
+  signal.throwIfAborted();
+  return new Promise<void>((resolve, reject) => {
+    const aborted = () => reject(signal.reason ?? new Error("Aborted."));
+    signal.addEventListener("abort", aborted, { once: true });
+    promise.then(
+      () => resolve(),
+      () => resolve(),
+    ).finally(() => signal.removeEventListener("abort", aborted));
+  });
 }
 
 function blocked(

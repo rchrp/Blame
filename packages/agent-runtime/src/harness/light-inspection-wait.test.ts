@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import test from "node:test";
+import { LightCommitService } from "./light-commit.js";
 import { startWorkspaceCommand } from "./workspace-command-process.js";
 import { LightTaskRunner } from "./light-task-runner.js";
 import { SessionJournal } from "./session-journal.js";
@@ -101,6 +102,54 @@ test("inspecting a run bounds the output it returns", { timeout: 15_000 }, async
       await writeFile(join(root, ".blame/go"), "go");
       controller.abort();
       await runner.run({ kind: "inspect", run: "r1" });
+    }
+  });
+});
+
+test("a command sent while another runs waits for it instead of failing on the workspace", { timeout: 15_000 }, async () => {
+  await fixture(async root => {
+    const runner = new LightTaskRunner({ files: new WorkspaceFiles(root), journal: new SessionJournal(root, "queued"), initialCommandWaitMs: 300 });
+    const order = join(root, ".blame/order");
+    await writeFile(join(root, "first.cjs"), "const fs=require('node:fs');const tick=setInterval(()=>{if(fs.existsSync('.blame/go')){fs.appendFileSync('.blame/order','a');clearInterval(tick)}},10);\n");
+    await writeFile(join(root, "second.cjs"), "require('node:fs').appendFileSync('.blame/order','b');\n");
+    const first = data(await runner.run({ kind: "command", command: "node first.cjs" }));
+    assert.equal(first.process, "running");
+    const second = runner.run({ kind: "command", command: "node second.cjs" });
+    await delay(200);
+    assert.equal(await readFile(order, "utf8").catch(() => ""), "", "The second command waits for the first.");
+    await writeFile(join(root, ".blame/go"), "go");
+    const result = await second as { status: string; data?: { exitCode?: number } };
+    assert.equal(result.status, "ok", JSON.stringify(result));
+    assert.equal(result.data?.exitCode, 0);
+    assert.equal(await readFile(order, "utf8"), "ab");
+  });
+});
+
+test("work blocked by a long run fails at once and says which run to wait for", async () => {
+  await fixture(async root => {
+    const files = new WorkspaceFiles(root);
+    let finish!: () => void;
+    let entered!: () => void;
+    const holding = new Promise<void>((resolve) => { entered = resolve; });
+    const running = new LightCommitService(files).exclusive(
+      () => new Promise<void>((resolve) => { finish = resolve; entered(); }),
+      { label: "run r7 (`pnpm test`)", run: "r7" },
+    );
+    await holding;
+    try {
+      const started = Date.now();
+      await assert.rejects(
+        new LightCommitService(files).exclusive(async () => undefined),
+        (error: Error) => {
+          assert.match(error.message, /The workspace is busy: run r7 \(`pnpm test`\) is still running/);
+          assert.match(error.message, /"kind": "inspect", "run": "r7"/);
+          return true;
+        },
+      );
+      assert.ok(Date.now() - started < 1_000, "No lock retries behind a long run.");
+    } finally {
+      finish();
+      await running;
     }
   });
 });

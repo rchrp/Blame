@@ -20,6 +20,18 @@ export type LightCommitResult = {
 
 export class LightCommitConflict extends Error {}
 
+/** What holds a workspace's write lock: a short operation, or a managed command run. */
+export type LockHolder = { label: string; run?: string };
+
+/** Lock holders in this process, by lock directory, to say who keeps a workspace busy. */
+const lockHolders = new Map<string, LockHolder>();
+
+export class WorkspaceBusyError extends Error {
+  constructor(holder: LockHolder | undefined) {
+    super(busyMessage(holder));
+  }
+}
+
 export class LightCommitService {
   private readonly files: WorkspaceFiles;
   private readonly lockDirectory: string;
@@ -42,13 +54,23 @@ export class LightCommitService {
     );
   }
 
-  async exclusive<T>(operation: () => Promise<T>) {
+  async exclusive<T>(operation: () => Promise<T>, holder: LockHolder = { label: "an edit or a read" }) {
+    // A managed command can hold the lock for minutes: say so now rather
+    // than after the retries.
+    const current = lockHolders.get(this.lockDirectory);
+    if (current?.run) throw new WorkspaceBusyError(current);
     await mkdir(this.lockDirectory, { recursive: true, mode: 0o700 });
-    const release = await lock(this.lockDirectory, lockOptions);
+    const release = await lock(this.lockDirectory, lockOptions).catch((error: unknown) => {
+      throw errorCode(error) === "ELOCKED"
+        ? new WorkspaceBusyError(lockHolders.get(this.lockDirectory))
+        : error;
+    });
+    lockHolders.set(this.lockDirectory, holder);
     try {
       await this.recoverInterruptedWrite();
       return await operation();
     } finally {
+      lockHolders.delete(this.lockDirectory);
       await release();
     }
   }
@@ -221,6 +243,15 @@ function mutationChangesContent(mutation: LightFileMutation) {
 
 function contentHash(content: Buffer | null) {
   return content ? sha256(content) : null;
+}
+
+function busyMessage(holder: LockHolder | undefined) {
+  if (!holder)
+    return "The workspace is busy: another Blame session or process is changing it. Retry in a moment.";
+  const wait = holder.run
+    ? ` Wait for it with run_task {"kind": "inspect", "run": "${holder.run}"}, then retry.`
+    : " Retry once it finishes.";
+  return `The workspace is busy: ${holder.label} is still running. Edits, reads and commands take turns so Blame can record what each one changes.${wait}`;
 }
 
 function errorCode(error: unknown) {
