@@ -86,6 +86,25 @@ test("incremental run_task waits for quiet termination and publishes the real fi
   }
 });
 
+test("inspecting a run bounds the output it returns", { timeout: 15_000 }, async () => {
+  await fixture(async root => {
+    const controller = new AbortController();
+    const runner = new LightTaskRunner({ files: new WorkspaceFiles(root), journal: new SessionJournal(root, "bounded-output"), initialCommandWaitMs: 0 });
+    await writeFile(join(root, "noisy.cjs"), "const fs=require('node:fs');process.stdout.write('x'.repeat(100000),()=>fs.writeFileSync('.blame/printed','x'));const tick=setInterval(()=>{if(fs.existsSync('.blame/go'))clearInterval(tick)},10);\n");
+    try {
+      const initial = data(await runner.run({ kind: "command", command: "node noisy.cjs" }, { signal: controller.signal }));
+      await waitFor(join(root, ".blame/printed"));
+      const output = (data(await runner.run({ kind: "inspect", run: initial.run, cursor: "0" })) as unknown as { output: string }).output;
+      assert.ok(output.length <= 12_000, `${output.length} characters`);
+      assert.match(output, /diagnostic truncated/);
+    } finally {
+      await writeFile(join(root, ".blame/go"), "go");
+      controller.abort();
+      await runner.run({ kind: "inspect", run: "r1" });
+    }
+  });
+});
+
 function data(result: unknown) {
   const value = result as { status: string; data: { run: string; cursor: string; process: string; completed?: { status: string; data?: { exitCode: number; validation?: unknown } } } };
   assert.equal(value.status, "ok", JSON.stringify(value));

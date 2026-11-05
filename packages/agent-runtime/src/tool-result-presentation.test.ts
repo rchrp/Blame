@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { ContentBlock, Message, ToolResultContent } from "@cline/sdk";
-import { presentToolResults } from "./tool-result-presentation.js";
+import { presentToolResults, textChunks } from "./tool-result-presentation.js";
 
 test("source text reaches the provider with original quotes, slashes, and Unicode", () => {
   const source = 'pattern = r"\\d+\\.é"\npath = "C:\\\\tools"\r\n';
@@ -45,6 +45,24 @@ test("native tools, malformed results, simple text, and images remain unchanged"
   block.content = [{ type: "text", text: "image metadata" }, { type: "image", mediaType: "image/png", data: "aW1hZ2U=" }];
   for (const history of [messages("read_file", { status: "ok", data: { content: "line\n" } }), messages("read_code", "not JSON"), messages("read_code", { status: "ok", data: { content: "plain" } }), image])
     assert.deepEqual(presentToolResults(history), history);
+});
+
+test("long harness results reach the model whole, in blocks Cline's 8,000-character cut leaves intact", () => {
+  const source = `${Array.from({ length: 900 }, (_, index) => `export const value${index} = ${index};`).join("\n")}\n`;
+  const result = { status: "ok", data: { path: "values.ts", view: "raw", content: source, lines: [1, 900], complete: true } };
+  const projected = presentToolResults(messages("read_code", result));
+  const blocks = (projected[1]!.content as ToolResultContent[])[0]!.content as { type: string; text: string }[];
+  assert.ok(Array.isArray(blocks) && blocks.length > 1);
+  assert.ok(blocks.every((block) => block.type === "text" && block.text.length <= 8_000));
+  assert.ok(blocks.slice(0, -1).every((block) => block.text.endsWith("\n")), "Blocks end on line boundaries.");
+  assert.ok(blocks.map((block) => block.text).join("").includes(source));
+  assert.deepEqual(presentToolResults(projected), projected);
+});
+
+test("only a line longer than a block is cut inside", () => {
+  assert.deepEqual(textChunks("aaaaaaaaaa\nb", 4), ["aaaa", "aaaa", "aa\nb"]);
+  assert.deepEqual(textChunks("ab\ncd\nef", 6), ["ab\ncd\n", "ef"]);
+  assert.deepEqual(textChunks("short", 8), ["short"]);
 });
 
 function messages(name: string, result: unknown): Message[] {

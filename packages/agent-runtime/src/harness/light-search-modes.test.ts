@@ -25,6 +25,22 @@ const attachmentsFolder = Object.fromEntries(
 );
 
 for (const engine of engines) {
+  test(`${engine}: a page too large for one result stops early and continues where it stopped`, async () => {
+    const source = `${Array.from({ length: 400 }, (_, index) => `export const needle${index} = "${"x".repeat(90)}";`).join("\n")}\n`;
+    await withEngine(engine, () => fixture({ "src/long.ts": source }, async (workspace) => {
+      const input = { query: "needle", mode: "text" as const, scope: "src", context: 30, limit: 100 };
+      const first = data(await workspace.searchCode(input));
+      const firstLines = (first.results as Result[]).map((item) => (item.lines as number[])[0]!);
+      assert.ok(firstLines.length > 1 && firstLines.length < 100);
+      assert.ok(JSON.stringify(first.results).length <= 40_000);
+      assert.match(String(first.guidance), /size limit/);
+      assert.deepEqual(first.nextSearch, { ...input, offset: firstLines.length });
+      const second = data(await workspace.searchCode(first.nextSearch as typeof input));
+      const secondLines = (second.results as Result[]).map((item) => (item.lines as number[])[0]!);
+      assert.equal(secondLines[0], firstLines.at(-1)! + 1);
+    }));
+  });
+
   test(`${engine}: a folder name shared with one term does not crowd out content matches`, async () => {
     await withEngine(engine, () => fixture({
       ...attachmentsFolder,

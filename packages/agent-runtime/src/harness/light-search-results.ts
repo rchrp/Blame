@@ -7,11 +7,14 @@ import type { WorkspaceFiles } from "./workspace-files.js";
 export type SearchMode = "references" | "regex" | "symbol" | "text";
 export type SearchPage = { limit: number; offset: number };
 export type FileHits = { path: string; matches: LexicalSearchMatch[]; score: number };
-export type SearchMore = { cappedFiles?: string[]; hasMore: boolean; truncated?: boolean };
+export type SearchMore = { cappedFiles?: string[]; hasMore: boolean; sized?: boolean; truncated?: boolean };
 
 export const defaultMatchLimit = 8;
 export const defaultFileLimit = 50;
 const maximumContextLineCharacters = 240;
+// One page of matches stays readable in a single result; large context or
+// limit values continue on the next page instead.
+const maximumPageCharacters = 40_000;
 
 export function searchMode(input: LightSearchCodeInput): SearchMode {
   if (input.mode === "references" || input.mode === "regex") return input.mode;
@@ -107,16 +110,30 @@ export function searchEnvelope(
   more: SearchMore,
 ): LightToolResult<unknown> {
   const page = searchPage(input);
+  const shown = withinCharacters(results, maximumPageCharacters);
+  const sized = shown.length < results.length;
   return {
     status: "ok",
     data: {
       mode,
       engine,
-      results,
+      results: shown,
       candidateCount: candidates.length,
-      ...limitData(input, page, more, results.length),
+      ...limitData(input, page, sized ? { ...more, hasMore: true, sized } : more, shown.length),
     },
   };
+}
+
+/** The leading results whose JSON fits the budget, and always the first. */
+function withinCharacters(results: unknown[], budget: number) {
+  let used = 0;
+  const kept: unknown[] = [];
+  for (const result of results) {
+    used += JSON.stringify(result).length;
+    if (kept.length && used > budget) break;
+    kept.push(result);
+  }
+  return kept;
 }
 
 export function limitData(input: LightSearchCodeInput, page: SearchPage, more: SearchMore, shown: number) {
@@ -124,13 +141,13 @@ export function limitData(input: LightSearchCodeInput, page: SearchPage, more: S
   if (!more.hasMore && !more.truncated && !capped.length)
     return shown || page.offset ? {} : { guidance: "No match in the selected scope." };
   const notes = [
-    ...(more.hasMore ? ["Result limit reached: call nextSearch for the next page, raise limit, or use output \"files\" to list every matching file."] : []),
+    ...(more.sized ? ["This page reached its size limit: call nextSearch for the following matches, or lower context."] : more.hasMore ? ["Result limit reached: call nextSearch for the next page, raise limit, or use output \"files\" to list every matching file."] : []),
     ...(more.truncated ? ["Collection stopped at the scan bound, so later matching lines were not ranked; narrow the query or scope."] : []),
     ...(capped.length ? [`Matching lines past the per-file bound were not examined in ${capped.slice(0, 3).join(", ")}${capped.length > 3 ? ` and ${capped.length - 3} more files` : ""}.`] : []),
   ];
   return {
     limited: true,
-    ...(more.hasMore ? { nextSearch: { ...input, offset: page.offset + page.limit } } : {}),
+    ...(more.hasMore ? { nextSearch: { ...input, offset: page.offset + shown } } : {}),
     guidance: notes.join(" "),
   };
 }

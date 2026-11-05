@@ -143,7 +143,8 @@ export class LightTaskRunner {
           run: input.run,
           command: run.command,
           ...snapshot,
-          output: redactedOutput(snapshot.output),
+          // Output since the cursor; a test run can print megabytes.
+          output: boundedDiagnostic(redactedOutput(snapshot.output), "", 12_000),
           ...(completed ? { completed } : {}),
         },
       };

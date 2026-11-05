@@ -220,8 +220,13 @@ export function mcpToolResult(
   else if (Array.isArray(raw)) {
     for (const item of raw) {
       if (!isRecord(item)) continue;
-      if (item.type === "text" && typeof item.text === "string")
-        content.push({ type: "text", text: item.text });
+      if (item.type === "text" && typeof item.text === "string") {
+        // Blame splits long harness results into blocks for Cline; Claude
+        // Code gets the text whole again.
+        const previous = content.at(-1);
+        if (previous?.type === "text") previous.text += item.text;
+        else content.push({ type: "text", text: item.text });
+      }
       else if (item.type === "image" && isRecord(item.source)) {
         const source = item.source;
         if (

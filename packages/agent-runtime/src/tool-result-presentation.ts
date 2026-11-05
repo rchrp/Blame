@@ -19,16 +19,44 @@ export function presentToolResults(messages: Message[]): Message[] {
   return projectImageContext(presented);
 }
 
+// Cline's message builder cuts the middle out of any tool-result text block
+// over 8,000 characters. Harness results bound their own size (a raw read
+// holds up to 64,000), so they reach the model whole, in blocks under that cut.
+const clineBlockCharacters = 8_000;
+
 function presentBlock(block: ContentBlock, names: Map<string, string>): ContentBlock {
   if (block.type !== "tool_result" || typeof block.content !== "string") return block;
   if (!harnessNames.has(names.get(block.tool_use_id) ?? block.name ?? "")) return block;
+  const text = presentedText(block.content) ?? block.content;
+  const chunks = textChunks(text, clineBlockCharacters);
+  if (chunks.length > 1)
+    return { ...block, content: chunks.map((chunk) => ({ type: "text" as const, text: chunk })) };
+  return text === block.content ? block : { ...block, content: text };
+}
+
+/** Metadata as one JSON line, then each source text field in its own fence. */
+function presentedText(source: string) {
   let result: unknown;
-  try { result = JSON.parse(block.content); } catch { return block; }
-  if (!result || typeof result !== "object" || !('status' in result)) return block;
+  try { result = JSON.parse(source); } catch { return undefined; }
+  if (!result || typeof result !== "object" || !('status' in result)) return undefined;
   const sections: string[] = [];
   const metadata = extractText(result, "", sections);
-  if (!sections.length) return block;
-  return { ...block, content: [JSON.stringify(metadata), ...sections].join("\n\n") };
+  if (!sections.length) return undefined;
+  return [JSON.stringify(metadata), ...sections].join("\n\n");
+}
+
+/** Splits after a newline where it can, so only a line longer than a block is cut. */
+export function textChunks(text: string, size: number) {
+  const chunks: string[] = [];
+  let start = 0;
+  while (text.length - start > size) {
+    const newline = text.lastIndexOf("\n", start + size - 1);
+    const end = newline >= start ? newline + 1 : start + size;
+    chunks.push(text.slice(start, end));
+    start = end;
+  }
+  chunks.push(text.slice(start));
+  return chunks;
 }
 
 function extractText(value: unknown, path: string, sections: string[]): unknown {
