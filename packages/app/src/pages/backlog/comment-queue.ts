@@ -117,8 +117,9 @@ export function onQueuedDeliveryRequest(
   }
 }
 
-export function useQueuedComments(storyId: string | undefined) {
-  const snapshot = React.useSyncExternalStore(
+// Every queued comment, for whoever delivers them in the background.
+export function useAllQueuedComments() {
+  return React.useSyncExternalStore(
     (listener) => {
       listeners.add(listener)
       return () => {
@@ -128,6 +129,10 @@ export function useQueuedComments(storyId: string | undefined) {
     () => queue,
     () => queue
   )
+}
+
+export function useQueuedComments(storyId: string | undefined) {
+  const snapshot = useAllQueuedComments()
   return React.useMemo(
     () => (storyId ? snapshot.filter((comment) => comment.storyId === storyId) : []),
     [snapshot, storyId]

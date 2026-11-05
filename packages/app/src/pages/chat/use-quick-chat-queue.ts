@@ -7,14 +7,10 @@ import type {
 import type { useModelSelection } from "@/components/model/model-selection"
 import type { useCloudAuth } from "@/context/cloud-auth"
 import { generateAgentTitle } from "@/lib/agent-title-generation"
-import { useLatestCallback } from "@/lib/use-latest-callback"
 import {
-  onQueuedDeliveryRequest,
   queueComment,
   requestQueuedDelivery,
-  useQueuedComments,
 } from "@/pages/backlog/comment-queue"
-import { QuickChatQueueDelivery } from "./quick-chat-queue-delivery"
 
 type QueuedMessage = {
   body: string
@@ -22,63 +18,24 @@ type QueuedMessage = {
   fileAttachments: UserStoryFileAttachment[]
 }
 
-// Messages written in a quick chat while its agent works: they wait and go
-// out together when it finishes. "Send now" on one of them stops the agent
-// first, so it reads that message right away.
-export function useQuickChatQueue({
-  agentRunning,
-  busy,
-  cancelAgent,
-  chatId,
-  onError,
-  paused,
-  send,
-}: {
-  agentRunning: boolean
-  busy: boolean
-  paused: boolean
-  cancelAgent(chatId: string): Promise<unknown>
-  chatId?: string
-  onError(error: unknown): void
-  send(chatId: string, message: QueuedMessage): Promise<void>
-}) {
-  const key = chatId ? `chat:${chatId}` : undefined
-  const queued = useQueuedComments(key)
-  const [delivery] = React.useState(() => new QuickChatQueueDelivery())
-  const deliver = useLatestCallback(async (commentId?: string) => {
-    if (!chatId) return
-    try {
-      await delivery.deliver({
-        chatId,
-        commentId,
-        automatic: !commentId,
-        stop: commentId && agentRunning ? cancelAgent : undefined,
-        send,
-      })
-    } catch (error) {
-      onError(error)
-    }
-  })
+const queueKeyPrefix = "chat:"
 
-  React.useEffect(() => {
-    if (key && !agentRunning && !busy && !paused && queued.length)
-      void deliver()
-  }, [agentRunning, busy, deliver, key, paused, queued])
+export function quickChatQueueKey(chatId: string) {
+  return `${queueKeyPrefix}${chatId}`
+}
 
-  const stopAndDeliver = useLatestCallback(
-    async (requested: string, commentId: string) => {
-      if (requested !== key) return
-      await deliver(commentId)
-    }
-  )
-  React.useEffect(
-    () =>
-      onQueuedDeliveryRequest(
-        (requested, commentId) => void stopAndDeliver(requested, commentId)
-      ),
-    [stopAndDeliver]
-  )
+export function quickChatQueueChatId(key: string) {
+  return key.startsWith(queueKeyPrefix)
+    ? key.slice(queueKeyPrefix.length) || undefined
+    : undefined
+}
 
+// Messages written in a quick chat while its agent works wait in the comment
+// queue. The quick chat agent runner sends them when the agent finishes, or
+// right away on "Send now" (it stops the agent first), whether or not the
+// chat is open.
+export function useQuickChatComposerQueue(chatId?: string) {
+  const key = chatId ? quickChatQueueKey(chatId) : undefined
   // sendNow (⌘↵) queues the message and sends it right away.
   const queue = React.useCallback(
     (message: QueuedMessage, sendNow = false) => {

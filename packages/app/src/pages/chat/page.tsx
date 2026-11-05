@@ -1,136 +1,46 @@
 import * as React from "react"
-import { createDebouncedUpdateQueue } from "@/lib/debounced-update-queue"
-import type { AgentEvent } from "@blame/agent-runtime"
 import { toast } from "sonner"
 
-import type { UserStoryFileAttachment } from "@/components/backlog/data/backlog-data"
-import {
-  agentEventText,
-  completedAgentRun,
-  shouldPersistAgentEvent,
-  terminalAgentRunEvent,
-} from "@/components/backlog/data/agent-flow"
-import {
-  registeredAgentEventSubscription,
-  subscribeAgentEvents,
-} from "@/components/backlog/data/agent-event-stream"
-import {
-  agentPersistenceEvent,
-  AgentStreamCoordinator,
-  type AgentStreamSnapshotPersistence,
-} from "@/components/backlog/data/agent-stream-coordinator"
-import { agentStreamStore } from "@/components/backlog/data/agent-stream-store"
-import {
-  forgetRunStream,
-  registerRunStream,
-} from "@/components/backlog/data/agent-run-streams"
-import {
-  quickChatAgentRunning,
-  quickChatStreamKey,
-} from "@/components/chat/data/quick-chat-agent-control"
-import {
-  pendingAgentRunSnapshots,
-  persistAgentSnapshot,
-} from "@/components/backlog/data/agent-snapshot-outbox"
-import type { PendingCodeSelectionAttachment } from "@/components/backlog/shared/comment-attachment-events"
 import { pendingFileAttachments } from "@/components/backlog/drawer/user-story-attachment-files"
-import {
-  projectPreviewConfiguration,
-  projectRunConfigurationPreviewKey,
-} from "@/components/backlog/board/project-run-configuration"
+import { projectPreviewConfiguration } from "@/components/backlog/board/project-run-configuration"
 import {
   screenshotOwnerFor,
   type AgentConversationUserMessageUndo,
 } from "@/components/chat/agent-conversation"
-import {
-  captureAgentRunDiffEndRef,
-  loadAgentRunDiffs,
-} from "@/components/chat/agent-run-diffs"
-import { nextCheckpointRunCount } from "@/components/chat/agent-run-checkpoints"
+import { loadAgentRunDiffs } from "@/components/chat/agent-run-diffs"
 import {
   latestLinkedAgentTurn,
   useAgentTurnMetrics,
 } from "@/components/chat/agent-turn-metrics"
-import {
-  interruptedQuickChatRunFinalization,
-  quickChatRunRecovery,
-} from "@/components/chat/data/quick-chat-run-recovery"
-import {
-  definedQuickChatUpdate,
-  immediateQuickChatAgentEvent,
-  pendingQuickChatAgentUpdate,
-  quickChatAgentEventUpdate,
-  quickChatAgentMetadataUpdate,
-  quickChatAgentRunEventUpdate,
-  quickChatAgentRunMetadataUpdate,
-  quickChatClineLogPath,
-  quickChatClineLogRelativePath,
-  quickChatExpiredAuthenticationToken,
-  recoverableQuickChatAgentRun,
-  type QueuedQuickChatAgentUpdate,
-} from "@/components/chat/data/quick-chat-agent-flow"
-import {
-  type QuickChat,
-  type QuickChatAgentRun,
-  type QuickChatAgentRunFinalization,
-  type QuickChatAgentRunUpdate,
-  type QuickChatMessage,
-  type QuickChatUpdate,
-} from "@/components/chat/data/quick-chat-data"
+import { quickChatAgentRunning } from "@/components/chat/data/quick-chat-agent-control"
+import type { QuickChat } from "@/components/chat/data/quick-chat-data"
 import { useQuickChatStore } from "@/components/chat/data/quick-chat-store"
 import { agentConversationResponseHeader } from "@/components/chat/agent-conversation-header"
 import { composerDraftStorageKey } from "@/components/backlog/drawer/composer-draft-storage"
 import { ExcerptTargetProvider } from "@/components/backlog/shared/selection-excerpt-actions"
 import { useModelSelection } from "@/components/model/model-selection"
-import { storyMaxInputTokens } from "@/components/backlog/data/story-context-limit"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
 import { useProjectInitialization } from "@/components/project-initialization/use-project-initialization"
-import { projectCodePractices } from "@/lib/project-code-practices"
-import { showSystemNotification } from "@/lib/system-notifications"
 import { QueuedComments } from "@/components/backlog/drawer/queued-comments"
 import {
   generatedQuickChatTitle,
-  useQuickChatQueue,
+  useQuickChatComposerQueue,
 } from "@/pages/chat/use-quick-chat-queue"
 import {
-  chatWithMessage,
   errorMessage,
   openProjectPath,
-  quickChatAgentFinalization,
-  quickChatDevelopmentSummary,
   quickChatMessageBody,
-  type QuickChatPromptInput,
-  quickChatSendInput,
-  quickChatSendValidationError,
-  quickChatTerminalPersistenceEvent,
-  quickChatTitle,
-  reportAgentPersistenceError,
   restoreQuickChatCheckpoint,
-  showExpiredAuthenticationToast,
   showQuickChatError,
   titleFromMessage,
 } from "./quick-chat-helpers"
+import { useQuickChatAgentRunner } from "./quick-chat-agent-runner"
 import { useComposerShortcuts } from "./use-composer-shortcuts"
 import { useChatExcerpts } from "./use-chat-excerpts"
 import { useQuickChatDraft } from "./use-quick-chat-draft"
-import { useQuickChatSnapshotReplay } from "./use-quick-chat-snapshot-replay"
 import { QuickChatView } from "./quick-chat-view"
-
-const agentEventPersistDelayMs = 1_500
-const agentCompletionRecoveryIntervalMs = 10_000
-
-type QuickChatDevelopmentSessionInput = {
-  chatId: string
-  codeAttachments: PendingCodeSelectionAttachment[]
-  executionId: string
-  fileAttachments: UserStoryFileAttachment[]
-  resumeSessionId?: string | null
-  summary: string
-  title: string
-  workspace: string
-}
 
 export function ChatPage() {
   const projects = useProjects()
@@ -145,6 +55,7 @@ function QuickChatProjectPage() {
   const projects = useProjects()
   const projectInitialization = useProjectInitialization()
   const quickChats = useQuickChatStore()
+  const runner = useQuickChatAgentRunner()
   const selection = useModelSelection({ role: "agent" })
   const project = projects.activeProject
   const previewConfiguration = projectPreviewConfiguration(
@@ -152,28 +63,6 @@ function QuickChatProjectPage() {
   )
   const [sending, setSending] = React.useState(false)
   const [cancelingAgent, setCancelingAgent] = React.useState(false)
-  const chatsRef = React.useRef(quickChats.chats)
-  const quickChatsRef = React.useRef(quickChats)
-  const pendingAgentUpdates = React.useRef(
-    createDebouncedUpdateQueue<QueuedQuickChatAgentUpdate>(
-      agentEventPersistDelayMs
-    )
-  )
-  const agentEventUnsubscribers = React.useRef(new Map<string, () => void>())
-  const agentStreamCoordinators = React.useRef(
-    new Map<string, AgentStreamCoordinator>()
-  )
-  const resumeQuickChatStreamsRef = React.useRef<(chats: QuickChat[]) => void>(
-    () => undefined
-  )
-  const recoveringAgentRunIds = React.useRef(new Set<string>())
-  const recoverAgentEventRef = React.useRef<
-    (
-      chat: QuickChat,
-      run: QuickChatAgentRun | undefined,
-      event: AgentEvent
-    ) => Promise<unknown>
-  >(() => Promise.resolve())
   const activeConversation = quickChats.activeChat
   const draftStorageKey = composerDraftStorageKey(
     project?.id ?? "project",
@@ -217,21 +106,23 @@ function QuickChatProjectPage() {
       selection.currentModel?.provider.id,
     providers: selection.allProviders,
   })
+  const activeWorkspace = activeConversation?.workspace
   const loadChangedFileDiffs = React.useCallback(
     (sessionId: string, checkpointRunCount: number, diffEndRef: string) => {
-      if (!activeConversation?.workspace) return Promise.resolve([])
+      if (!activeWorkspace) return Promise.resolve([])
       return loadAgentRunDiffs({
         checkpointRunCount,
         diffEndRef,
         platform,
-        root: activeConversation.workspace,
+        root: activeWorkspace,
         sessionId,
       })
     },
-    [activeConversation?.workspace, platform]
+    [activeWorkspace, platform]
   )
   const mentionDirectory = project?.path
   const agentRunning = quickChatAgentRunning(activeConversation)
+  const messageQueue = useQuickChatComposerQueue(activeConversation?.id)
   const latestTurn = latestLinkedAgentTurn(
     activeConversation?.messages ?? [],
     activeConversation?.agentRuns ?? [],
@@ -242,18 +133,6 @@ function QuickChatProjectPage() {
     run: latestTurn?.run,
     startedAt: latestTurn?.message.createdAt,
   })
-  React.useEffect(() => {
-    chatsRef.current = quickChats.chats
-    quickChatsRef.current = quickChats
-  }, [quickChats])
-
-  useQuickChatSnapshotReplay({
-    chatsRef,
-    clearStream: clearQuickChatAgentStream,
-    loading: quickChats.loading,
-    projectId: quickChats.projectId,
-    quickChatsRef,
-  })
 
   React.useEffect(() => {
     if (!activeConversation || quickChats.chatDetailsLoaded(activeConversation))
@@ -263,304 +142,11 @@ function QuickChatProjectPage() {
     })
   }, [activeConversation, quickChats])
 
-  React.useEffect(() => {
-    resumeQuickChatStreamsRef.current = (chats) => {
-      chats.forEach((chat) => {
-        if (quickChatsRef.current.busyChatIds.has(chat.id)) return
-        chat.agentRuns?.forEach((run) => {
-          const sessionId = run.clineSessionId ?? chat.clineSessionId
-          if (run.status !== "running" || !sessionId) return
-          if (registeredAgentEventSubscription(sessionId)) return
-          subscribeQuickChatAgentEvents(chat, run, sessionId)
-        })
-      })
-    }
-  })
-
-  React.useEffect(() => {
-    if (!platform.agent || quickChats.loading) return
-    resumeQuickChatStreamsRef.current(quickChats.chats)
-  }, [platform.agent, quickChats.chats, quickChats.loading])
-
-  React.useEffect(() => {
-    const updates = pendingAgentUpdates.current
-    const unsubscribers = agentEventUnsubscribers.current
-    const coordinators = agentStreamCoordinators.current
-    return () => {
-      updates.clear()
-      unsubscribers.forEach((unsubscribe) => unsubscribe())
-      unsubscribers.clear()
-      coordinators.forEach((coordinator) => {
-        void coordinator.disconnect().catch(reportAgentPersistenceError)
-      })
-      coordinators.clear()
-    }
-  }, [])
-
-  React.useEffect(() => {
-    if (!platform.workspace || !activeConversationLoaded || !activeConversation)
-      return
-    const recover = async () => {
-      const current = currentChat(activeConversation)
-      if (quickChatsRef.current.busyChatIds.has(current.id)) return
-      const run = recoverableQuickChatAgentRun(current)
-      const workspace = platform.workspace
-      const sessionId = run?.clineSessionId ?? current.clineSessionId
-      if (!run || !workspace || !current.workspace || !sessionId) return
-      if (recoveringAgentRunIds.current.has(run.id)) return
-      recoveringAgentRunIds.current.add(run.id)
-      try {
-        const recovery = await quickChatRunRecovery(current, run, sessionId, {
-          live: platform.agent?.sessions.live,
-          log: (id) =>
-            workspace.readFile({
-              root: current.workspace!,
-              path: quickChatClineLogRelativePath(id),
-            }),
-          messages: (id) =>
-            platform.agent?.sessions.messages(id) ?? Promise.resolve(undefined),
-        })
-        if (recovery?.kind === "completed")
-          await recoverAgentEventRef.current(currentChat(current), run, recovery.event)
-        if (recovery?.kind === "interrupted")
-          replaceChatRef(
-            await quickChatsRef.current.finalizeAgentRun(
-              currentChat(current),
-              run,
-              interruptedQuickChatRunFinalization(current, run)
-            )
-          )
-      } finally {
-        recoveringAgentRunIds.current.delete(run.id)
-      }
-    }
-    void recover()
-    const timer = window.setInterval(recover, agentCompletionRecoveryIntervalMs)
-    return () => window.clearInterval(timer)
-  }, [activeConversation, activeConversationLoaded, platform.agent, platform.workspace])
-
-  function replaceChatRef(chat: QuickChat) {
-    const exists = chatsRef.current.some((item) => item.id === chat.id)
-    chatsRef.current = exists
-      ? chatsRef.current.map((item) => (item.id === chat.id ? chat : item))
-      : [chat, ...chatsRef.current]
-  }
-
-  function currentChat(chat: QuickChat) {
-    return chatsRef.current.find((item) => item.id === chat.id) ?? chat
-  }
-
-  function updateChatLocal(chat: QuickChat, input: QuickChatUpdate) {
-    const current = currentChat(chat)
-    const next = { ...current, ...definedQuickChatUpdate(input) } as QuickChat
-    replaceChatRef(next)
-    quickChats.updateLocal(current, input)
-    return next
-  }
-
-  async function persistQueuedAgentUpdate(
-    chat: QuickChat,
-    update: QueuedQuickChatAgentUpdate
-  ) {
-    let nextChat = currentChat(chat)
-    const finalization = quickChatAgentFinalization(update)
-    if (update.run && finalization) {
-      const event =
-        finalization.persistenceEvent ??
-        quickChatTerminalPersistenceEvent(nextChat, update.run, finalization)
-      finalization.persistenceEvent = event
-      const finalized = await persistAgentSnapshot(
-        window.localStorage,
-        {
-          event,
-          messageId: update.activities.at(-1)?.id ?? "message-final",
-          projectId: nextChat.projectId,
-          runId: update.run.id,
-          targetId: nextChat.id,
-          targetType: "quick-chat",
-          update: finalization,
-        },
-        (snapshot) =>
-          quickChats.finalizeAgentRun(
-            nextChat,
-            update.run!,
-            snapshot.update as QuickChatAgentRunFinalization
-          )
-      )
-      replaceChatRef(finalized)
-      return finalized
-    }
-    const metadata = quickChatAgentMetadataUpdate(update.input)
-    if (Object.keys(definedQuickChatUpdate(metadata)).length) {
-      nextChat = await quickChats.update(nextChat, metadata)
-      replaceChatRef(nextChat)
-    }
-    if (update.activities.length) {
-      if (update.run) {
-        await quickChats.updateAgentRun(nextChat, update.run, {
-          agentActivityUpdates: update.activities,
-        })
-      } else {
-        nextChat = await quickChats.update(currentChat(nextChat), {
-          agentActivityUpdates: update.activities,
-        })
-        replaceChatRef(nextChat)
-      }
-    }
-    if (update.run) await persistAgentRunMetadata(nextChat, update)
-    return nextChat
-  }
-
-  async function persistAgentRunMetadata(
-    chat: QuickChat,
-    update: QueuedQuickChatAgentUpdate
-  ) {
-    if (!update.run) return
-    const metadata = quickChatAgentRunMetadataUpdate(update.runInput)
-    if (!Object.keys(definedQuickChatUpdate(metadata)).length) return
-    await quickChats.updateAgentRun(chat, update.run, metadata)
-  }
-
-  function queueAgentUpdate(
-    chat: QuickChat,
-    run: QuickChatAgentRun | undefined,
-    input: QuickChatUpdate,
-    runInput: QuickChatAgentRunUpdate
-  ) {
-    const pending = pendingAgentUpdates.current.get(chat.id)
-    const update = pendingQuickChatAgentUpdate(pending, input, run, runInput)
-    pendingAgentUpdates.current.schedule(chat.id, update, (queued) => {
-      void persistQueuedAgentUpdate(chat, queued).catch(
-        reportAgentPersistenceError
-      )
-    })
-  }
-
-  function flushAgentUpdate(
-    chat: QuickChat,
-    run: QuickChatAgentRun | undefined,
-    input: QuickChatUpdate,
-    runInput: QuickChatAgentRunUpdate
-  ) {
-    const pending = pendingAgentUpdates.current.take(chat.id)
-    return persistQueuedAgentUpdate(
-      chat,
-      pendingQuickChatAgentUpdate(pending, input, run, runInput)
-    )
-  }
-
-  function persistAgentUpdate(
-    chat: QuickChat,
-    run: QuickChatAgentRun | undefined,
-    input: QuickChatUpdate,
-    runInput: QuickChatAgentRunUpdate,
-    immediate: boolean
-  ) {
-    const nextChat = updateChatLocal(chat, input)
-    if (run) quickChats.updateAgentRunLocal(nextChat, run, runInput)
-    if (immediate) {
-      return flushAgentUpdate(nextChat, run, input, runInput).catch((error) => {
-        reportAgentPersistenceError(error)
-        throw error
-      })
-    }
-    queueAgentUpdate(nextChat, run, input, runInput)
-    return Promise.resolve(nextChat)
-  }
-
-  async function persistAgentEvent(
-    chat: QuickChat,
-    run: QuickChatAgentRun | undefined,
-    event: AgentEvent,
-    prepared?: AgentStreamSnapshotPersistence
-  ) {
-    const current = currentChat(chat)
-    const update = quickChatAgentEventUpdate(current, event, prepared?.update)
-    if (!shouldPersistAgentEvent(event, update)) return
-    const text = agentEventText(event)
-    const runInput = quickChatAgentRunEventUpdate(update, event, text)
-    if (run) {
-      runInput.persistenceEvent =
-        prepared?.persistenceEvent ??
-        agentPersistenceEvent(event, {
-          executionId: run.executionId ?? event.executionId ?? run.id,
-          lastSequenceNumber: run.lastSequenceNumber,
-          runId: run.id,
-          sessionId:
-            event.sessionId ??
-            run.clineSessionId ??
-            current.clineSessionId ??
-            run.id,
-        })
-    }
-    if (
-      prepared &&
-      run &&
-      !terminalAgentRunEvent(event) &&
-      !quickChatExpiredAuthenticationToken(text)
-    ) {
-      return persistQuickChatStreamSnapshot(current, run, runInput, prepared)
-    }
-    if (run && terminalAgentRunEvent(event) && !run.diffEndRef) {
-      runInput.diffEndRef = await captureAgentRunDiffEndRef({
-        id: run.id,
-        platform,
-        root: current.workspace,
-      })
-    }
-    if (completedAgentRun(event)) notifyQuickChatResponseCompleted(current)
-    return persistAgentUpdate(
-      current,
-      run,
-      update,
-      runInput,
-      immediateQuickChatAgentEvent(event)
-    )
-  }
-
-  function persistQuickChatStreamSnapshot(
-    chat: QuickChat,
-    run: QuickChatAgentRun,
-    runInput: QuickChatAgentRunUpdate,
-    prepared: AgentStreamSnapshotPersistence
-  ) {
-    return persistAgentSnapshot(
-      window.localStorage,
-      {
-        event: prepared.persistenceEvent,
-        messageId: prepared.update.agentActivity?.id ?? prepared.event.type,
-        projectId: chat.projectId,
-        runId: run.id,
-        targetId: chat.id,
-        targetType: "quick-chat",
-        update: runInput,
-      },
-      (snapshot) =>
-        quickChats.updateAgentRun(
-          chat,
-          run,
-          snapshot.update as QuickChatAgentRunUpdate
-        )
-    )
-  }
-
-  React.useEffect(() => {
-    recoverAgentEventRef.current = persistAgentEvent
-  })
-
-  function notifyQuickChatResponseCompleted(chat: QuickChat) {
-    void showSystemNotification(platform, {
-      body: chat.title,
-      target: { pathname: "/chat", chatId: chat.id },
-      title: "Agent response ready",
-    })
-  }
-
   async function undoQuickChatMessage(
     target: AgentConversationUserMessageUndo
   ) {
     if (!activeConversation) return
-    const current = await detailedConversation(activeConversation)
+    const current = await runner.detailedChat(activeConversation)
     await quickChats.validateMessageUndo(
       current,
       target.comment.id,
@@ -577,7 +163,7 @@ function QuickChatProjectPage() {
       target.comment.id,
       { clineSessionId: restored.sessionId, runId: target.run.id }
     )
-    replaceChatRef(nextConversation)
+    runner.rememberChat(nextConversation)
     setDraft(target.comment.body)
     setDraftCodeAttachments(target.comment.codeSelectionAttachments ?? [])
     setDraftFileAttachments(target.comment.fileAttachments ?? [])
@@ -614,12 +200,7 @@ function QuickChatProjectPage() {
       (activeConversation && quickChats.busyChatIds.has(activeConversation.id))
     )
       return
-    const validationError = quickChatSendValidationError({
-      auth,
-      model: selection.currentModel,
-      platform,
-      projectPath: project?.path,
-    })
+    const validationError = runner.sendValidationError()
     if (validationError) {
       showQuickChatError("Unable to send quick change", validationError)
       return
@@ -634,21 +215,15 @@ function QuickChatProjectPage() {
     setSending(true)
     try {
       const chat = await activeOrCreatedConversation(messageBody)
-      await quickChats.agentOperations.start(chat.id, async () => {
-        const message = await quickChats.createMessage(chat, {
+      await runner.sendMessage(
+        chat,
+        {
           body: messageBody,
           codeSelectionAttachments: codeAttachments,
           fileAttachments,
-        })
-        clearDraft()
-        replaceChatRef(chatWithMessage(currentChat(chat), message))
-        await runAgentForMessage(
-          chat,
-          message,
-          codeAttachments,
-          fileAttachments
-        )
-      })
+        },
+        clearDraft
+      )
     } catch (error) {
       showQuickChatError("Quick chat failed", errorMessage(error))
     } finally {
@@ -656,59 +231,14 @@ function QuickChatProjectPage() {
     }
   }
 
-  const messageQueue = useQuickChatQueue({
-    agentRunning,
-    busy: Boolean(
-      activeConversation && quickChats.busyChatIds.has(activeConversation.id)
-    ),
-    paused: activeConversation?.agentStatus === "Paused",
-    cancelAgent: async (chatId) => {
-      const chat = chatsRef.current.find((item) => item.id === chatId)
-      if (!chat) throw new Error("Quick chat is no longer available.")
-      await quickChats.stopAgent(chat)
-    },
-    chatId: activeConversation?.id,
-    onError: (error) =>
-      showQuickChatError(
-        "Couldn't send your queued message",
-        errorMessage(error)
-      ),
-    send: sendQueuedMessage,
-  })
-  async function sendQueuedMessage(
-    chatId: string,
-    queued: Parameters<typeof quickChats.createMessage>[1]
-  ) {
-    const conversation = chatsRef.current.find((item) => item.id === chatId)
-    if (!conversation) throw new Error("Quick chat is no longer available.")
-    const validationError = quickChatSendValidationError({
-      auth,
-      model: selection.currentModel,
-      platform,
-      projectPath: project?.path,
-    })
-    if (validationError) throw new Error(validationError)
-    await quickChats.agentOperations.start(chatId, async () => {
-      const chat = currentChat(await detailedConversation(conversation))
-      const message = await quickChats.createMessage(chat, queued)
-      replaceChatRef(chatWithMessage(currentChat(chat), message))
-      await runAgentForMessage(
-        chat,
-        message,
-        queued.codeSelectionAttachments ?? [],
-        queued.fileAttachments ?? []
-      )
-    })
-  }
-
   async function cancelAgent() {
     const conversation = activeConversation
-      ? currentChat(activeConversation)
+      ? runner.currentChat(activeConversation)
       : undefined
     if (!conversation || !agentRunning || cancelingAgent) return
     setCancelingAgent(true)
     try {
-      replaceChatRef(await quickChats.stopAgent(conversation))
+      runner.rememberChat(await quickChats.stopAgent(conversation))
       toast.success("Agent stopped.", {
         position: "bottom-right",
       })
@@ -721,13 +251,13 @@ function QuickChatProjectPage() {
 
   async function activeOrCreatedConversation(message: string) {
     if (activeConversation) {
-      return currentChat(await detailedConversation(activeConversation))
+      return runner.currentChat(await runner.detailedChat(activeConversation))
     }
     const chat = await quickChats.create({
       title: titleFromMessage(message, project?.name),
       workspace: project?.path ?? null,
     })
-    replaceChatRef(chat)
+    runner.rememberChat(chat)
     void generateQuickChatTitle(chat, message)
     return chat
   }
@@ -740,289 +270,9 @@ function QuickChatProjectPage() {
       selection,
     })
     if (title)
-      replaceChatRef(await quickChats.update(currentChat(chat), { title }))
-  }
-
-  async function detailedConversation(conversation: QuickChat) {
-    if (quickChats.chatDetailsLoaded(conversation)) {
-      return currentChat(conversation)
-    }
-    const chat = await quickChats.loadDetail(conversation)
-    replaceChatRef(chat)
-    return chat
-  }
-
-  async function runAgentForMessage(
-    chat: QuickChat,
-    message: QuickChatMessage,
-    codeAttachments: PendingCodeSelectionAttachment[],
-    fileAttachments: UserStoryFileAttachment[]
-  ) {
-    const executionId = crypto.randomUUID()
-    const run = await quickChats.createAgentRun(chat, {
-      checkpointRunCount: nextCheckpointRunCount(chat.agentRuns ?? []),
-      executionId,
-      kind: chat.clineSessionId ? "change-request" : "resume",
-      messageId: message.id,
-    })
-    try {
-      await startAgentSession(
-        chat,
-        run,
-        message,
-        codeAttachments,
-        fileAttachments,
-        executionId
+      runner.rememberChat(
+        await quickChats.update(runner.currentChat(chat), { title })
       )
-    } catch (error) {
-      await markAgentRunFailed(chat, run, error)
-      throw error
-    }
-  }
-
-  async function startAgentSession(
-    chat: QuickChat,
-    run: QuickChatAgentRun,
-    message: QuickChatMessage,
-    codeAttachments: PendingCodeSelectionAttachment[],
-    fileAttachments: UserStoryFileAttachment[],
-    executionId: string
-  ) {
-    const workspace = project!.path
-    const resumeSessionId = chat.clineSessionId
-    const title = quickChatTitle(chat, message.body, project?.name)
-    const summary = quickChatDevelopmentSummary(chat, message.body)
-    const session = await startQuickChatDevelopmentSession({
-      chatId: chat.id,
-      codeAttachments,
-      executionId,
-      fileAttachments,
-      resumeSessionId,
-      summary,
-      title,
-      workspace,
-    })
-    const reusedSession = Boolean(
-      resumeSessionId && session.sessionId === resumeSessionId
-    )
-    const activeRun = await quickChats.updateAgentRun(chat, run, {
-      clineSessionId: session.sessionId,
-    })
-    const updatedChat = await quickChats.update(currentChat(chat), {
-      agentActivities: [],
-      agentFinalResponse: null,
-      agentLastError: null,
-      agentLastEvent: `Cline debug log: ${quickChatClineLogPath(
-        workspace,
-        session.sessionId
-      )}`,
-      agentModelId: selection.currentModel!.id,
-      agentProviderId: selection.currentModel!.provider.id,
-      agentStatus: "Running",
-      agentUsage: null,
-      clineSessionId: session.sessionId,
-      title,
-      workspace,
-    })
-    replaceChatRef(updatedChat)
-    subscribeQuickChatAgentEvents(updatedChat, activeRun, session.sessionId)
-    // sendDevelopment resolves when the whole response ends. Only session
-    // startup belongs to the submission; keep the composer live during it.
-    void sendQuickChatPrompt({
-      codeAttachments,
-      executionId,
-      fileAttachments,
-      message,
-      reusedSession,
-      run: activeRun,
-      sessionId: session.sessionId,
-      summary,
-      title,
-      chat: updatedChat,
-    }).catch(reportAgentPersistenceError)
-  }
-
-  async function startQuickChatDevelopmentSession(
-    input: QuickChatDevelopmentSessionInput
-  ) {
-    return platform.agent!.sessions.startDevelopment({
-      apiConnection: auth.apiConnection,
-      providerId: selection.currentModel!.provider.id,
-      modelId: selection.currentModel!.id,
-      credentialLabel: selection.currentModel!.credentialLabel,
-      reasoningEffort: selection.currentVariant,
-      // The cap picked in the chat's stats panel, like a story's.
-      maxInputTokens: storyMaxInputTokens(
-        input.chatId,
-        selection.currentModel,
-        selection.allProviders
-      ),
-      autoSendPrompt: false,
-      title: input.title,
-      summary: input.summary,
-      codeSelectionAttachments: input.codeAttachments,
-      fileAttachments: input.fileAttachments,
-      cwd: input.workspace,
-      resumeSessionId: input.resumeSessionId,
-      workspaceRoot: input.workspace,
-      previewDevtoolsScope: projectRunConfigurationPreviewKey(
-        previewConfiguration,
-        input.workspace
-      ),
-      codePractices: await projectCodePractices(auth, projects),
-      executionId: input.executionId,
-      projectId: project!.id,
-    })
-  }
-
-  function subscribeQuickChatAgentEvents(
-    chat: QuickChat,
-    run: QuickChatAgentRun,
-    sessionId: string
-  ) {
-    let authenticationFailed = false
-    unsubscribeQuickChatAgentEvents(sessionId)
-    const coordinator = new AgentStreamCoordinator({
-      executionId: run.executionId ?? run.id,
-      initialState: {
-        agentActivities: run.activities ?? chat.agentActivities,
-        agentFinalResponse: run.finalResponse ?? chat.agentFinalResponse,
-        agentSessionSummary: run.sessionSummary ?? chat.agentSessionSummary,
-        agentUsage: run.usage ?? chat.agentUsage,
-      },
-      lastSequenceNumber: run.lastSequenceNumber,
-      onError: reportAgentPersistenceError,
-      persist: (snapshot) =>
-        persistAgentEvent(chat, run, snapshot.event, snapshot),
-      runId: run.id,
-      recoveredSnapshots: pendingAgentRunSnapshots(
-        window.localStorage,
-        chat.projectId,
-        "quick-chat",
-        run.id
-      ),
-      sessionId,
-    })
-    agentStreamCoordinators.current.set(sessionId, coordinator)
-    const unsubscribeEvents = subscribeAgentEvents(
-      platform,
-      sessionId,
-      (event) => {
-        if (authenticationFailed) return
-        const text = agentEventText(event)
-        authenticationFailed = quickChatExpiredAuthenticationToken(text)
-        if (authenticationFailed) showExpiredAuthenticationToast(text)
-        const persisted = terminalAgentRunEvent(event)
-          ? coordinator.terminate(event)
-          : coordinator.push(event)
-        if (authenticationFailed || immediateQuickChatAgentEvent(event)) {
-          void settleQuickChatAgentStream(
-            sessionId,
-            persisted,
-            unsubscribe
-          ).catch(reportAgentPersistenceError)
-        }
-      },
-      run.executionId ?? undefined,
-      run.lastSequenceNumber ?? 0
-    )
-    const unsubscribe = () => {
-      forgetRunStream(run.id, close)
-      unsubscribeEvents()
-    }
-    const close = () => unsubscribeQuickChatAgentEvents(sessionId, unsubscribe)
-    registerRunStream(run.id, quickChatStreamKey(chat.id), close, async () => {
-      await coordinator.disconnect()
-      const pending = pendingAgentUpdates.current.take(chat.id)
-      if (pending) await persistQueuedAgentUpdate(chat, pending)
-    })
-    agentEventUnsubscribers.current.set(sessionId, unsubscribe)
-    return unsubscribe
-  }
-
-  function unsubscribeQuickChatAgentEvents(
-    sessionId: string,
-    expected?: () => void
-  ) {
-    const unsubscribe = agentEventUnsubscribers.current.get(sessionId)
-    if (!unsubscribe || (expected && unsubscribe !== expected)) return
-    agentEventUnsubscribers.current.delete(sessionId)
-    const coordinator = agentStreamCoordinators.current.get(sessionId)
-    agentStreamCoordinators.current.delete(sessionId)
-    unsubscribe()
-    void coordinator?.disconnect().catch(reportAgentPersistenceError)
-  }
-
-  function settleQuickChatAgentStream(
-    sessionId: string,
-    persisted: Promise<unknown>,
-    expected?: () => void
-  ) {
-    expected ??= agentEventUnsubscribers.current.get(sessionId)
-    return persisted.then(
-      (result) => {
-        unsubscribeQuickChatAgentEvents(sessionId, expected)
-        return result
-      },
-      (error) => {
-        unsubscribeQuickChatAgentEvents(sessionId, expected)
-        throw error
-      }
-    )
-  }
-
-  function clearQuickChatAgentStream(chat: QuickChat, run: QuickChatAgentRun) {
-    const sessionId = run.clineSessionId ?? chat.clineSessionId
-    if (sessionId) agentStreamStore.clear({ runId: run.id, sessionId })
-  }
-
-  async function sendQuickChatPrompt(input: QuickChatPromptInput) {
-    const coordinator = agentStreamCoordinators.current.get(input.sessionId)
-    try {
-      await platform.agent!.sessions.sendDevelopment(quickChatSendInput(input))
-    } catch (error) {
-      const message = errorMessage(error)
-      // A late result from an aborted turn must not terminate its successor,
-      // which may reuse exactly the same runtime session.
-      if (
-        !coordinator ||
-        agentStreamCoordinators.current.get(input.sessionId) !== coordinator
-      )
-        return
-      await settleQuickChatAgentStream(
-        input.sessionId,
-        coordinator.terminate({
-          payload: { message },
-          sessionId: input.sessionId,
-          type: "error",
-        })
-      )
-    }
-  }
-
-  async function markAgentRunFailed(
-    chat: QuickChat,
-    run: QuickChatAgentRun,
-    error: unknown
-  ) {
-    const message = errorMessage(error)
-    const completedAt = new Date().toISOString()
-    const chatInput = {
-      agentLastError: message,
-      agentLastEvent: message,
-      agentStatus: null,
-    }
-    const runInput = {
-      completedAt,
-      finalResponse: message,
-      status: "failed" as const,
-    }
-    updateChatLocal(chat, chatInput)
-    quickChats.updateAgentRunLocal(chat, run, runInput)
-    await Promise.all([
-      quickChats.update(chat, chatInput).catch(() => undefined),
-      quickChats.updateAgentRun(chat, run, runInput).catch(() => undefined),
-    ])
   }
 
   const emptyConversation =
