@@ -75,7 +75,7 @@ subprocess.run = safe_run
 real_read_line = read_line_with_timeout
 read_line_with_timeout = lambda pipe, timeout: real_read_line(pipe, timeout / 20)
 try:
-    result = run_cline_hub_ensure({})
+    result = run_cline_hub_ensure({"port": os.environ.get("TEST_REQUEST_PORT")})
 except Exception as error:
     print(str(error), file=sys.stderr)
     sys.exit(1)
@@ -117,6 +117,16 @@ print(json.dumps({"action":result["action"],"status":result["status"]}), flush=T
             results = list(pool.map(lambda _: ensure(), range(2)))
         assert sorted(r["action"] for r in results) == ["connected", "started"], results
         health()
+        # Another Blame build asks for its own port: the hub moves there.
+        with socket.socket() as listener:
+            listener.bind(("127.0.0.1", 0))
+            other_port = listener.getsockname()[1]
+        env["TEST_REQUEST_PORT"] = str(other_port)
+        assert ensure()["action"] == "started"
+        with urllib.request.urlopen(f"http://127.0.0.1:{other_port}/health", timeout=2) as response:
+            assert response.status == 200
+        assert ensure()["action"] == "connected"
+        del env["TEST_REQUEST_PORT"]
         os.kill(pid(), signal.SIGTERM)
         time.sleep(0.15)
         env["TEST_HUB_TIMEOUT"] = "1"
@@ -131,7 +141,7 @@ print(json.dumps({"action":result["action"],"status":result["status"]}), flush=T
 
 for (const platform of ["macos", "windows"]) {
   test(
-    `${platform} hub handles delayed readiness, concurrent starts, SDK replacement, and startup timeouts`,
+    `${platform} hub handles delayed readiness, concurrent starts, SDK replacement, port changes, and startup timeouts`,
     { skip: !pythonAvailable },
     () => {
       const path = resolve(

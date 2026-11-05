@@ -548,7 +548,7 @@ json_worker_count = max(1, min(2, os.cpu_count() or 1))
 large_json_threshold = 64 * 1024
 ignored_env_directories = {".git", ".blame", "build", "coverage", "dist", "node_modules", "out"}
 env_template_suffixes = (".example", ".sample", ".template")
-runtime_agent_version = "11"
+runtime_agent_version = "12"
 
 def serialize_json_line(value):
     return json.dumps(value, separators=(",", ":")) + "\n"
@@ -924,6 +924,24 @@ def cline_hub_build_id():
     script = f"const hub = await import({json.dumps(module)}); console.log(JSON.stringify({{\"buildId\": hub.resolveHubBuildId()}}));"
     return run_node_json(script)["buildId"]
 
+default_cline_hub_port = 25463
+
+def cline_hub_port(params):
+    # Each Blame build (installed, dev) asks for its own port: the host
+    # reaches the hub on that same port, so two builds can run side by side.
+    try:
+        port = int(params.get("port") or default_cline_hub_port)
+    except (TypeError, ValueError):
+        return default_cline_hub_port
+    return port if 1024 <= port <= 65535 else default_cline_hub_port
+
+def is_cline_hub_process(pid):
+    try:
+        with open(f"/proc/{pid}/cmdline", "rb") as cmdline:
+            return b"ensureHubServer" in cmdline.read()
+    except OSError:
+        return False
+
 def run_cline_hub_ensure(params):
     # Serialize the whole startup, including callers from another agent process.
     import fcntl
@@ -935,6 +953,7 @@ def run_cline_hub_ensure(params):
 def ensure_cline_hub_locked(params):
     global hub_process, hub_result_cache
     import hashlib
+    port = cline_hub_port(params)
     module = cline_hub_module_path()
     with open(module, "rb") as source:
         fingerprint = runtime_agent_version + ":" + hashlib.sha256(source.read()).hexdigest()
@@ -993,17 +1012,18 @@ def ensure_cline_hub_locked(params):
                 authToken = data.get("authToken")
                 if (pid and authToken and data.get("buildId") == expected_build_id
                         and instance.get("pid") == pid and instance.get("fingerprint") == fingerprint
+                        and instance.get("port", default_cline_hub_port) == port
                         and is_pid_alive(pid)):
                     # Process is alive. Wait up to 3 seconds for the port to start listening.
                     port_ready = False
                     for _ in range(15):
-                        if is_port_listening(25463):
+                        if is_port_listening(port):
                             port_ready = True
                             break
                         time.sleep(0.2)
-                    
-                    if port_ready and run_cline_hub_status({}).get("status") == "ready":
-                        url = f"ws://127.0.0.1:25463/hub?authToken={authToken}"
+
+                    if port_ready and run_cline_hub_status({"port": port}).get("status") == "ready":
+                        url = f"ws://127.0.0.1:{port}/hub?authToken={authToken}"
                         hub_result_cache = {
                             "action": "connected",
                             "authToken": authToken,
@@ -1018,9 +1038,18 @@ def ensure_cline_hub_locked(params):
     if reused:
         return hub_result_cache
 
-    # If we could not reuse, clean up port 25463 and discovery files to avoid EADDRINUSE
+    # The hub started before goes too, even on another port: Lima would keep
+    # forwarding that port to the host, where another Blame build may need it.
+    previous = instance.get("pid")
+    if isinstance(previous, int) and is_cline_hub_process(previous):
+        try:
+            os.kill(previous, signal.SIGTERM)
+        except OSError:
+            pass
+
+    # If we could not reuse, clean up the port and discovery files to avoid EADDRINUSE
     try:
-        subprocess.run(["fuser", "-k", "25463/tcp"], stdin=subprocess.DEVNULL, capture_output=True)
+        subprocess.run(["fuser", "-k", f"{port}/tcp"], stdin=subprocess.DEVNULL, capture_output=True)
     except Exception:
         pass
     if discovery_root:
@@ -1046,10 +1075,10 @@ import {{ writeSync, closeSync }} from "node:fs";
 const hub = await import({json.dumps("file://" + module)});
 const result = await hub.ensureHubServer({{
   host: "0.0.0.0",
-  port: 25463,
+  port: {port},
   runtimeHandlers: hub.createLocalHubScheduleRuntimeHandlers()
 }});
-const url = result.url ? result.url.replace(/^ws:\\/\\/[^/]+/, "ws://127.0.0.1:25463") : result.url;
+const url = result.url ? result.url.replace(/^ws:\\/\\/[^/]+/, "ws://127.0.0.1:{port}") : result.url;
 writeSync({ready_write}, JSON.stringify({{
   action: result.action,
   authToken: result.authToken,
@@ -1105,7 +1134,7 @@ closeSync({ready_write});
         if result.get("status") != "ready" or not result.get("url"):
             raise ValueError("Cline hub returned an invalid startup result")
         with open(instance_path, "w", encoding="utf-8") as instance_file:
-            json.dump({"pid": proc.pid, "fingerprint": fingerprint}, instance_file)
+            json.dump({"pid": proc.pid, "fingerprint": fingerprint, "port": port}, instance_file)
     except Exception:
         proc.kill()
         proc.wait()
@@ -1116,7 +1145,7 @@ closeSync({ready_write});
 
 def run_cline_hub_status(params):
     try:
-        with urllib.request.urlopen("http://127.0.0.1:25463/health", timeout=3) as response:
+        with urllib.request.urlopen(f"http://127.0.0.1:{cline_hub_port(params)}/health", timeout=3) as response:
             payload = json.loads(response.read().decode("utf-8"))
             return {"status": "ready", "url": payload.get("url")}
     except Exception as error:
@@ -1194,7 +1223,7 @@ def main():
     elif command == "version":
         print(version())
     elif command == "cline-hub-ensure":
-        print(json.dumps(run_cline_hub_ensure({})))
+        print(json.dumps(run_cline_hub_ensure({"port": sys.argv[2] if len(sys.argv) > 2 else None})))
     elif command == "serve":
         serve()
     else:

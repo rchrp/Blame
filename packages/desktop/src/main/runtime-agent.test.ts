@@ -207,14 +207,18 @@ test("runtime agent client requests Cline hub ensure", async () => {
       })}\n`,
     );
   });
-  const client = new RuntimeAgentClient({ platform: "darwin", spawnProcess });
+  const client = new RuntimeAgentClient({
+    env: { BLAME_CLINE_HUB_PORT: "25464" },
+    platform: "darwin",
+    spawnProcess,
+  });
 
   const result = await client.clineHubEnsure();
 
   assert.equal(processes[0].requests[0].method, "exec");
   assert.deepEqual(processes[0].requests[0].params, {
     command: "/usr/local/bin/blame-runtime-agent",
-    args: ["cline-hub-ensure"],
+    args: ["cline-hub-ensure", "25464"],
     user: "root",
     timeoutMs: 90_000,
   });

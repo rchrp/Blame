@@ -16,6 +16,7 @@ import {
   resolveAgentWorkspaceInput,
   retryableHubTransportError,
 } from "./cline-backend-resolver";
+import { runtimeHubPortConflict } from "./runtime-hub-port";
 import { AgentEventStream } from "./agent-event-stream";
 import { AgentRuntimePool } from "./agent-runtime-pool";
 import {
@@ -193,12 +194,16 @@ function registerSessionStartIpcHandlers(
       log.warn(
         "Cline hub connection closed during session start; refreshing the runtime backend and retrying once",
       );
-      session = await agentRuntime().startSession(
-        "sessions.startDevelopment",
-        refreshRuntimeBackendConnection(
-          await agentWorkspaceInput(sessionInput),
-        ),
-      );
+      session = await agentRuntime()
+        .startSession(
+          "sessions.startDevelopment",
+          refreshRuntimeBackendConnection(
+            await agentWorkspaceInput(sessionInput),
+          ),
+        )
+        .catch(async (retryError: unknown) => {
+          throw await explainedHubFailure(retryError);
+        });
     } finally {
       if (pendingSessionId && !session)
         agentWorkspaceWriters.forget(pendingSessionId);
@@ -388,6 +393,14 @@ function agentWorkspacePath(input: unknown) {
     if (typeof value[key] === "string" && value[key]) return value[key];
   }
   return undefined;
+}
+
+// The hub connection closed again after a fresh one: when another program
+// holds the hub port, that is what the user can fix.
+async function explainedHubFailure(error: unknown) {
+  if (!retryableHubTransportError(error)) return error;
+  const conflict = await runtimeHubPortConflict();
+  return conflict ? Object.assign(new Error(conflict), { cause: error }) : error;
 }
 
 async function beforeAgentSessionWrite(

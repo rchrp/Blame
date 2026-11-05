@@ -1,4 +1,7 @@
-import { runtimeDistroName } from "./desktop-runtime-environment.ts";
+import {
+  runtimeClineHubPort,
+  runtimeDistroName,
+} from "./desktop-runtime-environment.ts";
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import type { LightWorkspaceExecutionRequest } from "@blame/agent-runtime";
@@ -152,7 +155,10 @@ export class RuntimeAgentClient {
       "exec",
       {
         command: "/usr/local/bin/blame-runtime-agent",
-        args: ["cline-hub-ensure"],
+        args: [
+          "cline-hub-ensure",
+          runtimeClineHubPort({ ...process.env, ...this.env }),
+        ],
         user: "root",
         timeoutMs: 90_000,
       },

@@ -172,7 +172,7 @@ function connects(host: string, port: number) {
   });
 }
 
-async function unixListeningProcess(
+export async function unixListeningProcess(
   port: number,
   platform: NodeJS.Platform,
 ): Promise<ListeningProcess | undefined> {
