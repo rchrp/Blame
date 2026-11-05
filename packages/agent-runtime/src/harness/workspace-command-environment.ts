@@ -15,7 +15,7 @@ export function workspaceCommandEnvironment(
   executable?: string,
 ) {
   const npmTask = executable && basename(executable).toLowerCase() === "npm";
-  return Object.fromEntries(
+  const filtered = Object.fromEntries(
     Object.entries(environment).filter(
       ([name]) =>
         name !== "NODE_ENV" &&
@@ -24,6 +24,13 @@ export function workspaceCommandEnvironment(
         !(npmTask && pnpmOnlyNpmConfiguration.has(name.toLowerCase())),
     ),
   );
+  // pnpm 11+ reinstalls before `pnpm run` or `pnpm exec` when it finds
+  // node_modules out of date. A test command must not change dependencies
+  // (the dependency operation does, journaled), and where native builds
+  // cannot run that install leaves node_modules half removed.
+  if (!Object.keys(filtered).some((name) => name.toUpperCase() === "PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN"))
+    filtered.PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN = "false";
+  return filtered;
 }
 
 /**

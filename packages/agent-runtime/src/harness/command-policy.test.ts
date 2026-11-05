@@ -128,11 +128,20 @@ test("removes pnpm-only npm configuration for npm tasks", () => {
   };
   assert.deepEqual(workspaceCommandEnvironment(environment, "npm"), {
     PATH: "/usr/bin",
+    PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN: "false",
     npm_config_registry: "https://registry.example.test",
   });
   assert.equal(
     workspaceCommandEnvironment(environment, "pnpm").npm_config_catalog,
     "catalog:value",
+  );
+});
+
+test("commands never let pnpm reinstall dependencies before a script, unless the user configured it", () => {
+  assert.equal(workspaceCommandEnvironment({ PATH: "/usr/bin" }).PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN, "false");
+  assert.equal(
+    workspaceCommandEnvironment({ pnpm_config_verify_deps_before_run: "warn" }).PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN,
+    undefined,
   );
 });
 
