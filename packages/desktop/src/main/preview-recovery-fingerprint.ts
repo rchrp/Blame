@@ -39,7 +39,7 @@ export function previewRecoveryFailureFingerprint(
   error: unknown,
   errorType: string,
 ) {
-  const diagnostic = errorMessage(error).trim().split(/\r?\n/u, 1)[0] ?? "";
+  const diagnostic = stableDiagnostic(error);
   const selected = configurations.find(
     ({ id }) => id === runtimeState.selectedConfigurationId,
   );
@@ -64,6 +64,18 @@ function previewRecoveryExitCode(error: unknown) {
   }
   const match = errorMessage(error).match(/exited? with code (\d+)/iu);
   return match ? Number(match[1]) : undefined;
+}
+
+// The failure's first line without what changes on every attempt. Quoted
+// service logs carry times and request ids: a preview that kept failing the
+// same way looked new each time, so its recovery never backed off.
+function stableDiagnostic(error: unknown) {
+  const line = errorMessage(error).trim().split(/\r?\n/u, 1)[0] ?? "";
+  return line
+    .replace(/\. Its last lines: .*$/u, "")
+    .replace(/\d{4}-\d{2}-\d{2}T[\d:.]+(?:Z|[+-]\d{2}:\d{2})?/gu, "<time>")
+    .replace(/[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}/giu, "<id>")
+    .replace(/\d{4,}/gu, "<n>");
 }
 
 function errorMessage(error: unknown) {
