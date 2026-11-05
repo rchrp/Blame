@@ -1519,6 +1519,9 @@ async function startProjectComposeOperation(
     });
     if (await stopPreviewStartWhenRequested(worktree)) return undefined;
     recordPreviewUse(worktree);
+    // A changed lockfile moves the story onto new dependency volumes, often
+    // gigabytes each: collect the ones nothing uses anymore.
+    schedulePreviewCleanup();
     await startProjectLogStream(worktree);
     return previewUrl;
   } catch (error) {
