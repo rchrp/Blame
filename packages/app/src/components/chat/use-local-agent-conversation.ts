@@ -4,6 +4,7 @@ import type { AgentConversationPurpose } from "@blame/agent-runtime"
 import type { useModelSelection } from "@/components/model/model-selection"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { usePlatform } from "@/context/platform"
+import { useLatestCallback } from "@/lib/use-latest-callback"
 
 import {
   LocalAgentConversationSession,
@@ -50,8 +51,11 @@ export function useLocalAgentConversation(input: {
     if (input.storageKey) void session.resume(platform, input.cwd)
   }, [input.cwd, input.storageKey, platform, session])
 
-  function send(message: LocalAgentMessage) {
-    return session.send(message, {
+  // Stable, like the session: surfaces reset the conversation from effects.
+  const reset = React.useCallback(() => session.reset(), [session])
+  const stop = React.useCallback(() => session.stop(), [session])
+  const send = useLatestCallback((message: LocalAgentMessage) =>
+    session.send(message, {
       apiConnection: auth.apiConnection,
       cwd: input.cwd,
       model: input.selection.currentModel,
@@ -62,13 +66,13 @@ export function useLocalAgentConversation(input: {
       title: input.title,
       unavailableReason: input.unavailableReason,
     })
-  }
+  )
 
   return {
     conversation,
     running: conversation.runs.some((run) => run.status === "running"),
-    reset: () => session.reset(),
+    reset,
     send,
-    stop: () => session.stop(),
+    stop,
   }
 }
