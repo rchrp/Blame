@@ -1181,6 +1181,20 @@ test("a leading cd becomes the directory of a deterministic Prettier edit", asyn
   );
 });
 
+test("the installed Prettier binary and npx prettier make deterministic edits too", async () => {
+  await withFormatterWorkspace(
+    { "first.ts": "export const first={value:1}\n", "second.ts": "export const second={value:2}\n" },
+    async (root) => {
+      const workspace = lightWorkspace(root, "formatter-binary");
+      for (const [command, path] of [["node_modules/.bin/prettier --write first.ts", "first.ts"], ["npx prettier --write second.ts", "second.ts"]]) {
+        const result = await workspace.tasks.run({ kind: "command", command: command! });
+        assert.equal(record(data(result)).mutation, "deterministic_format", command);
+        assert.match(await readFile(join(root, path!), "utf8"), / = \{ value: \d \};/u, command);
+      }
+    },
+  );
+});
+
 test("run_task explains how to separate a combined Prettier mutation", async () => {
   await withWorkspace({ "value.ts": "const value=1\n" }, async (root) => {
     const workspace = lightWorkspace(root, "formatter-recovery");

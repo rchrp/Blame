@@ -158,19 +158,20 @@ function formatterCommand(command: string): FormatterCommand | undefined {
   if (!paths.length || paths.length > 50 || paths.some(invalidPathToken))
     return undefined;
   return {
-    executable: prefix[0]!,
-    args: prefix.slice(1),
+    executable: prefix.run[0]!,
+    args: prefix.run.slice(1),
     ...(cd ? { cwd: cd[1]! } : {}),
     paths,
   };
 }
 
 function formatterPrefix(tokens: string[]) {
-  return formatterPrefixes.find(
-    (prefix) =>
-      tokens.length > prefix.length &&
-      prefix.every((value, index) => tokens[index] === value),
+  const prefix = formatterPrefixes.find(
+    (candidate) =>
+      tokens.length > candidate.length &&
+      candidate.every((value, index) => tokens[index] === value),
   );
+  return prefix && { length: prefix.length, run: formatterRuns.get(prefix.join(" ")) ?? prefix };
 }
 
 function invalidPathToken(value: string) {
@@ -183,9 +184,15 @@ function errorMessage(error: unknown) {
 
 const formatterPrefixes = [
   ["npx", "--no-install", "prettier"],
+  ["npx", "prettier"],
   ["npm", "exec", "--no", "--", "prettier"],
   ["pnpm", "exec", "prettier"],
   ["pnpm", "prettier"],
   ["yarn", "prettier"],
+  ["node_modules/.bin/prettier"],
+  ["./node_modules/.bin/prettier"],
   ["prettier"],
 ];
+
+// The installed Prettier only: a formatter edit never downloads a package.
+const formatterRuns = new Map([["npx prettier", ["npx", "--no-install", "prettier"]]]);
