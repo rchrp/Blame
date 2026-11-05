@@ -149,6 +149,32 @@ test("keeps the displayed Vercel duration monotonic between usage samples", () =
   assert.equal(cachedCloudPreviewSession(storageId)?.usage?.activeSeconds, 2)
 })
 
+test("keeps the published session when a poll brings nothing new", () => {
+  const storage = new Map<string, string>()
+  const storageId = cloudPreviewSessionStorageId("same", "vercel-compose")
+  const received: Array<PreviewSessionView | undefined> = []
+  const unsubscribe = subscribeCloudPreviewSession(storageId, (session) =>
+    received.push(session)
+  )
+  const writer = {
+    setItem: (key: string, item: string) => storage.set(key, item),
+  }
+  const first = publishCloudPreviewSession(
+    writer,
+    storageId,
+    usageSession("2026-08-10T10:00:00.000Z", 5)
+  )
+  const again = publishCloudPreviewSession(
+    writer,
+    storageId,
+    usageSession("2026-08-10T10:00:00.000Z", 5)
+  )
+
+  assert.equal(again, first)
+  assert.deepEqual(received, [first])
+  unsubscribe()
+})
+
 function usageSession(observedAt: string, activeSeconds: number) {
   return {
     id: "preview_usageusageusageusageusageusage",

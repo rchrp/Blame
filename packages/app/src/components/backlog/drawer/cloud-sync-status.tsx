@@ -32,7 +32,15 @@ export function useLiveSyncStatus(sessionId: string | undefined) {
     const refresh = () =>
       void previewRuntime.syncStatus!({ sessionId })
         .then((next) => {
-          if (active) setEntry({ sessionId, status: next ?? undefined })
+          if (!active) return
+          const status = next ?? undefined
+          // Polled every second: render again only when it changed.
+          setEntry((current) =>
+            current?.sessionId === sessionId &&
+            JSON.stringify(current.status) === JSON.stringify(status)
+              ? current
+              : { sessionId, status }
+          )
         })
         .catch(() => undefined)
     refresh()

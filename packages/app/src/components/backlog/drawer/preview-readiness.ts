@@ -52,18 +52,22 @@ export function useSetupPreviewReady(
     source: "",
   })
 
+  // Checked until the page first answers, then left alone until the source
+  // or a reload asks again.
   React.useEffect(() => {
     if (!enabled || !source) return
     let cancelled = false
+    let timeout: number | undefined
     const check = async () => {
       const ready = await previewResponds(source)
-      if (!cancelled) setState({ ready, reloadKey, source })
+      if (cancelled) return
+      setState({ ready, reloadKey, source })
+      if (!ready) timeout = window.setTimeout(check, 2000)
     }
     void check()
-    const interval = window.setInterval(() => void check(), 2000)
     return () => {
       cancelled = true
-      window.clearInterval(interval)
+      if (timeout) window.clearTimeout(timeout)
     }
   }, [enabled, reloadKey, source])
 

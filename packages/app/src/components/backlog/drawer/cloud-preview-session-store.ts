@@ -72,6 +72,10 @@ export function publishCloudPreviewSession(
 ) {
   const previous = sessions.get(storageId)
   const current = mergeCloudPreviewUsage(previous, session)
+  // A poll that brings nothing new keeps the session its listeners have.
+  if (previous && JSON.stringify(previous) === JSON.stringify(current)) {
+    return previous
+  }
   sessions.set(storageId, current)
   if (previous?.id !== current.id) storage.setItem(storageId, current.id)
   listeners.get(storageId)?.forEach((listener) => listener(current))
