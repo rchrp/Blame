@@ -622,7 +622,7 @@ test("the briefing exposes package topology, key files, and stack versions", asy
         name: "api",
         scripts: { dev: "node src/server.js" },
       }),
-      "packages/api/src/server.ts": `export const server = true\nexport const padding = "${"x".repeat(8_100)}"\n`,
+      "packages/api/src/server.ts": `export const server = true\nexport const padding = "${"x".repeat(33_000)}"\n`,
       "prisma/schema.prisma": "model User {\n  id Int @id\n}\n",
       ".env.example": "DATABASE_URL=postgresql://localhost/example\n",
       "tsconfig.json": "{}\n",
@@ -1465,17 +1465,16 @@ test("large application files route through outline and symbol reads", async () 
   });
 });
 
-test("medium supported files route through an outline", async () => {
-  const source = Array.from(
-    { length: 400 },
+test("large supported files route through an outline, mid-sized ones are read whole", async () => {
+  const source = (length: number) => Array.from(
+    { length },
     (_, index) => `export const mediumValue${index} = ${index}`,
   ).join("\n");
-  await withWorkspace({ "medium.ts": `${source}\n` }, async (root) => {
+  await withWorkspace({ "large.ts": `${source(1_200)}\n`, "medium.ts": `${source(400)}\n` }, async (root) => {
     const workspace = lightWorkspace(root, "medium-outline");
-    const result = data(
-      await workspace.readCode({ target: "medium.ts" }, { agentId: "lead" }),
-    );
-    assert.equal(result.view, "outline");
+    const read = async (target: string) => data(await workspace.readCode({ target }, { agentId: "lead" })).view;
+    assert.equal(await read("large.ts"), "outline");
+    assert.equal(await read("medium.ts"), "raw");
   });
 });
 

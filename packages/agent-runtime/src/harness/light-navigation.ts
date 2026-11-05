@@ -5,7 +5,9 @@ import type { ByteInterval } from "./read-coverage.js";
 
 export type EditTarget = { alias: string; qualifiedName: string };
 
-const smallFileCharacters = 8_000;
+// A file this small is read whole by default: in two of three cases an
+// outline of a mid-sized file was followed by reading the file anyway.
+const smallFileCharacters = 32_000;
 
 export function symbolicPath(path: string) {
   const capability = capabilityForPath(path);
