@@ -1,4 +1,5 @@
 import { createPreviewTerminalClient } from "./preview-terminal-client";
+import { opaqueWindowArgument } from "../main/window-blur";
 import { contextBridge, ipcRenderer } from "electron";
 import type { AgentEvent } from "@blame/agent-runtime";
 import type { RuntimeProgress } from "@blame/app";
@@ -212,6 +213,7 @@ const api: BlameDesktopApi = {
     },
   },
   platform: process.platform,
+  opaqueWindow: process.argv.includes(opaqueWindowArgument),
   appearance: {
     setTheme: (theme) => ipcRenderer.invoke("appearance:set-theme", theme),
   },

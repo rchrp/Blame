@@ -11,6 +11,21 @@ html[data-blame-platform="darwin"] {
   --sidebar: transparent;
 }
 
+/* Where nothing blurs the desktop behind the window (GNOME, KDE), the
+   translucent theme colors would show it sharp through the text: paint them
+   opaque instead. */
+html[data-blame-opaque-window],
+html[data-blame-opaque-window] .light {
+  --background: oklch(1 0 0);
+  --sidebar: oklch(0.985 0 0);
+}
+
+html[data-blame-opaque-window].dark,
+html[data-blame-opaque-window] .dark {
+  --background: oklch(0.145 0 0);
+  --sidebar: oklch(0.205 0 0);
+}
+
 [data-window-drag] {
   -webkit-app-region: drag;
 }

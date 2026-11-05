@@ -53,6 +53,7 @@ import {
   suspendStartedCloudPreviews,
 } from "./ipc";
 import { configureHyprlandWindow } from "./hyprland-window";
+import { windowBlurArguments } from "./window-blur";
 import {
   isMainWindowRole,
   mainWindowPresentation,
@@ -282,6 +283,7 @@ function mainWindowOptions(
       ? { maxHeight: bounds.height, maxWidth: bounds.width }
       : {}),
     webPreferences: {
+      additionalArguments: windowBlurArguments(process.platform, process.env),
       contextIsolation: true,
       nodeIntegration: false,
       preload: desktopResources.preload,

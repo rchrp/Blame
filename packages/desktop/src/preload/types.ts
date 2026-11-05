@@ -305,6 +305,8 @@ export type BlameDesktopApi = {
   openAttachment(input: { name: string; content: Uint8Array }): Promise<void>;
   backlogStatusPip: BacklogStatusPip;
   platform: NodeJS.Platform;
+  // Nothing blurs the desktop behind this window, so it paints opaque.
+  opaqueWindow: boolean;
   systemNotifications: SystemNotifications;
   appStatus: AppStatus;
   appearance: import("@blame/app").AppearanceClient;

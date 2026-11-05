@@ -3,6 +3,9 @@ import "./styles.css";
 
 document.documentElement.dataset.blameDesktop = "true";
 document.documentElement.dataset.blamePlatform = window.blame.platform;
+if (window.blame.opaqueWindow) {
+  document.documentElement.dataset.blameOpaqueWindow = "true";
+}
 
 const root = document.getElementById("root");
 if (!(root instanceof HTMLElement)) throw new Error("Root element not found");
