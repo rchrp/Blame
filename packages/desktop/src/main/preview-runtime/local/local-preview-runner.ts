@@ -34,6 +34,7 @@ import {
   type LocalRender,
 } from "./local-preview-render.ts";
 import { blameRuntimeDockerHost } from "./vm-docker-host.ts";
+import { queueDependencyInstall } from "./local-preview-install-queue.ts";
 import { localPreviewHostGateway } from "../../preview-environment/host-gateway.ts";
 import { environmentPreflightFailure } from "../../preview-environment/environment-preflight.ts";
 
@@ -88,12 +89,18 @@ export function localPreviewEngine(
     measure: async (phase, action) => {
       const step = phaseSteps[phase];
       if (step) options.step?.(step);
-      const startedAt = Date.now();
-      try {
-        return await action();
-      } finally {
-        options.timing?.(phase, Date.now() - startedAt);
-      }
+      const measured = async () => {
+        const startedAt = Date.now();
+        try {
+          return await action();
+        } finally {
+          options.timing?.(phase, Date.now() - startedAt);
+        }
+      };
+      if (phase !== "dependencies.install") return measured();
+      return queueDependencyInstall(measured, () =>
+        options.step?.("Waiting for another preview's setup"),
+      );
     },
   });
 }
