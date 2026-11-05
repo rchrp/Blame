@@ -154,6 +154,37 @@ test("work blocked by a long run fails at once and says which run to wait for", 
   });
 });
 
+test("another session in the same folder keeps working while a long command runs", { timeout: 15_000 }, async () => {
+  await fixture(async root => {
+    const runner = new LightTaskRunner({ files: new WorkspaceFiles(root, "story"), journal: new SessionJournal(root, "story"), initialCommandWaitMs: 0 });
+    await writeFile(join(root, "long.cjs"), "const fs=require('node:fs');fs.writeFileSync('.blame/long-started','x');const tick=setInterval(()=>{if(fs.existsSync('.blame/go')){fs.writeFileSync('built.txt','done');clearInterval(tick)}},10);\n");
+    const controller = new AbortController();
+    try {
+      const initial = data(await runner.run({ kind: "command", command: "node long.cjs" }, { signal: controller.signal }));
+      await waitFor(join(root, ".blame/long-started"));
+      assert.equal(initial.process, "running");
+
+      const chat = new LightCommitService(new WorkspaceFiles(root, "chat"));
+      const started = Date.now();
+      assert.equal(await chat.exclusive(async () => "read"), "read");
+      assert.ok(Date.now() - started < 2_000, "The other session does not wait for the run.");
+      await assert.rejects(
+        new LightCommitService(new WorkspaceFiles(root, "story")).exclusive(async () => undefined),
+        /run r1 .* is still running/,
+        "The session that runs the command still takes turns.",
+      );
+
+      await writeFile(join(root, ".blame/go"), "go");
+      const result = data(await runner.run({ kind: "inspect", run: initial.run, cursor: initial.cursor }));
+      assert.equal(result.completed?.status, "ok");
+      assert.equal(await readFile(join(root, "built.txt"), "utf8"), "done");
+    } finally {
+      await writeFile(join(root, ".blame/go"), "go");
+      controller.abort();
+    }
+  });
+});
+
 function data(result: unknown) {
   const value = result as { status: string; data: { run: string; cursor: string; process: string; completed?: { status: string; data?: { exitCode: number; validation?: unknown } } } };
   assert.equal(value.status, "ok", JSON.stringify(value));

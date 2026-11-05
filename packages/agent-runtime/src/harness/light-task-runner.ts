@@ -1,11 +1,11 @@
 import { invocationTestReport } from "./invocation-test-report.js";
 import { posix, relative } from "node:path";
 import { isTestInvocation, observeCheck, type CheckObservation } from "./check-observation.js";
-import { LightCommitService, type LockHolder } from "./light-commit.js";
+import { LightCommitService, type LockHolder, type WorkspaceLockedStep } from "./light-commit.js";
 import { redactSecuritySecrets } from "../security-secret-redaction.js";
 import { EnvironmentAdapter } from "./environment-adapter.js";
 import { blockedCommandReason } from "./command-policy.js";
-import { observeCommand } from "./command-changes.js";
+import { commandChanges, observeCommand } from "./command-changes.js";
 import {
   DeterministicFormatter,
   DeterministicFormatterError,
@@ -384,9 +384,12 @@ export class LightTaskRunner {
       publishHandle = resolve;
     });
     const holder: LockHolder = { label: `the command \`${command.slice(0, 120)}\`` };
+    // The command holds this session's turn while it runs, and the workspace
+    // lock only to look at the files before and after: other sessions in the
+    // same folder (chats, Direct stories) keep working during a long run.
     const completion = new LightCommitService(this.files)
-      .exclusive(
-        () =>
+      .sessionExclusive(
+        (locked) =>
           this.executeLocked(
             executable,
             args,
@@ -395,6 +398,7 @@ export class LightTaskRunner {
             context,
             metadata,
             publishHandle,
+            locked,
           ),
         holder,
       )
@@ -429,42 +433,51 @@ export class LightTaskRunner {
     executable: string, args: string[], cwd: string, command: string,
     context: RunnerContext, metadata: ValidationMetadata,
     publishHandle: (handle: CommandHandle) => void,
+    locked: WorkspaceLockedStep,
   ): Promise<LightToolResult<unknown>> {
     context.signal?.throwIfAborted();
-    const snapshot = await this.files.snapshot(context.signal);
     const directory =
       relative(this.files.root, cwd).replaceAll("\\", "/") || ".";
-    const validation = metadata.taskId
-      ? metadata
-      : await this.commandValidation(command, directory, snapshot.files);
-    const invocationReport = validation.taskKind === "test" && !validation.report && /\b(?:node|vitest|npm|pnpm|yarn|bun)\b/u.test(validation.taskCommand ?? command)
-      ? await invocationTestReport(this.files.root) : undefined;
-    const invocationEnvironment = validation.report?.nodeEvents || invocationReport
-      ? await environmentManifestEvidence(this.files, snapshot.files) : undefined;
-    const { result, after, changedPaths } = await observeCommand(this.files, this.journal,
-      snapshot, () => {
-        const handle = startWorkspaceCommand(executable, args, {
-          cwd,
-          ...(invocationReport ? { environment: invocationReport.environment } : {}),
-          signal: context.signal,
-        });
-        publishHandle(handle);
-        return handle.completion;
+    const { invocationEnvironment, invocationReport, snapshot, validation } = await locked(async () => {
+      const snapshot = await this.files.snapshot(context.signal);
+      const validation = metadata.taskId
+        ? metadata
+        : await this.commandValidation(command, directory, snapshot.files);
+      const invocationReport = validation.taskKind === "test" && !validation.report && /\b(?:node|vitest|npm|pnpm|yarn|bun)\b/u.test(validation.taskCommand ?? command)
+        ? await invocationTestReport(this.files.root) : undefined;
+      const invocationEnvironment = validation.report?.nodeEvents || invocationReport
+        ? await environmentManifestEvidence(this.files, snapshot.files) : undefined;
+      return { invocationEnvironment, invocationReport, snapshot, validation };
+    });
+    const [execution] = await Promise.allSettled([Promise.resolve().then(() => {
+      const handle = startWorkspaceCommand(executable, args, {
+        cwd,
+        ...(invocationReport ? { environment: invocationReport.environment } : {}),
+        signal: context.signal,
       });
-    return this.recordedResult(
-      command,
-      result,
-      {
-        ...metadata,
-        ...validation,
-        cwd: directory,
-        sourceRevisionId: snapshot.revision.source_revision_id,
-        ...(invocationEnvironment ? { invocationEnvironment } : {}),
-        ...(invocationReport ? { invocationReport, invocationSnapshot: snapshot } : {}),
-      },
-      after,
-      changedPaths,
-    );
+      publishHandle(handle);
+      return handle.completion;
+    })]);
+    return locked(async () => {
+      // Another session may have written files meanwhile: they count as the
+      // command's changes, and a check sees that its source moved.
+      const { after, changedPaths } = await commandChanges(this.files, this.journal, snapshot);
+      if (execution.status === "rejected") throw execution.reason;
+      return this.recordedResult(
+        command,
+        execution.value,
+        {
+          ...metadata,
+          ...validation,
+          cwd: directory,
+          sourceRevisionId: snapshot.revision.source_revision_id,
+          ...(invocationEnvironment ? { invocationEnvironment } : {}),
+          ...(invocationReport ? { invocationReport, invocationSnapshot: snapshot } : {}),
+        },
+        after,
+        changedPaths,
+      );
+    });
   }
 
   private async commandValidation(

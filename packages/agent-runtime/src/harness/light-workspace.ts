@@ -90,7 +90,7 @@ export class LightWorkspace {
   private readonly commits: LightCommitService;
 
   constructor(workspaceRoot: string, options: LightWorkspaceOptions) {
-    this.files = new WorkspaceFiles(workspaceRoot);
+    this.files = new WorkspaceFiles(workspaceRoot, options.sessionId);
     this.codeSearch = new LightCodeSearch({
       aliases: this.aliases,
       experimentalSearchExpansion: options.experimentalSearchExpansion,

@@ -88,7 +88,10 @@ export class LightFinishService {
 
   constructor(options: LocalFinishOptions) {
     this.options = options;
-    this.files = new WorkspaceFiles(options.workspaceRoot);
+    this.files = new WorkspaceFiles(
+      options.workspaceRoot,
+      options.conversationId,
+    );
     this.journal = new SessionJournal(
       options.workspaceRoot,
       options.conversationId,

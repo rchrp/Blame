@@ -9,10 +9,21 @@ export async function observeCommand<T>(
   execute: () => Promise<T>,
 ) {
   const [execution] = await Promise.allSettled([execute()]);
-  const after = await files.snapshot();
-  const changedPaths = await recordCommandChanges(files, journal, before, after);
+  const { after, changedPaths } = await commandChanges(files, journal, before);
   if (execution.status === "rejected") throw execution.reason;
   return { after, changedPaths, result: execution.value };
+}
+
+// What changed in the workspace since `before`, recorded as the command's
+// own changes.
+export async function commandChanges(
+  files: WorkspaceFiles,
+  journal: SessionJournal,
+  before: WorkspaceSnapshot,
+) {
+  const after = await files.snapshot();
+  const changedPaths = await recordCommandChanges(files, journal, before, after);
+  return { after, changedPaths };
 }
 
 async function recordCommandChanges(

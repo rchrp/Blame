@@ -20,7 +20,7 @@ export type LightCommitResult = {
 
 export class LightCommitConflict extends Error {}
 
-/** What holds a workspace's write lock: a short operation, or a managed command run. */
+/** What keeps a session or a workspace busy: a short operation, or a managed command run. */
 export type LockHolder = { label: string; run?: string };
 
 /** Lock holders in this process, by lock directory, to say who keeps a workspace busy. */
@@ -30,6 +30,74 @@ export class WorkspaceBusyError extends Error {
   constructor(holder: LockHolder | undefined) {
     super(busyMessage(holder));
   }
+}
+
+/** A step that holds the workspace write lock, inside a session's turn. */
+export type WorkspaceLockedStep = <T>(step: () => Promise<T>) => Promise<T>;
+
+// About as long as the write lock's retries: a session's operation waits
+// this long for the previous one before saying what keeps it busy.
+const sessionTurnWaitMs = 25_000;
+
+// One session's operations take turns, so Blame can record what each one
+// changes. Other sessions sharing the folder only wait for the short
+// workspace lock, never for this session's commands.
+class SessionTurn {
+  holder?: LockHolder;
+  private busy = false;
+  private readonly waiters: Array<() => void> = [];
+
+  get idle() {
+    return !this.busy && !this.waiters.length;
+  }
+
+  acquire(timeoutMs: number) {
+    if (!this.busy) {
+      this.busy = true;
+      return Promise.resolve(true);
+    }
+    return new Promise<boolean>((resolve) => {
+      const grant = () => {
+        clearTimeout(timer);
+        resolve(true);
+      };
+      const timer = setTimeout(() => {
+        const index = this.waiters.indexOf(grant);
+        if (index >= 0) this.waiters.splice(index, 1);
+        resolve(false);
+      }, timeoutMs);
+      this.waiters.push(grant);
+    });
+  }
+
+  release() {
+    this.holder = undefined;
+    const next = this.waiters.shift();
+    if (next) next();
+    else this.busy = false;
+  }
+}
+
+const namedSessionTurns = new Map<string, SessionTurn>();
+const unnamedSessionTurns = new WeakMap<WorkspaceFiles, SessionTurn>();
+
+function sessionTurn(files: WorkspaceFiles) {
+  if (!files.session) {
+    const current = unnamedSessionTurns.get(files) ?? new SessionTurn();
+    unnamedSessionTurns.set(files, current);
+    return { release: () => current.release(), turn: current };
+  }
+  const key = `${files.root}\0${files.session}`;
+  const current = namedSessionTurns.get(key) ?? new SessionTurn();
+  namedSessionTurns.set(key, current);
+  return {
+    release: () => {
+      current.release();
+      if (current.idle && namedSessionTurns.get(key) === current)
+        namedSessionTurns.delete(key);
+    },
+    turn: current,
+  };
 }
 
 export class LightCommitService {
@@ -55,10 +123,33 @@ export class LightCommitService {
   }
 
   async exclusive<T>(operation: () => Promise<T>, holder: LockHolder = { label: "an edit or a read" }) {
-    // A managed command can hold the lock for minutes: say so now rather
-    // than after the retries.
-    const current = lockHolders.get(this.lockDirectory);
-    if (current?.run) throw new WorkspaceBusyError(current);
+    return this.sessionExclusive((locked) => locked(operation), holder);
+  }
+
+  /**
+   * Holds the session's turn for the whole operation, and the workspace write
+   * lock only for the steps run through `locked`. A command looks at the
+   * files under the lock before and after it runs, not while it runs.
+   */
+  async sessionExclusive<T>(
+    operation: (locked: WorkspaceLockedStep) => Promise<T>,
+    holder: LockHolder = { label: "an edit or a read" },
+  ) {
+    const { release, turn } = sessionTurn(this.files);
+    // A managed command can keep its session busy for minutes: say so now
+    // rather than after a long wait.
+    if (turn.holder?.run) throw new WorkspaceBusyError(turn.holder);
+    if (!(await turn.acquire(sessionTurnWaitMs)))
+      throw new WorkspaceBusyError(turn.holder);
+    turn.holder = holder;
+    try {
+      return await operation((step) => this.workspaceExclusive(step, holder));
+    } finally {
+      release();
+    }
+  }
+
+  private async workspaceExclusive<T>(operation: () => Promise<T>, holder: LockHolder) {
     await mkdir(this.lockDirectory, { recursive: true, mode: 0o700 });
     const release = await lock(this.lockDirectory, lockOptions).catch((error: unknown) => {
       throw errorCode(error) === "ELOCKED"

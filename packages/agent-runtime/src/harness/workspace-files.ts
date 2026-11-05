@@ -53,12 +53,16 @@ export type WorkspaceSnapshot = {
 
 export class WorkspaceFiles {
   readonly root: string;
+  // The agent session these files are read and written for: its operations
+  // take turns, while other sessions in the same folder go on.
+  readonly session?: string;
   // Tools and stack traces may report the symlink-free spelling of the root
   // (for example /private/var for /var on macOS).
   private readonly physicalRoot: string;
 
-  constructor(root: string) {
+  constructor(root: string, session?: string) {
     this.root = resolve(root);
+    this.session = session;
     this.physicalRoot = physicalPath(this.root);
   }
 
