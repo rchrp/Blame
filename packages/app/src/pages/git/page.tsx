@@ -33,6 +33,11 @@ import {
   startGitStateMonitor,
   startSelectedDiffMonitor,
 } from "./git-state-monitor"
+import {
+  generateCommitMessageDraft,
+  setCommitMessageDraft,
+  useCommitMessageDraft,
+} from "./commit-message-draft"
 
 type GitAction = (root: string, workspace: WorkspaceClient) => Promise<unknown>
 
@@ -69,8 +74,7 @@ export function GitPage() {
   const [conflictDialogOpen, setConflictDialogOpen] = React.useState(false)
   const [conflictAgentResolving, setConflictAgentResolving] =
     React.useState(false)
-  const [commitMessageGenerating, setCommitMessageGenerating] =
-    React.useState(false)
+  const commitMessageGenerating = git.commitMessageGenerating
   const openedConflictFingerprintRef = React.useRef("")
   const generateCommitMessageWithAgent = React.useCallback(async () => {
     const selectedPaths = selectedGitFilePaths(
@@ -93,7 +97,7 @@ export function GitPage() {
       return
     }
     const toastId = "git-ai-commit-message-generation"
-    setCommitMessageGenerating(true)
+    const repositoryRoot = root!
     git.setError("")
     toast.loading("Generating commit message", {
       id: toastId,
@@ -101,22 +105,25 @@ export function GitPage() {
     })
     try {
       const codePractices = await projectCodePractices(auth, projects)
-      const result = await platform.agent!.generateCommitMessage({
-        apiConnection: auth.apiConnection,
-        providerId: alternativeSelection.currentModel!.provider.id,
-        modelId: alternativeSelection.currentModel!.id,
-        credentialLabel: alternativeSelection.currentModel!.credentialLabel,
-        reasoningEffort: alternativeSelection.currentVariant,
-        repositoryRoot: root!,
-        worktree: root!,
-        selectedPaths,
-        title: "Git commit",
-        summary: `Generate a commit message for ${selectedPaths.length} selected file${
-          selectedPaths.length > 1 ? "s" : ""
-        }.`,
-        codePractices,
-      })
-      git.setCommitMessage(result.message)
+      const result = await generateCommitMessageDraft(repositoryRoot, () =>
+        platform.agent!.generateCommitMessage({
+          apiConnection: auth.apiConnection,
+          providerId: alternativeSelection.currentModel!.provider.id,
+          modelId: alternativeSelection.currentModel!.id,
+          credentialLabel: alternativeSelection.currentModel!.credentialLabel,
+          reasoningEffort: alternativeSelection.currentVariant,
+          repositoryRoot: root!,
+          worktree: root!,
+          selectedPaths,
+          title: "Git commit",
+          summary: `Generate a commit message for ${selectedPaths.length} selected file${
+            selectedPaths.length > 1 ? "s" : ""
+          }.`,
+          codePractices,
+        })
+      )
+      // Saved for its repository even when the page closed meanwhile.
+      setCommitMessageDraft(repositoryRoot, result.message)
       toast.success("Commit message generated", {
         id: toastId,
         position: "bottom-right",
@@ -129,8 +136,6 @@ export function GitPage() {
         id: toastId,
         position: "bottom-right",
       })
-    } finally {
-      setCommitMessageGenerating(false)
     }
   }, [
     alternativeSelection.currentModel,
@@ -295,7 +300,11 @@ export function GitPage() {
 function useGitController(root?: string, workspace?: WorkspaceClient) {
   const gitIdentity = useGitIdentity()
   const [busy, setBusy] = React.useState<string>()
-  const [commitMessage, setCommitMessage] = React.useState("")
+  const {
+    generating: commitMessageGenerating,
+    message: commitMessage,
+    setMessage: setCommitMessage,
+  } = useCommitMessageDraft(root)
   const [commits, setCommits] = React.useState<GitLogCommit[]>([])
   const [commitTotal, setCommitTotal] = React.useState<number>()
   const [diff, setDiff] = React.useState("")
@@ -481,6 +490,7 @@ function useGitController(root?: string, workspace?: WorkspaceClient) {
         )
       ),
     commitMessage,
+    commitMessageGenerating,
     commitTotal,
     commitPush: () =>
       runAction(
