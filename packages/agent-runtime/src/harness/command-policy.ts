@@ -18,7 +18,11 @@ export function blockedCommandReason(command: string, environment?: LightTaskCon
   const invocations = root
     .findAll({ rule: { kind: "command" } })
     .map(commandInvocation);
-  const denied = invocations.map((value) => blockedInvocationReason(value, environment)).find(Boolean);
+  const scratch = scratchVariables(root);
+  const denied = invocations
+    .filter((value) => !scratchDeletion(value, scratch))
+    .map((value) => blockedInvocationReason(value, environment))
+    .find(Boolean);
   if (denied) return denied;
   if (
     root
@@ -31,7 +35,11 @@ export function blockedCommandReason(command: string, environment?: LightTaskCon
 
 function blockedInvocationReason(command: string, environment?: LightTaskContract["environment"]): string | undefined {
   const normalized = command.toLocaleLowerCase();
-  if (managedInfrastructure.test(normalized) && (environment?.managedPreview !== false || !environment.isolated))
+  if (
+    managedInfrastructure.test(normalized) &&
+    !(environment?.managedPreview !== false && containerListing.test(normalized)) &&
+    (environment?.managedPreview !== false || !environment.isolated)
+  )
     return environment?.managedPreview === false
       ? "Infrastructure commands require an isolated task environment."
       : "Managed preview infrastructure cannot be started from run_task.";
@@ -43,9 +51,9 @@ function blockedInvocationReason(command: string, environment?: LightTaskContrac
   )
     return "Long-running processes must use the managed preview runtime.";
   if (!environment?.isolated && destructiveFileCommand.test(normalized))
-    return "Use edit_code for file deletion; destructive filesystem commands are unavailable.";
-  if (packageManagerMutation.test(normalized))
-    return "Use the dependency operation for Node package changes.";
+    return "Use edit_code for file deletion; destructive filesystem commands are unavailable, except for scratch files the same command created with F=$(mktemp -d) or placed under $TMPDIR.";
+  if (packageManagerMutation.test(normalized) && !lockfileInstall(normalized))
+    return "Use the dependency operation for Node package changes. To restore node_modules from the lockfile, run `pnpm install --frozen-lockfile` (or `npm ci`).";
   if (!environment?.isolated && deniedGitCommand(command))
     return "Git mutations are unavailable from run_task.";
   if (/^sudo(?:\s|$)/u.test(normalized))
@@ -76,6 +84,10 @@ const managedInfrastructure =
   /^(?:docker|docker-compose|nerdctl|podman|postgres|pg_ctl|createdb|initdb)(?:\s|$)/u;
 const longRunningProcess =
   /^(?:next\s+(?:dev|start)|pnpm\s+(?:run\s+)?(?:dev|preview|start|serve|watch)|npm\s+(?:run\s+)?(?:dev|preview|start|serve|watch)|yarn\s+(?:dev|preview|start|serve|watch)|bun\s+(?:run\s+)?(?:dev|preview|start|serve|watch)|nohup)(?:\s|$)/u;
+// Listing what runs beside the managed preview starts nothing and shows no
+// environment values (inspect, logs and config can print the preview's secrets).
+const containerListing =
+  /^(?:docker|podman|nerdctl)(?:\s+(?:compose|container|image|network|volume))?\s+(?:ps|ls|images|version|info)(?:\s|$)|^docker-compose\s+(?:ps|ls|version)(?:\s|$)/u;
 const processControl = /^(?:kill|pkill)(?:\s|$)/u;
 const destructiveFileCommand = /^(?:rm|rmdir|dd|chown)(?:\s|$)/u;
 const packageManagerMutation =
@@ -101,6 +113,45 @@ const allowedGitCommands = new Set([
   "show",
   "status",
 ]);
+
+/** An install that only restores node_modules from the lockfile, changing no manifest. */
+function lockfileInstall(command: string) {
+  const [manager, operation, ...rest] = command.split(/\s+/u);
+  const operands = rest.filter((word) => !word.startsWith("-"));
+  const flags = new Set(rest.filter((word) => word.startsWith("-")).map((word) => word.split("=")[0]));
+  if (manager === "npm") return operation === "ci" && operands.length === 0;
+  if (operation !== "install" && operation !== "i") return false;
+  if (operands.length) return false;
+  return flags.has("--frozen-lockfile") || flags.has("--immutable");
+}
+
+/**
+ * Shell variables that hold a scratch path this command made: `F=$(mktemp -d)`
+ * or a path under $TMPDIR. Deleting there touches nothing Blame journals, and
+ * nothing the user owns, unlike an arbitrary /tmp path on their machine.
+ */
+function scratchVariables(root: SgNode) {
+  const names = new Set(["TMPDIR"]);
+  for (const assignment of root.findAll({ rule: { kind: "variable_assignment" } })) {
+    const [name, ...value] = assignment.text().split("=");
+    if (name && temporaryPath.test(value.join("="))) names.add(name);
+  }
+  return names;
+}
+
+function scratchDeletion(command: string, scratch: Set<string>) {
+  const [name, ...words] = command.split(/\s+/u);
+  if (name !== "rm" && name !== "rmdir") return false;
+  const operands = words.filter((word) => !word.startsWith("-")).map((word) => word.replace(/^["']|["']$/gu, ""));
+  return operands.length > 0 && operands.every((operand) => {
+    if (/(?:^|\/)\.\.(?:\/|$)/u.test(operand)) return false;
+    const [, variable, rest] = /^\$\{?(\w+)\}?(\/.*)?$/u.exec(operand) ?? [];
+    if (!variable || !scratch.has(variable)) return false;
+    return variable !== "TMPDIR" || /^\/[^/]/u.test(rest ?? "");
+  });
+}
+
+const temporaryPath = /^["']?\$\(\s*mktemp\b|^["']?\$\{?TMPDIR\}?\/[^/]/u;
 
 function signalInspection(command: string) {
   const [name, option, ...signals] = command.split(/\s+/u);

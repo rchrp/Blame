@@ -184,6 +184,41 @@ test("isolated environments permit authorized setup without disabling unrelated 
 
 test("isolation does not bypass an explicitly managed preview", () => {
   const environment = { isolated: true, managedPreview: true };
-  for (const command of ["nohup python server.py &", "npm run dev", "docker ps"])
+  for (const command of ["nohup python server.py &", "npm run dev", "docker compose up -d"])
     assert.match(blockedCommandReason(command, environment)!, /managed preview/i, command);
+});
+
+test("listing containers beside a managed preview is not starting infrastructure", () => {
+  for (const command of [
+    "which docker; docker ps --format '{{.Names}} {{.Ports}}'",
+    "docker compose ps",
+    "docker image ls",
+  ])
+    assert.equal(blockedCommandReason(command), undefined, command);
+  for (const command of ["docker compose up -d", "docker run --rm node:24 node -v", "docker start web-1", "docker inspect web-1", "docker logs web-1"])
+    assert.match(blockedCommandReason(command) ?? "", /Managed preview infrastructure/u, command);
+});
+
+test("deleting scratch files the command made itself is not a journaled deletion", () => {
+  for (const command of [
+    'F=$(mktemp -d /tmp/fixture-XXXX); echo hi > "$F/a"; rm -rf "$F"',
+    'F="$(mktemp -d)"; rm -rf "$F/.vite-cache"* ; ls "$F"',
+    'rm -rf "$TMPDIR/blame-test"',
+  ])
+    assert.equal(blockedCommandReason(command), undefined, command);
+  for (const command of ["rm -rf src", "rm -f /tmp/run-cp2.log", "rm -rf /tmp/../home/user", 'F=src; rm -rf "$F/x"',
+    'rm -rf "$TMPDIR"', 'F=$(ls -d /tmp/fixture-*); rm -rf "$F"', 'F=$(mktemp -d); rm -rf "$F" package.json'])
+    assert.match(blockedCommandReason(command) ?? "", /destructive filesystem.*mktemp/u, command);
+});
+
+test("restoring node_modules from the lockfile is not a dependency change", () => {
+  for (const command of [
+    "pnpm install --frozen-lockfile --ignore-scripts > /tmp/install.log 2>&1",
+    "pnpm i --frozen-lockfile --offline",
+    "npm ci",
+    "yarn install --immutable",
+  ])
+    assert.equal(blockedCommandReason(command), undefined, command);
+  for (const command of ["pnpm install", "pnpm add left-pad", "pnpm install left-pad --frozen-lockfile", "npm install"])
+    assert.match(blockedCommandReason(command) ?? "", /dependency operation.*--frozen-lockfile/u, command);
 });
