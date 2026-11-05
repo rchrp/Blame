@@ -597,6 +597,7 @@ export class LightTaskRunner {
         output,
         failure,
         changedPaths,
+        command,
       );
     }
     const validatedPaths = await this.recordCommandValidation(
@@ -709,8 +710,9 @@ function sourceChangedDuringValidation(
   output: string,
   failure?: FailureAssessment,
   changedPaths: string[] = [],
+  command?: string,
 ): LightToolResult<unknown> {
-  if (failure) return failedCommandResult(exitCode, output, failure);
+  if (failure) return failedCommandResult(exitCode, output, failure, command);
   return {
     status: "ok",
     data: {

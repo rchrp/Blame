@@ -18,12 +18,14 @@ export function failedCommandResult(
   failure: FailureAssessment,
   command?: string,
 ): LightToolResult<unknown> {
-  const filter = exitCode === 1 && !output.trim() && command ? finalFilter(command) : undefined;
+  const filter = exitCode === 1 && command ? finalFilter(command) : undefined;
   if (filter)
     return {
       status: "blocked",
       category: "command",
-      message: `Command exited with code 1: its last stage, \`${filter}\`, selected no line, so nothing was printed. That exit code is ${filter}'s, not the earlier commands'.`,
+      message: output.trim()
+        ? `Command exited with code 1 because its last command, \`${filter}\`, selected no line; that exit code is ${filter}'s. Output of the commands before it:\n${boundedDiagnostic(output)}`
+        : `Command exited with code 1: its last stage, \`${filter}\`, selected no line, so nothing was printed. That exit code is ${filter}'s, not the earlier commands'.`,
       recovery: "Rerun without the final filter or with a broader pattern, or write the output to a file and search that file.",
     };
   const diagnostic =
@@ -36,17 +38,21 @@ export function failedCommandResult(
   };
 }
 
-/** The grep or rg that ends a pipeline, whose "no line matched" status hides everything before it. */
+/**
+ * The grep or rg that ends the command line, alone or at the end of a
+ * pipeline after other statements: its "no line matched" status becomes the
+ * whole command's.
+ */
 function finalFilter(command: string) {
   const statements = literalShellStatements(command);
   const last = statements?.at(-1)?.pipeline;
-  if (last) {
+  if (last && statements) {
     const name = last.at(-1)?.words[0]?.value;
-    return last.length > 1 && name && filters.has(name) ? name : undefined;
+    return (last.length > 1 || statements.length > 1) && name && filters.has(name) ? name : undefined;
   }
   // Not a literal command line (variables, assignments): read it without its quoted words.
   const unquoted = command.replace(/'[^']*'|"(?:[^"\\]|\\.)*"/gu, "''");
-  return /\|\s*(e?grep|fgrep|rg)\b[^|;&]*$/u.exec(unquoted)?.[1];
+  return /(?:\||;|&&)\s*(e?grep|fgrep|rg)\b[^|;&]*$/u.exec(unquoted)?.[1];
 }
 
 const filters = new Set(["egrep", "fgrep", "grep", "rg"]);

@@ -37,6 +37,16 @@ test("a final grep that selects nothing says it hid the output, not that nothing
       assert.match(result.message, /its last stage, `grep`, selected no line/);
       assert.match(result.recovery ?? "", /without the final filter/);
     }
+    // A last grep after other statements that printed: their output stays.
+    const result = await workspace.runTask({
+      kind: "command",
+      command: "node -e 'console.log(\"tsc 0\")' > out.log; echo \"tsc $?\"; grep -E \"error TS\" out.log",
+    }, {});
+    assert.equal(result.status, "blocked", JSON.stringify(result));
+    if (result.status === "blocked") {
+      assert.match(result.message, /because its last command, `grep`, selected no line/);
+      assert.match(result.message, /tsc 0/);
+    }
   } finally {
     await rm(root, { recursive: true, force: true });
   }
