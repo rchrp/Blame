@@ -94,8 +94,6 @@ import {
   clineLogPath,
   clineLogRelativePath,
   definedUpdate,
-  directQueueNotice,
-  directStorySlots,
   errorMessage,
   expiredAuthenticationToken,
   type HostDependenciesDialogState,
@@ -434,30 +432,15 @@ export function useBacklogRotation(
       .catch(reportAgentPersistenceError)
   }
 
-  // Up to three agents at a time; Direct stories share the project folder,
-  // so only one of them runs (or waits for review) at a time.
+  // Up to three agents at a time, whatever their mode. Direct stories share
+  // the project folder with each other and with chats, as the Direct mode
+  // picker warns; the harness checks each file again when it writes it.
   function storiesToStartNow(readyStories: UserStory[]) {
-    const stories = storiesRef.current
-    let slots =
+    const slots =
       maxConcurrentDevelopmentStories -
-      runningStories(stories) -
+      runningStories(storiesRef.current) -
       startingStoryIds.current.size
-    const isDirect = (story: UserStory) => storyRunMode(story) === "direct"
-    const startingDirect = stories.filter(
-      (story) => startingStoryIds.current.has(story.id) && isDirect(story)
-    ).length
-    let directFree = directStorySlots(stories, startingDirect) > 0
-    const selected: UserStory[] = []
-    for (const story of readyStories) {
-      if (slots <= 0) break
-      if (isDirect(story)) {
-        if (!directFree) continue
-        directFree = false
-      }
-      selected.push(story)
-      slots -= 1
-    }
-    return selected
+    return readyStories.slice(0, Math.max(0, slots))
   }
 
   // No usable initialization: run the story Direct rather than wait for one.
@@ -1285,9 +1268,7 @@ export function useBacklogRotation(
   ])
 
   return {
-    runtimeWaitingLabel:
-      runtimeGate.waitingLabel ??
-      directQueueNotice(backlog.stories, (story) => storyRunMode(story) === "direct"),
+    runtimeWaitingLabel: runtimeGate.waitingLabel,
     hostDependenciesDialog: {
       checking: Boolean(hostDependenciesDialog?.checking),
       onOpenChange(open: boolean) {

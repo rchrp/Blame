@@ -355,4 +355,3 @@ export function agentAuthenticationErrorKey(
   return `${story.id}:${run?.id ?? "story"}:expired-authentication-token`
 }
 
-export { directQueueNotice, directStorySlots } from "./direct-story-queue"
