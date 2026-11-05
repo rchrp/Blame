@@ -1,7 +1,7 @@
-// One event stream per agent run, whichever part of the app opened it. The
-// story page and the background queue both follow runs; this registry keeps
-// them from persisting the same events twice, and lets a new run close the
-// streams of the run it replaces.
+// One event stream per agent run, whichever part of the app opened it. A
+// run can be asked for twice (its start, and the backlog showing it
+// running); this registry keeps its events from being persisted twice, and
+// lets a new run close the streams of the run it replaces.
 type RunStream = {
   close: () => void
   flush?: () => Promise<unknown>

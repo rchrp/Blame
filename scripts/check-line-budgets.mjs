@@ -13,7 +13,6 @@ const legacy = new Map(Object.entries({
   "packages/app/src/components/model/model-selector.tsx": budget(2087, 2050),
   "packages/app/src/components/backlog/drawer/user-story-preview.tsx": budget(2035, 1950),
   "packages/app/src/pages/backlog/page.tsx": budget(1400, 1350),
-  "packages/app/src/pages/backlog/use-backlog-rotation.ts": budget(1393, 1350),
   "packages/desktop/src/main/code-review-graph.ts": budget(1314, 1250),
   "packages/app/src/components/backlog/data/agent-flow.ts": budget(1308, 1250),
   "packages/app/src/pages/settings/page.tsx": budget(1270, 1200),

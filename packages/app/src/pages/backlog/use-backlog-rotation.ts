@@ -6,39 +6,15 @@ import type { RuntimeProfileId } from "@blame/preview-runtime"
 import type {
   UserStory,
   UserStoryAgentRun,
-  UserStoryAgentRunUpdate,
-  UserStoryUpdate,
 } from "@/components/backlog/data/backlog-data"
 import { userStoryDisplayId } from "@/components/backlog/data/backlog-data"
 import { nextCheckpointRunCount } from "@/components/chat/agent-run-checkpoints"
 import {
   agentEventText,
   agentFlowUpdate,
-  cancelledAgentRun,
-  completedAgentRun,
-  failedAgentRun,
-  resumableAgentFailure,
-  shouldPersistAgentEvent,
-  terminalAgentRunEvent,
 } from "@/components/backlog/data/agent-flow"
-import { subscribeAgentEvents } from "@/components/backlog/data/agent-event-stream"
-import {
-  agentPersistenceEvent,
-  AgentStreamCoordinator,
-  type AgentStreamSnapshotPersistence,
-} from "@/components/backlog/data/agent-stream-coordinator"
-import { persistTerminalAgentUpdate } from "@/components/backlog/data/agent-terminal-outbox"
-import {
-  pendingAgentRunSnapshots,
-  persistAgentSnapshot,
-} from "@/components/backlog/data/agent-snapshot-outbox"
-import {
-  agentRunFinalization,
-  agentRunOwnsStory,
-  agentUpdateKey,
-} from "@/components/backlog/data/agent-run-lifecycle"
-import { boundedAgentMessage } from "@/components/backlog/data/agent-update-limits"
-import { persistAgentRunDiffEndRef } from "@/components/backlog/data/agent-run-diff-end-ref"
+import { agentPersistenceEvent } from "@/components/backlog/data/agent-stream-coordinator"
+import { agentRunFinalization } from "@/components/backlog/data/agent-run-lifecycle"
 import {
   completedClineLog,
   finalAssistantResponse,
@@ -52,12 +28,6 @@ import { hostedServiceRequirement } from "@/lib/hosted-service-access"
 import type { HostDependencyReport } from "@/context/platform"
 import { useRuntimeGate } from "@/pages/backlog/use-runtime-gate"
 import { deadAgentRuns } from "@/pages/backlog/agent-run-liveness"
-import {
-  closeStoryRunStreams,
-  forgetRunStream,
-  registerRunStream,
-  runStreamOpen,
-} from "@/components/backlog/data/agent-run-streams"
 import { pendingTerminalAgentUpdates } from "@/components/backlog/data/agent-terminal-outbox"
 import { storiesInTransition } from "@/pages/backlog/story-transitions"
 import { useGitIdentity } from "@/context/git-identity"
@@ -84,51 +54,40 @@ import {
 import {
   activeAgentRun,
   activePreviewStory,
-  activeStory,
   activityUpdates,
-  agentAuthenticationErrorKey,
-  agentMetadataUpdate,
   agentRunEventUpdate,
-  agentRunMetadataUpdate,
-  clearPendingAgentUpdates,
   clineLogPath,
   clineLogRelativePath,
-  definedUpdate,
   errorMessage,
-  expiredAuthenticationToken,
   type HostDependenciesDialogState,
   nextAgentRun,
   notifyCommentResponseCompleted,
-  pausedAgentUpdate,
-  pendingAgentUpdate,
-  type PendingAgentUpdate,
   previewRecoveryStateKey,
-  type QueuedAgentUpdate,
   queuedStories,
   recoverableAgentRun,
   recoveredMessageCount,
   reportAgentPersistenceError,
   rotationBlocker,
   runFlowState,
-  runningAgentRunsForStory,
   maxConcurrentDevelopmentStories,
   runningStories,
   staleAgentRunAge,
   storyTelemetryCohorts,
 } from "./backlog-rotation-helpers"
+import type { StoryAgentStreamControls } from "./use-story-agent-stream"
 
 const blockerRetryDelay = 30_000
 const previewRecoveryIntervalMs = 30_000
 const agentCompletionRecoveryIntervalMs = 60_000
-const agentEventPersistDelayMs = 1_500
 const interruptedAgentMessage =
   "Agent interrupted while Blame was offline. Resume when ready."
 const setupToastId = "backlog-rotation-setup"
-const authToastId = "backlog-agent-auth"
 const initializationRetryDelay = 5_000
 
+// Starts the Agent Queue's stories; storyStream follows and saves the runs.
 export function useBacklogRotation(
-  backlog: ReturnType<typeof useBacklogStore>
+  backlog: ReturnType<typeof useBacklogStore>,
+  storyStream: StoryAgentStreamControls
 ) {
   const auth = useCloudAuth()
   const platform = usePlatform()
@@ -147,11 +106,6 @@ export function useBacklogRotation(
   const startingStoryIds = React.useRef(new Set<string>())
   const blockedStories = React.useRef(new Map<string, number>())
   const reportedBlockers = React.useRef(new Set<string>())
-  const reportedAgentErrors = React.useRef(new Set<string>())
-  const pendingAgentUpdates = React.useRef(
-    new Map<string, PendingAgentUpdate>()
-  )
-  const agentStreamClosers = React.useRef(new Set<() => void>())
   const agentAuthenticationBlockedUntil = React.useRef(0)
   const previewRecoveryStoryIds = React.useRef(new Set<string>())
   const agentCompletionRecoveryStoryIds = React.useRef(new Set<string>())
@@ -168,9 +122,6 @@ export function useBacklogRotation(
     (stories: UserStory[]) => void
   >(() => undefined)
   const recoverInterruptedAgentRunsRef = React.useRef<
-    (stories: UserStory[]) => void
-  >(() => undefined)
-  const resumeRunningAgentStreamsRef = React.useRef<
     (stories: UserStory[]) => void
   >(() => undefined)
   const [hostDependenciesDialog, setHostDependenciesDialog] =
@@ -196,21 +147,24 @@ export function useBacklogRotation(
   React.useEffect(() => {
     blockedStories.current.clear()
     reportedBlockers.current.clear()
-    reportedAgentErrors.current.clear()
-    clearPendingAgentUpdates(pendingAgentUpdates.current)
     agentAuthenticationBlockedUntil.current = 0
     previewRecoveryStoryIds.current.clear()
     agentCompletionRecoveryStoryIds.current.clear()
     interruptedAgentRecoveryStoryIds.current.clear()
   }, [projects.activeProject?.id, selection.currentModel?.id])
 
+  // An expired provider token fails every start: the queue waits a while.
+  const { onAuthenticationExpired } = storyStream
   React.useEffect(
-    () => () => {
-      clearPendingAgentUpdates(pendingAgentUpdates.current)
-      agentStreamClosers.current.forEach((close) => close())
-      agentStreamClosers.current.clear()
-    },
-    []
+    () =>
+      onAuthenticationExpired(() => {
+        agentAuthenticationBlockedUntil.current = Date.now() + blockerRetryDelay
+        window.setTimeout(
+          () => refreshStartingStories((value) => value + 1),
+          blockerRetryDelay
+        )
+      }),
+    [onAuthenticationExpired]
   )
 
   async function startStory(story: UserStory) {
@@ -377,7 +331,12 @@ export function useBacklogRotation(
         providerId: selection.currentModel.provider.id,
         reasoningEffort: selection.currentVariant ?? null,
       })
-      subscribeStoryStream(detailedStory, run, session.sessionId, executionId)
+      storyStream.subscribeStoryAgentEvents(
+        detailedStory,
+        run,
+        session.sessionId,
+        executionId
+      )
 
       await backlog.update(detailedStory, {
         agentModelId: selection.currentModel.id,
@@ -422,7 +381,7 @@ export function useBacklogRotation(
         fileAttachments: detailedStory.fileAttachments ?? [],
       })
       .catch((error) =>
-        persistAgentEvent(detailedStory, run, {
+        storyStream.persistAgentEvent(detailedStory, run, {
           type: "error",
           sessionId: session.sessionId,
           executionId,
@@ -838,392 +797,6 @@ export function useBacklogRotation(
     }, agentCompletionRecoveryIntervalMs)
     return () => window.clearInterval(timer)
   }, [backlog.loading, platform.agent, platform.workspace])
-
-  async function persistAgentEvent(
-    story: UserStory,
-    run: UserStoryAgentRun | undefined,
-    event: AgentEvent,
-    prepared?: AgentStreamSnapshotPersistence
-  ) {
-    const currentStory = activeStory(story, storiesRef.current)
-    const flowUpdate = prepared?.update ?? agentFlowUpdate(currentStory, event)
-    const text = agentEventText(event)
-    const runInput = agentRunEventUpdate(flowUpdate, event, text)
-    if (run) {
-      runInput.persistenceEvent =
-        prepared?.persistenceEvent ??
-        agentPersistenceEvent(event, {
-          executionId: run.executionId ?? event.executionId ?? run.id,
-          lastSequenceNumber: run.lastSequenceNumber,
-          runId: run.id,
-          sessionId:
-            event.sessionId ??
-            run.clineSessionId ??
-            currentStory.clineSessionId ??
-            run.id,
-        })
-    }
-    if (!shouldPersistAgentEvent(event, flowUpdate)) return
-    if (
-      prepared &&
-      run &&
-      !terminalAgentRunEvent(event) &&
-      !expiredAuthenticationToken(text)
-    ) {
-      await persistAgentSnapshot(
-        window.localStorage,
-        {
-          event: prepared.persistenceEvent,
-          messageId: flowUpdate.agentActivity?.id ?? event.type,
-          projectId: currentStory.projectId,
-          runId: run.id,
-          targetId: currentStory.id,
-          targetType: "user-story",
-          update: runInput,
-        },
-        (snapshot) =>
-          backlog.updateAgentRun(
-            currentStory,
-            run,
-            snapshot.update as UserStoryAgentRunUpdate
-          )
-      )
-      return
-    }
-    if (reportedAgentErrors.current.has(agentAuthenticationErrorKey(story, run)))
-      return
-    if (expiredAuthenticationToken(text)) {
-      reportExpiredAuthenticationToken(story, text, run)
-      persistAgentUpdate(
-        currentStory,
-        {
-          ...flowUpdate,
-          agentLastError: boundedAgentMessage(
-            text,
-            "Agent authentication failed"
-          ),
-          agentLastEvent: boundedAgentMessage(
-            text,
-            "Agent authentication failed"
-          ),
-          agentStatus: "Paused",
-        },
-        run,
-        runInput,
-        true
-      )
-      return
-    }
-    if (completedAgentRun(event)) {
-      notifyCommentResponseCompleted(currentStory, run, platform)
-      await persistTerminalAgentTransition(
-        currentStory,
-        {
-          ...flowUpdate,
-          agentLastError: null,
-          agentLastEvent: "Agent completed. Ready for review.",
-          agentStatus: null,
-          status: "in-review",
-        },
-        run,
-        runInput
-      )
-      return
-    }
-    if (cancelledAgentRun(event)) {
-      await persistTerminalAgentTransition(
-        currentStory,
-        {
-          ...flowUpdate,
-          agentLastError: null,
-          agentLastEvent: boundedAgentMessage(text, "Agent stopped."),
-          agentStatus: null,
-          status: "in-review",
-        },
-        run,
-        runInput
-      )
-      return
-    }
-    if (failedAgentRun(event)) {
-      const resumable = resumableAgentFailure(text)
-      await persistTerminalAgentTransition(
-        currentStory,
-        {
-          ...flowUpdate,
-          agentLastError: boundedAgentMessage(text, "Agent session failed"),
-          agentLastEvent: boundedAgentMessage(text, "Agent session failed"),
-          agentStatus: resumable ? "Paused" : null,
-          status: resumable ? "in-progress" : "in-review",
-        },
-        run,
-        runInput
-      )
-      return
-    }
-    persistAgentUpdate(
-      currentStory,
-      {
-        ...flowUpdate,
-        agentLastError:
-          event.type === "error"
-            ? boundedAgentMessage(text, "Agent session failed")
-            : undefined,
-        agentLastEvent: boundedAgentMessage(text, event.type),
-      },
-      run,
-      runInput,
-      terminalAgentRunEvent(event)
-    )
-  }
-
-  function createStoryStreamCoordinator(
-    story: UserStory,
-    run: UserStoryAgentRun,
-    sessionId: string,
-    executionId = run.executionId ?? run.id
-  ) {
-    return new AgentStreamCoordinator({
-      executionId,
-      initialState: runFlowState(run),
-      lastSequenceNumber: run.lastSequenceNumber,
-      onError: reportAgentPersistenceError,
-      persist: (snapshot) =>
-        persistAgentEvent(story, run, snapshot.event, snapshot),
-      runId: run.id,
-      recoveredSnapshots: pendingAgentRunSnapshots(
-        window.localStorage,
-        story.projectId,
-        "user-story",
-        run.id
-      ),
-      sessionId,
-    })
-  }
-
-  function subscribeStoryStream(
-    story: UserStory,
-    run: UserStoryAgentRun,
-    sessionId: string,
-    executionId?: string
-  ) {
-    if (runStreamOpen(run.id)) return
-    closeStoryRunStreams(story.id, run.id)
-    const coordinator = createStoryStreamCoordinator(
-      story,
-      run,
-      sessionId,
-      executionId
-    )
-    let unsubscribeSession: () => void = () => undefined
-    const close = () => {
-      unsubscribeSession()
-      agentStreamClosers.current.delete(close)
-      forgetRunStream(run.id, close)
-      void coordinator.disconnect().catch(reportAgentPersistenceError)
-    }
-    registerRunStream(run.id, story.id, close, () => coordinator.flush())
-    unsubscribeSession = subscribeAgentEvents(
-      platform,
-      sessionId,
-      (event) => {
-        const persisted = terminalAgentRunEvent(event)
-          ? coordinator.terminate(event)
-          : coordinator.push(event)
-        if (terminalAgentRunEvent(event)) {
-          void persisted.then(close, (error) => {
-            reportAgentPersistenceError(error)
-            close()
-          })
-        }
-      },
-      executionId ?? run.executionId ?? undefined,
-      run.lastSequenceNumber ?? 0
-    )
-    agentStreamClosers.current.add(close)
-  }
-
-  React.useEffect(() => {
-    resumeRunningAgentStreamsRef.current = (stories) => {
-      stories.forEach((story) => {
-        runningAgentRunsForStory(story).forEach((run) => {
-          const sessionId = run.clineSessionId ?? story.clineSessionId
-          if (!sessionId || runStreamOpen(run.id)) return
-          subscribeStoryStream(story, run, sessionId)
-        })
-      })
-    }
-  })
-
-  React.useEffect(() => {
-    if (!platform.agent || backlog.loading) return
-    resumeRunningAgentStreamsRef.current(backlog.stories)
-  }, [backlog.loading, backlog.stories, platform.agent])
-
-  function persistAgentUpdate(
-    story: UserStory,
-    input: UserStoryUpdate,
-    run: UserStoryAgentRun | undefined,
-    runInput: UserStoryAgentRunUpdate,
-    immediate: boolean
-  ) {
-    const storyInput = agentRunOwnsStory(story, run) ? input : {}
-    const nextStory = updateLocalStory(story, storyInput, run, runInput)
-    if (immediate) {
-      void flushAgentUpdate(nextStory, run, storyInput, runInput).catch(
-        reportAgentPersistenceError
-      )
-      return
-    }
-    queueAgentUpdate(nextStory, run, storyInput, runInput)
-  }
-
-  async function persistTerminalAgentTransition(
-    story: UserStory,
-    input: UserStoryUpdate,
-    run: UserStoryAgentRun | undefined,
-    runInput: UserStoryAgentRunUpdate
-  ) {
-    const storyInput = agentRunOwnsStory(story, run) ? input : {}
-    const nextStory = updateLocalStory(story, storyInput, run, runInput)
-    recordPerformanceEvent("agent.transition.local_terminal_update", {
-      eventType: runInput.status ?? "terminal",
-    })
-    await flushAgentUpdate(nextStory, run, storyInput, runInput)
-    if (run && !run.diffEndRef) {
-      void persistAgentRunDiffEndRef(story, run, platform, backlog).catch(
-        reportAgentPersistenceError
-      )
-    }
-  }
-
-  function updateLocalStory(
-    story: UserStory,
-    input: UserStoryUpdate,
-    run?: UserStoryAgentRun,
-    runInput?: UserStoryAgentRunUpdate
-  ) {
-    const currentStory = activeStory(story, storiesRef.current)
-    const nextStory = { ...currentStory, ...definedUpdate(input) }
-    storiesRef.current = storiesRef.current.map((current) =>
-      current.id === story.id ? nextStory : current
-    )
-    backlog.updateAgentLocal(currentStory, input, run, runInput)
-    return nextStory
-  }
-
-  function queueAgentUpdate(
-    story: UserStory,
-    run: UserStoryAgentRun | undefined,
-    input: UserStoryUpdate,
-    runInput: UserStoryAgentRunUpdate
-  ) {
-    const key = agentUpdateKey(story, run)
-    const pending = pendingAgentUpdates.current.get(key)
-    if (pending) window.clearTimeout(pending.timer)
-    const update = pendingAgentUpdate(pending, input, run, runInput)
-    const timer = window.setTimeout(() => {
-      pendingAgentUpdates.current.delete(key)
-      void persistQueuedAgentUpdate(story, update).catch(() => undefined)
-    }, agentEventPersistDelayMs)
-    pendingAgentUpdates.current.set(key, { ...update, timer })
-  }
-
-  function flushAgentUpdate(
-    story: UserStory,
-    run: UserStoryAgentRun | undefined,
-    input: UserStoryUpdate,
-    runInput: UserStoryAgentRunUpdate
-  ) {
-    const key = agentUpdateKey(story, run)
-    const pending = pendingAgentUpdates.current.get(key)
-    if (pending) window.clearTimeout(pending.timer)
-    pendingAgentUpdates.current.delete(key)
-    const update = pendingAgentUpdate(pending, input, run, runInput)
-    return persistTerminalAgentUpdate(window.localStorage, story, update, () =>
-      persistTerminalQueuedAgentUpdate(story, update)
-    )
-  }
-
-  function persistTerminalQueuedAgentUpdate(
-    story: UserStory,
-    update: QueuedAgentUpdate
-  ) {
-    const finalization = agentRunFinalization(
-      update.activities,
-      update.input,
-      update.runInput,
-      pausedAgentUpdate(update.input) ? "paused" : "review"
-    )
-    if (!update.run || !finalization) {
-      return persistQueuedAgentUpdate(story, update)
-    }
-    return backlog.finalizeAgentRun(story, update.run, finalization)
-  }
-
-  async function persistQueuedAgentUpdate(
-    story: UserStory,
-    update: QueuedAgentUpdate
-  ) {
-    let nextStory = activeStory(story, storiesRef.current)
-    const metadata = agentMetadataUpdate(update.input)
-    if (
-      agentRunOwnsStory(
-        activeStory(nextStory, storiesRef.current),
-        update.run
-      ) &&
-      Object.keys(definedUpdate(metadata)).length
-    ) {
-      nextStory = await backlog.update(
-        activeStory(nextStory, storiesRef.current),
-        metadata
-      )
-    }
-    if (update.activities.length) {
-      if (update.run) {
-        await backlog.updateAgentRun(nextStory, update.run, {
-          agentActivityUpdates: update.activities,
-        })
-      } else if (
-        agentRunOwnsStory(
-          activeStory(nextStory, storiesRef.current),
-          update.run
-        )
-      ) {
-        nextStory = await backlog.update(
-          activeStory(nextStory, storiesRef.current),
-          { agentActivityUpdates: update.activities }
-        )
-      }
-    }
-    if (update.run) {
-      const runMetadata = agentRunMetadataUpdate(update.runInput)
-      if (Object.keys(definedUpdate(runMetadata)).length) {
-        await backlog.updateAgentRun(nextStory, update.run, runMetadata)
-      }
-    }
-    return nextStory
-  }
-
-  function reportExpiredAuthenticationToken(
-    story: UserStory,
-    message: string,
-    run?: UserStoryAgentRun
-  ) {
-    const key = agentAuthenticationErrorKey(story, run)
-    if (reportedAgentErrors.current.has(key)) return
-    agentAuthenticationBlockedUntil.current = Date.now() + blockerRetryDelay
-    window.setTimeout(
-      () => refreshStartingStories((value) => value + 1),
-      blockerRetryDelay
-    )
-    reportedAgentErrors.current.add(key)
-    toast.error("Agent authentication expired", {
-      description: `${message} Reconnect the selected provider, then restart the story.`,
-      id: `${authToastId}-${story.id}`,
-      position: "bottom-right",
-    })
-  }
 
   const storiesToStartRef = React.useRef(storiesToStartNow)
   React.useEffect(() => {

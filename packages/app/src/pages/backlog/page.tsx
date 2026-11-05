@@ -111,7 +111,6 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
   const projects = useProjects()
   const agentSelection = useModelSelection({ role: "agent" })
   const alternativeSelection = useModelSelection({ role: "alternative" })
-  const rotation = useBacklogRotation(backlog)
   const [drawerTarget, setDrawerTarget] = React.useState<DrawerTarget>()
   const [titleGeneratingStoryIds, setTitleGeneratingStoryIds] = React.useState(
     () => new Set<string>()
@@ -340,13 +339,15 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
     (story: UserStory) => userStoryDiffStats.get(story.id),
     [userStoryDiffStats]
   )
-  const { persistAgentEvent, subscribeStoryAgentEvents } = useStoryAgentStream({
+  const storyStream = useStoryAgentStream({
     backlog,
     platform,
     storiesRef,
     updateStory,
     updateStoryLocal,
   })
+  const { persistAgentEvent, subscribeStoryAgentEvents } = storyStream
+  const rotation = useBacklogRotation(backlog, storyStream)
   const rejectStory = React.useCallback(
     async (story: UserStory, choice: RejectChoice) => {
       // The comment box opens; sending a comment is what resumes the agent.

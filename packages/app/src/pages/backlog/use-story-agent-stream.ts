@@ -57,13 +57,17 @@ import type { Platform } from "@/context/platform"
 import { createDebouncedUpdateQueue } from "@/lib/debounced-update-queue"
 import { recordPerformanceEvent } from "@/lib/performance-diagnostics"
 import {
+  agentAuthenticationErrorKey,
   notifyCommentResponseCompleted,
   reportAgentPersistenceError,
+  runFlowState,
+  runningAgentRunsForStory,
 } from "./backlog-rotation-helpers"
 import { activeStory } from "./story-runtime-state"
 
 const agentEventPersistDelayMs = 1_500
 const terminalAgentRetryIntervalMs = 60_000
+const authToastId = "backlog-agent-auth"
 
 type StoryAgentStream = {
   backlog: ReturnType<typeof useBacklogStore>
@@ -82,9 +86,12 @@ type StoryAgentStream = {
   ): UserStory
 }
 
-// Follows a story agent's event stream and saves what it streams: activity
-// is batched, terminal updates go through an outbox that is replayed until
-// they are saved.
+export type StoryAgentStreamControls = ReturnType<typeof useStoryAgentStream>
+
+// Follows every story agent's event stream, whatever started it (the Agent
+// Queue, a resume, a comment, or a run found running after a restart), and
+// saves what it streams: activity is batched, terminal updates go through
+// an outbox that is replayed until they are saved.
 export function useStoryAgentStream({
   backlog,
   platform,
@@ -97,6 +104,9 @@ export function useStoryAgentStream({
   )
   const agentStreamClosers = React.useRef(new Map<string, () => void>())
   const retryingTerminalAgentUpdates = React.useRef(false)
+  // Runs paused for an expired provider token: later events are ignored.
+  const expiredAuthenticationRuns = React.useRef(new Set<string>())
+  const authenticationExpiredListeners = React.useRef(new Set<() => void>())
   const backlogRef = React.useRef(backlog)
   const persistTerminalAgentUpdateRef = React.useRef<
     (story: UserStory, update: QueuedAgentUpdate) => Promise<unknown>
@@ -302,16 +312,38 @@ export function useStoryAgentStream({
     ) => {
       const storyInput = agentRunOwnsStory(story, run) ? input : {}
       const nextStory = updateStoryLocal(story, storyInput, run, runInput)
-      persistPreparedAgentUpdate(
+      // Failures are reported, and terminal ones replayed, by the call.
+      void persistPreparedAgentUpdate(
         nextStory,
         run,
         storyInput,
         runInput,
         immediate
-      )
+      ).catch(() => undefined)
     },
     [persistPreparedAgentUpdate, updateStoryLocal]
   )
+  // Once per run: the toast, and the listeners (the Agent Queue waits).
+  const reportExpiredAuthentication = React.useCallback(
+    (story: UserStory, message: string, run?: UserStoryAgentRun) => {
+      expiredAuthenticationRuns.current.add(
+        agentAuthenticationErrorKey(story, run)
+      )
+      authenticationExpiredListeners.current.forEach((listener) => listener())
+      toast.error("Agent authentication expired", {
+        description: `${message} Reconnect the selected provider, then restart the story.`,
+        id: `${authToastId}-${story.id}`,
+        position: "bottom-right",
+      })
+    },
+    []
+  )
+  const onAuthenticationExpired = React.useCallback((listener: () => void) => {
+    authenticationExpiredListeners.current.add(listener)
+    return () => {
+      authenticationExpiredListeners.current.delete(listener)
+    }
+  }, [])
   const persistAgentEvent = React.useCallback(
     async (
       story: UserStory,
@@ -321,12 +353,7 @@ export function useStoryAgentStream({
     ) => {
       const currentStory = activeStory(story, storiesRef.current)
       const text = agentEventText(event)
-      if (expiredAuthenticationToken(text)) {
-        toast.error("Agent authentication expired", {
-          description: `${text} Reconnect the selected provider, then restart the story.`,
-          position: "bottom-right",
-        })
-      }
+      const authenticationExpired = expiredAuthenticationToken(text)
       const update = agentEventUpdate(currentStory, event, prepared?.update)
       if (!shouldPersistAgentEvent(event, update)) return
       const runInput = agentRunEventUpdate(update, event, text)
@@ -348,7 +375,7 @@ export function useStoryAgentStream({
         prepared &&
         run &&
         !terminalAgentRunEvent(event) &&
-        !expiredAuthenticationToken(text)
+        !authenticationExpired
       ) {
         await persistAgentSnapshot(
           window.localStorage,
@@ -370,6 +397,13 @@ export function useStoryAgentStream({
         )
         return
       }
+      if (
+        expiredAuthenticationRuns.current.has(
+          agentAuthenticationErrorKey(story, run)
+        )
+      )
+        return
+      if (authenticationExpired) reportExpiredAuthentication(story, text, run)
       if (completedAgentRun(event))
         notifyCommentResponseCompleted(currentStory, run, platform)
       if (run && terminalAgentRunEvent(event) && !run.diffEndRef) {
@@ -411,6 +445,7 @@ export function useStoryAgentStream({
       persistAgentUpdate,
       persistPreparedAgentUpdate,
       platform,
+      reportExpiredAuthentication,
       storiesRef,
       updateStoryLocal,
     ]
@@ -420,21 +455,15 @@ export function useStoryAgentStream({
       story: UserStory,
       run: UserStoryAgentRun,
       sessionId: string,
-      executionId: string
+      executionId = run.executionId ?? undefined
     ) => {
-      agentStreamClosers.current.get(run.id)?.()
-      // The background queue may already follow this run; one stream only.
+      // One stream per run: a start and the effect below may both ask.
       if (runStreamOpen(run.id)) return
       // The run this one replaces stops listening.
       closeStoryRunStreams(story.id, run.id)
       const coordinator = new AgentStreamCoordinator({
-        executionId,
-        initialState: {
-          agentActivities: run.activities ?? story.agentActivities,
-          agentFinalResponse: run.finalResponse ?? story.agentFinalResponse,
-          agentSessionSummary: run.sessionSummary ?? story.agentSessionSummary,
-          agentUsage: run.usage ?? story.agentUsage,
-        },
+        executionId: executionId ?? run.id,
+        initialState: runFlowState(run),
         lastSequenceNumber: run.lastSequenceNumber,
         onError: reportAgentPersistenceError,
         persist: (snapshot) =>
@@ -483,7 +512,29 @@ export function useStoryAgentStream({
     [persistAgentEvent, platform]
   )
 
-  return { persistAgentEvent, subscribeStoryAgentEvents }
+  // Runs the backlog shows running are followed: after a restart, or while
+  // their start is still subscribing.
+  React.useEffect(() => {
+    if (!platform.agent || backlog.loading) return
+    backlog.stories.forEach((story) => {
+      runningAgentRunsForStory(story).forEach((run) => {
+        const sessionId = run.clineSessionId ?? story.clineSessionId
+        if (!sessionId || runStreamOpen(run.id)) return
+        subscribeStoryAgentEvents(story, run, sessionId)
+      })
+    })
+  }, [
+    backlog.loading,
+    backlog.stories,
+    platform.agent,
+    subscribeStoryAgentEvents,
+  ])
+
+  return {
+    onAuthenticationExpired,
+    persistAgentEvent,
+    subscribeStoryAgentEvents,
+  }
 }
 
 function clearStoryAgentStream(story: UserStory, run?: UserStoryAgentRun) {
