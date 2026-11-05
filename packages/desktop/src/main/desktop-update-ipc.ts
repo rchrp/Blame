@@ -13,6 +13,7 @@ import {
   type DesktopUpdateChannel,
 } from "./desktop-update-channel";
 import { privacyPreferences } from "./privacy-settings";
+import { rememberReleaseNotes } from "./whats-new-ipc";
 
 const { autoUpdater } = electronUpdater;
 
@@ -100,10 +101,12 @@ function configureUpdater() {
 
   autoUpdater.on("update-available", (info) => {
     setStatus(updateStatus("available", info));
+    keepReleaseNotes(info);
   });
 
   autoUpdater.on("update-not-available", (info) => {
     setStatus(updateStatus("not-available", info));
+    keepReleaseNotes(info);
   });
 
   autoUpdater.on("download-progress", (progress) => {
@@ -112,6 +115,7 @@ function configureUpdater() {
 
   autoUpdater.on("update-downloaded", (info) => {
     setStatus(updateStatus("downloaded", info));
+    keepReleaseNotes(info);
   });
 
   autoUpdater.on("error", (error) => {
@@ -268,6 +272,20 @@ function releaseNotes(value: UpdateInfo["releaseNotes"]) {
     .map((note) => note.note)
     .filter(Boolean)
     .join("\n\n");
+}
+
+// The feed's metadata carries each version's notes: the What's new screen
+// shows them after the update without a request of its own.
+function keepReleaseNotes(info: UpdateInfo) {
+  const notes = releaseNotes(info.releaseNotes);
+  if (!notes) return;
+  rememberReleaseNotes({
+    notes,
+    releaseDate: info.releaseDate,
+    version: info.version,
+  }).catch((error) => {
+    console.warn("Could not keep the release notes", error);
+  });
 }
 
 function isUpdaterSupported() {

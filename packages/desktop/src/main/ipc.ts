@@ -20,6 +20,7 @@ import { registerCloudAuthIpcHandlers } from "./cloud-auth-ipc";
 import { registerLocalApiIpcHandlers } from "./local-api/local-api-ipc";
 import { LocalApiService } from "./local-api/local-api-service";
 import { registerDesktopUpdateIpcHandlers } from "./desktop-update-ipc";
+import { registerWhatsNewIpcHandlers } from "./whats-new-ipc";
 import { DeployService } from "./deploy/deploy-service";
 import { registerDeployIpcHandlers } from "./ipc/deploy-ipc";
 import { registerMcpIpcHandlers } from "./mcp-ipc";
@@ -151,6 +152,7 @@ export function registerDesktopIpcHandlers(options: DesktopIpcOptions) {
   registerTerminalIpcHandlers();
   registerTelemetryIpcHandlers(options.telemetry);
   registerDesktopUpdateIpcHandlers({ beforeInstall: options.beforeInstall });
+  registerWhatsNewIpcHandlers();
   registerWorkspaceIpcHandlers({
     beforeGitWrite: (worktree) => previews.syncBarrier(worktree),
     onRuntimeReady: options.onRuntimeReady,

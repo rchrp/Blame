@@ -9,6 +9,7 @@ import { ThemeProvider } from "@/components/providers/theme-provider"
 import { Toaster } from "@/components/ui/sonner"
 import { DesktopUpdatesProvider } from "@/components/updates/desktop-updates-provider"
 import { UpdateNotifications } from "@/components/updates/update-notifications"
+import { WhatsNewOnLaunch } from "@/components/updates/whats-new-dialog"
 import { RuntimeInstallDialog } from "@/components/runtime/runtime-install-dialog"
 import { GitIdentityDialog } from "@/components/git/git-identity-dialog"
 import { BlameRuntimeProvider } from "@/context/blame-runtime"
@@ -76,6 +77,7 @@ export function mountApp(element: HTMLElement, options?: MountAppOptions) {
                             <GitIdentityDialog />
                             <Toaster />
                             <UpdateNotifications />
+                            <WhatsNewOnLaunch enabled={!secondaryWindow()} />
                           </GitIdentityProvider>
                         </DesktopUpdatesProvider>
                       </BlameRuntimeProvider>

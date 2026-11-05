@@ -13,6 +13,7 @@ import { useSystemNotificationsEnabled } from "@/lib/system-notifications"
 import { RuntimeSettingsGroup } from "./runtime-settings-group"
 import { BrowserDiagnosticsGroup } from "./browser-diagnostics-group"
 import { PrivacySettingsGroup } from "./privacy-settings-group"
+import { WhatsNewSettingsRow } from "./whats-new-settings-row"
 import { Switch } from "@/components/ui/switch"
 import * as React from "react"
 import { cn } from "@/lib/utils"
@@ -64,6 +65,7 @@ function DesktopUpdatesGroup({
     >
       <UpdateOverview status={updates.status} />
       <VersionGrid status={updates.status} />
+      <WhatsNewSettingsRow status={updates.status} />
       {updates.status.phase === "downloading" ? (
         <DownloadProgress progress={updates.status.progress ?? 0} />
       ) : null}

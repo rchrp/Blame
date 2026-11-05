@@ -37,6 +37,7 @@ mountApp(root, {
     projectApp: window.blame.projectApp,
     gitIdentity: window.blame.gitIdentity,
     privacy: window.blame.privacy,
+    whatsNew: window.blame.whatsNew,
     projectWindows: window.blame.projectWindows,
     openDirectoryPickerDialog: (options) =>
       window.blame.openDirectoryPicker(options),

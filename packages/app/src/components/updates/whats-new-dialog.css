@@ -1,0 +1,68 @@
+/* The cover of What's new when the release brings no picture of its own. */
+.whats-new-backdrop {
+  background:
+    radial-gradient(
+      120% 140% at 0% 0%,
+      oklch(0.62 0.21 285 / 0.9) 0%,
+      transparent 55%
+    ),
+    radial-gradient(
+      90% 120% at 100% 0%,
+      oklch(0.72 0.15 215 / 0.75) 0%,
+      transparent 60%
+    ),
+    linear-gradient(160deg, oklch(0.42 0.2 266), oklch(0.2 0.09 272));
+}
+
+.whats-new-backdrop::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  background-image:
+    linear-gradient(to right, rgb(255 255 255 / 0.09) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(255 255 255 / 0.09) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: radial-gradient(ellipse at 85% 0%, black, transparent 70%);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .whats-new-cover {
+    animation: whats-new-cover 18s ease-out both;
+  }
+}
+
+@keyframes whats-new-cover {
+  from {
+    transform: scale(1.08);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+/* Sections of the notes, such as GitHub's "What's Changed". */
+.whats-new-notes h2 {
+  margin-top: 1.5rem;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  line-height: 1rem;
+  text-transform: uppercase;
+}
+
+.whats-new-notes h3 {
+  margin-top: 1rem;
+}
+
+.whats-new-notes > div:first-child :is(h1, h2, h3) {
+  margin-top: 0;
+}
+
+.whats-new-notes [data-list-marker]::before {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.dark .whats-new-notes [data-list-marker]::before {
+  color: oklch(0.72 0.15 265);
+}

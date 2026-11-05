@@ -27,7 +27,7 @@ const args = commandArgs[0] === "--" ? commandArgs.slice(1) : commandArgs;
 await loadEnvFiles(rootDir);
 
 if (command === "build") await build(args);
-else if (command === "collect") await collect(...args);
+else if (command === "collect") await collect(args);
 else {
   printHelp();
   process.exit(command === "help" ? 0 : 1);
@@ -141,23 +141,62 @@ function hostPlatformArgs() {
 }
 
 // Flattens the per-platform CI artifacts into one GitHub Release asset set.
-async function collect(sourceDirectory, outputDirectory) {
+async function collect(collectArgs) {
+  const { positional, releaseNotesFile } = collectOptions(collectArgs);
+  const [sourceDirectory, outputDirectory] = positional;
   if (!sourceDirectory || !outputDirectory) {
-    throw new Error("Usage: collect <artifacts directory> <output directory>");
+    throw new Error(
+      "Usage: collect <artifacts directory> <output directory> [--release-notes <file>]",
+    );
   }
+  const releaseNotes = releaseNotesFile
+    ? (await readFile(resolve(rootDir, releaseNotesFile), "utf8")).trim()
+    : "";
   const output = resolve(rootDir, outputDirectory);
   await rm(output, { force: true, recursive: true });
   await mkdir(output, { recursive: true });
 
   const files = await releaseFiles(resolve(rootDir, sourceDirectory), output);
   assertCompleteRelease(files);
-  const checksums = [];
+  const names = [];
   for (const file of files.sort((a, b) => basename(a).localeCompare(basename(b)))) {
     const destination = join(output, basename(file));
     if (file !== destination) await cp(file, destination);
-    checksums.push(`${await sha256File(destination)}  ${basename(file)}`);
+    names.push(basename(file));
+  }
+  if (releaseNotes) await writeReleaseNotes(output, names, releaseNotes);
+  const checksums = [];
+  for (const name of names) {
+    checksums.push(`${await sha256File(join(output, name))}  ${name}`);
   }
   await writeFile(join(output, "SHA256SUMS"), `${checksums.join("\n")}\n`, "utf8");
+}
+
+function collectOptions(collectArgs) {
+  const flag = collectArgs.indexOf("--release-notes");
+  if (flag === -1) return { positional: collectArgs };
+  const releaseNotesFile = collectArgs[flag + 1];
+  if (!releaseNotesFile || releaseNotesFile.startsWith("--")) {
+    throw new Error("--release-notes needs a file");
+  }
+  return {
+    positional: collectArgs.filter((_, index) => index !== flag && index !== flag + 1),
+    releaseNotesFile,
+  };
+}
+
+// The app reads a version's notes from its update metadata and shows them once
+// that version is installed (packages/desktop/src/main/whats-new.ts).
+async function writeReleaseNotes(directory, names, releaseNotes) {
+  for (const name of names.filter(isUpdateMetadata)) {
+    const file = join(directory, name);
+    const metadata = YAML.parse(await readFile(file, "utf8"));
+    await writeFile(
+      file,
+      YAML.stringify({ ...metadata, releaseNotes }, { blockQuote: "literal", lineWidth: 0 }),
+      "utf8",
+    );
+  }
 }
 
 async function releaseFiles(directory, outputDirectory) {
@@ -201,11 +240,15 @@ async function mergeMacosMetadata(files, outputDirectory) {
 }
 
 function isReleaseFile(file) {
-  if (file.startsWith("latest") && file.endsWith(".yml")) return true;
+  if (isUpdateMetadata(file)) return true;
   if (file.endsWith(".blockmap")) return true;
   return [".AppImage", ".deb", ".dmg", ".exe", ".rpm", ".zip"].includes(
     extname(file),
   );
+}
+
+function isUpdateMetadata(file) {
+  return file.startsWith("latest") && file.endsWith(".yml");
 }
 
 function assertCompleteRelease(files) {
@@ -241,7 +284,8 @@ function printHelp() {
     [
       "Usage:",
       "  node scripts/desktop-release.mjs build [electron-builder args]   Build installers into packages/desktop/dist (host platform by default)",
-      "  node scripts/desktop-release.mjs collect <artifacts> <output>    Merge CI artifacts into a release directory with SHA256SUMS",
+      "  node scripts/desktop-release.mjs collect <artifacts> <output> [--release-notes <file>]",
+      "      Merge CI artifacts into a release directory with SHA256SUMS, writing the notes into latest*.yml",
     ].join("\n"),
   );
 }

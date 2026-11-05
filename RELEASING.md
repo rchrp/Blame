@@ -32,8 +32,28 @@ Users never download from GitHub URLs directly. [`download.blame.so`](deploy/dow
 3. The workflow checks that the runtime referenced by `packages/desktop/resources/runtime/*/manifest.json` is published while it builds macOS (x64 and arm64, both packaged on Apple Silicon, signed and notarized), Windows, and Linux, and then creates a draft release.
    Once Windows signing is configured, **approve two signing requests in SignPath** while the Windows job runs: `Blame.exe` first, then the installer (see [Windows signing](#windows-signing)).
 4. **Pre-production test.** Only maintainers can see a draft. Download the installers from the draft on the [releases page](https://github.com/rchrp/Blame/releases) and test them.
-5. Edit the generated notes and click **Publish release**. From then on, `download.blame.so/latest`, the download page, and the in-app updater serve this version.
+5. Edit the generated notes if needed. **If you edited them, re-run the `GitHub Release` job** of the workflow run (**Re-run jobs → GitHub Release**) so the update metadata carries the edit (see [Release notes in the app](#release-notes-in-the-app)). Then click **Publish release**. From then on, `download.blame.so/latest`, the download page, and the in-app updater serve this version.
 6. Publishing starts **Release packages**, which updates the package managers (see below).
+
+### Release notes in the app
+
+After an update, the app shows the new version's notes once, in a **What's new in Blame vX.Y.Z** screen; **Settings → Desktop → What's new** shows them again. A fresh install shows nothing.
+
+The app never downloads the notes on its own. They come with the update check, inside the update metadata it already reads: `releaseNotes` in `latest.yml`, `latest-mac.yml` and `latest-linux.yml`. The app keeps the notes of the running version and of the newest update it found in `whats-new.json`, in its user data folder. With update checks turned off in **Settings → Desktop**, the screen never opens.
+
+The **GitHub Release** job of **Release desktop** writes them, in this order:
+
+1. **Resolve the release notes**: for a new release, GitHub generates them (`POST /repos/{repo}/releases/generate-notes`, as `gh release create --generate-notes` did). If the release already exists, the job takes its current notes instead.
+2. **Collect release files**: `scripts/desktop-release.mjs collect --release-notes <file>` writes them into every `latest*.yml`, then computes `SHA256SUMS`, so the checksums describe the metadata with its notes.
+3. **Create or update the release**: a new release gets the same text (`--notes-file`). An existing one keeps its notes and receives the new metadata (`--clobber`).
+
+The builds never see the notes, which do not exist yet when they run. If you change the workflow, keep the notes written before the checksums, and keep the release and its metadata on the same text.
+
+Editing the notes on GitHub does not change the metadata. To ship an edit, re-run the **GitHub Release** job before publishing: it reads the edited notes from the draft. The build artifacts it needs are kept for 3 days; after that, re-run the whole workflow. A beta is published right away, so apps that check for updates before the re-run get the generated notes.
+
+In the notes, the app renders the Markdown that GitHub generates: lists, links, pull request and compare URLs, and `@` mentions. To put a picture or GIF at the top of the screen, upload it to the release and reference it from the notes: `![Short description](https://github.com/rchrp/Blame/releases/download/v1.2.0/whats-new.gif)`. The app only loads images from the release's own downloads (`github.com/rchrp/Blame/releases/download/…` or `download.blame.so`), where the updater already downloads from; any other image, `github.com/user-attachments` included, is shown as a link.
+
+To test the screen, install a packaged build that already includes it, then update it in the app to a newer published version: a beta tag works, with **Beta channel** turned on. Versions without the screen keep no state, so the first launch after updating from one of them counts as a fresh install. A version whose metadata has no notes shows no screen; **Settings → Desktop** then links to its GitHub release.
 
 ### Windows signing
 

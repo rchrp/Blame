@@ -123,6 +123,19 @@ const api: BlameDesktopApi = {
     get: () => ipcRenderer.invoke("privacy:get"),
     set: (preferences) => ipcRenderer.invoke("privacy:set", preferences),
   },
+  whatsNew: {
+    current: () => ipcRenderer.invoke("whats-new:current"),
+    dismiss: (version) => ipcRenderer.invoke("whats-new:dismiss", version),
+    onAvailable: (callback) => {
+      const handler = (
+        _event: unknown,
+        notes: Parameters<typeof callback>[0],
+      ) => callback(notes);
+      ipcRenderer.on("whats-new:available", handler);
+      return () => ipcRenderer.removeListener("whats-new:available", handler);
+    },
+    pending: () => ipcRenderer.invoke("whats-new:get"),
+  },
   telemetry: {
     configure: (session) => ipcRenderer.invoke("telemetry:configure", session),
     disable: () => ipcRenderer.invoke("telemetry:disable"),

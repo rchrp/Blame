@@ -67,6 +67,7 @@ import type { TelemetryExportSession } from "@blame/app";
 import type { HostDependencyReport } from "../main/host-dependencies";
 import type { RuntimeStatusReport } from "../main/runtime-manager";
 import type { CreateProjectInput } from "../main/project-creation";
+import type { ReleaseNotes } from "../main/whats-new";
 import type {
   PreviewLogEvent,
   PreviewSessionCommand,
@@ -161,6 +162,14 @@ export type PrivacyPreferences = { telemetry: boolean; updateChecks: boolean };
 export type PrivacyClient = {
   get(): Promise<PrivacyPreferences>;
   set(preferences: PrivacyPreferences): Promise<PrivacyPreferences>;
+};
+
+// The release notes shown once after an update; see main/whats-new.ts.
+export type WhatsNewClient = {
+  current(): Promise<ReleaseNotes | null>;
+  dismiss(version: string): Promise<void>;
+  onAvailable(callback: (notes: ReleaseNotes) => void): () => void;
+  pending(): Promise<ReleaseNotes | null>;
 };
 
 export type GitIdentityClient = {
@@ -305,6 +314,7 @@ export type BlameDesktopApi = {
   projectApp: ProjectApp;
   gitIdentity: GitIdentityClient;
   privacy: PrivacyClient;
+  whatsNew: WhatsNewClient;
   projectWindows: ProjectWindows;
   agentScreenshots: AgentScreenshotsClient;
   previewDevtools: PreviewDevtoolsSettingsClient;

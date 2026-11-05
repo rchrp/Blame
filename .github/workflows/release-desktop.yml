@@ -6,6 +6,9 @@
 # Once the SIGNPATH_API_TOKEN secret exists, SignPath signs the Windows app and
 # its installer, and each signing request waits for a maintainer's approval in
 # SignPath. Without the secret, Windows builds stay unsigned, with a notice.
+# The release notes also go into the update metadata (latest*.yml), which the
+# app shows once after updating. After editing a draft's notes, re-run the
+# GitHub Release job before publishing so the metadata carries the edit.
 name: Release desktop
 
 on:
@@ -253,8 +256,20 @@ jobs:
           path: artifacts
           pattern: desktop-*
 
+      # GitHub generates the notes of a new release. An existing release keeps
+      # its own, so a re-run writes the notes as edited in the draft.
+      - name: Resolve the release notes
+        run: |
+          if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
+            gh release view "$GITHUB_REF_NAME" --json body --jq .body > "$RUNNER_TEMP/release-notes.md"
+          else
+            gh api "repos/$GITHUB_REPOSITORY/releases/generate-notes" \
+              -f tag_name="$GITHUB_REF_NAME" --jq .body > "$RUNNER_TEMP/release-notes.md"
+          fi
+
+      # Writes the notes into every latest*.yml before SHA256SUMS is computed.
       - name: Collect release files
-        run: node scripts/desktop-release.mjs collect artifacts release
+        run: node scripts/desktop-release.mjs collect artifacts release --release-notes "$RUNNER_TEMP/release-notes.md"
 
       # Stable versions stay drafts until a maintainer publishes them. Betas are
       # published as prereleases, which download.blame.so/latest never serves.
@@ -263,7 +278,7 @@ jobs:
           if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
             gh release upload "$GITHUB_REF_NAME" release/* --clobber
           else
-            flags=(--generate-notes --title "Blame $VERSION" --verify-tag)
+            flags=(--notes-file "$RUNNER_TEMP/release-notes.md" --title "Blame $VERSION" --verify-tag)
             if [[ "$VERSION" == *-* ]]; then
               flags+=(--prerelease --latest=false)
             else
