@@ -593,19 +593,25 @@ def version():
         return "unknown"
 
 docker_lock = threading.Lock()
+# A docker info starts the Docker CLI, and every Docker command used to run
+# one first: about two a second while a preview is open. A daemon that
+# answered a few seconds ago is still up.
+docker_ready_until = 0.0
 
 def docker_ready():
+    global docker_ready_until
     try:
-        return subprocess.run(["docker", "info"], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=2).returncode == 0
+        ready = subprocess.run(["docker", "info"], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=2).returncode == 0
     except subprocess.TimeoutExpired:
-        return False
+        ready = False
+    docker_ready_until = time.monotonic() + 10 if ready else 0.0
+    return ready
 
 # Provisioning and every agent process share this lock. A thread-only lock
 # allowed two dockerd processes to race while opening the volume database.
 def ensure_docker():
     import fcntl
-    import time
-    if docker_ready():
+    if time.monotonic() < docker_ready_until or docker_ready():
         return
     deadline = time.monotonic() + 90
     os.makedirs("/var/log/blame-runtime", exist_ok=True)

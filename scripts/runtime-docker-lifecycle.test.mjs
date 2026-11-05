@@ -75,10 +75,47 @@ if command == "dockerd":
     assert len(launches()) == 3, "Startup retries must be bounded"
 `;
 
+// The long-lived agent checks the daemon once every few seconds, not before
+// every Docker command.
+const readinessProbe = String.raw`
+import importlib.util, os, sys, tempfile, time
+from pathlib import Path
+
+source = Path(sys.argv[1]).read_text()
+body = source.split("cat >/usr/local/bin/blame-runtime-agent <<'EOF'\n", 1)[1].split("\nEOF", 1)[0]
+with tempfile.TemporaryDirectory(prefix="blame-docker-test-") as directory:
+    root = Path(directory)
+    body = body.replace("/var/log/blame-runtime", str(root / "logs")).replace("/run/lock", str(root / "locks"))
+    (root / "agent.py").write_text(body)
+    docker = root / "docker"
+    docker.write_text("#!/bin/sh\necho \"$*\" >> \"$TEST_DOCKER_ROOT/calls\"\n")
+    docker.chmod(0o755)
+    os.environ["PATH"] = str(root) + os.pathsep + os.environ["PATH"]
+    os.environ["TEST_DOCKER_ROOT"] = str(root)
+    spec = importlib.util.spec_from_file_location("agent", root / "agent.py")
+    agent = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(agent)
+    def calls():
+        return (root / "calls").read_text().splitlines() if (root / "calls").exists() else []
+    for _ in range(5):
+        agent.ensure_docker()
+    assert calls() == ["info"], calls()
+    now = time.monotonic()
+    agent.time.monotonic = lambda: now + 11
+    agent.ensure_docker()
+    assert calls() == ["info", "info"], "A stale readiness check was trusted"
+`;
+
 for (const platform of ["macos", "windows"]) {
   test(`${platform} serializes Docker startup across provisioning and agents`, { skip: !pythonAvailable }, () => {
     const script = resolve(`packages/desktop/resources/runtime/${platform}/scripts/provision-blame-runtime.sh`);
     const result = spawnSync("python3", ["-c", probe, script], { encoding: "utf8", timeout: 30_000 });
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+  });
+
+  test(`${platform} reuses a recent Docker readiness check`, { skip: !pythonAvailable }, () => {
+    const script = resolve(`packages/desktop/resources/runtime/${platform}/scripts/provision-blame-runtime.sh`);
+    const result = spawnSync("python3", ["-c", readinessProbe, script], { encoding: "utf8", timeout: 30_000 });
     assert.equal(result.status, 0, result.stderr || result.stdout);
   });
 }
