@@ -139,7 +139,7 @@ export class LightWorkspace {
       }
     await this.journal.recordCoverage(this.coverage.snapshot());
     if (result.status !== "ok" || recordValue(result.data).changed !== true) return result;
-    return this.withCheckRepair(await this.withValidationState(result, recordValue(result.status === "ok" ? result.data : undefined).sourceRevisionId));
+    return this.withCheckRepair(await this.withValidationState(result, recordValue(result.status === "ok" ? result.data : undefined).sourceRevisionId), false);
   }
 
   private async withValidationState(result: LightToolResult<unknown>, expectedRevision?: unknown): Promise<LightToolResult<unknown>> {
@@ -158,10 +158,14 @@ export class LightWorkspace {
     return validationState ? { ...result, data: { ...recordValue(result.data), validationState } } : result;
   }
 
+  /** The repair plan last attached to a run_task result. */
+  private shownRepair?: string;
+
   async runTask(input: LightRunTaskInput, context: AgentToolContext) {
     const inspection = input.kind === "command" ? await this.shellInspection(input, context) : undefined;
     if (inspection) return inspection;
-    return this.withCheckRepair(await this.withValidationState(await this.runTaskWithDiagnostics(input, context)));
+    const result = await this.withValidationState(await this.runTaskWithDiagnostics(input, context));
+    return this.withCheckRepair(result, checkOrFailure(result, input));
   }
 
   /** Answers grep/cat-style source inspection with search_code and read_code observations. */
@@ -176,13 +180,20 @@ export class LightWorkspace {
     });
   }
 
-  private async withCheckRepair(result: LightToolResult<unknown>): Promise<LightToolResult<unknown>> {
+  /** `relevant`: the plan is about this result (a check, a failure, @checks), so it always rides on it. */
+  private async withCheckRepair(result: LightToolResult<unknown>, relevant: boolean): Promise<LightToolResult<unknown>> {
     if (result.status === "ok" && typeof recordValue(result.data).run === "string" &&
         !recordValue(result.data).completed) return result;
     // Advisory discovery must not turn a committed edit or completed command
     // into a missing receipt when a manifest is temporarily incomplete.
     const repair = await checkRepairPlan(this.files, this.journal, this.options.taskContract).catch(() => undefined);
+    const key = repair && JSON.stringify(repair);
+    const previous = this.shownRepair;
+    this.shownRepair = key;
     if (!repair) return result;
+    // A failing check's plan rode on every later command, an `ls` included
+    // (46 results in US-041). Repeat it only with checks and failures.
+    if (key === previous && !relevant) return result;
     return result.status === "ok" ? { ...result, data: { ...recordValue(result.data), validationRepair: repair } }
       : result.status === "blocked" ? { ...result, recovery: `${result.recovery ?? ""}\n${JSON.stringify({ validationRepair: repair })}`.trim() }
       : result;
@@ -311,7 +322,7 @@ export class LightWorkspace {
 
   private async specialReadResult(target: string) {
     if (target === "@checks")
-      return this.withCheckRepair({ status: "ok" as const, data: currentValidationReport(await this.journal.completionSnapshot(), this.journal.currentValidations()) });
+      return this.withCheckRepair({ status: "ok" as const, data: currentValidationReport(await this.journal.completionSnapshot(), this.journal.currentValidations()) }, true);
     if (target === "@capabilities") return capabilitiesResult();
     if (target === "@changes")
       return {
@@ -770,4 +781,12 @@ export class LightWorkspace {
     await this.journal.recordCoverage(this.coverage.snapshot());
     return result;
   }
+}
+
+/** A result the repair plan is about: a failure, a project task, or a recorded check. */
+function checkOrFailure(result: LightToolResult<unknown>, input: LightRunTaskInput) {
+  if (result.status !== "ok" || input.kind !== "command") return true;
+  const data = recordValue(result.data);
+  const completed = recordValue(recordValue(data.completed).data);
+  return ["validation", "reporting", "testValidationScope", "check"].some((key) => key in data || key in completed);
 }
