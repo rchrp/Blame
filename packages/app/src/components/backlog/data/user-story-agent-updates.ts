@@ -8,6 +8,7 @@ import {
   failedAgentRun,
   resumableAgentFailure,
   terminalAgentRunEvent,
+  type AgentFlowState,
   type AgentFlowUpdate,
 } from "./agent-flow.ts"
 
@@ -58,7 +59,7 @@ function nextAgentActivities(
   return updates.reduce(upsertAgentActivity, activities)
 }
 
-function activityUpdates(input: UserStoryUpdate) {
+export function activityUpdates(input: UserStoryUpdate) {
   return input.agentActivityUpdates ?? activityUpdateList(input.agentActivity)
 }
 
@@ -195,4 +196,24 @@ export function expiredAuthenticationToken(message: string) {
     normalized.includes("authentication token") &&
     normalized.includes("invalidated")
   )
+}
+
+// Scoped to the run: once a run failed to authenticate its later events
+// are ignored, but a restarted run of the same story is followed again.
+export function agentAuthenticationErrorKey(
+  story: Pick<UserStory, "id">,
+  run?: Pick<UserStoryAgentRun, "id">
+) {
+  return `${story.id}:${run?.id ?? "story"}:expired-authentication-token`
+}
+
+// What a run's stream starts from: the run's own saved state, never the
+// story's, which may still hold an earlier run's.
+export function runFlowState(run: UserStoryAgentRun): AgentFlowState {
+  return {
+    agentActivities: run.activities,
+    agentFinalResponse: run.finalResponse,
+    agentSessionSummary: run.sessionSummary,
+    agentUsage: run.usage,
+  }
 }

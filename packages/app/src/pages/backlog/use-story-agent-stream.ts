@@ -42,6 +42,7 @@ import type {
 } from "@/components/backlog/data/backlog-data"
 import type { useBacklogStore } from "@/components/backlog/data/backlog-store"
 import {
+  agentAuthenticationErrorKey,
   agentEventUpdate,
   agentMetadataUpdate,
   agentRunEventUpdate,
@@ -52,15 +53,14 @@ import {
   pausedAgentUpdate,
   pendingAgentUpdate,
   type QueuedAgentUpdate,
+  runFlowState,
 } from "@/components/backlog/data/user-story-agent-updates"
 import type { Platform } from "@/context/platform"
 import { createDebouncedUpdateQueue } from "@/lib/debounced-update-queue"
 import { recordPerformanceEvent } from "@/lib/performance-diagnostics"
 import {
-  agentAuthenticationErrorKey,
   notifyCommentResponseCompleted,
   reportAgentPersistenceError,
-  runFlowState,
   runningAgentRunsForStory,
 } from "./backlog-rotation-helpers"
 import { activeStory } from "./story-runtime-state"

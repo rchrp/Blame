@@ -7,9 +7,11 @@ import type {
   UserStoryAgentRun,
 } from "./backlog-data.ts"
 import {
+  agentAuthenticationErrorKey,
   agentEventUpdate,
   agentRunEventUpdate,
   pendingAgentUpdate,
+  runFlowState,
 } from "./user-story-agent-updates.ts"
 
 test("coalescing preserves activity order and replaces a tool's running snapshot", () => {
@@ -72,4 +74,40 @@ test("terminal success moves the story to review and completes its run", () => {
   assert.equal(update.agentLastError, null)
   assert.equal(runUpdate.status, "completed")
   assert.ok(runUpdate.completedAt)
+})
+
+test("an expired token silences its own run, not the story's next one", () => {
+  const story = { id: "story-1" }
+  const first = agentAuthenticationErrorKey(story, { id: "run-1" })
+  assert.equal(first, agentAuthenticationErrorKey(story, { id: "run-1" }))
+  assert.notEqual(first, agentAuthenticationErrorKey(story, { id: "run-2" }))
+  assert.notEqual(
+    first,
+    agentAuthenticationErrorKey({ id: "story-2" }, { id: "run-1" })
+  )
+  assert.notEqual(first, agentAuthenticationErrorKey(story))
+})
+
+test("a run's stream starts from the run's saved state, not the story's", () => {
+  const activity = { id: "tool-1" } as UserStoryAgentActivity
+  const usage = { inputTokens: 3 } as UserStoryAgentRun["usage"]
+  const run = {
+    activities: [activity],
+    finalResponse: "Done",
+    id: "run-1",
+    sessionSummary: "Session completed.",
+    usage,
+  } as UserStoryAgentRun
+  assert.deepEqual(runFlowState(run), {
+    agentActivities: [activity],
+    agentFinalResponse: "Done",
+    agentSessionSummary: "Session completed.",
+    agentUsage: usage,
+  })
+  assert.deepEqual(runFlowState({ id: "run-2" } as UserStoryAgentRun), {
+    agentActivities: undefined,
+    agentFinalResponse: undefined,
+    agentSessionSummary: undefined,
+    agentUsage: undefined,
+  })
 })

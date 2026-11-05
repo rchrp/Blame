@@ -54,8 +54,6 @@ import {
 import {
   activeAgentRun,
   activePreviewStory,
-  activityUpdates,
-  agentRunEventUpdate,
   clineLogPath,
   clineLogRelativePath,
   errorMessage,
@@ -68,13 +66,17 @@ import {
   recoveredMessageCount,
   reportAgentPersistenceError,
   rotationBlocker,
-  runFlowState,
   maxConcurrentDevelopmentStories,
   runningStories,
   staleAgentRunAge,
   storyTelemetryCohorts,
 } from "./backlog-rotation-helpers"
 import type { StoryAgentStreamControls } from "./use-story-agent-stream"
+import {
+  activityUpdates,
+  agentRunEventUpdate,
+  runFlowState,
+} from "@/components/backlog/data/user-story-agent-updates"
 
 const blockerRetryDelay = 30_000
 const previewRecoveryIntervalMs = 30_000

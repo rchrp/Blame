@@ -1,30 +1,17 @@
 import {
   type UserStory,
-  type UserStoryAgentActivity,
   type UserStoryAgentRun,
-  type UserStoryAgentRunUpdate,
   userStoryDisplayId,
   userStoryReadyForAgent,
-  type UserStoryUpdate,
 } from "@/components/backlog/data/backlog-data"
 import type { HostDependencyReport, usePlatform } from "@/context/platform"
 import type { useRuntimePreference } from "@/lib/runtime-preference"
-import type { AgentEvent } from "@blame/agent-runtime"
-import {
-  cancelledAgentRun,
-  completedAgentRun,
-  failedAgentRun,
-} from "@/components/backlog/data/agent-flow"
 import { showSystemNotification } from "@/lib/system-notifications"
 import type { useCloudAuth } from "@/context/cloud-auth"
 import type { useModelSelection } from "@/components/model/model-selection"
 import { taskComplexityBucket } from "@blame/agent-runtime/telemetry-cohorts"
 
 const agentCompletionRecoveryGraceMs = 60_000
-
-export function activeStory(story: UserStory, stories: UserStory[]) {
-  return stories.find((currentStory) => currentStory.id === story.id) ?? story
-}
 
 export function activeAgentRun(story: UserStory, run: UserStoryAgentRun) {
   return story.agentRuns?.find((currentRun) => currentRun.id === run.id)
@@ -34,17 +21,6 @@ export function reportAgentPersistenceError(error: unknown) {
   console.error("Failed to persist agent update.", error)
 }
 
-export type QueuedAgentUpdate = {
-  activities: UserStoryAgentActivity[]
-  input: UserStoryUpdate
-  run?: UserStoryAgentRun
-  runInput: UserStoryAgentRunUpdate
-}
-
-export type PendingAgentUpdate = QueuedAgentUpdate & {
-  timer: number
-}
-
 export type HostDependenciesDialogState = {
   checking: boolean
   report: HostDependencyReport
@@ -52,114 +28,6 @@ export type HostDependenciesDialogState = {
   workspaceMode: "local-container" | "cloud-mirror" | "direct"
   storyId: string
   storyTitle: string
-}
-
-export function clearPendingAgentUpdates(updates: Map<string, PendingAgentUpdate>) {
-  updates.forEach((update) => window.clearTimeout(update.timer))
-  updates.clear()
-}
-
-export function definedUpdate(input: object) {
-  return Object.fromEntries(
-    Object.entries(input).filter(([, value]) => value !== undefined)
-  )
-}
-
-export function pendingAgentUpdate(
-  pending: QueuedAgentUpdate | undefined,
-  input: UserStoryUpdate,
-  run: UserStoryAgentRun | undefined,
-  runInput: UserStoryAgentRunUpdate
-): QueuedAgentUpdate {
-  return {
-    activities: nextAgentActivities(
-      pending?.activities ?? [],
-      activityUpdates(input)
-    ),
-    input: { ...pending?.input, ...input },
-    run: pending?.run ?? run,
-    runInput: { ...pending?.runInput, ...runInput },
-  }
-}
-
-function nextAgentActivities(
-  activities: UserStoryAgentActivity[],
-  updates: UserStoryAgentActivity[]
-) {
-  return updates.reduce(upsertAgentActivity, activities)
-}
-
-export function activityUpdates(input: UserStoryUpdate) {
-  return input.agentActivityUpdates ?? activityUpdateList(input.agentActivity)
-}
-
-function activityUpdateList(
-  activity: UserStoryAgentActivity | null | undefined
-) {
-  return activity ? [activity] : []
-}
-
-function upsertAgentActivity(
-  activities: UserStoryAgentActivity[],
-  activity: UserStoryAgentActivity
-) {
-  const exists = activities.some((item) => item.id === activity.id)
-  if (!exists) return [...activities, activity]
-  return activities.map((item) => (item.id === activity.id ? activity : item))
-}
-
-export function agentMetadataUpdate(input: UserStoryUpdate): UserStoryUpdate {
-  const { agentActivities, agentActivity, agentActivityUpdates, ...metadata } =
-    input
-  void agentActivities
-  void agentActivity
-  void agentActivityUpdates
-  return metadata
-}
-
-export function pausedAgentUpdate(input: UserStoryUpdate) {
-  return input.status === "in-progress" && input.agentStatus === "Paused"
-}
-
-export function agentRunMetadataUpdate(
-  input: UserStoryAgentRunUpdate
-): UserStoryAgentRunUpdate {
-  const { activities, agentActivity, agentActivityUpdates, ...metadata } = input
-  void activities
-  void agentActivity
-  void agentActivityUpdates
-  return metadata
-}
-
-export function agentRunEventUpdate(
-  update: UserStoryUpdate,
-  event: AgentEvent,
-  text: string
-): UserStoryAgentRunUpdate {
-  const input: UserStoryAgentRunUpdate = {}
-  if (update.agentActivity) input.agentActivity = update.agentActivity
-  if (update.agentActivityUpdates)
-    input.agentActivityUpdates = update.agentActivityUpdates
-  if (update.agentUsage) input.usage = update.agentUsage
-  if (update.agentFinalResponse !== undefined)
-    input.finalResponse = update.agentFinalResponse
-  if (update.agentSessionSummary !== undefined)
-    input.sessionSummary = update.agentSessionSummary
-  if (completedAgentRun(event)) {
-    input.status = "completed"
-    input.completedAt = new Date().toISOString()
-  }
-  if (cancelledAgentRun(event)) {
-    input.status = "cancelled"
-    input.finalResponse = update.agentFinalResponse ?? text
-    input.completedAt = new Date().toISOString()
-  }
-  if (failedAgentRun(event) && !cancelledAgentRun(event)) {
-    input.status = "failed"
-    input.finalResponse = update.agentFinalResponse ?? text
-    input.completedAt = new Date().toISOString()
-  }
-  return input
 }
 
 export function notifyCommentResponseCompleted(
@@ -252,15 +120,6 @@ export function nextAgentRun(story: UserStory, run: UserStoryAgentRun) {
   )
 }
 
-export function runFlowState(run: UserStoryAgentRun) {
-  return {
-    agentActivities: run.activities,
-    agentFinalResponse: run.finalResponse,
-    agentSessionSummary: run.sessionSummary,
-    agentUsage: run.usage,
-  }
-}
-
 function staleAgentRun(run: UserStoryAgentRun) {
   return staleAgentRunAge(run) >= agentCompletionRecoveryGraceMs
 }
@@ -336,22 +195,5 @@ export function errorMessage(error: unknown) {
   return error instanceof Error
     ? error.message
     : "Unable to start queued user story."
-}
-
-export function expiredAuthenticationToken(message: string) {
-  const normalized = message.toLowerCase()
-  return (
-    normalized.includes("authentication token") &&
-    normalized.includes("invalidated")
-  )
-}
-
-// Scoped to the run: once a run failed to authenticate its later events
-// are ignored, but a restarted run of the same story is followed again.
-export function agentAuthenticationErrorKey(
-  story: UserStory,
-  run?: UserStoryAgentRun
-) {
-  return `${story.id}:${run?.id ?? "story"}:expired-authentication-token`
 }
 
