@@ -52,7 +52,10 @@ import {
   useAgentTurnMetrics,
 } from "@/components/chat/agent-turn-metrics"
 import {
-  completedQuickChatClineLog,
+  interruptedQuickChatRunFinalization,
+  quickChatRunRecovery,
+} from "@/components/chat/data/quick-chat-run-recovery"
+import {
   definedQuickChatUpdate,
   immediateQuickChatAgentEvent,
   pendingQuickChatAgentUpdate,
@@ -307,17 +310,26 @@ function QuickChatProjectPage() {
       if (recoveringAgentRunIds.current.has(run.id)) return
       recoveringAgentRunIds.current.add(run.id)
       try {
-        const log = await workspace
-          .readFile({
-            root: current.workspace,
-            path: quickChatClineLogRelativePath(sessionId),
-          })
-          .catch(() => "")
-        if (!completedQuickChatClineLog(log)) return
-        await recoverAgentEventRef.current(currentChat(current), run, {
-          payload: {},
-          type: "done",
+        const recovery = await quickChatRunRecovery(current, run, sessionId, {
+          live: platform.agent?.sessions.live,
+          log: (id) =>
+            workspace.readFile({
+              root: current.workspace!,
+              path: quickChatClineLogRelativePath(id),
+            }),
+          messages: (id) =>
+            platform.agent?.sessions.messages(id) ?? Promise.resolve(undefined),
         })
+        if (recovery?.kind === "completed")
+          await recoverAgentEventRef.current(currentChat(current), run, recovery.event)
+        if (recovery?.kind === "interrupted")
+          replaceChatRef(
+            await quickChatsRef.current.finalizeAgentRun(
+              currentChat(current),
+              run,
+              interruptedQuickChatRunFinalization(current, run)
+            )
+          )
       } finally {
         recoveringAgentRunIds.current.delete(run.id)
       }
@@ -325,7 +337,7 @@ function QuickChatProjectPage() {
     void recover()
     const timer = window.setInterval(recover, agentCompletionRecoveryIntervalMs)
     return () => window.clearInterval(timer)
-  }, [activeConversation, activeConversationLoaded, platform.workspace])
+  }, [activeConversation, activeConversationLoaded, platform.agent, platform.workspace])
 
   function replaceChatRef(chat: QuickChat) {
     const exists = chatsRef.current.some((item) => item.id === chat.id)

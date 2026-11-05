@@ -7,7 +7,6 @@ import type {
   QuickChatUpdate,
 } from "@/components/chat/data/quick-chat-data"
 import type { UserStoryAgentActivity } from "../../backlog/data/backlog-data.ts"
-import { completedClineLog } from "../../backlog/data/agent-run-recovery.ts"
 import {
   agentEventText,
   agentFlowUpdate,
@@ -124,10 +123,6 @@ export function recoverableQuickChatAgentRun(
       now - new Date(updatedAt).getTime() >= agentCompletionRecoveryGraceMs
     )
   })
-}
-
-export function completedQuickChatClineLog(log: string) {
-  return completedClineLog(log)
 }
 
 export function quickChatExpiredAuthenticationToken(message: string) {

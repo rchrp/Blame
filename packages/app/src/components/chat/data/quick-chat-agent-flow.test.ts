@@ -5,7 +5,6 @@ import type { AgentEvent } from "@blame/agent-runtime"
 
 import type { QuickChat, QuickChatAgentRun } from "./quick-chat-data.ts"
 import {
-  completedQuickChatClineLog,
   pendingQuickChatAgentUpdate,
   quickChatAgentEventUpdate,
   quickChatAgentRunEventUpdate,
@@ -103,28 +102,6 @@ test("accumulates queued quick chat activity updates", () => {
   )
   assert.equal(second.input.agentLastEvent, "Completed tool")
   assert.equal(second.runInput.finalResponse, "Finished")
-})
-
-test("recognizes a completed quick chat agent log", () => {
-  const log = [
-    JSON.stringify({ message: "event:text", payload: { text: "Done" } }),
-    JSON.stringify({
-      message: "event:done",
-      payload: { finishReason: "stop" },
-    }),
-  ].join("\n")
-
-  assert.equal(completedQuickChatClineLog(log), true)
-})
-
-test("does not recover a failed or incomplete quick chat agent log", () => {
-  const failed = JSON.stringify({
-    message: "event:done",
-    payload: { reason: "failed" },
-  })
-
-  assert.equal(completedQuickChatClineLog(failed), false)
-  assert.equal(completedQuickChatClineLog("not json"), false)
 })
 
 test("selects only stale running quick chat agent runs for recovery", () => {
