@@ -64,6 +64,8 @@ type JournalEvent =
   | ({ type: "change" } & JournalChange)
   | ({ type: "validation" } & JournalValidation)
   | { type: "aliases"; entries: LightAlias[]; timestamp: string }
+  /** Since the previous alias event: every alias in order, and the entries that changed. */
+  | { type: "alias_changes"; order: string[]; changed: LightAlias[]; timestamp: string }
   | { type: "coverage"; state: ReadCoverageState; timestamp: string }
   | { type: "terminal"; state: string; summary?: string; timestamp: string };
 
@@ -74,6 +76,8 @@ export class SessionJournal {
   private readonly validations: JournalValidation[] = [];
   private aliases: LightAlias[] = [];
   private aliasesDigest = "";
+  /** Alias change events since the last full list. */
+  private aliasChanges = 0;
   private coverage: ReadCoverageState = { entries: [], receiptSequence: 0 };
   private coverageDigest = "";
   private readonly requestIds = new Set<string>();
@@ -136,8 +140,23 @@ export class SessionJournal {
     const aliases = entries.slice(-500).map((entry) => ({ ...entry }));
     const digest = sha256(JSON.stringify(aliases));
     if (digest === this.aliasesDigest) return;
+    const previous = new Map(this.aliases.map((entry) => [entry.alias, JSON.stringify(entry)]));
     this.aliases = aliases;
     this.aliasesDigest = digest;
+    // Rewriting all 500 aliases on every read made a story's journal 12 MB
+    // (US-041). Most events now carry only what changed, with a full list
+    // now and then so a reload replays few of them.
+    if (previous.size && this.aliasChanges < fullAliasListEvery) {
+      this.aliasChanges += 1;
+      await this.append({
+        type: "alias_changes",
+        order: aliases.map((entry) => entry.alias),
+        changed: aliases.filter((entry) => previous.get(entry.alias) !== JSON.stringify(entry)),
+        timestamp: now(),
+      });
+      return;
+    }
+    this.aliasChanges = 0;
     await this.append({
       type: "aliases",
       entries: this.aliases,
@@ -202,9 +221,9 @@ export class SessionJournal {
       this.validations.length,
       ...events.filter(isValidation),
     );
-    this.aliases = ([...events].reverse().find(isAliases)?.entries ?? []).slice(
-      -500,
-    );
+    const { aliases, changes } = replayedAliases(events);
+    this.aliases = aliases.slice(-500);
+    this.aliasChanges = changes;
     this.aliasesDigest = sha256(JSON.stringify(this.aliases));
     this.coverage =
       [...events].reverse().find(isCoverage)?.state ?? this.coverage;
@@ -387,10 +406,24 @@ function isValidation(
   return event.type === "validation";
 }
 
-function isAliases(
-  event: JournalEvent,
-): event is Extract<JournalEvent, { type: "aliases" }> {
-  return event.type === "aliases";
+const fullAliasListEvery = 50;
+
+/** The alias list after the last full list and the changes recorded since. */
+function replayedAliases(events: JournalEvent[]) {
+  let aliases: LightAlias[] = [];
+  let changes = 0;
+  for (const event of events) {
+    if (event.type === "aliases") {
+      aliases = event.entries;
+      changes = 0;
+    } else if (event.type === "alias_changes") {
+      const byAlias = new Map(aliases.map((entry) => [entry.alias, entry]));
+      for (const entry of event.changed) byAlias.set(entry.alias, entry);
+      aliases = event.order.flatMap((alias) => byAlias.get(alias) ?? []);
+      changes += 1;
+    }
+  }
+  return { aliases, changes };
 }
 
 function isCoverage(

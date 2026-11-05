@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
@@ -261,3 +262,23 @@ async function waitFor(path: string) {
   }
   throw new Error("Fixture did not start.");
 }
+
+test("the journal records alias changes and replays the same list", async () => {
+  await fixture(async root => {
+    const journal = new SessionJournal(root, "aliases");
+    const alias = (index: number, end = 10) => ({ alias: `s${index}`, kind: "path", path: `src/file${index}.ts`, start: 0, end }) as never;
+    let entries = Array.from({ length: 300 }, (_, index) => alias(index));
+    await journal.recordAliases(entries);
+    for (let step = 0; step < 120; step += 1) {
+      entries = [...entries.filter((_, index) => index !== step % 7), alias(300 + step, step)];
+      await journal.recordAliases(entries);
+    }
+    const reloaded = new SessionJournal(root, "aliases");
+    await reloaded.hydrate();
+    assert.deepEqual(reloaded.currentAliases(), entries);
+    const file = join(root, ".blame/harness/light", `${createHash("sha256").update("aliases").digest("hex").slice(0, 24)}.jsonl`);
+    const full = Buffer.byteLength(JSON.stringify(entries));
+    // A full list each time would take about 121 times one list.
+    assert.ok((await stat(file)).size < full * 20, `${(await stat(file)).size} bytes`);
+  });
+});
