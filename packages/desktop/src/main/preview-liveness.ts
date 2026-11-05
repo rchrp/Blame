@@ -13,10 +13,13 @@ export type PreviewLivenessChecks = {
 
 export class PreviewLiveness {
   private readonly silentSince = new Map<string, number>();
+  private readonly probedAt = new Map<string, number>();
   private readonly graceMs: number;
+  private readonly probeReuseMs: number;
 
-  constructor(graceMs = 90_000) {
+  constructor(graceMs = 90_000, probeReuseMs = 120_000) {
     this.graceMs = graceMs;
+    this.probeReuseMs = probeReuseMs;
   }
 
   /** Whether the preview of `worktree` should be left as it is. */
@@ -27,8 +30,9 @@ export class PreviewLiveness {
   ) {
     if (await checks.answers()) {
       this.silentSince.delete(worktree);
-      return checks.probesPass();
+      return this.probesPass(worktree, checks, now);
     }
+    this.probedAt.delete(worktree);
     if (!(await checks.servicesRunning())) {
       this.silentSince.delete(worktree);
       return false;
@@ -40,5 +44,23 @@ export class PreviewLiveness {
 
   forget(worktree: string) {
     this.silentSince.delete(worktree);
+    this.probedAt.delete(worktree);
+  }
+
+  // Functional checks run commands in the containers, every 30 s for each
+  // active story. While the preview keeps answering, a check that passed a
+  // moment ago still holds.
+  private async probesPass(
+    worktree: string,
+    checks: PreviewLivenessChecks,
+    now: number,
+  ) {
+    const probedAt = this.probedAt.get(worktree);
+    if (probedAt !== undefined && now - probedAt < this.probeReuseMs)
+      return true;
+    const passed = await checks.probesPass();
+    if (passed) this.probedAt.set(worktree, now);
+    else this.probedAt.delete(worktree);
+    return passed;
   }
 }

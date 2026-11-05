@@ -67,3 +67,33 @@ test("each story waits on its own", async () => {
   assert.equal(await liveness.serving("second", silent, 95_000), true);
   assert.equal(await liveness.serving("first", silent, 95_000), false);
 });
+
+test("reuses a passing functional check while the preview answers", async () => {
+  const liveness = new PreviewLiveness(90_000, 120_000);
+  let probes = 0;
+  const state = { answers: true, running: true, probes: true };
+  const counted = {
+    ...checks(state),
+    probesPass: async () => {
+      probes += 1;
+      return state.probes;
+    },
+  };
+  assert.equal(await liveness.serving("story", counted, 0), true);
+  assert.equal(await liveness.serving("story", counted, 30_000), true);
+  assert.equal(probes, 1);
+  assert.equal(await liveness.serving("story", counted, 120_000), true);
+  assert.equal(probes, 2);
+
+  // A preview that went silent, or a recovery, checks again.
+  state.answers = false;
+  await liveness.serving("story", counted, 130_000);
+  state.answers = true;
+  assert.equal(await liveness.serving("story", counted, 140_000), true);
+  assert.equal(probes, 3);
+  liveness.forget("story");
+  state.probes = false;
+  assert.equal(await liveness.serving("story", counted, 150_000), false);
+  assert.equal(await liveness.serving("story", counted, 160_000), false);
+  assert.equal(probes, 5);
+});
