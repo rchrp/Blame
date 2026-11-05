@@ -2,6 +2,7 @@ import * as React from "react"
 import { toast } from "sonner"
 
 import { useModelSelection } from "@/components/model/model-selection"
+import { codePracticeAnalysisDue } from "@/components/practices/data/code-practice-analysis-due"
 import { notifyCodePracticeAnalysisUpdated } from "@/components/practices/data/code-practice-analysis-events"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { usePlatform } from "@/context/platform"
@@ -88,26 +89,34 @@ function analysisInput(
   }
 }
 
+// Projects analyzed by this window right now. An analysis outlives the
+// effect that started it (another project opened, the model changed): its
+// result or failure is still saved for its own project.
+const analysesHere = new Set<string>()
+
 async function maybeAnalyzeProjectCodePractices(input: AnalysisInput) {
   const cloud = createCloudApi(input.apiConnection)
+  const projectId = input.project.id
+  let started = false
   try {
-    const analysis = await cloud.projectCodePracticeAnalysis(input.project.id)
-    if (analysisCompleted(input, analysis.status)) return
-    await cloud.startProjectCodePracticeAnalysis(input.project.id, {
+    const analysis = await cloud.projectCodePracticeAnalysis(projectId)
+    const runningHere = analysesHere.has(projectId)
+    if (input.signal.aborted || !codePracticeAnalysisDue(analysis, runningHere))
+      return
+    analysesHere.add(projectId)
+    started = true
+    await cloud.startProjectCodePracticeAnalysis(projectId, {
       providerId: input.providerId,
       modelId: input.modelId,
     })
-    notifyCodePracticeAnalysisUpdated(input.project.id)
+    notifyCodePracticeAnalysisUpdated(projectId)
     await analyzeAndPersist(input, cloud)
   } catch (error) {
-    if (!input.signal.aborted) await persistAnalysisError(input, cloud, error)
+    if (started) await persistAnalysisError(input, cloud, error)
   } finally {
-    notifyCodePracticeAnalysisUpdated(input.project.id)
+    if (started) analysesHere.delete(projectId)
+    notifyCodePracticeAnalysisUpdated(projectId)
   }
-}
-
-function analysisCompleted(input: AnalysisInput, status: string) {
-  return input.signal.aborted || status === "running" || status === "done"
 }
 
 async function analyzeAndPersist(
@@ -139,6 +148,7 @@ async function persistAnalysisError(
       error: errorMessage(error),
     })
     .catch(() => undefined)
+  if (input.signal.aborted) return
   toast.error("Code practice analysis failed", {
     description: errorMessage(error),
     id: toastId,
