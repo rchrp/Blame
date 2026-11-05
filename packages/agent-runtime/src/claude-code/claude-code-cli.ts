@@ -107,6 +107,10 @@ export function claudeCodeEnvironment(env: NodeJS.ProcessEnv = process.env) {
   // Blame's tools can wait on approvals or long commands, and they already
   // bound their own output.
   next.MCP_TOOL_TIMEOUT = String(24 * 60 * 60 * 1_000);
+  // Without it, Claude Code drops a tool call silent for 300 s (the bridge's
+  // pings do not count) and answers on its own: one more model call per
+  // finished US, and a lost lane.
+  next.CLAUDE_CODE_MCP_TOOL_IDLE_TIMEOUT = "0";
   next.MAX_MCP_OUTPUT_TOKENS = "200000";
   next.DISABLE_AUTOUPDATER = "1";
   return next;

@@ -726,7 +726,8 @@ export class LightTaskRunner {
 class TaskSelectionError extends Error {}
 
 const outputPageBytes = 12_000;
-// Under Claude Code's own limit on a pending MCP tool call, seen at 300 s.
+// Under Claude Code's 300 s limit on a silent MCP tool call, should a
+// Claude Code build ignore the variable that lifts it (claude-code-cli.ts).
 const inspectExitWaitMs = 4 * 60_000;
 const keptFinishedRuns = 20;
 
