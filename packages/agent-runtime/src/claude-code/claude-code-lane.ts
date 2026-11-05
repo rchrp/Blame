@@ -97,6 +97,8 @@ export class ClaudeCodeLane {
   private claudeTurnOpen = false;
   /** Events Claude Code streamed while the turn was cut and Cline had not asked again. */
   private held: AnthropicBlock[] = [];
+  /** Cline's reminder, for when Claude Code gives up instead of retrying. */
+  private awaitedReminder?: AnthropicBlock[];
   private lastOutputAt = performance.now();
   private wokeAt?: number;
   private retryDelayMs = 0;
@@ -300,6 +302,7 @@ export class ClaudeCodeLane {
     this.turnTools.clear();
     this.stopReason = undefined;
     this.recoveries = 0;
+    this.awaitedReminder = undefined;
     this.turns += 1;
   }
 
@@ -343,8 +346,12 @@ export class ClaudeCodeLane {
     this.held = [];
     this.log("turn_resumed", { heldEvents: held.length, claudeTurnOpen: this.claudeTurnOpen });
     for (const event of held) if (this.state === "streaming") this.readStreamEvent(event);
-    if (this.state !== "streaming" || this.claudeTurnOpen || this.sinkHasEvents) return;
-    this.writeUser(reminder.length ? reminder : [{ type: "text", text: recoveryPrompt }]);
+    if (this.state !== "streaming" || this.sinkHasEvents) return;
+    const next = reminder.length ? reminder : [{ type: "text", text: recoveryPrompt }];
+    // Claude Code may still retry on its own; if it gives up, its result
+    // line can arrive after Cline asked again (US-045, on a loaded VM).
+    if (this.claudeTurnOpen) this.awaitedReminder = next;
+    else this.writeUser(next);
   }
 
   private deliver(toolUseId: string, result: McpToolResult) {
@@ -493,6 +500,12 @@ export class ClaudeCodeLane {
       return;
     }
     if (!this.sink) return;
+    const reminder = this.awaitedReminder;
+    this.awaitedReminder = undefined;
+    if (failed && reminder && !this.sinkHasEvents) {
+      this.writeUser(reminder);
+      return;
+    }
     if (!failed) {
       if (this.sinkHasEvents) this.finishTurn();
       return;

@@ -156,16 +156,18 @@ for (const timing of ["before", "after"]) {
   });
 }
 
-test("hands Claude Code Cline's reminder when it gave up after a drop", async () => {
-  await withBridge(async (bridge) => {
-    const key = bridge.token("session-drop");
-    const first = { role: "user", content: "please drop" };
-    assert.equal(text(await stream(bridge, key, [first])), "partial");
-    const next = await stream(bridge, key, [first, partialAnswer, reminder]);
-    assert.match(text(next), /echo\(sonnet\): Previous turn ended unexpectedly/);
-    assert.equal(openLanes(bridge), 1);
+for (const timing of ["before", "after"] as const) {
+  test(`hands Claude Code Cline's reminder when it gave up after a drop (${timing} Cline asks again)`, async () => {
+    await withBridge(async (bridge) => {
+      const key = bridge.token(`session-drop-${timing}`);
+      const first = { role: "user", content: timing === "before" ? "please drop" : "please drop later" };
+      assert.equal(text(await stream(bridge, key, [first])), "partial");
+      const next = await stream(bridge, key, [first, partialAnswer, reminder]);
+      assert.match(text(next), /echo\(sonnet\): Previous turn ended unexpectedly/);
+      assert.equal(openLanes(bridge), 1);
+    });
   });
-});
+}
 
 test("interrupts a silent stream and continues in the same process", async () => {
   await withBridge(
