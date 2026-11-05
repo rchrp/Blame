@@ -300,10 +300,18 @@ export class SessionJournal {
     }
   }
 
-  private async append(event: JournalEvent) {
-    await mkdir(dirname(this.file), { recursive: true });
-    await appendFile(this.file, `${JSON.stringify(event)}\n`, { mode: 0o600 });
+  /** Appends one line after the previous append ends: reads can record while a command does. */
+  private append(event: JournalEvent) {
+    const line = `${JSON.stringify(event)}\n`;
+    const appended = this.appending.then(async () => {
+      await mkdir(dirname(this.file), { recursive: true });
+      await appendFile(this.file, line, { mode: 0o600 });
+    });
+    this.appending = appended.catch(() => undefined);
+    return appended;
   }
+
+  private appending: Promise<unknown> = Promise.resolve();
 
   private async readEvents(): Promise<JournalEvent[]> {
     try {

@@ -207,7 +207,9 @@ export class LightWorkspace {
     }
     const result = await this.tasks.run(input, context);
     if (result.status !== "ok") return result;
-    const paths = arrayValue(recordValue(result.data).paths).flatMap(
+    // A long run reports its changed files when it completes, through inspect.
+    const completed = recordValue(recordValue(recordValue(result.data).completed).data);
+    const paths = [...arrayValue(recordValue(result.data).paths), ...arrayValue(completed.paths)].flatMap(
       (value) => {
         const path = stringValue(value);
         return path ? [path] : [];
@@ -232,7 +234,7 @@ export class LightWorkspace {
     try {
       await this.ready;
       const result = await this.persistAliases(
-        await this.commits.exclusive(() => this.codeSearch.search(input, signal)),
+        await this.commits.readExclusive(() => this.codeSearch.search(input, signal)),
       );
       await this.recordObservationAudit("search_code", input.mode ?? "auto", result);
       return result;
@@ -247,7 +249,7 @@ export class LightWorkspace {
   ): Promise<LightToolResult<unknown>> {
     try {
       await this.ready;
-      let result = await this.commits.exclusive(() =>
+      let result = await this.commits.readExclusive(() =>
         this.readCurrentWorkspace(input, context),
       );
       if (process.env.BLAME_AGENT_SYMBOLIC_ANALYSIS === "true" && process.env.BLAME_AGENT_SYMBOLIC_HINTS !== "false" && result.status === "ok") {

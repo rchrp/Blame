@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import test from "node:test";
 import { LightCommitService } from "./light-commit.js";
+import { LightWorkspace } from "./light-workspace.js";
 import { startWorkspaceCommand } from "./workspace-command-process.js";
 import { LightTaskRunner } from "./light-task-runner.js";
 import { SessionJournal } from "./session-journal.js";
@@ -173,11 +174,41 @@ test("another session in the same folder keeps working while a long command runs
         /run r1 .* is still running/,
         "The session that runs the command still takes turns.",
       );
+      const reads = Date.now();
+      assert.equal(await new LightCommitService(new WorkspaceFiles(root, "story")).readExclusive(async () => "read"), "read",
+        "Its own reads and searches go on while its command runs.");
+      assert.ok(Date.now() - reads < 2_000);
 
       await writeFile(join(root, ".blame/go"), "go");
       const result = data(await runner.run({ kind: "inspect", run: initial.run, cursor: initial.cursor }));
       assert.equal(result.completed?.status, "ok");
       assert.equal(await readFile(join(root, "built.txt"), "utf8"), "done");
+    } finally {
+      await writeFile(join(root, ".blame/go"), "go");
+      controller.abort();
+    }
+  });
+});
+
+test("the agent reads and searches code while its own command runs", { timeout: 20_000 }, async () => {
+  await fixture(async root => {
+    await writeFile(join(root, "value.ts"), "export const value = 1;\n");
+    await writeFile(join(root, "long.cjs"), "const fs=require('node:fs');fs.writeFileSync('.blame/long-started','x');const tick=setInterval(()=>{if(fs.existsSync('.blame/go')){fs.writeFileSync('value.ts','export const value = 2;\\n');clearInterval(tick)}},10);\n");
+    const workspace = new LightWorkspace(root, { sessionId: "reading", initialCommandWaitMs: 0 });
+    const controller = new AbortController();
+    try {
+      const initial = data(await workspace.runTask({ kind: "command", command: "node long.cjs" }, { signal: controller.signal } as never));
+      await waitFor(join(root, ".blame/long-started"));
+      const started = Date.now();
+      const read = await workspace.readCode({ target: "value.ts" }, {});
+      assert.equal(read.status, "ok", JSON.stringify(read));
+      assert.equal((await workspace.searchCode({ query: "value" })).status, "ok");
+      assert.ok(Date.now() - started < 5_000, "Reads do not wait for the run.");
+      assert.match(JSON.stringify(await workspace.editCode({ operations: [{ kind: "patch", path: "value.ts", patch: "*** Begin Patch\n*** Update File: value.ts\n@@\n-export const value = 1;\n+export const value = 3;\n*** End Patch" }] }, {})), /is still running/u,
+        "Edits still wait for the run.");
+      await writeFile(join(root, ".blame/go"), "go");
+      const done = data(await workspace.runTask({ kind: "inspect", run: initial.run, cursor: initial.cursor }, {} as never)) as unknown as { completed: { data: { paths?: string[] } } };
+      assert.deepEqual(done.completed.data.paths, ["value.ts"]);
     } finally {
       await writeFile(join(root, ".blame/go"), "go");
       controller.abort();

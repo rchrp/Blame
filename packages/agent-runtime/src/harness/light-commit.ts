@@ -127,6 +127,18 @@ export class LightCommitService {
   }
 
   /**
+   * A read or a search: during the session's own long run it skips the
+   * session's turn and takes only the short workspace lock, so the agent can
+   * read code while its tests run. A file the run then changes loses its
+   * read coverage when the run's result arrives.
+   */
+  async readExclusive<T>(operation: () => Promise<T>, holder: LockHolder = { label: "a read" }) {
+    const { turn } = sessionTurn(this.files);
+    if (turn.holder?.run) return this.workspaceExclusive(operation, holder);
+    return this.exclusive(operation, holder);
+  }
+
+  /**
    * Holds the session's turn for the whole operation, and the workspace write
    * lock only for the steps run through `locked`. A command looks at the
    * files under the lock before and after it runs, not while it runs.
