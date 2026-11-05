@@ -19,8 +19,9 @@ import { useProjects } from "@/context/projects"
 import { decidedStories, proposalDecisionsNote } from "./story-proposal-data"
 import { proposalDecisions } from "./story-proposal-state"
 
-// Mount it once per project (keyed by project id): the conversation of
-// each project is loaded on mount and saved on every change.
+// Each project's conversation belongs to the app: mounting this for another
+// project shows that project's conversation, while a turn of the previous one
+// goes on and keeps saving.
 export function usePlanMode() {
   const platform = usePlatform()
   const auth = useCloudAuth()

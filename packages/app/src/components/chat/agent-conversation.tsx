@@ -182,6 +182,7 @@ export type AgentConversationRun = {
   completedAt?: string | null
   diffEndRef?: string | null
   createdAt: string
+  executionId?: string | null
   finalResponse?: string | null
   id: string
   kind: UserStoryAgentRunKind

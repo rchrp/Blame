@@ -65,12 +65,14 @@ export function applyStreamSnapshot(
   conversation: LocalAgentConversation,
   runId: string,
   update: AgentFlowUpdate,
-  event: AgentEvent
+  event: AgentEvent,
+  stream: Pick<AgentConversationRun, "lastSequenceNumber"> = {}
 ): LocalAgentConversation {
   const run = conversation.runs.find((item) => item.id === runId)
   if (!run || run.status !== "running") return conversation
   const activities = fullDetailActivities(run.activities ?? [], update)
   const patch: Partial<AgentConversationRun> = {
+    ...stream,
     activities,
     ...(update.agentFinalResponse !== undefined
       ? { finalResponse: update.agentFinalResponse }
@@ -116,11 +118,27 @@ export function endRun(
   })
 }
 
-/** A stored conversation never resumes a stream: running turns stopped. */
-export function settleInterruptedRuns(conversation: LocalAgentConversation) {
+/**
+ * Turns a stored conversation left running: the app follows them again when
+ * the desktop still runs their session. Only the latest turn can still run;
+ * earlier ones were cut off by a later turn.
+ */
+export function resumableRuns(conversation: LocalAgentConversation) {
+  const latest = conversation.runs.at(-1)
+  return latest?.status === "running" || latest?.status === "pending"
+    ? [latest]
+    : []
+}
+
+/** Running turns that cannot be followed again end as interrupted. */
+export function settleInterruptedRuns(
+  conversation: LocalAgentConversation,
+  keep: ReadonlySet<string> = new Set()
+) {
   return conversation.runs.reduce(
     (current, run) =>
-      run.status === "running" || run.status === "pending"
+      (run.status === "running" || run.status === "pending") &&
+      !keep.has(run.id)
         ? endRun(
             { ...current, runs: markRunning(current.runs, run.id) },
             run.id,
@@ -140,13 +158,16 @@ export function loadLocalConversation(key: string | undefined) {
     const parsed = JSON.parse(raw) as Partial<LocalAgentConversation>
     if (!Array.isArray(parsed.comments) || !Array.isArray(parsed.runs))
       return emptyLocalConversation()
-    return settleInterruptedRuns({
+    const conversation = {
       comments: parsed.comments,
       runs: parsed.runs,
       sessionId:
         typeof parsed.sessionId === "string" ? parsed.sessionId : undefined,
       updatedAt: parsed.updatedAt ?? new Date().toISOString(),
-    })
+    }
+    // The latest turn stays running until the app checks its session.
+    const resumable = new Set(resumableRuns(conversation).map((run) => run.id))
+    return settleInterruptedRuns(conversation, resumable)
   } catch {
     return emptyLocalConversation()
   }

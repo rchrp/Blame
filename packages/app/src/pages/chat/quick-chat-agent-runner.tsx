@@ -23,7 +23,7 @@ import type {
 } from "@/components/chat/data/quick-chat-data"
 import {
   interruptedQuickChatRunFinalization,
-  quickChatRunRecovery,
+  agentTurnRecovery,
 } from "@/components/chat/data/quick-chat-run-recovery"
 import { useQuickChatStore } from "@/components/chat/data/quick-chat-store"
 import { useModelSelection } from "@/components/model/model-selection"
@@ -177,7 +177,7 @@ function useQuickChatAgentRunnerValue() {
     if (recoveringAgentRunIds.current.has(run.id)) return
     recoveringAgentRunIds.current.add(run.id)
     try {
-      const recovery = await quickChatRunRecovery(chat, run, sessionId, {
+      const recovery = await agentTurnRecovery(chat, run, sessionId, {
         live: platform.agent?.sessions.live,
         log: (id) =>
           workspace.readFile({

@@ -8,6 +8,9 @@ import {
   applyStreamSnapshot,
   emptyLocalConversation,
   endRun,
+  loadLocalConversation,
+  resumableRuns,
+  saveLocalConversation,
   settleInterruptedRuns,
 } from "./local-agent-conversation-data.ts"
 
@@ -110,4 +113,58 @@ test("a stopped or interrupted turn is cancelled, a finished one untouched", () 
   const restored = settleInterruptedRuns(conversation)
   assert.equal(restored.runs[0]!.status, "cancelled")
   assert.equal(restored.runs[0]!.finalResponse, "The agent was interrupted.")
+})
+
+test("a reload keeps the latest running turn for the app to follow again", () => {
+  const storage = new Map<string, string>()
+  const previous = globalThis.localStorage
+  globalThis.localStorage = {
+    getItem: (key: string) => storage.get(key) ?? null,
+    removeItem: (key: string) => void storage.delete(key),
+    setItem: (key: string, value: string) => void storage.set(key, value),
+  } as Storage
+  try {
+    const earlier = { ...run, id: "run-0", messageId: "comment-0" }
+    const latest = {
+      ...run,
+      clineSessionId: "session",
+      executionId: "execution",
+      lastSequenceNumber: 12,
+    }
+    const conversation = appendTurn(
+      appendTurn(
+        emptyLocalConversation(),
+        { ...comment, id: "comment-0" },
+        earlier
+      ),
+      comment,
+      latest
+    )
+    saveLocalConversation("plan", conversation)
+
+    const loaded = loadLocalConversation("plan")
+
+    assert.equal(loaded.runs[0]!.status, "cancelled")
+    assert.equal(loaded.runs[1]!.status, "running")
+    assert.equal(loaded.runs[1]!.lastSequenceNumber, 12)
+    assert.deepEqual(
+      resumableRuns(loaded).map((item) => item.id),
+      ["run-1"]
+    )
+  } finally {
+    globalThis.localStorage = previous
+  }
+})
+
+test("a snapshot records how far the stream was saved", () => {
+  const conversation = appendTurn(emptyLocalConversation(), comment, run)
+  const next = applyStreamSnapshot(
+    conversation,
+    "run-1",
+    { agentActivities: [activity("read", "x")] },
+    { payload: {}, type: "tool" } as never,
+    { lastSequenceNumber: 7 }
+  )
+  assert.equal(next.runs[0]!.lastSequenceNumber, 7)
+  assert.equal(resumableRuns(endRun(next, "run-1", "failed", "x")).length, 0)
 })

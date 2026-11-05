@@ -5,7 +5,7 @@ import type { QuickChatAgentRun } from "./quick-chat-data.ts"
 import {
   interruptedQuickChatMessage,
   interruptedQuickChatRunFinalization,
-  quickChatRunRecovery,
+  agentTurnRecovery,
 } from "./quick-chat-run-recovery.ts"
 
 const first = run("first", "2026-11-04T23:30:51.000Z")
@@ -19,7 +19,7 @@ const sharedLog = [
 ].join("\n")
 
 test("does not close a turn from an earlier turn's completion in the shared log", async () => {
-  const recovery = await quickChatRunRecovery(chat, second, "session", {
+  const recovery = await agentTurnRecovery(chat, second, "session", {
     live: async () => false,
     log: async () => sharedLog,
     messages: async () => [],
@@ -29,7 +29,7 @@ test("does not close a turn from an earlier turn's completion in the shared log"
 })
 
 test("closes a finished turn with its own final reply", async () => {
-  const recovery = await quickChatRunRecovery(chat, first, "session", {
+  const recovery = await agentTurnRecovery(chat, first, "session", {
     live: async () => false,
     log: async () => sharedLog,
     messages: async () => [
@@ -47,7 +47,7 @@ test("closes a finished turn with its own final reply", async () => {
 
 test("leaves a session the desktop still runs to its stream", async () => {
   let readLog = false
-  const recovery = await quickChatRunRecovery(chat, first, "session", {
+  const recovery = await agentTurnRecovery(chat, first, "session", {
     live: async () => true,
     log: async () => {
       readLog = true
@@ -61,7 +61,7 @@ test("leaves a session the desktop still runs to its stream", async () => {
 })
 
 test("keeps waiting when an older desktop cannot tell whether the session runs", async () => {
-  const recovery = await quickChatRunRecovery(chat, second, "session", {
+  const recovery = await agentTurnRecovery(chat, second, "session", {
     log: async () => sharedLog,
     messages: async () => [],
   })
@@ -70,7 +70,7 @@ test("keeps waiting when an older desktop cannot tell whether the session runs",
 })
 
 test("ignores a failed completion line", async () => {
-  const recovery = await quickChatRunRecovery(
+  const recovery = await agentTurnRecovery(
     { agentRuns: [first] },
     first,
     "session",
