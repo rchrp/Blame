@@ -8,6 +8,8 @@ import type { WorkspaceFiles } from "./workspace-files.js";
 
 export type FormatterCommand = {
   args: string[];
+  /** The directory of a leading `cd <dir> &&`, relative to the command's cwd. */
+  cwd?: string;
   executable: string;
   paths: string[];
 };
@@ -138,9 +140,15 @@ function formatterFailure(result: {
   );
 }
 
+// `cd packages/app && pnpm exec prettier --write …` is the usual way to run a
+// package's own formatter; the directory becomes the command's cwd.
+const cdPrefix = /^\s*cd\s+([^\s;&|<>'"`$\\]+)\s*&&\s*/u;
+
 function formatterCommand(command: string): FormatterCommand | undefined {
-  if (/[;&|<>\n\r'"`]/u.test(command)) return undefined;
-  const tokens = command.trim().split(/\s+/u);
+  const cd = cdPrefix.exec(command);
+  const rest = cd ? command.slice(cd[0].length) : command;
+  if (/[;&|<>\n\r'"`]/u.test(rest)) return undefined;
+  const tokens = rest.trim().split(/\s+/u);
   const prefix = formatterPrefix(tokens);
   if (!prefix) return undefined;
   const values = tokens.slice(prefix.length);
@@ -152,6 +160,7 @@ function formatterCommand(command: string): FormatterCommand | undefined {
   return {
     executable: prefix[0]!,
     args: prefix.slice(1),
+    ...(cd ? { cwd: cd[1]! } : {}),
     paths,
   };
 }

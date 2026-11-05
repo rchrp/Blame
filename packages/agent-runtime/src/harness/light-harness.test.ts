@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import {
   chmod,
+  copyFile,
   mkdir,
   mkdtemp,
   readFile,
@@ -1156,6 +1157,29 @@ for (const output of ["", " \n\t"]) {
     });
   });
 }
+
+test("a leading cd becomes the directory of a deterministic Prettier edit", async () => {
+  await withFormatterWorkspace(
+    {
+      "packages/app/package.json": JSON.stringify({ devDependencies: { prettier: "3.0.0" } }),
+      "packages/app/value.ts": "export const first={value:1}\n",
+    },
+    async (root) => {
+      await mkdir(join(root, "packages/app/node_modules/.bin"), { recursive: true });
+      await copyFile(join(root, "node_modules/.bin/prettier"), join(root, "packages/app/node_modules/.bin/prettier"));
+      const workspace = lightWorkspace(root, "formatter-cd");
+      const result = await workspace.tasks.run({
+        kind: "command",
+        command: "cd packages/app && pnpm exec prettier --write value.ts",
+      });
+      assert.equal(record(data(result)).mutation, "deterministic_format");
+      assert.equal(
+        await readFile(join(root, "packages/app/value.ts"), "utf8"),
+        "export const first = { value: 1 };\n",
+      );
+    },
+  );
+});
 
 test("run_task explains how to separate a combined Prettier mutation", async () => {
   await withWorkspace({ "value.ts": "const value=1\n" }, async (root) => {

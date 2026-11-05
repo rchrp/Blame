@@ -1,5 +1,5 @@
 import { invocationTestReport } from "./invocation-test-report.js";
-import { relative } from "node:path";
+import { posix, relative } from "node:path";
 import { isTestInvocation, observeCheck, type CheckObservation } from "./check-observation.js";
 import { LightCommitService, type LockHolder } from "./light-commit.js";
 import { redactSecuritySecrets } from "../security-secret-redaction.js";
@@ -244,7 +244,8 @@ export class LightTaskRunner {
         "Deterministic formatting is unavailable in this execution context.",
       );
     try {
-      return await this.applyFormatter(this.edits, request, input.cwd, context);
+      const cwd = request.cwd ? posix.join(input.cwd ?? ".", request.cwd) : input.cwd;
+      return await this.applyFormatter(this.edits, request, cwd, context);
     } catch (error) {
       if (error instanceof DeterministicFormatterError)
         return blocked(error.category, error.message);
