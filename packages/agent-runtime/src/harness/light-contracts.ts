@@ -103,7 +103,7 @@ export const lightRunTaskInputSchema = z.discriminatedUnion("kind", [
       run: z.string().regex(/^r[1-9]\d*$/u).describe("The rN id returned by run_task."),
       cursor: z.string().regex(/^\d+$/u).optional().describe("Output position to read from, as returned by the previous result; without it the latest output is shown."),
       until: z.enum(["exit", "output", "now"]).optional()
-        .describe("exit (default): wait until the run ends, up to 5 minutes. output: return as soon as new output arrives. now: return at once."),
+        .describe("exit (default): wait until the run ends, up to 4 minutes. output: return as soon as new output arrives. now: return at once."),
     })
     .strict(),
   z

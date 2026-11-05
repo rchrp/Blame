@@ -722,7 +722,8 @@ export class LightTaskRunner {
 class TaskSelectionError extends Error {}
 
 const outputPageBytes = 12_000;
-const inspectExitWaitMs = 5 * 60_000;
+// Under Claude Code's own limit on a pending MCP tool call, seen at 300 s.
+const inspectExitWaitMs = 4 * 60_000;
 const keptFinishedRuns = 20;
 
 /** A result whose output was cut says how to page the whole of it. */
