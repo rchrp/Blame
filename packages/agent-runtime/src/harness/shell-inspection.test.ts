@@ -132,6 +132,17 @@ test("an unrouted read-only command that matched nothing is not a failure", asyn
   });
 });
 
+test("a read-only pipeline cut short by head is not a failure", async () => {
+  await fixture({ "big.txt": "alpha\n".repeat(200_000) }, async (workspace) => {
+    const result = await workspace.runTask({ kind: "command", command: "echo start; cat big.txt | head -2" }, {} as never);
+    assert.equal(result.status, "ok", JSON.stringify(result));
+    const value = (result as { data: { exitCode: number; output: string; pipeClosedEarly: boolean } }).data;
+    assert.equal(value.exitCode, 141);
+    assert.equal(value.output, "start\nalpha\nalpha");
+    assert.equal(value.pipeClosedEarly, true);
+  });
+});
+
 test("run_task treats a command sent with kind inspect as a command", async () => {
   await fixture({ "notes.txt": "alpha\n" }, async (_workspace, directory) => {
     const tool = lightSemanticHarnessTools(directory).find((candidate) => candidate.name === "run_task")!;

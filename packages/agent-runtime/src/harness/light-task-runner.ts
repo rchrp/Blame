@@ -650,7 +650,10 @@ export class LightTaskRunner {
    */
   private async inspectionResult(command: string, result: WorkspaceCommandResult, output: string,
     inspection: "read" | "search"): Promise<LightToolResult<unknown>> {
-    const tolerated = result.exitCode === 0 || (inspection === "search" && result.exitCode === 1);
+    // Exit 141: a reader such as `head` closed the pipe once it had enough,
+    // and pipefail reports the writer's SIGPIPE.
+    const pipeClosed = result.exitCode === 141 && command.includes("|");
+    const tolerated = result.exitCode === 0 || pipeClosed || (inspection === "search" && result.exitCode === 1);
     if (result.interruption || !tolerated)
       return failedCommandResult(result.exitCode, output, result.interruption
         ? commandFailure() : await commandFailureAssessment(output, this.files, undefined, result.exitCode));
@@ -658,6 +661,7 @@ export class LightTaskRunner {
       command,
       exitCode: result.exitCode,
       ...(result.exitCode === 1 ? { noMatch: true } : {}),
+      ...(pipeClosed ? { pipeClosedEarly: true } : {}),
       output: boundedDiagnostic(output, "", 4_000),
       environment: this.environment.target(),
       ...(/\b(?:grep|rg|cat|sed|head|tail)\b/u.test(command) && !command.includes("node_modules")
