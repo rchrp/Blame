@@ -37,6 +37,7 @@ import {
   type PreviewSetupRepairAction,
 } from "@/components/backlog/drawer/preview-setup-repair"
 import { readableFailure } from "@/components/backlog/drawer/preview-failure-message"
+import { usePreviewRuntimePolling } from "@/components/backlog/drawer/use-preview-runtime-polling"
 import { usePlatform } from "@/context/platform"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { requestHostedService } from "@/lib/hosted-services"
@@ -93,7 +94,7 @@ export function useUserStoryPreviewRunner(
     (configurationId: string) => setSelection({ configurationId, worktree }),
     [worktree]
   )
-  usePreviewRuntimePolling(
+  const pollRuntimeSoon = usePreviewRuntimePolling(
     workspace,
     worktree,
     enabled,
@@ -168,7 +169,8 @@ export function useUserStoryPreviewRunner(
     setRuntime,
     select,
     repairAction,
-    userStoryId
+    userStoryId,
+    pollRuntimeSoon
   )
   useResumeSuspendedLocalPreview(
     enabled && preference.profile === "local-container",
@@ -790,69 +792,6 @@ async function pendingCloudCreateOperation(
   return operationId
 }
 
-function usePreviewRuntimePolling(
-  workspace: ReturnType<typeof usePlatform>["workspace"],
-  worktree: string | null | undefined,
-  enabled: boolean,
-  workspaceMode: "local-container" | "cloud-mirror",
-  stopAfterConfigured: boolean,
-  configuredCount: number | undefined,
-  setRuntime: PreviewRuntimeSetter
-) {
-  React.useEffect(() => {
-    setRuntime(undefined)
-  }, [enabled, setRuntime, workspace, workspaceMode, worktree])
-
-  React.useEffect(() => {
-    if (!worktree || !workspace?.projectPreviewRuntimeState) return
-    let cancelled = false
-    const refresh = () => {
-      void refreshPreviewRuntime(
-        workspace,
-        worktree,
-        workspaceMode,
-        () => cancelled,
-        setRuntime
-      )
-    }
-    if (enabled) refresh()
-    const interval =
-      enabled && !(stopAfterConfigured && configuredCount)
-        ? window.setInterval(refresh, 2_000)
-        : undefined
-    return () => {
-      cancelled = true
-      if (interval) window.clearInterval(interval)
-    }
-  }, [
-    configuredCount,
-    enabled,
-    setRuntime,
-    stopAfterConfigured,
-    workspace,
-    workspaceMode,
-    worktree,
-  ])
-}
-
-async function refreshPreviewRuntime(
-  workspace: ReturnType<typeof usePlatform>["workspace"],
-  worktree: string,
-  workspaceMode: "local-container" | "cloud-mirror",
-  cancelled: () => boolean,
-  setRuntime: PreviewRuntimeSetter
-) {
-  try {
-    const next = await workspace?.projectPreviewRuntimeState?.({
-      workspaceMode,
-      worktree,
-    })
-    if (!cancelled() && next?.configurations.length) setRuntime(next)
-  } catch {
-    return
-  }
-}
-
 // Blame stops a local preview nobody used for a while and marks it
 // suspended: opening it starts it again.
 function useResumeSuspendedLocalPreview(
@@ -883,7 +822,8 @@ function usePreviewRuntimeControl(
   setRuntime: PreviewRuntimeSetter,
   setSelectedId: (configurationId: string) => void,
   repairAction: (error: string) => PreviewSetupRepairAction | undefined,
-  userStoryId: string | undefined
+  userStoryId: string | undefined,
+  pollRuntimeSoon: () => void
 ) {
   const [pendingOperation, setPendingOperation] =
     React.useState<ProjectRunnerPendingOperation>()
@@ -895,6 +835,7 @@ function usePreviewRuntimeControl(
       if (!selectedId) return undefined
       setSelectedId(selectedId)
       setPendingOperation({ action, configurationId: selectedId })
+      pollRuntimeSoon()
       // A preview the user stopped stays stopped until they start it again.
       if (userStoryId && action === "stop")
         markCloudPreviewAutoStartDisabled(userStoryId)
@@ -912,6 +853,7 @@ function usePreviewRuntimeControl(
     },
     [
       pendingOperation,
+      pollRuntimeSoon,
       repairAction,
       setRuntime,
       setSelectedId,
