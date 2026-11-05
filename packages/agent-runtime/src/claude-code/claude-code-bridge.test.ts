@@ -169,6 +169,19 @@ for (const timing of ["before", "after"] as const) {
   });
 }
 
+test("logs why Claude Code answered a tool call itself", async () => {
+  await withBridge(async (bridge, stateDirectory) => {
+    const answer = await stream(bridge, bridge.token("session-refuse"), [
+      { role: "user", content: "please refuse" },
+    ]);
+    assert.equal(stopReason(answer), "tool_use");
+    const events = await laneEvents(stateDirectory);
+    const refused = events.find((entry) => entry.event === "tool_error") as { error?: string } | undefined;
+    assert.equal(refused?.error, "sent no response for 300s");
+    assert.ok(events.some((entry) => entry.event === "lane_closed"));
+  });
+});
+
 test("interrupts a silent stream and continues in the same process", async () => {
   await withBridge(
     async (bridge, stateDirectory) => {

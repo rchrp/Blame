@@ -400,6 +400,22 @@ export class ClaudeCodeLane {
     else if (message.type === "result") this.readResult(message);
     else if (message.type === "rate_limit_event")
       recordClaudeCodeRateLimit(message.rate_limit_info);
+    else if (message.type === "user") this.noteToolErrors(message);
+  }
+
+  /**
+   * Claude Code answered a tool call itself (a timeout, an input it
+   * rejected): why, for when it then continues without Blame.
+   */
+  private noteToolErrors(message: Record<string, unknown>) {
+    const content = isRecord(message.message) ? message.message.content : undefined;
+    if (!Array.isArray(content)) return;
+    for (const block of content)
+      if (isRecord(block) && block.type === "tool_result" && block.is_error === true)
+        this.log("tool_error", {
+          error: blockText(block.content).slice(0, 500),
+          toolUseId: block.tool_use_id,
+        });
   }
 
   private readStreamEvent(event: AnthropicBlock) {
@@ -539,6 +555,12 @@ function resultText(message: Record<string, unknown>) {
   if (typeof message.result === "string" && message.result) return message.result;
   if (Array.isArray(message.errors)) return message.errors.map(String).join("\n");
   return `Claude Code failed (${String(message.subtype)}).`;
+}
+
+function blockText(content: unknown): string {
+  if (typeof content === "string") return content;
+  if (!Array.isArray(content)) return "";
+  return content.map((item) => (isRecord(item) && typeof item.text === "string" ? item.text : "")).join("\n");
 }
 
 function completeAnswer(events: AnthropicBlock[]) {

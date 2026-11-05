@@ -61,6 +61,12 @@ for await (const line of lines) {
     if (text.includes("later")) await new Promise((resolve) => setTimeout(resolve, 300));
     write({ type: "result", subtype: "success", is_error: true, result: "API Error: Connection error." });
     continue;
+  } else if (text.includes("please refuse")) {
+    // Claude Code answers its own tool call (a timeout), then goes on alone.
+    const id = `toolu_${++messageCount}`;
+    streamMessage([{ type: "tool_use", id, name: "mcp__blame__echo", input: {} }], [], "tool_use");
+    write({ type: "user", message: { role: "user", content: [{ type: "tool_result", tool_use_id: id, is_error: true, content: "sent no response for 300s" }] } });
+    streamText("went on alone");
   } else if (text.includes("please stall")) {
     streamPartial("partial", false);
     onInterrupt = () => {
