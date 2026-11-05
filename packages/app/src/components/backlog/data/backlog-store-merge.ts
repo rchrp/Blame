@@ -100,6 +100,25 @@ export function mergeStoryAgentRun(
   }
 }
 
+// The story as its new running run leaves it: the run is its active one.
+export function storyWithActiveAgentRun(
+  story: UserStory,
+  run: UserStoryAgentRun
+): UserStory {
+  const nextStory = mergeStoryAgentRun(story, run)
+  if (run.status !== "running") return nextStory
+  return {
+    ...nextStory,
+    activeAgentRunId: run.id,
+    agentActivities: [],
+    agentFinalResponse: null,
+    agentStatus: "Running" as const,
+    agentUsage: null,
+    clineSessionId: run.clineSessionId,
+    status: "in-progress" as const,
+  }
+}
+
 function mergeComments(
   currentComments: UserStoryComment[],
   serverComments: UserStoryComment[]

@@ -6,10 +6,12 @@ import type {
   UserStoryAgentActivity,
   UserStoryAgentRun,
 } from "./backlog-data.ts"
+import { agentRunOwnsStory } from "./agent-run-lifecycle.ts"
 import {
   mergeLoadedStories,
   mergeStoryAgentRun,
   mergeUserStory,
+  storyWithActiveAgentRun,
 } from "./backlog-store-merge.ts"
 
 test("keeps local activities when a server run is incomplete", () => {
@@ -346,3 +348,65 @@ function activity(
     updatedAt,
   }
 }
+
+test("a story starting a run is owned by it, worktree and all", () => {
+  const previous = {
+    createdAt: "2026-11-01T10:00:00.000Z",
+    id: "run-1",
+    status: "completed",
+  } as UserStoryAgentRun
+  const story = {
+    activeAgentRunId: "run-1",
+    agentActivities: [{ id: "old" }],
+    agentFinalResponse: "Earlier answer",
+    agentRuns: [previous],
+    agentStatus: null,
+    id: "story-1",
+    status: "in-review",
+    worktree: "/tmp/story-1",
+  } as unknown as UserStory
+  const run = {
+    clineSessionId: "session-2",
+    createdAt: "2026-11-02T10:00:00.000Z",
+    id: "run-2",
+    status: "running",
+  } as UserStoryAgentRun
+
+  const started = storyWithActiveAgentRun(story, run)
+
+  assert.equal(agentRunOwnsStory(story, run), false)
+  assert.equal(agentRunOwnsStory(started, run), true)
+  assert.equal(started.worktree, "/tmp/story-1")
+  assert.equal(started.status, "in-progress")
+  assert.equal(started.agentStatus, "Running")
+  assert.equal(started.clineSessionId, "session-2")
+  assert.deepEqual(started.agentActivities, [])
+  assert.equal(started.agentFinalResponse, null)
+  assert.deepEqual(
+    started.agentRuns?.map((item) => item.id),
+    ["run-1", "run-2"]
+  )
+})
+
+test("a finished run joins its story without taking it over", () => {
+  const story = {
+    activeAgentRunId: "run-1",
+    agentRuns: [],
+    id: "story-1",
+    status: "in-review",
+  } as unknown as UserStory
+  const run = {
+    createdAt: "2026-11-02T10:00:00.000Z",
+    id: "run-2",
+    status: "completed",
+  } as UserStoryAgentRun
+
+  const merged = storyWithActiveAgentRun(story, run)
+
+  assert.equal(merged.activeAgentRunId, "run-1")
+  assert.equal(merged.status, "in-review")
+  assert.deepEqual(
+    merged.agentRuns?.map((item) => item.id),
+    ["run-2"]
+  )
+})

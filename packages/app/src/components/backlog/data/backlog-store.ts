@@ -7,6 +7,7 @@ import {
   mergeLoadedStories,
   mergeStoryAgentRun,
   mergeUserStory,
+  storyWithActiveAgentRun,
 } from "@/components/backlog/data/backlog-store-merge"
 import type {
   BacklogColumnId,
@@ -501,21 +502,6 @@ function storyWithComment(story: UserStory, comment: UserStoryComment) {
   return {
     ...story,
     comments: [...(story.comments ?? []), comment],
-  }
-}
-
-function storyWithActiveAgentRun(story: UserStory, run: UserStoryAgentRun) {
-  const nextStory = mergeStoryAgentRun(story, run)
-  if (run.status !== "running") return nextStory
-  return {
-    ...nextStory,
-    activeAgentRunId: run.id,
-    agentActivities: [],
-    agentFinalResponse: null,
-    agentStatus: "Running" as const,
-    agentUsage: null,
-    clineSessionId: run.clineSessionId,
-    status: "in-progress" as const,
   }
 }
 

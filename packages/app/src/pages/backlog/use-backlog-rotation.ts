@@ -15,6 +15,7 @@ import {
 } from "@/components/backlog/data/agent-flow"
 import { agentPersistenceEvent } from "@/components/backlog/data/agent-stream-coordinator"
 import { agentRunFinalization } from "@/components/backlog/data/agent-run-lifecycle"
+import { storyWithActiveAgentRun } from "@/components/backlog/data/backlog-store-merge"
 import {
   completedClineLog,
   finalAssistantResponse,
@@ -259,7 +260,7 @@ export function useBacklogRotation(
     })
     if (!direct)
       prepareStartingStoryPreview(storyId, { executionId, telemetryCohorts, environment: initialization })
-    await backlog.update(detailedStory, {
+    const workingStory = await backlog.update(detailedStory, {
       agentLastEvent: "Worktree ready.",
       baseCommit:
         (
@@ -276,7 +277,9 @@ export function useBacklogRotation(
     })
     let startedSessionId: string | undefined
     let sessionPromise: ReturnType<typeof agent.sessions.startDevelopment> | undefined
-    let started: { run: UserStoryAgentRun; sessionId: string } | undefined
+    let started:
+      | { run: UserStoryAgentRun; runningStory: UserStory; sessionId: string }
+      | undefined
     try {
       sessionPromise = agent.sessions.startDevelopment({
         apiConnection: auth.apiConnection,
@@ -333,8 +336,11 @@ export function useBacklogRotation(
         providerId: selection.currentModel.provider.id,
         reasoningEffort: selection.currentVariant ?? null,
       })
+      // The stream keeps this story for when its project is no longer open:
+      // with its worktree, and owned by the new run.
+      const runningStory = storyWithActiveAgentRun(workingStory, run)
       storyStream.subscribeStoryAgentEvents(
-        detailedStory,
+        runningStory,
         run,
         session.sessionId,
         executionId
@@ -350,7 +356,7 @@ export function useBacklogRotation(
         agentLastEvent: `Cline debug log: ${clineLogPath(worktree.worktree, session.sessionId)}`,
         clineSessionId: session.sessionId,
       })
-      started = { run, sessionId: session.sessionId }
+      started = { run, runningStory, sessionId: session.sessionId }
     } catch (error) {
       // The story did not start: stop the half-started session and put it
       // back in the queue (its worktree is reused on the next attempt).
@@ -370,7 +376,7 @@ export function useBacklogRotation(
       throw error
     }
     if (!started) return
-    const { run, sessionId: startedSession } = started
+    const { run, runningStory, sessionId: startedSession } = started
     const session = { sessionId: startedSession }
     void agent.sessions
       .sendDevelopment({
@@ -383,7 +389,7 @@ export function useBacklogRotation(
         fileAttachments: detailedStory.fileAttachments ?? [],
       })
       .catch((error) =>
-        storyStream.persistAgentEvent(detailedStory, run, {
+        storyStream.persistAgentEvent(runningStory, run, {
           type: "error",
           sessionId: session.sessionId,
           executionId,
