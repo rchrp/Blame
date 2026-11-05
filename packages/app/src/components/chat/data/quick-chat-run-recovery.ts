@@ -12,7 +12,7 @@ import type {
 } from "./quick-chat-data.ts"
 
 export const interruptedQuickChatMessage =
-  "Agent interrupted: Blame lost its session (the app restarted or its worker stopped). Send a message to continue."
+  "The agent stopped before its reply reached Blame. Send a message to continue."
 
 type QuickChatRecoverySources = {
   // Whether the desktop app still runs this session; absent on older builds.
