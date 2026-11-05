@@ -893,6 +893,7 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
           true
         )
         return updateStory(generatedStory ?? currentStory, {
+          agentLastError: null,
           status: "ready",
         })
       }

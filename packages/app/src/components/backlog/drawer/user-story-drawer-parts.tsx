@@ -221,7 +221,8 @@ export function actionInput(
     summary,
     title: title.trim() || "Untitled user story",
   }
-  if (action === "Send to Dev Agent") return { ...base, status: "ready" }
+  if (action === "Send to Dev Agent")
+    return { ...base, agentLastError: null, status: "ready" }
   if (action === "Dequeue") return { status: "backlog" }
   if (action === "Stop Agent")
     return {

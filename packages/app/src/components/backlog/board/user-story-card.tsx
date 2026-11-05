@@ -22,6 +22,7 @@ import { equalUserStoryCardStory } from "@/components/backlog/board/user-story-c
 import { StoryActions } from "@/components/backlog/actions/story-actions"
 import { StoryContributors } from "@/components/backlog/shared/story-contributors"
 import { StoryRunModeIcon } from "@/components/backlog/shared/story-run-mode-icon"
+import { storyStartFailure } from "@/components/backlog/shared/story-start-failure"
 import { Button } from "@/components/ui/button"
 import { useAnimatedBorderEffect } from "@/hooks/use-animated-border-effect"
 import { recordPerformanceCount } from "@/lib/performance-diagnostics"
@@ -222,7 +223,23 @@ function UserStoryCardBody({
           </p>
         </CardContent>
       )}
+      <StoryStartFailure story={story} />
     </>
+  )
+}
+
+function StoryStartFailure({ story }: { story: UserStory }) {
+  const failure = storyStartFailure(story)
+  if (!failure) return null
+  return (
+    <CardContent>
+      <p
+        className="line-clamp-3 text-xs font-medium break-words text-destructive"
+        title={failure}
+      >
+        {failure}
+      </p>
+    </CardContent>
   )
 }
 

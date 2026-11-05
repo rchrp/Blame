@@ -353,6 +353,7 @@ export function useBacklogRotation(
         agentFinalResponse: null,
         agentUsage: null,
         agentStatus: "Running",
+        agentLastError: null,
         agentLastEvent: `Cline debug log: ${clineLogPath(worktree.worktree, session.sessionId)}`,
         clineSessionId: session.sessionId,
       })
