@@ -11,6 +11,8 @@ import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
 import { createCloudApi } from "@/lib/cloud-api"
 
+import { persistSecurityAudit } from "./security-audit-persistence"
+
 const runningStatuses = new Set<SecurityAudit["status"]>([
   "queued",
   "mapping",
@@ -18,8 +20,6 @@ const runningStatuses = new Set<SecurityAudit["status"]>([
   "validation",
   "prioritization",
 ])
-
-type Persistence = { promise: Promise<SecurityAudit>; sequence: number }
 
 export function useSecurityAudits() {
   const auth = useCloudAuth()
@@ -32,7 +32,6 @@ export function useSecurityAudits() {
     () => createCloudApi(auth.apiConnection),
     [auth.apiConnection]
   )
-  const persistence = React.useRef(new Map<string, Persistence>())
   const auditsRef = React.useRef<SecurityAudit[]>([])
   const [state, setState] = React.useState<{
     audits: SecurityAudit[]
@@ -64,24 +63,16 @@ export function useSecurityAudits() {
   )
 
   const persist = React.useCallback(
-    (audit: SecurityAudit) => {
-      if (!projectId || audit.projectId !== projectId) {
-        return Promise.reject(
-          new Error("Security audit project identity is invalid.")
-        )
-      }
-      const key = `${projectId}:${audit.id}`
-      const queued = persistence.current.get(key)
-      if (queued && queued.sequence >= audit.sequence) return queued.promise
-      const promise = (queued?.promise ?? Promise.resolve(audit))
-        .catch(() => audit)
-        .then(() => cloud.saveSecurityAudit(projectId, audit))
-        .then((saved) => {
-          applyAudit(saved)
-          return saved
-        })
-      persistence.current.set(key, { promise, sequence: audit.sequence })
-      return promise
+    async (audit: SecurityAudit) => {
+      if (!projectId)
+        throw new Error("Security audit project identity is invalid.")
+      const saved = await persistSecurityAudit(
+        cloud.saveSecurityAudit,
+        projectId,
+        audit
+      )
+      applyAudit(saved)
+      return saved
     },
     [applyAudit, cloud, projectId]
   )
@@ -148,16 +139,14 @@ export function useSecurityAudits() {
     return () => window.clearTimeout(timer)
   }, [load])
 
+  // Changes are saved by the always-mounted SecurityAuditRecorder; this
+  // view only shows the ones of its project.
   React.useEffect(() => {
     if (!runner || !root) return
     return runner.onChanged((event) => {
-      if (event.root !== root) return
-      applyAudit(event.audit)
-      void persist(event.audit).catch((error) => {
-        setState((current) => ({ ...current, error: errorMessage(error) }))
-      })
+      if (event.root === root) applyAudit(event.audit)
     })
-  }, [applyAudit, persist, root, runner])
+  }, [applyAudit, root, runner])
 
   const run = React.useCallback(
     async (

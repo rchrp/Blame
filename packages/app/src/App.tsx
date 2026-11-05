@@ -4,6 +4,7 @@ import { BacklogPage } from "@/pages/backlog/page"
 import { BacklogStatusPipPage } from "@/pages/backlog/status-pip-page"
 import { ChatPage } from "@/pages/chat/page"
 import { QuickChatAgentRunner } from "@/pages/chat/quick-chat-agent-runner"
+import { SecurityAuditRecorder } from "@/components/security/security-audit-recorder"
 import { GitPage } from "@/pages/git/page"
 import { PracticesPage } from "@/pages/practices/page"
 import { DeployPage } from "@/pages/deploy/page"
@@ -213,6 +214,7 @@ export function App() {
           <QuickChatAgentRunner>
             <ProjectInitializationRunner />
             <ProjectCodePracticesRunner />
+            <SecurityAuditRecorder />
             <AppLayout
               pathname={pathname}
               persistent={<BacklogPage active={backlogActive} />}
