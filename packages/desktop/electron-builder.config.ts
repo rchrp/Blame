@@ -314,6 +314,10 @@ const config: Configuration = {
       name: maintainerName,
     },
     description: "Agentic desktop IDE for controlled AI development workflows.",
+    // Electron takes the Wayland app_id and WM_CLASS from this name. It must
+    // be the installed blame.desktop, or Linux taskbars cannot match the
+    // window to its entry and show a generic icon instead of Blame's.
+    desktopName: "blame.desktop",
     homepage,
     ...(releaseVersion ? { version: releaseVersion } : {}),
   },
@@ -330,6 +334,8 @@ const config: Configuration = {
     executableName: "blame",
     icon: "icons/prod",
     maintainer: `${maintainerName} <${maintainerEmail}>`,
+    // Names the .desktop file after desktopName, so the two cannot drift.
+    syncDesktopName: true,
     target: ["AppImage", "deb", "rpm"],
   },
   mac: {

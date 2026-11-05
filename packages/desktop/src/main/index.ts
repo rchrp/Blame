@@ -291,6 +291,7 @@ function mainWindowOptions(
     },
     ...(process.platform === "win32" ? windowsWindowOptions() : {}),
     ...(process.platform === "darwin" ? macosWindowOptions() : {}),
+    ...(process.platform === "linux" ? linuxWindowOptions() : {}),
   };
 }
 
@@ -454,6 +455,15 @@ function macosWindowOptions(): BrowserWindowConstructorOptions {
   return {
     vibrancy: "under-window",
     visualEffectState: "active",
+  };
+}
+
+// The taskbar takes the icon from blame.desktop when it is installed. An
+// AppImage run without one still shows Blame's icon where the window's own
+// icon is read: X11, and Wayland compositors with xdg-toplevel-icon (KDE).
+function linuxWindowOptions(): BrowserWindowConstructorOptions {
+  return {
+    icon: desktopResources.linuxWindowIcon,
   };
 }
 
