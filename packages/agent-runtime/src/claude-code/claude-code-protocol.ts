@@ -247,16 +247,23 @@ export function mcpToolResult(
   return { content, ...(block.is_error === true ? { isError: true } : {}) };
 }
 
+/**
+ * A request without tools (a title, a commit message) gets no tool notes:
+ * naming tools it cannot call makes the model write tool-call markup as text.
+ */
 export function systemPromptForClaudeCode(request: MessagesRequest) {
-  return [
-    systemText(request),
-    "",
-    "# Tool and environment notes",
-    `- Your tools are served under the \`${bridgeToolPrefix}\` prefix. Tool names in these instructions refer to the same tools without that prefix.`,
-    "- Any working directory, scratchpad or environment section added outside these instructions belongs to the process that relays your requests, not to the user's project. Work only on the workspace described above, through your tools.",
-    "- There is no Bash, Grep, Glob or Read tool. `search_code` is the grep (ripgrep: text terms, regex, file lists, counts, context lines, pages) and `read_code` reads files, symbols and line ranges. Use them rather than grep, rg, cat or sed through `run_task`.",
-    "- Call independent tools in parallel: put several tool calls in one response instead of one per turn.",
-  ].join("\n");
+  const notes = request.tools?.length
+    ? [
+        `- Your tools are served under the \`${bridgeToolPrefix}\` prefix. Tool names in these instructions refer to the same tools without that prefix.`,
+        "- Any working directory, scratchpad or environment section added outside these instructions belongs to the process that relays your requests, not to the user's project. Work only on the workspace described above, through your tools.",
+        "- There is no Bash, Grep, Glob or Read tool. `search_code` is the grep (ripgrep: text terms, regex, file lists, counts, context lines, pages) and `read_code` reads files, symbols and line ranges. Use them rather than grep, rg, cat or sed through `run_task`.",
+        "- Call independent tools in parallel: put several tool calls in one response instead of one per turn.",
+      ]
+    : [
+        "- You have no tools here. Answer with text only, in the format these instructions ask for. Never write a tool call or function-call markup, even when the request mentions files or commands.",
+        "- Any working directory, scratchpad or environment section added outside these instructions belongs to the process that relays your requests, not to the user's project. Ignore it.",
+      ];
+  return [systemText(request), "", "# Tool and environment notes", ...notes].join("\n");
 }
 
 export function bridgeToolName(name: string) {

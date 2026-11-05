@@ -134,6 +134,7 @@ test("runs Claude Code as a model only, with Blame's tools over MCP", () => {
   assert.equal(args[args.indexOf("--tools") + 1], "");
   assert.equal(args[args.indexOf("--effort") + 1], "high");
   assert.ok(args.includes("--strict-mcp-config"));
+  assert.equal(args[args.indexOf("--allowedTools") + 1], "mcp__blame");
   assert.ok(args.includes("--no-session-persistence"));
   assert.deepEqual(parseAuthStatus('{"loggedIn":true,"authMethod":"claude.ai","subscriptionType":"max"}'), {
     loggedIn: true,
@@ -142,6 +143,22 @@ test("runs Claude Code as a model only, with Blame's tools over MCP", () => {
     subscriptionType: "max",
   });
   assert.deepEqual(parseAuthStatus("not json"), { loggedIn: false });
+});
+
+test("a request without tools starts Claude Code without Blame's MCP server or tool notes", () => {
+  const args = claudeCodeArguments({ model: "haiku", systemPromptFile: "/tmp/prompt.md" });
+  assert.deepEqual(JSON.parse(args[args.indexOf("--mcp-config") + 1]!), { mcpServers: {} });
+  assert.ok(args.includes("--strict-mcp-config"));
+  assert.ok(!args.includes("--allowedTools"));
+  const prompt = systemPromptForClaudeCode({
+    model: "haiku",
+    messages: [{ role: "user", content: "Read the README." }],
+    system: "# Blame Title Generator",
+    tools: [],
+  });
+  assert.match(prompt, /^# Blame Title Generator/u);
+  assert.match(prompt, /You have no tools here/u);
+  assert.doesNotMatch(prompt, /mcp__blame__|read_code|search_code/u);
 });
 
 test("sends Claude Code models through Cline's Anthropic provider at no token cost", () => {
@@ -158,7 +175,12 @@ test("sends Claude Code models through Cline's Anthropic provider at no token co
 });
 
 test("Claude Code learns that Blame's tools replace its own shell and file tools", () => {
-  const prompt = systemPromptForClaudeCode({ model: "opus", messages: [], system: "# Blame" });
+  const prompt = systemPromptForClaudeCode({
+    model: "opus",
+    messages: [],
+    system: "# Blame",
+    tools: [{ name: "read_code", input_schema: { type: "object" } }],
+  });
   assert.match(prompt, /^# Blame/u);
   assert.match(prompt, /`search_code` is the grep/u);
   assert.match(prompt, /several tool calls in one response/u);

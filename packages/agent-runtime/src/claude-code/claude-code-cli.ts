@@ -114,10 +114,14 @@ export function claudeCodeEnvironment(env: NodeJS.ProcessEnv = process.env) {
 
 export function claudeCodeArguments(input: {
   effort?: ClaudeCodeEffort;
-  mcpUrl: string;
+  /** Blame's MCP endpoint; left out when the request offers no tools. */
+  mcpUrl?: string;
   model: string;
   systemPromptFile: string;
 }) {
+  const mcpServers = input.mcpUrl
+    ? { [bridgeMcpServerName]: { type: "http", url: input.mcpUrl } }
+    : {};
   return [
     "--print",
     "--input-format",
@@ -130,14 +134,9 @@ export function claudeCodeArguments(input: {
     "--tools",
     "",
     "--mcp-config",
-    JSON.stringify({
-      mcpServers: {
-        [bridgeMcpServerName]: { type: "http", url: input.mcpUrl },
-      },
-    }),
+    JSON.stringify({ mcpServers }),
     "--strict-mcp-config",
-    "--allowedTools",
-    `mcp__${bridgeMcpServerName}`,
+    ...(input.mcpUrl ? ["--allowedTools", `mcp__${bridgeMcpServerName}`] : []),
     "--permission-prompts",
     "none",
     "--setting-sources",

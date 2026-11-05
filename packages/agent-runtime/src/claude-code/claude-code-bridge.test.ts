@@ -56,6 +56,7 @@ test("relays turns and holds tool calls until Blame sends results", async () => 
       { role: "user", content: "thanks" },
     ]);
     assert.match(text(next), /echo\(sonnet\): thanks/);
+    assert.match(text(next), /mcp: blame/);
     assert.equal(openLanes(bridge), 1);
   });
 });
@@ -88,6 +89,8 @@ test("answers non-streaming calls and rejects unknown keys", async () => {
     };
     assert.equal(message.stop_reason, "end_turn");
     assert.match(message.content[0]!.text, /echo\(haiku\): hello/);
+    // A request without tools gets no MCP server, so no tool to call.
+    assert.match(message.content[0]!.text, /mcp: none/);
 
     const forged = await post(bridge, "bcc1.c2Vzc2lvbg.forged", {
       model: "haiku",

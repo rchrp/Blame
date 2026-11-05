@@ -121,7 +121,9 @@ export class ClaudeCodeLane {
       options.executablePath,
       claudeCodeArguments({
         effort: requestEffort(request),
-        mcpUrl: `${options.mcpBaseUrl}/mcp/${this.id}/${this.secret}`,
+        mcpUrl: this.tools.length
+          ? `${options.mcpBaseUrl}/mcp/${this.id}/${this.secret}`
+          : undefined,
         model: request.model,
         systemPromptFile: this.systemPromptFile,
       }),

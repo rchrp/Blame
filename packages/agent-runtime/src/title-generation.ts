@@ -81,7 +81,7 @@ export function generatedTitle(
 ) {
   const parsed = generatedTitlePayload(value);
   const candidate = titleCandidate(parsed.title);
-  if (!candidate) return undefined;
+  if (!candidate || modelScaffolding(candidate)) return undefined;
   const runConfigurationId = validRunConfigurationId(
     parsed.runConfigurationId,
     input.runConfigurations,
@@ -141,6 +141,14 @@ function titleCandidate(value: unknown) {
         .trim(),
     )
     .find(Boolean);
+}
+
+/**
+ * Tags, JSON or a transcript line instead of a title: the model tried to carry
+ * out the request (for example it wrote a tool call as text).
+ */
+function modelScaffolding(title: string) {
+  return /<[/!?]?[a-z_]|[{}]|^\[|[─-╿]/iu.test(title);
 }
 
 function stringValue(value: unknown) {

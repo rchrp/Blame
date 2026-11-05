@@ -7,7 +7,7 @@ import { createInterface } from "node:readline";
 
 const args = process.argv.slice(2);
 const option = (name) => args[args.indexOf(name) + 1];
-const mcpUrl = JSON.parse(option("--mcp-config")).mcpServers.blame.url;
+const mcpUrl = JSON.parse(option("--mcp-config")).mcpServers.blame?.url;
 const systemPrompt = readFileSync(option("--system-prompt-file"), "utf8");
 const model = option("--model");
 const effort = args.includes("--effort") ? option("--effort") : "default";
@@ -23,7 +23,7 @@ write({
   type: "system",
   subtype: "init",
   model,
-  mcp_servers: [{ name: "blame", status: "connected" }],
+  mcp_servers: mcpUrl ? [{ name: "blame", status: "connected" }] : [],
 });
 
 const lines = createInterface({ input: process.stdin });
@@ -77,7 +77,7 @@ for await (const line of lines) {
     continue;
   } else {
     streamText(
-      `echo(${model}): ${text} | effort: ${effort} | system: ${systemPrompt.split("\n")[0]}`,
+      `echo(${model}): ${text} | effort: ${effort} | system: ${systemPrompt.split("\n")[0]} | mcp: ${mcpUrl ? "blame" : "none"}`,
     );
   }
   write({ type: "result", subtype: "success", is_error: false, result: "" });
