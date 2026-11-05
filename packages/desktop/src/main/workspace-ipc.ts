@@ -137,8 +137,9 @@ import {
   localPreviewProbesPass,
   localPreviewServicesRunning,
   assertLocalPreviewHasServices,
-  localPreviewServices,
+  inspectLocalPreview,
   localPreviewUrl,
+  type LocalPreviewInspection,
   prefetchLocalPreview,
   removeLocalPreview,
   startLocalPreview,
@@ -1658,13 +1659,16 @@ export function schedulePreviewCleanup() {
   previewCleanupTimer.unref?.();
 }
 
-async function resolveProjectPreviewUrl(input: ResolveProjectPreviewUrlInput) {
+async function resolveProjectPreviewUrl(
+  input: ResolveProjectPreviewUrlInput,
+  inspection?: LocalPreviewInspection,
+) {
   const worktree = resolveRuntimePath(input.worktree);
   if (removedWorktrees.has(worktree)) return null;
   if (!(await isWorkspaceGitRepository(worktree))) return null;
   if ((await readPreviewRuntimeFileState(worktree)).desiredStatus === "stopped")
     return null;
-  return (await localPreviewUrl(worktree)) ?? null;
+  return (await localPreviewUrl(worktree, inspection)) ?? null;
 }
 
 export async function localPreviewBridgeGrant(
@@ -1803,13 +1807,14 @@ export async function projectPreviewRuntimeState(
   // written its result by the time it stops being in flight.
   const inFlight =
     localPreviewOperationInFlight(worktree) || previewStarts.has(worktree);
-  const [configurations, runtimeState, containers, manifest] =
+  const [configurations, runtimeState, inspection, manifest] =
     await Promise.all([
       readProjectRunConfigurations(worktree),
       readPreviewRuntimeFileState(worktree),
-      localPreviewServices(worktree),
+      inspectLocalPreview(worktree),
       readProjectPreviewManifest(worktree).catch(() => undefined),
     ]);
+  const containers = inspection.services;
   const selected = selectedPreviewRunConfiguration(
     configurations,
     runtimeState,
@@ -1827,7 +1832,8 @@ export async function projectPreviewRuntimeState(
   );
   const previewUrl =
     runtimeState.desiredStatus === "running" && browserPreview
-      ? ((await resolveProjectPreviewUrl({ worktree })) ?? undefined)
+      ? ((await resolveProjectPreviewUrl({ worktree }, inspection)) ??
+        undefined)
       : undefined;
   const lifecycle = localPreviewLifecycle(
     runtimeState,

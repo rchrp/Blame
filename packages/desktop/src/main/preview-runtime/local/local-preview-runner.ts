@@ -268,23 +268,42 @@ export async function removeLocalPreview(worktree: string) {
   await rm(localPreviewPaths(worktree).engineState);
 }
 
-export async function localPreviewServices(
+export type LocalPreviewInspection = {
+  context?: LocalPreviewContext;
+  services: ServiceState[];
+};
+
+/** The worktree's preview context and its containers, read once. */
+export async function inspectLocalPreview(
   worktree: string,
-): Promise<ServiceState[]> {
+): Promise<LocalPreviewInspection> {
   try {
-    const { plan } = await localPreviewContext(worktree);
-    return await localPreviewEngine(worktree).inspect(plan);
+    const context = await localPreviewContext(worktree);
+    const services = await localPreviewEngine(worktree).inspect(context.plan);
+    return { context, services };
   } catch {
-    return [];
+    return { services: [] };
   }
 }
 
-/** The browser preview URL while its service runs. */
-export async function localPreviewUrl(worktree: string) {
+export async function localPreviewServices(worktree: string) {
+  return (await inspectLocalPreview(worktree)).services;
+}
+
+/**
+ * The browser preview URL while its service runs. A fresh inspection of the
+ * worktree saves reading its context and containers again.
+ */
+export async function localPreviewUrl(
+  worktree: string,
+  inspection?: LocalPreviewInspection,
+) {
   const engine = localPreviewEngine(worktree);
   const project = await engine.prepared();
   if (!project) return undefined;
-  const context = await localPreviewContext(worktree).catch(() => undefined);
+  const context =
+    inspection?.context ??
+    (await localPreviewContext(worktree).catch(() => undefined));
   if (!context) return undefined;
   if (
     !shouldStartBrowserPreview(
@@ -296,7 +315,9 @@ export async function localPreviewUrl(worktree: string) {
     return undefined;
   const endpoint = previewEndpoint(context.plan, context.selected);
   if (!endpoint) return undefined;
-  const states = await engine.inspect(context.plan);
+  const states = inspection?.context
+    ? inspection.services
+    : await engine.inspect(context.plan);
   if (!states.find(({ id }) => id === endpoint.serviceId)?.running)
     return undefined;
   return previewUrl(

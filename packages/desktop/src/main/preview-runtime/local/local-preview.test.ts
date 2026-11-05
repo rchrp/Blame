@@ -29,6 +29,7 @@ import {
   writeLocalPreviewInitialization,
 } from "./local-preview-files.ts";
 import {
+  inspectLocalPreview,
   localPreviewUrl,
   removeLocalPreview,
   startLocalPreview,
@@ -268,6 +269,12 @@ test("restarts the selected run configuration and returns its preview URL", asyn
     "Waiting for the app to answer",
   ]);
   assert.equal(await localPreviewUrl(worktree), url);
+
+  // The state poll inspects once and reuses it for the URL.
+  const inspection = await inspectLocalPreview(worktree);
+  const inspected = host.commands.length;
+  assert.equal(await localPreviewUrl(worktree, inspection), url);
+  assert.equal(host.commands.length, inspected);
 });
 
 test("keeps preview state when Docker removal fails so deletion can be retried", async (t) => {
