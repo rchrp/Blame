@@ -2,11 +2,13 @@ import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import http from "node:http";
 import { join } from "node:path";
+import { performance } from "node:perf_hooks";
 
 import {
   claudeCodeEnvironment,
   findClaudeCodeExecutable,
 } from "./claude-code-cli.js";
+import { laneEventLog, type LaneLog } from "./claude-code-events.js";
 import { ClaudeCodeLane, type BridgeSink } from "./claude-code-lane.js";
 import {
   anthropicError,
@@ -24,6 +26,10 @@ import {
 export type ClaudeCodeBridgeOptions = {
   env?: NodeJS.ProcessEnv;
   stateDirectory: string;
+  /** Overrides for tests: silence before a stream counts as stalled, and the check period. */
+  stallMs?: number;
+  wakeStallMs?: number;
+  watchIntervalMs?: number;
 };
 
 const maxBodyBytes = 64 * 1024 * 1024;
@@ -36,6 +42,13 @@ const sessionIdleMs = 55 * 60 * 1_000;
 const operationIdleMs = 60 * 1_000;
 const awaitingToolsLaneMs = 2 * 60 * 60 * 1_000;
 const keepAliveMs = 20_000;
+// A silent stream is interrupted after this long, or sooner after a wake
+// from sleep, when the connection it used is most likely gone.
+const stallMs = 150_000;
+const wakeStallMs = 20_000;
+const watchIntervalMs = 5_000;
+// The wall clock moving this much more than the monotonic one means sleep.
+const sleepGapMs = 15_000;
 const tokenPrefix = "bcc1";
 
 /**
@@ -47,6 +60,9 @@ export class ClaudeCodeBridge {
   private readonly lanes = new Map<string, ClaudeCodeLane[]>();
   private readonly lanesById = new Map<string, ClaudeCodeLane>();
   private readonly reaper: NodeJS.Timeout;
+  private readonly watcher: NodeJS.Timeout;
+  private lastWatch = { monotonic: performance.now(), wall: Date.now() };
+  private readonly log: LaneLog;
   private readonly server: http.Server;
   private readonly secret: Buffer;
   private readonly options: ClaudeCodeBridgeOptions;
@@ -57,13 +73,20 @@ export class ClaudeCodeBridge {
     secret: Buffer,
     port: number,
     options: ClaudeCodeBridgeOptions,
+    log: LaneLog,
   ) {
     this.server = server;
     this.secret = secret;
     this.port = port;
     this.options = options;
+    this.log = log;
     this.reaper = setInterval(() => this.reapLanes(), 30_000);
     this.reaper.unref();
+    this.watcher = setInterval(
+      () => this.watchLanes(),
+      options.watchIntervalMs ?? watchIntervalMs,
+    );
+    this.watcher.unref();
   }
 
   static async start(options: ClaudeCodeBridgeOptions) {
@@ -90,6 +113,7 @@ export class ClaudeCodeBridge {
       Buffer.from(secret),
       port,
       { ...options, stateDirectory: lanesDirectory },
+      laneEventLog(join(options.stateDirectory, "bridge-events.log")),
     );
     return target.bridge;
   }
@@ -111,6 +135,7 @@ export class ClaudeCodeBridge {
 
   async close() {
     clearInterval(this.reaper);
+    clearInterval(this.watcher);
     for (const lane of [...this.lanesById.values()]) lane.close("Blame closed.");
     await new Promise<void>((resolve) => this.server.close(() => resolve()));
   }
@@ -180,8 +205,12 @@ export class ClaudeCodeBridge {
         idleMs: tokenScope(token).startsWith("op:")
           ? operationIdleMs
           : sessionIdleMs,
+        log: this.log,
         mcpBaseUrl: `http://127.0.0.1:${this.port}`,
+        scope: tokenScope(token),
+        stallMs: this.options.stallMs ?? stallMs,
         stateDirectory: this.options.stateDirectory,
+        wakeStallMs: this.options.wakeStallMs ?? wakeStallMs,
         onClose: (closed) => this.forget(token, closed),
       });
       this.lanesById.set(active.id, active);
@@ -273,6 +302,20 @@ export class ClaudeCodeBridge {
     const lanes = (this.lanes.get(token) ?? []).filter((item) => item !== lane);
     if (lanes.length) this.lanes.set(token, lanes);
     else this.lanes.delete(token);
+  }
+
+  /** Notices a wake from sleep, then lets each lane check its stream. */
+  private watchLanes() {
+    const now = { monotonic: performance.now(), wall: Date.now() };
+    const slept =
+      now.wall - this.lastWatch.wall - (now.monotonic - this.lastWatch.monotonic);
+    this.lastWatch = now;
+    const lanes = [...this.lanesById.values()];
+    if (slept > sleepGapMs) {
+      this.log("system_woke", { lanes: lanes.length, sleptMs: Math.round(slept) });
+      for (const lane of lanes) lane.noteWake(now.monotonic);
+    }
+    for (const lane of lanes) lane.watch(now.monotonic);
   }
 
   private reapLanes() {

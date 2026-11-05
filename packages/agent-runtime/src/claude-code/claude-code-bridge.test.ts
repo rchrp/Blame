@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { chmodSync, mkdtempSync, rmSync } from "node:fs";
+import { chmodSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -126,15 +126,119 @@ test("maps Claude Code failures to Anthropic errors", async () => {
   });
 });
 
-async function withBridge(run: (bridge: ClaudeCodeBridge) => Promise<void>) {
+const reminder = {
+  role: "user",
+  content: "Previous turn ended unexpectedly. Continue from where you left off.",
+};
+const partialAnswer = { role: "assistant", content: [{ type: "text", text: "partial" }] };
+
+for (const timing of ["before", "after"]) {
+  test(`keeps the process when Claude Code retries a dropped stream (${timing} Cline asks again)`, async () => {
+    await withBridge(async (bridge, stateDirectory) => {
+      const key = bridge.token(`session-cut-${timing}`);
+      const first = { role: "user", content: timing === "before" ? "please cut" : "please cut later" };
+      const cut = await stream(bridge, key, [first]);
+      assert.equal(text(cut), "partial");
+      assert.equal(stopReason(cut), undefined);
+
+      const retried = await stream(bridge, key, [first, partialAnswer, reminder]);
+      assert.equal(text(retried), "retried answer");
+      assert.equal(stopReason(retried), "end_turn");
+      assert.equal(openLanes(bridge), 1);
+      assert.deepEqual(
+        (await laneEvents(stateDirectory)).map((entry) => entry.event),
+        ["lane_started", "turn_cut", "api_retry", "turn_resumed"],
+      );
+    });
+  });
+}
+
+test("hands Claude Code Cline's reminder when it gave up after a drop", async () => {
+  await withBridge(async (bridge) => {
+    const key = bridge.token("session-drop");
+    const first = { role: "user", content: "please drop" };
+    assert.equal(text(await stream(bridge, key, [first])), "partial");
+    const next = await stream(bridge, key, [first, partialAnswer, reminder]);
+    assert.match(text(next), /echo\(sonnet\): Previous turn ended unexpectedly/);
+    assert.equal(openLanes(bridge), 1);
+  });
+});
+
+test("interrupts a silent stream and continues in the same process", async () => {
+  await withBridge(
+    async (bridge, stateDirectory) => {
+      const key = bridge.token("session-stall");
+      const first = { role: "user", content: "please stall" };
+      const cut = await stream(bridge, key, [first]);
+      assert.equal(text(cut), "partial");
+      // Claude Code reports an interrupted answer with a null stop reason.
+      assert.equal(stopReason(cut), null);
+      const next = await stream(bridge, key, [first, partialAnswer, reminder]);
+      assert.match(text(next), /echo\(sonnet\): Previous turn ended unexpectedly/);
+      assert.equal(openLanes(bridge), 1);
+      const interrupted = (await laneEvents(stateDirectory)).find(
+        (entry) => entry.event === "stream_interrupted",
+      );
+      assert.equal(interrupted?.scope, "session-stall");
+    },
+    { stallMs: 200, watchIntervalMs: 50 },
+  );
+});
+
+test("interrupts a silent stream sooner after the computer wakes from sleep", async () => {
+  const realNow = Date.now;
+  await withBridge(
+    async (bridge, stateDirectory) => {
+      // The wall clock jumps ahead of the monotonic one, as it does across sleep.
+      const asleep = setTimeout(() => {
+        Date.now = () => realNow() + 60_000;
+      }, 100);
+      try {
+        const cut = await stream(bridge, bridge.token("session-wake"), [
+          { role: "user", content: "please stall" },
+        ]);
+        assert.equal(text(cut), "partial");
+      } finally {
+        clearTimeout(asleep);
+        Date.now = realNow;
+      }
+      const events = await laneEvents(stateDirectory);
+      assert.ok(events.some((entry) => entry.event === "system_woke"));
+      assert.equal(
+        events.find((entry) => entry.event === "stream_interrupted")?.afterWake,
+        true,
+      );
+    },
+    { stallMs: 60_000, wakeStallMs: 200, watchIntervalMs: 50 },
+  );
+});
+
+test("retries a turn whose stream stayed silent before any output", async () => {
+  await withBridge(
+    async (bridge) => {
+      const answer = await stream(bridge, bridge.token("session-hang"), [
+        { role: "user", content: "please hang" },
+      ]);
+      assert.match(text(answer), /echo\(sonnet\): The connection to the model dropped/);
+      assert.equal(stopReason(answer), "end_turn");
+    },
+    { stallMs: 200, watchIntervalMs: 50 },
+  );
+});
+
+async function withBridge(
+  run: (bridge: ClaudeCodeBridge, stateDirectory: string) => Promise<void>,
+  options: { stallMs?: number; wakeStallMs?: number; watchIntervalMs?: number } = {},
+) {
   chmodSync(fakeClaudeCode, 0o755);
   const stateDirectory = mkdtempSync(join(tmpdir(), "blame-claude-code-"));
   const bridge = await ClaudeCodeBridge.start({
     env: { ...process.env, BLAME_CLAUDE_CODE_PATH: fakeClaudeCode },
     stateDirectory,
+    ...options,
   });
   try {
-    await run(bridge);
+    await run(bridge, stateDirectory);
   } finally {
     await bridge.close();
     rmSync(stateDirectory, { force: true, recursive: true });
@@ -152,7 +256,7 @@ function post(bridge: ClaudeCodeBridge, key: string, body: unknown) {
 type StreamEvent = {
   type: string;
   content_block?: { name?: string; caller?: unknown };
-  delta?: { text?: string; stop_reason?: string };
+  delta?: { text?: string; stop_reason?: string | null };
 };
 
 async function stream(bridge: ClaudeCodeBridge, key: string, messages: unknown[]) {
@@ -177,6 +281,15 @@ function text(events: StreamEvent[]) {
 function stopReason(events: StreamEvent[]) {
   return events.find((event) => event.type === "message_delta")?.delta
     ?.stop_reason;
+}
+
+/** The bridge's event log; writes are queued, so give them a moment to land. */
+async function laneEvents(stateDirectory: string) {
+  await new Promise((resolve) => setTimeout(resolve, 100));
+  return readFileSync(join(stateDirectory, "bridge-events.log"), "utf8")
+    .trim()
+    .split("\n")
+    .map((line) => JSON.parse(line) as { afterWake?: boolean; event: string; scope?: string });
 }
 
 function openLanes(bridge: ClaudeCodeBridge) {

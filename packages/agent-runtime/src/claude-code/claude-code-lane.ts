@@ -2,9 +2,11 @@ import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { randomBytes, randomUUID } from "node:crypto";
 import { rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { performance } from "node:perf_hooks";
 
 import { recordClaudeCodeRateLimit } from "../subscription-usage.js";
 import { claudeCodeArguments } from "./claude-code-cli.js";
+import type { LaneLog } from "./claude-code-events.js";
 import {
   bridgeMcpServerName,
   bridgeToolName,
@@ -15,6 +17,7 @@ import {
   isRecord,
   laneSignature,
   mcpToolResult,
+  messageBlocks,
   requestEffort,
   systemPromptForClaudeCode,
   toolResults,
@@ -22,6 +25,7 @@ import {
   userContent,
   userTextBesideToolResults,
   type AnthropicBlock,
+  type AnthropicMessage,
   type AnthropicTool,
   type McpToolResult,
   type MessagesRequest,
@@ -39,12 +43,29 @@ export type LaneOptions = {
   executablePath: string;
   /** How long a finished turn keeps its process for a follow-up. */
   idleMs: number;
+  log: LaneLog;
   mcpBaseUrl: string;
+  /** The conversation the bridge key belongs to, for the event log. */
+  scope: string;
+  /** Silence after which a generating turn counts as stalled. */
+  stallMs: number;
   stateDirectory: string;
+  /** The same, counted from the moment the computer woke from sleep. */
+  wakeStallMs: number;
   onClose(lane: ClaudeCodeLane): void;
 };
 
-type LaneState = "streaming" | "awaiting-tools" | "idle" | "closed";
+/**
+ * `cut`: Claude Code ended an answer without a stop reason (its connection
+ * dropped, or Blame interrupted a silent stream). Cline got the partial
+ * answer and will ask again; the process keeps the conversation meanwhile.
+ */
+type LaneState = "streaming" | "awaiting-tools" | "idle" | "cut" | "closed";
+
+const interruptGraceMs = 15_000;
+const maxRecoveries = 2;
+const recoveryPrompt =
+  "The connection to the model dropped. Continue from where you left off.";
 
 /**
  * One Claude Code process serving one conversation. Claude Code only
@@ -66,11 +87,23 @@ export class ClaudeCodeLane {
   private sinkHasEvents = false;
   private expectedLength = 0;
   private requestLength = 0;
+  private requestTail?: AnthropicMessage;
   private pendingToolUseIds: string[] = [];
   private turnTools = new Map<string, string>();
   private stopReason?: string;
   private readonly calls = new Map<string, (result: McpToolResult) => void>();
   private readonly results = new Map<string, McpToolResult>();
+  /** Claude Code is inside one of its own turns: from a user message to its result. */
+  private claudeTurnOpen = false;
+  /** Events Claude Code streamed while the turn was cut and Cline had not asked again. */
+  private held: AnthropicBlock[] = [];
+  private lastOutputAt = performance.now();
+  private wokeAt?: number;
+  private retryDelayMs = 0;
+  private interruptedAt?: number;
+  private recoveries = 0;
+  private turns = 0;
+  private readonly startedAt = Date.now();
   private stdout = "";
   private stderr = "";
   private readonly options: LaneOptions;
@@ -107,6 +140,13 @@ export class ClaudeCodeLane {
       ),
     );
     this.child.stdin.on("error", () => undefined);
+    options.log("lane_started", {
+      lane: this.id,
+      scope: options.scope,
+      messages: request.messages.length,
+      replayed: request.messages.length > 1,
+      model: request.model,
+    });
     this.beginTurn(request, sink);
     this.writeUser(initialUserContent(request.messages));
   }
@@ -129,10 +169,11 @@ export class ClaudeCodeLane {
 
   /** True when the request is exactly the next turn of this conversation. */
   accepts(request: MessagesRequest) {
-    if (this.state !== "idle" && this.state !== "awaiting-tools") return false;
-    if (request.messages.length !== this.expectedLength) return false;
     if (laneSignature(request) !== this.signature) return false;
     if (conversationRoot(request) !== this.root) return false;
+    if (this.state === "cut") return this.acceptsAfterCut(request.messages);
+    if (this.state !== "idle" && this.state !== "awaiting-tools") return false;
+    if (request.messages.length !== this.expectedLength) return false;
     const assistant = request.messages[this.expectedLength - 2];
     if (assistant?.role !== "assistant") return false;
     if (!sameIds(toolUseIds(assistant), this.pendingToolUseIds)) return false;
@@ -145,10 +186,12 @@ export class ClaudeCodeLane {
   }
 
   continue(request: MessagesRequest, sink: BridgeSink) {
-    const wasAwaitingTools = this.state === "awaiting-tools";
+    const previous = this.state;
+    const reminder = previous === "cut" ? this.cutReminder(request.messages) : [];
     this.beginTurn(request, sink);
     const last = request.messages.at(-1)!;
-    if (!wasAwaitingTools) {
+    if (previous === "cut") return this.resumeAfterCut(reminder);
+    if (previous !== "awaiting-tools") {
       this.writeUser(userContent(last));
       return;
     }
@@ -185,8 +228,50 @@ export class ClaudeCodeLane {
     if (this.state === "streaming") this.close("The client closed the request.");
   }
 
+  /** The computer woke from sleep: a stream that was open is likely dead. */
+  noteWake(now: number) {
+    this.wokeAt = now;
+  }
+
+  /**
+   * Checked every few seconds. A dead connection does not always fail: after
+   * sleep or a network change the stream can stay silent for many minutes.
+   * Interrupting the turn keeps the process and its prompt cache; the turn is
+   * then retried or continued like a dropped connection.
+   */
+  watch(now: number) {
+    if (this.state === "closed") return;
+    if (this.interruptedAt !== undefined) {
+      if (now - this.interruptedAt > interruptGraceMs)
+        this.close("Claude Code did not answer an interrupt of its silent stream.");
+      return;
+    }
+    if (!this.claudeTurnOpen || this.calls.size) return;
+    if (this.state !== "streaming" && this.state !== "cut") return;
+    const afterWake = this.wokeAt !== undefined && this.wokeAt > this.lastOutputAt;
+    const quietSince = afterWake ? this.wokeAt! : this.lastOutputAt;
+    const limit =
+      (afterWake ? this.options.wakeStallMs : this.options.stallMs) + this.retryDelayMs;
+    if (now - quietSince < limit) return;
+    this.interruptedAt = now;
+    this.log("stream_interrupted", {
+      afterWake,
+      quietMs: Math.round(now - this.lastOutputAt),
+      state: this.state,
+    });
+    this.child.stdin.write(
+      `${JSON.stringify({ type: "control_request", request_id: randomUUID(), request: { subtype: "interrupt" } })}\n`,
+    );
+  }
+
   close(reason = "Claude Code session closed.") {
     if (this.state === "closed") return;
+    this.log("lane_closed", {
+      ageMs: Date.now() - this.startedAt,
+      reason: reason.slice(0, 500),
+      state: this.state,
+      turns: this.turns,
+    });
     this.state = "closed";
     this.sink?.fail(500, "api_error", reason);
     this.sink = undefined;
@@ -209,8 +294,55 @@ export class ClaudeCodeLane {
     this.sink = sink;
     this.sinkHasEvents = false;
     this.requestLength = request.messages.length;
+    this.requestTail = request.messages.at(-1);
     this.turnTools.clear();
     this.stopReason = undefined;
+    this.recoveries = 0;
+    this.turns += 1;
+  }
+
+  /**
+   * After a cut, Cline either keeps the partial answer and adds a reminder
+   * (two more messages) or resends the request with the reminder merged into
+   * its last user turn.
+   */
+  private acceptsAfterCut(messages: AnthropicMessage[]) {
+    const last = messages.at(-1)!;
+    if (last.role !== "user") return false;
+    if (messages.length === this.requestLength + 2) {
+      const partial = messages[this.requestLength]!;
+      return (
+        partial.role === "assistant" &&
+        toolUseIds(partial).length === 0 &&
+        toolResults(last).length === 0
+      );
+    }
+    return (
+      messages.length === this.requestLength &&
+      sameIds(resultIds(last), this.requestTail ? resultIds(this.requestTail) : [])
+    );
+  }
+
+  /** What Cline added after the cut: its reminder, as a whole message or merged into the last one. */
+  private cutReminder(messages: AnthropicMessage[]): AnthropicBlock[] {
+    const last = messages.at(-1)!;
+    if (messages.length !== this.requestLength) return userContent(last);
+    const before = new Set(
+      (this.requestTail ? messageBlocks(this.requestTail) : []).map((block) => JSON.stringify(block)),
+    );
+    return messageBlocks(last).filter(
+      (block) => block.type === "text" && !before.has(JSON.stringify(block)),
+    );
+  }
+
+  /** Relays what Claude Code regenerated meanwhile, or hands it Cline's reminder if it gave up. */
+  private resumeAfterCut(reminder: AnthropicBlock[]) {
+    const held = this.held;
+    this.held = [];
+    this.log("turn_resumed", { heldEvents: held.length, claudeTurnOpen: this.claudeTurnOpen });
+    for (const event of held) if (this.state === "streaming") this.readStreamEvent(event);
+    if (this.state !== "streaming" || this.claudeTurnOpen || this.sinkHasEvents) return;
+    this.writeUser(reminder.length ? reminder : [{ type: "text", text: recoveryPrompt }]);
   }
 
   private deliver(toolUseId: string, result: McpToolResult) {
@@ -222,6 +354,8 @@ export class ClaudeCodeLane {
   }
 
   private writeUser(content: AnthropicBlock[]) {
+    this.claudeTurnOpen = true;
+    this.lastOutputAt = performance.now();
     this.child.stdin.write(
       `${JSON.stringify({ type: "user", message: { role: "user", content } })}\n`,
     );
@@ -246,16 +380,24 @@ export class ClaudeCodeLane {
       return;
     }
     if (!isRecord(message) || this.state === "closed") return;
-    if (message.type === "stream_event" && isRecord(message.event))
+    this.lastOutputAt = performance.now();
+    if (message.type === "stream_event" && isRecord(message.event)) {
+      this.retryDelayMs = 0;
       this.readStreamEvent(message.event as AnthropicBlock);
-    else if (message.type === "system" && message.subtype === "init")
+    } else if (message.type === "system" && message.subtype === "init")
       this.checkInit(message);
+    else if (message.type === "system" && message.subtype === "api_retry")
+      this.noteRetry(message);
     else if (message.type === "result") this.readResult(message);
     else if (message.type === "rate_limit_event")
       recordClaudeCodeRateLimit(message.rate_limit_info);
   }
 
   private readStreamEvent(event: AnthropicBlock) {
+    if (this.state === "cut") {
+      this.held.push(event);
+      return;
+    }
     const sink = this.sink;
     if (!sink) {
       // Claude Code moved on without Blame (for example it rejected a tool
@@ -264,6 +406,7 @@ export class ClaudeCodeLane {
         this.close("Claude Code continued without Blame's tool results.");
       return;
     }
+    if (event.type === "message_start") this.stopReason = undefined;
     if (
       event.type === "content_block_start" &&
       isRecord(event.content_block) &&
@@ -275,6 +418,7 @@ export class ClaudeCodeLane {
       );
     if (event.type === "message_delta" && isRecord(event.delta))
       this.stopReason = String(event.delta.stop_reason ?? "") || undefined;
+    if (event.type === "message_stop" && !this.stopReason) return this.cutTurn();
     this.sinkHasEvents = true;
     sink.event(clientStreamEvent(event));
     if (event.type === "message_stop") this.finishTurn();
@@ -295,6 +439,36 @@ export class ClaudeCodeLane {
     sink?.done();
   }
 
+  /**
+   * Claude Code closed an answer without a stop reason: its connection
+   * dropped (it retries on its own) or Blame interrupted a silent stream.
+   */
+  private cutTurn() {
+    const sink = this.sink!;
+    this.sink = undefined;
+    sink.event({ type: "message_stop" });
+    sink.done();
+    this.lastUsedAt = Date.now();
+    // Cline may run the partial answer's tool calls; Claude Code will not.
+    if (this.turnTools.size) {
+      this.close("Claude Code's answer was cut during a tool call.");
+      return;
+    }
+    this.state = "cut";
+    this.held = [];
+    this.log("turn_cut", { claudeTurnOpen: this.claudeTurnOpen });
+  }
+
+  private noteRetry(message: Record<string, unknown>) {
+    this.retryDelayMs = Number(message.retry_delay_ms) || 0;
+    this.log("api_retry", {
+      attempt: message.attempt,
+      delayMs: message.retry_delay_ms,
+      error: message.error,
+      errorStatus: message.error_status,
+    });
+  }
+
   private checkInit(message: Record<string, unknown>) {
     const servers = Array.isArray(message.mcp_servers) ? message.mcp_servers : [];
     const server = servers.find(
@@ -305,18 +479,28 @@ export class ClaudeCodeLane {
   }
 
   private readResult(message: Record<string, unknown>) {
-    if (!this.sink) return;
+    const interrupted = this.interruptedAt !== undefined;
+    this.interruptedAt = undefined;
+    this.claudeTurnOpen = false;
     const failed = message.is_error === true || message.subtype !== "success";
+    const text = failed ? resultText(message) : "";
+    if (this.state === "cut") {
+      // Only a whole regenerated answer can still be relayed.
+      if (!completeAnswer(this.held)) this.held = [];
+      if (failed) this.log("claude_turn_failed", { error: text.slice(0, 300) });
+      return;
+    }
+    if (!this.sink) return;
     if (!failed) {
       if (this.sinkHasEvents) this.finishTurn();
       return;
     }
-    const text =
-      typeof message.result === "string" && message.result
-        ? message.result
-        : Array.isArray(message.errors)
-          ? message.errors.map(String).join("\n")
-          : `Claude Code failed (${String(message.subtype)}).`;
+    if (!this.sinkHasEvents && this.recoverable(text, interrupted)) {
+      this.recoveries += 1;
+      this.log("turn_retried", { attempt: this.recoveries, error: text.slice(0, 300) });
+      this.writeUser([{ type: "text", text: recoveryPrompt }]);
+      return;
+    }
     const { status, type } = classifyClaudeCodeError(text);
     const sink = this.sink;
     this.sink = undefined;
@@ -324,6 +508,35 @@ export class ClaudeCodeLane {
     // A failed turn leaves Claude Code's context ahead of Cline's.
     this.close(text);
   }
+
+  /** Nothing reached Cline yet, and the failure is a dropped or stalled connection. */
+  private recoverable(text: string, interrupted: boolean) {
+    if (this.recoveries >= maxRecoveries) return false;
+    return interrupted || classifyClaudeCodeError(text).status >= 500;
+  }
+
+  private log(event: string, details: Record<string, unknown> = {}) {
+    this.options.log(event, { lane: this.id, scope: this.options.scope, ...details });
+  }
+}
+
+function resultText(message: Record<string, unknown>) {
+  if (typeof message.result === "string" && message.result) return message.result;
+  if (Array.isArray(message.errors)) return message.errors.map(String).join("\n");
+  return `Claude Code failed (${String(message.subtype)}).`;
+}
+
+function completeAnswer(events: AnthropicBlock[]) {
+  return events.some(
+    (event) =>
+      event.type === "message_delta" &&
+      isRecord(event.delta) &&
+      Boolean(event.delta.stop_reason),
+  );
+}
+
+function resultIds(message: AnthropicMessage) {
+  return toolResults(message).map((block) => String(block.tool_use_id));
 }
 
 function sameIds(left: string[], right: string[]) {
