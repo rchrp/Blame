@@ -107,6 +107,7 @@ function searchCodeTool(workspace: LightWorkspacePort) {
       "Results come in pages (8 matches or 50 files by default); a limited result carries nextSearch. Case is ignored unless caseSensitive. Search results do not authorize edits: read the target first. " +
       'Scope accepts paths and *, **, ?, or {a,b} globs; multiple scopes use an array such as ["src","spec"]. Spaces in a scope string are literal. Generated outputs and node_modules are excluded.',
     schema: lightSearchCodeInputSchema,
+    normalize: searchCodeInput,
     execute: (input, context) => workspace.searchCode(input, context.signal),
   });
 }
@@ -148,18 +149,40 @@ function runTaskTool(workspace: LightWorkspacePort, environment?: LightTaskContr
       "Prettier on explicit files uses atomic edits. Test results include reporting counters; null is unknown and pending is distinct from skipped. Returns bounded output and code/environment diagnostics." +
       (reasoningEnabled ? ' Optional kind analyze uses a local Z3 executable (BLAME_Z3_PATH or z3) to search for counterexamples in a pure typed TypeScript scalar function: target is sN or path#functionName, inputs maps each parameter to {min,max} safe-integer bounds or {type:"boolean"}, assertion is a boolean expression over inputs and result. Unsupported constructs or unavailable solver return unknown. Example: {"kind":"analyze","target":"src/math.ts#difference","inputs":{"a":{"min":0,"max":100},"b":{"min":0,"max":100}},"assertion":"result === a - b"}. Bounded absence of counterexamples is not project verification; reproduce witnesses with real tests.' : ""),
     schema: reasoningEnabled ? lightRunTaskInputSchema : lightDefaultRunTaskInputSchema,
-    normalize: commandInspectInput,
+    normalize: runTaskInput,
     execute: (input, context) => workspace.runTask(input, context),
   });
 }
 
-/** `kind: "inspect"` only polls a running command; a command sent with it is meant to run. */
-function commandInspectInput(value: unknown) {
+/** A scope sent as a JSON array in a string, which no real path looks like. */
+function searchCodeInput(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return value;
+  const scope = (value as Record<string, unknown>).scope;
+  if (typeof scope !== "string" || !/^\s*\[[\s\S]*\]\s*$/u.test(scope)) return value;
+  const parsed = jsonValue(scope);
+  return Array.isArray(parsed) && parsed.every((item) => typeof item === "string")
+    ? { ...value, scope: parsed }
+    : value;
+}
+
+/**
+ * Known misreadings of run_task's shape: `kind: "inspect"` with a command
+ * (it only polls a run), `kind: "task"` or a bare `task` for a project task,
+ * and a run id without its `r` or holding a command.
+ */
+function runTaskInput(value: unknown) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return value;
   const input: Record<string, unknown> = { ...value };
-  if (input.kind !== "inspect" || typeof input.command !== "string" || input.run !== undefined) return value;
+  if (typeof input.task === "string" && (input.kind === "task" || (input.kind === undefined && input.command === undefined)))
+    return { ...input, kind: "project" };
+  if (input.kind !== "inspect") return value;
+  const run = typeof input.run === "string" ? input.run.trim() : undefined;
+  if (run && /^[rR]?[1-9]\d*$/u.test(run)) return { ...input, run: `r${run.replace(/^[rR]/u, "")}` };
+  const command = typeof input.command === "string" ? input.command : run && /\s/u.test(run) ? run : undefined;
+  if (!command || (input.run !== undefined && command !== run)) return value;
   delete input.cursor;
-  return { ...input, kind: "command" };
+  delete input.run;
+  return { ...input, kind: "command", command };
 }
 
 type ToolDefinition<TSchema extends z.ZodTypeAny> = {
@@ -184,12 +207,59 @@ function harnessTool<TSchema extends z.ZodTypeAny>(
     retryable: false,
     maxRetries: 0,
     async execute(value: unknown, context: AgentToolContext) {
-      const parsed = definition.schema.safeParse(definition.normalize ? definition.normalize(value) : value);
+      const parsed = parseLeniently(definition.schema, definition.normalize ? definition.normalize(value) : value);
       if (!parsed.success) return invalidInput(parsed.error);
       const response = modelToolResponse(await definition.execute(parsed.data, context));
       return definition.name === "run_task" ? feedbackEnvelope(response) : response;
     },
   });
+}
+
+/**
+ * Models sometimes send a number, an object or an array as a JSON string
+ * (`"limit": "100"`, `"range": "{\"startLine\":1}"`). Where the schema
+ * rejected a string that parses as what it expected, use the parsed value.
+ */
+export function parseLeniently<TSchema extends z.ZodTypeAny>(schema: TSchema, value: unknown) {
+  let current = value;
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const parsed = schema.safeParse(current);
+    if (parsed.success) return parsed;
+    const repaired = withParsedStrings(current, parsed.error.issues);
+    if (repaired === undefined) return parsed;
+    current = repaired;
+  }
+  return schema.safeParse(current);
+}
+
+function withParsedStrings(value: unknown, issues: z.core.$ZodIssue[]) {
+  const copy = structuredClone(value);
+  let changed = false;
+  for (const issue of issues) {
+    if (issue.code !== "invalid_type" || !["array", "boolean", "number", "object"].includes(issue.expected)) continue;
+    const key = issue.path.at(-1);
+    const parent = issue.path.slice(0, -1).reduce<unknown>(
+      (node, part) => (node && typeof node === "object" ? (node as Record<PropertyKey, unknown>)[part] : undefined),
+      copy,
+    );
+    if (key === undefined || !parent || typeof parent !== "object") continue;
+    const raw = (parent as Record<PropertyKey, unknown>)[key];
+    if (typeof raw !== "string") continue;
+    const parsed = jsonValue(raw.trim());
+    const kind = Array.isArray(parsed) ? "array" : parsed === null ? "null" : typeof parsed;
+    if (kind !== issue.expected) continue;
+    (parent as Record<PropertyKey, unknown>)[key] = parsed;
+    changed = true;
+  }
+  return changed ? copy : undefined;
+}
+
+function jsonValue(text: string): unknown {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return undefined;
+  }
 }
 
 function modelToolResponse(result: LightToolResult<unknown>) {
