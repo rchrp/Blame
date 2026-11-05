@@ -515,6 +515,10 @@ function registerIpcHandlers() {
     return getEventWindow(event)?.isMaximized() ?? false;
   });
 
+  ipcMain.handle("window:is-focused", (event) => {
+    return getEventWindow(event)?.isFocused() ?? false;
+  });
+
   ipcMain.handle("window:minimize", (event) => {
     getEventWindow(event)?.minimize();
   });
@@ -677,6 +681,10 @@ function registerWindowStateEvents(window: BrowserWindow) {
   window.on("unmaximize", () =>
     window.webContents.send("window:maximized", false),
   );
+  // The window's own focus: clicking into a native preview blurs the page
+  // while the window stays focused.
+  window.on("focus", () => window.webContents.send("window:focused", true));
+  window.on("blur", () => window.webContents.send("window:focused", false));
 }
 
 function getEventWindow(event: IpcMainInvokeEvent | IpcMainEvent) {

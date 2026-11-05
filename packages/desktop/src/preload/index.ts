@@ -282,6 +282,7 @@ const api: BlameDesktopApi = {
   },
   windowControls: {
     close: () => ipcRenderer.send("window:close"),
+    isFocused: () => ipcRenderer.invoke("window:is-focused"),
     isMaximized: () => ipcRenderer.invoke("window:is-maximized"),
     minimize: () => ipcRenderer.invoke("window:minimize"),
     onMaximized: (callback) => {
@@ -289,6 +290,11 @@ const api: BlameDesktopApi = {
         callback(maximized);
       ipcRenderer.on("window:maximized", handler);
       return () => ipcRenderer.removeListener("window:maximized", handler);
+    },
+    onFocused: (callback) => {
+      const handler = (_event: unknown, focused: boolean) => callback(focused);
+      ipcRenderer.on("window:focused", handler);
+      return () => ipcRenderer.removeListener("window:focused", handler);
     },
     setPresentation: (input) =>
       ipcRenderer.invoke("window:set-presentation", input),

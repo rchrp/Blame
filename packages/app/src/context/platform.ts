@@ -385,8 +385,11 @@ export type ProjectWindowsClient = {
 
 export type WindowControlsClient = {
   close(): void
+  isFocused?(): Promise<boolean>
   isMaximized(): Promise<boolean>
   minimize(): Promise<void>
+  // The window's own focus, which a click into a native preview keeps.
+  onFocused?(callback: (focused: boolean) => void): () => void
   onMaximized(callback: (maximized: boolean) => void): () => void
   setPresentation(input: WindowPresentationInput): Promise<boolean>
   toggleMaximize(): Promise<void>

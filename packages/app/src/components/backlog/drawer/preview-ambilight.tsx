@@ -82,17 +82,22 @@ const ambilightPatches: {
   },
 ]
 
+// Paused, the glow stays but stops drifting: each frame of the drift
+// redraws eight large blurs.
 export function PreviewAmbilightCloud({
   ambilight,
+  paused,
 }: {
   ambilight?: PreviewAmbilight
+  paused?: boolean
 }) {
   return (
     <div
       aria-hidden="true"
       className={cn(
         "pointer-events-none absolute inset-0 transition-opacity duration-1000",
-        ambilight ? "opacity-60 dark:opacity-85" : "opacity-0"
+        ambilight ? "opacity-60 dark:opacity-85" : "opacity-0",
+        paused && "preview-ambilight-paused"
       )}
     >
       {ambilight
@@ -127,25 +132,29 @@ export function previewAmbilightShadow() {
   return "0 16px 44px rgb(0 0 0 / 0.28)"
 }
 
-const ambilightSampleInterval = 2_000
+// Each sample reads the whole page back from the GPU: often enough to follow
+// scrolling and in-page changes, and again soon after each navigation.
+const ambilightSampleInterval = 8_000
+const ambilightNavigationDelay = 600
 
 export function useNativePreviewAmbilight(
   client: PreviewBrowserClient,
   browserId: string | undefined,
   previewKey: string,
-  visible: boolean
+  active: boolean
 ) {
   const [sample, setSample] = React.useState<{
     ambilight?: PreviewAmbilight
     key: string
   }>()
 
-  // Sampled again and again while the page shows, so the glow follows what
-  // it shows as it scrolls, navigates or changes.
+  // Sampled while the glow shows, so it follows what the page shows. A
+  // pause keeps the last glow.
   React.useEffect(() => {
-    if (!browserId || !visible) return
+    if (!browserId || !active) return
     let cancelled = false
     let sampling = false
+    let soon: number | undefined
     const sampleFrame = async () => {
       if (sampling) return
       sampling = true
@@ -161,14 +170,27 @@ export function useNativePreviewAmbilight(
           : { ambilight: ambilight ?? undefined, key: previewKey }
       )
     }
-    const first = window.setTimeout(sampleFrame, 350)
+    const sampleSoon = (delay: number) => {
+      window.clearTimeout(soon)
+      soon = window.setTimeout(sampleFrame, delay)
+    }
+    sampleSoon(350)
     const again = window.setInterval(sampleFrame, ambilightSampleInterval)
+    let page: { loading: boolean; url?: string } | undefined
+    const stopState = client.onState({ id: browserId }, (state) => {
+      const navigated =
+        page !== undefined &&
+        (state.url !== page.url || (page.loading && !state.loading))
+      page = { loading: state.loading, url: state.url }
+      if (navigated) sampleSoon(ambilightNavigationDelay)
+    })
     return () => {
       cancelled = true
-      window.clearTimeout(first)
+      window.clearTimeout(soon)
       window.clearInterval(again)
+      stopState()
     }
-  }, [browserId, client, previewKey, visible])
+  }, [active, browserId, client, previewKey])
 
   return sample?.key === previewKey ? sample.ambilight : undefined
 }

@@ -190,8 +190,10 @@ export type ProjectWindows = {
 
 export type WindowControls = {
   close(): void;
+  isFocused(): Promise<boolean>;
   isMaximized(): Promise<boolean>;
   minimize(): Promise<void>;
+  onFocused(callback: (focused: boolean) => void): () => void;
   onMaximized(callback: (maximized: boolean) => void): () => void;
   setPresentation(input: WindowPresentationInput): Promise<boolean>;
   toggleMaximize(): Promise<void>;

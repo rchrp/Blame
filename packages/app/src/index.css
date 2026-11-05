@@ -280,6 +280,10 @@
     will-change: transform;
   }
 
+  .preview-ambilight-paused .preview-ambilight-patch {
+    animation-play-state: paused;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .preview-ambilight-patch {
       animation: none;

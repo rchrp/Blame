@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import { type PreviewBrowserClient } from "@/context/platform"
 import { nativePreviewLoadDecision } from "./native-preview-load"
 import { useLatestCallback } from "@/lib/use-latest-callback"
+import { useWindowActive } from "@/hooks/use-window-active"
 import {
   PreviewAmbilightCloud,
   previewAmbilightShadow,
@@ -60,6 +61,7 @@ export type PreviewCaptureHandler = () => Promise<File | undefined>
 type NativePreviewFrameProps = {
   bare?: boolean
   ambilight?: PreviewAmbilight
+  ambilightPaused: boolean
   browserId?: string
   client: PreviewBrowserClient
   error?: string
@@ -171,11 +173,13 @@ export function NativePreviewPanel({
     previewSessionId,
     previewWorktree
   )
+  // A device frame has no glow, and a window in the background needs none.
+  const windowActive = useWindowActive()
   const ambilight = useNativePreviewAmbilight(
     client,
     browserId,
     previewKey,
-    visible && previewState === "loaded"
+    !bare && windowActive && visible && previewState === "loaded"
   )
 
   useNativePreviewState(client, browserId, handleState)
@@ -195,6 +199,7 @@ export function NativePreviewPanel({
     <NativePreviewFrame
       bare={bare}
       ambilight={ambilight}
+      ambilightPaused={!windowActive}
       browserId={browserId}
       client={client}
       error={error}
@@ -223,6 +228,7 @@ function useNativePreviewCapture(
 function NativePreviewFrame({
   bare,
   ambilight,
+  ambilightPaused,
   browserId,
   client,
   error,
@@ -238,7 +244,12 @@ function NativePreviewFrame({
       )}
     >
       <div className="relative min-h-0 flex-1">
-        {!bare && <PreviewAmbilightCloud ambilight={ambilight} />}
+        {!bare && (
+          <PreviewAmbilightCloud
+            ambilight={ambilight}
+            paused={ambilightPaused}
+          />
+        )}
         <div
           className={cn(
             "relative h-full overflow-hidden bg-background",
