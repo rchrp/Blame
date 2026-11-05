@@ -1565,12 +1565,11 @@ async function removeWorktree(input: RemoveWorktreeInput) {
     worktree,
     workspaceMode: input.workspaceMode,
   });
-  // Direct mode runs in the project folder: stop what runs there, never
-  // delete it.
+  // Direct mode runs in the project folder, which other agents (chats, plan
+  // mode, other Direct stories) share: the story's own agent was stopped by
+  // its session. Never delete the folder or stop what else runs in it.
   if (state === "project") {
     await stopSetupRunsForWorktree(worktree);
-    await stopProjectLogStream(worktree);
-    await releaseAgentWorkspaceSessions(worktree);
     return true;
   }
   if (removingWorktrees.has(worktree))

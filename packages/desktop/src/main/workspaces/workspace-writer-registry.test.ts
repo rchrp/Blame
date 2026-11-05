@@ -24,16 +24,24 @@ test("releasing a workspace removes active and resumable session ownership", () 
   assert.equal(registry.workspaceForSession("session-a"), undefined);
 });
 
-test("rejects concurrent writers for the same canonical workspace", () => {
+test("lets several writers share the same canonical workspace", () => {
   const registry = new WorkspaceWriterRegistry();
-  registry.begin("session-a", "/work/story");
+  registry.begin("session-a", "/work/project");
+  registry.begin("session-b", "/work/project/../project");
+
+  assert.equal(registry.workspaceForSession("session-b"), "/work/project");
+  registry.end("session-a");
+  assert.equal(registry.hasActiveWriter("/work/project"), true);
+  registry.end("session-b");
+  assert.equal(registry.hasActiveWriter("/work/project"), false);
+});
+
+test("keeps an active session in one workspace", () => {
+  const registry = new WorkspaceWriterRegistry();
+  registry.begin("session-a", "/work/project");
 
   assert.throws(
-    () => registry.begin("session-b", "/work/story/../story"),
-    /already has an active writer/,
+    () => registry.begin("session-a", "/work/other"),
+    /already owns another workspace/,
   );
-
-  registry.end("session-a");
-  registry.begin("session-b", "/work/story");
-  assert.equal(registry.workspaceForSession("session-b"), "/work/story");
 });

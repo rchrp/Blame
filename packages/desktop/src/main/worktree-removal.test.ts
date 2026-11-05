@@ -81,7 +81,7 @@ test("cloud worktrees keep using native Git", async () => {
   );
 });
 
-test("direct stories and project folders need no Git to release their sessions", async () => {
+test("direct stories and project folders are left in place without Git", async () => {
   for (const input of [
     { repositoryRoot, worktree, workspaceMode: "direct" as const },
     { repositoryRoot, worktree: repositoryRoot },

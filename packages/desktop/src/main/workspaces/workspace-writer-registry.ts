@@ -1,17 +1,14 @@
 import { normalize, resolve } from "node:path";
 
+// Which local agent sessions are writing in which folder. Several may share
+// one: Direct stories, chats and plan mode all work in the project folder,
+// and the harness refuses an edit whose file changed since it was read.
 export class WorkspaceWriterRegistry {
   private readonly activeSessions = new Set<string>();
   private readonly sessionWorkspaces = new Map<string, string>();
 
   begin(sessionId: string, workspace: string) {
     const canonical = canonicalWorkspace(workspace);
-    const conflict = this.activeWriterFor(canonical, sessionId);
-    if (conflict) {
-      throw new Error(
-        `Workspace already has an active writer (${conflict}); finish or release it before starting another session`,
-      );
-    }
     const current = this.sessionWorkspaces.get(sessionId);
     if (this.activeSessions.has(sessionId) && current !== canonical) {
       throw new Error(`Session ${sessionId} already owns another workspace`);
@@ -45,7 +42,9 @@ export class WorkspaceWriterRegistry {
 
   hasActiveWriter(workspace: string) {
     const canonical = canonicalWorkspace(workspace);
-    return Boolean(this.activeWriterFor(canonical));
+    return [...this.activeSessions].some(
+      (sessionId) => this.sessionWorkspaces.get(sessionId) === canonical,
+    );
   }
 
   releaseWorkspace(workspace: string) {
@@ -60,14 +59,6 @@ export class WorkspaceWriterRegistry {
   clear() {
     this.activeSessions.clear();
     this.sessionWorkspaces.clear();
-  }
-
-  private activeWriterFor(workspace: string, exceptSessionId?: string) {
-    return [...this.activeSessions].find(
-      (sessionId) =>
-        sessionId !== exceptSessionId &&
-        this.sessionWorkspaces.get(sessionId) === workspace,
-    );
   }
 }
 
