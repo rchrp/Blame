@@ -353,6 +353,63 @@ test("runtime agent client treats stream kill as best effort", async () => {
   assert.equal(child.kill(), true);
 });
 
+test("a retired agent finishes its own work while new requests start a fresh one", async () => {
+  const processes: FakeAgentProcess[] = [];
+  const spawnProcess = fakeSpawn(processes, (request, process) => {
+    if (request.method === "lightWorkspace") return;
+    const result =
+      request.method === "spawn" ? { processId: "stream-1" } : { stdout: "" };
+    process.stdout.write(
+      `${JSON.stringify({ id: request.id, ok: true, result })}\n`,
+    );
+  });
+  const client = new RuntimeAgentClient({ platform: "darwin", spawnProcess });
+  const controller = new AbortController();
+  const stream = client.spawn({ args: [], command: "sleep" });
+  const execution = client.lightWorkspace(
+    semanticRequest("local-container", "remote", managedLightWorkspaceRoot),
+    controller.signal,
+  );
+  await settle();
+  const old = processes[0];
+  let stopped = false;
+  old.stdin.on("finish", () => {
+    stopped = true;
+  });
+
+  client.retire();
+  await client.exec({ args: [], command: "true" });
+  assert.equal(processes.length, 2);
+  assert.deepEqual(methods(processes[1]), ["exec"]);
+
+  controller.abort();
+  await assert.rejects(execution, { name: "AbortError" });
+  stream.kill();
+  await settle();
+  assert.deepEqual(methods(old), [
+    "spawn",
+    "lightWorkspace",
+    "lightWorkspaceCancel",
+    "kill",
+  ]);
+  assert.equal(stopped, false, "The old agent still serves its stream.");
+
+  old.stdout.write(
+    `${JSON.stringify({ code: 0, event: "spawn", processId: "stream-1", type: "exit" })}\n`,
+  );
+  await settle();
+  assert.equal(stopped, true, "The old agent stops once its work is done.");
+});
+
+function methods(process: FakeAgentProcess) {
+  return process.requests.map((request) => request.method);
+}
+
+async function settle() {
+  for (let turn = 0; turn < 3; turn += 1)
+    await new Promise((resolve) => setImmediate(resolve));
+}
+
 test("routes local-container semantic tools into Lima and WSL2", () => {
   const request = semanticRequest(
     "local-container",

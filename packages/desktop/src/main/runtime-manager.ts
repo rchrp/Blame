@@ -7,6 +7,7 @@ import {
   type ContainerRuntimeCommand,
 } from "./container-runtime.ts";
 import { runtimeToolScript } from "./host-tool-path.ts";
+import { retireRuntimeAgents } from "./runtime-agent.ts";
 import {
   runtimeTelemetry,
   type RuntimeTelemetryOperation,
@@ -279,13 +280,20 @@ function checkRuntimeStatus(context: RuntimeManagerContext) {
   );
 }
 
-function runLifecyclePhase(
+// A running agent keeps the code it started with: after provisioning, the
+// next requests go to a fresh agent (US-045 ran its whole story on the
+// agent the update had just replaced).
+async function runLifecyclePhase(
   context: RuntimeManagerContext,
   command: "ensure" | "repair" | "reset" | "uninstall",
 ) {
-  return observeRuntimePhase(context, "lifecycle_command", () =>
-    runRuntimeLifecycleCommand(context, command),
-  );
+  try {
+    return await observeRuntimePhase(context, "lifecycle_command", () =>
+      runRuntimeLifecycleCommand(context, command),
+    );
+  } finally {
+    retireRuntimeAgents();
+  }
 }
 
 function waitForReadinessPhase(context: RuntimeManagerContext) {

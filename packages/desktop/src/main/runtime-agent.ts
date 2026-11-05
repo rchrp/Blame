@@ -34,6 +34,8 @@ type AgentEvent = {
 };
 
 type PendingRequest = {
+  agent: ChildProcessWithoutNullStreams;
+  method: string;
   reject: (error: Error) => void;
   resolve: (value: unknown) => void;
   timer?: NodeJS.Timeout;
@@ -80,6 +82,7 @@ type RuntimeAgentClientInput = {
 };
 
 const defaultTimeoutMs = 60_000;
+const retiredAgentGraceMs = 30_000;
 const clients = new Map<string, RuntimeAgentClient>();
 
 export function runtimeAgentClient(input: RuntimeAgentClientInput = {}) {
@@ -90,6 +93,11 @@ export function runtimeAgentClient(input: RuntimeAgentClientInput = {}) {
   const next = new RuntimeAgentClient(input);
   clients.set(key, next);
   return next;
+}
+
+/** After provisioning, which may have replaced the agent's code on disk. */
+export function retireRuntimeAgents() {
+  for (const client of clients.values()) client.retire();
 }
 
 export function runtimeAgentSupported(platform = process.platform) {
@@ -104,6 +112,11 @@ export class RuntimeAgentClient {
   private readonly env?: NodeJS.ProcessEnv;
   private readonly spawnProcess: typeof spawn;
   private readonly streams = new Map<string, AgentChildProcess>();
+  private readonly streamOwners = new Map<
+    string,
+    ChildProcessWithoutNullStreams
+  >();
+  private readonly retiring = new Set<ChildProcessWithoutNullStreams>();
   private readonly bufferedEvents = new Map<string, AgentEvent[]>();
 
   constructor(input: RuntimeAgentClientInput = {}) {
@@ -184,21 +197,44 @@ export class RuntimeAgentClient {
     signal?: AbortSignal,
   ) {
     const operationId = randomUUID();
-    return this.request(
+    // The cancel goes to the agent running the operation, even if a newer
+    // one has replaced it since.
+    const agent = this.connection();
+    return this.requestOn(
+      agent,
       "lightWorkspace",
       { ...input, operationId },
       15 * 60_000,
       signal,
       () => {
-        void this.request("lightWorkspaceCancel", { operationId }, 5_000).catch(
-          () => undefined,
-        );
+        void this.requestOn(
+          agent,
+          "lightWorkspaceCancel",
+          { operationId },
+          5_000,
+        ).catch(() => undefined);
       },
     );
   }
 
   async kill(processId: string) {
-    await this.request("kill", { processId }, 5_000);
+    const owner = this.streamOwners.get(processId);
+    await (owner
+      ? this.requestOn(owner, "kill", { processId }, 5_000)
+      : this.request("kill", { processId }, 5_000));
+  }
+
+  /**
+   * Provisioning replaces the agent on disk under a running RPC process,
+   * which keeps serving its old code. New requests go to a fresh process;
+   * the old one stops once its requests and processes are done.
+   */
+  retire() {
+    const agent = this.process;
+    if (!agent) return;
+    this.process = undefined;
+    this.retiring.add(agent);
+    this.stopIfDone(agent);
   }
 
   private async requestWithTransportRetry(
@@ -220,13 +256,32 @@ export class RuntimeAgentClient {
   private request(
     method: string,
     params: Record<string, unknown>,
+    timeoutMs?: number,
+    signal?: AbortSignal,
+    onAbort?: () => void,
+  ) {
+    try {
+      const agent = this.connection();
+      return this.requestOn(agent, method, params, timeoutMs, signal, onAbort);
+    } catch (error) {
+      return Promise.reject(error as Error);
+    }
+  }
+
+  private connection() {
+    if (!runtimeAgentSupported(this.platform))
+      throw new Error("Runtime agent is not supported");
+    return this.ensureProcess();
+  }
+
+  private requestOn(
+    agent: ChildProcessWithoutNullStreams,
+    method: string,
+    params: Record<string, unknown>,
     timeoutMs = defaultTimeoutMs,
     signal?: AbortSignal,
     onAbort?: () => void,
   ) {
-    if (!runtimeAgentSupported(this.platform))
-      return Promise.reject(new Error("Runtime agent is not supported"));
-    const process = this.ensureProcess();
     const id = this.nextId;
     this.nextId += 1;
     const request: AgentRequest = {
@@ -245,6 +300,7 @@ export class RuntimeAgentClient {
         signal?.removeEventListener("abort", abort);
         onAbort?.();
         reject(new Error(`Runtime agent request timed out: ${method}`));
+        this.stopIfDone(agent);
       }, timeoutMs);
       const abort = () => {
         const pending = this.pending.get(id);
@@ -253,6 +309,7 @@ export class RuntimeAgentClient {
         clearTimeout(timer);
         onAbort?.();
         reject(abortError());
+        this.stopIfDone(agent);
       };
       const cleanupResolve = (value: unknown) => {
         signal?.removeEventListener("abort", abort);
@@ -263,17 +320,19 @@ export class RuntimeAgentClient {
         reject(error);
       };
       this.pending.set(id, {
+        agent,
+        method,
         reject: cleanupReject,
         resolve: cleanupResolve,
         timer,
       });
       signal?.addEventListener("abort", abort, { once: true });
-      process.stdin.write(`${JSON.stringify(request)}\n`, (error) => {
-        if (!error) return;
-        this.pending.delete(id);
+      agent.stdin.write(`${JSON.stringify(request)}\n`, (error) => {
+        if (!error || !this.pending.delete(id)) return;
         clearTimeout(timer);
         signal?.removeEventListener("abort", abort);
         reject(error);
+        this.stopIfDone(agent);
       });
     });
   }
@@ -293,22 +352,38 @@ export class RuntimeAgentClient {
       log.error(`Runtime agent stderr: ${data.toString()}`);
     });
     child.once("exit", (code, signal) => {
-      if (this.process !== child) return;
-      log.error(
-        `Runtime agent process exited with code: ${code}, signal: ${signal}`,
-      );
-      this.process = undefined;
+      if (this.process === child) {
+        log.error(
+          `Runtime agent process exited with code: ${code}, signal: ${signal}`,
+        );
+        this.process = undefined;
+      }
+      this.retiring.delete(child);
       this.rejectPending(
+        child,
         new RuntimeAgentTransportError("Runtime agent exited"),
       );
     });
     child.once("error", (error) => {
-      if (this.process !== child) return;
       log.error(`Runtime agent process error: ${error.message}`);
-      this.process = undefined;
-      this.rejectPending(new RuntimeAgentTransportError(error.message));
+      if (this.process === child) this.process = undefined;
+      this.retiring.delete(child);
+      this.rejectPending(child, new RuntimeAgentTransportError(error.message));
     });
     return child;
+  }
+
+  private stopIfDone(agent: ChildProcessWithoutNullStreams) {
+    if (!this.retiring.has(agent)) return;
+    for (const pending of this.pending.values())
+      if (pending.agent === agent) return;
+    for (const owner of this.streamOwners.values()) if (owner === agent) return;
+    this.retiring.delete(agent);
+    log.info("Stopping the runtime agent replaced by a newer one");
+    agent.stdin.end();
+    setTimeout(() => {
+      if (agent.exitCode === null && agent.signalCode === null) agent.kill();
+    }, retiredAgentGraceMs).unref();
   }
 
   private handleLine(line: string) {
@@ -330,11 +405,13 @@ export class RuntimeAgentClient {
     if (!pending) return;
     this.pending.delete(response.id);
     if (pending.timer) clearTimeout(pending.timer);
-    if (response.ok) {
-      pending.resolve(response.result);
-      return;
-    }
-    pending.reject(agentError(response));
+    const processId = (response.result as { processId?: unknown } | undefined)
+      ?.processId;
+    if (response.ok && pending.method === "spawn" && processId)
+      this.streamOwners.set(String(processId), pending.agent);
+    if (response.ok) pending.resolve(response.result);
+    else pending.reject(agentError(response));
+    this.stopIfDone(pending.agent);
   }
 
   private handleEvent(event: AgentEvent) {
@@ -360,18 +437,24 @@ export class RuntimeAgentClient {
     if (event.type === "exit") {
       this.streams.delete(event.processId);
       child.finish(event.code ?? null);
+      const owner = this.streamOwners.get(event.processId);
+      this.streamOwners.delete(event.processId);
+      if (owner) this.stopIfDone(owner);
     }
   }
 
-  private rejectPending(error: Error) {
+  private rejectPending(agent: ChildProcessWithoutNullStreams, error: Error) {
     for (const [id, pending] of this.pending) {
+      if (pending.agent !== agent) continue;
       this.pending.delete(id);
       if (pending.timer) clearTimeout(pending.timer);
       pending.reject(error);
     }
-    for (const [id, child] of this.streams) {
+    for (const [id, owner] of this.streamOwners) {
+      if (owner !== agent) continue;
+      this.streamOwners.delete(id);
+      this.streams.get(id)?.finish(1);
       this.streams.delete(id);
-      child.finish(1);
     }
   }
 }
