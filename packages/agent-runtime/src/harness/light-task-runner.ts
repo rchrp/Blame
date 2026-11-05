@@ -593,7 +593,7 @@ export class LightTaskRunner {
       metadata,
       failure,
     );
-    if (failure) return failedCommandResult(result.exitCode, output, failure);
+    if (failure) return failedCommandResult(result.exitCode, output, failure, command);
     const validation = validationProof(validatedRevisionId, validatedPaths, metadata);
     return passedCommandResult(
       command,

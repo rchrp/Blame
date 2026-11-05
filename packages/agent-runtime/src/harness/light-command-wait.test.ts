@@ -22,3 +22,22 @@ test("a six-second command returns its final outcome without status polling", as
     await rm(root, { recursive: true, force: true });
   }
 });
+
+test("a final grep that selects nothing says it hid the output, not that nothing was printed", async () => {
+  const root = await mkdtemp(join(tmpdir(), "blame-final-filter-"));
+  try {
+    const workspace = new LightWorkspace(root, { sessionId: "final-filter" });
+    for (const command of [
+      "node -e 'console.log(\"done\")' | grep missing",
+      "MODE=test node -e 'console.log(\"a|b\")' 2>&1 | grep -E \"x|y\"",
+    ]) {
+      const result = await workspace.runTask({ kind: "command", command }, {});
+      assert.equal(result.status, "blocked", JSON.stringify(result));
+      if (result.status !== "blocked") continue;
+      assert.match(result.message, /its last stage, `grep`, selected no line/);
+      assert.match(result.recovery ?? "", /without the final filter/);
+    }
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});

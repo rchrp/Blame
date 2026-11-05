@@ -2,6 +2,7 @@ import { boundedDiagnostic } from "./light-diagnostic.js";
 import { dependencyManifestSections } from "./light-dependencies.js";
 import type { LightToolResult } from "./light-contracts.js";
 import { recordValue } from "./light-navigation.js";
+import { literalShellStatements } from "./shell-words.js";
 import { isValidationKind } from "./task-catalog.js";
 import type { WorkspaceFiles } from "./workspace-files.js";
 
@@ -15,7 +16,16 @@ export function failedCommandResult(
   exitCode: number | undefined,
   output: string,
   failure: FailureAssessment,
+  command?: string,
 ): LightToolResult<unknown> {
+  const filter = exitCode === 1 && !output.trim() && command ? finalFilter(command) : undefined;
+  if (filter)
+    return {
+      status: "blocked",
+      category: "command",
+      message: `Command exited with code 1: its last stage, \`${filter}\`, selected no line, so nothing was printed. That exit code is ${filter}'s, not the earlier commands'.`,
+      recovery: "Rerun without the final filter or with a broader pattern, or write the output to a file and search that file.",
+    };
   const diagnostic =
     boundedDiagnostic(output) || "No diagnostic output was produced.";
   return {
@@ -25,6 +35,21 @@ export function failedCommandResult(
     recovery: failure.recovery,
   };
 }
+
+/** The grep or rg that ends a pipeline, whose "no line matched" status hides everything before it. */
+function finalFilter(command: string) {
+  const statements = literalShellStatements(command);
+  const last = statements?.at(-1)?.pipeline;
+  if (last) {
+    const name = last.at(-1)?.words[0]?.value;
+    return last.length > 1 && name && filters.has(name) ? name : undefined;
+  }
+  // Not a literal command line (variables, assignments): read it without its quoted words.
+  const unquoted = command.replace(/'[^']*'|"(?:[^"\\]|\\.)*"/gu, "''");
+  return /\|\s*(e?grep|fgrep|rg)\b[^|;&]*$/u.exec(unquoted)?.[1];
+}
+
+const filters = new Set(["egrep", "fgrep", "grep", "rg"]);
 
 export async function commandFailureAssessment(
   output: string,
