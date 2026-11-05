@@ -17,6 +17,7 @@ import {
   retryableHubTransportError,
 } from "./cline-backend-resolver";
 import { runtimeHubPortConflict } from "./runtime-hub-port";
+import { withSessionStartDeadline } from "./session-start-deadline";
 import { AgentEventStream } from "./agent-event-stream";
 import { AgentRuntimePool } from "./agent-runtime-pool";
 import {
@@ -185,7 +186,7 @@ function registerSessionStartIpcHandlers(
       agentWorkspaceWriters.begin(pendingSessionId, workspace);
     const sessionInput = eventStream.prepareSession(prepared);
     try {
-      session = await agentRuntime().startSession(
+      session = await startRuntimeSession(
         "sessions.startDevelopment",
         sessionInput,
       );
@@ -194,16 +195,14 @@ function registerSessionStartIpcHandlers(
       log.warn(
         "Cline hub connection closed during session start; refreshing the runtime backend and retrying once",
       );
-      session = await agentRuntime()
-        .startSession(
-          "sessions.startDevelopment",
-          refreshRuntimeBackendConnection(
-            await agentWorkspaceInput(sessionInput),
-          ),
-        )
-        .catch(async (retryError: unknown) => {
-          throw await explainedHubFailure(retryError);
-        });
+      session = await startRuntimeSession(
+        "sessions.startDevelopment",
+        refreshRuntimeBackendConnection(
+          await agentWorkspaceInput(sessionInput),
+        ),
+      ).catch(async (retryError: unknown) => {
+        throw await explainedHubFailure(retryError);
+      });
     } finally {
       if (pendingSessionId && !session)
         agentWorkspaceWriters.forget(pendingSessionId);
@@ -395,6 +394,16 @@ function agentWorkspacePath(input: unknown) {
   return undefined;
 }
 
+function startRuntimeSession(
+  method: "sessions.start" | "sessions.startDevelopment",
+  input: unknown,
+) {
+  return withSessionStartDeadline(
+    agentRuntime().startSession(method, input),
+    (sessionId) => agentRuntime().abortSession(sessionId),
+  );
+}
+
 // The hub connection closed again after a fresh one: when another program
 // holds the hub port, that is what the user can fix.
 async function explainedHubFailure(error: unknown) {
@@ -420,7 +429,7 @@ async function startWorkspaceSession(
   if (workspace && pendingSessionId)
     agentWorkspaceWriters.begin(pendingSessionId, workspace);
   try {
-    const session = await agentRuntime().startSession(
+    const session = await startRuntimeSession(
       method,
       eventStream.prepareSession(input),
     );
