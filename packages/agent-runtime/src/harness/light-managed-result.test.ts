@@ -63,7 +63,7 @@ for (const outcome of ["success", "failure", "cancelled", "unknown-test"] as con
 
 test("a still-running inspection does not wait for process or journal completion", { timeout: 15_000 }, async () => {
   await fixture("success", async ({ runner, initial, controller }) => {
-    const result = snapshot(await runner.run({ kind: "inspect", run: initial.run }));
+    const result = snapshot(await runner.run({ kind: "inspect", run: initial.run, until: "now" }));
     assert.equal(result.process, "running");
     assert.equal(result.completed, undefined);
     controller.abort();

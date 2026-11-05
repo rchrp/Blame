@@ -14,6 +14,7 @@ import {
 import type { LightRunTaskInput, LightToolResult, LightTaskContract } from "./light-contracts.js";
 import { LightDependencyService } from "./light-dependencies.js";
 import { boundedDiagnostic } from "./light-diagnostic.js";
+import { recordValue } from "./light-navigation.js";
 import {
   commandFailure,
   commandFailureAssessment,
@@ -132,29 +133,47 @@ export class LightTaskRunner {
         `Run ${input.run} does not belong to this session or is no longer available.`,
       );
     try {
-      const snapshot = process.env.BLAME_AGENT_INSPECT_WAIT !== "false" && input.cursor !== undefined
-        ? await run.handle.waitForUpdate(input.cursor, 30_000, signal)
-        : run.handle.inspect(input.cursor);
-      // Process termination precedes source capture and journal finalization.
-      // Expose their real result together instead of an exited-only snapshot.
-      const completed = run.result ?? (snapshot.process === "running"
-        ? undefined : await run.completion);
-      return {
-        status: "ok",
-        data: {
-          run: input.run,
-          command: run.command,
-          ...snapshot,
-          // Output since the cursor; a test run can print megabytes.
-          output: boundedDiagnostic(redactedOutput(snapshot.output), "", 12_000),
-          ...(completed ? { completed } : {}),
-        },
-      };
+      // Waiting for the end by default: a turn per burst of test output cost
+      // 11 of 107 turns and 13% of US-034's input tokens.
+      const until = input.until ?? "exit";
+      if (process.env.BLAME_AGENT_INSPECT_WAIT !== "false" && !run.result) {
+        if (until === "exit") await run.handle.waitForExit(inspectExitWaitMs, signal);
+        else if (until === "output" && input.cursor !== undefined)
+          await run.handle.waitForUpdate(input.cursor, 30_000, signal);
+      }
+      return await this.runView(input.run, run, input.cursor);
     } catch (error) {
       if (signal?.aborted)
         return blocked("environment", "Managed-run inspection was cancelled; no command outcome is inferred.");
       return blocked("input", errorMessage(error));
     }
+  }
+
+  /**
+   * One page of a run's output and, once it ended, its result. The page
+   * starts at the cursor (the latest output without one) and the cursor it
+   * returns is where the next page starts, so no output is skipped.
+   */
+  private async runView(runId: string, run: ManagedRun, cursor?: string): Promise<LightToolResult<unknown>> {
+    const snapshot = run.handle.inspect(cursor, outputPageBytes);
+    // Process termination precedes source capture and journal finalization.
+    // Expose their real result together instead of an exited-only snapshot.
+    const completed = run.result ?? (snapshot.process === "running" ? undefined : await run.completion);
+    const unread = (snapshot.totalBytes ?? 0) - Number(snapshot.cursor);
+    return {
+      status: "ok",
+      data: {
+        run: runId,
+        command: run.command,
+        process: snapshot.process,
+        cursor: snapshot.cursor,
+        // Pages join exactly: redacted, not trimmed.
+        output: redactSecuritySecrets(snapshot.output),
+        ...(cursor === undefined && snapshot.start ? { outputFrom: snapshot.start, earlierOutput: { kind: "inspect", run: runId, cursor: "0", until: "now" } } : {}),
+        ...(unread > 0 ? { nextOutput: { kind: "inspect", run: runId, cursor: snapshot.cursor, until: "now" } } : {}),
+        ...(completed ? { completed: withFullOutput(completed, runId) } : {}),
+      },
+    };
   }
 
   private async project(
@@ -413,6 +432,7 @@ export class LightTaskRunner {
     holder.label = `run ${runId} (\`${command.slice(0, 120)}\`)`;
     const managed: ManagedRun = { command, completion, handle: first.handle };
     this.runs.set(runId, managed);
+    this.forgetOldRuns();
     void completion.then((result) => {
       managed.result = result;
     });
@@ -420,13 +440,17 @@ export class LightTaskRunner {
       completion.then((result) => ({ kind: "complete" as const, result })),
       delay(this.initialCommandWaitMs).then(() => ({ kind: "running" as const })),
     ]);
-    if (initial.kind === "complete") {
-      this.runs.delete(runId);
-      return initial.result;
-    }
-    // From here the model watches a long run; other work fails fast while it holds the workspace.
+    // A finished run stays readable: its whole output pages through inspect.
+    if (initial.kind === "complete") return withFullOutput(initial.result, runId);
+    // From here the model watches a long run; its edits wait while it holds the session.
     holder.run = runId;
-    return this.inspect({ kind: "inspect", run: runId });
+    return this.runView(runId, managed);
+  }
+
+  /** Keeps the latest finished runs' output for paging, and every running one. */
+  private forgetOldRuns() {
+    const finished = [...this.runs].filter(([, run]) => run.result);
+    for (const [id] of finished.slice(0, Math.max(0, finished.length - keptFinishedRuns))) this.runs.delete(id);
   }
 
   private async executeLocked(
@@ -696,6 +720,19 @@ export class LightTaskRunner {
 }
 
 class TaskSelectionError extends Error {}
+
+const outputPageBytes = 12_000;
+const inspectExitWaitMs = 5 * 60_000;
+const keptFinishedRuns = 20;
+
+/** A result whose output was cut says how to page the whole of it. */
+function withFullOutput(result: LightToolResult<unknown>, runId: string): LightToolResult<unknown> {
+  if (!JSON.stringify(result).includes("diagnostic truncated")) return result;
+  const fullOutput = { kind: "inspect", run: runId, cursor: "0", until: "now" };
+  return result.status === "ok"
+    ? { ...result, data: { ...recordValue(result.data), fullOutput } }
+    : ({ ...result, fullOutput } as unknown as LightToolResult<unknown>);
+}
 
 function managedServiceResult(taskId: string): LightToolResult<unknown> {
   return blocked(

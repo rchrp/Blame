@@ -142,7 +142,7 @@ function runTaskTool(workspace: LightWorkspacePort, environment?: LightTaskContr
   return harnessTool({
     name: "run_task",
     description:
-      "Run project tasks, validations, generators, formatters, or requested setup. Source inspection belongs to search_code and read_code; simple grep, rg, cat, head, tail and sed -n commands are answered by them. A command still running after the initial wait returns a session-bound rN id; poll it with kind inspect, that id and the returned cursor to receive only new output without relaunching it. Source changes are journaled and require a subsequent check. Explicit calls execute; finish_task reuses fresh validation. Use the dependency operation for Node packages and native commands for other ecosystems. " +
+      "Run project tasks, validations, generators, formatters, or requested setup. Source inspection belongs to search_code and read_code; simple grep, rg, cat, head, tail and sed -n commands are answered by them. A command still running after the initial wait returns a session-bound rN id: kind inspect with that id waits until it ends (up to 5 minutes) and returns its result; with until set to output it returns at the next output instead. You can read and search code meanwhile. Output comes in pages: follow nextOutput, or fullOutput when a finished command's output was cut. Source changes are journaled and require a subsequent check. Explicit calls execute; finish_task reuses fresh validation. Use the dependency operation for Node packages and native commands for other ecosystems. " +
       (environment?.managedPreview === false
         ? "For requested services, detach the process and redirect its input/output so the command can finish. "
         : "Use the managed preview for services. ") +

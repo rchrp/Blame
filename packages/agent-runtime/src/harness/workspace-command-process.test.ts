@@ -141,7 +141,7 @@ test("run_task inspects a long command without launching it again", async () => 
     do {
       await delay(50);
       inspected = await workspace.runTask(
-        { kind: "inspect", run: initial.data.run, cursor: initial.data.cursor },
+        { kind: "inspect", run: initial.data.run, cursor: initial.data.cursor, until: "output" },
         {},
       );
       assert.equal(inspected.status, "ok", JSON.stringify(inspected));

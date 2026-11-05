@@ -99,9 +99,11 @@ export const lightRunTaskInputSchema = z.discriminatedUnion("kind", [
     .strict(),
   z
     .object({
-      kind: z.literal("inspect").describe("Polls a command that is still running; it does not run a new command."),
-      run: z.string().regex(/^r[1-9]\d*$/u).describe("The rN id returned by run_task for a command still running."),
-      cursor: z.string().regex(/^\d+$/u).optional(),
+      kind: z.literal("inspect").describe("Waits on a command run_task started; it does not run a new command."),
+      run: z.string().regex(/^r[1-9]\d*$/u).describe("The rN id returned by run_task."),
+      cursor: z.string().regex(/^\d+$/u).optional().describe("Output position to read from, as returned by the previous result; without it the latest output is shown."),
+      until: z.enum(["exit", "output", "now"]).optional()
+        .describe("exit (default): wait until the run ends, up to 5 minutes. output: return as soon as new output arrives. now: return at once."),
     })
     .strict(),
   z

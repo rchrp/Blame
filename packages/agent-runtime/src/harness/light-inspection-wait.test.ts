@@ -68,7 +68,7 @@ test("incremental run_task waits for quiet termination and publishes the real fi
       try {
         const initial = data(await runner.run({ kind: "command", command: "node check.cjs" }, { signal: controller.signal }));
         await waitFor(join(root, ".blame/launches"));
-        const peek = data(await runner.run({ kind: "inspect", run: initial.run }));
+        const peek = data(await runner.run({ kind: "inspect", run: initial.run, until: "now" }));
         assert.equal(peek.process, "running");
         assert.equal(peek.completed, undefined);
         const pending = runner.run({ kind: "inspect", run: initial.run, cursor: initial.cursor });
@@ -88,22 +88,48 @@ test("incremental run_task waits for quiet termination and publishes the real fi
   }
 });
 
-test("inspecting a run bounds the output it returns", { timeout: 15_000 }, async () => {
+test("a run's output comes in pages that skip nothing", { timeout: 15_000 }, async () => {
   await fixture(async root => {
     const controller = new AbortController();
     const runner = new LightTaskRunner({ files: new WorkspaceFiles(root), journal: new SessionJournal(root, "bounded-output"), initialCommandWaitMs: 0 });
-    await writeFile(join(root, "noisy.cjs"), "const fs=require('node:fs');process.stdout.write('x'.repeat(100000),()=>fs.writeFileSync('.blame/printed','x'));const tick=setInterval(()=>{if(fs.existsSync('.blame/go'))clearInterval(tick)},10);\n");
+    await writeFile(join(root, "noisy.cjs"), "const fs=require('node:fs');process.stdout.write(Array.from({length:3000},(_,i)=>'line '+i).join('\\n')+'\\n',()=>fs.writeFileSync('.blame/printed','x'));const tick=setInterval(()=>{if(fs.existsSync('.blame/go'))clearInterval(tick)},10);\n");
     try {
       const initial = data(await runner.run({ kind: "command", command: "node noisy.cjs" }, { signal: controller.signal }));
       await waitFor(join(root, ".blame/printed"));
-      const output = (data(await runner.run({ kind: "inspect", run: initial.run, cursor: "0" })) as unknown as { output: string }).output;
-      assert.ok(output.length <= 12_000, `${output.length} characters`);
-      assert.match(output, /diagnostic truncated/);
+      let page = data(await runner.run({ kind: "inspect", run: initial.run, cursor: "0", until: "now" })) as unknown as { output: string; nextOutput?: { cursor: string } };
+      let all = page.output;
+      while (page.nextOutput) {
+        assert.ok(page.output.length <= 12_000, `${page.output.length} characters`);
+        page = data(await runner.run({ kind: "inspect", run: initial.run, cursor: page.nextOutput.cursor, until: "now" })) as unknown as typeof page;
+        all += page.output;
+      }
+      assert.equal(all, `${Array.from({ length: 3000 }, (_, index) => `line ${index}`).join("\n")}\n`);
+      const latest = data(await runner.run({ kind: "inspect", run: initial.run, until: "now" })) as unknown as { output: string; earlierOutput?: unknown };
+      assert.match(latest.output, /line 2999\n$/u);
+      assert.ok(latest.earlierOutput, "The latest page says how to read from the start.");
     } finally {
       await writeFile(join(root, ".blame/go"), "go");
       controller.abort();
       await runner.run({ kind: "inspect", run: "r1" });
     }
+  });
+});
+
+test("inspect waits for the run to end by default, and a finished run's cut output pages whole", { timeout: 15_000 }, async () => {
+  await fixture(async root => {
+    const runner = new LightTaskRunner({ files: new WorkspaceFiles(root), journal: new SessionJournal(root, "exit-wait"), initialCommandWaitMs: 0 });
+    await writeFile(join(root, "slow.cjs"), "setTimeout(()=>{console.log('x'.repeat(10000));console.log('done')},600);\n");
+    const initial = data(await runner.run({ kind: "command", command: "node slow.cjs" }));
+    assert.equal(initial.process, "running");
+    const result = data(await runner.run({ kind: "inspect", run: initial.run })) as unknown as { process: string; completed?: { status: string; data?: { fullOutput?: { cursor: string } } } };
+    assert.equal(result.process, "exited");
+    assert.equal(result.completed?.status, "ok");
+    assert.deepEqual(result.completed?.data?.fullOutput, { kind: "inspect", run: initial.run, cursor: "0", until: "now" });
+    const waiting = new LightTaskRunner({ files: new WorkspaceFiles(root), journal: new SessionJournal(root, "exit-wait"), initialCommandWaitMs: 5_000 });
+    const quick = await waiting.run({ kind: "command", command: "node -e \"console.log('y'.repeat(9000))\"" }) as { data: { fullOutput?: { run: string } } };
+    assert.ok(quick.data.fullOutput, "A command that finished within the wait keeps its output too.");
+    const whole = data(await waiting.run({ kind: "inspect", run: quick.data.fullOutput.run, cursor: "0", until: "now" })) as unknown as { output: string };
+    assert.match(whole.output, /^y{9000}\n$/u);
   });
 });
 

@@ -16,6 +16,9 @@ export type WorkspaceCommandSnapshot = {
   cursor: string;
   output: string;
   process: "running" | "exited" | "timed_out" | "cancelled";
+  /** With a page limit: where the shown output starts, and the whole output's size, in bytes. */
+  start?: number;
+  totalBytes?: number;
 };
 
 export type WorkspaceCommandResult = {
@@ -43,8 +46,9 @@ export function startWorkspaceCommand(
   const execution = new CommandExecution(child, options);
   return {
     completion: execution.run(),
-    inspect: (cursor?: string) => execution.inspect(cursor),
+    inspect: (cursor?: string, limit?: number) => execution.inspect(cursor, limit),
     waitForUpdate: (cursor?: string, timeoutMs = 30_000, signal?: AbortSignal) => execution.waitForUpdate(cursor, timeoutMs, signal),
+    waitForExit: (timeoutMs: number, signal?: AbortSignal) => execution.waitForExit(timeoutMs, signal),
   };
 }
 
@@ -109,14 +113,26 @@ class CommandExecution {
     return completion;
   }
 
-  inspect(cursor?: string): WorkspaceCommandSnapshot {
+  /**
+   * Output from the cursor. With a limit, one page of at most that many
+   * bytes, and the cursor where the next page starts, so nothing is skipped;
+   * without a cursor the page is the latest output.
+   */
+  inspect(cursor?: string, limit?: number): WorkspaceCommandSnapshot {
     const offset = cursor === undefined ? 0 : Number(cursor);
     if (!Number.isSafeInteger(offset) || offset < 0 || offset > this.bytes)
       throw new Error(`Invalid run cursor ${cursor}.`);
     const content = Buffer.concat(this.chunks);
+    let start = offset;
+    let end = content.length;
+    if (limit !== undefined) {
+      if (cursor === undefined) start = characterStart(content, Math.max(0, end - limit));
+      else end = characterEnd(content, Math.min(end, start + limit));
+    }
     return {
-      cursor: String(this.bytes),
-      output: content.subarray(offset).toString("utf8"),
+      cursor: String(end),
+      output: content.subarray(start, end).toString("utf8"),
+      ...(limit !== undefined ? { start, totalBytes: content.length } : {}),
       process:
         this.interruption === "cancelled"
           ? "cancelled"
@@ -146,6 +162,29 @@ class CommandExecution {
       this.waiters.add(updated);
       signal?.addEventListener("abort", cancelled, { once: true });
       if (signal?.aborted) cancelled();
+    });
+  }
+
+  /** Resolves once the process ended, or after the timeout. */
+  waitForExit(timeoutMs: number, signal?: AbortSignal): Promise<void> {
+    signal?.throwIfAborted();
+    if (this.finished || timeoutMs <= 0) return Promise.resolve();
+    return new Promise((resolve, reject) => {
+      const cleanup = () => {
+        clearTimeout(timer);
+        this.waiters.delete(updated);
+        signal?.removeEventListener("abort", cancelled);
+      };
+      const updated = () => {
+        if (!this.finished) return;
+        cleanup();
+        resolve();
+      };
+      const cancelled = () => { cleanup(); reject(signal?.reason ?? new Error("Inspection cancelled.")); };
+      const timer = setTimeout(() => { cleanup(); resolve(); }, timeoutMs);
+      timer.unref();
+      this.waiters.add(updated);
+      signal?.addEventListener("abort", cancelled, { once: true });
     });
   }
 
@@ -226,6 +265,18 @@ class CommandExecution {
       .filter(Boolean)
       .join("\n");
   }
+}
+
+/** The first byte at or after index that starts a UTF-8 character. */
+function characterStart(content: Buffer, index: number) {
+  while (index < content.length && (content[index]! & 0xc0) === 0x80) index += 1;
+  return index;
+}
+
+/** The last character boundary at or before index. */
+function characterEnd(content: Buffer, index: number) {
+  while (index > 0 && index < content.length && (content[index]! & 0xc0) === 0x80) index -= 1;
+  return index;
 }
 
 function terminateCommand(child: ChildProcess) {
