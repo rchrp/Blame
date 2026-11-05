@@ -65,6 +65,56 @@ test("only a line longer than a block is cut inside", () => {
   assert.deepEqual(textChunks("short", 8), ["short"]);
 });
 
+test("the model reads no hash-only fields and long advice only once", () => {
+  const advice = "These invocation results do not apply to this source snapshot. After the final source/test edit, rerun every required invocation.";
+  const edit = (id: string) => ({
+    status: "ok",
+    data: {
+      changed: true,
+      sourceRevisionId: `src_${"a".repeat(32)}`,
+      validationState: {
+        invalidatedChecks: [{ id: `validation://${"b".repeat(64)}`, command: "pnpm test", previousOutcome: "passed" }],
+        guidance: advice,
+      },
+      testValidationScope: { forwardedArgsSha256: "c".repeat(64), changedTestCount: 1 },
+      receipt: id,
+    },
+  });
+  const history: Message[] = [
+    { role: "assistant", content: [{ type: "tool_use", id: "one", name: "edit_code", input: {} }] },
+    { role: "user", content: [{ type: "tool_result", tool_use_id: "one", content: JSON.stringify(edit("c1")) }] },
+    { role: "assistant", content: [{ type: "tool_use", id: "two", name: "edit_code", input: {} }] },
+    { role: "user", content: [{ type: "tool_result", tool_use_id: "two", content: JSON.stringify(edit("c2")) }] },
+  ];
+  const projected = presentToolResults(history);
+  const result = (index: number) => JSON.parse(((projected[index]!.content as ContentBlock[])[0] as ToolResultContent).content as string);
+  const first = result(1), second = result(3);
+  assert.equal(first.data.sourceRevisionId, undefined);
+  assert.deepEqual(first.data.validationState.invalidatedChecks, [{ command: "pnpm test", previousOutcome: "passed" }]);
+  assert.deepEqual(first.data.testValidationScope, { changedTestCount: 1 });
+  assert.equal(first.data.validationState.guidance, advice);
+  assert.equal(second.data.validationState.guidance, undefined, "Advice already read is not repeated.");
+  assert.equal(second.data.receipt, "c2");
+  assert.deepEqual(presentToolResults(projected), projected);
+});
+
+test("run_task's multipart envelope is presented whole instead of in clipped parts", () => {
+  const output = `${"failing line\n".repeat(1_000)}`;
+  const envelope = [
+    { type: "text", text: JSON.stringify({ format: "blame_tool_result_v1", result: { status: "blocked", category: "code", message: null }, textFields: [["message"]] }) },
+    { type: "text", text: output },
+  ];
+  const history: Message[] = [
+    { role: "assistant", content: [{ type: "tool_use", id: "call", name: "run_task", input: {} }] },
+    { role: "user", content: [{ type: "tool_result", tool_use_id: "call", content: envelope as never }] },
+  ];
+  const blocks = ((presentToolResults(history)[1]!.content as ContentBlock[])[0] as ToolResultContent).content as { text: string }[];
+  assert.ok(blocks.every((block) => block.text.length <= 8_000));
+  const text = blocks.map((block) => block.text).join("");
+  assert.match(text, /^\{"status":"blocked","category":"code"\}/u);
+  assert.ok(text.includes(output.trimEnd()));
+});
+
 function messages(name: string, result: unknown): Message[] {
   return [
     { role: "assistant", content: [{ type: "tool_use", id: "call", name, input: {} }] },

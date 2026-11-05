@@ -1,18 +1,21 @@
 import type { ContentBlock, Message } from "@cline/sdk";
 import { projectImageContext } from "./image-context.js";
 import { compactRepairAdvice } from "./repair-advice-projection.js";
+import { unwrapFeedbackEnvelope } from "./tool-result-envelope.js";
 
 const harnessNames = new Set(["read_code", "search_code", "edit_code", "run_task"]);
 const textKeys = new Set(["content", "body", "context", "imports", "signature", "snippet", "output", "message"]);
 
 export function presentToolResults(messages: Message[]): Message[] {
   const names = new Map<string, string>();
-  const source = process.env.BLAME_AGENT_REPAIR_CONTEXT_COMPACTION === "true" ? compactRepairAdvice(messages) : messages;
+  // Long advice already shown earlier in this transcript.
+  const shown = new Set<string>();
+  const source = process.env.BLAME_AGENT_REPAIR_CONTEXT_COMPACTION === "false" ? messages : compactRepairAdvice(messages);
   const presented = source.map((message) => {
     if (!Array.isArray(message.content)) return message;
     const content = message.content.map((block: ContentBlock) => {
       if (block.type === "tool_use") names.set(block.id, block.name);
-      return presentBlock(block, names);
+      return presentBlock(block, names, shown);
     });
     return { ...message, content };
   });
@@ -24,10 +27,26 @@ export function presentToolResults(messages: Message[]): Message[] {
 // holds up to 64,000), so they reach the model whole, in blocks under that cut.
 const clineBlockCharacters = 8_000;
 
-function presentBlock(block: ContentBlock, names: Map<string, string>): ContentBlock {
-  if (block.type !== "tool_result" || typeof block.content !== "string") return block;
+function presentBlock(block: ContentBlock, names: Map<string, string>, shown: Set<string>): ContentBlock {
+  if (block.type !== "tool_result") return block;
   if (!harnessNames.has(names.get(block.tool_use_id) ?? block.name ?? "")) return block;
-  const text = presentedText(block.content) ?? block.content;
+  const result = harnessResult(block.content);
+  if (result) return withText(block, presentedText(condensed(result, shown) as Record<string, unknown>));
+  return typeof block.content === "string" ? withText(block, block.content) : block;
+}
+
+/** A harness result, from its JSON text or from run_task's multipart envelope. */
+function harnessResult(content: unknown) {
+  let value: unknown;
+  if (typeof content === "string") {
+    try { value = JSON.parse(content); } catch { return undefined; }
+  } else value = unwrapFeedbackEnvelope(content);
+  return value && typeof value === "object" && !Array.isArray(value) && "status" in value
+    ? (value as Record<string, unknown>)
+    : undefined;
+}
+
+function withText(block: Extract<ContentBlock, { type: "tool_result" }>, text: string): ContentBlock {
   const chunks = textChunks(text, clineBlockCharacters);
   if (chunks.length > 1)
     return { ...block, content: chunks.map((chunk) => ({ type: "text" as const, text: chunk })) };
@@ -35,14 +54,32 @@ function presentBlock(block: ContentBlock, names: Map<string, string>): ContentB
 }
 
 /** Metadata as one JSON line, then each source text field in its own fence. */
-function presentedText(source: string) {
-  let result: unknown;
-  try { result = JSON.parse(source); } catch { return undefined; }
-  if (!result || typeof result !== "object" || !('status' in result)) return undefined;
+function presentedText(result: Record<string, unknown>) {
   const sections: string[] = [];
   const metadata = extractText(result, "", sections);
-  if (!sections.length) return undefined;
   return [JSON.stringify(metadata), ...sections].join("\n\n");
+}
+
+// Revision and check identities, and digests: journal bookkeeping the model
+// never sends back, at 30 to 70 characters each.
+const hashValue = /^(?:src_[0-9a-f]{32}|validation:\/\/[0-9a-f]{64}|(?:sha256:)?[0-9a-f]{64})$/u;
+const adviceKeys = new Set(["guidance", "instruction", "recovery", "note"]);
+
+/**
+ * What the model reads of a harness result: without hash-only fields, and
+ * without long advice it already read in an earlier result.
+ */
+function condensed(value: unknown, shown: Set<string>): unknown {
+  if (Array.isArray(value)) return value.map((item) => condensed(item, shown));
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(Object.entries(value).flatMap(([name, item]) => {
+    if (/sha256$/iu.test(name) || (typeof item === "string" && hashValue.test(item))) return [];
+    if (adviceKeys.has(name) && typeof item === "string" && item.length >= 80) {
+      if (shown.has(item)) return [];
+      shown.add(item);
+    }
+    return [[name, condensed(item, shown)]];
+  }));
 }
 
 /** Splits after a newline where it can, so only a line longer than a block is cut. */

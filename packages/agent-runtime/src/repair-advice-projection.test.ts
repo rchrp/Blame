@@ -69,14 +69,17 @@ test("only trusted tool metadata compacts; unknown calls and printed/source JSON
   assert.ok(result(enveloped).data.output.length > 6000);
 });
 
-test("the reference flag preserves presentation without advice compaction", () => {
+test("repeated advice compacts by default, and the flag turns it off", () => {
   const previous = process.env.BLAME_AGENT_REPAIR_CONTEXT_COMPACTION;
   try {
     const messages = [...pair("first"), ...pair("next")];
     delete process.env.BLAME_AGENT_REPAIR_CONTEXT_COMPACTION;
-    assert.deepEqual(result(presentToolResults(messages)).data.validationRepair, plan);
+    assert.equal(result(presentToolResults(messages)).data.validationRepair.kind, "repair_plan_reference");
     process.env.BLAME_AGENT_REPAIR_CONTEXT_COMPACTION = "false";
-    assert.deepEqual(result(presentToolResults(messages)).data.validationRepair, plan);
+    // The full plan again, without the long instruction the first result showed.
+    const rest: Partial<typeof plan> = { ...plan };
+    delete rest.instruction;
+    assert.deepEqual(result(presentToolResults(messages)).data.validationRepair, rest);
     process.env.BLAME_AGENT_REPAIR_CONTEXT_COMPACTION = "true";
     assert.equal(result(presentToolResults(messages)).data.validationRepair.kind, "repair_plan_reference");
   } finally { if (previous === undefined) delete process.env.BLAME_AGENT_REPAIR_CONTEXT_COMPACTION; else process.env.BLAME_AGENT_REPAIR_CONTEXT_COMPACTION = previous; }
