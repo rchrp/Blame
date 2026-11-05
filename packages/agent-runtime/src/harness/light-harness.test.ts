@@ -1186,7 +1186,7 @@ test("the installed Prettier binary and npx prettier make deterministic edits to
     { "first.ts": "export const first={value:1}\n", "second.ts": "export const second={value:2}\n" },
     async (root) => {
       const workspace = lightWorkspace(root, "formatter-binary");
-      for (const [command, path] of [["node_modules/.bin/prettier --write first.ts", "first.ts"], ["npx prettier --write second.ts", "second.ts"]]) {
+      for (const [command, path] of [["node_modules/.bin/prettier --write first.ts", "first.ts"], ["npx prettier --write second.ts 2>&1 | tail -15", "second.ts"]]) {
         const result = await workspace.tasks.run({ kind: "command", command: command! });
         assert.equal(record(data(result)).mutation, "deterministic_format", command);
         assert.match(await readFile(join(root, path!), "utf8"), / = \{ value: \d \};/u, command);

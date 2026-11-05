@@ -143,10 +143,13 @@ function formatterFailure(result: {
 // `cd packages/app && pnpm exec prettier --write …` is the usual way to run a
 // package's own formatter; the directory becomes the command's cwd.
 const cdPrefix = /^\s*cd\s+([^\s;&|<>'"`$\\]+)\s*&&\s*/u;
+// A trailing `2>&1 | tail -15` only trims what the agent would read; the
+// harness reports the formatted files itself (US-045 lost a turn on it).
+const displayFilter = /(?:\s+2>&1)?(?:\s*\|\s*(?:tail|head)(?:\s+-n)?(?:\s+-?\d+)?)?\s*$/u;
 
 function formatterCommand(command: string): FormatterCommand | undefined {
   const cd = cdPrefix.exec(command);
-  const rest = cd ? command.slice(cd[0].length) : command;
+  const rest = (cd ? command.slice(cd[0].length) : command).replace(displayFilter, "");
   if (/[;&|<>\n\r'"`]/u.test(rest)) return undefined;
   const tokens = rest.trim().split(/\s+/u);
   const prefix = formatterPrefix(tokens);
