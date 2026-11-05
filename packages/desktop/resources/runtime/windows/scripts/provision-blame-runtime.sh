@@ -508,6 +508,7 @@ import signal
 import subprocess
 import sys
 import threading
+import time
 import uuid
 import urllib.request
 import traceback
@@ -534,7 +535,7 @@ json_worker_count = max(1, min(2, os.cpu_count() or 1))
 large_json_threshold = 64 * 1024
 ignored_env_directories = {".git", ".blame", "build", "coverage", "dist", "node_modules", "out"}
 env_template_suffixes = (".example", ".sample", ".template")
-runtime_agent_version = "12"
+runtime_agent_version = "13"
 
 def serialize_json_line(value):
     return json.dumps(value, separators=(",", ":")) + "\n"
@@ -755,6 +756,9 @@ def cleanup_processes():
         active = list(processes.values())
     with semantic_processes_lock:
         active.extend(semantic_processes.values())
+    with semantic_server_lock:
+        if semantic_server is not None:
+            active.append(semantic_server)
     for process in active:
         terminate_process(process)
 
@@ -821,11 +825,83 @@ def run_read_existing_files(params):
             result[path] = None
     return {"files": result}
 
+# One long-lived harness serves every semantic request, answered by id: a
+# session's managed runs and caches then outlive a single tool call. A
+# harness that does not announce itself ready (an older payload) is served
+# one process per request, as before.
+semantic_server = None
+semantic_server_lock = threading.Lock()
+semantic_server_write_lock = threading.Lock()
+semantic_server_retry_at = 0
+semantic_pending = {}
+semantic_pending_lock = threading.Lock()
+semantic_server_ready_timeout = 20
+semantic_server_retry_seconds = 60
+
+def start_semantic_server():
+    account = target_user("blame")
+    process = subprocess.Popen(
+        ["blame-semantic-harness", "--serve"],
+        env=clean_env({}, account),
+        stdin=subprocess.PIPE,
+        text=True,
+        bufsize=1,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        preexec_fn=demote(account),
+        start_new_session=True,
+    )
+    try:
+        line = read_line_with_timeout(process.stdout, semantic_server_ready_timeout)
+        ready = json.loads(line or "{}").get("ready") is True
+    except Exception:
+        ready = False
+    if not ready:
+        terminate_process(process)
+        return None
+    threading.Thread(target=read_semantic_server, args=(process,), daemon=True).start()
+    return process
+
+def semantic_server_process():
+    global semantic_server, semantic_server_retry_at
+    with semantic_server_lock:
+        if semantic_server is not None and semantic_server.poll() is None:
+            return semantic_server
+        if time.monotonic() < semantic_server_retry_at:
+            return None
+        semantic_server = start_semantic_server()
+        if semantic_server is None:
+            semantic_server_retry_at = time.monotonic() + semantic_server_retry_seconds
+        return semantic_server
+
+def read_semantic_server(process):
+    for line in process.stdout:
+        try:
+            message = json.loads(line)
+        except Exception:
+            continue
+        with semantic_pending_lock:
+            entry = semantic_pending.pop(str(message.get("id")), None)
+        if entry is not None:
+            entry["response"] = message
+            entry["done"].set()
+    # The harness stopped: requests it held get no answer from it.
+    with semantic_pending_lock:
+        stopped = [key for key, entry in semantic_pending.items() if entry["process"] is process]
+        entries = [semantic_pending.pop(key) for key in stopped]
+    for entry in entries:
+        entry["response"] = {"error": "The semantic harness stopped."}
+        entry["done"].set()
+
+def send_semantic_server(process, message):
+    with semantic_server_write_lock:
+        process.stdin.write(json.dumps(message) + "\n")
+        process.stdin.flush()
+
 def run_semantic_workspace(params):
     operation_id = str(params.get("operationId") or "")
     if not operation_id:
         raise RuntimeError("Semantic workspace operation id is required")
-    account = target_user("blame")
     request = {
         "input": params.get("input"),
         "taskContract": params.get("taskContract"),
@@ -833,6 +909,26 @@ def run_semantic_workspace(params):
         "toolContext": params.get("toolContext"),
         "workspaceRoot": params.get("workspaceRoot"),
     }
+    process = semantic_server_process()
+    if process is None:
+        return run_semantic_workspace_once(operation_id, request)
+    entry = {"done": threading.Event(), "process": process}
+    with semantic_pending_lock:
+        semantic_pending[operation_id] = entry
+    try:
+        send_semantic_server(process, {"id": operation_id, "request": request})
+    except Exception as error:
+        with semantic_pending_lock:
+            semantic_pending.pop(operation_id, None)
+        raise CommandError({"stdout": "", "stderr": f"The semantic harness is unavailable: {error}", "code": 1})
+    entry["done"].wait()
+    response = entry["response"]
+    if "error" in response:
+        raise CommandError({"stdout": "", "stderr": str(response["error"]), "code": 1})
+    return response.get("result") or {}
+
+def run_semantic_workspace_once(operation_id, request):
+    account = target_user("blame")
     process = subprocess.Popen(
         ["blame-semantic-harness"],
         env=clean_env({}, account),
@@ -856,6 +952,14 @@ def run_semantic_workspace(params):
 
 def run_semantic_workspace_cancel(params):
     operation_id = str(params.get("operationId") or "")
+    with semantic_pending_lock:
+        entry = semantic_pending.get(operation_id)
+    if entry is not None:
+        try:
+            send_semantic_server(entry["process"], {"id": operation_id, "cancel": True})
+        except Exception:
+            pass
+        return {"stopped": True}
     with semantic_processes_lock:
         process = semantic_processes.get(operation_id)
     if process is not None:

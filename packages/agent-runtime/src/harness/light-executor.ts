@@ -98,6 +98,27 @@ export function localLightWorkspaceExecutor(
   return (request, signal) => executeWithWorkspace(workspace, request, signal);
 }
 
+/**
+ * One workspace per root and task contract, kept between requests: a
+ * long-lived harness keeps a session's managed runs, its command queue and
+ * its warm caches, where a process per request lost them after each call.
+ */
+export function cachedLightWorkspaceExecutor(limit = 32): LightWorkspaceExecutor {
+  const executors = new Map<string, LightWorkspaceExecutor>();
+  return (request, signal) => {
+    const key = JSON.stringify([request.workspaceRoot, request.taskContract ?? null]);
+    const executor = executors.get(key) ?? localLightWorkspaceExecutor(request.workspaceRoot, request.taskContract);
+    // Most recently used last, so the oldest session goes first past the limit.
+    executors.delete(key);
+    executors.set(key, executor);
+    for (const old of executors.keys()) {
+      if (executors.size <= limit) break;
+      executors.delete(old);
+    }
+    return executor(request, signal);
+  };
+}
+
 export function executeLightWorkspaceRequest(
   request: LightWorkspaceExecutionRequest,
   signal?: AbortSignal,

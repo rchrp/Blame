@@ -14,7 +14,7 @@ from types import SimpleNamespace
 
 source = Path(sys.argv[1]).read_text()
 body = source.split("cat >/usr/local/bin/blame-runtime-agent <<'EOF'\n", 1)[1].split("\nEOF", 1)[0]
-function = next(node for node in ast.parse(body).body if isinstance(node, ast.FunctionDef) and node.name == "run_semantic_workspace")
+functions = [node for node in ast.parse(body).body if isinstance(node, ast.FunctionDef) and node.name in ("run_semantic_workspace", "run_semantic_workspace_once")]
 captured = {}
 
 class Process:
@@ -23,10 +23,12 @@ class Process:
         captured.update(json.loads(encoded))
         return "{}", ""
 
+# No serving harness: the relay runs one harness process for the request.
 scope = {"json": json, "semantic_processes": {}, "semantic_processes_lock": threading.Lock(),
+         "semantic_server_process": lambda: None,
          "target_user": lambda _: None, "clean_env": lambda *_: {}, "demote": lambda _: None,
          "subprocess": SimpleNamespace(PIPE=None, Popen=lambda *args, **kwargs: Process())}
-exec(compile(ast.Module(body=[function], type_ignores=[]), "runtime-relay", "exec"), scope)
+exec(compile(ast.Module(body=functions, type_ignores=[]), "runtime-relay", "exec"), scope)
 context = {"agentId": "lead", "toolCallId": "read-1", "metadata": {"modelSupportsImages": True},
            "snapshot": {"messages": [{"id": "summary-1", "metadata": {"kind": "compaction_summary"}}]}}
 scope["run_semantic_workspace"]({"operationId": "operation-1", "workspaceRoot": "/workspace",
