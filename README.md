@@ -234,6 +234,22 @@ For one person, it already is: without an account, the desktop app runs the same
 
 </details>
 
+<details>
+<summary><strong>Why Electron, and not Tauri or something else?</strong></summary>
+
+Because live previews are the product, and Electron is the only option that makes them work the same on macOS, Windows, and Linux.
+
+- **Agents drive the preview with standard tools.** Each story's preview is a real browser, and the agent inspects it through the Chrome DevTools Protocol (CDP): console, network, DOM, clicks, screenshots. Electron embeds Chromium, so CDP is built in and every agent-side browser tool works unchanged.
+- **Tauri uses the system webview, and most of them do not speak CDP.** macOS uses WKWebView and Linux uses WebKitGTK, both WebKit, with a different inspection protocol. Only Windows (WebView2) is Chromium. Since macOS is a main target, Tauri would have meant either a second browser running beside the app, or bundling Chromium anyway (CEF), which removes Tauri's size advantage.
+- **The preview must render like your users' browser.** A WebKit preview on macOS, Chromium on Windows, and something else on Linux would show different bugs on each machine. One bundled Chromium means what you review is what you ship.
+- **One language, one codebase.** The desktop app shares TypeScript with the interface, the API, and the agent runtime. A Rust layer would add a second stack to maintain for little gain.
+
+**What about performance?** The interface is not where the time and memory go. The costs are the agents, the language models, the containers, and the Lima VM or WSL distribution that runs your project. Electron adds some memory at idle, which is small next to a Postgres container and a dev server per story, and it does not slow down the agents. Spending that memory buys previews that work the same everywhere and that agents can test.
+
+If your project is itself a Tauri app, Blame can preview it. The choice only concerns what Blame is built with.
+
+</details>
+
 ## Build from source
 
 Blame is a TypeScript monorepo (pnpm and Turborepo): an Electron desktop app, a React interface, an AdonisJS API, and the agent runtime.
