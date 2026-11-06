@@ -232,9 +232,11 @@ class Graph {
   private readonly traces = new Map<string, Step[]>();
   private readonly resolver: Resolver;
   private readonly byBasename = new Map<string, string[]>();
+  private readonly entries: ReadonlyMap<string, Entry>;
 
-  constructor(private readonly entries: ReadonlyMap<string, Entry>,
+  constructor(entries: ReadonlyMap<string, Entry>,
     present: ReadonlySet<string>, configs: ReadonlyMap<string, Json>) {
+    this.entries = entries;
     this.resolver = new Resolver(present, configs);
     for (const file of present) {
       const list = this.byBasename.get(posix.basename(file)) ?? [];
@@ -321,8 +323,12 @@ class Resolver {
   private readonly cache = new Map<string, string | undefined>();
   private readonly packages = new Map<string, string>();
   private readonly pathConfigs = new Map<string, PathConfig | undefined>();
+  private readonly present: ReadonlySet<string>;
+  private readonly configs: ReadonlyMap<string, Json>;
 
-  constructor(private readonly present: ReadonlySet<string>, private readonly configs: ReadonlyMap<string, Json>) {
+  constructor(present: ReadonlySet<string>, configs: ReadonlyMap<string, Json>) {
+    this.present = present;
+    this.configs = configs;
     for (const path of [...configs.keys()].sort()) {
       const name = configs.get(path)?.name;
       if (posix.basename(path) === "package.json" && typeof name === "string" && !this.packages.has(name))
