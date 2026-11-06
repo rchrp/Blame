@@ -1,11 +1,11 @@
 ---
 name: component-preview
-description: Use to check a component, screen or hard-to-reach state visually without running the whole app — errors, loading, empty or very long lists, dark mode, mobile widths — when the story has a managed preview. Shows the component alone on a temporary page with made-up data, served by the project's dev server, opened with open_component_preview. Not for checks a DOM read or a test already covers.
+description: Use to check a component, screen or hard-to-reach state visually without running the whole app — errors, loading, empty or very long lists, dark mode, mobile widths — in a Vite project. Shows the component alone with made-up data, rendered by the temporary Vite server that open_component_preview starts. Not for checks a DOM read or a test already covers.
 ---
 
 # Component preview
 
-Show one component on its own, with props and data you make up, on a temporary page that the project's dev server already running in the managed preview serves. You avoid sign-in, the backend and real data, and you can reach states that are hard to produce in the full app.
+Show one component on its own, with props and data you make up, rendered by a temporary Vite server that `open_component_preview` starts for the session with the package's own Vite config. You avoid sign-in, the backend and real data, and you can reach states that are hard to produce in the full app. The story's own preview, if any, keeps running untouched.
 
 ## When to use it
 
@@ -15,52 +15,24 @@ Show one component on its own, with props and data you make up, on a temporary p
 
 Prefer the real app through `preview_devtools__*` when the page is easy to reach. Use a component preview when it is not.
 
-## Pick the recipe from the project's files
+## Write the preview file
 
-Check `package.json`, the dev server configuration and the folder layout first.
+Write one file, `<name>.blame-preview.tsx`, in the package of the component: the folder with its `package.json` and `vite.config.*`. No HTML page or route: the server generates them. The file imports the app's global stylesheet and the component, and exports each state as a React element; the state `default` is the default export:
 
-### Vite (React, Vue, Svelte)
+```tsx
+import "./index.css" // the app's global styles, Tailwind included
+import { SettingsPanel } from "./components/settings-panel"
 
-Create two files at the root that Vite serves (the folder of `vite.config.*` or its `root`):
+export default <SettingsPanel items={sampleItems} />
+export const empty = <SettingsPanel items={[]} />
+export const error = <SettingsPanel items={[]} error="The server did not answer." />
+```
 
-- `<name>.blame-preview.html`, a minimal page that loads the module below:
+For Vue, Svelte or another framework, export `mount(element, state)` instead: it renders the named state into `element` with the framework's own entry API.
 
-  ```html
-  <!doctype html>
-  <html lang="en">
-    <head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /></head>
-    <body><div id="root"></div><script type="module" src="./<name>.blame-preview.tsx"></script></body>
-  </html>
-  ```
+The dark theme emulates `prefers-color-scheme` and sets the `dark` class, `data-theme` and `color-scheme` on `<html>`. If the project applies its theme another way, do it in the file.
 
-- `<name>.blame-preview.tsx` (or `.ts`), which imports the project's global stylesheet, mounts the component with made-up props, and reads the query string to switch between states:
-
-  ```tsx
-  import "./src/index.css" // the project's global styles
-  import { createRoot } from "react-dom/client"
-  import { SettingsPanel } from "./src/components/settings-panel"
-
-  const params = new URLSearchParams(location.search)
-  // Apply the theme the way the project does: a class, a data attribute…
-  document.documentElement.classList.toggle("dark", params.get("theme") === "dark")
-  const states = {
-    default: { items: sampleItems },
-    empty: { items: [] },
-    error: { items: [], error: "The server did not answer." },
-  }
-  const state = states[(params.get("state") ?? "default") as keyof typeof states]
-  createRoot(document.getElementById("root")!).render(<SettingsPanel {...state} />)
-  ```
-
-Open it with `open_component_preview` and `path: "/<name>.blame-preview.html?state=empty&theme=dark"`. For Vue or Svelte, mount the component with the framework's own entry API in the same way.
-
-### Next.js App Router
-
-Create `app/blame-preview/<name>/page.tsx` (under `src/app/` when the project uses it). Add `"use client"` at the top when the component uses state, effects or browser APIs. Read `searchParams` to switch states. Open `/blame-preview/<name>?state=empty`.
-
-### Anything else
-
-Look for an existing equivalent: Storybook stories, a playground, a dev-only route. If there is none the dev server can serve, say that a component preview is not available for this project and check the full app instead.
+Projects without Vite, such as Next.js, have no component preview yet: check the full app instead.
 
 ## Replace what the component depends on
 
@@ -74,10 +46,9 @@ Never change the project's real source to make the preview work. If the componen
 
 ## Check, then look
 
-1. Call `open_component_preview` with the path, and `colorScheme` or `viewport` when they matter. It refuses paths outside the temporary names and fails when the managed preview is not ready.
-2. Read what it reports: an error overlay or console errors mean the page is broken. Fix the temporary page or the component, then open it again.
-3. Check anything that can be read as text with `preview_devtools__take_snapshot`: labels, counts, disabled states, accessible names. Use the screenshot only for what is visual: layout, spacing, color, contrast, overflow.
-4. Switch states with the query string and take one screenshot per state that matters, in light and dark when the change affects both.
+1. Call `open_component_preview` with `file`, the `states` to render, and the `themes` and `widths` that matter. One call renders every combination, at most 6, and returns one screenshot per render.
+2. Read what each render reports: an error overlay, a reported error or console errors mean it is broken. Fix the preview file or the component, then call again: the same server shows the change.
+3. Use the screenshots for what is visual: layout, spacing, color, contrast, overflow. `preview_devtools__take_snapshot` and the other `preview_devtools__*` tools still drive the story's own preview, not this render.
 
 ## Finish
 

@@ -87,7 +87,7 @@ function localPortFree(port: number) {
   });
 }
 
-async function freeLocalPort(taken: Set<number>) {
+export async function freeLocalPort(taken: Set<number>) {
   for (let attempt = 0; attempt < 20; attempt += 1) {
     const port = await new Promise<number>((resolve, reject) => {
       const server = createServer();

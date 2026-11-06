@@ -8,13 +8,11 @@ import {
   runtimeManagedPath,
 } from "./workspace-runtime.ts";
 
-// Temporary component previews are named so Git ignores them. They go in
-// .git/info/exclude, never in .gitignore, so the story's diff stays clean.
+// Temporary component preview files are named so Git ignores them. The
+// pattern goes in .git/info/exclude, never in .gitignore, so the story's
+// diff stays clean.
 
-export const componentPreviewExcludePatterns = [
-  "*.blame-preview.*",
-  "blame-preview/",
-] as const;
+export const componentPreviewExcludePatterns = ["*.blame-preview.*"] as const;
 
 const execFileAsync = promisify(execFile);
 const heading = "# Temporary component previews (Blame)";

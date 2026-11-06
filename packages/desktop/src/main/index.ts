@@ -40,6 +40,7 @@ import {
 import { checkForUpdatesOnStartup } from "./desktop-update-ipc";
 import { destroyAllPreviewBrowsers } from "./preview-browser-ipc";
 import { shutdownPreviewDevtoolsMcp } from "./preview-runtime/preview-devtools-mcp-service";
+import { shutdownComponentPreviews } from "./component-preview/component-preview-agent";
 import { shutdownTerminalSessions } from "./terminal-ipc";
 import { shutdownWorkspaceProcesses } from "./workspace-ipc";
 import { setupPath } from "./host-tool-path";
@@ -716,6 +717,7 @@ async function cleanupApplication() {
     shutdownWorkspaceProcesses(),
     shutdownAgentRuntime(),
     shutdownPreviewDevtoolsMcp(),
+    shutdownComponentPreviews(),
     stopAllDevices(),
   ]).then(() => undefined);
   await settleWithin(runtimeShutdown, runtimeShutdownTimeoutMs);

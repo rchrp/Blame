@@ -110,7 +110,7 @@ test("keeps session startup available when the skill service fails", async () =>
   assert.equal(stopped, true);
 });
 
-test("the component preview skill explains the recipes and the tool", async () => {
+test("the component preview skill explains the preview file and the tool", async () => {
   const service = createUserInstructionConfigService({
     skills: {
       directories: resolvePluginSkillDirectoriesFromPaths([blameNativePluginPath()]),
@@ -121,8 +121,9 @@ test("the component preview skill explains the recipes and the tool", async () =
     const executor = service.createSkillsExecutor?.();
     assert.ok(executor);
     const output = await executor("component-preview", "settings panel", {} as never);
-    assert.match(output, /\.blame-preview\.html/);
-    assert.match(output, /app\/blame-preview\/<name>\/page\.tsx/);
+    assert.match(output, /<name>\.blame-preview\.tsx/);
+    assert.match(output, /mount\(element, state\)/);
+    assert.doesNotMatch(output, /\.blame-preview\.html|app\/blame-preview\//);
     assert.match(output, /open_component_preview/);
     assert.match(output, /take_snapshot/);
     assert.match(output, /finish_task/);

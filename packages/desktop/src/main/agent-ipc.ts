@@ -10,6 +10,7 @@ import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import log from "electron-log";
 import { excludeComponentPreviewFiles } from "./component-preview-exclude";
+import { stopComponentPreviews } from "./component-preview/component-preview-agent";
 import { releaseAgentPreviewSession } from "./preview-browser-ipc";
 import {
   refreshRuntimeBackendConnection,
@@ -161,15 +162,15 @@ function registerSessionStartIpcHandlers(
   beforeWorkspaceWrite?: (worktree: string) => Promise<void>,
 ) {
   ipcMain.handle("agent:sessions:start", async (_event, input) => {
-    const prepared = await agentWorkspaceInput(input);
+    let prepared = await agentWorkspaceInput(input);
     const workspace = agentWorkspacePath(prepared);
     if (workspace && beforeWorkspaceWrite)
       await beforeWorkspaceWrite(workspace);
-    await prepareComponentPreviews(prepared, workspace);
+    prepared = await prepareComponentPreviews(prepared, workspace);
     return startWorkspaceSession("sessions.start", prepared, workspace);
   });
   ipcMain.handle("agent:sessions:start-development", async (_event, input) => {
-    const prepared = await agentWorkspaceInput({
+    let prepared = await agentWorkspaceInput({
       ...input,
       sessionId:
         typeof input.sessionId === "string" && input.sessionId.trim()
@@ -179,7 +180,7 @@ function registerSessionStartIpcHandlers(
     const workspace = agentWorkspacePath(prepared);
     if (workspace && beforeWorkspaceWrite)
       await beforeWorkspaceWrite(workspace);
-    await prepareComponentPreviews(prepared, workspace);
+    prepared = await prepareComponentPreviews(prepared, workspace);
     let session;
     const pendingSessionId = workspace ? `pending:${randomUUID()}` : undefined;
     if (workspace && pendingSessionId)
@@ -238,6 +239,7 @@ function registerSessionControlIpcHandlers(
       return await agentRuntime().abortSession(sessionId);
     } finally {
       agentWorkspaceWriters.end(sessionId);
+      if (typeof sessionId === "string") void stopSessionComponentPreviews(sessionId);
     }
   });
 }
@@ -371,15 +373,35 @@ function registerDeliveryWorkflowIpcHandlers(
   });
 }
 
-// Sessions with a managed preview may write temporary component previews:
-// Git must ignore them from the start.
+// A session of a Vite project gets open_component_preview, whatever its
+// workspace: a managed preview, the project folder, or no web service at
+// all. Cloud previews do not have it yet. Git ignores the temporary
+// preview files from the start.
 async function prepareComponentPreviews(
   input: Record<string, unknown>,
   workspace: string | undefined,
-) {
-  if (!workspace || typeof input.previewDevtoolsScope !== "string") return;
+): Promise<Record<string, unknown>> {
+  if (!workspace || input.workspaceMode === "cloud-mirror") return input;
+  const { hasViteProject } =
+    await import("./component-preview/component-preview-location");
+  const supported = await hasViteProject(workspace).catch((error: unknown) => {
+    log.warn("Could not look for a Vite project", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return false;
+  });
+  if (!supported) return input;
   await excludeComponentPreviewFiles(workspace).catch((error: unknown) =>
     log.warn("Could not hide temporary component previews from Git", {
+      error: error instanceof Error ? error.message : String(error),
+    }),
+  );
+  return { ...input, componentPreview: true };
+}
+
+function stopSessionComponentPreviews(sessionId: string) {
+  return stopComponentPreviews({ sessionId }).catch((error: unknown) =>
+    log.warn("Could not stop a component preview server", {
       error: error instanceof Error ? error.message : String(error),
     }),
   );
@@ -550,6 +572,7 @@ function emitAgentEvent(event: AgentEvent) {
   if (event.sessionId && (event.type === "done" || event.type === "error")) {
     agentWorkspaceWriters.end(event.sessionId);
     releaseAgentPreviewSession(event.sessionId);
+    void stopSessionComponentPreviews(event.sessionId);
   }
   const rawTransportEvent = agentTransportEvent(event);
   const transportEvent =

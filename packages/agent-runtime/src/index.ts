@@ -20,6 +20,7 @@ export {
 } from "./harness/workspace-revisions.js";
 export { taskComplexityBucket } from "./telemetry-cohorts.js";
 export * from "./preview-devtools-policy.js";
+export * from "./component-preview-request.js";
 export type * from "./preview-environment-types.js";
 export type {
   PreviewEnvironmentToolInput,

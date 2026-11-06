@@ -60,6 +60,7 @@ export const agentHostMethods = [
   "projectScanRoot",
   "lightWorkspace",
   "projectApp",
+  "componentPreview",
 ] as const;
 
 export type AgentRuntimeMethod = (typeof agentRuntimeMethods)[number];

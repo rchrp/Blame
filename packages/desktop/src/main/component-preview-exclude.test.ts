@@ -20,12 +20,14 @@ test("adds the patterns once, after the existing rules", () => {
   );
   assert.equal(
     next,
-    "# git ls-files --others --exclude-from=.git/info/exclude\n*.log\n# Temporary component previews (Blame)\n*.blame-preview.*\nblame-preview/\n",
+    "# git ls-files --others --exclude-from=.git/info/exclude\n*.log\n# Temporary component previews (Blame)\n*.blame-preview.*\n",
   );
   assert.equal(excludeFileContent(next!), undefined);
+  // A pattern written by hand is not repeated.
+  assert.equal(excludeFileContent("*.blame-preview.*\n"), undefined);
   assert.equal(
-    excludeFileContent("blame-preview/\n"),
-    "blame-preview/\n# Temporary component previews (Blame)\n*.blame-preview.*\n",
+    excludeFileContent(""),
+    "# Temporary component previews (Blame)\n*.blame-preview.*\n",
   );
 });
 
@@ -51,7 +53,7 @@ test("hides temporary previews from git status in a linked worktree", async () =
     await git(repo, "worktree", "add", "-q", worktree);
     assert.equal(await excludeComponentPreviewFiles(worktree), true);
     assert.equal(await excludeComponentPreviewFiles(worktree), false);
-    await writeFile(join(worktree, "dialog.blame-preview.html"), "<div></div>");
+    await writeFile(join(worktree, "dialog.blame-preview.tsx"), "export {}");
     await writeFile(join(worktree, "draft.ts"), "x");
     const { stdout } = await git(worktree, "status", "--porcelain");
     assert.equal(stdout.trim(), "?? draft.ts");
@@ -89,7 +91,7 @@ test("the runtime script adds the same lines once", async () => {
     assert.equal((await apply()).stdout.trim(), "0");
     assert.equal(
       await readFile(join(root, ".git/info/exclude"), "utf8"),
-      "*.log\n# Temporary component previews (Blame)\n*.blame-preview.*\nblame-preview/\n",
+      "*.log\n# Temporary component previews (Blame)\n*.blame-preview.*\n",
     );
   } finally {
     await rm(root, { force: true, recursive: true });

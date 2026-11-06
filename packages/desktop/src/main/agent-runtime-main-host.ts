@@ -94,6 +94,11 @@ async function handleAgentHostRequest(
     return agentLightWorkspace(input, signal);
   }
   if (method === "projectApp") return agentProjectApp(input, signal);
+  if (method === "componentPreview") {
+    const { componentPreviewHostRequest } =
+      await import("./component-preview/component-preview-agent.ts");
+    return componentPreviewHostRequest(input, signal);
+  }
   throw new Error(`Unsupported agent host method: ${method}`);
 }
 

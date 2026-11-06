@@ -144,23 +144,34 @@ function describeScreenshot(
 }
 
 // A component opened alone on a temporary page, with its screenshot.
+// A component rendered alone by the temporary preview server: one
+// screenshot per render, and what each render reported.
 export function describeComponentPreview(source: ToolCallSource): ToolCallView {
   const input = record(source.input)
   const failed = !source.running && failedResult(source.output)
   const shot = describeScreenshot(source, input, failed)
-  const path = str(input.path)
+  const file = str(input.file)
   const report = outputText(source.output)
     .split("\n")
     .map((line) => line.trim())
-    .filter((line) => /^(Error overlay|Console errors|msgid=)/u.test(line))
+    .filter((line) =>
+      /^(Render \d+\/\d+ |Error overlay|Console errors|- )/u.test(line)
+    )
     .join("\n")
-  const problems = /Error overlay: (?!none)|^msgid=/mu.test(report)
+  const problems =
+    /^Render \d+\/\d+ [^\n]*: (?!rendered\.)|Error overlay: (?!none)|Console errors:(?! none)/mu.test(
+      report
+    )
+  const renders = screenshotRefs(source.output).length
   return {
     ...shot,
     verb: source.running ? "Previewing" : "Previewed",
-    target: path ? { text: path, mono: true, title: path } : shot.target,
+    target: file
+      ? { text: file.split("/").at(-1) ?? file, mono: true, title: file }
+      : shot.target,
     chips: [
       ...shot.chips.filter((chip) => chip.label !== "full page"),
+      ...(renders > 1 ? [{ label: `${renders} renders` }] : []),
       ...(problems && !failed
         ? [{ label: "Errors", tone: "danger" as const }]
         : []),

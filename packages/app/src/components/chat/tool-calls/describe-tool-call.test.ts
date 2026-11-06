@@ -488,24 +488,53 @@ test("common browser tools read as sentences", () => {
   )
 })
 
-test("a component preview names its page and flags errors", () => {
+test("a component preview names its file, counts its renders and flags errors", () => {
+  const second = { ...screenshotOutput[1], id: "f".repeat(64), colorScheme: "light" }
   const result = view(
     "open_component_preview",
-    { path: "/dialog.blame-preview.html?state=empty", colorScheme: "dark" },
+    {
+      file: "packages/app/src/dialog.blame-preview.tsx",
+      states: ["default", "empty"],
+      themes: ["dark"],
+    },
     [
       {
         type: "text",
-        text: "Opened /dialog.blame-preview.html?state=empty (dark).\nError overlay: none.\nConsole errors:\nmsgid=4 [error] Missing key prop",
+        text: "Started a Vite 8.3.6 server in the story's workspace for packages/app, at http://127.0.0.1:41234. 2 renders of packages/app/src/dialog.blame-preview.tsx:",
+      },
+      {
+        type: "text",
+        text: "Render 1/2 — default, dark, 1440 px: rendered.\nError overlay: none.\nConsole errors: none.",
+      },
+      ...screenshotOutput,
+      {
+        type: "text",
+        text: "Render 2/2 — empty, dark, 1440 px: rendered.\nError overlay: none.\nConsole errors:\n- Warning: Each child in a list should have a unique key",
+      },
+      second,
+    ]
+  )
+  assert.equal(row(result), "Previewed dialog.blame-preview.tsx 1440×900 dark 2 renders Errors")
+  assert.equal(result.target?.title, "packages/app/src/dialog.blame-preview.tsx")
+  const shots = result.bodies[0]
+  assert.ok(shots.type === "screenshot")
+  assert.equal(shots.screenshots.length, 2)
+  assert.deepEqual(result.bodies[1], {
+    type: "text",
+    text: "Render 1/2 — default, dark, 1440 px: rendered.\nError overlay: none.\nConsole errors: none.\nRender 2/2 — empty, dark, 1440 px: rendered.\nError overlay: none.\nConsole errors:\n- Warning: Each child in a list should have a unique key",
+  })
+  const clean = view(
+    "open_component_preview",
+    { file: "dialog.blame-preview.tsx" },
+    [
+      {
+        type: "text",
+        text: "Render 1/1 — default, light, 1280 px: rendered.\nError overlay: none.\nConsole errors: none.",
       },
       ...screenshotOutput,
     ]
   )
-  assert.equal(row(result), "Previewed /dialog.blame-preview.html?state=empty 1440×900 dark Errors")
-  assert.equal(result.bodies[0].type, "screenshot")
-  assert.deepEqual(result.bodies[1], {
-    type: "text",
-    text: "Error overlay: none.\nConsole errors:\nmsgid=4 [error] Missing key prop",
-  })
+  assert.ok(!clean.chips.some((chip) => chip.label === "Errors"))
 })
 
 test("story history lookups name the search and the story read", () => {

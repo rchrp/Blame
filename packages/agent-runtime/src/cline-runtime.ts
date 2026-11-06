@@ -3923,6 +3923,7 @@ export class BlameAgentRuntime {
       workspaceRoot: input.workspaceRoot,
       workspaceMode: input.workspaceMode,
       previewDevtoolsScope: input.previewDevtoolsScope,
+      componentPreview: input.componentPreview,
       isolatedEnvironment: input.isolatedEnvironment,
       systemPrompt: await buildDevelopmentSystemPrompt(input),
       enableBuiltInSkills: true,

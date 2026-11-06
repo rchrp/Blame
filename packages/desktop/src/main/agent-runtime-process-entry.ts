@@ -103,6 +103,8 @@ function createAgentRuntime(hostClient: AgentRuntimeHostClient) {
           signal: undefined,
         }),
       projectApp: (input) => hostRequest(hostClient, "projectApp", input),
+      componentPreview: (input) =>
+        hostRequest(hostClient, "componentPreview", input),
       projectScanRoot: async (workspace) => {
         const request = { workspace, signal: undefined };
         const location = await hostRequest<ProjectScanLocation>(

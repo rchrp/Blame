@@ -20,6 +20,8 @@ import {
   previewToolModelOutput,
   recordSessionScreenshots,
 } from "./preview-screenshots.js";
+import type { ComponentPreviewHostInput } from "./component-preview-tool.js";
+import type { PreviewEnvironmentToolOptions } from "./preview-environment-tool.js";
 
 type AgentTool = NonNullable<CoreSessionConfig["extraTools"]>[number];
 type ToolContext = Parameters<AgentTool["execute"]>[1];
@@ -54,6 +56,9 @@ export type PreviewDevtoolsTarget = {
 };
 
 export type PreviewRuntimeContext = {
+  // The desktop offers open_component_preview to this session: a Vite
+  // project, whatever its workspace (see component-preview-tool).
+  componentPreview?: boolean;
   surface?: PreviewSurfaceInfo;
   previewManifest?: PreviewInitialization["previewManifest"];
   // Lets the desktop app apply the project's browser tool settings.
@@ -109,7 +114,7 @@ type PreviewContainerLogsInput = PreviewRuntimeContext & {
 };
 
 export type PreviewToolRuntimeOptions = {
-  previewEnvironment?: import("./preview-environment-tool.js").PreviewEnvironmentToolOptions["previewEnvironment"];
+  previewEnvironment?: PreviewEnvironmentToolOptions["previewEnvironment"];
   previewSurfaceInfo?(
     input: PreviewRuntimeContext,
   ): Promise<PreviewSurfaceInfo | undefined>;
@@ -161,6 +166,8 @@ export type PreviewToolRuntimeOptions = {
     signal?: AbortSignal;
     worktree: string;
   }): Promise<unknown> | unknown;
+  // Renders a component preview, or stops the worktree's preview server.
+  componentPreview?(input: ComponentPreviewHostInput): Promise<unknown>;
 };
 
 type PreviewToolsLogger = {
@@ -168,6 +175,7 @@ type PreviewToolsLogger = {
 };
 
 type PreviewSessionContextInput = {
+  componentPreview?: boolean;
   projectInitialization?: PreviewInitialization;
   previewDevtoolsScope?: string;
   projectId?: string;
@@ -193,6 +201,7 @@ export function previewRuntimeContext(
     ...(input.previewDevtoolsScope
       ? { scope: input.previewDevtoolsScope }
       : {}),
+    ...(input.componentPreview ? { componentPreview: true } : {}),
     ...(input.projectId ? { projectId: input.projectId } : {}),
     ...(input.storyId ? { storyId: input.storyId } : {}),
     ...(input.workspaceMode ? { workspaceMode: input.workspaceMode } : {}),
