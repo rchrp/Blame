@@ -588,6 +588,11 @@ function walk(node: SgNode, visit: (node: SgNode) => void) {
   for (const child of node.children()) walk(child, visit);
 }
 
+/** UTF-8 byte range of a syntax node of a parsed tree. */
+export function nodeByteRange(node: SgNode, tree: ParsedTree): [number, number] {
+  return byteRange(node, tree);
+}
+
 function byteRange(node: SgNode, tree: ParsedTree): [number, number] {
   return [
     tree.byteOffset + tree.utf8Offsets[node.range().start.index]!,
