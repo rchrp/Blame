@@ -365,13 +365,17 @@ function finishScreenshots(
   };
 }
 
-// finish_task stops the component preview server, then removes the preview
-// files. A failure is reported in the answer, never blocks the finish.
+// finish_task removes the preview files, then stops the component preview
+// server: stopping a cloud preview's server also sends their removal to its
+// sandbox. A failure is reported in the answer, never blocks the finish.
 export async function finishComponentPreviews(
   options: Pick<RuntimeOptions, "componentPreview" | "git">,
   worktree: string,
   sessionId: string,
 ) {
+  const removed = options.git
+    ? await removePreviewScratch(options.git, worktree)
+    : undefined;
   const stopped = await Promise.resolve(
     options.componentPreview?.({ action: "stop", sessionId, worktree }),
   ).then(
@@ -379,9 +383,6 @@ export async function finishComponentPreviews(
     (error: unknown) =>
       `The component preview server did not stop: ${error instanceof Error ? error.message : String(error)}`,
   );
-  const removed = options.git
-    ? await removePreviewScratch(options.git, worktree)
-    : undefined;
   return [removed, stopped].filter(Boolean).join("\n") || undefined;
 }
 

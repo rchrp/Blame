@@ -374,15 +374,15 @@ function registerDeliveryWorkflowIpcHandlers(
 }
 
 // A session of a Vite or React project gets open_component_preview,
-// whatever its workspace: a managed preview, the project folder, or no web
-// service at all. Other projects, such as an Angular app, and cloud
-// previews do not have it. Git ignores the temporary preview files from
-// the start.
+// whatever its workspace: a managed preview, local or cloud, the project
+// folder, or no web service at all. Other projects, such as an Angular app,
+// do not have it. Git ignores the temporary preview files from the start;
+// a cloud preview's sandbox ignores them when its server starts.
 async function prepareComponentPreviews(
   input: Record<string, unknown>,
   workspace: string | undefined,
 ): Promise<Record<string, unknown>> {
-  if (!workspace || input.workspaceMode === "cloud-mirror") return input;
+  if (!workspace) return input;
   const { hasComponentPreviewProject } =
     await import("./component-preview/component-preview-location");
   const supported = await hasComponentPreviewProject(workspace).catch(

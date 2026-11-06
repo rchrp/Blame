@@ -72,6 +72,9 @@ export function hostedRoutes() {
       router
         .post('/:id/bridge-grant', [PreviewSessionsController, 'bridgeGrant'])
         .use(middleware.premium({ feature: 'cloud_preview' }))
+      router
+        .post('/:id/component-preview', [PreviewSessionsController, 'componentPreview'])
+        .use(middleware.premium({ feature: 'cloud_preview' }))
     })
     .prefix('preview-sessions')
     .as('preview_sessions')

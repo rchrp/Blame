@@ -306,6 +306,19 @@ export interface Registry {
       rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/preview_sessions_controller').default['bridgeGrant']>>>
     }
   }
+  'preview_sessions.preview_sessions.component_preview': {
+    methods: ["POST"]
+    pattern: '/api/v1/preview-sessions/:id/component-preview'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/preview_sessions_controller').default['componentPreview']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/preview_sessions_controller').default['componentPreview']>>>
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/preview_sessions_controller').default['componentPreview']>>>
+    }
+  }
   'billing.billing.show': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/billing'

@@ -37,6 +37,10 @@ import {
   displayActionCommand,
 } from "@blame/preview-runtime/compose";
 import { GatewaySupervisor } from "./gateway/gateway-supervisor.js";
+import {
+  ComponentPreviewSupervisor,
+  prepareComponentPreviewSandbox,
+} from "./component-preview/component-preview-supervisor.js";
 import { importSourceArtifact } from "./workspace/source-importer.js";
 import { liveSourceImportAllowed } from "./workspace/source-import-policy.js";
 import { refreshWorkspacePreservingWarmCaches } from "./workspace/warm-cache.js";
@@ -55,6 +59,10 @@ import { runnerVersion } from "./version.js";
 
 const compose = new ComposeSupervisor();
 const gateway = new GatewaySupervisor();
+const componentPreviews = new ComponentPreviewSupervisor({
+  compose,
+  prepareSandbox: () => prepareComponentPreviewSandbox(projectIdentity),
+});
 
 export class RunnerApplication {
   async dispatch(request: RunnerRequest): Promise<unknown> {
@@ -91,6 +99,12 @@ export class RunnerApplication {
         return acknowledgeSourceDelta(request.revision);
       case "exec":
         return this.exec(request);
+      case "component-preview-start":
+        return componentPreviews.start(await readRuntimeState(), request);
+      case "component-preview-output":
+        return componentPreviews.output(request.cursor);
+      case "component-preview-stop":
+        return componentPreviews.stop();
       case "surface-action": {
         const state = await requiredPreparedState();
         const service = state.plan?.services.find(
@@ -289,6 +303,8 @@ export class RunnerApplication {
   private async stop() {
     const state = await readRuntimeState();
     if (!state.running) return { running: false };
+    // The component preview runs in the preview's project: it stops first.
+    await componentPreviews.stop().catch(() => undefined);
     await gateway.stop();
     await compose.stop();
     state.running = false;

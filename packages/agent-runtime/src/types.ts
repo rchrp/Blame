@@ -251,7 +251,7 @@ export type StartSessionInput = {
   systemPrompt?: string;
   previewDevtoolsScope?: string;
   // The desktop offers open_component_preview (a Vite or React project,
-  // not cloud).
+  // whatever the workspace mode).
   componentPreview?: boolean;
   credentialLabel?: string;
   backend?: AgentBackendConfig;

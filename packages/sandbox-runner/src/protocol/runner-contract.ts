@@ -1,4 +1,5 @@
 import type {
+  ComponentPreviewSandboxCursor,
   PreviewEnvironmentSecrets,
   PreviewExecutionPlan,
   RuntimeObservation,
@@ -106,6 +107,17 @@ export type RunnerRequest = (
       environment?: Record<string, string>;
       timeoutMs?: number;
     }
+  | {
+      operation: "component-preview-start";
+      nodeArguments: string[];
+      port: number;
+      routeId: string;
+    }
+  | {
+      operation: "component-preview-output";
+      cursor?: ComponentPreviewSandboxCursor;
+    }
+  | { operation: "component-preview-stop" }
 ) & { fencingToken: number };
 
 export type RunnerSuccess<T = unknown> = { ok: true; result: T };

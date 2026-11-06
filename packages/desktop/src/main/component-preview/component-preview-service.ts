@@ -18,9 +18,12 @@ import type {
 // renders in a page of its own: the story's preview page, if any, is never
 // navigated nor emulated. The server stops at finish_task, when the run is
 // cancelled or ends, after ten minutes without a call, and when Blame quits.
+// For a cloud preview it runs in the preview's sandbox.
 
 export type ComponentPreviewTarget = {
   scope?: string;
+  // The story whose cloud preview hosts the server.
+  storyId?: string;
   workspaceMode?: "cloud-mirror" | "direct" | "local-container";
   worktree: string;
 };
@@ -158,10 +161,6 @@ export class ComponentPreviewService {
   ) {
     const parsed = parseComponentPreviewRequest(input.request);
     if (!parsed.ok) return failure(parsed.message);
-    if (input.workspaceMode === "cloud-mirror")
-      return failure(
-        "open_component_preview does not run for cloud previews yet.",
-      );
     const request = parsed.value;
     const location = await this.dependencies.locate(input, request.file);
     if ("message" in location) return failure(location.message);

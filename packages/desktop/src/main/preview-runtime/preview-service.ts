@@ -1,5 +1,7 @@
 import { cloudPreviewEnvironment } from "../preview-environment/cloud-environment.ts";
 import type {
+  ComponentPreviewSandboxCursor,
+  ComponentPreviewSandboxStart,
   PreviewSessionCommand,
   PreviewSessionEvent,
   PreviewSessionView,
@@ -132,6 +134,28 @@ export class PreviewService {
 
   bridgeGrant(sessionId: string) {
     return this.cloudClient().bridgeGrant(sessionId);
+  }
+
+  startComponentPreview(
+    sessionId: string,
+    input: ComponentPreviewSandboxStart,
+  ) {
+    return this.cloudClient().startComponentPreview(sessionId, input);
+  }
+
+  componentPreviewOutput(
+    sessionId: string,
+    cursor: ComponentPreviewSandboxCursor,
+  ) {
+    return this.cloudClient().componentPreviewOutput(sessionId, cursor);
+  }
+
+  refreshComponentPreview(sessionId: string, port: number) {
+    return this.cloudClient().refreshComponentPreview(sessionId, port);
+  }
+
+  stopComponentPreview(sessionId: string) {
+    return this.cloudClient().stopComponentPreview(sessionId);
   }
 
   surfaceAccessTicket(sessionId: string, routeId: string) {

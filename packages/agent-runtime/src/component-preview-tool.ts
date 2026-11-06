@@ -26,8 +26,9 @@ type ToolContext = Parameters<AgentTool["execute"]>[1];
 // story, renders each state, theme and width in a page of its own and
 // returns the screenshots with the errors each render reported. The
 // story's managed preview, if any, keeps running and keeps the page that
-// preview_devtools__* drives. Preview files are ignored by Git and
-// finish_task removes them and stops the server.
+// preview_devtools__* drives. A cloud preview's server runs in its sandbox.
+// Preview files are ignored by Git and finish_task removes them and stops
+// the server.
 
 export const componentPreviewFilePatterns = [componentPreviewFilePattern];
 export const componentPreviewPathspecs = [
@@ -64,7 +65,7 @@ const description = [
   "Use it after creating a UI component or changing how one renders, even when the app's preview is available: one call shows its main states (default, empty, error, loading, long content), dark mode and a mobile width. Check in the app alone only when this costs more: heavy fakes for a state the app already shows, or a change to the screen's integration rather than the component's rendering.",
   "Write one file `<name>.blame-preview.tsx` in the package of the component (the folder with its package.json). It imports the component and the app's global stylesheet, and exports each state as a React element, for example `export default <Settings items={sample} />` and `export const empty = <Settings items={[]} />`; the state `default` is the default export.",
   "For Vue, Svelte or another framework, export `mount(element, state)` instead: it renders the named state into the element.",
-  "No HTML page or route to write: a temporary Vite server, started on the first call and reused for the session, generates them. A package with a vite.config.* uses its own Vite and config (aliases, plugins, Tailwind, CSS). A React package without Vite, such as a Next.js app, gets Blame's own Vite with @vitejs/plugin-react, its PostCSS or Tailwind config and tsconfig paths; next/link, next/image, next/navigation and next/font become small shims in this server only. It never installs the project's dependencies, and runs whatever the story's workspace: managed preview, project folder or desktop app.",
+  "No HTML page or route to write: a temporary Vite server, started on the first call and reused for the session, generates them. A package with a vite.config.* uses its own Vite and config (aliases, plugins, Tailwind, CSS). A React package without Vite, such as a Next.js app, gets Blame's own Vite with @vitejs/plugin-react, its PostCSS or Tailwind config and tsconfig paths; next/link, next/image, next/navigation and next/font become small shims in this server only. It never installs the project's dependencies, and runs whatever the story's workspace: managed preview, project folder or desktop app. In a cloud preview it runs in the preview's sandbox, where the dependencies are installed, once the preview is started.",
   "Only client components render: a Server Component (an async component, or one importing server-only modules such as next/headers) is reported as such; preview one of its client sub-components with made-up props, or check that screen in the app.",
   `One call renders every combination of states, themes and widths, at most ${componentPreviewMaximumRenders}. The dark theme emulates prefers-color-scheme and sets the \`dark\` class, data-theme and color-scheme on <html>.`,
   "After editing the file or the component, call again to see the change. The story's own preview keeps running: preview_devtools__* still drives it, unchanged by this tool.",

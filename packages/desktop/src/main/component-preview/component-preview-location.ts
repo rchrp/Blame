@@ -22,8 +22,14 @@ import type {
 // Which package a preview file belongs to, which Vite serves it, and where
 // its dependencies are installed: the story's workspace when they are
 // there, otherwise the container of a local preview, whose node_modules
-// live in volumes. A package with a Vite config is served by its own Vite;
-// a React package without one, such as a Next.js app, by Blame's.
+// live in volumes. A cloud preview's dependencies are in its sandbox: the
+// server runs there. A package with a Vite config is served by its own
+// Vite; a React package without one, such as a Next.js app, by Blame's.
+
+// The host in the story's cloud preview sandbox, or why there is none.
+export type CloudComponentPreviewLocator = (
+  target: ComponentPreviewTarget,
+) => Promise<ComponentPreviewHost | { message: string }>;
 
 export const viteConfigNames = [
   "vite.config.ts",
@@ -52,6 +58,7 @@ const manifestReadLimit = 200;
 export async function locateComponentPreview(
   target: ComponentPreviewTarget,
   file: string,
+  cloud?: CloudComponentPreviewLocator,
 ): Promise<ComponentPreviewLocation> {
   const { worktree } = target;
   if (!(await pathExists(worktreePath(worktree, file))))
@@ -73,6 +80,15 @@ export async function locateComponentPreview(
       message: `${label} has no vite.config.* file and does not depend on React: open_component_preview renders files of a Vite package, or of a React package such as a Next.js app. Put the preview file in the package of the component.`,
     };
   const toolkit = framework ? { toolkit: { framework } } : {};
+  if (target.workspaceMode === "cloud-mirror") {
+    // This computer has the files, never the dependencies.
+    const host = cloud
+      ? await cloud(target)
+      : {
+          message: "This cloud preview cannot run a component preview server.",
+        };
+    return "message" in host ? host : { host, packageDir, ...toolkit };
+  }
   const required = projectVite ? ["vite"] : ["react", "react-dom"];
   if (await installed(worktree, packageDir, required))
     return {

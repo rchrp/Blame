@@ -218,7 +218,7 @@ test("one call returns a screenshot per render and records them for finish_task"
 test("the tool exists only where the desktop offers it, in every workspace mode", () => {
   const desktop = fakeDesktop(() => rendered(1));
   const names = (
-    workspaceMode: "direct" | "local-container",
+    workspaceMode: "cloud-mirror" | "direct" | "local-container",
     componentPreview: boolean,
   ) =>
     (
@@ -230,6 +230,7 @@ test("the tool exists only where the desktop offers it, in every workspace mode"
     ).map((tool) => tool.name);
   assert.ok(names("direct", true).includes("open_component_preview"));
   assert.ok(names("local-container", true).includes("open_component_preview"));
+  assert.ok(names("cloud-mirror", true).includes("open_component_preview"));
   assert.ok(
     !names("local-container", false).includes("open_component_preview"),
   );
@@ -265,16 +266,25 @@ test("the tool describes React packages without Vite, such as a Next.js app", ()
     /Only client components render: a Server Component \(an async component, or one importing server-only modules such as next\/headers\) is reported as such/,
   );
   assert.match(description, /never installs the project's dependencies/);
+  assert.match(
+    description,
+    /In a cloud preview it runs in the preview's sandbox, where the dependencies are installed/,
+  );
 });
 
-test("finishing stops the preview server, then removes the preview files", async () => {
+test("finishing removes the preview files, then stops the preview server", async () => {
   const root = await mkdtemp(join(tmpdir(), "blame-preview-finish-"));
   const git = async (cwd: string, args: string[]) =>
     (await run("git", args, { cwd })).stdout;
   try {
     await git(root, ["init", "-q"]);
     await writeFile(join(root, "card.blame-preview.tsx"), "export {}");
-    const desktop = fakeDesktop(() => ({ stopped: 1 }));
+    // A cloud preview's sandbox gets the removal when its server stops.
+    const atStop: string[][] = [];
+    const desktop = fakeDesktop(async () => {
+      atStop.push(await readdir(root));
+      return { stopped: 1 };
+    });
     const note = await finishComponentPreviews(
       { ...desktop.options, git },
       root,
@@ -283,6 +293,7 @@ test("finishing stops the preview server, then removes the preview files", async
     assert.deepEqual(desktop.calls, [
       { action: "stop", sessionId: "preview-session", worktree: root },
     ]);
+    assert.deepEqual(atStop, [[".git"]]);
     assert.equal(note, "Removed 1 temporary preview file.");
     assert.deepEqual(await readdir(root), [".git"]);
     const failing = await finishComponentPreviews(

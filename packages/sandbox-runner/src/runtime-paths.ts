@@ -9,6 +9,8 @@ export const runtimePaths = {
   exports: "/var/lib/blame/exports",
   logs: "/var/log/blame/services",
   gatewayConfig: "/var/lib/blame/runtime/gateway.json",
+  componentPreviewGatewayConfig:
+    "/var/lib/blame/runtime/component-preview-gateway.json",
   capabilityPublicKey: "/var/lib/blame/runtime/preview-capability-public.pem",
   requestDirectory: "/run/blame/control/requests",
   composeFile: "/var/lib/blame/runtime/compose.yaml",

@@ -1,4 +1,9 @@
-import type { PreviewEnvironmentSecrets } from "@blame/preview-runtime";
+import type {
+  ComponentPreviewSandboxCursor,
+  ComponentPreviewSandboxOutput,
+  ComponentPreviewSandboxStart,
+  PreviewEnvironmentSecrets,
+} from "@blame/preview-runtime";
 import type {
   PreviewLogEvent,
   PreviewSessionBackend,
@@ -233,6 +238,41 @@ export class CloudPreviewClient implements PreviewSessionBackend<CloudManagedPre
     );
   }
 
+  // open_component_preview's server in the preview's sandbox. Its route is
+  // its own: the preview's bridge grant stays as it is.
+  startComponentPreview(
+    sessionId: string,
+    input: ComponentPreviewSandboxStart,
+  ) {
+    return this.componentPreview<DesktopBridgeGrant>(sessionId, {
+      action: "start",
+      ...input,
+    });
+  }
+
+  componentPreviewOutput(
+    sessionId: string,
+    cursor: ComponentPreviewSandboxCursor,
+  ) {
+    return this.componentPreview<ComponentPreviewSandboxOutput>(sessionId, {
+      action: "output",
+      cursor,
+    });
+  }
+
+  refreshComponentPreview(sessionId: string, port: number) {
+    return this.componentPreview<DesktopBridgeGrant>(sessionId, {
+      action: "refresh",
+      port,
+    });
+  }
+
+  stopComponentPreview(sessionId: string) {
+    return this.componentPreview<{ stopped: boolean }>(sessionId, {
+      action: "stop",
+    });
+  }
+
   accessTicket(sessionId: string, routeId?: string) {
     return this.request<
       import("./external-preview-launcher").ExternalPreviewTicket
@@ -336,6 +376,16 @@ export class CloudPreviewClient implements PreviewSessionBackend<CloudManagedPre
     });
     if (!response.ok) throw await cloudError(response);
     return response.json() as Promise<T>;
+  }
+
+  private componentPreview<T>(
+    sessionId: string,
+    body: Record<string, unknown>,
+  ) {
+    return this.request<T>(
+      `/preview-sessions/${encoded(sessionId)}/component-preview`,
+      { method: "POST", body },
+    );
   }
 
   private fetch(path: string, init: RequestInit = {}) {

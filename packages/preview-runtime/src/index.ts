@@ -4,6 +4,7 @@ export * from "./application/preview-reconciler.js";
 export * from "./application/preview-resource-size.js";
 export * from "./compilation/capability-resolver.js";
 export * from "./compilation/manifest-compiler.js";
+export * from "./domain/component-preview-sandbox.js";
 export * from "./domain/endpoint-map.js";
 export * from "./domain/environment-plan.js";
 export * from "./domain/environment-secrets.js";

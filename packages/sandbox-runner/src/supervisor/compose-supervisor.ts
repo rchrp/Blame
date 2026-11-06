@@ -134,6 +134,17 @@ export class ComposeSupervisor {
     return engine.execInService(serviceId, args);
   }
 
+  // A Compose command on the prepared project; its exit code is the
+  // caller's to check.
+  composeCommand(args: string[]) {
+    return engine.compose(args, {}, true);
+  }
+
+  // A command of the sandbox's Docker engine.
+  docker(args: string[]) {
+    return runCommand("docker", args);
+  }
+
   targets() {
     return engine.targets();
   }

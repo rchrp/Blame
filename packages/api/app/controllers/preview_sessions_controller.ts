@@ -1,8 +1,11 @@
 import PreviewSessionService from '#services/preview_sessions/preview_session_service'
+import PreviewComponentPreviewService from '#services/preview_sessions/preview_component_preview_service'
 import PremiumService, { previewCommandRequiresPremium } from '#services/premium_service'
 import {
   PreviewRuntimeError,
   parsePreviewEnvironmentSecrets,
+  parseComponentPreviewSandboxCursor,
+  parseComponentPreviewSandboxStart,
   isRuntimeProfileId,
   type PreviewSessionCommand,
 } from '@blame/preview-runtime'
@@ -10,6 +13,7 @@ import type { PreviewManifest } from '@blame/preview-contract'
 import type { HttpContext } from '@adonisjs/core/http'
 
 const service = new PreviewSessionService()
+const componentPreviews = new PreviewComponentPreviewService()
 
 export default class PreviewSessionsController {
   async index(context: HttpContext) {
@@ -111,6 +115,20 @@ export default class PreviewSessionsController {
       return await service.issueDesktopBridgeGrant(
         context.auth.getUserOrFail().id,
         context.params.id
+      )
+    } catch (error) {
+      return runtimeErrorResponse(context, error)
+    }
+  }
+
+  // open_component_preview's server in the preview's sandbox: start, its
+  // output while it starts, a fresh route capability, stop.
+  async componentPreview(context: HttpContext) {
+    try {
+      return await componentPreviewAction(
+        context.auth.getUserOrFail().id,
+        context.params.id,
+        objectBody(context.request.all())
       )
     } catch (error) {
       return runtimeErrorResponse(context, error)
@@ -286,6 +304,34 @@ function objectBody(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value))
     throw invalidRequest('Invalid request body.')
   return value as Record<string, unknown>
+}
+
+function componentPreviewAction(
+  ownerUserId: string,
+  sessionId: string,
+  body: Record<string, unknown>
+) {
+  switch (body.action) {
+    case 'start': {
+      const start = parseComponentPreviewSandboxStart(body)
+      if (!start.ok) throw invalidRequest(start.message)
+      return componentPreviews.start(ownerUserId, sessionId, start.value)
+    }
+    case 'output': {
+      const cursor = parseComponentPreviewSandboxCursor(body.cursor)
+      if (!cursor) throw invalidRequest('cursor is invalid.')
+      return componentPreviews.output(ownerUserId, sessionId, cursor)
+    }
+    case 'refresh': {
+      const port = positiveInteger(body.port, 'port')
+      if (port > 65_535) throw invalidRequest('port is invalid.')
+      return componentPreviews.refresh(ownerUserId, sessionId, port)
+    }
+    case 'stop':
+      return componentPreviews.stop(ownerUserId, sessionId)
+    default:
+      throw invalidRequest('action is invalid.')
+  }
 }
 
 function requiredString(value: unknown, name: string) {

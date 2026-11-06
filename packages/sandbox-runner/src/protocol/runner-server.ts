@@ -86,6 +86,9 @@ function parseRunnerRequest(value: unknown): RunnerRequest {
     "source-export-upload",
     "source-export-ack",
     "exec",
+    "component-preview-start",
+    "component-preview-output",
+    "component-preview-stop",
   ]);
   if (
     typeof request.operation !== "string" ||

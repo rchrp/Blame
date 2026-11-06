@@ -144,6 +144,12 @@ const routes = {
     tokens: [[0,"api"],[0,"v1"],[0,"preview-sessions"],[1,"id"],[0,"bridge-grant"]],
     types: placeholder as Registry['preview_sessions.preview_sessions.bridge_grant']['types'],
   },
+  'preview_sessions.preview_sessions.component_preview': {
+    methods: ["POST"],
+    pattern: '/api/v1/preview-sessions/:id/component-preview',
+    tokens: [[0,"api"],[0,"v1"],[0,"preview-sessions"],[1,"id"],[0,"component-preview"]],
+    types: placeholder as Registry['preview_sessions.preview_sessions.component_preview']['types'],
+  },
   'billing.billing.show': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/billing',

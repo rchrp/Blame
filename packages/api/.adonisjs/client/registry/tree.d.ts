@@ -51,6 +51,7 @@ export interface ApiDefinition {
       events: typeof routes['preview_sessions.preview_sessions.events']
       accessTicket: typeof routes['preview_sessions.preview_sessions.access_ticket']
       bridgeGrant: typeof routes['preview_sessions.preview_sessions.bridge_grant']
+      componentPreview: typeof routes['preview_sessions.preview_sessions.component_preview']
     }
     previewSurfaces: {
       action: typeof routes['preview_sessions.preview_surfaces.action']

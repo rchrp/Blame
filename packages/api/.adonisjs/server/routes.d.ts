@@ -27,6 +27,7 @@ export type ScannedRoutes = {
     'preview_sessions.preview_sessions.events': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'preview_sessions.preview_sessions.access_ticket': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'preview_sessions.preview_sessions.bridge_grant': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'preview_sessions.preview_sessions.component_preview': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'billing.billing.show': { paramsTuple?: []; params?: {} }
     'billing.billing.checkout': { paramsTuple?: []; params?: {} }
     'billing.billing.portal': { paramsTuple?: []; params?: {} }
@@ -219,6 +220,7 @@ export type ScannedRoutes = {
     'preview_sessions.preview_sessions.source_export': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'preview_sessions.preview_sessions.access_ticket': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'preview_sessions.preview_sessions.bridge_grant': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'preview_sessions.preview_sessions.component_preview': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'billing.billing.checkout': { paramsTuple?: []; params?: {} }
     'billing.billing.portal': { paramsTuple?: []; params?: {} }
     'desktop_auth.exchange': { paramsTuple?: []; params?: {} }

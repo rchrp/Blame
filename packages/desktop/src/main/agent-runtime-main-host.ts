@@ -97,7 +97,7 @@ async function handleAgentHostRequest(
   if (method === "componentPreview") {
     const { componentPreviewHostRequest } =
       await import("./component-preview/component-preview-agent.ts");
-    return componentPreviewHostRequest(input, signal);
+    return componentPreviewHostRequest(input, signal, previews);
   }
   throw new Error(`Unsupported agent host method: ${method}`);
 }

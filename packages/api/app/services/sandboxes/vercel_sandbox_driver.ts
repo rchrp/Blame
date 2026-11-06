@@ -14,10 +14,15 @@ import {
 } from '@blame/telemetry'
 import { randomUUID } from 'node:crypto'
 import {
+  componentPreviewSandbox,
   PreviewRuntimeError,
   resolveCapabilities,
   runtimeCapabilities,
   runtimeHandle,
+  withComponentPreviewGatewayPort,
+  type ComponentPreviewSandboxCursor,
+  type ComponentPreviewSandboxOutput,
+  type ComponentPreviewSandboxStart,
   type DurableDeltaReceipt,
   type EndpointMap,
   type ExecInput,
@@ -77,6 +82,14 @@ type RunnerEndpointMap = {
   supportsWebSocket: boolean
   integratedPreviewRequired: boolean
   incompatibilityReasons: string[]
+}
+
+// Where the component preview server of a sandbox is reached, and the
+// identity its gateway checks capabilities against.
+export type ComponentPreviewProviderRoute = {
+  generation: number
+  providerUrl: string
+  sessionId: string
 }
 
 const runnerBinary = '/opt/blame/bin/blame-sandbox-runner'
@@ -139,7 +152,8 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
       })
     }
     this.assertResourceSize(input.resourceSize)
-    const gatewayPorts = desiredPorts(input.plan)
+    // The component preview server's port is declared with the preview's.
+    const gatewayPorts = withComponentPreviewGatewayPort(desiredPorts(input.plan))
     const sandboxName = sandboxNameFor(input.sessionId)
     const timeout =
       effectiveSandboxTimeoutMinutes(
@@ -398,6 +412,68 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
       operation: 'surface-action',
       serviceId,
       arguments: args,
+    })
+  }
+
+  // open_component_preview's temporary server, in a one-off container of
+  // the preview behind the reserved gateway port. A sandbox created before
+  // that port was reserved declares it now, when the provider's limit
+  // leaves room; the caller saves the handle.
+  async startComponentPreview(
+    handle: RuntimeHandle,
+    input: ComponentPreviewSandboxStart & { routeId: string }
+  ): Promise<ComponentPreviewProviderRoute> {
+    const payload = vercelHandle(handle)
+    const sandbox = await this.componentPreviewSandbox(payload)
+    await this.runnerCallWithSandbox(sandbox, handle, {
+      operation: 'component-preview-start',
+      nodeArguments: input.nodeArguments,
+      port: input.port,
+      routeId: input.routeId,
+    })
+    return {
+      generation: payload.generation,
+      providerUrl: sandbox.domain(componentPreviewSandbox.gatewayPort),
+      sessionId: payload.sessionId,
+    }
+  }
+
+  async componentPreviewRoute(handle: RuntimeHandle): Promise<ComponentPreviewProviderRoute> {
+    const payload = vercelHandle(handle)
+    if (!payload.gatewayPorts.includes(componentPreviewSandbox.gatewayPort)) {
+      throw componentPreviewNotStarted()
+    }
+    const sandbox = await this.findSandbox(payload, false)
+    if (sandbox?.status !== 'running') throw componentPreviewNotStarted()
+    return {
+      generation: payload.generation,
+      providerUrl: sandbox.domain(componentPreviewSandbox.gatewayPort),
+      sessionId: payload.sessionId,
+    }
+  }
+
+  // Polled while the server starts: it waits for no interactive operation.
+  async componentPreviewOutput(
+    handle: RuntimeHandle,
+    cursor: ComponentPreviewSandboxCursor
+  ): Promise<ComponentPreviewSandboxOutput> {
+    const payload = vercelHandle(handle)
+    const sandbox = await this.findSandbox(payload, false)
+    if (sandbox?.status !== 'running') return { cursor, running: false, stderr: '', stdout: '' }
+    return this.runnerCallWithSandbox<ComponentPreviewSandboxOutput>(
+      sandbox,
+      handle,
+      { operation: 'component-preview-output', cursor },
+      backgroundRunnerCallOptions(true)
+    )
+  }
+
+  async stopComponentPreview(handle: RuntimeHandle) {
+    const payload = vercelHandle(handle)
+    const sandbox = await this.findSandbox(payload, false)
+    if (sandbox?.status !== 'running') return { stopped: false }
+    return this.runnerCallWithSandbox<{ stopped: boolean }>(sandbox, handle, {
+      operation: 'component-preview-stop',
     })
   }
 
@@ -774,6 +850,32 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
     )
   }
 
+  // The running sandbox, with the component preview port declared.
+  private async componentPreviewSandbox(payload: VercelRuntimeHandle) {
+    const sandbox = await this.findSandbox(payload, false)
+    if (sandbox?.status !== 'running') {
+      throw new PreviewRuntimeError({
+        code: 'ENDPOINT_NOT_LISTENING',
+        message: 'Start the cloud preview before rendering a component.',
+        retryable: true,
+      })
+    }
+    if (payload.gatewayPorts.includes(componentPreviewSandbox.gatewayPort)) return sandbox
+    const ports = withComponentPreviewGatewayPort(payload.gatewayPorts)
+    if (!ports.includes(componentPreviewSandbox.gatewayPort)) {
+      throw new PreviewRuntimeError({
+        code: 'UNSUPPORTED_CAPABILITY',
+        message: `This cloud preview publishes ${payload.gatewayPorts.length} ports, the most a sandbox allows: none is left for the component preview server.`,
+        retryable: false,
+      })
+    }
+    await this.providerCall('update', () =>
+      sandbox.update({ ports, networkPolicy: this.networkPolicy() })
+    )
+    payload.gatewayPorts = ports
+    return this.sandbox(payload, false)
+  }
+
   private async findSandbox(handle: VercelRuntimeHandle, resume: boolean) {
     try {
       return await this.sandbox(handle, resume)
@@ -848,6 +950,14 @@ export default class VercelSandboxDriver implements PreviewRuntimeDriver {
     }
     throw providerFailure(operation, lastError)
   }
+}
+
+function componentPreviewNotStarted() {
+  return new PreviewRuntimeError({
+    code: 'ENDPOINT_NOT_LISTENING',
+    message: 'The component preview server of this cloud preview is not running.',
+    retryable: false,
+  })
 }
 
 async function measureRuntimePhase<T>(phase: string, operation: () => Promise<T>) {

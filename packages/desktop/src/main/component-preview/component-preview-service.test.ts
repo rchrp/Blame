@@ -243,20 +243,14 @@ test("one server serves the session; each render reports its errors", async () =
   await service.shutdown();
 });
 
-test("a call over six renders or for a cloud preview starts nothing", async () => {
+test("a call over six renders starts nothing", async () => {
   const browser = new FakeBrowser();
   const { service, starts } = serviceWith(browser);
   const tooMany = (await service.render({
     request: { ...request, widths: [390, 1280] },
     worktree: "/w",
   })) as { isError: boolean };
-  const cloud = (await service.render({
-    request,
-    workspaceMode: "cloud-mirror",
-    worktree: "/w",
-  })) as { isError: boolean };
   assert.equal(tooMany.isError, true);
-  assert.equal(cloud.isError, true);
   assert.deepEqual(starts, []);
   assert.equal(browser.pages.length, 1);
 });

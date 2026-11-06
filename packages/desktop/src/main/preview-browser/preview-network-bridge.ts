@@ -2,7 +2,6 @@ import { randomBytes, timingSafeEqual } from "node:crypto";
 import {
   createServer,
   request as httpRequest,
-  type IncomingHttpHeaders,
   type IncomingMessage,
 } from "node:http";
 import { request as httpsRequest } from "node:https";
@@ -17,6 +16,11 @@ import type {
 } from "./preview-bridge-grant";
 import { PreviewRouteTable } from "./preview-route-table";
 import { PreviewBridgeActivity } from "./preview-bridge-activity";
+import {
+  providerHeaders,
+  providerTarget,
+  responseHeaders,
+} from "./preview-provider-headers";
 
 type GrantProvider = () => Promise<DesktopBridgeGrant>;
 type Tracked = ReturnType<PreviewBridgeActivity["start"]>;
@@ -301,67 +305,6 @@ export class PreviewNetworkBridge {
       throw new Error("Preview proxy authentication failed");
     }
   }
-}
-
-function providerTarget(providerUrl: string, logical: URL) {
-  const target = new URL(providerUrl);
-  target.pathname = logical.pathname;
-  target.search = logical.search;
-  return target;
-}
-
-function providerHeaders(
-  source: IncomingHttpHeaders,
-  target: URL,
-  capability?: string,
-) {
-  const headers: Record<string, string | string[]> = {};
-  for (const [name, value] of Object.entries(source)) {
-    if (
-      value === undefined ||
-      name === "host" ||
-      name.startsWith("x-blame-") ||
-      [
-        "connection",
-        "proxy-authorization",
-        "proxy-authenticate",
-        "upgrade",
-      ].includes(name)
-    )
-      continue;
-    headers[name] = value;
-  }
-  headers.host = target.host;
-  if (capability) headers["x-blame-preview-capability"] = capability;
-  return headers;
-}
-
-function responseHeaders(
-  source: IncomingHttpHeaders,
-  rewriteLocation: (value: string) => string,
-) {
-  return Object.fromEntries(
-    Object.entries(source).flatMap(([name, value]) => {
-      if (
-        value === undefined ||
-        name.startsWith("x-blame-") ||
-        ["connection", "transfer-encoding"].includes(name)
-      )
-        return [];
-      if (name === "set-cookie") {
-        const values = Array.isArray(value) ? value : [value];
-        return [
-          [
-            name,
-            values.map((cookie) => cookie.replace(/;\s*Domain=[^;]+/gi, "")),
-          ],
-        ];
-      }
-      if (name === "location" && typeof value === "string")
-        return [[name, rewriteLocation(value)]];
-      return [[name, value]];
-    }),
-  ) as Record<string, string | string[]>;
 }
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number) {
