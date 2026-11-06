@@ -182,6 +182,22 @@ test("logs why Claude Code answered a tool call itself", async () => {
   });
 });
 
+test("the first message waits until Claude Code has listed Blame's tools", async () => {
+  await withBridge(async (bridge) => {
+    const answer = await stream(bridge, bridge.token("session-slow-mcp"), [{ role: "user", content: "hello" }]);
+    assert.match(text(answer), /tools: listed/u);
+  }, { env: { FAKE_CLAUDE_MCP_DELAY_MS: "400" } });
+});
+
+test("the first message goes anyway when the tools are never listed", async () => {
+  await withBridge(async (bridge, stateDirectory) => {
+    const answer = await stream(bridge, bridge.token("session-no-mcp"), [{ role: "user", content: "hello" }]);
+    assert.match(text(answer), /tools: missing/u);
+    const waited = (await laneEvents(stateDirectory)).find((entry) => entry.event === "tools_wait") as { listed?: boolean } | undefined;
+    assert.equal(waited?.listed, false);
+  }, { env: { FAKE_CLAUDE_MCP_DELAY_MS: "5000" }, toolsWaitMs: 300 });
+});
+
 test("interrupts a silent stream and continues in the same process", async () => {
   await withBridge(
     async (bridge, stateDirectory) => {
@@ -246,14 +262,15 @@ test("retries a turn whose stream stayed silent before any output", async () => 
 
 async function withBridge(
   run: (bridge: ClaudeCodeBridge, stateDirectory: string) => Promise<void>,
-  options: { stallMs?: number; wakeStallMs?: number; watchIntervalMs?: number } = {},
+  options: { env?: NodeJS.ProcessEnv; stallMs?: number; toolsWaitMs?: number; wakeStallMs?: number; watchIntervalMs?: number } = {},
 ) {
   chmodSync(fakeClaudeCode, 0o755);
   const stateDirectory = mkdtempSync(join(tmpdir(), "blame-claude-code-"));
+  const { env, ...bridgeOptions } = options;
   const bridge = await ClaudeCodeBridge.start({
-    env: { ...process.env, BLAME_CLAUDE_CODE_PATH: fakeClaudeCode },
+    env: { ...process.env, ...env, BLAME_CLAUDE_CODE_PATH: fakeClaudeCode },
     stateDirectory,
-    ...options,
+    ...bridgeOptions,
   });
   try {
     await run(bridge, stateDirectory);

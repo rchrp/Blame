@@ -52,6 +52,8 @@ export type LaneOptions = {
   stateDirectory: string;
   /** The same, counted from the moment the computer woke from sleep. */
   wakeStallMs: number;
+  /** The longest the first message waits for Claude Code to list Blame's tools. */
+  toolsWaitMs?: number;
   onClose(lane: ClaudeCodeLane): void;
 };
 
@@ -63,6 +65,7 @@ export type LaneOptions = {
 type LaneState = "streaming" | "awaiting-tools" | "idle" | "cut" | "closed";
 
 const interruptGraceMs = 15_000;
+const toolsWaitMs = 20_000;
 const maxRecoveries = 2;
 const recoveryPrompt =
   "The connection to the model dropped. Continue from where you left off.";
@@ -109,6 +112,11 @@ export class ClaudeCodeLane {
   private stdout = "";
   private stderr = "";
   private readonly options: LaneOptions;
+  /** Resolves once Claude Code has listed Blame's tools over MCP. */
+  private toolsListed!: () => void;
+  private readonly toolsReady = new Promise<void>((resolve) => {
+    this.toolsListed = resolve;
+  });
 
   constructor(request: MessagesRequest, sink: BridgeSink, options: LaneOptions) {
     this.options = options;
@@ -152,7 +160,37 @@ export class ClaudeCodeLane {
       model: request.model,
     });
     this.beginTurn(request, sink);
-    this.writeUser(initialUserContent(request.messages));
+    void this.writeFirstUser(initialUserContent(request.messages));
+  }
+
+  /** Claude Code listed Blame's tools: they exist for the model from now on. */
+  noteToolsListed() {
+    this.toolsListed();
+  }
+
+  /**
+   * Claude Code starts its first turn without waiting for a slow MCP server:
+   * the model then calls Blame's tools by their bare names and gets "No such
+   * tool available", and the lane is lost (US-045, US-047). It lists the tools
+   * about 0.3 s after starting, before any input, so the first message waits
+   * for that, up to a bound.
+   */
+  private async writeFirstUser(content: AnthropicBlock[]) {
+    if (this.tools.length) {
+      const started = performance.now();
+      let timer: NodeJS.Timeout | undefined;
+      const listed = await Promise.race([
+        this.toolsReady.then(() => true),
+        new Promise<false>((resolve) => {
+          timer = setTimeout(() => resolve(false), this.options.toolsWaitMs ?? toolsWaitMs);
+        }),
+      ]);
+      clearTimeout(timer);
+      const waitedMs = Math.round(performance.now() - started);
+      if (!listed || waitedMs > 1_000) this.log("tools_wait", { listed, waitedMs });
+    }
+    if (this.state === "closed") return;
+    this.writeUser(content);
   }
 
   get idleMs() {

@@ -30,6 +30,8 @@ export type ClaudeCodeBridgeOptions = {
   stallMs?: number;
   wakeStallMs?: number;
   watchIntervalMs?: number;
+  /** The longest a lane's first message waits for Claude Code to list Blame's tools. */
+  toolsWaitMs?: number;
 };
 
 const maxBodyBytes = 64 * 1024 * 1024;
@@ -211,6 +213,7 @@ export class ClaudeCodeBridge {
         stallMs: this.options.stallMs ?? stallMs,
         stateDirectory: this.options.stateDirectory,
         wakeStallMs: this.options.wakeStallMs ?? wakeStallMs,
+        ...(this.options.toolsWaitMs !== undefined ? { toolsWaitMs: this.options.toolsWaitMs } : {}),
         onClose: (closed) => this.forget(token, closed),
       });
       this.lanesById.set(active.id, active);
@@ -261,6 +264,7 @@ export class ClaudeCodeBridge {
       return;
     }
     json(response, 200, { jsonrpc: "2.0", id: body.id, ...mcpResponse(body.method, params, lane) });
+    if (body.method === "tools/list") lane.noteToolsListed();
   }
 
   private validToken(token: string) {

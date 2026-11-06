@@ -2,7 +2,11 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { execa } from "execa";
 import { StringDecoder } from "node:string_decoder";
 import type { Readable } from "node:stream";
-import { withBundledTools, workspaceCommandEnvironment } from "./workspace-command-environment.js";
+import {
+  withBundledTools,
+  withProvisionedPackageManagers,
+  workspaceCommandEnvironment,
+} from "./workspace-command-environment.js";
 
 type CommandOptions = {
   cwd: string;
@@ -55,7 +59,8 @@ export function startWorkspaceCommand(
 function spawnWorkspaceProcess(executable: string, args: string[], cwd: string, environment?: NodeJS.ProcessEnv) {
   const options = {
     cwd,
-    env: withBundledTools(workspaceCommandEnvironment({ ...process.env, ...environment }, executable)),
+    env: withProvisionedPackageManagers(
+      withBundledTools(workspaceCommandEnvironment({ ...process.env, ...environment }, executable)), cwd),
     detached: process.platform !== "win32",
     stdio: ["ignore", "pipe", "pipe"] as ["ignore", "pipe", "pipe"],
     windowsHide: true,

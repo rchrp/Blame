@@ -112,6 +112,10 @@ export function claudeCodeEnvironment(env: NodeJS.ProcessEnv = process.env) {
   // finished US, and a lost lane.
   next.CLAUDE_CODE_MCP_TOOL_IDLE_TIMEOUT = "0";
   next.MAX_MCP_OUTPUT_TOKENS = "200000";
+  // Claude Code may start its first turn before Blame's MCP server answers;
+  // as the host, wait for it (the bridge also holds the first message until
+  // the tools are listed).
+  next.CLAUDE_CODE_MCP_STARTUP_WAIT_MS = "20000";
   next.DISABLE_AUTOUPDATER = "1";
   return next;
 }
