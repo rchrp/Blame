@@ -85,6 +85,8 @@ export function describeRead(source: ToolCallSource): ToolCallView {
     chips.push({ label: `L${startLine}–${endLine}` })
   } else if (view === "outline") {
     chips.push({ label: "Outline" })
+  } else if (view === "folded") {
+    chips.push({ label: "Folded" })
   } else if (view === "signature") {
     chips.push({ label: "Signature" })
   } else if (content && data.complete === true) {
@@ -102,7 +104,8 @@ export function describeRead(source: ToolCallSource): ToolCallView {
     bodies.push({
       type: "code",
       path,
-      startLine: body ? (startLine ?? undefined) : (startLine ?? 1),
+      // A folded view's lines are not numbered in order.
+      startLine: body || view === "folded" ? (startLine ?? undefined) : (startLine ?? 1),
       text: code.text,
       truncated: code.truncated || data.truncated === true,
     })
