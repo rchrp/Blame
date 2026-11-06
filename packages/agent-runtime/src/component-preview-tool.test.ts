@@ -258,7 +258,7 @@ test("the tool describes React packages without Vite, such as a Next.js app", ()
   assert.match(description, /in the package of the component \(the folder with its package\.json\)/);
   assert.match(
     description,
-    /A React package without Vite, such as a Next\.js app, gets Blame's own Vite with @vitejs\/plugin-react, its PostCSS or Tailwind config and tsconfig paths/,
+    /A React package without Vite, such as a Next\.js app, gets Blame's own Vite with @vitejs\/plugin-react, its PostCSS or Tailwind config and tsconfig or jsconfig paths/,
   );
   assert.match(description, /next\/link, next\/image, next\/navigation and next\/font become small shims in this server only/);
   assert.match(
@@ -269,6 +269,19 @@ test("the tool describes React packages without Vite, such as a Next.js app", ()
   assert.match(
     description,
     /In a cloud preview it runs in the preview's sandbox, where the dependencies are installed/,
+  );
+});
+
+test("the tool describes Vue 3 packages without Vite, with a short mount example", () => {
+  const desktop = fakeDesktop(() => rendered(1));
+  const { description } = componentPreviewTool(desktop.options, preview)!;
+  assert.match(
+    description,
+    /write `<name>\.blame-preview\.ts` and export `mount\(element, state\)` instead: it renders the named state into the element, for Vue with `createApp\(Component, props\)\.mount\(element\)`/,
+  );
+  assert.match(
+    description,
+    /A Vue 3 package without Vite, such as a Vue CLI app, gets Blame's own Vite with @vitejs\/plugin-vue: \.vue files with their <style> and <style scoped> blocks, its PostCSS or Tailwind config, tsconfig or jsconfig paths, and Vue CLI's @ alias for src; Vue 2 is not supported/,
   );
 });
 

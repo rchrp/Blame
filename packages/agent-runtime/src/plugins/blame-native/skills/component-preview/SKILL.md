@@ -1,11 +1,11 @@
 ---
 name: component-preview
-description: Use after creating a UI component or changing how one renders, in a Vite or React project (Next.js included), even when the app's preview is available. Shows the component on its own with made-up data, in its main states (default, empty, error, loading, long content), light and dark, desktop and mobile widths, rendered in one open_component_preview call whose screenshots go to finish_task. Not for checks a DOM read or a test already covers.
+description: Use after creating a UI component or changing how one renders, in a Vite, React or Vue 3 project (Next.js and Vue CLI included), even when the app's preview is available. Shows the component on its own with made-up data, in its main states (default, empty, error, loading, long content), light and dark, desktop and mobile widths, rendered in one open_component_preview call whose screenshots go to finish_task. Not for checks a DOM read or a test already covers.
 ---
 
 # Component preview
 
-Show one component on its own, with props and data you make up, rendered by a temporary Vite server that `open_component_preview` starts for the session: with the package's own Vite config, or with Blame's own Vite for a React package without one, such as a Next.js app. You avoid sign-in, the backend and real data, and see every state that matters in one call. The story's own preview, if any, keeps running untouched.
+Show one component on its own, with props and data you make up, rendered by a temporary Vite server that `open_component_preview` starts for the session: with the package's own Vite config, or with Blame's own Vite for a React or Vue 3 package without one, such as a Next.js or Vue CLI app. You avoid sign-in, the backend and real data, and see every state that matters in one call. The story's own preview, if any, keeps running untouched.
 
 ## When to use it
 
@@ -31,17 +31,41 @@ export const loading = <SettingsPanel items={[]} loading />
 export const long = <SettingsPanel items={manyItemsWithLongNames} />
 ```
 
-For Vue, Svelte or another framework, export `mount(element, state)` instead: it renders the named state into `element` with the framework's own entry API.
+For Vue, Svelte or another framework, write `<name>.blame-preview.ts` and export `mount(element, state)` instead: it renders the named state into `element` with the framework's own entry API. For Vue, see below.
 
 The dark theme emulates `prefers-color-scheme` and sets the `dark` class, `data-theme` and `color-scheme` on `<html>`. If the project applies its theme another way, do it in the file.
 
 ## Next.js and other React packages without Vite
 
-A React package without `vite.config.*`, such as a Next.js or webpack app, is served by Blame's own Vite with `@vitejs/plugin-react`. Its PostCSS or Tailwind config and the `paths` of its `tsconfig.json` apply, so `@/` imports work. Import the stylesheet its root layout imports, such as `app/globals.css`.
+A React package without `vite.config.*`, such as a Next.js or webpack app, is served by Blame's own Vite with `@vitejs/plugin-react`. Its PostCSS or Tailwind config and the `paths` of its `tsconfig.json` (or `jsconfig.json`) apply, so `@/` imports work. Import the stylesheet its root layout imports, such as `app/globals.css`.
 
 - `next/link`, `next/image`, `next/navigation` and `next/font/*` are small shims, in this server only: a link renders its anchor and does not navigate, an image loads from `public/` without optimization, `usePathname()` returns `/` and the router does nothing, a Google font keeps its class names with a fallback font. `NEXT_PUBLIC_*` variables of the `.env` files reach `process.env`.
 - `"use client"` files render as they are.
 - Only client components render. A Server Component (an async component, as most `page.tsx` and `layout.tsx` are, or one that imports `next/headers`, `server-only` or Node modules) is reported as such: preview its client sub-components with the props it would pass them, or check that screen in the app.
+
+## Vue 3 packages
+
+A Vue 3 package (`vue` 3.2.25 or later) without `vite.config.*`, such as a Vue CLI or webpack app, is served by Blame's own Vite with `@vitejs/plugin-vue`. A package with a Vite config keeps its own. The preview file imports the `.vue` component and the stylesheet `src/main.*` imports, and mounts the requested state with `createApp(Component, props).mount(element)`:
+
+```ts
+import { createApp } from "vue"
+import "@/assets/main.css" // the stylesheet src/main.ts imports
+import ProfileCard from "@/components/ProfileCard.vue"
+
+const states: Record<string, Record<string, unknown>> = {
+  default: { name: "Ada Lovelace", status: "Active" },
+  empty: { name: "", status: "" },
+  long: { name: "Augusta Ada King, Countess of Lovelace", status: "Away" },
+}
+
+export function mount(element: HTMLElement, state: string) {
+  createApp(ProfileCard, states[state]).mount(element)
+}
+```
+
+- The component's `<style>` and `<style scoped>` blocks apply, and so do the package's PostCSS or Tailwind config and the `paths` of its `tsconfig.json` or `jsconfig.json`. In a Vue CLI package, `@/` resolves to `src/`, as in its webpack config. `VUE_APP_*` variables of its `.env` files reach `process.env`.
+- Install what the component needs on the app before mounting, with fakes: `app.use(router)`, `app.use(createPinia())`, `app.provide(key, value)`.
+- Vue 2 is not supported: the tool says so. Check that component in the app instead.
 
 ## Replace what the component depends on
 

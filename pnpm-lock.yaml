@@ -387,7 +387,7 @@ importers:
         version: 3.1157.0
       '@better-auth/passkey':
         specifier: 1.7.14
-        version: 1.7.14(@better-auth/core@1.7.14(@better-auth/utils@0.5.1)(@better-fetch/fetch@1.3.3)(@opentelemetry/api@1.9.1)(better-call@1.4.4(zod@4.6.7))(jose@6.2.3)(kysely@0.29.4)(nanostores@1.4.1))(@better-auth/utils@0.5.1)(@better-fetch/fetch@1.3.3)(better-auth@1.7.14(@opentelemetry/api@1.9.1)(mysql2@3.24.6(@types/node@24.12.4))(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@24.12.4)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(better-call@1.4.4(zod@4.6.7))(nanostores@1.4.1)
+        version: 1.7.14(@better-auth/core@1.7.14(@better-auth/utils@0.5.1)(@better-fetch/fetch@1.3.3)(@opentelemetry/api@1.9.1)(better-call@1.4.4(zod@4.6.7))(jose@6.2.3)(kysely@0.29.4)(nanostores@1.4.1))(@better-auth/utils@0.5.1)(@better-fetch/fetch@1.3.3)(better-auth@1.7.14(@opentelemetry/api@1.9.1)(mysql2@3.24.6(@types/node@24.12.4))(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@24.12.4)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(vue@3.5.45(@typescript/typescript6@6.0.2)))(better-call@1.4.4(zod@4.6.7))(nanostores@1.4.1)
       '@blame/deploy-contract':
         specifier: workspace:*
         version: link:../deploy-contract
@@ -420,7 +420,7 @@ importers:
         version: 4.4.0
       better-auth:
         specifier: 1.7.14
-        version: 1.7.14(@opentelemetry/api@1.9.1)(mysql2@3.24.6(@types/node@24.12.4))(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@24.12.4)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        version: 1.7.14(@opentelemetry/api@1.9.1)(mysql2@3.24.6(@types/node@24.12.4))(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@24.12.4)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(vue@3.5.45(@typescript/typescript6@6.0.2))
       luxon:
         specifier: ^3.7.2
         version: 3.7.2
@@ -843,6 +843,9 @@ importers:
       '@typescript/native':
         specifier: npm:typescript@7.0.2
         version: typescript@7.0.2
+      '@vitejs/plugin-vue':
+        specifier: 6.0.10
+        version: 6.0.10(vite@8.3.5(@types/node@24.12.4)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))(vue@3.5.45(@typescript/typescript6@6.0.2))
       electron:
         specifier: 45.0.0
         version: 45.0.0(supports-color@10.2.2)
@@ -858,6 +861,9 @@ importers:
       vite:
         specifier: ^8.3.5
         version: 8.3.5(@types/node@24.12.4)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)
+      vue:
+        specifier: 3.5.45
+        version: 3.5.45(@typescript/typescript6@6.0.2)
 
   packages/harness-core:
     devDependencies:
@@ -1085,7 +1091,7 @@ importers:
         version: 3.14.2
       lenis:
         specifier: 1.3.27
-        version: 1.3.27(react@19.3.1)
+        version: 1.3.27(react@19.3.1)(vue@3.5.45(@typescript/typescript6@6.0.2))
       lucide-react:
         specifier: 1.61.0
         version: 1.61.0(@types/react@19.3.0)(react@19.3.1)
@@ -1981,6 +1987,11 @@ packages:
 
   '@babel/parser@7.29.11':
     resolution: {integrity: sha512-OZ6+oaK7GMyg3IfCpj8JOmn8n+w2rJbDT0LLfVDTLb1ZFeKDh3AiNELgCMUw175IJHSkLl74hG0M0VLsvx+gag==}
+    engines: {node: '>=6.0.0'}
+    hasBin: true
+
+  '@babel/parser@7.29.13':
+    resolution: {integrity: sha512-fJM50YYjlTiBhgdkGmC1tBpv+FMAyo4annf2X6Aks+0yRlaiVkYW/3f07xAfVVkYIoZ9fFZp+mEThUFnuybhkQ==}
     engines: {node: '>=6.0.0'}
     hasBin: true
 
@@ -5752,6 +5763,13 @@ packages:
       oxc-transform-react:
         optional: true
 
+  '@vitejs/plugin-vue@6.0.10':
+    resolution: {integrity: sha512-b80aUQh3n+qEzzZm5oQp3rT2QImeCx58K6eFl/RkJ3d65KW0kTuv5lNsLRVAjbW9YRUpo/wzmvzMgV34bTAItA==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    peerDependencies:
+      vite: ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0
+      vue: ^3.2.25 || ^3.6.0-rc.10
+
   '@vscode/ripgrep-darwin-arm64@1.18.0':
     resolution: {integrity: sha512-r3ktHSvbFycQNF6sl7sNDPocpsI7J+mEzh1IaZFkY0spm3k2Z9t8hPAeOK7+p0l6p6/swkQC14XWX01low+94Q==}
     cpu: [arm64]
@@ -5814,6 +5832,33 @@ packages:
 
   '@vscode/ripgrep@1.18.0':
     resolution: {integrity: sha512-ns5lWe44tSfbTMbVUsyB+I1819PVSw4AdpgK0RNkzfWfwy6+3IUNSxwSrfTno1/oWaS/hERNz+XLWVyga2aJBQ==}
+
+  '@vue/compiler-core@3.5.45':
+    resolution: {integrity: sha512-XGHJrM6ufZARAc/w+tyOswStw9tdKiqCKBScI4gGaNxD+aaGu/HQWgKJ+JItjRLPqenQ7iE7G8AJC7T5ew1p+g==}
+
+  '@vue/compiler-dom@3.5.45':
+    resolution: {integrity: sha512-LbP2d19GSOYGPmvMBBCVJVlv7TKtjM1Cfeyu3cYia720pknZP+1cLX7H5MVatvruT6MuJhiPuNbQBW/MDn/EwA==}
+
+  '@vue/compiler-sfc@3.5.45':
+    resolution: {integrity: sha512-MKFjb2UX0M/l/jhfzqMLrI8VM4pfvFKG3pqFZkSZFHRLtNld/O4RtUPZFWSwhro/14qP88UQEkWzHxAZAQ0tsw==}
+
+  '@vue/compiler-ssr@3.5.45':
+    resolution: {integrity: sha512-RF5sbZOfYz5AK00tOJUn2PwFXR2fS1u2HVzI8D9VF9rGAFxuGBqg2bB1kJ3ZHMprqSltXnT9MZE1IsqjSM8oew==}
+
+  '@vue/reactivity@3.5.45':
+    resolution: {integrity: sha512-WqkyubNWpI4OYBOipSrjIssMdJO8K1i9Zts/Wm8Er10/0msOEwCyWWWvZnAI7WW3kQsTong6DJp8Cbb+vd4cPA==}
+
+  '@vue/runtime-core@3.5.45':
+    resolution: {integrity: sha512-bzIO3+FABjpj85uIKSc+Qnj36/sxDNI3tcH9i6w6xKA1k6e0ejv0G0jMCfeJBvK3yGL5XbJ3DMZj+ClqyCHFYw==}
+
+  '@vue/runtime-dom@3.5.45':
+    resolution: {integrity: sha512-ZvRTFMDgfqTDYWvJfoVpQTJx1RN5M6l7Pyd6wfdY2NaXzbPQVh9ezeQYFbNPP6bIcRVn2SqSSR25N/jSW69BFw==}
+
+  '@vue/server-renderer@3.5.45':
+    resolution: {integrity: sha512-1fNXUHhhsWf4EVL4XixbGBU5mKdiIXJAB82feHRTyPPo6ZUEYWIJuEeUl3mVV6QDBp50HJOX4obLhxYXlrjrzA==}
+
+  '@vue/shared@3.5.45':
+    resolution: {integrity: sha512-ue9fgHmVNPlP7iW3+cxoBX/Cnlw53dHlVSw0JKGY6z1lObg8pHoj928M2nzG4/yVsMZ3NaRZ2s2z61uC16NDwQ==}
 
   '@workflow/serde@4.1.0':
     resolution: {integrity: sha512-pav4F2BoirECWR7Nf1TKt+2eETcBj7jj4cBefQ8VXQCA6NPkaKeLfj/zMgi+3zYV5ZIBT4GuUiphsj0/b9hPQQ==}
@@ -7219,6 +7264,10 @@ packages:
     resolution: {integrity: sha512-V0hjH4dGPh9Ao5p0MoRY6BVqtwCjhz6vI5LT8AJ55H+4g9/4vbHx1I54fS0XuclLhDHArPQCiMjDxjaL8fPxhw==}
     engines: {node: '>=0.12'}
 
+  entities@7.0.1:
+    resolution: {integrity: sha512-TWrgLOFUQTH994YUyl1yT4uyavY5nNB5muff+RtWaqNVCAK408b5ZnnbNAUEWLTCpum9w6arT70i1XdQ4UeOPA==}
+    engines: {node: '>=0.12'}
+
   entities@8.1.0:
     resolution: {integrity: sha512-kxL7msIffSuh9aaFAMD7rxAIuTRMAHMeBtgHW2yUdWw732ZNh4MehkF2gdjvtdmikkaIP9bFDDJOPlsvm7avrA==}
     engines: {node: '>=20.19.0'}
@@ -7521,6 +7570,9 @@ packages:
 
   estree-util-visit@2.0.0:
     resolution: {integrity: sha512-m5KgiH85xAhhW8Wta0vShLcUvOsh3LLPI2YVwcbio1l7E09NTLL1EyMZFM1OyWowoH0skScNbhOPl4kcBgzTww==}
+
+  estree-walker@2.0.2:
+    resolution: {integrity: sha512-Rfkk/Mp/DL7JVje3u18FxFujQlTNR2q6QfMSMB7AvCBx91NGj/ba3kCfza0f6dVDbw7YlRf/nDrn7pQrCCyQ/w==}
 
   estree-walker@3.0.3:
     resolution: {integrity: sha512-7RUKfXgSMMkzt6ZuXmqapOurLGPPfgj6l9uRZ7lRGolvk0y2yocc35LdcxKC5PQZdn2DMqioAQ2NoWcrTKmm6g==}
@@ -11418,6 +11470,14 @@ packages:
   voca@1.4.1:
     resolution: {integrity: sha512-NJC/BzESaHT1p4B5k4JykxedeltmNbau4cummStd4RjFojgq/kLew5TzYge9N2geeWyI2w8T30wUET5v+F7ZHA==}
 
+  vue@3.5.45:
+    resolution: {integrity: sha512-3cvsib8m9c0vB24+MDKsgcW4+Da4xaBl9Z/5Tbm2pmSIsRPxcil4cdXjXlVsmJ2g64XJo5h+IRd7rsdGT9pZaw==}
+    peerDependencies:
+      typescript: '*'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
+
   w3c-xmlserializer@6.0.0:
     resolution: {integrity: sha512-4Nsy8K5Tr6SPDH9jhKJOHf7ChDrc1zufZTVSF7x72hwuEXBqxqk9G6cK+K2NRUtB3iELRJqjXb4JPDMBjMTl2Q==}
     engines: {node: ^22.22.2 || ^24.15.0 || >=26.0.0}
@@ -12664,6 +12724,10 @@ snapshots:
     dependencies:
       '@babel/types': 7.29.11
 
+  '@babel/parser@7.29.13':
+    dependencies:
+      '@babel/types': 7.29.11
+
   '@babel/parser@7.29.2':
     dependencies:
       '@babel/types': 7.29.0
@@ -12798,14 +12862,14 @@ snapshots:
       '@better-auth/core': 1.7.14(@better-auth/utils@0.5.1)(@better-fetch/fetch@1.3.3)(@opentelemetry/api@1.9.1)(better-call@1.4.4(zod@4.6.7))(jose@6.2.3)(kysely@0.29.4)(nanostores@1.4.1)
       '@better-auth/utils': 0.5.1
 
-  '@better-auth/passkey@1.7.14(@better-auth/core@1.7.14(@better-auth/utils@0.5.1)(@better-fetch/fetch@1.3.3)(@opentelemetry/api@1.9.1)(better-call@1.4.4(zod@4.6.7))(jose@6.2.3)(kysely@0.29.4)(nanostores@1.4.1))(@better-auth/utils@0.5.1)(@better-fetch/fetch@1.3.3)(better-auth@1.7.14(@opentelemetry/api@1.9.1)(mysql2@3.24.6(@types/node@24.12.4))(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@24.12.4)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(better-call@1.4.4(zod@4.6.7))(nanostores@1.4.1)':
+  '@better-auth/passkey@1.7.14(@better-auth/core@1.7.14(@better-auth/utils@0.5.1)(@better-fetch/fetch@1.3.3)(@opentelemetry/api@1.9.1)(better-call@1.4.4(zod@4.6.7))(jose@6.2.3)(kysely@0.29.4)(nanostores@1.4.1))(@better-auth/utils@0.5.1)(@better-fetch/fetch@1.3.3)(better-auth@1.7.14(@opentelemetry/api@1.9.1)(mysql2@3.24.6(@types/node@24.12.4))(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@24.12.4)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(vue@3.5.45(@typescript/typescript6@6.0.2)))(better-call@1.4.4(zod@4.6.7))(nanostores@1.4.1)':
     dependencies:
       '@better-auth/core': 1.7.14(@better-auth/utils@0.5.1)(@better-fetch/fetch@1.3.3)(@opentelemetry/api@1.9.1)(better-call@1.4.4(zod@4.6.7))(jose@6.2.3)(kysely@0.29.4)(nanostores@1.4.1)
       '@better-auth/utils': 0.5.1
       '@better-fetch/fetch': 1.3.3
       '@simplewebauthn/browser': 13.3.0
       '@simplewebauthn/server': 13.3.2
-      better-auth: 1.7.14(@opentelemetry/api@1.9.1)(mysql2@3.24.6(@types/node@24.12.4))(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@24.12.4)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      better-auth: 1.7.14(@opentelemetry/api@1.9.1)(mysql2@3.24.6(@types/node@24.12.4))(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@24.12.4)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(vue@3.5.45(@typescript/typescript6@6.0.2))
       better-call: 1.4.4(zod@4.6.7)
       nanostores: 1.4.1
       zod: 4.6.7
@@ -16691,6 +16755,12 @@ snapshots:
       '@rolldown/pluginutils': 1.0.1
       vite: 8.3.5(@types/node@24.12.4)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)
 
+  '@vitejs/plugin-vue@6.0.10(vite@8.3.5(@types/node@24.12.4)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))(vue@3.5.45(@typescript/typescript6@6.0.2))':
+    dependencies:
+      '@rolldown/pluginutils': 1.0.1
+      vite: 8.3.5(@types/node@24.12.4)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)
+      vue: 3.5.45(@typescript/typescript6@6.0.2)
+
   '@vscode/ripgrep-darwin-arm64@1.18.0':
     optional: true
 
@@ -16741,6 +16811,60 @@ snapshots:
       '@vscode/ripgrep-win32-arm64': 1.18.0
       '@vscode/ripgrep-win32-ia32': 1.18.0
       '@vscode/ripgrep-win32-x64': 1.18.0
+
+  '@vue/compiler-core@3.5.45':
+    dependencies:
+      '@babel/parser': 7.29.13
+      '@vue/shared': 3.5.45
+      entities: 7.0.1
+      estree-walker: 2.0.2
+      source-map-js: 1.2.2
+
+  '@vue/compiler-dom@3.5.45':
+    dependencies:
+      '@vue/compiler-core': 3.5.45
+      '@vue/shared': 3.5.45
+
+  '@vue/compiler-sfc@3.5.45':
+    dependencies:
+      '@babel/parser': 7.29.13
+      '@vue/compiler-core': 3.5.45
+      '@vue/compiler-dom': 3.5.45
+      '@vue/compiler-ssr': 3.5.45
+      '@vue/shared': 3.5.45
+      estree-walker: 2.0.2
+      magic-string: 0.30.21
+      postcss: 8.5.32
+      source-map-js: 1.2.2
+
+  '@vue/compiler-ssr@3.5.45':
+    dependencies:
+      '@vue/compiler-dom': 3.5.45
+      '@vue/shared': 3.5.45
+
+  '@vue/reactivity@3.5.45':
+    dependencies:
+      '@vue/shared': 3.5.45
+
+  '@vue/runtime-core@3.5.45':
+    dependencies:
+      '@vue/reactivity': 3.5.45
+      '@vue/shared': 3.5.45
+
+  '@vue/runtime-dom@3.5.45':
+    dependencies:
+      '@vue/reactivity': 3.5.45
+      '@vue/runtime-core': 3.5.45
+      '@vue/shared': 3.5.45
+      csstype: 3.2.3
+
+  '@vue/server-renderer@3.5.45':
+    dependencies:
+      '@vue/compiler-ssr': 3.5.45
+      '@vue/runtime-dom': 3.5.45
+      '@vue/shared': 3.5.45
+
+  '@vue/shared@3.5.45': {}
 
   '@workflow/serde@4.1.0': {}
 
@@ -17128,7 +17252,7 @@ snapshots:
 
   before-after-hook@4.0.0: {}
 
-  better-auth@1.7.14(@opentelemetry/api@1.9.1)(mysql2@3.24.6(@types/node@24.12.4))(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@24.12.4)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1):
+  better-auth@1.7.14(@opentelemetry/api@1.9.1)(mysql2@3.24.6(@types/node@24.12.4))(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@24.12.4)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(vue@3.5.45(@typescript/typescript6@6.0.2)):
     dependencies:
       '@better-auth/core': 1.7.14(@better-auth/utils@0.5.1)(@better-fetch/fetch@1.3.3)(@opentelemetry/api@1.9.1)(better-call@1.4.4(zod@4.6.7))(jose@6.2.3)(kysely@0.29.4)(nanostores@1.4.1)
       '@better-auth/drizzle-adapter': 1.7.14(@better-auth/core@1.7.14(@better-auth/utils@0.5.1)(@better-fetch/fetch@1.3.3)(@opentelemetry/api@1.9.1)(better-call@1.4.4(zod@4.6.7))(jose@6.2.3)(kysely@0.29.4)(nanostores@1.4.1))(@better-auth/utils@0.5.1)
@@ -17152,6 +17276,7 @@ snapshots:
       next: 16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@24.12.4)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       react: 19.3.1
       react-dom: 19.3.1(react@19.3.1)
+      vue: 3.5.45(@typescript/typescript6@6.0.2)
     transitivePeerDependencies:
       - '@opentelemetry/api'
 
@@ -18135,6 +18260,8 @@ snapshots:
 
   entities@4.5.0: {}
 
+  entities@7.0.1: {}
+
   entities@8.1.0: {}
 
   env-paths@2.2.1: {}
@@ -18661,6 +18788,8 @@ snapshots:
     dependencies:
       '@types/estree-jsx': 1.0.5
       '@types/unist': 3.0.3
+
+  estree-walker@2.0.2: {}
 
   estree-walker@3.0.3:
     dependencies:
@@ -19979,9 +20108,10 @@ snapshots:
 
   leac@0.6.0: {}
 
-  lenis@1.3.27(react@19.3.1):
+  lenis@1.3.27(react@19.3.1)(vue@3.5.45(@typescript/typescript6@6.0.2)):
     optionalDependencies:
       react: 19.3.1
+      vue: 3.5.45(@typescript/typescript6@6.0.2)
 
   levn@0.4.1:
     dependencies:
@@ -23050,6 +23180,16 @@ snapshots:
       yaml: 2.9.1
 
   voca@1.4.1: {}
+
+  vue@3.5.45(@typescript/typescript6@6.0.2):
+    dependencies:
+      '@vue/compiler-dom': 3.5.45
+      '@vue/compiler-sfc': 3.5.45
+      '@vue/runtime-dom': 3.5.45
+      '@vue/server-renderer': 3.5.45
+      '@vue/shared': 3.5.45
+    optionalDependencies:
+      typescript: '@typescript/typescript6@6.0.2'
 
   w3c-xmlserializer@6.0.0:
     dependencies:

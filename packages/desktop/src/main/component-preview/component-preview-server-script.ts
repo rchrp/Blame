@@ -5,12 +5,14 @@
 // pre-bundles only what the preview files import, and stops by itself when
 // nobody has asked it anything for a while.
 //
-// A React package without Vite, such as a Next.js app, gets Blame's own
-// Vite and @vitejs/plugin-react instead, installed once per environment in
-// the host's toolkit folder, outside the worktree. React and every other
-// import still resolve from the project's node_modules; its PostCSS config
-// and tsconfig paths apply. Next.js imports that only work inside Next are
-// replaced by small shims, in this server only.
+// A React or Vue 3 package without Vite, such as a Next.js or Vue CLI app,
+// gets Blame's own Vite instead, with @vitejs/plugin-react or
+// @vitejs/plugin-vue, installed once per environment in the host's toolkit
+// folder, outside the worktree. The framework and every other import still
+// resolve from the project's node_modules; its PostCSS config and tsconfig
+// or jsconfig paths apply. Next.js imports that only work inside Next are
+// replaced by small shims, and a Vue CLI package keeps its @ alias for
+// src, in this server only.
 
 export const componentPreviewPagePath = "/__blame_component_preview__";
 export const componentPreviewReportPrefix = "BLAME_COMPONENT_PREVIEW ";
@@ -18,15 +20,32 @@ export const componentPreviewReportPrefix = "BLAME_COMPONENT_PREVIEW ";
 // The versions of Blame's own Vite, the same as Blame's packages use.
 export const componentPreviewToolkitVersions = {
   pluginReact: "6.1.2",
+  pluginVue: "6.0.10",
   vite: "8.3.5",
 } as const;
 
 export type ComponentPreviewToolkit = {
-  // "next" adds the Next.js shims.
-  framework: "next" | "react";
+  // "next" adds the Next.js shims to React; "vue" uses @vitejs/plugin-vue.
+  framework: "next" | "react" | "vue";
   // Folder of Blame's own Vite installs, as the server process sees it.
   root: string;
 };
+
+// The one Vite plugin a framework needs. Each plugin gets its own toolkit
+// folder, so a plugin is only installed for a project that needs it.
+export function componentPreviewToolkitPlugin(
+  framework: ComponentPreviewToolkit["framework"],
+) {
+  return framework === "vue"
+    ? {
+        name: "@vitejs/plugin-vue",
+        version: componentPreviewToolkitVersions.pluginVue,
+      }
+    : {
+        name: "@vitejs/plugin-react",
+        version: componentPreviewToolkitVersions.pluginReact,
+      };
+}
 
 export type ComponentPreviewServerOptions = {
   // Suffix of the package's Vite cache directory, so this server never
@@ -62,6 +81,7 @@ export function componentPreviewServerArguments(
   options: ComponentPreviewServerOptions,
 ) {
   const { toolkit } = options;
+  const plugin = toolkit && componentPreviewToolkitPlugin(toolkit.framework);
   return [
     "--input-type=module",
     "-e",
@@ -75,7 +95,8 @@ export function componentPreviewServerArguments(
     options.cacheName,
     toolkit?.root ?? "",
     toolkit ? componentPreviewToolkitVersions.vite : "",
-    toolkit ? componentPreviewToolkitVersions.pluginReact : "",
+    plugin?.name ?? "",
+    plugin?.version ?? "",
     toolkit?.framework ?? "",
   ];
 }
@@ -126,16 +147,20 @@ import { homedir } from "node:os";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 
-const [packageDir, host, portText, token, idleText, cacheName, toolkitRoot, toolkitVite, toolkitPluginReact, framework] = process.argv.slice(1);
+const [packageDir, host, portText, token, idleText, cacheName, toolkitRoot, toolkitVite, toolkitPlugin, toolkitPluginVersion, framework] = process.argv.slice(1);
 const pagePath = "/__blame_component_preview__/" + token;
 const entryId = "virtual:blame-component-preview";
 const resolvedEntryId = "\0" + entryId;
 const idleMs = Number(idleText) || 660000;
 const usesToolkit = Boolean(toolkitVite);
 const serverComponentHint = "open_component_preview renders client components in the browser: preview one of its client sub-components with made-up props, or check this screen in the full app.";
+const vueMountHint = "A preview file of a Vue package exports mount(element, state), which renders the named state into element, such as createApp(Component, props).mount(element).";
 let lastRequest = Date.now();
 let server;
 let closing = false;
+
+// A problem of the package the agent can act on: reported without a stack.
+class SetupError extends Error {}
 
 function report(value) {
   process.stdout.write("BLAME_COMPONENT_PREVIEW " + JSON.stringify(value) + "\n");
@@ -167,13 +192,38 @@ function resolvable(require, id) {
   }
 }
 
+// The packages the package's own package.json declares.
+function ownDependencies() {
+  try {
+    const manifest = JSON.parse(readFileSync(join(packageDir, "package.json"), "utf8"));
+    return new Set(["dependencies", "devDependencies"].flatMap((field) => Object.keys(manifest[field] || {})));
+  } catch {
+    return new Set();
+  }
+}
+
+// @vitejs/plugin-vue compiles .vue files with the project's own Vue, 3.2.25
+// or later.
+function checkVue(require) {
+  let version;
+  try {
+    version = String(JSON.parse(readFileSync(require.resolve("vue/package.json"), "utf8")).version || "");
+  } catch {
+    throw new SetupError("Vue is not installed for " + packageDir + ". open_component_preview never installs the project's dependencies: install them first.");
+  }
+  const [major, minor, patch] = version.split(".").map((part) => parseInt(part, 10) || 0);
+  if (major < 3) throw new SetupError("Vue 2 is not supported: " + packageDir + " has vue " + version + " installed, and without a Vite config open_component_preview renders Vue 3.2.25 or later only. Check this component in the app instead.");
+  if (major === 3 && (minor < 2 || (minor === 2 && patch < 25))) throw new SetupError("vue " + version + " is installed for " + packageDir + ": without a Vite config, open_component_preview renders Vue 3.2.25 or later only, which @vitejs/plugin-vue requires. Check this component in the app instead.");
+}
+
 // Blame's own Vite: one install per version, platform and C library, so a
-// container and the runtime can share the folder.
+// container and the runtime can share the folder, with the one plugin the
+// package needs.
 function toolkitDirectory() {
   const header = process.platform === "linux" && process.report ? process.report.getReport().header : undefined;
   const libc = process.platform !== "linux" ? "" : header && header.glibcVersionRuntime ? "-gnu" : "-musl";
   const root = toolkitRoot || join(homedir(), ".cache", "blame", "component-preview");
-  return join(root, "vite-" + toolkitVite + "-plugin-react-" + toolkitPluginReact + "-" + process.platform + "-" + process.arch + libc);
+  return join(root, "vite-" + toolkitVite + "-" + toolkitPlugin.replace(/^@vitejs\//, "") + "-" + toolkitPluginVersion + "-" + process.platform + "-" + process.arch + libc);
 }
 
 function installedVersion(directory, name) {
@@ -185,7 +235,7 @@ function installedVersion(directory, name) {
 }
 
 function toolkitReady(directory) {
-  return installedVersion(directory, "vite") === toolkitVite && installedVersion(directory, "@vitejs/plugin-react") === toolkitPluginReact;
+  return installedVersion(directory, "vite") === toolkitVite && installedVersion(directory, toolkitPlugin) === toolkitPluginVersion;
 }
 
 // The npm that comes with this Node, else the one on PATH.
@@ -239,10 +289,10 @@ async function installToolkit(directory) {
   const staging = directory + ".staging-" + process.pid + "-" + Date.now().toString(36);
   try {
     mkdirSync(staging, { recursive: true });
-    const manifest = { name: "blame-component-preview-vite", private: true, dependencies: { vite: toolkitVite, "@vitejs/plugin-react": toolkitPluginReact } };
+    const manifest = { name: "blame-component-preview-vite", private: true, dependencies: { vite: toolkitVite, [toolkitPlugin]: toolkitPluginVersion } };
     writeFileSync(join(staging, "package.json"), JSON.stringify(manifest, null, 2) + "\n");
     await runNpm(["install", "--no-package-lock", "--ignore-scripts", "--loglevel=error", "--cache", join(parent, ".npm-cache")], staging);
-    if (!toolkitReady(staging)) throw new Error("npm finished without installing vite " + toolkitVite + " and @vitejs/plugin-react " + toolkitPluginReact + ".");
+    if (!toolkitReady(staging)) throw new Error("npm finished without installing vite " + toolkitVite + " and " + toolkitPlugin + " " + toolkitPluginVersion + ".");
     if (existsSync(directory) && !toolkitReady(directory)) rmSync(directory, { force: true, recursive: true });
     try {
       renameSync(staging, directory);
@@ -323,29 +373,40 @@ function entryCode(react) {
     '  if (typeof preview.mount === "function") {',
     '    await preview.mount(element, state);',
     '    finish("ready");',
-    '  } else if (!(state in preview)) {',
-    '    finish("error", "The preview file exports no state named " + JSON.stringify(state) + ". Its exports: " + (names.join(", ") || "none") + ".");',
   );
-  if (react)
+  if (framework === "vue")
+    // A Vue package renders every state through mount.
     lines.push(
       '  } else {',
-      '    const value = preview[state];',
-      '    const node = typeof value === "function" ? createElement(value) : value;',
-      '    if (!isValidElement(node)) {',
-      '      finish("error", "The export " + JSON.stringify(state) + " is not a React element: export it as <Component ... />, or export mount(element, state).");',
-      '    } else if (isAsync(node.type)) {',
-      '      finish("error", asyncMessage("<" + (node.type.displayName || node.type.name || "Anonymous") + ">"));',
-      '    } else {',
-      '      createRoot(element, { onUncaughtError: (error) => { console.error(error); finish("error", reactError(error)); } }).render(createElement(Rendered, null, node));',
-      '    }',
+      '    finish("error", ' + JSON.stringify(vueMountHint) + ' + " Its exports: " + (names.join(", ") || "none") + ".");',
       '  }',
     );
-  else
+  else {
     lines.push(
-      '  } else {',
-      '    finish("error", "React is not installed for this package: export mount(element, state) to render " + JSON.stringify(state) + ".");',
-      '  }',
+      '  } else if (!(state in preview)) {',
+      '    finish("error", "The preview file exports no state named " + JSON.stringify(state) + ". Its exports: " + (names.join(", ") || "none") + ".");',
     );
+    if (react)
+      lines.push(
+        '  } else {',
+        '    const value = preview[state];',
+        '    const node = typeof value === "function" ? createElement(value) : value;',
+        '    if (!isValidElement(node)) {',
+        '      finish("error", "The export " + JSON.stringify(state) + " is not a React element: export it as <Component ... />, or export mount(element, state).");',
+        '    } else if (isAsync(node.type)) {',
+        '      finish("error", asyncMessage("<" + (node.type.displayName || node.type.name || "Anonymous") + ">"));',
+        '    } else {',
+        '      createRoot(element, { onUncaughtError: (error) => { console.error(error); finish("error", reactError(error)); } }).render(createElement(Rendered, null, node));',
+        '    }',
+        '  }',
+      );
+    else
+      lines.push(
+        '  } else {',
+        '    finish("error", "React is not installed for this package: export mount(element, state) to render " + JSON.stringify(state) + ".");',
+        '  }',
+      );
+  }
   lines.push(
     '} catch (error) {',
     '  console.error(error);',
@@ -386,9 +447,11 @@ function previewPlugin(react) {
           hmr: { overlay: true },
         };
         const optimizeDeps = config.optimizeDeps || {};
-        // The entry imports React itself: bundled up front, a first render
-        // never waits for a re-optimization and its reload.
-        const include = react ? [...new Set([...(optimizeDeps.include || []), "react", "react-dom/client", "react/jsx-dev-runtime"])] : optimizeDeps.include;
+        // The entry imports React itself, and a Vue preview file imports
+        // Vue: bundled up front, a first render never waits for a
+        // re-optimization and its reload.
+        const frameworkDeps = framework === "vue" ? ["vue"] : react ? ["react", "react-dom/client", "react/jsx-dev-runtime"] : [];
+        const include = frameworkDeps.length ? [...new Set([...(optimizeDeps.include || []), ...frameworkDeps])] : optimizeDeps.include;
         config.optimizeDeps = { ...optimizeDeps, entries: ["**/*.blame-preview.*"], ...(include ? { include } : {}) };
       },
     },
@@ -664,17 +727,25 @@ function nextShims() {
   };
 }
 
-// Next inlines NEXT_PUBLIC_* variables of its .env files in client code.
-// In development, Vite's client sets defines as globals, so process.env
-// exists in the page as it does in Next.
-function nextPublicDefines(loadEnv) {
-  const defines = { "process.env.NODE_ENV": JSON.stringify("development") };
-  for (const [key, value] of Object.entries(loadEnv("development", packageDir, "NEXT_PUBLIC_")))
+// Next inlines the NEXT_PUBLIC_* variables of its .env files in client
+// code, Vue CLI its VUE_APP_* ones. In development, Vite's client sets
+// defines as globals, so process.env exists in the page as it does there.
+function publicEnvDefines(loadEnv, prefix, defines) {
+  for (const [key, value] of Object.entries(loadEnv("development", packageDir, prefix)))
     defines["process.env." + key] = JSON.stringify(value);
   return defines;
 }
 
-// Blame's own Vite, installed for this environment if it is not yet.
+// TypeScript reads jsconfig.json when a folder has no tsconfig.json; Vite
+// only finds tsconfig.json by itself.
+function jsconfigFile() {
+  if (existsSync(join(packageDir, "tsconfig.json"))) return undefined;
+  const path = join(packageDir, "jsconfig.json");
+  return existsSync(path) ? path : undefined;
+}
+
+// Blame's own Vite with the package's framework plugin, installed for this
+// environment if it is not yet.
 async function toolkitPlugins(plugins) {
   const directory = toolkitDirectory();
   const installed = !toolkitReady(directory);
@@ -683,8 +754,9 @@ async function toolkitPlugins(plugins) {
     await installToolkit(directory);
   }
   const vite = packageModule(join(directory, "node_modules", "vite", "package.json"));
-  const pluginReact = await import(packageModule(join(directory, "node_modules", "@vitejs", "plugin-react", "package.json")).url);
-  plugins.push(serverOnlyPlugin(), pluginReact.default());
+  const plugin = await import(packageModule(join(directory, "node_modules", ...toolkitPlugin.split("/"), "package.json")).url);
+  if (framework === "vue") plugins.push(plugin.default());
+  else plugins.push(serverOnlyPlugin(), plugin.default());
   if (framework === "next") plugins.push({ ...nextShims(), enforce: "pre" });
   return { toolkit: { directory, installed }, vite };
 }
@@ -694,18 +766,20 @@ async function main() {
   // the package's own dev server runs.
   process.chdir(packageDir);
   const require = createRequire(join(packageDir, "package.json"));
-  const react = resolvable(require, "react") && resolvable(require, "react-dom/client");
+  // A Vue package renders through mount, even with React installed nearby.
+  const react = framework !== "vue" && resolvable(require, "react") && resolvable(require, "react-dom/client");
   const plugins = [previewPlugin(react)];
   let vite;
   let toolkit;
   if (usesToolkit) {
-    if (!react) throw new Error("React is not installed for " + packageDir + ". Without a Vite config, open_component_preview renders React components only, and it never installs the project's dependencies: install them first.");
+    if (framework === "vue") checkVue(require);
+    else if (!react) throw new SetupError("React is not installed for " + packageDir + ". Without a Vite config, open_component_preview renders React components only, and it never installs the project's dependencies: install them first.");
     ({ toolkit, vite } = await toolkitPlugins(plugins));
   } else {
     try {
       vite = packageModule(require.resolve("vite/package.json"));
     } catch (error) {
-      throw new Error("Vite is not installed for " + packageDir + ": " + ((error && error.message) || error));
+      throw new SetupError("Vite is not installed for " + packageDir + ": " + ((error && error.message) || error));
     }
   }
   const { createServer, loadEnv } = await import(vite.url);
@@ -713,9 +787,16 @@ async function main() {
   if (usesToolkit) {
     options.configFile = false;
     options.resolve = { tsconfigPaths: true };
+    const jsconfig = jsconfigFile();
+    if (jsconfig) options.tsconfig = jsconfig;
     if (framework === "next") {
-      options.define = nextPublicDefines(loadEnv);
+      options.define = publicEnvDefines(loadEnv, "NEXT_PUBLIC_", { "process.env.NODE_ENV": JSON.stringify("development") });
       options.optimizeDeps = { rolldownOptions: { plugins: [nextShims()] } };
+    }
+    if (framework === "vue" && ownDependencies().has("@vue/cli-service")) {
+      // Vue CLI's webpack config resolves @ to src, ahead of any path.
+      options.resolve.alias = [{ find: /^@\//, replacement: join(packageDir, "src") + sep }];
+      options.define = publicEnvDefines(loadEnv, "VUE_APP_", { "process.env.BASE_URL": JSON.stringify("/"), "process.env.NODE_ENV": JSON.stringify("development") });
     }
   }
   server = await createServer(options);
@@ -729,7 +810,7 @@ async function main() {
 
 for (const signal of ["SIGTERM", "SIGINT", "SIGHUP"]) process.on(signal, close);
 main().catch((error) => {
-  report({ event: "error", message: String((error && (error.stack || error.message)) || error) });
+  report({ event: "error", message: error instanceof SetupError ? error.message : String((error && (error.stack || error.message)) || error) });
   process.exit(1);
 });
 `;

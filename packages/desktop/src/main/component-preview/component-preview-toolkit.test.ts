@@ -6,16 +6,21 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import test from "node:test";
 import { workspaceComponentPreviewHost } from "./component-preview-hosts.ts";
-import { componentPreviewToolkitVersions } from "./component-preview-server-script.ts";
+import {
+  componentPreviewToolkitPlugin,
+  componentPreviewToolkitVersions,
+  type ComponentPreviewToolkit,
+} from "./component-preview-server-script.ts";
 import {
   ComponentPreviewService,
   type ComponentPreviewCapture,
   type ComponentPreviewPage,
 } from "./component-preview-service.ts";
 
-// A small Next.js App Router project, without Vite, rendered by the real
-// temporary server with Blame's own Vite and @vitejs/plugin-react. The
-// browser is replaced by requests for the page and the modules it loads.
+// A small Next.js App Router project and a small Vue CLI project, without
+// Vite, rendered by the real temporary server with Blame's own Vite and
+// @vitejs/plugin-react or @vitejs/plugin-vue. The browser is replaced by
+// requests for the page and the modules it loads.
 
 const png = Buffer.from(
   "89504e470d0a1a0a0000000d4948445200000001000000010806000000" +
@@ -25,19 +30,23 @@ const png = Buffer.from(
 const dependencies = resolveDependencies();
 
 test(
-  "Blame's own Vite is the version Blame's packages use",
+  "Blame's own Vite and its plugins are the versions Blame's packages use",
   {
-    skip: dependencies
-      ? false
-      : "Vite or React is not installed for the desktop tests.",
+    skip:
+      dependencies.next && dependencies.vue
+        ? false
+        : "Vite, @vitejs/plugin-react or @vitejs/plugin-vue is not installed for the desktop tests.",
   },
   () => {
     assert.deepEqual(
       {
         pluginReact: packageVersion(
-          dependencies!.toolkit["@vitejs/plugin-react"]!,
+          dependencies.next!.toolkit["@vitejs/plugin-react"]!,
         ),
-        vite: packageVersion(dependencies!.toolkit.vite!),
+        pluginVue: packageVersion(
+          dependencies.vue!.toolkit["@vitejs/plugin-vue"]!,
+        ),
+        vite: packageVersion(dependencies.next!.toolkit.vite!),
       },
       componentPreviewToolkitVersions,
       "Update componentPreviewToolkitVersions with the versions in the lockfile.",
@@ -48,7 +57,7 @@ test(
 test(
   "a Next.js client component renders with Blame's Vite: Tailwind, tsconfig paths and the Next.js shims",
   {
-    skip: dependencies
+    skip: dependencies.next
       ? false
       : "Vite, @vitejs/plugin-react, React, Next.js or Tailwind is not installed for the desktop tests.",
     timeout: 120_000,
@@ -64,7 +73,7 @@ test(
     let service: ComponentPreviewService | undefined;
     try {
       await writeNextFixture(worktree);
-      await linkToolkit(toolkitRoot);
+      await linkToolkit(toolkitRoot, "next", dependencies.next!.toolkit);
       const page = new FetchingPage(async (url) => {
         const get = async (path: string) => {
           const response = await fetch(new URL(path, url));
@@ -102,7 +111,7 @@ test(
       assert.equal(result.isError, undefined, JSON.stringify(result.content));
       assert.match(
         result.content[0]!.text!,
-        /^Started Blame's own Vite 8\.\d+\.\d+ server with @vitejs\/plugin-react, with shims for next\/link, next\/image, next\/navigation and next\/font, in the story's workspace for the worktree root, at http:\/\/127\.0\.0\.1:\d+: the package has no Vite config, so its PostCSS config and tsconfig paths apply\. 1 render of components\/profile\.blame-preview\.tsx:$/u,
+        /^Started Blame's own Vite 8\.\d+\.\d+ server with @vitejs\/plugin-react, with shims for next\/link, next\/image, next\/navigation and next\/font, in the story's workspace for the worktree root, at http:\/\/127\.0\.0\.1:\d+: the package has no Vite config, so its PostCSS config and tsconfig or jsconfig paths apply\. 1 render of components\/profile\.blame-preview\.tsx:$/u,
       );
 
       // tsconfig paths: "@/" resolves from the package.
@@ -192,6 +201,217 @@ test(
       await service?.shutdown();
       await rm(worktree, { force: true, recursive: true });
       await rm(toolkitRoot, { force: true, recursive: true });
+    }
+  },
+);
+
+test(
+  "a Vue CLI component renders with Blame's Vite: its <style> and <style scoped> blocks, Tailwind, jsconfig paths and the @ alias",
+  {
+    skip: dependencies.vue
+      ? false
+      : "Vite, @vitejs/plugin-vue, Vue or Tailwind is not installed for the desktop tests.",
+    timeout: 120_000,
+  },
+  async () => {
+    const worktree = await mkdtemp(
+      join(tmpdir(), "blame-component-preview-vue-"),
+    );
+    const toolkitRoot = await mkdtemp(
+      join(tmpdir(), "blame-component-preview-toolkit-"),
+    );
+    const responses = new Map<string, string>();
+    let service: ComponentPreviewService | undefined;
+    try {
+      await writeVueCliFixture(worktree);
+      await linkToolkit(toolkitRoot, "vue", dependencies.vue!.toolkit);
+      const page = new FetchingPage(async (url) => {
+        const get = async (path: string) => {
+          const response = await fetch(new URL(path, url));
+          const body = await response.text();
+          assert.equal(response.status, 200, `${path}: ${body.slice(0, 600)}`);
+          responses.set(path, body);
+          return body;
+        };
+        const html = await get(new URL(url).pathname + new URL(url).search);
+        assert.match(html, /virtual:blame-component-preview/u);
+        // The preview file and every project module it loads, the blocks
+        // of each .vue file included.
+        const pending = [`/${new URL(url).searchParams.get("file")!}`];
+        for (let path = pending.shift(); path; path = pending.shift())
+          if (!responses.has(path))
+            pending.push(...importedPaths(await get(path)));
+        return true;
+      });
+      service = new ComponentPreviewService({
+        browser: async () => ({ openPage: async () => page }),
+        locate: async () => ({
+          host: workspaceComponentPreviewHost(worktree, undefined, toolkitRoot),
+          packageDir: "",
+          toolkit: { framework: "vue" },
+        }),
+        storeScreenshots: async (result) => ({
+          ...(result as object),
+          _meta: { blameScreenshots: [{ id: "2".repeat(64) }] },
+        }),
+      });
+      const result = (await service.render({
+        request: {
+          file: "src/components/profile.blame-preview.ts",
+          states: ["default", "long"],
+        },
+        worktree,
+      })) as {
+        content: Array<{ text?: string; type: string }>;
+        isError?: boolean;
+      };
+      assert.equal(result.isError, undefined, JSON.stringify(result.content));
+      assert.match(
+        result.content[0]!.text!,
+        /^Started Blame's own Vite 8\.\d+\.\d+ server with @vitejs\/plugin-vue, in the story's workspace for the worktree root, at http:\/\/127\.0\.0\.1:\d+: the package has no Vite config, so its PostCSS config and tsconfig or jsconfig paths apply\. In a Vue CLI package, @\/ resolves to src\/\. 2 renders of src\/components\/profile\.blame-preview\.ts:$/u,
+      );
+      assert.deepEqual(
+        result.content
+          .slice(1)
+          .filter(({ type }) => type === "text")
+          .map(({ text }) => text!.split("\n")[0]),
+        [
+          "Render 1/2 — default, light, 1280 px: rendered.",
+          "Render 2/2 — long, light, 1280 px: rendered.",
+        ],
+        JSON.stringify(result.content),
+      );
+
+      // Vue CLI's alias: "@/" resolves from src. Vue comes from the
+      // project, bundled up front.
+      const preview = responses.get(
+        "/src/components/profile.blame-preview.ts",
+      )!;
+      assert.match(preview, /from "\/src\/components\/ProfileCard\.vue"/u);
+      assert.match(preview, /import "\/src\/assets\/tailwind\.css"/u);
+      assert.match(preview, /\.vite-blame-preview-[0-9a-f]+\/deps\/vue\.js/u);
+
+      // The single-file component is compiled, its <script setup lang="ts">
+      // included; "@ui/" resolves with the paths of jsconfig.json.
+      const card = responses.get("/src/components/ProfileCard.vue")!;
+      assert.doesNotMatch(card, /<template>|defineProps</u);
+      assert.match(card, /from "\/src\/ui\/StatusBadge\.vue"/u);
+      const scopeId = /["']__scopeId["'],\s*["'](data-v-[0-9a-f]+)["']/u.exec(
+        card,
+      )?.[1];
+      assert.ok(scopeId, card);
+      // <style scoped> gets the component's attribute, <style> stays global.
+      const style = (file: string) =>
+        [...responses].find(([path]) =>
+          path.startsWith(`${file}?vue&type=style&index=0`),
+        )?.[1] ?? "";
+      assert.match(
+        style("/src/components/ProfileCard.vue"),
+        new RegExp(`\\.card\\[${scopeId}\\]`, "u"),
+        [...responses.keys()].join("\n"),
+      );
+      const badge = style("/src/ui/StatusBadge.vue");
+      assert.match(
+        badge,
+        /\.status-badge \{/u,
+        [...responses.keys()].join("\n"),
+      );
+      assert.doesNotMatch(badge, /data-v-/u);
+
+      // Tailwind runs through the project's PostCSS config, on its .vue
+      // files too.
+      const css = await (
+        await fetch(new URL("/src/assets/tailwind.css?direct", page.origin))
+      ).text();
+      assert.match(css, /\.bg-emerald-600\s*\{/u);
+      assert.match(css, /\.rounded-full\s*\{/u);
+      // VUE_APP_* variables of its .env files reach process.env, as Vue CLI
+      // inlines them; the others never reach the page.
+      const client = await (
+        await fetch(new URL("/@vite/client", page.origin))
+      ).text();
+      const envPath = /import "([^"]+\/env\.mjs)"/u.exec(client)?.[1];
+      assert.ok(envPath, "Vite's client imports no environment module.");
+      const env = await (await fetch(new URL(envPath, page.origin))).text();
+      assert.match(env, /process\.env\.VUE_APP_TITLE[^\n]*Fixture shop/u);
+      assert.doesNotMatch(env, /never-in-the-page/u);
+
+      // Every state goes through mount; React plays no part.
+      const entry = await fetch(
+        new URL("/@id/__x00__virtual:blame-component-preview", page.origin),
+      );
+      const entryCode = await entry.text();
+      assert.equal(entry.status, 200, entryCode.slice(0, 600));
+      assert.match(
+        entryCode,
+        /createApp\(Component, props\)\.mount\(element\)/u,
+      );
+      assert.doesNotMatch(entryCode, /react-dom/u);
+      assert.equal(await service.stop({ worktree }), 1);
+    } finally {
+      await service?.shutdown();
+      await rm(worktree, { force: true, recursive: true });
+      await rm(toolkitRoot, { force: true, recursive: true });
+    }
+  },
+);
+
+test(
+  "an installed Vue 2 is reported as not supported before Blame's Vite compiles anything",
+  { timeout: 60_000 },
+  async () => {
+    const worktree = await mkdtemp(
+      join(tmpdir(), "blame-component-preview-vue2-"),
+    );
+    let service: ComponentPreviewService | undefined;
+    try {
+      // A tag says nothing of the version: only the installed one tells.
+      await writeFile(
+        join(worktree, "package.json"),
+        JSON.stringify({ dependencies: { vue: "latest" } }),
+      );
+      await mkdir(join(worktree, "node_modules/vue"), { recursive: true });
+      await writeFile(
+        join(worktree, "node_modules/vue/package.json"),
+        JSON.stringify({ name: "vue", version: "2.7.16", main: "index.js" }),
+      );
+      await mkdir(join(worktree, "src"), { recursive: true });
+      await writeFile(
+        join(worktree, "src/card.blame-preview.ts"),
+        "export function mount() {}\n",
+      );
+      service = new ComponentPreviewService({
+        browser: async () => {
+          throw new Error("A server that did not start opens no page.");
+        },
+        locate: async () => ({
+          // Never installed: the check comes first.
+          host: workspaceComponentPreviewHost(
+            worktree,
+            undefined,
+            join(worktree, "toolkit"),
+          ),
+          packageDir: "",
+          toolkit: { framework: "vue" },
+        }),
+        storeScreenshots: async (result) => result,
+      });
+      const result = (await service.render({
+        request: { file: "src/card.blame-preview.ts" },
+        worktree,
+      })) as {
+        content: Array<{ text?: string; type: string }>;
+        isError?: boolean;
+      };
+      assert.equal(result.isError, true);
+      assert.match(
+        result.content[0]!.text!,
+        /^The component preview server did not start in the story's workspace: Vue 2 is not supported: \S+ has vue 2\.7\.16 installed, and without a Vite config open_component_preview renders Vue 3\.2\.25 or later only\. Check this component in the app instead\.$/u,
+      );
+      assert.equal(existsSync(join(worktree, "toolkit")), false);
+    } finally {
+      await service?.shutdown();
+      await rm(worktree, { force: true, recursive: true });
     }
   },
 );
@@ -380,7 +600,127 @@ async function writeNextFixture(worktree: string) {
   }
   await mkdir(join(worktree, "public"), { recursive: true });
   await writeFile(join(worktree, "public/avatar.png"), png);
-  for (const [name, directory] of Object.entries(dependencies!.project)) {
+  await linkProjectDependencies(worktree, dependencies.next!.project);
+}
+
+// A project created by `vue create` with Vue 3: no Vite, its webpack alias
+// @ for src, PostCSS with Tailwind and a .env file. Its jsconfig.json has
+// a path of its own, but no @ path, as before Vue CLI 5: the alias alone
+// resolves @/.
+async function writeVueCliFixture(worktree: string) {
+  const files: Record<string, string> = {
+    "package.json": JSON.stringify({
+      name: "vue-cli-fixture",
+      version: "0.1.0",
+      private: true,
+      scripts: { serve: "vue-cli-service serve" },
+      dependencies: { vue: "^3.5.45" },
+      devDependencies: {
+        "@tailwindcss/postcss": "4.3.3",
+        "@vue/cli-service": "~5.0.8",
+        tailwindcss: "4.3.3",
+      },
+    }),
+    "vue.config.js":
+      'const { defineConfig } = require("@vue/cli-service");\nmodule.exports = defineConfig({ transpileDependencies: true });\n',
+    "jsconfig.json": JSON.stringify({
+      compilerOptions: {
+        baseUrl: "./",
+        module: "esnext",
+        moduleResolution: "node",
+        paths: { "@ui/*": ["src/ui/*"] },
+      },
+    }),
+    "postcss.config.js":
+      'module.exports = { plugins: { "@tailwindcss/postcss": {} } };\n',
+    ".env": "VUE_APP_TITLE=Fixture shop\nSHOP_SECRET=never-in-the-page\n",
+    "src/main.js": [
+      'import { createApp } from "vue";',
+      'import App from "./App.vue";',
+      'import "./assets/tailwind.css";',
+      "",
+      'createApp(App).mount("#app");',
+      "",
+    ].join("\n"),
+    "src/App.vue": [
+      "<template>",
+      '  <ProfileCard name="Ada Lovelace" status="Active" />',
+      "</template>",
+      "",
+      "<script>",
+      'import ProfileCard from "@/components/ProfileCard.vue";',
+      "export default { components: { ProfileCard } };",
+      "</script>",
+      "",
+    ].join("\n"),
+    "src/assets/tailwind.css": '@import "tailwindcss";\n',
+    "src/components/ProfileCard.vue": [
+      "<template>",
+      '  <section class="card rounded-xl bg-emerald-600 p-6 text-white">',
+      '    <h2 class="text-2xl font-bold">{{ name }}</h2>',
+      '    <p class="shop">{{ shop }}</p>',
+      '    <StatusBadge :label="status" />',
+      "  </section>",
+      "</template>",
+      "",
+      '<script setup lang="ts">',
+      'import StatusBadge from "@ui/StatusBadge.vue";',
+      "",
+      "defineProps<{ name: string; status: string }>();",
+      "const shop = process.env.VUE_APP_TITLE;",
+      "</script>",
+      "",
+      "<style scoped>",
+      ".card {",
+      "  box-shadow: 0 0 0 4px rgb(16 185 129 / 0.3);",
+      "}",
+      "</style>",
+      "",
+    ].join("\n"),
+    "src/ui/StatusBadge.vue": [
+      "<template>",
+      '  <span class="status-badge rounded-full bg-white/20 px-2 text-xs">{{ label }}</span>',
+      "</template>",
+      "",
+      "<script>",
+      "export default { props: { label: String } };",
+      "</script>",
+      "",
+      "<style>",
+      ".status-badge {",
+      "  letter-spacing: 0.05em;",
+      "}",
+      "</style>",
+      "",
+    ].join("\n"),
+    "src/components/profile.blame-preview.ts": [
+      'import { createApp } from "vue";',
+      'import "@/assets/tailwind.css";',
+      'import ProfileCard from "@/components/ProfileCard.vue";',
+      "",
+      "const states: Record<string, { name: string; status: string }> = {",
+      '  default: { name: "Ada Lovelace", status: "Active" },',
+      '  long: { name: "Augusta Ada King, Countess of Lovelace", status: "Away" },',
+      "};",
+      "",
+      "export function mount(element: HTMLElement, state: string) {",
+      "  createApp(ProfileCard, states[state]).mount(element);",
+      "}",
+      "",
+    ].join("\n"),
+  };
+  for (const [path, content] of Object.entries(files)) {
+    await mkdir(dirname(join(worktree, path)), { recursive: true });
+    await writeFile(join(worktree, path), content);
+  }
+  await linkProjectDependencies(worktree, dependencies.vue!.project);
+}
+
+async function linkProjectDependencies(
+  worktree: string,
+  project: Record<string, string>,
+) {
+  for (const [name, directory] of Object.entries(project)) {
     await mkdir(dirname(join(worktree, "node_modules", name)), {
       recursive: true,
     });
@@ -389,7 +729,11 @@ async function writeNextFixture(worktree: string) {
 }
 
 // Blame's own Vite, as the server would have installed it.
-async function linkToolkit(root: string) {
+async function linkToolkit(
+  root: string,
+  framework: ComponentPreviewToolkit["framework"],
+  toolkit: Record<string, string>,
+) {
   const header =
     process.platform === "linux"
       ? (
@@ -404,12 +748,12 @@ async function linkToolkit(root: string) {
       : header?.glibcVersionRuntime
         ? "-gnu"
         : "-musl";
-  const { pluginReact, vite } = componentPreviewToolkitVersions;
+  const plugin = componentPreviewToolkitPlugin(framework);
   const directory = join(
     root,
-    `vite-${vite}-plugin-react-${pluginReact}-${process.platform}-${process.arch}${libc}`,
+    `vite-${componentPreviewToolkitVersions.vite}-${plugin.name.replace("@vitejs/", "")}-${plugin.version}-${process.platform}-${process.arch}${libc}`,
   );
-  for (const [name, source] of Object.entries(dependencies!.toolkit)) {
+  for (const [name, source] of Object.entries(toolkit)) {
     await mkdir(dirname(join(directory, "node_modules", name)), {
       recursive: true,
     });
@@ -425,8 +769,16 @@ function packageVersion(directory: string) {
   ).version;
 }
 
-// Vite from the desktop package, @vitejs/plugin-react and React from the
-// app package, Next.js and Tailwind from the vitrine package.
+type FixtureDependencies = {
+  // Installed package folders, by package name.
+  project: Record<string, string>;
+  toolkit: Record<string, string>;
+};
+
+// Vite, @vitejs/plugin-vue and Vue from the desktop package,
+// @vitejs/plugin-react and React from the app package, Next.js and
+// Tailwind from the vitrine package. A fixture whose packages are not all
+// installed is skipped.
 function resolveDependencies() {
   const packages = new URL("../../../../", import.meta.url);
   const installed = (packageName: string, name: string) => {
@@ -435,23 +787,50 @@ function resolveDependencies() {
       ? realpathSync(link)
       : undefined;
   };
-  const toolkit = {
-    "@vitejs/plugin-react": installed("app", "@vitejs/plugin-react"),
-    vite: installed("desktop", "vite"),
-  };
-  const project = {
+  const vite = installed("desktop", "vite");
+  const tailwind = {
     "@tailwindcss/postcss": installed("vitrine", "@tailwindcss/postcss"),
-    next: installed("vitrine", "next"),
-    react: installed("app", "react"),
-    "react-dom": installed("app", "react-dom"),
     tailwindcss: installed("vitrine", "tailwindcss"),
   };
-  if (
-    [...Object.values(toolkit), ...Object.values(project)].some((path) => !path)
-  )
-    return undefined;
   return {
-    project: project as Record<string, string>,
-    toolkit: toolkit as Record<string, string>,
+    next: fixtureDependencies(
+      {
+        ...tailwind,
+        next: installed("vitrine", "next"),
+        react: installed("app", "react"),
+        "react-dom": installed("app", "react-dom"),
+      },
+      {
+        "@vitejs/plugin-react": installed("app", "@vitejs/plugin-react"),
+        vite,
+      },
+    ),
+    vue: fixtureDependencies(
+      { ...tailwind, vue: installed("desktop", "vue") },
+      {
+        "@vitejs/plugin-vue": installed("desktop", "@vitejs/plugin-vue"),
+        vite,
+      },
+    ),
   };
+}
+
+function fixtureDependencies(
+  project: Record<string, string | undefined>,
+  toolkit: Record<string, string | undefined>,
+): FixtureDependencies | undefined {
+  const installedProject = allInstalled(project);
+  const installedToolkit = allInstalled(toolkit);
+  return installedProject && installedToolkit
+    ? { project: installedProject, toolkit: installedToolkit }
+    : undefined;
+}
+
+function allInstalled(folders: Record<string, string | undefined>) {
+  const entries = Object.entries(folders);
+  return entries.every(
+    (entry): entry is [string, string] => entry[1] !== undefined,
+  )
+    ? Object.fromEntries(entries)
+    : undefined;
 }

@@ -169,13 +169,35 @@ test("the component preview skill covers Next.js and React packages without Vite
     const output = await executor("component-preview", "pricing card", {} as never);
     assert.doesNotMatch(output, /have no component preview/);
     assert.match(output, /Blame's own Vite with `@vitejs\/plugin-react`/);
-    assert.match(output, /PostCSS or Tailwind config and the `paths` of its `tsconfig\.json` apply/);
+    assert.match(output, /PostCSS or Tailwind config and the `paths` of its `tsconfig\.json` \(or `jsconfig\.json`\) apply/);
     assert.match(output, /`next\/link`, `next\/image`, `next\/navigation` and `next\/font\/\*` are small shims, in this server only/);
     assert.match(output, /`"use client"` files render as they are/);
     assert.match(
       output,
       /Only client components render\. A Server Component[^\n]*preview its client sub-components with the props it would pass them, or check that screen in the app/,
     );
+  } finally {
+    service.stop();
+  }
+});
+
+test("the component preview skill shows how to mount a Vue 3 component without Vite", async () => {
+  const service = createUserInstructionConfigService({
+    skills: {
+      directories: resolvePluginSkillDirectoriesFromPaths([blameNativePluginPath()]),
+    },
+  });
+  try {
+    await service.start();
+    const executor = service.createSkillsExecutor?.();
+    assert.ok(executor);
+    const output = await executor("component-preview", "profile card", {} as never);
+    assert.match(output, /Vue 3 package \(`vue` 3\.2\.25 or later\) without `vite\.config\.\*`[^\n]*Blame's own Vite with `@vitejs\/plugin-vue`/);
+    assert.match(output, /import ProfileCard from "@\/components\/ProfileCard\.vue"/);
+    assert.match(output, /export function mount\(element: HTMLElement, state: string\) \{\n  createApp\(ProfileCard, states\[state\]\)\.mount\(element\)\n\}/);
+    assert.match(output, /`<style>` and `<style scoped>` blocks apply/);
+    assert.match(output, /In a Vue CLI package, `@\/` resolves to `src\/`/);
+    assert.match(output, /Vue 2 is not supported/);
   } finally {
     service.stop();
   }

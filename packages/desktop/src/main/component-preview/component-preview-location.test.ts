@@ -190,7 +190,7 @@ test("a preview file is located in its Vite package, with Vite installed in the 
           message: string;
         }
       ).message,
-      /^packages\/web has no vite\.config\.\* file and does not depend on React/u,
+      /^packages\/web has no vite\.config\.\* file and does not depend on React or Vue 3/u,
     );
     await writeFile(join(app, "vite.config.ts"), "export default {}");
     assert.match(
@@ -296,6 +296,96 @@ test("only a project with a Vite config or a React package gets the tool", async
     await mkdir(join(worktree, "packages/app"), { recursive: true });
     await writeFile(join(worktree, "packages/app/vite.config.ts"), "");
     assert.equal(await hasComponentPreviewProject(worktree), true);
+  } finally {
+    await rm(worktree, { force: true, recursive: true });
+  }
+});
+
+test("a Vue 3 package without Vite, such as a Vue CLI app, is served by Blame's own Vite; a Vue 2 package is told it is not supported", async () => {
+  const worktree = await mkdtemp(join(tmpdir(), "blame-preview-vue-"));
+  try {
+    const shop = join(worktree, "apps/shop");
+    const legacy = join(worktree, "apps/legacy");
+    await mkdir(join(shop, "src"), { recursive: true });
+    await mkdir(join(legacy, "src"), { recursive: true });
+    // React at the root, for the workspace's tooling: each package's own
+    // framework wins.
+    await writeFile(
+      join(worktree, "package.json"),
+      '{ "private": true, "devDependencies": { "react": "19.0.0" } }',
+    );
+    await writeFile(
+      join(shop, "package.json"),
+      '{ "dependencies": { "vue": "^3.5.0" }, "devDependencies": { "@vue/cli-service": "~5.0.8" } }',
+    );
+    await writeFile(
+      join(legacy, "package.json"),
+      '{ "dependencies": { "vue": "^2.7.16" } }',
+    );
+    await writeFile(join(shop, "src/card.blame-preview.ts"), "");
+    await writeFile(join(legacy, "src/card.blame-preview.ts"), "");
+    const locate = (file: string) =>
+      locateComponentPreview({ workspaceMode: "direct", worktree }, file);
+
+    assert.match(
+      (
+        (await locate("apps/shop/src/card.blame-preview.ts")) as {
+          message: string;
+        }
+      ).message,
+      /^Vue is not installed for apps\/shop in the story's workspace\. open_component_preview never installs the project's dependencies/u,
+    );
+    await mkdir(join(worktree, "node_modules/vue"), { recursive: true });
+    await writeFile(join(worktree, "node_modules/vue/package.json"), "{}");
+    const shopLocation = await locate("apps/shop/src/card.blame-preview.ts");
+    assert.ok("host" in shopLocation, JSON.stringify(shopLocation));
+    assert.equal(shopLocation.packageDir, "apps/shop");
+    assert.deepEqual(shopLocation.toolkit, { framework: "vue" });
+
+    // Installed or not, Vue 2 gets a clear message, never a compiler error.
+    assert.match(
+      (
+        (await locate("apps/legacy/src/card.blame-preview.ts")) as {
+          message: string;
+        }
+      ).message,
+      /^Vue 2 is not supported: apps\/legacy depends on Vue 2 and has no vite\.config\.\* file\. Without one, open_component_preview renders React components and Vue 3 components \(vue 3\.2\.25 or later\) only\./u,
+    );
+    // With its own Vite config, a Vue 2 package uses its own Vite.
+    await writeFile(join(legacy, "vite.config.js"), "export default {}");
+    await mkdir(join(worktree, "node_modules/vite"), { recursive: true });
+    await writeFile(join(worktree, "node_modules/vite/package.json"), "{}");
+    const legacyLocation = await locate(
+      "apps/legacy/src/card.blame-preview.ts",
+    );
+    assert.ok("host" in legacyLocation, JSON.stringify(legacyLocation));
+    assert.equal(legacyLocation.toolkit, undefined);
+  } finally {
+    await rm(worktree, { force: true, recursive: true });
+  }
+});
+
+test("a Vue 3 project gets the tool, a Vue 2 project does not", async () => {
+  const worktree = await mkdtemp(join(tmpdir(), "blame-preview-vue-project-"));
+  const offered = async (vue: string) => {
+    await writeFile(
+      join(worktree, "package.json"),
+      JSON.stringify({ dependencies: { vue } }),
+    );
+    return hasComponentPreviewProject(worktree);
+  };
+  try {
+    assert.equal(await offered("^2.7.16"), false);
+    assert.equal(await offered("~2.6.14"), false);
+    assert.equal(await offered("2.x"), false);
+    assert.equal(await offered("^3.2.25"), true);
+    assert.equal(await offered("3.5.45"), true);
+    // A library that supports both.
+    assert.equal(await offered("^2.7.0 || ^3.0.0"), true);
+    // Ranges it cannot read count as Vue 3: the server checks what is
+    // installed.
+    assert.equal(await offered("latest"), true);
+    assert.equal(await offered("catalog:"), true);
   } finally {
     await rm(worktree, { force: true, recursive: true });
   }

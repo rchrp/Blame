@@ -14,6 +14,7 @@ import {
   workspaceComponentPreviewHost,
   type ComponentPreviewHost,
 } from "./component-preview-hosts.ts";
+import type { ComponentPreviewToolkit } from "./component-preview-server-script.ts";
 import type {
   ComponentPreviewLocation,
   ComponentPreviewTarget,
@@ -24,12 +25,17 @@ import type {
 // there, otherwise the container of a local preview, whose node_modules
 // live in volumes. A cloud preview's dependencies are in its sandbox: the
 // server runs there. A package with a Vite config is served by its own
-// Vite; a React package without one, such as a Next.js app, by Blame's.
+// Vite; a React or Vue 3 package without one, such as a Next.js or Vue CLI
+// app, by Blame's.
 
 // The host in the story's cloud preview sandbox, or why there is none.
 export type CloudComponentPreviewLocator = (
   target: ComponentPreviewTarget,
 ) => Promise<ComponentPreviewHost | { message: string }>;
+
+// What a package.json declares: a framework Blame's own Vite renders, or
+// Vue 2, which it does not.
+type DeclaredFramework = ComponentPreviewToolkit["framework"] | "vue2";
 
 export const viteConfigNames = [
   "vite.config.ts",
@@ -74,10 +80,14 @@ export async function locateComponentPreview(
   const projectVite = await hasViteConfig(worktree, packageDir);
   const framework = projectVite
     ? undefined
-    : await reactFramework(worktree, packageDir);
+    : await toolkitFramework(worktree, packageDir);
+  if (framework === "vue2")
+    return {
+      message: `Vue 2 is not supported: ${label} depends on Vue 2 and has no vite.config.* file. Without one, open_component_preview renders React components and Vue 3 components (vue 3.2.25 or later) only. Check this component in the app instead.`,
+    };
   if (!projectVite && !framework)
     return {
-      message: `${label} has no vite.config.* file and does not depend on React: open_component_preview renders files of a Vite package, or of a React package such as a Next.js app. Put the preview file in the package of the component.`,
+      message: `${label} has no vite.config.* file and does not depend on React or Vue 3: open_component_preview renders files of a Vite package, or of a React or Vue 3 package such as a Next.js or Vue CLI app. Put the preview file in the package of the component.`,
     };
   const toolkit = framework ? { toolkit: { framework } } : {};
   if (target.workspaceMode === "cloud-mirror") {
@@ -89,7 +99,16 @@ export async function locateComponentPreview(
         };
     return "message" in host ? host : { host, packageDir, ...toolkit };
   }
-  const required = projectVite ? ["vite"] : ["react", "react-dom"];
+  const dependency = projectVite
+    ? "Vite"
+    : framework === "vue"
+      ? "Vue"
+      : "React";
+  const required = projectVite
+    ? ["vite"]
+    : framework === "vue"
+      ? ["vue"]
+      : ["react", "react-dom"];
   if (await installed(worktree, packageDir, required))
     return {
       host: workspaceComponentPreviewHost(worktree),
@@ -115,13 +134,13 @@ export async function locateComponentPreview(
     if (container) return { host: container, packageDir, ...toolkit };
   }
   return {
-    message: `${projectVite ? "Vite" : "React"} is not installed for ${label} in the story's workspace${target.workspaceMode === "direct" ? "" : ", and the story has no local preview container to run it in"}. open_component_preview never installs the project's dependencies: install them first.`,
+    message: `${dependency} is not installed for ${label} in the story's workspace${target.workspaceMode === "direct" ? "" : ", and the story has no local preview container to run it in"}. open_component_preview never installs the project's dependencies: install them first.`,
   };
 }
 
 // Whether the project has a package the tool renders: one with a Vite
-// config, or one that depends on React. Sessions of other projects, such
-// as an Angular app, are not offered the tool.
+// config, or one that depends on React or Vue 3. Sessions of other
+// projects, such as an Angular or Vue 2 app, are not offered the tool.
 export async function hasComponentPreviewProject(worktree: string) {
   const markers = runtimeManagedPath(worktree)
     ? await projectMarkersInRuntime(worktree)
@@ -130,9 +149,10 @@ export async function hasComponentPreviewProject(worktree: string) {
   const manifests = await readExistingFiles(
     markers.manifests.slice(0, manifestReadLimit),
   );
-  return Object.values(manifests).some((text) =>
-    dependsOnReact(manifestDependencies(text)),
-  );
+  return Object.values(manifests).some((text) => {
+    const framework = declaredFramework(manifestDependencies(text));
+    return framework !== undefined && framework !== "vue2";
+  });
 }
 
 type ProjectMarkers = { manifests: string[]; viteConfig: boolean };
@@ -203,48 +223,67 @@ async function projectMarkersInRuntime(
   };
 }
 
-// "next" for a package that depends on Next.js, "react" for one that, or
-// whose workspace root, depends on React.
-async function reactFramework(worktree: string, packageDir: string) {
+// The framework of the closest package.json that declares one: the
+// package's own, else its workspace root's. The Next.js shims only apply
+// to the Next.js app itself.
+async function toolkitFramework(
+  worktree: string,
+  packageDir: string,
+): Promise<DeclaredFramework | undefined> {
   const paths = ancestors(packageDir).map((directory) =>
     worktreePath(worktree, directory, "package.json"),
   );
   const files = await readExistingFiles(paths);
-  const [own, ...parents] = paths.map((path) =>
-    manifestDependencies(files[path]),
-  );
-  if (own?.has("next")) return "next" as const;
-  if ([own, ...parents].some((names) => names && dependsOnReact(names)))
-    return "react" as const;
+  for (const [index, path] of paths.entries()) {
+    const framework = declaredFramework(manifestDependencies(files[path]));
+    if (framework)
+      return framework === "next" && index > 0 ? "react" : framework;
+  }
   return undefined;
 }
 
-// The packages a package.json declares. One that is not valid JSON
-// declares none: the project's own tools report it.
+// The packages a package.json declares, with their version ranges. One
+// that is not valid JSON declares none: the project's own tools report it.
 function manifestDependencies(text: string | null | undefined) {
-  if (!text) return new Set<string>();
+  const dependencies = new Map<string, string>();
+  if (!text) return dependencies;
   let manifest: unknown;
   try {
     manifest = JSON.parse(text);
   } catch {
-    return new Set<string>();
+    return dependencies;
   }
-  const fields = ["dependencies", "devDependencies", "peerDependencies"];
-  return new Set(
-    fields.flatMap((field) => {
-      const value =
-        manifest && typeof manifest === "object"
-          ? (manifest as Record<string, unknown>)[field]
-          : undefined;
-      return value && typeof value === "object" && !Array.isArray(value)
-        ? Object.keys(value)
-        : [];
-    }),
-  );
+  if (!manifest || typeof manifest !== "object") return dependencies;
+  for (const field of ["dependencies", "devDependencies", "peerDependencies"]) {
+    const value = (manifest as Record<string, unknown>)[field];
+    if (!value || typeof value !== "object" || Array.isArray(value)) continue;
+    for (const [name, range] of Object.entries(value))
+      if (!dependencies.has(name))
+        dependencies.set(name, typeof range === "string" ? range : "");
+  }
+  return dependencies;
 }
 
-function dependsOnReact(dependencies: Set<string>) {
-  return dependencies.has("react") || dependencies.has("next");
+// React wins over Vue in a package that declares both, as before Vue was
+// supported.
+function declaredFramework(
+  dependencies: Map<string, string>,
+): DeclaredFramework | undefined {
+  if (dependencies.has("next")) return "next";
+  if (dependencies.has("react")) return "react";
+  const vue = dependencies.get("vue");
+  if (vue === undefined) return undefined;
+  return vue2Range(vue) ? "vue2" : "vue";
+}
+
+// Whether every alternative of a range stays below Vue 3, such as "^2.7.16"
+// or "~2.6.14 || 2.7.x". A tag, an alias or a workspace range counts as Vue
+// 3: the server checks the installed version before it compiles anything.
+function vue2Range(range: string) {
+  return range
+    .split("||")
+    .map((alternative) => /^\s*[\^~>=v\s]*(\d+)/u.exec(alternative)?.[1])
+    .every((major) => major !== undefined && Number(major) < 3);
 }
 
 // The closest folder with a package.json, from the file's folder up to the
