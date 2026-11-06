@@ -518,7 +518,7 @@ export class LightWorkspace {
     if (data.view !== "folded" && data.complete !== true) return result;
     const key = this.foldKey(path, content, context);
     if (this.linkedReads.has(key)) return result;
-    this.linkedReads.add(key);
+    remember(this.linkedReads, key);
     const links = await this.imports.briefLinks(path, content, this.focus, context.signal,
       this.latestSnapshot ? { snapshot: this.latestSnapshot } : {});
     return links ? { ...result, data: { ...data, links } } : result;
@@ -564,11 +564,9 @@ export class LightWorkspace {
   ) {
     const view = renderFold(content, parsed, window, plan,
       (symbol) => this.aliases.registerSymbol(path, content, symbol, revision).alias);
-    for (const marker of view.markers) this.shownMarkers.add(marker.text.trim());
-    while (this.shownMarkers.size > maximumRememberedMarkers)
-      this.shownMarkers.delete(this.shownMarkers.values().next().value!);
+    for (const marker of view.markers) remember(this.shownMarkers, marker.text.trim(), maximumRememberedMarkers);
     const coverage = await this.registerCoverage(path, content, view.shown, context);
-    this.foldedViews.add(this.foldKey(path, content, context));
+    remember(this.foldedViews, this.foldKey(path, content, context));
     const whole = window[0] === 0 && window[1] === content.byteLength;
     const editTargets = whole ? this.registerEditTargets(path, content, revision) : [];
     return foldedContentResult(path, content, window, view, plan, coverage.receipt, editTargets);
@@ -908,6 +906,13 @@ function coverageScope(context: ReadContext) {
     consumerId: context.agentId || context.conversationId || context.sessionId || "lead",
     generation: contextGeneration(context),
   };
+}
+
+/** Adds a key, forgetting the oldest beyond `limit`. */
+function remember(set: Set<string>, key: string, limit = 2_000) {
+  set.delete(key);
+  set.add(key);
+  while (set.size > limit) set.delete(set.values().next().value!);
 }
 
 function mergedIntervals(intervals: ByteInterval[]) {
