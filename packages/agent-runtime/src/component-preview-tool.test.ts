@@ -285,6 +285,23 @@ test("the tool describes Vue 3 packages without Vite, with a short mount example
   );
 });
 
+test("the tool describes SvelteKit apps and Svelte 5 packages without Vite, with a short mount example", () => {
+  const desktop = fakeDesktop(() => rendered(1));
+  const { description } = componentPreviewTool(desktop.options, preview)!;
+  assert.match(
+    description,
+    /for Vue with `createApp\(Component, props\)\.mount\(element\)`, for Svelte with `mount\(Component, \{ target: element, props \}\)`/,
+  );
+  assert.match(
+    description,
+    /A SvelteKit app keeps its own Vite and sveltekit\(\) \(\$lib or #lib, \$env and \$app\/env\): \$app\/state, and \$app\/stores before SvelteKit 3, give a page at \/, and its public environment variables reach the page; SvelteKit's router does not run/,
+  );
+  assert.match(
+    description,
+    /A Svelte 5 package without Vite, such as a Rollup or webpack app, gets Blame's own Vite with @sveltejs\/vite-plugin-svelte, compiled by the package's own Svelte \(5\.46\.4 or later\) with its svelte\.config\.\*, its PostCSS or Tailwind config and tsconfig or jsconfig paths; Svelte 4 is not supported/,
+  );
+});
+
 test("finishing removes the preview files, then stops the preview server", async () => {
   const root = await mkdtemp(join(tmpdir(), "blame-preview-finish-"));
   const git = async (cwd: string, args: string[]) =>

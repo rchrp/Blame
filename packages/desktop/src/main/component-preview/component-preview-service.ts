@@ -72,7 +72,8 @@ export type ComponentPreviewLocation =
       host: ComponentPreviewHost;
       // Worktree-relative package directory, "" for the worktree root.
       packageDir: string;
-      // Blame's own Vite, for a React or Vue package without a Vite config.
+      // Blame's own Vite, for a React, Vue or Svelte package without a Vite
+      // config.
       toolkit?: Pick<ComponentPreviewToolkit, "framework">;
     }
   | { message: string };
@@ -373,11 +374,15 @@ function serverSummary(
       : "";
   const vueCli =
     framework === "vue" ? " In a Vue CLI package, @/ resolves to src/." : "";
+  const svelte =
+    framework === "svelte"
+      ? " The package's own Svelte compiles its components, with its svelte.config.* if it has one."
+      : "";
   const installed =
     started && server.toolkit.installed
       ? ` Blame installed this Vite first, once for this environment, in ${server.toolkit.directory}.`
       : "";
-  return `${verb} Blame's own Vite ${server.viteVersion} server with ${componentPreviewToolkitPlugin(framework).name}${shims}, ${where}: the package has no Vite config, so its PostCSS config and tsconfig or jsconfig paths apply.${vueCli}${installed}`;
+  return `${verb} Blame's own Vite ${server.viteVersion} server with ${componentPreviewToolkitPlugin(framework).name}${shims}, ${where}: the package has no Vite config, so its PostCSS config and tsconfig or jsconfig paths apply.${vueCli}${svelte}${installed}`;
 }
 
 function errorMessage(error: unknown) {

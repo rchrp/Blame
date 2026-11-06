@@ -5,14 +5,20 @@
 // pre-bundles only what the preview files import, and stops by itself when
 // nobody has asked it anything for a while.
 //
-// A React or Vue 3 package without Vite, such as a Next.js or Vue CLI app,
-// gets Blame's own Vite instead, with @vitejs/plugin-react or
-// @vitejs/plugin-vue, installed once per environment in the host's toolkit
-// folder, outside the worktree. The framework and every other import still
-// resolve from the project's node_modules; its PostCSS config and tsconfig
-// or jsconfig paths apply. Next.js imports that only work inside Next are
-// replaced by small shims, and a Vue CLI package keeps its @ alias for
-// src, in this server only.
+// A React, Vue 3 or Svelte 5 package without Vite, such as a Next.js, Vue
+// CLI or Rollup app, gets Blame's own Vite instead, with
+// @vitejs/plugin-react, @vitejs/plugin-vue or @sveltejs/vite-plugin-svelte,
+// installed once per environment in the host's toolkit folder, outside the
+// worktree. The framework and every other import still resolve from the
+// project's node_modules, and the project's own Svelte compiles its
+// components; its PostCSS config and tsconfig or jsconfig paths apply.
+// Next.js imports that only work inside Next are replaced by small shims,
+// and a Vue CLI package keeps its @ alias for src, in this server only.
+//
+// A SvelteKit app keeps its own Vite and sveltekit(), whose client router
+// never starts in the preview page: $app/state (and $app/stores before
+// SvelteKit 3) give a page at /, and the page carries the public
+// environment variables SvelteKit's own page would, in this server only.
 
 export const componentPreviewPagePath = "/__blame_component_preview__";
 export const componentPreviewReportPrefix = "BLAME_COMPONENT_PREVIEW ";
@@ -20,13 +26,15 @@ export const componentPreviewReportPrefix = "BLAME_COMPONENT_PREVIEW ";
 // The versions of Blame's own Vite, the same as Blame's packages use.
 export const componentPreviewToolkitVersions = {
   pluginReact: "6.1.2",
+  pluginSvelte: "7.3.1",
   pluginVue: "6.0.10",
   vite: "8.3.5",
 } as const;
 
 export type ComponentPreviewToolkit = {
-  // "next" adds the Next.js shims to React; "vue" uses @vitejs/plugin-vue.
-  framework: "next" | "react" | "vue";
+  // "next" adds the Next.js shims to React; "vue" uses @vitejs/plugin-vue,
+  // "svelte" @sveltejs/vite-plugin-svelte.
+  framework: "next" | "react" | "svelte" | "vue";
   // Folder of Blame's own Vite installs, as the server process sees it.
   root: string;
 };
@@ -36,15 +44,20 @@ export type ComponentPreviewToolkit = {
 export function componentPreviewToolkitPlugin(
   framework: ComponentPreviewToolkit["framework"],
 ) {
-  return framework === "vue"
-    ? {
-        name: "@vitejs/plugin-vue",
-        version: componentPreviewToolkitVersions.pluginVue,
-      }
-    : {
-        name: "@vitejs/plugin-react",
-        version: componentPreviewToolkitVersions.pluginReact,
-      };
+  if (framework === "vue")
+    return {
+      name: "@vitejs/plugin-vue",
+      version: componentPreviewToolkitVersions.pluginVue,
+    };
+  if (framework === "svelte")
+    return {
+      name: "@sveltejs/vite-plugin-svelte",
+      version: componentPreviewToolkitVersions.pluginSvelte,
+    };
+  return {
+    name: "@vitejs/plugin-react",
+    version: componentPreviewToolkitVersions.pluginReact,
+  };
 }
 
 export type ComponentPreviewServerOptions = {
@@ -142,7 +155,7 @@ export function componentPreviewServerReport(
 export const componentPreviewServerScript = String.raw`
 import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
-import { createRequire } from "node:module";
+import nodeModule, { createRequire } from "node:module";
 import { homedir } from "node:os";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -155,6 +168,12 @@ const idleMs = Number(idleText) || 660000;
 const usesToolkit = Boolean(toolkitVite);
 const serverComponentHint = "open_component_preview renders client components in the browser: preview one of its client sub-components with made-up props, or check this screen in the full app.";
 const vueMountHint = "A preview file of a Vue package exports mount(element, state), which renders the named state into element, such as createApp(Component, props).mount(element).";
+const svelteMountHint = "A preview file of a Svelte package exports mount(element, state), which renders the named state into element, such as mount(Component, { target: element, props }) with mount from svelte.";
+// Vue and Svelte packages served by Blame's Vite render every state
+// through mount.
+const mountHints = { svelte: svelteMountHint, vue: vueMountHint };
+// Set for a SvelteKit app: the major version of its @sveltejs/kit.
+let svelteKitMajor = 0;
 let lastRequest = Date.now();
 let server;
 let closing = false;
@@ -202,18 +221,62 @@ function ownDependencies() {
   }
 }
 
-// @vitejs/plugin-vue compiles .vue files with the project's own Vue, 3.2.25
-// or later.
-function checkVue(require) {
-  let version;
+// The version of a package installed for the package, or undefined.
+function projectVersion(require, name) {
   try {
-    version = String(JSON.parse(readFileSync(require.resolve("vue/package.json"), "utf8")).version || "");
+    return String(JSON.parse(readFileSync(require.resolve(name + "/package.json"), "utf8")).version || "");
   } catch {
-    throw new SetupError("Vue is not installed for " + packageDir + ". open_component_preview never installs the project's dependencies: install them first.");
+    return undefined;
   }
-  const [major, minor, patch] = version.split(".").map((part) => parseInt(part, 10) || 0);
-  if (major < 3) throw new SetupError("Vue 2 is not supported: " + packageDir + " has vue " + version + " installed, and without a Vite config open_component_preview renders Vue 3.2.25 or later only. Check this component in the app instead.");
-  if (major === 3 && (minor < 2 || (minor === 2 && patch < 25))) throw new SetupError("vue " + version + " is installed for " + packageDir + ": without a Vite config, open_component_preview renders Vue 3.2.25 or later only, which @vitejs/plugin-vue requires. Check this component in the app instead.");
+}
+
+function versionParts(version) {
+  return version.split(".").map((part) => parseInt(part, 10) || 0);
+}
+
+function versionBelow(version, minimum) {
+  const parts = versionParts(version);
+  const index = minimum.findIndex((part, position) => (parts[position] || 0) !== part);
+  return index >= 0 && (parts[index] || 0) < minimum[index];
+}
+
+// The framework Blame's Vite compiles with: the project's own, at least the
+// version the plugin requires.
+function checkFramework(require, framework) {
+  const { label, minimum, name, plugin } =
+    framework === "vue"
+      ? { label: "Vue", minimum: [3, 2, 25], name: "vue", plugin: "@vitejs/plugin-vue" }
+      : { label: "Svelte", minimum: [5, 46, 4], name: "svelte", plugin: "@sveltejs/vite-plugin-svelte" };
+  const version = projectVersion(require, name);
+  if (version === undefined) throw new SetupError(label + " is not installed for " + packageDir + ". open_component_preview never installs the project's dependencies: install them first.");
+  const supported = label + " " + minimum.join(".") + " or later";
+  const [major] = versionParts(version);
+  if (major < minimum[0]) throw new SetupError(label + " " + major + " is not supported: " + packageDir + " has " + name + " " + version + " installed, and without a Vite config open_component_preview renders " + supported + " only. Check this component in the app instead.");
+  if (versionBelow(version, minimum)) throw new SetupError(name + " " + version + " is installed for " + packageDir + ": without a Vite config, open_component_preview renders " + supported + " only, which " + plugin + " requires. Check this component in the app instead.");
+}
+
+// @sveltejs/vite-plugin-svelte imports svelte/compiler from its own folder.
+// Its imports of svelte resolve from the package instead: the project's
+// own Svelte compiles the components that its runtime renders. A require()
+// keeps its own parent whatever the hook passes on: the package's require
+// resolves it.
+function useProjectSvelte(require) {
+  if (typeof nodeModule.registerHooks !== "function") throw new SetupError("Node " + process.version + " runs " + packageDir + ": without a Vite config, open_component_preview renders Svelte components with Node 22.15 or later only. Check this component in the app instead.");
+  const parentURL = pathToFileURL(join(packageDir, "package.json")).href;
+  nodeModule.registerHooks({
+    resolve(specifier, context, nextResolve) {
+      const svelte = specifier === "svelte" || specifier.startsWith("svelte/");
+      const fromPlugin = Boolean(context.parentURL && context.parentURL.includes("/node_modules/@sveltejs/vite-plugin-svelte/"));
+      if (!svelte || !fromPlugin) return nextResolve(specifier, context);
+      if (context.conditions && context.conditions.includes("require")) return { shortCircuit: true, url: pathToFileURL(require.resolve(specifier)).href };
+      return nextResolve(specifier, { ...context, parentURL });
+    },
+  });
+}
+
+// A package's own Svelte config, which @sveltejs/vite-plugin-svelte loads.
+function svelteConfigFile() {
+  return ["svelte.config.js", "svelte.config.mjs", "svelte.config.cjs", "svelte.config.ts", "svelte.config.mts"].some((name) => existsSync(join(packageDir, name)));
 }
 
 // Blame's own Vite: one install per version, platform and C library, so a
@@ -223,7 +286,7 @@ function toolkitDirectory() {
   const header = process.platform === "linux" && process.report ? process.report.getReport().header : undefined;
   const libc = process.platform !== "linux" ? "" : header && header.glibcVersionRuntime ? "-gnu" : "-musl";
   const root = toolkitRoot || join(homedir(), ".cache", "blame", "component-preview");
-  return join(root, "vite-" + toolkitVite + "-" + toolkitPlugin.replace(/^@vitejs\//, "") + "-" + toolkitPluginVersion + "-" + process.platform + "-" + process.arch + libc);
+  return join(root, "vite-" + toolkitVite + "-" + toolkitPlugin.replace(/^@[^/]+\//, "") + "-" + toolkitPluginVersion + "-" + process.platform + "-" + process.arch + libc);
 }
 
 function installedVersion(directory, name) {
@@ -304,17 +367,19 @@ async function installToolkit(directory) {
   }
 }
 
-function pageHtml() {
+function pageHtml(head) {
   return [
     "<!doctype html>",
     '<html lang="en">',
-    '<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>Component preview</title></head>',
+    '<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>Component preview</title>' + head + "</head>",
     '<body><div id="root"></div><script type="module" src="/@id/__x00__' + entryId + '"></script></body>',
     "</html>",
   ].join("\n");
 }
 
-function entryCode(react) {
+// mountHint: how the package's framework renders through mount, when
+// React is not installed.
+function entryCode(react, mountHint) {
   const lines = [];
   if (react) {
     lines.push('import { createElement, isValidElement, useEffect } from "react";');
@@ -374,11 +439,10 @@ function entryCode(react) {
     '    await preview.mount(element, state);',
     '    finish("ready");',
   );
-  if (framework === "vue")
-    // A Vue package renders every state through mount.
+  if (mountHints[framework])
     lines.push(
       '  } else {',
-      '    finish("error", ' + JSON.stringify(vueMountHint) + ' + " Its exports: " + (names.join(", ") || "none") + ".");',
+      '    finish("error", ' + JSON.stringify(mountHints[framework]) + ' + " Its exports: " + (names.join(", ") || "none") + ".");',
       '  }',
     );
   else {
@@ -403,7 +467,7 @@ function entryCode(react) {
     else
       lines.push(
         '  } else {',
-        '    finish("error", "React is not installed for this package: export mount(element, state) to render " + JSON.stringify(state) + ".");',
+        '    finish("error", "React is not installed for this package: export mount(element, state) to render " + JSON.stringify(state) + "."' + (mountHint ? ' + " " + ' + JSON.stringify(mountHint) : "") + ');',
         '  }',
       );
   }
@@ -423,7 +487,7 @@ function invalidateModules() {
   for (const graph of graphs) if (graph && typeof graph.invalidateAll === "function") graph.invalidateAll();
 }
 
-function previewPlugin(react) {
+function previewPlugin(react, mountHint) {
   return {
     name: "blame:component-preview",
     enforce: "pre",
@@ -459,7 +523,7 @@ function previewPlugin(react) {
       return id === entryId || id === resolvedEntryId ? resolvedEntryId : undefined;
     },
     load(id) {
-      return id === resolvedEntryId ? entryCode(react) : undefined;
+      return id === resolvedEntryId ? entryCode(react, mountHint) : undefined;
     },
     configureServer(viteServer) {
       viteServer.middlewares.use(async (request, response, next) => {
@@ -476,7 +540,8 @@ function previewPlugin(react) {
         }
         try {
           if (url.searchParams.get("fresh") === "1") invalidateModules();
-          const html = await viteServer.transformIndexHtml(url.pathname + url.search, pageHtml(), request.originalUrl);
+          const head = svelteKitMajor ? await svelteKitHead(viteServer) : "";
+          const html = await viteServer.transformIndexHtml(url.pathname + url.search, pageHtml(head), request.originalUrl);
           response.statusCode = 200;
           response.setHeader("content-type", "text/html; charset=utf-8");
           response.setHeader("cache-control", "no-store");
@@ -487,6 +552,79 @@ function previewPlugin(react) {
       });
     },
   };
+}
+
+// $app/state as SvelteKit's router leaves it after it navigates to /: the
+// preview page has no router. The preview file may change the page before
+// it mounts, such as page.url or page.params.
+const svelteKitStateShim = [
+  'export const page = { data: {}, error: null, form: null, params: {}, route: { id: null }, state: {}, status: 200, url: new URL("/", location.origin) };',
+  'export const navigating = { from: null, to: null, type: null, willUnload: null, delta: null, complete: null };',
+  'export const updated = { current: false, check: async () => false };',
+].join("\n");
+
+// $app/stores, removed in SvelteKit 3, with the same page.
+const svelteKitStoresShim = [
+  'import { readable } from "svelte/store";',
+  'import { page as pageState } from "blame-sveltekit:state";',
+  'export const page = readable(pageState);',
+  'export const navigating = readable(null);',
+  'export const updated = { ...readable(false), check: async () => false };',
+  'export function getStores() {',
+  '  return { page, navigating, updated };',
+  '}',
+].join("\n");
+
+// Resolves $app/state, and $app/stores before SvelteKit 3, to the shims,
+// ahead of SvelteKit's own $app alias.
+function svelteKitShims() {
+  const shims = { state: svelteKitStateShim, ...(svelteKitMajor < 3 ? { stores: svelteKitStoresShim } : {}) };
+  return {
+    name: "blame:sveltekit-shims",
+    enforce: "pre",
+    config: {
+      order: "post",
+      handler(config) {
+        const alias = (config.resolve && config.resolve.alias) || [];
+        const entries = Array.isArray(alias) ? alias : Object.entries(alias).map(([find, replacement]) => ({ find, replacement }));
+        const shimEntries = Object.keys(shims).map((name) => ({ find: new RegExp("^\\$app/" + name + "$"), replacement: "blame-sveltekit:" + name }));
+        config.resolve = { ...(config.resolve || {}), alias: [...shimEntries, ...entries] };
+      },
+    },
+    resolveId(id) {
+      return id.startsWith("blame-sveltekit:") && shims[id.slice("blame-sveltekit:".length)] ? "\0" + id : undefined;
+    },
+    load(id) {
+      return id.startsWith("\0blame-sveltekit:") ? shims[id.slice("\0blame-sveltekit:".length)] : undefined;
+    },
+  };
+}
+
+// SvelteKit 3, and SvelteKit 2 with explicit environment variables, give
+// the public ones of src/env.* through $app/env/public; SvelteKit 2
+// otherwise gives its PUBLIC_* ones through $env/dynamic/public.
+function explicitSvelteKitEnv(viteServer) {
+  if (svelteKitMajor >= 3) return true;
+  const setup = viteServer.config.plugins.find((plugin) => plugin.name === "vite-plugin-sveltekit-setup");
+  const kit = setup && setup.api && setup.api.options && setup.api.options.kit;
+  return Boolean(kit && kit.experimental && kit.experimental.explicitEnvironmentVariables);
+}
+
+// What SvelteKit's own page sets before its modules run: the dynamic
+// public environment variables, read from SvelteKit's server modules, which
+// never give the private ones.
+async function svelteKitHead(viteServer) {
+  let script;
+  try {
+    const env = explicitSvelteKitEnv(viteServer)
+      ? { ...(await viteServer.ssrLoadModule("$app/env/public")) }
+      : { ...(await viteServer.ssrLoadModule("$env/dynamic/public")).env };
+    script = "globalThis.__sveltekit_dev = " + JSON.stringify({ env }) + ";";
+  } catch (error) {
+    const message = "SvelteKit did not give the public environment variables of " + packageDir + ": " + ((error && error.message) || error);
+    script = 'document.documentElement.dataset.blamePreviewStatus = "error";\ndocument.documentElement.dataset.blamePreviewMessage = ' + JSON.stringify(message) + ";";
+  }
+  return "<script>" + script.replace(/</g, "\\u003c") + "</script>";
 }
 
 function displayPath(file) {
@@ -746,7 +884,7 @@ function jsconfigFile() {
 
 // Blame's own Vite with the package's framework plugin, installed for this
 // environment if it is not yet.
-async function toolkitPlugins(plugins) {
+async function toolkitPlugins(plugins, require) {
   const directory = toolkitDirectory();
   const installed = !toolkitReady(directory);
   if (installed) {
@@ -754,8 +892,12 @@ async function toolkitPlugins(plugins) {
     await installToolkit(directory);
   }
   const vite = packageModule(join(directory, "node_modules", "vite", "package.json"));
+  if (framework === "svelte") useProjectSvelte(require);
   const plugin = await import(packageModule(join(directory, "node_modules", ...toolkitPlugin.split("/"), "package.json")).url);
   if (framework === "vue") plugins.push(plugin.default());
+  // Without a svelte.config.*, <style lang="..."> blocks go through Vite's
+  // CSS preprocessors, as svelte-preprocess does in a bundler's config.
+  else if (framework === "svelte") plugins.push(...plugin.svelte(svelteConfigFile() ? undefined : { preprocess: plugin.vitePreprocess() }));
   else plugins.push(serverOnlyPlugin(), plugin.default());
   if (framework === "next") plugins.push({ ...nextShims(), enforce: "pre" });
   return { toolkit: { directory, installed }, vite };
@@ -766,15 +908,19 @@ async function main() {
   // the package's own dev server runs.
   process.chdir(packageDir);
   const require = createRequire(join(packageDir, "package.json"));
-  // A Vue package renders through mount, even with React installed nearby.
-  const react = framework !== "vue" && resolvable(require, "react") && resolvable(require, "react-dom/client");
-  const plugins = [previewPlugin(react)];
+  // A Vue or Svelte package renders through mount, even with React
+  // installed nearby.
+  const react = !mountHints[framework] && resolvable(require, "react") && resolvable(require, "react-dom/client");
+  const mountHint = react ? undefined : mountHints[framework] || (projectVersion(require, "svelte") ? svelteMountHint : projectVersion(require, "vue") ? vueMountHint : undefined);
+  const kitVersion = !usesToolkit && ownDependencies().has("@sveltejs/kit") ? projectVersion(require, "@sveltejs/kit") : undefined;
+  svelteKitMajor = kitVersion ? versionParts(kitVersion)[0] : 0;
+  const plugins = [previewPlugin(react, mountHint), ...(svelteKitMajor ? [svelteKitShims()] : [])];
   let vite;
   let toolkit;
   if (usesToolkit) {
-    if (framework === "vue") checkVue(require);
+    if (mountHints[framework]) checkFramework(require, framework);
     else if (!react) throw new SetupError("React is not installed for " + packageDir + ". Without a Vite config, open_component_preview renders React components only, and it never installs the project's dependencies: install them first.");
-    ({ toolkit, vite } = await toolkitPlugins(plugins));
+    ({ toolkit, vite } = await toolkitPlugins(plugins, require));
   } else {
     try {
       vite = packageModule(require.resolve("vite/package.json"));

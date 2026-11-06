@@ -1,11 +1,11 @@
 ---
 name: component-preview
-description: Use after creating a UI component or changing how one renders, in a Vite, React or Vue 3 project (Next.js and Vue CLI included), even when the app's preview is available. Shows the component on its own with made-up data, in its main states (default, empty, error, loading, long content), light and dark, desktop and mobile widths, rendered in one open_component_preview call whose screenshots go to finish_task. Not for checks a DOM read or a test already covers.
+description: Use after creating a UI component or changing how one renders, in a Vite, React, Vue 3 or Svelte 5 project (Next.js, Vue CLI and SvelteKit included), even when the app's preview is available. Shows the component on its own with made-up data, in its main states (default, empty, error, loading, long content), light and dark, desktop and mobile widths, rendered in one open_component_preview call whose screenshots go to finish_task. Not for checks a DOM read or a test already covers.
 ---
 
 # Component preview
 
-Show one component on its own, with props and data you make up, rendered by a temporary Vite server that `open_component_preview` starts for the session: with the package's own Vite config, or with Blame's own Vite for a React or Vue 3 package without one, such as a Next.js or Vue CLI app. You avoid sign-in, the backend and real data, and see every state that matters in one call. The story's own preview, if any, keeps running untouched.
+Show one component on its own, with props and data you make up, rendered by a temporary Vite server that `open_component_preview` starts for the session: with the package's own Vite config, a SvelteKit app's included, or with Blame's own Vite for a React, Vue 3 or Svelte 5 package without one, such as a Next.js, Vue CLI or Rollup app. You avoid sign-in, the backend and real data, and see every state that matters in one call. The story's own preview, if any, keeps running untouched.
 
 ## When to use it
 
@@ -31,7 +31,7 @@ export const loading = <SettingsPanel items={[]} loading />
 export const long = <SettingsPanel items={manyItemsWithLongNames} />
 ```
 
-For Vue, Svelte or another framework, write `<name>.blame-preview.ts` and export `mount(element, state)` instead: it renders the named state into `element` with the framework's own entry API. For Vue, see below.
+For Vue, Svelte or another framework, write `<name>.blame-preview.ts` and export `mount(element, state)` instead: it renders the named state into `element` with the framework's own entry API. For Vue and Svelte, see below.
 
 The dark theme emulates `prefers-color-scheme` and sets the `dark` class, `data-theme` and `color-scheme` on `<html>`. If the project applies its theme another way, do it in the file.
 
@@ -66,6 +66,34 @@ export function mount(element: HTMLElement, state: string) {
 - The component's `<style>` and `<style scoped>` blocks apply, and so do the package's PostCSS or Tailwind config and the `paths` of its `tsconfig.json` or `jsconfig.json`. In a Vue CLI package, `@/` resolves to `src/`, as in its webpack config. `VUE_APP_*` variables of its `.env` files reach `process.env`.
 - Install what the component needs on the app before mounting, with fakes: `app.use(router)`, `app.use(createPinia())`, `app.provide(key, value)`.
 - Vue 2 is not supported: the tool says so. Check that component in the app instead.
+
+## SvelteKit and Svelte 5 packages
+
+A SvelteKit app keeps its own Vite and `sveltekit()`, so `$lib` or `#lib`, its aliases, `$env/*` and `$app/env/*` work as in the app. SvelteKit's router does not run in the temporary page: `$app/state`, and `$app/stores` before SvelteKit 3, give a page at `/` with no params or data, its public environment variables reach the page, and `goto()` and links do not navigate. A Svelte 5 package (`svelte` 5.46.4 or later) without `vite.config.*`, such as a Rollup or webpack app, is served by Blame's own Vite with `@sveltejs/vite-plugin-svelte`: the package's own Svelte compiles its components, with its `svelte.config.*` if it has one.
+
+The preview file imports the `.svelte` component and the stylesheet the root layout (or `src/main.*`) imports, and mounts the requested state with Svelte's `mount(Component, { target: element, props })`. The file's own export is named `mount`, so import Svelte's under another name:
+
+```ts
+import { mount as mountComponent } from "svelte"
+import "../../app.css" // the stylesheet src/routes/+layout.svelte imports
+import ProfileCard from "$lib/components/ProfileCard.svelte"
+
+const states: Record<string, Record<string, unknown>> = {
+  default: { name: "Ada Lovelace", status: "Active" },
+  empty: { name: "", status: "" },
+  long: { name: "Augusta Ada King, Countess of Lovelace", status: "Away" },
+}
+
+export function mount(element: HTMLElement, state: string) {
+  mountComponent(ProfileCard, { target: element, props: states[state] })
+}
+```
+
+- The component's `<style>` blocks apply, scoped as in the app, and so do the package's PostCSS or Tailwind config and, without Vite, the `paths` of its `tsconfig.json` or `jsconfig.json`.
+- A component that reads the page: set it before mounting, such as `Object.assign(page, { url: new URL("/settings", location.href), params: { id: "42" } })` with `page` from `$app/state`. Pass layout data through props.
+- A component that reads a context: pass `context: new Map([[key, value]])` to `mountComponent`.
+- Server-only modules (`$lib/server/*`, `*.server.*`, private environment variables) never load in the browser: SvelteKit reports it. Preview the components that receive that data through props.
+- Svelte 4 is not supported without a Vite config: the tool says so. Check that component in the app instead.
 
 ## Replace what the component depends on
 

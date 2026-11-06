@@ -190,7 +190,7 @@ test("a preview file is located in its Vite package, with Vite installed in the 
           message: string;
         }
       ).message,
-      /^packages\/web has no vite\.config\.\* file and does not depend on React or Vue 3/u,
+      /^packages\/web has no vite\.config\.\* file and does not depend on React, Vue 3 or Svelte 5: open_component_preview renders files of a Vite package, or of a React, Vue 3 or Svelte 5 package such as a Next\.js, Vue CLI or Rollup app\./u,
     );
     await writeFile(join(app, "vite.config.ts"), "export default {}");
     assert.match(
@@ -349,7 +349,7 @@ test("a Vue 3 package without Vite, such as a Vue CLI app, is served by Blame's 
           message: string;
         }
       ).message,
-      /^Vue 2 is not supported: apps\/legacy depends on Vue 2 and has no vite\.config\.\* file\. Without one, open_component_preview renders React components and Vue 3 components \(vue 3\.2\.25 or later\) only\./u,
+      /^Vue 2 is not supported: apps\/legacy depends on Vue 2 and has no vite\.config\.\* file\. Without one, open_component_preview renders React, Vue 3 \(vue 3\.2\.25 or later\) and Svelte 5 \(svelte 5\.46\.4 or later\) components only\. Check this component in the app instead\.$/u,
     );
     // With its own Vite config, a Vue 2 package uses its own Vite.
     await writeFile(join(legacy, "vite.config.js"), "export default {}");
@@ -386,6 +386,103 @@ test("a Vue 3 project gets the tool, a Vue 2 project does not", async () => {
     // installed.
     assert.equal(await offered("latest"), true);
     assert.equal(await offered("catalog:"), true);
+  } finally {
+    await rm(worktree, { force: true, recursive: true });
+  }
+});
+
+test("a Svelte 5 package without Vite, such as a Rollup app, is served by Blame's own Vite; a Svelte 4 package is told it is not supported; a SvelteKit app keeps its own Vite", async () => {
+  const worktree = await mkdtemp(join(tmpdir(), "blame-preview-svelte-"));
+  try {
+    const widgets = join(worktree, "packages/widgets");
+    const legacy = join(worktree, "packages/legacy");
+    const site = join(worktree, "apps/site");
+    for (const directory of [widgets, legacy, site])
+      await mkdir(join(directory, "src/lib"), { recursive: true });
+    await writeFile(join(worktree, "package.json"), '{ "private": true }');
+    await writeFile(
+      join(widgets, "package.json"),
+      '{ "devDependencies": { "rollup": "^4.52.5", "svelte": "^5.57.3" } }',
+    );
+    await writeFile(
+      join(legacy, "package.json"),
+      '{ "devDependencies": { "svelte": "^4.2.19" } }',
+    );
+    await writeFile(
+      join(site, "package.json"),
+      '{ "devDependencies": { "@sveltejs/kit": "^2.70.4", "svelte": "^5.57.3", "vite": "^8.3.5" } }',
+    );
+    await writeFile(join(site, "vite.config.js"), "export default {}");
+    for (const directory of [widgets, legacy, site])
+      await writeFile(join(directory, "src/lib/card.blame-preview.ts"), "");
+    const locate = (file: string) =>
+      locateComponentPreview({ workspaceMode: "direct", worktree }, file);
+
+    assert.match(
+      (
+        (await locate("packages/widgets/src/lib/card.blame-preview.ts")) as {
+          message: string;
+        }
+      ).message,
+      /^Svelte is not installed for packages\/widgets in the story's workspace\. open_component_preview never installs the project's dependencies/u,
+    );
+    for (const name of ["svelte", "vite"]) {
+      await mkdir(join(worktree, "node_modules", name), { recursive: true });
+      await writeFile(
+        join(worktree, "node_modules", name, "package.json"),
+        "{}",
+      );
+    }
+    const widgetsLocation = await locate(
+      "packages/widgets/src/lib/card.blame-preview.ts",
+    );
+    assert.ok("host" in widgetsLocation, JSON.stringify(widgetsLocation));
+    assert.equal(widgetsLocation.packageDir, "packages/widgets");
+    assert.deepEqual(widgetsLocation.toolkit, { framework: "svelte" });
+
+    // Installed or not, Svelte 4 gets a clear message, never a compiler
+    // error.
+    assert.match(
+      (
+        (await locate("packages/legacy/src/lib/card.blame-preview.ts")) as {
+          message: string;
+        }
+      ).message,
+      /^Svelte 4 is not supported: packages\/legacy depends on Svelte 4 or older and has no vite\.config\.\* file\. Without one, open_component_preview renders React, Vue 3 \(vue 3\.2\.25 or later\) and Svelte 5 \(svelte 5\.46\.4 or later\) components only\. Check this component in the app instead\.$/u,
+    );
+    // SvelteKit: its own Vite, with sveltekit().
+    const siteLocation = await locate(
+      "apps/site/src/lib/card.blame-preview.ts",
+    );
+    assert.ok("host" in siteLocation, JSON.stringify(siteLocation));
+    assert.equal(siteLocation.packageDir, "apps/site");
+    assert.equal(siteLocation.toolkit, undefined);
+  } finally {
+    await rm(worktree, { force: true, recursive: true });
+  }
+});
+
+test("a Svelte 5 project gets the tool, a Svelte 4 project does not", async () => {
+  const worktree = await mkdtemp(
+    join(tmpdir(), "blame-preview-svelte-project-"),
+  );
+  const offered = async (svelte: string) => {
+    await writeFile(
+      join(worktree, "package.json"),
+      JSON.stringify({ devDependencies: { svelte } }),
+    );
+    return hasComponentPreviewProject(worktree);
+  };
+  try {
+    assert.equal(await offered("^4.2.19"), false);
+    assert.equal(await offered("~3.59.2"), false);
+    assert.equal(await offered("^5.0.0"), true);
+    assert.equal(await offered("5.57.3"), true);
+    // A library that supports both.
+    assert.equal(await offered("^4.0.0 || ^5.0.0"), true);
+    // Ranges it cannot read count as Svelte 5: the server checks what is
+    // installed.
+    assert.equal(await offered("latest"), true);
   } finally {
     await rm(worktree, { force: true, recursive: true });
   }

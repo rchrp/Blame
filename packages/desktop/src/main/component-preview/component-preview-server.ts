@@ -24,7 +24,7 @@ export type ComponentPreviewServerStart = {
   // Worktree-relative package directory, "" for the worktree root.
   packageDir: string;
   signal?: AbortSignal;
-  // Blame's own Vite, for a React or Vue package without one.
+  // Blame's own Vite, for a React, Vue or Svelte package without one.
   toolkit?: Pick<ComponentPreviewToolkit, "framework">;
 };
 

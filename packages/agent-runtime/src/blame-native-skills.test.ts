@@ -203,6 +203,32 @@ test("the component preview skill shows how to mount a Vue 3 component without V
   }
 });
 
+test("the component preview skill shows how to mount a Svelte component, in a SvelteKit app or without Vite", async () => {
+  const service = createUserInstructionConfigService({
+    skills: {
+      directories: resolvePluginSkillDirectoriesFromPaths([blameNativePluginPath()]),
+    },
+  });
+  try {
+    await service.start();
+    const executor = service.createSkillsExecutor?.();
+    assert.ok(executor);
+    const output = await executor("component-preview", "profile card", {} as never);
+    assert.match(output, /import \{ mount as mountComponent \} from "svelte"/);
+    assert.match(output, /import ProfileCard from "\$lib\/components\/ProfileCard\.svelte"/);
+    assert.match(
+      output,
+      /export function mount\(element: HTMLElement, state: string\) \{\n  mountComponent\(ProfileCard, \{ target: element, props: states\[state\] \}\)\n\}/,
+    );
+    assert.match(output, /A SvelteKit app keeps its own Vite and `sveltekit\(\)`/);
+    assert.match(output, /`\$app\/state`[^\n]*a page at `\/`/);
+    assert.match(output, /Svelte 5 package \(`svelte` 5\.46\.4 or later\) without `vite\.config\.\*`[^\n]*Blame's own Vite with `@sveltejs\/vite-plugin-svelte`/);
+    assert.match(output, /Svelte 4 is not supported/);
+  } finally {
+    service.stop();
+  }
+});
+
 test("the component preview skill makes the component preview the default visual check", async () => {
   const service = createUserInstructionConfigService({
     skills: {
