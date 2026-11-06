@@ -358,3 +358,51 @@ async function runFailingTool({ failures, sameCall }: { failures: number; sameCa
     await new Promise(resolve => server.close(resolve));
   }
 }
+
+test("a tool result over Cline's former 8,000-character cut reaches the model whole", async () => {
+  const { createTool } = await import("@cline/sdk");
+  const { encodeToolResult } = await import("./tool-result-envelope.js");
+  const output = `${"word ".repeat(8_000)}\nend`;
+  const requests: Record<string, unknown>[] = [];
+  const server = createServer(async (request, response) => {
+    requests.push(JSON.parse(await readBody(request)));
+    response.writeHead(200, { "content-type": "text/event-stream" });
+    const chunks = requests.length === 1 ? [
+      { id: "long", object: "chat.completion.chunk", choices: [{ index: 0, delta: { role: "assistant", tool_calls: [{ index: 0, id: "long-1", type: "function", function: { name: "long_result", arguments: "{}" } }] }, finish_reason: null }] },
+      { id: "long", object: "chat.completion.chunk", choices: [{ index: 0, delta: {}, finish_reason: "tool_calls" }] },
+    ] : streamedCompletion(["read"]);
+    for (const chunk of chunks) response.write(`data: ${JSON.stringify(chunk)}\n\n`);
+    response.end("data: [DONE]\n\n");
+  });
+  await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
+  const address = server.address();
+  assert.ok(address && typeof address === "object");
+  const workspace = await mkdtemp(join(sandbox, "long-result-"));
+  const tool = createTool({
+    name: "long_result",
+    description: "Returns a long result.",
+    inputSchema: { type: "object", properties: {} },
+    execute: async () => encodeToolResult({ status: "ok", data: { output } }) as never,
+  });
+  const core = await ClineCore.create({ backendMode: "local", clientName: "long-result-smoke", fetch: createProviderCompatibleFetch(globalThis.fetch), toolPolicies: toolPolicies(false) });
+  try {
+    const started = await core.start({
+      prompt: "Use the tool.",
+      config: appendProductionConfig({
+        sessionId: "long-result-smoke", providerId: "openai-compatible", modelId: "smoke-model", apiKey: "offline",
+        baseUrl: `http://127.0.0.1:${address.port}/v1`, cwd: workspace, workspaceRoot: workspace,
+        checkpoint: { enabled: false }, enableAgentTeams: false, enableSpawnAgent: false,
+        enableTools: true, extraTools: [tool], maxIterations: 3, mode: "act", systemPrompt: "Use the tool.",
+      }),
+      interactive: false, source: "long-result-smoke",
+    });
+    assert.equal(started.result?.text, "read");
+    const messages = requests[1]!.messages as Array<{ role: string; content: unknown }>;
+    const result = JSON.stringify(messages.find(message => message.role === "tool")?.content);
+    assert.ok(result.includes("word ".repeat(8_000)), "The tool result was cut");
+    assert.match(result, /data\.output:/u);
+  } finally {
+    await core.delete("long-result-smoke").catch(() => undefined);
+    await new Promise(resolve => server.close(resolve));
+  }
+});

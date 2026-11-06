@@ -227,5 +227,9 @@ test("standalone payload ships the patched SDK used by the managed hub", async (
     });
     assert.equal(result, undefined);
     assert.match(sdk.resolveHubBuildId(), /^blame-sdk-v1-/);
+    // Hub sessions run Cline's message builder without Blame's extensions.
+    const { changes } = JSON.parse(await readFile(join(packageRoot, "vendor/cline-core/dist/blame-patch.json"), "utf8"));
+    assert.ok(changes.includes("message builder: 100,000-character tool result backstop"));
+    assert.match(await readFile(entry, "utf8"), /=100000,(?:[\w$]+=\d+,)*[\w$]+=\{maxToolResultChars:"CLINE_MESSAGE_BUILDER_MAX_TOOL_RESULT_CHARS"/u);
   });
 });

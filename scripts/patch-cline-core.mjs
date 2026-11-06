@@ -18,6 +18,7 @@ const patchMarker = "dist/blame-patch.json"
 const bundles = ["dist/index.js", "dist/hub/index.js", "dist/hub/daemon/entry.js"]
 // Keep in step with the "@cline/core>simple-git" override in pnpm-workspace.yaml.
 const simpleGitVersion = "4.0.2"
+const toolResultBackstop = 100_000
 
 /** A transformation: files it applies to, how often per file, and the rewrite. */
 const changes = [
@@ -111,6 +112,19 @@ const changes = [
       "g",
     ),
     replace: (_match, head, time) => `${head}${Number(time) + 1})?${Number(time) + 1}:void 0}`,
+  },
+  {
+    // The message builder cuts the middle out of every tool-result text block
+    // over this many characters. Blame's tools bound their own output, so the
+    // default is only a backstop; CLINE_MESSAGE_BUILDER_MAX_TOOL_RESULT_CHARS
+    // still overrides it.
+    name: "message builder: 100,000-character tool result backstop",
+    files: Object.fromEntries(bundles.map((file) => [file, 1])),
+    pattern: new RegExp(
+      `(var ${id}=)8000(,(?:${id}=\\d+,)*${id}=\\{maxToolResultChars:"CLINE_MESSAGE_BUILDER_MAX_TOOL_RESULT_CHARS")`,
+      "g",
+    ),
+    replace: (_match, head, tail) => `${head}${toolResultBackstop}${tail}`,
   },
   {
     // simple-git 4 removed the default export; 3.x has the named one too.
