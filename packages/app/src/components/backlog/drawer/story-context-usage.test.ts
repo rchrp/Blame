@@ -28,6 +28,17 @@ test("does not count cached tokens twice when the input already holds them", () 
   assert.equal(usage?.fresh, 30_000)
 })
 
+test("does not count the cache twice when the sum still fits the window", () => {
+  // The last request of a Claude Code story: the input holds the cache.
+  const usage = storyContextUsage(
+    { cacheReadTokens: 467_019, cacheWriteTokens: 987, inputTokens: 468_008 },
+    1_000_000
+  )
+  assert.equal(usage?.used, 468_008)
+  assert.equal(usage?.cached, 467_019)
+  assert.equal(usage?.fresh, 989)
+})
+
 test("has nothing to show without usage or a known window", () => {
   assert.equal(storyContextUsage(undefined, 200_000), undefined)
   assert.equal(storyContextUsage({ inputTokens: 5 }, undefined), undefined)

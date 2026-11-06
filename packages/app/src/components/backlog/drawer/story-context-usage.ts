@@ -25,10 +25,15 @@ export function storyContextUsage(
   const input = usage.inputTokens ?? 0
   const cached = usage.cacheReadTokens ?? 0
   const written = usage.cacheWriteTokens ?? 0
-  // Some providers count cached tokens inside the input, others beside it:
-  // when adding them up overflows the window, the input already holds them.
+  // Some providers count cached tokens inside the input, others beside it.
+  // An input at least as large as its cached part already holds it: Claude
+  // Code reports 468k of input for 467k read from the cache and 1k written,
+  // and adding them up showed 91% of the window instead of 47%. Beside the
+  // input, the uncached tail after the last cache point is rarely that big.
   const separate = input + cached + written
-  const used = separate > limit && input <= limit ? input : separate
+  const included =
+    input >= cached + written || (separate > limit && input <= limit)
+  const used = included ? input : separate
   if (used <= 0) return undefined
   const clamped = Math.min(used, limit)
   const cachedPart = Math.min(cached, clamped)
