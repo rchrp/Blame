@@ -26,6 +26,16 @@ write({
   mcp_servers: mcpUrl ? [{ name: "blame", status: "connected" }] : [],
 });
 
+// Real Claude Code lists the MCP tools as it starts, before any input.
+let toolsListed = false;
+if (mcpUrl) {
+  const delay = Number(process.env.FAKE_CLAUDE_MCP_DELAY_MS ?? 0);
+  setTimeout(() => {
+    mcpReady ??= rpc({ method: "initialize", params: { protocolVersion: "2025-06-18" } });
+    void mcpReady.then(() => rpc({ method: "tools/list", params: {} })).then(() => { toolsListed = true; });
+  }, delay);
+}
+
 const lines = createInterface({ input: process.stdin });
 for await (const line of lines) {
   if (!line.trim()) continue;
@@ -85,7 +95,7 @@ for await (const line of lines) {
     continue;
   } else {
     streamText(
-      `echo(${model}): ${text} | effort: ${effort} | system: ${systemPrompt.split("\n")[0]} | mcp: ${mcpUrl ? "blame" : "none"}`,
+      `echo(${model}): ${text} | effort: ${effort} | system: ${systemPrompt.split("\n")[0]} | mcp: ${mcpUrl ? "blame" : "none"}${mcpUrl ? ` | tools: ${toolsListed ? "listed" : "missing"}` : ""}`,
     );
   }
   write({ type: "result", subtype: "success", is_error: false, result: "" });
