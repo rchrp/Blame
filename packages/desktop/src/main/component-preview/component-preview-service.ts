@@ -10,6 +10,7 @@ import type { ScreenshotCaptureContext } from "../agent-screenshots/agent-screen
 import type { ComponentPreviewHost } from "./component-preview-hosts.ts";
 import {
   componentPreviewToolkitPlugin,
+  type ComponentPreviewAngularReport,
   type ComponentPreviewToolkit,
 } from "./component-preview-server-script.ts";
 import type {
@@ -72,7 +73,8 @@ export type ComponentPreviewLocation =
       host: ComponentPreviewHost;
       // Worktree-relative package directory, "" for the worktree root.
       packageDir: string;
-      // Blame's own Vite, for a React or Vue package without a Vite config.
+      // Blame's own Vite, for a React, Vue or Angular package without a
+      // Vite config.
       toolkit?: Pick<ComponentPreviewToolkit, "framework">;
     }
   | { message: string };
@@ -93,7 +95,13 @@ export type ComponentPreviewDependencies = {
 
 type RunningServer = Pick<
   ComponentPreviewServer,
-  "origin" | "pageUrl" | "running" | "stop" | "toolkit" | "viteVersion"
+  | "angular"
+  | "origin"
+  | "pageUrl"
+  | "running"
+  | "stop"
+  | "toolkit"
+  | "viteVersion"
 >;
 
 type Running = {
@@ -373,11 +381,22 @@ function serverSummary(
       : "";
   const vueCli =
     framework === "vue" ? " In a Vue CLI package, @/ resolves to src/." : "";
+  const angular = server.angular ? ` ${angularSummary(server.angular)}` : "";
   const installed =
     started && server.toolkit.installed
       ? ` Blame installed this Vite first, once for this environment, in ${server.toolkit.directory}.`
       : "";
-  return `${verb} Blame's own Vite ${server.viteVersion} server with ${componentPreviewToolkitPlugin(framework).name}${shims}, ${where}: the package has no Vite config, so its PostCSS config and tsconfig or jsconfig paths apply.${vueCli}${installed}`;
+  return `${verb} Blame's own Vite ${server.viteVersion} server with ${componentPreviewToolkitPlugin(framework).name}${shims}, ${where}: the package has no Vite config, so its PostCSS config and tsconfig or jsconfig paths apply.${vueCli}${angular}${installed}`;
+}
+
+// What the Angular compiler compiles with, and how the page runs change
+// detection.
+function angularSummary(angular: ComponentPreviewAngularReport) {
+  const zone = angular.zone
+    ? "zone.js loads first, from its polyfills"
+    : "its polyfills have no zone.js, so the render is zoneless";
+  const problem = angular.problem ? ` ${angular.problem}.` : "";
+  return `The project's Angular ${angular.version} compiler compiles its components with ${angular.tsconfig}; ${zone}.${problem}`;
 }
 
 function errorMessage(error: unknown) {

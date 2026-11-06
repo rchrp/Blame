@@ -5,28 +5,33 @@
 // pre-bundles only what the preview files import, and stops by itself when
 // nobody has asked it anything for a while.
 //
-// A React or Vue 3 package without Vite, such as a Next.js or Vue CLI app,
-// gets Blame's own Vite instead, with @vitejs/plugin-react or
-// @vitejs/plugin-vue, installed once per environment in the host's toolkit
-// folder, outside the worktree. The framework and every other import still
-// resolve from the project's node_modules; its PostCSS config and tsconfig
-// or jsconfig paths apply. Next.js imports that only work inside Next are
-// replaced by small shims, and a Vue CLI package keeps its @ alias for
-// src, in this server only.
+// A React, Vue 3 or Angular package without Vite, such as a Next.js, Vue
+// CLI or Angular CLI app, gets Blame's own Vite instead, with
+// @vitejs/plugin-react, @vitejs/plugin-vue or @analogjs/vite-plugin-angular,
+// installed once per environment in the host's toolkit folder, outside the
+// worktree. The framework and every other import still resolve from the
+// project's node_modules; its PostCSS config and tsconfig or jsconfig
+// paths apply. Next.js imports that only work inside Next are replaced by
+// small shims, and a Vue CLI package keeps its @ alias for src, in this
+// server only. The Angular part is in component-preview-angular-script.ts.
+
+import { componentPreviewAngularScript } from "./component-preview-angular-script.ts";
 
 export const componentPreviewPagePath = "/__blame_component_preview__";
 export const componentPreviewReportPrefix = "BLAME_COMPONENT_PREVIEW ";
 
 // The versions of Blame's own Vite, the same as Blame's packages use.
 export const componentPreviewToolkitVersions = {
+  pluginAngular: "2.9.6",
   pluginReact: "6.1.2",
   pluginVue: "6.0.10",
   vite: "8.3.5",
 } as const;
 
 export type ComponentPreviewToolkit = {
-  // "next" adds the Next.js shims to React; "vue" uses @vitejs/plugin-vue.
-  framework: "next" | "react" | "vue";
+  // "next" adds the Next.js shims to React; "vue" uses @vitejs/plugin-vue,
+  // "angular" @analogjs/vite-plugin-angular.
+  framework: "angular" | "next" | "react" | "vue";
   // Folder of Blame's own Vite installs, as the server process sees it.
   root: string;
 };
@@ -36,16 +41,34 @@ export type ComponentPreviewToolkit = {
 export function componentPreviewToolkitPlugin(
   framework: ComponentPreviewToolkit["framework"],
 ) {
-  return framework === "vue"
-    ? {
-        name: "@vitejs/plugin-vue",
-        version: componentPreviewToolkitVersions.pluginVue,
-      }
-    : {
-        name: "@vitejs/plugin-react",
-        version: componentPreviewToolkitVersions.pluginReact,
-      };
+  if (framework === "angular")
+    return {
+      name: "@analogjs/vite-plugin-angular",
+      version: componentPreviewToolkitVersions.pluginAngular,
+    };
+  if (framework === "vue")
+    return {
+      name: "@vitejs/plugin-vue",
+      version: componentPreviewToolkitVersions.pluginVue,
+    };
+  return {
+    name: "@vitejs/plugin-react",
+    version: componentPreviewToolkitVersions.pluginReact,
+  };
 }
+
+// What an Angular server compiles with and loads first.
+export type ComponentPreviewAngularReport = {
+  // The polyfills of angular.json, imported before the preview file.
+  polyfills: string[];
+  // Why angular.json could not be read, if it could not.
+  problem?: string;
+  // Relative to the package directory.
+  tsconfig: string;
+  version: string;
+  // Whether the polyfills load zone.js; otherwise the render is zoneless.
+  zone: boolean;
+};
 
 export type ComponentPreviewServerOptions = {
   // Suffix of the package's Vite cache directory, so this server never
@@ -69,6 +92,8 @@ export type ComponentPreviewServerReport =
   | { event: "installing"; directory: string }
   | {
       event: "listening";
+      // Set when Blame's own Vite compiles an Angular package.
+      angular?: ComponentPreviewAngularReport;
       port: number;
       react: boolean;
       // Set when the server runs Blame's own Vite.
@@ -114,8 +139,10 @@ export function componentPreviewServerReport(
       return { event: "installing", directory: String(value.directory ?? "") };
     if (value.event === "listening" && typeof value.port === "number") {
       const toolkit = value.toolkit as Record<string, unknown> | undefined;
+      const angular = angularReport(value.angular);
       return {
         event: "listening",
+        ...(angular ? { angular } : {}),
         port: value.port,
         react: value.react === true,
         ...(toolkit && typeof toolkit.directory === "string"
@@ -137,24 +164,48 @@ export function componentPreviewServerReport(
   return undefined;
 }
 
+function angularReport(
+  value: unknown,
+): ComponentPreviewAngularReport | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const report = value as Record<string, unknown>;
+  return {
+    polyfills: Array.isArray(report.polyfills)
+      ? report.polyfills.filter(
+          (polyfill): polyfill is string => typeof polyfill === "string",
+        )
+      : [],
+    ...(typeof report.problem === "string" ? { problem: report.problem } : {}),
+    tsconfig: typeof report.tsconfig === "string" ? report.tsconfig : "",
+    version: typeof report.version === "string" ? report.version : "",
+    zone: report.zone === true,
+  };
+}
+
 // Plain JavaScript run by the project's Node. No template expressions and
-// no backticks inside: the whole script is one String.raw literal.
-export const componentPreviewServerScript = String.raw`
+// no backticks inside: the script is one String.raw literal, followed by
+// the functions of its Angular part.
+export const componentPreviewServerScript =
+  String.raw`
 import { spawn } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
-import { createRequire } from "node:module";
+import { existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
+import * as nodeModule from "node:module";
 import { homedir } from "node:os";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 
 const [packageDir, host, portText, token, idleText, cacheName, toolkitRoot, toolkitVite, toolkitPlugin, toolkitPluginVersion, framework] = process.argv.slice(1);
+const { createRequire } = nodeModule;
 const pagePath = "/__blame_component_preview__/" + token;
 const entryId = "virtual:blame-component-preview";
 const resolvedEntryId = "\0" + entryId;
 const idleMs = Number(idleText) || 660000;
 const usesToolkit = Boolean(toolkitVite);
+// A Vue or Angular package renders every state through mount.
+const mountsOnly = framework === "vue" || framework === "angular";
 const serverComponentHint = "open_component_preview renders client components in the browser: preview one of its client sub-components with made-up props, or check this screen in the full app.";
 const vueMountHint = "A preview file of a Vue package exports mount(element, state), which renders the named state into element, such as createApp(Component, props).mount(element).";
+const angularMountHint = "A preview file of an Angular package exports mount(element, state), which renders the named state into element: createApplication({ providers }), then createComponent(Component, { environmentInjector: app.injector, hostElement: element }), its inputs set with setInput, app.attachView(ref.hostView) and ref.changeDetectorRef.detectChanges().";
 let lastRequest = Date.now();
 let server;
 let closing = false;
@@ -223,7 +274,7 @@ function toolkitDirectory() {
   const header = process.platform === "linux" && process.report ? process.report.getReport().header : undefined;
   const libc = process.platform !== "linux" ? "" : header && header.glibcVersionRuntime ? "-gnu" : "-musl";
   const root = toolkitRoot || join(homedir(), ".cache", "blame", "component-preview");
-  return join(root, "vite-" + toolkitVite + "-" + toolkitPlugin.replace(/^@vitejs\//, "") + "-" + toolkitPluginVersion + "-" + process.platform + "-" + process.arch + libc);
+  return join(root, "vite-" + toolkitVite + "-" + toolkitPlugin.replace(/^@[^/]+\//, "") + "-" + toolkitPluginVersion + "-" + process.platform + "-" + process.arch + libc);
 }
 
 function installedVersion(directory, name) {
@@ -314,7 +365,7 @@ function pageHtml() {
   ].join("\n");
 }
 
-function entryCode(react) {
+function entryCode(react, angular) {
   const lines = [];
   if (react) {
     lines.push('import { createElement, isValidElement, useEffect } from "react";');
@@ -335,8 +386,9 @@ function entryCode(react) {
     '  html.dataset.blamePreviewStatus = status;',
     '  if (message) html.dataset.blamePreviewMessage = String(message).slice(0, 2000);',
     '};',
-    'const describe = (error) => (error && (error.message || error.reason)) || String(error);',
   );
+  if (angular) lines.push(...angularHelperLines());
+  else lines.push('const describe = (error) => (error && (error.message || error.reason)) || String(error);');
   if (react)
     lines.push(
       // React renders async components only on the server: it warns, or
@@ -368,17 +420,22 @@ function entryCode(react) {
     'addEventListener("unhandledrejection", (event) => finish("error", describe(event.reason)));',
     'const element = document.getElementById("root");',
     'try {',
+  );
+  if (angular) lines.push(...angularPolyfillLines(angular));
+  lines.push(
     '  const preview = await import(/* @vite-ignore */ "/" + file.split("/").map(encodeURIComponent).join("/"));',
     '  const names = Object.keys(preview).filter((name) => name !== "mount");',
     '  if (typeof preview.mount === "function") {',
     '    await preview.mount(element, state);',
+  );
+  if (angular) lines.push('    checkModules();');
+  lines.push(
     '    finish("ready");',
   );
-  if (framework === "vue")
-    // A Vue package renders every state through mount.
+  if (mountsOnly)
     lines.push(
       '  } else {',
-      '    finish("error", ' + JSON.stringify(vueMountHint) + ' + " Its exports: " + (names.join(", ") || "none") + ".");',
+      '    finish("error", ' + JSON.stringify(framework === "vue" ? vueMountHint : angularMountHint) + ' + " Its exports: " + (names.join(", ") || "none") + ".");',
       '  }',
     );
   else {
@@ -423,7 +480,7 @@ function invalidateModules() {
   for (const graph of graphs) if (graph && typeof graph.invalidateAll === "function") graph.invalidateAll();
 }
 
-function previewPlugin(react) {
+function previewPlugin(react, angular) {
   return {
     name: "blame:component-preview",
     enforce: "pre",
@@ -448,9 +505,9 @@ function previewPlugin(react) {
         };
         const optimizeDeps = config.optimizeDeps || {};
         // The entry imports React itself, and a Vue preview file imports
-        // Vue: bundled up front, a first render never waits for a
-        // re-optimization and its reload.
-        const frameworkDeps = framework === "vue" ? ["vue"] : react ? ["react", "react-dom/client", "react/jsx-dev-runtime"] : [];
+        // Vue, an Angular one Angular: bundled up front, a first render
+        // never waits for a re-optimization and its reload.
+        const frameworkDeps = angular ? angularDependencies(angular) : framework === "vue" ? ["vue"] : react ? ["react", "react-dom/client", "react/jsx-dev-runtime"] : [];
         const include = frameworkDeps.length ? [...new Set([...(optimizeDeps.include || []), ...frameworkDeps])] : optimizeDeps.include;
         config.optimizeDeps = { ...optimizeDeps, entries: ["**/*.blame-preview.*"], ...(include ? { include } : {}) };
       },
@@ -459,7 +516,7 @@ function previewPlugin(react) {
       return id === entryId || id === resolvedEntryId ? resolvedEntryId : undefined;
     },
     load(id) {
-      return id === resolvedEntryId ? entryCode(react) : undefined;
+      return id === resolvedEntryId ? entryCode(react, angular) : undefined;
     },
     configureServer(viteServer) {
       viteServer.middlewares.use(async (request, response, next) => {
@@ -746,7 +803,7 @@ function jsconfigFile() {
 
 // Blame's own Vite with the package's framework plugin, installed for this
 // environment if it is not yet.
-async function toolkitPlugins(plugins) {
+async function toolkitPlugins(plugins, angular) {
   const directory = toolkitDirectory();
   const installed = !toolkitReady(directory);
   if (installed) {
@@ -754,8 +811,11 @@ async function toolkitPlugins(plugins) {
     await installToolkit(directory);
   }
   const vite = packageModule(join(directory, "node_modules", "vite", "package.json"));
-  const plugin = await import(packageModule(join(directory, "node_modules", ...toolkitPlugin.split("/"), "package.json")).url);
-  if (framework === "vue") plugins.push(plugin.default());
+  const pluginDirectory = join(directory, "node_modules", ...toolkitPlugin.split("/"));
+  if (angular) resolveAngularFromProject(angular.bases, pluginDirectory);
+  const plugin = await import(packageModule(join(pluginDirectory, "package.json")).url);
+  if (angular) plugins.push(plugin.default(angularPluginOptions(angular)));
+  else if (framework === "vue") plugins.push(plugin.default());
   else plugins.push(serverOnlyPlugin(), plugin.default());
   if (framework === "next") plugins.push({ ...nextShims(), enforce: "pre" });
   return { toolkit: { directory, installed }, vite };
@@ -766,15 +826,17 @@ async function main() {
   // the package's own dev server runs.
   process.chdir(packageDir);
   const require = createRequire(join(packageDir, "package.json"));
-  // A Vue package renders through mount, even with React installed nearby.
-  const react = framework !== "vue" && resolvable(require, "react") && resolvable(require, "react-dom/client");
-  const plugins = [previewPlugin(react)];
+  // A Vue or Angular package renders through mount, even with React
+  // installed nearby.
+  const react = !mountsOnly && resolvable(require, "react") && resolvable(require, "react-dom/client");
+  const angular = framework === "angular" ? angularSetup(require) : undefined;
+  const plugins = [previewPlugin(react, angular)];
   let vite;
   let toolkit;
   if (usesToolkit) {
     if (framework === "vue") checkVue(require);
-    else if (!react) throw new SetupError("React is not installed for " + packageDir + ". Without a Vite config, open_component_preview renders React components only, and it never installs the project's dependencies: install them first.");
-    ({ toolkit, vite } = await toolkitPlugins(plugins));
+    else if (!angular && !react) throw new SetupError("React is not installed for " + packageDir + ". Without a Vite config, open_component_preview renders React components only, and it never installs the project's dependencies: install them first.");
+    ({ toolkit, vite } = await toolkitPlugins(plugins, angular));
   } else {
     try {
       vite = packageModule(require.resolve("vite/package.json"));
@@ -802,7 +864,7 @@ async function main() {
   server = await createServer(options);
   await server.listen();
   const address = server.httpServer && server.httpServer.address();
-  report({ event: "listening", port: address && typeof address === "object" ? address.port : Number(portText), react, vite: vite.version, ...(toolkit ? { toolkit } : {}) });
+  report({ event: "listening", port: address && typeof address === "object" ? address.port : Number(portText), react, vite: vite.version, ...(toolkit ? { toolkit } : {}), ...(angular ? { angular: angularReport(angular) } : {}) });
   setInterval(() => {
     if (Date.now() - lastRequest > idleMs) close();
   }, 15000).unref();
@@ -813,4 +875,4 @@ main().catch((error) => {
   report({ event: "error", message: error instanceof SetupError ? error.message : String((error && (error.stack || error.message)) || error) });
   process.exit(1);
 });
-`;
+` + componentPreviewAngularScript;

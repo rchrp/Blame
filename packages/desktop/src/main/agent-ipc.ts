@@ -373,11 +373,12 @@ function registerDeliveryWorkflowIpcHandlers(
   });
 }
 
-// A session of a Vite, React or Vue 3 project gets open_component_preview,
-// whatever its workspace: a managed preview, local or cloud, the project
-// folder, or no web service at all. Other projects, such as an Angular or
-// Vue 2 app, do not have it. Git ignores the temporary preview files from
-// the start; a cloud preview's sandbox ignores them when its server starts.
+// A session of a Vite, React, Vue 3 or Angular project gets
+// open_component_preview, whatever its workspace: a managed preview, local
+// or cloud, the project folder, or no web service at all. Other projects,
+// such as an Ember or Vue 2 app, do not have it. Git ignores the temporary
+// preview files from the start; a cloud preview's sandbox ignores them
+// when its server starts.
 async function prepareComponentPreviews(
   input: Record<string, unknown>,
   workspace: string | undefined,
@@ -387,7 +388,7 @@ async function prepareComponentPreviews(
     await import("./component-preview/component-preview-location");
   const supported = await hasComponentPreviewProject(workspace).catch(
     (error: unknown) => {
-      log.warn("Could not look for a Vite, React or Vue project", {
+      log.warn("Could not look for a Vite, React, Vue or Angular project", {
         error: error instanceof Error ? error.message : String(error),
       });
       return false;

@@ -190,7 +190,7 @@ test("a preview file is located in its Vite package, with Vite installed in the 
           message: string;
         }
       ).message,
-      /^packages\/web has no vite\.config\.\* file and does not depend on React or Vue 3/u,
+      /^packages\/web has no vite\.config\.\* file and does not depend on React, Vue 3 or Angular/u,
     );
     await writeFile(join(app, "vite.config.ts"), "export default {}");
     assert.match(
@@ -277,12 +277,12 @@ test("only a project with a Vite config or a React package gets the tool", async
       join(worktree, "node_modules/pkg/package.json"),
       '{ "dependencies": { "react": "19.0.0" } }',
     );
-    // An Angular app.
+    // A classic Ember app, built by ember-cli.
     await writeFile(
       join(worktree, "package.json"),
-      '{ "dependencies": { "@angular/core": "20.0.0" } }',
+      '{ "devDependencies": { "ember-cli": "~5.12.0", "ember-source": "~5.12.0" } }',
     );
-    await writeFile(join(worktree, "angular.json"), "{}");
+    await writeFile(join(worktree, "ember-cli-build.js"), "");
     assert.equal(await hasComponentPreviewProject(worktree), false);
     await mkdir(join(worktree, "apps/site"), { recursive: true });
     await writeFile(join(worktree, "apps/site/package.json"), "not json");
@@ -349,7 +349,7 @@ test("a Vue 3 package without Vite, such as a Vue CLI app, is served by Blame's 
           message: string;
         }
       ).message,
-      /^Vue 2 is not supported: apps\/legacy depends on Vue 2 and has no vite\.config\.\* file\. Without one, open_component_preview renders React components and Vue 3 components \(vue 3\.2\.25 or later\) only\./u,
+      /^Vue 2 is not supported: apps\/legacy depends on Vue 2 and has no vite\.config\.\* file\. Without one, open_component_preview renders React, Vue 3 \(vue 3\.2\.25 or later\) and Angular 17 to 22 components only\./u,
     );
     // With its own Vite config, a Vue 2 package uses its own Vite.
     await writeFile(join(legacy, "vite.config.js"), "export default {}");
@@ -386,6 +386,128 @@ test("a Vue 3 project gets the tool, a Vue 2 project does not", async () => {
     // installed.
     assert.equal(await offered("latest"), true);
     assert.equal(await offered("catalog:"), true);
+  } finally {
+    await rm(worktree, { force: true, recursive: true });
+  }
+});
+
+test("an Angular CLI package without Vite is served by Blame's own Vite with the Angular plugin; Angular 16, or Angular without its builder, is told why not", async () => {
+  const worktree = await mkdtemp(join(tmpdir(), "blame-preview-angular-"));
+  try {
+    const shop = join(worktree, "apps/shop");
+    for (const directory of [
+      join(shop, "src/app"),
+      join(shop, "projects/ui/src"),
+      join(worktree, "apps/legacy/src"),
+      join(worktree, "libs/widgets/src"),
+    ])
+      await mkdir(directory, { recursive: true });
+    await writeFile(join(worktree, "package.json"), '{ "private": true }');
+    // An Angular CLI app that also depends on React renders as Angular.
+    await writeFile(
+      join(shop, "package.json"),
+      '{ "dependencies": { "@angular/core": "^20.1.0", "react": "19.0.0" }, "devDependencies": { "@angular/build": "^20.1.0", "@angular/compiler-cli": "^20.1.0" } }',
+    );
+    await writeFile(join(shop, "angular.json"), "{}");
+    // A library of the app: the app's builder compiles it.
+    await writeFile(
+      join(shop, "projects/ui/package.json"),
+      '{ "peerDependencies": { "@angular/core": "^20.0.0" } }',
+    );
+    await writeFile(
+      join(worktree, "apps/legacy/package.json"),
+      '{ "dependencies": { "@angular/core": "~16.2.0" }, "devDependencies": { "@angular-devkit/build-angular": "~16.2.0" } }',
+    );
+    await writeFile(
+      join(worktree, "libs/widgets/package.json"),
+      '{ "peerDependencies": { "@angular/core": "^20.0.0" } }',
+    );
+    for (const file of [
+      "apps/shop/src/app/card.blame-preview.ts",
+      "apps/shop/projects/ui/src/button.blame-preview.ts",
+      "apps/legacy/src/card.blame-preview.ts",
+      "libs/widgets/src/chip.blame-preview.ts",
+    ])
+      await writeFile(join(worktree, file), "");
+    const locate = (file: string) =>
+      locateComponentPreview({ workspaceMode: "direct", worktree }, file);
+    const message = async (file: string) =>
+      ((await locate(file)) as { message: string }).message;
+
+    assert.match(
+      await message("apps/shop/src/app/card.blame-preview.ts"),
+      /^Angular is not installed for apps\/shop in the story's workspace\. open_component_preview never installs the project's dependencies/u,
+    );
+    for (const name of ["@angular/core", "@angular/compiler-cli"]) {
+      await mkdir(join(shop, "node_modules", name), { recursive: true });
+      await writeFile(join(shop, "node_modules", name, "package.json"), "{}");
+    }
+    const app = await locate("apps/shop/src/app/card.blame-preview.ts");
+    assert.ok("host" in app, JSON.stringify(app));
+    assert.equal(app.packageDir, "apps/shop");
+    assert.deepEqual(app.toolkit, { framework: "angular" });
+    const library = await locate(
+      "apps/shop/projects/ui/src/button.blame-preview.ts",
+    );
+    assert.ok("host" in library, JSON.stringify(library));
+    assert.equal(library.packageDir, "apps/shop/projects/ui");
+    assert.deepEqual(library.toolkit, { framework: "angular" });
+
+    assert.match(
+      await message("apps/legacy/src/card.blame-preview.ts"),
+      /^Angular 16 and earlier are not supported: apps\/legacy depends on one of them and has no vite\.config\.\* file\. Without one, open_component_preview renders Angular 17 to 22 components only\./u,
+    );
+    assert.match(
+      await message("libs/widgets/src/chip.blame-preview.ts"),
+      /^libs\/widgets depends on Angular, but neither it nor the package\.json files above it declare @angular\/build or @angular-devkit\/build-angular/u,
+    );
+  } finally {
+    await rm(worktree, { force: true, recursive: true });
+  }
+});
+
+test("an Angular 17 to 22 project with its builder gets the tool; Angular 16, or Angular without a builder, does not", async () => {
+  const worktree = await mkdtemp(
+    join(tmpdir(), "blame-preview-angular-project-"),
+  );
+  const offered = async (manifest: Record<string, Record<string, string>>) => {
+    await writeFile(join(worktree, "package.json"), JSON.stringify(manifest));
+    return hasComponentPreviewProject(worktree);
+  };
+  try {
+    assert.equal(
+      await offered({
+        dependencies: { "@angular/core": "^20.1.0" },
+        devDependencies: { "@angular/build": "^20.1.0" },
+      }),
+      true,
+    );
+    assert.equal(
+      await offered({
+        dependencies: { "@angular/core": "^17.3.0" },
+        devDependencies: { "@angular-devkit/build-angular": "^17.3.0" },
+      }),
+      true,
+    );
+    // The server checks a version it cannot read from the range.
+    assert.equal(
+      await offered({
+        dependencies: { "@angular/core": "latest" },
+        devDependencies: { "@angular/build": "latest" },
+      }),
+      true,
+    );
+    assert.equal(
+      await offered({
+        dependencies: { "@angular/core": "~16.2.0" },
+        devDependencies: { "@angular-devkit/build-angular": "~16.2.0" },
+      }),
+      false,
+    );
+    assert.equal(
+      await offered({ dependencies: { "@angular/core": "^20.1.0" } }),
+      false,
+    );
   } finally {
     await rm(worktree, { force: true, recursive: true });
   }

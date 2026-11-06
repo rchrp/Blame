@@ -25,8 +25,8 @@ import type {
 // there, otherwise the container of a local preview, whose node_modules
 // live in volumes. A cloud preview's dependencies are in its sandbox: the
 // server runs there. A package with a Vite config is served by its own
-// Vite; a React or Vue 3 package without one, such as a Next.js or Vue CLI
-// app, by Blame's.
+// Vite; a React, Vue 3 or Angular package without one, such as a Next.js,
+// Vue CLI or Angular CLI app, by Blame's.
 
 // The host in the story's cloud preview sandbox, or why there is none.
 export type CloudComponentPreviewLocator = (
@@ -34,8 +34,20 @@ export type CloudComponentPreviewLocator = (
 ) => Promise<ComponentPreviewHost | { message: string }>;
 
 // What a package.json declares: a framework Blame's own Vite renders, or
-// Vue 2, which it does not.
-type DeclaredFramework = ComponentPreviewToolkit["framework"] | "vue2";
+// one it does not: Vue 2, Angular 16 or earlier, or Angular without the
+// builder whose compiler @analogjs/vite-plugin-angular uses.
+type DeclaredFramework =
+  | ComponentPreviewToolkit["framework"]
+  | "angular-legacy"
+  | "angular-without-builder"
+  | "vue2";
+
+const unsupportedFrameworks = new Set<DeclaredFramework>([
+  "angular-legacy",
+  "angular-without-builder",
+  "vue2",
+]);
+const angularBuilders = ["@angular/build", "@angular-devkit/build-angular"];
 
 export const viteConfigNames = [
   "vite.config.ts",
@@ -83,11 +95,19 @@ export async function locateComponentPreview(
     : await toolkitFramework(worktree, packageDir);
   if (framework === "vue2")
     return {
-      message: `Vue 2 is not supported: ${label} depends on Vue 2 and has no vite.config.* file. Without one, open_component_preview renders React components and Vue 3 components (vue 3.2.25 or later) only. Check this component in the app instead.`,
+      message: `Vue 2 is not supported: ${label} depends on Vue 2 and has no vite.config.* file. Without one, open_component_preview renders React, Vue 3 (vue 3.2.25 or later) and Angular 17 to 22 components only. Check this component in the app instead.`,
+    };
+  if (framework === "angular-legacy")
+    return {
+      message: `Angular 16 and earlier are not supported: ${label} depends on one of them and has no vite.config.* file. Without one, open_component_preview renders Angular 17 to 22 components only. Check this component in the app instead.`,
+    };
+  if (framework === "angular-without-builder")
+    return {
+      message: `${label} depends on Angular, but neither it nor the package.json files above it declare @angular/build or @angular-devkit/build-angular: @analogjs/vite-plugin-angular compiles with the compiler of that builder. Put the preview file in the package of an Angular CLI app.`,
     };
   if (!projectVite && !framework)
     return {
-      message: `${label} has no vite.config.* file and does not depend on React or Vue 3: open_component_preview renders files of a Vite package, or of a React or Vue 3 package such as a Next.js or Vue CLI app. Put the preview file in the package of the component.`,
+      message: `${label} has no vite.config.* file and does not depend on React, Vue 3 or Angular: open_component_preview renders files of a Vite package, or of a React, Vue 3 or Angular package such as a Next.js, Vue CLI or Angular CLI app. Put the preview file in the package of the component.`,
     };
   const toolkit = framework ? { toolkit: { framework } } : {};
   if (target.workspaceMode === "cloud-mirror") {
@@ -99,16 +119,9 @@ export async function locateComponentPreview(
         };
     return "message" in host ? host : { host, packageDir, ...toolkit };
   }
-  const dependency = projectVite
-    ? "Vite"
-    : framework === "vue"
-      ? "Vue"
-      : "React";
-  const required = projectVite
-    ? ["vite"]
-    : framework === "vue"
-      ? ["vue"]
-      : ["react", "react-dom"];
+  const { dependency, required } = requiredPackages(
+    projectVite ? undefined : framework,
+  );
   if (await installed(worktree, packageDir, required))
     return {
       host: workspaceComponentPreviewHost(worktree),
@@ -138,9 +151,25 @@ export async function locateComponentPreview(
   };
 }
 
+// What must be installed for the package, and its name in messages. The
+// server checks the versions and the Angular builder itself.
+function requiredPackages(
+  framework: ComponentPreviewToolkit["framework"] | undefined,
+) {
+  if (!framework) return { dependency: "Vite", required: ["vite"] };
+  if (framework === "vue") return { dependency: "Vue", required: ["vue"] };
+  if (framework === "angular")
+    return {
+      dependency: "Angular",
+      required: ["@angular/core", "@angular/compiler-cli"],
+    };
+  return { dependency: "React", required: ["react", "react-dom"] };
+}
+
 // Whether the project has a package the tool renders: one with a Vite
-// config, or one that depends on React or Vue 3. Sessions of other
-// projects, such as an Angular or Vue 2 app, are not offered the tool.
+// config, or one that depends on React, Vue 3, or Angular 17 to 22 with
+// its builder. Sessions of other projects, such as an Ember or Vue 2 app,
+// are not offered the tool.
 export async function hasComponentPreviewProject(worktree: string) {
   const markers = runtimeManagedPath(worktree)
     ? await projectMarkersInRuntime(worktree)
@@ -151,7 +180,7 @@ export async function hasComponentPreviewProject(worktree: string) {
   );
   return Object.values(manifests).some((text) => {
     const framework = declaredFramework(manifestDependencies(text));
-    return framework !== undefined && framework !== "vue2";
+    return framework !== undefined && !unsupportedFrameworks.has(framework);
   });
 }
 
@@ -225,7 +254,8 @@ async function projectMarkersInRuntime(
 
 // The framework of the closest package.json that declares one: the
 // package's own, else its workspace root's. The Next.js shims only apply
-// to the Next.js app itself.
+// to the Next.js app itself. An Angular library declares @angular/core
+// without a builder: the builder of its workspace root compiles it.
 async function toolkitFramework(
   worktree: string,
   packageDir: string,
@@ -234,12 +264,14 @@ async function toolkitFramework(
     worktreePath(worktree, directory, "package.json"),
   );
   const files = await readExistingFiles(paths);
+  let withoutBuilder: DeclaredFramework | undefined;
   for (const [index, path] of paths.entries()) {
     const framework = declaredFramework(manifestDependencies(files[path]));
-    if (framework)
+    if (framework === "angular-without-builder") withoutBuilder ??= framework;
+    else if (framework)
       return framework === "next" && index > 0 ? "react" : framework;
   }
-  return undefined;
+  return withoutBuilder;
 }
 
 // The packages a package.json declares, with their version ranges. One
@@ -264,26 +296,34 @@ function manifestDependencies(text: string | null | undefined) {
   return dependencies;
 }
 
-// React wins over Vue in a package that declares both, as before Vue was
-// supported.
+// An Angular CLI app, with @angular/core and its builder, renders as
+// Angular even if it also depends on React. React wins over Vue in a
+// package that declares both, as before Vue was supported.
 function declaredFramework(
   dependencies: Map<string, string>,
 ): DeclaredFramework | undefined {
+  const angular = dependencies.get("@angular/core");
+  if (
+    angular !== undefined &&
+    angularBuilders.some((builder) => dependencies.has(builder))
+  )
+    return belowMajor(angular, 17) ? "angular-legacy" : "angular";
   if (dependencies.has("next")) return "next";
   if (dependencies.has("react")) return "react";
   const vue = dependencies.get("vue");
-  if (vue === undefined) return undefined;
-  return vue2Range(vue) ? "vue2" : "vue";
+  if (vue !== undefined) return belowMajor(vue, 3) ? "vue2" : "vue";
+  return angular === undefined ? undefined : "angular-without-builder";
 }
 
-// Whether every alternative of a range stays below Vue 3, such as "^2.7.16"
-// or "~2.6.14 || 2.7.x". A tag, an alias or a workspace range counts as Vue
-// 3: the server checks the installed version before it compiles anything.
-function vue2Range(range: string) {
+// Whether every alternative of a range stays below a major, such as
+// "^2.7.16" or "~2.6.14 || 2.7.x" below 3. A tag, an alias or a workspace
+// range does not: the server checks the installed version before it
+// compiles anything.
+function belowMajor(range: string, major: number) {
   return range
     .split("||")
     .map((alternative) => /^\s*[\^~>=v\s]*(\d+)/u.exec(alternative)?.[1])
-    .every((major) => major !== undefined && Number(major) < 3);
+    .every((found) => found !== undefined && Number(found) < major);
 }
 
 // The closest folder with a package.json, from the file's folder up to the

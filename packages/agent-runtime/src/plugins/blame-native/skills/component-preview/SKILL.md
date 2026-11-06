@@ -1,11 +1,11 @@
 ---
 name: component-preview
-description: Use after creating a UI component or changing how one renders, in a Vite, React or Vue 3 project (Next.js and Vue CLI included), even when the app's preview is available. Shows the component on its own with made-up data, in its main states (default, empty, error, loading, long content), light and dark, desktop and mobile widths, rendered in one open_component_preview call whose screenshots go to finish_task. Not for checks a DOM read or a test already covers.
+description: Use after creating a UI component or changing how one renders, in a Vite, React, Vue 3 or Angular project (Next.js, Vue CLI and Angular CLI included), even when the app's preview is available. Shows the component on its own with made-up data, in its main states (default, empty, error, loading, long content), light and dark, desktop and mobile widths, rendered in one open_component_preview call whose screenshots go to finish_task. Not for checks a DOM read or a test already covers.
 ---
 
 # Component preview
 
-Show one component on its own, with props and data you make up, rendered by a temporary Vite server that `open_component_preview` starts for the session: with the package's own Vite config, or with Blame's own Vite for a React or Vue 3 package without one, such as a Next.js or Vue CLI app. You avoid sign-in, the backend and real data, and see every state that matters in one call. The story's own preview, if any, keeps running untouched.
+Show one component on its own, with props and data you make up, rendered by a temporary Vite server that `open_component_preview` starts for the session: with the package's own Vite config, or with Blame's own Vite for a React, Vue 3 or Angular package without one, such as a Next.js, Vue CLI or Angular CLI app. You avoid sign-in, the backend and real data, and see every state that matters in one call. The story's own preview, if any, keeps running untouched.
 
 ## When to use it
 
@@ -31,7 +31,7 @@ export const loading = <SettingsPanel items={[]} loading />
 export const long = <SettingsPanel items={manyItemsWithLongNames} />
 ```
 
-For Vue, Svelte or another framework, write `<name>.blame-preview.ts` and export `mount(element, state)` instead: it renders the named state into `element` with the framework's own entry API. For Vue, see below.
+For Vue, Angular, Svelte or another framework, write `<name>.blame-preview.ts` and export `mount(element, state)` instead: it renders the named state into `element` with the framework's own entry API. For Vue and Angular, see below.
 
 The dark theme emulates `prefers-color-scheme` and sets the `dark` class, `data-theme` and `color-scheme` on `<html>`. If the project applies its theme another way, do it in the file.
 
@@ -66,6 +66,38 @@ export function mount(element: HTMLElement, state: string) {
 - The component's `<style>` and `<style scoped>` blocks apply, and so do the package's PostCSS or Tailwind config and the `paths` of its `tsconfig.json` or `jsconfig.json`. In a Vue CLI package, `@/` resolves to `src/`, as in its webpack config. `VUE_APP_*` variables of its `.env` files reach `process.env`.
 - Install what the component needs on the app before mounting, with fakes: `app.use(router)`, `app.use(createPinia())`, `app.provide(key, value)`.
 - Vue 2 is not supported: the tool says so. Check that component in the app instead.
+
+## Angular packages
+
+An Angular 17 to 22 package without `vite.config.*`, with `@angular/build` or `@angular-devkit/build-angular`, such as an Angular CLI app, is served by Blame's own Vite with `@analogjs/vite-plugin-angular`. It compiles ahead of time with the project's own Angular compiler and the tsconfig `angular.json` names (`tsconfig.app.json`), as `ng serve` does. Write `<name>.blame-preview.ts` in a folder of the package, such as next to the component in `src/`. It imports each stylesheet of the `styles` field of `angular.json`, creates an application with the providers the component needs, then creates the component in `element` with the inputs of the requested state:
+
+```ts
+import "../../styles.css" // each stylesheet of "styles" in angular.json
+import { createComponent } from "@angular/core"
+import { createApplication } from "@angular/platform-browser"
+import { provideRouter } from "@angular/router"
+import { ProfileCardComponent } from "./profile-card.component"
+
+const states: Record<string, Record<string, unknown>> = {
+  default: { name: "Ada Lovelace", status: "Active" },
+  empty: { name: "", status: "" },
+  long: { name: "Augusta Ada King, Countess of Lovelace", status: "Away" },
+}
+
+export async function mount(element: HTMLElement, state: string) {
+  const app = await createApplication({ providers: [provideRouter([])] })
+  const card = createComponent(ProfileCardComponent, { environmentInjector: app.injector, hostElement: element })
+  for (const [name, value] of Object.entries(states[state])) card.setInput(name, value)
+  app.attachView(card.hostView)
+  card.changeDetectorRef.detectChanges()
+}
+```
+
+- `templateUrl`, `styleUrl` and `styleUrls` files, signal inputs, signals and control flow blocks render as in the app. `setInput` sets `input()` and `@Input()` inputs alike. The package's PostCSS config (such as `.postcssrc.json` with Tailwind) and the `paths` of its `tsconfig.json` apply.
+- Pass the providers the component injects to `createApplication`, with fakes: `provideRouter([])` for a component that uses `routerLink`, `RouterOutlet`, `Router` or `ActivatedRoute`; `{ provide: UserService, useValue: fakeUsers }` for a service.
+- zone.js loads before the preview file when the `polyfills` of `angular.json` include it; the tool's first line says so. Otherwise the render is zoneless: Angular 21 and later need nothing more, Angular 20 needs `provideZonelessChangeDetection()` in the providers, Angular 18 and 19 `provideExperimentalZonelessChangeDetection()`.
+- A component an NgModule declares (`standalone: false`): import that module's file, add `importProvidersFrom(TheModule)` to the providers, and create the component with `createComponent` as above; `bootstrapApplication` only takes standalone components. When the module is missing, the tool names the elements Angular rendered nothing for.
+- Angular 16 and earlier are not supported, nor server-side rendering: check that component in the app instead.
 
 ## Replace what the component depends on
 

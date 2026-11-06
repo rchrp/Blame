@@ -250,8 +250,8 @@ export type StartSessionInput = {
   workspaceMode?: "local-container" | "cloud-mirror" | "direct";
   systemPrompt?: string;
   previewDevtoolsScope?: string;
-  // The desktop offers open_component_preview (a Vite, React or Vue 3
-  // project, whatever the workspace mode).
+  // The desktop offers open_component_preview (a Vite, React, Vue 3 or
+  // Angular project, whatever the workspace mode).
   componentPreview?: boolean;
   credentialLabel?: string;
   backend?: AgentBackendConfig;
