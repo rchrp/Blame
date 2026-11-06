@@ -49,6 +49,16 @@ test("all specialist prompts enforce advisory read-only work", () => {
   }
 });
 
+test("a specialist's answer is bounded, with a way to get the rest", async () => {
+  const tool = createConsultSpecialistTool({
+    capsule: async () => "",
+    spawnTool: { async execute() { return { text: "advice line\n".repeat(5_000) }; } } as never,
+  });
+  const result = await tool.execute({ specialist: "risk_review", task: "Review the risks." }, { runId: "long" } as never) as { text: string };
+  assert.ok(result.text.length < 20_200);
+  assert.match(result.text, /\nadvice line\n\[Cut to 20000 characters: .* Ask the specialist a narrower question/u);
+});
+
 test("consult_specialist resolves the private system prompt server-side", async () => {
   let delegatedInput: unknown;
   const spawnTool = {

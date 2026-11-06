@@ -5,6 +5,7 @@ import { join } from "node:path";
 import test from "node:test";
 import { currentWorkspaceRevisionState } from "./harness/workspace-revisions.js";
 import {
+  previewContainerLogsTool,
   previewDevtoolsMcpTools,
   projectAppTool,
   type PreviewToolRuntimeOptions,
@@ -224,4 +225,62 @@ test("a direct story gets the project app tool, not the managed container's", ()
   const isolated = names("local-container");
   assert.ok(!isolated.includes("project_app"));
   assert.ok(isolated.includes("repair_preview_initialization"));
+});
+
+test("a long DevTools result is cut to its own limit, with a way to narrow it", async (context) => {
+  const workspace = await mkdtemp(join(tmpdir(), "blame-preview-limit-"));
+  context.after(() => rm(workspace, { recursive: true, force: true }));
+  const options = await readyPreviewOptions(workspace, () => {
+    throw new Error("unused");
+  });
+  const snapshot = Array.from(
+    { length: 5_000 },
+    (_, index) => `uid=${index} button "Item ${index}"`,
+  ).join("\n");
+  options.previewDevtoolsCall = () => ({
+    content: [{ type: "text", text: snapshot }],
+  });
+  const tools = await previewDevtoolsMcpTools(
+    options,
+    { scope: "preview-limit", worktree: workspace },
+    { log() {} },
+  );
+  const result = (await tools[0].execute({}, {
+    sessionId: "session-limit",
+    signal: new AbortController().signal,
+  } as never)) as { content: Array<{ type: string; text: string }> };
+  const text = result.content.map((part) => part.text).join("\n");
+  assert.ok(text.length < 41_000);
+  assert.ok(text.startsWith('uid=0 button "Item 0"'));
+  assert.match(text, /\[Cut to 40000 characters: .* Narrow the call/u);
+});
+
+test("container logs keep their latest lines within the limit", async () => {
+  const stdout = Array.from(
+    { length: 4_000 },
+    (_, index) => `request ${index} served`,
+  ).join("\n");
+  const tool = previewContainerLogsTool(
+    {
+      previewContainerLogs: () => ({
+        service: "web",
+        source: "container",
+        stdout,
+        stderr: "warning\n",
+      }),
+    },
+    { scope: "logs", worktree: "/p" },
+  )!;
+  const result = (await tool.execute({}, {} as never)) as Record<
+    string,
+    string
+  >;
+  assert.equal(result.service, "web");
+  assert.equal(result.stderr, "warning\n");
+  assert.ok(result.stdout!.length < 24_300);
+  assert.ok(result.stdout!.endsWith("request 3999 served"));
+  assert.match(
+    result.stdout!,
+    /^\[Cut to 24000 characters: the first \d+ of \d+ are omitted\. The latest lines are kept\./u,
+  );
 });

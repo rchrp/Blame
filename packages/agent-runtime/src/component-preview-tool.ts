@@ -8,6 +8,7 @@ import {
   recordSessionScreenshots,
 } from "./preview-screenshots.js";
 import { previewDevtoolsAgentTimeoutMs } from "./preview-devtools-policy.js";
+import { limitToolText, toolOutputLimits } from "./tool-output-limit.js";
 
 type AgentTool = NonNullable<CoreSessionConfig["extraTools"]>[number];
 type ToolContext = Parameters<AgentTool["execute"]>[1];
@@ -85,8 +86,11 @@ export function componentPreviewTool(
     // desktop service; Cline's 30 s default would cut a slow first load.
     retryable: false,
     timeoutMs: previewDevtoolsAgentTimeoutMs(),
-    execute: (input: unknown, context: ToolContext) =>
-      openComponentPreview(options, preview, input, context),
+    execute: async (input: unknown, context: ToolContext) =>
+      limitToolText(
+        await openComponentPreview(options, preview, input, context),
+        toolOutputLimits.componentPreview,
+      ),
   };
 }
 

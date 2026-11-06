@@ -7,6 +7,7 @@ import {
   previewToolModelOutput,
   recordSessionScreenshots,
 } from "./preview-screenshots.js";
+import { limitToolText, toolOutputLimits } from "./tool-output-limit.js";
 
 export type PreviewSurfaceInfo = {
   type: "terminal" | "display" | "device" | "host-window";
@@ -82,7 +83,10 @@ export function previewSurfaceTool(
         toolCallId: context.toolCallId,
       });
       recordSessionScreenshots(context.sessionId, result);
-      return previewToolModelOutput(result) as never;
+      return limitToolText(
+        previewToolModelOutput(result),
+        toolOutputLimits.previewSurface,
+      ) as never;
     },
   };
 }

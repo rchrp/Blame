@@ -1,5 +1,6 @@
 import { createTool, type AgentTool, type AgentToolContext } from "@cline/sdk";
 import { z } from "zod";
+import { limitText, toolOutputLimits } from "./tool-output-limit.js";
 
 import {
   blameSpecialistAgent,
@@ -269,7 +270,10 @@ function recoverableSpecialistExecutionFailure(error: unknown) {
     recommendation: "Continue without the specialist or report the limitation.",
     isError: false,
     output: {
-      message: error instanceof Error ? error.message : String(error),
+      message: limitText(
+        error instanceof Error ? error.message : String(error),
+        toolOutputLimits.specialistFailure,
+      ),
     },
   };
 }
@@ -287,6 +291,9 @@ function completedConsultationResult(value: unknown) {
         : "SPECIALIST_CONSULTATION_COMPLETED",
     recommendation: "Apply the useful advice and continue as the lead agent.",
     ...result,
+    ...(typeof result.text === "string"
+      ? { text: limitText(result.text, toolOutputLimits.specialistAnswer) }
+      : {}),
     isError: false,
   };
 }

@@ -4,6 +4,11 @@ import { currentWorkspaceRevisionState } from "./harness/workspace-revisions.js"
 import { sha256 } from "./harness/light-identity.js";
 import { previewDevtoolsAgentTimeoutMs } from "./preview-devtools-policy.js";
 import {
+  limitText,
+  limitToolText,
+  toolOutputLimits,
+} from "./tool-output-limit.js";
+import {
   initializationSurface,
   type PreviewInitialization,
 } from "./preview-selection.js";
@@ -274,7 +279,7 @@ function previewMcpProvider(
         request.context?.sessionId ?? request.context?.conversationId,
         output,
       );
-      return output;
+      return limitToolText(output, toolOutputLimits.previewDevtools);
     },
   };
 }
@@ -585,11 +590,13 @@ async function executePreviewContainerLogs(
   signal?: AbortSignal,
 ) {
   try {
-    return await options.previewContainerLogs?.({
-      ...preview,
-      ...previewContainerLogsInput(input),
-      signal,
-    });
+    return boundedContainerLogs(
+      await options.previewContainerLogs?.({
+        ...preview,
+        ...previewContainerLogsInput(input),
+        signal,
+      }),
+    );
   } catch (error) {
     return {
       outcome: "failed",
@@ -600,6 +607,21 @@ async function executePreviewContainerLogs(
       output: { error: errorMessage(error) },
     };
   }
+}
+
+/** Lines can be long (minified bundles, JSON logs) and setup logs untailed. */
+function boundedContainerLogs<T>(result: T): T {
+  const record = recordValue(result);
+  if (!Object.keys(record).length) return result;
+  return {
+    ...record,
+    ...(typeof record.stdout === "string"
+      ? { stdout: limitText(record.stdout, toolOutputLimits.previewLogStdout) }
+      : {}),
+    ...(typeof record.stderr === "string"
+      ? { stderr: limitText(record.stderr, toolOutputLimits.previewLogStderr) }
+      : {}),
+  } as T;
 }
 
 function previewContainerLogsInputSchema() {
