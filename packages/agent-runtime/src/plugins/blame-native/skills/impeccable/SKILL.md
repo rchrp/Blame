@@ -147,6 +147,8 @@ Fix the cause at the narrowest correct level: reuse an existing shared primitive
 
 Build fully, then inspect the rendered experience in one batched pass across the representative desktop and mobile sizes. Fix the discovered issues together and confirm once more at most. Do not spend open-ended rounds polishing one corner.
 
+When `open_component_preview` is available, check the component's states, themes and widths there, following the `component-preview` skill. Use the app's preview for the requested workflow, navigation and the component's integration in its page.
+
 Verification must include:
 
 - the requested workflow with real content;

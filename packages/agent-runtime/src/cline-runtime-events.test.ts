@@ -22,7 +22,11 @@ import { executeLightWorkspaceRequest } from "./harness/light-executor.js";
 import { RunLifecycleRegistry } from "./harness/run-lifecycle.js";
 import { sha256 } from "./harness/light-identity.js";
 import type { ProjectMemoryRecord } from "./harness/project-memory.js";
-import type { AgentEvent } from "./types.js";
+import type {
+  AgentEvent,
+  ProjectRunConfiguration,
+  StartDevelopmentSessionInput,
+} from "./types.js";
 
 import {
   buildDevelopmentSystemPrompt,
@@ -576,6 +580,11 @@ test("starts development sessions with native skills and private specialist cons
     assert.match(capturedStart.config.systemPrompt ?? "", /## Skill selection/);
     assert.match(capturedStart.config.systemPrompt ?? "", /Workspace-owned regression fixture/);
     assert.match(capturedStart.config.systemPrompt ?? "", /Not for backend-only/);
+    assert.doesNotMatch(
+      capturedStart.config.systemPrompt ?? "",
+      /open_component_preview|`component-preview`|"name":"component-preview"|component preview/i,
+      "Without open_component_preview, neither the skill nor the tool is offered",
+    );
     const toolNames = capturedStart.config.extraTools?.map(
       (tool: { name: string }) => tool.name,
     );
@@ -2338,6 +2347,273 @@ test("includes optional guidance only for interactive scoped sessions", async ()
   assert.match(prompt, /consult_specialist/);
   assert.match(prompt, /get_preview_devtools/);
   assert.match(prompt, /managed by Blame/);
+});
+
+const componentPreviewGuidance =
+  /load the `component-preview` skill, write its preview file with the states that matter, open them in one `open_component_preview` call, and attach the screenshots to `finish_task`/;
+const appCaptures =
+  /capture the app with this preview's tools[^.]*a whole screen, a flow, the component in its page, navigation between screens/;
+// The tool or its skill, named by the prompt. Workspace paths, such as this
+// story's worktree, may contain "component-preview" and do not count.
+const componentPreviewMention =
+  /open_component_preview|`component-preview`|"name":"component-preview"|component preview/i;
+
+function previewRunConfiguration(
+  overrides: Partial<ProjectRunConfiguration>,
+): ProjectRunConfiguration {
+  return {
+    category: "web",
+    command: "pnpm dev",
+    cwd: ".",
+    default: true,
+    id: "app",
+    name: "App",
+    scopes: [],
+    services: [],
+    ...overrides,
+  };
+}
+
+function previewInitialization(
+  configuration: ProjectRunConfiguration,
+  services: Array<{ id: string; surface: { type: "display" | "terminal" } }> = [],
+): StartDevelopmentSessionInput["projectInitialization"] {
+  return {
+    previewManifest: { services } as never,
+    runConfigurations: [configuration],
+  };
+}
+
+// Every preview the story can have, and whether it shows the app's interface.
+const previewSurfaces: Array<{
+  name: string;
+  input: Partial<StartDevelopmentSessionInput>;
+  surfaceTool?: RegExp;
+  visual: boolean;
+}> = [
+  {
+    name: "managed web preview",
+    input: { previewDevtoolsScope: "story:1" },
+    surfaceTool: /get_preview_devtools/,
+    visual: true,
+  },
+  {
+    name: "Direct web app",
+    input: { previewDevtoolsScope: "runner:app", workspaceMode: "direct" },
+    surfaceTool: /project_app/,
+    visual: true,
+  },
+  {
+    name: "device",
+    input: {
+      projectInitialization: previewInitialization(
+        previewRunConfiguration({ category: "mobile", previewTarget: "iphone" }),
+      ),
+    },
+    surfaceTool: /preview_device/,
+    visual: true,
+  },
+  {
+    name: "app screen",
+    input: {
+      projectInitialization: previewInitialization(
+        previewRunConfiguration({
+          category: "desktop",
+          previewService: "desktop",
+          services: ["desktop"],
+        }),
+        [{ id: "desktop", surface: { type: "display" } }],
+      ),
+    },
+    surfaceTool: /preview_display/,
+    visual: true,
+  },
+  {
+    name: "program terminal",
+    input: {
+      projectInitialization: previewInitialization(
+        previewRunConfiguration({
+          category: "terminal",
+          previewService: "cli",
+          services: ["cli"],
+        }),
+        [{ id: "cli", surface: { type: "terminal" } }],
+      ),
+    },
+    surfaceTool: /preview_terminal/,
+    visual: false,
+  },
+  {
+    name: "native desktop app in a Direct story",
+    input: {
+      projectInitialization: previewInitialization(
+        previewRunConfiguration({ category: "desktop" }),
+      ),
+      workspaceMode: "direct",
+    },
+    surfaceTool: /project_app/,
+    visual: false,
+  },
+  {
+    name: "native desktop app in an isolated story",
+    input: {
+      projectInitialization: previewInitialization(
+        previewRunConfiguration({ category: "desktop" }),
+      ),
+      workspaceMode: "local-container",
+    },
+    surfaceTool: /host window is unavailable/,
+    visual: false,
+  },
+  { name: "no preview", input: {}, visual: false },
+];
+
+function previewPrompt(input: Partial<StartDevelopmentSessionInput>) {
+  return buildDevelopmentSystemPrompt({
+    apiConnection: { token: "token", url: "https://example.com" },
+    cwd: process.cwd(),
+    modelId: "model",
+    providerId: "provider",
+    summary: "Add a settings panel",
+    title: "Settings panel",
+    workspaceRoot: process.cwd(),
+    ...input,
+  });
+}
+
+test("with a visual preview of the app, the component preview comes first and app captures complement it", async () => {
+  for (const surface of previewSurfaces.filter(({ visual }) => visual)) {
+    const prompt = await previewPrompt({ ...surface.input, componentPreview: true });
+    assert.match(prompt, componentPreviewGuidance, surface.name);
+    assert.match(prompt, appCaptures, surface.name);
+    assert.match(prompt, /these captures complement the component preview/, surface.name);
+    assert.match(prompt, /each caption says whether it shows the isolated component or the app/, surface.name);
+    assert.match(
+      prompt,
+      /in the app alone only when the component preview costs more: heavy fakes for a state the app already shows, or a change to the screen's integration/,
+      surface.name,
+    );
+    assert.doesNotMatch(prompt, /visual check available in this story/, surface.name);
+    if (surface.surfaceTool) assert.match(prompt, surface.surfaceTool, surface.name);
+  }
+});
+
+test("without a visual preview of the app, the component preview is the visual check available", async () => {
+  for (const surface of previewSurfaces.filter(({ visual }) => !visual)) {
+    const prompt = await previewPrompt({ ...surface.input, componentPreview: true });
+    assert.match(prompt, componentPreviewGuidance, surface.name);
+    assert.match(
+      prompt,
+      /It is the visual check available in this story: it shows the component on its own, not the running app/,
+      surface.name,
+    );
+    assert.doesNotMatch(prompt, /capture the app|complement the component preview/, surface.name);
+    if (surface.surfaceTool) assert.match(prompt, surface.surfaceTool, surface.name);
+  }
+  const desktop = await previewPrompt({
+    ...previewSurfaces.find(({ name }) => name === "native desktop app in a Direct story")!.input,
+    componentPreview: true,
+  });
+  assert.match(desktop, /Its window is not visible to you and no tool captures it/);
+  assert.match(desktop, /never claim you inspected the app visually/);
+  assert.doesNotMatch(desktop, /cannot see or take screenshots/);
+});
+
+test("without open_component_preview, the prompt names neither the tool nor its skill", async () => {
+  for (const surface of previewSurfaces)
+    for (const componentPreview of [undefined, false]) {
+      const prompt = await previewPrompt({ ...surface.input, componentPreview });
+      assert.doesNotMatch(prompt, componentPreviewMention, surface.name);
+      if (surface.surfaceTool) assert.match(prompt, surface.surfaceTool, surface.name);
+    }
+  const desktop = await previewPrompt(
+    previewSurfaces.find(({ name }) => name === "native desktop app in a Direct story")!.input,
+  );
+  assert.match(desktop, /Its window is not visible to you/);
+  assert.match(desktop, /never claim you inspected the app visually/);
+});
+
+test("a session offers the component preview skill and guidance only where it registers the tool", async () => {
+  const workspace = await mkdtemp(join(tmpdir(), "blame-preview-skill-session-"));
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => providerCredentialResponse();
+  const started = async (session: {
+    host: boolean;
+    offered: boolean;
+    previewDevtoolsScope?: string;
+  }) => {
+    let captured: ClineCoreStartInput | undefined;
+    const core = {
+      async dispose() {},
+      async list() {
+        return [];
+      },
+      async start(input: ClineCoreStartInput) {
+        captured = input;
+        return { sessionId: input.config.sessionId! };
+      },
+      async subscribe() {
+        return () => undefined;
+      },
+    };
+    const runtime = new BlameAgentRuntime(undefined, {
+      createCore: async () => core as never,
+      ...(session.host ? { componentPreview: async () => ({ content: [] }) } : {}),
+    });
+    try {
+      await runtime.sessions.startDevelopment({
+        apiConnection: { url: "https://api.example" },
+        autoSendPrompt: false,
+        componentPreview: session.offered,
+        cwd: workspace,
+        modelId: "model",
+        ...(session.previewDevtoolsScope
+          ? { previewDevtoolsScope: session.previewDevtoolsScope }
+          : {}),
+        providerId: "provider",
+        summary: "Add a settings panel",
+        title: "Settings panel",
+        workspaceRoot: workspace,
+      });
+    } finally {
+      await runtime.shutdown();
+    }
+    assert.ok(captured);
+    return {
+      prompt: captured.config.systemPrompt ?? "",
+      tools: captured.config.extraTools?.map((tool: { name: string }) => tool.name) ?? [],
+    };
+  };
+  try {
+    const withApp = await started({ host: true, offered: true, previewDevtoolsScope: "story:1" });
+    assert.ok(withApp.tools.includes("open_component_preview"));
+    assert.match(withApp.prompt, /## Skill selection/);
+    assert.match(withApp.prompt, /"name":"component-preview"/);
+    assert.match(withApp.prompt, /even when the app's preview is available/);
+    assert.match(withApp.prompt, componentPreviewGuidance);
+    assert.match(withApp.prompt, appCaptures);
+
+    const alone = await started({ host: true, offered: true });
+    assert.ok(alone.tools.includes("open_component_preview"));
+    assert.match(alone.prompt, /"name":"component-preview"/);
+    assert.match(alone.prompt, componentPreviewGuidance);
+    assert.match(alone.prompt, /visual check available in this story/);
+    assert.doesNotMatch(alone.prompt, appCaptures);
+
+    for (const unavailable of [
+      { host: false, offered: true },
+      { host: true, offered: false },
+    ]) {
+      const session = await started({ ...unavailable, previewDevtoolsScope: "story:1" });
+      const label = JSON.stringify(unavailable);
+      assert.equal(session.tools.includes("open_component_preview"), false, label);
+      assert.match(session.prompt, /"name":"impeccable"/, label);
+      assert.doesNotMatch(session.prompt, componentPreviewMention, label);
+    }
+  } finally {
+    globalThis.fetch = originalFetch;
+    await rm(workspace, { force: true, recursive: true });
+  }
 });
 
 test("an absent test preference leaves validation choices to the agent", async () => {

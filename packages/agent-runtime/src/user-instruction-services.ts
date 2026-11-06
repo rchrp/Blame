@@ -13,10 +13,20 @@ type StartUserInstructionServiceInput = {
 
 type UserInstructionServiceFactory = typeof createUserInstructionConfigService;
 
-export function skillScopeSystemPrompt(service?: UserInstructionConfigService) {
+// Skills that only apply through a tool the session may not register.
+const skillRequiredTools: ReadonlyMap<string, string> = new Map([
+  ["component-preview", "open_component_preview"],
+]);
+
+export function skillScopeSystemPrompt(
+  service?: UserInstructionConfigService,
+  toolNames: readonly string[] = [],
+) {
   const configured: Array<{ name: string; description?: string; disabled?: boolean }> =
     service?.createSkillsExecutor?.().configuredSkills ?? [];
-  const skills = configured.filter((skill) => !skill.disabled);
+  const skills = configured.filter(
+    (skill) => !skill.disabled && hasRequiredTool(skill.name, toolNames),
+  );
   if (!skills.length) return "";
   const descriptions: string[] = [];
   let remaining = 16_384;
@@ -35,6 +45,11 @@ export function skillScopeSystemPrompt(service?: UserInstructionConfigService) {
   return "\n\n## Skill selection\n" +
     "Invoke explicitly requested skills. Otherwise load a skill when its described scope applies to the current request; frontend files elsewhere in the workspace do not make a backend or mechanical task frontend design work. These descriptions are a startup snapshot; the skills tool loads current instructions. Inspect the skill if relevance is uncertain.\n" +
     descriptions.join("\n");
+}
+
+function hasRequiredTool(skillName: string, toolNames: readonly string[]) {
+  const tool = skillRequiredTools.get(skillName.trim());
+  return !tool || toolNames.includes(tool);
 }
 
 export class BlameUserInstructionServices {

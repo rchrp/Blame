@@ -951,7 +951,10 @@ export class BlameAgentRuntime {
       const systemPrompt =
         (input.systemPrompt ?? loadPrompt("default-agent-system")) + webResearchGuidance +
         (input.nativeCompletion && !input.clineDefaultTools
-          ? skillScopeSystemPrompt(userInstructionService)
+          ? skillScopeSystemPrompt(
+              userInstructionService,
+              extraTools.map((tool) => tool.name),
+            )
           : "");
       const requestedCompaction =
         input.compaction ?? blameCompactionConfig(this.productionConfig);
@@ -3897,6 +3900,10 @@ export class BlameAgentRuntime {
     const compaction = blameCompactionConfig(this.productionConfig);
     const enableSpecialistConsult = developmentSpecialistConsultEnabled(input);
     const conversation = conversationSessionOptions(input);
+    // open_component_preview exists only where the desktop offers it and
+    // this runtime can render it: the prompt describes exactly that.
+    const componentPreview =
+      input.componentPreview === true && Boolean(this.options.componentPreview);
     const session = await this.startSession({
       ...conversation,
       apiConnection: input.apiConnection,
@@ -3923,9 +3930,12 @@ export class BlameAgentRuntime {
       workspaceRoot: input.workspaceRoot,
       workspaceMode: input.workspaceMode,
       previewDevtoolsScope: input.previewDevtoolsScope,
-      componentPreview: input.componentPreview,
+      componentPreview,
       isolatedEnvironment: input.isolatedEnvironment,
-      systemPrompt: await buildDevelopmentSystemPrompt(input),
+      systemPrompt: await buildDevelopmentSystemPrompt({
+        ...input,
+        componentPreview,
+      }),
       enableBuiltInSkills: true,
       enableSpecialistConsult,
       enableSpawnAgent: false,

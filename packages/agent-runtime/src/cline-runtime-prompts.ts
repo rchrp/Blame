@@ -429,17 +429,73 @@ function developmentEnvironmentPrompt(input: StartDevelopmentSessionInput) {
 }
 
 function developmentPreviewPrompt(input: StartDevelopmentSessionInput) {
+  const app = appPreviewGuidance(input);
+  if (!input.componentPreview) return app.text;
+  return [app.text, componentPreviewGuidance(app.visual)]
+    .filter(Boolean)
+    .join("\n\n");
+}
+
+// What the story's own preview lets the agent check, and whether it shows
+// the app's interface, which screenshots of the app can then complement.
+function appPreviewGuidance(input: StartDevelopmentSessionInput): {
+  text: string;
+  visual: boolean;
+} {
   const initialization = input.projectInitialization;
-  const configuration = selectedInitializationConfiguration(initialization,input.previewDevtoolsScope);
-  if (configuration?.category === "desktop" && !configuration.services.length) { if (input.workspaceMode !== "direct") return "This native desktop app runs on the user's computer in a Direct story. Its host window is unavailable in this isolated story. Continue source checks and ask the user to try the UI in a Direct story."; return "This native desktop app opens in its own window on the user's computer, without isolation. Use project_app to start it and read its run status and logs. You cannot see or take screenshots of its host window. Ask the user to check the interface; never claim you inspected it visually."; }
-  if (configuration?.previewTarget) return "The preview is a local device. Use preview_device to check availability, describe_ui before tapping, and screenshot to inspect the result. Coordinates are points. Build errors refer to worktree files. Use build_and_run to rebuild after edits; Blame manages the simulator and supporting containers. If the device is unavailable here, continue local validation and report the reason.";
-  const surface = initialization?.previewManifest.services.find((s) => s.id === configuration?.previewService)?.surface;
-  if (surface?.type === "display") return "The preview is the app screen. Use preview_display to list its windows, take a screenshot, click, type, press keys, scroll and drag. Coordinates are screen pixels. Check a screenshot after changing the UI. Blame manages the app and virtual screen; do not start them manually.";
-  if (surface?.type === "terminal") return "The preview is a program terminal. Use preview_terminal to read its screen, type, press keys, wait for output and restart. The user sees the same terminal, so do not clear it without reason. Blame manages the service; do not start it manually.";
-  if (!input.previewDevtoolsScope) return "";
+  const configuration = selectedInitializationConfiguration(
+    initialization,
+    input.previewDevtoolsScope,
+  );
+  if (configuration?.category === "desktop" && !configuration.services.length) {
+    if (input.workspaceMode !== "direct")
+      return {
+        text: "This native desktop app runs on the user's computer in a Direct story. Its host window is unavailable in this isolated story; never claim you inspected the app visually. Continue source checks and ask the user to try the UI in a Direct story.",
+        visual: false,
+      };
+    return {
+      text: "This native desktop app opens in its own window on the user's computer, without isolation. Use project_app to start it and read its run status and logs. Its window is not visible to you and no tool captures it. Ask the user to check the interface; never claim you inspected the app visually.",
+      visual: false,
+    };
+  }
+  if (configuration?.previewTarget)
+    return {
+      text: "The preview is a local device. Use preview_device to check availability, describe_ui before tapping, and screenshot to inspect the result. Coordinates are points. Build errors refer to worktree files. Use build_and_run to rebuild after edits; Blame manages the simulator and supporting containers. If the device is unavailable here, continue local validation and report the reason.",
+      visual: true,
+    };
+  const surface = initialization?.previewManifest.services.find(
+    (s) => s.id === configuration?.previewService,
+  )?.surface;
+  if (surface?.type === "display")
+    return {
+      text: "The preview is the app screen. Use preview_display to list its windows, take a screenshot, click, type, press keys, scroll and drag. Coordinates are screen pixels. Check a screenshot after changing the UI. Blame manages the app and virtual screen; do not start them manually.",
+      visual: true,
+    };
+  if (surface?.type === "terminal")
+    return {
+      text: "The preview is a program terminal. Use preview_terminal to read its screen, type, press keys, wait for output and restart. The user sees the same terminal, so do not clear it without reason. Blame manages the service; do not start it manually.",
+      visual: false,
+    };
+  if (!input.previewDevtoolsScope) return { text: "", visual: false };
   if (input.workspaceMode === "direct")
-    return "The preview is the project's own app, run by Blame's project runner: the same process the user starts and stops from Blame. Check it or start it with project_app, never by hand. After final UI edits, use get_preview_devtools with waitFor=ready once; if the app is not running, start it with project_app first. If its port is held by another app, or it cannot start, continue with local validation and tell the user.";
-  return "After final UI edits, use get_preview_devtools with waitFor=ready once when available. Preview services, databases, containers, and dev servers are managed by Blame and must not be started manually. If preview infrastructure is unavailable, continue with local validation and report it.";
+    return {
+      text: "The preview is the project's own app, run by Blame's project runner: the same process the user starts and stops from Blame. Check it or start it with project_app, never by hand. After final UI edits, use get_preview_devtools with waitFor=ready once; if the app is not running, start it with project_app first. If its port is held by another app, or it cannot start, continue with local validation and tell the user.",
+      visual: true,
+    };
+  return {
+    text: "After final UI edits, use get_preview_devtools with waitFor=ready once when available. Preview services, databases, containers, and dev servers are managed by Blame and must not be started manually. If preview infrastructure is unavailable, continue with local validation and report it.",
+    visual: true,
+  };
+}
+
+// Only for sessions that register open_component_preview. The choice
+// between the component and the app stays short here; the skill details it.
+function componentPreviewGuidance(appPreviewVisual: boolean) {
+  const rule =
+    "After creating a UI component or changing how one renders, load the `component-preview` skill, write its preview file with the states that matter, open them in one `open_component_preview` call, and attach the screenshots to `finish_task`.";
+  if (!appPreviewVisual)
+    return `${rule} It is the visual check available in this story: it shows the component on its own, not the running app.`;
+  return `${rule} You may also capture the app with this preview's tools for what the component alone cannot show: a whole screen, a flow, the component in its page, navigation between screens; these captures complement the component preview, and each caption says whether it shows the isolated component or the app. Check in the app alone only when the component preview costs more: heavy fakes for a state the app already shows, or a change to the screen's integration rather than the component's rendering.`;
 }
 
 export async function clineDefaultSystemPrompt(

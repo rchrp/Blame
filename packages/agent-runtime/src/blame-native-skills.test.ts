@@ -110,6 +110,29 @@ test("keeps session startup available when the skill service fails", async () =>
   assert.equal(stopped, true);
 });
 
+test("the component preview skill is listed only with its tool", async () => {
+  const service = createUserInstructionConfigService({
+    skills: {
+      directories: resolvePluginSkillDirectoriesFromPaths([blameNativePluginPath()]),
+    },
+  });
+  try {
+    await service.start();
+    const withTool = skillScopeSystemPrompt(service, ["finish_task", "open_component_preview"]);
+    assert.match(withTool, /"name":"component-preview"/);
+    assert.match(withTool, /after creating a UI component or changing how one renders/);
+    assert.match(withTool, /even when the app's preview is available/);
+    assert.match(withTool, /"name":"impeccable"/);
+    for (const toolNames of [undefined, [], ["finish_task", "get_preview_devtools"]]) {
+      const withoutTool = skillScopeSystemPrompt(service, toolNames);
+      assert.match(withoutTool, /"name":"impeccable"/);
+      assert.doesNotMatch(withoutTool, /component-preview|open_component_preview/);
+    }
+  } finally {
+    service.stop();
+  }
+});
+
 test("the component preview skill explains the preview file and the tool", async () => {
   const service = createUserInstructionConfigService({
     skills: {
@@ -128,6 +151,42 @@ test("the component preview skill explains the preview file and the tool", async
     assert.match(output, /take_snapshot/);
     assert.match(output, /finish_task/);
     assert.match(output, /Never change the project's real source/);
+  } finally {
+    service.stop();
+  }
+});
+
+test("the component preview skill makes the component preview the default visual check", async () => {
+  const service = createUserInstructionConfigService({
+    skills: {
+      directories: resolvePluginSkillDirectoriesFromPaths([blameNativePluginPath()]),
+    },
+  });
+  try {
+    await service.start();
+    const executor = service.createSkillsExecutor?.();
+    assert.ok(executor);
+    const output = await executor("component-preview", "settings panel", {} as never);
+    assert.doesNotMatch(output, /Prefer the real app/);
+    assert.match(output, /Component preview first\*\*, even when the app's preview is available/);
+    assert.match(output, /App captures as a complement/);
+    assert.match(output, /a whole screen, a flow, where the component sits in its page, navigation between screens/);
+    assert.match(output, /The app alone only when the component preview costs more than the app/);
+    assert.match(output, /heavy fakes \(several providers, global state, real data\)/);
+    assert.match(output, /how the screen integrates the component rather than how the component renders/);
+    assert.match(output, /No visual preview of the app\*\*[^\n]*never claim you inspected the app/);
+    assert.match(output, /`window\.\*` globals/);
+    assert.match(output, /states × themes × widths, at most 6/);
+    assert.match(output, /`empty`, `error`, `loading` or long content/);
+    assert.match(output, /`dark` next to `light` only if the theme changes the rendering/);
+    assert.match(output, /mobile width[^\n]*only if the component is responsive/);
+    assert.match(output, /each one-line caption says which of the two it shows/);
+
+    const impeccable = await executor("impeccable", "polish settings", {} as never);
+    assert.match(
+      impeccable,
+      /When `open_component_preview` is available, check the component's states, themes and widths there[^\n]*Use the app's preview for the requested workflow, navigation and the component's integration/,
+    );
   } finally {
     service.stop();
   }

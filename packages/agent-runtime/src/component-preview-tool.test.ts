@@ -236,6 +236,21 @@ test("the tool exists only where the desktop offers it, in every workspace mode"
   assert.equal(componentPreviewTool({}, preview), undefined);
 });
 
+test("the tool says when to use it, not only how", () => {
+  const desktop = fakeDesktop(() => rendered(1));
+  const { description } = componentPreviewTool(desktop.options, preview)!;
+  assert.match(
+    description,
+    /Use it after creating a UI component or changing how one renders, even when the app's preview is available/,
+  );
+  assert.match(description, /default, empty, error, loading, long content/);
+  assert.match(
+    description,
+    /in the app alone only when this costs more: heavy fakes for a state the app already shows, or a change to the screen's integration/,
+  );
+  assert.match(description, /each caption says whether it shows the isolated component or the app/);
+});
+
 test("finishing stops the preview server, then removes the preview files", async () => {
   const root = await mkdtemp(join(tmpdir(), "blame-preview-finish-"));
   const git = async (cwd: string, args: string[]) =>
