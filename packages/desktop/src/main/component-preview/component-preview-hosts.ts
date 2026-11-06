@@ -1,7 +1,16 @@
 import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import { randomBytes } from "node:crypto";
-import { posix } from "node:path";
-import { joinWorkspacePath, spawnRuntime } from "../workspace-runtime.ts";
+import { mkdir } from "node:fs/promises";
+import { homedir } from "node:os";
+import { join, posix } from "node:path";
+import { runtimeExecution } from "../workspace-mode.ts";
+import {
+  joinWorkspacePath,
+  run,
+  runtimeManagedPath,
+  spawnRuntime,
+  worktreeRoot,
+} from "../workspace-runtime.ts";
 
 // Where the temporary component preview server runs: next to the story's
 // installed dependencies. One interface starts a Node process there and
@@ -29,11 +38,49 @@ export type ComponentPreviewHost = {
   // Starts Node with these arguments; `port` is reachable on this computer
   // at 127.0.0.1 once the process listens on it.
   start(nodeArguments: string[], port: number): ComponentPreviewProcess;
+  // Folder of Blame's own Vite installs as the server process sees it, for
+  // packages without Vite. Absent: the server's home cache folder.
+  readonly toolkitRoot?: string;
 };
 
 type Spawn = typeof spawnRuntime;
 
 const stopGraceMs = 3_000;
+
+// Blame's own Vite installs, outside every worktree: beside the runtime's
+// worktrees when Node runs in the Blame Runtime, else in the user's cache
+// folder. A preview container mounts the same folder at the same path.
+export function componentPreviewToolkitRoot(
+  worktree: string,
+  platform: NodeJS.Platform = process.platform,
+) {
+  if (
+    runtimeExecution({ cwd: worktree }, platform, runtimeManagedPath) ===
+    "virtualized"
+  )
+    return posix.join(
+      posix.dirname(worktreeRoot(platform)),
+      "component-preview",
+    );
+  return join(homedir(), ".cache", "blame", "component-preview");
+}
+
+// Created by the worktree's owner, the user preview containers run as:
+// Docker would otherwise create a mounted folder that only root can write.
+export async function ensureComponentPreviewToolkitRoot(
+  worktree: string,
+  root: string,
+) {
+  if (
+    runtimeExecution(
+      { cwd: worktree },
+      process.platform,
+      runtimeManagedPath,
+    ) === "virtualized"
+  )
+    await run("mkdir", ["-p", root], { execution: "virtualized" });
+  else await mkdir(root, { recursive: true });
+}
 
 // The story's own workspace, where run_task runs: the computer itself for a
 // project folder, the Blame Runtime for a managed worktree. The runtime
@@ -41,6 +88,7 @@ const stopGraceMs = 3_000;
 export function workspaceComponentPreviewHost(
   worktree: string,
   spawn: Spawn = spawnRuntime,
+  toolkitRoot: string = componentPreviewToolkitRoot(worktree),
 ): ComponentPreviewHost {
   return {
     bindHost: "127.0.0.1",
@@ -52,17 +100,20 @@ export function workspaceComponentPreviewHost(
         : worktree,
     start: (nodeArguments) =>
       processHandle(spawn("node", nodeArguments, { cwd: worktree })),
+    toolkitRoot,
   };
 }
 
 // A one-off container of a local preview service: the same image, the
 // worktree at /workspace and the shared node_modules volumes, with only the
-// server's port published. The preview's own containers keep running.
+// server's port published. The preview's own containers keep running. With
+// `toolkitRoot`, Blame's own Vite installs are mounted at the same path.
 export function containerComponentPreviewHost(
   input: {
     composeFile: string;
     projectName: string;
     serviceId: string;
+    toolkitRoot?: string;
     worktree: string;
   },
   spawn: Spawn = spawnRuntime,
@@ -76,11 +127,15 @@ export function containerComponentPreviewHost(
     "--file",
     input.composeFile,
   ];
+  const toolkitVolume = input.toolkitRoot
+    ? ["--volume", `${input.toolkitRoot}:${input.toolkitRoot}`]
+    : [];
   return {
     bindHost: "0.0.0.0",
     description: `the preview's ${input.serviceId} container`,
     key: `container:${input.projectName}:${input.serviceId}`,
     path: (relativePath) => posix.join("/workspace", relativePath),
+    ...(input.toolkitRoot ? { toolkitRoot: input.toolkitRoot } : {}),
     start(nodeArguments, port) {
       const name = `${input.projectName}-component-preview-${randomBytes(4).toString("hex")}`;
       const child = spawn(
@@ -95,6 +150,7 @@ export function containerComponentPreviewHost(
           name,
           "--publish",
           `127.0.0.1:${port}:${port}`,
+          ...toolkitVolume,
           "--entrypoint",
           "node",
           input.serviceId,

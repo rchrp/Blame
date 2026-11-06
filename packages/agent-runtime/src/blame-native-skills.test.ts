@@ -156,6 +156,31 @@ test("the component preview skill explains the preview file and the tool", async
   }
 });
 
+test("the component preview skill covers Next.js and React packages without Vite", async () => {
+  const service = createUserInstructionConfigService({
+    skills: {
+      directories: resolvePluginSkillDirectoriesFromPaths([blameNativePluginPath()]),
+    },
+  });
+  try {
+    await service.start();
+    const executor = service.createSkillsExecutor?.();
+    assert.ok(executor);
+    const output = await executor("component-preview", "pricing card", {} as never);
+    assert.doesNotMatch(output, /have no component preview/);
+    assert.match(output, /Blame's own Vite with `@vitejs\/plugin-react`/);
+    assert.match(output, /PostCSS or Tailwind config and the `paths` of its `tsconfig\.json` apply/);
+    assert.match(output, /`next\/link`, `next\/image`, `next\/navigation` and `next\/font\/\*` are small shims, in this server only/);
+    assert.match(output, /`"use client"` files render as they are/);
+    assert.match(
+      output,
+      /Only client components render\. A Server Component[^\n]*preview its client sub-components with the props it would pass them, or check that screen in the app/,
+    );
+  } finally {
+    service.stop();
+  }
+});
+
 test("the component preview skill makes the component preview the default visual check", async () => {
   const service = createUserInstructionConfigService({
     skills: {

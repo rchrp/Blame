@@ -373,23 +373,26 @@ function registerDeliveryWorkflowIpcHandlers(
   });
 }
 
-// A session of a Vite project gets open_component_preview, whatever its
-// workspace: a managed preview, the project folder, or no web service at
-// all. Cloud previews do not have it yet. Git ignores the temporary
-// preview files from the start.
+// A session of a Vite or React project gets open_component_preview,
+// whatever its workspace: a managed preview, the project folder, or no web
+// service at all. Other projects, such as an Angular app, and cloud
+// previews do not have it. Git ignores the temporary preview files from
+// the start.
 async function prepareComponentPreviews(
   input: Record<string, unknown>,
   workspace: string | undefined,
 ): Promise<Record<string, unknown>> {
   if (!workspace || input.workspaceMode === "cloud-mirror") return input;
-  const { hasViteProject } =
+  const { hasComponentPreviewProject } =
     await import("./component-preview/component-preview-location");
-  const supported = await hasViteProject(workspace).catch((error: unknown) => {
-    log.warn("Could not look for a Vite project", {
-      error: error instanceof Error ? error.message : String(error),
-    });
-    return false;
-  });
+  const supported = await hasComponentPreviewProject(workspace).catch(
+    (error: unknown) => {
+      log.warn("Could not look for a Vite or React project", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return false;
+    },
+  );
   if (!supported) return input;
   await excludeComponentPreviewFiles(workspace).catch((error: unknown) =>
     log.warn("Could not hide temporary component previews from Git", {

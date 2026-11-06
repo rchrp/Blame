@@ -1,0 +1,457 @@
+import assert from "node:assert/strict";
+import { existsSync, realpathSync } from "node:fs";
+import { mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
+import { createRequire } from "node:module";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
+import test from "node:test";
+import { workspaceComponentPreviewHost } from "./component-preview-hosts.ts";
+import { componentPreviewToolkitVersions } from "./component-preview-server-script.ts";
+import {
+  ComponentPreviewService,
+  type ComponentPreviewCapture,
+  type ComponentPreviewPage,
+} from "./component-preview-service.ts";
+
+// A small Next.js App Router project, without Vite, rendered by the real
+// temporary server with Blame's own Vite and @vitejs/plugin-react. The
+// browser is replaced by requests for the page and the modules it loads.
+
+const png = Buffer.from(
+  "89504e470d0a1a0a0000000d4948445200000001000000010806000000" +
+    "1f15c4890000000d49444154789c63f8cfc0f01f0005000201ffa65f6b0000000049454e44ae426082",
+  "hex",
+);
+const dependencies = resolveDependencies();
+
+test(
+  "Blame's own Vite is the version Blame's packages use",
+  {
+    skip: dependencies
+      ? false
+      : "Vite or React is not installed for the desktop tests.",
+  },
+  () => {
+    assert.deepEqual(
+      {
+        pluginReact: packageVersion(
+          dependencies!.toolkit["@vitejs/plugin-react"]!,
+        ),
+        vite: packageVersion(dependencies!.toolkit.vite!),
+      },
+      componentPreviewToolkitVersions,
+      "Update componentPreviewToolkitVersions with the versions in the lockfile.",
+    );
+  },
+);
+
+test(
+  "a Next.js client component renders with Blame's Vite: Tailwind, tsconfig paths and the Next.js shims",
+  {
+    skip: dependencies
+      ? false
+      : "Vite, @vitejs/plugin-react, React, Next.js or Tailwind is not installed for the desktop tests.",
+    timeout: 120_000,
+  },
+  async () => {
+    const worktree = await mkdtemp(
+      join(tmpdir(), "blame-component-preview-next-"),
+    );
+    const toolkitRoot = await mkdtemp(
+      join(tmpdir(), "blame-component-preview-toolkit-"),
+    );
+    const responses = new Map<string, string>();
+    let service: ComponentPreviewService | undefined;
+    try {
+      await writeNextFixture(worktree);
+      await linkToolkit(toolkitRoot);
+      const page = new FetchingPage(async (url) => {
+        const get = async (path: string) => {
+          const response = await fetch(new URL(path, url));
+          const body = await response.text();
+          assert.equal(response.status, 200, `${path}: ${body.slice(0, 600)}`);
+          responses.set(path, body);
+          return body;
+        };
+        const html = await get(new URL(url).pathname + new URL(url).search);
+        assert.match(html, /virtual:blame-component-preview/u);
+        const file = new URL(url).searchParams.get("file")!;
+        const preview = await get(`/${file}`);
+        for (const path of importedPaths(preview)) await get(path);
+        return true;
+      });
+      service = new ComponentPreviewService({
+        browser: async () => ({ openPage: async () => page }),
+        locate: async () => ({
+          host: workspaceComponentPreviewHost(worktree, undefined, toolkitRoot),
+          packageDir: "",
+          toolkit: { framework: "next" },
+        }),
+        storeScreenshots: async (result) => ({
+          ...(result as object),
+          _meta: { blameScreenshots: [{ id: "1".repeat(64) }] },
+        }),
+      });
+      const result = (await service.render({
+        request: { file: "components/profile.blame-preview.tsx" },
+        worktree,
+      })) as {
+        content: Array<{ text?: string; type: string }>;
+        isError?: boolean;
+      };
+      assert.equal(result.isError, undefined, JSON.stringify(result.content));
+      assert.match(
+        result.content[0]!.text!,
+        /^Started Blame's own Vite 8\.\d+\.\d+ server with @vitejs\/plugin-react, with shims for next\/link, next\/image, next\/navigation and next\/font, in the story's workspace for the worktree root, at http:\/\/127\.0\.0\.1:\d+: the package has no Vite config, so its PostCSS config and tsconfig paths apply\. 1 render of components\/profile\.blame-preview\.tsx:$/u,
+      );
+
+      // tsconfig paths: "@/" resolves from the package.
+      const preview = responses.get("/components/profile.blame-preview.tsx")!;
+      assert.match(preview, /from "\/components\/profile-card\.tsx"/u);
+      assert.match(preview, /import "\/app\/globals\.css"/u);
+
+      // "use client" breaks nothing; Next.js imports go to the shims, never
+      // to the next package; React comes from the project.
+      const card = responses.get("/components/profile-card.tsx")!;
+      for (const shim of [
+        "next/link",
+        "next/image",
+        "next/navigation",
+        "next/font/google:0",
+      ])
+        assert.ok(
+          card.includes(`/@id/__x00__blame-next:${shim}`),
+          `${shim} is not shimmed:\n${card}`,
+        );
+      assert.doesNotMatch(card, /node_modules\/next\//u);
+      assert.match(card, /\.vite-blame-preview-[0-9a-f]+\/deps\/react/u);
+      await assertShims(page.origin!);
+      // A library that imports next/link itself gets the shim too, in the
+      // bundle Vite pre-builds for it.
+      const library =
+        /"(\/node_modules\/\.vite-blame-preview-[0-9a-f]+\/deps\/fixture-ui\.js[^"]*)"/u.exec(
+          card,
+        )?.[1];
+      assert.ok(library, card);
+      const bundle = await bundledCode(page.origin!, library);
+      assert.match(bundle, /\\0blame-next:next\/link/u);
+      assert.match(bundle, /createElement\)\("a"/u);
+      assert.doesNotMatch(bundle, /next\/dist\//u);
+      // NEXT_PUBLIC_* variables of its .env files reach process.env, set by
+      // Vite's client environment in development; the others never reach
+      // the page.
+      const client = await (
+        await fetch(new URL("/@vite/client", page.origin))
+      ).text();
+      const envPath = /import "([^"]+\/env\.mjs)"/u.exec(client)?.[1];
+      assert.ok(envPath, "Vite's client imports no environment module.");
+      const env = await (await fetch(new URL(envPath, page.origin))).text();
+      assert.match(
+        env,
+        /process\.env\.NEXT_PUBLIC_SITE_NAME[^\n]*Fixture site/u,
+      );
+      assert.doesNotMatch(env, /never-in-the-page/u);
+
+      // Tailwind runs through the project's PostCSS config, on its sources.
+      const css = await (
+        await fetch(new URL("/app/globals.css?direct", page.origin))
+      ).text();
+      assert.match(css, /\.bg-emerald-600\s*\{/u);
+      assert.match(css, /\.rounded-xl\s*\{/u);
+      // next/image sources come from public/, as in Next.
+      const avatar = await fetch(new URL("/avatar.png", page.origin));
+      assert.equal(avatar.status, 200);
+      assert.match(avatar.headers.get("content-type") ?? "", /image\/png/u);
+
+      // A Server Component's server-only import fails with a clear message.
+      const account = await (
+        await fetch(new URL("/app/account/page.tsx", page.origin))
+      ).text();
+      const serverOnly = /"(\/@id\/__x00__blame-server-only:\d+)"/u.exec(
+        account,
+      )?.[1];
+      assert.ok(serverOnly, account);
+      assert.match(
+        await (await fetch(new URL(serverOnly, page.origin))).text(),
+        /throw new Error\("app\/account\/page\.tsx imports \\"next\/headers\\", which runs only on the server: it is part of a Server Component\. open_component_preview renders client components in the browser: preview one of its client sub-components with made-up props, or check this screen in the full app\."\)/u,
+      );
+      // The entry Vite serves reports an async component, such as the
+      // page.tsx Server Component, instead of rendering it.
+      const entry = await fetch(
+        new URL("/@id/__x00__virtual:blame-component-preview", page.origin),
+      );
+      const entryCode = await entry.text();
+      assert.equal(entry.status, 200, entryCode.slice(0, 600));
+      assert.match(entryCode, /\[object AsyncFunction\]/u);
+      assert.match(
+        entryCode,
+        /is an async component: React renders async components only as Server Components/u,
+      );
+      assert.equal(await service.stop({ worktree }), 1);
+    } finally {
+      await service?.shutdown();
+      await rm(worktree, { force: true, recursive: true });
+      await rm(toolkitRoot, { force: true, recursive: true });
+    }
+  },
+);
+
+async function assertShims(origin: string) {
+  const shim = async (id: string) => {
+    const response = await fetch(
+      new URL(`/@id/__x00__blame-next:${id}`, origin),
+    );
+    const body = await response.text();
+    assert.equal(response.status, 200, `${id}: ${body.slice(0, 600)}`);
+    return body;
+  };
+  assert.match(await shim("next/link"), /createElement\("a"/u);
+  assert.match(await shim("next/image"), /createElement\("img"/u);
+  assert.match(await shim("next/navigation"), /export function usePathname/u);
+  assert.match(
+    await shim("next/font/google:0"),
+    /export const Geist_Mono = googleFont\("Geist Mono"\)/u,
+  );
+  assert.match(await shim("font-runtime"), /export function localFont/u);
+}
+
+// A pre-bundled dependency with the chunks it imports.
+async function bundledCode(origin: string, path: string) {
+  const code = await (await fetch(new URL(path, origin))).text();
+  const chunks = [...code.matchAll(/from "(\.\/[^"]+)"/gu)].map(
+    (match) => match[1]!,
+  );
+  const parts = await Promise.all(
+    chunks.map(async (chunk) =>
+      (await fetch(new URL(chunk, new URL(path, origin)))).text(),
+    ),
+  );
+  return [code, ...parts].join("\n");
+}
+
+// The project modules and shims a transformed module imports.
+function importedPaths(code: string) {
+  return [
+    ...code.matchAll(/(?:from|import) "(\/(?!@vite\/|node_modules\/)[^"]+)"/gu),
+  ]
+    .map((match) => match[1]!)
+    .filter((path) => !path.includes("/.vite-blame-preview-"));
+}
+
+class FetchingPage implements ComponentPreviewPage {
+  origin?: string;
+  private readonly load: (url: string) => Promise<true>;
+
+  constructor(load: (url: string) => Promise<true>) {
+    this.load = load;
+  }
+
+  async capture(input: {
+    theme: "dark" | "light";
+    url: string;
+    width: number;
+  }): Promise<ComponentPreviewCapture> {
+    this.origin = new URL(input.url).origin;
+    await this.load(input.url);
+    return {
+      consoleErrors: [],
+      image: png,
+      status: "ready",
+      url: input.url,
+      viewport: { height: 900, width: input.width },
+    };
+  }
+
+  close() {}
+}
+
+async function writeNextFixture(worktree: string) {
+  const files: Record<string, string> = {
+    "package.json": JSON.stringify({
+      name: "next-fixture",
+      private: true,
+      scripts: { dev: "next dev" },
+      dependencies: { next: "16.4.3", react: "19.3.1", "react-dom": "19.3.1" },
+      devDependencies: {
+        "@tailwindcss/postcss": "4.3.3",
+        tailwindcss: "4.3.3",
+      },
+    }),
+    "next.config.mjs": "export default {};\n",
+    "tsconfig.json": [
+      "{",
+      "  // As create-next-app writes it.",
+      '  "compilerOptions": {',
+      '    "jsx": "preserve",',
+      '    "moduleResolution": "bundler",',
+      '    "paths": { "@/*": ["./*"] },',
+      "  },",
+      "}",
+      "",
+    ].join("\n"),
+    "postcss.config.mjs":
+      'export default { plugins: { "@tailwindcss/postcss": {} } };\n',
+    ".env.local":
+      "NEXT_PUBLIC_SITE_NAME=Fixture site\nDATABASE_PASSWORD=never-in-the-page\n",
+    "app/globals.css": '@import "tailwindcss";\n',
+    "app/layout.tsx": [
+      'import { Geist } from "next/font/google";',
+      'import "./globals.css";',
+      'const geist = Geist({ subsets: ["latin"] });',
+      "export default function RootLayout({ children }: { children: React.ReactNode }) {",
+      '  return <html lang="en"><body className={geist.className}>{children}</body></html>;',
+      "}",
+      "",
+    ].join("\n"),
+    "app/page.tsx": [
+      'import { ProfileCard } from "@/components/profile-card";',
+      "export default async function Home() {",
+      '  const name = await Promise.resolve("Ada Lovelace");',
+      "  return <main><ProfileCard name={name} /></main>;",
+      "}",
+      "",
+    ].join("\n"),
+    "app/account/page.tsx": [
+      'import { cookies } from "next/headers";',
+      "export default async function Account() {",
+      '  const session = (await cookies()).get("session");',
+      "  return <p>{session?.value}</p>;",
+      "}",
+      "",
+    ].join("\n"),
+    "components/profile-card.tsx": [
+      '"use client";',
+      "",
+      'import Image from "next/image";',
+      'import Link from "next/link";',
+      'import { usePathname } from "next/navigation";',
+      'import { Geist_Mono } from "next/font/google";',
+      'import { NavLink } from "fixture-ui";',
+      "",
+      'const mono = Geist_Mono({ subsets: ["latin"], variable: "--font-mono" });',
+      "",
+      "export function ProfileCard({ name }: { name: string }) {",
+      "  const pathname = usePathname();",
+      "  return (",
+      "    <section className={`${mono.variable} rounded-xl bg-emerald-600 p-6 text-white`}>",
+      '      <Image src="/avatar.png" alt="" width={48} height={48} />',
+      '      <h2 className="text-2xl font-bold">{name}</h2>',
+      "      <p>{process.env.NEXT_PUBLIC_SITE_NAME} · {pathname}</p>",
+      '      <Link href={{ pathname: "/settings", query: { tab: "profile" } }} className="underline">Settings</Link>',
+      '      <NavLink href="/help">Help</NavLink>',
+      "    </section>",
+      "  );",
+      "}",
+      "",
+    ].join("\n"),
+    "components/profile.blame-preview.tsx": [
+      'import "@/app/globals.css";',
+      'import { ProfileCard } from "@/components/profile-card";',
+      'import Home from "@/app/page";',
+      "",
+      'export default <ProfileCard name="Ada Lovelace" />;',
+      "export const page = <Home />;",
+      "",
+    ].join("\n"),
+    "app/account.blame-preview.tsx": [
+      'import Account from "@/app/account/page";',
+      "export default <Account />;",
+      "",
+    ].join("\n"),
+    // A "use client" library of the project that imports next/link.
+    "node_modules/fixture-ui/package.json": JSON.stringify({
+      name: "fixture-ui",
+      type: "module",
+      exports: "./index.js",
+    }),
+    "node_modules/fixture-ui/index.js": [
+      '"use client";',
+      'import Link from "next/link";',
+      'import { createElement } from "react";',
+      "export function NavLink(props) {",
+      "  return createElement(Link, props);",
+      "}",
+      "",
+    ].join("\n"),
+  };
+  for (const [path, content] of Object.entries(files)) {
+    await mkdir(dirname(join(worktree, path)), { recursive: true });
+    await writeFile(join(worktree, path), content);
+  }
+  await mkdir(join(worktree, "public"), { recursive: true });
+  await writeFile(join(worktree, "public/avatar.png"), png);
+  for (const [name, directory] of Object.entries(dependencies!.project)) {
+    await mkdir(dirname(join(worktree, "node_modules", name)), {
+      recursive: true,
+    });
+    await symlink(directory, join(worktree, "node_modules", name), "dir");
+  }
+}
+
+// Blame's own Vite, as the server would have installed it.
+async function linkToolkit(root: string) {
+  const header =
+    process.platform === "linux"
+      ? (
+          process.report.getReport() as {
+            header?: { glibcVersionRuntime?: string };
+          }
+        ).header
+      : undefined;
+  const libc =
+    process.platform !== "linux"
+      ? ""
+      : header?.glibcVersionRuntime
+        ? "-gnu"
+        : "-musl";
+  const { pluginReact, vite } = componentPreviewToolkitVersions;
+  const directory = join(
+    root,
+    `vite-${vite}-plugin-react-${pluginReact}-${process.platform}-${process.arch}${libc}`,
+  );
+  for (const [name, source] of Object.entries(dependencies!.toolkit)) {
+    await mkdir(dirname(join(directory, "node_modules", name)), {
+      recursive: true,
+    });
+    await symlink(source, join(directory, "node_modules", name), "dir");
+  }
+}
+
+function packageVersion(directory: string) {
+  return (
+    createRequire(import.meta.url)(join(directory, "package.json")) as {
+      version: string;
+    }
+  ).version;
+}
+
+// Vite from the desktop package, @vitejs/plugin-react and React from the
+// app package, Next.js and Tailwind from the vitrine package.
+function resolveDependencies() {
+  const packages = new URL("../../../../", import.meta.url);
+  const installed = (packageName: string, name: string) => {
+    const link = join(packages.pathname, packageName, "node_modules", name);
+    return existsSync(join(link, "package.json"))
+      ? realpathSync(link)
+      : undefined;
+  };
+  const toolkit = {
+    "@vitejs/plugin-react": installed("app", "@vitejs/plugin-react"),
+    vite: installed("desktop", "vite"),
+  };
+  const project = {
+    "@tailwindcss/postcss": installed("vitrine", "@tailwindcss/postcss"),
+    next: installed("vitrine", "next"),
+    react: installed("app", "react"),
+    "react-dom": installed("app", "react-dom"),
+    tailwindcss: installed("vitrine", "tailwindcss"),
+  };
+  if (
+    [...Object.values(toolkit), ...Object.values(project)].some((path) => !path)
+  )
+    return undefined;
+  return {
+    project: project as Record<string, string>,
+    toolkit: toolkit as Record<string, string>,
+  };
+}

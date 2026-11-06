@@ -1,11 +1,11 @@
 ---
 name: component-preview
-description: Use after creating a UI component or changing how one renders, in a Vite project, even when the app's preview is available. Shows the component on its own with made-up data, in its main states (default, empty, error, loading, long content), light and dark, desktop and mobile widths, rendered in one open_component_preview call whose screenshots go to finish_task. Not for checks a DOM read or a test already covers.
+description: Use after creating a UI component or changing how one renders, in a Vite or React project (Next.js included), even when the app's preview is available. Shows the component on its own with made-up data, in its main states (default, empty, error, loading, long content), light and dark, desktop and mobile widths, rendered in one open_component_preview call whose screenshots go to finish_task. Not for checks a DOM read or a test already covers.
 ---
 
 # Component preview
 
-Show one component on its own, with props and data you make up, rendered by a temporary Vite server that `open_component_preview` starts for the session with the package's own Vite config. You avoid sign-in, the backend and real data, and see every state that matters in one call. The story's own preview, if any, keeps running untouched.
+Show one component on its own, with props and data you make up, rendered by a temporary Vite server that `open_component_preview` starts for the session: with the package's own Vite config, or with Blame's own Vite for a React package without one, such as a Next.js app. You avoid sign-in, the backend and real data, and see every state that matters in one call. The story's own preview, if any, keeps running untouched.
 
 ## When to use it
 
@@ -16,11 +16,9 @@ Use it by default whenever you create a UI component or change how one renders: 
 - **The app alone only when the component preview costs more than the app.** For example, the component needs heavy fakes (several providers, global state, real data) while the state you need shows directly in the app's preview; or the change is about how the screen integrates the component rather than how the component renders.
 - **No visual preview of the app**, such as a native desktop app without a web service: the component preview is the visual check available. It shows the component, never the app window, so never claim you inspected the app.
 
-Packages without Vite, such as a Next.js app, have no component preview: check them in the app.
-
 ## Write the preview file
 
-Write one file, `<name>.blame-preview.tsx`, in the package of the component: the folder with its `package.json` and `vite.config.*`. It is the only file to write: the server generates the page. The file imports the app's global stylesheet and the component, and exports each state as a React element; the state `default` is the default export:
+Write one file, `<name>.blame-preview.tsx`, in the package of the component: the folder with its `package.json`. It is the only file to write: the server generates the page. The file imports the app's global stylesheet and the component, and exports each state as a React element; the state `default` is the default export:
 
 ```tsx
 import "./index.css" // the app's global styles, Tailwind included
@@ -36,6 +34,14 @@ export const long = <SettingsPanel items={manyItemsWithLongNames} />
 For Vue, Svelte or another framework, export `mount(element, state)` instead: it renders the named state into `element` with the framework's own entry API.
 
 The dark theme emulates `prefers-color-scheme` and sets the `dark` class, `data-theme` and `color-scheme` on `<html>`. If the project applies its theme another way, do it in the file.
+
+## Next.js and other React packages without Vite
+
+A React package without `vite.config.*`, such as a Next.js or webpack app, is served by Blame's own Vite with `@vitejs/plugin-react`. Its PostCSS or Tailwind config and the `paths` of its `tsconfig.json` apply, so `@/` imports work. Import the stylesheet its root layout imports, such as `app/globals.css`.
+
+- `next/link`, `next/image`, `next/navigation` and `next/font/*` are small shims, in this server only: a link renders its anchor and does not navigate, an image loads from `public/` without optimization, `usePathname()` returns `/` and the router does nothing, a Google font keeps its class names with a fallback font. `NEXT_PUBLIC_*` variables of the `.env` files reach `process.env`.
+- `"use client"` files render as they are.
+- Only client components render. A Server Component (an async component, as most `page.tsx` and `layout.tsx` are, or one that imports `next/headers`, `server-only` or Node modules) is reported as such: preview its client sub-components with the props it would pass them, or check that screen in the app.
 
 ## Replace what the component depends on
 

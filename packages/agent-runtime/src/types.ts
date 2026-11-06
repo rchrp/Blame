@@ -250,7 +250,8 @@ export type StartSessionInput = {
   workspaceMode?: "local-container" | "cloud-mirror" | "direct";
   systemPrompt?: string;
   previewDevtoolsScope?: string;
-  // The desktop offers open_component_preview (a Vite project, not cloud).
+  // The desktop offers open_component_preview (a Vite or React project,
+  // not cloud).
   componentPreview?: boolean;
   credentialLabel?: string;
   backend?: AgentBackendConfig;

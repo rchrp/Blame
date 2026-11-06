@@ -251,6 +251,22 @@ test("the tool says when to use it, not only how", () => {
   assert.match(description, /each caption says whether it shows the isolated component or the app/);
 });
 
+test("the tool describes React packages without Vite, such as a Next.js app", () => {
+  const desktop = fakeDesktop(() => rendered(1));
+  const { description } = componentPreviewTool(desktop.options, preview)!;
+  assert.match(description, /in the package of the component \(the folder with its package\.json\)/);
+  assert.match(
+    description,
+    /A React package without Vite, such as a Next\.js app, gets Blame's own Vite with @vitejs\/plugin-react, its PostCSS or Tailwind config and tsconfig paths/,
+  );
+  assert.match(description, /next\/link, next\/image, next\/navigation and next\/font become small shims in this server only/);
+  assert.match(
+    description,
+    /Only client components render: a Server Component \(an async component, or one importing server-only modules such as next\/headers\) is reported as such/,
+  );
+  assert.match(description, /never installs the project's dependencies/);
+});
+
 test("finishing stops the preview server, then removes the preview files", async () => {
   const root = await mkdtemp(join(tmpdir(), "blame-preview-finish-"));
   const git = async (cwd: string, args: string[]) =>

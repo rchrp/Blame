@@ -65,6 +65,8 @@ export type ComponentPreviewLocation =
       host: ComponentPreviewHost;
       // Worktree-relative package directory, "" for the worktree root.
       packageDir: string;
+      // Blame's own Vite, for a React package without a Vite config.
+      toolkit?: { framework: "next" | "react" };
     }
   | { message: string };
 
@@ -84,7 +86,7 @@ export type ComponentPreviewDependencies = {
 
 type RunningServer = Pick<
   ComponentPreviewServer,
-  "origin" | "pageUrl" | "running" | "stop" | "viteVersion"
+  "origin" | "pageUrl" | "running" | "stop" | "toolkit" | "viteVersion"
 >;
 
 type Running = {
@@ -172,7 +174,7 @@ export class ComponentPreviewService {
     const content: unknown[] = [
       {
         type: "text",
-        text: `${started ? "Started" : "Reused"} a Vite ${running.server.viteVersion} server in ${running.description} for ${location.packageDir || "the worktree root"}, at ${running.server.origin}. ${renders.length} ${renders.length === 1 ? "render" : "renders"} of ${request.file}:`,
+        text: `${serverSummary(running, started, location)} ${renders.length} ${renders.length === 1 ? "render" : "renders"} of ${request.file}:`,
       },
     ];
     const screenshots: unknown[] = [];
@@ -239,7 +241,7 @@ export class ComponentPreviewService {
     location: Extract<ComponentPreviewLocation, { host: unknown }>,
     signal?: AbortSignal,
   ): Promise<{ running: Running; started: boolean } | { message: string }> {
-    const key = `${location.host.key}:${location.packageDir}`;
+    const key = `${location.host.key}:${location.packageDir}:${location.toolkit?.framework ?? "vite"}`;
     const current = this.running.get(input.worktree);
     if (current?.key === key && current.server.running)
       return { running: current, started: false };
@@ -258,6 +260,7 @@ export class ComponentPreviewService {
         idleMs: serverIdleMs,
         packageDir: location.packageDir,
         signal,
+        ...(location.toolkit ? { toolkit: location.toolkit } : {}),
       });
     } catch (error) {
       if (signal?.aborted) throw error;
@@ -347,6 +350,28 @@ export function renderReport(
 
 function failure(message: string) {
   return { content: [{ type: "text", text: message }], isError: true };
+}
+
+// Which Vite serves the renders, and what Blame added when it is its own.
+function serverSummary(
+  running: Running,
+  started: boolean,
+  location: Extract<ComponentPreviewLocation, { host: unknown }>,
+) {
+  const { server } = running;
+  const verb = started ? "Started" : "Reused";
+  const where = `in ${running.description} for ${location.packageDir || "the worktree root"}, at ${server.origin}`;
+  if (!server.toolkit)
+    return `${verb} a Vite ${server.viteVersion} server ${where}.`;
+  const shims =
+    location.toolkit?.framework === "next"
+      ? ", with shims for next/link, next/image, next/navigation and next/font"
+      : "";
+  const installed =
+    started && server.toolkit.installed
+      ? ` Blame installed this Vite first, once for this environment, in ${server.toolkit.directory}.`
+      : "";
+  return `${verb} Blame's own Vite ${server.viteVersion} server with @vitejs/plugin-react${shims}, ${where}: the package has no Vite config, so its PostCSS config and tsconfig paths apply.${installed}`;
 }
 
 function errorMessage(error: unknown) {
