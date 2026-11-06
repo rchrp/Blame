@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { access, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { access, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
@@ -258,4 +258,33 @@ test("an isolated workspace can configure a repository and run a detached servic
       terminateFixture(pid);
     }
   });
+});
+
+test("project tasks find the package manager the runtime provisions outside PATH, at the pinned version", async () => {
+  if (process.platform === "win32") return;
+  const root = await mkdtemp(join(tmpdir(), "blame-managers-"));
+  const previous = process.env.BLAME_PACKAGE_MANAGER_ROOT;
+  try {
+    for (const version of ["10.34.9", "12.15.0", "12.16.0"]) {
+      const bin = join(root, "managers", "pnpm", version, "bin");
+      await mkdir(bin, { recursive: true });
+      await writeFile(join(bin, "pnpm"), `#!/bin/sh\necho pnpm ${version}\n`, { mode: 0o755 });
+    }
+    await mkdir(join(root, "project", "packages", "app"), { recursive: true });
+    await writeFile(join(root, "project", "package.json"), JSON.stringify({ packageManager: "pnpm@12.15.0+sha512.abc" }));
+    process.env.BLAME_PACKAGE_MANAGER_ROOT = join(root, "managers");
+    const environment = { PATH: "/usr/bin:/bin" };
+    const pinned = await executeWorkspaceCommand("pnpm", ["--version"], { cwd: join(root, "project", "packages", "app"), environment });
+    assert.equal(pinned.all.trim(), "pnpm 12.15.0");
+    // Without a pin, the newest.
+    const unpinned = await executeWorkspaceCommand("pnpm", ["--version"], { cwd: root, environment });
+    assert.equal(unpinned.all.trim(), "pnpm 12.16.0");
+    // Shell commands find it too.
+    const shell = await executeWorkspaceCommand("/bin/sh", ["-c", "pnpm --version"], { cwd: join(root, "project"), environment });
+    assert.equal(shell.all.trim(), "pnpm 12.15.0");
+  } finally {
+    if (previous === undefined) delete process.env.BLAME_PACKAGE_MANAGER_ROOT;
+    else process.env.BLAME_PACKAGE_MANAGER_ROOT = previous;
+    await rm(root, { recursive: true, force: true });
+  }
 });
