@@ -7,6 +7,7 @@ import {
 } from "./code-intelligence.js";
 import { LightAliasRegistry, type ResolvedLightSymbol } from "./light-aliases.js";
 import { LightAttention } from "./light-attention.js";
+import { ImportIndex } from "./import-index.js";
 import {
   foldFileMinimumCharacters,
   foldViewCharacters,
@@ -49,6 +50,7 @@ import { sha256 } from "./light-identity.js";
 import {
   assertMutableWorkspacePath,
   WorkspaceFiles,
+  type WorkspaceSnapshot,
 } from "./workspace-files.js";
 import {
   arrayValue,
@@ -92,6 +94,12 @@ export class LightWorkspace {
   private readonly foldedViews = new Set<string>();
   /** Marker lines shown in folded views, refused when an edit copies one into source. */
   private readonly shownMarkers = new Set<string>();
+  private readonly imports: ImportIndex;
+  /** Files whose cross-file links each consumer already got, by content. */
+  private readonly linkedReads = new Set<string>();
+  /** Identifiers of the task and of the session's searches: the links worth naming first. */
+  private readonly focus = new Set<string>();
+  private latestSnapshot?: WorkspaceSnapshot;
   private readonly codeSearch: LightCodeSearch;
   private readonly coverage = new ReadCoverage();
   private readonly files: WorkspaceFiles;
@@ -111,6 +119,7 @@ export class LightWorkspace {
         this.registerCoverage(path, content, intervals, {}),
     });
     this.commits = new LightCommitService(this.files);
+    this.imports = new ImportIndex(this.files);
     this.journal = new SessionJournal(workspaceRoot, options.sessionId);
     this.options = options;
     this.edits = new LightEditService(this.aliases, {
@@ -286,6 +295,7 @@ export class LightWorkspace {
       );
       await this.recordObservationAudit("search_code", input.mode ?? "auto", result);
       if (result.status === "ok") await this.pointAt(searchHits(result.data));
+      this.addFocus(input.query);
       return result;
     } catch (error) {
       return inputBlocked(error);
@@ -332,6 +342,7 @@ export class LightWorkspace {
     const special = await this.specialReadResult(input.target);
     if (special) return special;
     const snapshot = await this.files.snapshot(context.signal);
+    this.latestSnapshot = snapshot;
     return withMissingPathRecovery(
       {
         files: this.files, input, snapshot,
@@ -343,6 +354,14 @@ export class LightWorkspace {
         return directory ?? this.readWorkspaceTarget(input, snapshot.revision.source_revision_id, context);
       },
     );
+  }
+
+  private addFocus(text: string) {
+    for (const name of text.match(/[A-Za-z_$][\w$]{2,}/gu) ?? []) {
+      this.focus.delete(name);
+      this.focus.add(name);
+    }
+    while (this.focus.size > 200) this.focus.delete(this.focus.values().next().value!);
   }
 
   /** Search hits and failing-check lines, kept whole by later folded views. */
@@ -373,7 +392,10 @@ export class LightWorkspace {
     for (const entry of this.journal.currentCoverage().entries)
       this.aliases.rememberObservation(entry.path, entry.hash, entry.intervals);
     const objective = options.taskContract?.objective;
-    if (objective) await this.journal.ingestUserRequest("initial", objective);
+    if (objective) {
+      this.addFocus(objective);
+      await this.journal.ingestUserRequest("initial", objective);
+    }
   }
 
   private async persistAliases<T>(result: LightToolResult<T>) {
@@ -461,23 +483,45 @@ export class LightWorkspace {
     const view = routedView(input);
     if (view === "signature")
       throw new Error("Signature view requires a symbol alias or path#qualifiedName. Read the file outline to choose a declaration.");
-    if (view === "outline")
-      return await this.readOutlinePath(path, file.content, revision, context, input);
     if (view === "range")
       return await this.readLineRange(path, file.content, input, revision, context);
+    return this.withLinks(path, file.content, context, await this.readWholePath(input, view, path, file.content, revision, context));
+  }
+
+  private async readWholePath(
+    input: LightReadCodeInput,
+    view: ReturnType<typeof routedView>,
+    path: string,
+    content: Buffer,
+    revision: string,
+    context: ReadContext,
+  ) {
+    if (view === "outline")
+      return await this.readOutlinePath(path, content, revision, context, input);
     if (view === "auto") {
       // A file larger than a folded view is always folded, down to one line per declaration if need be.
-      const folded = this.plannedFold(path, file.content, [0, file.content.byteLength], foldFileMinimumCharacters,
-        file.content.toString("utf8").length > foldViewCharacters);
-      if (folded) return await this.foldResult(path, file.content, folded, revision, context);
+      const folded = this.plannedFold(path, content, [0, content.byteLength], foldFileMinimumCharacters,
+        content.toString("utf8").length > foldViewCharacters);
+      if (folded) return await this.foldResult(path, content, folded, revision, context);
     }
-    return await this.raw(
-      path,
-      file.content,
-      revision,
-      context,
-      view === "symbol" ? "symbol_target_missing" : undefined,
-    );
+    return await this.raw(path, content, revision, context, view === "symbol" ? "symbol_target_missing" : undefined);
+  }
+
+  /**
+   * On a file's first whole or folded read, one line naming who uses its
+   * exports (file:line) and which tests import it. "Who uses X" searches were
+   * 12% of searches, often alone in a turn late in a session.
+   */
+  private async withLinks(path: string, content: Buffer, context: ReadContext, result: LightToolResult<unknown>) {
+    if (result.status !== "ok") return result;
+    const data = recordValue(result.data);
+    if (data.view !== "folded" && data.complete !== true) return result;
+    const key = this.foldKey(path, content, context);
+    if (this.linkedReads.has(key)) return result;
+    this.linkedReads.add(key);
+    const links = await this.imports.briefLinks(path, content, this.focus, context.signal,
+      this.latestSnapshot ? { snapshot: this.latestSnapshot } : {});
+    return links ? { ...result, data: { ...data, links } } : result;
   }
 
   private async readOutlinePath(

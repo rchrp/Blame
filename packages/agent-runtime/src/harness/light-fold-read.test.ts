@@ -84,3 +84,17 @@ test("several line ranges come back in one read", async () => {
     assert.deepEqual(read.segments.map((segment: { lines: number[] }) => segment.lines), [[4, 5], [30, 31]]);
   });
 });
+
+test("the first read of a file names who uses its exports, later reads do not repeat it", async () => {
+  const files = {
+    "helper.ts": "export function helper(value: number) {\n  return value + 1;\n}\n",
+    "consumer.ts": 'import { helper } from "./helper.js";\n\nexport const result = helper(1);\n',
+  };
+  await fixture(files, async (workspace) => {
+    const first = data(await workspace.readCode({ target: "helper.ts" }, context));
+    assert.equal(first.links, "helper ← consumer.ts:3");
+    assert.equal(data(await workspace.readCode({ target: "helper.ts" }, { agentId: "other" })).links, "helper ← consumer.ts:3");
+    const again = await workspace.readCode({ target: "helper.ts", view: "raw" }, context);
+    assert.equal(data(again).links, undefined);
+  });
+});
