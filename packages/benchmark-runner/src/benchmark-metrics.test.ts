@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { AgentEvent } from "@blame/agent-runtime";
+import { encodeToolResult } from "@blame/agent-runtime/tool-result-envelope";
 import { BenchmarkMetricsCollector } from "./benchmark-metrics.js";
 
 test("attributes model context and tool payload exposure", () => {
@@ -44,6 +45,19 @@ test("separates navigation deduplication and blocked edits", () => {
   assert.equal(metrics.navigation.deduplicatedReads, 1);
   assert.equal(metrics.editing.blocked, 1);
   assert.equal(metrics.tools.blockedCalls, 1);
+});
+
+test("reads harness results from their multipart envelope", () => {
+  const collector = new BenchmarkMetricsCollector();
+  const output = encodeToolResult({
+    status: "ok",
+    data: { changed: true, diagnostic: "formatted\nfile" },
+  });
+  assert.ok(Array.isArray(output));
+  collector.record(finishedTool("edit_code", output), 1_000);
+  const metrics = collector.summary(new Date(0), new Date(2_000));
+  assert.equal(metrics.editing.successful, 1);
+  assert.equal(metrics.tools.outputBytes, JSON.stringify(output).length);
 });
 
 test("measures Cline batched reads, searches, and patches", () => {

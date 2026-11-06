@@ -1,7 +1,10 @@
 import { createHash } from "node:crypto";
 import { projectReadOverlap } from "./read-overlap-projection.js";
 import { presentToolResults } from "./tool-result-presentation.js";
-import { unwrapFeedbackEnvelope } from "./tool-result-envelope.js";
+import {
+  encodeToolResult,
+  unwrapFeedbackEnvelope,
+} from "./tool-result-envelope.js";
 import type {
   AgentPlugin,
   ContentBlock,
@@ -58,7 +61,6 @@ type IndexedTool = {
 type LatestEdit = {
   id: string;
   index: number;
-  revision?: string;
 };
 
 type IndexedRead = {
@@ -71,7 +73,9 @@ type IndexedRead = {
 };
 
 type HistoryIndex = {
-  latestSourceRevision?: string;
+  // Results carry no source revisions (hash-only fields are dropped), so a
+  // validation proves the current source when no source change follows it.
+  latestSourceChangeIndex: number;
   latestEditByPath: Map<string, LatestEdit>;
   latestReadIndexByPath: Map<string, number>;
   readById: Map<string, IndexedRead>;
@@ -84,7 +88,6 @@ type HistoryIndex = {
 type ValidationProof = {
   index: number;
   paths: Set<string>;
-  revision: string;
 };
 
 const minimumValidatedEditBytes = 4_096;
@@ -243,7 +246,7 @@ function finalizeHistoryIndex(history: HistoryIndex) {
       history.successfulEditIds.add(id);
       indexEdit(id, tool, history);
     }
-    indexSourceRevision(tool, history);
+    indexSourceChange(tool, history);
     if (tool.name === "run_task") indexValidation(tool, history);
   }
   projectOverlappingReads(history);
@@ -292,39 +295,43 @@ function completeRead(tool: IndexedTool) {
 
 function indexEdit(id: string, tool: IndexedTool, history: HistoryIndex) {
   const data = recordValue(tool.result?.data);
-  const revision = stringValue(data?.sourceRevisionId);
   const index = tool.resultIndex ?? -1;
   for (const change of arrayValue(data?.changes).map(recordValue)) {
     const path = stringValue(change?.path);
-    if (path) history.latestEditByPath.set(path, { id, index, revision });
+    if (path) history.latestEditByPath.set(path, { id, index });
   }
 }
 
-function indexSourceRevision(tool: IndexedTool, history: HistoryIndex) {
+/** Edits, commands that changed files, and formatter writes. */
+function indexSourceChange(tool: IndexedTool, history: HistoryIndex) {
   if (!successfulResult(tool.result)) return;
   const data = recordValue(tool.result?.data);
-  const validation = recordValue(data?.validation);
-  const revision =
-    stringValue(data?.sourceRevisionId) ??
-    stringValue(validation?.sourceRevisionId);
-  if (revision) history.latestSourceRevision = revision;
+  const completed = recordValue(recordValue(data?.completed)?.data);
+  if (
+    (tool.name === "edit_code" && changedPaths(tool).length) ||
+    data?.changed === true ||
+    data?.mutation === "deterministic_format" ||
+    // A command that changed files reports them, also when it ends later.
+    (tool.name === "run_task" && (arrayValue(data?.paths).length > 0 || arrayValue(completed?.paths).length > 0))
+  )
+    history.latestSourceChangeIndex = Math.max(
+      history.latestSourceChangeIndex,
+      tool.resultIndex ?? -1,
+    );
 }
 
 function indexValidation(tool: IndexedTool, history: HistoryIndex) {
   const validation = recordValue(recordValue(tool.result?.data)?.validation);
-  const revision = stringValue(validation?.sourceRevisionId);
   const paths = stringArray(validation?.paths);
   if (
     validation?.status !== "passed" ||
     !trustedValidationKind(validation?.taskKind) ||
-    !revision ||
     !paths.length
   )
     return;
   history.validations.push({
     index: tool.resultIndex ?? -1,
     paths: new Set(paths),
-    revision,
   });
 }
 
@@ -371,17 +378,25 @@ function projectBlock(
 }
 
 function projectCommandResult(block: ToolResultContent, tool: IndexedTool): ToolResultContent {
-  if (typeof block.content !== "string" || block.is_error) return block;
+  if (block.is_error) return block;
   const result = parseToolResult(block);
   const data = recordValue(result?.data);
   if (typeof tool.input.command !== "string" || data?.command !== tool.input.command)
     return block;
   const projectedData = { ...data };
   delete projectedData.command;
+  const projected = { ...result, data: projectedData };
+  if (!Array.isArray(block.content))
+    return { ...block, content: JSON.stringify(projected) };
+  // A multipart result keeps its form, and its images.
+  const attachments = (block.content as Array<{ type: string }>).filter(
+    (part) => part.type !== "text",
+  );
+  const encoded = encodeToolResult(projected, attachments);
   return {
     ...block,
-    content: JSON.stringify({ ...result, data: projectedData }),
-  };
+    content: Array.isArray(encoded) ? encoded : JSON.stringify(encoded),
+  } as ToolResultContent;
 }
 
 function supersededRead(
@@ -450,16 +465,12 @@ function compactableEdit(id: string, history: HistoryIndex) {
 function validatedCurrentEdit(id: string, history: HistoryIndex) {
   const tool = history.tools.get(id);
   const paths = changedPaths(tool);
-  if (
-    !paths.length ||
-    !history.latestSourceRevision ||
-    serializedBytes(tool?.input) < minimumValidatedEditBytes
-  )
+  if (!paths.length || serializedBytes(tool?.input) < minimumValidatedEditBytes)
     return false;
   return history.validations.some(
     (validation) =>
       validation.index > (tool?.resultIndex ?? -1) &&
-      validation.revision === history.latestSourceRevision &&
+      validation.index > history.latestSourceChangeIndex &&
       paths.every((path) => validation.paths.has(path)),
   );
 }
@@ -637,6 +648,7 @@ function successfulResult(result: Record<string, unknown> | undefined) {
 
 function emptyHistoryIndex(): HistoryIndex {
   return {
+    latestSourceChangeIndex: -1,
     latestEditByPath: new Map(),
     latestReadIndexByPath: new Map(),
     readById: new Map(),

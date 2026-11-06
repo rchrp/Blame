@@ -221,10 +221,10 @@ export function mcpToolResult(
     for (const item of raw) {
       if (!isRecord(item)) continue;
       if (item.type === "text" && typeof item.text === "string") {
-        // Blame splits long harness results into blocks for Cline; Claude
-        // Code gets the text whole again.
+        // A harness result's metadata line and fenced sections read as one
+        // text, separated as paragraphs.
         const previous = content.at(-1);
-        if (previous?.type === "text") previous.text += item.text;
+        if (previous?.type === "text") previous.text += `\n\n${item.text}`;
         else content.push({ type: "text", text: item.text });
       }
       else if (item.type === "image" && isRecord(item.source)) {

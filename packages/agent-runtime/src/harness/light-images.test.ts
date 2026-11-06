@@ -5,6 +5,7 @@ import { join, relative } from "node:path";
 import test from "node:test";
 import type { AgentToolContext, ToolResultContent } from "@cline/sdk";
 import { projectProviderContext } from "../context-projection.js";
+import { unwrapFeedbackEnvelope } from "../tool-result-envelope.js";
 import { executeLightWorkspaceRequest } from "./light-executor.js";
 import { lightSemanticHarnessTools } from "./light-tools.js";
 
@@ -61,7 +62,8 @@ test("image reads retain workspace and symlink boundaries", async () => {
 
 async function read(root: string, target: string, inputContext = context) {
   const tool = lightSemanticHarnessTools(root).find((tool) => tool.name === "read_code")!;
-  return await tool.execute({ target }, inputContext) as Record<string, unknown>;
+  // Results with source text come in the model-facing multipart form.
+  return unwrapFeedbackEnvelope(await tool.execute({ target }, inputContext)) as Record<string, unknown>;
 }
 
 async function fixture(action: (root: string) => Promise<void>) {

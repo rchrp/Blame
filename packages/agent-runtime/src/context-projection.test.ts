@@ -12,6 +12,7 @@ import {
   type ContextProjectionMetrics,
 } from "./context-projection.js";
 import { presentToolResults } from "./tool-result-presentation.js";
+import { encodeToolResult, unwrapFeedbackEnvelope } from "./tool-result-envelope.js";
 
 test("projects acknowledged edits and reads superseded after edits", () => {
   const original = projectionMessages();
@@ -311,6 +312,40 @@ test("preserves a small edit after validation", () => {
   });
   assert.match(JSON.stringify(projection.messages), /SMALL_EDIT/u);
   assert.equal(projection.metrics.validatedEditsReplaced, 0);
+});
+
+test("validated edits compact without source revisions, until a later change to the source", () => {
+  const large = "REVISIONLESS_EDIT".repeat(400);
+  const edit = toolResult("edit-a", "edit_code", { data: { changed: true, changes: [{ path: "src/a.ts" }] }, status: "ok" });
+  const build = toolResult("build", "run_task", { data: { validation: { paths: ["src/a.ts"], status: "passed", taskKind: "build" } }, status: "ok" });
+  const base = [toolUse("edit-a", "edit_code", editInput("src/a.ts", large)), edit,
+    toolUse("build", "run_task", { kind: "project", task: "build" }), build];
+  const validated = projectProviderContext(base, { systemPrompt: "", tools: [] });
+  assert.doesNotMatch(JSON.stringify(validated.messages), /REVISIONLESS_EDIT/u);
+  assert.equal(validated.metrics.validatedEditsReplaced, 1);
+  for (const later of [
+    { data: { command: "pnpm format", changed: true, paths: ["src/b.ts"] }, status: "ok" },
+    { data: { mutation: "deterministic_format", formatter: "prettier", paths: ["src/a.ts"] }, status: "ok" },
+    { data: { command: "pnpm codegen", exitCode: 0, paths: ["src/generated.ts"] }, status: "ok" },
+  ]) {
+    const changed = projectProviderContext([...base, toolUse("later", "run_task", { command: "pnpm format" }),
+      toolResult("later", "run_task", later)], { systemPrompt: "", tools: [] });
+    assert.match(JSON.stringify(changed.messages), /REVISIONLESS_EDIT/u);
+    assert.equal(changed.metrics.validatedEditsReplaced, 0);
+  }
+});
+
+test("multipart command results drop the echoed command and stay decodable", () => {
+  const output = "line one\nline two\n";
+  const messages: Message[] = [toolUse("command", "run_task", { command: "npm test" }), {
+    role: "user",
+    content: [{ type: "tool_result", tool_use_id: "command", name: "run_task",
+      content: encodeToolResult({ status: "ok", data: { command: "npm test", exitCode: 0, output } }) as never }],
+  }];
+  const block = (projectProviderContext(messages, { systemPrompt: "", tools: [] }).messages[1]!.content as ContentBlock[])[0]!;
+  assert.equal(block.type, "tool_result");
+  if (block.type !== "tool_result") return;
+  assert.deepEqual(unwrapFeedbackEnvelope(block.content), { status: "ok", data: { exitCode: 0, output } });
 });
 
 test("publishes content-free provider context measurements", async () => {

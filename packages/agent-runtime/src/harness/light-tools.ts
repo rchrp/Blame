@@ -18,7 +18,7 @@ import type {
 } from "./light-executor.js";
 import { lightToolContext } from "./light-executor.js";
 import { LightWorkspace } from "./light-workspace.js";
-import { feedbackEnvelope } from "../tool-result-envelope.js";
+import { encodeToolResult } from "../tool-result-envelope.js";
 
 export const lightReadToolNames = ["search_code", "read_code"] as const;
 export const lightWriteToolNames = ["edit_code", "run_task"] as const;
@@ -208,9 +208,8 @@ function harnessTool<TSchema extends z.ZodTypeAny>(
     maxRetries: 0,
     async execute(value: unknown, context: AgentToolContext) {
       const parsed = parseLeniently(definition.schema, definition.normalize ? definition.normalize(value) : value);
-      if (!parsed.success) return invalidInput(parsed.error);
-      const response = modelToolResponse(await definition.execute(parsed.data, context));
-      return definition.name === "run_task" ? feedbackEnvelope(response) : response;
+      if (!parsed.success) return modelToolResponse(invalidInput(parsed.error));
+      return modelToolResponse(await definition.execute(parsed.data, context));
     },
   });
 }
@@ -264,10 +263,13 @@ function jsonValue(text: string): unknown {
   }
 }
 
+/**
+ * The result in its model-facing form, the same for in-process and hub
+ * sessions: see encodeToolResult. Images from read_code follow the text.
+ */
 function modelToolResponse(result: LightToolResult<unknown>) {
-  if (result.status !== "ok" || !result.content) return redactSecurityValue(result);
-  const { content, ...text } = result;
-  return [{ type: "text" as const, text: JSON.stringify(redactSecurityValue(text)) }, ...content];
+  const { content, ...text } = result.status === "ok" && result.content ? result : { ...result, content: [] };
+  return encodeToolResult(redactSecurityValue(text) as Record<string, unknown>, content);
 }
 
 function invalidInput(error: z.ZodError): LightToolResult<unknown> {

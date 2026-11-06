@@ -43,7 +43,8 @@ export function compactRepairAdvice(messages: Message[]) {
 }
 
 function validPlan(plan: Record<string, unknown>) {
-  return plan.advisoryOnly === true && typeof plan.sourceRevisionId === "string" &&
+  // Harness results no longer carry the plan's source revision (a hash).
+  return plan.advisoryOnly === true && ["string", "undefined"].includes(typeof plan.sourceRevisionId) &&
     Array.isArray(plan.repairFirst) && plan.repairFirst.length > 0 &&
     Array.isArray(plan.requiredAfterRepair) && plan.repairFirst.every(value => {
       const input = record(record(value)?.input);

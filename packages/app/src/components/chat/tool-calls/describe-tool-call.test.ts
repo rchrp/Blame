@@ -1,6 +1,6 @@
 import assert from "node:assert/strict"
 import test from "node:test"
-import { feedbackEnvelope } from "@blame/agent-runtime/tool-result-envelope"
+import { encodeToolResult } from "@blame/agent-runtime/tool-result-envelope"
 
 import { describeToolCall, toolCallSource } from "./describe-tool-call.ts"
 
@@ -37,7 +37,15 @@ function row(result: ReturnType<typeof view>) {
 
 test("large command feedback retains command outcome and terminal text in multipart results", () => {
   const output = { status: "ok", data: { command: "npm test", exitCode: 1, output: "failure diagnostic\n".repeat(700) } }
-  assert.deepEqual(view("run_task", { kind: "project", task: "test" }, feedbackEnvelope(output)), view("run_task", { kind: "project", task: "test" }, output))
+  const encoded = encodeToolResult(output)
+  assert.ok(Array.isArray(encoded))
+  assert.deepEqual(view("run_task", { kind: "project", task: "test" }, encoded), view("run_task", { kind: "project", task: "test" }, output))
+  // Transcripts from earlier versions carry the first envelope format.
+  const earlier = [
+    { type: "text", text: JSON.stringify({ format: "blame_tool_result_v1", result: { ...output, data: { ...output.data, output: null } }, textFields: [["data", "output"]] }) },
+    { type: "text", text: output.data.output },
+  ]
+  assert.deepEqual(view("run_task", { kind: "project", task: "test" }, earlier), view("run_task", { kind: "project", task: "test" }, output))
 })
 
 test("edits name the file and its line counts", () => {

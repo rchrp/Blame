@@ -102,6 +102,18 @@ test("converts tool results and stream events between both sides", () => {
       isError: true,
     },
   );
+  assert.deepEqual(
+    mcpToolResult({
+      type: "tool_result",
+      tool_use_id: "t2",
+      content: [
+        { type: "text", text: '{"format":"blame_tool_result_v2"}' },
+        { type: "text", text: "data.output:\n```\nok\n```" },
+      ],
+    }).content,
+    [{ type: "text", text: '{"format":"blame_tool_result_v2"}\n\ndata.output:\n```\nok\n```' }],
+    "A harness result's parts read as paragraphs of one text.",
+  );
   const event = clientStreamEvent({
     type: "content_block_start",
     index: 0,

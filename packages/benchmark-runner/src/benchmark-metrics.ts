@@ -1,4 +1,5 @@
 import type { AgentEvent } from "@blame/agent-runtime";
+import { unwrapFeedbackEnvelope } from "@blame/agent-runtime/tool-result-envelope";
 import type {
   BenchmarkMetrics,
   BenchmarkNamedToolMetrics,
@@ -189,10 +190,11 @@ export class BenchmarkMetricsCollector {
     this.activeTools.delete(id);
     const tool = active?.tool ?? fallbackTool;
     const input = active?.input ?? fallbackInput;
-    const output = payload.output;
+    // Harness results with multi-line text arrive as multipart envelopes.
+    const output = unwrapFeedbackEnvelope(payload.output);
     const metric = this.namedToolMetric(tool);
     const inputBytes = serializedBytes(input);
-    const outputBytes = serializedBytes(output);
+    const outputBytes = serializedBytes(payload.output);
     updateToolMetric(metric, inputBytes, outputBytes, output, payload);
     this.spans.push({
       finishedAt,

@@ -3,7 +3,7 @@ import test from "node:test";
 import type { Message } from "@cline/sdk";
 import { compactRepairAdvice } from "./repair-advice-projection.js";
 import { presentToolResults } from "./tool-result-presentation.js";
-import { feedbackEnvelope } from "./tool-result-envelope.js";
+import { encodeToolResult } from "./tool-result-envelope.js";
 
 const plan = { sourceRevisionId: "src_one", advisoryOnly: true,
   repairFirst: [{ input: { kind: "project", task: "types" }, category: "code", freshness: "current" }],
@@ -14,7 +14,7 @@ function pair(id: string, options: { plan?: unknown; blocked?: boolean; checks?:
   const result = options.blocked ? { status: "blocked", category: "code", message: "Compiler error", recovery: "Inspect the diagnostic.\n" + JSON.stringify({ validationRepair: value }) }
     : { status: "ok", data: { output: "inspection", exitCode: 0, validationRepair: value, reporting: { admission: "unverified" } } };
   return [{ role: "assistant", content: [{ type: "tool_use", id, name: options.checks ? "read_code" : "run_task", input: options.checks ? { target: "@checks" } : { kind: "command", command: "pwd" } }] },
-    { role: "user", content: [{ type: "tool_result", tool_use_id: id, content: JSON.stringify(options.envelope ? feedbackEnvelope({ ...result, data: { ...("data" in result ? result.data : {}), output: "diagnostic\n".repeat(1000) } }) : result) }] }];
+    { role: "user", content: [{ type: "tool_result", tool_use_id: id, content: options.envelope ? encodeToolResult({ ...result, data: { ...("data" in result ? result.data : {}), output: "diagnostic\n".repeat(1000) } }) as never : JSON.stringify(result) }] }];
 }
 function result(messages: Message[], index = -1) {
   const block = messages.at(index)!.content[0]!;
@@ -67,6 +67,15 @@ test("only trusted tool metadata compacts; unknown calls and printed/source JSON
   const enveloped = compactRepairAdvice([...pair("first"), ...pair("large", { envelope: true })]);
   assert.equal(result(enveloped).data.validationRepair.kind, "repair_plan_reference");
   assert.ok(result(enveloped).data.output.length > 6000);
+});
+
+test("plans without their source revision, as harness results now carry them, still compact", () => {
+  const { sourceRevisionId: _revision, ...current } = plan;
+  void _revision;
+  const projected = compactRepairAdvice([...pair("first", { plan: current }), ...pair("next", { plan: current })]);
+  assert.deepEqual(result(projected, 1).data.validationRepair, current);
+  assert.equal(result(projected).data.validationRepair.kind, "repair_plan_reference");
+  assert.equal(result(projected).data.validationRepair.sourceRevisionId, undefined);
 });
 
 test("repeated advice compacts by default, and the flag turns it off", () => {

@@ -9,6 +9,7 @@ import {
   type ToolSpanState,
   turnDuration,
 } from "./agent-telemetry-state.js";
+import { unwrapFeedbackEnvelope } from "./tool-result-envelope.js";
 
 export function recordHarnessToolMetrics(
   state: AgentSessionTelemetry,
@@ -17,7 +18,9 @@ export function recordHarnessToolMetrics(
   payload: Record<string, unknown>,
 ) {
   const attributes = toolMetricAttributes(state, current);
-  const output = asRecord(event.output ?? payload.output);
+  const output = asRecord(
+    unwrapFeedbackEnvelope(event.output ?? payload.output),
+  );
   const body = asRecord(output.data ?? output.output ?? output);
   const data: Record<string, unknown> = {
     ...body,
