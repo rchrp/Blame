@@ -244,15 +244,16 @@ test("experimental search groups repeated hits and publishes an immediately edit
 test("an outline cannot authorize replacement of an unobserved body", async () => {
   const root = await mkdtemp(join(tmpdir(), "frontier-"));
   try {
-    const source = "export function value() {\n  return 1;\n}\n";
+    const body = Array.from({ length: 30 }, (_, index) => `  const step${index} = compute(${index});`).join("\n");
+    const source = `export function value() {\n${body}\n  return 1;\n}\n\nexport function other() {\n${body}\n  return 2;\n}\n`;
     await writeFile(join(root, "a.ts"), source);
     const workspace = new LightWorkspace(root, { sessionId: "outline" });
     const outline = await workspace.readCode(
       { target: "a.ts", view: "outline" },
       {},
     );
-    const alias = (outline as { data: { items: Array<{ alias: string }> } })
-      .data.items[0]!.alias;
+    const content = (outline as { data: { content: string } }).data.content;
+    const alias = /⋯ L2–\d+ · [\d.k]+ · (s\d+)/u.exec(content)![1]!;
     const result = await workspace.editCode({
       operations: [
         {

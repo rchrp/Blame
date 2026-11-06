@@ -504,11 +504,11 @@ test("a lexical alias promotes to its enclosing editable symbol", async () => {
   );
 });
 
-test("CSS outlines stay compact and expose an append target", async () => {
+test("CSS outlines fold rule bodies and expose an append target", async () => {
   const rules = Array.from(
     { length: 60 },
     (_, index) =>
-      `.rule-${index} { background: linear-gradient(135deg, #111111, #222222); border: 1px solid #333333; color: #f5f5f5; padding: 1rem 2rem; }`,
+      `.rule-${index} {\n  background: linear-gradient(135deg, #111111, #222222);\n  border: 1px solid #333333;\n  color: #f5f5f5;\n  padding: 1rem 2rem;\n}`,
   ).join("\n");
   const source = `:root { --accent: red; }\n${rules}\n`;
   await withWorkspace({ "styles.css": source }, async (root) => {
@@ -519,14 +519,10 @@ test("CSS outlines stay compact and expose an append target", async () => {
         { agentId: "lead" },
       ),
     );
-    assert.equal(array(result.items).length, 32);
-    assert.equal(result.truncated, true);
-    assert.ok(JSON.stringify(result).length < source.length);
-    assert.ok(
-      array(result.items).every(
-        (item) => record(item).kind !== "css_custom_property",
-      ),
-    );
+    assert.equal(result.view, "folded");
+    assert.ok(String(result.content).length < source.length / 2);
+    assert.match(String(result.content), /^:root \{ --accent: red; \}$/mu);
+    assert.match(String(result.content), /^\.rule-7 \{\n {2}⋯ L\d+–\d+ · \d+ · s\d+\n\}$/mu);
     assert.equal(
       record(array(result.editTargets).at(-1)).qualifiedName,
       ".rule-59",
@@ -544,7 +540,9 @@ test("path-qualified symbol aliases resolve when the path matches", async () => 
         { agentId: "lead" },
       ),
     );
-    const alias = String(record(array(outline.items)[0]).alias);
+    // Folding one short rule would save nothing: the outline is the file.
+    assert.equal(outline.fallbackReason, "outline_not_smaller");
+    const alias = String(record(array(outline.editTargets)[0]).alias);
     const result = await workspace.editCode({
       operations: [
         {
@@ -1437,7 +1435,7 @@ test("run_task bounds successful command output", async () => {
   });
 });
 
-test("large application files route through outline and symbol reads", async () => {
+test("large application files route through a folded view and symbol reads", async () => {
   const filler = Array.from(
     { length: 1_500 },
     (_, index) => `export const value${index} = ${index}`,
@@ -1448,15 +1446,12 @@ test("large application files route through outline and symbol reads", async () 
     const outline = data(
       await workspace.readCode({ target: "large.ts" }, { agentId: "lead" }),
     );
-    assert.equal(outline.view, "outline");
-    const item = record(
-      array(outline.items).find(
-        (value) => record(value).qualified_name === "target",
-      ),
-    );
+    assert.equal(outline.view, "folded");
+    assert.ok(String(outline.content).length <= 32_000);
+    assert.match(String(outline.content), /members: target, value0, value1, …/u);
     const symbol = data(
       await workspace.readCode(
-        { target: String(item.alias), view: "symbol" },
+        { target: "large.ts#target", view: "symbol" },
         { agentId: "lead" },
       ),
     );
@@ -1465,7 +1460,7 @@ test("large application files route through outline and symbol reads", async () 
   });
 });
 
-test("large supported files route through an outline, mid-sized ones are read whole", async () => {
+test("files larger than a folded view are always folded, smaller flat ones are read whole", async () => {
   const source = (length: number) => Array.from(
     { length },
     (_, index) => `export const mediumValue${index} = ${index}`,
@@ -1473,7 +1468,7 @@ test("large supported files route through an outline, mid-sized ones are read wh
   await withWorkspace({ "large.ts": `${source(1_200)}\n`, "medium.ts": `${source(400)}\n` }, async (root) => {
     const workspace = lightWorkspace(root, "medium-outline");
     const read = async (target: string) => data(await workspace.readCode({ target }, { agentId: "lead" })).view;
-    assert.equal(await read("large.ts"), "outline");
+    assert.equal(await read("large.ts"), "folded");
     assert.equal(await read("medium.ts"), "raw");
   });
 });
@@ -1544,7 +1539,7 @@ test("CSS supports structural outline and rule body editing", async () => {
           { agentId: "lead" },
         ),
       );
-      const rule = record(array(outline.items)[0]);
+      const rule = record(array(outline.editTargets)[0]);
       await workspace.readCode({ target: String(rule.alias) }, {});
       const result = await workspace.editCode({
         operations: [
@@ -1590,7 +1585,7 @@ test("nested CSS outline targets identify their containing target", async () => 
   });
 });
 
-test("outline ranges exclude symbols outside the requested lines", async () => {
+test("an outline range with nothing to fold reads those lines", async () => {
   const source = Array.from(
     { length: 700 },
     (_, index) => `.rule-${index + 1} { color: red; }`,
@@ -1607,14 +1602,8 @@ test("outline ranges exclude symbols outside the requested lines", async () => {
         { agentId: "lead" },
       ),
     );
-    const items = array(result.items).map(record);
-    assert.equal(items.length, 32);
-    assert.ok(
-      items.every((item) => {
-        const [start, end] = array(item.line_range).map(Number);
-        return start >= 330 && end <= 650;
-      }),
-    );
+    assert.equal(result.view, "range");
+    assert.deepEqual(result.lines, [330, 650]);
     assert.ok(
       array(result.editTargets).every((target) => {
         const match = String(record(target).qualifiedName).match(/(\d+)/u);
@@ -1772,10 +1761,10 @@ test("HTML supports outline and structural body replacement", async () => {
           { agentId: "lead" },
         ),
       );
-      assert.equal(outline.view, "outline");
+      assert.equal(outline.view, "raw");
       const main = record(
-        array(outline.items).find(
-          (value) => record(value).qualified_name === "main#app",
+        array(outline.editTargets).find(
+          (value) => record(value).qualifiedName === "main#app",
         ),
       );
       await workspace.readCode({ target: String(main.alias) }, {});
@@ -1814,8 +1803,8 @@ for (const extension of ["vue", "svelte"])
         ),
       );
       const main = record(
-        array(outline.items).find(
-          (value) => record(value).qualified_name === "main#app",
+        array(outline.editTargets).find(
+          (value) => record(value).qualifiedName === "main#app",
         ),
       );
       await workspace.readCode({ target: String(main.alias) }, {});

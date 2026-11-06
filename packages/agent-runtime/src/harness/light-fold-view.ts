@@ -157,6 +157,11 @@ export function renderFold(
     markers = groupedMembers(lines, container.members, markers, Math.ceil(container.members.length / runs));
     rendered = render(lines, window, markers, alias);
   }
+  if (rendered.text.length > foldViewCharacters && top.length) {
+    const runs = Math.max(1, Math.floor((foldViewCharacters - (rendered.text.length - shownIn(rendered, window))) / 160));
+    markers = groupedMembers(lines, top, markers, Math.ceil(top.length / runs));
+    rendered = render(lines, window, markers, alias);
+  }
   for (const container of top.filter((unit) => unit.container).sort((left, right) => size(left.range) - size(right.range))) {
     if (rendered.text.length <= foldViewCharacters) break;
     markers = summarizedMembers(lines, [container], markers);

@@ -227,10 +227,10 @@ for (const [path, source] of Object.entries(classSources)) {
           {},
         );
         assert.equal(result.status, "ok");
-        const data = result.data as { view: string; items: unknown[] };
-        assert.equal(data.view, "outline");
-        assert.match(JSON.stringify(data.items), /Counter.second/u);
-        assert.doesNotMatch(JSON.stringify(data.items), /Unrelated|return 2/u);
+        // Too small to fold: the outline of the class is the class itself.
+        const data = JSON.stringify(result.data);
+        assert.match(data, /second/u);
+        assert.doesNotMatch(data, /Unrelated/u);
       },
     );
   });

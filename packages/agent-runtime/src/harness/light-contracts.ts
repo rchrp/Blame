@@ -22,22 +22,29 @@ export const lightSearchCodeInputSchema = z
   })
   .strict();
 
+const lineRange = z
+  .object({
+    startLine: z.number().int().positive(),
+    endLine: z.number().int().positive(),
+  })
+  .strict()
+  .refine((value) => value.endLine >= value.startLine);
+
 export const lightReadCodeInputSchema = z
   .object({
     target: z.string().trim().min(1).max(4_096),
     view: z.enum(["auto", "raw", "outline", "symbol", "signature", "range", "declaration"]).optional(),
     offset: z.number().int().nonnegative().max(256_000).optional()
       .describe("Only for declaration continuation; use the offset returned by nextRead."),
-    range: z
-      .object({
-        startLine: z.number().int().positive(),
-        endLine: z.number().int().positive(),
-      })
-      .strict()
-      .refine((value) => value.endLine >= value.startLine)
-      .optional(),
+    range: z.union([lineRange, z.array(lineRange).min(1).max(8)]).optional()
+      .describe("Lines to read; an array reads up to 8 ranges in one call."),
   })
   .strict();
+
+/** The line ranges of a read, one or several. */
+export function readRanges(input: Pick<LightReadCodeInput, "range">) {
+  return input.range === undefined ? [] : Array.isArray(input.range) ? input.range : [input.range];
+}
 
 const symbolEdit = z
   .object({

@@ -32,6 +32,12 @@ export class ReadCoverage {
     return { covered: uncovered.length === 0, receipt, uncovered };
   }
 
+  /** The parts of `intervals` this consumer has not read yet, without recording a read. */
+  uncovered(input: Omit<CoverageEntry, "intervals"> & { intervals: ByteInterval[] }) {
+    const covered = this.entries.get(coverageKey(input))?.intervals ?? [];
+    return mergeIntervals(input.intervals.flatMap((interval) => subtractCovered(interval, covered)));
+  }
+
   invalidatePath(path: string) {
     for (const [key, entry] of this.entries)
       if (entry.path === path) this.entries.delete(key);

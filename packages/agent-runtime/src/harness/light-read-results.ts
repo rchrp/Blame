@@ -1,52 +1,14 @@
-import { outlineSymbol, type ParsedSymbol, symbolEditRange } from "./code-intelligence.js";
-import type { LightReadCodeInput, LightToolResult } from "./light-contracts.js";
-import { type EditTarget, outlineCandidates, symbolicPath } from "./light-navigation.js";
-import { type LightAliasRegistry, type ResolvedLightSymbol, SymbolResolutionError } from "./light-aliases.js";
+import { type ParsedSymbol, symbolEditRange } from "./code-intelligence.js";
+import type { LightToolResult } from "./light-contracts.js";
+import { type EditTarget, symbolicPath } from "./light-navigation.js";
+import { type ResolvedLightSymbol, SymbolResolutionError } from "./light-aliases.js";
+import type { FoldPlan, RenderedFold } from "./light-fold-view.js";
 import type { ByteInterval } from "./read-coverage.js";
 import { lightCapabilityDescription, runtimeCapabilityRegistry } from "./light-capabilities.js";
 import { isUtf8 } from "node:buffer";
 import type { AgentToolContext } from "@cline/sdk";
 
 export type ReadContext = Partial<AgentToolContext>;
-
-export function outlineRangeCandidates(
-  symbols: ParsedSymbol[],
-  range?: LightReadCodeInput["range"],
-) {
-  const candidates = outlineCandidates(symbols);
-  if (!range) return candidates;
-  return candidates.filter(
-    ({ line_range: [start, end] }) =>
-      start <= range.endLine && end >= range.startLine,
-  );
-}
-
-export function enclosingOutlineTarget(
-  symbol: ParsedSymbol,
-  candidates: Array<{ alias: string; symbol: ParsedSymbol }>,
-) {
-  return candidates
-    .filter(
-      ({ symbol: candidate }) =>
-        candidate !== symbol &&
-        candidate.range_utf8_bytes[0] <= symbol.range_utf8_bytes[0] &&
-        candidate.range_utf8_bytes[1] >= symbol.range_utf8_bytes[1],
-    )
-    .sort(
-      (left, right) => byteLength(left.symbol) - byteLength(right.symbol),
-    )[0];
-}
-
-function byteLength(symbol: ParsedSymbol) {
-  return symbol.range_utf8_bytes[1] - symbol.range_utf8_bytes[0];
-}
-
-export function emptyOutline(path: string): LightToolResult<unknown> {
-  return {
-    status: "ok",
-    data: { path, view: "outline", items: [], truncated: false },
-  };
-}
 
 export function directoryEntries(path: string, files: string[]) {
   const prefix = path === "." ? "" : `${path}/`;
@@ -80,26 +42,6 @@ export function coveredDirectoryResult(
       view: "directory",
     },
     receipt,
-  };
-}
-
-export function outlineResult(
-  path: string,
-  items: unknown[],
-  total: number,
-  receipt: string,
-  editTargets: EditTarget[],
-): LightToolResult<unknown> {
-  return {
-    status: "ok",
-    receipt,
-    data: {
-      path,
-      view: "outline",
-      items,
-      editTargets,
-      truncated: total > items.length,
-    },
   };
 }
 
@@ -144,6 +86,44 @@ function symbolProjectedContent(
     ...(imports && rangeHasDelta(imports.range, uncovered)
       ? { imports: imports.content }
       : {}),
+  };
+}
+
+const foldGuidance =
+  "Folded view: every line is the file's own except the ⋯ lines, each standing for hidden lines (line range, size in characters, sN alias, imported names the hidden code uses). " +
+  "To see hidden code, read its sN alias or line range; range accepts up to 8 ranges in one call. Hidden lines are not observed edit coverage.";
+
+export function foldedContentResult(
+  path: string,
+  content: Buffer,
+  window: ByteInterval,
+  view: RenderedFold,
+  plan: FoldPlan,
+  receipt: string,
+  editTargets: EditTarget[],
+): LightToolResult<unknown> {
+  const whole = window[0] === 0 && window[1] === content.byteLength;
+  return {
+    status: "ok",
+    receipt,
+    data: {
+      path,
+      view: "folded",
+      complete: false,
+      ...(whole ? {} : { lines: intervalLines(content, window) }),
+      folded: {
+        shownCharacters: view.text.length,
+        ofCharacters: content.subarray(...window).toString("utf8").length,
+        hiddenParts: view.markers.length,
+      },
+      ...(plan.kept.length
+        ? { keptWhole: plan.kept.slice(0, 4).map(({ lines, reason }) =>
+            `L${lines[0] + 1}–${lines[1] + 1}: ${reason === "edited" ? "edited this session" : "search or check hit"}`) }
+        : {}),
+      content: view.text,
+      ...(editTargets.length ? { editTargets } : {}),
+      guidance: foldGuidance,
+    },
   };
 }
 
@@ -307,25 +287,4 @@ export function readableSource(content: Buffer) {
   if (content.includes(0) || !isUtf8(content) || content.subarray(0, 5).toString("ascii") === "%PDF-")
     throw new Error("Binary or PDF content is not source text. Use run_task to extract text or render images, then read the output.");
   return content.toString("utf8");
-}
-
-export function outlineItems(
-  aliases: LightAliasRegistry,
-  path: string,
-  content: Buffer,
-  symbols: ParsedSymbol[],
-  revision: string,
-) {
-  const registered = symbols.map((symbol) => {
-    const { alias, materialized } = aliases.registerSymbol(path, content, symbol, revision);
-    return { alias, materialized, symbol };
-  });
-  return registered.map(({ alias, materialized, symbol }) => {
-    const parent = enclosingOutlineTarget(symbol, registered);
-    return {
-      alias,
-      ...outlineSymbol(materialized),
-      ...(parent ? { containedBy: parent.alias } : {}),
-    };
-  });
 }

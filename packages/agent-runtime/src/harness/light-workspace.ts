@@ -4,9 +4,15 @@ import { pythonBodyRange } from "./python-body.js";
 import {
   parseCode,
   symbolEditRange,
-  type ParsedSymbol,
 } from "./code-intelligence.js";
 import { LightAliasRegistry, type ResolvedLightSymbol } from "./light-aliases.js";
+import { LightAttention } from "./light-attention.js";
+import {
+  foldFileMinimumCharacters,
+  foldViewCharacters,
+  outlineMinimumCharacters,
+} from "./light-fold-economics.js";
+import { lineAlignedWindow, planFold, renderFold, type FoldPlan } from "./light-fold-view.js";
 import { capabilityForPath } from "./light-capabilities.js";
 import type {
   LightEditCodeInput,
@@ -15,6 +21,7 @@ import type {
   LightTaskContract,
   LightToolResult,
 } from "./light-contracts.js";
+import { readRanges } from "./light-contracts.js";
 import { LightEditService } from "./light-edit.js";
 import { checkRepairPlan } from "./light-check-repair.js";
 import { LightCommitService } from "./light-commit.js";
@@ -50,12 +57,9 @@ import {
   contextGeneration,
   coveredDirectoryResult,
   directoryEntries,
-  emptyOutline,
+  foldedContentResult,
   inputBlocked,
   lineByteRange,
-  outlineItems,
-  outlineRangeCandidates,
-  outlineResult,
   readableSource,
   type ReadContext,
   shortImportBlock,
@@ -74,13 +78,20 @@ type LightWorkspaceOptions = {
 };
 
 const maximumRawCharacters = 64_000;
-const maximumOutlineItems = 32;
 const maximumDirectoryEntries = 64;
+const maximumRememberedMarkers = 5_000;
+
+type PlannedFold = { parsed: ReturnType<typeof parseCode>; plan: FoldPlan; window: ByteInterval };
 
 export class LightWorkspace {
   readonly edits: LightEditService;
   readonly tasks: LightTaskRunner;
   private readonly aliases = new LightAliasRegistry();
+  private readonly attention = new LightAttention();
+  /** Files each consumer last saw folded, by content: a raw re-read then returns only what the fold hid. */
+  private readonly foldedViews = new Set<string>();
+  /** Marker lines shown in folded views, refused when an edit copies one into source. */
+  private readonly shownMarkers = new Set<string>();
   private readonly codeSearch: LightCodeSearch;
   private readonly coverage = new ReadCoverage();
   private readonly files: WorkspaceFiles;
@@ -131,13 +142,24 @@ export class LightWorkspace {
     } = {},
   ) {
     await this.ready;
+    const marker = this.copiedMarker(input);
+    if (marker)
+      return {
+        status: "blocked" as const,
+        category: "input" as const,
+        message: `This edit copies the folded-view line "${marker}", which stands for hidden source lines. Read them (the sN alias or the line range it names) and write the actual code.`,
+      };
     const result = await this.edits.edit(input, context);
     if (result.status === "ok")
       for (const change of arrayValue(recordValue(result.data).changes)) {
         const path = stringValue(recordValue(change).path);
-        if (path) this.coverage.invalidatePath(path);
+        if (!path) continue;
+        this.coverage.invalidatePath(path);
+        this.attention.changed(path);
+        this.attention.edit(path, arrayValue(recordValue(change).symbols).flatMap((symbol) => stringValue(symbol) ?? []));
       }
     await this.journal.recordCoverage(this.coverage.snapshot());
+    await this.journal.recordAttention(this.attention.snapshot());
     if (result.status !== "ok" || recordValue(result.data).changed !== true) return result;
     return this.withCheckRepair(await this.withValidationState(result, recordValue(result.status === "ok" ? result.data : undefined).sourceRevisionId), false);
   }
@@ -156,6 +178,20 @@ export class LightWorkspace {
         }).catch(() => undefined)
       : undefined;
     return validationState ? { ...result, data: { ...recordValue(result.data), validationState } } : result;
+  }
+
+  private copiedMarker(input: LightEditCodeInput) {
+    if (!this.shownMarkers.size) return undefined;
+    for (const operation of input.operations) {
+      const text = operation.kind === "symbol"
+        ? operation.content ?? ""
+        : operation.patch.trimStart().startsWith("*** Begin Patch")
+          ? operation.patch.split("\n").filter((line) => line.startsWith("+")).map((line) => line.slice(1)).join("\n")
+          : operation.patch;
+      const copied = text.split("\n").map((line) => line.trim()).find((line) => this.shownMarkers.has(line));
+      if (copied) return copied;
+    }
+    return undefined;
   }
 
   /** The repair plan last attached to a run_task result. */
@@ -215,13 +251,25 @@ export class LightWorkspace {
         return path ? [path] : [];
       },
     );
-    for (const path of paths) this.coverage.invalidatePath(path);
+    for (const path of paths) {
+      this.coverage.invalidatePath(path);
+      this.attention.changed(path);
+    }
     if (paths.length)
       await this.journal.recordCoverage(this.coverage.snapshot());
     if (recordValue(recordValue(result.data).check).outcome === "failed") {
       const data = recordValue(result.data);
       const snippets = await failedCheckSnippets(this.files, data, (target, startLine, endLine) =>
         this.readCode({ target, view: "range", range: { startLine, endLine } }, context));
+      await this.pointAt(snippets.flatMap((snippet) => {
+        const value = recordValue(snippet);
+        const path = stringValue(value.path);
+        const lines = arrayValue(value.lines);
+        const [start, end] = [Number(lines[0]), Number(lines[1])];
+        return path && Number.isSafeInteger(start) && end >= start
+          ? [{ path, lines: Array.from({ length: Math.min(end - start + 1, 16) }, (_, index) => start + index) }]
+          : [];
+      }));
       if (snippets.length) return { ...result, data: { ...data, diagnostics: snippets } };
     }
     return result;
@@ -237,6 +285,7 @@ export class LightWorkspace {
         await this.commits.readExclusive(() => this.codeSearch.search(input, signal)),
       );
       await this.recordObservationAudit("search_code", input.mode ?? "auto", result);
+      if (result.status === "ok") await this.pointAt(searchHits(result.data));
       return result;
     } catch (error) {
       return inputBlocked(error);
@@ -296,6 +345,15 @@ export class LightWorkspace {
     );
   }
 
+  /** Search hits and failing-check lines, kept whole by later folded views. */
+  private async pointAt(hits: Array<{ path: string; lines: number[] }>) {
+    if (!hits.length) return;
+    const byPath = new Map<string, number[]>();
+    for (const hit of hits) byPath.set(hit.path, [...(byPath.get(hit.path) ?? []), ...hit.lines]);
+    for (const [path, lines] of byPath) this.attention.point(path, lines);
+    await this.journal.recordAttention(this.attention.snapshot());
+  }
+
   private async recordObservationAudit(tool: "read_code" | "search_code", requestedView: string, result: LightToolResult<unknown>) {
     if (result.status !== "ok") return;
     const data = recordValue(result.data);
@@ -311,6 +369,7 @@ export class LightWorkspace {
     await this.commits.exclusive(() => this.journal.hydrate());
     this.aliases.hydrate(this.journal.currentAliases());
     this.coverage.hydrate(this.journal.currentCoverage());
+    this.attention.hydrate(this.journal.currentAttention());
     for (const entry of this.journal.currentCoverage().entries)
       this.aliases.rememberObservation(entry.path, entry.hash, entry.intervals);
     const objective = options.taskContract?.objective;
@@ -398,14 +457,20 @@ export class LightWorkspace {
     const image = await readWorkspaceImage(this.files, path, context);
     if (image) return image;
     const file = await this.files.read(path);
-    const source = readableSource(file.content);
-    const view = routedView(input, path, source.length);
+    readableSource(file.content);
+    const view = routedView(input);
     if (view === "signature")
       throw new Error("Signature view requires a symbol alias or path#qualifiedName. Read the file outline to choose a declaration.");
     if (view === "outline")
-      return await this.readOutlinePath(path, file.content, revision, context, input.range);
+      return await this.readOutlinePath(path, file.content, revision, context, input);
     if (view === "range")
       return await this.readLineRange(path, file.content, input, revision, context);
+    if (view === "auto") {
+      // A file larger than a folded view is always folded, down to one line per declaration if need be.
+      const folded = this.plannedFold(path, file.content, [0, file.content.byteLength], foldFileMinimumCharacters,
+        file.content.toString("utf8").length > foldViewCharacters);
+      if (folded) return await this.foldResult(path, file.content, folded, revision, context);
+    }
     return await this.raw(
       path,
       file.content,
@@ -420,25 +485,93 @@ export class LightWorkspace {
     content: Buffer,
     revision: string,
     context: ReadContext,
-    range?: LightReadCodeInput["range"],
+    input: LightReadCodeInput,
   ) {
+    if (!parseCode(path, content).supported)
+      return await this.raw(path, content, revision, context, "symbol_view_unavailable");
+    const ranges = readRanges(input).map(({ startLine, endLine }) => lineByteRange(content, startLine, endLine));
+    const window: ByteInterval = ranges.length
+      ? [Math.min(...ranges.map(([start]) => start)), Math.max(...ranges.map(([, end]) => end))]
+      : [0, content.byteLength];
+    const folded = this.plannedFold(path, content, window, outlineMinimumCharacters);
+    if (folded) return await this.foldResult(path, content, folded, revision, context);
+    // Folding would save less than the call that unfolds it.
+    return ranges.length
+      ? await this.readLineRange(path, content, input, revision, context)
+      : await this.raw(path, content, revision, context, "outline_not_smaller");
+  }
+
+  /** A fold of `window` when it removes at least `minimum` characters. */
+  private plannedFold(path: string, content: Buffer, window: ByteInterval, minimum: number, always = false): PlannedFold | undefined {
+    if (content.byteLength > 2 * 1024 * 1024) return undefined;
     const parsed = parseCode(path, content);
-    if (parsed.supported)
-      return await this.outline(
-        path,
-        content,
-        parsed.symbols,
-        revision,
-        context,
-        range,
-      );
-    return await this.raw(
-      path,
-      content,
-      revision,
-      context,
-      "symbol_view_unavailable",
-    );
+    if (!parsed.supported) return undefined;
+    const aligned = lineAlignedWindow(content, window);
+    const plan = planFold(content, parsed, aligned, this.attention.forFile(path));
+    return always || (plan.markers.length && plan.removed >= minimum) ? { parsed, plan, window: aligned } : undefined;
+  }
+
+  private async foldResult(
+    path: string,
+    content: Buffer,
+    { parsed, plan, window }: PlannedFold,
+    revision: string,
+    context: ReadContext,
+  ) {
+    const view = renderFold(content, parsed, window, plan,
+      (symbol) => this.aliases.registerSymbol(path, content, symbol, revision).alias);
+    for (const marker of view.markers) this.shownMarkers.add(marker.text.trim());
+    while (this.shownMarkers.size > maximumRememberedMarkers)
+      this.shownMarkers.delete(this.shownMarkers.values().next().value!);
+    const coverage = await this.registerCoverage(path, content, view.shown, context);
+    this.foldedViews.add(this.foldKey(path, content, context));
+    const whole = window[0] === 0 && window[1] === content.byteLength;
+    const editTargets = whole ? this.registerEditTargets(path, content, revision) : [];
+    return foldedContentResult(path, content, window, view, plan, coverage.receipt, editTargets);
+  }
+
+  private foldKey(path: string, content: Buffer, context: ReadContext) {
+    const { consumerId, generation } = coverageScope(context);
+    return [consumerId, generation, path, sha256(content)].join("\0");
+  }
+
+  /**
+   * A whole-file read right after a folded view of the same content returns
+   * only what the fold hid: the rest is already in the agent's context.
+   */
+  private async foldedDelta(path: string, content: Buffer, context: ReadContext) {
+    if (!this.foldedViews.has(this.foldKey(path, content, context))) return undefined;
+    const uncovered = this.coverage.uncovered({
+      ...coverageScope(context), hash: sha256(content), path, intervals: [[0, content.byteLength]],
+    });
+    if (!uncovered.length) {
+      const coverage = await this.registerCoverage(path, content, [], context);
+      return {
+        status: "ok" as const,
+        receipt: coverage.receipt,
+        data: {
+          path, view: "raw", status: "already_in_context",
+          note: "Your folded view and later reads of this file already hold every line of its current content.",
+        },
+      };
+    }
+    const intervals: ByteInterval[] = [];
+    let budget = maximumRawCharacters;
+    let truncated = false;
+    for (const [start, end] of uncovered) {
+      let stop = Math.min(end, start + budget);
+      while (stop > start && stop < content.length && (content[stop]! & 0xc0) === 0x80) stop--;
+      if (stop > start) intervals.push([start, stop]);
+      budget -= stop - start;
+      if (stop < end) {
+        truncated = true;
+        break;
+      }
+    }
+    const result = await this.coveredContent(path, content, intervals, context, "raw", "folded_view_delta", truncated);
+    return result.status === "ok"
+      ? { ...result, data: { ...recordValue(result.data), delta: "Only the lines your folded view of this file hid; the other lines are in that view, unchanged." } }
+      : result;
   }
 
   private async readLineRange(
@@ -448,82 +581,22 @@ export class LightWorkspace {
     revision: string,
     context: ReadContext,
   ) {
-    if (!input.range) throw new Error("range is required for the range view.");
-    const range = lineByteRange(
-      content,
-      input.range.startLine,
-      input.range.endLine,
+    const ranges = readRanges(input);
+    if (!ranges.length) throw new Error("range is required for the range view.");
+    const intervals = mergedIntervals(
+      ranges.map(({ startLine, endLine }) => lineByteRange(content, startLine, endLine)),
     );
-    const editTargets = this.registerEditTargets(path, content, revision, [
-      range,
-    ]);
+    const editTargets = this.registerEditTargets(path, content, revision, intervals);
     return await this.coveredContent(
       path,
       content,
-      [range],
+      intervals,
       context,
       "range",
       undefined,
       false,
       editTargets,
     );
-  }
-
-  private async outline(
-    path: string,
-    content: Buffer,
-    symbols: ParsedSymbol[],
-    revision: string,
-    context: ReadContext,
-    range?: LightReadCodeInput["range"],
-  ): Promise<LightToolResult<unknown>> {
-    const projection = await this.prepareOutline(
-      path,
-      content,
-      symbols,
-      revision,
-      context,
-      range,
-    );
-    if (!projection) return emptyOutline(path);
-    const { candidates, coverage, editTargets, selected } = projection;
-    const items = outlineItems(this.aliases, path, content, selected, revision);
-    return outlineResult(
-      path,
-      items,
-      candidates.length,
-      coverage.receipt,
-      editTargets,
-    );
-  }
-
-  private async prepareOutline(
-    path: string,
-    content: Buffer,
-    symbols: ParsedSymbol[],
-    revision: string,
-    context: ReadContext,
-    range?: LightReadCodeInput["range"],
-  ) {
-    const candidates = outlineRangeCandidates(symbols, range);
-    const selected = candidates.slice(0, maximumOutlineItems);
-    if (!selected.length) return undefined;
-    const interval = range
-      ? lineByteRange(content, range.startLine, range.endLine)
-      : undefined;
-    const editTargets = this.registerEditTargets(
-      path,
-      content,
-      revision,
-      interval ? [interval] : undefined,
-    );
-    const coverage = await this.registerCoverage(
-      path,
-      content,
-      selected.map(signatureRange),
-      context,
-    );
-    return { candidates, coverage, editTargets, selected };
   }
 
   private async readSymbol(
@@ -540,6 +613,10 @@ export class LightWorkspace {
     if (input.view === "signature")
       return this.readSignature(resolved, context);
     const [start, end] = resolved.symbol.range_utf8_bytes;
+    const folded = end - start > maximumRawCharacters
+      ? this.plannedFold(resolved.path, resolved.content, [start, end], 0)
+      : undefined;
+    if (folded) return this.foldResult(resolved.path, resolved.content, folded, revision, context);
     if (end - start > maximumRawCharacters) {
       let boundedEnd = start + maximumRawCharacters;
       while (boundedEnd > start && (resolved.content[boundedEnd]! & 0xc0) === 0x80) boundedEnd--;
@@ -607,19 +684,10 @@ export class LightWorkspace {
     revision: string,
     context: ReadContext,
   ) {
-    const [start, end] = resolved.symbol.range_utf8_bytes;
-    const symbols = parseCode(resolved.path, resolved.content).symbols.filter(
-      ({ range_utf8_bytes: range }) => range[0] >= start && range[1] <= end,
-    );
-    const [startLine, endLine] = resolved.symbol.line_range;
-    return this.outline(
-      resolved.path,
-      resolved.content,
-      symbols,
-      revision,
-      context,
-      { startLine, endLine },
-    );
+    const folded = this.plannedFold(resolved.path, resolved.content, resolved.symbol.range_utf8_bytes,
+      outlineMinimumCharacters);
+    if (folded) return this.foldResult(resolved.path, resolved.content, folded, revision, context);
+    return this.readSymbol(resolved.alias!, revision, context);
   }
 
   private async symbolProjection(
@@ -699,6 +767,8 @@ export class LightWorkspace {
     context: ReadContext,
     fallbackReason?: string,
   ) {
+    const delta = await this.foldedDelta(path, content, context);
+    if (delta) return delta;
     let end = Math.min(content.byteLength, maximumRawCharacters);
     while (end > 0 && end < content.length && (content[end]! & 0xc0) === 0x80) end--;
     const editTargets = this.registerEditTargets(path, content, revision);
@@ -770,12 +840,7 @@ export class LightWorkspace {
   ) {
     this.aliases.observe(path, content, intervals);
     const result = this.coverage.register({
-      consumerId:
-        context.agentId ||
-        context.conversationId ||
-        context.sessionId ||
-        "lead",
-      generation: contextGeneration(context),
+      ...coverageScope(context),
       hash: sha256(content),
       intervals,
       path,
@@ -791,4 +856,33 @@ function checkOrFailure(result: LightToolResult<unknown>, input: LightRunTaskInp
   const data = recordValue(result.data);
   const completed = recordValue(recordValue(data.completed).data);
   return ["validation", "reporting", "testValidationScope", "check"].some((key) => key in data || key in completed);
+}
+
+/** Who holds a read in context: the agent and its context generation. */
+function coverageScope(context: ReadContext) {
+  return {
+    consumerId: context.agentId || context.conversationId || context.sessionId || "lead",
+    generation: contextGeneration(context),
+  };
+}
+
+function mergedIntervals(intervals: ByteInterval[]) {
+  const output: ByteInterval[] = [];
+  for (const [start, end] of [...intervals].sort((left, right) => left[0] - right[0])) {
+    const previous = output.at(-1);
+    if (previous && start <= previous[1]) previous[1] = Math.max(previous[1], end);
+    else output.push([start, end]);
+  }
+  return output;
+}
+
+/** Lines search results point at, per path. */
+function searchHits(data: unknown) {
+  return arrayValue(recordValue(data).results).flatMap((item) => {
+    const result = recordValue(item);
+    const path = stringValue(result.path);
+    const lines = arrayValue(result.lines);
+    const line = typeof result.matchLine === "number" ? result.matchLine : typeof lines[0] === "number" ? lines[0] : undefined;
+    return path && line ? [{ path, lines: [line] }] : [];
+  });
 }

@@ -5,10 +5,6 @@ import type { ByteInterval } from "./read-coverage.js";
 
 export type EditTarget = { alias: string; qualifiedName: string };
 
-// A file this small is read whole by default: in two of three cases an
-// outline of a mid-sized file was followed by reading the file anyway.
-const smallFileCharacters = 32_000;
-
 export function symbolicPath(path: string) {
   const capability = capabilityForPath(path);
   return Boolean(capability?.loaded && capability.level !== "raw");
@@ -116,18 +112,10 @@ export function qualifiedTarget(value: string) {
   return value.includes("#") && !value.startsWith("#");
 }
 
-export function routedView(
-  input: LightReadCodeInput,
-  path: string,
-  characters: number,
-) {
+/** "auto" folds a file when its folds repay their cost (light-fold-economics.ts), whatever its size. */
+export function routedView(input: LightReadCodeInput) {
   if (requestedLineRange(input)) return "range" as const;
-  if (input.view && input.view !== "auto") return input.view;
-  if (characters <= smallFileCharacters) return "raw" as const;
-  const capability = capabilityForPath(path);
-  return capability?.loaded && capability.level !== "raw"
-    ? ("outline" as const)
-    : ("raw" as const);
+  return input.view ?? ("auto" as const);
 }
 
 export function requestedLineRange(input: LightReadCodeInput) {

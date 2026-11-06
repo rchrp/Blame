@@ -2,7 +2,8 @@ import { lightCapabilityDescription } from "./light-capabilities.js";
 import { parseCode } from "./code-intelligence.js";
 import { lightRequiredChecksSchema, type LightTaskContract } from "./light-contracts.js";
 import type { LightWorkspaceExecutor } from "./light-executor.js";
-import { routedView } from "./light-navigation.js";
+import { foldViewCharacters } from "./light-fold-economics.js";
+import { symbolicPath } from "./light-navigation.js";
 import { readTaskCatalog } from "./task-catalog.js";
 import { WorkspaceFiles, languageName } from "./workspace-files.js";
 import { resolvePackageManager } from "./package-manager-runtime.js";
@@ -164,10 +165,8 @@ async function briefingSymbolTarget(
   try {
     if ((await files.fileSize(path)) > 512_000) return undefined;
     const content = (await files.read(path)).content;
-    if (
-      routedView({ target: path }, path, content.toString("utf8").length) ===
-      "raw"
-    )
+    // A file larger than a folded view is best entered through a symbol.
+    if (content.toString("utf8").length <= foldViewCharacters || !symbolicPath(path))
       return undefined;
     const symbols = parseCode(path, content)
       .symbols.map((symbol) => ({

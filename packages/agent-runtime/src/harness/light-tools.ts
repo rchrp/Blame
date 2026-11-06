@@ -116,7 +116,7 @@ function readCodeTool(workspace: LightWorkspacePort) {
   return harnessTool({
     name: "read_code",
     description:
-      "Read a text file or local image, compact directory, sN alias, path#qualifiedName, @changes, @checks, or @capabilities. @checks lists current-source check observations without running them; unknown counts stay null. A line range selects those lines; otherwise omit view for automatic raw/outline routing. Truncated reads propose nextRead and outline routes without granting unseen coverage. Use view signature on a symbol to inspect its declaration header without its body; read the symbol body before behavioral edits or rename. Symbol outlines list contained declarations. Results state the lines they hold and expose editTargets and containedBy relationships. Generated outputs and ordinary node_modules reads are excluded. For installed dependency types, use view declaration with localFile#importBinding or localFile#importBinding.exportedMember: the configured JS/TS compiler resolves a bounded read-only declaration with package/version identity. This grants no edit coverage and does not establish dependency runtime behavior; follow nextRead for continuation.",
+      "Read a text file or local image, compact directory, sN alias, path#qualifiedName, @changes, @checks, or @capabilities. @checks lists current-source check observations without running them; unknown counts stay null. A line range selects those lines; range also takes an array of up to 8 ranges in one call. Without a view, a file comes back whole when that is cheaper, otherwise folded, and that is a complete answer: every line shown is exact, and each body you probably do not need is one line such as `⋯ L82–118 · 2.2k · s9 ↗ parseCode` (hidden lines, size, alias, imported names it uses). Bodies your searches, edits or failing checks hit stay whole. To unfold, read the alias or the line ranges; view raw reads the whole file, and right after a folded view returns only the hidden lines. View outline folds everything it can. Truncated reads propose nextRead without granting unseen coverage. Use view signature on a symbol to inspect its declaration header without its body; read the symbol body before behavioral edits or rename. Symbol outlines list contained declarations. Results state the lines they hold and expose editTargets and containedBy relationships. Generated outputs and ordinary node_modules reads are excluded. For installed dependency types, use view declaration with localFile#importBinding or localFile#importBinding.exportedMember: the configured JS/TS compiler resolves a bounded read-only declaration with package/version identity. This grants no edit coverage and does not establish dependency runtime behavior; follow nextRead for continuation.",
     schema: lightReadCodeInputSchema,
     execute: (input, context) => workspace.readCode(input, context),
   });
@@ -236,7 +236,9 @@ function withParsedStrings(value: unknown, issues: z.core.$ZodIssue[]) {
   const copy = structuredClone(value);
   let changed = false;
   for (const issue of issues) {
-    if (issue.code !== "invalid_type" || !["array", "boolean", "number", "object"].includes(issue.expected)) continue;
+    // A union (a range or a list of ranges) reports invalid_union, not the type it wanted.
+    const expected = issue.code === "invalid_type" ? issue.expected : issue.code === "invalid_union" ? "object or array" : undefined;
+    if (!expected || !["array", "boolean", "number", "object", "object or array"].includes(expected)) continue;
     const key = issue.path.at(-1);
     const parent = issue.path.slice(0, -1).reduce<unknown>(
       (node, part) => (node && typeof node === "object" ? (node as Record<PropertyKey, unknown>)[part] : undefined),
@@ -247,7 +249,7 @@ function withParsedStrings(value: unknown, issues: z.core.$ZodIssue[]) {
     if (typeof raw !== "string") continue;
     const parsed = jsonValue(raw.trim());
     const kind = Array.isArray(parsed) ? "array" : parsed === null ? "null" : typeof parsed;
-    if (kind !== issue.expected) continue;
+    if (expected === "object or array" ? !["object", "array"].includes(kind) : kind !== expected) continue;
     (parent as Record<PropertyKey, unknown>)[key] = parsed;
     changed = true;
   }

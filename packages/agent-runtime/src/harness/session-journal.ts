@@ -4,6 +4,7 @@ import { sha256 } from "./light-identity.js";
 import { WorkspaceFiles } from "./workspace-files.js";
 import type { LightAlias } from "./light-aliases.js";
 import type { ReadCoverageState } from "./read-coverage.js";
+import type { LightAttentionState } from "./light-attention.js";
 
 export type JournalFileState = { hash: string; path: string };
 
@@ -67,6 +68,7 @@ type JournalEvent =
   /** Since the previous alias event: every alias in order, and the entries that changed. */
   | { type: "alias_changes"; order: string[]; changed: LightAlias[]; timestamp: string }
   | { type: "coverage"; state: ReadCoverageState; timestamp: string }
+  | { type: "attention"; state: LightAttentionState; timestamp: string }
   | { type: "terminal"; state: string; summary?: string; timestamp: string };
 
 export class SessionJournal {
@@ -80,6 +82,8 @@ export class SessionJournal {
   private aliasChanges = 0;
   private coverage: ReadCoverageState = { entries: [], receiptSequence: 0 };
   private coverageDigest = "";
+  private attention?: LightAttentionState;
+  private attentionDigest = "";
   private readonly requestIds = new Set<string>();
   private terminalState?: string;
 
@@ -176,6 +180,18 @@ export class SessionJournal {
     await this.append({ type: "coverage", state, timestamp: now() });
   }
 
+  async recordAttention(state: LightAttentionState) {
+    const digest = sha256(JSON.stringify(state));
+    if (digest === this.attentionDigest) return;
+    this.attention = state;
+    this.attentionDigest = digest;
+    await this.append({ type: "attention", state, timestamp: now() });
+  }
+
+  currentAttention() {
+    return this.attention && structuredClone(this.attention);
+  }
+
   currentCoverage() {
     return structuredClone(this.coverage);
   }
@@ -228,6 +244,9 @@ export class SessionJournal {
     this.coverage =
       [...events].reverse().find(isCoverage)?.state ?? this.coverage;
     this.coverageDigest = sha256(JSON.stringify(this.coverage));
+    const attention = [...events].reverse().find((event) => event.type === "attention");
+    this.attention = attention?.type === "attention" ? attention.state : this.attention;
+    this.attentionDigest = this.attention ? sha256(JSON.stringify(this.attention)) : "";
     this.requestIds.clear();
     for (const event of events)
       if (event.type === "request") this.requestIds.add(event.id);
