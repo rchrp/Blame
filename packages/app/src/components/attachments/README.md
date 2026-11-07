@@ -75,7 +75,13 @@ Uploaded originals are read through signed storage links that expire (15 minutes
 
 ## Image annotation implementation
 
-The shared Markdown composer opens image thumbnails in a gallery. Editable composers can annotate and apply changes; read-only consumers omit `onSave`. This extends the existing app UI: Radix dialog, shared buttons/popovers/tooltips, semantic app colors, and Lucide icons. The gallery fills the viewport over a translucent blurred backdrop, without a visible header, filename, or footer divider. Annotation tools float at the bottom, with Save and Close in a detached action group to their right; tools wrap on narrow screens. The dialog title and editing hints remain available to assistive technology. There are no generated visual assets or additional design-system tokens.
+The shared Markdown composer opens image thumbnails in a gallery. Editable composers can annotate and apply changes; read-only consumers omit `onSave`. This extends the existing app UI: Radix dialog, shared buttons/popovers/tooltips, semantic app colors, and Lucide icons. The gallery fills the viewport over a translucent blurred backdrop, without a visible header, filename, or footer divider. The top right holds the zoom percentage, the Actual size / Fit to window toggle and Close. Annotation tools float at the bottom center, with Save in a detached action group to their right; tools wrap on narrow screens. At the bottom right, without a background, sit the image dimensions and the Copy image / Save as buttons. The dialog title and editing hints remain available to assistive technology. There are no generated visual assets or additional design-system tokens.
+
+The same gallery shows the agent's preview screenshots (`chat/screenshots/screenshot-lightbox.tsx` adapts them to `GalleryImage`). Those omit `onSave`, so there is no Annotate button; they pass `details` (caption, color scheme, viewport), `actions` (copy and save through the desktop client) and a `status` while the image loads or is missing.
+
+## Zoom
+
+`annotation-canvas.tsx` fits the image to its container until `zoom` is a number (0.5× to 4×). Zoomed, the stage scrolls; while the canvas is not being annotated a drag pans it, Ctrl or ⌘ with the wheel (a trackpad pinch) zooms around the pointer, a click toggles actual size and a double click fits again. The annotation overlay is capped at 4096 px so a zoomed large image stays within canvas limits. Marks keep working at any zoom because pointer positions come from the displayed canvas bounds.
 
 ## Ownership
 

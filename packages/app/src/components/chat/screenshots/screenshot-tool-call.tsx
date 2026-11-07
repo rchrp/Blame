@@ -22,7 +22,6 @@ export function useLightbox(items: ScreenshotItem[]) {
   const [state, setState] = React.useState<{
     index: number
     items: ScreenshotItem[]
-    open: boolean
     returnFocus: HTMLElement | null
   }>()
   // Opens among the turn's screenshots, or among `from` when given.
@@ -35,14 +34,13 @@ export function useLightbox(items: ScreenshotItem[]) {
         : null
     setState(
       inGroup >= 0
-        ? { index: inGroup, items: group, open: true, returnFocus }
+        ? { index: inGroup, items: group, returnFocus }
         : {
             index: Math.max(
               0,
               pool.findIndex((entry) => entry.id === item.id)
             ),
             items: pool,
-            open: true,
             returnFocus,
           }
     )
@@ -52,8 +50,7 @@ export function useLightbox(items: ScreenshotItem[]) {
       index={state.index}
       items={state.items}
       onIndexChange={(index) => setState({ ...state, index })}
-      onOpenChange={(next) => setState({ ...state, open: next })}
-      open={state.open}
+      onClose={() => setState(undefined)}
       returnFocus={state.returnFocus}
     />
   ) : null

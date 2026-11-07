@@ -4,11 +4,15 @@ import {
   CheckIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  ImageOffIcon,
   LoaderCircleIcon,
   PencilIcon,
+  ScanIcon,
   XIcon,
+  ZoomInIcon,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import {
   Dialog,
@@ -16,7 +20,7 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { AnnotationCanvas } from "./annotation-canvas"
+import { AnnotationCanvas, type ImageView } from "./annotation-canvas"
 import {
   AnnotationButton,
   AnnotationToolbar,
@@ -37,13 +41,34 @@ import {
   layoutTextAnnotation,
   renderAnnotatedImage,
 } from "./annotation-renderer"
+import {
+  copyImageToClipboard,
+  downloadImage,
+  imageBlob,
+} from "./image-export"
+import { ImageViewerActions } from "./image-viewer-actions"
 
 export type ImageAnnotation = { source: string; marks: Annotation[] }
+// Copy and save for images that are not plain files, such as the agent's
+// screenshots; the viewer exports the others itself.
+export type GalleryImageActions = {
+  copy: () => Promise<boolean>
+  saveAs: () => Promise<unknown>
+}
+export type GalleryImageDetails = {
+  caption?: string
+  colorScheme?: "dark" | "light"
+  viewport?: { height: number; width: number }
+}
 export type GalleryImage = {
   id: string
   name: string
   source: string
   annotation?: ImageAnnotation
+  // While the image is not there to show; `source` is then ignored.
+  status?: "loading" | "unavailable"
+  actions?: GalleryImageActions
+  details?: GalleryImageDetails
 }
 export type AnnotatedAttachment = {
   id: string
@@ -63,12 +88,14 @@ export function ImageAttachmentGallery({
   images,
   initialId,
   onClose,
+  onIndexChange,
   onRestoreFocus,
   onSave,
 }: {
   images: GalleryImage[]
   initialId: string
   onClose: () => void
+  onIndexChange?: (index: number) => void
   onRestoreFocus?: () => void
   onSave?: (changes: AnnotatedAttachment[]) => Promise<void>
 }) {
@@ -90,6 +117,8 @@ export function ImageAttachmentGallery({
   const [width, setWidth] = React.useState(3)
   const [editing, setEditing] = React.useState(false)
   const [ready, setReady] = React.useState(false)
+  const [zoom, setZoom] = React.useState<number | "fit">("fit")
+  const [view, setView] = React.useState<ImageView | null>(null)
   const [imageHeight, setImageHeight] = React.useState(1000)
   const [selected, setSelected] = React.useState<string | null>(null)
   const [textDraft, setTextDraft] = React.useState<TextDraft | null>(null)
@@ -118,7 +147,10 @@ export function ImageAttachmentGallery({
     setIndex(next)
     setSelected(null)
     setReady(false)
+    setZoom("fit")
+    setView(null)
     setError(null)
+    onIndexChange?.(next)
   }
   function requestClose() {
     if (saving) return
@@ -257,6 +289,28 @@ export function ImageAttachmentGallery({
       setSelected(null)
     }
   }
+  const zoomed = zoom !== "fit"
+  async function exportCurrent() {
+    const marks = history.present
+    const blob = await imageBlob(
+      current.annotation?.source ?? current.source,
+      marks
+    )
+    return {
+      blob,
+      name: marks.length ? annotatedFileName(current.name) : current.name,
+    }
+  }
+  const imageActions: GalleryImageActions = current.actions ?? {
+    copy: async () => {
+      await copyImageToClipboard((await exportCurrent()).blob)
+      return true
+    },
+    saveAs: async () => {
+      const { blob, name } = await exportCurrent()
+      downloadImage(blob, name)
+    },
+  }
   return (
     <Dialog
       open
@@ -288,6 +342,36 @@ export function ImageAttachmentGallery({
             ? "Annotate your image, then save your changes."
             : "Browse image attachments."}
         </DialogDescription>
+        <div
+          data-gallery-backdrop
+          className="flex shrink-0 items-center justify-end gap-2 pb-3"
+        >
+          {view && (
+            <span className="rounded-md bg-popover/80 px-2 py-1 text-xs text-popover-foreground tabular-nums shadow-lg backdrop-blur-xl">
+              {Math.round(view.scale * 100)}%
+            </span>
+          )}
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            disabled={!ready}
+            onClick={() => setZoom(zoomed ? "fit" : 1)}
+          >
+            {zoomed ? <ScanIcon /> : <ZoomInIcon />}
+            {zoomed ? "Fit to window" : "Actual size"}
+          </Button>
+          <Button
+            type="button"
+            size="icon-sm"
+            variant="secondary"
+            aria-label="Close image viewer"
+            disabled={saving}
+            onClick={requestClose}
+          >
+            <XIcon />
+          </Button>
+        </div>
         {error && (
           <div
             role="alert"
@@ -322,31 +406,53 @@ export function ImageAttachmentGallery({
           </div>
         )}
         <div data-gallery-backdrop className="relative min-h-0 flex-1 px-0 pt-0 pb-5 sm:px-12">
-          <AnnotationCanvas
-            key={current.id}
-            source={current.annotation?.source ?? current.source}
-            name={current.name}
-            marks={history.present}
-            tool={tool}
-            color={color}
-            width={width}
-            selected={selected}
-            disabled={!editing || locked}
-            onReady={(loaded, height) => {
-              setReady(loaded)
-              if (height) setImageHeight(height)
-            }}
-            onSelect={setSelected}
-            onChange={(marks) => update(commitAnnotations(history, marks))}
-            onText={(point, imageHeight, mark) =>
-              setTextDraft({
-                point,
-                imageHeight,
-                value: mark?.text ?? "",
-                mark,
-              })
-            }
-          />
+          {current.status === "loading" ? (
+            <div data-gallery-backdrop className="flex size-full">
+              <Skeleton
+                aria-label="Loading image"
+                className="m-auto h-2/3 w-3/4 max-w-3xl rounded-md"
+              />
+            </div>
+          ) : current.status === "unavailable" ? (
+            <div data-gallery-backdrop className="flex size-full">
+              <div
+                role="alert"
+                className="m-auto flex flex-col items-center gap-3 text-center"
+              >
+                <ImageOffIcon className="size-7 text-muted-foreground" />
+                <p>This image is not available.</p>
+              </div>
+            </div>
+          ) : (
+            <AnnotationCanvas
+              key={current.id}
+              source={current.annotation?.source ?? current.source}
+              name={current.name}
+              marks={history.present}
+              tool={tool}
+              color={color}
+              width={width}
+              selected={selected}
+              disabled={!editing || locked}
+              zoom={zoom}
+              onReady={(loaded, height) => {
+                setReady(loaded)
+                if (height) setImageHeight(height)
+              }}
+              onView={setView}
+              onZoom={setZoom}
+              onSelect={setSelected}
+              onChange={(marks) => update(commitAnnotations(history, marks))}
+              onText={(point, imageHeight, mark) =>
+                setTextDraft({
+                  point,
+                  imageHeight,
+                  value: mark?.text ?? "",
+                  mark,
+                })
+              }
+            />
+          )}
           {images.length > 1 && (
             <>
               <Button
@@ -461,100 +567,140 @@ export function ImageAttachmentGallery({
             </div>
           )}
         </div>
-        <div data-gallery-backdrop className="flex shrink-0 flex-col items-center gap-2 pb-[env(safe-area-inset-bottom)]">
-          <div data-gallery-backdrop className="flex max-w-full items-end justify-center gap-3">
-            {onSave && !editing && (
-              <div className="rounded-xl bg-popover/80 p-1.5 shadow-lg backdrop-blur-xl">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="h-10"
-                  disabled={!ready}
-                  onClick={() => setEditing(true)}
-                >
-                  <PencilIcon />
-                  Annotate
-                </Button>
-              </div>
-            )}
-            {editing && onSave && (
-              <AnnotationToolbar
-                tool={tool}
-                color={color}
-                width={width}
-                onTool={(value) => {
-                  setTool(value)
-                  setSelected(null)
-                }}
-                onColor={(value) => changeStyle({ color: value })}
-                onWidth={(value) => changeStyle({ width: value })}
-                onUndo={undo}
-                onRedo={redo}
-                onDelete={removeSelected}
-                canUndo={history.past.length > 0}
-                canRedo={history.future.length > 0}
-                selected={Boolean(selected)}
-                disabled={!ready || locked}
-              />
-            )}
-            <TooltipProvider>
-              <div
-                role="group"
-                aria-label="Image actions"
-                className="flex shrink-0 items-center gap-0.5 rounded-xl bg-popover/80 p-1.5 shadow-lg backdrop-blur-xl"
-              >
-                {onSave && editing && (
-                  <AnnotationButton
-                    label={
-                      saving
-                        ? "Saving annotations…"
-                        : "Save annotations (⌘/Ctrl S)"
-                    }
-                    disabled={!changed.length || locked}
-                    className="text-primary"
-                    onClick={() => void save()}
-                  >
-                    {saving ? (
-                      <LoaderCircleIcon className="animate-spin" />
-                    ) : (
-                      <CheckIcon />
-                    )}
-                  </AnnotationButton>
-                )}
-                <AnnotationButton
-                  label="Close image viewer"
-                  disabled={saving}
-                  onClick={requestClose}
-                >
-                  <XIcon />
-                </AnnotationButton>
-              </div>
-            </TooltipProvider>
-          </div>
-          {images.length > 1 && (
-            <span
-              className="text-xs text-foreground/70 tabular-nums"
-              aria-live="polite"
-              aria-label={`Image ${index + 1} of ${images.length}`}
+        <div
+          data-gallery-backdrop
+          className="grid shrink-0 items-end gap-3 pb-[env(safe-area-inset-bottom)] lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]"
+        >
+          <div
+            data-gallery-backdrop
+            className="flex min-w-0 flex-col items-center gap-2 lg:col-start-2"
+          >
+            <div
+              data-gallery-backdrop
+              className="flex max-w-full items-end justify-center gap-3"
             >
-              {index + 1} / {images.length}
-            </span>
-          )}
-          <p aria-live="polite" className="sr-only">
-            {changed.length
-              ? `${changed.length} image${changed.length > 1 ? "s" : ""} with unsaved annotations`
-              : editing
-                ? tool === "text"
-                  ? "Click the image to add text."
-                  : tool === "select"
-                    ? "Drag to move. Double-click text to edit."
-                    : tool === "eraser"
-                      ? "Click or drag over an annotation to erase it."
-                      : "Draw directly on the image."
-                : images.length > 1
-                  ? "Use ← and → to browse images. Esc to close."
-                  : "Esc to close."}
-          </p>
+              {onSave && !editing && (
+                <div className="rounded-xl bg-popover/80 p-1.5 shadow-lg backdrop-blur-xl">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-10"
+                    disabled={!ready}
+                    onClick={() => setEditing(true)}
+                  >
+                    <PencilIcon />
+                    Annotate
+                  </Button>
+                </div>
+              )}
+              {editing && onSave && (
+                <AnnotationToolbar
+                  tool={tool}
+                  color={color}
+                  width={width}
+                  onTool={(value) => {
+                    setTool(value)
+                    setSelected(null)
+                  }}
+                  onColor={(value) => changeStyle({ color: value })}
+                  onWidth={(value) => changeStyle({ width: value })}
+                  onUndo={undo}
+                  onRedo={redo}
+                  onDelete={removeSelected}
+                  canUndo={history.past.length > 0}
+                  canRedo={history.future.length > 0}
+                  selected={Boolean(selected)}
+                  disabled={!ready || locked}
+                />
+              )}
+              {onSave && editing && (
+                <TooltipProvider>
+                  <div
+                    role="group"
+                    aria-label="Image actions"
+                    className="flex shrink-0 items-center gap-0.5 rounded-xl bg-popover/80 p-1.5 shadow-lg backdrop-blur-xl"
+                  >
+                    <AnnotationButton
+                      label={
+                        saving
+                          ? "Saving annotations…"
+                          : "Save annotations (⌘/Ctrl S)"
+                      }
+                      disabled={!changed.length || locked}
+                      className="text-primary"
+                      onClick={() => void save()}
+                    >
+                      {saving ? (
+                        <LoaderCircleIcon className="animate-spin" />
+                      ) : (
+                        <CheckIcon />
+                      )}
+                    </AnnotationButton>
+                  </div>
+                </TooltipProvider>
+              )}
+            </div>
+            {images.length > 1 && (
+              <span
+                className="text-xs text-foreground/70 tabular-nums"
+                aria-live="polite"
+                aria-label={`Image ${index + 1} of ${images.length}`}
+              >
+                {index + 1} / {images.length}
+              </span>
+            )}
+            <p aria-live="polite" className="sr-only">
+              {changed.length
+                ? `${changed.length} image${changed.length > 1 ? "s" : ""} with unsaved annotations`
+                : editing
+                  ? tool === "text"
+                    ? "Click the image to add text."
+                    : tool === "select"
+                      ? "Drag to move. Double-click text to edit."
+                      : tool === "eraser"
+                        ? "Click or drag over an annotation to erase it."
+                        : "Draw directly on the image."
+                  : images.length > 1
+                    ? "Use ← and → to browse images. Esc to close."
+                    : "Esc to close."}
+            </p>
+          </div>
+          <div
+            data-gallery-backdrop
+            className="flex min-w-0 flex-wrap items-center justify-center gap-x-3 gap-y-2 text-xs text-foreground/80 lg:col-start-3 lg:justify-end"
+          >
+            {current.details?.caption && (
+              <span
+                className="max-w-64 min-w-0 truncate"
+                title={current.details.caption}
+              >
+                {current.details.caption}
+              </span>
+            )}
+            {view && (
+              <span
+                className="font-mono text-foreground/70"
+                title={
+                  current.details?.viewport
+                    ? `Viewport ${current.details.viewport.width}×${current.details.viewport.height}`
+                    : undefined
+                }
+              >
+                {view.width}×{view.height}
+              </span>
+            )}
+            {current.details?.colorScheme && (
+              <span className="text-foreground/70">
+                {current.details.colorScheme === "dark" ? "Dark" : "Light"}
+              </span>
+            )}
+            <ImageViewerActions
+              disabled={!ready || saving}
+              onCopy={imageActions.copy}
+              onError={setError}
+              onSave={imageActions.saveAs}
+            />
+          </div>
         </div>
       </DialogContent>
     </Dialog>

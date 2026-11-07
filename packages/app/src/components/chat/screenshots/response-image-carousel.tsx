@@ -169,7 +169,7 @@ function Slide({
   const state = useAgentScreenshot(item)
   // A fixed 16:10 frame keeps the layout still while the image loads.
   const frame =
-    "aspect-[16/10] w-full overflow-hidden rounded-lg border border-border bg-muted"
+    "relative aspect-[16/10] w-full overflow-hidden rounded-lg border border-border bg-muted"
   if (state.status === "loading")
     return <Skeleton className={cn(frame, "border-0")} />
   if (state.status === "unavailable")
@@ -185,9 +185,18 @@ function Slide({
       onClick={onOpen}
       tabIndex={tabIndex}
     >
+      {/* The same image, blurred, fills the frame around the contained one. */}
+      <img
+        alt=""
+        aria-hidden
+        className="absolute inset-0 size-full scale-125 object-cover blur-2xl"
+        draggable={false}
+        loading="lazy"
+        src={state.data.dataUrl}
+      />
       <img
         alt={item.caption ?? ""}
-        className="size-full object-contain"
+        className="relative size-full object-contain"
         draggable={false}
         loading="lazy"
         src={state.data.dataUrl}
