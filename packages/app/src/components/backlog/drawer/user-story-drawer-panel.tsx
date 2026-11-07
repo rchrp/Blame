@@ -252,6 +252,9 @@ export function UserStoryDrawerPanel({
   // status does not have falls back to the story.
   const tab = initialDrawerTab(hasDevelopment, hasPreview, false, tabChoice)
   const developmentTab = normalizeDevelopmentTab(status, developmentTabChoice)
+  // The native preview is drawn above the page, so it cannot follow the
+  // drawer's closing slide: it is hidden as soon as the drawer starts closing.
+  const previewVisible = open && tab === "preview"
   const drawerWidth = useStoryDrawerWidth()
   const rememberedStoryId = mode === "create" ? undefined : userStory?.id
   React.useEffect(() => {
@@ -805,7 +808,7 @@ export function UserStoryDrawerPanel({
               {directPreview ? (
                 <DirectStoryPreview
                   storyId={userStory.id}
-                  visible={tab === "preview"}
+                  visible={previewVisible}
                   onCapture={handlePreviewCapture}
                   onReadyChange={setPreviewReady}
                 />
@@ -813,7 +816,7 @@ export function UserStoryDrawerPanel({
                 <UserStoryPreview
                   setupInitializing={setupInitializing}
                   userStory={userStory}
-                  visible={tab === "preview"}
+                  visible={previewVisible}
                   onRunConfigurationChange={handlePreviewRunConfigurationChange}
                   onCapture={handlePreviewCapture}
                   onReadyChange={setPreviewReady}
