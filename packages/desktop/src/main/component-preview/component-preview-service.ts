@@ -9,7 +9,8 @@ import {
 import type { ScreenshotCaptureContext } from "../agent-screenshots/agent-screenshot-capture.ts";
 import type { ComponentPreviewHost } from "./component-preview-hosts.ts";
 import {
-  componentPreviewToolkitPackages,
+  componentPreviewToolkitPlugin,
+  type ComponentPreviewAngularReport,
   type ComponentPreviewToolkit,
 } from "./component-preview-server-script.ts";
 import type {
@@ -72,8 +73,8 @@ export type ComponentPreviewLocation =
       host: ComponentPreviewHost;
       // Worktree-relative package directory, "" for the worktree root.
       packageDir: string;
-      // Blame's own Vite, for a React, Vue or Nuxt package without a Vite
-      // config.
+      // Blame's own Vite, for a React, Vue, Nuxt, Svelte or Angular package
+      // without a Vite config.
       toolkit?: Pick<ComponentPreviewToolkit, "framework">;
     }
   | { message: string };
@@ -94,6 +95,7 @@ export type ComponentPreviewDependencies = {
 
 type RunningServer = Pick<
   ComponentPreviewServer,
+  | "angular"
   | "notes"
   | "origin"
   | "pageUrl"
@@ -377,21 +379,38 @@ function serverSummary(
   const shims =
     framework === "next"
       ? ", with shims for next/link, next/image, next/navigation and next/font"
-      : framework === "nuxt"
-        ? ", Nuxt's auto-imports and shims for <NuxtLink>, @nuxt/image, useRoute, useRouter, navigateTo, useHead, useRuntimeConfig and useState"
-        : "";
+      : framework === "react-native"
+        ? ", with react-native resolved to react-native-web, .web.* files first and __DEV__ set"
+        : framework === "nuxt"
+          ? ", Nuxt's auto-imports and shims for <NuxtLink>, @nuxt/image, useRoute, useRouter, navigateTo, useHead, useRuntimeConfig and useState"
+          : "";
   const applies =
     framework === "nuxt"
       ? "its nuxt.config and PostCSS config apply"
       : "its PostCSS config and tsconfig or jsconfig paths apply";
   const vueCli =
     framework === "vue" ? " In a Vue CLI package, @/ resolves to src/." : "";
+  const svelte =
+    framework === "svelte"
+      ? " The package's own Svelte compiles its components, with its svelte.config.* if it has one."
+      : "";
+  const angular = server.angular ? ` ${angularSummary(server.angular)}` : "";
   const notes = server.notes?.length ? ` ${server.notes.join(" ")}` : "";
   const installed =
     started && server.toolkit.installed
       ? ` Blame installed this Vite first, once for this environment, in ${server.toolkit.directory}.`
       : "";
-  return `${verb} Blame's own Vite ${server.viteVersion} server with ${componentPreviewToolkitPackages(framework)[0]!.name}${shims}, ${where}: the package has no Vite config, so ${applies}.${vueCli}${notes}${installed}`;
+  return `${verb} Blame's own Vite ${server.viteVersion} server with ${componentPreviewToolkitPlugin(framework).name}${shims}, ${where}: the package has no Vite config, so ${applies}.${vueCli}${svelte}${angular}${notes}${installed}`;
+}
+
+// What the Angular compiler compiles with, and how the page runs change
+// detection.
+function angularSummary(angular: ComponentPreviewAngularReport) {
+  const zone = angular.zone
+    ? "zone.js loads first, from its polyfills"
+    : "its polyfills have no zone.js, so the render is zoneless";
+  const problem = angular.problem ? ` ${angular.problem}.` : "";
+  return `The project's Angular ${angular.version} compiler compiles its components with ${angular.tsconfig}; ${zone}.${problem}`;
 }
 
 function errorMessage(error: unknown) {

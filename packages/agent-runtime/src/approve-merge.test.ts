@@ -473,17 +473,126 @@ test("a failed resolver restores a usable story and can be retried", async () =>
   }
 });
 
+test("resolves a VM story's conflicts through the runtime hub", async () => {
+  const fixture = await conflictingStoryFixture();
+  const calls: string[] = [];
+  // Like the Blame Runtime hub: start() returns at once without a result, and
+  // only a sent turn runs the agent and answers with its result.
+  const runtime = mergeTestRuntime(undefined, {
+    async start(input: ClineCoreStartInput) {
+      calls.push(`start:${input.interactive}:${input.prompt ?? ""}`);
+      return { sessionId: "hub-merge", result: undefined };
+    },
+    async send(input: { sessionId: string; prompt: string }) {
+      calls.push(`send:${input.sessionId}`);
+      assert.match(input.prompt, /Conflicted files:\nshared\.txt/);
+      await writeFile(fixture.file, "story and target\n");
+      await git(fixture.input.worktree, ["add", "shared.txt"]);
+      return { status: "done" };
+    },
+    async stop(sessionId: string) {
+      calls.push(`stop:${sessionId}`);
+    },
+  });
+  try {
+    await runtime.approveAndMerge({
+      ...fixture.input,
+      backend: { mode: "remote", endpoint: "ws://blame-runtime" },
+    });
+    assert.deepEqual(calls, [
+      "start:true:",
+      "send:hub-merge",
+      "stop:hub-merge",
+    ]);
+    assert.equal(
+      await readFile(join(fixture.input.repositoryRoot, "shared.txt"), "utf8"),
+      "story and target\n",
+    );
+  } finally {
+    await runtime.shutdown();
+    await rm(fixture.directory, { force: true, recursive: true });
+  }
+});
+
+test("reports a resolver that returned no result instead of the conflicts", async () => {
+  const fixture = await conflictingStoryFixture();
+  const runtime = mergeTestRuntime(undefined, {
+    async start() {
+      return { sessionId: "silent-merge", result: undefined };
+    },
+  });
+  try {
+    await assert.rejects(
+      runtime.approveAndMerge(fixture.input),
+      /merge conflict agent returned no result/,
+    );
+    assert.equal(await readFile(fixture.file, "utf8"), "story\n");
+  } finally {
+    await runtime.shutdown();
+    await rm(fixture.directory, { force: true, recursive: true });
+  }
+});
+
+test("merges two stories approved at once into the same repository one after the other", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "blame-concurrent-merge-"));
+  const repositoryRoot = join(directory, "project");
+  await mkdir(repositoryRoot);
+  await git(repositoryRoot, ["init", "--initial-branch=main"]);
+  await git(repositoryRoot, ["config", "user.email", "blame@example.com"]);
+  await git(repositoryRoot, ["config", "user.name", "Blame Test"]);
+  await writeFile(join(repositoryRoot, ".gitignore"), ".blame/\n");
+  await git(repositoryRoot, ["add", "."]);
+  await git(repositoryRoot, ["commit", "-m", "base"]);
+  const stories = [];
+  for (const name of ["first", "second"]) {
+    const worktree = join(directory, name);
+    const storyBranch = `story/${name}`;
+    await git(repositoryRoot, ["worktree", "add", "-b", storyBranch, worktree]);
+    await writeFile(join(worktree, `${name}.txt`), `${name}\n`);
+    await git(worktree, ["add", "."]);
+    await git(worktree, ["commit", "-m", name]);
+    stories.push({
+      apiConnection: { url: "https://api.example" },
+      providerId: "test-provider",
+      modelId: "test-model",
+      repositoryRoot,
+      worktree,
+      storyBranch,
+      title: `Add the ${name} file`,
+      summary: "Exercise concurrent approvals.",
+    });
+  }
+  const runtime = mergeTestRuntime();
+  try {
+    await Promise.all(stories.map((story) => runtime.approveAndMerge(story)));
+    assert.equal(
+      await readFile(join(repositoryRoot, "first.txt"), "utf8"),
+      "first\n",
+    );
+    assert.equal(
+      await readFile(join(repositoryRoot, "second.txt"), "utf8"),
+      "second\n",
+    );
+    assert.equal(await git(repositoryRoot, ["status", "--porcelain"]), "");
+  } finally {
+    await runtime.shutdown();
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
 function mergeTestRuntime(
-  resolve: (input: ClineCoreStartInput) => Promise<void>,
+  resolve?: (input: ClineCoreStartInput) => Promise<void>,
+  core?: Record<string, unknown>,
 ) {
   const runtime = new BlameAgentRuntime(undefined, {
     createCore: async () =>
       ({
         async start(input: ClineCoreStartInput) {
-          await resolve(input);
+          await resolve?.(input);
           return { sessionId: "merge-test", result: { status: "done" } };
         },
         async dispose() {},
+        ...core,
       }) as never,
   });
   const internals = runtime as unknown as {

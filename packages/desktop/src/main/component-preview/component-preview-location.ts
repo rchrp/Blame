@@ -25,8 +25,10 @@ import type {
 // there, otherwise the container of a local preview, whose node_modules
 // live in volumes. A cloud preview's dependencies are in its sandbox: the
 // server runs there. A package with a Vite config is served by its own
-// Vite; a React or Vue 3 package without one, such as a Next.js, Vue CLI
-// or Nuxt app, by Blame's.
+// Vite, a SvelteKit app included; a React, Vue 3, Svelte 5 or Angular
+// package without one, such as a Next.js, Vue CLI, Nuxt, Rollup or Angular
+// CLI app, by Blame's, and so is a React Native package with react-native-web,
+// such as an Expo app with web support.
 
 // The host in the story's cloud preview sandbox, or why there is none.
 export type CloudComponentPreviewLocator = (
@@ -34,15 +36,70 @@ export type CloudComponentPreviewLocator = (
 ) => Promise<ComponentPreviewHost | { message: string }>;
 
 // What a package.json declares: a framework Blame's own Vite renders, or
-// Vue 2 or Nuxt 2, which it does not.
+// one it does not: Vue 2, Nuxt 2, Svelte 4 and older, React Native without
+// react-native-web, Angular 16 or earlier, or Angular without the builder
+// whose compiler @analogjs/vite-plugin-angular uses.
 type DeclaredFramework =
-  ComponentPreviewToolkit["framework"] | "nuxt2" | "vue2";
+  | ComponentPreviewToolkit["framework"]
+  | UnsupportedFramework
+  | "angular-without-builder"
+  | "nuxt2";
+type UnsupportedFramework = keyof typeof unsupportedFrameworks;
 
 // A framework declared by a workspace root rather than by the package
 // itself: the Next.js and Nuxt shims only apply to the app itself.
 const inheritedFrameworks: Partial<
   Record<DeclaredFramework, DeclaredFramework>
 > = { next: "react", nuxt: "vue", nuxt2: "vue2" };
+
+// What the package depends on, for the message, and where to check its
+// components instead.
+const unsupportedFrameworks = {
+  "angular-legacy": {
+    check: "in the app",
+    reason: (label: string) =>
+      `Angular 16 and earlier are not supported: ${label} depends on one of them`,
+  },
+  "react-native-without-web": {
+    check: "in the app or on a device",
+    reason: (label: string) =>
+      `React Native is not supported without react-native-web: ${label} depends on react-native but not on react-native-web`,
+  },
+  svelte4: {
+    check: "in the app",
+    reason: (label: string) =>
+      `Svelte 4 is not supported: ${label} depends on Svelte 4 or older`,
+  },
+  vue2: {
+    check: "in the app",
+    reason: (label: string) =>
+      `Vue 2 is not supported: ${label} depends on Vue 2`,
+  },
+};
+const toolkitFrameworks =
+  "React, React Native with react-native-web, Vue 3 (vue 3.2.25 or later), Svelte 5 (svelte 5.46.4 or later) and Angular 17 to 22 components";
+const angularBuilders = ["@angular/build", "@angular-devkit/build-angular"];
+
+// The packages Blame's own Vite needs installed, by framework.
+const toolkitDependencies = {
+  angular: {
+    label: "Angular",
+    names: ["@angular/core", "@angular/compiler-cli"],
+  },
+  next: { label: "React", names: ["react", "react-dom"] },
+  // Nuxt itself is never loaded: its components need Vue.
+  nuxt: { label: "Vue", names: ["vue"] },
+  react: { label: "React", names: ["react", "react-dom"] },
+  "react-native": {
+    label: "React, react-dom or react-native-web",
+    names: ["react", "react-dom", "react-native-web"],
+  },
+  svelte: { label: "Svelte", names: ["svelte"] },
+  vue: { label: "Vue", names: ["vue"] },
+} satisfies Record<
+  ComponentPreviewToolkit["framework"],
+  { label: string; names: string[] }
+>;
 
 export const viteConfigNames = [
   "vite.config.ts",
@@ -88,17 +145,21 @@ export async function locateComponentPreview(
   const framework = projectVite
     ? undefined
     : await toolkitFramework(worktree, packageDir);
-  if (framework === "vue2")
+  if (framework === "angular-without-builder")
     return {
-      message: `Vue 2 is not supported: ${label} depends on Vue 2 and has no vite.config.* file. Without one, open_component_preview renders React components and Vue 3 components (vue 3.2.25 or later) only. Check this component in the app instead.`,
+      message: `${label} depends on Angular, but neither it nor the package.json files above it declare @angular/build or @angular-devkit/build-angular: @analogjs/vite-plugin-angular compiles with the compiler of that builder. Put the preview file in the package of an Angular CLI app.`,
     };
   if (framework === "nuxt2")
     return {
       message: `Nuxt 2 is not supported: ${label} depends on Nuxt 2, which runs Vue 2. open_component_preview renders the components of Nuxt 3 and 4 apps only. Check this component in the app instead.`,
     };
+  if (framework && unsupported(framework))
+    return {
+      message: `${unsupportedFrameworks[framework].reason(label)} and has no vite.config.* file. Without one, open_component_preview renders ${toolkitFrameworks} only. Check this component ${unsupportedFrameworks[framework].check} instead.`,
+    };
   if (!projectVite && !framework)
     return {
-      message: `${label} has no vite.config.* file and does not depend on React or Vue 3: open_component_preview renders files of a Vite package, or of a React or Vue 3 package such as a Next.js, Nuxt or Vue CLI app. Put the preview file in the package of the component.`,
+      message: `${label} has no vite.config.* file and does not depend on React, Vue 3, Svelte 5 or Angular: open_component_preview renders files of a Vite package, or of a React, Vue 3, Svelte 5 or Angular package such as a Next.js, Vue CLI, Nuxt, Rollup or Angular CLI app. Put the preview file in the package of the component.`,
     };
   const toolkit = framework ? { toolkit: { framework } } : {};
   if (target.workspaceMode === "cloud-mirror") {
@@ -110,15 +171,10 @@ export async function locateComponentPreview(
         };
     return "message" in host ? host : { host, packageDir, ...toolkit };
   }
-  // Nuxt itself is never loaded: its components need Vue.
-  const vue = framework === "vue" || framework === "nuxt";
-  const dependency = projectVite ? "Vite" : vue ? "Vue" : "React";
-  const required = projectVite
-    ? ["vite"]
-    : vue
-      ? ["vue"]
-      : ["react", "react-dom"];
-  if (await installed(worktree, packageDir, required))
+  const required = framework
+    ? toolkitDependencies[framework]
+    : { label: "Vite", names: ["vite"] };
+  if (await installed(worktree, packageDir, required.names))
     return {
       host: workspaceComponentPreviewHost(worktree),
       packageDir,
@@ -143,14 +199,16 @@ export async function locateComponentPreview(
     if (container) return { host: container, packageDir, ...toolkit };
   }
   return {
-    message: `${dependency} is not installed for ${label} in the story's workspace${target.workspaceMode === "direct" ? "" : ", and the story has no local preview container to run it in"}. open_component_preview never installs the project's dependencies: install them first.`,
+    message: `${required.label} is not installed for ${label} in the story's workspace${target.workspaceMode === "direct" ? "" : ", and the story has no local preview container to run it in"}. open_component_preview never installs the project's dependencies: install them first.`,
   };
 }
 
 // Whether the project has a package the tool renders: one with a Vite
-// config, or one that depends on React, Vue 3 or Nuxt 3 or later. Sessions
-// of other projects, such as an Angular, Vue 2 or Nuxt 2 app, are not
-// offered the tool.
+// config, or one that depends on React, React Native with
+// react-native-web, Vue 3, Nuxt 3 or later, Svelte 5, or Angular 17 to 22
+// with its builder. Sessions of other projects, such as an Ember, Vue 2,
+// Nuxt 2 or Svelte 4 app, or a React Native app without react-native-web,
+// are not offered the tool.
 export async function hasComponentPreviewProject(worktree: string) {
   const markers = runtimeManagedPath(worktree)
     ? await projectMarkersInRuntime(worktree)
@@ -162,9 +220,18 @@ export async function hasComponentPreviewProject(worktree: string) {
   return Object.values(manifests).some((text) => {
     const framework = declaredFramework(manifestDependencies(text));
     return (
-      framework !== undefined && framework !== "vue2" && framework !== "nuxt2"
+      framework !== undefined &&
+      framework !== "angular-without-builder" &&
+      framework !== "nuxt2" &&
+      !unsupported(framework)
     );
   });
+}
+
+function unsupported(
+  framework: DeclaredFramework,
+): framework is UnsupportedFramework {
+  return framework in unsupportedFrameworks;
 }
 
 type ProjectMarkers = { manifests: string[]; viteConfig: boolean };
@@ -236,7 +303,8 @@ async function projectMarkersInRuntime(
 }
 
 // The framework of the closest package.json that declares one: the
-// package's own, else its workspace root's.
+// package's own, else its workspace root's. An Angular library declares @angular/core
+// without a builder: the builder of its workspace root compiles it.
 async function toolkitFramework(
   worktree: string,
   packageDir: string,
@@ -245,14 +313,16 @@ async function toolkitFramework(
     worktreePath(worktree, directory, "package.json"),
   );
   const files = await readExistingFiles(paths);
+  let withoutBuilder: DeclaredFramework | undefined;
   for (const [index, path] of paths.entries()) {
     const framework = declaredFramework(manifestDependencies(files[path]));
-    if (framework)
+    if (framework === "angular-without-builder") withoutBuilder ??= framework;
+    else if (framework)
       return index > 0
         ? (inheritedFrameworks[framework] ?? framework)
         : framework;
   }
-  return undefined;
+  return withoutBuilder;
 }
 
 // The packages a package.json declares, with their version ranges. One
@@ -277,29 +347,43 @@ function manifestDependencies(text: string | null | undefined) {
   return dependencies;
 }
 
-// Nuxt names its app whatever else it declares. React wins over Vue in a
-// package that declares both, as before Vue was supported.
+// An Angular CLI app, with @angular/core and its builder, renders as
+// Angular even if it also depends on React. Nuxt names its app whatever
+// else it declares. React wins over Vue, and Vue over Svelte, in a package
+// that declares several, as before Vue and Svelte were supported. React
+// Native components render in the page through react-native-web only.
 function declaredFramework(
   dependencies: Map<string, string>,
 ): DeclaredFramework | undefined {
+  const angular = dependencies.get("@angular/core");
+  if (
+    angular !== undefined &&
+    angularBuilders.some((builder) => dependencies.has(builder))
+  )
+    return rangeBelowMajor(angular, 17) ? "angular-legacy" : "angular";
   const nuxt = dependencies.get("nuxt");
-  if (nuxt !== undefined) return belowMajorThree(nuxt) ? "nuxt2" : "nuxt";
+  if (nuxt !== undefined) return rangeBelowMajor(nuxt, 3) ? "nuxt2" : "nuxt";
   if (dependencies.has("next")) return "next";
+  if (dependencies.has("react-native-web")) return "react-native";
+  if (dependencies.has("react-native")) return "react-native-without-web";
   if (dependencies.has("react")) return "react";
   const vue = dependencies.get("vue");
-  if (vue === undefined) return undefined;
-  return belowMajorThree(vue) ? "vue2" : "vue";
+  if (vue !== undefined) return rangeBelowMajor(vue, 3) ? "vue2" : "vue";
+  const svelte = dependencies.get("svelte");
+  if (svelte !== undefined)
+    return rangeBelowMajor(svelte, 5) ? "svelte4" : "svelte";
+  return angular === undefined ? undefined : "angular-without-builder";
 }
 
-// Whether every alternative of a Vue or Nuxt range stays below 3, such as
-// "^2.7.16" or "~2.6.14 || 2.7.x". A tag, an alias or a workspace range
-// counts as 3 or later: the server checks the installed Vue before it
-// compiles anything.
-function belowMajorThree(range: string) {
+// Whether every alternative of a range stays below a major version, such as
+// "^2.7.16" or "~2.6.14 || 2.7.x" below Vue 3. A tag, an alias or a
+// workspace range counts as supported: the server checks the installed
+// version before it compiles anything.
+function rangeBelowMajor(range: string, major: number) {
   return range
     .split("||")
     .map((alternative) => /^\s*[\^~>=v\s]*(\d+)/u.exec(alternative)?.[1])
-    .every((major) => major !== undefined && Number(major) < 3);
+    .every((found) => found !== undefined && Number(found) < major);
 }
 
 // The closest folder with a package.json, from the file's folder up to the

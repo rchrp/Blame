@@ -9,11 +9,16 @@ allowBuilds:
   "@ast-grep/lang-java": true
   "@ast-grep/lang-python": true
   "@ast-grep/lang-rust": true
+  # Angular's build tooling, for the component preview tests: they ship
+  # prebuilt binaries, so their install scripts need not run.
+  "@parcel/watcher": false
   "@swc/core": true
   electron: true
   electron-winstaller: true
   es5-ext: true
   esbuild: true
+  lmdb: false
+  msgpackr-extract: false
   msw: true
   node-pty: true
   pnpm: true

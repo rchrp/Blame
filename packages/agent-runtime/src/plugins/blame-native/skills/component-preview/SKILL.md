@@ -1,11 +1,11 @@
 ---
 name: component-preview
-description: Use after creating a UI component or changing how one renders, in a Vite, React or Vue 3 project (Next.js, Vue CLI and Nuxt included), even when the app's preview is available. Shows the component on its own with made-up data, in its main states (default, empty, error, loading, long content), light and dark, desktop and mobile widths, rendered in one open_component_preview call whose screenshots go to finish_task. Not for checks a DOM read or a test already covers.
+description: Use after creating a UI component or changing how one renders, in a Vite, React, Vue 3, Svelte 5 or Angular project (Next.js, Vue CLI, Nuxt, SvelteKit and Angular CLI included) or a React Native one with react-native-web (an Expo app with web support), even when the app's preview is available. Shows the component on its own with made-up data, in its main states (default, empty, error, loading, long content), light and dark, desktop and mobile widths, rendered in one open_component_preview call whose screenshots go to finish_task. Not for checks a DOM read or a test already covers.
 ---
 
 # Component preview
 
-Show one component on its own, with props and data you make up, rendered by a temporary Vite server that `open_component_preview` starts for the session: with the package's own Vite config, or with Blame's own Vite for a React or Vue 3 package without one, such as a Next.js, Vue CLI or Nuxt app. You avoid sign-in, the backend and real data, and see every state that matters in one call. The story's own preview, if any, keeps running untouched.
+Show one component on its own, with props and data you make up, rendered by a temporary Vite server that `open_component_preview` starts for the session: with the package's own Vite config, a SvelteKit app's included, or with Blame's own Vite for a React, Vue 3, Svelte 5 or Angular package without one, such as a Next.js, Vue CLI, Nuxt, Rollup or Angular CLI app, and for a React Native package with `react-native-web`, such as an Expo app. You avoid sign-in, the backend and real data, and see every state that matters in one call. The story's own preview, if any, keeps running untouched.
 
 ## When to use it
 
@@ -31,7 +31,7 @@ export const loading = <SettingsPanel items={[]} loading />
 export const long = <SettingsPanel items={manyItemsWithLongNames} />
 ```
 
-For Vue, Svelte or another framework, write `<name>.blame-preview.ts` and export `mount(element, state)` instead: it renders the named state into `element` with the framework's own entry API. For Vue, see below.
+For Vue, Angular, Svelte or another framework, write `<name>.blame-preview.ts` and export `mount(element, state)` instead: it renders the named state into `element` with the framework's own entry API. For Vue, Svelte and Angular, see below.
 
 The dark theme emulates `prefers-color-scheme` and sets the `dark` class, `data-theme` and `color-scheme` on `<html>`. If the project applies its theme another way, do it in the file.
 
@@ -42,6 +42,21 @@ A React package without `vite.config.*`, such as a Next.js or webpack app, is se
 - `next/link`, `next/image`, `next/navigation` and `next/font/*` are small shims, in this server only: a link renders its anchor and does not navigate, an image loads from `public/` without optimization, `usePathname()` returns `/` and the router does nothing, a Google font keeps its class names with a fallback font. `NEXT_PUBLIC_*` variables of the `.env` files reach `process.env`.
 - `"use client"` files render as they are.
 - Only client components render. A Server Component (an async component, as most `page.tsx` and `layout.tsx` are, or one that imports `next/headers`, `server-only` or Node modules) is reported as such: preview its client sub-components with the props it would pass them, or check that screen in the app.
+
+## React Native and Expo packages
+
+A React Native package with `react-native-web`, such as an Expo app with web support, is served by Blame's own Vite with `@vitejs/plugin-react`, as its web build renders it: `react-native` resolves to `react-native-web`, a `.web.tsx` or `.web.ts` file comes before its native variant, `__DEV__` is `true` and the `EXPO_PUBLIC_*` variables of its `.env` files reach `process.env`. Write `<name>.blame-preview.tsx` as for React; the components keep their `View`, `Text`, `Pressable` and `StyleSheet`:
+
+```tsx
+import { ProfileCard } from "./components/profile-card"
+
+export default <ProfileCard name="Ada Lovelace" status="Active" />
+export const empty = <ProfileCard name="" status="" />
+```
+
+- Wrap the component in the providers it reads, such as `SafeAreaProvider` or a navigation container, with fake values.
+- Without `react-native-web`, the package is not rendered: the tool says so. Check that component in the app or on a device; never add `react-native-web` or `react-dom` to the project only for the preview.
+- An Expo module without a web implementation, whose native module or view the browser lacks, fails with an error that names it. Preview a sub-component that does not use it, pass what it gives through props, or check that component in the app or on a device.
 
 ## Vue 3 packages
 
@@ -91,6 +106,66 @@ export function mount(element: HTMLElement, state: string) {
 - `useFetch`, `useAsyncData`, `$fetch` and imports of `server/` fail with a clear message, since the Nuxt server never runs: preview the component that receives the data through its props, and pass made-up data.
 - The PostCSS plugins, `vite` plugins (such as `@tailwindcss/vite`) and aliases of `nuxt.config` apply. Nuxt modules that generate code at build time, such as `@nuxtjs/i18n` or `@pinia/nuxt`, do not: install what the component needs on the app before mounting, as for Vue.
 - Nuxt 2 is not supported: the tool says so. Check that component in the app instead.
+
+## SvelteKit and Svelte 5 packages
+
+A SvelteKit app keeps its own Vite and `sveltekit()`, so `$lib` or `#lib`, its aliases, `$env/*` and `$app/env/*` work as in the app. SvelteKit's router does not run in the temporary page: `$app/state`, and `$app/stores` before SvelteKit 3, give a page at `/` with no params or data, its public environment variables reach the page, and `goto()` and links do not navigate. A Svelte 5 package (`svelte` 5.46.4 or later) without `vite.config.*`, such as a Rollup or webpack app, is served by Blame's own Vite with `@sveltejs/vite-plugin-svelte`: the package's own Svelte compiles its components, with its `svelte.config.*` if it has one.
+
+The preview file imports the `.svelte` component and the stylesheet the root layout (or `src/main.*`) imports, and mounts the requested state with Svelte's `mount(Component, { target: element, props })`. The file's own export is named `mount`, so import Svelte's under another name:
+
+```ts
+import { mount as mountComponent } from "svelte"
+import "../../app.css" // the stylesheet src/routes/+layout.svelte imports
+import ProfileCard from "$lib/components/ProfileCard.svelte"
+
+const states: Record<string, Record<string, unknown>> = {
+  default: { name: "Ada Lovelace", status: "Active" },
+  empty: { name: "", status: "" },
+  long: { name: "Augusta Ada King, Countess of Lovelace", status: "Away" },
+}
+
+export function mount(element: HTMLElement, state: string) {
+  mountComponent(ProfileCard, { target: element, props: states[state] })
+}
+```
+
+- The component's `<style>` blocks apply, scoped as in the app, and so do the package's PostCSS or Tailwind config and, without Vite, the `paths` of its `tsconfig.json` or `jsconfig.json`.
+- A component that reads the page: set it before mounting, such as `Object.assign(page, { url: new URL("/settings", location.href), params: { id: "42" } })` with `page` from `$app/state`. Pass layout data through props.
+- A component that reads a context: pass `context: new Map([[key, value]])` to `mountComponent`.
+- Server-only modules (`$lib/server/*`, `*.server.*`, private environment variables) never load in the browser: SvelteKit reports it. Preview the components that receive that data through props.
+- Svelte 4 is not supported without a Vite config: the tool says so. Check that component in the app instead.
+
+## Angular packages
+
+An Angular 17 to 22 package without `vite.config.*`, with `@angular/build` or `@angular-devkit/build-angular`, such as an Angular CLI app, is served by Blame's own Vite with `@analogjs/vite-plugin-angular`. It compiles ahead of time with the project's own Angular compiler and the tsconfig `angular.json` names (`tsconfig.app.json`), as `ng serve` does. Write `<name>.blame-preview.ts` in a folder of the package, such as next to the component in `src/`. It imports each stylesheet of the `styles` field of `angular.json`, creates an application with the providers the component needs, then creates the component in `element` with the inputs of the requested state:
+
+```ts
+import "../../styles.css" // each stylesheet of "styles" in angular.json
+import { createComponent } from "@angular/core"
+import { createApplication } from "@angular/platform-browser"
+import { provideRouter } from "@angular/router"
+import { ProfileCardComponent } from "./profile-card.component"
+
+const states: Record<string, Record<string, unknown>> = {
+  default: { name: "Ada Lovelace", status: "Active" },
+  empty: { name: "", status: "" },
+  long: { name: "Augusta Ada King, Countess of Lovelace", status: "Away" },
+}
+
+export async function mount(element: HTMLElement, state: string) {
+  const app = await createApplication({ providers: [provideRouter([])] })
+  const card = createComponent(ProfileCardComponent, { environmentInjector: app.injector, hostElement: element })
+  for (const [name, value] of Object.entries(states[state])) card.setInput(name, value)
+  app.attachView(card.hostView)
+  card.changeDetectorRef.detectChanges()
+}
+```
+
+- `templateUrl`, `styleUrl` and `styleUrls` files, signal inputs, signals and control flow blocks render as in the app. `setInput` sets `input()` and `@Input()` inputs alike. The package's PostCSS config (such as `.postcssrc.json` with Tailwind) and the `paths` of its `tsconfig.json` apply.
+- Pass the providers the component injects to `createApplication`, with fakes: `provideRouter([])` for a component that uses `routerLink`, `RouterOutlet`, `Router` or `ActivatedRoute`; `{ provide: UserService, useValue: fakeUsers }` for a service.
+- zone.js loads before the preview file when the `polyfills` of `angular.json` include it; the tool's first line says so. Otherwise the render is zoneless: Angular 21 and later need nothing more, Angular 20 needs `provideZonelessChangeDetection()` in the providers, Angular 18 and 19 `provideExperimentalZonelessChangeDetection()`.
+- A component an NgModule declares (`standalone: false`): import that module's file, add `importProvidersFrom(TheModule)` to the providers, and create the component with `createComponent` as above; `bootstrapApplication` only takes standalone components. When the module is missing, the tool names the elements Angular rendered nothing for.
+- Angular 16 and earlier are not supported, nor server-side rendering: check that component in the app instead.
 
 ## Replace what the component depends on
 
