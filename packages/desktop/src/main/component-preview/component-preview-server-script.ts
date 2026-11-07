@@ -6,7 +6,7 @@
 // nobody has asked it anything for a while.
 //
 // A React, Vue 3, Svelte 5 or Angular package without Vite, such as a
-// Next.js, Vue CLI, Rollup or Angular CLI app, gets Blame's own Vite
+// Next.js, Vue CLI, Nuxt, Rollup or Angular CLI app, gets Blame's own Vite
 // instead, with @vitejs/plugin-react, @vitejs/plugin-vue,
 // @sveltejs/vite-plugin-svelte or @analogjs/vite-plugin-angular, installed
 // once per environment in the host's toolkit folder, outside the
@@ -14,7 +14,10 @@
 // project's node_modules, and the project's own Svelte compiles its
 // components; its PostCSS config and tsconfig or jsconfig paths apply.
 // Next.js imports that only work inside Next are replaced by small shims,
-// and a Vue CLI package keeps its @ alias for src, in this server only.
+// and a Vue CLI package keeps its @ alias for src, in this server only. A
+// Nuxt package also gets what Nuxt generates at build time: auto-imports
+// with unimport, its components by their Nuxt names, its aliases, and shims
+// for the composables and components Nuxt provides.
 // The Angular part is in component-preview-angular-script.ts.
 //
 // A React Native package with react-native-web, such as an Expo app with
@@ -29,6 +32,10 @@
 // environment variables SvelteKit's own page would, in this server only.
 
 import { componentPreviewAngularScript } from "./component-preview-angular-script.ts";
+import { componentPreviewNextScript } from "./component-preview-next-script.ts";
+import { componentPreviewNuxtScript } from "./component-preview-nuxt-script.ts";
+import { componentPreviewReactNativeScript } from "./component-preview-react-native-script.ts";
+import { componentPreviewSvelteScript } from "./component-preview-svelte-script.ts";
 
 export const componentPreviewPagePath = "/__blame_component_preview__";
 export const componentPreviewReportPrefix = "BLAME_COMPONENT_PREVIEW ";
@@ -39,15 +46,17 @@ export const componentPreviewToolkitVersions = {
   pluginReact: "6.1.2",
   pluginSvelte: "7.3.1",
   pluginVue: "6.0.10",
+  unimport: "7.0.2",
   vite: "8.3.5",
 } as const;
 
 export type ComponentPreviewToolkit = {
   // "next" adds the Next.js shims to React, "react-native" resolves
   // react-native to react-native-web; "vue" uses @vitejs/plugin-vue,
-  // "svelte" @sveltejs/vite-plugin-svelte, "angular"
-  // @analogjs/vite-plugin-angular.
-  framework: "angular" | "next" | "react" | "react-native" | "svelte" | "vue";
+  // "nuxt" adds Nuxt's auto-imports and shims to it, "svelte"
+  // @sveltejs/vite-plugin-svelte, "angular" @analogjs/vite-plugin-angular.
+  framework:
+    "angular" | "next" | "nuxt" | "react" | "react-native" | "svelte" | "vue";
   // Folder of Blame's own Vite installs, as the server process sees it.
   root: string;
 };
@@ -62,7 +71,7 @@ export function componentPreviewToolkitPlugin(
       name: "@analogjs/vite-plugin-angular",
       version: componentPreviewToolkitVersions.pluginAngular,
     };
-  if (framework === "vue")
+  if (framework === "vue" || framework === "nuxt")
     return {
       name: "@vitejs/plugin-vue",
       version: componentPreviewToolkitVersions.pluginVue,
@@ -76,6 +85,36 @@ export function componentPreviewToolkitPlugin(
     name: "@vitejs/plugin-react",
     version: componentPreviewToolkitVersions.pluginReact,
   };
+}
+
+type ComponentPreviewToolkitPackage = { name: string; version: string };
+
+// What a framework needs beside Vite, its Vite plugin first. Each set gets
+// its own toolkit folder, so a package is only installed for a project
+// that needs it.
+export function componentPreviewToolkitPackages(
+  framework: ComponentPreviewToolkit["framework"],
+): ComponentPreviewToolkitPackage[] {
+  const plugin = componentPreviewToolkitPlugin(framework);
+  return framework === "nuxt"
+    ? [
+        plugin,
+        { name: "unimport", version: componentPreviewToolkitVersions.unimport },
+      ]
+    : [plugin];
+}
+
+// A framework's toolkit folder, before the platform suffix the server adds,
+// such as "vite-8.3.5-plugin-vue-6.0.10".
+export function componentPreviewToolkitFolder(
+  framework: ComponentPreviewToolkit["framework"],
+) {
+  return [
+    `vite-${componentPreviewToolkitVersions.vite}`,
+    ...componentPreviewToolkitPackages(framework).map(
+      ({ name, version }) => `${name.replace(/^@[^/]+\//u, "")}-${version}`,
+    ),
+  ].join("-");
 }
 
 // What an Angular server compiles with and loads first.
@@ -115,6 +154,9 @@ export type ComponentPreviewServerReport =
       event: "listening";
       // Set when Blame's own Vite compiles an Angular package.
       angular?: ComponentPreviewAngularReport;
+      // What the agent should know about this server, such as the
+      // stylesheets a Nuxt app's nuxt.config lists.
+      notes?: string[];
       port: number;
       react: boolean;
       // Set when the server runs Blame's own Vite.
@@ -127,7 +169,6 @@ export function componentPreviewServerArguments(
   options: ComponentPreviewServerOptions,
 ) {
   const { toolkit } = options;
-  const plugin = toolkit && componentPreviewToolkitPlugin(toolkit.framework);
   return [
     "--input-type=module",
     "-e",
@@ -141,8 +182,10 @@ export function componentPreviewServerArguments(
     options.cacheName,
     toolkit?.root ?? "",
     toolkit ? componentPreviewToolkitVersions.vite : "",
-    plugin?.name ?? "",
-    plugin?.version ?? "",
+    toolkit ? componentPreviewToolkitFolder(toolkit.framework) : "",
+    toolkit
+      ? JSON.stringify(componentPreviewToolkitPackages(toolkit.framework))
+      : "",
     toolkit?.framework ?? "",
   ];
 }
@@ -161,9 +204,13 @@ export function componentPreviewServerReport(
     if (value.event === "listening" && typeof value.port === "number") {
       const toolkit = value.toolkit as Record<string, unknown> | undefined;
       const angular = angularReport(value.angular);
+      const notes = Array.isArray(value.notes)
+        ? value.notes.filter((note): note is string => typeof note === "string")
+        : [];
       return {
         event: "listening",
         ...(angular ? { angular } : {}),
+        ...(notes.length ? { notes } : {}),
         port: value.port,
         react: value.react === true,
         ...(toolkit && typeof toolkit.directory === "string"
@@ -205,17 +252,23 @@ function angularReport(
 
 // Plain JavaScript run by the project's Node. No template expressions and
 // no backticks inside: the script is one String.raw literal, followed by
-// the functions of its Angular part.
+// its framework parts, then the call that starts the server, once every
+// part has declared its constants.
 export const componentPreviewServerScript =
   String.raw`
 import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import nodeModule, { createRequire } from "node:module";
 import { homedir } from "node:os";
-import { dirname, join, relative, resolve, sep } from "node:path";
+import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 
-const [packageDir, host, portText, token, idleText, cacheName, toolkitRoot, toolkitVite, toolkitPlugin, toolkitPluginVersion, framework] = process.argv.slice(1);
+const [packageDir, host, portText, token, idleText, cacheName, toolkitRoot, toolkitVite, toolkitFolder, toolkitPackagesText, framework] = process.argv.slice(1);
+// The packages beside Vite in Blame's own Vite: [{ name, version }], the
+// framework's Vite plugin first.
+const toolkitPackages = toolkitPackagesText ? JSON.parse(toolkitPackagesText) : [];
+const toolkitPlugin = toolkitPackages.length ? toolkitPackages[0].name : "";
+const toolkitPluginVersion = toolkitPackages.length ? toolkitPackages[0].version : "";
 const pagePath = "/__blame_component_preview__/" + token;
 const entryId = "virtual:blame-component-preview";
 const resolvedEntryId = "\0" + entryId;
@@ -224,10 +277,13 @@ const usesToolkit = Boolean(toolkitVite);
 const serverComponentHint = "open_component_preview renders client components in the browser: preview one of its client sub-components with made-up props, or check this screen in the full app.";
 const vueMountHint = "A preview file of a Vue package exports mount(element, state), which renders the named state into element, such as createApp(Component, props).mount(element).";
 const svelteMountHint = "A preview file of a Svelte package exports mount(element, state), which renders the named state into element, such as mount(Component, { target: element, props }) with mount from svelte.";
-// Vue, Svelte and Angular packages served by Blame's Vite render every
-// state through mount.
+// Vue, Nuxt, Svelte and Angular packages served by Blame's Vite render
+// every state through mount.
 const angularMountHint = "A preview file of an Angular package exports mount(element, state), which renders the named state into element: createApplication({ providers }), then createComponent(Component, { environmentInjector: app.injector, hostElement: element }), its inputs set with setInput, app.attachView(ref.hostView) and ref.changeDetectorRef.detectChanges().";
-const mountHints = { angular: angularMountHint, svelte: svelteMountHint, vue: vueMountHint };
+const mountHints = { angular: angularMountHint, nuxt: vueMountHint, svelte: svelteMountHint, vue: vueMountHint };
+// Scans the project's folders again before a fresh render, such as Nuxt's
+// components and composables.
+let refreshProjectScan;
 // Set for a SvelteKit app: the major version of its @sveltejs/kit.
 let svelteKitMajor = 0;
 let lastRequest = Date.now();
@@ -267,14 +323,23 @@ function resolvable(require, id) {
   }
 }
 
-// The packages the package's own package.json declares.
-function ownDependencies() {
+function plainObject(value) {
+  return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+}
+
+// The package's own package.json, or {} when it is not valid JSON.
+function packageManifest() {
   try {
-    const manifest = JSON.parse(readFileSync(join(packageDir, "package.json"), "utf8"));
-    return new Set(["dependencies", "devDependencies"].flatMap((field) => Object.keys(manifest[field] || {})));
+    return plainObject(JSON.parse(readFileSync(join(packageDir, "package.json"), "utf8")));
   } catch {
-    return new Set();
+    return {};
   }
+}
+
+// The packages the package's own package.json declares, with their ranges.
+function dependencyRanges() {
+  const manifest = packageManifest();
+  return new Map(["dependencies", "devDependencies"].flatMap((field) => Object.entries(plainObject(manifest[field]))));
 }
 
 // The version of a package installed for the package, or undefined.
@@ -311,38 +376,14 @@ function checkFramework(require, framework) {
   if (versionBelow(version, minimum)) throw new SetupError(name + " " + version + " is installed for " + packageDir + ": without a Vite config, open_component_preview renders " + supported + " only, which " + plugin + " requires. Check this component in the app instead.");
 }
 
-// @sveltejs/vite-plugin-svelte imports svelte/compiler from its own folder.
-// Its imports of svelte resolve from the package instead: the project's
-// own Svelte compiles the components that its runtime renders. A require()
-// keeps its own parent whatever the hook passes on: the package's require
-// resolves it.
-function useProjectSvelte(require) {
-  if (typeof nodeModule.registerHooks !== "function") throw new SetupError("Node " + process.version + " runs " + packageDir + ": without a Vite config, open_component_preview renders Svelte components with Node 22.15 or later only. Check this component in the app instead.");
-  const parentURL = pathToFileURL(join(packageDir, "package.json")).href;
-  nodeModule.registerHooks({
-    resolve(specifier, context, nextResolve) {
-      const svelte = specifier === "svelte" || specifier.startsWith("svelte/");
-      const fromPlugin = Boolean(context.parentURL && context.parentURL.includes("/node_modules/@sveltejs/vite-plugin-svelte/"));
-      if (!svelte || !fromPlugin) return nextResolve(specifier, context);
-      if (context.conditions && context.conditions.includes("require")) return { shortCircuit: true, url: pathToFileURL(require.resolve(specifier)).href };
-      return nextResolve(specifier, { ...context, parentURL });
-    },
-  });
-}
-
-// A package's own Svelte config, which @sveltejs/vite-plugin-svelte loads.
-function svelteConfigFile() {
-  return ["svelte.config.js", "svelte.config.mjs", "svelte.config.cjs", "svelte.config.ts", "svelte.config.mts"].some((name) => existsSync(join(packageDir, name)));
-}
-
 // Blame's own Vite: one install per version, platform and C library, so a
-// container and the runtime can share the folder, with the one plugin the
-// package needs.
+// container and the runtime can share the folder, with the packages the
+// framework needs.
 function toolkitDirectory() {
   const header = process.platform === "linux" && process.report ? process.report.getReport().header : undefined;
   const libc = process.platform !== "linux" ? "" : header && header.glibcVersionRuntime ? "-gnu" : "-musl";
   const root = toolkitRoot || join(homedir(), ".cache", "blame", "component-preview");
-  return join(root, "vite-" + toolkitVite + "-" + toolkitPlugin.replace(/^@[^/]+\//, "") + "-" + toolkitPluginVersion + "-" + process.platform + "-" + process.arch + libc);
+  return join(root, toolkitFolder + "-" + process.platform + "-" + process.arch + libc);
 }
 
 function installedVersion(directory, name) {
@@ -354,7 +395,7 @@ function installedVersion(directory, name) {
 }
 
 function toolkitReady(directory) {
-  return installedVersion(directory, "vite") === toolkitVite && installedVersion(directory, toolkitPlugin) === toolkitPluginVersion;
+  return installedVersion(directory, "vite") === toolkitVite && toolkitPackages.every(({ name, version }) => installedVersion(directory, name) === version);
 }
 
 // The npm that comes with this Node, else the one on PATH.
@@ -408,10 +449,11 @@ async function installToolkit(directory) {
   const staging = directory + ".staging-" + process.pid + "-" + Date.now().toString(36);
   try {
     mkdirSync(staging, { recursive: true });
-    const manifest = { name: "blame-component-preview-vite", private: true, dependencies: { vite: toolkitVite, [toolkitPlugin]: toolkitPluginVersion } };
+    const dependencies = Object.fromEntries([["vite", toolkitVite]].concat(toolkitPackages.map(({ name, version }) => [name, version])));
+    const manifest = { name: "blame-component-preview-vite", private: true, dependencies };
     writeFileSync(join(staging, "package.json"), JSON.stringify(manifest, null, 2) + "\n");
     await runNpm(["install", "--no-package-lock", "--ignore-scripts", "--loglevel=error", "--cache", join(parent, ".npm-cache")], staging);
-    if (!toolkitReady(staging)) throw new Error("npm finished without installing vite " + toolkitVite + " and " + toolkitPlugin + " " + toolkitPluginVersion + ".");
+    if (!toolkitReady(staging)) throw new Error("npm finished without installing " + Object.entries(dependencies).map(([name, version]) => name + " " + version).join(", ") + ".");
     if (existsSync(directory) && !toolkitReady(directory)) rmSync(directory, { force: true, recursive: true });
     try {
       renameSync(staging, directory);
@@ -543,14 +585,15 @@ function entryCode(react, mountHint, angular) {
   return lines.join("\n");
 }
 
-function invalidateModules() {
+async function invalidateModules() {
+  if (refreshProjectScan) await refreshProjectScan();
   const graphs = server.environments
     ? Object.values(server.environments).map((environment) => environment.moduleGraph)
     : [server.moduleGraph];
   for (const graph of graphs) if (graph && typeof graph.invalidateAll === "function") graph.invalidateAll();
 }
 
-function previewPlugin(react, mountHint, angular) {
+function previewPlugin(react, mountHint, angular, nuxt) {
   return {
     name: "blame:component-preview",
     enforce: "pre",
@@ -577,11 +620,13 @@ function previewPlugin(react, mountHint, angular) {
         // The entry imports React itself, a Vue preview file imports Vue,
         // an Angular one Angular, and a React Native one react-native-web
         // through its alias: bundled up front, a first render never waits
-        // for a re-optimization and its reload.
+        // for a re-optimization and its reload. Nuxt's composables and
+        // utils are imported by no file, only auto-imported: scanned too.
         const reactDeps = ["react", "react-dom/client", "react/jsx-dev-runtime", ...(framework === "react-native" ? ["react-native-web"] : [])];
-        const frameworkDeps = angular ? angularDependencies(angular) : framework === "vue" ? ["vue"] : react ? reactDeps : [];
+        const frameworkDeps = angular ? angularDependencies(angular) : framework === "vue" || framework === "nuxt" ? ["vue"] : react ? reactDeps : [];
         const include = frameworkDeps.length ? [...new Set([...(optimizeDeps.include || []), ...frameworkDeps])] : optimizeDeps.include;
-        config.optimizeDeps = { ...optimizeDeps, entries: ["**/*.blame-preview.*"], ...(include ? { include } : {}) };
+        const entries = ["**/*.blame-preview.*"].concat(nuxt ? nuxt.scanEntries : []);
+        config.optimizeDeps = { ...optimizeDeps, entries, ...(include ? { include } : {}) };
       },
     },
     resolveId(id) {
@@ -604,7 +649,7 @@ function previewPlugin(react, mountHint, angular) {
           return;
         }
         try {
-          if (url.searchParams.get("fresh") === "1") invalidateModules();
+          if (url.searchParams.get("fresh") === "1") await invalidateModules();
           const head = svelteKitMajor ? await svelteKitHead(viteServer) : "";
           const html = await viteServer.transformIndexHtml(url.pathname + url.search, pageHtml(head), request.originalUrl);
           response.statusCode = 200;
@@ -617,79 +662,6 @@ function previewPlugin(react, mountHint, angular) {
       });
     },
   };
-}
-
-// $app/state as SvelteKit's router leaves it after it navigates to /: the
-// preview page has no router. The preview file may change the page before
-// it mounts, such as page.url or page.params.
-const svelteKitStateShim = [
-  'export const page = { data: {}, error: null, form: null, params: {}, route: { id: null }, state: {}, status: 200, url: new URL("/", location.origin) };',
-  'export const navigating = { from: null, to: null, type: null, willUnload: null, delta: null, complete: null };',
-  'export const updated = { current: false, check: async () => false };',
-].join("\n");
-
-// $app/stores, removed in SvelteKit 3, with the same page.
-const svelteKitStoresShim = [
-  'import { readable } from "svelte/store";',
-  'import { page as pageState } from "blame-sveltekit:state";',
-  'export const page = readable(pageState);',
-  'export const navigating = readable(null);',
-  'export const updated = { ...readable(false), check: async () => false };',
-  'export function getStores() {',
-  '  return { page, navigating, updated };',
-  '}',
-].join("\n");
-
-// Resolves $app/state, and $app/stores before SvelteKit 3, to the shims,
-// ahead of SvelteKit's own $app alias.
-function svelteKitShims() {
-  const shims = { state: svelteKitStateShim, ...(svelteKitMajor < 3 ? { stores: svelteKitStoresShim } : {}) };
-  return {
-    name: "blame:sveltekit-shims",
-    enforce: "pre",
-    config: {
-      order: "post",
-      handler(config) {
-        const alias = (config.resolve && config.resolve.alias) || [];
-        const entries = Array.isArray(alias) ? alias : Object.entries(alias).map(([find, replacement]) => ({ find, replacement }));
-        const shimEntries = Object.keys(shims).map((name) => ({ find: new RegExp("^\\$app/" + name + "$"), replacement: "blame-sveltekit:" + name }));
-        config.resolve = { ...(config.resolve || {}), alias: [...shimEntries, ...entries] };
-      },
-    },
-    resolveId(id) {
-      return id.startsWith("blame-sveltekit:") && shims[id.slice("blame-sveltekit:".length)] ? "\0" + id : undefined;
-    },
-    load(id) {
-      return id.startsWith("\0blame-sveltekit:") ? shims[id.slice("\0blame-sveltekit:".length)] : undefined;
-    },
-  };
-}
-
-// SvelteKit 3, and SvelteKit 2 with explicit environment variables, give
-// the public ones of src/env.* through $app/env/public; SvelteKit 2
-// otherwise gives its PUBLIC_* ones through $env/dynamic/public.
-function explicitSvelteKitEnv(viteServer) {
-  if (svelteKitMajor >= 3) return true;
-  const setup = viteServer.config.plugins.find((plugin) => plugin.name === "vite-plugin-sveltekit-setup");
-  const kit = setup && setup.api && setup.api.options && setup.api.options.kit;
-  return Boolean(kit && kit.experimental && kit.experimental.explicitEnvironmentVariables);
-}
-
-// What SvelteKit's own page sets before its modules run: the dynamic
-// public environment variables, read from SvelteKit's server modules, which
-// never give the private ones.
-async function svelteKitHead(viteServer) {
-  let script;
-  try {
-    const env = explicitSvelteKitEnv(viteServer)
-      ? { ...(await viteServer.ssrLoadModule("$app/env/public")) }
-      : { ...(await viteServer.ssrLoadModule("$env/dynamic/public")).env };
-    script = "globalThis.__sveltekit_dev = " + JSON.stringify({ env }) + ";";
-  } catch (error) {
-    const message = "SvelteKit did not give the public environment variables of " + packageDir + ": " + ((error && error.message) || error);
-    script = 'document.documentElement.dataset.blamePreviewStatus = "error";\ndocument.documentElement.dataset.blamePreviewMessage = ' + JSON.stringify(message) + ";";
-  }
-  return "<script>" + script.replace(/</g, "\\u003c") + "</script>";
 }
 
 function displayPath(file) {
@@ -725,211 +697,6 @@ function serverOnlyPlugin() {
   };
 }
 
-const nextLinkShim = [
-  'import { cloneElement, createElement, forwardRef, isValidElement } from "react";',
-  'function hrefText(href) {',
-  '  if (typeof href === "string") return href;',
-  '  if (!href || typeof href !== "object") return "";',
-  '  const query = href.query && typeof href.query === "object" ? new URLSearchParams(href.query).toString() : "";',
-  '  const hash = href.hash ? (String(href.hash).startsWith("#") ? href.hash : "#" + href.hash) : "";',
-  '  return (href.pathname || "") + (href.search || (query ? "?" + query : "")) + hash;',
-  '}',
-  '// The anchor Next renders; a click stays on the preview page.',
-  'const Link = forwardRef(function Link(props, ref) {',
-  '  const { href, as, replace, scroll, shallow, passHref, prefetch, locale, legacyBehavior, onNavigate, children, onClick, ...rest } = props;',
-  '  const url = hrefText(as || href);',
-  '  const click = (event) => {',
-  '    if (onClick) onClick(event);',
-  '    event.preventDefault();',
-  '  };',
-  '  if (legacyBehavior && isValidElement(children)) return cloneElement(children, { href: url, onClick: click, ref });',
-  '  return createElement("a", { ...rest, href: url, onClick: click, ref }, children);',
-  '});',
-  'export default Link;',
-  'export function useLinkStatus() {',
-  '  return { pending: false };',
-  '}',
-].join("\n");
-
-const nextImageShim = [
-  'import { createElement, forwardRef } from "react";',
-  'function imageSource(src) {',
-  '  if (src && typeof src === "object") return src.default && typeof src.default === "object" ? src.default : src;',
-  '  return { src };',
-  '}',
-  '// A plain img, loaded eagerly so that full-page captures show every image.',
-  'const Image = forwardRef(function Image(props, ref) {',
-  '  const { src, width, height, fill, sizes, quality, priority, preload, loading, placeholder, blurDataURL, unoptimized, loader, overrideSrc, onLoadingComplete, style, ...rest } = props;',
-  '  const image = imageSource(src);',
-  '  const fillStyle = fill ? { position: "absolute", inset: 0, width: "100%", height: "100%" } : {};',
-  '  return createElement("img", {',
-  '    ...rest,',
-  '    ref,',
-  '    src: overrideSrc || image.src,',
-  '    width: fill ? undefined : width ?? image.width,',
-  '    height: fill ? undefined : height ?? image.height,',
-  '    sizes,',
-  '    loading: "eager",',
-  '    decoding: "async",',
-  '    "data-nimg": fill ? "fill" : "1",',
-  '    style: { color: "transparent", ...fillStyle, ...style },',
-  '  });',
-  '});',
-  'export default Image;',
-  'export function getImageProps(props) {',
-  '  const image = imageSource(props.src);',
-  '  return { props: { alt: props.alt, src: props.overrideSrc || image.src, width: props.width ?? image.width, height: props.height ?? image.height, sizes: props.sizes } };',
-  '}',
-].join("\n");
-
-const nextNavigationShim = [
-  'const ignore = () => undefined;',
-  'const router = { back: ignore, forward: ignore, prefetch: ignore, push: ignore, refresh: ignore, replace: ignore };',
-  'export class ReadonlyURLSearchParams extends URLSearchParams {}',
-  'export const RedirectType = { push: "push", replace: "replace" };',
-  'export function useRouter() {',
-  '  return router;',
-  '}',
-  'export function usePathname() {',
-  '  return "/";',
-  '}',
-  'export function useSearchParams() {',
-  '  return new ReadonlyURLSearchParams();',
-  '}',
-  'export function useParams() {',
-  '  return {};',
-  '}',
-  'export function useSelectedLayoutSegment() {',
-  '  return null;',
-  '}',
-  'export function useSelectedLayoutSegments() {',
-  '  return [];',
-  '}',
-  'export function useServerInsertedHTML() {}',
-  'export function unstable_rethrow() {}',
-  'function navigates(name) {',
-  '  return new Error(name + "() navigates in the Next.js app, which the component preview does not run: render the state it leads to instead.");',
-  '}',
-  'export function redirect() {',
-  '  throw navigates("redirect");',
-  '}',
-  'export function permanentRedirect() {',
-  '  throw navigates("permanentRedirect");',
-  '}',
-  'export function notFound() {',
-  '  throw navigates("notFound");',
-  '}',
-  'export function forbidden() {',
-  '  throw navigates("forbidden");',
-  '}',
-  'export function unauthorized() {',
-  '  throw navigates("unauthorized");',
-  '}',
-].join("\n");
-
-// next/font returns class names for fonts Next self-hosts. Here, Google
-// fonts get their family name and a generic fallback (the page loads
-// nothing remote), local fonts their own files.
-const nextFontRuntime = [
-  'let count = 0;',
-  'const generic = (family) => (/mono|code/i.test(family) ? "monospace" : /serif/i.test(family) && !/sans/i.test(family) ? "serif" : "sans-serif");',
-  'function register(family, options, faces) {',
-  '  count += 1;',
-  '  const className = "__blame_font_" + count;',
-  '  const variableClass = "__blame_font_variable_" + count;',
-  '  const stack = [JSON.stringify(family)].concat(options.fallback || [generic(family)]).join(", ");',
-  '  const weight = typeof options.weight === "string" && !options.weight.includes(" ") ? options.weight : undefined;',
-  '  const fontStyle = typeof options.style === "string" ? options.style : undefined;',
-  '  const rules = faces.concat("." + className + " { font-family: " + stack + ";" + (weight ? " font-weight: " + weight + ";" : "") + (fontStyle ? " font-style: " + fontStyle + ";" : "") + " }");',
-  '  if (options.variable) rules.push("." + variableClass + " { " + options.variable + ": " + stack + "; }");',
-  '  const element = document.createElement("style");',
-  '  element.dataset.blameFont = family;',
-  '  element.textContent = rules.join(" ");',
-  '  document.head.appendChild(element);',
-  '  const style = { fontFamily: stack };',
-  '  if (weight) style.fontWeight = Number(weight) || weight;',
-  '  if (fontStyle) style.fontStyle = fontStyle;',
-  '  return options.variable ? { className, style, variable: variableClass } : { className, style };',
-  '}',
-  'export function googleFont(family) {',
-  '  return (options) => register(family, options || {}, []);',
-  '}',
-  'let localCount = 0;',
-  'export function localFont(base) {',
-  '  return (options) => {',
-  '    const settings = options || {};',
-  '    localCount += 1;',
-  '    const family = "__blame_local_font_" + localCount;',
-  '    const sources = Array.isArray(settings.src) ? settings.src : [{ path: settings.src, style: settings.style, weight: settings.weight }];',
-  '    const faces = sources.filter((source) => source && source.path).map((source) =>',
-  '      "@font-face { font-family: " + JSON.stringify(family) + "; src: url(" + JSON.stringify(new URL(source.path, location.origin + base).pathname) + "); font-display: " + (settings.display || "swap") + ";" + (source.weight ? " font-weight: " + source.weight + ";" : "") + (source.style ? " font-style: " + source.style + ";" : "") + " }");',
-  '    return register(family, { fallback: settings.fallback || ["sans-serif"], variable: settings.variable }, faces);',
-  '  };',
-  '}',
-].join("\n");
-
-// The fonts a module imports from next/font/google, read from its source:
-// Next requires named imports called with literal options.
-function googleFontNames(importer) {
-  let source = "";
-  try {
-    source = readFileSync(importer.split("?")[0], "utf8");
-  } catch {
-    return [];
-  }
-  const names = new Set();
-  const pattern = /import\s*\{([^}]*)\}\s*from\s*["']next\/font\/google["']/g;
-  for (let match = pattern.exec(source); match; match = pattern.exec(source))
-    for (const part of match[1].split(",")) {
-      const name = part.trim().replace(/^type\s+/, "").split(/\s+as\s+/)[0].trim();
-      if (/^[A-Za-z_$][\w$]*$/.test(name)) names.add(name);
-    }
-  return [...names];
-}
-
-// The URL folder of a module, for the files a local font names.
-function moduleBase(importer) {
-  const directory = dirname(importer.split("?")[0]);
-  const path = relative(packageDir, directory).split(sep).join("/");
-  if (!path) return "/";
-  if (!path.startsWith("..")) return "/" + path + "/";
-  return "/@fs/" + directory.split(sep).join("/").replace(/^\/+/, "") + "/";
-}
-
-const nextShimModules = { "next/image": nextImageShim, "next/link": nextLinkShim, "next/navigation": nextNavigationShim };
-
-// Resolves next/link, next/image, next/navigation and next/font/* to the
-// shims, for the project's modules and the libraries Vite pre-bundles.
-function nextShims() {
-  const fontImporters = [];
-  return {
-    name: "blame:next-shims",
-    resolveId(id, importer) {
-      const bare = id.replace(/\.js$/, "");
-      if (nextShimModules[bare]) return "\0blame-next:" + bare;
-      if (id === "blame-next:font-runtime") return "\0blame-next:font-runtime";
-      if (bare !== "next/font/google" && bare !== "next/font/local") return undefined;
-      let index = fontImporters.indexOf(importer || "");
-      if (index < 0) index = fontImporters.push(importer || "") - 1;
-      return "\0blame-next:" + bare + ":" + index;
-    },
-    load(id) {
-      if (!id.startsWith("\0blame-next:")) return undefined;
-      const name = id.slice("\0blame-next:".length);
-      if (nextShimModules[name]) return nextShimModules[name];
-      if (name === "font-runtime") return nextFontRuntime;
-      const font = /^next\/font\/(google|local):(\d+)$/.exec(name);
-      if (!font) return undefined;
-      const importer = fontImporters[Number(font[2])] || "";
-      if (font[1] === "local")
-        return 'import { localFont } from "blame-next:font-runtime";\nexport default localFont(' + JSON.stringify(moduleBase(importer || join(packageDir, "index.js"))) + ");\n";
-      return ['import { googleFont } from "blame-next:font-runtime";']
-        .concat(googleFontNames(importer).map((exported) => "export const " + exported + " = googleFont(" + JSON.stringify(exported.replace(/_/g, " ")) + ");"))
-        .join("\n");
-    },
-  };
-}
-
 // Next inlines the NEXT_PUBLIC_* variables of its .env files in client
 // code, Vue CLI its VUE_APP_* ones. In development, Vite's client sets
 // defines as globals, so process.env exists in the page as it does there.
@@ -947,91 +714,34 @@ function jsconfigFile() {
   return existsSync(path) ? path : undefined;
 }
 
-// The extensions an Expo app's web build tries first, before Vite's own
-// and those of its pre-bundler.
-const webExtensions = [".web.tsx", ".web.ts", ".web.jsx", ".web.js"];
-const viteExtensions = [".mjs", ".js", ".mts", ".ts", ".jsx", ".tsx", ".json"];
-const preBundlerExtensions = [".tsx", ".ts", ".jsx", ".js", ".css", ".json"];
-
-// react-native-web renders the components in the page, with react-dom.
-function checkReactNativeWeb(require) {
-  const missing = ["react", "react-dom", "react-native-web"].filter((name) => !resolvable(require, name));
-  if (!missing.length) return;
-  const names = missing.length > 1 ? missing.slice(0, -1).join(", ") + " and " + missing[missing.length - 1] + " are" : missing[0] + " is";
-  throw new SetupError(names + " not installed for " + packageDir + ". Without a Vite config, open_component_preview renders React Native components with react-native-web and react-dom, and it never installs the project's dependencies: install them first.");
-}
-
-// In the browser, an Expo module's requireNativeModule, requireNativeView or
-// requireNativeViewManager call throws: its native code is not there. Each
-// call of an expo-* package gets a wrapper whose error names the package.
-const nativeCallPattern = /(?<![\w$.])(requireNative(?:Module|View|ViewManager))\((?=\s*["'])/g;
-const nativeOnlyRuntimeId = "blame-native-only:runtime";
-const nativeOnlyRuntime = [
-  'export function nativeOnly(name, require) {',
-  '  if (typeof require !== "function") return require;',
-  '  return function (...args) {',
-  '    try {',
-  '      return require.apply(this, args);',
-  '    } catch (error) {',
-  '      const cause = (error && error.message) || String(error);',
-  '      throw new Error(name + " has no web implementation (" + cause + "): open_component_preview renders React Native components in the browser with react-native-web. Check this component in the app or on a device, or preview a sub-component that does not use " + name + ".", { cause: error });',
-  '    }',
-  '  };',
-  '}',
-].join("\n");
-
-// The expo-* package of a module, from its path: the last node_modules
-// folder, as pnpm nests packages. expo-modules-core defines the calls.
-function expoPackage(id) {
-  const matches = [...id.split("\\").join("/").matchAll(/\/node_modules\/(expo-[^/]+)\//g)];
-  const name = matches.length ? matches[matches.length - 1][1] : undefined;
-  return name === "expo-modules-core" ? undefined : name;
-}
-
-// For the package's modules and those Vite pre-bundles. Only ES modules are
-// changed: the runtime's import goes last, so every line stays in place.
-function nativeOnlyPlugin() {
-  return {
-    name: "blame:expo-native-only",
-    resolveId(id) {
-      return id === nativeOnlyRuntimeId ? "\0" + nativeOnlyRuntimeId : undefined;
-    },
-    load(id) {
-      return id === "\0" + nativeOnlyRuntimeId ? nativeOnlyRuntime : undefined;
-    },
-    transform(code, id) {
-      const name = expoPackage(id);
-      if (!name || !/^\s*(?:import|export)\s/m.test(code)) return undefined;
-      const wrapped = code.replace(nativeCallPattern, (call, callee) => "__blameNativeOnly(" + JSON.stringify(name) + ", " + callee + ")(");
-      if (wrapped === code) return undefined;
-      return { code: wrapped + '\nimport { nativeOnly as __blameNativeOnly } from "' + nativeOnlyRuntimeId + '";\n', map: null };
-    },
-  };
-}
-
-// Blame's own Vite with the package's framework plugin, installed for this
-// environment if it is not yet.
-async function toolkitPlugins(plugins, require, angular) {
+// Blame's own Vite and the packages the framework needs, installed for
+// this environment if they are not yet.
+async function loadToolkit(require, angular) {
   const directory = toolkitDirectory();
   const installed = !toolkitReady(directory);
   if (installed) {
     report({ event: "installing", directory });
     await installToolkit(directory);
   }
-  const vite = packageModule(join(directory, "node_modules", "vite", "package.json"));
-  const pluginDirectory = join(directory, "node_modules", ...toolkitPlugin.split("/"));
   if (framework === "svelte") useProjectSvelte(require);
-  if (angular) resolveAngularFromProject(angular.bases, pluginDirectory);
-  const plugin = await import(packageModule(join(pluginDirectory, "package.json")).url);
-  if (angular) plugins.push(plugin.default(angularPluginOptions(angular)));
-  else if (framework === "vue") plugins.push(plugin.default());
+  if (angular) resolveAngularFromProject(angular.bases, join(directory, "node_modules", ...toolkitPlugin.split("/")));
+  const modules = {};
+  for (const { name } of toolkitPackages) modules[name] = await import(packageModule(join(directory, "node_modules", ...name.split("/"), "package.json")).url);
+  return { modules, toolkit: { directory, installed }, vite: packageModule(join(directory, "node_modules", "vite", "package.json")) };
+}
+
+function frameworkPlugins(modules, nuxt, angular) {
+  if (framework === "nuxt") return nuxtPlugins(modules, nuxt);
+  const plugin = modules[toolkitPlugin];
+  if (angular) return [plugin.default(angularPluginOptions(angular))];
+  if (framework === "vue") return [plugin.default()];
   // Without a svelte.config.*, <style lang="..."> blocks go through Vite's
   // CSS preprocessors, as svelte-preprocess does in a bundler's config.
-  else if (framework === "svelte") plugins.push(...plugin.svelte(svelteConfigFile() ? undefined : { preprocess: plugin.vitePreprocess() }));
-  else plugins.push(serverOnlyPlugin(), plugin.default());
+  if (framework === "svelte") return plugin.svelte(svelteConfigFile() ? undefined : { preprocess: plugin.vitePreprocess() });
+  const plugins = [serverOnlyPlugin(), plugin.default()];
   if (framework === "next") plugins.push({ ...nextShims(), enforce: "pre" });
   if (framework === "react-native") plugins.push(nativeOnlyPlugin());
-  return { toolkit: { directory, installed }, vite };
+  return plugins;
 }
 
 async function main() {
@@ -1039,21 +749,22 @@ async function main() {
   // the package's own dev server runs.
   process.chdir(packageDir);
   const require = createRequire(join(packageDir, "package.json"));
-  // A Vue, Svelte or Angular package renders through mount, even with React
-  // installed nearby.
+  // A Vue, Nuxt, Svelte or Angular package renders through mount, even with
+  // React installed nearby.
   const react = !mountHints[framework] && resolvable(require, "react") && resolvable(require, "react-dom/client");
   const mountHint = react ? undefined : mountHints[framework] || (projectVersion(require, "svelte") ? svelteMountHint : projectVersion(require, "vue") ? vueMountHint : undefined);
-  const kitVersion = !usesToolkit && ownDependencies().has("@sveltejs/kit") ? projectVersion(require, "@sveltejs/kit") : undefined;
+  const kitVersion = !usesToolkit && dependencyRanges().has("@sveltejs/kit") ? projectVersion(require, "@sveltejs/kit") : undefined;
   svelteKitMajor = kitVersion ? versionParts(kitVersion)[0] : 0;
   const angular = framework === "angular" ? angularSetup(require) : undefined;
-  const plugins = [previewPlugin(react, mountHint, angular), ...(svelteKitMajor ? [svelteKitShims()] : [])];
-  let vite;
+  let modules;
   let toolkit;
+  let vite;
   if (usesToolkit) {
-    if (framework === "vue" || framework === "svelte") checkFramework(require, framework);
+    if (framework === "vue" || framework === "nuxt") checkFramework(require, "vue");
+    else if (framework === "svelte") checkFramework(require, framework);
     else if (framework === "react-native") checkReactNativeWeb(require);
     else if (!angular && !react) throw new SetupError("React is not installed for " + packageDir + ". Without a Vite config, open_component_preview renders React components only, and it never installs the project's dependencies: install them first.");
-    ({ toolkit, vite } = await toolkitPlugins(plugins, require, angular));
+    ({ modules, toolkit, vite } = await loadToolkit(require, angular));
   } else {
     try {
       vite = packageModule(require.resolve("vite/package.json"));
@@ -1061,9 +772,13 @@ async function main() {
       throw new SetupError("Vite is not installed for " + packageDir + ": " + ((error && error.message) || error));
     }
   }
-  const { createServer, loadEnv } = await import(vite.url);
-  const options = { root: packageDir, mode: "development", logLevel: "warn", clearScreen: false, plugins };
-  if (usesToolkit) {
+  const viteApi = await import(vite.url);
+  const { createServer, loadEnv } = viteApi;
+  const nuxt = framework === "nuxt" ? await nuxtProject(viteApi, require, toolkit.directory) : undefined;
+  const plugins = [previewPlugin(react, mountHint, angular, nuxt), ...(svelteKitMajor ? [svelteKitShims()] : [])].concat(usesToolkit ? frameworkPlugins(modules, nuxt, angular) : []);
+  let options = { root: packageDir, mode: "development", logLevel: "warn", clearScreen: false, plugins };
+  if (nuxt) options = nuxtViteOptions(viteApi.mergeConfig, options, nuxt);
+  else if (usesToolkit) {
     options.configFile = false;
     options.resolve = { tsconfigPaths: true };
     const jsconfig = jsconfigFile();
@@ -1072,7 +787,7 @@ async function main() {
       options.define = publicEnvDefines(loadEnv, "NEXT_PUBLIC_", { "process.env.NODE_ENV": JSON.stringify("development") });
       options.optimizeDeps = { rolldownOptions: { plugins: [nextShims()] } };
     }
-    if (framework === "vue" && ownDependencies().has("@vue/cli-service")) {
+    if (framework === "vue" && dependencyRanges().has("@vue/cli-service")) {
       // Vue CLI's webpack config resolves @ to src, ahead of any path.
       options.resolve.alias = [{ find: /^@\//, replacement: join(packageDir, "src") + sep }];
       options.define = publicEnvDefines(loadEnv, "VUE_APP_", { "process.env.BASE_URL": JSON.stringify("/"), "process.env.NODE_ENV": JSON.stringify("development") });
@@ -1098,15 +813,22 @@ async function main() {
   server = await createServer(options);
   await server.listen();
   const address = server.httpServer && server.httpServer.address();
-  report({ event: "listening", port: address && typeof address === "object" ? address.port : Number(portText), react, vite: vite.version, ...(toolkit ? { toolkit } : {}), ...(angular ? { angular: angularReport(angular) } : {}) });
+  report({ event: "listening", ...(nuxt ? { notes: nuxt.notes } : {}), port: address && typeof address === "object" ? address.port : Number(portText), react, vite: vite.version, ...(toolkit ? { toolkit } : {}), ...(angular ? { angular: angularReport(angular) } : {}) });
   setInterval(() => {
     if (Date.now() - lastRequest > idleMs) close();
   }, 15000).unref();
 }
 
 for (const signal of ["SIGTERM", "SIGINT", "SIGHUP"]) process.on(signal, close);
+` +
+  componentPreviewSvelteScript +
+  componentPreviewNextScript +
+  componentPreviewReactNativeScript +
+  componentPreviewNuxtScript +
+  componentPreviewAngularScript +
+  String.raw`
 main().catch((error) => {
   report({ event: "error", message: error instanceof SetupError ? error.message : String((error && (error.stack || error.message)) || error) });
   process.exit(1);
 });
-` + componentPreviewAngularScript;
+`;

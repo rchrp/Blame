@@ -86,6 +86,7 @@
     "sveltekit-2": "npm:@sveltejs/kit@2.70.4",
     "tslib": "2.8.1",
     "typescript": "npm:@typescript/typescript6@6.0.2",
+    "unimport": "7.0.2",
     "vite": "^8.3.5",
     "vue": "3.5.45",
     "zone.js": "0.16.3"

@@ -194,7 +194,7 @@ test("the component preview skill shows how to mount a Vue 3 component without V
     const output = await executor("component-preview", "profile card", {} as never);
     assert.match(output, /Vue 3 package \(`vue` 3\.2\.25 or later\) without `vite\.config\.\*`[^\n]*Blame's own Vite with `@vitejs\/plugin-vue`/);
     assert.match(output, /import ProfileCard from "@\/components\/ProfileCard\.vue"/);
-    assert.match(output, /export function mount\(element: HTMLElement, state: string\) \{\n  createApp\(ProfileCard, states\[state\]\)\.mount\(element\)\n\}/);
+    assert.match(output, /export function mount\(element: HTMLElement, state: string\) \{\n {2}createApp\(ProfileCard, states\[state\]\)\.mount\(element\)\n\}/);
     assert.match(output, /`<style>` and `<style scoped>` blocks apply/);
     assert.match(output, /In a Vue CLI package, `@\/` resolves to `src\/`/);
     assert.match(output, /Vue 2 is not supported/);
@@ -264,7 +264,7 @@ test("the component preview skill shows how to mount an Angular component withou
     const executor = service.createSkillsExecutor?.();
     assert.ok(executor);
     const output = await executor("component-preview", "profile card", {} as never);
-    assert.match(output, /Vite, React, Vue 3, Svelte 5 or Angular project \(Next\.js, Vue CLI, SvelteKit and Angular CLI included\)/);
+    assert.match(output, /Vite, React, Vue 3, Svelte 5 or Angular project \(Next\.js, Vue CLI, Nuxt, SvelteKit and Angular CLI included\)/);
     assert.match(
       output,
       /An Angular 17 to 22 package without `vite\.config\.\*`, with `@angular\/build` or `@angular-devkit\/build-angular`[^\n]*Blame's own Vite with `@analogjs\/vite-plugin-angular`[^\n]*the project's own Angular compiler/,
@@ -279,6 +279,33 @@ test("the component preview skill shows how to mount an Angular component withou
     assert.match(output, /`provideZonelessChangeDetection\(\)`/);
     assert.match(output, /A component an NgModule declares \(`standalone: false`\): import that module's file, add `importProvidersFrom\(TheModule\)` to the providers/);
     assert.match(output, /Angular 16 and earlier are not supported, nor server-side rendering/);
+  } finally {
+    service.stop();
+  }
+});
+
+test("the component preview skill shows how to preview a Nuxt component", async () => {
+  const service = createUserInstructionConfigService({
+    skills: {
+      directories: resolvePluginSkillDirectoriesFromPaths([blameNativePluginPath()]),
+    },
+  });
+  try {
+    await service.start();
+    const executor = service.createSkillsExecutor?.();
+    assert.ok(executor);
+    const output = await executor("component-preview", "order summary", {} as never);
+    assert.match(output, /## Nuxt 3 and 4/);
+    assert.match(output, /import "~\/assets\/css\/main\.css" \/\/ the stylesheets of nuxt\.config's css field/);
+    assert.match(output, /import OrderSummary from "~\/components\/OrderSummary\.vue"/);
+    assert.match(output, /`components\/base\/Button\.vue` is `<BaseButton>`/);
+    assert.match(output, /`~\/` and `@\/` resolve to the `srcDir` \(`app\/` in Nuxt 4\)/);
+    assert.match(output, /`useRuntimeConfig\(\)` returns the `public` part of `runtimeConfig` in `nuxt\.config`/);
+    assert.match(
+      output,
+      /`useFetch`, `useAsyncData`, `\$fetch` and imports of `server\/` fail with a clear message[^\n]*pass made-up data/,
+    );
+    assert.match(output, /Nuxt 2 is not supported/);
   } finally {
     service.stop();
   }

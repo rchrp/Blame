@@ -73,8 +73,8 @@ export type ComponentPreviewLocation =
       host: ComponentPreviewHost;
       // Worktree-relative package directory, "" for the worktree root.
       packageDir: string;
-      // Blame's own Vite, for a React, Vue, Svelte or Angular package without a
-      // Vite config.
+      // Blame's own Vite, for a React, Vue, Nuxt, Svelte or Angular package
+      // without a Vite config.
       toolkit?: Pick<ComponentPreviewToolkit, "framework">;
     }
   | { message: string };
@@ -96,6 +96,7 @@ export type ComponentPreviewDependencies = {
 type RunningServer = Pick<
   ComponentPreviewServer,
   | "angular"
+  | "notes"
   | "origin"
   | "pageUrl"
   | "running"
@@ -380,7 +381,13 @@ function serverSummary(
       ? ", with shims for next/link, next/image, next/navigation and next/font"
       : framework === "react-native"
         ? ", with react-native resolved to react-native-web, .web.* files first and __DEV__ set"
-        : "";
+        : framework === "nuxt"
+          ? ", Nuxt's auto-imports and shims for <NuxtLink>, @nuxt/image, useRoute, useRouter, navigateTo, useHead, useRuntimeConfig and useState"
+          : "";
+  const applies =
+    framework === "nuxt"
+      ? "its nuxt.config and PostCSS config apply"
+      : "its PostCSS config and tsconfig or jsconfig paths apply";
   const vueCli =
     framework === "vue" ? " In a Vue CLI package, @/ resolves to src/." : "";
   const svelte =
@@ -388,11 +395,12 @@ function serverSummary(
       ? " The package's own Svelte compiles its components, with its svelte.config.* if it has one."
       : "";
   const angular = server.angular ? ` ${angularSummary(server.angular)}` : "";
+  const notes = server.notes?.length ? ` ${server.notes.join(" ")}` : "";
   const installed =
     started && server.toolkit.installed
       ? ` Blame installed this Vite first, once for this environment, in ${server.toolkit.directory}.`
       : "";
-  return `${verb} Blame's own Vite ${server.viteVersion} server with ${componentPreviewToolkitPlugin(framework).name}${shims}, ${where}: the package has no Vite config, so its PostCSS config and tsconfig or jsconfig paths apply.${vueCli}${svelte}${angular}${installed}`;
+  return `${verb} Blame's own Vite ${server.viteVersion} server with ${componentPreviewToolkitPlugin(framework).name}${shims}, ${where}: the package has no Vite config, so ${applies}.${vueCli}${svelte}${angular}${notes}${installed}`;
 }
 
 // What the Angular compiler compiles with, and how the page runs change

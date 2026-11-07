@@ -1,11 +1,11 @@
 ---
 name: component-preview
-description: Use after creating a UI component or changing how one renders, in a Vite, React, Vue 3, Svelte 5 or Angular project (Next.js, Vue CLI, SvelteKit and Angular CLI included) or a React Native one with react-native-web (an Expo app with web support), even when the app's preview is available. Shows the component on its own with made-up data, in its main states (default, empty, error, loading, long content), light and dark, desktop and mobile widths, rendered in one open_component_preview call whose screenshots go to finish_task. Not for checks a DOM read or a test already covers.
+description: Use after creating a UI component or changing how one renders, in a Vite, React, Vue 3, Svelte 5 or Angular project (Next.js, Vue CLI, Nuxt, SvelteKit and Angular CLI included) or a React Native one with react-native-web (an Expo app with web support), even when the app's preview is available. Shows the component on its own with made-up data, in its main states (default, empty, error, loading, long content), light and dark, desktop and mobile widths, rendered in one open_component_preview call whose screenshots go to finish_task. Not for checks a DOM read or a test already covers.
 ---
 
 # Component preview
 
-Show one component on its own, with props and data you make up, rendered by a temporary Vite server that `open_component_preview` starts for the session: with the package's own Vite config, a SvelteKit app's included, or with Blame's own Vite for a React, Vue 3, Svelte 5 or Angular package without one, such as a Next.js, Vue CLI, Rollup or Angular CLI app, and for a React Native package with `react-native-web`, such as an Expo app. You avoid sign-in, the backend and real data, and see every state that matters in one call. The story's own preview, if any, keeps running untouched.
+Show one component on its own, with props and data you make up, rendered by a temporary Vite server that `open_component_preview` starts for the session: with the package's own Vite config, a SvelteKit app's included, or with Blame's own Vite for a React, Vue 3, Svelte 5 or Angular package without one, such as a Next.js, Vue CLI, Nuxt, Rollup or Angular CLI app, and for a React Native package with `react-native-web`, such as an Expo app. You avoid sign-in, the backend and real data, and see every state that matters in one call. The story's own preview, if any, keeps running untouched.
 
 ## When to use it
 
@@ -81,6 +81,31 @@ export function mount(element: HTMLElement, state: string) {
 - The component's `<style>` and `<style scoped>` blocks apply, and so do the package's PostCSS or Tailwind config and the `paths` of its `tsconfig.json` or `jsconfig.json`. In a Vue CLI package, `@/` resolves to `src/`, as in its webpack config. `VUE_APP_*` variables of its `.env` files reach `process.env`.
 - Install what the component needs on the app before mounting, with fakes: `app.use(router)`, `app.use(createPinia())`, `app.provide(key, value)`.
 - Vue 2 is not supported: the tool says so. Check that component in the app instead.
+
+## Nuxt 3 and 4
+
+A package that depends on `nuxt` 3 or 4 is served by Blame's own Vite with `@vitejs/plugin-vue` and what Nuxt generates at build time, in this server only. Write the preview file as for Vue, next to the component, and import the stylesheets of `nuxt.config`'s `css` field: the tool's first line lists them.
+
+```ts
+import { createApp } from "vue"
+import "~/assets/css/main.css" // the stylesheets of nuxt.config's css field
+import OrderSummary from "~/components/OrderSummary.vue"
+
+const states: Record<string, Record<string, unknown>> = {
+  default: { customer: "Ada Lovelace", items: sampleItems },
+  empty: { customer: "Ada Lovelace", items: [] },
+}
+
+export function mount(element: HTMLElement, state: string) {
+  createApp(OrderSummary, states[state]).mount(element)
+}
+```
+
+- Auto-imports work as in Nuxt, in the preview file too: Vue's API (`ref`, `computed`, `watch`…), the exports of `composables/` and `utils/`, `#imports`, and the components of `components/` by their Nuxt names: `components/base/Button.vue` is `<BaseButton>`, a file of `components/global/` takes no prefix. `~/` and `@/` resolve to the `srcDir` (`app/` in Nuxt 4), `~~/` and `@@/` to the package.
+- Nuxt's own components and composables are small shims. `<NuxtLink>` renders its anchor and does not navigate; `<NuxtImg>` and `<NuxtPicture>` (with `@nuxt/image`) load their source from `public/`; `<ClientOnly>` renders its content. `useRoute()` returns `/` with no params: to show another route, set it before mounting, such as `Object.assign(useRoute().params, { id: "42" })`. `useRouter()` and `navigateTo()` do nothing, `useHead()` and `useSeoMeta()` have no effect, `useRuntimeConfig()` returns the `public` part of `runtimeConfig` in `nuxt.config`, and `useState()` shares one ref per key.
+- `useFetch`, `useAsyncData`, `$fetch` and imports of `server/` fail with a clear message, since the Nuxt server never runs: preview the component that receives the data through its props, and pass made-up data.
+- The PostCSS plugins, `vite` plugins (such as `@tailwindcss/vite`) and aliases of `nuxt.config` apply. Nuxt modules that generate code at build time, such as `@nuxtjs/i18n` or `@pinia/nuxt`, do not: install what the component needs on the app before mounting, as for Vue.
+- Nuxt 2 is not supported: the tool says so. Check that component in the app instead.
 
 ## SvelteKit and Svelte 5 packages
 

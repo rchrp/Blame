@@ -373,12 +373,12 @@ function registerDeliveryWorkflowIpcHandlers(
   });
 }
 
-// A session of a Vite, React, Vue 3, Svelte 5 or Angular project gets
-// open_component_preview, whatever its workspace: a managed preview, local
-// or cloud, the project folder, or no web service at all. Other projects,
-// such as an Ember, Vue 2 or Svelte 4 app, do not have it. Git ignores the
-// temporary preview files from the start; a cloud preview's sandbox ignores
-// them when its server starts.
+// A session of a Vite, React, Vue 3, Nuxt 3 or later, Svelte 5 or Angular
+// project gets open_component_preview, whatever its workspace: a managed
+// preview, local or cloud, the project folder, or no web service at all.
+// Other projects, such as an Ember, Vue 2, Nuxt 2 or Svelte 4 app, do not
+// have it. Git ignores the temporary preview files from the start; a cloud
+// preview's sandbox ignores them when its server starts.
 async function prepareComponentPreviews(
   input: Record<string, unknown>,
   workspace: string | undefined,
