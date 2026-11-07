@@ -1,4 +1,6 @@
 import Link from 'next/link'
+import { ArrowRight, ShieldAlert } from 'lucide-react'
+import { InstallCommand } from '@/components/install-command'
 import { SceneWarmup } from '@/components/scene-warmup'
 import { SiteHeader } from '@/components/site-header'
 import { HeroScene } from '@/app/scene/hero-scene'
@@ -12,9 +14,9 @@ import { loadLatestRelease } from './latest-release'
 import { artifactUrl, primaryArtifacts } from './artifacts'
 
 export const metadata = createIndexablePageMetadata({
-  title: 'Download Blame for macOS, Windows, and Linux',
+  title: 'Download Blame ADE for macOS, Windows, and Linux',
   description:
-    'Download the open-source Blame desktop app for macOS (Apple silicon and Intel), Windows x64, and Linux (AppImage, Debian, and RPM packages).',
+    'Download Blame ADE, free and open source, for macOS (Apple silicon and Intel), Windows x64, and Linux (AppImage, Debian, and RPM packages), or install it with Homebrew. No account needed.',
   canonicalPath: '/download',
 })
 
@@ -53,12 +55,13 @@ export default async function DownloadPage() {
               Download Blame.
             </h1>
             <p className="landing-reveal landing-reveal-copy mt-7 max-w-2xl text-balance text-base leading-7 text-white/76 sm:text-lg md:text-xl">
-              Install the desktop app and keep agent execution close to your
-              code: isolated worktrees, live previews, diffs, and controlled
-              merges on your machine.
+              Free and open source. No account needed: open the app, choose
+              Continue without an account, and your agents, worktrees, and
+              previews run on your machine.
             </p>
 
             <DownloadClientSection artifacts={artifacts} mode="actions" />
+            <CommandLineInstall />
           </div>
 
           <div
@@ -73,6 +76,7 @@ export default async function DownloadPage() {
                 </h2>
 
                 <DownloadClientSection artifacts={artifacts} mode="cards" />
+                <WindowsSigningNotice />
                 <OpenSourceNotice />
               </div>
             </div>
@@ -84,10 +88,90 @@ export default async function DownloadPage() {
   )
 }
 
-function OpenSourceNotice() {
-  const linkClassName =
-    'text-white/86 underline decoration-white/24 underline-offset-4 transition hover:text-white hover:decoration-white/60'
+const linkClassName =
+  'text-white/86 underline decoration-white/24 underline-offset-4 transition hover:text-white hover:decoration-white/60'
 
+// Homebrew and winget. The winget package (Blame.Blame) is waiting for
+// Microsoft's review: once it is published
+// (https://github.com/microsoft/winget-pkgs/pull/468422), drop its note.
+function CommandLineInstall() {
+  return (
+    <section
+      aria-labelledby="command-line-install-title"
+      className="landing-reveal landing-reveal-actions mt-10 max-w-xl"
+    >
+      <h2
+        id="command-line-install-title"
+        className="text-sm font-semibold text-white/86"
+      >
+        Or install from the command line
+      </h2>
+      <dl className="mt-4 grid gap-4">
+        <div>
+          <dt className="text-xs font-medium text-white/52">macOS · Homebrew</dt>
+          <dd className="mt-2">
+            <InstallCommand
+              platform="macOS"
+              command="brew install --cask rchrp/tap/blame"
+              showPlatform={false}
+            />
+          </dd>
+        </div>
+        <div>
+          <dt className="text-xs font-medium text-white/52">Windows · winget</dt>
+          <dd className="mt-2">
+            <InstallCommand
+              platform="Windows"
+              command="winget install Blame.Blame"
+              showPlatform={false}
+            />
+            <p className="mt-2 text-xs leading-5 text-white/48">
+              The winget package is in review. Until Microsoft publishes it,
+              use the installer.
+            </p>
+          </dd>
+        </div>
+        <div>
+          <dt className="text-xs font-medium text-white/52">Linux</dt>
+          <dd className="mt-2 text-sm leading-6 text-white/60">
+            Download the AppImage, or the Debian and RPM packages from the{' '}
+            <a className={linkClassName} href={githubReleasesUrl}>
+              releases page
+            </a>
+            . An AUR package is coming soon.
+          </dd>
+        </div>
+      </dl>
+      <Link
+        href="/docs/install"
+        className="group mt-6 inline-flex items-center gap-1.5 text-sm text-white/80 underline decoration-white/24 underline-offset-4 transition hover:text-white hover:decoration-white/60"
+      >
+        Install guide: requirements, checksums, and betas
+        <ArrowRight className="size-3.5 transition group-hover:translate-x-0.5" />
+      </Link>
+    </section>
+  )
+}
+
+function WindowsSigningNotice() {
+  return (
+    <p className="mt-5 flex gap-3 border-t border-white/12 pt-5 text-sm leading-6 text-white/60">
+      <ShieldAlert className="mt-1 size-4 shrink-0 text-white/80" />
+      <span>
+        The Windows installer is not code-signed yet, so SmartScreen may warn
+        you: choose <strong className="font-semibold text-white/86">More info</strong>, then{' '}
+        <strong className="font-semibold text-white/86">Run anyway</strong>. Signing
+        through SignPath Foundation is planned: see the{' '}
+        <Link className={linkClassName} href="/code-signing-policy">
+          code signing policy
+        </Link>
+        .
+      </span>
+    </p>
+  )
+}
+
+function OpenSourceNotice() {
   return (
     <p className="mt-5 flex gap-3 border-t border-white/12 pt-5 text-sm leading-6 text-white/60">
       <GitHubMark className="mt-1 size-4 shrink-0 text-white/80" />
