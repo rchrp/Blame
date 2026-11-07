@@ -28,6 +28,7 @@ import type {
   UserStoryDrawerMode
 } from "@/components/backlog/shared/backlog-types"
 import { drawerActions } from "@/components/backlog/drawer/user-story-drawer-helpers"
+import { useStoryTransitionKind } from "@/pages/backlog/story-transitions"
 import { Button } from "@/components/ui/button"
 import { Kbd } from "@/components/ui/kbd"
 import { modKeyLabel } from "@/lib/keyboard"
@@ -121,6 +122,10 @@ export function DrawerActions({
   status: BacklogColumnId
   story?: UserStory
 }) {
+  // A merge keeps spinning here when it started from the card, or before the
+  // drawer was closed and opened again.
+  const merging = useStoryTransitionKind(story?.id) === "merge"
+  const activeAction = loadingAction ?? (merging ? "Approve & Merge" : undefined)
   const actions = drawerActions(mode, status).map((action) => (
     <React.Fragment key={action}>
       {action === "Stop Agent" && story ? (
@@ -136,7 +141,7 @@ export function DrawerActions({
             action={action}
             icon={Trash2Icon}
             label="Discard"
-            loading={loadingAction === action}
+            loading={activeAction === action}
             onClick={() => onAction(action)}
           />
         ) : (
@@ -163,7 +168,7 @@ export function DrawerActions({
               ? approveActionLabel(story, reviewDiffEmpty)
               : undefined
           }
-          loading={loadingAction === action}
+          loading={activeAction === action}
           onClick={() => onAction(action)}
         />
       )}
@@ -176,13 +181,13 @@ export function DrawerActions({
     <div className="pointer-events-auto flex flex-wrap items-center justify-end gap-2">
       {requestChangesPrimary ? (
         <>
-          <ReviewActionsMenu disabled={Boolean(loadingAction)}>
+          <ReviewActionsMenu disabled={Boolean(activeAction)}>
             {actions}
           </ReviewActionsMenu>
           <DrawerActionButton
             action="Request Changes"
-            loading={loadingAction === "Request Changes"}
-            disabled={Boolean(loadingAction)}
+            loading={activeAction === "Request Changes"}
+            disabled={Boolean(activeAction)}
             onClick={() => onAction("Request Changes")}
           />
         </>

@@ -1,5 +1,8 @@
 import * as React from "react"
-import { useStoryInTransition } from "@/pages/backlog/story-transitions"
+import {
+  useStoryInTransition,
+  useStoryTransitionKind,
+} from "@/pages/backlog/story-transitions"
 import {
   CheckIcon,
   CircleStopIcon,
@@ -154,9 +157,12 @@ export function StoryAction({
   onUnpauseAgent?: (story: UserStory) => Promise<UserStory>
   story: UserStory
 }) {
-  const [loading, setLoading] = React.useState(false)
-  // Another action (pause, resume, comment) is already running on it.
+  const [clicked, setClicked] = React.useState(false)
+  // Another action (pause, resume, comment, merge) is already running on it.
   const busy = useStoryInTransition(story.id)
+  // A merge started from the drawer spins here too, even after navigating.
+  const merging = useStoryTransitionKind(story.id) === "merge"
+  const loading = clicked || (action === "Approve & Merge" && merging)
 
   if (action === "Stop Agent") {
     if (!onStopAgent) return null
@@ -221,18 +227,18 @@ export function StoryAction({
       await runAction(story, action)
       return
     }
-    setLoading(true)
+    setClicked(true)
     try {
       await runAction(story, action)
     } finally {
-      setLoading(false)
+      setClicked(false)
     }
   }
 
   return (
     <Button
       type="button"
-      disabled={loading}
+      disabled={loading || (action === "Approve & Merge" && busy)}
       size={buttonIconOnly ? "icon-sm" : "sm"}
       variant={actionStyle.variant}
       className={cn(

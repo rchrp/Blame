@@ -679,7 +679,7 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
     [backlog, platform]
   )
 
-  const approveAndMergeStory = React.useCallback(
+  const mergeApprovedStory = React.useCallback(
     async (story: UserStory) => {
       const validationError = approveAndMergeValidationError(
         story,
@@ -788,6 +788,13 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
       alternativeSelection.currentVariant,
       updateStory,
     ]
+  )
+  // One merge per story at a time, shown on its card and in its drawer alike.
+  const approveAndMergeStory = React.useCallback(
+    async (story: UserStory) =>
+      (await withStoryTransition(story.id, () => mergeApprovedStory(story), "merge")) ??
+      activeStory(story, storiesRef.current),
+    [mergeApprovedStory]
   )
   const { approveDirectStory, markReviewStoryDone } =
     useReviewCompletion(updateStory)
