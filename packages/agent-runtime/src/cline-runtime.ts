@@ -137,6 +137,7 @@ import {
   sessionLogPath,
   startLogPath,
 } from "./cline-runtime-log.js";
+import { runOneShotAgent } from "./one-shot-agent.js";
 import {
   buildDevelopmentSystemPrompt,
   clineDefaultSystemPrompt,
@@ -2660,16 +2661,15 @@ export class BlameAgentRuntime {
       const credential = await this.runtimeCredential(input);
       const cline = await this.core(input.backend);
       const session = await this.agentTelemetry.runOperation(
-        input,
-        "commit_message_generation",
+        input, "commit_message_generation",
         async () =>
-          cline.start({
+          runOneShotAgent(cline, {
             prompt: await commitMessagePrompt(input),
             config: commitMessageConfig(input, credential),
             interactive: false,
             source,
             toolPolicies: initializationToolPolicies(),
-          }),
+          }, input.backend),
         credential.authMethod,
       );
       const message = commitMessageFromAgentResult(session.result);
@@ -2808,16 +2808,15 @@ export class BlameAgentRuntime {
     const credential = await this.runtimeCredential(input);
     const cline = await this.core(input.backend);
     const session = await this.agentTelemetry.runOperation(
-      input,
-      "merge_conflict_resolution",
+      input, "merge_conflict_resolution",
       async () =>
-        cline.start({
+        runOneShotAgent(cline, {
           prompt: await mergeConflictPrompt(input, targetBranch, attempt),
           config: mergeConflictConfig(input, credential),
           interactive: false,
           source: "blame-merge-conflict-resolution",
           toolPolicies: mergeConflictToolPolicies(),
-        }),
+        }, input.backend),
       credential.authMethod,
     );
     await appendLog(logFile, "merge conflict agent run completed", {
@@ -2825,7 +2824,7 @@ export class BlameAgentRuntime {
       sessionId: session.sessionId,
       status: resultStatus(asRecord(session.result)),
     });
-    return resultFailureMessage(session.result);
+    return session.result === undefined ? "The merge conflict agent returned no result." : resultFailureMessage(session.result);
   }
 
   private async subscribeSession(
