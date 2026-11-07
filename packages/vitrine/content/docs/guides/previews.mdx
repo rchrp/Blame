@@ -9,7 +9,9 @@ Each story gets its own running copy of your app, with its own ports and service
 
 When you open a repository, a setup agent reads it and writes down how the project runs: the app, its services (PostgreSQL, Redis, workers, and so on), and how to start them. Each story then gets its own copy of that setup.
 
-This analysis runs by itself when a project has no setup yet. Its result is on the **Preview Environment** page, in the sidebar, which also has **Run again** and **Edit setup**. Until the setup is ready, only stories in Direct mode can start.
+The first time you open a project that has no setup yet, Blame asks before it runs this analysis, because the setup agent reads the repository with your AI provider. Choose **Set up previews** to start it, or **Not now** to open the project without it; Blame then does not ask again for that project until the app restarts. Check **Remember my choice** to stop being asked: the answer is saved, and you can change it in **Settings → General → When a project has no preview setup** (**Ask**, **Set up automatically**, or **Don't set up**).
+
+The analysis result is on the **Preview Environment** page, in the sidebar, which can always start it (**Analyze project**, then **Run again**) and has **Edit setup**. Until the setup is ready, only stories in Direct mode can start. A project created with **New Project** is set up as part of its creation, whatever this setting says.
 
 ## What it can preview
 
