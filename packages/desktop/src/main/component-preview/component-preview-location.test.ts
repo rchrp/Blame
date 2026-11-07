@@ -390,3 +390,86 @@ test("a Vue 3 project gets the tool, a Vue 2 project does not", async () => {
     await rm(worktree, { force: true, recursive: true });
   }
 });
+
+test("a Nuxt 3 or 4 package is served by Blame's own Vite with Nuxt's shims; a Nuxt 2 package is told it is not supported", async () => {
+  const worktree = await mkdtemp(join(tmpdir(), "blame-preview-nuxt-"));
+  try {
+    const shop = join(worktree, "apps/shop");
+    const legacy = join(worktree, "apps/legacy");
+    const ui = join(worktree, "packages/ui");
+    await mkdir(join(shop, "app/components"), { recursive: true });
+    await mkdir(join(legacy, "components"), { recursive: true });
+    await mkdir(join(ui, "src"), { recursive: true });
+    // Nuxt at the root, for the workspace's tooling.
+    await writeFile(
+      join(worktree, "package.json"),
+      '{ "private": true, "devDependencies": { "nuxt": "^4.2.0" } }',
+    );
+    // A Nuxt app with a React library is still a Nuxt app.
+    await writeFile(
+      join(shop, "package.json"),
+      '{ "dependencies": { "nuxt": "^4.2.0", "react": "19.0.0", "vue": "^3.5.0" } }',
+    );
+    await writeFile(
+      join(legacy, "package.json"),
+      '{ "dependencies": { "nuxt": "^2.17.3" } }',
+    );
+    await writeFile(join(ui, "package.json"), '{ "name": "ui" }');
+    await writeFile(join(shop, "app/components/card.blame-preview.ts"), "");
+    await writeFile(join(legacy, "components/card.blame-preview.ts"), "");
+    await writeFile(join(ui, "src/button.blame-preview.ts"), "");
+    const locate = (file: string) =>
+      locateComponentPreview({ workspaceMode: "direct", worktree }, file);
+
+    // Nuxt itself is never loaded: Vue is what must be installed.
+    assert.match(
+      (
+        (await locate("apps/shop/app/components/card.blame-preview.ts")) as {
+          message: string;
+        }
+      ).message,
+      /^Vue is not installed for apps\/shop in the story's workspace\. open_component_preview never installs the project's dependencies/u,
+    );
+    await mkdir(join(worktree, "node_modules/vue"), { recursive: true });
+    await writeFile(join(worktree, "node_modules/vue/package.json"), "{}");
+    const shopLocation = await locate(
+      "apps/shop/app/components/card.blame-preview.ts",
+    );
+    assert.ok("host" in shopLocation, JSON.stringify(shopLocation));
+    assert.equal(shopLocation.packageDir, "apps/shop");
+    assert.deepEqual(shopLocation.toolkit, { framework: "nuxt" });
+    // A package of a Nuxt workspace is no Nuxt app: plain Vue.
+    const uiLocation = await locate("packages/ui/src/button.blame-preview.ts");
+    assert.ok("host" in uiLocation, JSON.stringify(uiLocation));
+    assert.deepEqual(uiLocation.toolkit, { framework: "vue" });
+    assert.match(
+      (
+        (await locate("apps/legacy/components/card.blame-preview.ts")) as {
+          message: string;
+        }
+      ).message,
+      /^Nuxt 2 is not supported: apps\/legacy depends on Nuxt 2, which runs Vue 2\. open_component_preview renders the components of Nuxt 3 and 4 apps only\. Check this component in the app instead\.$/u,
+    );
+  } finally {
+    await rm(worktree, { force: true, recursive: true });
+  }
+});
+
+test("a Nuxt 3 or 4 project gets the tool, a Nuxt 2 project does not", async () => {
+  const worktree = await mkdtemp(join(tmpdir(), "blame-preview-nuxt-project-"));
+  const offered = async (nuxt: string) => {
+    await writeFile(
+      join(worktree, "package.json"),
+      JSON.stringify({ dependencies: { nuxt } }),
+    );
+    return hasComponentPreviewProject(worktree);
+  };
+  try {
+    assert.equal(await offered("^2.17.3"), false);
+    assert.equal(await offered("^3.17.0"), true);
+    assert.equal(await offered("^4.2.0"), true);
+    assert.equal(await offered("latest"), true);
+  } finally {
+    await rm(worktree, { force: true, recursive: true });
+  }
+});

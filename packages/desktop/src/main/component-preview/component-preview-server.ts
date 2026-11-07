@@ -24,7 +24,7 @@ export type ComponentPreviewServerStart = {
   // Worktree-relative package directory, "" for the worktree root.
   packageDir: string;
   signal?: AbortSignal;
-  // Blame's own Vite, for a React or Vue package without one.
+  // Blame's own Vite, for a React, Vue or Nuxt package without one.
   toolkit?: Pick<ComponentPreviewToolkit, "framework">;
 };
 
@@ -45,6 +45,9 @@ const outputTailCharacters = 4_000;
 const startAttempts = 2;
 
 export class ComponentPreviewServer {
+  // What the agent should know about this server, such as the stylesheets
+  // a Nuxt app's nuxt.config lists.
+  readonly notes?: readonly string[];
   readonly origin: string;
   // Set when the server runs Blame's own Vite.
   readonly toolkit?: { directory: string; installed: boolean };
@@ -54,12 +57,14 @@ export class ComponentPreviewServer {
   private ended = false;
 
   private constructor(input: {
+    notes?: string[];
     origin: string;
     serverProcess: ComponentPreviewProcess;
     token: string;
     toolkit?: { directory: string; installed: boolean };
     viteVersion: string;
   }) {
+    if (input.notes) this.notes = input.notes;
     this.origin = input.origin;
     this.serverProcess = input.serverProcess;
     this.token = input.token;
@@ -100,6 +105,7 @@ export class ComponentPreviewServer {
         const origin = `http://127.0.0.1:${port}`;
         await waitUntilReachable(origin, token, serverProcess, input.signal);
         return new ComponentPreviewServer({
+          ...(listening.notes ? { notes: listening.notes } : {}),
           origin,
           serverProcess,
           token,

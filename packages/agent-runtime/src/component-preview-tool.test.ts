@@ -285,6 +285,20 @@ test("the tool describes Vue 3 packages without Vite, with a short mount example
   );
 });
 
+test("the tool describes Nuxt packages: their auto-imports, the shims, and what replaces data fetching", () => {
+  const desktop = fakeDesktop(() => rendered(1));
+  const { description } = componentPreviewTool(desktop.options, preview)!;
+  assert.match(
+    description,
+    /A Nuxt 3 or 4 package gets it too, with Nuxt's auto-imports: Vue's API, composables\/ and utils\/, and the components of components\/ by their Nuxt names \(components\/base\/Button\.vue is <BaseButton>\); ~ and @ point to its srcDir \(app\/ in Nuxt 4\)/,
+  );
+  assert.match(
+    description,
+    /<NuxtLink>, <NuxtImg>, useRoute, useRouter, navigateTo, useHead, useRuntimeConfig and useState are small shims; useFetch, useAsyncData, \$fetch and imports of server\/ fail with a message: pass made-up data through props/,
+  );
+  assert.match(description, /Import the stylesheets of nuxt\.config's css field in the preview file/);
+});
+
 test("finishing removes the preview files, then stops the preview server", async () => {
   const root = await mkdtemp(join(tmpdir(), "blame-preview-finish-"));
   const git = async (cwd: string, args: string[]) =>

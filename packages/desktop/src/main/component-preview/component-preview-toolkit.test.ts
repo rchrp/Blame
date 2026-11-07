@@ -7,7 +7,7 @@ import { dirname, join } from "node:path";
 import test from "node:test";
 import { workspaceComponentPreviewHost } from "./component-preview-hosts.ts";
 import {
-  componentPreviewToolkitPlugin,
+  componentPreviewToolkitFolder,
   componentPreviewToolkitVersions,
   type ComponentPreviewToolkit,
 } from "./component-preview-server-script.ts";
@@ -17,10 +17,11 @@ import {
   type ComponentPreviewPage,
 } from "./component-preview-service.ts";
 
-// A small Next.js App Router project and a small Vue CLI project, without
-// Vite, rendered by the real temporary server with Blame's own Vite and
-// @vitejs/plugin-react or @vitejs/plugin-vue. The browser is replaced by
-// requests for the page and the modules it loads.
+// A small Next.js App Router project, a small Vue CLI project and a small
+// Nuxt 4 project, without Vite, rendered by the real temporary server with
+// Blame's own Vite and @vitejs/plugin-react or @vitejs/plugin-vue, with
+// unimport for Nuxt. The browser is replaced by requests for the page and
+// the modules it loads.
 
 const png = Buffer.from(
   "89504e470d0a1a0a0000000d4948445200000001000000010806000000" +
@@ -33,9 +34,9 @@ test(
   "Blame's own Vite and its plugins are the versions Blame's packages use",
   {
     skip:
-      dependencies.next && dependencies.vue
+      dependencies.next && dependencies.vue && dependencies.nuxt
         ? false
-        : "Vite, @vitejs/plugin-react or @vitejs/plugin-vue is not installed for the desktop tests.",
+        : "Vite, @vitejs/plugin-react, @vitejs/plugin-vue or unimport is not installed for the desktop tests.",
   },
   () => {
     assert.deepEqual(
@@ -46,6 +47,7 @@ test(
         pluginVue: packageVersion(
           dependencies.vue!.toolkit["@vitejs/plugin-vue"]!,
         ),
+        unimport: packageVersion(dependencies.nuxt!.toolkit.unimport!),
         vite: packageVersion(dependencies.next!.toolkit.vite!),
       },
       componentPreviewToolkitVersions,
@@ -347,6 +349,204 @@ test(
         /createApp\(Component, props\)\.mount\(element\)/u,
       );
       assert.doesNotMatch(entryCode, /react-dom/u);
+      assert.equal(await service.stop({ worktree }), 1);
+    } finally {
+      await service?.shutdown();
+      await rm(worktree, { force: true, recursive: true });
+      await rm(toolkitRoot, { force: true, recursive: true });
+    }
+  },
+);
+
+test(
+  "a Nuxt component renders with Blame's Vite: auto-imports, components by their Nuxt names, the Nuxt shims and Tailwind from nuxt.config",
+  {
+    skip: dependencies.nuxt
+      ? false
+      : "Vite, @vitejs/plugin-vue, unimport, Vue or Tailwind is not installed for the desktop tests.",
+    timeout: 120_000,
+  },
+  async () => {
+    const worktree = await mkdtemp(
+      join(tmpdir(), "blame-component-preview-nuxt-"),
+    );
+    const toolkitRoot = await mkdtemp(
+      join(tmpdir(), "blame-component-preview-toolkit-"),
+    );
+    const responses = new Map<string, string>();
+    let service: ComponentPreviewService | undefined;
+    try {
+      await writeNuxtFixture(worktree);
+      const toolkitDirectory = await linkToolkit(
+        toolkitRoot,
+        "nuxt",
+        dependencies.nuxt!.toolkit,
+      );
+      const page = new FetchingPage(async (url) => {
+        const get = async (path: string) => {
+          const response = await fetch(new URL(path, url));
+          const body = await response.text();
+          assert.equal(response.status, 200, `${path}: ${body.slice(0, 600)}`);
+          responses.set(path, body);
+          return body;
+        };
+        const html = await get(new URL(url).pathname + new URL(url).search);
+        assert.match(html, /virtual:blame-component-preview/u);
+        // The preview file and every module it loads: components,
+        // composables, utils and shims.
+        const pending = [`/${new URL(url).searchParams.get("file")!}`];
+        for (let path = pending.shift(); path; path = pending.shift())
+          if (!responses.has(path))
+            pending.push(...importedPaths(await get(path)));
+        return true;
+      });
+      service = new ComponentPreviewService({
+        browser: async () => ({ openPage: async () => page }),
+        locate: async () => ({
+          host: workspaceComponentPreviewHost(worktree, undefined, toolkitRoot),
+          packageDir: "",
+          toolkit: { framework: "nuxt" },
+        }),
+        storeScreenshots: async (result) => ({
+          ...(result as object),
+          _meta: { blameScreenshots: [{ id: "3".repeat(64) }] },
+        }),
+      });
+      const result = (await service.render({
+        request: { file: "app/components/profile.blame-preview.ts" },
+        worktree,
+      })) as {
+        content: Array<{ text?: string; type: string }>;
+        isError?: boolean;
+      };
+      assert.equal(result.isError, undefined, JSON.stringify(result.content));
+      assert.match(
+        result.content[0]!.text!,
+        /^Started Blame's own Vite 8\.\d+\.\d+ server with @vitejs\/plugin-vue, Nuxt's auto-imports and shims for <NuxtLink>, @nuxt\/image, useRoute, useRouter, navigateTo, useHead, useRuntimeConfig and useState, in the story's workspace for the worktree root, at http:\/\/127\.0\.0\.1:\d+: the package has no Vite config, so its nuxt\.config and PostCSS config apply\. ~\/ and @\/ resolve to app\/\. Its nuxt\.config's css field lists ~\/assets\/css\/main\.css: import it in the preview file\. 1 render of app\/components\/profile\.blame-preview\.ts:$/u,
+      );
+
+      // ~ resolves to Nuxt 4's srcDir, app/; Vue comes from the project,
+      // bundled up front.
+      const preview = responses.get(
+        "/app/components/profile.blame-preview.ts",
+      )!;
+      assert.match(preview, /from "\/app\/components\/ProfileCard\.vue"/u);
+      assert.match(preview, /import "\/app\/assets\/css\/main\.css"/u);
+      assert.match(preview, /\.vite-blame-preview-[0-9a-f]+\/deps\/vue\.js/u);
+
+      // Nothing is imported in ProfileCard.vue: Vue's API and the Nuxt
+      // composables come from the shims, useGreeting from composables/,
+      // formatPrice (in the template) from utils/, and the components by
+      // their Nuxt names: base/Button.vue is <BaseButton>, global/ files
+      // take no prefix. Nuxt's flags are constants in the browser.
+      const card = responses.get("/app/components/ProfileCard.vue")!;
+      assert.doesNotMatch(card, /resolveComponent\("/u);
+      for (const source of [
+        "/@id/__x00__blame-nuxt:app",
+        "/@id/__x00__blame-nuxt:components",
+        "/app/components/base/Button.vue",
+        "/app/components/global/StatusBadge.vue",
+        "/app/composables/useGreeting.ts",
+        "/app/utils/format.ts",
+      ])
+        assert.ok(
+          card.includes(`from "${source}"`),
+          `${source} is not imported:\n${card}`,
+        );
+      assert.match(card, /\{ NuxtLink as __blame_nuxt_component_\d+ \}/u);
+      assert.match(card, /\{ NuxtImg as __blame_nuxt_component_\d+ \}/u);
+      for (const name of ["useRoute", "useRuntimeConfig", "useState"])
+        assert.match(
+          card,
+          new RegExp(
+            `import \\{[^}]*\\b${name}\\b[^}]*\\} from "/@id/__x00__blame-nuxt:app"`,
+            "u",
+          ),
+        );
+      assert.doesNotMatch(card, /import\.meta\.client/u);
+      // An explicit #imports import gets its real source.
+      const button = responses.get("/app/components/base/Button.vue")!;
+      assert.doesNotMatch(button, /#imports/u);
+      assert.match(button, /\.vite-blame-preview-[0-9a-f]+\/deps\/vue\.js/u);
+      // Nuxt's tsconfig.json references .nuxt/, which nuxi has not written:
+      // Blame's stands in for it, and TypeScript modules still compile.
+      // Vue's API is auto-imported in composables too.
+      const greeting = responses.get("/app/composables/useGreeting.ts")!;
+      assert.match(greeting, /export function useGreeting\(name\)/u);
+      assert.match(
+        greeting,
+        /import \{ computed \} from "\/node_modules\/\.vite-blame-preview-[0-9a-f]+\/deps\/vue\.js/u,
+      );
+      assert.equal(
+        existsSync(join(toolkitDirectory, "nuxt-tsconfig.json")),
+        true,
+      );
+
+      // The shims: useRuntimeConfig() has the public part of nuxt.config's
+      // runtimeConfig only; useFetch and $fetch say what to do instead.
+      const app = responses.get("/@id/__x00__blame-nuxt:app")!;
+      for (const name of [
+        "useRoute",
+        "useRouter",
+        "navigateTo",
+        "useHead",
+        "useSeoMeta",
+        "useRuntimeConfig",
+        "useState",
+        "useFetch",
+        "useAsyncData",
+        "$fetch",
+      ])
+        assert.ok(
+          app.includes(`export function ${name}(`) ||
+            app.includes(`export const ${name} =`),
+          `${name} is not shimmed:\n${app}`,
+        );
+      assert.match(app, /"siteName":"Fixture shop"/u);
+      assert.doesNotMatch(app, /never-in-the-page/u);
+      assert.match(
+        app,
+        /fetches data from the Nuxt server, which open_component_preview does not run: " \+ "pass made-up data to the component through its props instead\."/u,
+      );
+      const components = responses.get("/@id/__x00__blame-nuxt:components")!;
+      assert.match(components, /export const NuxtLink = /u);
+      assert.match(components, /h\("a", /u);
+      assert.match(components, /export const NuxtImg = /u);
+      assert.match(
+        components,
+        /\.vite-blame-preview-[0-9a-f]+\/deps\/vue\.js/u,
+      );
+
+      // A component that fetches its data imports useFetch from the shims;
+      // one that imports server/ fails with a clear message.
+      const orders = await (
+        await fetch(new URL("/app/components/OrderList.vue", page.origin))
+      ).text();
+      assert.match(
+        orders,
+        /import \{[^}]*\buseFetch\b[^}]*\} from "\/@id\/__x00__blame-nuxt:app"/u,
+      );
+      const admin = await (
+        await fetch(new URL("/app/components/AdminStats.vue", page.origin))
+      ).text();
+      const serverImport = /"(\/@id\/__x00__blame-nuxt:server:\d+)"/u.exec(
+        admin,
+      )?.[1];
+      assert.ok(serverImport, admin);
+      assert.match(
+        await (await fetch(new URL(serverImport, page.origin))).text(),
+        /throw new Error\("app\/components\/AdminStats\.vue imports server\/utils\/stats, which is part of the Nuxt server and never runs in the browser: pass made-up data to the component through its props instead\."\)/u,
+      );
+
+      // Tailwind runs through the PostCSS plugins of nuxt.config, on the
+      // .vue files of app/; images come from public/.
+      const css = await (
+        await fetch(new URL("/app/assets/css/main.css?direct", page.origin))
+      ).text();
+      assert.match(css, /\.bg-emerald-600\s*\{/u);
+      assert.match(css, /\.rounded-xl\s*\{/u);
+      const avatar = await fetch(new URL("/avatar.png", page.origin));
+      assert.equal(avatar.status, 200);
       assert.equal(await service.stop({ worktree }), 1);
     } finally {
       await service?.shutdown();
@@ -716,6 +916,163 @@ async function writeVueCliFixture(worktree: string) {
   await linkProjectDependencies(worktree, dependencies.vue!.project);
 }
 
+// A Nuxt 4 app as create-nuxt writes it, before nuxi prepare: no .nuxt/,
+// so its tsconfig.json references files that do not exist yet. Its
+// components use auto-imports only; Tailwind comes from the PostCSS plugins
+// of nuxt.config. Nuxt itself is not installed: the preview never loads it.
+async function writeNuxtFixture(worktree: string) {
+  const files: Record<string, string> = {
+    "package.json": JSON.stringify({
+      name: "nuxt-fixture",
+      private: true,
+      type: "module",
+      scripts: { dev: "nuxt dev" },
+      dependencies: {
+        "@nuxt/image": "^1.11.0",
+        nuxt: "^4.2.0",
+        vue: "^3.5.45",
+        "vue-router": "^4.6.3",
+      },
+      devDependencies: {
+        "@tailwindcss/postcss": "4.3.3",
+        tailwindcss: "4.3.3",
+      },
+    }),
+    "tsconfig.json": JSON.stringify({
+      files: [],
+      references: [
+        { path: "./.nuxt/tsconfig.app.json" },
+        { path: "./.nuxt/tsconfig.server.json" },
+        { path: "./.nuxt/tsconfig.shared.json" },
+        { path: "./.nuxt/tsconfig.node.json" },
+      ],
+    }),
+    "nuxt.config.ts": [
+      "export default defineNuxtConfig({",
+      '  compatibilityDate: "2026-11-01",',
+      '  modules: ["@nuxt/image"],',
+      '  css: ["~/assets/css/main.css"],',
+      '  postcss: { plugins: { "@tailwindcss/postcss": {} } },',
+      "  runtimeConfig: {",
+      '    apiSecret: "never-in-the-page",',
+      '    public: { siteName: "Fixture shop" },',
+      "  },",
+      "});",
+      "",
+    ].join("\n"),
+    "app/app.vue": "<template><NuxtPage /></template>\n",
+    "app/assets/css/main.css": '@import "tailwindcss";\n',
+    "app/composables/useGreeting.ts": [
+      "export function useGreeting(name: string) {",
+      '  return computed(() => "Hello, " + name);',
+      "}",
+      "",
+    ].join("\n"),
+    "app/utils/format.ts": [
+      "export function formatPrice(cents: number): string {",
+      '  return (cents / 100).toFixed(2) + " €";',
+      "}",
+      "",
+    ].join("\n"),
+    "app/components/base/Button.vue": [
+      "<template>",
+      '  <NuxtLink :to="href" class="base-button rounded-full bg-white px-3 py-1 text-emerald-700"><slot /></NuxtLink>',
+      "</template>",
+      "",
+      '<script setup lang="ts">',
+      'import { computed } from "#imports";',
+      "",
+      "const props = defineProps<{ to: string }>();",
+      "const href = computed(() => props.to);",
+      "</script>",
+      "",
+      "<style scoped>",
+      ".base-button {",
+      "  letter-spacing: 0.05em;",
+      "}",
+      "</style>",
+      "",
+    ].join("\n"),
+    "app/components/global/StatusBadge.vue": [
+      "<template>",
+      '  <span class="rounded-full bg-white/20 px-2 text-xs">{{ label }}</span>',
+      "</template>",
+      "",
+      "<script setup>",
+      "defineProps({ label: String });",
+      "</script>",
+      "",
+    ].join("\n"),
+    "app/components/ProfileCard.vue": [
+      "<template>",
+      '  <section class="rounded-xl bg-emerald-600 p-6 text-white">',
+      '    <NuxtImg src="/avatar.png" width="48" height="48" alt="" />',
+      '    <h2 class="text-2xl font-bold">{{ greeting }}</h2>',
+      "    <p>{{ config.public.siteName }} · {{ route.path }} · {{ formatPrice(totalCents) }} · {{ visits }}</p>",
+      '    <StatusBadge :label="status" />',
+      "    <NuxtLink :to=\"{ path: '/orders', query: { tab: 'open' } }\" class=\"underline\">Orders</NuxtLink>",
+      '    <BaseButton to="/settings">Settings</BaseButton>',
+      '    <p v-if="client">Rendered in the browser</p>',
+      "  </section>",
+      "</template>",
+      "",
+      '<script setup lang="ts">',
+      "const props = defineProps<{ name: string; status: string; totalCents: number }>();",
+      "const route = useRoute();",
+      "const config = useRuntimeConfig();",
+      'const visits = useState("visits", () => 3);',
+      "const greeting = useGreeting(props.name);",
+      "const client = import.meta.client;",
+      "</script>",
+      "",
+    ].join("\n"),
+    "app/components/OrderList.vue": [
+      "<template>",
+      '  <ul><li v-for="order in data" :key="order.id">{{ order.id }}</li></ul>',
+      "</template>",
+      "",
+      "<script setup>",
+      'const { data } = await useFetch("/api/orders");',
+      "</script>",
+      "",
+    ].join("\n"),
+    "app/components/AdminStats.vue": [
+      "<template>",
+      "  <p>{{ stats.orders }}</p>",
+      "</template>",
+      "",
+      "<script setup>",
+      'import { stats } from "~~/server/utils/stats";',
+      "</script>",
+      "",
+    ].join("\n"),
+    "server/utils/stats.ts": "export const stats = { orders: 12 };\n",
+    // Next to the component, where the agent writes it: Nuxt's scanner
+    // never takes it for a component.
+    "app/components/profile.blame-preview.ts": [
+      'import { createApp } from "vue";',
+      'import "~/assets/css/main.css";',
+      'import ProfileCard from "~/components/ProfileCard.vue";',
+      "",
+      "const states: Record<string, Record<string, unknown>> = {",
+      '  default: { name: "Ada Lovelace", status: "Active", totalCents: 4200 },',
+      "};",
+      "",
+      "export function mount(element: HTMLElement, state: string) {",
+      "  createApp(ProfileCard, states[state]).mount(element);",
+      "}",
+      "",
+    ].join("\n"),
+  };
+  for (const [path, content] of Object.entries(files)) {
+    await mkdir(dirname(join(worktree, path)), { recursive: true });
+    await writeFile(join(worktree, path), content);
+  }
+  await mkdir(join(worktree, "public"), { recursive: true });
+  await writeFile(join(worktree, "public/avatar.png"), png);
+  await linkProjectDependencies(worktree, dependencies.nuxt!.project);
+}
+
 async function linkProjectDependencies(
   worktree: string,
   project: Record<string, string>,
@@ -728,7 +1085,8 @@ async function linkProjectDependencies(
   }
 }
 
-// Blame's own Vite, as the server would have installed it.
+// Blame's own Vite, as the server would have installed it. Returns its
+// folder.
 async function linkToolkit(
   root: string,
   framework: ComponentPreviewToolkit["framework"],
@@ -748,10 +1106,9 @@ async function linkToolkit(
       : header?.glibcVersionRuntime
         ? "-gnu"
         : "-musl";
-  const plugin = componentPreviewToolkitPlugin(framework);
   const directory = join(
     root,
-    `vite-${componentPreviewToolkitVersions.vite}-${plugin.name.replace("@vitejs/", "")}-${plugin.version}-${process.platform}-${process.arch}${libc}`,
+    `${componentPreviewToolkitFolder(framework)}-${process.platform}-${process.arch}${libc}`,
   );
   for (const [name, source] of Object.entries(toolkit)) {
     await mkdir(dirname(join(directory, "node_modules", name)), {
@@ -759,6 +1116,7 @@ async function linkToolkit(
     });
     await symlink(source, join(directory, "node_modules", name), "dir");
   }
+  return directory;
 }
 
 function packageVersion(directory: string) {
@@ -775,7 +1133,7 @@ type FixtureDependencies = {
   toolkit: Record<string, string>;
 };
 
-// Vite, @vitejs/plugin-vue and Vue from the desktop package,
+// Vite, @vitejs/plugin-vue, unimport and Vue from the desktop package,
 // @vitejs/plugin-react and React from the app package, Next.js and
 // Tailwind from the vitrine package. A fixture whose packages are not all
 // installed is skipped.
@@ -809,6 +1167,14 @@ function resolveDependencies() {
       { ...tailwind, vue: installed("desktop", "vue") },
       {
         "@vitejs/plugin-vue": installed("desktop", "@vitejs/plugin-vue"),
+        vite,
+      },
+    ),
+    nuxt: fixtureDependencies(
+      { ...tailwind, vue: installed("desktop", "vue") },
+      {
+        "@vitejs/plugin-vue": installed("desktop", "@vitejs/plugin-vue"),
+        unimport: installed("desktop", "unimport"),
         vite,
       },
     ),

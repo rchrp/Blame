@@ -71,6 +71,7 @@
     "electron-builder": "^26.18.0",
     "electron-vite": "^6.0.0",
     "typescript": "npm:@typescript/typescript6@6.0.2",
+    "unimport": "7.0.2",
     "vite": "^8.3.5",
     "vue": "3.5.45"
   }

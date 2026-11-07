@@ -25,8 +25,8 @@ import type {
 // there, otherwise the container of a local preview, whose node_modules
 // live in volumes. A cloud preview's dependencies are in its sandbox: the
 // server runs there. A package with a Vite config is served by its own
-// Vite; a React or Vue 3 package without one, such as a Next.js or Vue CLI
-// app, by Blame's.
+// Vite; a React or Vue 3 package without one, such as a Next.js, Vue CLI
+// or Nuxt app, by Blame's.
 
 // The host in the story's cloud preview sandbox, or why there is none.
 export type CloudComponentPreviewLocator = (
@@ -34,8 +34,15 @@ export type CloudComponentPreviewLocator = (
 ) => Promise<ComponentPreviewHost | { message: string }>;
 
 // What a package.json declares: a framework Blame's own Vite renders, or
-// Vue 2, which it does not.
-type DeclaredFramework = ComponentPreviewToolkit["framework"] | "vue2";
+// Vue 2 or Nuxt 2, which it does not.
+type DeclaredFramework =
+  ComponentPreviewToolkit["framework"] | "nuxt2" | "vue2";
+
+// A framework declared by a workspace root rather than by the package
+// itself: the Next.js and Nuxt shims only apply to the app itself.
+const inheritedFrameworks: Partial<
+  Record<DeclaredFramework, DeclaredFramework>
+> = { next: "react", nuxt: "vue", nuxt2: "vue2" };
 
 export const viteConfigNames = [
   "vite.config.ts",
@@ -85,9 +92,13 @@ export async function locateComponentPreview(
     return {
       message: `Vue 2 is not supported: ${label} depends on Vue 2 and has no vite.config.* file. Without one, open_component_preview renders React components and Vue 3 components (vue 3.2.25 or later) only. Check this component in the app instead.`,
     };
+  if (framework === "nuxt2")
+    return {
+      message: `Nuxt 2 is not supported: ${label} depends on Nuxt 2, which runs Vue 2. open_component_preview renders the components of Nuxt 3 and 4 apps only. Check this component in the app instead.`,
+    };
   if (!projectVite && !framework)
     return {
-      message: `${label} has no vite.config.* file and does not depend on React or Vue 3: open_component_preview renders files of a Vite package, or of a React or Vue 3 package such as a Next.js or Vue CLI app. Put the preview file in the package of the component.`,
+      message: `${label} has no vite.config.* file and does not depend on React or Vue 3: open_component_preview renders files of a Vite package, or of a React or Vue 3 package such as a Next.js, Nuxt or Vue CLI app. Put the preview file in the package of the component.`,
     };
   const toolkit = framework ? { toolkit: { framework } } : {};
   if (target.workspaceMode === "cloud-mirror") {
@@ -99,14 +110,12 @@ export async function locateComponentPreview(
         };
     return "message" in host ? host : { host, packageDir, ...toolkit };
   }
-  const dependency = projectVite
-    ? "Vite"
-    : framework === "vue"
-      ? "Vue"
-      : "React";
+  // Nuxt itself is never loaded: its components need Vue.
+  const vue = framework === "vue" || framework === "nuxt";
+  const dependency = projectVite ? "Vite" : vue ? "Vue" : "React";
   const required = projectVite
     ? ["vite"]
-    : framework === "vue"
+    : vue
       ? ["vue"]
       : ["react", "react-dom"];
   if (await installed(worktree, packageDir, required))
@@ -139,8 +148,9 @@ export async function locateComponentPreview(
 }
 
 // Whether the project has a package the tool renders: one with a Vite
-// config, or one that depends on React or Vue 3. Sessions of other
-// projects, such as an Angular or Vue 2 app, are not offered the tool.
+// config, or one that depends on React, Vue 3 or Nuxt 3 or later. Sessions
+// of other projects, such as an Angular, Vue 2 or Nuxt 2 app, are not
+// offered the tool.
 export async function hasComponentPreviewProject(worktree: string) {
   const markers = runtimeManagedPath(worktree)
     ? await projectMarkersInRuntime(worktree)
@@ -151,7 +161,9 @@ export async function hasComponentPreviewProject(worktree: string) {
   );
   return Object.values(manifests).some((text) => {
     const framework = declaredFramework(manifestDependencies(text));
-    return framework !== undefined && framework !== "vue2";
+    return (
+      framework !== undefined && framework !== "vue2" && framework !== "nuxt2"
+    );
   });
 }
 
@@ -224,8 +236,7 @@ async function projectMarkersInRuntime(
 }
 
 // The framework of the closest package.json that declares one: the
-// package's own, else its workspace root's. The Next.js shims only apply
-// to the Next.js app itself.
+// package's own, else its workspace root's.
 async function toolkitFramework(
   worktree: string,
   packageDir: string,
@@ -237,7 +248,9 @@ async function toolkitFramework(
   for (const [index, path] of paths.entries()) {
     const framework = declaredFramework(manifestDependencies(files[path]));
     if (framework)
-      return framework === "next" && index > 0 ? "react" : framework;
+      return index > 0
+        ? (inheritedFrameworks[framework] ?? framework)
+        : framework;
   }
   return undefined;
 }
@@ -264,22 +277,25 @@ function manifestDependencies(text: string | null | undefined) {
   return dependencies;
 }
 
-// React wins over Vue in a package that declares both, as before Vue was
-// supported.
+// Nuxt names its app whatever else it declares. React wins over Vue in a
+// package that declares both, as before Vue was supported.
 function declaredFramework(
   dependencies: Map<string, string>,
 ): DeclaredFramework | undefined {
+  const nuxt = dependencies.get("nuxt");
+  if (nuxt !== undefined) return belowMajorThree(nuxt) ? "nuxt2" : "nuxt";
   if (dependencies.has("next")) return "next";
   if (dependencies.has("react")) return "react";
   const vue = dependencies.get("vue");
   if (vue === undefined) return undefined;
-  return vue2Range(vue) ? "vue2" : "vue";
+  return belowMajorThree(vue) ? "vue2" : "vue";
 }
 
-// Whether every alternative of a range stays below Vue 3, such as "^2.7.16"
-// or "~2.6.14 || 2.7.x". A tag, an alias or a workspace range counts as Vue
-// 3: the server checks the installed version before it compiles anything.
-function vue2Range(range: string) {
+// Whether every alternative of a Vue or Nuxt range stays below 3, such as
+// "^2.7.16" or "~2.6.14 || 2.7.x". A tag, an alias or a workspace range
+// counts as 3 or later: the server checks the installed Vue before it
+// compiles anything.
+function belowMajorThree(range: string) {
   return range
     .split("||")
     .map((alternative) => /^\s*[\^~>=v\s]*(\d+)/u.exec(alternative)?.[1])

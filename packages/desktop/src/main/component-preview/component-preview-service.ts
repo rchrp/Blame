@@ -9,7 +9,7 @@ import {
 import type { ScreenshotCaptureContext } from "../agent-screenshots/agent-screenshot-capture.ts";
 import type { ComponentPreviewHost } from "./component-preview-hosts.ts";
 import {
-  componentPreviewToolkitPlugin,
+  componentPreviewToolkitPackages,
   type ComponentPreviewToolkit,
 } from "./component-preview-server-script.ts";
 import type {
@@ -72,7 +72,8 @@ export type ComponentPreviewLocation =
       host: ComponentPreviewHost;
       // Worktree-relative package directory, "" for the worktree root.
       packageDir: string;
-      // Blame's own Vite, for a React or Vue package without a Vite config.
+      // Blame's own Vite, for a React, Vue or Nuxt package without a Vite
+      // config.
       toolkit?: Pick<ComponentPreviewToolkit, "framework">;
     }
   | { message: string };
@@ -93,7 +94,13 @@ export type ComponentPreviewDependencies = {
 
 type RunningServer = Pick<
   ComponentPreviewServer,
-  "origin" | "pageUrl" | "running" | "stop" | "toolkit" | "viteVersion"
+  | "notes"
+  | "origin"
+  | "pageUrl"
+  | "running"
+  | "stop"
+  | "toolkit"
+  | "viteVersion"
 >;
 
 type Running = {
@@ -370,14 +377,21 @@ function serverSummary(
   const shims =
     framework === "next"
       ? ", with shims for next/link, next/image, next/navigation and next/font"
-      : "";
+      : framework === "nuxt"
+        ? ", Nuxt's auto-imports and shims for <NuxtLink>, @nuxt/image, useRoute, useRouter, navigateTo, useHead, useRuntimeConfig and useState"
+        : "";
+  const applies =
+    framework === "nuxt"
+      ? "its nuxt.config and PostCSS config apply"
+      : "its PostCSS config and tsconfig or jsconfig paths apply";
   const vueCli =
     framework === "vue" ? " In a Vue CLI package, @/ resolves to src/." : "";
+  const notes = server.notes?.length ? ` ${server.notes.join(" ")}` : "";
   const installed =
     started && server.toolkit.installed
       ? ` Blame installed this Vite first, once for this environment, in ${server.toolkit.directory}.`
       : "";
-  return `${verb} Blame's own Vite ${server.viteVersion} server with ${componentPreviewToolkitPlugin(framework).name}${shims}, ${where}: the package has no Vite config, so its PostCSS config and tsconfig or jsconfig paths apply.${vueCli}${installed}`;
+  return `${verb} Blame's own Vite ${server.viteVersion} server with ${componentPreviewToolkitPackages(framework)[0]!.name}${shims}, ${where}: the package has no Vite config, so ${applies}.${vueCli}${notes}${installed}`;
 }
 
 function errorMessage(error: unknown) {
