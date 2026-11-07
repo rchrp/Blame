@@ -2307,6 +2307,52 @@ test("renders the compact native Cline development prompt", async () => {
   assert.doesNotMatch(prompt, /CLINE_RULES|CLINE_METADATA/);
 });
 
+test("asks development and plan agents to apply the Pareto principle", async () => {
+  const base = {
+    apiConnection: { token: "token", url: "https://example.com" },
+    cwd: process.cwd(),
+    modelId: "model",
+    providerId: "provider",
+    summary: "Summary",
+    title: "Title",
+    workspaceRoot: process.cwd(),
+  };
+  const development = await buildDevelopmentSystemPrompt({
+    ...base,
+    purpose: "development",
+  });
+  assert.match(
+    development,
+    /Apply the Pareto principle: it decides how you work, never what you deliver/,
+  );
+  assert.match(
+    development,
+    /Do not spend effort on work that does not change the outcome \(speculative code, unrequested options\); this never applies to understanding the problem, researching, or verifying your work\./,
+  );
+  assert.match(
+    development,
+    /Explicit requests and acceptance criteria are delivered in full/,
+  );
+  assert.match(development, /Choose the simplest solution that fully meets the request/);
+  assert.match(
+    development,
+    /Mention an improvement outside the request in your final reply or propose it as a story rather than making it/,
+  );
+  assert.doesNotMatch(development, /20%|80%|instead of doing it/);
+
+  const plan = await buildDevelopmentSystemPrompt({ ...base, purpose: "plan" });
+  assert.match(plan, /Apply the Pareto principle to the plan/);
+  assert.match(plan, /slice that delivers most of the value/);
+  assert.match(plan, /Never remove or defer an acceptance criterion on your own/);
+  assert.doesNotMatch(plan, /20%|80%|least effort|instead of planning/);
+
+  const newProject = await buildDevelopmentSystemPrompt({
+    ...base,
+    purpose: "new-project",
+  });
+  assert.doesNotMatch(newProject, /Pareto/);
+});
+
 test("enables specialists for interactive or explicit one-shot requests", () => {
   const base = { summary: "Update the API", title: "API change" };
   assert.equal(developmentSpecialistConsultEnabled(base), false);

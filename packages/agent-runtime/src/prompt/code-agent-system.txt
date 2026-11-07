@@ -21,6 +21,8 @@ Inspect source with `search_code` (text, regex, file lists, context lines) and `
 
 {{BLAME_PREVIEW}}
 
+{{BLAME_PARETO}}
+
 {{BLAME_SPECIALISTS}}
 
 {{BLAME_PROPOSALS}}

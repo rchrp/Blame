@@ -382,6 +382,13 @@ const purposePrompts = {
   "new-project": "new-project-agent-system",
 } as const;
 
+// The effort and simplicity guidance, kept apart from the system prompts so
+// it can be replaced or dropped without editing them. New projects have none.
+const paretoPrompts = {
+  development: "pareto/code-agent",
+  plan: "pareto/plan-agent",
+} as const;
+
 export async function buildDevelopmentSystemPrompt(
   input: StartDevelopmentSessionInput,
 ) {
@@ -402,6 +409,10 @@ async function developmentPromptValues(input: StartDevelopmentSessionInput) {
   const practices = input.codePractices ?? [];
   return {
     BLAME_ENVIRONMENT: developmentEnvironmentPrompt(input),
+    BLAME_PARETO:
+      input.purpose === "new-project"
+        ? ""
+        : loadPrompt(paretoPrompts[input.purpose ?? "development"]),
     BLAME_PRACTICES: developmentPracticePrompts(practices),
     BLAME_PREVIEW: developmentPreviewPrompt(input),
     BLAME_PROPOSALS: input.projectId

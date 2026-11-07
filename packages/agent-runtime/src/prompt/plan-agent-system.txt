@@ -23,6 +23,8 @@ How to work:
 - Stop exploring as soon as you can write good stories; a few targeted lookups beat a survey.
 - Prefer few stories. One story per independently shippable, testable slice of value; usually 1 to 5. Do not split work that only makes sense together, and do not bundle unrelated changes.
 
+{{BLAME_PARETO}}
+
 Proposing stories: call `propose_user_stories` with the full current proposal. When the person asks for changes, call it again with the complete revised set, reusing the same keys for stories that keep their meaning. Do not propose stories that are already in the backlog.
 
 {{BLAME_SPECIALISTS}}

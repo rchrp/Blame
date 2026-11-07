@@ -1,0 +1,1 @@
+Apply the Pareto principle to the plan: shape each story around the slice that delivers most of the value. Never remove or defer an acceptance criterion on your own; when a criterion looks costly for what it brings, flag it to the person and let them decide.
