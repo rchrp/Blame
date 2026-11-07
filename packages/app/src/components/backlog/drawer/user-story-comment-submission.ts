@@ -10,6 +10,8 @@ type Submission = {
   input: CommentInput
   createComment: (input: CommentInput) => Promise<UserStoryComment>
   requestChanges: (comment: UserStoryComment) => Promise<UserStory | undefined>
+  // Called once the comment exists, before the (slow) agent handoff starts.
+  onCommentSaved?: (comment: UserStoryComment) => void
 }
 
 export function createUserStoryCommentSubmission() {
@@ -22,7 +24,13 @@ export function createUserStoryCommentSubmission() {
     get pending() {
       return pending
     },
-    async submit({ story, input, createComment, requestChanges }: Submission) {
+    async submit({
+      story,
+      input,
+      createComment,
+      requestChanges,
+      onCommentSaved,
+    }: Submission) {
       if (pending) return false
       pending = true
       try {
@@ -36,6 +44,7 @@ export function createUserStoryCommentSubmission() {
           recoverableComment(story, key) ??
           (await createComment(input))
         saved = { storyId: story.id, key, comment }
+        onCommentSaved?.(comment)
         if (story.status === "in-review" || story.status === "in-progress") {
           const nextStory = await requestChanges(comment)
           if (nextStory?.status !== "in-progress") return false

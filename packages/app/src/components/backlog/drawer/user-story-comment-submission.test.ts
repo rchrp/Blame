@@ -204,6 +204,22 @@ test("failed feedback handoff during a running story retains the saved comment f
   assert.equal(creates, 1)
 })
 
+test("the saved comment is reported before the agent handoff finishes", async () => {
+  const submission = createUserStoryCommentSubmission()
+  const events: string[] = []
+  await submission.submit({
+    story: started,
+    input: comment,
+    createComment: async () => comment,
+    onCommentSaved: (saved) => events.push(`saved:${saved.id}`),
+    requestChanges: async () => {
+      events.push("handoff")
+      return started
+    },
+  })
+  assert.deepEqual(events, [`saved:${comment.id}`, "handoff"])
+})
+
 test("a saved comment without a run stays visible and can be reused after reopening", async () => {
   const linkedComment = { ...comment, id: "delivered" }
   const current: UserStory = {
