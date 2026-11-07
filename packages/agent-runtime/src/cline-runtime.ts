@@ -138,6 +138,7 @@ import {
   startLogPath,
 } from "./cline-runtime-log.js";
 import { runOneShotAgent } from "./one-shot-agent.js";
+import { runRepositoryMerge } from "./repository-merge-queue.js";
 import {
   buildDevelopmentSystemPrompt,
   clineDefaultSystemPrompt,
@@ -2481,8 +2482,10 @@ export class BlameAgentRuntime {
   private async approveAndMergeStory(
     input: ApproveAndMergeInput,
   ): Promise<ApproveAndMergeResult> {
-    return this.agentTelemetry.runBusinessOperation(input, "merge", () =>
-      this.approveAndMergeStoryOperation(input),
+    return runRepositoryMerge(input.repositoryRoot, () =>
+      this.agentTelemetry.runBusinessOperation(input, "merge", () =>
+        this.approveAndMergeStoryOperation(input),
+      ),
     );
   }
 
@@ -2781,12 +2784,7 @@ export class BlameAgentRuntime {
       attempt <= maxMergeConflictResolutionAttempts && conflicts.length;
       attempt += 1
     ) {
-      const failure = await this.runMergeConflictAgent(
-        input,
-        targetBranch,
-        attempt,
-        logFile,
-      );
+      const failure = await this.runMergeConflictAgent(input, targetBranch, attempt, logFile);
       conflicts = await mergeConflictFiles(input.worktree);
       await appendLog(logFile, "merge conflict agent finished", {
         status: conflicts.length ? "conflicts_remaining" : "resolved",

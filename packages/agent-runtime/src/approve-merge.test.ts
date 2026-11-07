@@ -533,6 +533,53 @@ test("reports a resolver that returned no result instead of the conflicts", asyn
   }
 });
 
+test("merges two stories approved at once into the same repository one after the other", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "blame-concurrent-merge-"));
+  const repositoryRoot = join(directory, "project");
+  await mkdir(repositoryRoot);
+  await git(repositoryRoot, ["init", "--initial-branch=main"]);
+  await git(repositoryRoot, ["config", "user.email", "blame@example.com"]);
+  await git(repositoryRoot, ["config", "user.name", "Blame Test"]);
+  await writeFile(join(repositoryRoot, ".gitignore"), ".blame/\n");
+  await git(repositoryRoot, ["add", "."]);
+  await git(repositoryRoot, ["commit", "-m", "base"]);
+  const stories = [];
+  for (const name of ["first", "second"]) {
+    const worktree = join(directory, name);
+    const storyBranch = `story/${name}`;
+    await git(repositoryRoot, ["worktree", "add", "-b", storyBranch, worktree]);
+    await writeFile(join(worktree, `${name}.txt`), `${name}\n`);
+    await git(worktree, ["add", "."]);
+    await git(worktree, ["commit", "-m", name]);
+    stories.push({
+      apiConnection: { url: "https://api.example" },
+      providerId: "test-provider",
+      modelId: "test-model",
+      repositoryRoot,
+      worktree,
+      storyBranch,
+      title: `Add the ${name} file`,
+      summary: "Exercise concurrent approvals.",
+    });
+  }
+  const runtime = mergeTestRuntime();
+  try {
+    await Promise.all(stories.map((story) => runtime.approveAndMerge(story)));
+    assert.equal(
+      await readFile(join(repositoryRoot, "first.txt"), "utf8"),
+      "first\n",
+    );
+    assert.equal(
+      await readFile(join(repositoryRoot, "second.txt"), "utf8"),
+      "second\n",
+    );
+    assert.equal(await git(repositoryRoot, ["status", "--porcelain"]), "");
+  } finally {
+    await runtime.shutdown();
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
 function mergeTestRuntime(
   resolve?: (input: ClineCoreStartInput) => Promise<void>,
   core?: Record<string, unknown>,
