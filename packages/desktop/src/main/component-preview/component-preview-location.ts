@@ -25,10 +25,10 @@ import type {
 // there, otherwise the container of a local preview, whose node_modules
 // live in volumes. A cloud preview's dependencies are in its sandbox: the
 // server runs there. A package with a Vite config is served by its own
-// Vite, a SvelteKit app included; a React, Vue 3 or Svelte 5 package without
-// one, such as a Next.js, Vue CLI or Rollup app, by Blame's, and so is a
-// React Native package with react-native-web, such as an Expo app with web
-// support.
+// Vite, a SvelteKit app included; a React, Vue 3, Svelte 5 or Angular
+// package without one, such as a Next.js, Vue CLI, Rollup or Angular CLI
+// app, by Blame's, and so is a React Native package with react-native-web,
+// such as an Expo app with web support.
 
 // The host in the story's cloud preview sandbox, or why there is none.
 export type CloudComponentPreviewLocator = (
@@ -36,15 +36,23 @@ export type CloudComponentPreviewLocator = (
 ) => Promise<ComponentPreviewHost | { message: string }>;
 
 // What a package.json declares: a framework Blame's own Vite renders, or
-// Vue 2, Svelte 4 and older, or React Native without react-native-web,
-// which it does not.
+// one it does not: Vue 2, Svelte 4 and older, React Native without
+// react-native-web, Angular 16 or earlier, or Angular without the builder
+// whose compiler @analogjs/vite-plugin-angular uses.
 type DeclaredFramework =
-  ComponentPreviewToolkit["framework"] | UnsupportedFramework;
+  | ComponentPreviewToolkit["framework"]
+  | UnsupportedFramework
+  | "angular-without-builder";
 type UnsupportedFramework = keyof typeof unsupportedFrameworks;
 
 // What the package depends on, for the message, and where to check its
 // components instead.
 const unsupportedFrameworks = {
+  "angular-legacy": {
+    check: "in the app",
+    reason: (label: string) =>
+      `Angular 16 and earlier are not supported: ${label} depends on one of them`,
+  },
   "react-native-without-web": {
     check: "in the app or on a device",
     reason: (label: string) =>
@@ -62,10 +70,15 @@ const unsupportedFrameworks = {
   },
 };
 const toolkitFrameworks =
-  "React, React Native with react-native-web, Vue 3 (vue 3.2.25 or later) and Svelte 5 (svelte 5.46.4 or later) components";
+  "React, React Native with react-native-web, Vue 3 (vue 3.2.25 or later), Svelte 5 (svelte 5.46.4 or later) and Angular 17 to 22 components";
+const angularBuilders = ["@angular/build", "@angular-devkit/build-angular"];
 
 // The packages Blame's own Vite needs installed, by framework.
 const toolkitDependencies = {
+  angular: {
+    label: "Angular",
+    names: ["@angular/core", "@angular/compiler-cli"],
+  },
   next: { label: "React", names: ["react", "react-dom"] },
   react: { label: "React", names: ["react", "react-dom"] },
   "react-native": {
@@ -123,13 +136,17 @@ export async function locateComponentPreview(
   const framework = projectVite
     ? undefined
     : await toolkitFramework(worktree, packageDir);
+  if (framework === "angular-without-builder")
+    return {
+      message: `${label} depends on Angular, but neither it nor the package.json files above it declare @angular/build or @angular-devkit/build-angular: @analogjs/vite-plugin-angular compiles with the compiler of that builder. Put the preview file in the package of an Angular CLI app.`,
+    };
   if (framework && unsupported(framework))
     return {
       message: `${unsupportedFrameworks[framework].reason(label)} and has no vite.config.* file. Without one, open_component_preview renders ${toolkitFrameworks} only. Check this component ${unsupportedFrameworks[framework].check} instead.`,
     };
   if (!projectVite && !framework)
     return {
-      message: `${label} has no vite.config.* file and does not depend on React, Vue 3 or Svelte 5: open_component_preview renders files of a Vite package, or of a React, Vue 3 or Svelte 5 package such as a Next.js, Vue CLI or Rollup app. Put the preview file in the package of the component.`,
+      message: `${label} has no vite.config.* file and does not depend on React, Vue 3, Svelte 5 or Angular: open_component_preview renders files of a Vite package, or of a React, Vue 3, Svelte 5 or Angular package such as a Next.js, Vue CLI, Rollup or Angular CLI app. Put the preview file in the package of the component.`,
     };
   const toolkit = framework ? { toolkit: { framework } } : {};
   if (target.workspaceMode === "cloud-mirror") {
@@ -175,9 +192,9 @@ export async function locateComponentPreview(
 
 // Whether the project has a package the tool renders: one with a Vite
 // config, or one that depends on React, React Native with
-// react-native-web, Vue 3 or Svelte 5. Sessions of other projects, such as
-// an Angular, Vue 2 or Svelte 4 app, or a React Native app without
-// react-native-web, are not offered the tool.
+// react-native-web, Vue 3, Svelte 5, or Angular 17 to 22 with its builder.
+// Sessions of other projects, such as an Ember, Vue 2 or Svelte 4 app, or a
+// React Native app without react-native-web, are not offered the tool.
 export async function hasComponentPreviewProject(worktree: string) {
   const markers = runtimeManagedPath(worktree)
     ? await projectMarkersInRuntime(worktree)
@@ -188,7 +205,11 @@ export async function hasComponentPreviewProject(worktree: string) {
   );
   return Object.values(manifests).some((text) => {
     const framework = declaredFramework(manifestDependencies(text));
-    return framework !== undefined && !unsupported(framework);
+    return (
+      framework !== undefined &&
+      framework !== "angular-without-builder" &&
+      !unsupported(framework)
+    );
   });
 }
 
@@ -268,7 +289,8 @@ async function projectMarkersInRuntime(
 
 // The framework of the closest package.json that declares one: the
 // package's own, else its workspace root's. The Next.js shims only apply
-// to the Next.js app itself.
+// to the Next.js app itself. An Angular library declares @angular/core
+// without a builder: the builder of its workspace root compiles it.
 async function toolkitFramework(
   worktree: string,
   packageDir: string,
@@ -277,12 +299,14 @@ async function toolkitFramework(
     worktreePath(worktree, directory, "package.json"),
   );
   const files = await readExistingFiles(paths);
+  let withoutBuilder: DeclaredFramework | undefined;
   for (const [index, path] of paths.entries()) {
     const framework = declaredFramework(manifestDependencies(files[path]));
-    if (framework)
+    if (framework === "angular-without-builder") withoutBuilder ??= framework;
+    else if (framework)
       return framework === "next" && index > 0 ? "react" : framework;
   }
-  return undefined;
+  return withoutBuilder;
 }
 
 // The packages a package.json declares, with their version ranges. One
@@ -307,12 +331,20 @@ function manifestDependencies(text: string | null | undefined) {
   return dependencies;
 }
 
-// React wins over Vue, and Vue over Svelte, in a package that declares
-// several, as before Vue and Svelte were supported. React Native components
-// render in the page through react-native-web only.
+// An Angular CLI app, with @angular/core and its builder, renders as
+// Angular even if it also depends on React. React wins over Vue, and Vue
+// over Svelte, in a package that declares several, as before Vue and Svelte
+// were supported. React Native components render in the page through
+// react-native-web only.
 function declaredFramework(
   dependencies: Map<string, string>,
 ): DeclaredFramework | undefined {
+  const angular = dependencies.get("@angular/core");
+  if (
+    angular !== undefined &&
+    angularBuilders.some((builder) => dependencies.has(builder))
+  )
+    return rangeBelowMajor(angular, 17) ? "angular-legacy" : "angular";
   if (dependencies.has("next")) return "next";
   if (dependencies.has("react-native-web")) return "react-native";
   if (dependencies.has("react-native")) return "react-native-without-web";
@@ -322,7 +354,7 @@ function declaredFramework(
   const svelte = dependencies.get("svelte");
   if (svelte !== undefined)
     return rangeBelowMajor(svelte, 5) ? "svelte4" : "svelte";
-  return undefined;
+  return angular === undefined ? undefined : "angular-without-builder";
 }
 
 // Whether every alternative of a range stays below a major version, such as

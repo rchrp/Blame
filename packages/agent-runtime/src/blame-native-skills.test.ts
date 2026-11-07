@@ -253,6 +253,37 @@ test("the component preview skill covers React Native packages with react-native
   }
 });
 
+test("the component preview skill shows how to mount an Angular component without Vite", async () => {
+  const service = createUserInstructionConfigService({
+    skills: {
+      directories: resolvePluginSkillDirectoriesFromPaths([blameNativePluginPath()]),
+    },
+  });
+  try {
+    await service.start();
+    const executor = service.createSkillsExecutor?.();
+    assert.ok(executor);
+    const output = await executor("component-preview", "profile card", {} as never);
+    assert.match(output, /Vite, React, Vue 3, Svelte 5 or Angular project \(Next\.js, Vue CLI, SvelteKit and Angular CLI included\)/);
+    assert.match(
+      output,
+      /An Angular 17 to 22 package without `vite\.config\.\*`, with `@angular\/build` or `@angular-devkit\/build-angular`[^\n]*Blame's own Vite with `@analogjs\/vite-plugin-angular`[^\n]*the project's own Angular compiler/,
+    );
+    assert.match(output, /import "\.\.\/\.\.\/styles\.css" \/\/ each stylesheet of "styles" in angular\.json/);
+    assert.match(
+      output,
+      /export async function mount\(element: HTMLElement, state: string\) \{\n {2}const app = await createApplication\(\{ providers: \[provideRouter\(\[\]\)\] \}\)\n {2}const card = createComponent\(ProfileCardComponent, \{ environmentInjector: app\.injector, hostElement: element \}\)\n {2}for \(const \[name, value\] of Object\.entries\(states\[state\]\)\) card\.setInput\(name, value\)\n {2}app\.attachView\(card\.hostView\)\n {2}card\.changeDetectorRef\.detectChanges\(\)\n\}/,
+    );
+    assert.match(output, /`provideRouter\(\[\]\)` for a component that uses `routerLink`, `RouterOutlet`, `Router` or `ActivatedRoute`/);
+    assert.match(output, /zone\.js loads before the preview file when the `polyfills` of `angular\.json` include it[^\n]*Otherwise the render is zoneless/);
+    assert.match(output, /`provideZonelessChangeDetection\(\)`/);
+    assert.match(output, /A component an NgModule declares \(`standalone: false`\): import that module's file, add `importProvidersFrom\(TheModule\)` to the providers/);
+    assert.match(output, /Angular 16 and earlier are not supported, nor server-side rendering/);
+  } finally {
+    service.stop();
+  }
+});
+
 test("the component preview skill makes the component preview the default visual check", async () => {
   const service = createUserInstructionConfigService({
     skills: {

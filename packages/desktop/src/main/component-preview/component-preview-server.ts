@@ -8,6 +8,7 @@ import {
   componentPreviewPagePath,
   componentPreviewServerArguments,
   componentPreviewServerReport,
+  type ComponentPreviewAngularReport,
   type ComponentPreviewServerReport,
   type ComponentPreviewToolkit,
 } from "./component-preview-server-script.ts";
@@ -24,7 +25,7 @@ export type ComponentPreviewServerStart = {
   // Worktree-relative package directory, "" for the worktree root.
   packageDir: string;
   signal?: AbortSignal;
-  // Blame's own Vite, for a React, Vue or Svelte package without one.
+  // Blame's own Vite, for a React, Vue, Svelte or Angular package without one.
   toolkit?: Pick<ComponentPreviewToolkit, "framework">;
 };
 
@@ -45,6 +46,8 @@ const outputTailCharacters = 4_000;
 const startAttempts = 2;
 
 export class ComponentPreviewServer {
+  // Set when Blame's own Vite compiles an Angular package.
+  readonly angular?: ComponentPreviewAngularReport;
   readonly origin: string;
   // Set when the server runs Blame's own Vite.
   readonly toolkit?: { directory: string; installed: boolean };
@@ -54,12 +57,14 @@ export class ComponentPreviewServer {
   private ended = false;
 
   private constructor(input: {
+    angular?: ComponentPreviewAngularReport;
     origin: string;
     serverProcess: ComponentPreviewProcess;
     token: string;
     toolkit?: { directory: string; installed: boolean };
     viteVersion: string;
   }) {
+    if (input.angular) this.angular = input.angular;
     this.origin = input.origin;
     this.serverProcess = input.serverProcess;
     this.token = input.token;
@@ -100,6 +105,7 @@ export class ComponentPreviewServer {
         const origin = `http://127.0.0.1:${port}`;
         await waitUntilReachable(origin, token, serverProcess, input.signal);
         return new ComponentPreviewServer({
+          ...(listening.angular ? { angular: listening.angular } : {}),
           origin,
           serverProcess,
           token,

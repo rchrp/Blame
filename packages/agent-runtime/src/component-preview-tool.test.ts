@@ -277,7 +277,7 @@ test("the tool describes Vue 3 packages without Vite, with a short mount example
   const { description } = componentPreviewTool(desktop.options, preview)!;
   assert.match(
     description,
-    /write `<name>\.blame-preview\.ts` and export `mount\(element, state\)` instead: it renders the named state into the element, for Vue with `createApp\(Component, props\)\.mount\(element\)`/,
+    /For Vue, Angular, Svelte or another framework, write `<name>\.blame-preview\.ts` and export `mount\(element, state\)` instead: it renders the named state into the element, for Vue with `createApp\(Component, props\)\.mount\(element\)`/,
   );
   assert.match(
     description,
@@ -308,6 +308,23 @@ test("the tool describes React Native packages with react-native-web, such as an
   assert.match(
     description,
     /A React Native package with react-native-web, such as an Expo app with web support, gets Blame's own Vite with @vitejs\/plugin-react: react-native resolves to react-native-web, \.web\.\* files come first, __DEV__ is set and EXPO_PUBLIC_\* variables reach process\.env; without react-native-web it is not rendered, and an Expo module without a web implementation is named in the page's error: check those in the app or on a device/,
+  );
+});
+
+test("the tool describes Angular packages without Vite, with createApplication and createComponent", () => {
+  const desktop = fakeDesktop(() => rendered(1));
+  const { description } = componentPreviewTool(desktop.options, preview)!;
+  assert.match(
+    description,
+    /for Angular with `createApplication\(\{ providers \}\)` then `createComponent\(Component, \{ environmentInjector: app\.injector, hostElement: element \}\)`/,
+  );
+  assert.match(
+    description,
+    /An Angular 17 to 22 package without Vite, such as an Angular CLI app, gets Blame's own Vite with @analogjs\/vite-plugin-angular, which compiles with the project's Angular compiler and the tsconfig of angular\.json: templateUrl and styleUrl files, its PostCSS or Tailwind config and tsconfig paths; the preview file imports the stylesheets of the styles field of angular\.json\./,
+  );
+  assert.match(
+    description,
+    /zone\.js loads first when the polyfills of angular\.json include it, otherwise the render is zoneless\./,
   );
 });
 

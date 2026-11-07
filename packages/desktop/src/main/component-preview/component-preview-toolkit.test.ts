@@ -18,10 +18,11 @@ import {
 } from "./component-preview-service.ts";
 
 // Small projects rendered by the real temporary server: a Next.js App
-// Router app, an Expo app with react-native-web, a Vue CLI app and a Rollup
-// Svelte app, without Vite, with Blame's own Vite and @vitejs/plugin-react,
-// @vitejs/plugin-vue or @sveltejs/vite-plugin-svelte; SvelteKit 2 and 3
-// apps with their own Vite and sveltekit(). The browser is replaced by
+// Router app, an Expo app with react-native-web, a Vue CLI app, a Rollup
+// Svelte app and an Angular CLI app, without Vite, with Blame's own Vite
+// and @vitejs/plugin-react, @vitejs/plugin-vue,
+// @sveltejs/vite-plugin-svelte or @analogjs/vite-plugin-angular; SvelteKit
+// 2 and 3 apps with their own Vite and sveltekit(). The browser is replaced by
 // requests for the page and the modules it loads, or by jsdom, which runs
 // those modules in this process.
 
@@ -36,13 +37,19 @@ test(
   "Blame's own Vite and its plugins are the versions Blame's packages use",
   {
     skip:
-      dependencies.next && dependencies.vue && dependencies.svelte
+      dependencies.next &&
+      dependencies.vue &&
+      dependencies.svelte &&
+      dependencies.angular
         ? false
-        : "Vite, @vitejs/plugin-react, @vitejs/plugin-vue or @sveltejs/vite-plugin-svelte is not installed for the desktop tests.",
+        : "Vite, @vitejs/plugin-react, @vitejs/plugin-vue, @sveltejs/vite-plugin-svelte or @analogjs/vite-plugin-angular is not installed for the desktop tests.",
   },
   () => {
     assert.deepEqual(
       {
+        pluginAngular: packageVersion(
+          dependencies.angular!.toolkit["@analogjs/vite-plugin-angular"]!,
+        ),
         pluginReact: packageVersion(
           dependencies.next!.toolkit["@vitejs/plugin-react"]!,
         ),
@@ -1112,6 +1119,335 @@ function useHttpModules() {
   );
   httpModules = true;
 }
+test(
+  "an Angular CLI component renders with Blame's Vite and the project's Angular compiler: templateUrl, styleUrl, signal inputs, the router, an NgModule, Tailwind, tsconfig paths and zone.js",
+  {
+    skip: dependencies.angular
+      ? false
+      : "Vite, @analogjs/vite-plugin-angular, Angular or Tailwind is not installed for the desktop tests.",
+    timeout: 180_000,
+  },
+  async () => {
+    const worktree = await mkdtemp(
+      join(tmpdir(), "blame-component-preview-angular-"),
+    );
+    const toolkitRoot = await mkdtemp(
+      join(tmpdir(), "blame-component-preview-toolkit-"),
+    );
+    const responses = new Map<string, string>();
+    let service: ComponentPreviewService | undefined;
+    try {
+      await writeAngularFixture(worktree, { zone: true });
+      await linkToolkit(toolkitRoot, "angular", dependencies.angular!.toolkit);
+      const page = new FetchingPage(
+        loadingProjectModules(responses, /virtual:blame-component-preview/u),
+      );
+      service = angularService(worktree, toolkitRoot, page);
+      const result = await renderAngular(
+        service,
+        worktree,
+        "src/app/profile-card/profile.blame-preview.ts",
+        ["default", "long"],
+      );
+      assert.match(
+        result.content[0]!.text!,
+        /^Started Blame's own Vite 8\.\d+\.\d+ server with @analogjs\/vite-plugin-angular, in the story's workspace for the worktree root, at http:\/\/127\.0\.0\.1:\d+: the package has no Vite config, so its PostCSS config and tsconfig or jsconfig paths apply\. The project's Angular 22\.\d+\.\d+ compiler compiles its components with tsconfig\.app\.json; zone\.js loads first, from its polyfills\. 2 renders of src\/app\/profile-card\/profile\.blame-preview\.ts:$/u,
+      );
+      assert.deepEqual(
+        result.content
+          .slice(1)
+          .filter(({ type }) => type === "text")
+          .map(({ text }) => text!.split("\n")[0]),
+        [
+          "Render 1/2 — default, light, 1280 px: rendered.",
+          "Render 2/2 — long, light, 1280 px: rendered.",
+        ],
+        JSON.stringify(result.content),
+      );
+
+      // The preview file joins the Angular program, though tsconfig.app.json
+      // lists main.ts only: it is compiled, and "@app/" resolves with the
+      // paths of tsconfig.json. Angular comes from the project, bundled up
+      // front.
+      const preview = responses.get(
+        "/src/app/profile-card/profile.blame-preview.ts",
+      )!;
+      assert.doesNotMatch(preview, /: HTMLElement|Record<string/u);
+      assert.match(
+        preview,
+        /from "\/src\/app\/profile-card\/profile-card\.component\.ts"/u,
+      );
+      assert.match(preview, /import "\/src\/styles\.css"/u);
+      assert.match(
+        preview,
+        /\.vite-blame-preview-[0-9a-f]+\/deps\/@angular_router\.js/u,
+      );
+
+      // The standalone component is compiled ahead of time: its templateUrl
+      // and styleUrl are inlined, its signal inputs and RouterLink are part
+      // of its definition, and "@shared/" resolves with tsconfig paths.
+      const card = responses.get(
+        "/src/app/profile-card/profile-card.component.ts",
+      )!;
+      assert.match(card, /ɵɵdefineComponent/u);
+      assert.doesNotMatch(card, /templateUrl|styleUrl|ɵɵngDeclare/u);
+      assert.match(card, /ɵɵtextInterpolate|ɵɵtext\(/u);
+      assert.match(card, /RouterLink/u);
+      assert.match(card, /\.card\[_ngcontent-%COMP%\]/u);
+      assert.match(
+        card,
+        /from "\/src\/app\/shared\/status-badge\.component\.ts"/u,
+      );
+      assert.match(
+        responses.get("/src/app/shared/status-badge.component.ts")!,
+        /ɵɵdefineComponent/u,
+      );
+
+      // Angular's own packages are linked when Vite pre-bundles them.
+      const router =
+        /"(\/node_modules\/\.vite-blame-preview-[0-9a-f]+\/deps\/@angular_router\.js[^"]*)"/u.exec(
+          preview,
+        )?.[1];
+      assert.ok(router, preview);
+      const routerBundle = await bundledCode(page.origin!, router);
+      assert.match(routerBundle, /ɵɵdefineInjectable/u);
+      assert.doesNotMatch(routerBundle, /ɵɵngDeclareInjectable\(/u);
+
+      // Tailwind runs through the project's .postcssrc.json, on its
+      // templates.
+      const css = await (
+        await fetch(new URL("/src/styles.css?direct", page.origin))
+      ).text();
+      assert.match(css, /\.bg-emerald-600\s*\{/u);
+      assert.match(css, /\.rounded-xl\s*\{/u);
+
+      // zone.js, the polyfill of angular.json, loads before the preview
+      // file. The entry explains NgModule, router and zoneless errors, and
+      // reports a template element of an NgModule component that nothing
+      // matched, which Angular skips ahead of time.
+      const entry = await fetch(
+        new URL("/@id/__x00__virtual:blame-component-preview", page.origin),
+      );
+      const entryCode = await entry.text();
+      assert.equal(entry.status, 200, entryCode.slice(0, 600));
+      assert.match(
+        entryCode,
+        /await import\(["'][^"']*\/deps\/zone__js\.js[^"']*["']\)[^\n]*\n\s*const preview = await import/u,
+      );
+      assert.match(
+        entryCode,
+        /This component is declared in an NgModule: import that module's file in the preview file/u,
+      );
+      assert.match(
+        entryCode,
+        /This component depends on the router: add provideRouter\(\[\]\) to the providers of createApplication/u,
+      );
+      assert.match(entryCode, /NG0908/u);
+      assert.match(
+        entryCode,
+        /await preview\.mount\(element, state\);\s*checkModules\(\);\s*finish\("ready"\);/u,
+      );
+      assert.doesNotMatch(entryCode, /react-dom/u);
+
+      // A component an NgModule declares renders once the preview file
+      // imports its module, on the same server.
+      const legacy = await renderAngular(
+        service,
+        worktree,
+        "src/app/legacy/legacy.blame-preview.ts",
+        ["default"],
+      );
+      assert.match(
+        legacy.content[0]!.text!,
+        /^Reused Blame's own Vite 8\.\d+\.\d+ server with @analogjs\/vite-plugin-angular/u,
+      );
+      const panel = responses.get("/src/app/legacy/legacy-panel.component.ts")!;
+      assert.match(panel, /ɵɵdefineComponent/u);
+      assert.match(panel, /standalone:\s*false/u);
+      assert.match(panel, /LegacyChipComponent/u);
+      assert.match(
+        responses.get("/src/app/legacy/legacy.module.ts")!,
+        /ɵɵdefineNgModule/u,
+      );
+      assert.equal(await service.stop({ worktree }), 1);
+    } finally {
+      await service?.shutdown();
+      await rm(worktree, { force: true, recursive: true });
+      await rm(toolkitRoot, { force: true, recursive: true });
+    }
+  },
+);
+
+test(
+  "an Angular package whose polyfills have no zone.js renders zoneless",
+  {
+    skip: dependencies.angular
+      ? false
+      : "Vite, @analogjs/vite-plugin-angular, Angular or Tailwind is not installed for the desktop tests.",
+    timeout: 180_000,
+  },
+  async () => {
+    const worktree = await mkdtemp(
+      join(tmpdir(), "blame-component-preview-zoneless-"),
+    );
+    const toolkitRoot = await mkdtemp(
+      join(tmpdir(), "blame-component-preview-toolkit-"),
+    );
+    let service: ComponentPreviewService | undefined;
+    try {
+      await writeAngularFixture(worktree, { zone: false });
+      await linkToolkit(toolkitRoot, "angular", dependencies.angular!.toolkit);
+      const page = new FetchingPage(
+        loadingProjectModules(new Map(), /virtual:blame-component-preview/u),
+      );
+      service = angularService(worktree, toolkitRoot, page);
+      const result = await renderAngular(
+        service,
+        worktree,
+        "src/app/profile-card/profile.blame-preview.ts",
+        ["default"],
+      );
+      assert.match(
+        result.content[0]!.text!,
+        /The project's Angular 22\.\d+\.\d+ compiler compiles its components with tsconfig\.app\.json; its polyfills have no zone\.js, so the render is zoneless\./u,
+      );
+      const entryCode = await (
+        await fetch(
+          new URL("/@id/__x00__virtual:blame-component-preview", page.origin),
+        )
+      ).text();
+      assert.doesNotMatch(entryCode, /deps\/zone__js/u);
+      assert.match(entryCode, /try \{\s*const preview = await import/u);
+    } finally {
+      await service?.shutdown();
+      await rm(worktree, { force: true, recursive: true });
+      await rm(toolkitRoot, { force: true, recursive: true });
+    }
+  },
+);
+
+test(
+  "an installed Angular 16 is reported as not supported before Blame's Vite compiles anything",
+  { timeout: 60_000 },
+  async () => {
+    const worktree = await mkdtemp(
+      join(tmpdir(), "blame-component-preview-angular16-"),
+    );
+    let service: ComponentPreviewService | undefined;
+    try {
+      // A tag says nothing of the version: only the installed one tells.
+      await writeFile(
+        join(worktree, "package.json"),
+        JSON.stringify({
+          dependencies: { "@angular/core": "latest" },
+          devDependencies: { "@angular-devkit/build-angular": "latest" },
+        }),
+      );
+      await mkdir(join(worktree, "node_modules/@angular/core"), {
+        recursive: true,
+      });
+      await writeFile(
+        join(worktree, "node_modules/@angular/core/package.json"),
+        JSON.stringify({ name: "@angular/core", version: "16.2.12" }),
+      );
+      await mkdir(join(worktree, "src"), { recursive: true });
+      await writeFile(
+        join(worktree, "src/card.blame-preview.ts"),
+        "export function mount() {}\n",
+      );
+      service = new ComponentPreviewService({
+        browser: async () => {
+          throw new Error("A server that did not start opens no page.");
+        },
+        locate: async () => ({
+          // Never installed: the check comes first.
+          host: workspaceComponentPreviewHost(
+            worktree,
+            undefined,
+            join(worktree, "toolkit"),
+          ),
+          packageDir: "",
+          toolkit: { framework: "angular" },
+        }),
+        storeScreenshots: async (result) => result,
+      });
+      const result = (await service.render({
+        request: { file: "src/card.blame-preview.ts" },
+        worktree,
+      })) as {
+        content: Array<{ text?: string; type: string }>;
+        isError?: boolean;
+      };
+      assert.equal(result.isError, true);
+      assert.match(
+        result.content[0]!.text!,
+        /^The component preview server did not start in the story's workspace: @angular\/core 16\.2\.12 is installed for \S+: without a Vite config, open_component_preview renders Angular 17 to 22 only, the versions @analogjs\/vite-plugin-angular 2\.9\.\d+ supports\. Check this component in the app instead\.$/u,
+      );
+      assert.equal(existsSync(join(worktree, "toolkit")), false);
+    } finally {
+      await service?.shutdown();
+      await rm(worktree, { force: true, recursive: true });
+    }
+  },
+);
+
+function angularService(
+  worktree: string,
+  toolkitRoot: string,
+  page: FetchingPage,
+) {
+  return new ComponentPreviewService({
+    browser: async () => ({ openPage: async () => page }),
+    locate: async () => ({
+      host: workspaceComponentPreviewHost(worktree, undefined, toolkitRoot),
+      packageDir: "",
+      toolkit: { framework: "angular" },
+    }),
+    storeScreenshots: async (result) => ({
+      ...(result as object),
+      _meta: { blameScreenshots: [{ id: "3".repeat(64) }] },
+    }),
+  });
+}
+
+async function renderAngular(
+  service: ComponentPreviewService,
+  worktree: string,
+  file: string,
+  states: string[],
+) {
+  const result = (await service.render({
+    request: { file, states },
+    worktree,
+  })) as {
+    content: Array<{ text?: string; type: string }>;
+    isError?: boolean;
+  };
+  assert.equal(result.isError, undefined, JSON.stringify(result.content));
+  return result;
+}
+
+// Loads the page, then the preview file and every project module it
+// imports, as the browser would.
+function loadingProjectModules(
+  responses: Map<string, string>,
+  page: RegExp,
+): (url: string) => Promise<true> {
+  return async (url) => {
+    const get = async (path: string) => {
+      const response = await fetch(new URL(path, url));
+      const body = await response.text();
+      assert.equal(response.status, 200, `${path}: ${body.slice(0, 600)}`);
+      responses.set(path, body);
+      return body;
+    };
+    assert.match(await get(new URL(url).pathname + new URL(url).search), page);
+    const pending = [`/${new URL(url).searchParams.get("file")!}`];
+    for (let path = pending.shift(); path; path = pending.shift())
+      if (!responses.has(path)) pending.push(...importedPaths(await get(path)));
+    return true;
+  };
+}
 
 async function writeFixtureFiles(
   worktree: string,
@@ -1748,6 +2084,241 @@ async function writeSvelteRollupFixture(worktree: string) {
   await linkProjectDependencies(worktree, dependencies.svelte!.project);
 }
 
+// A project created by `ng new` with Angular 22: no Vite, its polyfills,
+// tsconfig and styles in angular.json, Tailwind through .postcssrc.json
+// and paths in tsconfig.json. Its tsconfig.app.json lists main.ts only, as
+// before Angular 20: the components below are not reachable from it.
+async function writeAngularFixture(
+  worktree: string,
+  options: { zone: boolean },
+) {
+  const files: Record<string, string> = {
+    "package.json": JSON.stringify({
+      name: "angular-fixture",
+      version: "0.0.0",
+      private: true,
+      scripts: { start: "ng serve" },
+      dependencies: {
+        "@angular/common": "^22.2.0",
+        "@angular/compiler": "^22.2.0",
+        "@angular/core": "^22.2.0",
+        "@angular/platform-browser": "^22.2.0",
+        "@angular/router": "^22.2.0",
+        rxjs: "~7.8.0",
+        tslib: "^2.3.0",
+        ...(options.zone ? { "zone.js": "~0.16.0" } : {}),
+      },
+      devDependencies: {
+        "@angular/build": "^22.2.0",
+        "@angular/compiler-cli": "^22.2.0",
+        "@tailwindcss/postcss": "4.3.3",
+        tailwindcss: "4.3.3",
+        typescript: "~6.0.2",
+      },
+    }),
+    "angular.json": JSON.stringify({
+      $schema: "./node_modules/@angular/cli/lib/config/schema.json",
+      version: 1,
+      newProjectRoot: "projects",
+      projects: {
+        shop: {
+          projectType: "application",
+          root: "",
+          sourceRoot: "src",
+          prefix: "app",
+          architect: {
+            build: {
+              builder: "@angular/build:application",
+              options: {
+                browser: "src/main.ts",
+                polyfills: options.zone ? ["zone.js"] : [],
+                tsConfig: "tsconfig.app.json",
+                styles: ["src/styles.css"],
+              },
+            },
+          },
+        },
+      },
+    }),
+    "tsconfig.json": JSON.stringify({
+      compileOnSave: false,
+      compilerOptions: {
+        strict: true,
+        skipLibCheck: true,
+        isolatedModules: true,
+        target: "ES2022",
+        module: "preserve",
+        moduleResolution: "bundler",
+        paths: {
+          "@app/*": ["./src/app/*"],
+          "@shared/*": ["./src/app/shared/*"],
+        },
+      },
+      angularCompilerOptions: { strictTemplates: true },
+    }),
+    "tsconfig.app.json": JSON.stringify({
+      extends: "./tsconfig.json",
+      compilerOptions: { outDir: "./out-tsc/app", types: [] },
+      files: ["src/main.ts"],
+      include: ["src/**/*.d.ts"],
+    }),
+    ".postcssrc.json": JSON.stringify({
+      plugins: { "@tailwindcss/postcss": {} },
+    }),
+    "src/styles.css": '@import "tailwindcss";\n',
+    "src/main.ts": [
+      'import { bootstrapApplication } from "@angular/platform-browser";',
+      'import { provideRouter } from "@angular/router";',
+      'import { AppComponent } from "./app/app.component";',
+      "",
+      "bootstrapApplication(AppComponent, { providers: [provideRouter([])] }).catch((error) => console.error(error));",
+      "",
+    ].join("\n"),
+    "src/app/app.component.ts": [
+      'import { Component } from "@angular/core";',
+      'import { RouterOutlet } from "@angular/router";',
+      "",
+      '@Component({ selector: "app-root", imports: [RouterOutlet], template: "<router-outlet />" })',
+      "export class AppComponent {}",
+      "",
+    ].join("\n"),
+    "src/app/profile-card/profile-card.component.ts": [
+      'import { Component, inject, input, signal } from "@angular/core";',
+      'import { ActivatedRoute, RouterLink } from "@angular/router";',
+      'import { StatusBadgeComponent } from "@shared/status-badge.component";',
+      "",
+      "@Component({",
+      '  selector: "app-profile-card",',
+      "  imports: [RouterLink, StatusBadgeComponent],",
+      '  templateUrl: "./profile-card.component.html",',
+      '  styleUrl: "./profile-card.component.css",',
+      "})",
+      "export class ProfileCardComponent {",
+      "  readonly name = input.required<string>();",
+      '  readonly status = input("Active");',
+      "  readonly expanded = signal(false);",
+      "  readonly route = inject(ActivatedRoute);",
+      "}",
+      "",
+    ].join("\n"),
+    "src/app/profile-card/profile-card.component.html": [
+      '<section class="card rounded-xl bg-emerald-600 p-6 text-white">',
+      '  <h2 class="text-2xl font-bold">{{ name() }}</h2>',
+      '  <app-status-badge [label]="status()" />',
+      '  <a routerLink="/settings" class="underline">Settings</a>',
+      "  @if (expanded()) {",
+      "    <p>More</p>",
+      "  }",
+      "</section>",
+      "",
+    ].join("\n"),
+    "src/app/profile-card/profile-card.component.css": [
+      ".card {",
+      "  box-shadow: 0 0 0 4px rgb(16 185 129 / 0.3);",
+      "}",
+      "",
+    ].join("\n"),
+    "src/app/shared/status-badge.component.ts": [
+      'import { Component, input } from "@angular/core";',
+      "",
+      "@Component({",
+      '  selector: "app-status-badge",',
+      "  template: '<span class=\"status-badge rounded-full bg-white/20 px-2 text-xs\">{{ label() }}</span>',",
+      '  styles: ".status-badge { letter-spacing: 0.05em; }",',
+      "})",
+      "export class StatusBadgeComponent {",
+      '  readonly label = input("");',
+      "}",
+      "",
+    ].join("\n"),
+    "src/app/profile-card/profile.blame-preview.ts": [
+      'import "../../styles.css";',
+      'import { createComponent } from "@angular/core";',
+      'import { createApplication } from "@angular/platform-browser";',
+      'import { provideRouter } from "@angular/router";',
+      'import { ProfileCardComponent } from "@app/profile-card/profile-card.component";',
+      "",
+      "const states: Record<string, { name: string; status: string }> = {",
+      '  default: { name: "Ada Lovelace", status: "Active" },',
+      '  long: { name: "Augusta Ada King, Countess of Lovelace", status: "Away" },',
+      "};",
+      "",
+      "export async function mount(element: HTMLElement, state: string) {",
+      "  const app = await createApplication({ providers: [provideRouter([])] });",
+      "  const card = createComponent(ProfileCardComponent, { environmentInjector: app.injector, hostElement: element });",
+      "  for (const [name, value] of Object.entries(states[state]!)) card.setInput(name, value);",
+      "  app.attachView(card.hostView);",
+      "  card.changeDetectorRef.detectChanges();",
+      "}",
+      "",
+    ].join("\n"),
+    // Components an NgModule declares, as before standalone components.
+    "src/app/legacy/legacy-chip.component.ts": [
+      'import { Component, Input } from "@angular/core";',
+      "",
+      "@Component({",
+      '  selector: "app-legacy-chip",',
+      "  standalone: false,",
+      "  template: '<span class=\"rounded bg-amber-200 px-1\">{{ text }}</span>',",
+      "})",
+      "export class LegacyChipComponent {",
+      '  @Input() text = "";',
+      "}",
+      "",
+    ].join("\n"),
+    "src/app/legacy/legacy-panel.component.ts": [
+      'import { Component } from "@angular/core";',
+      "",
+      "@Component({",
+      '  selector: "app-legacy-panel",',
+      "  standalone: false,",
+      `  template: '<div *ngIf="title"><app-legacy-chip [text]="title" /></div>',`,
+      "})",
+      "export class LegacyPanelComponent {",
+      '  title = "Legacy";',
+      "}",
+      "",
+    ].join("\n"),
+    "src/app/legacy/legacy.module.ts": [
+      'import { CommonModule } from "@angular/common";',
+      'import { NgModule } from "@angular/core";',
+      'import { LegacyChipComponent } from "./legacy-chip.component";',
+      'import { LegacyPanelComponent } from "./legacy-panel.component";',
+      "",
+      "@NgModule({",
+      "  declarations: [LegacyChipComponent, LegacyPanelComponent],",
+      "  imports: [CommonModule],",
+      "  exports: [LegacyPanelComponent],",
+      "})",
+      "export class LegacyModule {}",
+      "",
+    ].join("\n"),
+    "src/app/legacy/legacy.blame-preview.ts": [
+      'import { createComponent, importProvidersFrom } from "@angular/core";',
+      'import { createApplication } from "@angular/platform-browser";',
+      'import { LegacyModule } from "./legacy.module";',
+      'import { LegacyPanelComponent } from "./legacy-panel.component";',
+      "",
+      "export async function mount(element: HTMLElement) {",
+      "  const app = await createApplication({ providers: [importProvidersFrom(LegacyModule)] });",
+      "  const panel = createComponent(LegacyPanelComponent, { environmentInjector: app.injector, hostElement: element });",
+      "  app.attachView(panel.hostView);",
+      "  panel.changeDetectorRef.detectChanges();",
+      "}",
+      "",
+    ].join("\n"),
+  };
+  for (const [path, content] of Object.entries(files)) {
+    await mkdir(dirname(join(worktree, path)), { recursive: true });
+    await writeFile(join(worktree, path), content);
+  }
+  const { "zone.js": zone, ...project } = dependencies.angular!.project;
+  await linkProjectDependencies(
+    worktree,
+    options.zone ? { ...project, "zone.js": zone! } : project,
+  );
+}
+
 async function linkProjectDependencies(
   worktree: string,
   project: Record<string, string>,
@@ -1847,7 +2418,8 @@ type FixtureDependencies = {
 };
 
 // Vite, @vitejs/plugin-vue, Vue, @sveltejs/vite-plugin-svelte, Svelte,
-// SvelteKit 2 and 3 and react-native-web from the desktop package,
+// SvelteKit 2 and 3, react-native-web, @analogjs/vite-plugin-angular and
+// Angular from the desktop package,
 // @vitejs/plugin-react and React from the app package, Next.js and Tailwind
 // from the vitrine package, jsdom from the agent-runtime package. A fixture
 // whose packages are not all installed is skipped.
@@ -1918,6 +2490,33 @@ function resolveDependencies() {
     sveltekit3: fixtureDependencies(
       { ...svelte, "@sveltejs/kit": installed("desktop", "@sveltejs/kit") },
       {},
+    ),
+    angular: fixtureDependencies(
+      {
+        ...tailwind,
+        ...Object.fromEntries(
+          [
+            "@angular/build",
+            "@angular/common",
+            "@angular/compiler",
+            "@angular/compiler-cli",
+            "@angular/core",
+            "@angular/platform-browser",
+            "@angular/router",
+            "rxjs",
+            "tslib",
+            "typescript",
+            "zone.js",
+          ].map((name) => [name, installed("desktop", name)]),
+        ),
+      },
+      {
+        "@analogjs/vite-plugin-angular": installed(
+          "desktop",
+          "@analogjs/vite-plugin-angular",
+        ),
+        vite,
+      },
     ),
     jsdom: installed("agent-runtime", "jsdom"),
   };
