@@ -338,6 +338,7 @@ export function UserStoryDrawerPanel({
     mode === "create" ? "" : (storedDraft?.markdown ?? "")
   )
   const summaryValueRef = React.useRef(summary)
+  const syncedStoryTitleRef = React.useRef(userStory?.title ?? "")
   const commentValueRef = React.useRef(comment)
   const hasCommentDraft = Boolean(
     comment.trim() ||
@@ -414,8 +415,16 @@ export function UserStoryDrawerPanel({
 
   React.useEffect(() => {
     if (mode === "create") return
-    if (!titleGenerating) return
-    const frame = requestAnimationFrame(() => setTitle(userStory?.title ?? ""))
+    const storyTitle = userStory?.title ?? ""
+    // A title that changes behind the drawer (generated, renamed elsewhere)
+    // replaces the one shown, unless the user has typed their own.
+    const frame = requestAnimationFrame(() => {
+      const previousStoryTitle = syncedStoryTitleRef.current
+      syncedStoryTitleRef.current = storyTitle
+      setTitle((current) =>
+        titleGenerating || current === previousStoryTitle ? storyTitle : current
+      )
+    })
     return () => cancelAnimationFrame(frame)
   }, [mode, titleGenerating, userStory?.title])
 
