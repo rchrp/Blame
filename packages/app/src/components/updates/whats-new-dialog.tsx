@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog"
 import { usePlatform } from "@/context/platform"
 import type { ReleaseNotes } from "@/context/platform-whats-new"
+import { publicAssetUrl } from "@/lib/public-asset-url"
 import { cn } from "@/lib/utils"
 import { releaseNotesView, releasePageUrl } from "./release-notes"
 import "./whats-new-dialog.css"
@@ -101,9 +102,11 @@ export function WhatsNewDialog({
               onError={() => setFailedCover(cover.url)}
             />
           ) : (
-            <div
+            <img
+              alt=""
               aria-hidden
-              className="whats-new-backdrop absolute inset-0 -z-20"
+              className="whats-new-cover absolute inset-0 -z-20 size-full object-cover object-[50%_40%]"
+              src={publicAssetUrl("whats-new-cover.jpg")}
             />
           )}
           <div
