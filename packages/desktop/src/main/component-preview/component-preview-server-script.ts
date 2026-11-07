@@ -15,6 +15,12 @@
 // Next.js imports that only work inside Next are replaced by small shims,
 // and a Vue CLI package keeps its @ alias for src, in this server only.
 //
+// A React Native package with react-native-web, such as an Expo app with
+// web support, renders as in its web build: react-native resolves to
+// react-native-web, a .web.* file comes before its native variant, and
+// __DEV__ is set. An Expo module whose native module or view is missing in
+// the browser fails with an error that names it.
+//
 // A SvelteKit app keeps its own Vite and sveltekit(), whose client router
 // never starts in the preview page: $app/state (and $app/stores before
 // SvelteKit 3) give a page at /, and the page carries the public
@@ -32,9 +38,10 @@ export const componentPreviewToolkitVersions = {
 } as const;
 
 export type ComponentPreviewToolkit = {
-  // "next" adds the Next.js shims to React; "vue" uses @vitejs/plugin-vue,
+  // "next" adds the Next.js shims to React, "react-native" resolves
+  // react-native to react-native-web; "vue" uses @vitejs/plugin-vue,
   // "svelte" @sveltejs/vite-plugin-svelte.
-  framework: "next" | "react" | "svelte" | "vue";
+  framework: "next" | "react" | "react-native" | "svelte" | "vue";
   // Folder of Blame's own Vite installs, as the server process sees it.
   root: string;
 };
@@ -512,9 +519,11 @@ function previewPlugin(react, mountHint) {
         };
         const optimizeDeps = config.optimizeDeps || {};
         // The entry imports React itself, and a Vue preview file imports
-        // Vue: bundled up front, a first render never waits for a
+        // Vue, and a React Native one react-native-web through its alias:
+        // bundled up front, a first render never waits for a
         // re-optimization and its reload.
-        const frameworkDeps = framework === "vue" ? ["vue"] : react ? ["react", "react-dom/client", "react/jsx-dev-runtime"] : [];
+        const reactDeps = ["react", "react-dom/client", "react/jsx-dev-runtime", ...(framework === "react-native" ? ["react-native-web"] : [])];
+        const frameworkDeps = framework === "vue" ? ["vue"] : react ? reactDeps : [];
         const include = frameworkDeps.length ? [...new Set([...(optimizeDeps.include || []), ...frameworkDeps])] : optimizeDeps.include;
         config.optimizeDeps = { ...optimizeDeps, entries: ["**/*.blame-preview.*"], ...(include ? { include } : {}) };
       },
@@ -882,6 +891,68 @@ function jsconfigFile() {
   return existsSync(path) ? path : undefined;
 }
 
+// The extensions an Expo app's web build tries first, before Vite's own
+// and those of its pre-bundler.
+const webExtensions = [".web.tsx", ".web.ts", ".web.jsx", ".web.js"];
+const viteExtensions = [".mjs", ".js", ".mts", ".ts", ".jsx", ".tsx", ".json"];
+const preBundlerExtensions = [".tsx", ".ts", ".jsx", ".js", ".css", ".json"];
+
+// react-native-web renders the components in the page, with react-dom.
+function checkReactNativeWeb(require) {
+  const missing = ["react", "react-dom", "react-native-web"].filter((name) => !resolvable(require, name));
+  if (!missing.length) return;
+  const names = missing.length > 1 ? missing.slice(0, -1).join(", ") + " and " + missing[missing.length - 1] + " are" : missing[0] + " is";
+  throw new SetupError(names + " not installed for " + packageDir + ". Without a Vite config, open_component_preview renders React Native components with react-native-web and react-dom, and it never installs the project's dependencies: install them first.");
+}
+
+// In the browser, an Expo module's requireNativeModule, requireNativeView or
+// requireNativeViewManager call throws: its native code is not there. Each
+// call of an expo-* package gets a wrapper whose error names the package.
+const nativeCallPattern = /(?<![\w$.])(requireNative(?:Module|View|ViewManager))\((?=\s*["'])/g;
+const nativeOnlyRuntimeId = "blame-native-only:runtime";
+const nativeOnlyRuntime = [
+  'export function nativeOnly(name, require) {',
+  '  if (typeof require !== "function") return require;',
+  '  return function (...args) {',
+  '    try {',
+  '      return require.apply(this, args);',
+  '    } catch (error) {',
+  '      const cause = (error && error.message) || String(error);',
+  '      throw new Error(name + " has no web implementation (" + cause + "): open_component_preview renders React Native components in the browser with react-native-web. Check this component in the app or on a device, or preview a sub-component that does not use " + name + ".", { cause: error });',
+  '    }',
+  '  };',
+  '}',
+].join("\n");
+
+// The expo-* package of a module, from its path: the last node_modules
+// folder, as pnpm nests packages. expo-modules-core defines the calls.
+function expoPackage(id) {
+  const matches = [...id.split("\\").join("/").matchAll(/\/node_modules\/(expo-[^/]+)\//g)];
+  const name = matches.length ? matches[matches.length - 1][1] : undefined;
+  return name === "expo-modules-core" ? undefined : name;
+}
+
+// For the package's modules and those Vite pre-bundles. Only ES modules are
+// changed: the runtime's import goes last, so every line stays in place.
+function nativeOnlyPlugin() {
+  return {
+    name: "blame:expo-native-only",
+    resolveId(id) {
+      return id === nativeOnlyRuntimeId ? "\0" + nativeOnlyRuntimeId : undefined;
+    },
+    load(id) {
+      return id === "\0" + nativeOnlyRuntimeId ? nativeOnlyRuntime : undefined;
+    },
+    transform(code, id) {
+      const name = expoPackage(id);
+      if (!name || !/^\s*(?:import|export)\s/m.test(code)) return undefined;
+      const wrapped = code.replace(nativeCallPattern, (call, callee) => "__blameNativeOnly(" + JSON.stringify(name) + ", " + callee + ")(");
+      if (wrapped === code) return undefined;
+      return { code: wrapped + '\nimport { nativeOnly as __blameNativeOnly } from "' + nativeOnlyRuntimeId + '";\n', map: null };
+    },
+  };
+}
+
 // Blame's own Vite with the package's framework plugin, installed for this
 // environment if it is not yet.
 async function toolkitPlugins(plugins, require) {
@@ -900,6 +971,7 @@ async function toolkitPlugins(plugins, require) {
   else if (framework === "svelte") plugins.push(...plugin.svelte(svelteConfigFile() ? undefined : { preprocess: plugin.vitePreprocess() }));
   else plugins.push(serverOnlyPlugin(), plugin.default());
   if (framework === "next") plugins.push({ ...nextShims(), enforce: "pre" });
+  if (framework === "react-native") plugins.push(nativeOnlyPlugin());
   return { toolkit: { directory, installed }, vite };
 }
 
@@ -919,6 +991,7 @@ async function main() {
   let toolkit;
   if (usesToolkit) {
     if (mountHints[framework]) checkFramework(require, framework);
+    else if (framework === "react-native") checkReactNativeWeb(require);
     else if (!react) throw new SetupError("React is not installed for " + packageDir + ". Without a Vite config, open_component_preview renders React components only, and it never installs the project's dependencies: install them first.");
     ({ toolkit, vite } = await toolkitPlugins(plugins, require));
   } else {
@@ -943,6 +1016,23 @@ async function main() {
       // Vue CLI's webpack config resolves @ to src, ahead of any path.
       options.resolve.alias = [{ find: /^@\//, replacement: join(packageDir, "src") + sep }];
       options.define = publicEnvDefines(loadEnv, "VUE_APP_", { "process.env.BASE_URL": JSON.stringify("/"), "process.env.NODE_ENV": JSON.stringify("development") });
+    }
+    if (framework === "react-native") {
+      // As an Expo app's web build does. The package's own
+      // react-native-web serves every module, those of its dependencies
+      // included. Expo inlines EXPO_PUBLIC_* variables of its .env files.
+      options.resolve.alias = [{ find: /^react-native$/, replacement: "react-native-web" }];
+      options.resolve.dedupe = ["react-native-web"];
+      options.resolve.extensions = [...webExtensions, ...viteExtensions];
+      options.define = publicEnvDefines(loadEnv, "EXPO_PUBLIC_", { __DEV__: "true", "process.env.NODE_ENV": JSON.stringify("development") });
+      // Vite's pre-bundler has its own extensions and defines.
+      options.optimizeDeps = {
+        rolldownOptions: {
+          plugins: [nativeOnlyPlugin()],
+          resolve: { extensions: [...webExtensions, ...preBundlerExtensions] },
+          transform: { define: { __DEV__: "true" } },
+        },
+      };
     }
   }
   server = await createServer(options);

@@ -302,6 +302,15 @@ test("the tool describes SvelteKit apps and Svelte 5 packages without Vite, with
   );
 });
 
+test("the tool describes React Native packages with react-native-web, such as an Expo app", () => {
+  const desktop = fakeDesktop(() => rendered(1));
+  const { description } = componentPreviewTool(desktop.options, preview)!;
+  assert.match(
+    description,
+    /A React Native package with react-native-web, such as an Expo app with web support, gets Blame's own Vite with @vitejs\/plugin-react: react-native resolves to react-native-web, \.web\.\* files come first, __DEV__ is set and EXPO_PUBLIC_\* variables reach process\.env; without react-native-web it is not rendered, and an Expo module without a web implementation is named in the page's error: check those in the app or on a device/,
+  );
+});
+
 test("finishing removes the preview files, then stops the preview server", async () => {
   const root = await mkdtemp(join(tmpdir(), "blame-preview-finish-"));
   const git = async (cwd: string, args: string[]) =>

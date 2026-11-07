@@ -72,6 +72,7 @@
     "electron": "45.0.0",
     "electron-builder": "^26.18.0",
     "electron-vite": "^6.0.0",
+    "react-native-web": "0.21.4",
     "svelte": "5.57.3",
     "sveltekit-2": "npm:@sveltejs/kit@2.70.4",
     "typescript": "npm:@typescript/typescript6@6.0.2",

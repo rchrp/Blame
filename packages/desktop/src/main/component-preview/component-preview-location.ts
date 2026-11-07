@@ -26,7 +26,9 @@ import type {
 // live in volumes. A cloud preview's dependencies are in its sandbox: the
 // server runs there. A package with a Vite config is served by its own
 // Vite, a SvelteKit app included; a React, Vue 3 or Svelte 5 package without
-// one, such as a Next.js, Vue CLI or Rollup app, by Blame's.
+// one, such as a Next.js, Vue CLI or Rollup app, by Blame's, and so is a
+// React Native package with react-native-web, such as an Expo app with web
+// support.
 
 // The host in the story's cloud preview sandbox, or why there is none.
 export type CloudComponentPreviewLocator = (
@@ -34,24 +36,42 @@ export type CloudComponentPreviewLocator = (
 ) => Promise<ComponentPreviewHost | { message: string }>;
 
 // What a package.json declares: a framework Blame's own Vite renders, or
-// Vue 2 or Svelte 4 and older, which it does not.
+// Vue 2, Svelte 4 and older, or React Native without react-native-web,
+// which it does not.
 type DeclaredFramework =
   ComponentPreviewToolkit["framework"] | UnsupportedFramework;
 type UnsupportedFramework = keyof typeof unsupportedFrameworks;
 
-// What the package depends on, for the message.
+// What the package depends on, for the message, and where to check its
+// components instead.
 const unsupportedFrameworks = {
-  svelte4: (label: string) =>
-    `Svelte 4 is not supported: ${label} depends on Svelte 4 or older`,
-  vue2: (label: string) => `Vue 2 is not supported: ${label} depends on Vue 2`,
+  "react-native-without-web": {
+    check: "in the app or on a device",
+    reason: (label: string) =>
+      `React Native is not supported without react-native-web: ${label} depends on react-native but not on react-native-web`,
+  },
+  svelte4: {
+    check: "in the app",
+    reason: (label: string) =>
+      `Svelte 4 is not supported: ${label} depends on Svelte 4 or older`,
+  },
+  vue2: {
+    check: "in the app",
+    reason: (label: string) =>
+      `Vue 2 is not supported: ${label} depends on Vue 2`,
+  },
 };
 const toolkitFrameworks =
-  "React, Vue 3 (vue 3.2.25 or later) and Svelte 5 (svelte 5.46.4 or later) components";
+  "React, React Native with react-native-web, Vue 3 (vue 3.2.25 or later) and Svelte 5 (svelte 5.46.4 or later) components";
 
 // The packages Blame's own Vite needs installed, by framework.
 const toolkitDependencies = {
   next: { label: "React", names: ["react", "react-dom"] },
   react: { label: "React", names: ["react", "react-dom"] },
+  "react-native": {
+    label: "React, react-dom or react-native-web",
+    names: ["react", "react-dom", "react-native-web"],
+  },
   svelte: { label: "Svelte", names: ["svelte"] },
   vue: { label: "Vue", names: ["vue"] },
 } satisfies Record<
@@ -105,7 +125,7 @@ export async function locateComponentPreview(
     : await toolkitFramework(worktree, packageDir);
   if (framework && unsupported(framework))
     return {
-      message: `${unsupportedFrameworks[framework](label)} and has no vite.config.* file. Without one, open_component_preview renders ${toolkitFrameworks} only. Check this component in the app instead.`,
+      message: `${unsupportedFrameworks[framework].reason(label)} and has no vite.config.* file. Without one, open_component_preview renders ${toolkitFrameworks} only. Check this component ${unsupportedFrameworks[framework].check} instead.`,
     };
   if (!projectVite && !framework)
     return {
@@ -154,9 +174,10 @@ export async function locateComponentPreview(
 }
 
 // Whether the project has a package the tool renders: one with a Vite
-// config, or one that depends on React, Vue 3 or Svelte 5. Sessions of
-// other projects, such as an Angular, Vue 2 or Svelte 4 app, are not
-// offered the tool.
+// config, or one that depends on React, React Native with
+// react-native-web, Vue 3 or Svelte 5. Sessions of other projects, such as
+// an Angular, Vue 2 or Svelte 4 app, or a React Native app without
+// react-native-web, are not offered the tool.
 export async function hasComponentPreviewProject(worktree: string) {
   const markers = runtimeManagedPath(worktree)
     ? await projectMarkersInRuntime(worktree)
@@ -287,11 +308,14 @@ function manifestDependencies(text: string | null | undefined) {
 }
 
 // React wins over Vue, and Vue over Svelte, in a package that declares
-// several, as before Vue and Svelte were supported.
+// several, as before Vue and Svelte were supported. React Native components
+// render in the page through react-native-web only.
 function declaredFramework(
   dependencies: Map<string, string>,
 ): DeclaredFramework | undefined {
   if (dependencies.has("next")) return "next";
+  if (dependencies.has("react-native-web")) return "react-native";
+  if (dependencies.has("react-native")) return "react-native-without-web";
   if (dependencies.has("react")) return "react";
   const vue = dependencies.get("vue");
   if (vue !== undefined) return rangeBelowMajor(vue, 3) ? "vue2" : "vue";

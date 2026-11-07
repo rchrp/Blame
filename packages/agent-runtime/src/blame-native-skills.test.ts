@@ -229,6 +229,30 @@ test("the component preview skill shows how to mount a Svelte component, in a Sv
   }
 });
 
+test("the component preview skill covers React Native packages with react-native-web, such as an Expo app", async () => {
+  const service = createUserInstructionConfigService({
+    skills: {
+      directories: resolvePluginSkillDirectoriesFromPaths([blameNativePluginPath()]),
+    },
+  });
+  try {
+    await service.start();
+    const executor = service.createSkillsExecutor?.();
+    assert.ok(executor);
+    const output = await executor("component-preview", "profile card", {} as never);
+    assert.match(
+      output,
+      /React Native package with `react-native-web`, such as an Expo app with web support,[^\n]*Blame's own Vite with `@vitejs\/plugin-react`/,
+    );
+    assert.match(output, /`react-native` resolves to `react-native-web`, a `\.web\.tsx` or `\.web\.ts` file comes before its native variant, `__DEV__` is `true`/);
+    assert.match(output, /import \{ ProfileCard \} from "\.\/components\/profile-card"\n\nexport default <ProfileCard name="Ada Lovelace" status="Active" \/>/);
+    assert.match(output, /Without `react-native-web`, the package is not rendered[^\n]*in the app or on a device/);
+    assert.match(output, /An Expo module without a web implementation[^\n]*fails with an error that names it/);
+  } finally {
+    service.stop();
+  }
+});
+
 test("the component preview skill makes the component preview the default visual check", async () => {
   const service = createUserInstructionConfigService({
     skills: {

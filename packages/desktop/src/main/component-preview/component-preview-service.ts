@@ -371,7 +371,9 @@ function serverSummary(
   const shims =
     framework === "next"
       ? ", with shims for next/link, next/image, next/navigation and next/font"
-      : "";
+      : framework === "react-native"
+        ? ", with react-native resolved to react-native-web, .web.* files first and __DEV__ set"
+        : "";
   const vueCli =
     framework === "vue" ? " In a Vue CLI package, @/ resolves to src/." : "";
   const svelte =

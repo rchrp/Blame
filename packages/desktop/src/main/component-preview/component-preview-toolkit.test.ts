@@ -18,11 +18,12 @@ import {
 } from "./component-preview-service.ts";
 
 // Small projects rendered by the real temporary server: a Next.js App
-// Router app, a Vue CLI app and a Rollup Svelte app, without Vite, with
-// Blame's own Vite and @vitejs/plugin-react, @vitejs/plugin-vue or
-// @sveltejs/vite-plugin-svelte; SvelteKit 2 and 3 apps with their own Vite
-// and sveltekit(). The browser is replaced by requests for the page and the
-// modules it loads, or by jsdom, which runs those modules in this process.
+// Router app, an Expo app with react-native-web, a Vue CLI app and a Rollup
+// Svelte app, without Vite, with Blame's own Vite and @vitejs/plugin-react,
+// @vitejs/plugin-vue or @sveltejs/vite-plugin-svelte; SvelteKit 2 and 3
+// apps with their own Vite and sveltekit(). The browser is replaced by
+// requests for the page and the modules it loads, or by jsdom, which runs
+// those modules in this process.
 
 const png = Buffer.from(
   "89504e470d0a1a0a0000000d4948445200000001000000010806000000" +
@@ -206,6 +207,129 @@ test(
       await service?.shutdown();
       await rm(worktree, { force: true, recursive: true });
       await rm(toolkitRoot, { force: true, recursive: true });
+    }
+  },
+);
+
+test(
+  "a React Native component renders with Blame's Vite and react-native-web: View, Text and Pressable, .web.* files first and __DEV__",
+  {
+    skip:
+      dependencies.reactNative && dependencies.jsdom
+        ? false
+        : "Vite, @vitejs/plugin-react, React, react-native-web or jsdom is not installed for the desktop tests.",
+    timeout: 120_000,
+  },
+  async () => {
+    const { clientEnv, page, text } = await renderReactNativeFixture(
+      "components/greeting.blame-preview.tsx",
+    );
+    assert.match(
+      text[0]!,
+      /^Started Blame's own Vite 8\.\d+\.\d+ server with @vitejs\/plugin-react, with react-native resolved to react-native-web, \.web\.\* files first and __DEV__ set, in the story's workspace for the worktree root, at http:\/\/127\.0\.0\.1:\d+: the package has no Vite config, so its PostCSS config and tsconfig or jsconfig paths apply\. 1 render of components\/greeting\.blame-preview\.tsx:$/u,
+    );
+    assert.match(
+      text[1]!,
+      /^Render 1\/1 — default, light, 1280 px: rendered\./u,
+      text[1],
+    );
+    // react-native-web's View, Text and Pressable, with the app's
+    // EXPO_PUBLIC_* variable; the others never reach the page.
+    assert.match(page.rendered, /class="css-view-\w+/u);
+    assert.match(page.rendered, /Hello, Ada/u);
+    assert.match(
+      page.rendered,
+      /role="button"[^>]*tabindex="0"[^>]*>.*Pressed 0 times/su,
+    );
+    assert.doesNotMatch(clientEnv, /never-in-the-page/u);
+    // platform-label.web.tsx, not platform-label.tsx; the Expo module's
+    // .web.js file, not its native one, which needs its native module.
+    assert.match(page.rendered, /web build/u);
+    assert.doesNotMatch(page.rendered, /native/u);
+    // __DEV__ in the app's code and in the pre-bundled module.
+    assert.match(page.rendered, /development app, development module/u);
+  },
+);
+
+test(
+  "an Expo module without a web implementation is named in the page's error",
+  {
+    skip:
+      dependencies.reactNative && dependencies.jsdom
+        ? false
+        : "Vite, @vitejs/plugin-react, React, react-native-web or jsdom is not installed for the desktop tests.",
+    timeout: 120_000,
+  },
+  async () => {
+    const { text } = await renderReactNativeFixture(
+      "components/sensor.blame-preview.tsx",
+    );
+    assert.match(
+      text[1]!,
+      /^Render 1\/1 — default, light, 1280 px: the page reported an error: expo-fixture-sensor has no web implementation \(Cannot find native module 'ExpoFixtureSensor'\): open_component_preview renders React Native components in the browser with react-native-web\. Check this component in the app or on a device, or preview a sub-component that does not use expo-fixture-sensor\.$/mu,
+      text[1],
+    );
+  },
+);
+
+test(
+  "a React Native package without react-dom and react-native-web installed is reported before Blame's Vite is installed",
+  { timeout: 60_000 },
+  async () => {
+    const worktree = await mkdtemp(
+      join(tmpdir(), "blame-component-preview-native-missing-"),
+    );
+    let service: ComponentPreviewService | undefined;
+    try {
+      // Installed in a container, the desktop does not check them first.
+      await writeFixtureFiles(worktree, {
+        "package.json": JSON.stringify({
+          dependencies: {
+            react: "19.3.1",
+            "react-dom": "19.3.1",
+            "react-native": "0.83.0",
+            "react-native-web": "0.21.4",
+          },
+        }),
+        "node_modules/react/package.json": JSON.stringify({
+          name: "react",
+          version: "19.3.1",
+          main: "index.js",
+        }),
+        "node_modules/react/index.js": "module.exports = {};\n",
+        "components/card.blame-preview.tsx": "export default null;\n",
+      });
+      service = new ComponentPreviewService({
+        browser: async () => {
+          throw new Error("A server that did not start opens no page.");
+        },
+        locate: async () => ({
+          host: workspaceComponentPreviewHost(
+            worktree,
+            undefined,
+            join(worktree, "toolkit"),
+          ),
+          packageDir: "",
+          toolkit: { framework: "react-native" },
+        }),
+        storeScreenshots: async (result) => result,
+      });
+      const result = (await service.render({
+        request: { file: "components/card.blame-preview.tsx" },
+        worktree,
+      })) as {
+        content: Array<{ text?: string; type: string }>;
+        isError?: boolean;
+      };
+      assert.equal(result.isError, true);
+      assert.match(
+        result.content[0]!.text!,
+        /^The component preview server did not start in the story's workspace: react-dom and react-native-web are not installed for \S+\. Without a Vite config, open_component_preview renders React Native components with react-native-web and react-dom, and it never installs the project's dependencies: install them first\.$/u,
+      );
+      assert.equal(existsSync(join(worktree, "toolkit")), false);
+    } finally {
+      await service?.shutdown();
+      await rm(worktree, { force: true, recursive: true });
     }
   },
 );
@@ -673,6 +797,65 @@ async function renderSvelteKitFixture(
   }
 }
 
+// Renders a preview file of the React Native fixture with Blame's own Vite,
+// in jsdom.
+async function renderReactNativeFixture(file: string) {
+  const worktree = await mkdtemp(
+    join(tmpdir(), "blame-component-preview-native-"),
+  );
+  const toolkitRoot = await mkdtemp(
+    join(tmpdir(), "blame-component-preview-toolkit-"),
+  );
+  const page = new DomPage();
+  const service = new ComponentPreviewService({
+    browser: async () => ({ openPage: async () => page }),
+    locate: async () => ({
+      host: workspaceComponentPreviewHost(worktree, undefined, toolkitRoot),
+      packageDir: "",
+      toolkit: { framework: "react-native" },
+    }),
+    storeScreenshots: async (result) => ({
+      ...(result as object),
+      _meta: { blameScreenshots: [{ id: "5".repeat(64) }] },
+    }),
+  });
+  try {
+    await writeReactNativeFixture(worktree);
+    await linkToolkit(
+      toolkitRoot,
+      "react-native",
+      dependencies.reactNative!.toolkit,
+    );
+    const result = (await service.render({ request: { file }, worktree })) as {
+      content: Array<{ text?: string; type: string }>;
+      isError?: boolean;
+    };
+    assert.equal(result.isError, undefined, JSON.stringify(result.content));
+    const clientEnv = await viteClientEnv(page.origin!);
+    assert.equal(await service.stop({ worktree }), 1);
+    return {
+      clientEnv,
+      page,
+      text: result.content
+        .filter(({ type }) => type === "text")
+        .map(({ text }) => text!),
+    };
+  } finally {
+    await service.shutdown();
+    await rm(worktree, { force: true, recursive: true });
+    await rm(toolkitRoot, { force: true, recursive: true });
+  }
+}
+
+// The environment module Vite's client imports first: it sets the config's
+// defines in the page.
+async function viteClientEnv(origin: string) {
+  const client = await (await fetch(new URL("/@vite/client", origin))).text();
+  const envPath = /import "([^"]+\/env\.mjs)"/u.exec(client)?.[1];
+  assert.ok(envPath, "Vite's client imports no environment module.");
+  return (await fetch(new URL(envPath, origin))).text();
+}
+
 async function assertShims(origin: string) {
   const shim = async (id: string) => {
     const response = await fetch(
@@ -743,7 +926,9 @@ class FetchingPage implements ComponentPreviewPage {
 }
 
 // jsdom in place of the browser: the page's modules run in this process,
-// loaded over HTTP from the preview server. Each page renders once.
+// loaded over HTTP from the preview server, its module scripts in document
+// order as a browser runs them: Vite's client, React's refresh preamble,
+// then the entry. Each page renders once.
 class DomPage implements ComponentPreviewPage {
   origin?: string;
   // The page as the server sent it.
@@ -781,9 +966,16 @@ class DomPage implements ComponentPreviewPage {
     const restore = useWindowGlobals(window);
     try {
       useHttpModules();
-      await import(
-        new URL("/@id/__x00__virtual:blame-component-preview", input.url).href
-      );
+      for (const script of window.document.querySelectorAll(
+        'script[type="module"]',
+      )) {
+        const src = script.getAttribute("src");
+        await import(
+          src
+            ? new URL(src, input.url).href
+            : inlineModuleUrl(script.textContent ?? "", this.origin!)
+        );
+      }
       const { dataset } = window.document.documentElement;
       const deadline = Date.now() + 20_000;
       while (!dataset.blamePreviewStatus && Date.now() < deadline)
@@ -813,9 +1005,11 @@ class DomPage implements ComponentPreviewPage {
 }
 
 // The page's globals, as a browser has them, until `restore` is called;
-// those the page's modules set go too.
+// those the page's modules set go too. Vite's client sets the config's
+// process.env defines on this process's own environment: it is restored.
 function useWindowGlobals(window: Window & typeof globalThis) {
   const before = new Set(Object.getOwnPropertyNames(globalThis));
+  const env = { ...process.env };
   const replaced = new Map<string, PropertyDescriptor | undefined>();
   const set = (name: string, value: unknown) => {
     if (!replaced.has(name))
@@ -843,7 +1037,20 @@ function useWindowGlobals(window: Window & typeof globalThis) {
       if (!before.has(name)) Reflect.deleteProperty(globalThis, name);
     for (const [name, descriptor] of replaced)
       if (descriptor) Object.defineProperty(globalThis, name, descriptor);
+    for (const name of Object.keys(process.env))
+      if (!(name in env)) Reflect.deleteProperty(process.env, name);
+    Object.assign(process.env, env);
   };
+}
+
+// An inline module script as a module this process can import, its
+// root-relative imports made absolute.
+function inlineModuleUrl(code: string, origin: string) {
+  const absolute = code.replace(
+    /(\bfrom\s*|\bimport\s*\(?\s*)(["'])\//gu,
+    `$1$2${origin}/`,
+  );
+  return `data:text/javascript,${encodeURIComponent(absolute)}`;
 }
 
 // Vite's HMR client in the page, reduced to what modules call when they
@@ -1029,6 +1236,133 @@ async function writeNextFixture(worktree: string) {
   await mkdir(join(worktree, "public"), { recursive: true });
   await writeFile(join(worktree, "public/avatar.png"), png);
   await linkProjectDependencies(worktree, dependencies.next!.project);
+}
+
+// An Expo app with web support, as `npx expo install react-dom
+// react-native-web` leaves it, without Vite and without react-native
+// itself installed: components written with View, Text and Pressable, one
+// with a .web.tsx variant, an EXPO_PUBLIC_* variable, and two Expo modules,
+// one with a web implementation in .web.js files and one without.
+async function writeReactNativeFixture(worktree: string) {
+  await writeFixtureFiles(worktree, {
+    "package.json": JSON.stringify({
+      name: "react-native-fixture",
+      private: true,
+      main: "index.ts",
+      dependencies: {
+        expo: "~55.0.0",
+        "expo-fixture-haptics": "1.0.0",
+        "expo-fixture-sensor": "1.0.0",
+        react: "19.3.1",
+        "react-dom": "19.3.1",
+        "react-native": "0.83.0",
+        "react-native-web": "0.21.4",
+      },
+    }),
+    ".env": "EXPO_PUBLIC_GREETING=Hello\nAPI_SECRET=never-in-the-page\n",
+    "components/platform-label.tsx": [
+      'import { Text } from "react-native";',
+      "export function PlatformLabel() {",
+      "  return <Text>native-only label</Text>;",
+      "}",
+      "",
+    ].join("\n"),
+    "components/platform-label.web.tsx": [
+      'import { Platform, Text } from "react-native";',
+      "export function PlatformLabel() {",
+      "  return <Text>{Platform.OS} build</Text>;",
+      "}",
+      "",
+    ].join("\n"),
+    "components/greeting.tsx": [
+      'import { useState } from "react";',
+      'import { Pressable, StyleSheet, Text, View } from "react-native";',
+      'import { impactAsync, mode } from "expo-fixture-haptics";',
+      'import { PlatformLabel } from "./platform-label";',
+      "",
+      "export function Greeting({ name }: { name: string }) {",
+      "  const [count, setCount] = useState(0);",
+      "  return (",
+      "    <View style={styles.card}>",
+      "      <Text style={styles.title}>{process.env.EXPO_PUBLIC_GREETING}, {name}</Text>",
+      "      <PlatformLabel />",
+      '      <Text>{__DEV__ ? "development" : "production"} app, {mode} module</Text>',
+      '      <Pressable accessibilityRole="button" onPress={() => { setCount(count + 1); void impactAsync(); }}>',
+      "        <Text>Pressed {count} times</Text>",
+      "      </Pressable>",
+      "    </View>",
+      "  );",
+      "}",
+      "",
+      "const styles = StyleSheet.create({",
+      '  card: { backgroundColor: "#2563eb", borderRadius: 12, padding: 16 },',
+      '  title: { color: "white", fontSize: 20, fontWeight: "700" },',
+      "});",
+      "",
+    ].join("\n"),
+    "components/greeting.blame-preview.tsx": [
+      'import { Greeting } from "./greeting";',
+      'export default <Greeting name="Ada" />;',
+      "",
+    ].join("\n"),
+    "components/sensor.blame-preview.tsx": [
+      'import { Text } from "react-native";',
+      'import { readSensor } from "expo-fixture-sensor";',
+      "export default <Text>{readSensor()}</Text>;",
+      "",
+    ].join("\n"),
+    // expo-modules-core in the browser: no native module is there.
+    "node_modules/expo-modules-core/package.json": JSON.stringify({
+      name: "expo-modules-core",
+      version: "3.0.0",
+      main: "index.js",
+    }),
+    "node_modules/expo-modules-core/index.js": [
+      "export function requireNativeModule(moduleName) {",
+      `  throw new Error("Cannot find native module '" + moduleName + "'");`,
+      "}",
+      "",
+    ].join("\n"),
+    "node_modules/expo-fixture-haptics/package.json": JSON.stringify({
+      name: "expo-fixture-haptics",
+      version: "1.0.0",
+      main: "build/index.js",
+    }),
+    "node_modules/expo-fixture-haptics/expo-module.config.json": JSON.stringify(
+      { platforms: ["apple", "android"] },
+    ),
+    "node_modules/expo-fixture-haptics/build/index.js":
+      'export { impactAsync, mode } from "./ExpoFixtureHaptics";\n',
+    "node_modules/expo-fixture-haptics/build/ExpoFixtureHaptics.js": [
+      'import { requireNativeModule } from "expo-modules-core";',
+      'const Haptics = requireNativeModule("ExpoFixtureHaptics");',
+      "export const impactAsync = Haptics.impactAsync;",
+      'export const mode = "native-only";',
+      "",
+    ].join("\n"),
+    "node_modules/expo-fixture-haptics/build/ExpoFixtureHaptics.web.js": [
+      "export async function impactAsync() {}",
+      'export const mode = __DEV__ ? "development" : "production";',
+      "",
+    ].join("\n"),
+    "node_modules/expo-fixture-sensor/package.json": JSON.stringify({
+      name: "expo-fixture-sensor",
+      version: "1.0.0",
+      main: "build/index.js",
+    }),
+    "node_modules/expo-fixture-sensor/expo-module.config.json": JSON.stringify({
+      platforms: ["apple", "android"],
+    }),
+    "node_modules/expo-fixture-sensor/build/index.js": [
+      'import { requireNativeModule } from "expo-modules-core";',
+      'const Sensor = requireNativeModule("ExpoFixtureSensor");',
+      "export function readSensor() {",
+      "  return Sensor.read();",
+      "}",
+      "",
+    ].join("\n"),
+  });
+  await linkProjectDependencies(worktree, dependencies.reactNative!.project);
 }
 
 // A project created by `vue create` with Vue 3: no Vite, its webpack alias
@@ -1512,11 +1846,11 @@ type FixtureDependencies = {
   toolkit: Record<string, string>;
 };
 
-// Vite, @vitejs/plugin-vue, Vue, @sveltejs/vite-plugin-svelte, Svelte and
-// SvelteKit 2 and 3 from the desktop package, @vitejs/plugin-react and
-// React from the app package, Next.js and Tailwind from the vitrine
-// package, jsdom from the agent-runtime package. A fixture whose packages
-// are not all installed is skipped.
+// Vite, @vitejs/plugin-vue, Vue, @sveltejs/vite-plugin-svelte, Svelte,
+// SvelteKit 2 and 3 and react-native-web from the desktop package,
+// @vitejs/plugin-react and React from the app package, Next.js and Tailwind
+// from the vitrine package, jsdom from the agent-runtime package. A fixture
+// whose packages are not all installed is skipped.
 function resolveDependencies() {
   const packages = new URL("../../../../", import.meta.url);
   const installed = (packageName: string, name: string) => {
@@ -1545,6 +1879,17 @@ function resolveDependencies() {
         next: installed("vitrine", "next"),
         react: installed("app", "react"),
         "react-dom": installed("app", "react-dom"),
+      },
+      {
+        "@vitejs/plugin-react": installed("app", "@vitejs/plugin-react"),
+        vite,
+      },
+    ),
+    reactNative: fixtureDependencies(
+      {
+        react: installed("app", "react"),
+        "react-dom": installed("app", "react-dom"),
+        "react-native-web": installed("desktop", "react-native-web"),
       },
       {
         "@vitejs/plugin-react": installed("app", "@vitejs/plugin-react"),
