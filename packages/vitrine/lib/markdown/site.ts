@@ -20,7 +20,13 @@ const demoVideoUrl = "https://youtu.be/cD6jASpIKQw";
 const studyUrl = absoluteSiteUrl("/research/light-semantic-harness-study.pdf");
 
 export const productSummary =
-  "Blame is an open-source Agentic Development Environment (ADE) for AI coding agents: a desktop app for macOS, Windows, and Linux where each task goes from backlog to agent, isolated worktree, live preview, review, and controlled merge. Agents work through a verifiable harness, and nothing merges until you approve it.";
+  "Blame ADE is a free, open-source desktop app for macOS, Windows, and Linux that runs coding agents in parallel, each with its own live preview. Every story gets its own branch, worktree, ports, and containers for the app and its services, so up to three agents work at once without conflicts, and nothing merges until you approve it. No account needed: it works with your Claude or ChatGPT plan, or 50 AI providers with your own key.";
+
+const installCommands = [
+  "- macOS: `brew install --cask rchrp/tap/blame`",
+  `- Windows: \`winget install Blame.Blame\` once the winget package is published (it is in review); until then, download the installer from ${absoluteSiteUrl("/download")}`,
+  "- Linux: the AppImage, `.deb`, or `.rpm` package from the download page. An AUR package is coming soon.",
+].join("\n");
 
 const keyLinks = [
   `- Website: ${absoluteSiteUrl("/")}`,
@@ -33,21 +39,43 @@ const keyLinks = [
 ].join("\n");
 
 export function homeMarkdown() {
-  return `# Blame — the open-source ADE for AI coding agents
+  return `# Blame ADE — Run coding agents in parallel, each with its own live preview
 
 > ${productSummary}
 
 ${keyLinks}
 
-AI can write the code. Blame makes it shippable. From story to controlled merge, one verifiable harness unifies agents, Code Practices, smart worktrees, and live Cloud Previews.
+Plan stories in a backlog, then run up to three agents at once. Each gets its own ports, database, and services, so you try every change in its running app before you review and merge it.
+
+Free and open source · No account needed · Works with your Claude or ChatGPT plan
+
+## Install
+
+${installCommands}
+
+Then open Blame and choose Continue without an account. Install guide: ${absoluteSiteUrl("/docs/install")}
+
+## Worktrees isolate the code. Blame isolates the running app.
+
+Run three agents in three worktrees and they still share one localhost:3000, one database, and one .env. Blame gives each story its own running app, from first prompt to merge.
+
+## Three stories, three running apps, no conflicts
+
+Before an agent starts, Blame gives its story:
+
+- its own branch and worktree;
+- its own ports;
+- its own containers for the app and its services: database, cache, workers.
+
+Up to three agents run at once, and you try each change in its own running app. Previews today cover web apps and APIs that run on Linux (the page in a built-in browser) and Linux GUI, Electron, and Tauri apps (a screen of the running app).
 
 ## How a story goes from backlog to merge
 
-1. Open Blame and sign in, or create a free account.
-2. Open a Git repository, or create a new project from a web stack.
-3. Connect an AI provider with your own API key or subscription.
-4. Write a user story in the backlog and hand it to an agent.
-5. Follow the agent in its own worktree, try the result in the live preview, then request changes, reject it, or approve and merge.
+1. Open Blame and choose Continue without an account, or sign in.
+2. Connect an AI provider: sign in with your Claude or ChatGPT plan, or paste an API key.
+3. Open a Git repository, or create a new project from a web stack. Blame prepares how the project runs in a preview.
+4. Write two or three user stories in the backlog and start an agent on each. They run at the same time.
+5. Open each story's Preview tab to try its own running copy of the app, then request changes, reject the work, or approve and merge.
 
 For a quick fix or a question about the code, skip the backlog and use Quick Chat.
 
@@ -67,14 +95,10 @@ Same model, different harness. Blame’s agents find code by its structure, read
 | \`run_task\` | Runs commands and tests | Results are bound to the run and the source revision. A failing test stays failed, even behind a script that exits 0. |
 | \`finish_task\` | Hands the work back | Required checks run again on the final source. Missing or stale checks are reported as unverified, with the reason. |
 
-Measured in the open: on fresh cross-module TypeScript tasks audited by hand, the harness matched Cline’s 6/6 with 54% fewer tokens and a 39% lower estimated cost, with the same model (panel F61 of the study).
+Measured in the open: on six fresh cross-module TypeScript tasks audited by hand, the harness matched Cline’s 6/6 with 54% fewer tokens and a 39% lower estimated cost, with the same model (panel F61 of the study).
 
 - Study (PDF): ${studyUrl}
 - Harness source: ${harnessSourceUrl}
-
-## Smart workspaces: one story, its own workspace
-
-Isolated by default. Blame analyzes your project, works out what each story needs, and prepares a dedicated branch, worktree, environment, port, and runtime before the agent starts.
 
 ## Live previews and review: merge when it earns it
 
@@ -82,11 +106,11 @@ Open the running app beside the story, read the diff and the checks, then approv
 
 ## Parallel agents: run every agent on the model that fits
 
-Launch multiple agents in parallel, even across different providers. Blame supports 50 AI providers, such as OpenAI, Anthropic, Google, xAI, and Mistral, plus any OpenAI-compatible API, so every task can use the model that fits it best.
+Run up to three agents at once, each on its own model. Sign in with your Claude or ChatGPT plan, or use any of 50 AI providers, such as OpenAI, Anthropic, Google, xAI, and Mistral, with your own key, plus any OpenAI-compatible API.
 
-## Code Practices: every agent codes like a pro
+## Code Practices: same rules for every agent
 
-Blame holds every implementation to professional engineering standards: clean code, verified changes, sound architecture, and a commit history your team can trust. Practices are set project by project.
+Four practices, set project by project: coding style, unit tests, architecture, and commit messages. For each, agents either match what the codebase already does, or apply a stricter standard: explicit, typed, focused code with deliberate error handling; a TDD loop with ZOMBIES cases; Clean, Onion, and Hexagonal Architecture with ports and adapters; exact Conventional Commits. Blame detects which practices the project already follows.
 
 ## Specialist agents: more perspective, only when it matters
 
@@ -176,11 +200,17 @@ export function downloadMarkdown(release: {
     (artifact) =>
       `| ${artifact.platform} | ${artifact.architecture} | [${artifact.fileName}](${artifactUrl(artifact.fileName)}) | ${artifact.size}B | ${artifact.updatedAt} |`,
   );
-  return `# Download Blame
+  return `# Download Blame ADE
 
-> Install the Blame desktop app and keep agent execution close to your code: isolated worktrees, live previews, diffs, and controlled merges on your machine.
+> Free and open source, for macOS, Windows, and Linux. No account needed: open the app, choose Continue without an account, and your agents, worktrees, and previews run on your machine.
 
 Page: ${absoluteSiteUrl("/download")}
+
+## Install from the command line
+
+${installCommands}
+
+Install guide: ${absoluteSiteUrl("/docs/install")}
 
 ## Latest release${release.tag ? `: ${release.tag}` : ""}
 
@@ -193,7 +223,7 @@ Linux packages: [Debian (.deb)](${artifactUrl("blame-linux-amd64.deb")}) · [RPM
 ## Requirements
 
 - macOS 13 or later (Apple silicon or Intel). The app is signed and notarized. On first launch, Blame sets up a small Linux VM (Lima) where agents, worktrees, and previews run.
-- Windows 10 or 11 with WSL 2. The installer is not code-signed yet, so SmartScreen may warn: choose More info, then Run anyway. If WSL is missing, run \`wsl --install\` in an administrator terminal and restart.
+- Windows 10 or 11 with WSL 2. The installer is not code-signed yet (signing through SignPath Foundation is planned: ${absoluteSiteUrl("/code-signing-policy")}), so SmartScreen may warn: choose More info, then Run anyway. If WSL is missing, run \`wsl --install\` in an administrator terminal and restart.
 - Linux x86_64 with Docker Engine and the Compose plugin. Worktrees stay native; previews and project services run in Docker.
 
 ## Install on Linux

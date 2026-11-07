@@ -30,7 +30,7 @@ export function llmsTxt() {
       `- [${page.data.title}](${absoluteSiteUrl(docsMarkdownPath(page))})${page.data.description ? `: ${page.data.description}` : ""}`,
   );
 
-  return `# Blame
+  return `# Blame ADE
 
 > ${productSummary}
 

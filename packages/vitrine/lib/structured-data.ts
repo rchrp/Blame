@@ -87,10 +87,10 @@ function premiumOffer(cycle: PricingBillingCycle) {
 const softwareApplicationStructuredData = {
   "@type": "SoftwareApplication",
   "@id": applicationId,
-  name: "Blame",
-  alternateName: "Blame ADE",
+  name: "Blame ADE",
+  alternateName: "Blame",
   description:
-    "Blame is an open-source Agentic Development Environment (ADE): a desktop app where each task goes from backlog to AI coding agent, isolated worktree, live preview, review, and controlled merge, through a verifiable harness.",
+    "Blame ADE is an open-source Agentic Development Environment: a desktop app that runs up to three coding agents at once, each with its own live preview. Every story gets its own branch, worktree, ports, and containers for the app and its services, so you try each change in its running app before you review and merge it. Free, no account needed, and it works with your Claude or ChatGPT plan or 50 AI providers.",
   url: absoluteSiteUrl("/"),
   downloadUrl: absoluteSiteUrl("/download"),
   installUrl: absoluteSiteUrl("/download"),
@@ -102,13 +102,15 @@ const softwareApplicationStructuredData = {
   isAccessibleForFree: true,
   operatingSystem: "macOS 13 or later, Windows 10 or 11, Linux",
   featureList: [
+    "Up to three agents at once, each with its own live preview of the running app",
+    "Isolated running apps: each story gets its own branch, worktree, ports, and containers for the app and its services (database, cache, workers)",
     "Backlog-driven development: each user story becomes a lane that keeps its brief, agent work, review, and decision",
     "Light Semantic Harness: agents find code by its structure, read before they edit, and prove their checks",
-    "Smart worktrees: a dedicated branch, worktree, environment, port, and runtime for each story",
-    "Live previews beside each story, and managed Cloud Previews",
     "Controlled merge: approve, request changes, or reject",
-    "Parallel agents across 50 AI providers and any OpenAI-compatible API",
-    "Code Practices that hold every agent to your engineering standards",
+    "Works with your Claude or ChatGPT plan, or 50 AI providers and any OpenAI-compatible API with your own key",
+    "No account needed: projects, stories, and provider connections stay on your computer",
+    "Code Practices: coding style, unit tests, architecture, and commit messages, matched to the codebase or to a stricter standard",
+    "Managed Cloud Previews with Blame Cloud",
     "Specialist agents for codebase context, story, frontend design, verification, and risk",
     "MCP servers for every agent",
     "Project creation from an empty folder",
@@ -187,7 +189,7 @@ export const homepageStructuredData = {
     {
       ...webPage(
         "/",
-        "Blame — The Open Source ADE That Sets the Standard",
+        "Blame ADE — Run coding agents in parallel, each with its own live preview",
         softwareApplicationStructuredData.description,
       ),
       about: { "@id": applicationId },
@@ -243,8 +245,8 @@ export function downloadStructuredData(
       {
         ...webPage(
           "/download",
-          "Download Blame",
-          "Download the Blame desktop app for macOS, Windows, and Linux.",
+          "Download Blame ADE",
+          "Download Blame ADE for macOS, Windows, and Linux, or install it with Homebrew. Free and open source, no account needed.",
         ),
         about: { "@id": applicationId },
         breadcrumb: { "@id": `${url}#breadcrumb` },
