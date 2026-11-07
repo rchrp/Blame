@@ -23,6 +23,10 @@ import {
   type AnnotatedAttachment,
 } from "@/components/attachments/image-attachment-gallery"
 import { AttachmentPreview } from "@/components/attachments/attachment-preview"
+import {
+  attachmentImageUrl,
+  renewExpiredImages,
+} from "@/components/attachments/stored-attachment-url"
 import { DocumentAttachmentGallery } from "@/components/attachments/document-attachment-gallery"
 import type { ComposerAttachment as PastedAttachment } from "@/components/attachments/attachment-types"
 import { attachmentFormat } from "@/components/attachments/attachment-format"
@@ -1068,6 +1072,12 @@ export const MarkdownEditor = React.forwardRef<
   >([])
   const [activeMentionIndex, setActiveMentionIndex] = React.useState(0)
   const attachmentsRef = React.useRef<PastedAttachment[]>([])
+  // Signed image links expire: renew them before the gallery loads them.
+  const openGallery = useLatestCallback((id: string) => {
+    void renewExpiredImages(attachmentsRef.current).finally(() =>
+      setGalleryId(id)
+    )
+  })
   const pendingAttachmentWritesRef = React.useRef(
     new Map<string, Promise<void>>()
   )
@@ -1857,7 +1867,7 @@ export const MarkdownEditor = React.forwardRef<
                     <AttachmentPreview
                       key={attachment.id}
                       attachment={attachment}
-                      onOpenImage={setGalleryId}
+                      onOpenImage={openGallery}
                       onOpenDocument={setDocumentId}
                       onRemove={removeAttachment}
                     />
@@ -1905,7 +1915,7 @@ export const MarkdownEditor = React.forwardRef<
                 <AttachmentPreview
                   key={attachment.id}
                   attachment={attachment}
-                  onOpenImage={setGalleryId}
+                  onOpenImage={openGallery}
                   onOpenDocument={setDocumentId}
                 />
               ))}
@@ -1941,7 +1951,7 @@ export const MarkdownEditor = React.forwardRef<
             .map((attachment) => ({
               id: attachment.id,
               name: attachment.file.name,
-              source: attachment.previewUrl!,
+              source: attachmentImageUrl(attachment)!,
               annotation: attachment.annotation,
             }))}
           onClose={() => setGalleryId(null)}

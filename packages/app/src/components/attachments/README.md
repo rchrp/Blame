@@ -69,6 +69,10 @@ covers IPC payload validation, path sanitization and executable rejection.
 Browser checks should cover PDF pagination/zoom, worksheet selection, malformed
 files/retry, keyboard focus restoration, large inputs, and both viewport sizes.
 
+## Stored file links
+
+Uploaded originals are read through signed storage links that expire (15 minutes on hosted storage), while stories, comments and drafts keep the link they were loaded with. `stored-attachment-url.ts` asks the API (`GET /attachments/:id`) for a new link shortly before the old one expires, or once storage refuses it (once per link, so a deleted file stops there). Image cards, the image gallery, document previews, opening and downloading all go through it.
+
 ## Image annotation implementation
 
 The shared Markdown composer opens image thumbnails in a gallery. Editable composers can annotate and apply changes; read-only consumers omit `onSave`. This extends the existing app UI: Radix dialog, shared buttons/popovers/tooltips, semantic app colors, and Lucide icons. The gallery fills the viewport over a translucent blurred backdrop, without a visible header, filename, or footer divider. Annotation tools float at the bottom, with Save and Close in a detached action group to their right; tools wrap on narrow screens. The dialog title and editing hints remain available to assistive technology. There are no generated visual assets or additional design-system tokens.

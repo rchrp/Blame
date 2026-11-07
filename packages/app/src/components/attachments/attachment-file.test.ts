@@ -1,6 +1,7 @@
 import assert from "node:assert/strict"
 import { test } from "node:test"
 import { readAttachmentFile } from "./attachment-file.ts"
+import { configureStoredAttachmentUrls } from "./stored-attachment-url.ts"
 
 test("reads uploaded originals instead of their empty File placeholders", async () => {
   const file = new File([], "restored.md", { type: "text/markdown" })
@@ -74,4 +75,50 @@ test("refuses missing originals and oversized local previews", async () => {
     }),
     /unavailable/
   )
+})
+
+test("retries an original storage refused with a renewed link", async () => {
+  const file = new File([], "restored.md", { type: "text/markdown" })
+  const refused = "https://storage.example/old"
+  const renewed = "https://storage.example/new"
+  const requests: string[] = []
+  const originalFetch = globalThis.fetch
+  configureStoredAttachmentUrls({ url: "https://api.example", token: "t" })
+  globalThis.fetch = async (input) => {
+    const url = String(input)
+    requests.push(url)
+    if (url === refused) return new Response("", { status: 403 })
+    if (url === renewed) return new Response("# Renewed")
+    return Response.json({
+      data: {
+        id: "1",
+        name: file.name,
+        size: 9,
+        type: file.type,
+        downloadUrl: renewed,
+      },
+    })
+  }
+  try {
+    const restored = await readAttachmentFile({
+      id: "1",
+      file,
+      source: "file",
+      storedAttachment: {
+        id: "1",
+        name: file.name,
+        type: file.type,
+        size: 9,
+        downloadUrl: refused,
+      },
+    })
+    assert.equal(await restored.text(), "# Renewed")
+    assert.deepEqual(requests, [
+      refused,
+      "https://api.example/attachments/1",
+      renewed,
+    ])
+  } finally {
+    globalThis.fetch = originalFetch
+  }
 })

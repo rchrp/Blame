@@ -1,4 +1,8 @@
 import type { ComposerAttachment } from "./attachment-types"
+import {
+  freshDownloadUrl,
+  renewRefusedDownloadUrl,
+} from "./stored-attachment-url.ts"
 
 // Persisted attachments use an empty File placeholder; always read their original URL.
 export async function readAttachmentFile(
@@ -22,10 +26,13 @@ export async function readAttachmentFile(
     throw new Error(
       "This file is too large to preview. Download the original instead."
     )
-  const response = await fetch(stored.downloadUrl, {
-    signal: signal ?? AbortSignal.timeout(30_000),
-    credentials: "omit",
-  })
+  const timeout = signal ?? AbortSignal.timeout(30_000)
+  const url = (await freshDownloadUrl(stored)) ?? stored.downloadUrl
+  let response = await fetchOriginal(url, timeout)
+  if (!response.ok) {
+    const renewed = await renewRefusedDownloadUrl(stored, url)
+    if (renewed) response = await fetchOriginal(renewed, timeout)
+  }
   if (!response.ok || !response.body)
     throw new Error(
       "Unable to load this file. Check your connection and try again."
@@ -53,7 +60,8 @@ export async function readAttachmentFile(
 
 export async function downloadAttachment(attachment: ComposerAttachment) {
   const link = document.createElement("a")
-  const remote = attachment.storedAttachment?.downloadUrl
+  const stored = attachment.storedAttachment
+  const remote = stored ? await freshDownloadUrl(stored) : undefined
   const url = remote ?? URL.createObjectURL(attachment.file)
   link.href = url
   link.download = attachment.file.name
@@ -61,4 +69,8 @@ export async function downloadAttachment(attachment: ComposerAttachment) {
   if (remote) link.target = "_blank"
   link.click()
   if (!remote) window.setTimeout(() => URL.revokeObjectURL(url), 60_000)
+}
+
+function fetchOriginal(url: string, signal: AbortSignal) {
+  return fetch(url, { signal, credentials: "omit" })
 }

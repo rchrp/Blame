@@ -19,6 +19,7 @@ import type { ComposerAttachment } from "./attachment-types"
 import { DocumentContent } from "./document-content"
 import { useDocumentPreview } from "./use-document-preview"
 import { useAttachmentActions } from "./use-attachment-actions"
+import { useAttachmentImageUrl } from "./use-stored-attachment-url"
 
 type AttachmentPreviewProps = {
   attachment: ComposerAttachment
@@ -52,6 +53,7 @@ function FileAttachmentPreview({
   const previewable = !isImage && hasDocumentPreview(attachment.file)
   const preview = useDocumentPreview(attachment, visible && previewable)
   const actions = useAttachmentActions(attachment)
+  const image = useAttachmentImageUrl(attachment)
   const external = format === "audio" || format === "video"
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -95,7 +97,8 @@ function FileAttachmentPreview({
               alt=""
               className="size-full object-cover"
               loading="lazy"
-              src={attachment.previewUrl}
+              src={image.url}
+              onError={image.onError}
             />
             {attachment.annotation && (
               <span

@@ -43,6 +43,15 @@ export async function uploadFileAttachments(
   )
 }
 
+// Returns the stored attachment with a newly signed download link.
+export function fetchFileAttachment(connection: ApiConnection, id: string) {
+  return request<UserStoryFileAttachment>(
+    connection,
+    `/attachments/${encodeURIComponent(id)}`,
+    { method: "GET" }
+  )
+}
+
 export function isFileAttachmentReference(
   value: unknown
 ): value is UserStoryFileAttachment {

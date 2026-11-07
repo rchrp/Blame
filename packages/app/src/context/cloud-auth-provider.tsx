@@ -19,6 +19,7 @@ import {
   removeCloudSession,
   writeCloudSession,
 } from "@/context/cloud-auth-storage"
+import { configureStoredAttachmentUrls } from "@/components/attachments/stored-attachment-url"
 import { createCloudApi } from "@/lib/cloud-api"
 import { useCloudTelemetry } from "@/context/cloud-telemetry"
 import { defaultCloudApiUrl } from "@/context/cloud-api-origin"
@@ -91,6 +92,10 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
     [apiConnection]
   )
   useCloudTelemetry(platform.telemetry, apiConnection, account)
+  React.useEffect(
+    () => configureStoredAttachmentUrls(apiConnection),
+    [apiConnection]
+  )
 
   React.useEffect(() => {
     if (!platform.previewRuntime) return
