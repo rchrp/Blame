@@ -1,6 +1,5 @@
 'use client'
 
-import { Check } from 'lucide-react'
 import { useEffect, useRef, useState, type RefObject } from 'react'
 import { HeroLoop } from '@/components/demo-video'
 import { GitHubMark } from '@/components/github-stars'
@@ -21,12 +20,6 @@ const scrollProgressResponse = 14
 // From this point of its scroll on, the hero has faded and takes no input.
 const hiddenFrom = 0.72
 
-const promises = [
-  'Free and open source',
-  'No account needed',
-  'Works with your Claude or ChatGPT plan',
-]
-
 type LayerStyle = {
   opacity: number
   pointerEvents?: 'auto' | 'none'
@@ -38,6 +31,10 @@ type HeroLayers = {
   frame: RefObject<HTMLDivElement | null>
   mockup: RefObject<HTMLDivElement | null>
 }
+
+// The copy and the mockup are centered together under the header, so a tall
+// screen shows no gap between them; when they don't fit, they start at the
+// top and the mockup runs off the bottom of the screen.
 
 // The server renders the top of the scroll; the browser takes over from there.
 const initialFrameStyle = heroFrameStyle(0, false)
@@ -81,13 +78,13 @@ export function LandingHero() {
         <div
           ref={frameRef}
           aria-hidden={hidden || undefined}
-          className="absolute inset-0 z-10 mx-auto flex w-full max-w-9xl flex-col px-5 pb-0 pt-24 sm:px-8 lg:px-10"
+          className="absolute inset-0 z-10 mx-auto flex w-full max-w-9xl flex-col justify-center-safe px-5 pb-0 pt-24 sm:px-8 lg:px-10"
           inert={hidden || undefined}
           style={initialFrameStyle}
         >
           <div
             ref={copyRef}
-            className="flex flex-1 items-center justify-center pb-4 pt-8 sm:pb-6"
+            className="flex items-center justify-center pb-8 pt-8"
             style={initialCopyStyle}
           >
             <HeroCopy />
@@ -111,25 +108,12 @@ export function LandingHero() {
 
 function HeroCopy() {
   return (
-    // The end card's highlight, buttons and spacing (see cta-scene.module.css),
-    // with the hero's own eyebrow, longer title, subtitle and promises.
+    // The end card's title, highlight, buttons and spacing (see
+    // cta-scene.module.css), with the hero's own subtitle.
     <div className={`${endCard.scene} ${endCard.heroScene}`}>
-      <p className={endCard.heroEyebrow}>
-        <span className={endCard.heroEyebrowName}>Blame ADE</span>
-        <span aria-hidden="true">·</span>
-        <span className="hidden sm:inline">
-          The open-source agentic development environment
-        </span>
-        <span className="sm:hidden">Open-source agentic dev environment</span>
-      </p>
       <h1 id="hero-title" className={`${endCard.title} ${endCard.heroTitle}`}>
-        {/* From tablets up, the rows break after "in parallel," */}
-        Run coding agents{' '}
-        <span className="whitespace-nowrap">in parallel,</span>{' '}
-        <span className="md:whitespace-nowrap">
-          each with its own{' '}
-          <span className="whitespace-nowrap">live preview.</span>
-        </span>
+        <span className="whitespace-nowrap">Run coding agents</span>{' '}
+        <span className="whitespace-nowrap">in parallel.</span>
         <br />
         <span className={`${endCard.hl} ${endCard.hlIntro}`}>
           <span className={endCard.hlBox}>
@@ -138,18 +122,8 @@ function HeroCopy() {
         </span>
       </h1>
       <p className={`hero-subtitle max-w-3xl text-balance text-white/76 ${endCard.heroCopy}`}>
-        Plan stories in a backlog, then run up to three agents at once. Each
-        gets its own ports, database, and services, so you try every change
-        in its running app before you review and merge it.
+        Each agent gets its own live preview, ports, and database.
       </p>
-      <ul className={endCard.heroPromises}>
-        {promises.map((promise) => (
-          <li key={promise}>
-            <Check aria-hidden="true" className={endCard.heroPromiseMark} />
-            {promise}
-          </li>
-        ))}
-      </ul>
       <HeroActions />
       <InstallCommand
         className={endCard.heroInstall}
