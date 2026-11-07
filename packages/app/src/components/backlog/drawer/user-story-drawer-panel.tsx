@@ -957,15 +957,17 @@ export function UserStoryDrawerPanel({
         storyId: userStory.id,
       })
       if (sendNow) requestQueuedDelivery(userStory.id, queued.id)
-      clearComposerDraft()
-      commentValueRef.current = ""
-      setComment("")
-      setCommentCodeSelectionAttachments([])
-      setCommentFileAttachments([])
-      setCommentEditorKey((key) => key + 1)
+      clearCommentComposer()
       return
     }
     setPendingAction("Request Changes")
+    let composerCleared = false
+    // Empty the editor as soon as the comment shows in the conversation, so
+    // the message is not duplicated while the agent starts.
+    const clearComposerOnce = () => {
+      composerCleared = true
+      clearCommentComposer()
+    }
     try {
       const submitted = await commentSubmission.submit({
         story: userStory,
@@ -975,6 +977,7 @@ export function UserStoryDrawerPanel({
           fileAttachments: commentFileAttachments,
         },
         createComment: (input) => onCreateUserStoryComment(userStory, input),
+        onCommentSaved: clearComposerOnce,
         requestChanges: (createdComment) =>
           onRequestChanges(
             userStory,
@@ -984,14 +987,25 @@ export function UserStoryDrawerPanel({
             createdComment.fileAttachments
           ),
       })
-      if (!submitted) return
-      clearComposerDraft()
-      commentValueRef.current = ""
-      setComment("")
-      setCommentCodeSelectionAttachments([])
-      setCommentFileAttachments([])
-      setCommentEditorKey((key) => key + 1)
+      if (!submitted) {
+        if (composerCleared) {
+          restoreCommentComposer(
+            currentComment,
+            commentCodeSelectionAttachments,
+            commentFileAttachments
+          )
+        }
+        return
+      }
+      if (!composerCleared) clearComposerOnce()
     } catch (error) {
+      if (composerCleared) {
+        restoreCommentComposer(
+          currentComment,
+          commentCodeSelectionAttachments,
+          commentFileAttachments
+        )
+      }
       toast.error("Unable to send comment", {
         description: error instanceof Error ? error.message : String(error),
         position: "bottom-right",
@@ -1009,6 +1023,27 @@ export function UserStoryDrawerPanel({
     } catch {
       return
     }
+  }
+
+  function clearCommentComposer() {
+    clearComposerDraft()
+    commentValueRef.current = ""
+    setComment("")
+    setCommentCodeSelectionAttachments([])
+    setCommentFileAttachments([])
+    setCommentEditorKey((key) => key + 1)
+  }
+
+  function restoreCommentComposer(
+    body: string,
+    codeSelectionAttachments: typeof commentCodeSelectionAttachments,
+    fileAttachments: typeof commentFileAttachments
+  ) {
+    commentValueRef.current = body
+    setComment(body)
+    setCommentCodeSelectionAttachments(codeSelectionAttachments)
+    setCommentFileAttachments(fileAttachments)
+    setCommentEditorKey((key) => key + 1)
   }
 
   async function undoCommentMessage(target: AgentConversationUserMessageUndo) {
