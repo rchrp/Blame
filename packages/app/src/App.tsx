@@ -34,6 +34,8 @@ import {
   type OnboardingScreen,
 } from "@/components/onboarding/stage/onboarding-stage"
 import { PremiumOfferScreen, PremiumPanel } from "@/pages/premium/page"
+import { WhatsNewOnLaunch } from "@/components/updates/whats-new-dialog"
+import { isSecondaryWindow } from "@/lib/secondary-window"
 import {
   AccountDialog,
   useAccountFlow,
@@ -227,6 +229,8 @@ export function App() {
             <SettingsDialog open={settingsOpen} onOpenChange={closeSettings} />
             <AccountDialog flow={accountFlow} onPremiumClose={closePremium} />
             <StarInvite />
+            {/* Only once the app itself is up: never over loading or onboarding. */}
+            <WhatsNewOnLaunch enabled={!isSecondaryWindow()} />
           </QuickChatAgentRunner>
         </QuickChatStoreProvider>
       </BacklogStoreProvider>

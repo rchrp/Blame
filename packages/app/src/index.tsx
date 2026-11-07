@@ -9,7 +9,7 @@ import { ThemeProvider } from "@/components/providers/theme-provider"
 import { Toaster } from "@/components/ui/sonner"
 import { DesktopUpdatesProvider } from "@/components/updates/desktop-updates-provider"
 import { UpdateNotifications } from "@/components/updates/update-notifications"
-import { WhatsNewOnLaunch } from "@/components/updates/whats-new-dialog"
+import { isSecondaryWindow } from "@/lib/secondary-window"
 import { RuntimeInstallDialog } from "@/components/runtime/runtime-install-dialog"
 import { GitIdentityDialog } from "@/components/git/git-identity-dialog"
 import { BlameRuntimeProvider } from "@/context/blame-runtime"
@@ -51,10 +51,6 @@ export type MountAppOptions = {
   platform?: Platform
 }
 
-function secondaryWindow() {
-  return new URLSearchParams(window.location.search).get("view") !== null
-}
-
 export function mountApp(element: HTMLElement, options?: MountAppOptions) {
   installPerformanceDiagnostics()
   const root = createRoot(element)
@@ -69,15 +65,14 @@ export function mountApp(element: HTMLElement, options?: MountAppOptions) {
                 <MotionConfig reducedMotion="user">
                   <PerformanceDiagnosticsProfiler id="app">
                     <SpeechToTextProvider>
-                      <BlameRuntimeProvider enabled={!secondaryWindow()}>
-                        <DesktopUpdatesProvider enabled={!secondaryWindow()}>
+                      <BlameRuntimeProvider enabled={!isSecondaryWindow()}>
+                        <DesktopUpdatesProvider enabled={!isSecondaryWindow()}>
                           <GitIdentityProvider>
                             <App />
                             <RuntimeInstallDialog />
                             <GitIdentityDialog />
                             <Toaster />
                             <UpdateNotifications />
-                            <WhatsNewOnLaunch enabled={!secondaryWindow()} />
                           </GitIdentityProvider>
                         </DesktopUpdatesProvider>
                       </BlameRuntimeProvider>
