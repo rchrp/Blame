@@ -550,6 +550,7 @@ function nullableStoryAttributes(input: CreateUserStoryInput) {
     worktree: input.worktree ?? null,
     workspaceMode: input.workspaceMode ?? null,
     runMode: input.runMode ?? null,
+    ambition: input.ambition ?? null,
   }
 }
 

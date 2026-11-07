@@ -11,6 +11,12 @@ import {
 import { imageAwareCompaction } from "./image-compaction.js";
 import { contextLimitConfig } from "./context-limit-config.js";
 import { compactSessionContext } from "./manual-compaction.js";
+import {
+  defaultPersonalization,
+  normalizePersonalization,
+  personalizationUpdateNote,
+  type AgentPersonalization,
+} from "./personalization.js";
 
 import type { ExecutionTerminalReason } from "@blame/harness-core";
 import {
@@ -462,6 +468,8 @@ export class BlameAgentRuntime {
   private sessionContexts = new Map<string, ProductionSessionContext>();
   private sessionApiConnections = new Map<string, ApiConnection>();
   private sessionStartInputs = new Map<string, ClineCoreStartInput>();
+  // What each session's agent was last told; a change goes out with the next message.
+  private sessionPersonalization = new Map<string, AgentPersonalization>();
   private sessionQualityBaselines = new Map<string, string>();
   private clineDefaultSessions = new Set<string>();
   private sessionEventSignatures = new Map<string, Map<string, number>>();
@@ -815,6 +823,10 @@ export class BlameAgentRuntime {
       this.runLifecycles.begin(sessionId, executionId);
       this.sessionBackendKeys.set(sessionId, backendKey(input.backend));
       this.sessionLogFiles.set(sessionId, sessionLogFile);
+      this.sessionPersonalization.set(
+        sessionId,
+        normalizePersonalization(input.personalization),
+      );
       this.sessionContexts.set(sessionId, sessionContext(input, sessionId));
       if (input.autoApproveWriteTools) {
         this.autoApprovedWriteToolSessions.add(sessionId);
@@ -912,6 +924,9 @@ export class BlameAgentRuntime {
                     this.recordNativeCompletion(sessionId, notification, input),
                   onValidationActivity: (activity) =>
                     this.publishNativeValidationActivity(sessionId, activity),
+                  responseStyle: () =>
+                    this.sessionPersonalization.get(sessionId)?.responseStyle ??
+                    defaultPersonalization.responseStyle,
                 }
               : undefined,
             previewMcpTools,
@@ -1299,16 +1314,34 @@ export class BlameAgentRuntime {
     });
     const briefing = this.sessionDeferredTaskBriefings.get(input.sessionId);
     this.sessionDeferredTaskBriefings.delete(input.sessionId);
+    const personalizationNote = this.personalizationNote(input);
     return this.sendSession(
       {
         sessionId: input.sessionId,
         executionId: input.executionId,
         storyId: input.storyId,
         userImages: developmentInput.userImages,
-        prompt: appendInitialTaskBriefing(developmentInput.prompt, briefing),
+        prompt: [
+          personalizationNote,
+          appendInitialTaskBriefing(developmentInput.prompt, briefing),
+        ]
+          .filter(Boolean)
+          .join("\n\n"),
       },
       input.feedbackOnly ? "feedback" : undefined,
     );
+  }
+
+  // The note a changed setting adds ahead of the next message, applied from
+  // that turn on and never in the middle of one.
+  private personalizationNote(input: SendDevelopmentSessionInput) {
+    if (!input.personalization) return "";
+    const next = normalizePersonalization(input.personalization);
+    const previous =
+      this.sessionPersonalization.get(input.sessionId) ??
+      defaultPersonalization;
+    this.sessionPersonalization.set(input.sessionId, next);
+    return personalizationUpdateNote(previous, next);
   }
 
   private async abortSession(sessionId: string, humanInitiated = true) {
@@ -3503,6 +3536,7 @@ export class BlameAgentRuntime {
     this.sessionApiConnections.delete(sessionId);
     this.sessionQualityBaselines.delete(sessionId);
     this.sessionStartInputs.delete(sessionId);
+    this.sessionPersonalization.delete(sessionId);
     this.userInstructionServices.stop(sessionId);
     this.structuredEventSessions.delete(sessionId);
     if (!preserveTelemetry) this.agentTelemetry.remove(sessionId);
@@ -3943,6 +3977,7 @@ export class BlameAgentRuntime {
       executionId: input.executionId,
       projectId: input.projectId,
       storyId: input.storyId,
+      personalization: input.personalization,
       projectInitialization: input.projectInitialization,
     });
     this.sessionApiConnections.set(session.sessionId, input.apiConnection);

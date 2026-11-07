@@ -26,6 +26,10 @@ import type {
   TelemetryExportSession,
 } from "@/context/platform"
 import { createDeployCloudApi } from "./deploy-cloud-api.ts"
+import {
+  normalizePersonalization,
+  type Personalization,
+} from "./personalization.ts"
 
 type CloudApiConnection = ApiConnection & {
   authRequest?: CloudAuthRequestClient["request"]
@@ -285,6 +289,12 @@ export function createCloudApi(connection: CloudApiConnection) {
     saveAiPreferences(input: SaveAiPreferencesInput) {
       return request<unknown>(connection, baseUrl, "/account/ai-preferences", {
         body: JSON.stringify(input),
+        method: "PUT",
+      }).then(cloudAiPreferencesRequired)
+    },
+    savePersonalization(personalization: Personalization) {
+      return request<unknown>(connection, baseUrl, "/account/ai-preferences", {
+        body: JSON.stringify({ personalization }),
         method: "PUT",
       }).then(cloudAiPreferencesRequired)
     },
@@ -591,7 +601,10 @@ function cloudAiPreferencesRequired(value: unknown) {
   ) {
     throw new Error("Unable to read AI preferences.")
   }
-  return preferences as CloudAiPreferences
+  return {
+    ...preferences,
+    personalization: normalizePersonalization(preferences.personalization),
+  } as CloudAiPreferences
 }
 
 function cloudMcpConfiguration(value: unknown) {

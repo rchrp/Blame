@@ -36,6 +36,7 @@ import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
 import { createCloudApi } from "@/lib/cloud-api"
 import { effectiveProjectCodePractices } from "@/lib/project-code-practice-preferences"
+import { currentPersonalization } from "@/lib/agent-personalization"
 import { storyMaxInputTokens } from "@/components/backlog/data/story-context-limit"
 import {
   prepareStartingStoryPreview,
@@ -317,6 +318,7 @@ export function useBacklogRotation(
           databaseMode: initialization.databaseMode,
         },
         executionId,
+        personalization: currentPersonalization(detailedStory.ambition),
         projectId: detailedStory.projectId,
         storyId,
       })

@@ -34,6 +34,7 @@ import {
 } from "./harness/light-completion.js";
 
 import type { LightTaskContract } from "./harness/light-contracts.js";
+import type { AgentPersonalization, ResponseStyle } from "./personalization.js";
 
 import { type LightWorkspaceExecutor } from "./harness/light-executor.js";
 
@@ -90,6 +91,7 @@ export type RuntimeStartSessionInput = StartSessionInput & {
   enableSpecialistConsult?: boolean;
   enableSpawnAgent?: boolean;
   nativeCompletion?: boolean;
+  personalization?: AgentPersonalization;
   taskObjective?: string;
   projectInitialization?: StartDevelopmentSessionInput["projectInitialization"];
 };
@@ -128,6 +130,7 @@ export function runtimeTools(
     conversationId: string;
     onComplete(notification: LightCompletionNotification): void;
     onValidationActivity(activity: LightValidationActivity): Promise<void>;
+    responseStyle?: () => ResponseStyle;
   },
   previewMcpTools: AgentTool[] = [],
   initialTaskBriefing?: string,
@@ -153,6 +156,7 @@ export function runtimeTools(
           createFinishTaskTool({
             conversationId: completion.conversationId,
             executor,
+            responseStyle: completion.responseStyle,
             screenshots: finishScreenshots(
               options,
               completion.conversationId,

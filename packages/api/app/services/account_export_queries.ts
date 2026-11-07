@@ -96,6 +96,7 @@ const userStoryColumns = [
   'worktree',
   'workspace_mode',
   'run_mode',
+  'ambition',
   'agent_status',
   'cline_session_id',
   'agent_provider_id',
@@ -186,6 +187,10 @@ const aiPreferenceColumns = [
   'agent_model_id',
   'agent_credential_label',
   'agent_reasoning_effort',
+  'response_style',
+  'experience',
+  'autonomy',
+  'ambition',
   'created_at',
   'updated_at',
 ]

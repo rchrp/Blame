@@ -450,6 +450,7 @@ export function AgentConversationComposer({
   onMessageSendNow,
   onAgentCancel,
   placeholder,
+  personalizationMenu,
   submitLabel,
   queueWhileRunning = false,
   title,
@@ -484,6 +485,8 @@ export function AgentConversationComposer({
   onAgentCancel?: () => void
   placeholder: string
   submitLabel: string
+  // The button that opens the personalization menu, next to the microphone.
+  personalizationMenu?: React.ReactNode
   title?: string
   toolbarEnd?: React.ReactNode
   turnMetrics?: AgentTurnMetrics
@@ -566,6 +569,7 @@ export function AgentConversationComposer({
           minHeight={minHeight}
           maxHeight="max-h-80"
           onSubmitShortcut={submitMessage}
+          personalizationMenu={personalizationMenu}
           primaryAction={
             <Button
               aria-label={primaryActionLabel}

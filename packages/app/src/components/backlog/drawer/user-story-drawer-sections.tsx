@@ -20,6 +20,8 @@ import { RuntimeProfileSelector } from "@/components/backlog/drawer/runtime-prof
 import { composerDraftStorageKey } from "@/components/backlog/drawer/composer-draft-storage"
 import type { SpeechTarget } from "@/components/backlog/drawer/speech-session-store"
 import type { StoryRunMode } from "@/lib/runtime-preference"
+import type { Ambition } from "@/lib/personalization"
+import { PersonalizationMenu } from "@/components/personalization/personalization-menu"
 import {
   commentButtonLabel,
   hasConversation,
@@ -57,6 +59,8 @@ const commentComposerBlurMask = {
 } satisfies React.CSSProperties
 
 type UserStoryCommentComposerProps = {
+  // The ambition kept with this story; null follows the account's.
+  ambition: Ambition | null
   commentCodeSelectionAttachments: PendingCodeSelectionAttachment[]
   commentFileAttachments: PendingFileAttachment[]
   comment: string
@@ -72,6 +76,7 @@ type UserStoryCommentComposerProps = {
   onCommentFileAttachmentsAdd: (attachments: UserStoryFileAttachment[]) => void
   onCommentSubmit: () => void
   onCommentSendNow?: () => void
+  onAmbitionChange: (ambition: Ambition | null) => void
   // Pauses the running agent (the composer's stop button).
   onAgentPause?: () => void
   onFileLinkClick?: (path: string) => void
@@ -253,6 +258,7 @@ export const UserStoryFixedSection = React.memo(function UserStoryFixedSection({
 })
 
 function UserStoryCommentComposer({
+  ambition,
   commentCodeSelectionAttachments,
   commentFileAttachments,
   comment,
@@ -266,6 +272,7 @@ function UserStoryCommentComposer({
   onCommentFileAttachmentsReplace,
   onCommentSubmit,
   onCommentSendNow,
+  onAmbitionChange,
   onAgentPause,
   onFileLinkClick,
   status,
@@ -312,6 +319,13 @@ function UserStoryCommentComposer({
       onMessageChange={onCommentChange}
       onMessageSubmit={onCommentSubmit}
       onMessageSendNow={onCommentSendNow}
+      personalizationMenu={
+        userStory && status !== "done" ? (
+          <PersonalizationMenu
+            ambition={{ value: ambition, onChange: onAmbitionChange }}
+          />
+        ) : undefined
+      }
       placeholder={
         agentRunning
           ? "Message the agent: ↵ when it finishes, ⌘↵ right now"

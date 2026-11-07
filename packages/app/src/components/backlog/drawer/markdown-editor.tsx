@@ -1026,6 +1026,8 @@ export const MarkdownEditor = React.forwardRef<
     onMarkdownChange?: (markdown: string) => void
     onOptimize?: (markdown: string) => Promise<string>
     onSubmitShortcut?: () => void
+    // The button that opens the personalization menu, next to the microphone.
+    personalizationMenu?: React.ReactNode
     primaryAction?: React.ReactNode
     readOnly?: boolean
     toolbarEnd?: React.ReactNode
@@ -1050,6 +1052,7 @@ export const MarkdownEditor = React.forwardRef<
     onMarkdownChange,
     onOptimize,
     onSubmitShortcut,
+    personalizationMenu,
     primaryAction,
     placeholder,
     readOnly,
@@ -1829,6 +1832,11 @@ export const MarkdownEditor = React.forwardRef<
                     />
                   </div>
                 )}
+                {personalizationMenu ? (
+                  <div className="pointer-events-auto shrink-0">
+                    {personalizationMenu}
+                  </div>
+                ) : null}
                 <div className="pointer-events-auto shrink-0">
                   <SpeechToTextControl
                     sessionKey={speechSessionKey}

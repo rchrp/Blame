@@ -7,6 +7,7 @@ import type {
   PreviewLifecycleState,
   PreviewManifest,
 } from "@blame/preview-contract";
+import type { AgentPersonalization } from "./personalization.js";
 
 export type ApiConnection = {
   url: string;
@@ -318,6 +319,8 @@ export type StartDevelopmentSessionInput = {
   previewDevtoolsScope?: string;
   componentPreview?: boolean;
   codePractices?: ProjectCodePracticePreference[];
+  // Read when the conversation starts; later turns bring it with the message.
+  personalization?: AgentPersonalization;
   projectInitialization?: {
     runConfigurationId?: string;
     previewManifest: PreviewManifest;
@@ -431,6 +434,8 @@ export type SendDevelopmentSessionInput = {
   sessionId: string;
   executionId?: string;
   storyId?: string;
+  // What the person chose for this turn; a change reaches the agent with it.
+  personalization?: AgentPersonalization;
   title: string;
   summary: string;
   codeSelectionAttachments?: CodeSelectionAttachment[];

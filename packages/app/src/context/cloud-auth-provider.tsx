@@ -13,6 +13,7 @@ import {
   type SignupInput,
   type WorkspaceMode,
 } from "@/context/cloud-auth"
+import type { Personalization } from "@/lib/personalization"
 import { usePlatform } from "@/context/platform"
 import {
   readCloudSession,
@@ -373,6 +374,16 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
     [sessionApi, token, updateSession]
   )
 
+  const savePersonalization = React.useCallback(
+    async (personalization: Personalization) => {
+      if (!token) return
+      updateSession({
+        aiPreferences: await sessionApi.savePersonalization(personalization),
+      })
+    },
+    [sessionApi, token, updateSession]
+  )
+
   const refreshLicense = React.useCallback(async () => {
     if (!account || !token) return
     const license = await sessionApi.license()
@@ -474,6 +485,7 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
         resendVerification,
         resetPassword,
         saveAiPreferences,
+        savePersonalization,
         saveMcpConfiguration,
         signup,
         socialLogin,

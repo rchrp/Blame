@@ -4,6 +4,7 @@ import type { AgentConversationPurpose } from "@blame/agent-runtime"
 import type { useModelSelection } from "@/components/model/model-selection"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { usePlatform } from "@/context/platform"
+import { conversationPersonalization } from "@/lib/agent-personalization"
 import { useLatestCallback } from "@/lib/use-latest-callback"
 
 import {
@@ -24,6 +25,8 @@ export type { LocalAgentMessage } from "./local-agent-conversation-session"
  * open. One kept in memory only ends its turn with the view.
  */
 export function useLocalAgentConversation(input: {
+  // Where the ambition chosen for this conversation is kept.
+  ambitionKey?: string
   cwd?: string
   projectId?: string
   purpose: AgentConversationPurpose
@@ -59,6 +62,7 @@ export function useLocalAgentConversation(input: {
       apiConnection: auth.apiConnection,
       cwd: input.cwd,
       model: input.selection.currentModel,
+      personalization: conversationPersonalization(input.ambitionKey),
       platform,
       projectId: input.projectId,
       purpose: input.purpose,

@@ -63,6 +63,7 @@ import {
   recordPerformanceMetric,
 } from "@/lib/performance-diagnostics"
 import { projectCodePractices } from "@/lib/project-code-practices"
+import { currentPersonalization } from "@/lib/agent-personalization"
 import { showSystemNotification } from "@/lib/system-notifications"
 import { celebrateStory } from "@/lib/celebrate"
 import { inviteToStarAfter } from "@/components/star-invite/star-invite"
@@ -499,6 +500,7 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
             : storyPreviewDevtoolsScope(story.id),
         codePractices: await projectCodePractices(auth, projects),
         executionId,
+        personalization: currentPersonalization(story.ambition),
         projectId: story.projectId,
         storyId,
       })

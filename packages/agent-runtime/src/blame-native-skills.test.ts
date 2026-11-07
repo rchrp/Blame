@@ -218,7 +218,7 @@ test("the component preview skill shows how to mount a Svelte component, in a Sv
     assert.match(output, /import ProfileCard from "\$lib\/components\/ProfileCard\.svelte"/);
     assert.match(
       output,
-      /export function mount\(element: HTMLElement, state: string\) \{\n  mountComponent\(ProfileCard, \{ target: element, props: states\[state\] \}\)\n\}/,
+      /export function mount\(element: HTMLElement, state: string\) \{\n {2}mountComponent\(ProfileCard, \{ target: element, props: states\[state\] \}\)\n\}/,
     );
     assert.match(output, /A SvelteKit app keeps its own Vite and `sveltekit\(\)`/);
     assert.match(output, /`\$app\/state`[^\n]*a page at `\/`/);

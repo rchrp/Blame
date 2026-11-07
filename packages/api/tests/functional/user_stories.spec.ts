@@ -41,6 +41,7 @@ type UserStoryBody = {
     mergeCommit?: string | null
     runConfigurationId?: string | null
     workspaceMode?: 'local-container' | 'cloud-mirror' | null
+    ambition?: 'quick' | 'standard' | 'ambitious' | null
     title: string
   }
 }
@@ -200,6 +201,57 @@ test.group('user stories', (group) => {
     assert.lengthOf(detail.data.fileAttachments ?? [], 1)
     assert.lengthOf(detail.data.comments ?? [], 1)
     assert.lengthOf(detail.data.agentRuns ?? [], 1)
+  })
+
+  test('keeps the ambition chosen for a story, and clears it', async ({ client, assert }) => {
+    const user = await createUser()
+    const project = await createProject(user.id, 'Alpha')
+
+    const created = (
+      await client
+        .post('/api/v1/projects/user-stories')
+        .loginAs(user)
+        .json({ projectId: project.id, title: 'Go deep', summary: 'Ambitious work', ambition: 'ambitious' })
+    ).body() as UserStoryBody
+    assert.equal(created.data.ambition, 'ambitious')
+
+    const withoutAmbition = (
+      await client
+        .post('/api/v1/projects/user-stories')
+        .loginAs(user)
+        .json({ projectId: project.id, title: 'Default', summary: 'Follows the account' })
+    ).body() as UserStoryBody
+    assert.isNull(withoutAmbition.data.ambition)
+
+    const updated = await client
+      .patch(`/api/v1/projects/user-stories/${created.data.id}`)
+      .loginAs(user)
+      .json({ ambition: 'quick' })
+    updated.assertStatus(200)
+    assert.equal((updated.body() as UserStoryBody).data.ambition, 'quick')
+
+    const cleared = await client
+      .patch(`/api/v1/projects/user-stories/${created.data.id}`)
+      .loginAs(user)
+      .json({ ambition: null })
+    assert.isNull((cleared.body() as UserStoryBody).data.ambition)
+
+    const shown = await client
+      .get(`/api/v1/projects/user-stories/${created.data.id}`)
+      .loginAs(user)
+    assert.isNull((shown.body() as UserStoryBody).data.ambition)
+  })
+
+  test('rejects an unknown story ambition', async ({ client }) => {
+    const user = await createUser()
+    const project = await createProject(user.id, 'Alpha')
+
+    const response = await client
+      .post('/api/v1/projects/user-stories')
+      .loginAs(user)
+      .json({ projectId: project.id, title: 'Too much', summary: 'Invalid', ambition: 'reckless' })
+
+    response.assertStatus(422)
   })
 
   test('creates updates and deletes a story', async ({ client, assert }) => {

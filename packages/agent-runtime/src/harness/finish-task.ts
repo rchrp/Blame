@@ -10,6 +10,7 @@ import {
   type LightWorkspaceExecutor,
 } from "./light-executor.js";
 import { LightFinishService } from "./light-finish-service.js";
+import type { ResponseStyle } from "../personalization.js";
 
 export type FinishTaskScreenshots = {
   // Returns the ids that were not taken in this conversation.
@@ -23,6 +24,8 @@ export type FinishTaskOptions = {
   onValidationActivity?(
     activity: LightValidationActivity,
   ): Promise<void> | void;
+  // How long and in what format the final reply is, as the person chose.
+  responseStyle?: () => ResponseStyle;
   screenshots?: FinishTaskScreenshots;
   // Removes temporary files before the finish checks; returns a note.
   cleanup?(): Promise<string | undefined>;
@@ -34,14 +37,17 @@ export function createFinishTaskTool(options: FinishTaskOptions) {
   const service = options.executor
     ? undefined
     : new LightFinishService(options);
-  return createLightCompletionTool(async (summary, images, context) => {
-    await assertKnownScreenshots(options, images, context);
-    const note = await cleanupNote(options);
-    const result = service
-      ? await service.finish(summary, context, images)
-      : await finishRemotely(options, summary, images, context);
-    return note ? `${result}\n\n${note}` : result;
-  });
+  return createLightCompletionTool(
+    async (summary, images, context) => {
+      await assertKnownScreenshots(options, images, context);
+      const note = await cleanupNote(options);
+      const result = service
+        ? await service.finish(summary, context, images)
+        : await finishRemotely(options, summary, images, context);
+      return note ? `${result}\n\n${note}` : result;
+    },
+    options.responseStyle,
+  );
 }
 
 // A cleanup failure never blocks the finish; it is reported instead.

@@ -17,6 +17,12 @@ import { ManageModelsDialog } from "@/components/model/manage-models-dialog"
 import { iconNames, type IconName } from "@/components/provider-icons/types"
 import { Button } from "@/components/ui/button"
 import {
+  NotchedSlider,
+  reverseWheelDirection,
+  useWheelStep,
+  type WheelDirection,
+} from "@/components/ui/notched-slider"
+import {
   Popover,
   PopoverAnchor,
   PopoverContent,
@@ -60,7 +66,6 @@ type ModelDialog =
   | { type: "connect"; providerID: string }
   | { type: "manage" }
   | undefined
-type WheelDirection = -1 | 1
 
 export function ModelSelector({
   modelTriggerClassName,
@@ -166,26 +171,9 @@ function ModelPicker({
   )
 }
 
-function useWheelStep<Element extends HTMLElement = HTMLButtonElement>(
-  onStep: (direction: WheelDirection) => void
-): React.WheelEventHandler<Element> {
-  const lastStepAt = React.useRef(-Infinity)
-  return React.useCallback(
-    (event) => {
-      if (event.deltaY === 0) return
-      event.preventDefault()
-      event.stopPropagation()
-      if (event.timeStamp - lastStepAt.current < 80) return
-      lastStepAt.current = event.timeStamp
-      onStep(event.deltaY > 0 ? 1 : -1)
-    },
-    [onStep]
-  )
-}
 
-function reverseWheelDirection(direction: WheelDirection): WheelDirection {
-  return direction === 1 ? -1 : 1
-}
+
+
 
 function ModelPickerTrigger({
   className,
@@ -652,16 +640,16 @@ function SmartModelSlider({ providerID, selection }: SmartModelSliderProps) {
   const position = resolvedSliderState.position
   const setPosition = (nextPosition: number) =>
     setSliderState({ ...resolvedSliderState, position: nextPosition })
-  const onWheel = useWheelStep<HTMLDivElement>((direction) => {
+  const onStep = (direction: WheelDirection) => {
     const recommendation = adjacentSliderRecommendation(
       recommendations,
       position,
-      reverseWheelDirection(direction)
+      direction
     )
     if (!recommendation) return
     setPosition(recommendation.position)
     selectModelWithoutWaiting(selection, recommendation.model)
-  })
+  }
 
   if (!recommendations.length) {
     return <EmptySmartModelSlider />
@@ -678,7 +666,7 @@ function SmartModelSlider({ providerID, selection }: SmartModelSliderProps) {
           selectRecommendation(selection, recommendation)
         }
         setPosition={setPosition}
-        onWheel={onWheel}
+        onStep={onStep}
       />
     </div>
   )
@@ -693,7 +681,7 @@ function EmptySmartModelSlider() {
 }
 
 type SmartSliderInputProps = {
-  onWheel: React.WheelEventHandler<HTMLDivElement>
+  onStep: (direction: WheelDirection) => void
   position: number
   recommendations: RecommendedSelectableModel[]
   select: (recommendation: RecommendedSelectableModel) => Promise<void>
@@ -701,14 +689,15 @@ type SmartSliderInputProps = {
 }
 
 function SmartSliderInput(props: SmartSliderInputProps) {
-  const control = useSmartSliderControl(props)
+  const change = useSmartSliderSelection(props)
   return (
-    <div className="relative h-8" onWheel={props.onWheel}>
-      <SliderTrack position={props.position} />
-      <SliderMarkers {...props} />
-      <SliderRangeInput control={control} />
-      <SliderThumb position={props.position} />
-    </div>
+    <NotchedSlider
+      ariaLabel="Model cost and intelligence"
+      markers={props.recommendations.map(({ position }) => position)}
+      position={props.position}
+      onChange={change}
+      onStep={props.onStep}
+    />
   )
 }
 
@@ -727,22 +716,20 @@ function adjacentSliderRecommendation(
   return adjacentItem(ordered, currentIndex, direction)
 }
 
-function useSmartSliderControl(props: SmartSliderInputProps) {
-  const [inputPosition, setInputPosition] = React.useState(props.position)
-  const selectedPosition = React.useRef(props.position)
+// The selection a position of the slider stands for; a model is only chosen
+// once the thumb rests on another one.
+function useSmartSliderSelection(props: SmartSliderInputProps) {
   const selectedKey = React.useRef(
     recommendationIdentity(
       nearestRecommendation(props.recommendations, props.position)
     )
   )
-  const change = (rawPosition: number) => {
-    setInputPosition(rawPosition)
+  return (rawPosition: number) => {
     const recommendation = nearestRecommendation(
       props.recommendations,
       rawPosition
     )
     if (!recommendation) return
-    selectedPosition.current = recommendation.position
     props.setPosition(recommendation.position)
     const nextKey = recommendationIdentity(recommendation)
     if (selectedKey.current === nextKey) return
@@ -751,58 +738,17 @@ function useSmartSliderControl(props: SmartSliderInputProps) {
       .select(recommendation)
       .catch((error) => console.error("Unable to select model", error))
   }
-  const settle = () => setInputPosition(selectedPosition.current)
-  return { change, inputPosition, settle }
 }
 
-function SliderRangeInput({
-  control,
-}: {
-  control: ReturnType<typeof useSmartSliderControl>
-}) {
-  return (
-    <input
-      aria-label="Model cost and intelligence"
-      className="peer absolute inset-0 z-10 h-full w-full cursor-grab opacity-0 active:cursor-grabbing"
-      max={1000}
-      min={0}
-      type="range"
-      value={Math.round(control.inputPosition * 1000)}
-      onBlur={control.settle}
-      onChange={(event) =>
-        control.change(Number(event.currentTarget.value) / 1000)
-      }
-      onKeyUp={control.settle}
-      onPointerUp={control.settle}
-    />
-  )
-}
 
-function SliderTrack({ position }: { position: number }) {
-  return (
-    <div className="smart-model-slider-track pointer-events-none absolute inset-x-0 top-1/2 h-[18px] -translate-y-1/2 rounded-full">
-      <span
-        className="smart-model-slider-fill absolute inset-y-0 left-0 overflow-hidden rounded-full transition-[width,box-shadow] duration-300 ease-out motion-reduce:transition-none"
-        style={sliderFillStyle(position)}
-      />
-    </div>
-  )
-}
 
-function SliderThumb({ position }: { position: number }) {
-  return (
-    <span
-      className="pointer-events-none absolute top-1/2 z-2 size-6 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white shadow-md ring-2 ring-neutral-900 dark:ring-background transition-[left,scale,box-shadow] duration-200 ease-out peer-hover:scale-125 peer-hover:shadow-lg peer-focus-visible:scale-125 peer-active:scale-125 peer-active:shadow-xl motion-reduce:transition-none"
-      style={{ left: sliderPoint(position) }}
-    />
-  )
-}
 
-type SliderFillStyle = React.CSSProperties & { "--smart-position": number }
 
-function sliderFillStyle(position: number): SliderFillStyle {
-  return { "--smart-position": position, width: sliderPoint(position) }
-}
+
+
+
+
+
 
 function SliderLabels({
   boundary,
@@ -856,29 +802,9 @@ function SliderLabels({
   )
 }
 
-function SliderMarkers({
-  position,
-  recommendations,
-}: {
-  position: number
-  recommendations: RecommendedSelectableModel[]
-}) {
-  return recommendations.map((recommendation) =>
-    Math.abs(recommendation.position - position) < 0.025 ? null : (
-      <span
-        key={`${recommendation.providerId}:${recommendation.modelId}`}
-        className="pointer-events-none absolute top-1/2 z-1 size-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground/30"
-        style={{ left: sliderPoint(recommendation.position) }}
-      />
-    )
-  )
-}
 
-function sliderPoint(position: number) {
-  const percent = position * 100
-  const offset = 16 * (1 - 2 * position)
-  return `calc(${percent}% + ${offset}px)`
-}
+
+
 
 function sliderRecommendations(
   recommendations: RecommendedSelectableModel[],

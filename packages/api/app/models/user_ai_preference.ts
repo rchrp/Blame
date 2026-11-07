@@ -4,6 +4,11 @@ import { DateTime } from 'luxon'
 export type AiReasoningEffort =
   'none' | 'enabled' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh' | 'max'
 
+export type AgentResponseStyle = 'concise' | 'balanced' | 'detailed'
+export type AgentExperience = 'new' | 'comfortable' | 'experienced'
+export type AgentAutonomy = 'ask' | 'balanced' | 'decide'
+export type AgentAmbition = 'quick' | 'standard' | 'ambitious'
+
 export default class UserAiPreference extends BaseModel {
   static selfAssignPrimaryKey = true
 
@@ -33,6 +38,18 @@ export default class UserAiPreference extends BaseModel {
 
   @column()
   declare agentReasoningEffort: AiReasoningEffort | null
+
+  @column()
+  declare responseStyle: AgentResponseStyle
+
+  @column()
+  declare experience: AgentExperience
+
+  @column()
+  declare autonomy: AgentAutonomy
+
+  @column()
+  declare ambition: AgentAmbition
 
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime

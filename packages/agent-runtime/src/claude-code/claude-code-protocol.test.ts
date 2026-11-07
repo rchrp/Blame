@@ -5,6 +5,7 @@ import { claudeCodeArguments, parseAuthStatus } from "./claude-code-cli.js";
 import type { ModelInfo } from "@cline/llms";
 
 import { claudeCodeModelConfig } from "./claude-code-provider.js";
+import { lightCompletionDescription } from "../harness/light-completion.js";
 import {
   clientStreamEvent,
   collectMessage,
@@ -50,6 +51,35 @@ test("maps reasoning settings onto Claude Code effort levels", () => {
     laneSignature({ ...base, output_config: { effort: "low" } }),
     laneSignature({ ...base, output_config: { effort: "high" } }),
   );
+});
+
+test("carries the personalization to Claude Code through the system prompt and the finish_task description", () => {
+  const request = (
+    system: string,
+    personalization: Parameters<typeof lightCompletionDescription>[0],
+  ) => ({
+    model: "opus",
+    system,
+    messages: [{ role: "user" as const, content: "x" }],
+    tools: [
+      {
+        name: "finish_task",
+        description: lightCompletionDescription(personalization),
+        input_schema: { type: "object" },
+      },
+    ],
+  });
+  const detailed = request("System", "detailed");
+  assert.ok(
+    systemPromptForClaudeCode(request("System\n\n## Personalization", "balanced")).includes(
+      "## Personalization",
+    ),
+  );
+  assert.ok(detailed.tools[0]!.description.includes("Final reply style: detailed"));
+  // A new setting is a new lane, never a change in the middle of a turn.
+  assert.notEqual(laneSignature(detailed), laneSignature(request("System", "balanced")));
+  assert.notEqual(laneSignature(detailed), laneSignature(request("System", "concise")));
+  assert.equal(laneSignature(detailed), laneSignature(request("System", "detailed")));
 });
 
 test("sends a new conversation natively and replays a longer one", () => {

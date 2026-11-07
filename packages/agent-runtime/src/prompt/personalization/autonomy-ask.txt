@@ -1,0 +1,1 @@
+Ask before you change anything structural or risky: data models, public interfaces, dependencies, configuration, moving or deleting files, or any step that is hard to undo. Explain each step of your plan and why before you take it. When a decision belongs to the person, finish with one short, concrete question rather than choosing for them.

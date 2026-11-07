@@ -1,0 +1,3 @@
+The person changed their personalization settings since your last turn. From this turn on, follow the instructions below; they replace every earlier personalization instruction, and a setting that is not listed is back to its default.
+
+{{BLOCKS}}

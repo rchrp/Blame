@@ -13,6 +13,7 @@ import type {
 import type { useBacklogStore } from "@/components/backlog/data/backlog-store"
 import { nextCheckpointRunCount } from "@/components/chat/agent-run-checkpoints"
 import type { Platform } from "@/context/platform"
+import { currentPersonalization } from "@/lib/agent-personalization"
 import { useLatestCallback } from "@/lib/use-latest-callback"
 import {
   clineLogPath,
@@ -176,6 +177,7 @@ export function useStoryComments({
           feedbackOnly: true,
           feedbackCodeSelectionAttachments: codeSelectionAttachments ?? [],
           feedbackFileAttachments: fileAttachments ?? [],
+          personalization: currentPersonalization(story.ambition),
         })
         .catch((error) =>
           persistAgentEvent(updatedStory, run, {

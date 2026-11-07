@@ -13,6 +13,8 @@ export type UserStoryStatus =
 export type UserStoryPriority = 'Low' | 'Medium' | 'High'
 export type UserStoryWorkspaceMode = 'local-container' | 'cloud-mirror' | 'direct'
 export type UserStoryRunMode = 'local-container' | 'vercel-compose' | 'direct'
+// How far the agent goes on this story; null follows the account's ambition.
+export type UserStoryAmbition = 'quick' | 'standard' | 'ambitious'
 export type UserStoryAgentStatus = 'Running' | 'Paused'
 export type UserStoryAgentErrorCode =
   | 'cline_not_subscribed'
@@ -228,6 +230,9 @@ export default class UserStory extends BaseModel {
 
   @column()
   declare runMode: UserStoryRunMode | null
+
+  @column()
+  declare ambition: UserStoryAmbition | null
 
   @column()
   declare agentStatus: UserStoryAgentStatus | null

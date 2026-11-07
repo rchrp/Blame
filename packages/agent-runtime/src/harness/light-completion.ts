@@ -8,6 +8,11 @@ import {
 import type { LightRunTaskInput } from "./light-contracts.js";
 import type { ProjectMemoryCandidate } from "./project-memory.js";
 import type { LightValidationReport } from "./light-validation-report.js";
+import {
+  defaultPersonalization,
+  responseStyleBlock,
+  type ResponseStyle,
+} from "../personalization.js";
 
 export const lightCompletionToolName = "finish_task";
 
@@ -29,17 +34,32 @@ export type LightValidationActivity = {
   toolCallId: string;
 };
 
+// The base of the description is what the agent has always been told; a
+// response style other than the default adds its block after it.
+export function lightCompletionDescription(
+  responseStyle: ResponseStyle = defaultPersonalization.responseStyle,
+) {
+  const summaryKind = responseStyle === "balanced" ? "concise factual" : "factual";
+  const description = `Finish with the final reply the user reads. For a question, conversation, analysis or review, the summary is the answer itself, in the user's language, not a note that no change was needed. For code work, give a ${summaryKind} summary. Use run_task reporting or read_code @checks for test counts: null is unknown, pending is distinct from skipped, and unreported categories must not become zero. Separate commands run, passing tests, admitted verification and user criteria. Mention a non-obvious durable implementation decision only when it helps future work. The runtime checks known changes, reuses current checks, and refreshes relevant checks already requested in this session. Work without a current check is reported as unverified. Do not provide receipts or internal state. When the work changed something visible, attach the most useful screenshots you took in this run in images (before/after, each state that was asked for, light and dark when relevant), each with a one-line caption saying what it shows; refer to them as screenshot:<id>, exactly as the screenshot result named them. Do not attach screenshots that show nothing new.`;
+  const block = responseStyleBlock(responseStyle);
+  return block ? `${description} ${block}` : description;
+}
+
 export function createLightCompletionTool(
   submit: (
     summary: string,
     images: FinishTaskImage[],
     context: AgentToolContext,
   ) => Promise<unknown>,
+  // Read when the model is given the tool, so a style chosen between two turns
+  // applies to the next one.
+  responseStyle?: () => ResponseStyle,
 ): AgentTool {
   return createTool({
     name: lightCompletionToolName,
-    description:
-      "Finish with the final reply the user reads. For a question, conversation, analysis or review, the summary is the answer itself, in the user's language, not a note that no change was needed. For code work, give a concise factual summary. Use run_task reporting or read_code @checks for test counts: null is unknown, pending is distinct from skipped, and unreported categories must not become zero. Separate commands run, passing tests, admitted verification and user criteria. Mention a non-obvious durable implementation decision only when it helps future work. The runtime checks known changes, reuses current checks, and refreshes relevant checks already requested in this session. Work without a current check is reported as unverified. Do not provide receipts or internal state. When the work changed something visible, attach the most useful screenshots you took in this run in images (before/after, each state that was asked for, light and dark when relevant), each with a one-line caption saying what it shows; refer to them as screenshot:<id>, exactly as the screenshot result named them. Do not attach screenshots that show nothing new.",
+    get description() {
+      return lightCompletionDescription(responseStyle?.());
+    },
     inputSchema: finishTaskInputSchema as unknown as Record<string, unknown>,
     lifecycle: { completesRun: true },
     retryable: false,

@@ -23,6 +23,7 @@ import { PlanningConversation } from "@/components/chat/planning-conversation"
 import { ProposalHostProvider } from "@/components/chat/proposals/proposal-context"
 import { useModelSelection } from "@/components/model/model-selection"
 import { ModelSelector } from "@/components/model/model-selector"
+import { ConversationPersonalizationMenu } from "@/components/personalization/personalization-menu"
 import { Button } from "@/components/ui/button"
 import { Dialog } from "@/components/ui/dialog"
 import { usePlatform } from "@/context/platform"
@@ -240,6 +241,9 @@ function PlanModeDialog({
               }
               onMessageChange={setDraft}
               onMessageSubmit={submit}
+              personalizationMenu={
+                <ConversationPersonalizationMenu ambitionKey={plan.ambitionKey} />
+              }
               placeholder={
                 empty
                   ? "What do you want to build or fix? The more context, the better the stories."

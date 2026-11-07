@@ -104,6 +104,7 @@ import {
   requestQueuedDelivery,
 } from "@/pages/backlog/comment-queue"
 import { readStoryRunMode, type StoryRunMode } from "@/lib/runtime-preference"
+import type { Ambition } from "@/lib/personalization"
 import { createUserStoryCommentSubmission } from "./user-story-comment-submission"
 import {
   actionInput,
@@ -313,6 +314,9 @@ export function UserStoryDrawerPanel({
   const [pendingAction, setPendingAction] = React.useState<DrawerAction>()
   const [runMode, setRunMode] = React.useState<StoryRunMode | null>(
     userStory?.runMode ?? null
+  )
+  const [ambition, setAmbition] = React.useState<Ambition | null>(
+    userStory?.ambition ?? null
   )
   const [commentSubmission] = React.useState(createUserStoryCommentSubmission)
   // The stats panel opens in full; it can fold into a small pill.
@@ -726,6 +730,7 @@ export function UserStoryDrawerPanel({
               fixedSection={
                 <UserStoryFixedSection
                   actions={drawerActionButtons}
+                  ambition={ambition}
                   commentCodeSelectionAttachments={
                     commentCodeSelectionAttachments
                   }
@@ -744,6 +749,7 @@ export function UserStoryDrawerPanel({
                   onCommentFileAttachmentsReplace={(replacements) => setCommentFileAttachments((current) => replaceFileAttachments(current, replacements))}
                   onCommentSubmit={handleCommentSubmit}
                   onCommentSendNow={handleCommentSendNow}
+                  onAmbitionChange={changeAmbition}
                   onAgentPause={
                     userStory
                       ? () => void onStopAgent(userStory, "pause")
@@ -863,6 +869,13 @@ export function UserStoryDrawerPanel({
     setRunMode(next)
     if (mode !== "create" && userStory)
       void onUpdateUserStory(userStory, { runMode: next })
+  }
+
+  // Kept with the story, and told to its agent from the next turn on.
+  function changeAmbition(next: Ambition | null) {
+    setAmbition(next)
+    if (mode !== "create" && userStory)
+      void onUpdateUserStory(userStory, { ambition: next })
   }
 
   async function handleAction(action: DrawerAction) {

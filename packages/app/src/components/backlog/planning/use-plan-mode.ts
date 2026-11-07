@@ -15,6 +15,7 @@ import { useModelSelection } from "@/components/model/model-selection"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
+import { planModeAmbitionKey } from "@/lib/conversation-ambition"
 
 import { decidedStories, proposalDecisionsNote } from "./story-proposal-data"
 import { proposalDecisions } from "./story-proposal-state"
@@ -28,6 +29,7 @@ export function usePlanMode() {
   const project = useProjects().activeProject
   const selection = useModelSelection({ role: "agent" })
   const projectId = project?.id
+  const ambitionKey = planModeAmbitionKey(projectId)
   const unavailableReason = !platform.agent
     ? "Plan mode runs in the Blame desktop app."
     : !project?.path || !projectId
@@ -38,6 +40,7 @@ export function usePlanMode() {
           ? "Choose an AI model below to start planning."
           : undefined
   const conversation = useLocalAgentConversation({
+    ambitionKey,
     cwd: project?.path,
     projectId,
     purpose: "plan",
@@ -68,6 +71,7 @@ export function usePlanMode() {
 
   return {
     ...conversation,
+    ambitionKey,
     model: selection.currentModel,
     projectPath: project?.path,
     send,

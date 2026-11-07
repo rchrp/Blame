@@ -1032,7 +1032,7 @@ export class StripeWebhookEventSchema extends BaseModel {
 }
 
 export class UserAiPreferenceSchema extends BaseModel {
-  static $columns = ['agentCredentialLabel', 'agentModelId', 'agentProviderId', 'agentReasoningEffort', 'alternativeCredentialLabel', 'alternativeModelId', 'alternativeProviderId', 'alternativeReasoningEffort', 'createdAt', 'updatedAt', 'userId'] as const
+  static $columns = ['agentCredentialLabel', 'agentModelId', 'agentProviderId', 'agentReasoningEffort', 'alternativeCredentialLabel', 'alternativeModelId', 'alternativeProviderId', 'alternativeReasoningEffort', 'ambition', 'autonomy', 'createdAt', 'experience', 'responseStyle', 'updatedAt', 'userId'] as const
   $columns = UserAiPreferenceSchema.$columns
   @column()
   declare agentCredentialLabel: string | null
@@ -1050,8 +1050,16 @@ export class UserAiPreferenceSchema extends BaseModel {
   declare alternativeProviderId: string
   @column()
   declare alternativeReasoningEffort: string | null
+  @column()
+  declare ambition: string
+  @column()
+  declare autonomy: string
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
+  @column()
+  declare experience: string
+  @column()
+  declare responseStyle: string
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
   @column({ isPrimary: true })
@@ -1072,7 +1080,7 @@ export class UserMcpConfigurationSchema extends BaseModel {
 }
 
 export class UserStorySchema extends BaseModel {
-  static $columns = ['activeAgentRunId', 'agentActivities', 'agentFinalResponse', 'agentLastError', 'agentLastEvent', 'agentModelId', 'agentProviderId', 'agentSessionSummary', 'agentStatus', 'agentUsage', 'baseCommit', 'branch', 'clineSessionId', 'codeSelectionAttachments', 'createdAt', 'discardedReason', 'fileAttachmentUploadPending', 'fileAttachments', 'id', 'mergeCommit', 'mergedAt', 'owner', 'previewUrl', 'priority', 'projectId', 'runConfigurationId', 'runMode', 'status', 'storyNumber', 'summary', 'title', 'updatedAt', 'workspaceMode', 'worktree'] as const
+  static $columns = ['activeAgentRunId', 'agentActivities', 'agentFinalResponse', 'agentLastError', 'agentLastEvent', 'agentModelId', 'agentProviderId', 'agentSessionSummary', 'agentStatus', 'agentUsage', 'ambition', 'baseCommit', 'branch', 'clineSessionId', 'codeSelectionAttachments', 'createdAt', 'discardedReason', 'fileAttachmentUploadPending', 'fileAttachments', 'id', 'mergeCommit', 'mergedAt', 'owner', 'previewUrl', 'priority', 'projectId', 'runConfigurationId', 'runMode', 'status', 'storyNumber', 'summary', 'title', 'updatedAt', 'workspaceMode', 'worktree'] as const
   $columns = UserStorySchema.$columns
   @column()
   declare activeAgentRunId: string | null
@@ -1094,6 +1102,8 @@ export class UserStorySchema extends BaseModel {
   declare agentStatus: string | null
   @column()
   declare agentUsage: any | null
+  @column()
+  declare ambition: string | null
   @column()
   declare baseCommit: string | null
   @column()

@@ -1,6 +1,7 @@
 import type {
   AgentConversationPurpose,
   AgentEvent,
+  AgentPersonalization,
   ApiConnection,
 } from "@blame/agent-runtime"
 
@@ -44,6 +45,8 @@ export type LocalAgentTurnOptions = {
   apiConnection: ApiConnection
   cwd?: string
   model: ReturnType<typeof useModelSelection>["currentModel"]
+  // What the person chose for the agent, read when the turn starts.
+  personalization?: AgentPersonalization
   platform: Platform
   projectId?: string
   purpose: AgentConversationPurpose
@@ -300,6 +303,7 @@ export class LocalAgentConversationSession {
         cwd,
         executionId,
         modelId: model.id,
+        personalization: options.personalization,
         projectId: options.projectId,
         providerId: model.provider.id,
         purpose: options.purpose,
@@ -329,6 +333,7 @@ export class LocalAgentConversationSession {
           feedbackCodeSelectionAttachments: message.codeSelectionAttachments,
           feedbackFileAttachments: message.fileAttachments,
           feedbackOnly: true,
+          personalization: options.personalization,
           sessionId: session.sessionId,
           summary: message.text,
           title: options.title,

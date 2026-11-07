@@ -15,6 +15,10 @@ import { workspacePromptMetadata } from "./workspace-prompt-metadata.js";
 
 import { loadPrompt } from "./prompt-loader.js";
 import { newProjectStackCatalogPrompt } from "./new-project-planning.js";
+import {
+  normalizePersonalization,
+  personalizationSystemSection,
+} from "./personalization.js";
 
 import {
   blameSpecialistRoutingSystemPrompt,
@@ -396,9 +400,12 @@ export async function buildDevelopmentSystemPrompt(
   const prompt = renderPrompt(loadPrompt(purposePrompts[purpose]), {
     ...(await developmentPromptValues(input)),
   });
-  return purpose === "new-project"
-    ? `${prompt}\n\n${newProjectStackCatalogPrompt(input.title)}`
-    : prompt;
+  if (purpose === "new-project")
+    return `${prompt}\n\n${newProjectStackCatalogPrompt(input.title)}`;
+  const personalization = personalizationSystemSection(
+    normalizePersonalization(input.personalization),
+  );
+  return personalization ? `${prompt}\n\n${personalization}` : prompt;
 }
 
 async function developmentPromptValues(input: StartDevelopmentSessionInput) {
@@ -409,6 +416,12 @@ async function developmentPromptValues(input: StartDevelopmentSessionInput) {
   const practices = input.codePractices ?? [];
   return {
     BLAME_ENVIRONMENT: developmentEnvironmentPrompt(input),
+    // Another response style replaces the prompt's call for a concise reply.
+    BLAME_FINAL_REPLY:
+      normalizePersonalization(input.personalization).responseStyle ===
+      "balanced"
+        ? "concise factual"
+        : "factual",
     BLAME_PARETO:
       input.purpose === "new-project"
         ? ""

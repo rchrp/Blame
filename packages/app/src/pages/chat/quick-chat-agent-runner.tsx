@@ -32,6 +32,8 @@ import { useCloudAuth } from "@/context/cloud-auth"
 import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
 import { projectCodePractices } from "@/lib/project-code-practices"
+import { chatPersonalization } from "@/lib/agent-personalization"
+import { chatAmbitionKey, conversationAmbitions, newChatAmbitionKey } from "@/lib/conversation-ambition"
 import { useLatestCallback } from "@/lib/use-latest-callback"
 import {
   onQueuedDeliveryRequest,
@@ -359,6 +361,9 @@ function useQuickChatAgentRunnerValue() {
     const resumeSessionId = chat.clineSessionId
     const title = quickChatTitle(chat, message.body, project?.name)
     const summary = quickChatDevelopmentSummary(chat, message.body)
+    // The ambition chosen before the chat existed now belongs to it.
+    if (!resumeSessionId)
+      conversationAmbitions.move(newChatAmbitionKey, chatAmbitionKey(chat.id))
     const session = await platform.agent!.sessions.startDevelopment({
       apiConnection: auth.apiConnection,
       providerId: model.provider.id,
@@ -385,6 +390,7 @@ function useQuickChatAgentRunnerValue() {
       ),
       codePractices: await projectCodePractices(auth, projects),
       executionId: input.executionId,
+      personalization: chatPersonalization(chat.id),
       projectId: project!.id,
     })
     const reusedSession = Boolean(
@@ -430,7 +436,10 @@ function useQuickChatAgentRunnerValue() {
   async function sendPrompt(input: QuickChatPromptInput) {
     const coordinator = stream.coordinator(input.sessionId)
     try {
-      await platform.agent!.sessions.sendDevelopment(quickChatSendInput(input))
+      await platform.agent!.sessions.sendDevelopment({
+        ...quickChatSendInput(input),
+        personalization: chatPersonalization(input.chat.id),
+      })
     } catch (error) {
       await stream.terminateWithError(
         input.sessionId,

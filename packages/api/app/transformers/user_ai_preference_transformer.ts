@@ -16,6 +16,12 @@ export default class UserAiPreferenceTransformer extends BaseTransformer<UserAiP
         credentialLabel: this.resource.agentCredentialLabel,
         reasoningEffort: this.resource.agentReasoningEffort,
       },
+      personalization: {
+        responseStyle: this.resource.responseStyle,
+        experience: this.resource.experience,
+        autonomy: this.resource.autonomy,
+        ambition: this.resource.ambition,
+      },
       createdAt: this.resource.createdAt.toISO(),
       updatedAt: this.resource.updatedAt?.toISO() ?? null,
     }

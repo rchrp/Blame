@@ -3,6 +3,7 @@ import { navigate } from "@/components/navigation/navigation"
 export type SettingsSectionId =
   | "general"
   | "models"
+  | "personalization"
   | "mcp"
   | "desktop"
   | "account"

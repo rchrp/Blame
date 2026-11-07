@@ -7,6 +7,7 @@ import type {
 } from "@blame/agent-runtime"
 import type { ReasoningSelection } from "@blame/agent-runtime"
 import type { SignInGreeting } from "./workspace-start"
+import type { Personalization } from "@/lib/personalization"
 
 export type CloudUser = {
   id: string
@@ -41,6 +42,7 @@ export type CloudAiModelPreference = {
 export type CloudAiPreferences = {
   alternativeModel: CloudAiModelPreference
   agentModel: CloudAiModelPreference
+  personalization: Personalization
   createdAt: string
   updatedAt: string | null
 }
@@ -184,6 +186,7 @@ export type CloudAuthContextValue = {
   socialLogin(provider: SocialAuthProvider): Promise<void>
   passkeyLogin(): Promise<void>
   saveAiPreferences(input: SaveAiPreferencesInput): Promise<void>
+  savePersonalization(personalization: Personalization): Promise<void>
   saveMcpConfiguration(servers: CloudMcpServer[]): Promise<void>
   refreshAiPreferences(): Promise<void>
   refreshLicense(): Promise<CloudLicense | undefined>

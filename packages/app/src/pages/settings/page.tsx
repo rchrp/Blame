@@ -9,6 +9,7 @@ import {
   RefreshCwIcon,
   Settings2Icon,
   SlidersHorizontalIcon,
+  SparklesIcon,
   UserRoundIcon,
   type LucideIcon,
 } from "lucide-react"
@@ -53,6 +54,7 @@ import {
   StatusText,
 } from "./settings-layout"
 import { DesktopSettingsPanel } from "./desktop-settings-panel"
+import { PersonalizationSettingsPanel } from "@/components/personalization/personalization-panel"
 import { OpenProjectTargetRow } from "./open-project-target-row"
 import {
   clearRequestedSettingsSection,
@@ -88,6 +90,12 @@ const settingsSections: SettingsSection[] = [
     icon: BrainCircuitIcon,
     id: "models",
     title: "Models & Providers",
+  },
+  {
+    description: "How your agents talk and work.",
+    icon: SparklesIcon,
+    id: "personalization",
+    title: "Personalization",
   },
   {
     description: "External tools and context for agents.",
@@ -252,6 +260,7 @@ function SettingsSectionHeader({ section }: { section: SettingsSection }) {
 
 function SettingsSectionContent({ section }: { section: SettingsSectionId }) {
   if (section === "general") return <GeneralSettingsPanel />
+  if (section === "personalization") return <PersonalizationSettingsPanel />
   if (section === "mcp") return <McpSettingsPanel />
   if (section === "desktop") return <DesktopSettingsPanel />
   if (section === "account") return <AccountSettingsPanel />

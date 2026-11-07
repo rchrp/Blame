@@ -6,6 +6,7 @@ import {
 import type { QuickChat } from "@/components/chat/data/quick-chat-data"
 import { QuickChatEmptyState } from "@/components/chat/quick-chat-empty-state"
 import { ModelSelector } from "@/components/model/model-selector"
+import { ConversationPersonalizationMenu } from "@/components/personalization/personalization-menu"
 import { ProjectRunConfigurationPreviewWarmup } from "@/components/backlog/board/project-run-preview-warmup"
 import {
   MessageScroller,
@@ -15,6 +16,7 @@ import {
   MessageScrollerViewport,
 } from "@/components/ui/message-scroller"
 import { isBoolean, useUiMemory } from "@/lib/ui-memory"
+import { chatAmbitionKey } from "@/lib/conversation-ambition"
 import { cn } from "@/lib/utils"
 import { QuickChatStats } from "./quick-chat-stats"
 import { QuickChatStatus } from "./quick-chat-status"
@@ -107,6 +109,11 @@ export function QuickChatView({
                   ) : null}
                   <AgentConversationComposer
                     {...composer}
+                    personalizationMenu={
+                      <ConversationPersonalizationMenu
+                        ambitionKey={chatAmbitionKey(conversationId)}
+                      />
+                    }
                     minHeight={emptyConversation ? "min-h-44" : "min-h-24"}
                     toolbarEnd={
                       <div className="w-[28rem] max-w-full min-w-0">

@@ -1,3 +1,4 @@
+import { Exception } from '@adonisjs/core/exceptions'
 import UserAiPreference from '#models/user_ai_preference'
 import type { saveUserAiPreferenceValidator } from '#validators/user_ai_preference'
 import type { Infer } from '@vinejs/vine/types'
@@ -11,16 +12,34 @@ export default class UserAiPreferencesService {
 
   async save(userId: string, input: SaveUserAiPreferenceInput) {
     const existing = await UserAiPreference.find(userId)
+    const { alternativeModel, agentModel, personalization } = input
+    // The models are required once, to create the row; later saves may carry
+    // the personalization alone.
+    if (!existing && (!alternativeModel || !agentModel)) {
+      throw new Exception('Choose the models before saving the personalization.', {
+        code: 'E_AI_PREFERENCES_MODELS_REQUIRED',
+        status: 422,
+      })
+    }
     const values = {
       userId,
-      alternativeProviderId: input.alternativeModel.providerId,
-      alternativeModelId: input.alternativeModel.modelId,
-      alternativeCredentialLabel: input.alternativeModel.credentialLabel,
-      alternativeReasoningEffort: input.alternativeModel.reasoningEffort,
-      agentProviderId: input.agentModel.providerId,
-      agentModelId: input.agentModel.modelId,
-      agentCredentialLabel: input.agentModel.credentialLabel,
-      agentReasoningEffort: input.agentModel.reasoningEffort,
+      ...(alternativeModel
+        ? {
+            alternativeProviderId: alternativeModel.providerId,
+            alternativeModelId: alternativeModel.modelId,
+            alternativeCredentialLabel: alternativeModel.credentialLabel,
+            alternativeReasoningEffort: alternativeModel.reasoningEffort,
+          }
+        : {}),
+      ...(agentModel
+        ? {
+            agentProviderId: agentModel.providerId,
+            agentModelId: agentModel.modelId,
+            agentCredentialLabel: agentModel.credentialLabel,
+            agentReasoningEffort: agentModel.reasoningEffort,
+          }
+        : {}),
+      ...(personalization ?? {}),
     }
     if (!existing) return UserAiPreference.create(values)
     existing.merge(values)

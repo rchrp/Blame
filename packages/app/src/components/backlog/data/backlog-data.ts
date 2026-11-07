@@ -169,6 +169,9 @@ export type UserStory = {
   // Where the person chose to run it (kept across requeues). Null on
   // stories made before the choice was per story: the account default.
   runMode?: "local-container" | "vercel-compose" | "direct" | null
+  // How far the agent goes on this story, as chosen from the composer menu.
+  // Null follows the ambition set in Settings.
+  ambition?: "quick" | "standard" | "ambitious" | null
   agentStatus?: UserStoryAgentStatus | null
   activeAgentRunId?: string | null
   clineSessionId?: string | null
@@ -202,6 +205,7 @@ export type UserStoryDraft = {
   priority?: UserStoryPriority
   owner?: string
   runMode?: UserStory["runMode"]
+  ambition?: UserStory["ambition"]
 }
 
 export type UserStoryUpdate = Partial<
@@ -222,6 +226,7 @@ export type UserStoryUpdate = Partial<
     | "worktree"
     | "workspaceMode"
     | "runMode"
+    | "ambition"
     | "agentStatus"
     | "clineSessionId"
     | "agentProviderId"

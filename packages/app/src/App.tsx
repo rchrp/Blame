@@ -48,6 +48,7 @@ import { useBlameRuntime } from "@/context/blame-runtime"
 import { ProjectInitializationRunner } from "@/components/project-initialization/project-initialization-runner"
 import { ProjectCodePracticesRunner } from "@/components/practices/project-code-practices-runner"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { PersonalizationSync } from "@/lib/use-personalization"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
@@ -216,6 +217,7 @@ export function App() {
           <QuickChatAgentRunner>
             <ProjectInitializationRunner />
             <ProjectCodePracticesRunner />
+            <PersonalizationSync />
             <SecurityAuditRecorder />
             <AppLayout
               pathname={pathname}
