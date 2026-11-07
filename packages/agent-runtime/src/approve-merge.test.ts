@@ -533,6 +533,65 @@ test("reports a resolver that returned no result instead of the conflicts", asyn
   }
 });
 
+test("leaves a merge in progress in the project checkout alone, with its second parent", async () => {
+  const fixture = await conflictingStoryFixture();
+  const root = fixture.input.repositoryRoot;
+  const runtime = mergeTestRuntime();
+  try {
+    // Someone merges by hand in the project checkout, conflicts resolved
+    // but not committed yet.
+    await git(root, ["checkout", "-q", "-b", "side", "HEAD~1"]);
+    await writeFile(join(root, "shared.txt"), "side\n");
+    await git(root, ["commit", "-qam", "side"]);
+    await git(root, ["checkout", "-q", "main"]);
+    await assert.rejects(git(root, ["merge", "side"]));
+    await writeFile(join(root, "shared.txt"), "target and side\n");
+    await git(root, ["add", "shared.txt"]);
+
+    await assert.rejects(
+      runtime.approveAndMerge(fixture.input),
+      /^Error: A Git merge is in progress in .+: commit it or run git merge --abort, then approve again\.$/u,
+    );
+    assert.ok(await git(root, ["rev-parse", "--verify", "MERGE_HEAD"]));
+    assert.equal(await git(root, ["rev-parse", "HEAD"]), fixture.targetCommit);
+    assert.equal(await git(root, ["stash", "list"]), "");
+    assert.equal(
+      await git(fixture.input.worktree, ["rev-parse", "HEAD"]),
+      fixture.storyCommit,
+    );
+    await git(root, ["commit", "-q", "--no-edit"]);
+    assert.equal(
+      (await git(root, ["show", "-s", "--format=%P", "HEAD"])).split(" ")
+        .length,
+      2,
+    );
+  } finally {
+    await runtime.shutdown();
+    await rm(fixture.directory, { force: true, recursive: true });
+  }
+});
+
+test("leaves a rebase stopped in the project checkout alone", async () => {
+  const fixture = await conflictingStoryFixture();
+  const root = fixture.input.repositoryRoot;
+  const runtime = mergeTestRuntime();
+  try {
+    await git(root, ["checkout", "-q", "-b", "side", "HEAD~1"]);
+    await writeFile(join(root, "shared.txt"), "side\n");
+    await git(root, ["commit", "-qam", "side"]);
+    await assert.rejects(git(root, ["rebase", "main"]));
+    await assert.rejects(
+      runtime.approveAndMerge(fixture.input),
+      /A Git rebase is in progress in .+: run git rebase --continue or --abort, then approve again\./u,
+    );
+    await git(root, ["rebase", "--abort"]);
+    assert.equal(await git(root, ["stash", "list"]), "");
+  } finally {
+    await runtime.shutdown();
+    await rm(fixture.directory, { force: true, recursive: true });
+  }
+});
+
 test("merges two stories approved at once into the same repository one after the other", async () => {
   const directory = await mkdtemp(join(tmpdir(), "blame-concurrent-merge-"));
   const repositoryRoot = join(directory, "project");

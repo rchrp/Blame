@@ -7,7 +7,7 @@ import {
   errorType,
   stringValue,
 } from "./cline-runtime-events.js";
-import { rm } from "node:fs/promises";
+import { rm, stat } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
 import { withoutTelemetryEnvironment } from "@blame/telemetry";
 import { promisify } from "node:util";
@@ -35,6 +35,7 @@ export async function validateMergeBranches(
   input: ApproveAndMergeInput,
   targetBranch: string,
 ) {
+  await assertNoGitOperationInProgress(input.repositoryRoot);
   if (!targetBranch)
     throw new Error("Unable to detect the active project branch.");
   const storyBranch = await currentGitBranch(input.worktree);
@@ -45,6 +46,38 @@ export async function validateMergeBranches(
   }
   if (targetBranch === input.storyBranch) {
     throw new Error("Story branch and target branch must be different.");
+  }
+}
+
+// A merge, cherry-pick, revert or rebase someone runs in the project
+// checkout. Approving would stash it away with the local changes, and the
+// stash drops its state: a merge then commits with a single parent.
+const gitOperations = [
+  { ref: "MERGE_HEAD", name: "merge", finish: "commit it or run git merge --abort" },
+  { ref: "CHERRY_PICK_HEAD", name: "cherry-pick", finish: "run git cherry-pick --continue or --abort" },
+  { ref: "REVERT_HEAD", name: "revert", finish: "run git revert --continue or --abort" },
+];
+const rebaseDirectories = ["rebase-merge", "rebase-apply"];
+
+async function assertNoGitOperationInProgress(cwd: string) {
+  const busy = (name: string, finish: string) =>
+    new Error(
+      `A Git ${name} is in progress in ${cwd}. Approve & Merge leaves it alone: ${finish}, then approve again.`,
+    );
+  for (const { ref, name, finish } of gitOperations)
+    if (await gitRevisionExists(cwd, ref)) throw busy(name, finish);
+  for (const directory of rebaseDirectories) {
+    const path = await git(cwd, ["rev-parse", "--path-format=absolute", "--git-path", directory]);
+    if (await stat(path).then(() => true, () => false))
+      throw busy("rebase", "run git rebase --continue or --abort");
+  }
+}
+
+async function gitRevisionExists(cwd: string, ref: string) {
+  try {
+    return Boolean(await git(cwd, ["rev-parse", "--verify", "--quiet", ref]));
+  } catch {
+    return false;
   }
 }
 
