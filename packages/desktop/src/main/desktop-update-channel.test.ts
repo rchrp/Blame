@@ -70,6 +70,7 @@ test("builds the beta feed from the GitHub releases API", async () => {
   );
   assert.deepEqual(requests, [
     "https://api.github.com/repos/owner/repo/releases?per_page=30",
+    "https://api.github.com/repos/owner/repo/releases/latest",
   ]);
 
   await assert.rejects(
@@ -79,6 +80,33 @@ test("builds the beta feed from the GitHub releases API", async () => {
     ),
     /HTTP 403/,
   );
+});
+
+test("a stable release served as latest supersedes the installed beta", async () => {
+  const feedWith = (latest: unknown) =>
+    betaFeedUrl(
+      async (url) => ({
+        ok: !url.endsWith("/releases/latest") || latest !== undefined,
+        status: latest === undefined ? 404 : 200,
+        json: async () =>
+          url.endsWith("/releases/latest")
+            ? latest
+            : [{ tag_name: "v1.2.6-beta.3", draft: false, assets: mac }],
+      }),
+      "latest-mac.yml",
+      "owner/repo",
+    );
+  const folder = "https://github.com/owner/repo/releases/download";
+
+  assert.equal(
+    await feedWith({ tag_name: "v1.2.6", draft: false, assets: mac }),
+    `${folder}/v1.2.6`,
+  );
+  assert.equal(
+    await feedWith({ tag_name: "v1.2.5", draft: false, assets: mac }),
+    `${folder}/v1.2.6-beta.3`,
+  );
+  assert.equal(await feedWith(undefined), `${folder}/v1.2.6-beta.3`);
 });
 
 test("names the update metadata of each packaged platform", () => {

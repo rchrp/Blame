@@ -3,8 +3,10 @@ import { dirname } from "node:path";
 
 // The stable channel follows the update feed built into the app, which serves
 // the latest published release. The beta channel follows the newest release on
-// GitHub, prereleases included, and returns to stable releases once a newer
-// one ships. Prereleases are public, so no token is needed.
+// GitHub, prereleases included. The release GitHub serves as `latest` is always
+// a candidate too, so a stable release that supersedes the installed beta is
+// offered without leaving the channel. Releases are public, so no token is
+// needed.
 export type DesktopUpdateChannel = "stable" | "beta";
 
 export const releasesRepository = "rchrp/Blame";
@@ -54,33 +56,38 @@ export function updateMetadataFile(platform: string, arch: string) {
 
 /**
  * Download folder of the newest published release that has update metadata
- * for this platform, or undefined when there is none.
+ * for this platform, or undefined when there is none. The release GitHub
+ * serves as `latest` is considered next to the recent releases list.
  */
 export async function betaFeedUrl(
   fetchReleases: Fetch,
   metadataFile: string,
   repository = releasesRepository,
 ) {
-  const response = await fetchReleases(
-    `https://api.github.com/repos/${repository}/releases?per_page=30`,
-    {
-      headers: {
-        Accept: "application/vnd.github+json",
-        "X-GitHub-Api-Version": "2022-11-28",
-      },
-    },
-  );
+  const [response, latestResponse] = await Promise.all([
+    fetchGitHub(fetchReleases, `${repository}/releases?per_page=30`),
+    fetchGitHub(fetchReleases, `${repository}/releases/latest`),
+  ]);
   if (!response.ok)
     throw new Error(
       `GitHub releases are unavailable (HTTP ${response.status}).`,
     );
-  const release = newestRelease(
-    (await response.json()) as GitHubRelease[],
-    metadataFile,
-  );
+  const releases = (await response.json()) as GitHubRelease[];
+  if (latestResponse.ok)
+    releases.push((await latestResponse.json()) as GitHubRelease);
+  const release = newestRelease(releases, metadataFile);
   return release
     ? `https://github.com/${repository}/releases/download/${release.tag_name}`
     : undefined;
+}
+
+function fetchGitHub(fetchReleases: Fetch, path: string) {
+  return fetchReleases(`https://api.github.com/repos/${path}`, {
+    headers: {
+      Accept: "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28",
+    },
+  });
 }
 
 export function newestRelease(releases: GitHubRelease[], metadataFile: string) {
