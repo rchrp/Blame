@@ -349,7 +349,7 @@ test("a Vue 3 package without Vite, such as a Vue CLI app, is served by Blame's 
           message: string;
         }
       ).message,
-      /^Vue 2 is not supported: apps\/legacy depends on Vue 2 and has no vite\.config\.\* file\. Without one, open_component_preview renders React, Vue 3 \(vue 3\.2\.25 or later\) and Svelte 5 \(svelte 5\.46\.4 or later\) components only\. Check this component in the app instead\.$/u,
+      /^Vue 2 is not supported: apps\/legacy depends on Vue 2 and has no vite\.config\.\* file\. Without one, open_component_preview renders React, React Native with react-native-web, Vue 3 \(vue 3\.2\.25 or later\) and Svelte 5 \(svelte 5\.46\.4 or later\) components only\. Check this component in the app instead\.$/u,
     );
     // With its own Vite config, a Vue 2 package uses its own Vite.
     await writeFile(join(legacy, "vite.config.js"), "export default {}");
@@ -448,7 +448,7 @@ test("a Svelte 5 package without Vite, such as a Rollup app, is served by Blame'
           message: string;
         }
       ).message,
-      /^Svelte 4 is not supported: packages\/legacy depends on Svelte 4 or older and has no vite\.config\.\* file\. Without one, open_component_preview renders React, Vue 3 \(vue 3\.2\.25 or later\) and Svelte 5 \(svelte 5\.46\.4 or later\) components only\. Check this component in the app instead\.$/u,
+      /^Svelte 4 is not supported: packages\/legacy depends on Svelte 4 or older and has no vite\.config\.\* file\. Without one, open_component_preview renders React, React Native with react-native-web, Vue 3 \(vue 3\.2\.25 or later\) and Svelte 5 \(svelte 5\.46\.4 or later\) components only\. Check this component in the app instead\.$/u,
     );
     // SvelteKit: its own Vite, with sveltekit().
     const siteLocation = await locate(
@@ -483,6 +483,114 @@ test("a Svelte 5 project gets the tool, a Svelte 4 project does not", async () =
     // Ranges it cannot read count as Svelte 5: the server checks what is
     // installed.
     assert.equal(await offered("latest"), true);
+  } finally {
+    await rm(worktree, { force: true, recursive: true });
+  }
+});
+
+test("a React Native package without react-native-web is told to check the app or a device; with it, Blame's own Vite serves it", async () => {
+  const worktree = await mkdtemp(join(tmpdir(), "blame-preview-native-"));
+  try {
+    const mobile = join(worktree, "apps/mobile");
+    await mkdir(join(mobile, "components"), { recursive: true });
+    await writeFile(join(worktree, "package.json"), '{ "private": true }');
+    const manifest = (dependencies: Record<string, string>) =>
+      writeFile(join(mobile, "package.json"), JSON.stringify({ dependencies }));
+    // An Expo app as `create-expo-app` makes it, before web support.
+    await manifest({
+      expo: "~55.0.0",
+      react: "19.2.0",
+      "react-native": "0.83.0",
+    });
+    await writeFile(join(mobile, "components/card.blame-preview.tsx"), "");
+    const locate = () =>
+      locateComponentPreview(
+        { workspaceMode: "direct", worktree },
+        "apps/mobile/components/card.blame-preview.tsx",
+      );
+
+    // Installed or not, it is never rendered without react-native-web.
+    for (const name of ["react", "react-native"]) {
+      await mkdir(join(worktree, "node_modules", name), { recursive: true });
+      await writeFile(
+        join(worktree, "node_modules", name, "package.json"),
+        "{}",
+      );
+    }
+    assert.match(
+      ((await locate()) as { message: string }).message,
+      /^React Native is not supported without react-native-web: apps\/mobile depends on react-native but not on react-native-web and has no vite\.config\.\* file\. Without one, open_component_preview renders React, React Native with react-native-web, Vue 3 \(vue 3\.2\.25 or later\) and Svelte 5 \(svelte 5\.46\.4 or later\) components only\. Check this component in the app or on a device instead\.$/u,
+    );
+
+    // With web support, as `npx expo install react-dom react-native-web`
+    // adds it.
+    await manifest({
+      expo: "~55.0.0",
+      react: "19.2.0",
+      "react-dom": "19.2.0",
+      "react-native": "0.83.0",
+      "react-native-web": "^0.21.0",
+    });
+    assert.match(
+      ((await locate()) as { message: string }).message,
+      /^React, react-dom or react-native-web is not installed for apps\/mobile in the story's workspace\. open_component_preview never installs the project's dependencies/u,
+    );
+    for (const name of ["react-dom", "react-native-web"]) {
+      await mkdir(join(worktree, "node_modules", name), { recursive: true });
+      await writeFile(
+        join(worktree, "node_modules", name, "package.json"),
+        "{}",
+      );
+    }
+    const located = await locate();
+    assert.ok("host" in located, JSON.stringify(located));
+    assert.equal(located.packageDir, "apps/mobile");
+    assert.deepEqual(located.toolkit, { framework: "react-native" });
+  } finally {
+    await rm(worktree, { force: true, recursive: true });
+  }
+});
+
+test("a React Native project gets the tool only with react-native-web, unless another package renders", async () => {
+  const worktree = await mkdtemp(
+    join(tmpdir(), "blame-preview-native-project-"),
+  );
+  const offered = async (dependencies: Record<string, string>) => {
+    await writeFile(
+      join(worktree, "package.json"),
+      JSON.stringify({ dependencies }),
+    );
+    return hasComponentPreviewProject(worktree);
+  };
+  try {
+    assert.equal(
+      await offered({ react: "19.2.0", "react-native": "0.83.0" }),
+      false,
+    );
+    assert.equal(
+      await offered({ expo: "~55.0.0", "react-native": "0.83.0" }),
+      false,
+    );
+    assert.equal(
+      await offered({
+        react: "19.2.0",
+        "react-dom": "19.2.0",
+        "react-native": "0.83.0",
+        "react-native-web": "^0.21.0",
+      }),
+      true,
+    );
+    // The mobile app alone has no web support; the web app of the same
+    // workspace renders.
+    await mkdir(join(worktree, "apps/web"), { recursive: true });
+    await writeFile(
+      join(worktree, "apps/web/package.json"),
+      '{ "dependencies": { "react": "19.2.0", "react-dom": "19.2.0" } }',
+    );
+    assert.equal(
+      await offered({ react: "19.2.0", "react-native": "0.83.0" }),
+      true,
+    );
   } finally {
     await rm(worktree, { force: true, recursive: true });
   }

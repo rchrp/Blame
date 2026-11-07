@@ -1,11 +1,11 @@
 ---
 name: component-preview
-description: Use after creating a UI component or changing how one renders, in a Vite, React, Vue 3 or Svelte 5 project (Next.js, Vue CLI and SvelteKit included), even when the app's preview is available. Shows the component on its own with made-up data, in its main states (default, empty, error, loading, long content), light and dark, desktop and mobile widths, rendered in one open_component_preview call whose screenshots go to finish_task. Not for checks a DOM read or a test already covers.
+description: Use after creating a UI component or changing how one renders, in a Vite, React, Vue 3 or Svelte 5 project (Next.js, Vue CLI and SvelteKit included) or a React Native one with react-native-web (an Expo app with web support), even when the app's preview is available. Shows the component on its own with made-up data, in its main states (default, empty, error, loading, long content), light and dark, desktop and mobile widths, rendered in one open_component_preview call whose screenshots go to finish_task. Not for checks a DOM read or a test already covers.
 ---
 
 # Component preview
 
-Show one component on its own, with props and data you make up, rendered by a temporary Vite server that `open_component_preview` starts for the session: with the package's own Vite config, a SvelteKit app's included, or with Blame's own Vite for a React, Vue 3 or Svelte 5 package without one, such as a Next.js, Vue CLI or Rollup app. You avoid sign-in, the backend and real data, and see every state that matters in one call. The story's own preview, if any, keeps running untouched.
+Show one component on its own, with props and data you make up, rendered by a temporary Vite server that `open_component_preview` starts for the session: with the package's own Vite config, a SvelteKit app's included, or with Blame's own Vite for a React, Vue 3 or Svelte 5 package without one, such as a Next.js, Vue CLI or Rollup app, and for a React Native package with `react-native-web`, such as an Expo app. You avoid sign-in, the backend and real data, and see every state that matters in one call. The story's own preview, if any, keeps running untouched.
 
 ## When to use it
 
@@ -42,6 +42,21 @@ A React package without `vite.config.*`, such as a Next.js or webpack app, is se
 - `next/link`, `next/image`, `next/navigation` and `next/font/*` are small shims, in this server only: a link renders its anchor and does not navigate, an image loads from `public/` without optimization, `usePathname()` returns `/` and the router does nothing, a Google font keeps its class names with a fallback font. `NEXT_PUBLIC_*` variables of the `.env` files reach `process.env`.
 - `"use client"` files render as they are.
 - Only client components render. A Server Component (an async component, as most `page.tsx` and `layout.tsx` are, or one that imports `next/headers`, `server-only` or Node modules) is reported as such: preview its client sub-components with the props it would pass them, or check that screen in the app.
+
+## React Native and Expo packages
+
+A React Native package with `react-native-web`, such as an Expo app with web support, is served by Blame's own Vite with `@vitejs/plugin-react`, as its web build renders it: `react-native` resolves to `react-native-web`, a `.web.tsx` or `.web.ts` file comes before its native variant, `__DEV__` is `true` and the `EXPO_PUBLIC_*` variables of its `.env` files reach `process.env`. Write `<name>.blame-preview.tsx` as for React; the components keep their `View`, `Text`, `Pressable` and `StyleSheet`:
+
+```tsx
+import { ProfileCard } from "./components/profile-card"
+
+export default <ProfileCard name="Ada Lovelace" status="Active" />
+export const empty = <ProfileCard name="" status="" />
+```
+
+- Wrap the component in the providers it reads, such as `SafeAreaProvider` or a navigation container, with fake values.
+- Without `react-native-web`, the package is not rendered: the tool says so. Check that component in the app or on a device; never add `react-native-web` or `react-dom` to the project only for the preview.
+- An Expo module without a web implementation, whose native module or view the browser lacks, fails with an error that names it. Preview a sub-component that does not use it, pass what it gives through props, or check that component in the app or on a device.
 
 ## Vue 3 packages
 
