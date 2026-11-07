@@ -1,7 +1,7 @@
 /* The video's end card. Its sizes are the video's pixel counts (a 1920 x 1080
    frame) times --px, the title's size over the video's 96px title, so the
-   card keeps the video's proportions. On a phone the title wraps onto three
-   rows and the pills and buttons keep readable sizes of their own. */
+   card keeps the video's proportions. On a phone the pills and buttons keep
+   readable sizes of their own. */
 
 .scene {
   --title: min(9.6vw, 3.5rem);
@@ -49,7 +49,7 @@
   color: #ffffff;
 }
 
-/* The title: two rows, "The Open Source ADE that" over "sets the standard" */
+/* The title: two rows, "Free. Open source." over "No account needed." */
 .scene .title {
   display: flex;
   flex-wrap: wrap;
@@ -82,14 +82,9 @@
   height: 0;
 }
 
-@media (min-width: 48rem) {
-  .phoneBreak {
-    display: none;
-  }
-}
-
-/* "Open Source" opens between "The" and "ADE": its column grows from nothing
-   to its full width and pushes them apart while the blue box is revealed */
+/* The highlight ("No account needed." on the end card, "No conflicts." in the
+   hero) opens: its column grows from nothing to its full width while the
+   blue box is revealed */
 .hl {
   display: grid;
   flex: none;
@@ -299,21 +294,129 @@ a.pill:focus-visible,
 
 /* ---------- the home hero, which shares the end card's look ---------- */
 
-/* The hero's title is the end card's title, without the lockup above it,
-   and all in pure white */
+/* Its title is a full sentence, so it is set smaller than the end card's */
+.heroScene {
+  --title: min(8vw, 2.75rem);
+  min-width: 0;
+  max-width: 100%;
+}
+
+@media (min-width: 48rem) {
+  .heroScene {
+    --title: clamp(2.5rem, 3.9vw, 4.25rem);
+  }
+}
+
+/* A quiet eyebrow: the secondary button's frosted pill, small */
+.scene .heroEyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  margin: 0 0 max(1rem, calc(26 * var(--px)));
+  padding: 0.375rem 0.875rem;
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 5%);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  color: rgb(255 255 255 / 66%);
+  font-size: 0.8125rem;
+  line-height: 1.2;
+}
+
+.heroEyebrowName {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+/* The hero's title is the end card's, without the lockup above it, all in
+   pure white, and wrapping as text: the sentence balances over two rows,
+   then "No conflicts." takes its own */
 .scene .heroTitle {
+  display: block;
   margin-top: 0;
   color: #ffffff;
+  line-height: 1.12;
+  white-space: normal;
+  text-wrap: balance;
+}
+
+.heroTitle .hl {
+  display: inline-grid;
+  margin-top: 0.06em;
+  vertical-align: top;
 }
 
 /* Its subtitle and buttons sit closer to the title than the end card's tags
    and button do */
 .heroCopy {
-  margin: max(0.75rem, calc(18 * var(--px))) auto 0;
+  margin: max(0.875rem, calc(24 * var(--px))) auto 0;
+}
+
+.heroPromises {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.375rem 1.25rem;
+  margin: max(0.875rem, calc(20 * var(--px))) auto 0;
+  padding: 0;
+  color: rgb(255 255 255 / 62%);
+  font-family: Arial, Helvetica, ui-sans-serif, sans-serif;
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  list-style: none;
+}
+
+.heroPromises > li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.heroPromiseMark {
+  width: 1em;
+  height: 1em;
+  flex: none;
+  color: oklch(0.8 0.17 150);
 }
 
 .scene .heroActions {
-  margin-top: max(1.25rem, calc(34 * var(--px)));
+  margin-top: max(1.25rem, calc(32 * var(--px)));
+}
+
+.heroInstall {
+  margin-top: 1rem;
+}
+
+/* On phones the copy tightens so the mockup still shows under it: a smaller
+   subtitle and promises, and the two buttons side by side */
+@media (max-width: 47.99rem) {
+  .heroScene .heroCopy {
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+
+  .scene .heroEyebrow {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
+  }
+
+  .heroPromises {
+    gap: 0.25rem 0.875rem;
+    font-size: 0.8125rem;
+  }
+
+  .scene .heroActions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.625rem;
+  }
+
+  .heroActions .button {
+    padding: 0 1em;
+    font-size: 0.875rem;
+  }
 }
 
 /* The hero's page styles set its links in Arial: the buttons keep theirs */
@@ -337,8 +440,8 @@ a.pill:focus-visible,
   background: rgb(255 255 255 / 14%);
 }
 
-/* In the hero, "Open Source" opens on its own once the page shows, the way
-   the end card's timeline opens it */
+/* In the hero, "No conflicts." opens on its own once the page shows, the way
+   the end card's timeline opens its highlight */
 .hlIntro {
   animation: hlOpen 0.7s cubic-bezier(0.87, 0, 0.13, 1) 0.9s both;
 }

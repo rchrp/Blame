@@ -8,7 +8,8 @@ import styles from "./practices-scene.module.css";
 // The code practices beat, told in the presentation video's language: Blame's
 // practices card, where a cursor switches the project from "Match codebase"
 // to "Pro standard", each practice ticks on with the standard it now holds,
-// and the agents that will follow it pop in underneath.
+// and the agents that will follow it pop in underneath. The practices and
+// their standards are the app's (see content/docs/guides/code-practices.mdx).
 
 const practices = [
   { name: "Coding style", standard: "Explicit, typed, focused" },
@@ -226,15 +227,17 @@ export function PracticesScene() {
       <div className="overflow-x-clip">
         <p className="story-eyebrow pr-eyebrow">Code practices</p>
         <h2 className="story-title mt-5 max-w-xl text-[#f5f5f7]">
-          <span className="pr-word inline-block">Every</span>{" "}
-          <span className="pr-word inline-block">agent</span>{" "}
-          <span className="pr-word inline-block text-[#dedede]">codes</span>{" "}
-          <span className="pr-word inline-block">like a pro.</span>
+          <span className="pr-word inline-block">Same</span>{" "}
+          <span className="pr-word inline-block">rules</span>{" "}
+          <span className="pr-word inline-block text-[#dedede]">for</span>{" "}
+          <span className="pr-word inline-block text-[#dedede]">every</span>{" "}
+          <span className="pr-word inline-block">agent.</span>
         </h2>
         <p className="story-copy pr-copy mt-6 max-w-xl">
-          Blame holds every implementation to professional engineering
-          standards: clean code, verified changes, sound architecture, and a
-          commit history your team can trust.
+          For coding style, unit tests, architecture, and commit messages,
+          agents either match what your codebase already does or apply a
+          stricter standard. Blame detects which ones the project already
+          follows.
         </p>
       </div>
       <PracticesCard />

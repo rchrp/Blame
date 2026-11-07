@@ -3,9 +3,10 @@
 import { useSceneTimeline } from "@/components/story/use-scene-timeline";
 import styles from "./workspace-scene.module.css";
 
-// The presentation video's "smart workspace" beat: three stories get three
-// isolated worktrees side by side, each with its own named agent cursor, their
-// setup checks tick on in parallel, and a cursor opens a ready preview.
+// The isolation beat, right after the opening: three stories run side by
+// side, each with its own named agent cursor. Blame sets each one up at the
+// same time (branch, worktree, ports, and containers for the app and its
+// services), and a cursor opens one of the three running apps.
 
 const worktrees = [
   {
@@ -13,6 +14,7 @@ const worktrees = [
     title: "Build repository insights panel",
     branch: "blame/us-706-insights",
     port: "46021",
+    services: "postgres, redis",
     agent: "Claude",
     color: "#f97316",
   },
@@ -21,6 +23,7 @@ const worktrees = [
     title: "Add secure credential vault",
     branch: "blame/us-708-vault",
     port: "46023",
+    services: "postgres",
     agent: "Gemini",
     color: "#93c5fd",
   },
@@ -29,6 +32,7 @@ const worktrees = [
     title: "Build project activity timeline",
     branch: "blame/us-709-timeline",
     port: "46025",
+    services: "postgres, worker",
     agent: "GPT",
     color: "#6ee7b7",
   },
@@ -121,7 +125,7 @@ function buildWorkspace(timeline: gsap.core.Timeline, root: HTMLElement) {
     );
   });
 
-  // Blame prepares all three at once: branch, worktree, environment, port, runtime
+  // Blame prepares all three at once: branch, worktree, ports, app, services
   slots.forEach((slot, i) => {
     slot.querySelectorAll<HTMLElement>(".ws-row").forEach((row, j) => {
       const t = ROW_START + j * ROW_STEP + i * 0.05;
@@ -227,9 +231,9 @@ function buildWorkspace(timeline: gsap.core.Timeline, root: HTMLElement) {
 const rowsOf = (worktree: (typeof worktrees)[number]) => [
   { label: "Branch", value: worktree.branch },
   { label: "Worktree", value: `story-${worktree.story}` },
-  { label: "Environment", value: ".env synced" },
-  { label: "Port", value: `:${worktree.port}`, port: true },
-  { label: "Runtime", value: "dev server up" },
+  { label: "Ports", value: `:${worktree.port}, :${Number(worktree.port) + 1}`, port: true },
+  { label: "App", value: "own container" },
+  { label: "Services", value: worktree.services },
 ];
 
 export function WorkspaceScene() {
@@ -240,16 +244,20 @@ export function WorkspaceScene() {
       <div className="text-center">
         <p className="story-eyebrow ws-eyebrow">Isolated by default</p>
         <h2 className="story-title mx-auto mt-5 max-w-6xl text-[#f5f5f7]">
-          <span className="ws-word inline-block">One</span>{" "}
-          <span className="ws-word inline-block">story.</span>{" "}
-          <span className="ws-word inline-block text-[#dedede]">Its</span>{" "}
-          <span className="ws-word inline-block text-[#dedede]">own</span>{" "}
-          <span className="ws-word workspace-smart-sweep">smart workspace.</span>
+          <span className="ws-word inline-block">Three</span>{" "}
+          <span className="ws-word inline-block">stories.</span>{" "}
+          <span className="whitespace-nowrap">
+            <span className="ws-word inline-block text-[#dedede]">Three</span>{" "}
+            <span className="ws-word inline-block text-[#dedede]">running</span>{" "}
+            <span className="ws-word inline-block text-[#dedede]">apps.</span>
+          </span>{" "}
+          <br className="hidden md:inline" />
+          <span className="ws-word workspace-smart-sweep">No conflicts.</span>
         </h2>
         <p className="story-copy ws-copy mx-auto mt-6 max-w-3xl">
-          Blame analyzes your project, works out what each story needs, and
-          prepares a dedicated branch, worktree, environment, port, and runtime
-          before the agent starts.
+          Before an agent starts, Blame gives its story a branch, a worktree,
+          its own ports, and containers for the app and its services: database,
+          cache, workers. Up to three agents run at once.
         </p>
       </div>
 

@@ -6,48 +6,49 @@ import { celebrateStage } from "@/components/story/story-stage";
 import { useSceneTimeline } from "@/components/story/use-scene-timeline";
 import styles from "./opening-scene.module.css";
 
-// The video's first two beats ("hook" then "name") as one scene: the line
-// types on while the loose ends of AI coding are dealt under it, they collapse
-// into the product name, and the workflow from story to merge draws itself.
+// The video's first two beats ("hook" then "name") as one scene, retold as
+// the problem Blame solves: the line types on while what worktrees leave
+// shared is dealt under it (ports, database, .env, the preview itself), the
+// cards collapse into the product name, and the workflow from story to merge
+// draws itself.
 
 const typedWords = [
-  { text: "AI", tone: "dim" },
-  { text: "can", tone: "dim" },
-  { text: "write", tone: "bright" },
+  { text: "Worktrees", tone: "bright" },
+  { text: "isolate", tone: "dim" },
   { text: "the", tone: "dim" },
   { text: "code.", tone: "bright" },
 ] as const;
 
-const restWords = ["makes", "it", "shippable."];
+const restWords = ["isolates", "the", "running", "app."];
 
 const looseEnds = [
   {
-    source: "chat · 14 open",
-    badge: "Lost context",
-    amber: false,
-    body: "Which prompt changed this file?",
-    plain: false,
-  },
-  {
-    source: "terminal",
+    source: "agent 1 · terminal",
     badge: "Port conflict",
     amber: true,
     body: "Error: port 3000 is already in use",
     plain: true,
   },
   {
-    source: "git",
-    badge: "Unreviewed",
+    source: "agent 2 · migrate",
+    badge: "Shared database",
     amber: false,
-    body: "47 files changed on feature/tmp-2",
-    plain: false,
+    body: 'relation "orders" already exists',
+    plain: true,
   },
   {
-    source: ".env",
+    source: "agent 3 · .env",
     badge: "Not synced",
     amber: true,
     body: "DATABASE_URL is missing",
     plain: true,
+  },
+  {
+    source: "localhost:3000",
+    badge: "Whose branch?",
+    amber: false,
+    body: "Which agent's change is this?",
+    plain: false,
   },
 ];
 
@@ -75,7 +76,7 @@ function buildOpening(timeline: gsap.core.Timeline, root: HTMLDivElement) {
   const brand = root.querySelector<HTMLElement>("[data-op-brand]");
   if (!words.length || !brand) return;
 
-  // Beat 1: "AI can write the code." types on, caret first.
+  // Beat 1: "Worktrees isolate the code." types on, caret first.
   timeline.fromTo(words[0], { "--caret": 1 }, { "--caret": 1, duration: 0.01 }, 0);
   let at = TYPE_AT;
   words.forEach((word, index) => {
@@ -92,10 +93,11 @@ function buildOpening(timeline: gsap.core.Timeline, root: HTMLDivElement) {
     );
     at += (chars + 1) * CHAR;
   });
+  // the caret fades once the line is typed
   timeline.to(
     words[words.length - 1],
     { "--caret": 0, duration: 0.25, ease: "power2.in" },
-    1.05,
+    Math.max(1.05, at),
   );
 
   // The loose ends are dealt under the line, drift, then fall into one point:
@@ -292,8 +294,9 @@ export function OpeningScene() {
           </div>
 
           <p data-op-copy="" className={`story-copy ${styles.copy}`}>
-            Turn an idea into a user story, give it an isolated workspace, see
-            it run, review every change, then decide what ships.
+            Run three agents in three worktrees and they still share one
+            localhost:3000, one database, and one .env. Blame gives each story
+            its own running app, from first prompt to merge.
           </p>
 
           <div aria-hidden="true" className={styles.deckArea}>

@@ -1,21 +1,31 @@
 'use client'
 
+import { Check } from 'lucide-react'
 import { useEffect, useRef, useState, type RefObject } from 'react'
+import { HeroLoop } from '@/components/demo-video'
 import { GitHubMark } from '@/components/github-stars'
+import { InstallCommand } from '@/components/install-command'
+import { heroLoopVideo } from '@/lib/demo-media'
 import { githubRepositoryUrl } from '@/lib/github'
 import { HeroBacklogMockup } from '@/components/blame-mockups/backlog-mockup'
 import endCard from '@/components/story/cta-scene.module.css'
 
-// The hero follows the scroll: its copy rises and fades, then the mockup
-// tilts up and fades. Those styles are written straight to the frame, copy
-// and mockup elements on each frame, so React renders again only when the
-// hero hides or shows. The 3D scene behind the hero is the page's story
+// The hero follows the scroll: its copy rises and fades, then the mockup (or
+// the demo loop, once it is on: see lib/demo-media.ts) tilts up and fades.
+// Those styles are written straight to the frame, copy and mockup elements
+// on each frame, so React renders again only when the hero hides or shows. The 3D scene behind the hero is the page's story
 // stage (components/story/story-stage.tsx).
 
 const heroStageHeight = 180
 const scrollProgressResponse = 14
 // From this point of its scroll on, the hero has faded and takes no input.
 const hiddenFrom = 0.72
+
+const promises = [
+  'Free and open source',
+  'No account needed',
+  'Works with your Claude or ChatGPT plan',
+]
 
 type LayerStyle = {
   opacity: number
@@ -77,7 +87,7 @@ export function LandingHero() {
         >
           <div
             ref={copyRef}
-            className="flex flex-1 items-center justify-center pb-4 pt-8 sm:pb-6 lg:pb-8"
+            className="flex flex-1 items-center justify-center pb-4 pt-8 sm:pb-6"
             style={initialCopyStyle}
           >
             <HeroCopy />
@@ -87,7 +97,11 @@ export function LandingHero() {
             className="z-20 mx-auto mb-4 w-[90%] max-w-[61.2rem]"
             style={initialMockupStyle}
           >
-            <HeroBacklogMockup />
+            <HeroLoop
+              video={heroLoopVideo}
+              playing={!hidden}
+              fallback={<HeroBacklogMockup />}
+            />
           </div>
         </div>
       </div>
@@ -97,29 +111,51 @@ export function LandingHero() {
 
 function HeroCopy() {
   return (
-    // The end card's title, highlight, button and spacing (see
-    // cta-scene.module.css), with the hero's own subtitle.
-    <div className={endCard.scene}>
+    // The end card's highlight, buttons and spacing (see cta-scene.module.css),
+    // with the hero's own eyebrow, longer title, subtitle and promises.
+    <div className={`${endCard.scene} ${endCard.heroScene}`}>
+      <p className={endCard.heroEyebrow}>
+        <span className={endCard.heroEyebrowName}>Blame ADE</span>
+        <span aria-hidden="true">·</span>
+        <span className="hidden sm:inline">
+          The open-source agentic development environment
+        </span>
+        <span className="sm:hidden">Open-source agentic dev environment</span>
+      </p>
       <h1 id="hero-title" className={`${endCard.title} ${endCard.heroTitle}`}>
-        <span className={endCard.word}>The</span>{' '}
+        {/* From tablets up, the rows break after "in parallel," */}
+        Run coding agents{' '}
+        <span className="whitespace-nowrap">in parallel,</span>{' '}
+        <span className="md:whitespace-nowrap">
+          each with its own{' '}
+          <span className="whitespace-nowrap">live preview.</span>
+        </span>
+        <br />
         <span className={`${endCard.hl} ${endCard.hlIntro}`}>
           <span className={endCard.hlBox}>
-            <span className={endCard.hlText}>Open Source</span>
+            <span className={endCard.hlText}>No conflicts.</span>
           </span>
-        </span>{' '}
-        <span aria-hidden="true" className={`${endCard.break} ${endCard.phoneBreak}`} />
-        <span className={endCard.word}>ADE</span>{' '}
-        <span className={endCard.word}>that</span>{' '}
-        <span aria-hidden="true" className={endCard.break} />
-        <span className={endCard.word}>sets</span>{' '}
-        <span className={endCard.word}>the</span>{' '}
-        <span className={endCard.word}>standard</span>
+        </span>
       </h1>
       <p className={`hero-subtitle max-w-3xl text-balance text-white/76 ${endCard.heroCopy}`}>
-        From story to controlled merge, one verifiable harness unifies
-        agents, Code Practices, smart worktrees, and live Cloud Previews.
+        Plan stories in a backlog, then run up to three agents at once. Each
+        gets its own ports, database, and services, so you try every change
+        in its running app before you review and merge it.
       </p>
+      <ul className={endCard.heroPromises}>
+        {promises.map((promise) => (
+          <li key={promise}>
+            <Check aria-hidden="true" className={endCard.heroPromiseMark} />
+            {promise}
+          </li>
+        ))}
+      </ul>
       <HeroActions />
+      <InstallCommand
+        className={endCard.heroInstall}
+        platform="macOS"
+        command="brew install --cask rchrp/tap/blame"
+      />
     </div>
   )
 }

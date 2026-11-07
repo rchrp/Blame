@@ -1,0 +1,35 @@
+/* The demo videos' frame: the hero mockup's 16:9 window (see
+   blame-mockups/backlog-mockup.module.css), so a video takes its exact place
+   and nothing moves while it loads. */
+.frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 14%);
+  border-radius: clamp(12px, 1.4vw, 24px);
+  background: #07080b;
+  box-shadow:
+    0 30px 80px rgb(0 0 0 / 44%),
+    0 0 0 1px rgb(71 126 255 / 8%);
+}
+
+.media {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* The full demo stays whole on screen under its heading: the section's top
+   padding, the heading and this margin take about 25rem. */
+.demoSlot {
+  width: min(100%, 64rem, calc((100svh - 25rem) * 16 / 9));
+  margin: 3rem auto 0;
+}
+
+@media (min-width: 64rem) {
+  .demoSlot {
+    margin-top: 3.5rem;
+  }
+}
