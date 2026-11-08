@@ -12,21 +12,31 @@ import endCard from '@/components/story/cta-scene.module.css'
 // The hero follows the scroll in three steps. First the copy fades while the
 // demo loop (or the mockup, while the loop is off: see lib/demo-media.ts)
 // rises to the middle of the screen, straightens up from a slight tilt and
-// grows a little. Then the loop stays there, flat and whole, for a while.
-// Last, it tilts away and fades. With reduced motion it only rises, then
+// grows a little. Then the loop rests there, flat and whole, just long
+// enough to stop on it. Last, it tilts away and fades. With reduced motion it only rises, then
 // fades.
 // Those styles are written straight to the frame, copy and mockup elements
 // on each frame, so React renders again only when the hero hides or shows.
 // The 3D scene behind the hero is the page's story stage
 // (components/story/story-stage.tsx).
 
-const heroStageHeight = 250
+// Each step's length, in screen heights of scroll (vh). The loop fades over
+// the exit's first `fadeLength`.
+const riseLength = 45
+const stayLength = 15
+const exitLength = 50
+const fadeLength = 30
+const heroScroll = riseLength + stayLength + exitLength
+const heroStageHeight = 100 + heroScroll
 const scrollProgressResponse = 14
-// Where the rise and the stay end, as parts of the hero's scroll.
-const riseEnd = 0.3
-const stayEnd = 0.66
+// Where the rise and the stay end, as parts of the hero's scroll. The stay
+// ends before the magnet starts pulling the page to the first story section
+// (components/story/story-scroll.tsx), so the page can rest on it.
+const riseEnd = riseLength / heroScroll
+const stayEnd = (riseLength + stayLength) / heroScroll
+const fadeStart = stayEnd + 4 / heroScroll
 // From this point of its scroll on, the hero has faded and takes no input.
-const hiddenFrom = 0.9
+const hiddenFrom = (riseLength + stayLength + fadeLength) / heroScroll
 // How far the loop leans back at the top of the page, and once it leaves,
 // in degrees.
 const restingTilt = 12
@@ -355,7 +365,7 @@ function heroMockupStyle(
   geometry: HeroGeometry,
 ): LayerStyle {
   const rise = smoothstep(0, riseEnd, progress)
-  const opacity = 1 - smoothstep(stayEnd + 0.04, hiddenFrom, progress)
+  const opacity = 1 - smoothstep(fadeStart, hiddenFrom, progress)
   const y = geometry.rise * rise
   if (reducedMotion) return { opacity, transform: `translate3d(0, ${y}px, 0)` }
   // While it stays, it keeps growing a touch, so the scroll still shows.
@@ -384,8 +394,9 @@ function easeOut(value: number) {
   return 1 - Math.pow(1 - clamp(value, 0, 1), 3)
 }
 
+// Only a little slower at first, so the exit picks up right after the stay.
 function easeIn(value: number) {
-  return Math.pow(clamp(value, 0, 1), 2)
+  return Math.pow(clamp(value, 0, 1), 1.3)
 }
 
 function clamp(value: number, min: number, max: number) {
