@@ -719,8 +719,10 @@ export function UserStoryDrawerPanel({
               sidebarOpen={statsShownExpanded}
             >
               <UserStoryContent
+                ambition={ambition}
                 loadChangedFileDiffs={loadChangedFileDiffs}
                 mode={mode}
+                onAmbitionChange={changeAmbition}
                 onCommentUndo={handleCommentUndo}
                 onSummaryCodeSelectionAttachmentRemove={
                   removeSummaryCodeSelectionAttachment
@@ -850,6 +852,7 @@ export function UserStoryDrawerPanel({
               summaryFileAttachments
             ),
             runMode: runMode ?? readStoryRunMode(),
+            ambition,
           },
           storyContextLimit(contextLimitKey)
         )

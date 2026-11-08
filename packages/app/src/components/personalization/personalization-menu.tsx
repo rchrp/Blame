@@ -48,7 +48,8 @@ export function PersonalizationMenu({ ambition }: { ambition: AmbitionScope }) {
         align="end"
         side="top"
         sideOffset={10}
-        className="w-[min(22rem,calc(100vw-2rem))] gap-3 p-4"
+        collisionPadding={16}
+        className="max-h-(--radix-popover-content-available-height) w-[min(22rem,calc(100vw-2rem))] gap-3 overflow-y-auto p-4"
       >
         <PersonalizationMenuBody ambition={ambition} />
       </PopoverContent>

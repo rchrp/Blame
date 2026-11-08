@@ -90,8 +90,10 @@ type UserStoryFixedSectionProps = UserStoryCommentComposerProps & {
 }
 
 export const UserStoryContent = React.memo(function UserStoryContent({
+  ambition,
   mode,
   onCommentUndo,
+  onAmbitionChange,
   onSummaryChange,
   onSummaryCodeSelectionAttachmentRemove,
   onSummaryFileAttachmentRemove,
@@ -110,10 +112,13 @@ export const UserStoryContent = React.memo(function UserStoryContent({
   summaryRef,
   userStory,
 }: {
+  // The ambition kept with this story; null follows the account's.
+  ambition?: Ambition | null
   loadChangedFileDiffs?: Parameters<
     typeof AgentConversationTimeline
   >[0]["loadChangedFileDiffs"]
   mode: UserStoryDrawerMode
+  onAmbitionChange?: (ambition: Ambition | null) => void
   // Where this story runs (Local Container, Cloud Preview or Direct).
   runMode?: StoryRunMode | null
   onRunModeChange?: (mode: StoryRunMode) => void
@@ -176,6 +181,13 @@ export const UserStoryContent = React.memo(function UserStoryContent({
           onFileLinkClick={onFileLinkClick}
           onMarkdownChange={onSummaryChange}
           onOptimize={onSummaryOptimize}
+          personalizationMenu={
+            mode === "create" && onAmbitionChange ? (
+              <PersonalizationMenu
+                ambition={{ value: ambition ?? null, onChange: onAmbitionChange }}
+              />
+            ) : undefined
+          }
           readOnly={!editable}
           toolbarEnd={
             editable ? (
