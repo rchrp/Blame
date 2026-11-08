@@ -26,6 +26,8 @@ import type {
   SubscriptionUsage,
   SubscriptionUsageInput,
   LoginOAuthProviderInput,
+  OpenPullRequestInput,
+  OpenPullRequestResult,
   OptimizeUserStoryPromptInput,
   OptimizeUserStoryPromptResult,
   ApplyPreviewInitializationInput,
@@ -33,6 +35,8 @@ import type {
   ProjectPreviewRuntimeState,
   ProjectRunConfiguration,
   ProviderListResponse,
+  PullRequestAvailability,
+  PullRequestAvailabilityInput,
   RepairProjectInitializationInput,
   RepairProjectInitializationResult,
   ResolveApprovalInput,
@@ -695,6 +699,10 @@ export type BlameDesktopApi = {
     approveAndMerge(
       input: ApproveAndMergeInput,
     ): Promise<ApproveAndMergeResult>;
+    openPullRequest(input: OpenPullRequestInput): Promise<OpenPullRequestResult>;
+    pullRequestAvailability(
+      input: PullRequestAvailabilityInput,
+    ): Promise<PullRequestAvailability>;
     generateCommitMessage(
       input: GenerateCommitMessageInput,
     ): Promise<GenerateCommitMessageResult>;

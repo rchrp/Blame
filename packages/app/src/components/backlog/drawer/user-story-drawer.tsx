@@ -1,4 +1,5 @@
 import * as React from "react"
+import type { PullRequestAvailability } from "@blame/agent-runtime"
 
 import type {
   UserStory,
@@ -49,8 +50,14 @@ export type UserStoryDrawerProps = {
     >
   ) => Promise<UserStoryComment>
   onDeleteUserStory: (story: UserStory) => Promise<void>
-  onApproveAndMerge: (story: UserStory) => Promise<UserStory>
+  onApproveAndMerge: (
+    story: UserStory,
+    options?: { push?: boolean }
+  ) => Promise<UserStory>
+  // Whether Open PR can run for this project; absent where gh cannot run.
+  onCheckPullRequest?: () => Promise<PullRequestAvailability>
   onOpenDrawer: OpenDrawer
+  onOpenPullRequest: (story: UserStory) => Promise<UserStory>
   onOptimizeUserStory?: (input: {
     summary: string
     title: string
@@ -91,7 +98,9 @@ export const UserStoryDrawer = React.memo(function UserStoryDrawer({
   onCreateUserStoryComment,
   onDeleteUserStory,
   onApproveAndMerge,
+  onCheckPullRequest,
   onOpenDrawer,
+  onOpenPullRequest,
   onOptimizeUserStory,
   onReject,
   onRequestChanges,
@@ -150,10 +159,12 @@ export const UserStoryDrawer = React.memo(function UserStoryDrawer({
         open={open}
         onCancel={() => onOpenChange(false)}
         onApproveAndMerge={onApproveAndMerge}
+        onCheckPullRequest={onCheckPullRequest}
         onCreateUserStory={onCreateUserStory}
         onCreateUserStoryComment={onCreateUserStoryComment}
         onDeleteUserStory={onDeleteUserStory}
         onOpenDrawer={onOpenDrawer}
+        onOpenPullRequest={onOpenPullRequest}
         onOptimizeUserStory={onOptimizeUserStory}
         onRequestChanges={onRequestChanges}
         onReject={onReject}

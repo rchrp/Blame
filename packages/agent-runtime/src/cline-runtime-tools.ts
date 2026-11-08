@@ -118,6 +118,8 @@ export type RuntimeOptions = PreviewToolRuntimeOptions & {
   developmentHarness?: "blame" | "cline";
   openExternalUrl?(url: string): void;
   git?(cwd: string, args: string[]): Promise<string>;
+  // Runs the GitHub CLI on this computer for Open PR; gh by default.
+  gh?(cwd: string, args: string[]): Promise<string>;
   lightWorkspace?: LightWorkspaceExecutor;
   /**
    * The credentials the desktop grants a session's commands when they run in

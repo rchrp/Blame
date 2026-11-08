@@ -348,6 +348,8 @@ export type ApproveAndMergeInput = {
   // Worktrees where an agent is running, filled in by the desktop host: the
   // target branch is not advanced inside one of them.
   activeWorktrees?: string[];
+  // False merges into the local target branch and leaves it unpushed.
+  push?: boolean;
   title: string;
   summary: string;
   codePractices?: ProjectCodePracticePreference[];
@@ -366,7 +368,38 @@ export type ApproveAndMergeResult = {
 export type ApproveAndMergePush =
   | { status: "pushed"; upstream: string }
   // The target branch has no upstream; remote is where it could be published.
-  | { status: "no-upstream"; remote: string | null };
+  | { status: "no-upstream"; remote: string | null }
+  // The person merged without pushing.
+  | { status: "skipped" };
+
+// Commits the remaining story work, pushes the story branch to origin and
+// opens (or finds) its GitHub pull request into the target branch.
+export type OpenPullRequestInput = Omit<
+  ApproveAndMergeInput,
+  "activeWorktrees" | "push"
+> & {
+  // The agent's final summary of the story, quoted in the pull request body.
+  agentSummary?: string;
+};
+
+export type OpenPullRequestResult = {
+  url: string;
+  // False when an open pull request already existed for the story branch.
+  created: boolean;
+  targetBranch: string;
+};
+
+export type PullRequestAvailabilityInput = {
+  repositoryRoot: string;
+};
+
+// Whether Open PR can run on this computer for this project.
+export type PullRequestAvailability =
+  | { status: "available"; repository: string }
+  // origin is missing or not on github.com: the action is not offered.
+  | { status: "not-github" }
+  // gh is missing or signed out: message says what to do.
+  | { status: "gh-missing" | "gh-signed-out"; message: string };
 
 export type GenerateCommitMessageInput = {
   apiConnection: ApiConnection;

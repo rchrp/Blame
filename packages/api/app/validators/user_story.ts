@@ -174,6 +174,13 @@ export const updateUserStoryValidator = vine.create({
   mergeCommit: vine.string().trim().maxLength(255).nullable().optional(),
   baseCommit: vine.string().trim().maxLength(255).nullable().optional(),
   discardedReason: vine.string().trim().maxLength(2048).nullable().optional(),
+  pullRequestUrl: vine
+    .string()
+    .trim()
+    .maxLength(2048)
+    .url({ protocols: ['https'], require_protocol: true })
+    .nullable()
+    .optional(),
 })
 
 export const agentScreenshotUploadValidator = vine.compile(

@@ -800,10 +800,9 @@ test("uses native Cline compaction with structural context projection", async ()
     });
     assert.equal(fixture.start()?.config.compaction?.enabled, true);
     assert.equal(fixture.start()?.config.compaction?.compact, undefined);
-    assert.equal(fixture.start()?.config.extensions?.length, 1);
-    assert.equal(
-      fixture.start()?.config.extensions?.[0]?.name,
-      "blame-context-projection",
+    assert.deepEqual(
+      fixture.start()?.config.extensions?.map((extension: { name: string }) => extension.name),
+      ["blame-context-projection", "blame-mcp-result-redaction"],
     );
   } finally {
     await fixture.restore();
@@ -828,7 +827,10 @@ test("disabled compaction does not install a projection extension", async () => 
     });
     assert.equal(fixture.start()?.config.compaction?.enabled, false);
     assert.equal(fixture.start()?.config.compaction?.compact, undefined);
-    assert.equal(fixture.start()?.config.extensions, undefined);
+    assert.deepEqual(
+      fixture.start()?.config.extensions?.map((extension: { name: string }) => extension.name),
+      ["blame-mcp-result-redaction"],
+    );
   } finally {
     await fixture.restore();
     await rm(workspace, { force: true, recursive: true });
@@ -2691,7 +2693,13 @@ test("keeps explicit development practices concise and actionable", async () => 
     workspaceRoot: process.cwd(),
   });
 
-  assert.ok(Buffer.byteLength(prompt) < 6_500);
+  // The budget covers the authored prompt, not the host's paths and git branch
+  // that the runtime context and workspace metadata repeat.
+  const authored = prompt.replace(
+    /<runtime_context>[\s\S]*?<\/runtime_context>|<workspace_metadata>[\s\S]*?<\/workspace_metadata>/gu,
+    "",
+  );
+  assert.ok(Buffer.byteLength(authored) < 6_500);
   assert.match(prompt, /Use precise names, focused functions/);
   assert.match(prompt, /Preserve the existing architecture/);
   assert.match(prompt, /Unless the user explicitly asks for tests/);

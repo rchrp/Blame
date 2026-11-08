@@ -28,6 +28,8 @@ import type {
   SubscriptionUsage,
   SubscriptionUsageInput,
   LoginOAuthProviderInput,
+  OpenPullRequestInput,
+  OpenPullRequestResult,
   OptimizeUserStoryPromptInput,
   OptimizeUserStoryPromptResult,
   ApplyPreviewInitializationInput,
@@ -35,6 +37,8 @@ import type {
   ProjectPreviewRuntimeState,
   ProjectRunConfiguration,
   ProviderListResponse,
+  PullRequestAvailability,
+  PullRequestAvailabilityInput,
   RepairProjectInitializationInput,
   RepairProjectInitializationResult,
   ResolveApprovalInput,
@@ -505,6 +509,11 @@ export type AgentClient = {
     generateTitle(input: GenerateTitleInput): Promise<GenerateTitleResult>
   }
   approveAndMerge(input: ApproveAndMergeInput): Promise<ApproveAndMergeResult>
+  // Open PR: commit, push the story branch, then gh pr create on the host.
+  openPullRequest(input: OpenPullRequestInput): Promise<OpenPullRequestResult>
+  pullRequestAvailability(
+    input: PullRequestAvailabilityInput
+  ): Promise<PullRequestAvailability>
   generateCommitMessage(
     input: GenerateCommitMessageInput
   ): Promise<GenerateCommitMessageResult>

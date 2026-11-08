@@ -1,4 +1,5 @@
 import { delimiter, isAbsolute, relative, resolve } from "node:path";
+import { mcpResultRedactionExtension } from "./mcp-result-redaction.js";
 import { supplementalModelConfig } from "./supplemental-model-config.js";
 import type {
   BasicLogger,
@@ -242,6 +243,7 @@ export function appendProductionConfig<T extends CoreSessionConfig>(
   };
   return {
     ...supplementalModelConfig(config),
+    extensions: [...(config.extensions ?? []), mcpResultRedactionExtension()],
     ...(production.requestMaxOutputTokens !== undefined ? { maxTokensPerTurn:
       Math.min(config.maxTokensPerTurn ?? production.requestMaxOutputTokens, production.requestMaxOutputTokens) } : {}),
     execution: {
