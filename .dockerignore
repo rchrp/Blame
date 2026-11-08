@@ -20,3 +20,8 @@ node_modules
 **/node_modules
 **/out
 *.log
+# Local env files hold private values, and Next.js copies .env and
+# .env.production into its standalone output: keep them out of every build
+# context.
+**/.env*
+!**/.env.example
