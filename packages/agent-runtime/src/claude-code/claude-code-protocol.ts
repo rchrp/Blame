@@ -346,8 +346,8 @@ export function classifyClaudeCodeError(message: string) {
   if (
     text.includes("not logged in") ||
     text.includes("/login") ||
-    text.includes("authentication") ||
-    text.includes("oauth token")
+    text.includes("authenticat") ||
+    text.includes("oauth")
   )
     return { status: 401, type: "authentication_error" };
   if (text.includes("limit") || text.includes("rate"))
