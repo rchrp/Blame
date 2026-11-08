@@ -5,6 +5,7 @@ import {
 import {
   BlameAgentRuntime,
   type AgentEvent,
+  type LightCommandCredentials,
   type LightWorkspaceExecutionRequest,
 } from "@blame/agent-runtime";
 import {
@@ -103,6 +104,10 @@ function createAgentRuntime(hostClient: AgentRuntimeHostClient) {
           signal: undefined,
         }),
       projectApp: (input) => hostRequest(hostClient, "projectApp", input),
+      commandCredentials: (sessionId) =>
+        hostClient.request<LightCommandCredentials>("commandCredentials", {
+          sessionId,
+        }),
       componentPreview: (input) =>
         hostRequest(hostClient, "componentPreview", input),
       projectScanRoot: async (workspace) => {

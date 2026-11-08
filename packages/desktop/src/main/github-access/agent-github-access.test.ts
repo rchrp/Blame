@@ -9,12 +9,20 @@ import {
   grantSessionGithubAccess,
   grantedGithubTokens,
   readHostGithubToken,
+  requestCloudGithubToken,
+  sessionCommandCredentials,
   withSessionCommandCredentials,
+  type CloudGithubTokenRequest,
+  type CloudGithubTokenResult,
   type HostGithubToken,
 } from "./agent-github-access.ts";
 
 const token = "gho_SessionToken0123456789abcdefABCDEFGH";
 const managedBackend = { mode: "remote", endpoint: "ws://127.0.0.1:1" };
+const apiConnection = { url: "https://api.blame.so/api/v1", token: "blame-session" };
+const noCloudToken = async (): Promise<CloudGithubTokenResult> => {
+  throw new Error("A Local Container session never asks the API for a token");
+};
 
 test("GitHub access is off by default and kept per project", async () => {
   const root = await mkdtemp(join(tmpdir(), "blame-github-access-"));
@@ -65,6 +73,7 @@ test("a Local Container session's requests carry GH_TOKEN only when its project 
       reads += 1;
       return result;
     },
+    cloudToken: noCloudToken,
   });
   const session = { sessionId: "session-on", projectId: "project-a", workspaceMode: "local-container", backend: managedBackend };
 
@@ -87,19 +96,112 @@ test("a Local Container session's requests carry GH_TOKEN only when its project 
   assert.equal(reads, 0);
 
   // Cloud and Direct sessions never read the host token.
-  await grantSessionGithubAccess({ ...session, workspaceMode: "cloud-mirror" }, dependencies(true));
+  const cloud = await grantSessionGithubAccess({ ...session, workspaceMode: "cloud-mirror" }, dependencies(true));
+  assert.match(cloud.notice ?? "", /no Blame account connection/u);
   await grantSessionGithubAccess({ ...session, workspaceMode: "direct", backend: undefined }, dependencies(true));
   assert.equal(reads, 0);
   assert.deepEqual(credentials("session-on"), {});
+  assert.deepEqual(await sessionCommandCredentials("session-on"), {});
 });
 
 test("a session starts without GitHub access, and says why, when gh has no token", async () => {
   const result = await grantSessionGithubAccess(
     { sessionId: "session-no-gh", projectId: "project-a", workspaceMode: "local-container", backend: managedBackend },
-    { enabled: async () => true, readToken: async () => ({ unavailable: "gh isn't signed in" }) },
+    {
+      enabled: async () => true,
+      readToken: async () => ({ unavailable: "gh isn't signed in" }),
+      cloudToken: noCloudToken,
+    },
   );
   assert.deepEqual(result, { notice: "gh isn't signed in" });
   assert.deepEqual(credentials("session-no-gh"), {});
+});
+
+test("a cloud session's commands get the API's repository token, renewed before it expires, never the host's", async () => {
+  const requests: CloudGithubTokenRequest[] = [];
+  const issued = [
+    // Expires within the renewal margin: the first command renews it.
+    { token: "repository-token-first", expiresAt: Date.now() + 5 * 60_000 },
+    { token: "repository-token-renewed", expiresAt: Date.now() + 60 * 60_000 },
+  ];
+  let hostReads = 0;
+  const dependencies = (enabled: boolean) => ({
+    enabled: async () => enabled,
+    readToken: async (): Promise<HostGithubToken> => {
+      hostReads += 1;
+      return { token };
+    },
+    cloudToken: async (request: CloudGithubTokenRequest) => {
+      requests.push(request);
+      return issued[Math.min(requests.length - 1, issued.length - 1)]!;
+    },
+  });
+  const session = { sessionId: "cloud-session", projectId: "project-a", workspaceMode: "cloud-mirror", apiConnection };
+
+  assert.deepEqual(await grantSessionGithubAccess(session, dependencies(true)), {});
+  assert.deepEqual(requests, [{ apiConnection, projectId: "project-a" }]);
+  assert.deepEqual(await sessionCommandCredentials("cloud-session"), { githubToken: "repository-token-renewed" });
+  assert.equal(requests.length, 2);
+  // Valid for long enough: the next command reuses it.
+  assert.deepEqual(await sessionCommandCredentials("cloud-session"), { githubToken: "repository-token-renewed" });
+  assert.equal(requests.length, 2);
+  assert.deepEqual(await sessionCommandCredentials("another-session"), {});
+  assert.ok(grantedGithubTokens().includes("repository-token-renewed"));
+  assert.equal(hostReads, 0);
+
+  // Restarting with access off revokes it without asking the API.
+  assert.deepEqual(await grantSessionGithubAccess(session, dependencies(false)), {});
+  assert.deepEqual(await sessionCommandCredentials("cloud-session"), {});
+  assert.equal(requests.length, 2);
+  assert.ok(!grantedGithubTokens().includes("repository-token-renewed"));
+});
+
+test("a cloud session starts without GitHub access, and says why, when the API issues no token", async () => {
+  const result = await grantSessionGithubAccess(
+    { sessionId: "cloud-refused", projectId: "project-a", workspaceMode: "cloud-mirror", apiConnection },
+    {
+      enabled: async () => true,
+      readToken: async () => ({ token }),
+      cloudToken: async () => ({ unavailable: "Link this project to a GitHub repository first." }),
+    },
+  );
+  assert.deepEqual(result, { notice: "Link this project to a GitHub repository first." });
+  assert.deepEqual(await sessionCommandCredentials("cloud-refused"), {});
+});
+
+test("the cloud token is asked of the project's agent-token endpoint with the session's account", async () => {
+  const calls: Array<{ url: string; init?: RequestInit }> = [];
+  const expiresAt = new Date(Date.now() + 3_600_000).toISOString();
+  const respond = (response: Response): typeof fetch => async (input, init) => {
+    calls.push({ url: String(input), init });
+    return response;
+  };
+  const request = { apiConnection, projectId: "project-a" };
+
+  const result = await requestCloudGithubToken(request, {
+    packaged: true,
+    fetcher: respond(Response.json({ token: "repository-token", expiresAt, repository: "acme/web" })),
+  });
+  assert.deepEqual(result, { token: "repository-token", expiresAt: Date.parse(expiresAt) });
+  assert.equal(calls[0]!.url, "https://api.blame.so/api/v1/projects/project-a/github/agent-token");
+  assert.equal(calls[0]!.init?.method, "POST");
+  assert.equal(new Headers(calls[0]!.init?.headers).get("authorization"), "Bearer blame-session");
+
+  const refused = await requestCloudGithubToken(request, {
+    packaged: true,
+    fetcher: respond(
+      Response.json({ errors: [{ message: "GitHub access for the agent is turned off for this project." }] }, { status: 403 }),
+    ),
+  });
+  assert.match("unavailable" in refused ? refused.unavailable : "", /turned off for this project/u);
+
+  calls.length = 0;
+  const elsewhere = await requestCloudGithubToken(
+    { ...request, apiConnection: { ...apiConnection, url: "https://attacker.example/api/v1" } },
+    { packaged: true, fetcher: respond(Response.json({})) },
+  );
+  assert.ok("unavailable" in elsewhere);
+  assert.equal(calls.length, 0);
 });
 
 function credentials(sessionId: string) {

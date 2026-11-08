@@ -4,6 +4,7 @@ import {
   AgentGithubAccessSettings,
   grantSessionGithubAccess,
   readHostGithubToken,
+  requestCloudGithubToken,
 } from "../github-access/agent-github-access.ts";
 
 let settings: AgentGithubAccessSettings | undefined;
@@ -15,12 +16,18 @@ function agentGithubAccessSettings() {
   return settings;
 }
 
-/** At session start: grants the host's gh token when the project allows it. */
+/**
+ * At session start, when the project allows it: grants the host's gh token
+ * to a Local Container session, a repository-scoped GitHub App token to a
+ * cloud session.
+ */
 export function prepareSessionGithubAccess(session: Record<string, unknown>) {
   const projects = agentGithubAccessSettings();
   return grantSessionGithubAccess(session, {
     enabled: (projectId) => projects.enabled(projectId),
     readToken: () => readHostGithubToken(),
+    cloudToken: (request) =>
+      requestCloudGithubToken(request, { packaged: app.isPackaged }),
   });
 }
 

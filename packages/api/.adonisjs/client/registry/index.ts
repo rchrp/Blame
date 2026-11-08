@@ -48,6 +48,12 @@ const routes = {
     tokens: [[0,"api"],[0,"v1"],[0,"integrations"],[0,"vercel"],[0,"callback"]],
     types: placeholder as Registry['vercel_connections.callback']['types'],
   },
+  'github_installations.callback': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/integrations/github/callback',
+    tokens: [[0,"api"],[0,"v1"],[0,"integrations"],[0,"github"],[0,"callback"]],
+    types: placeholder as Registry['github_installations.callback']['types'],
+  },
   'telemetry_sessions.show': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/telemetry/session',
@@ -77,6 +83,48 @@ const routes = {
     pattern: '/api/v1/integrations/vercel/connections/:id/link',
     tokens: [[0,"api"],[0,"v1"],[0,"integrations"],[0,"vercel"],[0,"connections"],[1,"id"],[0,"link"]],
     types: placeholder as Registry['integrations.vercel.vercel_connections.destroy']['types'],
+  },
+  'integrations.github.github_installations.create_intent': {
+    methods: ["POST"],
+    pattern: '/api/v1/integrations/github/connect-intents',
+    tokens: [[0,"api"],[0,"v1"],[0,"integrations"],[0,"github"],[0,"connect-intents"]],
+    types: placeholder as Registry['integrations.github.github_installations.create_intent']['types'],
+  },
+  'integrations.github.github_installations.index': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/integrations/github/installations',
+    tokens: [[0,"api"],[0,"v1"],[0,"integrations"],[0,"github"],[0,"installations"]],
+    types: placeholder as Registry['integrations.github.github_installations.index']['types'],
+  },
+  'project_github.project_github.show': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/projects/:projectId/github',
+    tokens: [[0,"api"],[0,"v1"],[0,"projects"],[1,"projectId"],[0,"github"]],
+    types: placeholder as Registry['project_github.project_github.show']['types'],
+  },
+  'project_github.project_github.link_repository': {
+    methods: ["PUT"],
+    pattern: '/api/v1/projects/:projectId/github/repository',
+    tokens: [[0,"api"],[0,"v1"],[0,"projects"],[1,"projectId"],[0,"github"],[0,"repository"]],
+    types: placeholder as Registry['project_github.project_github.link_repository']['types'],
+  },
+  'project_github.project_github.unlink_repository': {
+    methods: ["DELETE"],
+    pattern: '/api/v1/projects/:projectId/github/repository',
+    tokens: [[0,"api"],[0,"v1"],[0,"projects"],[1,"projectId"],[0,"github"],[0,"repository"]],
+    types: placeholder as Registry['project_github.project_github.unlink_repository']['types'],
+  },
+  'project_github.project_github.update_agent_access': {
+    methods: ["PUT"],
+    pattern: '/api/v1/projects/:projectId/github/agent-access',
+    tokens: [[0,"api"],[0,"v1"],[0,"projects"],[1,"projectId"],[0,"github"],[0,"agent-access"]],
+    types: placeholder as Registry['project_github.project_github.update_agent_access']['types'],
+  },
+  'project_github.project_github.agent_token': {
+    methods: ["POST"],
+    pattern: '/api/v1/projects/:projectId/github/agent-token',
+    tokens: [[0,"api"],[0,"v1"],[0,"projects"],[1,"projectId"],[0,"github"],[0,"agent-token"]],
+    types: placeholder as Registry['project_github.project_github.agent_token']['types'],
   },
   'preview_sessions.preview_sessions.index': {
     methods: ["GET","HEAD"],

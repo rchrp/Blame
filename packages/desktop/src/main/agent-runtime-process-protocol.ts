@@ -59,6 +59,7 @@ export const agentHostMethods = [
   "applyPreviewInitialization",
   "projectScanRoot",
   "lightWorkspace",
+  "commandCredentials",
   "projectApp",
   "componentPreview",
 ] as const;

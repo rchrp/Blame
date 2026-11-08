@@ -16,6 +16,8 @@ const WebSearchController = () => import('#controllers/web_search_controller')
 const PreviewSessionsController = () => import('#controllers/preview_sessions_controller')
 const PreviewEdgeInternalController = () => import('#controllers/preview_edge_internal_controller')
 const VercelConnectionsController = () => import('#controllers/vercel_connections_controller')
+const GithubInstallationsController = () => import('#controllers/github_installations_controller')
+const ProjectGithubController = () => import('#controllers/project_github_controller')
 const DeployTargetsController = () => import('#controllers/deploy_targets_controller')
 const ProjectDeploymentsController = () => import('#controllers/project_deployments_controller')
 const WorkspaceTransferController = () => import('#controllers/workspace_transfer_controller')
@@ -35,6 +37,7 @@ export function hostedRoutes() {
     .get('telemetry/upstream-health', [TelemetryIngestionController, 'health'])
     .use(middleware.auth())
   router.get('integrations/vercel/callback', [VercelConnectionsController, 'callback'])
+  router.get('integrations/github/callback', [GithubInstallationsController, 'callback'])
 
   router.get('telemetry/session', [TelemetrySessionsController, 'show']).use(middleware.auth())
 
@@ -47,6 +50,28 @@ export function hostedRoutes() {
     })
     .prefix('integrations/vercel')
     .as('integrations.vercel')
+    .use(middleware.auth())
+
+  router
+    .group(() => {
+      router.post('/connect-intents', [GithubInstallationsController, 'createIntent'])
+      router.get('/installations', [GithubInstallationsController, 'index'])
+    })
+    .prefix('integrations/github')
+    .as('integrations.github')
+    .use(middleware.auth())
+
+  // A project's GitHub repository and the agent's short repository-scoped token.
+  router
+    .group(() => {
+      router.get('/:projectId/github', [ProjectGithubController, 'show'])
+      router.put('/:projectId/github/repository', [ProjectGithubController, 'linkRepository'])
+      router.delete('/:projectId/github/repository', [ProjectGithubController, 'unlinkRepository'])
+      router.put('/:projectId/github/agent-access', [ProjectGithubController, 'updateAgentAccess'])
+      router.post('/:projectId/github/agent-token', [ProjectGithubController, 'agentToken'])
+    })
+    .prefix('projects')
+    .as('project_github')
     .use(middleware.auth())
 
   router
@@ -159,6 +184,7 @@ const hostedPaths = [
   'consumer-contract/*',
   'telemetry/*',
   'integrations/vercel/*',
+  'integrations/github/*',
   'preview-sessions',
   'preview-sessions/*',
   'billing',
@@ -168,6 +194,8 @@ const hostedPaths = [
   'projects/:projectId/deploy-target',
   'projects/:projectId/deployments',
   'projects/:projectId/deployments/*',
+  'projects/:projectId/github',
+  'projects/:projectId/github/*',
 ]
 
 /**

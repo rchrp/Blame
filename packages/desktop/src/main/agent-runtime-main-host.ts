@@ -25,7 +25,10 @@ import { previewLogService } from "./preview-runtime/preview-log-service.ts";
 import type { PreviewService } from "./preview-runtime/preview-service.ts";
 import { runtimeAgentClient, runtimeAgentSupported } from "./runtime-agent.ts";
 import { lightWorkspaceExecutionTarget } from "./light-workspace-routing.ts";
-import { withSessionCommandCredentials } from "./github-access/agent-github-access.ts";
+import {
+  sessionCommandCredentials,
+  withSessionCommandCredentials,
+} from "./github-access/agent-github-access.ts";
 import {
   ensureRuntimeGitUserIdentity,
   getRuntimeGitIdentity,
@@ -94,6 +97,8 @@ async function handleAgentHostRequest(
   if (method === "lightWorkspace") {
     return agentLightWorkspace(input, signal);
   }
+  if (method === "commandCredentials")
+    return sessionCommandCredentials(recordInput(input).sessionId);
   if (method === "projectApp") return agentProjectApp(input, signal);
   if (method === "componentPreview") {
     const { componentPreviewHostRequest } =
