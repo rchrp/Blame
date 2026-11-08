@@ -77,6 +77,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { usePlatform } from "@/context/platform"
+import { registerFocusOnTypeEditor } from "@/lib/focus-on-type"
 import {
   recordPerformanceCount,
   recordPerformanceMetric,
@@ -1009,6 +1010,8 @@ export const MarkdownEditor = React.forwardRef<
     // Where a dictation goes when this editor is closed meanwhile.
     speechTarget?: SpeechTarget
     appearance?: "bubble" | "subtle"
+    // Typing outside any text field focuses this editor (when editable).
+    focusOnType?: boolean
     markdown: string
     maxHeight?: string
     minHeight: string
@@ -1036,6 +1039,7 @@ export const MarkdownEditor = React.forwardRef<
   {
     animateAppend,
     appearance = "bubble",
+    focusOnType,
     speechSessionKey,
     speechTarget,
     codeSelectionAttachments,
@@ -1186,6 +1190,19 @@ export const MarkdownEditor = React.forwardRef<
     },
     []
   )
+
+  React.useEffect(() => {
+    if (!focusOnType || readOnly) return
+    return registerFocusOnTypeEditor({
+      element: () => editorRef.current,
+      focusAtEnd: () => {
+        const editor = editorRef.current
+        if (!editor) return
+        const end = currentValueRef.current.length
+        restoreMarkdownEditorSelection(editor, { start: end, end })
+      },
+    })
+  }, [focusOnType, readOnly])
 
   React.useLayoutEffect(() => {
     const selection = pendingSelectionRef.current

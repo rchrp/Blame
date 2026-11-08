@@ -550,6 +550,7 @@ export function AgentConversationComposer({
         <AgentTurnTab metrics={turnMetrics} />
         <DraftSavedHint message={message} hidden={submitting || disabled} />
         <MarkdownEditor
+          focusOnType
           speechSessionKey={speechSessionKey}
           speechTarget={speechTarget}
           key={editorKey}

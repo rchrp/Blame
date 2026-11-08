@@ -24,16 +24,20 @@ export function isEditableTarget(target: EventTarget | null) {
   )
 }
 
+// True when the event happens in a text field, a listbox or a menu (command
+// menus included): they own their keys, a dialog around them does not.
+export function isFieldOrMenuTarget(target: EventTarget | null) {
+  if (isEditableTarget(target)) return true
+  if (!(target instanceof HTMLElement)) return false
+  return Boolean(target.closest("[role='listbox'], [role='menu'], [cmdk-root]"))
+}
+
 // True when the event happens inside something that owns its keys: a text
 // field, a listbox (command menus), or an open dialog/popover.
 export function isKeyOwnedByTarget(target: EventTarget | null) {
-  if (isEditableTarget(target)) return true
+  if (isFieldOrMenuTarget(target)) return true
   if (!(target instanceof HTMLElement)) return false
-  return Boolean(
-    target.closest(
-      "[role='listbox'], [role='menu'], [role='dialog'], [role='alertdialog'], [cmdk-root]"
-    )
-  )
+  return Boolean(target.closest("[role='dialog'], [role='alertdialog']"))
 }
 
 function dialogOpen() {
@@ -79,7 +83,7 @@ export function useAltEnter(
   }, [control, enabled])
 }
 
-function topDialog() {
+export function topDialog() {
   const dialogs = document.querySelectorAll(
     "[role='dialog'][data-state='open'], [role='alertdialog'][data-state='open']"
   )

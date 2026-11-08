@@ -165,6 +165,7 @@ export const UserStoryContent = React.memo(function UserStoryContent({
     <>
       <div className="group/message grid gap-3">
         <MarkdownEditor
+          focusOnType
           speechSessionKey={`backlog-summary:${project?.id}:${userStory?.id ?? "new"}`}
           speechTarget={summarySpeechTarget(mode, userStory)}
           codeSelectionAttachments={summaryCodeSelectionAttachments}
