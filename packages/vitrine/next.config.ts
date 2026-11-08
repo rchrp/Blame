@@ -2,11 +2,15 @@ import type { NextConfig } from "next";
 import { createMDX } from "fumadocs-mdx/next";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import uploadedDemoMedia from "./lib/demo-media-manifest.json";
 import {
   markdownPagePaths,
   markdownRoutePath,
   markdownUrlPath,
 } from "./lib/markdown-paths";
+
+// The demo videos' public URLs in the media bucket, by file name.
+const demoMediaUrls: Record<string, string> = uploadedDemoMedia;
 
 const packageRoot = dirname(fileURLToPath(import.meta.url));
 const workspaceRoot = join(packageRoot, "../..");
@@ -17,7 +21,14 @@ const workspaceRoot = join(packageRoot, "../..");
 // visitors within a day.
 const publicAssetCacheControl =
   "public, max-age=86400, stale-while-revalidate=604800";
-const publicAssetFolders = ["agents", "icons", "research", "social", "story"];
+const publicAssetFolders = [
+  "agents",
+  "icons",
+  "media",
+  "research",
+  "social",
+  "story",
+];
 
 const nextConfig: NextConfig = {
   // The Docker image runs .next/standalone: the server and only the
@@ -36,6 +47,14 @@ const nextConfig: NextConfig = {
     return [
       { source: "/pricing", destination: "/cloud", permanent: true },
       { source: "/pricing.md", destination: "/cloud.md", permanent: true },
+      // The demo videos moved to the media bucket (lib/demo-media.ts): links
+      // to their old paths, like the README's, follow them there. A new
+      // recording gets a new URL, so these redirects aren't permanent.
+      ...Object.entries(demoMediaUrls).map(([name, url]) => ({
+        source: `/media/${name}.mp4`,
+        destination: url,
+        permanent: false,
+      })),
     ];
   },
   // Every page's Markdown version for AI agents: /cloud.md, /index.md,
