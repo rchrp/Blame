@@ -2,14 +2,17 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { execa } from "execa";
 import { StringDecoder } from "node:string_decoder";
 import type { Readable } from "node:stream";
+import type { LightCommandCredentials } from "./light-contracts.js";
 import {
   withBundledTools,
+  withCommandCredentials,
   withProvisionedPackageManagers,
   workspaceCommandEnvironment,
 } from "./workspace-command-environment.js";
 
 type CommandOptions = {
   cwd: string;
+  credentials?: LightCommandCredentials;
   environment?: NodeJS.ProcessEnv;
   signal?: AbortSignal;
   timeoutMs?: number;
@@ -46,7 +49,8 @@ export function startWorkspaceCommand(
   options: CommandOptions,
 ) {
   options.signal?.throwIfAborted();
-  const child = spawnWorkspaceProcess(executable, args, options.cwd, options.environment);
+  const child = spawnWorkspaceProcess(executable, args, options.cwd,
+    withCommandCredentials({ ...process.env, ...options.environment }, options.credentials));
   const execution = new CommandExecution(child, options);
   return {
     completion: execution.run(),
@@ -56,11 +60,11 @@ export function startWorkspaceCommand(
   };
 }
 
-function spawnWorkspaceProcess(executable: string, args: string[], cwd: string, environment?: NodeJS.ProcessEnv) {
+function spawnWorkspaceProcess(executable: string, args: string[], cwd: string, environment: NodeJS.ProcessEnv) {
   const options = {
     cwd,
     env: withProvisionedPackageManagers(
-      withBundledTools(workspaceCommandEnvironment({ ...process.env, ...environment }, executable)), cwd),
+      withBundledTools(workspaceCommandEnvironment(environment, executable)), cwd),
     detached: process.platform !== "win32",
     stdio: ["ignore", "pipe", "pipe"] as ["ignore", "pipe", "pipe"],
     windowsHide: true,

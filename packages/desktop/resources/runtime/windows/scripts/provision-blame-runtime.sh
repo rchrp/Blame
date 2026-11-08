@@ -909,6 +909,8 @@ def run_semantic_workspace(params):
     if not operation_id:
         raise RuntimeError("Semantic workspace operation id is required")
     request = {
+        # Granted by the desktop for this request's commands only; never logged.
+        "commandCredentials": params.get("commandCredentials") or {},
         "input": params.get("input"),
         "taskContract": params.get("taskContract"),
         "tool": params.get("tool"),

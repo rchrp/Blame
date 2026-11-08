@@ -26,6 +26,7 @@ import {
   type AgentRuntimeProcessCallbacks,
 } from "./agent-runtime-process-client";
 import { createAgentHostRequestHandler } from "./agent-runtime-main-host";
+import { prepareSessionGithubAccess } from "./ipc/agent-github-access-ipc";
 import { setupPath } from "./host-tool-path";
 import { getRuntimeStatus } from "./runtime-manager";
 import { runtimeAgentClient } from "./runtime-agent";
@@ -186,6 +187,8 @@ function registerSessionStartIpcHandlers(
     if (workspace && pendingSessionId)
       agentWorkspaceWriters.begin(pendingSessionId, workspace);
     const sessionInput = eventStream.prepareSession(prepared);
+    // Before the runtime starts: its first managed requests carry the token.
+    const githubAccess = await prepareSessionGithubAccess(sessionInput);
     try {
       session = await startRuntimeSession(
         "sessions.startDevelopment",
@@ -210,6 +213,16 @@ function registerSessionStartIpcHandlers(
     }
     if (pendingSessionId)
       agentWorkspaceWriters.rebind(pendingSessionId, session.sessionId);
+    if (githubAccess.notice)
+      emitAgentEvent({
+        type: "notice",
+        sessionId: session.sessionId,
+        executionId:
+          typeof sessionInput.executionId === "string"
+            ? sessionInput.executionId
+            : undefined,
+        payload: { message: githubAccess.notice, recoverable: true },
+      });
     return session;
   });
 }

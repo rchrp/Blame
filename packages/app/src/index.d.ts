@@ -5,6 +5,7 @@ import type { Platform } from "./context/platform"
 export type { LocalApiClient } from "./context/platform-local-api"
 export type { PreviewEnvironmentClient } from "./context/platform-preview-environment"
 export type { PreviewDevtoolsSettingsClient } from "./context/platform-preview-devtools"
+export type { AgentGithubAccessClient } from "./context/platform-agent-github-access"
 export type {
   PreviewTerminalClient,
   PreviewSurfacesClient,

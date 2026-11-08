@@ -542,7 +542,9 @@ function agentCommand(platform: NodeJS.Platform, env?: NodeJS.ProcessEnv) {
     ...env,
     PATH: setupPath({ env, platform }),
   };
-  const sanitizedEnv = withoutTelemetryEnvironment(nextEnv);
+  const sanitizedEnv = withoutHostGithubTokens(
+    withoutTelemetryEnvironment(nextEnv),
+  );
   if (platform === "win32") {
     return {
       args: [
@@ -563,6 +565,15 @@ function agentCommand(platform: NodeJS.Platform, env?: NodeJS.ProcessEnv) {
     command: "blame-lima-runtime",
     env: sanitizedEnv,
   };
+}
+// The runtime agent's commands get a GitHub token only when the desktop
+// grants one to a session (see github-access), never one set on the host.
+function withoutHostGithubTokens(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+  return Object.fromEntries(
+    Object.entries(env).filter(
+      ([key]) => !/^(?:GH|GITHUB)_TOKEN$/iu.test(key),
+    ),
+  );
 }
 
 function isAgentResponse(value: unknown): value is AgentResponse {

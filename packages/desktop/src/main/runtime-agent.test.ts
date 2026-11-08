@@ -549,6 +549,35 @@ const harnessRuntimeCases = [
   },
 ] as const;
 
+test("a semantic request brings its GitHub credentials to the runtime agent, which inherits no host token", async () => {
+  const processes: FakeAgentProcess[] = [];
+  const environments: NodeJS.ProcessEnv[] = [];
+  const spawnAgent = fakeSpawn(processes, (request, process) => {
+    process.stdout.write(
+      `${JSON.stringify({ id: request.id, ok: true, result: { status: "ok", data: {} } })}\n`,
+    );
+  });
+  const client = new RuntimeAgentClient({
+    env: { GH_TOKEN: "ghp_host", GITHUB_TOKEN: "ghp_host", PATH: "/bin" },
+    platform: "darwin",
+    spawnProcess: ((command, args, options) => {
+      environments.push(options.env ?? {});
+      return spawnAgent(command, args, options);
+    }) as typeof spawn,
+  });
+
+  await client.lightWorkspace({
+    ...semanticRequest("local-container", "remote", managedLightWorkspaceRoot),
+    commandCredentials: { githubToken: "gho_granted" },
+  });
+
+  assert.deepEqual(processes[0].requests[0].params.commandCredentials, {
+    githubToken: "gho_granted",
+  });
+  assert.equal(environments[0].GH_TOKEN, undefined);
+  assert.equal(environments[0].GITHUB_TOKEN, undefined);
+});
+
 function fakeSpawn(
   processes: FakeAgentProcess[],
   handle: (request: Request, process: FakeAgentProcess) => void,

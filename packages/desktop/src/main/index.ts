@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { shutdownBlameTelemetry } from "@blame/telemetry";
 import contextMenu from "electron-context-menu";
+import log from "electron-log";
 import windowState from "electron-window-state";
 import {
   app,
@@ -32,6 +33,7 @@ import {
   desktopProtocolClientArguments,
 } from "./desktop-auth-deep-link";
 import { desktopResourcePaths } from "./desktop-resource-paths";
+import { registerDesktopLogRedaction } from "./desktop-log-redaction";
 import {
   attachLiveLogWindow,
   flushLiveLogs,
@@ -112,6 +114,7 @@ if (protocolClientArguments.length === 0) {
     protocolClientArguments[1],
   );
 }
+registerDesktopLogRedaction(log);
 registerLiveLogCapture();
 
 const appImageTaskSmoke = process.env.BLAME_APPIMAGE_RUN_TASK_SMOKE === "true";

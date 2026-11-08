@@ -16,6 +16,7 @@ import {
 import { lineAlignedWindow, planFold, renderFold, type FoldPlan } from "./light-fold-view.js";
 import { capabilityForPath } from "./light-capabilities.js";
 import type {
+  LightCommandCredentials,
   LightEditCodeInput,
   LightReadCodeInput,
   LightRunTaskInput,
@@ -68,6 +69,8 @@ import {
   signatureRange,
   symbolContentResult,
 } from "./light-read-results.js";
+
+type RunTaskContext = AgentToolContext & { commandCredentials?: LightCommandCredentials };
 
 type LightWorkspaceOptions = {
   /** Runner-only experiment; production keeps compact search until the offline gate is met. */
@@ -206,7 +209,7 @@ export class LightWorkspace {
   /** The repair plan last attached to a run_task result. */
   private shownRepair?: string;
 
-  async runTask(input: LightRunTaskInput, context: AgentToolContext) {
+  async runTask(input: LightRunTaskInput, context: RunTaskContext) {
     const inspection = input.kind === "command" ? await this.shellInspection(input, context) : undefined;
     if (inspection) return inspection;
     const result = await this.withValidationState(await this.runTaskWithDiagnostics(input, context));
@@ -244,7 +247,7 @@ export class LightWorkspace {
       : result;
   }
 
-  private async runTaskWithDiagnostics(input: LightRunTaskInput, context: AgentToolContext) {
+  private async runTaskWithDiagnostics(input: LightRunTaskInput, context: RunTaskContext) {
     await this.ready;
     if (input.kind === "analyze") {
       const { analyzeWorkspaceSymbol } = await import("./light-symbolic-analysis.js");

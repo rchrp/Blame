@@ -13,6 +13,7 @@ import { localAgentOwnsWorkspace, registerAgentIpcHandlers } from "./agent-ipc";
 import { registerAppearanceIpcHandlers } from "./appearance-ipc";
 import { registerAgentScreenshotIpcHandlers } from "./ipc/agent-screenshots-ipc";
 import { registerPreviewDevtoolsSettingsIpcHandlers } from "./ipc/preview-devtools-settings-ipc";
+import { registerAgentGithubAccessIpcHandlers } from "./ipc/agent-github-access-ipc";
 import { registerProjectAppIpcHandlers } from "./ipc/project-app-ipc";
 import { registerGitIdentityIpcHandlers } from "./ipc/git-identity-ipc";
 import { registerBacklogStatusPipIpcHandlers } from "./backlog-status-pip-ipc";
@@ -147,6 +148,7 @@ export function registerDesktopIpcHandlers(options: DesktopIpcOptions) {
   registerPreviewDevtoolsSettingsIpcHandlers({
     isAppWindow: options.isAppWindow,
   });
+  registerAgentGithubAccessIpcHandlers({ isAppWindow: options.isAppWindow });
   registerPreviewEnvironmentIpcHandlers({ isAppWindow: options.isAppWindow });
   registerMcpIpcHandlers();
   registerTerminalIpcHandlers();

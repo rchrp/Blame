@@ -197,6 +197,13 @@ export type LightTaskContract = {
   story_id?: string;
 };
 
+/**
+ * What the desktop grants the commands of one managed runtime request. With
+ * it, a command never inherits GH_TOKEN or GITHUB_TOKEN: GH_TOKEN is the
+ * granted token, when there is one.
+ */
+export type LightCommandCredentials = { githubToken?: string };
+
 export type LightToolResult<T> =
   | { status: "ok"; data: T; receipt?: string; content?: ImageContent[] }
   | {

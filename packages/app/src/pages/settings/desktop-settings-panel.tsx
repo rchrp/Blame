@@ -12,6 +12,7 @@ import {
 import { useSystemNotificationsEnabled } from "@/lib/system-notifications"
 import { RuntimeSettingsGroup } from "./runtime-settings-group"
 import { BrowserDiagnosticsGroup } from "./browser-diagnostics-group"
+import { AgentGithubAccessGroup } from "./agent-github-access-group"
 import { PrivacySettingsGroup } from "./privacy-settings-group"
 import { WhatsNewSettingsRow } from "./whats-new-settings-row"
 import { Switch } from "@/components/ui/switch"
@@ -46,6 +47,7 @@ export function DesktopSettingsPanel() {
       <PrivacySettingsGroup />
       <RuntimeSettingsGroup />
       <BrowserDiagnosticsGroup />
+      <AgentGithubAccessGroup />
       <DesktopIntegrationGroup platform={platform} />
     </SettingsPanel>
   )

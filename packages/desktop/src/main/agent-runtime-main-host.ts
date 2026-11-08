@@ -25,6 +25,7 @@ import { previewLogService } from "./preview-runtime/preview-log-service.ts";
 import type { PreviewService } from "./preview-runtime/preview-service.ts";
 import { runtimeAgentClient, runtimeAgentSupported } from "./runtime-agent.ts";
 import { lightWorkspaceExecutionTarget } from "./light-workspace-routing.ts";
+import { withSessionCommandCredentials } from "./github-access/agent-github-access.ts";
 import {
   ensureRuntimeGitUserIdentity,
   getRuntimeGitIdentity,
@@ -306,7 +307,10 @@ async function agentLightWorkspace(input: unknown, signal: AbortSignal) {
   ) {
     throw new Error("Invalid managed semantic workspace request");
   }
-  return runtimeAgentClient().lightWorkspace(request, signal);
+  return runtimeAgentClient().lightWorkspace(
+    withSessionCommandCredentials(request),
+    signal,
+  );
 }
 
 async function agentGit(input: unknown) {

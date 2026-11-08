@@ -17,6 +17,7 @@ mountApp(root, {
     agent: window.blame.agent,
     agentScreenshots: window.blame.agentScreenshots,
     previewDevtools: window.blame.previewDevtools,
+    agentGithubAccess: window.blame.agentGithubAccess,
     previewEnvironment: window.blame.previewEnvironment,
     billing: window.blame.billing,
     localApi: window.blame.localApi,

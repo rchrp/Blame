@@ -1,5 +1,6 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { basename, delimiter, dirname, join } from "node:path";
+import type { LightCommandCredentials } from "./light-contracts.js";
 import { bundledRipgrepDirectory } from "./lexical-search.js";
 
 const pnpmOnlyNpmConfiguration = new Set([
@@ -32,6 +33,23 @@ export function workspaceCommandEnvironment(
   if (!Object.keys(filtered).some((name) => name.toUpperCase() === "PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN"))
     filtered.PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN = "false";
   return filtered;
+}
+const githubTokenVariables = new Set(["GH_TOKEN", "GITHUB_TOKEN"]);
+
+/**
+ * With credentials (a managed runtime request), a command never inherits a
+ * GitHub token: GH_TOKEN is the token the desktop granted, if any. Without
+ * them (the project folder), the environment is left as it is.
+ */
+export function withCommandCredentials(
+  environment: NodeJS.ProcessEnv,
+  credentials: LightCommandCredentials | undefined,
+): NodeJS.ProcessEnv {
+  if (!credentials) return environment;
+  const filtered = Object.fromEntries(
+    Object.entries(environment).filter(([name]) => !githubTokenVariables.has(name.toUpperCase())),
+  );
+  return credentials.githubToken ? { ...filtered, GH_TOKEN: credentials.githubToken } : filtered;
 }
 
 /**

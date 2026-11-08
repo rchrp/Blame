@@ -97,6 +97,7 @@ export type Platform = {
   api?: ApiConnection
   localApi?: import("./platform-local-api").LocalApiClient
   previewDevtools?: import("./platform-preview-devtools").PreviewDevtoolsSettingsClient
+  agentGithubAccess?: import("./platform-agent-github-access").AgentGithubAccessClient
   previewEnvironment?: import("./platform-preview-environment").PreviewEnvironmentClient
   appStatus?: AppStatusClient
   appearance?: AppearanceClient

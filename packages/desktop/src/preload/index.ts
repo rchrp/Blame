@@ -306,6 +306,10 @@ const api: BlameDesktopApi = {
     setAdvancedDiagnostics: (input) =>
       ipcRenderer.invoke("preview-devtools:set-advanced", input),
   },
+  agentGithubAccess: {
+    getEnabled: (input) => ipcRenderer.invoke("agent-github-access:get", input),
+    setEnabled: (input) => ipcRenderer.invoke("agent-github-access:set", input),
+  },
   previewEnvironment: {
     describe: (input) =>
       ipcRenderer.invoke("preview-environment:describe", input),

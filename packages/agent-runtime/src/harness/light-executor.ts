@@ -1,6 +1,7 @@
 import type { AgentToolContext } from "@cline/sdk";
 import { createInitialTaskBriefing } from "./initial-task-briefing.js";
 import type {
+  LightCommandCredentials,
   LightEditCodeInput,
   LightReadCodeInput,
   LightRunTaskInput,
@@ -30,6 +31,8 @@ export const lightWorkspaceToolNames = [
 export type LightWorkspaceToolName = (typeof lightWorkspaceToolNames)[number];
 
 export type LightWorkspaceExecutionRequest = {
+  /** Set by the desktop on managed runtime requests only, never by the agent. */
+  commandCredentials?: LightCommandCredentials;
   execution?: {
     backendMode?: "auto" | "local" | "hub" | "remote";
     workspaceMode?: "local-container" | "cloud-mirror" | "direct";
@@ -148,7 +151,10 @@ async function executeWithWorkspace(
     case "edit_code":
       return workspace.editCode(request.input as LightEditCodeInput, context);
     case "run_task":
-      return workspace.runTask(request.input as LightRunTaskInput, context);
+      return workspace.runTask(request.input as LightRunTaskInput, {
+        ...context,
+        commandCredentials: request.commandCredentials,
+      });
     case "finish_task":
       return finishRequest(request, context);
     case "initial_task_briefing":

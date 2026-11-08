@@ -11,7 +11,12 @@ import {
   DeterministicFormatterError,
   type FormatterCommand,
 } from "./deterministic-formatter.js";
-import type { LightRunTaskInput, LightToolResult, LightTaskContract } from "./light-contracts.js";
+import type {
+  LightCommandCredentials,
+  LightRunTaskInput,
+  LightToolResult,
+  LightTaskContract,
+} from "./light-contracts.js";
 import { LightDependencyService } from "./light-dependencies.js";
 import { boundedDiagnostic } from "./light-diagnostic.js";
 import { recordValue } from "./light-navigation.js";
@@ -47,6 +52,7 @@ import { managedTestReport, type ManagedTestReport } from "./managed-test-report
 import { runtimeTestScope, typecheckSelections, type TypecheckSelection } from "./runtime-test-scope.js";
 
 type RunnerContext = {
+  commandCredentials?: LightCommandCredentials;
   sessionId?: string;
   toolCallId?: string;
   signal?: AbortSignal;
@@ -476,6 +482,7 @@ export class LightTaskRunner {
     const [execution] = await Promise.allSettled([Promise.resolve().then(() => {
       const handle = startWorkspaceCommand(executable, args, {
         cwd,
+        credentials: context.commandCredentials,
         ...(invocationReport ? { environment: invocationReport.environment } : {}),
         signal: context.signal,
       });
