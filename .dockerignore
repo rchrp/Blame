@@ -24,3 +24,9 @@ node_modules
 # The vitrine media bucket upload: its credentials and its source videos.
 packages/vitrine/.env.media
 packages/vitrine/media-source
+
+# Local env files hold private values, and Next.js copies .env and
+# .env.production into its standalone output: keep them out of every build
+# context.
+**/.env*
+!**/.env.example

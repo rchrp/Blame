@@ -3,6 +3,7 @@ import type {
   LegalSection,
 } from "@/components/legal-document-page";
 import { legalDocumentReadyForPublication } from "@/content/legal-publication";
+import { publisher } from "@/lib/publisher";
 
 const paragraph = (text: string): LegalBlock => ({ type: "paragraph", text });
 const list = (...items: string[]): LegalBlock => ({ type: "list", items });
@@ -17,7 +18,7 @@ export const dpaLastUpdated = "18 July 2026";
 export const dpaVersion = "1.0";
 
 export const dpaIntroduction = [
-  'This Data Processing Addendum ("DPA") forms part of the agreement governing access to the Blame Services between Raphael Charpentier EI, a French individual entrepreneur operating under the trade name MK Holding, 36 rue des Geltines, 69390 Millery, France, registered under SIREN number 984 448 217 (R.C.S. Lyon) ("Blame"), and the Business User identified in the applicable Account, order form, quotation, checkout record, or other agreement ("Customer").',
+  `This Data Processing Addendum ("DPA") forms part of the agreement governing access to the Blame Services between Raphael Charpentier EI, a French individual entrepreneur operating under the trade name MK Holding, ${publisher.address}, registered under SIREN number ${publisher.siren} (R.C.S. Lyon) ("Blame"), and the Business User identified in the applicable Account, order form, quotation, checkout record, or other agreement ("Customer").`,
   "This DPA applies only to Customer Personal Data that Blame processes as a processor on Customer's behalf. It does not govern personal data for which Blame determines its own purposes and means as controller, including Account administration, billing, service security, legal compliance, and the minimised operational telemetry described in the Privacy Policy.",
   "By accepting the Terms of Service or an order that incorporates this DPA, or by using the Services to submit Customer Personal Data for processing by Blame, Customer enters into this DPA on behalf of itself and any Customer Affiliate authorised to use the Services. A signed copy may be requested at legal@blame.so.",
 ] as const;

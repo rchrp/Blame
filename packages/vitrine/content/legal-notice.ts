@@ -3,6 +3,7 @@ import type {
   LegalSection,
 } from "@/components/legal-document-page";
 import { legalDocumentReadyForPublication } from "@/content/legal-publication";
+import { publisher } from "@/lib/publisher";
 
 const paragraph = (text: string): LegalBlock => ({ type: "paragraph", text });
 const list = (...items: string[]): LegalBlock => ({ type: "list", items });
@@ -24,11 +25,11 @@ export const legalNoticeSections = [
         "The website and the Blame Services are published and provided by Raphael Charpentier, an individual entrepreneur (entrepreneur individuel) applying the French micro-enterprise regime and operating under the trade name MK Holding.",
       ),
       list(
-        "Business address: 36 rue des Geltines, 69390 Millery, France.",
-        "SIREN: 984 448 217.",
+        `Business address: ${publisher.address}.`,
+        `SIREN: ${publisher.siren}.`,
         "Registration: French National Business Register and R.C.S. Lyon.",
         "Email: legal@blame.so.",
-        "Telephone: +33 6 67 28 12 29.",
+        `Telephone: ${publisher.phone}.`,
         "VAT: VAT not applicable pursuant to Article 293 B of the French General Tax Code.",
       ),
     ],

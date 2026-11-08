@@ -3,6 +3,7 @@ import type {
   LegalSection,
 } from "@/components/legal-document-page";
 import { legalDocumentReadyForPublication } from "@/content/legal-publication";
+import { publisher } from "@/lib/publisher";
 
 const paragraph = (text: string): LegalBlock => ({ type: "paragraph", text });
 const list = (...items: string[]): LegalBlock => ({ type: "list", items });
@@ -17,7 +18,7 @@ export const termsLastUpdated = "19 July 2026";
 export const termsVersion = "1.2";
 
 export const termsIntroduction = [
-  'These Terms of Service form a legally binding agreement between you and Raphael Charpentier EI, a French individual entrepreneur applying the micro-enterprise regime and operating under the trade name MK Holding, whose business is domiciled at 36 rue des Geltines, 69390 Millery, France, registered with the French National Business Register and the Lyon Trade and Companies Register under SIREN number 984 448 217 (R.C.S. Lyon) ("Blame", "we", "us", or "our"). VAT is not applicable pursuant to Article 293 B of the French General Tax Code. They govern your download, installation, access to, and use of the Blame desktop application, websites, cloud services, APIs, updates, support, and related services.',
+  `These Terms of Service form a legally binding agreement between you and Raphael Charpentier EI, a French individual entrepreneur applying the micro-enterprise regime and operating under the trade name MK Holding, whose business is domiciled at ${publisher.address}, registered with the French National Business Register and the Lyon Trade and Companies Register under SIREN number ${publisher.siren} (R.C.S. Lyon) ("Blame", "we", "us", or "our"). VAT is not applicable pursuant to Article 293 B of the French General Tax Code. They govern your download, installation, access to, and use of the Blame desktop application, websites, cloud services, APIs, updates, support, and related services.`,
   "Please read these Terms carefully. By creating an account, expressly accepting these Terms, purchasing a Subscription, downloading or installing the Desktop App, or using any part of the Services, you agree to be bound by them. If you do not agree, do not access or use the Services.",
   'If you are a Consumer, mandatory rights under the law of your habitual residence remain unaffected. Provisions expressly addressed to Business Users do not apply to Consumers. If you use the Services for an organisation, you confirm that you have authority to bind that organisation, and "you" includes that organisation.',
 ] as const;
@@ -28,7 +29,7 @@ export const termsSections = [
     title: "1. Contracting party and scope",
     blocks: [
       paragraph(
-        "Blame is the provider and licensor of the Services. Legal enquiries may be sent to legal@blame.so and support enquiries to support@blame.so. Our business telephone number is +33 6 67 28 12 29.",
+        `Blame is the provider and licensor of the Services. Legal enquiries may be sent to legal@blame.so and support enquiries to support@blame.so. Our business telephone number is ${publisher.phone}.`,
       ),
       paragraph(
         "These Terms apply to individual accounts and to any paid or unpaid plan, early-access programme, trial, preview, or beta that refers to them. An order page, checkout page, accepted quotation, or order form may contain plan-specific terms. If there is a conflict, an individually signed order form prevails, followed by the checkout or order terms, these Terms, and incorporated policies, in that order.",
@@ -163,7 +164,7 @@ export const termsSections = [
     title: "8. Consumer right of withdrawal",
     blocks: [
       notice("Notice for EEA and United Kingdom Consumers", [
-        "If you are a Consumer in the European Economic Area or the United Kingdom and purchase at a distance, you generally have fourteen days from conclusion of the contract to withdraw without giving a reason. To exercise that right, send an unambiguous statement to Raphael Charpentier EI, 36 rue des Geltines, 69390 Millery, France, or withdrawal@blame.so. Consumers in France may also use the direct and permanently available electronic withdrawal function at https://blame.so/withdraw. You may use the model form in Schedule 2, but it is not mandatory.",
+        `If you are a Consumer in the European Economic Area or the United Kingdom and purchase at a distance, you generally have fourteen days from conclusion of the contract to withdraw without giving a reason. To exercise that right, send an unambiguous statement to Raphael Charpentier EI, ${publisher.address}, or withdrawal@blame.so. Consumers in France may also use the direct and permanently available electronic withdrawal function at https://blame.so/withdraw. You may use the model form in Schedule 2, but it is not mandatory.`,
         "If you ask us to begin the digital service during the withdrawal period and then exercise a valid withdrawal right, Blame will not deduct a proportional charge for the part supplied before withdrawal. Any loss of a withdrawal right for digital content supplied without a tangible medium applies only after the separate prior express consent and acknowledgement required by law. Acceptance of these Terms alone is not treated as that separate consent.",
         "We will acknowledge an electronic withdrawal request on a durable medium without undue delay. Where withdrawal is valid, we will reimburse all amounts due without undue delay and no later than fourteen days after receiving your notice, using the original payment method unless you expressly agree otherwise. No fee will be charged for the reimbursement.",
       ]),
@@ -499,7 +500,7 @@ export const termsSections = [
     title: "27. Notices and contact",
     blocks: [
       paragraph(
-        "Operational messages may be sent in the Desktop App or to the Account email. Formal legal notices to Blame must be sent to legal@blame.so and Raphael Charpentier EI, 36 rue des Geltines, 69390 Millery, France, unless mandatory law permits another method. A notice to you may be sent to the Account email or another postal address you have provided to us.",
+        `Operational messages may be sent in the Desktop App or to the Account email. Formal legal notices to Blame must be sent to legal@blame.so and Raphael Charpentier EI, ${publisher.address}, unless mandatory law permits another method. A notice to you may be sent to the Account email or another postal address you have provided to us.`,
       ),
       paragraph(
         "Email notice is treated as received on the next business day after sending unless the sender receives a delivery failure. Postal notice is treated as received according to applicable law. This Section does not govern service of court proceedings where special rules apply.",
@@ -596,7 +597,7 @@ export const termsSections = [
         "Complete and return this form only if you wish to withdraw from the contract. You may instead send any other clear statement that identifies the contract and your decision.",
       ),
       notice("Model form", [
-        "To: Raphael Charpentier EI, operating under the trade name MK Holding, 36 rue des Geltines, 69390 Millery, France, withdrawal@blame.so.",
+        `To: Raphael Charpentier EI, operating under the trade name MK Holding, ${publisher.address}, withdrawal@blame.so.`,
         "I/We hereby give notice that I/We withdraw from my/our contract for the supply of the following digital service: ____________________.",
         "Ordered on / contract concluded on: ____________________.",
         "Consumer name: ____________________.",

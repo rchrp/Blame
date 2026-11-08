@@ -48,6 +48,7 @@ yarn-error.log*
 # Added by code-review-graph
 .code-review-graph/
 .env*
+!.env.example
 
 # Raw experiment data lives in github.com/rchrp/blame-research; only Markdown summaries stay here.
 /docs/experiments/**
