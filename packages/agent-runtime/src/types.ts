@@ -342,6 +342,12 @@ export type ApproveAndMergeInput = {
   repositoryRoot: string;
   worktree: string;
   storyBranch: string;
+  // The branch the story started from and merges into; without it, the
+  // branch checked out in the project folder.
+  targetBranch?: string;
+  // Worktrees where an agent is running, filled in by the desktop host: the
+  // target branch is not advanced inside one of them.
+  activeWorktrees?: string[];
   title: string;
   summary: string;
   codePractices?: ProjectCodePracticePreference[];
@@ -354,7 +360,13 @@ export type ApproveAndMergeResult = {
   baseCommit: string;
   mergeCommit: string;
   targetBranch: string;
+  push: ApproveAndMergePush;
 };
+
+export type ApproveAndMergePush =
+  | { status: "pushed"; upstream: string }
+  // The target branch has no upstream; remote is where it could be published.
+  | { status: "no-upstream"; remote: string | null };
 
 export type GenerateCommitMessageInput = {
   apiConnection: ApiConnection;

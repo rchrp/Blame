@@ -26,12 +26,14 @@ const gitReadLimit = pLimit(6);
 export function storyWorktreeAddArguments(input: {
   branch: string;
   existing: boolean;
+  // The last commit of the story's target branch; HEAD without one.
+  startPoint: string;
   worktree: string;
 }) {
   const args = ["worktree", "add", "--lock", "--reason", "Managed by Blame"];
   return input.existing
     ? [...args, input.worktree, input.branch]
-    : [...args, "-b", input.branch, input.worktree, "HEAD"];
+    : [...args, "-b", input.branch, input.worktree, input.startPoint];
 }
 
 export function storyWorktreeRemoveArguments(worktree: string) {

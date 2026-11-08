@@ -285,6 +285,7 @@ import type {
   AnalyzeProjectCodePracticesResult,
   ApiConnection,
   ApproveAndMergeInput,
+  ApproveAndMergePush,
   ApproveAndMergeResult,
   AssessProjectInitializationImpactInput,
   AssessProjectInitializationImpactResult,
@@ -327,6 +328,7 @@ import {
   assertGitRepository,
   cleanGitStatus,
   currentGitBranch,
+  defaultPushRemote,
   setGitRunner,
   git,
   type GitUpstream,
@@ -336,9 +338,12 @@ import {
   mergeConflictFiles,
   optionalGitUpstream,
   pullIntegrationWorktree,
-  pushIntegrationWorktree,
+  pushTargetBranch,
   removeIntegrationWorktree,
   restoreTargetChanges,
+  samePath,
+  targetBranchCheckout,
+  updateDetachedTargetBranch,
   validateMergeBranches,
 } from "./runtime-git.js";
 
@@ -409,10 +414,20 @@ type InitializationCredential = {
 type StoryMergePreparation = {
   baseCommit: string;
   integration: string;
+  placement: StoryMergePlacement;
+  previousTargetCommit: string;
   targetBranch: string;
-  targetClean: boolean;
   upstream?: GitUpstream;
 };
+
+// How the target branch is advanced, from where it is checked out.
+type StoryMergePlacement =
+  // In its own checkout: the clean project folder or another worktree.
+  | "in-place"
+  // In the project folder with local changes, stashed around the merge.
+  | "stash"
+  // Checked out nowhere: moved by update-ref from a temporary checkout.
+  | "detached";
 
 type SessionTermination = {
   cline: ClineCore;
@@ -2550,7 +2565,7 @@ export class BlameAgentRuntime {
       await removeRuntimeEnvChanges(input.worktree, preparation.baseCommit);
       return await this.finalizeStoryMerge(input, logFile, preparation);
     } finally {
-      if (!preparation.targetClean) {
+      if (preparation.placement !== "in-place") {
         await removeIntegrationWorktree(
           input.repositoryRoot,
           preparation.integration,
@@ -2564,19 +2579,37 @@ export class BlameAgentRuntime {
   ): Promise<StoryMergePreparation> {
     await assertGitRepository(input.repositoryRoot);
     await assertGitRepository(input.worktree);
-    const targetBranch = await currentGitBranch(input.repositoryRoot);
+    // Stories created before the target branch was recorded merge into the
+    // branch checked out in the project folder, as they always did.
+    const targetBranch =
+      input.targetBranch?.trim() ||
+      (await currentGitBranch(input.repositoryRoot));
     await validateMergeBranches(input, targetBranch);
-    const upstream = await optionalGitUpstream(input.repositoryRoot);
-    const targetClean = await cleanGitStatus(input.repositoryRoot);
-    const integration = targetClean
-      ? input.repositoryRoot
-      : await integrationWorktree(input.repositoryRoot, targetBranch);
+    const upstream = await optionalGitUpstream(
+      input.repositoryRoot,
+      targetBranch,
+    );
+    const previousTargetCommit = await git(input.repositoryRoot, [
+      "rev-parse",
+      `refs/heads/${targetBranch}`,
+    ]);
+    const { integration, placement } = await storyMergeIntegration(
+      input,
+      targetBranch,
+    );
     try {
-      await pullIntegrationWorktree(integration, upstream);
+      await pullIntegrationWorktree(input.repositoryRoot, integration, upstream);
       const baseCommit = await git(integration, ["rev-parse", "HEAD"]);
-      return { baseCommit, integration, targetBranch, targetClean, upstream };
+      return {
+        baseCommit,
+        integration,
+        placement,
+        previousTargetCommit,
+        targetBranch,
+        upstream,
+      };
     } catch (error) {
-      if (!targetClean) {
+      if (placement !== "in-place") {
         await removeIntegrationWorktree(input.repositoryRoot, integration);
       }
       throw error;
@@ -2587,12 +2620,18 @@ export class BlameAgentRuntime {
     input: ApproveAndMergeInput,
     logFile: string,
     preparation: StoryMergePreparation,
-  ) {
-    const { baseCommit, integration, targetBranch, targetClean, upstream } =
-      preparation;
+  ): Promise<ApproveAndMergeResult> {
+    const {
+      baseCommit,
+      integration,
+      placement,
+      previousTargetCommit,
+      targetBranch,
+      upstream,
+    } = preparation;
     let targetChanges: TargetChangesStash | undefined;
     try {
-      if (!targetClean) {
+      if (placement === "stash") {
         targetChanges = await stashTargetChanges(input.repositoryRoot, git);
         if (targetChanges) {
           await appendLog(logFile, "local target changes stashed", {
@@ -2602,7 +2641,7 @@ export class BlameAgentRuntime {
       }
       await git(integration, ["merge", "--ff-only", input.storyBranch]);
       const mergeCommit = await git(integration, ["rev-parse", "HEAD"]);
-      if (!targetClean) {
+      if (placement === "stash") {
         await assertTargetChangesRestorable(integration, targetChanges, git);
         await advanceTargetBranch(
           input.repositoryRoot,
@@ -2617,13 +2656,33 @@ export class BlameAgentRuntime {
           logFile,
         );
       }
-      await pushIntegrationWorktree(integration, upstream, logFile);
+      if (placement === "detached") {
+        await updateDetachedTargetBranch(
+          input.repositoryRoot,
+          targetBranch,
+          mergeCommit,
+          previousTargetCommit,
+        );
+      }
+      await pushTargetBranch(
+        input.repositoryRoot,
+        targetBranch,
+        upstream,
+        logFile,
+      );
+      const push: ApproveAndMergePush = upstream
+        ? { status: "pushed", upstream: `${upstream.remote}/${upstream.branch}` }
+        : {
+            status: "no-upstream",
+            remote: await defaultPushRemote(input.repositoryRoot),
+          };
       await appendLog(logFile, "approve merge completed", {
         baseCommit,
         mergeCommit,
+        placement,
         targetBranch,
       });
-      return { baseCommit, mergeCommit, targetBranch };
+      return { baseCommit, mergeCommit, push, targetBranch };
     } finally {
       if (targetChanges) {
         await restoreTargetChanges(
@@ -4621,7 +4680,46 @@ function approveMergeContext(input: ApproveAndMergeInput) {
     repositoryRoot: input.repositoryRoot,
     worktree: input.worktree,
     storyBranch: input.storyBranch,
+    targetBranch: input.targetBranch,
   };
+}
+
+// Where the target branch can be fast-forwarded to the story: its own
+// checkout when that is safe, otherwise a temporary detached one.
+async function storyMergeIntegration(
+  input: ApproveAndMergeInput,
+  targetBranch: string,
+): Promise<{ integration: string; placement: StoryMergePlacement }> {
+  const checkout = await targetBranchCheckout(input.repositoryRoot, targetBranch);
+  if (checkout.kind === "worktree") {
+    await assertTargetWorktreeAvailable(input, targetBranch, checkout.path);
+    return { integration: checkout.path, placement: "in-place" };
+  }
+  if (checkout.kind === "project" && (await cleanGitStatus(input.repositoryRoot)))
+    return { integration: input.repositoryRoot, placement: "in-place" };
+  return {
+    integration: await integrationWorktree(input.repositoryRoot, targetBranch),
+    placement: checkout.kind === "project" ? "stash" : "detached",
+  };
+}
+
+// Another worktree, often another story, holds the target branch: it moves
+// there only when nothing would be lost or raced.
+async function assertTargetWorktreeAvailable(
+  input: ApproveAndMergeInput,
+  targetBranch: string,
+  worktree: string,
+) {
+  for (const active of input.activeWorktrees ?? []) {
+    if (await samePath(active, worktree))
+      throw new Error(
+        `${targetBranch} is checked out in ${worktree}, where an agent is running. Approve & Merge again once it stops.`,
+      );
+  }
+  if (!(await cleanGitStatus(worktree)))
+    throw new Error(
+      `${targetBranch} is checked out in ${worktree}, which has uncommitted changes. Commit or stash them there, then approve again.`,
+    );
 }
 
 async function settleWithTimeout(

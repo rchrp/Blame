@@ -216,6 +216,10 @@ export default class UserStory extends BaseModel {
   @column()
   declare branch: string | null
 
+  // The branch the story starts from and merges into.
+  @column()
+  declare targetBranch: string | null
+
   @column()
   declare previewUrl: string | null
 

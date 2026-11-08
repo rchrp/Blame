@@ -86,6 +86,7 @@ test("merges into a dirty target branch and restores its local changes", async (
       providerId: "test-provider",
       repositoryRoot,
       storyBranch: "story/test-dirty-target",
+      targetBranch: "main",
       summary: "Exercise merging with local target-branch changes.",
       title: "Dirty target merge",
       worktree,
@@ -94,6 +95,7 @@ test("merges into a dirty target branch and restores its local changes", async (
     assert.deepEqual(result, {
       baseCommit,
       mergeCommit: storyCommit,
+      push: { status: "no-upstream", remote: null },
       targetBranch: "main",
     });
     assert.equal(await git(repositoryRoot, ["rev-parse", "HEAD"]), storyCommit);
@@ -639,6 +641,178 @@ test("merges two stories approved at once into the same repository one after the
   }
 });
 
+test("advances a target branch checked out nowhere and pushes it to its own upstream", async () => {
+  const fixture = await targetBranchFixture("detached");
+  const { repositoryRoot } = fixture;
+  const remote = join(fixture.directory, "remote.git");
+  await git(fixture.directory, ["init", "--bare", remote]);
+  await git(repositoryRoot, ["remote", "add", "origin", remote]);
+  // Only the target has an upstream; the project folder's branch has none.
+  await git(repositoryRoot, ["push", "--set-upstream", "origin", "develop"]);
+  const runtime = mergeTestRuntime();
+  try {
+    const result = await runtime.approveAndMerge(fixture.input);
+
+    assert.equal(result.targetBranch, "develop");
+    assert.equal(result.mergeCommit, fixture.storyCommit);
+    assert.deepEqual(result.push, {
+      status: "pushed",
+      upstream: "origin/develop",
+    });
+    assert.equal(
+      await git(repositoryRoot, ["rev-parse", "develop"]),
+      fixture.storyCommit,
+    );
+    assert.equal(await git(remote, ["rev-parse", "develop"]), fixture.storyCommit);
+    assert.equal(await git(repositoryRoot, ["branch", "--show-current"]), "main");
+    assert.equal(
+      await git(repositoryRoot, ["rev-parse", "HEAD"]),
+      fixture.mainCommit,
+    );
+    assert.doesNotMatch(
+      await git(repositoryRoot, ["worktree", "list", "--porcelain"]),
+      /\/\.merge\//,
+    );
+  } finally {
+    await runtime.shutdown();
+    await rm(fixture.directory, { recursive: true, force: true });
+  }
+});
+
+test("advances a target branch checked out in another clean worktree", async () => {
+  const fixture = await targetBranchFixture("other-worktree");
+  const { repositoryRoot } = fixture;
+  const other = join(fixture.directory, "other");
+  await git(repositoryRoot, ["worktree", "add", other, "develop"]);
+  await git(repositoryRoot, [
+    "remote",
+    "add",
+    "origin",
+    join(fixture.directory, "unpublished.git"),
+  ]);
+  const runtime = mergeTestRuntime();
+  try {
+    const result = await runtime.approveAndMerge(fixture.input);
+
+    assert.equal(await git(other, ["rev-parse", "HEAD"]), fixture.storyCommit);
+    assert.equal(await readFile(join(other, "story.txt"), "utf8"), "story\n");
+    assert.equal(await git(other, ["status", "--porcelain"]), "");
+    assert.equal(
+      await git(repositoryRoot, ["rev-parse", "HEAD"]),
+      fixture.mainCommit,
+    );
+    // Without an upstream the merge stays local, and says where to publish it.
+    assert.deepEqual(result.push, { status: "no-upstream", remote: "origin" });
+  } finally {
+    await runtime.shutdown();
+    await rm(fixture.directory, { recursive: true, force: true });
+  }
+});
+
+for (const blocker of ["uncommitted changes", "a running agent"] as const) {
+  test(`leaves a target branch checked out in a worktree with ${blocker} alone`, async () => {
+    const fixture = await targetBranchFixture("busy-worktree");
+    const { repositoryRoot } = fixture;
+    const other = join(fixture.directory, "other");
+    await git(repositoryRoot, ["worktree", "add", other, "develop"]);
+    const developCommit = await git(repositoryRoot, ["rev-parse", "develop"]);
+    if (blocker === "uncommitted changes")
+      await writeFile(join(other, "work-in-progress.txt"), "draft\n");
+    const runtime = mergeTestRuntime();
+    try {
+      await assert.rejects(
+        runtime.approveAndMerge({
+          ...fixture.input,
+          activeWorktrees: blocker === "a running agent" ? [other] : [],
+        }),
+        blocker === "a running agent"
+          ? /develop is checked out in .+, where an agent is running/
+          : /develop is checked out in .+, which has uncommitted changes/,
+      );
+      assert.equal(
+        await git(repositoryRoot, ["rev-parse", "develop"]),
+        developCommit,
+      );
+      assert.equal(
+        await git(fixture.worktree, ["rev-parse", "HEAD"]),
+        fixture.storyCommit,
+      );
+    } finally {
+      await runtime.shutdown();
+      await rm(fixture.directory, { recursive: true, force: true });
+    }
+  });
+}
+
+for (const [targetBranch, error] of [
+  ["missing", /Target branch missing does not exist/],
+  ["story/target", /Story branch and target branch must be different/],
+] as const) {
+  test(`refuses to merge into target branch ${targetBranch}`, async () => {
+    const fixture = await targetBranchFixture("invalid-target");
+    const runtime = mergeTestRuntime();
+    try {
+      await assert.rejects(
+        runtime.approveAndMerge({ ...fixture.input, targetBranch }),
+        error,
+      );
+      assert.equal(
+        await git(fixture.repositoryRoot, ["rev-parse", "HEAD"]),
+        fixture.mainCommit,
+      );
+    } finally {
+      await runtime.shutdown();
+      await rm(fixture.directory, { recursive: true, force: true });
+    }
+  });
+}
+
+// A story started from develop while the project folder stays on main.
+async function targetBranchFixture(name: string) {
+  const directory = await mkdtemp(join(tmpdir(), `blame-target-${name}-`));
+  const repositoryRoot = join(directory, "project");
+  const worktree = join(directory, "story");
+  await mkdir(repositoryRoot);
+  await git(repositoryRoot, ["init", "--initial-branch=main"]);
+  await git(repositoryRoot, ["config", "user.email", "blame@example.com"]);
+  await git(repositoryRoot, ["config", "user.name", "Blame Test"]);
+  await writeFile(join(repositoryRoot, ".gitignore"), ".blame/\n");
+  await git(repositoryRoot, ["add", "."]);
+  await git(repositoryRoot, ["commit", "-m", "base"]);
+  await git(repositoryRoot, ["branch", "develop"]);
+  await git(repositoryRoot, ["commit", "--allow-empty", "-m", "main only"]);
+  const mainCommit = await git(repositoryRoot, ["rev-parse", "HEAD"]);
+  await git(repositoryRoot, [
+    "worktree",
+    "add",
+    "-b",
+    "story/target",
+    worktree,
+    "develop",
+  ]);
+  await writeFile(join(worktree, "story.txt"), "story\n");
+  await git(worktree, ["add", "."]);
+  await git(worktree, ["commit", "-m", "story"]);
+  const storyCommit = await git(worktree, ["rev-parse", "HEAD"]);
+  return {
+    directory,
+    mainCommit,
+    repositoryRoot,
+    storyCommit,
+    worktree,
+    input: {
+      apiConnection: { url: "https://api.example" },
+      providerId: "test-provider",
+      modelId: "test-model",
+      repositoryRoot,
+      worktree,
+      storyBranch: "story/target",
+      targetBranch: "develop",
+      title: "Ship on develop",
+      summary: "Merge into the branch the story started from.",
+    },
+  };
+}
 function mergeTestRuntime(
   resolve?: (input: ClineCoreStartInput) => Promise<void>,
   core?: Record<string, unknown>,

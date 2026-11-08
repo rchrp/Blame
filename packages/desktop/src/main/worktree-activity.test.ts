@@ -47,6 +47,7 @@ test("removes a locked Git worktree only after preparation settles, without late
     ...storyWorktreeAddArguments({
       branch: "blame/story-US-001",
       existing: false,
+      startPoint: "HEAD",
       worktree,
     }),
   );
@@ -102,6 +103,7 @@ test("removes a locked Git worktree only after preparation settles, without late
     ...storyWorktreeAddArguments({
       branch: "blame/story-US-001",
       existing: true,
+      startPoint: "HEAD",
       worktree,
     }),
   );

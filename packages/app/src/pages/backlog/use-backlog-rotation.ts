@@ -256,6 +256,7 @@ export function useBacklogRotation(
       runtimeProfile: previewProfile,
       storyId,
       storyReference: userStoryDisplayId(detailedStory),
+      targetBranch: detailedStory.targetBranch,
       telemetryCohorts,
       title: detailedStory.title,
     })
@@ -272,6 +273,11 @@ export function useBacklogRotation(
           })
         )[0]?.hash ?? null,
       branch: worktree.branch,
+      // Kept from the first run on: the story merges back where it started.
+      // Direct works on the project folder's branch, whatever was chosen.
+      targetBranch: direct
+        ? worktree.targetBranch
+        : (detailedStory.targetBranch ?? worktree.targetBranch),
       status: "in-progress",
       workspaceMode: worktree.workspaceMode,
       worktree: worktree.worktree,

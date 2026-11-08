@@ -459,6 +459,12 @@ const api: BlameDesktopApi = {
       ipcRenderer.invoke("workspace:git-delete-files", input),
     gitCommit: (input) => ipcRenderer.invoke("workspace:git-commit", input),
     gitPush: (input) => ipcRenderer.invoke("workspace:git-push", input),
+    gitBranches: (input) =>
+      ipcRenderer.invoke("workspace:git-branches", input),
+    gitTrackBranch: (input) =>
+      ipcRenderer.invoke("workspace:git-track-branch", input),
+    gitPublishBranch: (input) =>
+      ipcRenderer.invoke("workspace:git-publish-branch", input),
     listGitDirectory: (input) =>
       ipcRenderer.invoke("workspace:list-git-directory", input),
     readGitFile: (input) =>

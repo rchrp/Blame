@@ -347,7 +347,11 @@ function registerDeliveryWorkflowIpcHandlers(
     ),
   );
   ipcMain.handle("agent:approve-and-merge", async (_event, input) => {
-    const resolved = await agentWorkspaceInput(input);
+    const resolved = {
+      ...(await agentWorkspaceInput(input)),
+      // The target branch is never advanced under a running agent.
+      activeWorktrees: agentWorkspaceWriters.activeWorkspaces(),
+    };
     if (typeof resolved.worktree !== "string" || !resolved.worktree) {
       throw new Error("Agent delivery worktree is invalid");
     }
