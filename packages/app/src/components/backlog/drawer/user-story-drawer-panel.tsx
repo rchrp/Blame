@@ -65,9 +65,15 @@ import {
 import {
   composerDraftStorageKey,
   readComposerDraft,
-  removeComposerDraft,
-  writeComposerDraft,
 } from "@/components/backlog/drawer/composer-draft-storage"
+import {
+  readTitleDraft,
+  useDrawerComposerDraft,
+} from "@/components/backlog/drawer/use-drawer-composer-draft"
+import {
+  recallDrawerTabs,
+  useDrawerTabMemory,
+} from "@/components/backlog/drawer/use-drawer-tab-memory"
 import {
   type CodeSelectionAttachment,
   type PendingCodeSelectionAttachment,
@@ -85,12 +91,7 @@ import {
 import { Tabs, TabsContent, TabsTrigger } from "@/components/ui/tabs"
 import { SlidingTabsList, slidingTabsTrigger, TabReadyIcon } from "@/components/backlog/drawer/sliding-tabs-list"
 import { cn } from "@/lib/utils"
-import {
-  isBoolean,
-  recallForItem,
-  rememberForItem,
-  useUiMemory,
-} from "@/lib/ui-memory"
+import { isBoolean, useUiMemory } from "@/lib/ui-memory"
 import { StoryStatsIsland } from "@/components/backlog/drawer/user-story-drawer-sidebar"
 import { DirectStoryPreview } from "@/components/backlog/drawer/direct-story-preview"
 import { StoryStatusGlow } from "@/components/backlog/drawer/story-status-glow"
@@ -111,15 +112,12 @@ import {
   createdAtLabel,
   createInput,
   DrawerBody,
-  drawerComposerDraft,
   DrawerHeaderTitle,
   initialDrawerTab,
   isSendToDevAgentShortcut,
   mergeAttachments,
-  type PendingComposerDraft,
   updatePendingDraftMarkdown,
 } from "./user-story-drawer-parts"
-const composerDraftPersistDelayMs = 500
 const drawerHeaderSoftBlurMask = {
   maskImage:
     "linear-gradient(to bottom, black 0%, black 60%, transparent 100%)",
@@ -229,7 +227,7 @@ export function UserStoryDrawerPanel({
   // Opening a story on its default tab brings back the tab it was left on.
   const [rememberedTabs] = React.useState(() =>
     mode !== "create" && userStory && initialTab === "user-story" && !focusComment
-      ? recallForItem(drawerTabsMemoryKey, userStory.id, isRememberedDrawerTabs)
+      ? recallDrawerTabs(userStory.id)
       : undefined
   )
   const [previewReady, setPreviewReady] = React.useState(false)
@@ -257,13 +255,7 @@ export function UserStoryDrawerPanel({
   const previewVisible = open && tab === "preview"
   const drawerWidth = useStoryDrawerWidth()
   const rememberedStoryId = mode === "create" ? undefined : userStory?.id
-  React.useEffect(() => {
-    if (!rememberedStoryId) return
-    rememberForItem(drawerTabsMemoryKey, rememberedStoryId, {
-      developmentTab,
-      tab,
-    })
-  }, [developmentTab, rememberedStoryId, tab])
+  useDrawerTabMemory(rememberedStoryId, tab, developmentTab)
   const [summaryCodeSelectionAttachments, setSummaryCodeSelectionAttachments] =
     React.useState<PendingCodeSelectionAttachment[]>(
       mode === "create"
@@ -354,60 +346,19 @@ export function UserStoryDrawerPanel({
   )
   const summaryRef = React.useRef<HTMLDivElement>(null)
   const commentRef = React.useRef<HTMLDivElement>(null)
-  const pendingComposerDraftRef = React.useRef<
-    PendingComposerDraft | undefined
-  >(undefined)
-  const composerDraftRemovedRef = React.useRef(false)
-
-  // A new story's title survives closing the drawer, like its description.
-  React.useEffect(() => {
-    if (mode !== "create") return
-    const timer = window.setTimeout(() => {
-      try {
-        if (title.trim()) localStorage.setItem(titleDraftKey, title)
-        else localStorage.removeItem(titleDraftKey)
-      } catch {
-        return
-      }
-    }, composerDraftPersistDelayMs)
-    return () => window.clearTimeout(timer)
-  }, [mode, title, titleDraftKey])
-
-  React.useEffect(() => {
-    const draft = drawerComposerDraft({
+  const { clearComposerDraft, pendingComposerDraftRef } =
+    useDrawerComposerDraft({
       comment,
       commentCodeSelectionAttachments,
       commentFileAttachments,
+      draftStorageKey,
       mode,
       summary,
       summaryCodeSelectionAttachments,
       summaryFileAttachments,
+      title,
+      titleDraftKey,
     })
-    pendingComposerDraftRef.current = { draft, key: draftStorageKey }
-    composerDraftRemovedRef.current = false
-    const timer = window.setTimeout(() => {
-      writeComposerDraft(localStorage, draftStorageKey, draft)
-    }, composerDraftPersistDelayMs)
-    return () => window.clearTimeout(timer)
-  }, [
-    comment,
-    commentCodeSelectionAttachments,
-    commentFileAttachments,
-    draftStorageKey,
-    mode,
-    summary,
-    summaryCodeSelectionAttachments,
-    summaryFileAttachments,
-  ])
-
-  React.useEffect(
-    () => () => {
-      const pending = pendingComposerDraftRef.current
-      if (!pending || composerDraftRemovedRef.current) return
-      writeComposerDraft(localStorage, pending.key, pending.draft)
-    },
-    []
-  )
 
   React.useEffect(() => {
     if (!focusComment) return
@@ -545,7 +496,7 @@ export function UserStoryDrawerPanel({
       )
       setSummary(nextSummary)
     },
-    [mode]
+    [mode, pendingComposerDraftRef]
   )
   const handleCommentChange = React.useCallback(
     (nextComment: string) => {
@@ -557,7 +508,7 @@ export function UserStoryDrawerPanel({
       )
       setComment(nextComment)
     },
-    [mode]
+    [mode, pendingComposerDraftRef]
   )
   const handleDrawerAction = useLatestCallback((action: DrawerAction) => {
     void handleAction(action)
@@ -1031,16 +982,6 @@ export function UserStoryDrawerPanel({
     }
   }
 
-  function clearComposerDraft() {
-    composerDraftRemovedRef.current = true
-    removeComposerDraft(localStorage, draftStorageKey)
-    try {
-      localStorage.removeItem(titleDraftKey)
-    } catch {
-      return
-    }
-  }
-
   function clearCommentComposer() {
     clearComposerDraft()
     commentValueRef.current = ""
@@ -1078,30 +1019,4 @@ export function UserStoryDrawerPanel({
         ?.focus()
     })
   }
-}
-
-function readTitleDraft(key: string) {
-  try {
-    return localStorage.getItem(key) ?? undefined
-  } catch {
-    return undefined
-  }
-}
-
-const drawerTabsMemoryKey = "story-drawer-tabs"
-const drawerTabs = new Set<string>(["user-story", "preview", "development"])
-const developmentTabs = new Set<string>(["files", "diff", "terminal"])
-
-function isRememberedDrawerTabs(value: unknown): value is {
-  developmentTab: UserStoryDevelopmentTab
-  tab: UserStoryDrawerTab
-} {
-  if (!value || typeof value !== "object") return false
-  const record = value as Record<string, unknown>
-  return (
-    typeof record.tab === "string" &&
-    drawerTabs.has(record.tab) &&
-    typeof record.developmentTab === "string" &&
-    developmentTabs.has(record.developmentTab)
-  )
 }
