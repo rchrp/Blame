@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
   useSyncExternalStore,
+  type CSSProperties,
   type ReactNode,
 } from "react";
 import { ScrollReveal } from "@/components/scroll-reveal";
@@ -18,7 +19,7 @@ import styles from "./demo-video.module.css";
 
 const reducedMotionQuery = "(prefers-reduced-motion: reduce)";
 
-// The hero's muted loop, in the mockup's 16:9 frame. With reduced motion it
+// The hero's muted loop, in the mockup's place. With reduced motion it
 // shows its poster instead. The server renders the poster too, and the
 // browser swaps in the video once it knows motion is welcome: the first
 // frame and the poster match, so the swap doesn't show.
@@ -47,7 +48,7 @@ export function HeroLoop({
 
   const fail = () => setFailed(true);
   return (
-    <div className={styles.frame}>
+    <div className={styles.frame} style={frameShape(video)}>
       {stillOnly ? (
         // A plain image: the poster is already sized for the frame. One that
         // failed before the page hydrated has missed onError: its ref sees it.
@@ -110,12 +111,13 @@ export function FullDemoSection({ video }: { video: DemoVideo }) {
       aria-labelledby="demo-title"
       data-story-section
       className="flex min-h-[100svh] flex-col justify-center px-5 py-24 sm:px-8 lg:px-10"
+      style={frameShape(video)}
     >
       <div className="mx-auto w-full max-w-7xl">
         <ScrollReveal className="text-center">
           <p className="story-eyebrow">The full demo</p>
-          <h2 id="demo-title" className="story-title mx-auto mt-5 max-w-5xl">
-            One minute, backlog to merge.
+          <h2 id="demo-title" className="story-title mx-auto mt-5 max-w-6xl">
+            Backlog to merge in under a minute.
           </h2>
           <p className="story-copy mx-auto mt-7 max-w-3xl">
             Plan the stories, start the agents, try each change in its own
@@ -139,6 +141,11 @@ export function FullDemoSection({ video }: { video: DemoVideo }) {
       </div>
     </section>
   );
+}
+
+// The video's shape, which its frame and the full demo's slot take.
+function frameShape(video: DemoVideo) {
+  return { "--video-ratio": video.width / video.height } as CSSProperties;
 }
 
 // The browser plays the first source it supports. Once the last one has

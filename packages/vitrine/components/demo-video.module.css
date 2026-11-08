@@ -1,10 +1,11 @@
-/* The demo videos' frame: the hero mockup's 16:9 window (see
-   blame-mockups/backlog-mockup.module.css), so a video takes its exact place
-   and nothing moves while it loads. */
+/* The demo videos' frame, in the hero mockup's style (see
+   blame-mockups/backlog-mockup.module.css). It takes the video's shape
+   (--video-ratio, from lib/demo-media.ts) before the video loads, so nothing
+   moves when it does. */
 .frame {
   position: relative;
   width: 100%;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: var(--video-ratio, 16 / 9);
   overflow: hidden;
   border: 1px solid rgb(255 255 255 / 14%);
   border-radius: clamp(12px, 1.4vw, 24px);
@@ -24,7 +25,7 @@
 /* The full demo stays whole on screen under its heading: the section's top
    padding, the heading and this margin take about 25rem. */
 .demoSlot {
-  width: min(100%, 64rem, calc((100svh - 25rem) * 16 / 9));
+  width: min(100%, 64rem, calc((100svh - 25rem) * var(--video-ratio)));
   margin: 3rem auto 0;
 }
 
