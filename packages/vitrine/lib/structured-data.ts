@@ -8,6 +8,7 @@ import {
   type LegalDocument,
 } from "@/content/legal-documents";
 import { githubReleasesUrl, githubRepositoryUrl } from "@/lib/github";
+import { publisher } from "@/lib/publisher";
 import { absoluteSiteUrl } from "@/lib/site";
 
 // Schema.org data for search engines and AI agents. Every page's graph
@@ -36,18 +37,16 @@ const organizationStructuredData = {
   },
   sameAs: [githubRepositoryUrl],
   email: "support@blame.so",
-  telephone: "+33 6 67 28 12 29",
+  // The street address and phone number stay on the legal pages only: search
+  // engines and scrapers copy structured data widely.
   address: {
     "@type": "PostalAddress",
-    streetAddress: "36 rue des Geltines",
-    postalCode: "69390",
-    addressLocality: "Millery",
     addressCountry: "FR",
   },
   identifier: {
     "@type": "PropertyValue",
     propertyID: "SIREN",
-    value: "984448217",
+    value: publisher.sirenDigits,
   },
 };
 
