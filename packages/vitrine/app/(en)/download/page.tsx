@@ -68,7 +68,11 @@ export default async function DownloadPage() {
             id="all-downloads"
             className="landing-reveal landing-reveal-actions scroll-mt-28"
           >
-            <div className="relative overflow-hidden rounded-[2rem] border border-white/18 bg-white/[0.08] p-5 shadow-[0_34px_120px_rgba(0,0,0,0.42)] backdrop-blur-2xl sm:p-6">
+            {/* A tinted panel, without a backdrop blur: under the animated
+                border of the recommended card, Chrome redraws a blur in
+                patches, which flickers. Inside this revealed block the blur
+                didn't reach the scene behind anyway. */}
+            <div className="relative overflow-hidden rounded-[2rem] border border-white/18 bg-white/[0.08] p-5 shadow-[0_34px_120px_rgba(0,0,0,0.42)] sm:p-6">
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(255,255,255,0.18),transparent_28%),radial-gradient(circle_at_80%_18%,rgba(159,215,255,0.2),transparent_36%)]" />
               <div className="relative">
                 <h2 className="text-2xl font-semibold tracking-[-0.04em] text-white">
