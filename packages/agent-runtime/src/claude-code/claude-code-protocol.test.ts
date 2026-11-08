@@ -7,6 +7,7 @@ import type { ModelInfo } from "@cline/llms";
 import { claudeCodeModelConfig } from "./claude-code-provider.js";
 import { lightCompletionDescription } from "../harness/light-completion.js";
 import {
+  classifyClaudeCodeError,
   clientStreamEvent,
   collectMessage,
   initialUserContent,
@@ -232,4 +233,14 @@ test("workspace metadata in the prompt leaves out the commit hash so commits kee
   const metadata = JSON.stringify({ workspaces: { "/repo": { hint: "repo", latestGitCommitHash: "abc123", latestGitBranchName: "main" } } }, null, 2);
   assert.deepEqual(JSON.parse(withoutCommitHash(metadata)), { workspaces: { "/repo": { hint: "repo", latestGitBranchName: "main" } } });
   assert.equal(withoutCommitHash("plain text"), "plain text");
+});
+
+test("an expired Claude Code sign-in is an authentication error, not a retried server error", () => {
+  for (const message of [
+    "Failed to authenticate: OAuth session expired and could not be refreshed",
+    "OAuth token has expired",
+    "Invalid API key · Please run /login",
+  ])
+    assert.deepEqual(classifyClaudeCodeError(message), { status: 401, type: "authentication_error" });
+  assert.equal(classifyClaudeCodeError("socket hang up").status, 500);
 });

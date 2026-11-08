@@ -577,6 +577,8 @@ function createAgentRuntimePool(input: AgentRuntimeRegistration) {
     BLAME_AGENT_PACKAGED: String(input.packaged),
     BLAME_AGENT_SERVICE_VERSION: input.serviceVersion,
     BLAME_CLAUDE_CODE_STATE_DIR: join(app.getPath("userData"), "claude-code"),
+    // Where cloud commands' gh is downloaded once (see github-cli.ts).
+    BLAME_GITHUB_CLI_DIR: join(app.getPath("userData"), "github-cli"),
   };
   return new AgentRuntimePool({
     createProcess: (callbacks) =>

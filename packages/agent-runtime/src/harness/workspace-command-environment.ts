@@ -49,7 +49,27 @@ export function withCommandCredentials(
   const filtered = Object.fromEntries(
     Object.entries(environment).filter(([name]) => !githubTokenVariables.has(name.toUpperCase())),
   );
-  return credentials.githubToken ? { ...filtered, GH_TOKEN: credentials.githubToken } : filtered;
+  const withToken = credentials.githubToken ? { ...filtered, GH_TOKEN: credentials.githubToken } : filtered;
+  return credentials.githubCli ? withGithubCliEnvironment(withToken, credentials.githubCli) : withToken;
+}
+
+function withGithubCliEnvironment(
+  environment: NodeJS.ProcessEnv,
+  githubCli: NonNullable<LightCommandCredentials["githubCli"]>,
+): NodeJS.ProcessEnv {
+  const isolated = {
+    ...environment,
+    GH_CONFIG_DIR: githubCli.configDirectory,
+    // The update notifiers write their state outside GH_CONFIG_DIR.
+    GH_NO_UPDATE_NOTIFIER: "1",
+    GH_NO_EXTENSION_UPDATE_NOTIFIER: "1",
+  };
+  const { binDirectory } = githubCli;
+  if (!binDirectory) return isolated;
+  const key = Object.keys(environment).find((name) => name.toUpperCase() === "PATH") ?? "PATH";
+  const entries = (environment[key] ?? "").split(delimiter).filter((entry) => entry && entry !== binDirectory);
+  // First: the pinned gh runs even where the host has another one.
+  return { ...isolated, [key]: [binDirectory, ...entries].join(delimiter) };
 }
 
 /**
