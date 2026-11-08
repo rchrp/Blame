@@ -222,6 +222,7 @@ import {
   previewRuntimeContext,
   type PreviewRuntimeContext,
 } from "./preview-harness-tools.js";
+import { githubMcpTools } from "./github-mcp-tools.js";
 import type { ProductionSessionContext } from "./production.js";
 import {
   appendProductionConfig,
@@ -927,6 +928,9 @@ export class BlameAgentRuntime {
             previewContext,
             productionLogger,
           );
+      const githubTools = input.clineDefaultTools
+        ? []
+        : await githubMcpTools(this.options, sessionId, productionLogger);
       const standardTools = input.clineDefaultTools
         ? undefined
         : runtimeTools(
@@ -979,6 +983,7 @@ export class BlameAgentRuntime {
       const extraTools = [
         ...webResearchTools(input.apiConnection, this.options.renderWebPage),
         ...(standardTools ?? []),
+        ...githubTools,
         ...(specialistTool ? [specialistTool] : []),
         ...sessionStoryHistoryTools(input, this.options.git),
         ...(input.conversationTools ?? []),
@@ -1082,6 +1087,8 @@ export class BlameAgentRuntime {
           ? clineDefaultToolPolicies()
           : toolPolicies(!!input.autoApproveWriteTools, [
               ...previewMcpTools.map(({ name }) => name),
+              // Read-only: GitHub's MCP server only exposes read tools.
+              ...githubTools.map(({ name }) => name),
               ...(previewOptions.repairPreviewInitialization
                 ? ["repair_preview_initialization"]
                 : []),

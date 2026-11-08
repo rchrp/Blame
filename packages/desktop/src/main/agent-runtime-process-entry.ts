@@ -105,6 +105,12 @@ function createAgentRuntime(hostClient: AgentRuntimeHostClient) {
       projectApp: (input) => hostRequest(hostClient, "projectApp", input),
       componentPreview: (input) =>
         hostRequest(hostClient, "componentPreview", input),
+      githubMcpTools: (input) =>
+        hostRequest(hostClient, "githubMcpTools", {
+          ...input,
+          signal: undefined,
+        }),
+      githubMcpCall: (input) => hostRequest(hostClient, "githubMcpCall", input),
       projectScanRoot: async (workspace) => {
         const request = { workspace, signal: undefined };
         const location = await hostRequest<ProjectScanLocation>(

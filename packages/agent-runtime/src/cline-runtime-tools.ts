@@ -44,6 +44,7 @@ import {
 } from "./harness/light-tools.js";
 
 import { type ProjectMemoryPersistence } from "./harness/project-memory.js";
+import type { GithubMcpToolOptions } from "./github-mcp-tools.js";
 
 import {
   previewContainerLogsTool,
@@ -96,7 +97,7 @@ export type RuntimeStartSessionInput = StartSessionInput & {
   projectInitialization?: StartDevelopmentSessionInput["projectInitialization"];
 };
 
-export type RuntimeOptions = PreviewToolRuntimeOptions & {
+export type RuntimeOptions = PreviewToolRuntimeOptions & GithubMcpToolOptions & {
   renderWebPage?: import('./web-research-types.js').RenderWebPage;
   // A readable copy of a workspace the runtime cannot read directly.
   projectScanRoot?: import("./project-initialization.js").ProjectScanRootProvider;

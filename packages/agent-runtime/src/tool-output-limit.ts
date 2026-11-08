@@ -22,6 +22,11 @@ export const toolOutputLimits = {
     characters: 40_000,
     more: "Narrow the request, such as wait_for one pattern or fewer device logs.",
   },
+  /** A GitHub MCP result: a file, issue, pull request, list or CI log. */
+  githubMcp: {
+    characters: 40_000,
+    more: "Narrow the call: page lists with perPage and page, or read one file, issue or job.",
+  },
   /** Preview container stdout: the latest lines matter. */
   previewLogStdout: {
     characters: 24_000,

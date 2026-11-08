@@ -61,6 +61,8 @@ export const agentHostMethods = [
   "lightWorkspace",
   "projectApp",
   "componentPreview",
+  "githubMcpTools",
+  "githubMcpCall",
 ] as const;
 
 export type AgentRuntimeMethod = (typeof agentRuntimeMethods)[number];

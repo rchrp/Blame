@@ -15,11 +15,11 @@ function agentGithubAccessSettings() {
   return settings;
 }
 
-/** At session start: grants the host's gh token when the project allows it. */
+/** At session start: grants the host's gh token at the project's level. */
 export function prepareSessionGithubAccess(session: Record<string, unknown>) {
   const projects = agentGithubAccessSettings();
   return grantSessionGithubAccess(session, {
-    enabled: (projectId) => projects.enabled(projectId),
+    level: (projectId) => projects.level(projectId),
     readToken: () => readHostGithubToken(),
   });
 }
@@ -30,7 +30,7 @@ export function registerAgentGithubAccessIpcHandlers(input: {
   ipcMain.handle("agent-github-access:get", (event, value) => {
     if (!input.isAppWindow(event.sender))
       throw new Error("Settings request was rejected");
-    return agentGithubAccessSettings().enabled(projectId(value));
+    return agentGithubAccessSettings().level(projectId(value));
   });
   ipcMain.handle("agent-github-access:set", (event, value) => {
     if (!input.isAppWindow(event.sender))
@@ -39,9 +39,9 @@ export function registerAgentGithubAccessIpcHandlers(input: {
       value && typeof value === "object"
         ? (value as Record<string, unknown>)
         : {};
-    return agentGithubAccessSettings().setEnabled(
+    return agentGithubAccessSettings().setLevel(
       projectId(value) ?? "",
-      body.enabled === true,
+      body.level,
     );
   });
 }

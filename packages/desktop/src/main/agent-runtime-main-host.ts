@@ -26,6 +26,7 @@ import type { PreviewService } from "./preview-runtime/preview-service.ts";
 import { runtimeAgentClient, runtimeAgentSupported } from "./runtime-agent.ts";
 import { lightWorkspaceExecutionTarget } from "./light-workspace-routing.ts";
 import { withSessionCommandCredentials } from "./github-access/agent-github-access.ts";
+import { githubMcpService } from "./github-access/github-mcp-service.ts";
 import {
   ensureRuntimeGitUserIdentity,
   getRuntimeGitIdentity,
@@ -95,6 +96,9 @@ async function handleAgentHostRequest(
     return agentLightWorkspace(input, signal);
   }
   if (method === "projectApp") return agentProjectApp(input, signal);
+  if (method === "githubMcpTools")
+    return githubMcpService.listTools(optionalText(recordInput(input).sessionId));
+  if (method === "githubMcpCall") return githubMcpCall(input, signal);
   if (method === "componentPreview") {
     const { componentPreviewHostRequest } =
       await import("./component-preview/component-preview-agent.ts");
@@ -311,6 +315,22 @@ async function agentLightWorkspace(input: unknown, signal: AbortSignal) {
     withSessionCommandCredentials(request),
     signal,
   );
+}
+// The agent process names the session; the desktop holds its token.
+function githubMcpCall(input: unknown, signal: AbortSignal) {
+  const request = recordInput(input);
+  const toolName = optionalText(request.toolName);
+  if (!toolName) throw new Error("Invalid GitHub MCP request");
+  const argumentsValue = request.arguments;
+  return githubMcpService.call({
+    arguments:
+      argumentsValue && typeof argumentsValue === "object" && !Array.isArray(argumentsValue)
+        ? (argumentsValue as Record<string, unknown>)
+        : undefined,
+    sessionId: optionalText(request.sessionId),
+    signal,
+    toolName,
+  });
 }
 
 async function agentGit(input: unknown) {
