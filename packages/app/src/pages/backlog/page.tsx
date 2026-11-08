@@ -683,7 +683,7 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
   )
 
   const mergeApprovedStory = React.useCallback(
-    async (story: UserStory) => {
+    async (story: UserStory, options: { push?: boolean } = {}) => {
       const validationError = approveAndMergeValidationError(
         story,
         auth,
@@ -720,6 +720,7 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
               worktree: story.worktree!,
               storyBranch: story.branch!,
               targetBranch: story.targetBranch ?? undefined,
+              push: options.push,
               title: story.title,
               summary: story.summary,
               storyId: story.id,
@@ -792,15 +793,123 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
   )
   // One merge per story at a time, shown on its card and in its drawer alike.
   const approveAndMergeStory = React.useCallback(
-    async (story: UserStory) =>
-      (await withStoryTransition(story.id, () => mergeApprovedStory(story), "merge")) ??
+    async (story: UserStory, options?: { push?: boolean }) =>
+      (await withStoryTransition(
+        story.id,
+        () => mergeApprovedStory(story, options),
+        "merge"
+      )) ??
       activeStory(story, storiesRef.current),
     [mergeApprovedStory]
   )
+  // Open PR: the host commits, pushes the story branch and runs gh. The story
+  // stays in review; its pull request URL is kept and opened in the browser.
+  const openStoryPullRequest = React.useCallback(
+    async (story: UserStory) => {
+      const validationError = approveAndMergeValidationError(
+        story,
+        auth,
+        platform,
+        projects.activeProject?.path,
+        alternativeSelection.currentModel
+      )
+      if (validationError) {
+        toast.error("Unable to open a pull request", {
+          description: validationError,
+          position: "bottom-right",
+        })
+        return story
+      }
+      try {
+        const [currentStory, codePractices] = await Promise.all([
+          detailedStory(activeStory(story, storiesRef.current), backlog),
+          projectCodePractices(auth, projects),
+        ])
+        const result = await measurePerformanceOperation(
+          "agent.transition.open_pull_request",
+          () =>
+            platform.agent!.openPullRequest({
+              apiConnection: auth.apiConnection,
+              executionId: crypto.randomUUID(),
+              providerId: alternativeSelection.currentModel!.provider.id,
+              modelId: alternativeSelection.currentModel!.id,
+              credentialLabel:
+                alternativeSelection.currentModel!.credentialLabel,
+              reasoningEffort: alternativeSelection.currentVariant,
+              repositoryRoot: projects.activeProject!.path,
+              worktree: currentStory.worktree!,
+              storyBranch: currentStory.branch!,
+              targetBranch: currentStory.targetBranch ?? undefined,
+              title: currentStory.title,
+              summary: currentStory.summary,
+              agentSummary: currentStory.agentFinalResponse ?? undefined,
+              storyId: currentStory.id,
+              codePractices,
+            })
+        )
+        platform.openExternalLink?.(result.url)
+        toast.success(
+          result.created ? "Pull request opened" : "Pull request updated",
+          {
+            description: result.created
+              ? `Into ${result.targetBranch}: ${result.url}`
+              : `Latest work pushed to ${result.url}`,
+            position: "bottom-right",
+          }
+        )
+        return await updateStory(currentStory, {
+          agentLastError: null,
+          agentLastEvent: result.created
+            ? `Pull request opened: ${result.url}`
+            : `Pushed to pull request ${result.url}`,
+          pullRequestUrl: result.url,
+        })
+      } catch (error) {
+        const message = errorMessage(error)
+        const askedIdentity = gitIdentity?.handleError(message, () =>
+          toast.success("Git name and email saved", {
+            description: "Open PR again to open the pull request.",
+            position: "bottom-right",
+          })
+        )
+        if (!askedIdentity)
+          toast.error("Open PR failed", {
+            description: message,
+            position: "bottom-right",
+          })
+        return activeStory(story, storiesRef.current)
+      }
+    },
+    [
+      auth,
+      backlog,
+      gitIdentity,
+      platform,
+      projects,
+      alternativeSelection.currentModel,
+      alternativeSelection.currentVariant,
+      updateStory,
+    ]
+  )
+  const openPullRequestForStory = React.useCallback(
+    async (story: UserStory) =>
+      (await withStoryTransition(
+        story.id,
+        () => openStoryPullRequest(story),
+        "pull-request"
+      )) ?? activeStory(story, storiesRef.current),
+    [openStoryPullRequest]
+  )
+  const checkPullRequest = React.useCallback(async () => {
+    const repositoryRoot = projects.activeProject?.path
+    if (!platform.agent || !repositoryRoot)
+      return { status: "not-github" } as const
+    return platform.agent.pullRequestAvailability({ repositoryRoot })
+  }, [platform.agent, projects.activeProject?.path])
   const { approveDirectStory, markReviewStoryDone } =
     useReviewCompletion(updateStory)
   const completeReviewStory = React.useCallback(
-    async (story: UserStory) => {
+    async (story: UserStory, options?: { push?: boolean }) => {
       const emptyDiff = await currentReviewDiffEmpty(
         story,
         platform.workspace,
@@ -808,7 +917,7 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
       )
       if (emptyDiff) return markReviewStoryDone(story)
       if (story.workspaceMode === "direct") return approveDirectStory(story)
-      return approveAndMergeStory(story)
+      return approveAndMergeStory(story, options)
     },
     [
       approveAndMergeStory,
@@ -1052,6 +1161,8 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
   const drawerOpenDrawer = useLatestCallback(openDrawer)
   const drawerOptimizeStory = useLatestCallback(optimizeUserStory)
   const drawerApproveStory = useLatestCallback(completeReviewStory)
+  const drawerOpenPullRequest = useLatestCallback(openPullRequestForStory)
+  const drawerCheckPullRequest = useLatestCallback(checkPullRequest)
   const drawerRequestChanges = useLatestCallback(requestChanges)
   const drawerRejectStory = useLatestCallback(rejectStory)
   const drawerStopAgent = useLatestCallback(stopAgent)
@@ -1134,6 +1245,10 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
         onOpenDrawer={drawerOpenDrawer}
         onOptimizeUserStory={drawerOptimizeStory}
         onApproveAndMerge={drawerApproveStory}
+        onCheckPullRequest={
+          platform.agent ? drawerCheckPullRequest : undefined
+        }
+        onOpenPullRequest={drawerOpenPullRequest}
         onRequestChanges={drawerRequestChanges}
         onReject={drawerRejectStory}
         reviewDiffEmpty={

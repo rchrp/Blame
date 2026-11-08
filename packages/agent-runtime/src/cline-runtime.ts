@@ -140,10 +140,19 @@ import {
   blameTelemetry,
   commitMessageLogPath,
   mergeConflictLogPath,
+  pullRequestLogPath,
   sessionLogPath,
   startLogPath,
 } from "./cline-runtime-log.js";
 import { runOneShotAgent } from "./one-shot-agent.js";
+import {
+  createPullRequest,
+  openPullRequestUrl,
+  pullRequestAvailability,
+  pullRequestBody,
+  requirePullRequestRepository,
+  runHostGh,
+} from "./pull-request.js";
 import { runRepositoryMerge } from "./repository-merge-queue.js";
 import {
   buildDevelopmentSystemPrompt,
@@ -304,8 +313,11 @@ import type {
   MapSecurityAuditInput,
   NewProjectGenerationResult,
   OAuthCredentials,
+  OpenPullRequestInput,
+  OpenPullRequestResult,
   OptimizeUserStoryPromptInput,
   OptimizeUserStoryPromptResult,
+  PullRequestAvailabilityInput,
   RepairProjectInitializationInput,
   RepairProjectInitializationResult,
   ResolveApprovalInput,
@@ -625,6 +637,14 @@ export class BlameAgentRuntime {
 
   approveAndMerge = (input: ApproveAndMergeInput) =>
     this.approveAndMergeStory(input);
+
+  openPullRequest = (input: OpenPullRequestInput) =>
+    this.openStoryPullRequest(input);
+
+  pullRequestAvailability = (input: PullRequestAvailabilityInput) => {
+    assertRepositoryPath(input.repositoryRoot, "repositoryRoot");
+    return pullRequestAvailability(input.repositoryRoot, this.gh);
+  };
 
   generateCommitMessage = (input: GenerateCommitMessageInput) =>
     this.generateWorkspaceCommitMessage(input);
@@ -2664,18 +2684,12 @@ export class BlameAgentRuntime {
           previousTargetCommit,
         );
       }
-      await pushTargetBranch(
-        input.repositoryRoot,
+      const push = await this.publishMergedTarget(
+        input,
         targetBranch,
         upstream,
         logFile,
       );
-      const push: ApproveAndMergePush = upstream
-        ? { status: "pushed", upstream: `${upstream.remote}/${upstream.branch}` }
-        : {
-            status: "no-upstream",
-            remote: await defaultPushRemote(input.repositoryRoot),
-          };
       await appendLog(logFile, "approve merge completed", {
         baseCommit,
         mergeCommit,
@@ -2694,7 +2708,105 @@ export class BlameAgentRuntime {
     }
   }
 
-  private async commitStoryWork(input: ApproveAndMergeInput) {
+  private async publishMergedTarget(
+    input: ApproveAndMergeInput,
+    targetBranch: string,
+    upstream: GitUpstream | undefined,
+    logFile: string,
+  ): Promise<ApproveAndMergePush> {
+    if (input.push === false) {
+      await appendLog(logFile, "approve merge push skipped", {
+        reason: "requested",
+      });
+      return { status: "skipped" };
+    }
+    await pushTargetBranch(input.repositoryRoot, targetBranch, upstream, logFile);
+    return upstream
+      ? { status: "pushed", upstream: `${upstream.remote}/${upstream.branch}` }
+      : {
+          status: "no-upstream",
+          remote: await defaultPushRemote(input.repositoryRoot),
+        };
+  }
+
+  private get gh() {
+    return this.options.gh ?? runHostGh;
+  }
+
+  // Runs with the merges of its repository: both commit in the story worktree
+  // and read the target branch.
+  private async openStoryPullRequest(
+    input: OpenPullRequestInput,
+  ): Promise<OpenPullRequestResult> {
+    return runRepositoryMerge(input.repositoryRoot, () =>
+      this.agentTelemetry.runBusinessOperation(input, "pull_request", () =>
+        this.openStoryPullRequestOperation(input),
+      ),
+    );
+  }
+
+  private async openStoryPullRequestOperation(
+    input: OpenPullRequestInput,
+  ): Promise<OpenPullRequestResult> {
+    assertRepositoryPath(input.repositoryRoot, "repositoryRoot");
+    assertRepositoryPath(input.worktree, "worktree");
+    const logFile = pullRequestLogPath(input.worktree);
+    await appendLog(logFile, "pull request requested", approveMergeContext(input));
+    await assertGitRepository(input.repositoryRoot);
+    await assertGitRepository(input.worktree);
+    const targetBranch =
+      input.targetBranch?.trim() ||
+      (await currentGitBranch(input.repositoryRoot));
+    await validateMergeBranches(input, targetBranch);
+    // Checked before anything is committed or pushed.
+    const repository = await requirePullRequestRepository(
+      input.repositoryRoot,
+      this.gh,
+    );
+    await this.commitStoryWork(input);
+    // Runtime env files stay out of GitHub, as they stay out of merges.
+    const forkPoint = await git(input.repositoryRoot, [
+      "merge-base",
+      `refs/heads/${targetBranch}`,
+      `refs/heads/${input.storyBranch}`,
+    ]);
+    await removeRuntimeEnvChanges(input.worktree, forkPoint);
+    // The project checkout owns the remote credentials; the story worktree
+    // may run in a VM without them.
+    await git(input.repositoryRoot, [
+      "push",
+      "origin",
+      `refs/heads/${input.storyBranch}:refs/heads/${input.storyBranch}`,
+    ]);
+    const existingUrl = await openPullRequestUrl(
+      input.repositoryRoot,
+      repository,
+      input.storyBranch,
+      this.gh,
+    );
+    const url =
+      existingUrl ??
+      (await createPullRequest(
+        input.repositoryRoot,
+        {
+          body: pullRequestBody(input),
+          repository,
+          storyBranch: input.storyBranch,
+          targetBranch,
+          title: input.title,
+        },
+        this.gh,
+      ));
+    await appendLog(logFile, "pull request ready", {
+      created: !existingUrl,
+      repository,
+      targetBranch,
+      url,
+    });
+    return { url, created: !existingUrl, targetBranch };
+  }
+
+private async commitStoryWork(input: ApproveAndMergeInput) {
     if (await hasMergeConflicts(input.worktree)) {
       throw new Error(
         "Resolve the active Git conflicts before committing the story.",

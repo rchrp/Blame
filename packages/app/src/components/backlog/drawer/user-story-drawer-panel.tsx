@@ -4,6 +4,7 @@ import {
 } from "@/components/backlog/data/story-context-limit"
 import { replaceFileAttachments } from "./user-story-attachment-files"
 import * as React from "react"
+import type { PullRequestAvailability } from "@blame/agent-runtime"
 import { toast } from "sonner"
 import { mergeDraftSummary } from "@/components/backlog/data/user-story-context"
 import {
@@ -36,6 +37,7 @@ import type {
   UserStoryDrawerTab,
 } from "@/components/backlog/shared/backlog-types"
 import { DevelopmentContent } from "@/components/backlog/drawer/user-story-development"
+import { PullRequestLink } from "@/components/backlog/drawer/pull-request-link"
 import {
   useDevelopmentWorkspace,
   type VcsFileDiff,
@@ -139,10 +141,12 @@ export function UserStoryDrawerPanel({
   open,
   onCancel,
   onApproveAndMerge,
+  onCheckPullRequest,
   onCreateUserStory,
   onCreateUserStoryComment,
   onDeleteUserStory,
   onOpenDrawer,
+  onOpenPullRequest,
   onOptimizeUserStory,
   onRequestChanges,
   onReject,
@@ -163,7 +167,11 @@ export function UserStoryDrawerPanel({
   mode: UserStoryDrawerMode
   open: boolean
   onCancel: () => void
-  onApproveAndMerge: (story: UserStory) => Promise<UserStory>
+  onApproveAndMerge: (
+    story: UserStory,
+    options?: { push?: boolean }
+  ) => Promise<UserStory>
+  onCheckPullRequest?: () => Promise<PullRequestAvailability>
   onCreateUserStory: (
     input: Omit<UserStoryDraft, "projectId">,
     contextLimit?: number
@@ -177,6 +185,7 @@ export function UserStoryDrawerPanel({
   ) => Promise<UserStoryComment>
   onDeleteUserStory: (story: UserStory) => Promise<void>
   onOpenDrawer: OpenDrawer
+  onOpenPullRequest: (story: UserStory) => Promise<UserStory>
   onOptimizeUserStory?: (input: {
     summary: string
     title: string
@@ -557,6 +566,7 @@ export function UserStoryDrawerPanel({
         mode={mode}
         status={status}
         onAction={handleDrawerAction}
+        onCheckPullRequest={onCheckPullRequest}
         onDeleteUserStory={onDeleteUserStory}
         onOpenDrawer={onOpenDrawer}
         onReject={onReject}
@@ -569,6 +579,7 @@ export function UserStoryDrawerPanel({
       hasCommentDraft,
       handleDrawerAction,
       mode,
+      onCheckPullRequest,
       onDeleteUserStory,
       onOpenDrawer,
       onReject,
@@ -659,6 +670,9 @@ export function UserStoryDrawerPanel({
                   <ColumnStatusBadge status={status} />
                   <span>{userStory?.owner ?? "Product"} created this</span>
                   <span>{createdAtLabel(userStory)}</span>
+                  {userStory?.pullRequestUrl ? (
+                    <PullRequestLink url={userStory.pullRequestUrl} />
+                  ) : null}
                 </div>
               </DrawerDescription>
             </div>
@@ -875,6 +889,10 @@ export function UserStoryDrawerPanel({
       if (mode !== "create" && userStory) {
         if (action === "Approve & Merge") {
           await onApproveAndMerge(userStory)
+        } else if (action === "Merge without Push") {
+          await onApproveAndMerge(userStory, { push: false })
+        } else if (action === "Open PR") {
+          await onOpenPullRequest(userStory)
         } else {
           await onUpdateUserStory(
             userStory,

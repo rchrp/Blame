@@ -1,9 +1,12 @@
 import * as React from "react"
+import type { PullRequestAvailability } from "@blame/agent-runtime"
 import { approveActionLabel } from "@/components/backlog/shared/backlog-helpers"
 import {
   CheckIcon,
   ChevronUpIcon,
   CircleStopIcon,
+  GitMergeIcon,
+  GitPullRequestIcon,
   LoaderCircleIcon,
   MessageSquareIcon,
   RotateCcwIcon,
@@ -27,6 +30,7 @@ import type {
   OpenDrawer,
   UserStoryDrawerMode
 } from "@/components/backlog/shared/backlog-types"
+import { ApproveMergeMenu } from "@/components/backlog/drawer/approve-merge-menu"
 import { drawerActions } from "@/components/backlog/drawer/user-story-drawer-helpers"
 import { useStoryTransitionKind } from "@/pages/backlog/story-transitions"
 import { Button } from "@/components/ui/button"
@@ -82,6 +86,16 @@ const drawerActionConfig: Record<DrawerAction, DrawerActionConfig> = {
     variant: "default",
     tone: "primary"
   },
+  "Open PR": {
+    icon: GitPullRequestIcon,
+    variant: "default",
+    tone: "primary"
+  },
+  "Merge without Push": {
+    icon: GitMergeIcon,
+    variant: "default",
+    tone: "primary"
+  },
   Close: {
     icon: XIcon,
     variant: "outline"
@@ -102,6 +116,7 @@ export function DrawerActions({
   loadingAction,
   mode,
   onAction,
+  onCheckPullRequest,
   onDeleteUserStory,
   onOpenDrawer,
   onReject,
@@ -114,6 +129,7 @@ export function DrawerActions({
   loadingAction?: DrawerAction
   mode: UserStoryDrawerMode
   onAction: (action: DrawerAction) => void
+  onCheckPullRequest?: () => Promise<PullRequestAvailability>
   onDeleteUserStory: (story: UserStory) => Promise<void>
   onOpenDrawer: OpenDrawer
   onReject: (story: UserStory, choice: RejectChoice) => Promise<UserStory>
@@ -124,8 +140,16 @@ export function DrawerActions({
 }) {
   // A merge keeps spinning here when it started from the card, or before the
   // drawer was closed and opened again.
-  const merging = useStoryTransitionKind(story?.id) === "merge"
-  const activeAction = loadingAction ?? (merging ? "Approve & Merge" : undefined)
+  const transition = useStoryTransitionKind(story?.id)
+  const activeAction =
+    loadingAction ??
+    (transition === "merge"
+      ? "Approve & Merge"
+      : transition === "pull-request"
+        ? "Open PR"
+        : undefined)
+  const requestChangesPrimary =
+    mode !== "create" && status === "in-review" && hasCommentDraft
   const actions = drawerActions(mode, status).map((action) => (
     <React.Fragment key={action}>
       {action === "Stop Agent" && story ? (
@@ -160,6 +184,18 @@ export function DrawerActions({
           triggerIconOnly
           triggerSize="icon"
         />
+      ) : action === "Approve & Merge" &&
+        story &&
+        !requestChangesPrimary &&
+        !approveActionLabel(story, reviewDiffEmpty) ? (
+        // Inside the hover menu of review actions, the plain button stays.
+        <ApproveMergeMenu
+          activeAction={activeAction}
+          hasPullRequest={Boolean(story.pullRequestUrl)}
+          onAction={onAction}
+          onCheckPullRequest={onCheckPullRequest}
+          targetBranch={story.targetBranch}
+        />
       ) : (
         <DrawerActionButton
           action={action}
@@ -174,8 +210,6 @@ export function DrawerActions({
       )}
     </React.Fragment>
   ))
-  const requestChangesPrimary =
-    mode !== "create" && status === "in-review" && hasCommentDraft
 
   return (
     <div className="pointer-events-auto flex flex-wrap items-center justify-end gap-2">

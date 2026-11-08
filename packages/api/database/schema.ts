@@ -1080,7 +1080,7 @@ export class UserMcpConfigurationSchema extends BaseModel {
 }
 
 export class UserStorySchema extends BaseModel {
-  static $columns = ['activeAgentRunId', 'agentActivities', 'agentFinalResponse', 'agentLastError', 'agentLastEvent', 'agentModelId', 'agentProviderId', 'agentSessionSummary', 'agentStatus', 'agentUsage', 'ambition', 'baseCommit', 'branch', 'clineSessionId', 'codeSelectionAttachments', 'createdAt', 'discardedReason', 'fileAttachmentUploadPending', 'fileAttachments', 'id', 'mergeCommit', 'mergedAt', 'owner', 'previewUrl', 'priority', 'projectId', 'runConfigurationId', 'runMode', 'status', 'storyNumber', 'summary', 'targetBranch', 'title', 'updatedAt', 'workspaceMode', 'worktree'] as const
+  static $columns = ['activeAgentRunId', 'agentActivities', 'agentFinalResponse', 'agentLastError', 'agentLastEvent', 'agentModelId', 'agentProviderId', 'agentSessionSummary', 'agentStatus', 'agentUsage', 'ambition', 'baseCommit', 'branch', 'clineSessionId', 'codeSelectionAttachments', 'createdAt', 'discardedReason', 'fileAttachmentUploadPending', 'fileAttachments', 'id', 'mergeCommit', 'mergedAt', 'owner', 'previewUrl', 'priority', 'projectId', 'pullRequestUrl', 'runConfigurationId', 'runMode', 'status', 'storyNumber', 'summary', 'targetBranch', 'title', 'updatedAt', 'workspaceMode', 'worktree'] as const
   $columns = UserStorySchema.$columns
   @column()
   declare activeAgentRunId: string | null
@@ -1134,6 +1134,8 @@ export class UserStorySchema extends BaseModel {
   declare priority: string
   @column()
   declare projectId: string
+  @column()
+  declare pullRequestUrl: string | null
   @column()
   declare runConfigurationId: string | null
   @column()

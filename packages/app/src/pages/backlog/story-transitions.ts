@@ -5,7 +5,7 @@ import * as React from "react"
 // resume or merge), and automatic recovery leaves these stories alone. The
 // store lives outside the backlog page, so the card and the drawer show the
 // same state and an action keeps running wherever the person navigates.
-export type StoryTransitionKind = "merge" | "other"
+export type StoryTransitionKind = "merge" | "pull-request" | "other"
 
 const busy = new Set<string>()
 const kinds = new Map<string, StoryTransitionKind>()

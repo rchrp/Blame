@@ -22,6 +22,10 @@ export function mergeConflictLogPath(worktree: string) {
   return join(worktree, ".blame", "logs", "merge-conflicts.log");
 }
 
+export function pullRequestLogPath(worktree: string) {
+  return join(worktree, ".blame", "logs", "pull-request.log");
+}
+
 export function startLogPath(cwd: string) {
   return join(cwd, ".blame", "logs", "cline-start.log");
 }

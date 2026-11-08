@@ -220,6 +220,10 @@ export default class UserStory extends BaseModel {
   @column()
   declare targetBranch: string | null
 
+  // The GitHub pull request opened from the story, if any.
+  @column()
+  declare pullRequestUrl: string | null
+
   @column()
   declare previewUrl: string | null
 

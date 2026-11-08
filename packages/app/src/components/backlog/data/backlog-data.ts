@@ -165,6 +165,8 @@ export type UserStory = {
   // The branch the story starts from and merges into. Null until chosen in
   // the composer or recorded at the first run: the project folder's branch.
   targetBranch?: string | null
+  // The GitHub pull request opened from the story with Open PR.
+  pullRequestUrl?: string | null
   previewUrl?: string | null
   runConfigurationId?: string | null
   worktree?: string | null
@@ -226,6 +228,7 @@ export type UserStoryUpdate = Partial<
     | "owner"
     | "branch"
     | "targetBranch"
+    | "pullRequestUrl"
     | "previewUrl"
     | "runConfigurationId"
     | "worktree"

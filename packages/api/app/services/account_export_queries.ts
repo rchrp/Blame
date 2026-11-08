@@ -93,6 +93,7 @@ const userStoryColumns = [
   'owner',
   'branch',
   'target_branch',
+  'pull_request_url',
   'preview_url',
   'worktree',
   'workspace_mode',

@@ -52,6 +52,13 @@ export function notifyMerged(
     })
     return
   }
+  if (push.status === "skipped") {
+    toast.success("Story approved and merged", {
+      description: `Merged into ${targetBranch} on this computer, not pushed.`,
+      position: "bottom-right",
+    })
+    return
+  }
   const { remote } = push
   const publish = platform.workspace?.gitPublishBranch
   if (!remote) {
