@@ -66,6 +66,7 @@ async function buildArchitecture(architecture) {
       runtimeVersion,
       clineSdkVersion,
     );
+    await verifyGitHubEgress(image);
     await run("docker", ["create", "--name", container, image]);
     await run("docker", ["export", "--output", tarPath, container]);
     await validateRootfs(tarPath, runtimeVersion);
@@ -78,6 +79,27 @@ async function buildArchitecture(architecture) {
     await rm(compressedPath, { force: true });
     await rm(tarPath, { force: true });
   }
+}
+
+// gh needs a token even for /rate_limit: CI passes the job's GITHUB_TOKEN by
+// name only. The throwaway container leaves the exported image unchanged.
+async function verifyGitHubEgress(image) {
+  if (!text(process.env.GH_TOKEN)) {
+    console.log("GH_TOKEN is not set: skipping the gh api /rate_limit smoke test.");
+    return;
+  }
+  await run("docker", [
+    "run",
+    "--rm",
+    "--env",
+    "GH_TOKEN",
+    image,
+    "/usr/local/bin/gh",
+    "api",
+    "/rate_limit",
+    "--jq",
+    ".resources.core.limit",
+  ]);
 }
 
 async function replaceArtifact(source, destination) {

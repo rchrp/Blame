@@ -30,6 +30,8 @@ RUN BLAME_RUNTIME_BAKE=1 \
     && test -x /usr/local/bin/docker-init \
     && test "$(docker compose version --short)" = "${BLAME_COMPOSE_VERSION}" \
     && docker buildx version | grep -q " v${BLAME_BUILDX_VERSION} " \
+    && /usr/local/bin/gh --version | head -n 1 | grep -q '^gh version ' \
+    && test -z "$(find /root /home -path '*/.config/gh' -print -quit)" \
     && test -s /etc/docker/daemon.json \
     && id blame \
     && rm -f /tmp/provision-blame-runtime.sh \

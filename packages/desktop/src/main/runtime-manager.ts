@@ -63,6 +63,7 @@ type ManagedRuntimeCheckName =
   | "node"
   | "semantic-harness"
   | "package-managers"
+  | "gh"
   | RuntimeDependencyName;
 
 type ManagedRuntimeCheckStatus =
@@ -605,6 +606,7 @@ const updateChecks = new Set<ManagedRuntimeCheckName>([
   "cline-sdk",
   "semantic-harness",
   "package-managers",
+  "gh",
 ]);
 
 function managedRuntimeStatusIssue(status: RuntimeState, action?: string) {

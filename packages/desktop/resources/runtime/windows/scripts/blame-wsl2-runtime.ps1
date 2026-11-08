@@ -295,6 +295,7 @@ check git sh -lc 'command -v git >/dev/null 2>&1'
 check cline-sdk valid_cline_sdk_install
 check semantic-harness sh -lc 'command -v blame-semantic-harness >/dev/null 2>&1 && test "$(cat /etc/blame-semantic-harness-sha256 2>/dev/null)" = "__SEMANTIC_HARNESS_SHA256__"'
 check package-managers sh -lc 'test "$(/opt/blame/package-managers/pnpm/12.15.0/bin/pnpm --version 2>/dev/null)" = "12.15.0" && test "$(/opt/blame/package-managers/pnpm/10.34.9/bin/pnpm --version 2>/dev/null)" = "10.34.9" && test "$(/opt/blame/package-managers/npm/12.2.1/bin/npm --version 2>/dev/null)" = "12.2.1" && test "$(/opt/blame/package-managers/npm/11.6.4/bin/npm --version 2>/dev/null)" = "11.6.4" && test "$(/opt/blame/package-managers/yarn/1.22.22/bin/yarn --version 2>/dev/null)" = "1.22.22"'
+check gh sh -lc '/usr/local/bin/gh --version 2>/dev/null | head -n 1 | grep -q "^gh version 2.103.3 "'
 '@
   $command = $command -replace "__CLINE_SDK_VERSION__", $ClineSdkVersion
   $command = $command -replace "__RUNTIME_AGENT_VERSION__", $RuntimeAgentVersion
@@ -309,7 +310,7 @@ check package-managers sh -lc 'test "$(/opt/blame/package-managers/pnpm/12.15.0/
     }
   }
   # Missing/truncated probe output must never turn a broken distro into ready.
-  foreach ($name in @("agent", "agent-version", "runtime-version", "docker", "docker-compose", "git", "cline-sdk", "semantic-harness", "package-managers")) {
+  foreach ($name in @("agent", "agent-version", "runtime-version", "docker", "docker-compose", "git", "cline-sdk", "semantic-harness", "package-managers", "gh")) {
     if ($reported[$name] -eq "available") {
       $Checks.Add((New-Check $name "available"))
     } else {
@@ -567,7 +568,8 @@ version_ok &&
   test "$(cat /etc/blame-semantic-harness-sha256 2>/dev/null)" = "__SEMANTIC_HARNESS_SHA256__" &&
   test "$(/opt/blame/package-managers/pnpm/12.15.0/bin/pnpm --version 2>/dev/null)" = "12.15.0" && test "$(/opt/blame/package-managers/pnpm/10.34.9/bin/pnpm --version 2>/dev/null)" = "10.34.9" &&
   test "$(/opt/blame/package-managers/npm/12.2.1/bin/npm --version 2>/dev/null)" = "12.2.1" && test "$(/opt/blame/package-managers/npm/11.6.4/bin/npm --version 2>/dev/null)" = "11.6.4" &&
-  test "$(/opt/blame/package-managers/yarn/1.22.22/bin/yarn --version 2>/dev/null)" = "1.22.22"
+  test "$(/opt/blame/package-managers/yarn/1.22.22/bin/yarn --version 2>/dev/null)" = "1.22.22" &&
+  /usr/local/bin/gh --version 2>/dev/null | head -n 1 | grep -q "^gh version 2.103.3 "
 '@
   $command = $command -replace "__CLINE_SDK_VERSION__", $ClineSdkVersion
   $command = $command -replace "__RUNTIME_AGENT_VERSION__", $RuntimeAgentVersion

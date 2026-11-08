@@ -66,6 +66,8 @@ jobs:
         name: Build, scan, publish and sign
         env:
           BLAME_SANDBOX_RUNNER_IMAGE_TAG: ${{ steps.version.outputs.tag }}
+          # The built image runs gh api /rate_limit with this token.
+          GH_TOKEN: ${{ github.token }}
         run: node scripts/sandbox-runner-release.mjs release --pin
 
       - name: Open the pin pull request

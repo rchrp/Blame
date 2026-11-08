@@ -227,6 +227,9 @@ async function verifyRuntime(bundle, instanceName, environment) {
     "test -x /usr/local/bin/docker-init",
     "docker compose version",
     "docker buildx version",
+    "/usr/local/bin/gh --version",
+    // gh takes its token from GH_TOKEN: no stored login may ship in the image.
+    `test -z "$(find /root /home -path '*/.config/gh' -print -quit)"`,
     "test -s /etc/docker/daemon.json",
     "id blame",
     // Lima creates its own user with UID 1000 on a user's first boot.
@@ -237,6 +240,29 @@ async function verifyRuntime(bundle, instanceName, environment) {
     bundle,
     ["shell", instanceName, "sudo", "-n", "sh", "-lc", checks],
     environment,
+  );
+  await verifyGitHubEgress(bundle, instanceName, environment);
+}
+
+// gh needs a token even for /rate_limit: CI passes the job's GITHUB_TOKEN on
+// stdin, never in argv. Lima deletes this verification VM afterwards.
+async function verifyGitHubEgress(bundle, instanceName, environment) {
+  const token = text(process.env.GH_TOKEN);
+  if (!token) {
+    console.log("GH_TOKEN is not set: skipping the gh api /rate_limit smoke test.");
+    return;
+  }
+  await runLimactl(
+    bundle,
+    [
+      "shell",
+      instanceName,
+      "sh",
+      "-c",
+      "IFS= read -r GH_TOKEN && export GH_TOKEN && exec /usr/local/bin/gh api /rate_limit --jq .resources.core.limit",
+    ],
+    environment,
+    `${token}\n`,
   );
 }
 

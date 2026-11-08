@@ -16,6 +16,8 @@ ARG DOCKER_VERSION=29.9.2
 ARG DOCKER_SHA256=9ac225999fd5e863f7694c728ef23d480616b1e5639328fa309befd4243d69eb
 ARG COMPOSE_VERSION=5.6.1
 ARG COMPOSE_SHA256=47737f4236e6d3ccea7291995203f8f018058783b4c3a9469119811a0b5db8c0
+ARG GH_VERSION=2.103.3
+ARG GH_SHA256=4c806978ffce1cec70853302a56d70ac6da4f19bae7adca4e1a8ab00633dd91d
 ARG BLAME_RUNNER_VERSION=0.3.8
 ARG BLAME_RUNNER_IMAGE_DIGEST=sha256:development
 
@@ -71,7 +73,14 @@ RUN dnf upgrade -y \
       --output /usr/local/lib/docker/cli-plugins/docker-compose \
     && echo "${COMPOSE_SHA256}  /usr/local/lib/docker/cli-plugins/docker-compose" | sha256sum --check --strict \
     && chmod 0755 /usr/local/lib/docker/cli-plugins/docker-compose \
-    && rm -rf /tmp/node.tar.xz /tmp/npm.tgz /tmp/npm-tar.tgz /tmp/docker /tmp/docker.tar.gz
+    && curl --fail --silent --show-error --location \
+      "https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_amd64.tar.gz" \
+      --output /tmp/gh.tar.gz \
+    && echo "${GH_SHA256}  /tmp/gh.tar.gz" | sha256sum --check --strict \
+    && tar -xzf /tmp/gh.tar.gz -C /tmp \
+    && install -m 0755 "/tmp/gh_${GH_VERSION}_linux_amd64/bin/gh" /usr/local/bin/gh \
+    && /usr/local/bin/gh --version | head -n 1 | grep -q "^gh version ${GH_VERSION} " \
+    && rm -rf /tmp/node.tar.xz /tmp/npm.tgz /tmp/npm-tar.tgz /tmp/docker /tmp/docker.tar.gz /tmp/gh.tar.gz "/tmp/gh_${GH_VERSION}_linux_amd64"
 
 COPY --chmod=0755 --from=buildx /buildx /usr/local/lib/docker/cli-plugins/docker-buildx
 
@@ -81,7 +90,9 @@ RUN groupadd --system blame-runtime \
     && mkdir -p /opt/blame /workspace /var/lib/blame /var/log/blame \
     && chown blame-project:blame-runtime /workspace \
     && chmod 2770 /workspace \
-    && chmod 0700 /var/lib/blame /var/log/blame
+    && chmod 0700 /var/lib/blame /var/log/blame \
+    # gh takes its token from GH_TOKEN: no stored login may ship in the image.
+    && test -z "$(find /root /home -path '*/.config/gh' -print -quit)"
 
 WORKDIR /opt/blame
 COPY packages/sandbox-runner/package.json ./package.json

@@ -428,7 +428,7 @@ case "$1" in
     content=$(cat)
     case "$content" in
       *'host_mount="$1"'*)
-        for name in host-home agent agent-version runtime-version docker docker-compose git cline-sdk semantic-harness package-managers; do
+        for name in host-home agent agent-version runtime-version docker docker-compose git cline-sdk semantic-harness package-managers gh; do
           status=available
           if [ "$name" = "semantic-harness" ] && [ ! -f "$state/provisioned" ]; then status=missing; fi
           printf '%s\\t%s\\n' "$name" "$status"

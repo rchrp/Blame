@@ -182,10 +182,11 @@ check git sh -lc 'command -v git >/dev/null 2>&1'
 check cline-sdk valid_cline_sdk_install
 check semantic-harness sh -lc 'command -v blame-semantic-harness >/dev/null 2>&1 && test "$(cat /etc/blame-semantic-harness-sha256 2>/dev/null)" = "$1"' sh "$semantic_harness_sha256"
 check package-managers sh -lc 'test "$(/opt/blame/package-managers/pnpm/12.15.0/bin/pnpm --version 2>/dev/null)" = "12.15.0" && test "$(/opt/blame/package-managers/npm/12.2.1/bin/npm --version 2>/dev/null)" = "12.2.1" && test "$(/opt/blame/package-managers/yarn/1.22.22/bin/yarn --version 2>/dev/null)" = "1.22.22"'
+check gh sh -lc '/usr/local/bin/gh --version 2>/dev/null | head -n 1 | grep -q "^gh version 2.103.3 "'
 EOF
 )"
   if [ -z "$output" ]; then
-    for name in agent agent-version runtime-version docker docker-compose git cline-sdk semantic-harness package-managers; do
+    for name in agent agent-version runtime-version docker docker-compose git cline-sdk semantic-harness package-managers gh; do
       append_check "$(new_check "$name" "missing" "$repair_action")"
     done
     return
