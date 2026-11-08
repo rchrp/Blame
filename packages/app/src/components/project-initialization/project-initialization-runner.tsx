@@ -35,6 +35,15 @@ import {
 } from "@/components/project-initialization/project-initialization-events"
 import { blockedInitialization } from "@/components/project-initialization/initialization-blocked"
 import {
+  PreviewSetupDialog,
+  type PreviewSetupChoice,
+} from "@/components/project-initialization/preview-setup-dialog"
+import { previewSetupDecision } from "@/lib/preview-setup-decision"
+import {
+  readPreviewSetupPolicy,
+  rememberPreviewSetupPolicy,
+} from "@/lib/preview-setup-policy"
+import {
   DatabaseModeOptions,
   databaseEvidenceSentence,
 } from "@/components/project-initialization/database-mode-options"
@@ -106,10 +115,18 @@ type ActiveInitializationRun = {
 
 const activeRuns = new Map<string, ActiveInitializationRun>()
 
+// Projects whose first setup the person declined with "Not now": they are
+// not asked again until the app restarts.
+const declinedProjectIds = new Set<string>()
+
 export function ProjectInitializationRunner() {
   const controller = useProjectInitializationController()
   return (
     <>
+      <PreviewSetupDialog
+        projectName={controller.setupPromptProjectName}
+        onChoose={controller.chooseSetup}
+      />
       <InitializationDatabaseDialog controller={controller} />
       <HostDependenciesDialog {...controller.hostDependenciesDialog} />
     </>
@@ -132,6 +149,11 @@ function useProjectInitializationController() {
     platform.workspace,
     databaseDialog.openDatabaseDialog
   )
+  const setupPrompt = useSetupPromptState(
+    platform.workspace,
+    databaseDialog.openDatabaseDialog,
+    hostDependenciesDialog.openHostDependenciesDialog
+  )
 
   useInitializationEffect(
     activeProject,
@@ -141,7 +163,8 @@ function useProjectInitializationController() {
     currentModel,
     selection.currentVariant,
     databaseDialog.openDatabaseDialog,
-    hostDependenciesDialog.openHostDependenciesDialog
+    hostDependenciesDialog.openHostDependenciesDialog,
+    setupPrompt.openSetupPrompt
   )
   useInitializationRunRequests({
     activeProject,
@@ -153,6 +176,7 @@ function useProjectInitializationController() {
     openDatabaseDialog: databaseDialog.openDatabaseDialog,
     openHostDependenciesDialog:
       hostDependenciesDialog.openHostDependenciesDialog,
+    openSetupPrompt: setupPrompt.openSetupPrompt,
   })
   React.useEffect(
     () => subscribeProjectInitializationCancelRequested(cancelInitialization),
@@ -162,6 +186,7 @@ function useProjectInitializationController() {
   return initializationController({
     databaseDialog,
     hostDependenciesDialog,
+    setupPrompt,
     removeRecentProject: projects.removeRecentProject,
   })
 }
@@ -169,6 +194,7 @@ function useProjectInitializationController() {
 function initializationController(input: {
   databaseDialog: ReturnType<typeof useDatabaseDialogState>
   hostDependenciesDialog: ReturnType<typeof useHostDependenciesDialogState>
+  setupPrompt: ReturnType<typeof useSetupPromptState>
   removeRecentProject: (path: string) => void
 }) {
   const cancelDatabaseChoice = () => {
@@ -178,6 +204,8 @@ function initializationController(input: {
   }
 
   return {
+    setupPromptProjectName: input.setupPrompt.projectName,
+    chooseSetup: input.setupPrompt.chooseSetup,
     databaseDialogOpen: input.databaseDialog.open,
     databaseEvidence: input.databaseDialog.pendingRun?.databaseEvidence,
     hostDependenciesDialog: input.hostDependenciesDialog.dialog,
@@ -277,6 +305,42 @@ function useHostDependenciesDialogState(
   }
 }
 
+// The first-setup question: "Set up previews" starts the analysis as a
+// Run again would; "Not now" opens the project without it.
+function useSetupPromptState(
+  workspace: WorkspaceClient | undefined,
+  openDatabaseDialog: (run: InitializationRunInput) => void,
+  openHostDependenciesDialog: OpenHostDependenciesDialog
+) {
+  const [pendingRun, setPendingRun] = React.useState<InitializationRunInput>()
+  const openSetupPrompt = React.useCallback((run: InitializationRunInput) => {
+    setPendingRun(run)
+  }, [])
+  const chooseSetup = (choice: PreviewSetupChoice, remember: boolean) => {
+    const run = pendingRun
+    if (!run) return
+    setPendingRun(undefined)
+    if (remember)
+      rememberPreviewSetupPolicy(choice === "set-up" ? "automatic" : "never")
+    if (choice === "not-now") {
+      declinedProjectIds.add(run.project.id)
+      return
+    }
+    void startInitialization(
+      run,
+      workspace,
+      openDatabaseDialog,
+      openHostDependenciesDialog
+    )
+  }
+
+  return {
+    chooseSetup,
+    openSetupPrompt,
+    projectName: pendingRun?.project.name,
+  }
+}
+
 function InitializationDatabaseDialog({
   controller,
 }: {
@@ -318,7 +382,8 @@ function useInitializationEffect(
   currentModel: ModelSelection["currentModel"],
   currentVariant: ModelSelection["currentVariant"],
   openDatabaseDialog: (run: InitializationRunInput) => void,
-  openHostDependenciesDialog: OpenHostDependenciesDialog | undefined
+  openHostDependenciesDialog: OpenHostDependenciesDialog | undefined,
+  openSetupPrompt: (run: InitializationRunInput) => void
 ) {
   React.useEffect(
     () =>
@@ -331,6 +396,7 @@ function useInitializationEffect(
         currentVariant,
         openDatabaseDialog,
         openHostDependenciesDialog,
+        openSetupPrompt,
       }),
     [
       activeProject,
@@ -341,6 +407,7 @@ function useInitializationEffect(
       currentVariant,
       openDatabaseDialog,
       openHostDependenciesDialog,
+      openSetupPrompt,
     ]
   )
 }
@@ -397,6 +464,7 @@ function initializationEffect(input: {
   currentVariant: ModelSelection["currentVariant"]
   openDatabaseDialog: (run: InitializationRunInput) => void
   openHostDependenciesDialog: OpenHostDependenciesDialog | undefined
+  openSetupPrompt: (run: InitializationRunInput) => void
 }) {
   if (!input.activeProject || input.auth.status !== "authenticated") return
   if (!input.agent) return
@@ -412,13 +480,15 @@ async function maybeInitializeProject(
   if (!input.activeProject || !input.agent) return
   const cloud = createCloudApi(input.auth.apiConnection)
   const snapshot = await cloud.projectInitialization(input.activeProject.id)
-  if (
-    signal.aborted ||
-    !initializationStartsAutomatically(snapshot.initialization, {
+  if (signal.aborted) return
+  const decision = previewSetupDecision({
+    needsSetup: initializationStartsAutomatically(snapshot.initialization, {
       runningHere: initializationRunningHere(input.activeProject.id),
-    })
-  )
-    return
+    }),
+    policy: readPreviewSetupPolicy(),
+    declinedThisSession: declinedProjectIds.has(input.activeProject.id),
+  })
+  if (decision === "skip") return
   const run = runInput(
     input.activeProject,
     input.auth,
@@ -427,6 +497,10 @@ async function maybeInitializeProject(
     input.currentVariant
   )
   if (!run) return
+  if (decision === "ask") {
+    input.openSetupPrompt(run)
+    return
+  }
   await startInitialization(
     run,
     input.workspace,
