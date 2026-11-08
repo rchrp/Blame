@@ -103,9 +103,12 @@ function DownloadCard({
 }) {
   return (
     <DownloadCardFrame isRecommended={isRecommended}>
+      {/* No blur of its own: the panel behind is frosted already, and a
+          frosted card inside it makes Chrome redraw the cards around the
+          animated border on each of its frames, which flickers. */}
       <Link
         href={artifactUrl(artifact.fileName)}
-        className="group relative z-[1] block h-full rounded-2xl border border-white/12 bg-white/[0.06] p-4 text-white backdrop-blur-xl transition duration-200 hover:bg-white/[0.1] focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 data-[recommended=true]:border-transparent data-[recommended=true]:bg-white data-[recommended=true]:bg-clip-padding data-[recommended=true]:text-[#111] data-[recommended=true]:shadow-[0_22px_58px_rgba(0,0,0,0.24)]"
+        className="group relative z-[1] block h-full rounded-2xl border border-white/12 bg-white/[0.06] p-4 text-white transition duration-200 hover:bg-white/[0.1] focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 data-[recommended=true]:border-transparent data-[recommended=true]:bg-white data-[recommended=true]:bg-clip-padding data-[recommended=true]:text-[#111] data-[recommended=true]:shadow-[0_22px_58px_rgba(0,0,0,0.24)]"
         data-recommended={isRecommended}
       >
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
