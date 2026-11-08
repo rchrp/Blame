@@ -13,7 +13,7 @@
     "build:sandbox-runner": "node scripts/sandbox-runner-release.mjs build",
     "build:study-pdf": "node scripts/build-harness-study-pdf.mjs",
     "dev": "node scripts/dev-with-database-tunnel.mjs",
-    "dev:db": "ssh -N -T -o BatchMode=yes -o ConnectTimeout=10 -o ExitOnForwardFailure=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -L 127.0.0.1:13307:127.0.0.1:13307 ubuntu@server.raphael-charpentier.fr",
+    "dev:db": "node scripts/dev-with-database-tunnel.mjs --tunnel-only",
     "dev:vitrine": "pnpm --filter @blame/vitrine dev",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
