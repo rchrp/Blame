@@ -43,6 +43,14 @@ ENV NODE_OPTIONS="--max-old-space-size=4096"
 # Force cache bust to avoid stale Next.js build layers on Dokploy
 RUN rm -rf packages/vitrine/.next packages/vitrine/out
 
+# The publisher's details for the legal pages (lib/publisher.ts). The pages
+# are prerendered, so they are build arguments: the build inlines them into
+# the pages and fails when one is missing. The production stage below only
+# gets the built output, not the variables.
+ARG VITRINE_PUBLISHER_ADDRESS
+ARG VITRINE_PUBLISHER_PHONE
+ARG VITRINE_PUBLISHER_SIREN
+
 # Build the vitrine app
 RUN pnpm --filter @blame/vitrine build
 

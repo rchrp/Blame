@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { PHASE_PRODUCTION_BUILD } from "next/constants";
 import { createMDX } from "fumadocs-mdx/next";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -7,6 +8,7 @@ import {
   markdownRoutePath,
   markdownUrlPath,
 } from "./lib/markdown-paths";
+import { publisherBuildEnvironment } from "./lib/publisher";
 
 const packageRoot = dirname(fileURLToPath(import.meta.url));
 const workspaceRoot = join(packageRoot, "../..");
@@ -64,4 +66,13 @@ const nextConfig: NextConfig = {
 // Fumadocs MDX compiles the docs (content/docs) and its defineDocs macro.
 const withMDX = createMDX();
 
-export default withMDX(nextConfig);
+export default function vitrineConfig(phase: string) {
+  return withMDX({
+    ...nextConfig,
+    // The publisher's legal details (lib/publisher.ts), inlined at build time.
+    // A production build fails when one is missing.
+    env: publisherBuildEnvironment({
+      required: phase === PHASE_PRODUCTION_BUILD,
+    }),
+  });
+}
