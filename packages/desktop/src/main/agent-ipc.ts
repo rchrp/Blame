@@ -373,6 +373,20 @@ function registerDeliveryWorkflowIpcHandlers(
       agentRuntime().run("approveAndMerge", resolved),
     );
   });
+  // gh runs here, on the host, with the person's own sign-in.
+  ipcMain.handle("agent:open-pull-request", async (_event, input) => {
+    const resolved = await agentWorkspaceInput(input);
+    if (typeof resolved.worktree !== "string" || !resolved.worktree) {
+      throw new Error("Agent pull request worktree is invalid");
+    }
+    if (beforeDelivery) await beforeDelivery(resolved.worktree);
+    return runWorkspaceTask(resolved.worktree, () =>
+      agentRuntime().run("openPullRequest", resolved),
+    );
+  });
+  ipcMain.handle("agent:pull-request-availability", (_event, input) =>
+    agentRuntime().run("pullRequestAvailability", input),
+  );
   ipcMain.handle("agent:generate-commit-message", (_event, input) =>
     agentWorkspaceInput(input).then((resolved) =>
       agentRuntime().run("generateCommitMessage", resolved),

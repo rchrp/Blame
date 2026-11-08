@@ -36,6 +36,8 @@ export const agentRuntimeMethods = [
   "promptOptimizer.optimizeUserStory",
   "promptOptimizer.generateTitle",
   "approveAndMerge",
+  "openPullRequest",
+  "pullRequestAvailability",
   "generateCommitMessage",
   "resolveMergeConflicts",
   "telemetry.configure",
