@@ -1,1 +1,6 @@
-{}
+{
+  "demo-loop-av1": "https://blame-prod-vitrine-media-gra.s3.gra.io.cloud.ovh.net/demo/demo-loop-av1.18de1320.mp4",
+  "demo-loop-h264": "https://blame-prod-vitrine-media-gra.s3.gra.io.cloud.ovh.net/demo/demo-loop-h264.727cca07.mp4",
+  "demo-full-av1": "https://blame-prod-vitrine-media-gra.s3.gra.io.cloud.ovh.net/demo/demo-full-av1.357f420f.mp4",
+  "demo-full-h264": "https://blame-prod-vitrine-media-gra.s3.gra.io.cloud.ovh.net/demo/demo-full-h264.25a9035f.mp4"
+}
