@@ -41,6 +41,8 @@ import type { AgentPersonalization, ResponseStyle } from "./personalization.js";
 
 import { type LightWorkspaceExecutor } from "./harness/light-executor.js";
 
+import { withGithubCli } from "./harness/github-cli.js";
+
 import {
   lightReadToolNames,
   lightSemanticHarnessTools,
@@ -206,8 +208,9 @@ export function runtimeTools(
   return tools.length ? tools : undefined;
 }
 // Cloud sessions run the agent's commands in this process, on the host: they
-// ask the desktop for the session's credentials before each one. Managed
-// runtime requests get theirs from the desktop on the way.
+// ask the desktop for the session's credentials before each one, and get the
+// gh Blame provides with them. Managed runtime requests get theirs from the
+// desktop on the way, and the runtime's own gh.
 function cloudCommandCredentials(
   options: RuntimeOptions,
   previewContext: PreviewRuntimeContext | undefined,
@@ -223,7 +226,9 @@ function cloudCommandCredentials(
     previewContext?.workspaceMode !== "cloud-mirror"
   )
     return {};
-  return { commandCredentials: () => credentials(sessionId) };
+  return {
+    commandCredentials: async () => withGithubCli(await credentials(sessionId)),
+  };
 }
 
 export function readOnlyRuntimeTools(
