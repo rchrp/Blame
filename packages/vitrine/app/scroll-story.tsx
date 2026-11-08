@@ -1,21 +1,62 @@
 'use client'
 
 import { useEffect, useRef, useState, type RefObject } from 'react'
+import { HeroLoop } from '@/components/demo-video'
 import { GitHubMark } from '@/components/github-stars'
+import { InstallCommand } from '@/components/install-command'
+import { heroLoopVideo } from '@/lib/demo-media'
 import { githubRepositoryUrl } from '@/lib/github'
 import { HeroBacklogMockup } from '@/components/blame-mockups/backlog-mockup'
 import endCard from '@/components/story/cta-scene.module.css'
 
-// The hero follows the scroll: its copy rises and fades, then the mockup
-// tilts up and fades. Those styles are written straight to the frame, copy
-// and mockup elements on each frame, so React renders again only when the
-// hero hides or shows. The 3D scene behind the hero is the page's story
-// stage (components/story/story-stage.tsx).
+// The hero follows the scroll in three steps. First the copy fades while the
+// demo loop (or the mockup, while the loop is off: see lib/demo-media.ts)
+// rises to the middle of the screen, straightens up from a slight tilt and
+// grows a little. Then the loop rests there, flat and whole, just long
+// enough to stop on it. Last, it leans forward and leaves past the top of
+// the screen; only then is the hero hidden. With reduced motion it only rises,
+// rests and leaves.
+// Those styles are written straight to the frame, copy and mockup elements
+// on each frame, so React renders again only when the hero hides or shows.
+// The 3D scene behind the hero is the page's story stage
+// (components/story/story-stage.tsx).
 
-const heroStageHeight = 180
+// Each step's length, in screen heights of scroll (vh). After the exit, the
+// hero stays hidden for the last `hiddenLength`.
+const riseLength = 45
+const stayLength = 15
+const exitLength = 50
+const hiddenLength = 5
+const heroScroll = riseLength + stayLength + exitLength + hiddenLength
+const heroStageHeight = 100 + heroScroll
 const scrollProgressResponse = 14
-// From this point of its scroll on, the hero has faded and takes no input.
-const hiddenFrom = 0.72
+// Where the rise and the stay end, as parts of the hero's scroll. The stay
+// ends before the magnet starts pulling the page to the first story section
+// (components/story/story-scroll.tsx), so the page can rest on it.
+const riseEnd = riseLength / heroScroll
+const stayEnd = (riseLength + stayLength) / heroScroll
+// From this point of its scroll on, the loop has left the screen: the hero
+// is hidden and takes no input.
+const hiddenFrom = (riseLength + stayLength + exitLength) / heroScroll
+// How far the loop leans at the top of the page and once it has left, in
+// degrees (above zero its top leans back, below zero it leans forward), and
+// how much it grows while it leaves.
+const restingTilt = 12
+const exitTilt = -30
+const exitGrowth = 1.3
+
+// Once in the middle, the loop keeps clear of the header and of the screen's
+// edges, and grows by a tenth at most.
+const headerSpace = 88
+const edgeSpace = 24
+const sideSpace = 12
+const maxGrowth = 1.1
+const minScale = 0.8
+
+// How far the loop rises to sit in the middle of the screen, its scale
+// there, and how much farther it rises to leave the screen.
+type HeroGeometry = { rise: number; scale: number; leave: number }
+const restingGeometry: HeroGeometry = { rise: 0, scale: 1, leave: 0 }
 
 type LayerStyle = {
   opacity: number
@@ -29,10 +70,15 @@ type HeroLayers = {
   mockup: RefObject<HTMLDivElement | null>
 }
 
+// From tablets up, the copy and the mockup are centered together under the
+// header, so a tall screen shows no gap between them; when they don't fit,
+// they start at the top and the mockup runs off the bottom of the screen. On
+// phones they always start under the header.
+
 // The server renders the top of the scroll; the browser takes over from there.
-const initialFrameStyle = heroFrameStyle(0, false)
+const initialFrameStyle = heroFrameStyle(0)
 const initialCopyStyle = heroCopyStyle(0, false)
-const initialMockupStyle = heroMockupStyle(0, false)
+const initialMockupStyle = heroMockupStyle(0, false, restingGeometry)
 
 type ScrollAnimationState = {
   current: number
@@ -71,13 +117,13 @@ export function LandingHero() {
         <div
           ref={frameRef}
           aria-hidden={hidden || undefined}
-          className="absolute inset-0 z-10 mx-auto flex w-full max-w-9xl flex-col px-5 pb-0 pt-24 sm:px-8 lg:px-10"
+          className="absolute inset-0 z-10 mx-auto flex w-full max-w-9xl flex-col justify-start px-5 pb-0 pt-24 sm:px-8 md:justify-center-safe lg:px-10"
           inert={hidden || undefined}
           style={initialFrameStyle}
         >
           <div
             ref={copyRef}
-            className="flex flex-1 items-center justify-center pb-4 pt-8 sm:pb-6 lg:pb-8"
+            className="flex items-center justify-center pb-8 pt-8"
             style={initialCopyStyle}
           >
             <HeroCopy />
@@ -87,7 +133,11 @@ export function LandingHero() {
             className="z-20 mx-auto mb-4 w-[90%] max-w-[61.2rem]"
             style={initialMockupStyle}
           >
-            <HeroBacklogMockup />
+            <HeroLoop
+              video={heroLoopVideo}
+              playing={!hidden}
+              fallback={<HeroBacklogMockup />}
+            />
           </div>
         </div>
       </div>
@@ -97,29 +147,38 @@ export function LandingHero() {
 
 function HeroCopy() {
   return (
-    // The end card's title, highlight, button and spacing (see
-    // cta-scene.module.css), with the hero's own subtitle.
-    <div className={endCard.scene}>
+    // The end card's title, highlight, buttons and spacing (see
+    // cta-scene.module.css), with the hero's own eyebrow and subtitle.
+    <div className={`${endCard.scene} ${endCard.heroScene}`}>
+      <p className={endCard.heroEyebrow}>
+        <span className={endCard.heroEyebrowName}>Blame ADE</span>
+        <span aria-hidden="true">·</span>
+        <span className="hidden sm:inline">
+          The open-source agentic development environment
+        </span>
+        <span className="sm:hidden">Open-source agentic dev environment</span>
+      </p>
       <h1 id="hero-title" className={`${endCard.title} ${endCard.heroTitle}`}>
-        <span className={endCard.word}>The</span>{' '}
+        <span className="whitespace-nowrap">Run coding agents</span>{' '}
+        <span className="whitespace-nowrap">in parallel,</span>
+        <br className="hidden md:inline" />{' '}
+        <span className="whitespace-nowrap">each with</span>{' '}
+        <span className="whitespace-nowrap">its own</span>{' '}
         <span className={`${endCard.hl} ${endCard.hlIntro}`}>
           <span className={endCard.hlBox}>
-            <span className={endCard.hlText}>Open Source</span>
+            <span className={endCard.hlText}>live preview.</span>
           </span>
-        </span>{' '}
-        <span aria-hidden="true" className={`${endCard.break} ${endCard.phoneBreak}`} />
-        <span className={endCard.word}>ADE</span>{' '}
-        <span className={endCard.word}>that</span>{' '}
-        <span aria-hidden="true" className={endCard.break} />
-        <span className={endCard.word}>sets</span>{' '}
-        <span className={endCard.word}>the</span>{' '}
-        <span className={endCard.word}>standard</span>
+        </span>
       </h1>
-      <p className={`hero-subtitle max-w-3xl text-balance text-white/76 ${endCard.heroCopy}`}>
-        From story to controlled merge, one verifiable harness unifies
-        agents, Code Practices, smart worktrees, and live Cloud Previews.
+      <p className={`hero-subtitle max-w-4xl text-balance text-white/76 ${endCard.heroCopy}`}>
+        No conflicts: every agent gets its own ports, database, and services.
       </p>
       <HeroActions />
+      <InstallCommand
+        className={endCard.heroInstall}
+        platform="macOS"
+        command="brew install --cask rchrp/tap/blame"
+      />
     </div>
   )
 }
@@ -164,10 +223,14 @@ function connectHeroScroll(
   const media = window.matchMedia('(prefers-reduced-motion: reduce)')
   let reducedMotion = media.matches
   let hidden = false
+  let geometry = restingGeometry
   const render = (progress: number) => {
-    applyLayerStyle(layers.frame.current, heroFrameStyle(progress, reducedMotion))
+    applyLayerStyle(layers.frame.current, heroFrameStyle(progress))
     applyLayerStyle(layers.copy.current, heroCopyStyle(progress, reducedMotion))
-    applyLayerStyle(layers.mockup.current, heroMockupStyle(progress, reducedMotion))
+    applyLayerStyle(
+      layers.mockup.current,
+      heroMockupStyle(progress, reducedMotion, geometry),
+    )
     if (progress >= hiddenFrom !== hidden) {
       hidden = !hidden
       setHidden(hidden)
@@ -185,15 +248,30 @@ function connectHeroScroll(
     reducedMotion = media.matches
     render(state.current)
   }
+  // The copy's and the loop's sizes change with the screen and once the
+  // fonts load: the loop's place in the middle follows them.
+  const measure = () => {
+    geometry = measureHeroGeometry(layers.mockup.current)
+    render(state.current)
+  }
+  const resize = () => {
+    measure()
+    update()
+  }
+  const sizes = new ResizeObserver(measure)
+  for (const layer of [layers.copy.current, layers.mockup.current]) {
+    if (layer) sizes.observe(layer)
+  }
 
   render(initial)
   window.addEventListener('scroll', update, { passive: true })
-  window.addEventListener('resize', update)
+  window.addEventListener('resize', resize)
   media.addEventListener('change', updateMotion)
   return () => {
     if (state.frame) window.cancelAnimationFrame(state.frame)
+    sizes.disconnect()
     window.removeEventListener('scroll', update)
-    window.removeEventListener('resize', update)
+    window.removeEventListener('resize', resize)
     media.removeEventListener('change', updateMotion)
   }
 }
@@ -249,22 +327,41 @@ function readScrollProgress(node: HTMLElement | null) {
   return clamp(-node.getBoundingClientRect().top / scrollable, 0, 1)
 }
 
-function heroFrameStyle(
-  progress: number,
-  reducedMotion: boolean,
-): LayerStyle {
-  const opacity = reducedMotion
-    ? reducedMotionOpacity(progress)
-    : 1 - smoothstep(hiddenFrom, 0.98, progress)
-  return { opacity, pointerEvents: progress < hiddenFrom ? 'auto' : 'none' }
+// The frame fills the pinned screen, so the loop's offsets in it are its
+// place on screen before any transform.
+function measureHeroGeometry(mockup: HTMLElement | null): HeroGeometry {
+  if (!mockup?.offsetHeight) return restingGeometry
+  const { offsetHeight: height, offsetTop: top, offsetWidth: width } = mockup
+  const room = window.innerHeight - headerSpace - 2 * edgeSpace
+  const scale = clamp(
+    Math.min(room / height, (window.innerWidth - 2 * sideSpace) / width),
+    minScale,
+    maxGrowth,
+  )
+  const middle = headerSpace + edgeSpace + room / 2
+  const rise = Math.min(0, middle - (top + height / 2))
+  // It leaves at its largest. Leaning forward shows its lower half shorter
+  // than flat (about 0.37 of its height below its middle, 0.53 leaning
+  // back): 0.6 of it clears the top of the screen with room to spare.
+  const restingMiddle = top + height / 2 + rise
+  const largest = height * scale * 1.025 * exitGrowth
+  const leave = -(restingMiddle + largest * 0.6 + edgeSpace)
+  return { rise, scale, leave }
 }
 
+// Shown until the loop has left the screen, then hidden at once.
+function heroFrameStyle(progress: number): LayerStyle {
+  const shown = progress < hiddenFrom
+  return { opacity: shown ? 1 : 0, pointerEvents: shown ? 'auto' : 'none' }
+}
+
+// The copy is gone before the loop reaches the middle.
 function heroCopyStyle(
   progress: number,
   reducedMotion: boolean,
 ): LayerStyle {
-  if (reducedMotion) return { opacity: reducedMotionOpacity(progress) }
-  const amount = easeOut(timelineProgress(progress, 0, 0.68))
+  const amount = easeOut(timelineProgress(progress, 0, riseEnd * 0.75))
+  if (reducedMotion) return { opacity: 1 - amount }
   return {
     opacity: 1 - amount,
     transform: `translate3d(0, ${amount * -72}px, 0) scale(${1 - amount * 0.035})`,
@@ -274,18 +371,23 @@ function heroCopyStyle(
 function heroMockupStyle(
   progress: number,
   reducedMotion: boolean,
+  geometry: HeroGeometry,
 ): LayerStyle {
-  if (reducedMotion) return { opacity: reducedMotionOpacity(progress) }
-  const lift = easeOut(timelineProgress(progress, 0, 0.9))
-  const fade = smoothstep(0.34, 0.72, progress)
+  const rise = smoothstep(0, riseEnd, progress)
+  const exit = easeIn(timelineProgress(progress, stayEnd, hiddenFrom))
+  const y = geometry.rise * rise + geometry.leave * exit
+  if (reducedMotion) return { opacity: 1, transform: `translate3d(0, ${y}px, 0)` }
+  // While it stays, it keeps growing a touch, so the scroll still shows.
+  const stay = timelineProgress(progress, riseEnd, stayEnd)
+  const scale =
+    (1 + (geometry.scale - 1) * rise) *
+    (1 + stay * 0.025) *
+    (1 + exit * (exitGrowth - 1))
+  const tilt = (1 - rise) * restingTilt + exit * exitTilt
   return {
-    opacity: 1 - fade,
-    transform: `translate3d(0, ${lift * -42}vh, 0) perspective(1200px) rotate3d(1, -0.16, 0, ${lift * 32}deg) scale(${1 + lift * 0.42})`,
+    opacity: 1,
+    transform: `translate3d(0, ${y}px, 0) perspective(1200px) rotate3d(1, -0.16, 0, ${tilt}deg) scale(${scale})`,
   }
-}
-
-function reducedMotionOpacity(progress: number) {
-  return progress < hiddenFrom ? 1 : 0
 }
 
 function timelineProgress(progress: number, start: number, end: number) {
@@ -300,6 +402,11 @@ function smoothstep(edge0: number, edge1: number, value: number) {
 
 function easeOut(value: number) {
   return 1 - Math.pow(1 - clamp(value, 0, 1), 3)
+}
+
+// Only a little slower at first, so the exit picks up right after the stay.
+function easeIn(value: number) {
+  return Math.pow(clamp(value, 0, 1), 1.3)
 }
 
 function clamp(value: number, min: number, max: number) {

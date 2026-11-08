@@ -9,10 +9,10 @@ import { formatStarCount, githubRepositoryUrl } from "@/lib/github";
 import styles from "./cta-scene.module.css";
 
 // The video's end card (its `cta` beat): the Blame mark and name lock up, the
-// title's words streak in and snap into place, "Open Source" opens in a blue
-// selection box between them, the tags pop out, then the white button and a
-// cursor that presses it. Offsets are the video's pixels times `u`, the
-// title's size over the video's 96px title.
+// title's words ("Free. Open source.") streak in and snap into place, "No
+// account needed." opens in a blue selection box under them, the tags pop
+// out, then the white button and a cursor that presses it. Offsets are the
+// video's pixels times `u`, the title's size over the video's 96px title.
 function buildCta(timeline: gsap.core.Timeline, root: HTMLDivElement) {
   const title = root.querySelector<HTMLElement>('[data-cta="title"]');
   const u = title ? parseFloat(getComputedStyle(title).fontSize) / 96 : 0.75;
@@ -38,8 +38,7 @@ function buildCta(timeline: gsap.core.Timeline, root: HTMLDivElement) {
     0.5,
   );
 
-  // words streak in from the lower right and snap into the line; "The" and
-  // "ADE that" land side by side, closed over the room the blue box will take
+  // words streak in from the lower right and snap into the line
   timeline.fromTo(
     '[data-cta="word"]',
     { x: 150 * u, y: 56 * u, opacity: 0, filter: "blur(12px)" },
@@ -56,8 +55,8 @@ function buildCta(timeline: gsap.core.Timeline, root: HTMLDivElement) {
     0.3,
   );
 
-  // then "Open Source" opens between "The" and "ADE", pushing them apart, its
-  // blue box widening with it
+  // then "No account needed." opens on the row below, its blue box widening
+  // with it
   const open = { duration: 0.7, ease: "expo.inOut" };
   timeline.fromTo(
     '[data-cta="hl"]',
@@ -144,32 +143,22 @@ export function CtaScene() {
 
       <div data-cta="glide">
         <h2 data-cta="title" className={styles.title}>
-          <span data-cta="word" className={`${styles.word} ${styles.dim}`}>
-            The
+          <span data-cta="word" className={styles.word}>
+            Free.
           </span>{" "}
+          <span data-cta="word" className={`${styles.word} ${styles.dim}`}>
+            Open
+          </span>{" "}
+          <span data-cta="word" className={`${styles.word} ${styles.dim}`}>
+            source.
+          </span>{" "}
+          <span aria-hidden="true" className={styles.break} />
           <span data-cta="hl" className={styles.hl}>
             <span data-cta="hl-box" className={styles.hlBox}>
               <span data-cta="hl-text" className={styles.hlText}>
-                Open Source
+                No account needed.
               </span>
             </span>
-          </span>{" "}
-          <span aria-hidden="true" className={`${styles.break} ${styles.phoneBreak}`} />
-          <span data-cta="word" className={styles.word}>
-            ADE
-          </span>{" "}
-          <span data-cta="word" className={`${styles.word} ${styles.dim}`}>
-            that
-          </span>{" "}
-          <span aria-hidden="true" className={styles.break} />
-          <span data-cta="word" className={styles.word}>
-            sets
-          </span>{" "}
-          <span data-cta="word" className={styles.word}>
-            the
-          </span>{" "}
-          <span data-cta="word" className={styles.word}>
-            standard
           </span>
         </h2>
 
@@ -195,7 +184,7 @@ export function CtaScene() {
           </li>
           <li>
             <span data-cta="tag" className={styles.pill}>
-              50 AI providers
+              Works with your Claude or ChatGPT plan
             </span>
           </li>
         </ul>

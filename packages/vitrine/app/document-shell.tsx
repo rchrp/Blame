@@ -48,7 +48,7 @@ export const rootMetadata: Metadata = {
   applicationName: "Blame",
   category: "technology",
   description:
-    "Blame is the open-source ADE for AI coding agents: a verifiable harness, isolated smart worktrees, live Cloud Previews, and controlled merges.",
+    "Blame ADE runs coding agents in parallel, each with its own live preview: its own worktree, ports, database, and services, on your machine. Free, open source, no account needed.",
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },

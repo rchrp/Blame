@@ -5,7 +5,8 @@ import { isMarkdownPagePath, markdownUrlPath } from "@/lib/markdown-paths";
 import { absoluteSiteUrl } from "@/lib/site";
 
 const socialImageUrl = absoluteSiteUrl("/social/blame-social-card.jpg");
-const socialImageAlt = "Blame — The ADE that sets the standard";
+const socialImageAlt =
+  "Blame ADE, the open-source ADE for parallel agents: a backlog of stories and one story's live preview";
 
 type IndexablePageMetadata = {
   canonicalPath: string;

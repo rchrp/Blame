@@ -8,7 +8,8 @@ import { harnessSourceUrl } from "@/lib/github";
 // Built from docs/semantic-harness-study.tex by `pnpm build:study-pdf`.
 const harnessStudyPdfPath = "/research/light-semantic-harness-study.pdf";
 
-// Panel F61 of the study: 54.2% fewer tokens than Cline, both at 6/6.
+// Panel F61 of the study: 54.2% fewer tokens than Cline and a 39% lower
+// estimated cost, both at 6/6 on six hand-audited TypeScript tasks.
 const tokenSavingPercent = 54;
 
 export function HarnessSection({
@@ -52,11 +53,11 @@ function HarnessSaving() {
         <SavingsCountUp value={tokenSavingPercent} />
       </p>
       <p className="mt-2 text-balance text-base text-white/72 sm:text-xl">
-        tokens vs. Cline, same model, same tasks
+        tokens vs. Cline, same model, on six hand-audited tasks
       </p>
-      <p className="mt-4 inline-flex items-center gap-2 text-sm text-white/56">
-        <CircleCheck className="size-4 text-[oklch(0.8_0.17_150)]" />
-        No quality lost: 6/6 audited runs, same as Cline.
+      <p className="mt-4 inline-flex items-center gap-2 text-balance text-sm text-white/56">
+        <CircleCheck className="size-4 shrink-0 text-[oklch(0.8_0.17_150)]" />
+        Both passed 6/6. Estimated cost: 39% lower.
       </p>
       <div className="mt-4 flex flex-wrap justify-center gap-x-7 gap-y-2 text-sm">
         <StudyLink href={harnessStudyPdfPath}>Read the study</StudyLink>

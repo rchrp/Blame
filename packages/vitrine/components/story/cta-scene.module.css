@@ -1,7 +1,7 @@
 /* The video's end card. Its sizes are the video's pixel counts (a 1920 x 1080
    frame) times --px, the title's size over the video's 96px title, so the
-   card keeps the video's proportions. On a phone the title wraps onto three
-   rows and the pills and buttons keep readable sizes of their own. */
+   card keeps the video's proportions. On a phone the pills and buttons keep
+   readable sizes of their own. */
 
 .scene {
   --title: min(9.6vw, 3.5rem);
@@ -49,7 +49,7 @@
   color: #ffffff;
 }
 
-/* The title: two rows, "The Open Source ADE that" over "sets the standard" */
+/* The title: two rows, "Free. Open source." over "No account needed." */
 .scene .title {
   display: flex;
   flex-wrap: wrap;
@@ -82,14 +82,9 @@
   height: 0;
 }
 
-@media (min-width: 48rem) {
-  .phoneBreak {
-    display: none;
-  }
-}
-
-/* "Open Source" opens between "The" and "ADE": its column grows from nothing
-   to its full width and pushes them apart while the blue box is revealed */
+/* The highlight ("No account needed." on the end card, "live preview." in
+   the hero) opens: its column grows from nothing to its full width while the
+   blue box is revealed */
 .hl {
   display: grid;
   flex: none;
@@ -299,21 +294,111 @@ a.pill:focus-visible,
 
 /* ---------- the home hero, which shares the end card's look ---------- */
 
-/* The hero's title is the end card's title, without the lockup above it,
-   and all in pure white */
+/* The hero keeps its copy inside the screen's gutters */
+.heroScene {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* A quiet eyebrow: the secondary button's frosted pill, small */
+.scene .heroEyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  margin: 0 0 max(1rem, calc(26 * var(--px)));
+  padding: 0.375rem 0.875rem;
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 5%);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  color: rgb(255 255 255 / 66%);
+  font-size: 0.8125rem;
+  line-height: 1.2;
+}
+
+.heroEyebrowName {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+/* The hero's title is the end card's, without the lockup above it, all in
+   pure white, and wrapping as text */
 .scene .heroTitle {
+  display: block;
   margin-top: 0;
   color: #ffffff;
+  line-height: 1.12;
+  white-space: normal;
+  text-wrap: balance;
+}
+
+/* The highlight ends the title's last row, on the text's baseline, one
+   space after "its own" */
+.heroTitle .hl {
+  display: inline-grid;
+  margin-top: 0.06em;
+  vertical-align: baseline;
+}
+
+.heroTitle .hlBox {
+  margin: 0 0 0 0.02em;
 }
 
 /* Its subtitle and buttons sit closer to the title than the end card's tags
    and button do */
 .heroCopy {
-  margin: max(0.75rem, calc(18 * var(--px))) auto 0;
+  margin: max(1rem, calc(30 * var(--px))) auto 0;
+  /* the story copy's shadow, so it stays legible over the bright horizon */
+  text-shadow:
+    0 1px 2px rgb(0 0 0 / 55%),
+    0 0 14px rgb(0 0 0 / 50%),
+    0 2px 30px rgb(0 0 0 / 55%);
 }
 
 .scene .heroActions {
-  margin-top: max(1.25rem, calc(34 * var(--px)));
+  margin-top: max(1.5rem, calc(40 * var(--px)));
+}
+
+/* The install command reads as a line in a terminal: near-black, not
+   frosted like the buttons */
+.heroInstall {
+  margin-top: 1rem;
+}
+
+.scene .heroInstall {
+  border-color: rgb(255 255 255 / 10%);
+  background: #0a0b0e;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow:
+    0 12px 32px rgb(0 0 0 / 45%),
+    inset 0 1px 0 rgb(255 255 255 / 5%);
+}
+
+/* On phones: a smaller subtitle, and the two buttons side by side */
+@media (max-width: 47.99rem) {
+  .heroScene .heroCopy {
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+
+  .scene .heroEyebrow {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
+  }
+
+  .scene .heroActions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.625rem;
+  }
+
+  .heroActions .button {
+    padding: 0 1em;
+    font-size: 0.875rem;
+  }
 }
 
 /* The hero's page styles set its links in Arial: the buttons keep theirs */
@@ -337,8 +422,8 @@ a.pill:focus-visible,
   background: rgb(255 255 255 / 14%);
 }
 
-/* In the hero, "Open Source" opens on its own once the page shows, the way
-   the end card's timeline opens it */
+/* In the hero, "live preview." opens on its own once the page shows, the way
+   the end card's timeline opens its highlight */
 .hlIntro {
   animation: hlOpen 0.7s cubic-bezier(0.87, 0, 0.13, 1) 0.9s both;
 }

@@ -5,6 +5,7 @@ import {
   parallelAgentProviders,
   ProviderLogo,
 } from "@/components/provider-logos";
+import { FullDemoSection } from "@/components/demo-video";
 import { ScrollReveal } from "@/components/scroll-reveal";
 import { BacklogScene } from "@/components/story/backlog-scene";
 import { CreationScene } from "@/components/story/creation-scene";
@@ -13,6 +14,7 @@ import { MergeScene } from "@/components/story/merge-scene";
 import { OpeningScene } from "@/components/story/opening-scene";
 import { PracticesScene } from "@/components/story/practices-scene";
 import { WorkspaceScene } from "@/components/story/workspace-scene";
+import { fullDemoVideo } from "@/lib/demo-media";
 import { HarnessSection } from "./harness-story";
 
 const specialistAgents = [
@@ -80,23 +82,26 @@ const cloudContinuityItems = [
   },
 ];
 
-// The page follows the Blame presentation video: the opening statement, then
-// one section per step of a story's life (backlog lane, harness, smart
-// workspace, review and merge), then what surrounds it, and the end card.
+// The page opens on the problem it solves (parallel agents share one running
+// app), then what each story gets (its own branch, worktree, ports and
+// containers), then one section per step of a story's life (backlog lane,
+// harness, review and merge), the full demo once it is on (see
+// lib/demo-media.ts), what surrounds it, and the end card.
 export function ProductStory() {
   return (
     <div className="relative z-10 -mt-[48vh]">
       <OpeningSection />
+      <SceneSection id="workspace">
+        <WorkspaceScene />
+      </SceneSection>
       <SceneSection id="workflow">
         <BacklogScene />
       </SceneSection>
       <HarnessSection />
-      <SceneSection id="workspace">
-        <WorkspaceScene />
-      </SceneSection>
       <SceneSection id="review">
         <MergeScene />
       </SceneSection>
+      <FullDemoSection video={fullDemoVideo} />
       <ParallelAgentsSection />
       <SceneSection id="practices">
         <PracticesScene />
@@ -165,9 +170,9 @@ function ParallelAgentsSection() {
             Run every agent on the model that fits.
           </h2>
           <p className="story-copy mx-auto mt-7 max-w-3xl">
-            Launch multiple agents in parallel, even across different
-            providers. Blame supports 50 AI providers, so every task can use the
-            model that fits it best.
+            Run up to three agents at once, each on its own model. Sign in with
+            your Claude or ChatGPT plan, or use any of 50 AI providers with your
+            own key.
           </p>
         </ScrollReveal>
         <ProviderRail />

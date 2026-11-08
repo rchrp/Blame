@@ -17,8 +17,8 @@
   text-align: center;
 }
 
-/* Rows: 1 "AI can write the code.", 2 "Blame makes it shippable.",
-   3 the workflow chain, 4 the copy line. */
+/* Rows: 1 "Worktrees isolate the code.", 2 "Blame isolates the running
+   app.", 3 the workflow chain, 4 the copy line. */
 .heading {
   grid-column: 1;
   grid-row: 1 / span 2;
