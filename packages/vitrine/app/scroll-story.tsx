@@ -32,9 +32,10 @@ type HeroLayers = {
   mockup: RefObject<HTMLDivElement | null>
 }
 
-// The copy and the mockup are centered together under the header, so a tall
-// screen shows no gap between them; when they don't fit, they start at the
-// top and the mockup runs off the bottom of the screen.
+// From tablets up, the copy and the mockup are centered together under the
+// header, so a tall screen shows no gap between them; when they don't fit,
+// they start at the top and the mockup runs off the bottom of the screen. On
+// phones they always start under the header.
 
 // The server renders the top of the scroll; the browser takes over from there.
 const initialFrameStyle = heroFrameStyle(0, false)
@@ -78,7 +79,7 @@ export function LandingHero() {
         <div
           ref={frameRef}
           aria-hidden={hidden || undefined}
-          className="absolute inset-0 z-10 mx-auto flex w-full max-w-9xl flex-col justify-center-safe px-5 pb-0 pt-24 sm:px-8 lg:px-10"
+          className="absolute inset-0 z-10 mx-auto flex w-full max-w-9xl flex-col justify-start px-5 pb-0 pt-24 sm:px-8 md:justify-center-safe lg:px-10"
           inert={hidden || undefined}
           style={initialFrameStyle}
         >
@@ -109,20 +110,30 @@ export function LandingHero() {
 function HeroCopy() {
   return (
     // The end card's title, highlight, buttons and spacing (see
-    // cta-scene.module.css), with the hero's own subtitle.
+    // cta-scene.module.css), with the hero's own eyebrow and subtitle.
     <div className={`${endCard.scene} ${endCard.heroScene}`}>
+      <p className={endCard.heroEyebrow}>
+        <span className={endCard.heroEyebrowName}>Blame ADE</span>
+        <span aria-hidden="true">·</span>
+        <span className="hidden sm:inline">
+          The open-source agentic development environment
+        </span>
+        <span className="sm:hidden">Open-source agentic dev environment</span>
+      </p>
       <h1 id="hero-title" className={`${endCard.title} ${endCard.heroTitle}`}>
         <span className="whitespace-nowrap">Run coding agents</span>{' '}
-        <span className="whitespace-nowrap">in parallel.</span>
-        <br />
+        <span className="whitespace-nowrap">in parallel,</span>
+        <br className="hidden md:inline" />{' '}
+        <span className="whitespace-nowrap">each with</span>{' '}
+        <span className="whitespace-nowrap">its own</span>{' '}
         <span className={`${endCard.hl} ${endCard.hlIntro}`}>
           <span className={endCard.hlBox}>
-            <span className={endCard.hlText}>No conflicts.</span>
+            <span className={endCard.hlText}>live preview.</span>
           </span>
         </span>
       </h1>
-      <p className={`hero-subtitle max-w-3xl text-balance text-white/76 ${endCard.heroCopy}`}>
-        Each agent gets its own live preview, ports, and database.
+      <p className={`hero-subtitle max-w-4xl text-balance text-white/76 ${endCard.heroCopy}`}>
+        No conflicts: every agent gets its own ports, database, and services.
       </p>
       <HeroActions />
       <InstallCommand
