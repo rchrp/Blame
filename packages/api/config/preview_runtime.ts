@@ -72,6 +72,8 @@ export function previewRuntimeConfig() {
           'registry.npmjs.org',
           '*.npmjs.org',
           'github.com',
+          // The GitHub CLI calls the REST and GraphQL APIs.
+          'api.github.com',
           'codeload.github.com',
           '*.githubusercontent.com',
           'auth.docker.io',

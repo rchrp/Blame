@@ -227,6 +227,13 @@ import {
   type GitPathInput,
   type GitResolveConflictFileInput,
 } from "./workspaces/workspace-git-service";
+import {
+  gitBranches,
+  gitPublishBranch,
+  gitTrackRemoteBranch,
+  type GitPublishBranchInput,
+  type GitTrackBranchInput,
+} from "./workspaces/workspace-git-branches.ts";
 import { resolveStoryBranch } from "./workspaces/story-branch-identity.ts";
 
 const previewRequestTimeoutMs = 5_000;
@@ -293,6 +300,9 @@ type CreateWorktreeInput = ExecutionContextInput & {
   runtimeProfile: RuntimeProfileId;
   storyId: string;
   storyReference: string;
+  // The branch the story starts from and merges into; without it, the
+  // branch checked out in the project folder.
+  targetBranch?: string | null;
   title: string;
 };
 
@@ -382,6 +392,8 @@ type WorktreeCreationContext = {
   mode: WorkspaceMode;
   repositoryRoot: string;
   startedAt: number;
+  // Null when the project folder is on a detached HEAD and none was chosen.
+  targetBranch: string | null;
   timings: Array<{ duration: number; label: string }>;
   worktree: string;
 };
@@ -561,6 +573,23 @@ export function registerWorkspaceIpcHandlers(
     Promise.resolve(input.beforeGitWrite?.(value.root)).then(() =>
       gitPush(value.root),
     ),
+  );
+  ipcMain.handle("workspace:git-branches", (_event, value: { root: string }) =>
+    gitBranches(value.root),
+  );
+  ipcMain.handle(
+    "workspace:git-track-branch",
+    (_event, value: GitTrackBranchInput) =>
+      Promise.resolve(input.beforeGitWrite?.(value.root)).then(() =>
+        gitTrackRemoteBranch(value),
+      ),
+  );
+  ipcMain.handle(
+    "workspace:git-publish-branch",
+    (_event, value: GitPublishBranchInput) =>
+      Promise.resolve(input.beforeGitWrite?.(value.root)).then(() =>
+        gitPublishBranch(value),
+      ),
   );
   ipcMain.handle(
     "workspace:list-git-directory",
@@ -813,9 +842,34 @@ async function worktreeCreationContext(
     mode,
     repositoryRoot,
     startedAt: Date.now(),
+    targetBranch: await storyTargetBranch(
+      repositoryRoot,
+      input.targetBranch,
+      mode,
+    ),
     timings: [],
     worktree: `${createWorktreePath(input)}${suffix}`,
   };
+}
+
+// A chosen branch must exist; otherwise the story follows the project folder.
+async function storyTargetBranch(
+  repositoryRoot: string,
+  requested: string | null | undefined,
+  mode: WorkspaceMode,
+) {
+  const chosen = requested?.trim();
+  if (chosen) {
+    if (!(await branchExists(repositoryRoot, chosen, mode)))
+      throw new Error(`The story's branch ${chosen} does not exist.`);
+    return chosen;
+  }
+  const { stdout } = await runRuntimeGit(
+    repositoryRoot,
+    ["branch", "--show-current"],
+    workspaceExecution(mode),
+  );
+  return String(stdout).trim() || null;
 }
 
 async function prepareWorktreeCreation(context: WorktreeCreationContext) {
@@ -865,7 +919,8 @@ async function assertWorktreePathAvailable(context: WorktreeCreationContext) {
 }
 
 async function addStoryWorktree(context: WorktreeCreationContext) {
-  const { branch, mode, repositoryRoot, timings, worktree } = context;
+  const { branch, mode, repositoryRoot, targetBranch, timings, worktree } =
+    context;
   const existing = await timedWorktreeCreateStep(
     timings,
     "branch exists check",
@@ -874,7 +929,13 @@ async function addStoryWorktree(context: WorktreeCreationContext) {
   const label = existing
     ? "git worktree add existing branch"
     : "git worktree add new branch";
-  const args = storyWorktreeAddArguments({ branch, existing, worktree });
+  // The target's last commit: a checkout's uncommitted changes stay there.
+  const args = storyWorktreeAddArguments({
+    branch,
+    existing,
+    startPoint: targetBranch ? `refs/heads/${targetBranch}` : "HEAD",
+    worktree,
+  });
   await timedWorktreeCreateStep(timings, label, () =>
     runRuntimeGit(repositoryRoot, args, workspaceExecution(mode)),
   );
@@ -903,6 +964,7 @@ async function directWorkspace(input: CreateWorktreeInput) {
   ).trim();
   return {
     branch: branch && branch !== "HEAD" ? branch : "",
+    targetBranch: branch && branch !== "HEAD" ? branch : null,
     workspaceMode: "direct" as const,
     worktree: repositoryRoot,
   };
@@ -911,6 +973,7 @@ async function directWorkspace(input: CreateWorktreeInput) {
 function worktreeResult(context: WorktreeCreationContext) {
   return {
     branch: context.branch,
+    targetBranch: context.targetBranch,
     workspaceMode: context.mode,
     worktree: context.worktree,
   };

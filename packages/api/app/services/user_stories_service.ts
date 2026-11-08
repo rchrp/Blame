@@ -541,6 +541,7 @@ function nullableStoryAttributes(input: CreateUserStoryInput) {
     agentUsage: input.agentUsage ?? null,
     baseCommit: input.baseCommit ?? null,
     branch: input.branch ?? null,
+    targetBranch: input.targetBranch ?? null,
     clineSessionId: input.clineSessionId ?? null,
     discardedReason: input.discardedReason ?? null,
     mergeCommit: input.mergeCommit ?? null,

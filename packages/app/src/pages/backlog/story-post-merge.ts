@@ -1,4 +1,5 @@
 import { toast } from "sonner"
+import type { ApproveAndMergeResult } from "@blame/agent-runtime"
 
 import { afterRendererPaint } from "@/components/backlog/data/agent-transition-scheduling"
 import type { UserStory } from "@/components/backlog/data/backlog-data"
@@ -34,6 +35,67 @@ export function approveAndMergeValidationError(
   if (!model) return "Select a model before approving the merge."
   if (!platform.agent?.approveAndMerge)
     return "Desktop agent runtime is not available."
+}
+
+// Says where the story went. A target branch without upstream is not pushed:
+// it gets the push -u that publishes it instead.
+export function notifyMerged(
+  result: ApproveAndMergeResult,
+  platform: ReturnType<typeof usePlatform>,
+  repositoryRoot: string
+) {
+  const { push, targetBranch } = result
+  if (push.status === "pushed") {
+    toast.success("Story approved and merged", {
+      description: `Merged into ${targetBranch} and pushed to ${push.upstream}.`,
+      position: "bottom-right",
+    })
+    return
+  }
+  const { remote } = push
+  const publish = platform.workspace?.gitPublishBranch
+  if (!remote) {
+    toast.success("Story approved and merged", {
+      description: `Merged into ${targetBranch}. Not pushed: the project has no Git remote.`,
+      position: "bottom-right",
+    })
+    return
+  }
+  toast.success("Story approved and merged", {
+    action: publish
+      ? {
+          label: `Push to ${remote}`,
+          onClick: () =>
+            void publishTargetBranch(
+              () => publish({ branch: targetBranch, remote, root: repositoryRoot }),
+              targetBranch,
+              remote
+            ),
+        }
+      : undefined,
+    description: `Merged into ${targetBranch}, not pushed: the branch has no upstream. Publish it with git push -u ${remote} ${targetBranch}.`,
+    duration: 30_000,
+    position: "bottom-right",
+  })
+}
+
+async function publishTargetBranch(
+  publish: () => Promise<unknown>,
+  branch: string,
+  remote: string
+) {
+  try {
+    await publish()
+    toast.success(`${branch} pushed to ${remote}`, {
+      description: `It now tracks ${remote}/${branch}; the next merges push there.`,
+      position: "bottom-right",
+    })
+  } catch (error) {
+    toast.error(`Couldn't push ${branch}`, {
+      description: errorMessage(error),
+      position: "bottom-right",
+    })
+  }
 }
 
 async function cleanupMergedStory(

@@ -555,6 +555,33 @@ test("flags an outdated runtime version as an update", async () => {
   assert.equal(status.issues[0]?.update, true);
 });
 
+test("flags a runtime without the GitHub CLI as an update", async () => {
+  const manager = createRuntimeManager(
+    { platform: "darwin" },
+    async (_command, args) => {
+      if (args[0] !== "status") return "ok";
+      return JSON.stringify({
+        status: "repairable",
+        checks: [
+          { name: "vm", status: "available" },
+          {
+            action: "Repair BlameRuntime from Blame runtime setup.",
+            name: "gh",
+            status: "missing",
+          },
+        ],
+      });
+    },
+  );
+
+  const status = await manager.checkRuntimeDependencies();
+
+  assert.equal(status.status, "repairable");
+  assert.equal(status.updateRequired, true);
+  assert.equal(status.issues[0]?.name, "blame-runtime");
+  assert.equal(status.issues[0]?.update, true);
+});
+
 test("does not call a missing VM an update", async () => {
   const manager = createRuntimeManager(
     { platform: "darwin" },

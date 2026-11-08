@@ -75,6 +75,7 @@ export type {
   DiscoverSecurityAuditInput,
   ExecutionTelemetryCohorts,
   ApproveAndMergeInput,
+  ApproveAndMergePush,
   ApproveAndMergeResult,
   ApprovalDecision,
   ApiConnection,

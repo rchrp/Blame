@@ -7,8 +7,8 @@ import {
   errorType,
   stringValue,
 } from "./cline-runtime-events.js";
-import { rm, stat } from "node:fs/promises";
-import { basename, dirname, join } from "node:path";
+import { realpath, rm, stat } from "node:fs/promises";
+import { basename, dirname, join, normalize, resolve } from "node:path";
 import { withoutTelemetryEnvironment } from "@blame/telemetry";
 import { promisify } from "node:util";
 import { execFile } from "node:child_process";
@@ -38,14 +38,16 @@ export async function validateMergeBranches(
   await assertNoGitOperationInProgress(input.repositoryRoot);
   if (!targetBranch)
     throw new Error("Unable to detect the active project branch.");
+  if (targetBranch === input.storyBranch) {
+    throw new Error("Story branch and target branch must be different.");
+  }
+  if (!(await gitRevisionExists(input.repositoryRoot, `refs/heads/${targetBranch}`)))
+    throw new Error(`Target branch ${targetBranch} does not exist.`);
   const storyBranch = await currentGitBranch(input.worktree);
   if (storyBranch !== input.storyBranch) {
     throw new Error(
       `Story worktree is on ${storyBranch}, expected ${input.storyBranch}.`,
     );
-  }
-  if (targetBranch === input.storyBranch) {
-    throw new Error("Story branch and target branch must be different.");
   }
 }
 
@@ -81,18 +83,63 @@ async function gitRevisionExists(cwd: string, ref: string) {
   }
 }
 
-export async function optionalGitUpstream(cwd: string) {
+// The upstream of the target branch itself, wherever it is checked out.
+export async function optionalGitUpstream(cwd: string, branch: string) {
   try {
     const upstream = await git(cwd, [
       "rev-parse",
       "--abbrev-ref",
-      "--symbolic-full-name",
-      "@{u}",
+      `${branch}@{u}`,
     ]);
     return parseUpstream(upstream);
   } catch {
     return undefined;
   }
+}
+
+// The remote a branch without upstream would be published to.
+export async function defaultPushRemote(cwd: string) {
+  const remotes = (await git(cwd, ["remote"])).split("\n").filter(Boolean);
+  return remotes.includes("origin") ? "origin" : (remotes[0] ?? null);
+}
+
+export type TargetCheckout =
+  | { kind: "project" }
+  | { kind: "none" }
+  | { kind: "worktree"; path: string };
+
+// Where the target branch is checked out decides where it can be advanced.
+export async function targetBranchCheckout(
+  repositoryRoot: string,
+  targetBranch: string,
+): Promise<TargetCheckout> {
+  const list = await git(repositoryRoot, ["worktree", "list", "--porcelain"]);
+  const path = checkedOutPath(list, targetBranch);
+  if (!path) return { kind: "none" };
+  const projectRoot = await git(repositoryRoot, ["rev-parse", "--show-toplevel"]);
+  if (await samePath(path, projectRoot)) return { kind: "project" };
+  return { kind: "worktree", path };
+}
+
+function checkedOutPath(porcelain: string, branch: string) {
+  for (const entry of porcelain.split(/\n\s*\n/)) {
+    const lines = entry.split("\n");
+    const path = lines.find((line) => line.startsWith("worktree "))?.slice(9);
+    if (path && lines.includes(`branch refs/heads/${branch}`)) return path;
+  }
+  return undefined;
+}
+
+export async function samePath(left: string, right: string) {
+  const [a, b] = await Promise.all([canonicalPath(left), canonicalPath(right)]);
+  return a === b;
+}
+
+// Worktrees inside the VM do not exist on the host: compare them as written.
+async function canonicalPath(path: string) {
+  const resolved = await realpath(path).catch(() => resolve(path));
+  const normalized = normalize(resolved);
+  return process.platform === "win32" ? normalized.toLowerCase() : normalized;
 }
 
 export async function cleanGitStatus(cwd: string) {
@@ -139,9 +186,15 @@ export async function restoreTargetChanges(
   });
 }
 
-export async function pullIntegrationWorktree(cwd: string, upstream?: GitUpstream) {
+// Remote credentials live with the project checkout: fetch there, then
+// fast-forward wherever the target branch is being advanced.
+export async function pullIntegrationWorktree(
+  repositoryRoot: string,
+  cwd: string,
+  upstream?: GitUpstream,
+) {
   if (!upstream) return;
-  await git(cwd, ["fetch", upstream.remote, upstream.branch]);
+  await git(repositoryRoot, ["fetch", upstream.remote, upstream.branch]);
   await git(cwd, [
     "merge",
     "--ff-only",
@@ -149,8 +202,26 @@ export async function pullIntegrationWorktree(cwd: string, upstream?: GitUpstrea
   ]);
 }
 
-export async function pushIntegrationWorktree(
-  cwd: string,
+// Moves a branch checked out nowhere to the integration's commit, only if
+// nothing else moved it meanwhile.
+export async function updateDetachedTargetBranch(
+  repositoryRoot: string,
+  targetBranch: string,
+  newCommit: string,
+  previousCommit: string,
+) {
+  await git(repositoryRoot, [
+    "update-ref",
+    `refs/heads/${targetBranch}`,
+    newCommit,
+    previousCommit,
+  ]);
+}
+
+// Pushes the advanced local target branch from the project checkout.
+export async function pushTargetBranch(
+  repositoryRoot: string,
+  targetBranch: string,
   upstream: GitUpstream | undefined,
   logFile: string,
 ) {
@@ -160,7 +231,11 @@ export async function pushIntegrationWorktree(
     });
     return;
   }
-  await git(cwd, ["push", upstream.remote, `HEAD:${upstream.branch}`]);
+  await git(repositoryRoot, [
+    "push",
+    upstream.remote,
+    `refs/heads/${targetBranch}:${upstream.branch}`,
+  ]);
 }
 
 export async function removeIntegrationWorktree(
@@ -186,7 +261,7 @@ function parseUpstream(value: string): GitUpstream {
   const [remote, ...branchParts] = value.split("/");
   const branch = branchParts.join("/");
   if (!remote || !branch)
-    throw new Error("Active project branch upstream is invalid.");
+    throw new Error("Target branch upstream is invalid.");
   return { branch, remote };
 }
 

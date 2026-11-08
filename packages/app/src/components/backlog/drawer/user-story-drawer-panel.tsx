@@ -310,6 +310,9 @@ export function UserStoryDrawerPanel({
   const [runMode, setRunMode] = React.useState<StoryRunMode | null>(
     userStory?.runMode ?? null
   )
+  const [targetBranch, setTargetBranch] = React.useState<string | null>(
+    userStory?.targetBranch ?? null
+  )
   const [ambition, setAmbition] = React.useState<Ambition | null>(
     userStory?.ambition ?? null
   )
@@ -738,6 +741,8 @@ export function UserStoryDrawerPanel({
                 onChangedFileClick={handleOpenDevelopmentDiff}
                 onRunModeChange={changeRunMode}
                 runMode={runMode}
+                onTargetBranchChange={changeTargetBranch}
+                targetBranch={targetBranch}
                 status={status}
                 summary={summary}
                 summaryCodeSelectionAttachments={summaryCodeSelectionAttachments}
@@ -827,6 +832,13 @@ export function UserStoryDrawerPanel({
       void onUpdateUserStory(userStory, { runMode: next })
   }
 
+  // Like the run mode; the first run locks it with the story's worktree.
+  function changeTargetBranch(next: string) {
+    setTargetBranch(next)
+    if (mode !== "create" && userStory)
+      void onUpdateUserStory(userStory, { targetBranch: next })
+  }
+
   // Kept with the story, and told to its agent from the next turn on.
   function changeAmbition(next: Ambition | null) {
     setAmbition(next)
@@ -852,6 +864,7 @@ export function UserStoryDrawerPanel({
               summaryFileAttachments
             ),
             runMode: runMode ?? readStoryRunMode(),
+            targetBranch,
             ambition,
           },
           storyContextLimit(contextLimitKey)

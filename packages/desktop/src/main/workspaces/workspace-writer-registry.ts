@@ -47,6 +47,13 @@ export class WorkspaceWriterRegistry {
     );
   }
 
+  activeWorkspaces() {
+    const workspaces = [...this.activeSessions].map((sessionId) =>
+      this.sessionWorkspaces.get(sessionId),
+    );
+    return [...new Set(workspaces.filter((path) => path !== undefined))];
+  }
+
   releaseWorkspace(workspace: string) {
     const canonical = canonicalWorkspace(workspace);
     for (const [sessionId, candidate] of this.sessionWorkspaces) {

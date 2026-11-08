@@ -27,6 +27,10 @@ import {
   readGitFile,
 } from "./workspace-git.ts";
 import { workspaceDiffStats } from "./workspace-diff-stats.ts";
+import {
+  gitBranches,
+  gitTrackRemoteBranch,
+} from "./workspaces/workspace-git-branches.ts";
 
 const execFileAsync = promisify(execFile);
 
@@ -48,6 +52,7 @@ test("managed story registrations survive host pruning and can still be intentio
       storyWorktreeAddArguments({
         branch: "story/vm",
         existing: false,
+        startPoint: "HEAD",
         worktree,
       }),
     );
@@ -387,6 +392,79 @@ test("keeps an existing repository unchanged", async () => {
   }
 });
 
+test("a new story worktree starts from its target branch's last commit, without uncommitted changes", async () => {
+  const repository = await createRepository();
+  const worktree = join(repository, "story-from-release");
+  try {
+    await git(repository, ["branch", "release"]);
+    const releaseCommit = await revision(repository);
+    await writeFile(join(repository, "head-only.txt"), "head\n");
+    await commit(repository, "ahead of release");
+    await writeFile(join(repository, "removed.txt"), "uncommitted\n");
+    await git(
+      repository,
+      storyWorktreeAddArguments({
+        branch: "story/release",
+        existing: false,
+        startPoint: "release",
+        worktree,
+      }),
+    );
+    assert.equal(await revision(worktree), releaseCommit);
+    assert.equal((await git(worktree, ["status", "--porcelain"])).stdout, "");
+    await git(repository, storyWorktreeRemoveArguments(worktree));
+  } finally {
+    await rm(repository, { recursive: true, force: true });
+  }
+});
+test("lists remote-only branches and tracks one with a new local branch", async () => {
+  const repository = await createRepository();
+  const remote = `${repository}-remote.git`;
+  try {
+    await git(repository, ["init", "--bare", remote]);
+    await git(repository, ["remote", "add", "origin", remote]);
+    const current = (
+      await git(repository, ["branch", "--show-current"])
+    ).stdout.trim();
+    await git(repository, ["push", "--set-upstream", "origin", current]);
+    await git(repository, [
+      "push",
+      "origin",
+      `${current}:refs/heads/feature/remote`,
+    ]);
+    await git(repository, ["fetch", "origin"]);
+
+    assert.deepEqual(await gitBranches(repository), {
+      current,
+      local: [current],
+      remote: ["origin/feature/remote"],
+    });
+    assert.deepEqual(
+      await gitTrackRemoteBranch({
+        remoteBranch: "origin/feature/remote",
+        root: repository,
+      }),
+      { branch: "feature/remote" },
+    );
+    assert.equal(
+      (
+        await git(repository, ["rev-parse", "--abbrev-ref", "feature/remote@{u}"])
+      ).stdout.trim(),
+      "origin/feature/remote",
+    );
+    assert.deepEqual((await gitBranches(repository)).remote, []);
+    await assert.rejects(
+      gitTrackRemoteBranch({
+        remoteBranch: "--upload-pack=touch",
+        root: repository,
+      }),
+      /Invalid Git branch name/,
+    );
+  } finally {
+    await rm(repository, { recursive: true, force: true });
+    await rm(remote, { recursive: true, force: true });
+  }
+});
 async function createRepository() {
   const repository = await mkdtemp(join(tmpdir(), "blame-workspace-git-"));
   await git(repository, ["init"]);

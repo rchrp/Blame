@@ -13,6 +13,7 @@ pnpm_version="${BLAME_PNPM_VERSION:-12.15.0}"
 # The newest pnpm 10, for projects that still pin pnpm 10.
 pnpm_legacy_version="10.34.9"
 yarn_version="${BLAME_YARN_VERSION:-1.22.22}"
+gh_version="2.103.3"
 preview_display_image="ghcr.io/rchrp/blame-preview-display@sha256:ff979c4dd3b0df001f26252d2da11949f86c820ff7dde8fbbb94bc1d7bd98e2b" # Filled from the signed preview-image release.
 runtime_packages="bubblewrap ca-certificates curl dbus-user-session git gzip iptables procps python3 tar xz-utils"
 
@@ -337,6 +338,38 @@ docker_artifact_sha256() {
     buildx:0.38.1:arm64) printf '%s' "3b83b3731916ba433feccaaa689fe5bcdc81c641d92c8e6c2ea865dfa141c97a" ;;
     *)
       printf '%s\n' "No pinned checksum for $1 $version on $2." >&2
+      return 1
+      ;;
+  esac
+}
+
+# The GitHub CLI for the agent's GitHub option. It receives its token through
+# GH_TOKEN and never logs in, so the image holds no ~/.config/gh/hosts.yml.
+ensure_gh() (
+  if gh_current; then
+    return
+  fi
+  arch="$(runtime_architecture)"
+  temp_dir="$(mktemp -d)"
+  trap 'rm -rf "$temp_dir"' 0
+  download_verified \
+    "https://github.com/cli/cli/releases/download/v${gh_version}/gh_${gh_version}_linux_${arch}.tar.gz" \
+    "$temp_dir/gh.tar.gz" "$(gh_archive_sha256 "$arch")"
+  tar -C "$temp_dir" -xzf "$temp_dir/gh.tar.gz"
+  install -m 0755 "$temp_dir/gh_${gh_version}_linux_${arch}/bin/gh" /usr/local/bin/gh
+  gh_current
+)
+
+gh_current() {
+  /usr/local/bin/gh --version 2>/dev/null | head -n 1 | grep -q "^gh version ${gh_version} "
+}
+
+gh_archive_sha256() {
+  case "$gh_version:$1" in
+    2.103.3:amd64) printf '%s' "4c806978ffce1cec70853302a56d70ac6da4f19bae7adca4e1a8ab00633dd91d" ;;
+    2.103.3:arm64) printf '%s' "ee32df2323c8847f5fac6cb6b4b69ca75828e9329a8f22f677021f7b3306ce63" ;;
+    *)
+      printf '%s\n' "No pinned checksum for gh $gh_version on $1." >&2
       return 1
       ;;
   esac
@@ -1421,6 +1454,7 @@ ensure_semantic_harness
 ensure_cline_sdk
 remove_external_cli_payloads
 ensure_container_stack
+ensure_gh
 ensure_runtime_paths
 ensure_docker_config
 stop_legacy_container_stack

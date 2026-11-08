@@ -48,6 +48,7 @@ if (action === "sign") {
     "--filter=@blame/sandbox-runner",
   ]);
   await buildImage("build");
+  await verifyGitHubEgress();
 }
 if (action === "release") {
   await command("grype", [`docker:${image}`, ...grypeArgs]);
@@ -108,6 +109,27 @@ async function buildImage(mode) {
     ...(release ? ["--sbom=true", "--provenance=mode=max"] : []),
     release ? "--push" : "--load",
     ".",
+  ]);
+}
+
+// gh needs a token even for /rate_limit: CI passes the job's GITHUB_TOKEN by
+// name only, to a throwaway container of the image just built.
+async function verifyGitHubEgress() {
+  if (!process.env.GH_TOKEN?.trim()) {
+    console.log("GH_TOKEN is not set: skipping the gh api /rate_limit smoke test.");
+    return;
+  }
+  await command("docker", [
+    "run",
+    "--rm",
+    "--env",
+    "GH_TOKEN",
+    image,
+    "/usr/local/bin/gh",
+    "api",
+    "/rate_limit",
+    "--jq",
+    ".resources.core.limit",
   ]);
 }
 

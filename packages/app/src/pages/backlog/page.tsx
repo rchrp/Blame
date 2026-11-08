@@ -82,6 +82,7 @@ import {
 import { shouldCloseDrawerAfterDelete } from "./drawer-delete"
 import {
   approveAndMergeValidationError,
+  notifyMerged,
   runPostMergeTasks,
 } from "./story-post-merge"
 import {
@@ -718,16 +719,14 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
               repositoryRoot: projects.activeProject!.path,
               worktree: story.worktree!,
               storyBranch: story.branch!,
+              targetBranch: story.targetBranch ?? undefined,
               title: story.title,
               summary: story.summary,
               storyId: story.id,
               codePractices,
             })
         )
-        toast.success("Story approved and merged", {
-          description: `Merged into ${result.targetBranch}.`,
-          position: "bottom-right",
-        })
+        notifyMerged(result, platform, projects.activeProject!.path)
         celebrateStory(story.id)
         inviteToStarAfter("merged")
         const mergedStory = await updateStory(

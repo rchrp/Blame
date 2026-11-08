@@ -92,6 +92,7 @@ const userStoryColumns = [
   'priority',
   'owner',
   'branch',
+  'target_branch',
   'preview_url',
   'worktree',
   'workspace_mode',

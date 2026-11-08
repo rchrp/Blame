@@ -1,5 +1,6 @@
 import { validateSourceArtifact } from '#services/workspace_artifacts/source_artifact_validator'
 import { vercelNetworkPolicy } from '#services/sandboxes/vercel_network_policy'
+import { previewRuntimeConfig } from '#config/preview_runtime'
 import { redactPreviewMessage } from '#services/preview_sessions/preview_event_sink'
 import { createHash } from 'node:crypto'
 import { pack } from 'tar-stream'
@@ -19,6 +20,11 @@ test.group('preview runtime security', () => {
     )
     assert.throws(() => vercelNetworkPolicy(['169.254.169.254']), /Invalid sandbox egress domain/)
     assert.throws(() => vercelNetworkPolicy(['-invalid.example']), /Invalid sandbox egress domain/)
+  })
+
+  test('lets the sandbox reach GitHub for gh and git', ({ assert }) => {
+    const policy = vercelNetworkPolicy(previewRuntimeConfig().sandbox.egressAllowlist)
+    assert.properties(policy.allow, ['github.com', 'api.github.com'])
   })
 
   test('accepts a bounded source archive with its canonical manifest', async ({ assert }) => {
