@@ -11,9 +11,10 @@ import endCard from '@/components/story/cta-scene.module.css'
 
 // The hero follows the scroll in three steps. First the copy fades while the
 // demo loop (or the mockup, while the loop is off: see lib/demo-media.ts)
-// rises to the middle of the screen and grows a little. Then the loop stays
-// there, whole, for a while. Last, it tilts away and fades. With reduced
-// motion it only rises, then fades.
+// rises to the middle of the screen, straightens up from a slight tilt and
+// grows a little. Then the loop stays there, flat and whole, for a while.
+// Last, it tilts away and fades. With reduced motion it only rises, then
+// fades.
 // Those styles are written straight to the frame, copy and mockup elements
 // on each frame, so React renders again only when the hero hides or shows.
 // The 3D scene behind the hero is the page's story stage
@@ -26,6 +27,10 @@ const riseEnd = 0.3
 const stayEnd = 0.66
 // From this point of its scroll on, the hero has faded and takes no input.
 const hiddenFrom = 0.9
+// How far the loop leans back at the top of the page, and once it leaves,
+// in degrees.
+const restingTilt = 12
+const exitTilt = 30
 
 // Once in the middle, the loop keeps clear of the header and of the screen's
 // edges, and grows by a tenth at most.
@@ -358,9 +363,10 @@ function heroMockupStyle(
   const exit = easeIn(timelineProgress(progress, stayEnd, 1))
   const scale =
     (1 + (geometry.scale - 1) * rise) * (1 + stay * 0.025) * (1 + exit * 0.3)
+  const tilt = (1 - rise) * restingTilt + exit * exitTilt
   return {
     opacity,
-    transform: `translate3d(0, ${y}px, 0) translate3d(0, ${exit * -30}vh, 0) perspective(1200px) rotate3d(1, -0.16, 0, ${exit * 30}deg) scale(${scale})`,
+    transform: `translate3d(0, ${y}px, 0) translate3d(0, ${exit * -30}vh, 0) perspective(1200px) rotate3d(1, -0.16, 0, ${tilt}deg) scale(${scale})`,
   }
 }
 
