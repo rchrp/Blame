@@ -9,16 +9,36 @@ import { githubRepositoryUrl } from '@/lib/github'
 import { HeroBacklogMockup } from '@/components/blame-mockups/backlog-mockup'
 import endCard from '@/components/story/cta-scene.module.css'
 
-// The hero follows the scroll: its copy rises and fades, then the mockup (or
-// the demo loop, once it is on: see lib/demo-media.ts) tilts up and fades.
+// The hero follows the scroll in three steps. First the copy fades while the
+// demo loop (or the mockup, while the loop is off: see lib/demo-media.ts)
+// rises to the middle of the screen and grows a little. Then the loop stays
+// there, whole, for a while. Last, it tilts away and fades. With reduced
+// motion it only rises, then fades.
 // Those styles are written straight to the frame, copy and mockup elements
-// on each frame, so React renders again only when the hero hides or shows. The 3D scene behind the hero is the page's story
-// stage (components/story/story-stage.tsx).
+// on each frame, so React renders again only when the hero hides or shows.
+// The 3D scene behind the hero is the page's story stage
+// (components/story/story-stage.tsx).
 
-const heroStageHeight = 180
+const heroStageHeight = 250
 const scrollProgressResponse = 14
+// Where the rise and the stay end, as parts of the hero's scroll.
+const riseEnd = 0.3
+const stayEnd = 0.66
 // From this point of its scroll on, the hero has faded and takes no input.
-const hiddenFrom = 0.72
+const hiddenFrom = 0.9
+
+// Once in the middle, the loop keeps clear of the header and of the screen's
+// edges, and grows by a tenth at most.
+const headerSpace = 88
+const edgeSpace = 24
+const sideSpace = 12
+const maxGrowth = 1.1
+const minScale = 0.8
+
+// How far the loop rises to sit in the middle of the screen, and its scale
+// there.
+type HeroGeometry = { rise: number; scale: number }
+const restingGeometry: HeroGeometry = { rise: 0, scale: 1 }
 
 type LayerStyle = {
   opacity: number
@@ -38,9 +58,9 @@ type HeroLayers = {
 // phones they always start under the header.
 
 // The server renders the top of the scroll; the browser takes over from there.
-const initialFrameStyle = heroFrameStyle(0, false)
+const initialFrameStyle = heroFrameStyle(0)
 const initialCopyStyle = heroCopyStyle(0, false)
-const initialMockupStyle = heroMockupStyle(0, false)
+const initialMockupStyle = heroMockupStyle(0, false, restingGeometry)
 
 type ScrollAnimationState = {
   current: number
@@ -185,10 +205,14 @@ function connectHeroScroll(
   const media = window.matchMedia('(prefers-reduced-motion: reduce)')
   let reducedMotion = media.matches
   let hidden = false
+  let geometry = restingGeometry
   const render = (progress: number) => {
-    applyLayerStyle(layers.frame.current, heroFrameStyle(progress, reducedMotion))
+    applyLayerStyle(layers.frame.current, heroFrameStyle(progress))
     applyLayerStyle(layers.copy.current, heroCopyStyle(progress, reducedMotion))
-    applyLayerStyle(layers.mockup.current, heroMockupStyle(progress, reducedMotion))
+    applyLayerStyle(
+      layers.mockup.current,
+      heroMockupStyle(progress, reducedMotion, geometry),
+    )
     if (progress >= hiddenFrom !== hidden) {
       hidden = !hidden
       setHidden(hidden)
@@ -206,15 +230,30 @@ function connectHeroScroll(
     reducedMotion = media.matches
     render(state.current)
   }
+  // The copy's and the loop's sizes change with the screen and once the
+  // fonts load: the loop's place in the middle follows them.
+  const measure = () => {
+    geometry = measureHeroGeometry(layers.mockup.current)
+    render(state.current)
+  }
+  const resize = () => {
+    measure()
+    update()
+  }
+  const sizes = new ResizeObserver(measure)
+  for (const layer of [layers.copy.current, layers.mockup.current]) {
+    if (layer) sizes.observe(layer)
+  }
 
   render(initial)
   window.addEventListener('scroll', update, { passive: true })
-  window.addEventListener('resize', update)
+  window.addEventListener('resize', resize)
   media.addEventListener('change', updateMotion)
   return () => {
     if (state.frame) window.cancelAnimationFrame(state.frame)
+    sizes.disconnect()
     window.removeEventListener('scroll', update)
-    window.removeEventListener('resize', update)
+    window.removeEventListener('resize', resize)
     media.removeEventListener('change', updateMotion)
   }
 }
@@ -270,22 +309,35 @@ function readScrollProgress(node: HTMLElement | null) {
   return clamp(-node.getBoundingClientRect().top / scrollable, 0, 1)
 }
 
-function heroFrameStyle(
-  progress: number,
-  reducedMotion: boolean,
-): LayerStyle {
-  const opacity = reducedMotion
-    ? reducedMotionOpacity(progress)
-    : 1 - smoothstep(hiddenFrom, 0.98, progress)
-  return { opacity, pointerEvents: progress < hiddenFrom ? 'auto' : 'none' }
+// The frame fills the pinned screen, so the loop's offsets in it are its
+// place on screen before any transform.
+function measureHeroGeometry(mockup: HTMLElement | null): HeroGeometry {
+  if (!mockup?.offsetHeight) return restingGeometry
+  const { offsetHeight: height, offsetTop: top, offsetWidth: width } = mockup
+  const room = window.innerHeight - headerSpace - 2 * edgeSpace
+  const scale = clamp(
+    Math.min(room / height, (window.innerWidth - 2 * sideSpace) / width),
+    minScale,
+    maxGrowth,
+  )
+  const middle = headerSpace + edgeSpace + room / 2
+  return { rise: Math.min(0, middle - (top + height / 2)), scale }
 }
 
+function heroFrameStyle(progress: number): LayerStyle {
+  return {
+    opacity: 1 - smoothstep(hiddenFrom, 0.98, progress),
+    pointerEvents: progress < hiddenFrom ? 'auto' : 'none',
+  }
+}
+
+// The copy is gone before the loop reaches the middle.
 function heroCopyStyle(
   progress: number,
   reducedMotion: boolean,
 ): LayerStyle {
-  if (reducedMotion) return { opacity: reducedMotionOpacity(progress) }
-  const amount = easeOut(timelineProgress(progress, 0, 0.68))
+  const amount = easeOut(timelineProgress(progress, 0, riseEnd * 0.75))
+  if (reducedMotion) return { opacity: 1 - amount }
   return {
     opacity: 1 - amount,
     transform: `translate3d(0, ${amount * -72}px, 0) scale(${1 - amount * 0.035})`,
@@ -295,18 +347,21 @@ function heroCopyStyle(
 function heroMockupStyle(
   progress: number,
   reducedMotion: boolean,
+  geometry: HeroGeometry,
 ): LayerStyle {
-  if (reducedMotion) return { opacity: reducedMotionOpacity(progress) }
-  const lift = easeOut(timelineProgress(progress, 0, 0.9))
-  const fade = smoothstep(0.34, 0.72, progress)
+  const rise = smoothstep(0, riseEnd, progress)
+  const opacity = 1 - smoothstep(stayEnd + 0.04, hiddenFrom, progress)
+  const y = geometry.rise * rise
+  if (reducedMotion) return { opacity, transform: `translate3d(0, ${y}px, 0)` }
+  // While it stays, it keeps growing a touch, so the scroll still shows.
+  const stay = timelineProgress(progress, riseEnd, stayEnd)
+  const exit = easeIn(timelineProgress(progress, stayEnd, 1))
+  const scale =
+    (1 + (geometry.scale - 1) * rise) * (1 + stay * 0.025) * (1 + exit * 0.3)
   return {
-    opacity: 1 - fade,
-    transform: `translate3d(0, ${lift * -42}vh, 0) perspective(1200px) rotate3d(1, -0.16, 0, ${lift * 32}deg) scale(${1 + lift * 0.42})`,
+    opacity,
+    transform: `translate3d(0, ${y}px, 0) translate3d(0, ${exit * -30}vh, 0) perspective(1200px) rotate3d(1, -0.16, 0, ${exit * 30}deg) scale(${scale})`,
   }
-}
-
-function reducedMotionOpacity(progress: number) {
-  return progress < hiddenFrom ? 1 : 0
 }
 
 function timelineProgress(progress: number, start: number, end: number) {
@@ -321,6 +376,10 @@ function smoothstep(edge0: number, edge1: number, value: number) {
 
 function easeOut(value: number) {
   return 1 - Math.pow(1 - clamp(value, 0, 1), 3)
+}
+
+function easeIn(value: number) {
+  return Math.pow(clamp(value, 0, 1), 2)
 }
 
 function clamp(value: number, min: number, max: number) {
