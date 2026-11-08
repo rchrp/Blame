@@ -7,6 +7,7 @@ import {
   githubReleasesUrl,
   githubRepositoryUrl,
 } from "@/lib/github";
+import { publisher } from "@/lib/publisher";
 
 const footerGroups = [
   {
@@ -87,7 +88,7 @@ function PublisherSummary() {
       </Link>
       <p className="mt-4 max-w-md text-sm leading-7 text-white/52">
         Blame is published by Raphael Charpentier EI, operating under the trade
-        name MK Holding, registered under SIREN 984 448 217 (R.C.S. Lyon).
+        name MK Holding, registered under SIREN {publisher.siren} (R.C.S. Lyon).
       </p>
       <a
         className="mt-4 inline-block text-sm text-[#dedaff] underline decoration-white/20 underline-offset-4"

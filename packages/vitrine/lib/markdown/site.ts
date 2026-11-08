@@ -7,6 +7,7 @@ import {
   harnessSourceUrl,
 } from "@/lib/github";
 import { isMarkdownPagePath, markdownUrlPath } from "@/lib/markdown-paths";
+import { publisher } from "@/lib/publisher";
 import { absoluteSiteUrl } from "@/lib/site";
 
 // The product pages as Markdown for AI agents. The text follows the pages
@@ -151,7 +152,7 @@ Blame is a TypeScript monorepo: an Electron desktop app, a React interface, an A
 
 ## License and publisher
 
-Blame is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0-only). It is published by Raphael Charpentier EI, operating under the trade name MK Holding (SIREN 984 448 217, Lyon, France). Contact: support@blame.so.
+Blame is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0-only). It is published by Raphael Charpentier EI, operating under the trade name MK Holding (SIREN ${publisher.siren}, Lyon, France). Contact: support@blame.so.
 `;
 }
 

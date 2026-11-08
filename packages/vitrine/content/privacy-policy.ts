@@ -3,6 +3,7 @@ import type {
   LegalSection,
 } from "@/components/legal-document-page";
 import { legalDocumentReadyForPublication } from "@/content/legal-publication";
+import { publisher } from "@/lib/publisher";
 
 const paragraph = (text: string): LegalBlock => ({ type: "paragraph", text });
 const list = (...items: string[]): LegalBlock => ({ type: "list", items });
@@ -28,14 +29,14 @@ export const privacySections = [
     title: "1. Controller and contact details",
     blocks: [
       paragraph(
-        "For the processing described in this Policy for which Blame determines the purposes and means, the data controller is Raphael Charpentier EI, operating under the trade name MK Holding, 36 rue des Geltines, 69390 Millery, France, registered with the French National Business Register and the Lyon Trade and Companies Register under SIREN number 984 448 217 (R.C.S. Lyon).",
+        `For the processing described in this Policy for which Blame determines the purposes and means, the data controller is Raphael Charpentier EI, operating under the trade name MK Holding, ${publisher.address}, registered with the French National Business Register and the Lyon Trade and Companies Register under SIREN number ${publisher.siren} (R.C.S. Lyon).`,
       ),
       list(
         "Privacy enquiries and rights requests: privacy@blame.so",
         "Security reports: security@blame.so",
         "General support: support@blame.so",
-        "Telephone: +33 6 67 28 12 29",
-        "Postal address: 36 rue des Geltines, 69390 Millery, France",
+        `Telephone: ${publisher.phone}`,
+        `Postal address: ${publisher.address}`,
       ),
       paragraph(
         "Blame has not appointed a Data Protection Officer. The privacy contact above handles data-protection enquiries. Contacting us does not affect your right to contact a competent supervisory authority.",
@@ -475,7 +476,7 @@ export const privacySections = [
     title: "26. Questions and complaints",
     blocks: [
       paragraph(
-        "Send privacy questions, complaints, and rights requests to privacy@blame.so or by post to Raphael Charpentier EI / MK Holding, 36 rue des Geltines, 69390 Millery, France. We will acknowledge and investigate a privacy complaint and explain the outcome and any available review route without undue delay.",
+        `Send privacy questions, complaints, and rights requests to privacy@blame.so or by post to Raphael Charpentier EI / MK Holding, ${publisher.address}. We will acknowledge and investigate a privacy complaint and explain the outcome and any available review route without undue delay.`,
       ),
       paragraph(
         "In France, you may lodge a complaint with the Commission nationale de l'informatique et des libertés (CNIL), 3 Place de Fontenoy, TSA 80715, 75334 Paris Cedex 07, France, at https://www.cnil.fr/en/contact-us or through its online complaint service at https://www.cnil.fr/fr/plaintes. You may instead contact the supervisory authority in the EEA or other jurisdiction where you habitually reside, work, or believe an infringement occurred.",

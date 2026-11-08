@@ -3,6 +3,7 @@ import type {
   LegalSection,
 } from "@/components/legal-document-page";
 import { legalDocumentReadyForPublication } from "@/content/legal-publication";
+import { publisher } from "@/lib/publisher";
 
 const paragraph = (text: string): LegalBlock => ({ type: "paragraph", text });
 const list = (...items: string[]): LegalBlock => ({ type: "list", items });
@@ -17,7 +18,7 @@ export const frenchTermsLastUpdated = "19 juillet 2026";
 export const frenchTermsVersion = "1.0";
 
 export const frenchTermsIntroduction = [
-  "Les présentes Conditions Générales de Service et de Vente constituent le contrat entre le Client et Raphael Charpentier, entrepreneur individuel soumis au régime de la micro-entreprise et exerçant sous le nom commercial MK Holding, domicilié 36 rue des Geltines, 69390 Millery, France, immatriculé au Registre national des entreprises et au R.C.S. de Lyon sous le numéro SIREN 984 448 217 (« Blame », « nous »). TVA non applicable, article 293 B du Code général des impôts.",
+  `Les présentes Conditions Générales de Service et de Vente constituent le contrat entre le Client et Raphael Charpentier, entrepreneur individuel soumis au régime de la micro-entreprise et exerçant sous le nom commercial MK Holding, domicilié ${publisher.address}, immatriculé au Registre national des entreprises et au R.C.S. de Lyon sous le numéro SIREN ${publisher.siren} (« Blame », « nous »). TVA non applicable, article 293 B du Code général des impôts.`,
   "Elles régissent le téléchargement, l'installation, l'accès et l'utilisation de l'application Blame Desktop, du site, des services cloud, des API, des mises à jour et du support. Le Client doit les lire et les accepter avant de commander. Les droits impératifs du consommateur demeurent intégralement applicables.",
   "La version française prévaut pour les consommateurs en France. Les clauses expressément réservées aux Clients professionnels ne s'appliquent pas aux consommateurs.",
 ] as const;
@@ -28,7 +29,7 @@ export const frenchTermsSections = [
     title: "1. Identité du prestataire et champ d'application",
     blocks: [
       paragraph(
-        "Blame est le fournisseur et le concédant de licence du Service. Le Client peut écrire à legal@blame.so pour toute question juridique, à support@blame.so pour le support et appeler le +33 6 67 28 12 29.",
+        `Blame est le fournisseur et le concédant de licence du Service. Le Client peut écrire à legal@blame.so pour toute question juridique, à support@blame.so pour le support et appeler le ${publisher.phone}.`,
       ),
       paragraph(
         "Les présentes conditions s'appliquent aux comptes gratuits ou payants, abonnements, essais et programmes d'accès anticipé qui y renvoient. Les caractéristiques, le prix total, la périodicité, la durée et les éventuelles conditions particulières affichées avant la commande complètent les présentes conditions.",
@@ -366,7 +367,7 @@ export const frenchTermsSections = [
     title: "22. Réclamations, médiation, droit applicable et juridiction",
     blocks: [
       paragraph(
-        "Toute réclamation est adressée d'abord à support@blame.so ou par courrier à Raphael Charpentier EI, 36 rue des Geltines, 69390 Millery, France, avec les faits et la solution demandée. Les parties tentent de résoudre le différend de bonne foi, sans retarder une mesure urgente ou un délai de prescription.",
+        `Toute réclamation est adressée d'abord à support@blame.so ou par courrier à Raphael Charpentier EI, ${publisher.address}, avec les faits et la solution demandée. Les parties tentent de résoudre le différend de bonne foi, sans retarder une mesure urgente ou un délai de prescription.`,
       ),
       notice("Médiation de la consommation", [
         "Après une réclamation écrite préalable restée sans solution, le consommateur peut saisir gratuitement, selon ses règles et son champ de compétence, CM2C — Centre de la Médiation de la Consommation de Conciliateurs de Justice, 49 rue de Ponthieu, 75008 Paris, France, https://www.cm2c.net. La médiation est facultative pour le consommateur et ne supprime pas son droit de saisir un tribunal.",
@@ -407,7 +408,7 @@ export const frenchTermsSections = [
         "Veuillez compléter et renvoyer le présent formulaire uniquement si vous souhaitez vous rétracter du contrat. Vous pouvez utiliser toute autre déclaration dénuée d'ambiguïté ou la fonctionnalité https://blame.so/fr/retractation.",
       ),
       notice("Formulaire type", [
-        "À l'attention de Raphael Charpentier EI, nom commercial MK Holding, 36 rue des Geltines, 69390 Millery, France, withdrawal@blame.so.",
+        `À l'attention de Raphael Charpentier EI, nom commercial MK Holding, ${publisher.address}, withdrawal@blame.so.`,
         "Je/Nous vous notifie/notifions par la présente ma/notre rétractation du contrat portant sur la fourniture du service numérique suivant : ____________________.",
         "Commandé le / contrat conclu le : ____________________.",
         "Nom du/des consommateur(s) : ____________________.",

@@ -6,6 +6,7 @@ import { ArrowLeft, CheckCircle2, Download, ShieldCheck } from "lucide-react";
 
 import { LanguageSelector } from "@/components/language-selector";
 import { SiteHeader } from "@/components/site-header";
+import { publisher } from "@/lib/publisher";
 
 type ActionStep = "form" | "review" | "complete";
 export type WithdrawalLanguage = "en" | "fr";
@@ -727,7 +728,7 @@ function englishReceiptText(receipt: ContractReceipt) {
     `Status: ${receipt.status}`,
     `Refund: ${refund}`,
     `Effects: ${receipt.effects.join("; ")}`,
-    "Issuer: Raphael Charpentier EI — MK Holding, 36 rue des Geltines, 69390 Millery, France",
+    `Issuer: Raphael Charpentier EI — MK Holding, ${publisher.address}`,
     "Contact: billing@blame.so",
   ].join("\n");
 }
@@ -750,7 +751,7 @@ function frenchReceiptText(receipt: ContractReceipt) {
     `Statut : ${receipt.status}`,
     `Remboursement : ${refund}`,
     `Effets : ${receipt.effects.join("; ")}`,
-    "Émetteur : Raphael Charpentier EI — MK Holding, 36 rue des Geltines, 69390 Millery, France",
+    `Émetteur : Raphael Charpentier EI — MK Holding, ${publisher.address}`,
     "Contact : billing@blame.so",
   ].join("\n");
 }
