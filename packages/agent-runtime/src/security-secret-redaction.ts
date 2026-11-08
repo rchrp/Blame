@@ -10,6 +10,7 @@ const knownSecretPatterns: { kind: string; pattern: RegExp }[] = [
     kind: "GITHUB_TOKEN",
     pattern: /\bgh(?:p|o|u|s|r)_[A-Za-z0-9]{20,}\b/g,
   },
+  { kind: "GITHUB_TOKEN", pattern: /\bgithub_pat_[A-Za-z0-9_]{22,}\b/g },
   { kind: "GITLAB_TOKEN", pattern: /\bglpat-[A-Za-z0-9_-]{20,}\b/g },
   { kind: "OPENAI_API_KEY", pattern: /\bsk-(?:proj-)?[A-Za-z0-9_-]{20,}\b/g },
   { kind: "SLACK_TOKEN", pattern: /\bxox(?:b|p|a|r|s)-[A-Za-z0-9-]{16,}\b/g },
@@ -24,6 +25,12 @@ const knownSecretPatterns: { kind: string; pattern: RegExp }[] = [
 const credentialAssignment =
   /\b(api[_-]?key|access[_-]?token|auth[_-]?token|client[_-]?secret|password|passwd|private[_-]?key|secret|token)\b\s*[:=]\s*(["'`])([^\n"'`]{8,})\2/gi;
 
+// The variables gh reads its token from: their value is a secret whatever its
+// shape, quoted or not (env files, shell exports, YAML, JSON).
+const githubTokenVariables = new Set(["GH_TOKEN", "GITHUB_TOKEN"]);
+const githubTokenAssignment =
+  /\b(GH_TOKEN|GITHUB_TOKEN)\b["']?\s*[:=]\s*["'`]?([^\s"'`,;}]+)/g;
+
 export function detectSecuritySecrets(content: string) {
   const signals: SecuritySecretSignal[] = [];
   for (const { kind, pattern } of knownSecretPatterns) {
@@ -35,13 +42,14 @@ export function detectSecuritySecrets(content: string) {
   for (const match of content.matchAll(clonePattern(credentialAssignment))) {
     const value = match[3] ?? "";
     if (!likelyCredential(value)) continue;
-    const matchStart = match.index ?? 0;
-    const offset = match[0].lastIndexOf(value);
-    signals.push({
-      kind: credentialKind(match[1] ?? "SECRET"),
-      start: matchStart + offset,
-      end: matchStart + offset + value.length,
-    });
+    signals.push(
+      assignedValueSignal(match, credentialKind(match[1] ?? "SECRET"), value),
+    );
+  }
+  for (const match of content.matchAll(clonePattern(githubTokenAssignment))) {
+    const value = match[2] ?? "";
+    if (value.startsWith("$") || !likelyCredential(value)) continue;
+    signals.push(assignedValueSignal(match, match[1] ?? "GH_TOKEN", value));
   }
   return nonOverlapping(signals);
 }
@@ -61,9 +69,20 @@ export function redactSecurityValue<T>(value: T): T {
   return Object.fromEntries(
     Object.entries(value).map(([key, item]) => [
       key,
-      redactSecurityValue(item),
+      githubTokenVariables.has(key) && typeof item === "string" && item
+        ? `<REDACTED_SECRET:${key}>`
+        : redactSecurityValue(item),
     ]),
   ) as T;
+}
+
+function assignedValueSignal(
+  match: RegExpMatchArray,
+  kind: string,
+  value: string,
+): SecuritySecretSignal {
+  const start = (match.index ?? 0) + match[0].lastIndexOf(value);
+  return { kind, start, end: start + value.length };
 }
 
 function likelyCredential(value: string) {
