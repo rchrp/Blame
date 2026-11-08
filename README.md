@@ -18,9 +18,11 @@ Blame gives each agent its own worktree, ports, services, and running app, so yo
 [![GitHub stars](https://img.shields.io/github/stars/rchrp/Blame?color=f7cf83)](https://github.com/rchrp/Blame/stargazers)
 [![Discord](https://img.shields.io/badge/chat-Discord-5865F2?logo=discord&logoColor=white)](https://discord.gg/AfjG6aUyxe)
 
-**[Install](#install)** · [Website](https://blame.so) · [Docs](https://blame.so/docs) · [Discord](https://discord.gg/AfjG6aUyxe) · [Demo video](https://youtu.be/cD6jASpIKQw) · [Discussions](https://github.com/rchrp/Blame/discussions) · [Roadmap](https://github.com/users/rchrp/projects/7) · [Contributing](CONTRIBUTING.md) · [Code signing policy](CODE_SIGNING_POLICY.md)
+**[Install](#install)** · [Website](https://blame.so) · [Docs](https://blame.so/docs) · [Discord](https://discord.gg/AfjG6aUyxe) · [Discussions](https://github.com/rchrp/Blame/discussions) · [Roadmap](https://github.com/users/rchrp/projects/7) · [Contributing](CONTRIBUTING.md) · [Code signing policy](CODE_SIGNING_POLICY.md)
 
-<a href="https://youtu.be/cD6jASpIKQw"><img src="docs/media/demo.gif" width="900" alt="Three agents work on three stories of the Blame website at once in Blame; each story's Preview tab shows its own running copy of the site, then the story in review is approved and merged"></a>
+<a href="https://blame.so/media/demo-full-h264.mp4"><img src="docs/media/demo.gif" width="900" alt="In Blame, a user story is written and sent to an agent, then the story in review shows its thread and its own running preview of the site, followed by the light theme's preview"></a>
+
+<p><a href="https://blame.so/media/demo-full-h264.mp4"><b>▶ Watch the longer demo</b></a></p>
 
 </div>
 
