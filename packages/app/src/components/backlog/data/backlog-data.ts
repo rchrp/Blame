@@ -162,6 +162,9 @@ export type UserStory = {
   priority: UserStoryPriority
   owner: string
   branch?: string | null
+  // The branch the story starts from and merges into. Null until chosen in
+  // the composer or recorded at the first run: the project folder's branch.
+  targetBranch?: string | null
   previewUrl?: string | null
   runConfigurationId?: string | null
   worktree?: string | null
@@ -205,6 +208,7 @@ export type UserStoryDraft = {
   priority?: UserStoryPriority
   owner?: string
   runMode?: UserStory["runMode"]
+  targetBranch?: UserStory["targetBranch"]
   ambition?: UserStory["ambition"]
 }
 
@@ -221,6 +225,7 @@ export type UserStoryUpdate = Partial<
     | "priority"
     | "owner"
     | "branch"
+    | "targetBranch"
     | "previewUrl"
     | "runConfigurationId"
     | "worktree"

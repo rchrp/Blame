@@ -8,6 +8,7 @@ import { QuickChatEmptyState } from "@/components/chat/quick-chat-empty-state"
 import { ModelSelector } from "@/components/model/model-selector"
 import { ConversationPersonalizationMenu } from "@/components/personalization/personalization-menu"
 import { ProjectRunConfigurationPreviewWarmup } from "@/components/backlog/board/project-run-preview-warmup"
+import { BranchSelector } from "@/components/backlog/drawer/branch-selector"
 import {
   MessageScroller,
   MessageScrollerButton,
@@ -116,11 +117,15 @@ export function QuickChatView({
                     }
                     minHeight={emptyConversation ? "min-h-44" : "min-h-24"}
                     toolbarEnd={
-                      <div className="w-[28rem] max-w-full min-w-0">
-                        <ModelSelector
-                          role="agent"
-                          warnOnModelChange={!emptyConversation}
-                        />
+                      <div className="flex max-w-full min-w-0 flex-wrap items-center justify-end gap-2">
+                        {/* A chat works in the project folder, on its branch. */}
+                        {emptyConversation ? <BranchSelector readOnly /> : null}
+                        <div className="w-[28rem] max-w-full min-w-0">
+                          <ModelSelector
+                            role="agent"
+                            warnOnModelChange={!emptyConversation}
+                          />
+                        </div>
                       </div>
                     }
                   />

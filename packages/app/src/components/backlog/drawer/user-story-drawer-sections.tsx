@@ -17,9 +17,10 @@ import {
   type PendingFileAttachment,
 } from "@/components/backlog/drawer/markdown-editor"
 import { RuntimeProfileSelector } from "@/components/backlog/drawer/runtime-profile-selector"
+import { BranchSelector } from "@/components/backlog/drawer/branch-selector"
 import { composerDraftStorageKey } from "@/components/backlog/drawer/composer-draft-storage"
 import type { SpeechTarget } from "@/components/backlog/drawer/speech-session-store"
-import type { StoryRunMode } from "@/lib/runtime-preference"
+import { useStoryRunMode, type StoryRunMode } from "@/lib/runtime-preference"
 import type { Ambition } from "@/lib/personalization"
 import { PersonalizationMenu } from "@/components/personalization/personalization-menu"
 import {
@@ -103,6 +104,7 @@ export const UserStoryContent = React.memo(function UserStoryContent({
   onFileLinkClick,
   onChangedFileClick,
   onRunModeChange,
+  onTargetBranchChange,
   loadChangedFileDiffs,
   runMode,
   status,
@@ -110,6 +112,7 @@ export const UserStoryContent = React.memo(function UserStoryContent({
   summaryCodeSelectionAttachments,
   summaryFileAttachments,
   summaryRef,
+  targetBranch,
   userStory,
 }: {
   // The ambition kept with this story; null follows the account's.
@@ -122,6 +125,9 @@ export const UserStoryContent = React.memo(function UserStoryContent({
   // Where this story runs (Local Container, Cloud Preview or Direct).
   runMode?: StoryRunMode | null
   onRunModeChange?: (mode: StoryRunMode) => void
+  // The branch the story starts from and merges into.
+  targetBranch?: string | null
+  onTargetBranchChange?: (branch: string) => void
   onCommentUndo?: (target: AgentConversationUserMessageUndo) => Promise<void>
   onSummaryChange?: (summary: string) => void
   onSummaryCodeSelectionAttachmentRemove: (id: string) => void
@@ -193,6 +199,11 @@ export const UserStoryContent = React.memo(function UserStoryContent({
           toolbarEnd={
             editable ? (
               <div className="flex max-w-full min-w-0 flex-wrap items-center justify-end gap-2">
+                <StoryBranchSelector
+                  runMode={runMode}
+                  value={targetBranch}
+                  onChange={onTargetBranchChange}
+                />
                 <RuntimeProfileSelector value={runMode} onChange={onRunModeChange} />
                 <div className="w-96 shrink-0">
                   <MarkdownEditorModelSelector />
@@ -485,6 +496,26 @@ type AgentRunTimelineProps = {
   userStory?: UserStory
 }
 
+// Direct stories run on the project folder's own branch: shown, not chosen.
+const StoryBranchSelector = React.memo(function StoryBranchSelector({
+  onChange,
+  runMode,
+  value,
+}: {
+  onChange?: (branch: string) => void
+  runMode?: StoryRunMode | null
+  value?: string | null
+}) {
+  const premium = useCloudAuth().license?.licensed === true
+  const accountRunMode = useStoryRunMode(premium)
+  return (
+    <BranchSelector
+      readOnly={(runMode ?? accountRunMode) === "direct"}
+      value={value}
+      onChange={onChange}
+    />
+  )
+})
 const MarkdownEditorModelSelector = React.memo(
   function ModelSelectorBoundary() {
     return <ModelSelector modelTriggerClassName="max-w-none" />

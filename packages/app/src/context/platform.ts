@@ -533,7 +533,17 @@ export type WorkspaceEntry = {
 export type WorktreeResult = {
   worktree: string
   branch: string
+  // The branch the story started from and merges into.
+  targetBranch: string | null
   workspaceMode: "local-container" | "cloud-mirror" | "direct"
+}
+
+export type GitBranchList = {
+  // Null when the folder is on a detached HEAD.
+  current: string | null
+  local: string[]
+  // Remote branches with no local branch yet, such as "origin/feature".
+  remote: string[]
 }
 
 export type GitBranchStatus = {
@@ -827,6 +837,17 @@ export type WorkspaceClient = {
   gitDeleteFiles(input: { root: string; paths: string[] }): Promise<boolean>
   gitCommit(input: { root: string; message: string }): Promise<GitCommandResult>
   gitPush(input: { root: string }): Promise<GitCommandResult>
+  gitBranches?(input: { root: string }): Promise<GitBranchList>
+  // Creates the local branch following a remote-only one.
+  gitTrackBranch?(input: {
+    remoteBranch: string
+    root: string
+  }): Promise<{ branch: string }>
+  gitPublishBranch?(input: {
+    branch: string
+    remote: string
+    root: string
+  }): Promise<GitCommandResult>
   listGitDirectory(input: {
     path?: string
     refs: string[]
@@ -861,6 +882,8 @@ export type WorkspaceClient = {
     runtimeProfile: RuntimeProfileId
     storyId: string
     storyReference: string
+    // The branch to start from; without it, the project folder's branch.
+    targetBranch?: string | null
     telemetryCohorts?: ExecutionTelemetryCohorts
     title: string
   }): Promise<WorktreeResult>
