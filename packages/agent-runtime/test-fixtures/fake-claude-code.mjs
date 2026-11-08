@@ -27,12 +27,17 @@ write({
 });
 
 // Real Claude Code lists the MCP tools as it starts, before any input.
+// A list already asked for lands before the model call, as it does in real
+// Claude Code, so the answer waits for it; a list not asked for yet does not.
 let toolsListed = false;
+let toolsListing;
 if (mcpUrl) {
   const delay = Number(process.env.FAKE_CLAUDE_MCP_DELAY_MS ?? 0);
   setTimeout(() => {
     mcpReady ??= rpc({ method: "initialize", params: { protocolVersion: "2025-06-18" } });
-    void mcpReady.then(() => rpc({ method: "tools/list", params: {} })).then(() => { toolsListed = true; });
+    void mcpReady.then(() => {
+      toolsListing = rpc({ method: "tools/list", params: {} }).then(() => { toolsListed = true; });
+    });
   }, delay);
 }
 
@@ -94,6 +99,7 @@ for await (const line of lines) {
     write({ type: "result", subtype: "success", is_error: true, result: "Claude AI usage limit reached" });
     continue;
   } else {
+    await toolsListing;
     streamText(
       `echo(${model}): ${text} | effort: ${effort} | system: ${systemPrompt.split("\n")[0]} | mcp: ${mcpUrl ? "blame" : "none"}${mcpUrl ? ` | tools: ${toolsListed ? "listed" : "missing"}` : ""}`,
     );

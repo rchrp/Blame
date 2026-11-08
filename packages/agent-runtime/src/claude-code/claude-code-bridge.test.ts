@@ -223,17 +223,22 @@ test("interrupts a silent stream sooner after the computer wakes from sleep", as
   const realNow = Date.now;
   await withBridge(
     async (bridge, stateDirectory) => {
-      // The wall clock jumps ahead of the monotonic one, as it does across sleep.
-      const asleep = setTimeout(() => {
+      // Once the stream has gone quiet after its first text, the wall clock
+      // jumps ahead of the monotonic one, as it does across sleep. A fixed
+      // delay would land before that text on a slow runner, since the first
+      // message waits for Claude Code to list Blame's tools.
+      const sleep = () => {
         Date.now = () => realNow() + 60_000;
-      }, 100);
+      };
       try {
-        const cut = await stream(bridge, bridge.token("session-wake"), [
-          { role: "user", content: "please stall" },
-        ]);
+        const cut = await stream(
+          bridge,
+          bridge.token("session-wake"),
+          [{ role: "user", content: "please stall" }],
+          sleep,
+        );
         assert.equal(text(cut), "partial");
       } finally {
-        clearTimeout(asleep);
         Date.now = realNow;
       }
       const events = await laneEvents(stateDirectory);
@@ -294,7 +299,13 @@ type StreamEvent = {
   delta?: { text?: string; stop_reason?: string | null };
 };
 
-async function stream(bridge: ClaudeCodeBridge, key: string, messages: unknown[]) {
+/** Streams a turn; `onText` runs once, when its first text arrives. */
+async function stream(
+  bridge: ClaudeCodeBridge,
+  key: string,
+  messages: unknown[],
+  onText?: () => void,
+) {
   const response = await post(bridge, key, {
     model: "sonnet",
     stream: true,
@@ -303,7 +314,16 @@ async function stream(bridge: ClaudeCodeBridge, key: string, messages: unknown[]
     messages,
   });
   assert.equal(response.status, 200);
-  return (await response.text())
+  const decoder = new TextDecoder();
+  let body = "";
+  for await (const chunk of response.body!) {
+    body += decoder.decode(chunk, { stream: true });
+    if (onText && body.includes('"text_delta"')) {
+      onText();
+      onText = undefined;
+    }
+  }
+  return body
     .split("\n")
     .filter((line) => line.startsWith("data: "))
     .map((line) => JSON.parse(line.slice(6)) as StreamEvent);
