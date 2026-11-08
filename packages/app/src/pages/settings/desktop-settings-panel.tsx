@@ -13,6 +13,8 @@ import { useSystemNotificationsEnabled } from "@/lib/system-notifications"
 import { RuntimeSettingsGroup } from "./runtime-settings-group"
 import { BrowserDiagnosticsGroup } from "./browser-diagnostics-group"
 import { AgentGithubAccessGroup } from "./agent-github-access-group"
+import { ProjectGithubGroup } from "./project-github-group"
+import { useCloudAuth } from "@/context/cloud-auth"
 import { PrivacySettingsGroup } from "./privacy-settings-group"
 import { WhatsNewSettingsRow } from "./whats-new-settings-row"
 import { Switch } from "@/components/ui/switch"
@@ -39,6 +41,7 @@ const fallbackStatus: DesktopUpdateStatus = {
 
 export function DesktopSettingsPanel() {
   const platform = usePlatform()
+  const auth = useCloudAuth()
   const updates = useDesktopUpdates(platform.updates)
 
   return (
@@ -47,6 +50,9 @@ export function DesktopSettingsPanel() {
       <PrivacySettingsGroup />
       <RuntimeSettingsGroup />
       <BrowserDiagnosticsGroup />
+      {auth.status === "authenticated" && auth.mode === "account" ? (
+        <ProjectGithubGroup />
+      ) : null}
       <AgentGithubAccessGroup />
       <DesktopIntegrationGroup platform={platform} />
     </SettingsPanel>

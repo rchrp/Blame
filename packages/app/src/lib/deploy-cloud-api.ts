@@ -6,7 +6,7 @@ import type {
   ProjectDeployment,
 } from "@blame/deploy-contract"
 
-type CloudRequester = <T>(path: string, init?: RequestInit) => Promise<T>
+export type CloudRequester = <T>(path: string, init?: RequestInit) => Promise<T>
 
 export function createDeployCloudApi(request: CloudRequester) {
   return {
