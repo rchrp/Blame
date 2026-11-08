@@ -1,0 +1,24 @@
+{
+  "Statement": [
+    {
+      "Sid": "UploadDemoMedia",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:ListBucket",
+        "s3:PutObject",
+        "s3:PutObjectAcl"
+      ],
+      "Resource": [
+        "arn:aws:s3:::blame-prod-vitrine-media-gra",
+        "arn:aws:s3:::blame-prod-vitrine-media-gra/*"
+      ]
+    },
+    {
+      "Sid": "HideOtherBuckets",
+      "Effect": "Deny",
+      "Action": ["s3:ListAllMyBuckets"],
+      "Resource": ["*"]
+    }
+  ]
+}
