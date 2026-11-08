@@ -16,6 +16,8 @@ export type DrawerAction =
   | "Request Changes"
   | "Reject"
   | "Approve & Merge"
+  | "Open PR"
+  | "Merge without Push"
   | "Close"
   | "Rework as Draft"
   | "Delete Permanently"

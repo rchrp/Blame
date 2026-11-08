@@ -40,6 +40,12 @@ export default await Env.create(new URL('../', import.meta.url), {
   RESEND_API_KEY: Env.schema.secret.optional(),
   GITHUB_CLIENT_ID: Env.schema.string.optional(),
   GITHUB_CLIENT_SECRET: Env.schema.secret.optional(),
+  // The Blame GitHub App: repository-scoped tokens for the agent in cloud sessions
+  GITHUB_APP_ID: Env.schema.string.optional(),
+  GITHUB_APP_PRIVATE_KEY: Env.schema.secret.optional(),
+  GITHUB_APP_CLIENT_ID: Env.schema.string.optional(),
+  GITHUB_APP_CLIENT_SECRET: Env.schema.secret.optional(),
+  GITHUB_APP_SLUG: Env.schema.string.optional(),
   GOOGLE_CLIENT_ID: Env.schema.string.optional(),
   GOOGLE_CLIENT_SECRET: Env.schema.secret.optional(),
   MICROSOFT_CLIENT_ID: Env.schema.string.optional(),

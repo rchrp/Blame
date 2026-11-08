@@ -25,7 +25,9 @@ import { previewLogService } from "./preview-runtime/preview-log-service.ts";
 import type { PreviewService } from "./preview-runtime/preview-service.ts";
 import { runtimeAgentClient, runtimeAgentSupported } from "./runtime-agent.ts";
 import { lightWorkspaceExecutionTarget } from "./light-workspace-routing.ts";
-import { withSessionCommandCredentials } from "./github-access/agent-github-access.ts";
+import { sessionCommandCredentials, withSessionCommandCredentials } from "./github-access/agent-github-access.ts";
+import { githubMcpService } from "./github-access/github-mcp-service.ts";
+import { sessionCommandCredentials, withSessionCommandCredentials } from "./github-access/agent-github-access.ts";
 import { githubMcpService } from "./github-access/github-mcp-service.ts";
 import {
   ensureRuntimeGitUserIdentity,
@@ -95,6 +97,8 @@ async function handleAgentHostRequest(
   if (method === "lightWorkspace") {
     return agentLightWorkspace(input, signal);
   }
+  if (method === "commandCredentials")
+    return sessionCommandCredentials(recordInput(input).sessionId);
   if (method === "projectApp") return agentProjectApp(input, signal);
   if (method === "githubMcpTools")
     return githubMcpService.listTools(optionalText(recordInput(input).sessionId));

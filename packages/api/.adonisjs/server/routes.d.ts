@@ -11,11 +11,19 @@ export type ScannedRoutes = {
     'telemetry_ingestion.store': { paramsTuple: [ParamValue]; params: {'signal': ParamValue} }
     'telemetry_ingestion.health': { paramsTuple?: []; params?: {} }
     'vercel_connections.callback': { paramsTuple?: []; params?: {} }
+    'github_installations.callback': { paramsTuple?: []; params?: {} }
     'telemetry_sessions.show': { paramsTuple?: []; params?: {} }
     'integrations.vercel.vercel_connections.create_intent': { paramsTuple?: []; params?: {} }
     'integrations.vercel.vercel_connections.index': { paramsTuple?: []; params?: {} }
     'integrations.vercel.vercel_connections.projects': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'integrations.vercel.vercel_connections.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'integrations.github.github_installations.create_intent': { paramsTuple?: []; params?: {} }
+    'integrations.github.github_installations.index': { paramsTuple?: []; params?: {} }
+    'project_github.project_github.show': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
+    'project_github.project_github.link_repository': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
+    'project_github.project_github.unlink_repository': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
+    'project_github.project_github.update_agent_access': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
+    'project_github.project_github.agent_token': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'preview_sessions.preview_sessions.index': { paramsTuple?: []; params?: {} }
     'preview_sessions.preview_sessions.store': { paramsTuple?: []; params?: {} }
     'preview_sessions.preview_sessions.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -123,9 +131,12 @@ export type ScannedRoutes = {
   GET: {
     'telemetry_ingestion.health': { paramsTuple?: []; params?: {} }
     'vercel_connections.callback': { paramsTuple?: []; params?: {} }
+    'github_installations.callback': { paramsTuple?: []; params?: {} }
     'telemetry_sessions.show': { paramsTuple?: []; params?: {} }
     'integrations.vercel.vercel_connections.index': { paramsTuple?: []; params?: {} }
     'integrations.vercel.vercel_connections.projects': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'integrations.github.github_installations.index': { paramsTuple?: []; params?: {} }
+    'project_github.project_github.show': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'preview_sessions.preview_sessions.index': { paramsTuple?: []; params?: {} }
     'preview_sessions.preview_sessions.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'preview_sessions.preview_sessions.logs': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -166,9 +177,12 @@ export type ScannedRoutes = {
   HEAD: {
     'telemetry_ingestion.health': { paramsTuple?: []; params?: {} }
     'vercel_connections.callback': { paramsTuple?: []; params?: {} }
+    'github_installations.callback': { paramsTuple?: []; params?: {} }
     'telemetry_sessions.show': { paramsTuple?: []; params?: {} }
     'integrations.vercel.vercel_connections.index': { paramsTuple?: []; params?: {} }
     'integrations.vercel.vercel_connections.projects': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'integrations.github.github_installations.index': { paramsTuple?: []; params?: {} }
+    'project_github.project_github.show': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'preview_sessions.preview_sessions.index': { paramsTuple?: []; params?: {} }
     'preview_sessions.preview_sessions.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'preview_sessions.preview_sessions.logs': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -213,6 +227,8 @@ export type ScannedRoutes = {
     'consumer_contracts.withdraw': { paramsTuple?: []; params?: {} }
     'telemetry_ingestion.store': { paramsTuple: [ParamValue]; params: {'signal': ParamValue} }
     'integrations.vercel.vercel_connections.create_intent': { paramsTuple?: []; params?: {} }
+    'integrations.github.github_installations.create_intent': { paramsTuple?: []; params?: {} }
+    'project_github.project_github.agent_token': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'preview_sessions.preview_sessions.store': { paramsTuple?: []; params?: {} }
     'preview_sessions.preview_sessions.action': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'preview_sessions.preview_surfaces.action': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -269,15 +285,15 @@ export type ScannedRoutes = {
   }
   DELETE: {
     'integrations.vercel.vercel_connections.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'project_github.project_github.unlink_repository': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'auth.better': { paramsTuple: [...ParamValue[]]; params: {'*': ParamValue[]} }
     'providers.provider_credentials.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'projects.quick_chats.quick_chats.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'projects.user_stories.user_stories.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
   }
-  OPTIONS: {
-    'auth.better': { paramsTuple: [...ParamValue[]]; params: {'*': ParamValue[]} }
-  }
   PUT: {
+    'project_github.project_github.link_repository': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
+    'project_github.project_github.update_agent_access': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'auth.better': { paramsTuple: [...ParamValue[]]; params: {'*': ParamValue[]} }
     'account_privacy.workspace_transfer.import': { paramsTuple?: []; params?: {} }
     'project_deployments.deploy_targets.update': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
@@ -286,6 +302,9 @@ export type ScannedRoutes = {
     'projects.security_audits.update': { paramsTuple: [ParamValue,ParamValue]; params: {'projectId': ParamValue,'auditId': ParamValue} }
     'projects.quick_chats.quick_chats.store_screenshot': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'screenshotId': ParamValue} }
     'projects.user_stories.user_stories.store_screenshot': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'screenshotId': ParamValue} }
+  }
+  OPTIONS: {
+    'auth.better': { paramsTuple: [...ParamValue[]]; params: {'*': ParamValue[]} }
   }
   PATCH: {
     'auth.better': { paramsTuple: [...ParamValue[]]; params: {'*': ParamValue[]} }

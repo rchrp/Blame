@@ -26,6 +26,7 @@ import type {
   TelemetryExportSession,
 } from "@/context/platform"
 import { createDeployCloudApi } from "./deploy-cloud-api.ts"
+import { createGithubCloudApi } from "./github-cloud-api.ts"
 import {
   normalizePersonalization,
   type Personalization,
@@ -94,13 +95,14 @@ export type CloudAccountClosureReceipt = {
 
 export function createCloudApi(connection: CloudApiConnection) {
   const baseUrl = connection.url.replace(/\/$/, "")
-  const deployApi = createDeployCloudApi(
-    <T>(path: string, init?: RequestInit) =>
-      request<T>(connection, baseUrl, path, init)
-  )
+  const cloudRequest = <T>(path: string, init?: RequestInit) =>
+    request<T>(connection, baseUrl, path, init)
+  const deployApi = createDeployCloudApi(cloudRequest)
+  const githubApi = createGithubCloudApi(cloudRequest)
 
   return {
     ...deployApi,
+    ...githubApi,
     async login(input: LoginInput): Promise<CloudLoginResult> {
       let response
       try {

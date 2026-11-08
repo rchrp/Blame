@@ -73,6 +73,11 @@ import {
 type RunTaskContext = AgentToolContext & { commandCredentials?: LightCommandCredentials };
 
 type LightWorkspaceOptions = {
+  /**
+   * The credentials of the session's commands, asked before each one so a
+   * renewed token is used. Present only where the desktop grants them.
+   */
+  commandCredentials?: () => Promise<LightCommandCredentials>;
   /** Runner-only experiment; production keeps compact search until the offline gate is met. */
   experimentalSearchExpansion?: boolean;
   /** Test/embedded runner override; production uses the fifteen-second initial wait. */
@@ -212,8 +217,17 @@ export class LightWorkspace {
   async runTask(input: LightRunTaskInput, context: RunTaskContext) {
     const inspection = input.kind === "command" ? await this.shellInspection(input, context) : undefined;
     if (inspection) return inspection;
-    const result = await this.withValidationState(await this.runTaskWithDiagnostics(input, context));
+    const commandContext = await this.withCommandCredentials(context);
+    const result = await this.withValidationState(await this.runTaskWithDiagnostics(input, commandContext));
     return this.withCheckRepair(result, checkOrFailure(result, input));
+  }
+
+  // Without a granted token the credentials are empty, which still keeps
+  // inherited GitHub tokens away from the commands.
+  private async withCommandCredentials(context: RunTaskContext): Promise<RunTaskContext> {
+    if (context.commandCredentials || !this.options.commandCredentials) return context;
+    const commandCredentials = await this.options.commandCredentials().catch(() => ({}));
+    return { ...context, commandCredentials };
   }
 
   /** Answers grep/cat-style source inspection with search_code and read_code observations. */

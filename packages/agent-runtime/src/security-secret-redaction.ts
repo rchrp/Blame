@@ -65,7 +65,7 @@ export function redactSecuritySecrets(content: string) {
 export function redactSecurityValue<T>(value: T): T {
   if (typeof value === "string") return redactSecuritySecrets(value) as T;
   if (Array.isArray(value)) return value.map(redactSecurityValue) as T;
-  if (!value || typeof value !== "object") return value;
+  if (!value || typeof value !== "object" || binaryContent(value)) return value;
   return Object.fromEntries(
     Object.entries(value).map(([key, item]) => [
       key,
@@ -76,6 +76,16 @@ export function redactSecurityValue<T>(value: T): T {
   ) as T;
 }
 
+// Images, audio and binary resources (MCP and Cline content parts) carry
+// base64 data, not text: masking could only corrupt them.
+function binaryContent(value: object) {
+  const record = value as Record<string, unknown>;
+  return (
+    ((record.type === "image" || record.type === "audio") &&
+      typeof record.data === "string") ||
+    typeof record.blob === "string"
+  );
+}
 function assignedValueSignal(
   match: RegExpMatchArray,
   kind: string,

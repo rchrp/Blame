@@ -4,6 +4,7 @@ import {
   AgentGithubAccessSettings,
   grantSessionGithubAccess,
   readHostGithubToken,
+  requestCloudGithubToken,
 } from "../github-access/agent-github-access.ts";
 
 let settings: AgentGithubAccessSettings | undefined;
@@ -21,6 +22,7 @@ export function prepareSessionGithubAccess(session: Record<string, unknown>) {
   return grantSessionGithubAccess(session, {
     level: (projectId) => projects.level(projectId),
     readToken: () => readHostGithubToken(),
+    cloudToken: (request) => requestCloudGithubToken(request, { packaged: app.isPackaged }),
   });
 }
 

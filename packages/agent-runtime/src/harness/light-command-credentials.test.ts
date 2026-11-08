@@ -9,6 +9,7 @@ import {
   cachedLightWorkspaceExecutor,
   type LightWorkspaceExecutionRequest,
 } from "./light-executor.js";
+import { lightSemanticHarnessTools } from "./light-tools.js";
 import { withCommandCredentials } from "./workspace-command-environment.js";
 
 const grantedToken = "gho_GrantedTokenValue0123456789abcdefABCD";
@@ -49,6 +50,53 @@ test("commands outside the managed runtime keep their environment", () => {
   assert.equal(withCommandCredentials(environment, undefined), environment);
   assert.deepEqual(withCommandCredentials({ ...environment, github_token: inheritedGithubToken }, {}), {
     PATH: "/bin",
+  });
+});
+
+test("commands run in this process ask the session's credentials before each one", async () => {
+  await fixture(async (root) => {
+    let asked = 0;
+    const tool = lightSemanticHarnessTools(root, {
+      commandCredentials: async () => {
+        asked += 1;
+        return { githubToken: grantedToken };
+      },
+      taskContract: {
+        session_id: "cloud-credentials",
+        environment: { isolated: false, managedPreview: true },
+      },
+    }).find(({ name }) => name === "run_task")!;
+    for (const toolCallId of ["first", "second"]) {
+      const result = JSON.stringify(
+        await tool.execute({ kind: "command", command: reportCommand }, {
+          sessionId: "cloud-credentials",
+          toolCallId,
+        } as never),
+      );
+      assert.match(result, /gh granted, github absent/u);
+      assert.doesNotMatch(result, new RegExp(grantedToken, "u"));
+    }
+    // Asked again for the second command: a renewed token reaches it.
+    assert.equal(asked, 2);
+    assert.deepEqual(await filesContaining(root, grantedToken), []);
+  });
+});
+
+test("a failed credentials request runs the command without any GitHub token", async () => {
+  await fixture(async (root) => {
+    const tool = lightSemanticHarnessTools(root, {
+      commandCredentials: async () => {
+        throw new Error("desktop unavailable");
+      },
+      taskContract: { session_id: "cloud-no-credentials" },
+    }).find(({ name }) => name === "run_task")!;
+    const result = JSON.stringify(
+      await tool.execute({ kind: "command", command: reportCommand }, {
+        sessionId: "cloud-no-credentials",
+        toolCallId: "failed",
+      } as never),
+    );
+    assert.match(result, /gh absent, github absent/u);
   });
 });
 

@@ -98,6 +98,19 @@ export interface Registry {
       rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/vercel_connections_controller').default['callback']>>>
     }
   }
+  'github_installations.callback': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/integrations/github/callback'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/github_installations_controller').default['callback']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/github_installations_controller').default['callback']>>>
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/github_installations_controller').default['callback']>>>
+    }
+  }
   'telemetry_sessions.show': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/telemetry/session'
@@ -161,6 +174,97 @@ export interface Registry {
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/vercel_connections_controller').default['destroy']>>>
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/vercel_connections_controller').default['destroy']>>>
       rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/vercel_connections_controller').default['destroy']>>>
+    }
+  }
+  'integrations.github.github_installations.create_intent': {
+    methods: ["POST"]
+    pattern: '/api/v1/integrations/github/connect-intents'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/github_installations_controller').default['createIntent']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/github_installations_controller').default['createIntent']>>>
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/github_installations_controller').default['createIntent']>>>
+    }
+  }
+  'integrations.github.github_installations.index': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/integrations/github/installations'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/github_installations_controller').default['index']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/github_installations_controller').default['index']>>>
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/github_installations_controller').default['index']>>>
+    }
+  }
+  'project_github.project_github.show': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/projects/:projectId/github'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { projectId: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/project_github_controller').default['show']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_github_controller').default['show']>>>
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/project_github_controller').default['show']>>>
+    }
+  }
+  'project_github.project_github.link_repository': {
+    methods: ["PUT"]
+    pattern: '/api/v1/projects/:projectId/github/repository'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/github').linkGithubRepositoryValidator)>>
+      paramsTuple: [ParamValue]
+      params: { projectId: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/github').linkGithubRepositoryValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/project_github_controller').default['linkRepository']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_github_controller').default['linkRepository']>>> | { status: 422; response: { errors: SimpleError[] } }
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/project_github_controller').default['linkRepository']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'project_github.project_github.unlink_repository': {
+    methods: ["DELETE"]
+    pattern: '/api/v1/projects/:projectId/github/repository'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { projectId: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/project_github_controller').default['unlinkRepository']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_github_controller').default['unlinkRepository']>>>
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/project_github_controller').default['unlinkRepository']>>>
+    }
+  }
+  'project_github.project_github.update_agent_access': {
+    methods: ["PUT"]
+    pattern: '/api/v1/projects/:projectId/github/agent-access'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/github').updateGithubAgentAccessValidator)>>
+      paramsTuple: [ParamValue]
+      params: { projectId: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/github').updateGithubAgentAccessValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/project_github_controller').default['updateAgentAccess']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_github_controller').default['updateAgentAccess']>>> | { status: 422; response: { errors: SimpleError[] } }
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/project_github_controller').default['updateAgentAccess']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'project_github.project_github.agent_token': {
+    methods: ["POST"]
+    pattern: '/api/v1/projects/:projectId/github/agent-token'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { projectId: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/project_github_controller').default['agentToken']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_github_controller').default['agentToken']>>>
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/project_github_controller').default['agentToken']>>>
     }
   }
   'preview_sessions.preview_sessions.index': {

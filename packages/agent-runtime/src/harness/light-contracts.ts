@@ -202,7 +202,15 @@ export type LightTaskContract = {
  * it, a command never inherits GH_TOKEN or GITHUB_TOKEN: GH_TOKEN is the
  * granted token, when there is one.
  */
-export type LightCommandCredentials = { githubToken?: string };
+export type LightCommandCredentials = {
+  githubToken?: string;
+  /**
+   * Host commands only (cloud sessions): the directory of the gh Blame
+   * provides, put first on PATH, and the GH_CONFIG_DIR gh uses instead of
+   * the person's.
+   */
+  githubCli?: { binDirectory?: string; configDirectory: string };
+};
 
 export type LightToolResult<T> =
   | { status: "ok"; data: T; receipt?: string; content?: ImageContent[] }

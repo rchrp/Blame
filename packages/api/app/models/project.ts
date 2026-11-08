@@ -25,6 +25,20 @@ export default class Project extends BaseModel {
   @column()
   declare lastStoryNumber: number
 
+  /** The GitHub App installation that covers the project's repository. */
+  @column()
+  declare githubInstallationId: string | null
+
+  @column()
+  declare githubRepositoryOwner: string | null
+
+  @column()
+  declare githubRepositoryName: string | null
+
+  /** GitHub access for the agent: off by default. */
+  @column({ consume: (value: unknown) => Boolean(value) })
+  declare githubAgentAccess: boolean
+
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
 

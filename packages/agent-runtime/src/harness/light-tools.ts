@@ -8,6 +8,7 @@ import {
   lightDefaultRunTaskInputSchema,
   lightRunTaskInputSchema,
   lightSearchCodeInputSchema,
+  type LightCommandCredentials,
   type LightToolResult,
   type LightTaskContract,
 } from "./light-contracts.js";
@@ -24,6 +25,8 @@ export const lightReadToolNames = ["search_code", "read_code"] as const;
 export const lightWriteToolNames = ["edit_code", "run_task"] as const;
 
 export type LightHarnessToolsOptions = {
+  /** Credentials of the session's commands when they run in this process. */
+  commandCredentials?: () => Promise<LightCommandCredentials>;
   executor?: LightWorkspaceExecutor;
   refreshPreviewDependencies?: () => Promise<PreviewDependencyRefreshResult>;
   taskContract?: LightTaskContract;
@@ -37,6 +40,7 @@ export function lightSemanticHarnessTools(
   const workspace = options.executor
     ? executorWorkspace(workspaceRoot, options)
     : new LightWorkspace(workspaceRoot, {
+        commandCredentials: options.commandCredentials,
         refreshPreviewDependencies: options.refreshPreviewDependencies,
         sessionId: options.taskContract?.session_id ?? "unscoped-session",
         taskContract: options.taskContract,

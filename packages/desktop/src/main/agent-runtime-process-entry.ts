@@ -5,6 +5,7 @@ import {
 import {
   BlameAgentRuntime,
   type AgentEvent,
+  type LightCommandCredentials,
   type LightWorkspaceExecutionRequest,
 } from "@blame/agent-runtime";
 import {
@@ -103,6 +104,10 @@ function createAgentRuntime(hostClient: AgentRuntimeHostClient) {
           signal: undefined,
         }),
       projectApp: (input) => hostRequest(hostClient, "projectApp", input),
+      commandCredentials: (sessionId) =>
+        hostClient.request<LightCommandCredentials>("commandCredentials", {
+          sessionId,
+        }),
       componentPreview: (input) =>
         hostRequest(hostClient, "componentPreview", input),
       githubMcpTools: (input) =>
@@ -278,6 +283,10 @@ function workflowHandlers(runtime: BlameAgentRuntime) {
       runtime.promptOptimizer.generateTitle(input as never),
     approveAndMerge: (input: unknown) =>
       runtime.approveAndMerge(input as never),
+    openPullRequest: (input: unknown) =>
+      runtime.openPullRequest(input as never),
+    pullRequestAvailability: (input: unknown) =>
+      runtime.pullRequestAvailability(input as never),
     generateCommitMessage: (input: unknown) =>
       runtime.generateCommitMessage(input as never),
     resolveMergeConflicts: (input: unknown) =>

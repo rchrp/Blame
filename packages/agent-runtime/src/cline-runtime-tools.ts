@@ -33,10 +33,15 @@ import {
   type LightValidationActivity,
 } from "./harness/light-completion.js";
 
-import type { LightTaskContract } from "./harness/light-contracts.js";
+import type {
+  LightCommandCredentials,
+  LightTaskContract,
+} from "./harness/light-contracts.js";
 import type { AgentPersonalization, ResponseStyle } from "./personalization.js";
 
 import { type LightWorkspaceExecutor } from "./harness/light-executor.js";
+
+import { withGithubCli } from "./harness/github-cli.js";
 
 import {
   lightReadToolNames,
@@ -116,7 +121,15 @@ export type RuntimeOptions = PreviewToolRuntimeOptions & GithubMcpToolOptions & 
   developmentHarness?: "blame" | "cline";
   openExternalUrl?(url: string): void;
   git?(cwd: string, args: string[]): Promise<string>;
+  // Runs the GitHub CLI on this computer for Open PR; gh by default.
+  gh?(cwd: string, args: string[]): Promise<string>;
   lightWorkspace?: LightWorkspaceExecutor;
+  /**
+   * The credentials the desktop grants a session's commands when they run in
+   * this process (cloud sessions): a GitHub App token limited to the
+   * project's repository, or none.
+   */
+  commandCredentials?(sessionId: string): Promise<LightCommandCredentials>;
   modelInactivityTimeoutMs?: number;
   projectMemoryPersistence?: ProjectMemoryPersistence;
 };
@@ -143,6 +156,7 @@ export function runtimeTools(
     ...lightSemanticHarnessTools(worktree, {
       executor,
       taskContract,
+      ...cloudCommandCredentials(options, previewContext, taskContract, executor),
       ...(options.refreshPreviewDependencies && previewContext
         ? {
             refreshPreviewDependencies: () =>
@@ -193,6 +207,29 @@ export function runtimeTools(
     ...previewMcpTools,
   ].filter((tool): tool is AgentTool => Boolean(tool));
   return tools.length ? tools : undefined;
+}
+// Cloud sessions run the agent's commands in this process, on the host: they
+// ask the desktop for the session's credentials before each one, and get the
+// gh Blame provides with them. Managed runtime requests get theirs from the
+// desktop on the way, and the runtime's own gh.
+function cloudCommandCredentials(
+  options: RuntimeOptions,
+  previewContext: PreviewRuntimeContext | undefined,
+  taskContract: LightTaskContract | undefined,
+  executor: LightWorkspaceExecutor | undefined,
+) {
+  const sessionId = taskContract?.session_id;
+  const credentials = options.commandCredentials;
+  if (
+    executor ||
+    !credentials ||
+    !sessionId ||
+    previewContext?.workspaceMode !== "cloud-mirror"
+  )
+    return {};
+  return {
+    commandCredentials: async () => withGithubCli(await credentials(sessionId)),
+  };
 }
 
 export function readOnlyRuntimeTools(

@@ -26,6 +26,9 @@ export interface ApiDefinition {
   vercelConnections: {
     callback: typeof routes['vercel_connections.callback']
   }
+  githubInstallations: {
+    callback: typeof routes['github_installations.callback']
+  }
   telemetrySessions: {
     show: typeof routes['telemetry_sessions.show']
   }
@@ -37,6 +40,21 @@ export interface ApiDefinition {
         projects: typeof routes['integrations.vercel.vercel_connections.projects']
         destroy: typeof routes['integrations.vercel.vercel_connections.destroy']
       }
+    }
+    github: {
+      githubInstallations: {
+        createIntent: typeof routes['integrations.github.github_installations.create_intent']
+        index: typeof routes['integrations.github.github_installations.index']
+      }
+    }
+  }
+  projectGithub: {
+    projectGithub: {
+      show: typeof routes['project_github.project_github.show']
+      linkRepository: typeof routes['project_github.project_github.link_repository']
+      unlinkRepository: typeof routes['project_github.project_github.unlink_repository']
+      updateAgentAccess: typeof routes['project_github.project_github.update_agent_access']
+      agentToken: typeof routes['project_github.project_github.agent_token']
     }
   }
   previewSessions: {

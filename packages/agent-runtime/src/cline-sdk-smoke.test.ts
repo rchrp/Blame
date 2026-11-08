@@ -406,3 +406,52 @@ test("a tool result over Cline's former 8,000-character cut reaches the model wh
     await new Promise(resolve => server.close(resolve));
   }
 });
+
+test("a token in an MCP tool result reaches neither the model nor the transcript", async () => {
+  const { createMcpTools } = await import("@cline/sdk");
+  const token = "ghp_A1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6Q7r8S9t0";
+  const requests: Record<string, unknown>[] = [];
+  const server = createServer(async (request, response) => {
+    requests.push(JSON.parse(await readBody(request)));
+    response.writeHead(200, { "content-type": "text/event-stream" });
+    const chunks = requests.length === 1 ? [
+      { id: "mcp", object: "chat.completion.chunk", choices: [{ index: 0, delta: { role: "assistant", tool_calls: [{ index: 0, id: "mcp-1", type: "function", function: { name: "github__get_issue", arguments: "{}" } }] }, finish_reason: null }] },
+      { id: "mcp", object: "chat.completion.chunk", choices: [{ index: 0, delta: {}, finish_reason: "tool_calls" }] },
+    ] : streamedCompletion(["read"]);
+    for (const chunk of chunks) response.write(`data: ${JSON.stringify(chunk)}\n\n`);
+    response.end("data: [DONE]\n\n");
+  });
+  await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
+  const address = server.address();
+  assert.ok(address && typeof address === "object");
+  const workspace = await mkdtemp(join(sandbox, "mcp-redaction-"));
+  const tools = await createMcpTools({
+    serverName: "github",
+    provider: {
+      listTools: async () => [{ name: "get_issue", description: "Reads an issue.", inputSchema: { type: "object", properties: {} } }],
+      callTool: async () => ({ content: [{ type: "text", text: `CI log: GH_TOKEN=${token}` }] }),
+    },
+  });
+  const core = await ClineCore.create({ backendMode: "local", clientName: "mcp-redaction-smoke", fetch: createProviderCompatibleFetch(globalThis.fetch), toolPolicies: toolPolicies(false) });
+  try {
+    const started = await core.start({
+      prompt: "Read the issue.",
+      config: appendProductionConfig({
+        sessionId: "mcp-redaction-smoke", providerId: "openai-compatible", modelId: "smoke-model", apiKey: "offline",
+        baseUrl: `http://127.0.0.1:${address.port}/v1`, cwd: workspace, workspaceRoot: workspace,
+        checkpoint: { enabled: false }, enableAgentTeams: false, enableSpawnAgent: false,
+        enableTools: true, extraTools: tools, maxIterations: 3, mode: "act", systemPrompt: "Read the issue.",
+      }),
+      interactive: false, source: "mcp-redaction-smoke",
+    });
+    assert.equal(started.result?.text, "read");
+    const toolMessage = JSON.stringify((requests[1]!.messages as Array<{ role: string }>).find(message => message.role === "tool"));
+    assert.match(toolMessage, /CI log: GH_TOKEN=<REDACTED_SECRET:GITHUB_TOKEN>/u);
+    const transcript = JSON.stringify(await core.readMessages("mcp-redaction-smoke"));
+    assert.match(transcript, /REDACTED_SECRET:GITHUB_TOKEN/u);
+    for (const seen of [toolMessage, transcript]) assert.ok(!seen.includes(token), "The token was not masked");
+  } finally {
+    await core.delete("mcp-redaction-smoke").catch(() => undefined);
+    await new Promise(resolve => server.close(resolve));
+  }
+});

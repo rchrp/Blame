@@ -373,6 +373,20 @@ function registerDeliveryWorkflowIpcHandlers(
       agentRuntime().run("approveAndMerge", resolved),
     );
   });
+  // gh runs here, on the host, with the person's own sign-in.
+  ipcMain.handle("agent:open-pull-request", async (_event, input) => {
+    const resolved = await agentWorkspaceInput(input);
+    if (typeof resolved.worktree !== "string" || !resolved.worktree) {
+      throw new Error("Agent pull request worktree is invalid");
+    }
+    if (beforeDelivery) await beforeDelivery(resolved.worktree);
+    return runWorkspaceTask(resolved.worktree, () =>
+      agentRuntime().run("openPullRequest", resolved),
+    );
+  });
+  ipcMain.handle("agent:pull-request-availability", (_event, input) =>
+    agentRuntime().run("pullRequestAvailability", input),
+  );
   ipcMain.handle("agent:generate-commit-message", (_event, input) =>
     agentWorkspaceInput(input).then((resolved) =>
       agentRuntime().run("generateCommitMessage", resolved),
@@ -563,6 +577,8 @@ function createAgentRuntimePool(input: AgentRuntimeRegistration) {
     BLAME_AGENT_PACKAGED: String(input.packaged),
     BLAME_AGENT_SERVICE_VERSION: input.serviceVersion,
     BLAME_CLAUDE_CODE_STATE_DIR: join(app.getPath("userData"), "claude-code"),
+    // Where cloud commands' gh is downloaded once (see github-cli.ts).
+    BLAME_GITHUB_CLI_DIR: join(app.getPath("userData"), "github-cli"),
   };
   return new AgentRuntimePool({
     createProcess: (callbacks) =>
