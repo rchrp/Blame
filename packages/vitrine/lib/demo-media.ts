@@ -1,11 +1,15 @@
-// The home page's two demo videos. Each one stays off until its files are in
-// public/media and its `enabled` flag is true. While a video is off:
+// The home page's two demo videos. Their MP4s are served from the vitrine's
+// public media bucket (OVH Object Storage), not from this server or git; the
+// posters stay in public/media, served from here, so they paint at once.
+// A video is on once its `enabled` flag is true and both of its files are in
+// demo-media-manifest.json, which the upload script writes. While a video is
+// off:
 // - the hero shows the interactive backlog mockup instead of the loop;
 // - the full demo's section is left out of the story.
 // If a video is on but its files fail to load, the page falls back the same
 // way, so it never shows a broken player.
 //
-// To turn a video on:
+// To turn a video on, or replace one:
 // 1. Export it at 1680 x 1050 (16:10), 30 fps or less, then encode it twice
 //    and save its first frame as the poster, for example with ffmpeg and
 //    cwebp (brew install ffmpeg webp):
@@ -18,9 +22,16 @@
 //    covers up to 2048 x 1088 at 30 fps; a larger or faster video needs a
 //    higher level. A video of another size needs its own `width` and
 //    `height`, which give its frame on the page its shape.
-// 2. Put the three files in public/media under the names below.
-// 3. Set `enabled: true`, then check the page with and without reduced
+// 2. Put the two MP4s in media-source/ (gitignored) and the poster in
+//    public/media, under the names below.
+// 3. Run `pnpm upload:demo-media` (its settings: .env.media.example). It
+//    uploads each new file under a key with its hash, so a new recording
+//    gets a new URL, and rewrites the manifest. Commit the manifest and the
+//    poster.
+// 4. Set `enabled: true`, then check the page with and without reduced
 //    motion.
+
+import uploadedFiles from "./demo-media-manifest.json";
 
 export type DemoVideo = {
   enabled: boolean;
@@ -36,16 +47,24 @@ export type DemoVideo = {
 const av1Type = 'video/mp4; codecs="av01.0.08M.08"';
 const h264Type = "video/mp4";
 
+// Each file's public URL in the media bucket, by name (demo-loop-av1...).
+const uploadedUrls: Partial<Record<string, string>> = uploadedFiles;
+
 function demoVideo(name: string, enabled: boolean, label: string): DemoVideo {
+  const av1 = uploadedUrls[`${name}-av1`];
+  const h264 = uploadedUrls[`${name}-h264`];
   return {
-    enabled,
+    enabled: enabled && Boolean(av1 && h264),
     label,
     poster: `/media/${name}-poster.webp`,
     // The browser plays the first source it supports: AV1, then H.264.
-    sources: [
-      { src: `/media/${name}-av1.mp4`, type: av1Type },
-      { src: `/media/${name}-h264.mp4`, type: h264Type },
-    ],
+    sources:
+      av1 && h264
+        ? [
+            { src: av1, type: av1Type },
+            { src: h264, type: h264Type },
+          ]
+        : [],
     width: 1680,
     height: 1050,
   };

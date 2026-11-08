@@ -20,3 +20,7 @@ node_modules
 **/node_modules
 **/out
 *.log
+
+# The vitrine media bucket upload: its credentials and its source videos.
+packages/vitrine/.env.media
+packages/vitrine/media-source

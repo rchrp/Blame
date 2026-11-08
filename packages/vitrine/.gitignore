@@ -1,0 +1,4 @@
+# The demo videos live in the media bucket, not in git: their MP4s are kept
+# in media-source/ and uploaded by scripts/upload-demo-media.mjs.
+/media-source/
+/public/media/*.mp4
