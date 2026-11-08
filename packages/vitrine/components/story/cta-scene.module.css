@@ -360,8 +360,20 @@ a.pill:focus-visible,
   margin-top: max(1.5rem, calc(40 * var(--px)));
 }
 
+/* The install command reads as a line in a terminal: near-black, not
+   frosted like the buttons */
 .heroInstall {
   margin-top: 1rem;
+}
+
+.scene .heroInstall {
+  border-color: rgb(255 255 255 / 10%);
+  background: #0a0b0e;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow:
+    0 12px 32px rgb(0 0 0 / 45%),
+    inset 0 1px 0 rgb(255 255 255 / 5%);
 }
 
 /* On phones: a smaller subtitle, and the two buttons side by side */
