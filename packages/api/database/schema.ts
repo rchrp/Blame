@@ -279,6 +279,23 @@ export class FileAttachmentSchema extends BaseModel {
   declare userId: string
 }
 
+export class GithubAppInstallationSchema extends BaseModel {
+  static $columns = ['accountLogin', 'createdAt', 'id', 'installationId', 'updatedAt', 'userId'] as const
+  $columns = GithubAppInstallationSchema.$columns
+  @column()
+  declare accountLogin: string
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare installationId: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+  @column()
+  declare userId: string
+}
+
 export class ModelCatalogSnapshotSchema extends BaseModel {
   static $columns = ['catalogHash', 'createdAt', 'id', 'payload', 'refreshedAt', 'updatedAt'] as const
   $columns = ModelCatalogSnapshotSchema.$columns
@@ -821,10 +838,18 @@ export class ProjectInitializationSchema extends BaseModel {
 }
 
 export class ProjectSchema extends BaseModel {
-  static $columns = ['createdAt', 'id', 'lastStoryNumber', 'name', 'repositoryFingerprint', 'updatedAt', 'userId'] as const
+  static $columns = ['createdAt', 'githubAgentAccess', 'githubInstallationId', 'githubRepositoryName', 'githubRepositoryOwner', 'id', 'lastStoryNumber', 'name', 'repositoryFingerprint', 'updatedAt', 'userId'] as const
   $columns = ProjectSchema.$columns
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
+  @column()
+  declare githubAgentAccess: boolean
+  @column()
+  declare githubInstallationId: string | null
+  @column()
+  declare githubRepositoryName: string | null
+  @column()
+  declare githubRepositoryOwner: string | null
   @column({ isPrimary: true })
   declare id: string
   @column()
