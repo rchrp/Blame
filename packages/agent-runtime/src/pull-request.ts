@@ -1,6 +1,5 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { withoutTelemetryEnvironment } from "@blame/telemetry";
 
 import { git } from "./runtime-git.js";
 import type { PullRequestAvailability } from "./types.js";
@@ -25,7 +24,7 @@ export async function runHostGh(cwd: string, args: string[]) {
   const { stdout } = await execFileAsync("gh", args, {
     cwd,
     env: {
-      ...withoutTelemetryEnvironment(process.env),
+      ...process.env,
       GH_PROMPT_DISABLED: "1",
       GIT_TERMINAL_PROMPT: "0",
       NO_COLOR: "1",

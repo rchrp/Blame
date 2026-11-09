@@ -2,13 +2,9 @@ import { appendFile, mkdir } from "node:fs/promises";
 
 import { dirname, join } from "node:path";
 
-import { getBlameTelemetry } from "@blame/telemetry";
-
 import { asRecord, stringValue } from "./cline-runtime-events.js";
 
-import { safeLogPayload } from "./production.js";
-
-export const blameTelemetry = getBlameTelemetry();
+import { logRecord, safeLogPayload } from "./production.js";
 
 export function approveMergeLogPath(worktree: string) {
   return join(worktree, ".blame", "logs", "approve-merge.log");
@@ -38,13 +34,12 @@ export async function appendLog(
   file: string,
   message: string,
   payload?: unknown,
-  activeContext?: import("@blame/telemetry").Context,
 ) {
   try {
     await mkdir(dirname(file), { recursive: true });
     await appendFile(
       file,
-      `${JSON.stringify(logLine(message, safeLogPayload(payload), activeContext))}\n`,
+      `${JSON.stringify(logLine(message, payload))}\n`,
       "utf8",
     );
   } catch {
@@ -52,17 +47,9 @@ export async function appendLog(
   }
 }
 
-function logLine(
-  message: string,
-  payload?: unknown,
-  activeContext?: import("@blame/telemetry").Context,
-) {
-  return blameTelemetry.structuredLog(
-    logSeverity(payload),
-    logEventName(message),
-    safeLogPayload(payload),
-    activeContext,
-  );
+function logLine(message: string, payload?: unknown) {
+  const attributes = safeLogPayload(payload);
+  return logRecord(logSeverity(attributes), logEventName(message), attributes);
 }
 
 function logEventName(message: string) {

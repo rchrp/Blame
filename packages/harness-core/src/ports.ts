@@ -150,10 +150,6 @@ export interface ClockPort {
   now(): Date;
 }
 
-export interface TelemetryPort {
-  record(name: string, attributes: Record<string, unknown>): void;
-}
-
 export type AdapterCapabilityManifest = {
   adapter_id: string;
   adapter_version: string;

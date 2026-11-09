@@ -2,7 +2,6 @@ import { execFile } from "node:child_process";
 import { lstat } from "node:fs/promises";
 import { join } from "node:path";
 import { promisify } from "node:util";
-import { withoutTelemetryEnvironment } from "@blame/telemetry";
 import type { CloudPreviewIgnoreRule } from "./project-cloud-ignore.js";
 
 const execFileAsync = promisify(execFile);
@@ -33,7 +32,6 @@ export async function measureCloudTransfer(
       ["ls-files", "-z", "--cached", "--others", "--exclude-standard"],
       {
         cwd: root,
-        env: withoutTelemetryEnvironment(process.env),
         maxBuffer: 64 * 1024 * 1024,
       },
     ));

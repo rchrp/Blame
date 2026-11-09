@@ -45,9 +45,6 @@ import type {
   OAuthServerListeningInfo,
 } from "@cline/sdk";
 
-import { type Context } from "@blame/telemetry";
-
-import { AgentTelemetry } from "./agent-telemetry.js";
 import { assertTargetChangesRestorable, stashTargetChanges, type TargetChangesStash } from "./approve-merge-git.js";
 import {
   codePracticesConfig,
@@ -137,7 +134,6 @@ import {
 import {
   appendLog,
   approveMergeLogPath,
-  blameTelemetry,
   commitMessageLogPath,
   mergeConflictLogPath,
   pullRequestLogPath,
@@ -274,7 +270,6 @@ import {
 } from "./security-audit-runtime.js";
 import { scanSecurityAuditRepository } from "./security-audit-scan.js";
 import { developmentSpecialistConsultEnabled } from "./specialist-agents.js";
-import { taskComplexityBucket } from "./telemetry-cohorts.js";
 import { generateTitle } from "./title-generation.js";
 import { sessionStoryHistoryTools } from "./story-history-tools.js";
 import type { RuntimeCredentialInput } from "./runtime-credential.js";
@@ -487,7 +482,6 @@ export class BlameAgentRuntime {
   private readonly initializationCancellations =
     new InitializationCancellations();
   private sessionBackendKeys = new Map<string, string>();
-  private readonly agentTelemetry = new AgentTelemetry();
   private unsubscribers = new Map<string, () => void>();
   private pendingApprovals = new Map<string, PendingApproval>();
   private alwaysAllowedTools = new Set<string>();
@@ -501,7 +495,6 @@ export class BlameAgentRuntime {
   private sessionStartInputs = new Map<string, ClineCoreStartInput>();
   // What each session's agent was last told; a change goes out with the next message.
   private sessionPersonalization = new Map<string, AgentPersonalization>();
-  private sessionQualityBaselines = new Map<string, string>();
   private clineDefaultSessions = new Set<string>();
   private sessionEventSignatures = new Map<string, Map<string, number>>();
   private sessionExecutionIds = new Map<string, string>();
@@ -678,7 +671,6 @@ export class BlameAgentRuntime {
     await this.disposeCore();
     await closeClaudeCodeBridge();
     this.userInstructionServices.stopAll();
-    this.agentTelemetry.shutdown();
   }
 
   private async core(backend?: AgentBackendConfig) {
@@ -769,18 +761,8 @@ export class BlameAgentRuntime {
     const sessionId = requestedSessionId || createBlameSessionId();
     const executionId =
       input.executionId?.trim() || `${sessionId}:initial-execution`;
-    this.agentTelemetry.start(sessionId, {
-      ...input,
-      taskComplexityBucket: sessionTaskComplexity(input),
-    });
-    const telemetryContext = this.agentTelemetry.context(sessionId);
     const startLogFile = startLogPath(input.cwd);
-    await appendLog(
-      startLogFile,
-      "start requested",
-      startContext(input),
-      telemetryContext,
-    );
+    await appendLog(startLogFile, "start requested", startContext(input));
     const startedAt = Date.now();
     const projectMemoryPromise = this.loadProjectMemory(input);
     try {
@@ -800,16 +782,11 @@ export class BlameAgentRuntime {
           input.modelId,
         ),
       ]);
-      await appendLog(
-        startLogFile,
-        "credential resolved",
-        {
-          providerId: credential.providerId,
-          authMethod: credential.authMethod,
-          hasBaseUrl: !!credential.baseUrl,
-        },
-        telemetryContext,
-      );
+      await appendLog(startLogFile, "credential resolved", {
+        providerId: credential.providerId,
+        authMethod: credential.authMethod,
+        hasBaseUrl: !!credential.baseUrl,
+      });
       const resolvedCredential = await claudeCodeCredential(
         await this.refreshOAuthCredential(input.apiConnection, credential, {
           force: forceOAuthRefresh(credential.providerId),
@@ -820,42 +797,23 @@ export class BlameAgentRuntime {
           scope: sessionId,
         },
       );
-      this.agentTelemetry.setAuthentication(
-        sessionId,
-        resolvedCredential.authMethod,
-      );
-      await appendLog(
-        startLogFile,
-        "credential refreshed",
-        {
-          providerId: resolvedCredential.providerId,
-          authMethod: resolvedCredential.authMethod,
-          hasBaseUrl: !!resolvedCredential.baseUrl,
-          expires: resolvedCredential.oauthCredentials?.expires,
-        },
-        telemetryContext,
-      );
+      await appendLog(startLogFile, "credential refreshed", {
+        providerId: resolvedCredential.providerId,
+        authMethod: resolvedCredential.authMethod,
+        hasBaseUrl: !!resolvedCredential.baseUrl,
+        expires: resolvedCredential.oauthCredentials?.expires,
+      });
       await this.syncClineOAuthProviderSettings(resolvedCredential);
       if (resolvedCredential.authMethod === "oauth") {
-        await appendLog(
-          startLogFile,
-          "cline oauth settings synced",
-          {
-            providerId: resolvedCredential.providerId,
-            accountId: resolvedCredential.oauthCredentials?.accountId,
-            email: resolvedCredential.oauthCredentials?.email,
-            expires: resolvedCredential.oauthCredentials?.expires,
-          },
-          telemetryContext,
-        );
+        await appendLog(startLogFile, "cline oauth settings synced", {
+          providerId: resolvedCredential.providerId,
+          accountId: resolvedCredential.oauthCredentials?.accountId,
+          email: resolvedCredential.oauthCredentials?.email,
+          expires: resolvedCredential.oauthCredentials?.expires,
+        });
       }
       const cline = await this.core(input.backend);
-      await appendLog(
-        startLogFile,
-        "cline core ready",
-        undefined,
-        telemetryContext,
-      );
+      await appendLog(startLogFile, "cline core ready");
       const sessionLogFile = sessionLogPath(input.cwd, sessionId);
       await this.subscribeSession(sessionId, input.backend);
       this.sessionExecutionIds.set(sessionId, executionId);
@@ -1116,7 +1074,6 @@ export class BlameAgentRuntime {
       } as const;
       this.sessionStartInputs.set(sessionId, startInput);
       if (input.clineDefaultTools) this.clineDefaultSessions.add(sessionId);
-      await this.captureSessionQualityBaseline(sessionId);
       if (input.autoApproveWriteTools) {
         this.emitSessionNotice(
           sessionId,
@@ -1125,12 +1082,7 @@ export class BlameAgentRuntime {
       }
       if (autoSendPrompt) {
         this.armSessionInactivityWatchdog(sessionId, executionId, cline);
-        this.agentTelemetry.startModelRequest(sessionId);
-        void this.agentTelemetry
-          .withinSession<RuntimeClineResult>(
-            sessionId,
-            () => cline.start(startInput) as Promise<RuntimeClineResult>,
-          )
+        void (cline.start(startInput) as Promise<RuntimeClineResult>)
           .then((session) =>
             this.completeSessionStart(
               startLogFile,
@@ -1149,22 +1101,13 @@ export class BlameAgentRuntime {
         this.emitSessionNotice(sessionId, `Cline debug log: ${sessionLogFile}`);
         return { sessionId };
       }
-      const session =
-        await this.agentTelemetry.withinSession<RuntimeClineResult>(
-          sessionId,
-          () => cline.start(startInput) as Promise<RuntimeClineResult>,
-        );
+      const session = (await cline.start(startInput)) as RuntimeClineResult;
       this.sessionBackendKeys.set(session.sessionId, backendKey(input.backend));
-      await appendLog(
-        startLogFile,
-        "session created",
-        {
-          durationMs: Date.now() - startedAt,
-          sessionId: session.sessionId,
-          logFile: sessionLogFile,
-        },
-        this.agentTelemetry.context(session.sessionId),
-      );
+      await appendLog(startLogFile, "session created", {
+        durationMs: Date.now() - startedAt,
+        sessionId: session.sessionId,
+        logFile: sessionLogFile,
+      });
       await this.logSession(session.sessionId, "session created", {
         ...startContext(input),
         logFile: sessionLogFile,
@@ -1179,25 +1122,17 @@ export class BlameAgentRuntime {
           ...promptMetadata(input.prompt),
         });
       }
-      this.agentTelemetry.ready(session.sessionId, true);
       return session;
     } catch (error) {
-      const activeContext = this.agentTelemetry.context(sessionId);
-      await appendLog(
-        startLogFile,
-        "start failed",
-        {
-          durationMs: Date.now() - startedAt,
-          errorType: errorType(error),
-          message: errorMessage(error),
-          status: "failed",
-        },
-        activeContext,
-      );
-      this.agentTelemetry.fail(sessionId, error);
+      await appendLog(startLogFile, "start failed", {
+        durationMs: Date.now() - startedAt,
+        errorType: errorType(error),
+        message: errorMessage(error),
+        status: "failed",
+      });
       this.userInstructionServices.stop(sessionId);
       if (this.sessionExecutionIds.get(sessionId) === executionId)
-        await this.unsubscribeSession(sessionId, true);
+        await this.unsubscribeSession(sessionId);
       throw error;
     }
   }
@@ -1212,17 +1147,11 @@ export class BlameAgentRuntime {
     executionId: string,
   ) {
     const sessionId = session.sessionId;
-    const activeContext = this.agentTelemetry.context(sessionId);
-    await appendLog(
-      startLogFile,
-      "session created",
-      {
-        durationMs: Date.now() - startedAt,
-        sessionId,
-        logFile: sessionLogFile,
-      },
-      activeContext,
-    );
+    await appendLog(startLogFile, "session created", {
+      durationMs: Date.now() - startedAt,
+      sessionId,
+      logFile: sessionLogFile,
+    });
     await this.logSession(sessionId, "session created", {
       ...startContext(input),
       logFile: sessionLogFile,
@@ -1267,19 +1196,13 @@ export class BlameAgentRuntime {
   ) {
     this.clearSessionInactivityWatchdog(sessionId);
     this.sessionTransportRecoveries.delete(sessionId);
-    const activeContext = this.agentTelemetry.context(sessionId);
     const message = errorMessage(error);
-    await appendLog(
-      startLogFile,
-      "start failed",
-      {
-        durationMs: Date.now() - startedAt,
-        errorType: errorType(error),
-        message,
-        status: "failed",
-      },
-      activeContext,
-    );
+    await appendLog(startLogFile, "start failed", {
+      durationMs: Date.now() - startedAt,
+      errorType: errorType(error),
+      message,
+      status: "failed",
+    });
     await this.recordSessionJournalTerminal(sessionId, "failed").catch(
       () => undefined,
     );
@@ -1295,14 +1218,10 @@ export class BlameAgentRuntime {
       )
     )
       this.emitSessionError(sessionId, message, error, executionId);
-    this.agentTelemetry.fail(sessionId, error);
     this.userInstructionServices.stop(sessionId);
   }
 
-  private async sendSession(
-    input: SendSessionInput,
-    interventionType?: string,
-  ) {
+  private async sendSession(input: SendSessionInput) {
     const executionId =
       input.executionId?.trim() ??
       `${input.sessionId}:execution:${randomUUID()}`;
@@ -1313,32 +1232,17 @@ export class BlameAgentRuntime {
       );
     this.sessionSubmittedSummaries.delete(input.sessionId);
     this.sessionExecutionIds.set(input.sessionId, executionId);
-    this.agentTelemetry.beginTurn(
+    const cline = await this.sessionCore(input.sessionId);
+    return this.sendPrompt(
+      cline,
       input.sessionId,
-      input.executionId,
-      input.storyId,
-      sessionTaskComplexity(input),
+      input.prompt,
+      {
+        userFiles: input.userFiles,
+        userImages: input.userImages,
+      },
+      executionId,
     );
-    if (interventionType) {
-      this.agentTelemetry.humanIntervention(input.sessionId, interventionType);
-    }
-    try {
-      await this.captureSessionQualityBaseline(input.sessionId);
-      const cline = await this.sessionCore(input.sessionId);
-      return await this.sendPrompt(
-        cline,
-        input.sessionId,
-        input.prompt,
-        {
-          userFiles: input.userFiles,
-          userImages: input.userImages,
-        },
-        executionId,
-      );
-    } catch (error) {
-      this.agentTelemetry.fail(input.sessionId, error);
-      throw error;
-    }
   }
 
   private async sendDevelopmentSession(input: SendDevelopmentSessionInput) {
@@ -1360,21 +1264,17 @@ export class BlameAgentRuntime {
     const briefing = this.sessionDeferredTaskBriefings.get(input.sessionId);
     this.sessionDeferredTaskBriefings.delete(input.sessionId);
     const personalizationNote = this.personalizationNote(input);
-    return this.sendSession(
-      {
-        sessionId: input.sessionId,
-        executionId: input.executionId,
-        storyId: input.storyId,
-        userImages: developmentInput.userImages,
-        prompt: [
-          personalizationNote,
-          appendInitialTaskBriefing(developmentInput.prompt, briefing),
-        ]
-          .filter(Boolean)
-          .join("\n\n"),
-      },
-      input.feedbackOnly ? "feedback" : undefined,
-    );
+    return this.sendSession({
+      sessionId: input.sessionId,
+      executionId: input.executionId,
+      userImages: developmentInput.userImages,
+      prompt: [
+        personalizationNote,
+        appendInitialTaskBriefing(developmentInput.prompt, briefing),
+      ]
+        .filter(Boolean)
+        .join("\n\n"),
+    });
   }
 
   // The note a changed setting adds ahead of the next message, applied from
@@ -1399,8 +1299,6 @@ export class BlameAgentRuntime {
       ["cancelled", "failed", "succeeded"].includes(lifecycle.state)
     )
       return;
-    if (humanInitiated)
-      this.agentTelemetry.humanIntervention(sessionId, "abort");
     await this.terminateSessionExecution({
       cline,
       executionId,
@@ -1750,11 +1648,6 @@ export class BlameAgentRuntime {
         ? input.event && this.withSubmittedSummary(input.sessionId, input.event)
         : completionFailureEvent(input.sessionId, notification);
     if (event) await this.handleSessionEvent(input.sessionId, event);
-    const usage = await Promise.resolve()
-      .then(() => input.cline.getAccumulatedUsage(input.sessionId))
-      .then(normalizeAgentUsageSummary)
-      .catch(() => undefined);
-    if (usage) this.agentTelemetry.recordUsageSummary(input.sessionId, usage);
     if (
       !this.runLifecycles.finish(
         input.sessionId,
@@ -1767,13 +1660,6 @@ export class BlameAgentRuntime {
       )
     )
       return;
-    if (terminalState === "cancelled")
-      this.agentTelemetry.cancel(input.sessionId);
-    else if (terminalState !== "succeeded")
-      this.agentTelemetry.fail(
-        input.sessionId,
-        new Error(terminalProductMessage(terminalState)),
-      );
     await this.logSession(input.sessionId, "run lifecycle terminal", {
       ...this.runLifecycles.state(input.sessionId),
     });
@@ -1801,14 +1687,6 @@ export class BlameAgentRuntime {
   }
 
   private async restoreCheckpoint(
-    input: RestoreCheckpointInput,
-  ): Promise<RestoreCheckpointResult> {
-    return this.agentTelemetry.runCheckpointRestore(input.sessionId, () =>
-      this.restoreCheckpointWorkflow(input),
-    );
-  }
-
-  private async restoreCheckpointWorkflow(
     input: RestoreCheckpointInput,
   ): Promise<RestoreCheckpointResult> {
     const cline = await this.sessionCore(input.sessionId);
@@ -1862,7 +1740,6 @@ export class BlameAgentRuntime {
   ) {
     if (!restoredSessionId || !start) return;
     if (restoredSessionId === sourceSessionId) return;
-    this.agentTelemetry.restore(sourceSessionId, restoredSessionId);
     if (!this.unsubscribers.has(restoredSessionId)) {
       await this.subscribeCoreSession(restoredSessionId, cline);
     }
@@ -1895,7 +1772,6 @@ export class BlameAgentRuntime {
     if (apiConnection) {
       this.sessionApiConnections.set(restoredSessionId, apiConnection);
     }
-    await this.captureSessionQualityBaseline(restoredSessionId);
     if (this.autoApprovedWriteToolSessions.has(sourceSessionId)) {
       this.autoApprovedWriteToolSessions.add(restoredSessionId);
     }
@@ -2001,34 +1877,22 @@ export class BlameAgentRuntime {
   }
 
   private async discoverSecurityAudit(input: DiscoverSecurityAuditInput) {
-    return this.agentTelemetry.runBusinessOperation(
+    assertWorkspacePath(input.cwd, input.workspaceRoot, "cwd");
+    return runSecurityDiscovery(
+      await this.core(input.backend),
       input,
-      "security_audit_discovery",
-      async () => {
-        assertWorkspacePath(input.cwd, input.workspaceRoot, "cwd");
-        return runSecurityDiscovery(
-          await this.core(input.backend),
-          input,
-          await this.initializationCredential(input),
-          this.securityAuditSessionControl(input.auditId),
-        );
-      },
+      await this.initializationCredential(input),
+      this.securityAuditSessionControl(input.auditId),
     );
   }
 
   private async validateSecurityAudit(input: ValidateSecurityAuditInput) {
-    return this.agentTelemetry.runBusinessOperation(
+    assertWorkspacePath(input.cwd, input.workspaceRoot, "cwd");
+    return runSecurityValidation(
+      await this.core(input.backend),
       input,
-      "security_audit_validation",
-      async () => {
-        assertWorkspacePath(input.cwd, input.workspaceRoot, "cwd");
-        return runSecurityValidation(
-          await this.core(input.backend),
-          input,
-          await this.initializationCredential(input),
-          this.securityAuditSessionControl(input.auditId),
-        );
-      },
+      await this.initializationCredential(input),
+      this.securityAuditSessionControl(input.auditId),
     );
   }
 
@@ -2089,27 +1953,13 @@ export class BlameAgentRuntime {
     // first progress notice, it can cancel the run by its progress id.
     const run = this.initializationCancellations.track(input.progressId);
     try {
-      return await this.agentTelemetry.runBusinessOperation(
-        input,
-        "project_initialization",
-        () => this.initializeProjectWorkflow(input, run.signal),
-      );
+      return await this.initializeProjectWorkflow(input, run.signal);
     } finally {
       run.release();
     }
   }
 
   private async analyzeProjectCodePractices(
-    input: AnalyzeProjectCodePracticesInput,
-  ): Promise<AnalyzeProjectCodePracticesResult> {
-    return this.agentTelemetry.runBusinessOperation(
-      input,
-      "project_code_practices",
-      () => this.analyzeProjectCodePracticesWorkflow(input),
-    );
-  }
-
-  private async analyzeProjectCodePracticesWorkflow(
     input: AnalyzeProjectCodePracticesInput,
   ): Promise<AnalyzeProjectCodePracticesResult> {
     assertWorkspacePath(input.cwd, input.workspaceRoot, "cwd");
@@ -2134,12 +1984,7 @@ export class BlameAgentRuntime {
         credential,
         correction,
       );
-      const outcome = this.codePracticesAttemptOutcome(
-        input,
-        result,
-        scan,
-        attempt,
-      );
+      const outcome = this.codePracticesAttemptOutcome(result, scan, attempt);
       if (outcome.complete) return outcome.result;
       correction = outcome.correction;
     }
@@ -2147,7 +1992,6 @@ export class BlameAgentRuntime {
   }
 
   private codePracticesAttemptOutcome(
-    input: AnalyzeProjectCodePracticesInput,
     result: ProjectCodePracticesAttempt,
     scan: ProjectCodePracticesScan,
     attempt: number,
@@ -2159,12 +2003,7 @@ export class BlameAgentRuntime {
       };
     } catch (error) {
       if (attempt === maxInitializationAttempts) throw error;
-      const correction = this.projectInitializationRetry(
-        input,
-        "project_code_practices",
-        result.input,
-        error,
-      );
+      const correction = initializationCorrection(result.input, error);
       return { complete: false, correction };
     }
   }
@@ -2199,19 +2038,13 @@ export class BlameAgentRuntime {
     submitTool: AgentTool,
     correction?: InitializationCorrection,
   ) {
-    return this.agentTelemetry.runOperation(
-      input,
-      "project_code_practices",
-      () =>
-        cline.start({
-          prompt: codePracticesPrompt(scan, correction),
-          config: codePracticesConfig(input, credential, submitTool),
-          interactive: false,
-          source: "blame-project-code-practices",
-          toolPolicies: codePracticesToolPolicies(),
-        }) as Promise<RuntimeClineResult>,
-      credential.authMethod,
-    );
+    return cline.start({
+      prompt: codePracticesPrompt(scan, correction),
+      config: codePracticesConfig(input, credential, submitTool),
+      interactive: false,
+      source: "blame-project-code-practices",
+      toolPolicies: codePracticesToolPolicies(),
+    }) as Promise<RuntimeClineResult>;
   }
 
   private async initializeProjectWorkflow(
@@ -2238,14 +2071,7 @@ export class BlameAgentRuntime {
         ),
       {
         onChecking: (submission) => progress.checking(submission),
-        onRejected: (submission, error) => {
-          progress.rejected(submission, error);
-          this.agentTelemetry.recordOperationRetry(
-            input,
-            "project_initialization",
-            error,
-          );
-        },
+        onRejected: (submission, error) => progress.rejected(submission, error),
       },
     );
     progress.analyzing();
@@ -2279,32 +2105,16 @@ export class BlameAgentRuntime {
     correction: InitializationCorrection | undefined,
     sessionId?: string,
   ) {
-    return this.agentTelemetry.runOperation(
-      input,
-      "project_initialization",
-      () =>
-        cline.start({
-          prompt: initializationPrompt(scan, correction, input.preferences, input.workspaceRoot),
-          config: initializationConfig(input, credential, tools, sessionId),
-          interactive: false,
-          source: "blame-project-initialization",
-          toolPolicies: initializationToolPolicies(),
-        }) as Promise<RuntimeClineResult>,
-      credential.authMethod,
-    );
+    return cline.start({
+      prompt: initializationPrompt(scan, correction, input.preferences, input.workspaceRoot),
+      config: initializationConfig(input, credential, tools, sessionId),
+      interactive: false,
+      source: "blame-project-initialization",
+      toolPolicies: initializationToolPolicies(),
+    }) as Promise<RuntimeClineResult>;
   }
 
   private async repairProjectInitialization(
-    input: RepairProjectInitializationInput,
-  ): Promise<RepairProjectInitializationResult> {
-    return this.agentTelemetry.runBusinessOperation(
-      input,
-      "project_initialization_repair",
-      () => this.repairProjectInitializationWorkflow(input),
-    );
-  }
-
-  private async repairProjectInitializationWorkflow(
     input: RepairProjectInitializationInput,
   ): Promise<RepairProjectInitializationResult> {
     assertWorkspacePath(input.cwd, input.workspaceRoot, "cwd");
@@ -2327,12 +2137,7 @@ export class BlameAgentRuntime {
         return parseProjectInitializationRepairAttempt(result, scan, input);
       } catch (error) {
         if (attempt === maxInitializationAttempts) throw error;
-        correction = this.projectInitializationRetry(
-          input,
-          "project_initialization_repair",
-          result.result,
-          error,
-        );
+        correction = initializationCorrection(result.result, error);
       }
     }
     throw new Error(
@@ -2348,47 +2153,17 @@ export class BlameAgentRuntime {
     correction?: InitializationCorrection,
   ): Promise<ProjectInitializationRepairAttempt> {
     const submitTool = projectInitializationRepairSubmitTool();
-    const session = await this.agentTelemetry.runOperation(
-      input,
-      "project_initialization_repair",
-      () =>
-        cline.start({
-          prompt: projectInitializationRepairPrompt(input, scan, correction),
-          config: initializationRepairConfig(
-            input,
-            credential,
-            submitTool.tool,
-          ),
-          interactive: false,
-          source: "blame-project-initialization-repair",
-          toolPolicies: initializationToolPolicies(),
-        }) as Promise<RuntimeClineResult>,
-      credential.authMethod,
-    );
+    const session = (await cline.start({
+      prompt: projectInitializationRepairPrompt(input, scan, correction),
+      config: initializationRepairConfig(input, credential, submitTool.tool),
+      interactive: false,
+      source: "blame-project-initialization-repair",
+      toolPolicies: initializationToolPolicies(),
+    })) as RuntimeClineResult;
     return collectProjectInitializationRepairAttempt(session, submitTool);
   }
 
-  private projectInitializationRetry(
-    input: InitializeProjectInput | RepairProjectInitializationInput,
-    operationName: string,
-    previousResult: unknown,
-    error: unknown,
-  ) {
-    this.agentTelemetry.recordOperationRetry(input, operationName, error);
-    return initializationCorrection(previousResult, error);
-  }
-
   private async assessProjectInitializationImpact(
-    input: AssessProjectInitializationImpactInput,
-  ): Promise<AssessProjectInitializationImpactResult> {
-    return this.agentTelemetry.runBusinessOperation(
-      input,
-      "project_initialization_impact",
-      () => this.assessProjectInitializationImpactWorkflow(input),
-    );
-  }
-
-  private async assessProjectInitializationImpactWorkflow(
     input: AssessProjectInitializationImpactInput,
   ): Promise<AssessProjectInitializationImpactResult> {
     assertWorkspacePath(input.cwd, input.workspaceRoot, "cwd");
@@ -2424,19 +2199,13 @@ export class BlameAgentRuntime {
     credential: InitializationCredential,
     cline: ClineCore,
   ) {
-    return this.agentTelemetry.runOperation(
-      input,
-      "project_initialization_impact",
-      () =>
-        cline.start({
-          prompt: projectInitializationImpactPrompt(diagnostics),
-          config: initializationImpactConfig(input, credential),
-          interactive: false,
-          source: "blame-project-initialization-impact",
-          toolPolicies: initializationToolPolicies(),
-        }) as Promise<RuntimeClineResult>,
-      credential.authMethod,
-    );
+    return cline.start({
+      prompt: projectInitializationImpactPrompt(diagnostics),
+      config: initializationImpactConfig(input, credential),
+      interactive: false,
+      source: "blame-project-initialization-impact",
+      toolPolicies: initializationToolPolicies(),
+    }) as Promise<RuntimeClineResult>;
   }
 
   private async generateNewProject(
@@ -2446,8 +2215,6 @@ export class BlameAgentRuntime {
     const credential = await this.runtimeCredential(input);
     const cline = await this.core(input.backend);
     const sessionId = input.sessionId ?? createBlameSessionId();
-    this.agentTelemetry.start(sessionId, input);
-    this.agentTelemetry.setAuthentication(sessionId, credential.authMethod);
     const sessionLogFile = sessionLogPath(input.cwd, sessionId);
     await this.subscribeSession(sessionId, input.backend);
     this.sessionBackendKeys.set(sessionId, backendKey(input.backend));
@@ -2470,21 +2237,15 @@ export class BlameAgentRuntime {
         sessionId,
         this.productionConfig,
       );
-      this.agentTelemetry.startModelRequest(sessionId);
-      const session =
-        await this.agentTelemetry.withinSession<RuntimeClineResult>(
-          sessionId,
-          () =>
-            cline.start({
-              prompt: newProjectGenerationPrompt(input),
-              config: { ...config, systemPrompt: `${config.systemPrompt ?? ''}${webResearchGuidance}`,
-                extraTools: webResearchTools(input.apiConnection, this.options.renderWebPage) },
-              interactive: false,
-              localRuntime: { configExtensions: ["rules"] },
-              source: "blame-new-project-generation",
-              toolPolicies: newProjectGenerationToolPolicies(),
-            }) as Promise<RuntimeClineResult>,
-        );
+      const session = (await cline.start({
+        prompt: newProjectGenerationPrompt(input),
+        config: { ...config, systemPrompt: `${config.systemPrompt ?? ''}${webResearchGuidance}`,
+          extraTools: webResearchTools(input.apiConnection, this.options.renderWebPage) },
+        interactive: false,
+        localRuntime: { configExtensions: ["rules"] },
+        source: "blame-new-project-generation",
+        toolPolicies: newProjectGenerationToolPolicies(),
+      })) as RuntimeClineResult;
       const failure = resultFailureMessage(session.result);
       const readinessError = await generatedProjectReadinessError(input.cwd);
       if (readinessError) throw new Error(failure ?? readinessError);
@@ -2516,12 +2277,7 @@ export class BlameAgentRuntime {
       throw new Error("Prompt optimizer requires a user story prompt.");
     const credential = await this.runtimeCredential(input);
     const cline = await this.core(input.backend);
-    return this.agentTelemetry.runOperation(
-      input,
-      "prompt_optimization",
-      () => optimizeUserStoryPrompt({ ...input, prompt }, cline, credential),
-      credential.authMethod,
-    );
+    return optimizeUserStoryPrompt({ ...input, prompt }, cline, credential);
   }
 
   private async generateTitle(
@@ -2532,12 +2288,7 @@ export class BlameAgentRuntime {
     if (!prompt) throw new Error("Title generator requires a prompt.");
     const credential = await this.runtimeCredential(input);
     const cline = await this.core(input.backend);
-    return this.agentTelemetry.runOperation(
-      input,
-      "title_generation",
-      () => generateTitle({ ...input, prompt }, cline, credential),
-      credential.authMethod,
-    );
+    return generateTitle({ ...input, prompt }, cline, credential);
   }
 
   private async initializationCredential(input: RuntimeCredentialInput) {
@@ -2561,9 +2312,7 @@ export class BlameAgentRuntime {
     input: ApproveAndMergeInput,
   ): Promise<ApproveAndMergeResult> {
     return runRepositoryMerge(input.repositoryRoot, () =>
-      this.agentTelemetry.runBusinessOperation(input, "merge", () =>
-        this.approveAndMergeStoryOperation(input),
-      ),
+      this.approveAndMergeStoryOperation(input),
     );
   }
 
@@ -2746,9 +2495,7 @@ export class BlameAgentRuntime {
     input: OpenPullRequestInput,
   ): Promise<OpenPullRequestResult> {
     return runRepositoryMerge(input.repositoryRoot, () =>
-      this.agentTelemetry.runBusinessOperation(input, "pull_request", () =>
-        this.openStoryPullRequestOperation(input),
-      ),
+      this.openStoryPullRequestOperation(input),
     );
   }
 
@@ -2877,18 +2624,13 @@ private async commitStoryWork(input: ApproveAndMergeInput) {
       const startedAt = Date.now();
       const credential = await this.runtimeCredential(input);
       const cline = await this.core(input.backend);
-      const session = await this.agentTelemetry.runOperation(
-        input, "commit_message_generation",
-        async () =>
-          runOneShotAgent(cline, {
-            prompt: await commitMessagePrompt(input),
-            config: commitMessageConfig(input, credential),
-            interactive: false,
-            source,
-            toolPolicies: initializationToolPolicies(),
-          }, input.backend),
-        credential.authMethod,
-      );
+      const session = await runOneShotAgent(cline, {
+        prompt: await commitMessagePrompt(input),
+        config: commitMessageConfig(input, credential),
+        interactive: false,
+        source,
+        toolPolicies: initializationToolPolicies(),
+      }, input.backend);
       const message = commitMessageFromAgentResult(session.result);
       await appendLog(logFile, "commit message agent finished", {
         durationMs: Date.now() - startedAt,
@@ -3019,18 +2761,13 @@ private async commitStoryWork(input: ApproveAndMergeInput) {
     const startedAt = Date.now();
     const credential = await this.runtimeCredential(input);
     const cline = await this.core(input.backend);
-    const session = await this.agentTelemetry.runOperation(
-      input, "merge_conflict_resolution",
-      async () =>
-        runOneShotAgent(cline, {
-          prompt: await mergeConflictPrompt(input, targetBranch, attempt),
-          config: mergeConflictConfig(input, credential),
-          interactive: false,
-          source: "blame-merge-conflict-resolution",
-          toolPolicies: mergeConflictToolPolicies(),
-        }, input.backend),
-      credential.authMethod,
-    );
+    const session = await runOneShotAgent(cline, {
+      prompt: await mergeConflictPrompt(input, targetBranch, attempt),
+      config: mergeConflictConfig(input, credential),
+      interactive: false,
+      source: "blame-merge-conflict-resolution",
+      toolPolicies: mergeConflictToolPolicies(),
+    }, input.backend);
     await appendLog(logFile, "merge conflict agent run completed", {
       durationMs: Date.now() - startedAt,
       sessionId: session.sessionId,
@@ -3048,7 +2785,7 @@ private async commitStoryWork(input: ApproveAndMergeInput) {
   }
 
   private async subscribeCoreSession(sessionId: string, cline: ClineCore) {
-    await this.unsubscribeSession(sessionId, true);
+    await this.unsubscribeSession(sessionId);
     this.sessionReleases.delete(sessionId);
     const unsubscribe = await cline.subscribe(
       (payload: CoreSessionEvent) => {
@@ -3069,14 +2806,7 @@ private async commitStoryWork(input: ApproveAndMergeInput) {
           "failed",
           "cancelled",
         ].includes(lifecycleBeforeEvent?.state ?? "");
-        if (
-          lifecycleBeforeEvent?.execution_id === executionId &&
-          lifecycleBeforeEvent.state !== "running"
-        )
-          this.agentTelemetry.recordPostStopEvent(sessionId, eventTokens);
         if (!this.runLifecycles.accepts(sessionId, executionId, eventTokens)) {
-          if (terminalBeforeEvent)
-            this.agentTelemetry.recordPostTerminalEvent(sessionId, eventTokens);
           void this.logSession(
             sessionId,
             terminalBeforeEvent
@@ -3094,7 +2824,6 @@ private async commitStoryWork(input: ApproveAndMergeInput) {
           completed.add(toolActivity.toolCallId);
           this.sessionCompletedToolIds.set(sessionId, completed);
         }
-        this.agentTelemetry.observeCoreEvent(sessionId, payload);
         if (this.shouldSkipFallbackChunk(sessionId, payload)) return;
         const spawnAgentPhase = clineSessionSpawnAgentPhase(payload);
         const normalized = this.withToolLifecycle(
@@ -3280,10 +3009,8 @@ private async commitStoryWork(input: ApproveAndMergeInput) {
       "Provider connection interrupted. Blame is resuming from the persisted session state.",
     );
     if (restart) {
-      this.agentTelemetry.startModelRequest(sessionId);
       this.armSessionInactivityWatchdog(sessionId, executionId, cline);
-      const session = await this.agentTelemetry.withinSession(sessionId,
-        () => cline.start(restart!) as Promise<RuntimeClineResult>);
+      const session = (await cline.start(restart)) as RuntimeClineResult;
       await this.completeSessionStartResult(cline, session, executionId);
       return session.result;
     }
@@ -3449,31 +3176,12 @@ private async commitStoryWork(input: ApproveAndMergeInput) {
   }
 
   private async handleSessionEvent(sessionId: string, event: AgentEvent) {
-    if (streamingAgentEvent(event)) {
-      this.agentTelemetry.observeEvent(sessionId, event);
-      return;
-    }
-    const activeContext = this.agentTelemetry.context(sessionId);
+    if (streamingAgentEvent(event)) return;
     const eventUsage = eventUsageSummary(event);
     const usage = await this.usageForEvent(sessionId, event, eventUsage);
-    if (event.type === "done" && usage)
-      this.agentTelemetry.recordUsageSummary(sessionId, usage);
-    const qualityContext =
-      event.type === "done"
-        ? this.agentTelemetry.completeModelRequest(sessionId, event.payload)
-        : undefined;
-    if (event.type === "done") {
-      await this.recordSessionQuality(sessionId, qualityContext);
-    }
-    this.agentTelemetry.observeEvent(sessionId, event);
-    await this.logSession(
-      sessionId,
-      `event:${event.type}`,
-      eventLogPayload(event),
-      activeContext,
-    );
+    await this.logSession(sessionId, `event:${event.type}`, eventLogPayload(event));
     if (!usage) return;
-    await this.handleUsageUpdate(sessionId, usage, activeContext);
+    await this.handleUsageUpdate(sessionId, usage);
   }
 
   private recordNativeCompletion(
@@ -3603,39 +3311,22 @@ private async commitStoryWork(input: ApproveAndMergeInput) {
     eventUsage: AgentUsageSummary | undefined,
   ) {
     if (eventUsage || event.type !== "done") return eventUsage;
-    const span = blameTelemetry.startSpan("blame.agent.usage_summary", {
-      parent: this.agentTelemetry.context(sessionId),
-    });
     try {
-      const usage = await blameTelemetry.withinSpan(span, () =>
-        this.readUsage(sessionId),
-      );
-      span.end();
-      return usage;
-    } catch (error) {
-      span.recordError(error).end("failed");
+      return await this.readUsage(sessionId);
+    } catch {
       return undefined;
     }
   }
 
-  private async handleUsageUpdate(
-    sessionId: string,
-    usage: AgentUsageSummary,
-    activeContext: Context | undefined,
-  ) {
+  private async handleUsageUpdate(sessionId: string, usage: AgentUsageSummary) {
     const usageSignature = JSON.stringify(summarizeUsage(usage));
     if (this.sessionUsageSignatures.get(sessionId) === usageSignature) return;
     this.sessionUsageSignatures.set(sessionId, usageSignature);
     const context = this.sessionContexts.get(sessionId) ?? { sessionId };
-    await this.logSession(
-      sessionId,
-      "usage updated",
-      {
-        ...context,
-        ...summarizeUsage(usage),
-      },
-      activeContext,
-    );
+    await this.logSession(sessionId, "usage updated", {
+      ...context,
+      ...summarizeUsage(usage),
+    });
     if (!shouldAbortForUsage(usage, this.productionConfig)) return;
     const executionId = this.sessionExecutionIds.get(sessionId);
     if (executionId && !this.runLifecycles.canInvoke(sessionId, executionId))
@@ -3645,10 +3336,10 @@ private async commitStoryWork(input: ApproveAndMergeInput) {
     await this.abortSession(sessionId, false);
   }
 
-  private unsubscribeSession(sessionId: string, preserveTelemetry = false) {
+  private unsubscribeSession(sessionId: string) {
     const current = this.sessionReleases.get(sessionId);
     if (current) return current;
-    const release = this.releaseSession(sessionId, preserveTelemetry);
+    const release = this.releaseSession(sessionId);
     this.sessionReleases.set(sessionId, release);
     void release.then(
       () => this.deleteSessionRelease(sessionId, release),
@@ -3662,7 +3353,7 @@ private async commitStoryWork(input: ApproveAndMergeInput) {
       this.sessionReleases.delete(sessionId);
   }
 
-  private async releaseSession(sessionId: string, preserveTelemetry: boolean) {
+  private async releaseSession(sessionId: string) {
     const unsubscribe = this.unsubscribers.get(sessionId);
     this.unsubscribers.delete(sessionId);
     try {
@@ -3670,7 +3361,7 @@ private async commitStoryWork(input: ApproveAndMergeInput) {
     } catch {
       // Session cleanup must continue even when a provider unsubscribe fails.
     }
-    this.clearSessionState(sessionId, preserveTelemetry);
+    this.clearSessionState(sessionId);
     await this.sessionMemoryWrites.get(sessionId)?.catch(() => undefined);
     this.sessionMemoryWrites.delete(sessionId);
     const logFile = this.sessionLogFiles.get(sessionId);
@@ -3681,7 +3372,7 @@ private async commitStoryWork(input: ApproveAndMergeInput) {
     this.sessionLogWrites.delete(sessionId);
   }
 
-  private clearSessionState(sessionId: string, preserveTelemetry: boolean) {
+  private clearSessionState(sessionId: string) {
     this.clearSessionInactivityWatchdog(sessionId);
     const lifecycle = this.runLifecycles.state(sessionId);
     const terminationActive = lifecycle?.state === "cancelling";
@@ -3715,45 +3406,10 @@ private async commitStoryWork(input: ApproveAndMergeInput) {
     }
     this.sessionBackendKeys.delete(sessionId);
     this.sessionApiConnections.delete(sessionId);
-    this.sessionQualityBaselines.delete(sessionId);
     this.sessionStartInputs.delete(sessionId);
     this.sessionPersonalization.delete(sessionId);
     this.userInstructionServices.stop(sessionId);
     this.structuredEventSessions.delete(sessionId);
-    if (!preserveTelemetry) this.agentTelemetry.remove(sessionId);
-  }
-
-  private async recordSessionQuality(
-    sessionId: string,
-    parent: Context | undefined,
-  ) {
-    const cwd = this.sessionStartInputs.get(sessionId)?.config.cwd;
-    const baseline = this.sessionQualityBaselines.get(sessionId);
-    if (!cwd || baseline === undefined) return;
-    const span = blameTelemetry.startSpan("blame.agent.quality", { parent });
-    try {
-      const status = await blameTelemetry.withinSpan(span, () =>
-        workspaceStatus(cwd),
-      );
-      this.agentTelemetry.recordQuality(
-        sessionId,
-        qualityFromStatusDelta(baseline, status),
-      );
-      this.sessionQualityBaselines.set(sessionId, status);
-      span.end();
-    } catch (error) {
-      span.recordError(error).end("failed");
-    }
-  }
-
-  private async captureSessionQualityBaseline(sessionId: string) {
-    const cwd = this.sessionStartInputs.get(sessionId)?.config.cwd;
-    if (!cwd) return;
-    try {
-      this.sessionQualityBaselines.set(sessionId, await workspaceStatus(cwd));
-    } catch {
-      this.sessionQualityBaselines.delete(sessionId);
-    }
   }
 
   private shouldSkipSessionDisplayEvent(
@@ -3851,12 +3507,6 @@ private async commitStoryWork(input: ApproveAndMergeInput) {
 
     return new Promise((resolve) => {
       const approval = toApprovalRequest(request, toolName);
-      if (approval.sessionId) {
-        this.agentTelemetry.humanIntervention(
-          approval.sessionId,
-          "tool_approval",
-        );
-      }
       this.pendingApprovals.set(approval.id, { request: approval, resolve });
       if (approval.sessionId)
         void this.logSession(
@@ -4052,14 +3702,13 @@ private async commitStoryWork(input: ApproveAndMergeInput) {
     sessionId: string,
     message: string,
     payload?: unknown,
-    activeContext: Context | undefined = this.agentTelemetry.context(sessionId),
   ) {
     const file = this.sessionLogFiles.get(sessionId);
     if (!file) return;
     const precedingWrite = this.sessionLogWrites.get(sessionId);
     const write = (precedingWrite ?? Promise.resolve())
       .catch(() => undefined)
-      .then(() => appendLog(file, message, payload, activeContext));
+      .then(() => appendLog(file, message, payload));
     this.sessionLogWrites.set(sessionId, write);
     await write;
   }
@@ -4068,7 +3717,6 @@ private async commitStoryWork(input: ApproveAndMergeInput) {
     const clines = Array.from(this.clines.values());
     this.clines.clear();
     this.sessionBackendKeys.clear();
-    this.sessionQualityBaselines.clear();
     this.sessionStartInputs.clear();
     this.sessionInactivityTimeouts.clear();
     await Promise.allSettled(
@@ -4239,8 +3887,6 @@ private async commitStoryWork(input: ApproveAndMergeInput) {
       },
       diagnostics: await this.previewInitializationDiagnostics(preview),
       backend: input.backend,
-      executionId: input.executionId,
-      storyId: input.storyId,
     };
   }
 
@@ -4324,22 +3970,18 @@ private async commitStoryWork(input: ApproveAndMergeInput) {
           "The execution is no longer running; no model call was made.",
         ),
       );
-    this.agentTelemetry.startModelRequest(sessionId);
     this.armSessionInactivityWatchdog(sessionId, activeExecutionId, cline);
-    const activeContext = this.agentTelemetry.context(sessionId);
-    const result: Promise<unknown> = this.agentTelemetry
-      .withinSession(sessionId, () =>
-        cline.send({
-          sessionId,
-          prompt,
-          ...(attachments.userImages?.length
-            ? { userImages: attachments.userImages }
-            : {}),
-          ...(attachments.userFiles?.length
-            ? { userFiles: attachments.userFiles }
-            : {}),
-        }),
-      )
+    const result: Promise<unknown> = cline
+      .send({
+        sessionId,
+        prompt,
+        ...(attachments.userImages?.length
+          ? { userImages: attachments.userImages }
+          : {}),
+        ...(attachments.userFiles?.length
+          ? { userFiles: attachments.userFiles }
+          : {}),
+      })
       .then(async (result: unknown): Promise<unknown> => {
         const terminalDrain = this.sessionTerminalDrains.get(sessionId);
         await terminalDrain;
@@ -4353,7 +3995,6 @@ private async commitStoryWork(input: ApproveAndMergeInput) {
           sessionId,
           "send resolved",
           sendResultLogPayload(result, Date.now() - startedAt),
-          activeContext,
         );
         const failure = this.sessionResultFailure(
           sessionId,
@@ -4442,17 +4083,12 @@ private async commitStoryWork(input: ApproveAndMergeInput) {
             activeExecutionId,
           );
         this.sessionTransportRecoveries.delete(sessionId);
-        void this.logSession(
-          sessionId,
-          "send failed",
-          {
-            durationMs: Date.now() - startedAt,
-            errorType: errorType(error),
-            message,
-            status: "failed",
-          },
-          activeContext,
-        );
+        void this.logSession(sessionId, "send failed", {
+          durationMs: Date.now() - startedAt,
+          errorType: errorType(error),
+          message,
+          status: "failed",
+        });
         await this.terminateSessionExecution({
           cline,
           display: true,
@@ -4472,14 +4108,9 @@ private async commitStoryWork(input: ApproveAndMergeInput) {
         });
         throw error;
       });
-    void this.logSession(
-      sessionId,
-      "prompt sent",
-      {
-        ...promptMetadata(prompt),
-      },
-      activeContext,
-    );
+    void this.logSession(sessionId, "prompt sent", {
+      ...promptMetadata(prompt),
+    });
     return result;
   }
 }
@@ -4716,59 +4347,6 @@ function runtimeEnvPath(path: string) {
 
 function splitLines(value: string) {
   return value.split("\n").filter(Boolean);
-}
-
-export function qualityFromStatus(status: string) {
-  return qualityFromStatusDelta("", status);
-}
-
-export function qualityFromStatusDelta(baseline: string, status: string) {
-  const baselinePaths = new Set(
-    statusEntries(baseline).map(({ path }) => path),
-  );
-  const entries = statusEntries(status).filter(
-    ({ path }) => !baselinePaths.has(path),
-  );
-  return {
-    filesModified: new Set(entries.map((entry) => entry.path)).size,
-    testsAdded: entries.filter(
-      (entry) => entry.added && testFilePath(entry.path),
-    ).length,
-  };
-}
-
-function statusEntries(status: string) {
-  return splitLines(status).map(statusEntry);
-}
-
-function statusEntry(line: string) {
-  const separator = line[2] === " " ? 2 : line[1] === " " ? 1 : 2;
-  const status = line.slice(0, separator);
-  const path =
-    line
-      .slice(separator + 1)
-      .split(" -> ")
-      .at(-1) ?? "";
-  return {
-    added: status === "??" || status.includes("A"),
-    path,
-  };
-}
-
-function testFilePath(path: string) {
-  return /(?:^|\/)(?:__tests__|tests?)\/|\.(?:spec|test)\.[^/]+$/i.test(path);
-}
-
-function sessionTaskComplexity(
-  input: Pick<SendSessionInput, "prompt" | "userFiles" | "userImages">,
-) {
-  const attachmentCount =
-    (input.userFiles?.length ?? 0) + (input.userImages?.length ?? 0);
-  return taskComplexityBucket(input.prompt.length, attachmentCount);
-}
-
-function workspaceStatus(cwd: string) {
-  return git(cwd, ["status", "--porcelain=v1", "--untracked-files=all"]);
 }
 
 function unresolvedMergeConflictMessage(conflicts: string[]) {

@@ -9,7 +9,6 @@ import {
 } from "./cline-runtime-events.js";
 import { realpath, rm, stat } from "node:fs/promises";
 import { basename, dirname, join, normalize, resolve } from "node:path";
-import { withoutTelemetryEnvironment } from "@blame/telemetry";
 import { promisify } from "node:util";
 import { execFile } from "node:child_process";
 
@@ -312,7 +311,7 @@ export async function git(cwd: string, args: string[]) {
     const { stdout } = await execFileAsync("git", args, {
       cwd,
       env: {
-        ...withoutTelemetryEnvironment(process.env),
+        ...process.env,
         GIT_TERMINAL_PROMPT: "0",
         GIT_SSH_COMMAND:
           process.platform === "win32"

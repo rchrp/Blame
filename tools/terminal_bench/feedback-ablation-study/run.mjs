@@ -43,7 +43,7 @@ async function bindings() {
   for (const path of ['tools/terminal_bench/navigation-evidence/wire-audit.mjs', 'tools/terminal_bench/navigation-evidence/native-search-repair.mjs',
     'tools/terminal_bench/request-limit-model-study/prompt-date.mjs', 'tools/terminal_bench/navigation-evidence/budget-accounting.mjs',
     'tools/terminal_bench/corpus/light-study-accounting.mjs', 'packages/agent-runtime/dist/usage-audit.js', 'pnpm-lock.yaml']) files[path] = sha(await readFile(join(repo, path)));
-  for (const name of ['@cline/sdk', '@cline/llms','@blame/harness-core','@blame/model-catalog','@blame/preview-contract','@blame/telemetry']) {
+  for (const name of ['@cline/sdk', '@cline/llms','@blame/harness-core','@blame/model-catalog','@blame/preview-contract']) {
     const path = join(repo, 'packages/agent-runtime/node_modules', name, 'dist');
     files[name] = await fileTree(path);
   }
