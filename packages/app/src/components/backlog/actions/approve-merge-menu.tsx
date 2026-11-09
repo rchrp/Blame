@@ -18,10 +18,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
+import { useStoryTransitionKind } from "@/pages/backlog/story-transitions"
 
 export type ApproveMergeAction = Extract<
   DrawerAction,
-  "Approve & Merge" | "Open PR" | "Merge without Push"
+  "Approve & Merge" | "Open PR" | "Approve, Merge & Push"
 >
 
 // Checked each time the menu opens: gh may have been signed in meanwhile.
@@ -33,16 +34,34 @@ type PullRequestCheck =
 const primaryTone =
   "bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-500"
 
-// Approve & Merge, with its other ways to deliver the story behind the arrow:
-// a GitHub pull request, or a merge that is not pushed.
+// A merge or pull request that started elsewhere (the card, the drawer before
+// it was closed and opened again) keeps spinning on the story's menu.
+export function useApproveMergeTransition(
+  storyId: string | undefined
+): ApproveMergeAction | undefined {
+  const transition = useStoryTransitionKind(storyId)
+  if (transition === "merge") return "Approve & Merge"
+  if (transition === "pull-request") return "Open PR"
+  return undefined
+}
+
+// Approve & Merge, which merges on this computer without pushing, with its
+// other ways to deliver the story behind the arrow: the same merge followed by
+// a push, or a GitHub pull request.
 export function ApproveMergeMenu({
   activeAction,
+  compact,
+  disabled,
   hasPullRequest,
   onAction,
   onCheckPullRequest,
   targetBranch,
 }: {
   activeAction?: DrawerAction
+  // The smaller buttons of a card, filling the width they are given.
+  compact?: boolean
+  // Another action on the story is running, without a spinner here.
+  disabled?: boolean
   hasPullRequest: boolean
   onAction: (action: ApproveMergeAction) => void
   // Absent where gh cannot run (the web app): Open PR is not offered.
@@ -52,7 +71,7 @@ export function ApproveMergeMenu({
   const [pullRequest, setPullRequest] = React.useState<PullRequestCheck>()
   const checkRequest = React.useRef(0)
   const running = isApproveMergeAction(activeAction) ? activeAction : undefined
-  const busy = Boolean(activeAction)
+  const busy = disabled || Boolean(activeAction)
 
   function checkPullRequest(open: boolean) {
     if (!open || !onCheckPullRequest) return
@@ -73,10 +92,11 @@ export function ApproveMergeMenu({
   }
 
   return (
-    <ButtonGroup>
+    <ButtonGroup className={cn(compact && "w-full")}>
       <Button
         type="button"
-        className={primaryTone}
+        size={compact ? "sm" : "default"}
+        className={cn(primaryTone, compact && "min-w-0 flex-1 justify-start")}
         disabled={busy}
         onClick={() => onAction("Approve & Merge")}
       >
@@ -87,7 +107,7 @@ export function ApproveMergeMenu({
         <DropdownMenuTrigger asChild>
           <Button
             type="button"
-            size="icon"
+            size={compact ? "icon-sm" : "icon"}
             className={cn(primaryTone, "border-l border-l-white/25")}
             disabled={busy}
             aria-label="More ways to deliver"
@@ -104,10 +124,10 @@ export function ApproveMergeMenu({
             />
           ) : null}
           <MenuAction
-            description={`Merge into ${targetBranch || "the target branch"} on this computer only.`}
+            description={`Merge into ${targetBranch || "the target branch"} on this computer, then push it to its remote.`}
             icon={GitMergeIcon}
-            label="Merge without Push"
-            onSelect={() => onAction("Merge without Push")}
+            label="Approve, Merge & Push"
+            onSelect={() => onAction("Approve, Merge & Push")}
           />
         </DropdownMenuContent>
       </DropdownMenu>
@@ -217,6 +237,6 @@ function isApproveMergeAction(
   return (
     action === "Approve & Merge" ||
     action === "Open PR" ||
-    action === "Merge without Push"
+    action === "Approve, Merge & Push"
   )
 }

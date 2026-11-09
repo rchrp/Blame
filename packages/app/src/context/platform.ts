@@ -282,6 +282,8 @@ export type BacklogStatusPipSnapshot = {
   authStatus: "loading" | "authenticated" | "unauthenticated"
   hasActiveProject: boolean
   loading: boolean
+  // Where the status window checks that Open PR can run.
+  projectPath?: string
   stories: UserStory[]
 }
 
@@ -331,6 +333,8 @@ export type BacklogStatusPipAction =
   | "Request Changes"
   | "Reject"
   | "Approve & Merge"
+  | "Approve, Merge & Push"
+  | "Open PR"
   | "Use Context"
   | "Rework"
   | "Delete Permanently"

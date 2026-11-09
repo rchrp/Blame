@@ -35,6 +35,7 @@ import { UserStoryDrawer } from "@/components/backlog/drawer/user-story-drawer"
 import { UserStoryPreviewWarmup } from "@/components/backlog/drawer/user-story-preview"
 import { drawerTargetForAction } from "@/components/backlog/shared/backlog-helpers"
 import type { DrawerTarget } from "@/components/backlog/shared/backlog-types"
+import { approveMergeOptions } from "@/components/backlog/shared/approve-merge-options"
 import { storyPreviewDevtoolsScope } from "@/components/backlog/shared/preview-devtools-scope"
 import { directStoryPreviewScope } from "@/components/backlog/board/project-run-configuration"
 import type { AgentConversationUserMessageUndo } from "@/components/chat/agent-conversation"
@@ -176,6 +177,7 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
       hasActiveProject: Boolean(projects.activeProject),
       // A refresh of an already loaded backlog is not "loading".
       loading: backlog.loading && !backlog.stories.length,
+      projectPath: projects.activeProject?.path,
       stories: statusPipStories,
     })
   }, [
@@ -957,7 +959,9 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
         openCreateDrawerWithDraft({ codeSelectionAttachments: [storyContextAttachment(currentStory)] })
         return
       }
-      if (action === "Approve & Merge") return completeReviewStory(currentStory)
+      if (action === "Approve & Merge" || action === "Approve, Merge & Push")
+        return completeReviewStory(currentStory, approveMergeOptions(action))
+      if (action === "Open PR") return openPullRequestForStory(currentStory)
     },
     [
       closeDrawerIfDeleted,
@@ -965,6 +969,7 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
       generateQueuedStoryTitle,
       backlog,
       openCreateDrawerWithDraft,
+      openPullRequestForStory,
       platform,
       projects.activeProject?.path,
       updateStory,
@@ -1039,6 +1044,7 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
     })
   }, [platform.backlogStatusPip])
   const columnAction = useLatestCallback(runStoryAction)
+  const columnCheckPullRequest = useLatestCallback(checkPullRequest)
   const deleteStory = useLatestCallback(async (story: UserStory) => {
     await deleteUserStoryWithRuntime(
       await detailedStory(story, backlog),
@@ -1131,6 +1137,9 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
             column={column}
             diffStats={storyDiffStats}
             onAction={columnAction}
+            onCheckPullRequest={
+              platform.agent ? columnCheckPullRequest : undefined
+            }
             onCreateUserStory={openCreateDrawer}
             onDeleteUserStory={columnDeleteStory}
             onOpenDrawer={columnOpenDrawer}
@@ -1288,6 +1297,7 @@ function detailedStoryForAction(
 function storyActionRequiresDetail(action: BacklogAction) {
   return (
     action === "Approve & Merge" ||
+    action === "Approve, Merge & Push" ||
     action === "Use Context" ||
     action === "Delete Permanently"
   )

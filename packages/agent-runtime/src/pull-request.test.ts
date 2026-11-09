@@ -197,7 +197,7 @@ test("explains how to sign gh in instead of pushing", async () => {
   }
 });
 
-test("merges without pushing when asked", async () => {
+test("merges without pushing by default and pushes only when asked", async () => {
   const fixture = await pullRequestFixture();
   const { repositoryRoot } = fixture;
   // The merge fetches its target's upstream: keep it off the network.
@@ -206,10 +206,7 @@ test("merges without pushing when asked", async () => {
   const pushedDevelop = await git(fixture.remote, ["rev-parse", "develop"]);
   const runtime = pullRequestTestRuntime(fakeGh().run);
   try {
-    const result = await runtime.approveAndMerge({
-      ...fixture.input,
-      push: false,
-    });
+    const result = await runtime.approveAndMerge(fixture.input);
 
     assert.deepEqual(result.push, { status: "skipped" });
     assert.equal(
@@ -217,6 +214,32 @@ test("merges without pushing when asked", async () => {
       result.mergeCommit,
     );
     assert.equal(await git(fixture.remote, ["rev-parse", "develop"]), pushedDevelop);
+  } finally {
+    await runtime.shutdown();
+    await rm(fixture.directory, { recursive: true, force: true });
+  }
+});
+
+test("pushes the merged target branch when asked", async () => {
+  const fixture = await pullRequestFixture();
+  const { repositoryRoot } = fixture;
+  await git(repositoryRoot, ["remote", "set-url", "origin", fixture.remote]);
+  await git(repositoryRoot, ["push", "--set-upstream", "origin", "develop"]);
+  const runtime = pullRequestTestRuntime(fakeGh().run);
+  try {
+    const result = await runtime.approveAndMerge({
+      ...fixture.input,
+      push: true,
+    });
+
+    assert.deepEqual(result.push, {
+      status: "pushed",
+      upstream: "origin/develop",
+    });
+    assert.equal(
+      await git(fixture.remote, ["rev-parse", "develop"]),
+      result.mergeCommit,
+    );
   } finally {
     await runtime.shutdown();
     await rm(fixture.directory, { recursive: true, force: true });

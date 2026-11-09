@@ -89,6 +89,7 @@ test("merges into a dirty target branch and restores its local changes", async (
       targetBranch: "main",
       summary: "Exercise merging with local target-branch changes.",
       title: "Dirty target merge",
+      push: true,
       worktree,
     });
 
@@ -256,6 +257,7 @@ test("merges a VM story through host credentials and preserves unpublished targe
       repositoryRoot,
       worktree,
       storyBranch: "story/retry",
+      push: true,
       title: "Resume a committed VM story",
       summary: "Finish approval without giving the VM remote credentials.",
     });
@@ -651,7 +653,10 @@ test("advances a target branch checked out nowhere and pushes it to its own upst
   await git(repositoryRoot, ["push", "--set-upstream", "origin", "develop"]);
   const runtime = mergeTestRuntime();
   try {
-    const result = await runtime.approveAndMerge(fixture.input);
+    const result = await runtime.approveAndMerge({
+      ...fixture.input,
+      push: true,
+    });
 
     assert.equal(result.targetBranch, "develop");
     assert.equal(result.mergeCommit, fixture.storyCommit);
@@ -692,7 +697,10 @@ test("advances a target branch checked out in another clean worktree", async () 
   ]);
   const runtime = mergeTestRuntime();
   try {
-    const result = await runtime.approveAndMerge(fixture.input);
+    const result = await runtime.approveAndMerge({
+      ...fixture.input,
+      push: true,
+    });
 
     assert.equal(await git(other, ["rev-parse", "HEAD"]), fixture.storyCommit);
     assert.equal(await readFile(join(other, "story.txt"), "utf8"), "story\n");

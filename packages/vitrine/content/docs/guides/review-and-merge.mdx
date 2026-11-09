@@ -19,7 +19,7 @@ When an agent hands its work back, the story moves to **In Review**. Open it:
 | ------------------- | ---------------------------------------------------------------------------------------------- |
 | **Request Changes** | Write a comment: the story goes back to **In Progress** and the agent takes another pass.      |
 | **Reject**          | Choose **Request Changes** after all, or **Discard User Story**, which moves it to **Discarded**. Discarding a Direct story keeps the files the agent changed in your project folder. |
-| **Approve & Merge** | Blame merges the story's branch, and the story moves to **Done**.                              |
+| **Approve & Merge** | Blame merges the story's branch into your local branch, without pushing, and the story moves to **Done**. The arrow next to the button offers **Approve, Merge & Push**, which also pushes the branch, and **Open PR**. The same button and menu sit on the story's card in the backlog. |
 | **Approve & Commit** | A Direct story, which already works in your project folder, has nothing to merge: Blame commits its files on the checked-out branch, and the story moves to **Done**. |
 
 The approve button reads **Mark as Done** when the story changed nothing.
@@ -42,10 +42,10 @@ Blame merges into the branch checked out in your project folder:
 1. If that branch has an upstream, Blame pulls it first.
 2. It commits the story's work with a message written by an agent.
 3. It brings the story's branch up to date with yours, then fast-forwards your branch to it.
-4. If your branch has an upstream, Blame pushes it.
+4. Blame does not push. With **Approve, Merge & Push**, if your branch has an upstream, Blame pushes it.
 
-<Callout type="warn" title="Merging pushes">
-  When the checked-out branch tracks a remote branch, Approve & Merge pushes the merged result to it. To review before anything is pushed, check out a local branch without an upstream.
+<Callout title="Merging does not push">
+  Approve & Merge, and dragging a story to **Done**, leave the merged result on your local branch: your branch ends up ahead of its upstream. Choose **Approve, Merge & Push** in the menu next to the button to push it to the branch's upstream in the same step. If the branch has no upstream, nothing is pushed and Blame offers to publish the branch after the merge.
 </Callout>
 
 Merge conflicts are resolved by an agent, with up to three attempts; if conflicts remain, the merge stops and says so. Uncommitted changes in your project folder are set aside during the merge and put back afterwards. If they conflict with the story's changes, the merge stops before your branch moves.

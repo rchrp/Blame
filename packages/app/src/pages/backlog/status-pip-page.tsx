@@ -1,4 +1,5 @@
 import * as React from "react"
+import type { PullRequestAvailability } from "@blame/agent-runtime"
 
 import { UserStoryCard } from "@/components/backlog/board/user-story-card"
 import type {
@@ -45,6 +46,17 @@ export function BacklogStatusPipPage() {
     isBoolean
   )
   const compactListRef = React.useRef<HTMLDivElement>(null)
+  // gh runs on the host whichever window asks: the project path published by
+  // the main window is all this one needs to check Open PR.
+  const agent = platform.agent
+  const projectPath = snapshot.projectPath
+  const checkPullRequest = React.useMemo(
+    () =>
+      agent && projectPath
+        ? () => agent.pullRequestAvailability({ repositoryRoot: projectPath })
+        : undefined,
+    [agent, projectPath]
+  )
   const activeStories = React.useMemo(
     () => snapshot.stories.filter(activeStory).sort(compareActiveStories),
     [snapshot.stories]
@@ -141,6 +153,7 @@ export function BacklogStatusPipPage() {
                 {activeStories.map((story) => (
                   <StatusPipStoryCard
                     key={story.id}
+                    onCheckPullRequest={checkPullRequest}
                     platform={platform}
                     story={story}
                   />
@@ -210,9 +223,11 @@ function useStatusPipWindowSize(
 }
 
 function StatusPipStoryCard({
+  onCheckPullRequest,
   platform,
   story,
 }: {
+  onCheckPullRequest?: () => Promise<PullRequestAvailability>
   platform: ReturnType<typeof usePlatform>
   story: UserStory
 }) {
@@ -221,6 +236,7 @@ function StatusPipStoryCard({
       onAction={async (story, action) => {
         await requestStoryAction(platform, story, action)
       }}
+      onCheckPullRequest={onCheckPullRequest}
       onDeleteUserStory={async (story) => {
         await requestStoryAction(platform, story, "Delete Permanently")
       }}

@@ -36,6 +36,7 @@ import type {
   UserStoryDrawerMode,
   UserStoryDrawerTab,
 } from "@/components/backlog/shared/backlog-types"
+import { approveMergeOptions } from "@/components/backlog/shared/approve-merge-options"
 import { DevelopmentContent } from "@/components/backlog/drawer/user-story-development"
 import { PullRequestLink } from "@/components/backlog/drawer/pull-request-link"
 import {
@@ -879,10 +880,8 @@ export function UserStoryDrawerPanel({
         clearComposerDraft()
       }
       if (mode !== "create" && userStory) {
-        if (action === "Approve & Merge") {
-          await onApproveAndMerge(userStory)
-        } else if (action === "Merge without Push") {
-          await onApproveAndMerge(userStory, { push: false })
+        if (action === "Approve & Merge" || action === "Approve, Merge & Push") {
+          await onApproveAndMerge(userStory, approveMergeOptions(action))
         } else if (action === "Open PR") {
           await onOpenPullRequest(userStory)
         } else {

@@ -1,4 +1,5 @@
 import * as React from "react"
+import type { PullRequestAvailability } from "@blame/agent-runtime"
 import { LoaderCircleIcon, ShieldCheckIcon } from "lucide-react"
 
 import {
@@ -52,6 +53,7 @@ type UserStoryCardProps = {
     story: UserStory,
     action: BacklogAction
   ) => Promise<UserStory | void>
+  onCheckPullRequest?: () => Promise<PullRequestAvailability>
   onDeleteUserStory: (story: UserStory) => Promise<void>
   onOpenDrawer: OpenDrawer
   onOpenWorktree: (story: UserStory) => Promise<void>
@@ -67,6 +69,7 @@ type UserStoryCardProps = {
 export const UserStoryCard = React.memo(function UserStoryCard({
   diffStats,
   onAction,
+  onCheckPullRequest,
   onDeleteUserStory,
   onOpenDrawer,
   onOpenWorktree,
@@ -103,6 +106,7 @@ export const UserStoryCard = React.memo(function UserStoryCard({
           <StoryActions
             diffStats={diffStats}
             onAction={onAction}
+            onCheckPullRequest={onCheckPullRequest}
             onDeleteUserStory={onDeleteUserStory}
             onOpenDrawer={onOpenDrawer}
             onOpenWorktree={onOpenWorktree}

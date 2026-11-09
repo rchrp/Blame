@@ -2480,9 +2480,9 @@ export class BlameAgentRuntime {
     upstream: GitUpstream | undefined,
     logFile: string,
   ): Promise<ApproveAndMergePush> {
-    if (input.push === false) {
+    if (input.push !== true) {
       await appendLog(logFile, "approve merge push skipped", {
-        reason: "requested",
+        reason: "not requested",
       });
       return { status: "skipped" };
     }

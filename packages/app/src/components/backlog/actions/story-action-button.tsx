@@ -11,6 +11,7 @@ import {
   FileTextIcon,
   FolderOpenIcon,
   GitMergeIcon,
+  GitPullRequestIcon,
   LoaderCircleIcon,
   MessageSquareReplyIcon,
   PlayIcon,
@@ -105,6 +106,16 @@ const actionConfig: Record<BacklogAction, ActionConfig> = {
   },
   "Approve & Merge": {
     icon: CheckIcon,
+    variant: "default",
+    tone: "primary",
+  },
+  "Approve, Merge & Push": {
+    icon: GitMergeIcon,
+    variant: "default",
+    tone: "primary",
+  },
+  "Open PR": {
+    icon: GitPullRequestIcon,
     variant: "default",
     tone: "primary",
   },
@@ -269,6 +280,8 @@ function directAction(action: BacklogAction) {
     action === "Discard" ||
     action === "Dequeue" ||
     action === "Approve & Merge" ||
+    action === "Approve, Merge & Push" ||
+    action === "Open PR" ||
     action === "Use Context" ||
     action === "Rework"
   )

@@ -30,9 +30,11 @@ import type {
   OpenDrawer,
   UserStoryDrawerMode
 } from "@/components/backlog/shared/backlog-types"
-import { ApproveMergeMenu } from "@/components/backlog/drawer/approve-merge-menu"
+import {
+  ApproveMergeMenu,
+  useApproveMergeTransition
+} from "@/components/backlog/actions/approve-merge-menu"
 import { drawerActions } from "@/components/backlog/drawer/user-story-drawer-helpers"
-import { useStoryTransitionKind } from "@/pages/backlog/story-transitions"
 import { Button } from "@/components/ui/button"
 import { Kbd } from "@/components/ui/kbd"
 import { modKeyLabel } from "@/lib/keyboard"
@@ -91,7 +93,7 @@ const drawerActionConfig: Record<DrawerAction, DrawerActionConfig> = {
     variant: "default",
     tone: "primary"
   },
-  "Merge without Push": {
+  "Approve, Merge & Push": {
     icon: GitMergeIcon,
     variant: "default",
     tone: "primary"
@@ -140,14 +142,8 @@ export function DrawerActions({
 }) {
   // A merge keeps spinning here when it started from the card, or before the
   // drawer was closed and opened again.
-  const transition = useStoryTransitionKind(story?.id)
-  const activeAction =
-    loadingAction ??
-    (transition === "merge"
-      ? "Approve & Merge"
-      : transition === "pull-request"
-        ? "Open PR"
-        : undefined)
+  const transitionAction = useApproveMergeTransition(story?.id)
+  const activeAction = loadingAction ?? transitionAction
   const requestChangesPrimary =
     mode !== "create" && status === "in-review" && hasCommentDraft
   const actions = drawerActions(mode, status).map((action) => (

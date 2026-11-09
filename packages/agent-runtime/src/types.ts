@@ -348,7 +348,8 @@ export type ApproveAndMergeInput = {
   // Worktrees where an agent is running, filled in by the desktop host: the
   // target branch is not advanced inside one of them.
   activeWorktrees?: string[];
-  // False merges into the local target branch and leaves it unpushed.
+  // Only true also pushes the target branch to its upstream; otherwise the
+  // merge stays on the local target branch.
   push?: boolean;
   title: string;
   summary: string;
@@ -367,7 +368,7 @@ export type ApproveAndMergePush =
   | { status: "pushed"; upstream: string }
   // The target branch has no upstream; remote is where it could be published.
   | { status: "no-upstream"; remote: string | null }
-  // The person merged without pushing.
+  // The merge was not pushed: the person did not ask for it.
   | { status: "skipped" };
 
 // Commits the remaining story work, pushes the story branch to origin and

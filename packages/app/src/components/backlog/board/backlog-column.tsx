@@ -1,4 +1,5 @@
 import * as React from "react"
+import type { PullRequestAvailability } from "@blame/agent-runtime"
 import { InfoIcon, LoaderCircleIcon, PlusIcon } from "lucide-react"
 
 import {
@@ -52,6 +53,7 @@ type BacklogColumnProps = {
     story: UserStory,
     action: BacklogAction
   ) => Promise<UserStory | void>
+  onCheckPullRequest?: () => Promise<PullRequestAvailability>
   onCreateUserStory: () => void
   onDeleteUserStory: (story: UserStory) => Promise<void>
   onOpenDrawer: OpenDrawer
@@ -74,6 +76,7 @@ export const BacklogColumn = React.memo(function BacklogColumn({
   column,
   diffStats,
   onAction,
+  onCheckPullRequest,
   onCreateUserStory,
   onDeleteUserStory,
   onOpenDrawer,
@@ -154,6 +157,7 @@ export const BacklogColumn = React.memo(function BacklogColumn({
             cleanup={storyCleanup?.(story)}
             diffStats={diffStats?.(story)}
             onAction={onAction}
+            onCheckPullRequest={onCheckPullRequest}
             onDeleteUserStory={onDeleteUserStory}
             onOpenDrawer={onOpenDrawer}
             onOpenWorktree={onOpenWorktree}
