@@ -38,6 +38,7 @@ export const agentRuntimeMethods = [
   "approveAndMerge",
   "openPullRequest",
   "pullRequestAvailability",
+  "pullRequestState",
   "generateCommitMessage",
   "directStoryFiles",
   "resolveMergeConflicts",

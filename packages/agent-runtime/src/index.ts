@@ -78,6 +78,8 @@ export type {
   OpenPullRequestResult,
   PullRequestAvailability,
   PullRequestAvailabilityInput,
+  PullRequestState,
+  PullRequestStateInput,
   ApprovalDecision,
   ApiConnection,
   AssessProjectInitializationImpactInput,

@@ -40,6 +40,8 @@ import type {
   ProviderListResponse,
   PullRequestAvailability,
   PullRequestAvailabilityInput,
+  PullRequestState,
+  PullRequestStateInput,
   RepairProjectInitializationInput,
   RepairProjectInitializationResult,
   ResolveApprovalInput,
@@ -521,6 +523,8 @@ export type AgentClient = {
   pullRequestAvailability(
     input: PullRequestAvailabilityInput
   ): Promise<PullRequestAvailability>
+  // What GitHub says about the story's pull request: gh pr view on the host.
+  pullRequestState(input: PullRequestStateInput): Promise<PullRequestState>
   generateCommitMessage(
     input: GenerateCommitMessageInput
   ): Promise<GenerateCommitMessageResult>
