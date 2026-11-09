@@ -10,6 +10,7 @@ import { createLicensedUser as createUser } from '../helpers/create_licensed_use
 import db from '@adonisjs/lucid/services/db'
 import testUtils from '@adonisjs/core/services/test_utils'
 import type { Assert } from '@japa/assert'
+import type { ApiClient } from '@japa/api-client'
 import { test } from '@japa/runner'
 import { createHash } from 'node:crypto'
 import { DateTime } from 'luxon'
@@ -304,6 +305,83 @@ test.group('file attachments', (group) => {
     await assert.rejects(() => attachmentObjectStorage().content(`${user.id}/detached-file`))
   })
 
+  test('keeps conversation files past the standard orphan grace for a story to use', async ({
+    assert,
+    client,
+  }) => {
+    const user = await createUser()
+    const project = await createProject(user.id)
+    await uploadReadyFile(client, user, 'conversation-file', { conversationAttachment: true })
+    await uploadReadyFile(client, user, 'plain-file')
+    assert.isTrue((await FileAttachment.findOrFail('conversation-file')).conversationAttachment)
+    assert.isFalse((await FileAttachment.findOrFail('plain-file')).conversationAttachment)
+    await FileAttachment.query()
+      .whereIn('id', ['conversation-file', 'plain-file'])
+      .update({ detachedAt: DateTime.utc().minus({ hours: 25 }).toJSDate() })
+
+    assert.equal(await new FileAttachmentsService().cleanupOrphans(), 1)
+
+    assert.isNull(await FileAttachment.find('plain-file'))
+    const opened = await client.get('/api/v1/attachments/conversation-file').loginAs(user)
+    opened.assertStatus(200)
+    const storyResponse = await client
+      .post('/api/v1/projects/user-stories')
+      .loginAs(user)
+      .json({
+        fileAttachments: [
+          {
+            id: 'conversation-file',
+            name: 'hello.txt',
+            size: content.byteLength,
+            type: 'text/plain',
+          },
+        ],
+        projectId: project.id,
+        summary: 'Planned in Plan Mode',
+        title: 'Conversation file',
+      })
+    storyResponse.assertStatus(200)
+  })
+
+  test('purges a conversation file once the conversation grace has passed', async ({
+    assert,
+    client,
+  }) => {
+    const user = await createUser()
+    await uploadReadyFile(client, user, 'reset-conversation-file', { conversationAttachment: true })
+    const service = new FileAttachmentsService()
+    await FileAttachment.query()
+      .where('id', 'reset-conversation-file')
+      .update({ detachedAt: DateTime.utc().minus({ days: 29 }).toJSDate() })
+    assert.equal(await service.cleanupOrphans(), 0)
+
+    await FileAttachment.query()
+      .where('id', 'reset-conversation-file')
+      .update({ detachedAt: DateTime.utc().minus({ days: 31 }).toJSDate() })
+
+    assert.equal(await service.cleanupOrphans(), 1)
+    assert.isNull(await FileAttachment.find('reset-conversation-file'))
+    await assert.rejects(() =>
+      attachmentObjectStorage().content(`${user.id}/reset-conversation-file`)
+    )
+  })
+
+  test('purges a conversation upload that never completed after the standard grace', async ({
+    assert,
+    client,
+  }) => {
+    const user = await createUser()
+    await requestUpload(client, user, 'abandoned-conversation-file', {
+      conversationAttachment: true,
+    })
+    await FileAttachment.query()
+      .where('id', 'abandoned-conversation-file')
+      .update({ createdAt: DateTime.utc().minus({ hours: 25 }).toJSDate() })
+
+    assert.equal(await new FileAttachmentsService().cleanupOrphans(), 1)
+    assert.isNull(await FileAttachment.find('abandoned-conversation-file'))
+  })
+
   test('stores comment and quick chat message attachments as objects', async ({
     assert,
     client,
@@ -391,6 +469,37 @@ async function attachmentLinkCount(table: string) {
 
 function sha256(value: Uint8Array) {
   return createHash('sha256').update(value).digest('hex')
+}
+
+async function requestUpload(
+  client: ApiClient,
+  user: User,
+  id: string,
+  flags: { conversationAttachment?: boolean } = {}
+) {
+  const response = await client.post('/api/v1/attachments/uploads').loginAs(user).json({
+    ...flags,
+    checksumSha256,
+    id,
+    name: 'hello.txt',
+    size: content.byteLength,
+    type: 'text/plain',
+  })
+  response.assertStatus(200)
+}
+
+async function uploadReadyFile(
+  client: ApiClient,
+  user: User,
+  id: string,
+  flags: { conversationAttachment?: boolean } = {}
+) {
+  await requestUpload(client, user, id, flags)
+  const stored = await client
+    .post(`/api/v1/attachments/${id}/content`)
+    .loginAs(user)
+    .json({ content: content.toString('base64') })
+  stored.assertStatus(200)
 }
 
 function createProject(userId: string) {

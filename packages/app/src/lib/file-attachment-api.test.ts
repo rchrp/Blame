@@ -70,6 +70,28 @@ function attachmentReference() {
   }
 }
 
+test("flags the upload as a conversation attachment only when asked", async () => {
+  const bodies: Array<Record<string, unknown>> = []
+  globalThis.fetch = async (input, init) => {
+    const url = String(input)
+    if (url.endsWith("/attachments/uploads")) {
+      bodies.push(JSON.parse(String(init?.body)))
+      return Response.json({ attachment: attachmentReference(), upload: null })
+    }
+    throw new Error(`Unexpected request to ${url}`)
+  }
+  const connection = { token: "token", url: "https://api.example/api/v1" }
+  const files = [{ ...attachmentReference(), content: "SGVsbG8=" }]
+
+  await uploadFileAttachments(connection, files)
+  await uploadFileAttachments(connection, files, {
+    conversationAttachment: true,
+  })
+
+  assert.equal("conversationAttachment" in (bodies[0] ?? {}), false)
+  assert.equal(bodies[1]?.conversationAttachment, true)
+})
+
 test("retries a blocked direct upload through the authenticated API with the same bytes", async () => {
   const calls: string[] = []
   globalThis.fetch = async (input, init) => {

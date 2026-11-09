@@ -10,6 +10,7 @@ export const createFileAttachmentUploadValidator = vine.compile(
       .string()
       .trim()
       .regex(/^[a-f0-9]{64}$/),
+    conversationAttachment: vine.boolean().optional(),
     id: vine.string().trim().minLength(1).maxLength(36),
     name: vine.string().trim().minLength(1).maxLength(255),
     size: vine.number().nonNegative().withoutDecimals(),

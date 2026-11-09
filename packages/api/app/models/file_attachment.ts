@@ -27,6 +27,11 @@ export default class FileAttachment extends BaseModel {
   @column({ columnName: 'checksum_sha256' })
   declare checksumSha256: string
 
+  // Uploaded by a conversation the app keeps itself: no owner row ever links
+  // it, so it is retained for the longer conversation grace.
+  @column({ consume: (value: unknown) => Boolean(value) })
+  declare conversationAttachment: boolean
+
   @column()
   declare status: FileAttachmentStatus
 

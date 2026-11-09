@@ -57,6 +57,7 @@ export default await Env.create(new URL('../', import.meta.url), {
   ATTACHMENTS_DOWNLOAD_URL_TTL_SECONDS: Env.schema.number.optional(),
   ATTACHMENTS_UPLOAD_URL_TTL_SECONDS: Env.schema.number.optional(),
   ATTACHMENTS_ORPHAN_GRACE_HOURS: Env.schema.number.optional(),
+  ATTACHMENTS_CONVERSATION_ORPHAN_GRACE_HOURS: Env.schema.number.optional(),
   ATTACHMENTS_S3_ENDPOINT: Env.schema.string.optional({ format: 'url', tld: false }),
   ATTACHMENTS_S3_REGION: Env.schema.string.optional(),
   ATTACHMENTS_S3_BUCKET: Env.schema.string.optional(),

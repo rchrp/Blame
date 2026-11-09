@@ -166,7 +166,9 @@ export class LocalAgentConversationSession {
   ) {
     if (!this.storageKey || !files?.length) return
     try {
-      const uploaded = await uploadFileAttachments(apiConnection, files)
+      const uploaded = await uploadFileAttachments(apiConnection, files, {
+        conversationAttachment: true,
+      })
       if (uploaded)
         this.set((current) =>
           setCommentFileAttachments(current, commentId, uploaded)
