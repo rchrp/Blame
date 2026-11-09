@@ -85,3 +85,50 @@ for (const platform of ["macos", "windows"]) {
     assert.notEqual(run(archive, checksum).status, 0);
   }));
 }
+
+const repositoryFile = (path) => readFile(resolve(path), "utf8");
+const allMatches = (source, pattern) => [...source.matchAll(pattern)].map((match) => match.slice(1));
+
+// github-cli.ts is the reference: every other file writes the same release by hand.
+async function pinnedGithubCli() {
+  const source = await repositoryFile("packages/agent-runtime/src/harness/github-cli.ts");
+  const version = source.match(/^export const githubCliVersion = "([^"]+)";$/m)?.[1];
+  const checksum = (architecture) => source.match(new RegExp(`"linux_${architecture}\\.tar\\.gz": "([0-9a-f]{64})"`))?.[1];
+  const pinned = { version, amd64: checksum("amd64"), arm64: checksum("arm64") };
+  assert.ok(pinned.version && pinned.amd64 && pinned.arm64, "github-cli.ts pins gh and its Linux checksums");
+  return pinned;
+}
+
+for (const platform of ["macos", "windows"]) {
+  test(`${platform} provisioner pins the gh release of github-cli.ts`, async () => {
+    const pinned = await pinnedGithubCli();
+    const source = await repositoryFile(`packages/desktop/resources/runtime/${platform}/scripts/provision-blame-runtime.sh`);
+    assert.deepEqual(allMatches(source, /^gh_version="([^"]+)"$/gm), [[pinned.version]]);
+    const checksums = source.match(/^gh_archive_sha256\(\) \{\n([\s\S]*?)\n\}$/m)?.[1];
+    assert.ok(checksums, "The provisioner pins the gh archive checksums");
+    assert.deepEqual(allMatches(checksums, /^\s*([^\s:]+):(\S+)\) printf '%s' "([0-9a-f]+)" ;;$/gm), [
+      [pinned.version, "amd64", pinned.amd64],
+      [pinned.version, "arm64", pinned.arm64],
+    ]);
+  });
+}
+
+for (const path of [
+  "packages/desktop/resources/runtime/macos/scripts/blame-lima-runtime.sh",
+  "packages/desktop/resources/runtime/windows/scripts/blame-wsl2-runtime.ps1",
+]) {
+  test(`${path} checks the gh release of github-cli.ts`, async () => {
+    const { version } = await pinnedGithubCli();
+    const checked = allMatches(await repositoryFile(path), /\^gh version (\S+) /g).map(([found]) => found);
+    assert.ok(checked.length > 0, "The runtime health check verifies the gh version");
+    assert.deepEqual(checked, checked.map(() => version));
+  });
+}
+
+test("sandbox-runner image installs the gh release of github-cli.ts", async () => {
+  const pinned = await pinnedGithubCli();
+  const source = await repositoryFile("packages/sandbox-runner/Dockerfile");
+  assert.deepEqual(allMatches(source, /^ARG GH_VERSION=(\S+)$/gm), [[pinned.version]]);
+  assert.deepEqual(allMatches(source, /^ARG GH_SHA256=(\S+)$/gm), [[pinned.amd64]]);
+  assert.match(source, /gh_\$\{GH_VERSION\}_linux_amd64\.tar\.gz/, "The image installs the amd64 archive GH_SHA256 verifies");
+});

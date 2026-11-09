@@ -8,7 +8,14 @@ import type { LightCommandCredentials } from "./light-contracts.js";
 
 const execFileAsync = promisify(execFile);
 
-/** The gh the managed runtimes and the sandbox image install (provision-blame-runtime.sh, sandbox-runner Dockerfile). */
+/**
+ * The gh the managed runtimes and the sandbox image install. A version bump
+ * also updates the version and Linux checksums in
+ * packages/desktop/resources/runtime/{macos,windows}/scripts/provision-blame-runtime.sh,
+ * macos/scripts/blame-lima-runtime.sh, windows/scripts/blame-wsl2-runtime.ps1
+ * and packages/sandbox-runner/Dockerfile; scripts/runtime-gh-install.test.mjs
+ * fails until they match.
+ */
 export const githubCliVersion = "2.103.3";
 
 // From gh_2.103.3_checksums.txt of the release.

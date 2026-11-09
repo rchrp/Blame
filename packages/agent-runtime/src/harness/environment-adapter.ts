@@ -13,12 +13,21 @@ export class EnvironmentAdapter {
     this.platform = platform;
   }
 
-  command(command: string) {
+  /**
+   * The login shell's profile may put its own directories before the PATH a
+   * command inherits: path_helper (/etc/profile on macOS) and `brew shellenv`
+   * do. A directory that must come first is put back first after the profile.
+   */
+  command(command: string, firstPathDirectory?: string) {
     if (this.platform === "win32")
       return { executable: "cmd.exe", args: ["/d", "/s", "/c", command] };
+    // Same line as the command, so the shell's line numbers stay the command's.
+    const script = firstPathDirectory
+      ? `PATH=${shellQuoted(firstPathDirectory)}:"$PATH"; ${command}`
+      : command;
     return {
       executable: "/bin/bash",
-      args: ["-o", "pipefail", "-lc", command],
+      args: ["-o", "pipefail", "-lc", script],
     };
   }
 
@@ -35,4 +44,8 @@ export class EnvironmentAdapter {
     if (this.platform === "win32") return "windows-native" as const;
     return "linux-native" as const;
   }
+}
+
+function shellQuoted(value: string) {
+  return `'${value.replaceAll("'", `'\\''`)}'`;
 }

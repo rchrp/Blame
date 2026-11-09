@@ -243,7 +243,10 @@ export class LightTaskRunner {
     const denied = blockedCommandReason(input.command, this.commandEnvironment);
     if (denied) return blocked("input", denied);
     try {
-      const invocation = this.environment.command(input.command);
+      const invocation = this.environment.command(
+        input.command,
+        context.commandCredentials?.githubCli?.binDirectory,
+      );
       const cwd = await this.environment.cwd(input.cwd);
       return await this.execute(
         invocation.executable,

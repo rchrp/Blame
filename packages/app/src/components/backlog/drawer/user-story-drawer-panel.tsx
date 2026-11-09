@@ -114,22 +114,14 @@ import {
   createdAtLabel,
   createInput,
   DrawerBody,
+  drawerHeaderSoftBlurMask,
+  drawerHeaderStrongBlurMask,
   DrawerHeaderTitle,
   initialDrawerTab,
   isSendToDevAgentShortcut,
   mergeAttachments,
   updatePendingDraftMarkdown,
 } from "./user-story-drawer-parts"
-const drawerHeaderSoftBlurMask = {
-  maskImage:
-    "linear-gradient(to bottom, black 0%, black 60%, transparent 100%)",
-  WebkitMaskImage:
-    "linear-gradient(to bottom, black 0%, black 60%, transparent 100%)",
-} satisfies React.CSSProperties
-const drawerHeaderStrongBlurMask = {
-  maskImage: "linear-gradient(to bottom, black 0%, transparent 72%)",
-  WebkitMaskImage: "linear-gradient(to bottom, black 0%, transparent 72%)",
-} satisfies React.CSSProperties
 
 export function UserStoryDrawerPanel({
   diffStats,

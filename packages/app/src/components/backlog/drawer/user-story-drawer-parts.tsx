@@ -33,6 +33,18 @@ export type PendingComposerDraft = {
   key: string
 }
 
+export const drawerHeaderSoftBlurMask = {
+  maskImage:
+    "linear-gradient(to bottom, black 0%, black 60%, transparent 100%)",
+  WebkitMaskImage:
+    "linear-gradient(to bottom, black 0%, black 60%, transparent 100%)",
+} satisfies React.CSSProperties
+
+export const drawerHeaderStrongBlurMask = {
+  maskImage: "linear-gradient(to bottom, black 0%, transparent 72%)",
+  WebkitMaskImage: "linear-gradient(to bottom, black 0%, transparent 72%)",
+} satisfies React.CSSProperties
+
 export function initialDrawerTab(
   hasDevelopment: boolean,
   hasPreview: boolean,
