@@ -33,6 +33,7 @@ export type {
   GitLogCommitRef,
   GitStatusFile,
   GitStatusResult,
+  IssueReport,
   McpServerConfig,
   McpServersClient,
   Platform,

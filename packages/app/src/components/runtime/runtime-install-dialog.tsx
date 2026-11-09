@@ -13,6 +13,7 @@ import {
 import { useBlameRuntime } from "@/context/blame-runtime"
 import { usePlatform } from "@/context/platform"
 import { saveStoryRunMode } from "@/lib/runtime-preference"
+import { runtimeFailureTitle } from "@/pages/backlog/runtime-failure"
 
 // The one dialog about the Blame Runtime. It opens when someone picks Local
 // Container without it, or asks for details after a failed repair. Installing
@@ -90,7 +91,20 @@ export function RuntimeInstallDialog() {
             <span />
           )}
           <div className="flex flex-col-reverse gap-2 sm:flex-row">
-            {storyTitle ? (
+            {repair && runtime.lastError && platform.reportIssue ? (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() =>
+                  void platform.reportIssue?.({
+                    error: runtime.lastError ?? "",
+                    title: runtimeFailureTitle("repair"),
+                  })
+                }
+              >
+                Report on GitHub
+              </Button>
+            ) : storyTitle ? (
               <Button
                 type="button"
                 variant="outline"

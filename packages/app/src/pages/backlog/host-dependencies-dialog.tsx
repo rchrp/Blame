@@ -65,12 +65,16 @@ export function HostDependenciesDialog({
         const result = await runtimeAction.run(setRuntimeProgress)
         const reportFailure = runtimeReportFailure(result)
         if (reportFailure) {
-          showRuntimeFailureToast(reportFailure, runtimeAction.operation)
+          showRuntimeFailureToast(
+            reportFailure,
+            runtimeAction.operation,
+            platform
+          )
           return
         }
         await onRecheck()
       } catch (error) {
-        showRuntimeFailureToast(error, runtimeAction.operation)
+        showRuntimeFailureToast(error, runtimeAction.operation, platform)
       } finally {
         setRunningAction(null)
         setRuntimeProgress(null)
@@ -305,9 +309,22 @@ function dependencyUrl(issue: HostDependencyIssue) {
   return urls[issue.name]
 }
 
-function showRuntimeFailureToast(error: unknown, operation: RuntimeOperation) {
-  toast.error(runtimeFailureTitle(operation), {
-    description: runtimeFailureDetail(error),
+function showRuntimeFailureToast(
+  error: unknown,
+  operation: RuntimeOperation,
+  platform: ReturnType<typeof usePlatform>
+) {
+  const detail = runtimeFailureDetail(error)
+  const title = runtimeFailureTitle(operation)
+  const reportIssue = platform.reportIssue
+  toast.error(title, {
+    action: reportIssue
+      ? {
+          label: "Report on GitHub",
+          onClick: () => void reportIssue({ error: detail, title }),
+        }
+      : undefined,
+    description: detail,
     duration: Infinity,
     id: runtimeFailureToastId,
   })

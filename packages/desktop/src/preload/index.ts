@@ -156,6 +156,7 @@ const api: BlameDesktopApi = {
   openMicrophoneSettings: () =>
     ipcRenderer.invoke("media:open-microphone-settings"),
   openExternalLink: (url) => ipcRenderer.send("shell:open-external", url),
+  reportIssue: (report) => ipcRenderer.invoke("github-issue:open", report),
   openPath: (path) => ipcRenderer.invoke("shell:open-path", path),
   openAttachment: (input) => ipcRenderer.invoke("shell:open-attachment", input),
   backlogStatusPip: {

@@ -66,7 +66,7 @@ import type {
   PreviewDevtoolsSettingsClient,
   PreviewEnvironmentClient,
 } from "@blame/app";
-import type { RuntimeProgress } from "@blame/app";
+import type { IssueReport, RuntimeProgress } from "@blame/app";
 import type { HostDependencyReport } from "../main/host-dependencies";
 import type { RuntimeStatusReport } from "../main/runtime-manager";
 import type { CreateProjectInput } from "../main/project-creation";
@@ -311,6 +311,7 @@ export type BlameDesktopApi = {
   requestMicrophoneAccess(): Promise<boolean>;
   openMicrophoneSettings(): Promise<void>;
   openExternalLink(url: string): void;
+  reportIssue(report: IssueReport): Promise<void>;
   openPath(path: string): Promise<string>;
   openAttachment(input: { name: string; content: Uint8Array }): Promise<void>;
   backlogStatusPip: BacklogStatusPip;

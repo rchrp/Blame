@@ -27,6 +27,10 @@ import {
   desktopProtocolClientArguments,
 } from "./desktop-auth-deep-link";
 import { desktopResourcePaths } from "./desktop-resource-paths";
+import {
+  offerGithubIssueOnMainError,
+  offerGithubIssueOnRendererGone,
+} from "./github-issue-ipc";
 import { registerDesktopLogRedaction } from "./desktop-log-redaction";
 import {
   attachLiveLogWindow,
@@ -128,6 +132,7 @@ let readyToQuit = false;
 const initialDeepLink = desktopDeepLink(process.argv);
 let pendingBillingRefresh = initialDeepLink === billingDeepLink;
 const authCallbackQueue = new DesktopAuthCallbackDeliveryQueue();
+offerGithubIssueOnMainError(() => mainWindow);
 const initialAuthCallback = desktopAuthCallback(initialDeepLink);
 if (initialAuthCallback) authCallbackQueue.enqueue(initialAuthCallback);
 let authRendererReady = false;
@@ -238,6 +243,7 @@ function createMainWindow(
   hidePlatformWindowButtons(window);
   state?.manage(window);
   attachLiveLogWindow(window);
+  offerGithubIssueOnRendererGone(window);
   registerWindowStateEvents(window);
   loadRenderer(window, role, pathname, project);
   scheduleInitialWindowShow(window, role, fittedPresentation, replacedWindow);

@@ -133,6 +133,8 @@ export type Platform = {
   // Opens the system's microphone privacy settings (desktop only).
   openMicrophoneSettings?(): Promise<void>
   openExternalLink?(url: string): void
+  // Opens a pre-filled GitHub issue in the browser for the user to submit.
+  reportIssue?(report: IssueReport): Promise<void>
   openPath?(path: string): Promise<string>
   openAttachment?(input: { name: string; content: Uint8Array }): Promise<void>
 }
@@ -165,6 +167,11 @@ export type DeployClient = {
     },
     onProgress?: (progress: DeployProgress) => void
   ): Promise<ProjectDeployment>
+}
+
+export type IssueReport = {
+  error: string
+  title: string
 }
 
 export type RuntimeProgress = {

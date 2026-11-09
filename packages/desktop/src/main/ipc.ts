@@ -28,6 +28,7 @@ import { registerMcpIpcHandlers } from "./mcp-ipc";
 import { registerPreviewBrowserIpcHandlers } from "./preview-browser-ipc";
 import { PreviewService } from "./preview-runtime/preview-service";
 import { registerPreviewRuntimeIpcHandlers } from "./ipc/preview-runtime-ipc";
+import { registerGithubIssueIpcHandlers } from "./github-issue-ipc";
 import { registerPrivacyIpcHandlers } from "./privacy-settings";
 import { registerTerminalIpcHandlers } from "./terminal-ipc";
 import { registerPreviewSurfacesIpc } from "./ipc/preview-surfaces-ipc";
@@ -144,6 +145,7 @@ export function registerDesktopIpcHandlers(options: DesktopIpcOptions) {
   registerMcpIpcHandlers();
   registerTerminalIpcHandlers();
   registerPrivacyIpcHandlers();
+  registerGithubIssueIpcHandlers({ isAppWindow: options.isAppWindow });
   registerDesktopUpdateIpcHandlers({ beforeInstall: options.beforeInstall });
   registerWhatsNewIpcHandlers();
   registerWorkspaceIpcHandlers({
