@@ -175,13 +175,21 @@ export function initialUserContent(messages: AnthropicMessage[]) {
     ...history.map(transcriptEntry),
     "</blame_conversation_history>",
   ].join("\n");
-  if (replayLast)
+  if (replayLast) {
+    // The transcript shows images as `[image]`: the last turn is the one the
+    // model answers, so its images follow the transcript as real images.
+    const images = turnImages(last);
+    const note = images.length
+      ? " The images of the last message follow."
+      : "";
     return [
       {
         type: "text",
-        text: `${transcript}\n\nContinue the task from the last tool results.`,
+        text: `${transcript}\n\nContinue the task from the last tool results.${note}`,
       },
+      ...images,
     ];
+  }
   return [{ type: "text", text: transcript }, ...userContent(last)];
 }
 
@@ -199,20 +207,31 @@ export function userContent(message: AnthropicMessage): AnthropicBlock[] {
   return blocks.length ? blocks : [{ type: "text", text: "Continue." }];
 }
 
-/** Text that sits next to tool results in a user turn, kept with the results. */
-export function userTextBesideToolResults(message: AnthropicMessage) {
-  return messageBlocks(message)
+/**
+ * What sits next to tool results in a user turn, kept with the results: its
+ * text, then its images.
+ */
+export function contentBesideToolResults(
+  message: AnthropicMessage,
+): McpContent[] {
+  const blocks = messageBlocks(message);
+  const text = blocks
     .flatMap((block) =>
       block.type === "text" && typeof block.text === "string" && block.text
         ? [block.text]
         : [],
     )
     .join("\n\n");
+  const images = blocks.flatMap((block) => {
+    const image = mcpImage(block);
+    return image ? [image] : [];
+  });
+  return [...(text ? [{ type: "text" as const, text }] : []), ...images];
 }
 
 export function mcpToolResult(
   block: AnthropicBlock,
-  extraText?: string,
+  beside: McpContent[] = [],
 ): McpToolResult {
   const content: McpContent[] = [];
   const raw = block.content;
@@ -226,25 +245,45 @@ export function mcpToolResult(
         const previous = content.at(-1);
         if (previous?.type === "text") previous.text += `\n\n${item.text}`;
         else content.push({ type: "text", text: item.text });
-      }
-      else if (item.type === "image" && isRecord(item.source)) {
-        const source = item.source;
-        if (
-          source.type === "base64" &&
-          typeof source.data === "string" &&
-          typeof source.media_type === "string"
-        )
-          content.push({
-            type: "image",
-            data: source.data,
-            mimeType: source.media_type,
-          });
+      } else {
+        const image = mcpImage(item);
+        if (image) content.push(image);
       }
     }
   }
-  if (extraText) content.push({ type: "text", text: extraText });
+  content.push(...beside);
   if (!content.length) content.push({ type: "text", text: "(no output)" });
   return { content, ...(block.is_error === true ? { isError: true } : {}) };
+}
+
+/** An Anthropic base64 image block as MCP image content. */
+function mcpImage(block: Record<string, unknown>): McpContent | undefined {
+  const source = block.source;
+  if (
+    block.type !== "image" ||
+    !isRecord(source) ||
+    source.type !== "base64" ||
+    typeof source.data !== "string" ||
+    typeof source.media_type !== "string"
+  )
+    return undefined;
+  return { type: "image", data: source.data, mimeType: source.media_type };
+}
+
+/**
+ * The images of a user turn, attached to it or returned inside its tool
+ * results, in the format Claude Code accepts on stdin.
+ */
+function turnImages(message: AnthropicMessage): AnthropicBlock[] {
+  const stdinImage = (block: unknown): AnthropicBlock[] =>
+    isRecord(block) && block.type === "image" && isRecord(block.source)
+      ? [{ type: "image", source: block.source }]
+      : [];
+  return messageBlocks(message).flatMap((block) =>
+    block.type === "tool_result" && Array.isArray(block.content)
+      ? block.content.flatMap(stdinImage)
+      : stdinImage(block),
+  );
 }
 
 /**
