@@ -143,6 +143,7 @@ import {
   openPullRequestUrl,
   pullRequestAvailability,
   pullRequestBody,
+  readPullRequestState,
   requirePullRequestRepository,
   runHostGh,
 } from "./pull-request.js";
@@ -326,6 +327,7 @@ import type {
   OptimizeUserStoryPromptInput,
   OptimizeUserStoryPromptResult,
   PullRequestAvailabilityInput,
+  PullRequestStateInput,
   RepairProjectInitializationInput,
   RepairProjectInitializationResult,
   ResolveApprovalInput,
@@ -643,6 +645,11 @@ export class BlameAgentRuntime {
   pullRequestAvailability = (input: PullRequestAvailabilityInput) => {
     assertRepositoryPath(input.repositoryRoot, "repositoryRoot");
     return pullRequestAvailability(input.repositoryRoot, this.gh);
+  };
+
+  pullRequestState = (input: PullRequestStateInput) => {
+    assertRepositoryPath(input.repositoryRoot, "repositoryRoot");
+    return readPullRequestState(input.repositoryRoot, input.url, this.gh);
   };
 
   generateCommitMessage = (input: GenerateCommitMessageInput) =>

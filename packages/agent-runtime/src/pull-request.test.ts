@@ -9,8 +9,10 @@ import { promisify } from "node:util";
 import { BlameAgentRuntime } from "./cline-runtime.js";
 import {
   githubRepository,
+  parsePullRequestState,
   pullRequestAvailability,
   pullRequestBody,
+  readPullRequestState,
 } from "./pull-request.js";
 
 const execFileAsync = promisify(execFile);
@@ -127,6 +129,87 @@ test("offers pull requests only for a GitHub origin and a signed-in gh", async (
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
+});
+
+test("reads the state of a pull request from gh pr view", () => {
+  assert.deepEqual(
+    parsePullRequestState('{"state":"OPEN","mergedAt":null}'),
+    { status: "open" },
+  );
+  assert.deepEqual(
+    parsePullRequestState('{"state":"CLOSED","mergedAt":null}'),
+    { status: "closed" },
+  );
+  assert.deepEqual(
+    parsePullRequestState(
+      '{"state":"MERGED","mergedAt":"2026-11-09T10:15:00Z"}',
+    ),
+    { status: "merged", mergedAt: "2026-11-09T10:15:00Z" },
+  );
+});
+
+test("tells a merged pull request by mergedAt, not by an approval", () => {
+  assert.deepEqual(
+    parsePullRequestState(
+      '{"state":"OPEN","mergedAt":null,"reviewDecision":"APPROVED"}',
+    ),
+    { status: "open" },
+  );
+  // mergedAt is the proof of the merge, whatever state says.
+  assert.equal(
+    parsePullRequestState(
+      '{"state":"CLOSED","mergedAt":"2026-11-09T10:15:00Z"}',
+    ).status,
+    "merged",
+  );
+});
+
+test("refuses an answer of gh pr view it does not understand", () => {
+  for (const output of ["", "null", "[]", "{}", '{"state":"DRAFT"}'])
+    assert.throws(() => parsePullRequestState(output), Error, output);
+});
+
+test("asks gh for the state of the pull request by its URL", async () => {
+  const url = "https://github.com/acme/shop/pull/7";
+  const calls: string[][] = [];
+  const state = await readPullRequestState(
+    "/project",
+    url,
+    async (_cwd, args) => {
+      calls.push(args);
+      return '{"state":"MERGED","mergedAt":"2026-11-09T10:15:00Z"}';
+    },
+  );
+  assert.deepEqual(state, {
+    status: "merged",
+    mergedAt: "2026-11-09T10:15:00Z",
+  });
+  assert.deepEqual(calls, [["pr", "view", url, "--json", "state,mergedAt"]]);
+});
+
+test("knows nothing of a pull request when gh is missing, signed out or offline", async () => {
+  const url = "https://github.com/acme/shop/pull/7";
+  for (const failure of [
+    Object.assign(new Error("spawn gh ENOENT"), { code: "ENOENT" }),
+    Object.assign(new Error("not logged in"), { code: 1 }),
+  ])
+    assert.deepEqual(
+      await readPullRequestState("/project", url, async () => {
+        throw failure;
+      }),
+      { status: "unavailable" },
+    );
+});
+
+test("never hands gh a pull request URL it could read as an option", async () => {
+  for (const url of ["--web", "", "http://github.com/acme/shop/pull/7"])
+    await assert.rejects(
+      readPullRequestState("/project", url, async () => {
+        throw new Error("gh must not run");
+      }),
+      /URL is invalid/,
+      url,
+    );
 });
 
 test("commits, pushes the story branch and opens its pull request once", async () => {

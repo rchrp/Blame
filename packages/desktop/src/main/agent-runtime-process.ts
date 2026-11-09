@@ -281,6 +281,8 @@ function workflowHandlers(runtime: BlameAgentRuntime) {
       runtime.openPullRequest(input as never),
     pullRequestAvailability: (input: unknown) =>
       runtime.pullRequestAvailability(input as never),
+    pullRequestState: (input: unknown) =>
+      runtime.pullRequestState(input as never),
     generateCommitMessage: (input: unknown) =>
       runtime.generateCommitMessage(input as never),
     directStoryFiles: (input: unknown) =>

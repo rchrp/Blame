@@ -97,6 +97,7 @@ import { useReviewCompletion } from "./use-review-completion"
 import { DirectSharedFilesDialog } from "./direct-shared-files-dialog"
 import { useDirectStoryCommit } from "./use-direct-story-commit"
 import { useStoryPullRequest } from "./use-story-pull-request"
+import { useStoryPullRequestSync } from "./use-story-pull-request-sync"
 import { useStoryAgentStream } from "./use-story-agent-stream"
 import { finalizeStoppedRun } from "./story-agent-control"
 import {
@@ -811,6 +812,14 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
     gitIdentity,
     platform,
     projects,
+    storiesRef,
+    updateStory,
+  })
+  useStoryPullRequestSync({
+    drawerStoryId: drawerUserStory?.id,
+    platform,
+    projects,
+    stories: backlog.stories,
     storiesRef,
     updateStory,
   })
