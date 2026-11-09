@@ -14,8 +14,8 @@ const notice = (
 ): LegalBlock => ({ type: "notice", title, paragraphs, items });
 
 export const frenchTermsEffectiveDate = "19 juillet 2026";
-export const frenchTermsLastUpdated = "19 juillet 2026";
-export const frenchTermsVersion = "1.0";
+export const frenchTermsLastUpdated = "9 novembre 2026";
+export const frenchTermsVersion = "1.1";
 
 export const frenchTermsIntroduction = [
   `Les présentes Conditions Générales de Service et de Vente constituent le contrat entre le Client et Raphael Charpentier, entrepreneur individuel soumis au régime de la micro-entreprise et exerçant sous le nom commercial MK Holding, domicilié ${publisher.address}, immatriculé au Registre national des entreprises et au R.C.S. de Lyon sous le numéro SIREN ${publisher.siren} (« Blame », « nous »). TVA non applicable, article 293 B du Code général des impôts.`,
@@ -246,13 +246,13 @@ export const frenchTermsSections = [
   },
   {
     id: "donnees-securite",
-    title: "15. Données personnelles, télémétrie et sécurité",
+    title: "15. Données personnelles et sécurité",
     blocks: [
       paragraph(
         "La Politique de confidentialité à https://blame.so/privacy décrit les données, finalités, bases légales, destinataires, transferts, durées, mesures et droits. Lorsque Blame agit comme sous-traitant d'un Client professionnel, le DPA à https://blame.so/legal/dpa s'applique.",
       ),
       paragraph(
-        "La télémétrie cloud est limitée à des événements, métriques et traces techniques minimisés permettant d'exploiter, sécuriser, diagnostiquer et améliorer globalement le Service. Les journaux locaux ne sont pas automatiquement transmis. Les journaux du setup runtime ne sont transmis qu'après consentement explicite de l'utilisateur.",
+        "L'application Desktop n'envoie aucune télémétrie à Blame. Les services cloud de Blame enregistrent des événements, métriques et traces techniques minimisés sur leur propre fonctionnement afin de l'exploiter, le sécuriser, le diagnostiquer et l'améliorer. Les journaux locaux ne sont pas automatiquement transmis. En cas d'échec, l'application peut préremplir un ticket sur le dépôt GitHub public de Blame : rien n'est transmis tant que l'utilisateur ne le publie pas lui-même sur GitHub.",
       ),
       paragraph(
         "Aucune mesure de sécurité n'élimine tout risque. Blame met en œuvre des mesures proportionnées, chiffre les secrets applicables et limite les accès. Le Client doit protéger son environnement et ne pas transmettre de secret dans un canal non prévu.",

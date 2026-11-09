@@ -16,7 +16,7 @@ const notice = (title: string, paragraphs: readonly string[]): LegalBlock => ({
 // free: linked as "Code signing policy" from the home and download pages.
 // Mirrors CODE_SIGNING_POLICY.md at the repository root.
 export const codeSigningEffectiveDate = "2 November 2026";
-export const codeSigningLastUpdated = "4 November 2026";
+export const codeSigningLastUpdated = "9 November 2026";
 export const codeSigningVersion = "1.0";
 
 // Until SignPath Foundation approves Blame, the attribution is announced, not
@@ -84,7 +84,7 @@ export const codeSigningSections = [
     title: "5. Privacy",
     blocks: [
       paragraph(
-        "The privacy policy at https://blame.so/privacy describes the data Blame sends, where it goes and how to turn it off. The Windows installer shows a summary of it before installing and lets you turn off usage telemetry and the update check at launch; Settings > Desktop > Privacy offers the same switches.",
+        "The privacy policy at https://blame.so/privacy describes the data Blame sends, where it goes and how to turn it off. The Windows installer shows a summary of it before installing and lets you turn off the update check at launch; Settings > Desktop > Privacy offers the same switch.",
       ),
     ],
   },

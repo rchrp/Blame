@@ -75,8 +75,6 @@ adapter and ephemeral memory implementation do not constitute a durable local
 filesystem adapter.
 \item Make email delivery and verification setup explicit. Production
 authentication currently requires email verification and an email provider.
-\item Review required telemetry configuration so running a private instance
-does not require the project's hosted telemetry account.
 \item Expose the availability and configuration of speech transcription. The
 current backend integration uses an operator OpenRouter credential; it is not
 yet a local speech engine or a per-user transcription adapter.
@@ -92,7 +90,7 @@ service. They must not promise zero infrastructure or inference cost.
 \section{Practical release sequence}
 The global billing dependency has been removed from core flows and replaced
 with service-specific checks. Next establish a reproducible local backend
-setup, configurable origins, storage, email, and telemetry. Verify the default
+setup, configurable origins, storage, and email. Verify the default
 clone-to-development workflow without personal infrastructure. The public
 license is now selected. Document contribution and security reporting, and
 validate desktop packaging and provider setup across supported platforms.

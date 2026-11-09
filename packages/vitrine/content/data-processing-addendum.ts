@@ -14,8 +14,8 @@ const notice = (
 ): LegalBlock => ({ type: "notice", title, paragraphs, items });
 
 export const dpaEffectiveDate = "18 July 2026";
-export const dpaLastUpdated = "18 July 2026";
-export const dpaVersion = "1.0";
+export const dpaLastUpdated = "9 November 2026";
+export const dpaVersion = "1.1";
 
 export const dpaIntroduction = [
   `This Data Processing Addendum ("DPA") forms part of the agreement governing access to the Blame Services between Raphael Charpentier EI, a French individual entrepreneur operating under the trade name MK Holding, ${publisher.address}, registered under SIREN number ${publisher.siren} (R.C.S. Lyon) ("Blame"), and the Business User identified in the applicable Account, order form, quotation, checkout record, or other agreement ("Customer").`,
@@ -40,7 +40,7 @@ export const dpaSections = [
         '"Personal Data Breach" means a breach of security leading to the accidental or unlawful destruction, loss, alteration, unauthorised disclosure of, or access to Customer Personal Data transmitted, stored, or otherwise processed by Blame.',
         '"Restricted Transfer" means a transfer of Customer Personal Data that requires an adequacy decision, standard contractual clauses, addendum, or another transfer safeguard under Applicable Data Protection Law.',
         '"Services", "Business User", "Customer Content", and "Third-Party Service" have the meanings given in the Terms of Service.',
-        '"Service Data" means Account, subscription, billing, security, support-administration, service-usage, and minimised operational-telemetry data for which Blame determines the purposes and means described in the Privacy Policy.',
+        '"Service Data" means Account, subscription, billing, security, support-administration, service-usage, and service-monitoring data for which Blame determines the purposes and means described in the Privacy Policy.',
         '"Subprocessor" means a third party engaged by Blame to process Customer Personal Data on Customer\'s behalf.',
       ),
       paragraph(
@@ -266,7 +266,7 @@ export const dpaSections = [
     title: "16. Service Data processed by Blame as controller",
     blocks: [
       paragraph(
-        "Blame acts as controller, not processor for Customer, when it determines the purposes and essential means of processing Account contacts, authentication and security records, subscription and billing records, legal-compliance records, support administration, and minimised operational telemetry used to secure, operate, diagnose, and improve the Services. The Privacy Policy at https://blame.so/privacy governs that processing.",
+        "Blame acts as controller, not processor for Customer, when it determines the purposes and essential means of processing Account contacts, authentication and security records, subscription and billing records, legal-compliance records, support administration, and the monitoring data its cloud services record about their own operation to secure, operate, diagnose, and improve the Services. The Privacy Policy at https://blame.so/privacy governs that processing.",
       ),
       paragraph(
         "Blame will not use the controller designation to repurpose Customer Content for advertising, individual employee-performance monitoring, sale, or AI-model training. If data is used both to perform Customer's instruction and for a separate Blame purpose, the parties' respective roles are determined for each processing operation under Applicable Data Protection Law rather than by the label applied in this DPA.",
@@ -344,11 +344,11 @@ export const dpaSections = [
       list(
         "Identity and authentication: unique Account identities, password hashing, expiring or revocable access tokens, verification for sensitive export and closure operations, and protected closure-receipt credentials.",
         "Authorisation and isolation: authenticated API access, record-level ownership checks, logical separation between Accounts and projects, least-privilege infrastructure access, and restricted production administration.",
-        "Encryption and secrets: TLS for public network transmission; application-level encryption for designated provider and OAuth credentials; hashing for passwords, server tokens, and verification material; encrypted database backup files; and exclusion of reusable secrets from ordinary telemetry fields.",
+        "Encryption and secrets: TLS for public network transmission; application-level encryption for designated provider and OAuth credentials; hashing for passwords, server tokens, and verification material; encrypted database backup files; and exclusion of reusable secrets from service monitoring records.",
         "Infrastructure: production hosting in OVHcloud's Gravelines region, network controls, restricted administrative endpoints, container isolation, hardened service configuration, and physical and environmental controls supplied by OVHcloud.",
         "Secure development: version control, peer or automated review where appropriate, dependency and build controls, automated tests, environment separation, migration controls, and remediation of identified vulnerabilities according to risk.",
-        "Logging and monitoring: access-restricted service and security records, minimised OpenTelemetry events, metrics and traces, telemetry allowlists and redaction, bounded error categories, operational alerting, and retention controls appropriate to each record type.",
-        "Data minimisation: product controls that limit selected repository context; exclusion of prompts, source code, raw commands and output, tool arguments and results, paths, reusable credentials, and free-form errors from automatic operational telemetry; and separate user action before a detailed runtime diagnostic is submitted.",
+        "Logging and monitoring: access-restricted service and security records, minimised OpenTelemetry events, metrics and traces about the cloud services' own operation, attribute allowlists and redaction, bounded error categories, operational alerting, and retention controls appropriate to each record type.",
+        "Data minimisation: product controls that limit selected repository context; no usage telemetry from the Desktop App; exclusion of prompts, source code, raw commands and output, tool arguments and results, reusable credentials, and free-form errors from service monitoring records; and problem reports that the user reviews and submits on GitHub.",
         "Resilience and recovery: encrypted rolling backups, documented restoration procedures, active deletion and retry jobs, a durable Account-closure ledger designed to prevent restoration of closed Accounts, and reconciliation before restored service access is reopened.",
         "Deletion: verified Account closure, disabling of access, active-cloud deletion within 30 days, backup rotation within 90 days, credential revocation or deletion, and retention restrictions for legal holds and compliance records.",
         "Incident management: procedures to identify, contain, investigate, document, remediate, and notify relevant Personal Data Breaches, with preservation of evidence and post-incident corrective action where appropriate.",

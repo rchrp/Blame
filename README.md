@@ -124,7 +124,7 @@ You can also pick any version, including betas, from the [releases page](https:/
 
 **macOS.** The app is signed and notarized. On first launch, Blame sets up a small Linux VM (based on [Lima](https://lima-vm.io)) where agents, worktrees, and previews run.
 
-**Windows.** The installer is not code-signed yet (signing through SignPath Foundation is [planned](CODE_SIGNING_POLICY.md)), so SmartScreen may warn you: choose **More info → Run anyway**. The installer lets you turn off usage telemetry and the update check at launch; Settings → Desktop → Privacy has the same switches. Blame runs agents in its own WSL distribution. If WSL is not installed, run `wsl --install` in an administrator terminal and restart first.
+**Windows.** The installer is not code-signed yet (signing through SignPath Foundation is [planned](CODE_SIGNING_POLICY.md)), so SmartScreen may warn you: choose **More info → Run anyway**. The installer lets you turn off the update check at launch; Settings → Desktop → Privacy has the same switch. Blame runs agents in its own WSL distribution. If WSL is not installed, run `wsl --install` in an administrator terminal and restart first.
 
 **Linux.** Worktrees stay native, and previews and project services run in Docker on your machine.
 
@@ -196,13 +196,13 @@ A free account adds sync between computers, web research for agents, and deploym
 
 Blame Cloud is **$20/month** or **$200/year**. Your AI provider bills its own usage. Files stay accessible after a subscription ends. See [blame.so/cloud](https://blame.so/cloud).
 
-## Privacy and telemetry
+## Privacy
 
-- **Without an account, Blame sends no usage telemetry.** Agents call only the AI provider you pick, and the app checks for updates at launch.
-- **With an account,** the app sends usage metrics to `api.blame.so`: durations, token counts, error types, and outcomes, used to make agents and previews more reliable. It never sends prompts, code, file paths, commands or their output, tool arguments, or keys, and the server filters them out a second time.
-- **Turn it off** in **Settings → Desktop → Privacy**, which also turns off the update check. The Windows installer offers the same switches.
+- **No telemetry.** Blame sends no usage metrics, traces, logs, or crash reports, with or without an account. Agents call only the AI provider you pick.
+- **Update check.** At launch, the app asks `download.blame.so` whether a newer version exists. Turn it off in **Settings → Desktop → Privacy**; the Windows installer offers the same switch.
+- **Reporting a problem.** When something fails, **Report on GitHub** opens a pre-filled issue in your browser. Nothing is sent unless you submit it.
 
-The [privacy policy](https://blame.so/privacy) lists everything the app sends and where. The telemetry code is in [`packages/telemetry`](packages/telemetry).
+The [privacy policy](https://blame.so/privacy) lists every connection the app makes, such as runtime downloads and, with an account, sync with `api.blame.so`.
 
 ## FAQ
 
