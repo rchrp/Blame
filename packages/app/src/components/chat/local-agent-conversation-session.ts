@@ -4,6 +4,7 @@ import type {
   AgentPersonalization,
   ApiConnection,
 } from "@blame/agent-runtime"
+import { toast } from "sonner"
 
 import {
   agentFlowUpdate,
@@ -20,6 +21,7 @@ import { quickChatClineLogRelativePath } from "@/components/chat/data/quick-chat
 import { agentTurnRecovery } from "@/components/chat/data/quick-chat-run-recovery"
 import type { useModelSelection } from "@/components/model/model-selection"
 import type { Platform } from "@/context/platform"
+import { uploadFileAttachments } from "@/lib/file-attachment-api"
 
 import {
   appendTurn,
@@ -29,6 +31,7 @@ import {
   loadLocalConversation,
   resumableRuns,
   saveLocalConversation,
+  setCommentFileAttachments,
   updateRun,
   type LocalAgentConversation,
 } from "./data/local-agent-conversation-data"
@@ -144,8 +147,35 @@ export class LocalAgentConversationSession {
         run
       )
     )
+    void this.keepFiles(
+      commentId,
+      message.fileAttachments,
+      options.apiConnection
+    )
     void this.runTurn(run, { ...message, text }, options)
     return true
+  }
+
+  // The saved thread keeps no file content: uploading the files is what lets
+  // it show and hand them over again after a reload. The agent reads the
+  // originals meanwhile, so a failed upload never holds the turn back.
+  private async keepFiles(
+    commentId: string,
+    files: UserStoryFileAttachment[] | undefined,
+    apiConnection: ApiConnection
+  ) {
+    if (!this.storageKey || !files?.length) return
+    try {
+      const uploaded = await uploadFileAttachments(apiConnection, files)
+      if (uploaded)
+        this.set((current) =>
+          setCommentFileAttachments(current, commentId, uploaded)
+        )
+    } catch (error) {
+      toast.error("Unable to save your attachments", {
+        description: `${errorMessage(error)} They will not be available after a reload.`,
+      })
+    }
   }
 
   // Turns left running by an earlier app session: follow the ones the

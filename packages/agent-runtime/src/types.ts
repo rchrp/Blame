@@ -780,6 +780,9 @@ export type PlannedUserStory = {
   summary: string;
   priority: StoryPlanPriority;
   dependsOn: string[];
+  // Names of the files the person attached to the conversation that this
+  // story needs; the app hands them to the story's coding agent.
+  attachments: string[];
   // Set by the app once the person added it to the backlog.
   addedAs?: string;
   dismissed?: boolean;

@@ -71,6 +71,7 @@ function plannedStory(
           ),
         )
       : [],
+    attachments: attachmentNames(item.attachments),
   };
 }
 
@@ -89,6 +90,13 @@ function priority(value: unknown): StoryPlanPriority {
 
 function textField(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function attachmentNames(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return Array.from(
+    new Set(value.map((entry) => textField(entry)).filter(Boolean)),
+  );
 }
 
 function recordValue(value: unknown): Record<string, unknown> {
@@ -132,6 +140,12 @@ const storyProposalSchema = {
             items: { type: "string" },
             description:
               "Keys (P1) or story ids (US-012) that must be merged first. Empty unless the dependency is real.",
+          },
+          attachments: {
+            type: "array",
+            items: { type: "string" },
+            description:
+              "Names of the files the person attached in this conversation (screenshots, mockups, specs) that this story's coding agent needs, exactly as listed with their message. They are handed to that agent with the story. Omit for a story that needs none; never list a file a story does not use.",
           },
         },
         required: ["key", "title", "summary", "priority", "dependsOn"],

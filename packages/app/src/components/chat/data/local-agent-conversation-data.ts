@@ -7,7 +7,10 @@ import {
   type AgentFlowUpdate,
 } from "../../backlog/data/agent-flow.ts"
 import { agentRunFinalization } from "../../backlog/data/agent-run-lifecycle.ts"
-import type { UserStoryAgentActivity } from "@/components/backlog/data/backlog-data"
+import type {
+  UserStoryAgentActivity,
+  UserStoryFileAttachment,
+} from "@/components/backlog/data/backlog-data"
 import type {
   AgentConversationComment,
   AgentConversationRun,
@@ -55,6 +58,25 @@ export function updateRun(
     ...conversation,
     runs: conversation.runs.map((run) =>
       run.id === runId ? { ...run, ...patch } : run
+    ),
+    updatedAt: new Date().toISOString(),
+  }
+}
+
+/**
+ * Swaps a message's files for their uploaded copies. The saved thread never
+ * keeps file content, so the uploaded copy (its id and link) is how the
+ * files are found again after a reload.
+ */
+export function setCommentFileAttachments(
+  conversation: LocalAgentConversation,
+  commentId: string,
+  fileAttachments: UserStoryFileAttachment[]
+): LocalAgentConversation {
+  return {
+    ...conversation,
+    comments: conversation.comments.map((comment) =>
+      comment.id === commentId ? { ...comment, fileAttachments } : comment
     ),
     updatedAt: new Date().toISOString(),
   }
@@ -187,7 +209,8 @@ export function saveLocalConversation(
 }
 
 // Keeps proposals in full (they are the cards); other steps as the timeline
-// shows them when collapsed.
+// shows them when collapsed. Files keep their id, name and link but never
+// their content: an uploaded file is found again from those.
 function storable(conversation: LocalAgentConversation) {
   const runs = conversation.runs.slice(-maxStoredRuns)
   const messageIds = new Set(runs.map((run) => run.messageId))
