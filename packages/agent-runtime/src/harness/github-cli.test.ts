@@ -8,7 +8,9 @@ import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { githubCliArchive, githubCliVersion, installGithubCli, withGithubCli, type GithubCliArchive } from "./github-cli.js";
+import { EnvironmentAdapter } from "./environment-adapter.js";
 import { lightSemanticHarnessTools } from "./light-tools.js";
+import type { WorkspaceFiles } from "./workspace-files.js";
 
 const posixOnly = { skip: process.platform === "win32" ? "The fixture gh is a shell script" : false };
 const appToken = "fixture-app-token";
@@ -23,20 +25,41 @@ printf 'blame gh %s, token %s, config %s\n' "$*" "$token" "$GH_CONFIG_DIR"
 
 test("a cloud command runs the gh Blame provides, with the App token and a config directory of its own", posixOnly, async () => {
   await fixture(async ({ root, archive, cacheRoot }) => {
-    const tool = lightSemanticHarnessTools(root, {
-      commandCredentials: () => withGithubCli({ githubToken: appToken }, { root: cacheRoot, archive }),
-      taskContract: { session_id: "cloud-gh", environment: { isolated: false, managedPreview: true } },
-    }).find(({ name }) => name === "run_task")!;
-    const command = `gh pr list && node -e 'process.stdout.write("first " + process.env.PATH.split(require("node:path").delimiter)[0])'`;
-    const result = JSON.stringify(
-      await tool.execute({ kind: "command", command }, { sessionId: "cloud-gh", toolCallId: "gh" } as never),
-    );
-    assert.match(result, /blame gh pr list, token granted, config /u, result);
-    assert.ok(result.includes(`first ${join(cacheRoot, archive.sha256, "bin")}`), result);
-    const configDirectory = /config (\/[^\s"\\]+)/u.exec(result)?.[1];
-    assert.ok(configDirectory?.startsWith(join(tmpdir(), "blame-gh-config-")), result);
-    assert.notEqual(configDirectory, join(homedir(), ".config", "gh"));
+    const personalConfigDirectory = join(homedir(), ".config", "gh");
+    const home = await homeWhoseLoginProfilePutsHostGhFirst();
+    const previousHome = process.env.HOME;
+    process.env.HOME = home;
+    try {
+      const tool = lightSemanticHarnessTools(root, {
+        commandCredentials: () => withGithubCli({ githubToken: appToken }, { root: cacheRoot, archive }),
+        taskContract: { session_id: "cloud-gh", environment: { isolated: false, managedPreview: true } },
+      }).find(({ name }) => name === "run_task")!;
+      const command = `gh pr list && node -e 'process.stdout.write("first " + process.env.PATH.split(require("node:path").delimiter)[0])'`;
+      const result = JSON.stringify(
+        await tool.execute({ kind: "command", command }, { sessionId: "cloud-gh", toolCallId: "gh" } as never),
+      );
+      assert.doesNotMatch(result, /host gh/u, result);
+      assert.match(result, /blame gh pr list, token granted, config /u, result);
+      assert.ok(result.includes(`first ${join(cacheRoot, archive.sha256, "bin")}`), result);
+      const configDirectory = /config (\/[^\s"\\]+)/u.exec(result)?.[1];
+      assert.ok(configDirectory?.startsWith(join(tmpdir(), "blame-gh-config-")), result);
+      assert.notEqual(configDirectory, personalConfigDirectory);
+    } finally {
+      if (previousHome === undefined) delete process.env.HOME;
+      else process.env.HOME = previousHome;
+      await rm(home, { force: true, recursive: true });
+    }
   });
+});
+
+test("the directory a shell command gets first is kept whatever characters its path holds", posixOnly, () => {
+  const directory = "/tmp/it's a \"gh\" $HOME";
+  const { executable, args } = new EnvironmentAdapter({} as WorkspaceFiles, "linux").command(
+    `printf '%s' "$PATH"`,
+    directory,
+  );
+  const path = execFileSync(executable, args, { encoding: "utf8" });
+  assert.equal(path.split(":")[0], directory);
 });
 
 test("concurrent commands share one verified download of gh", posixOnly, async () => {
@@ -134,4 +157,19 @@ async function fixtureArchive(directory: string) {
 
 function git(root: string, args: string[]) {
   execFileSync("git", args, { cwd: root, stdio: "ignore" });
+}
+
+/**
+ * Like macOS, where path_helper (/etc/profile) and `brew shellenv` put
+ * /opt/homebrew/bin back before the directories a command inherited: the
+ * login shell of a command then finds the host's gh first.
+ */
+async function homeWhoseLoginProfilePutsHostGhFirst() {
+  const home = await mkdtemp(join(tmpdir(), "blame-gh-home-"));
+  const hostBin = join(home, "host-bin");
+  await mkdir(hostBin);
+  await writeFile(join(hostBin, "gh"), "#!/bin/sh\necho 'host gh'\n");
+  await chmod(join(hostBin, "gh"), 0o755);
+  await writeFile(join(home, ".bash_profile"), `export PATH='${hostBin}':"$PATH"\n`);
+  return home;
 }
