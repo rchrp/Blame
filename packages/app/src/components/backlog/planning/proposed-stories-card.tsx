@@ -27,8 +27,9 @@ import {
   decidedStories,
   missingDependencies,
   pendingStories,
-  plannedStoryMarkdown,
+  plannedStoryDraft,
   storiesToAdd,
+  storyFileAttachments,
   type PlanStory,
 } from "./story-proposal-data"
 import {
@@ -42,6 +43,7 @@ export function ProposedStoriesCard(props: ProposalCardProps) {
   const projectId = useProjects().activeProject?.id
   const backlog = useBacklogStore()
   const host = useProposalHost()
+  const conversationFiles = host.fileAttachments ?? []
   const decisions = useProposalDecisions(projectId)
   const conversationProposals = useStoryProposals()
   const id = proposalId(props.run, props.activity)
@@ -72,6 +74,7 @@ export function ProposedStoriesCard(props: ProposalCardProps) {
         summary: "",
         priority: "Medium" as const,
         dependsOn: [],
+        attachments: [],
         ...decision,
       }))
     )
@@ -95,10 +98,11 @@ export function ProposedStoriesCard(props: ProposalCardProps) {
     try {
       for (const story of toAdd) {
         const userStory = await backlog.create({
-          title: story.title,
-          summary: plannedStoryMarkdown(story, (key) => refs.get(key)),
-          priority: story.priority,
-          status: "backlog",
+          ...plannedStoryDraft(
+            story,
+            (key) => refs.get(key),
+            conversationFiles
+          ),
           runMode: readStoryRunMode(),
         })
         const displayId = userStoryDisplayId(userStory)
@@ -133,6 +137,9 @@ export function ProposedStoriesCard(props: ProposalCardProps) {
 
   const actionsFor = (story: PlanStory) => ({
     adding: adding.has(story.key),
+    attachmentNames: storyFileAttachments(story, conversationFiles).map(
+      (file) => file.name
+    ),
     dependencyLabel,
     missingDependencies: missingDependencies(stories, story.key),
     onAdd: () => void addStories([story.key]),

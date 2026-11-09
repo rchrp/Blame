@@ -1,5 +1,10 @@
 import type { PlannedUserStory } from "@blame/agent-runtime"
 
+import type {
+  UserStoryDraft,
+  UserStoryFileAttachment,
+} from "@/components/backlog/data/backlog-data"
+
 // User stories an agent proposed in a conversation (plan mode, a chat, a
 // user story). They are cards the person can edit, dismiss or add to the
 // backlog; nothing is created until they do.
@@ -91,6 +96,36 @@ export function plannedStoryMarkdown(
         `- ${displayId}${title ? ` · ${title}` : ""} (to be merged first)`
     ),
   ].join("\n")
+}
+
+/** The conversation's files that a proposed story names, each once. */
+export function storyFileAttachments(
+  story: Pick<PlannedUserStory, "attachments">,
+  available: UserStoryFileAttachment[]
+) {
+  const files: UserStoryFileAttachment[] = []
+  for (const name of story.attachments) {
+    // When a name was attached twice, the latest upload is the one meant.
+    const file = available.findLast((item) => item.name === name)
+    if (file && !files.includes(file)) files.push(file)
+  }
+  return files
+}
+
+/** The backlog story that adding a proposal creates, with the files it carries. */
+export function plannedStoryDraft(
+  story: PlanStory,
+  resolve: Parameters<typeof plannedStoryMarkdown>[1],
+  available: UserStoryFileAttachment[]
+): Omit<UserStoryDraft, "projectId"> {
+  const fileAttachments = storyFileAttachments(story, available)
+  return {
+    title: story.title,
+    summary: plannedStoryMarkdown(story, resolve),
+    priority: story.priority,
+    status: "backlog",
+    ...(fileAttachments.length ? { fileAttachments } : {}),
+  }
 }
 
 /** Stories added from earlier proposals, by key (latest wins). */

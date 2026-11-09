@@ -13,7 +13,11 @@ import {
   pendingFileAttachments,
   replaceFileAttachments,
 } from "@/components/backlog/drawer/user-story-attachment-files"
-import type { PendingCodeSelectionAttachment } from "@/components/backlog/shared/comment-attachment-events"
+import type {
+  CodeSelectionAttachment,
+  PendingCodeSelectionAttachment,
+} from "@/components/backlog/shared/comment-attachment-events"
+import { ExcerptTargetProvider } from "@/components/backlog/shared/selection-excerpt-actions"
 import {
   AgentConversationComposer,
   AgentConversationTimeline,
@@ -27,6 +31,7 @@ import { ConversationPersonalizationMenu } from "@/components/personalization/pe
 import { Button } from "@/components/ui/button"
 import { Dialog } from "@/components/ui/dialog"
 import { usePlatform } from "@/context/platform"
+import { useLatestCallback } from "@/lib/use-latest-callback"
 import { cn } from "@/lib/utils"
 import { openProjectPath } from "@/pages/chat/quick-chat-helpers"
 
@@ -130,6 +135,11 @@ function PlanModeDialog({
     UserStoryFileAttachment[]
   >([])
   const { comments, runs } = plan.conversation
+  // What proposed stories can carry: every file attached in the thread.
+  const conversationFiles = React.useMemo(
+    () => comments.flatMap((comment) => comment.fileAttachments ?? []),
+    [comments]
+  )
   const empty = !runs.length
   const latestRun = runs.at(-1)
   const responseHeader = agentConversationResponseHeader({
@@ -153,6 +163,16 @@ function PlanModeDialog({
     setEditorKey((key) => key + 1)
     focusComposer()
   }
+
+  const attachAsContext = useLatestCallback(
+    (excerpt: CodeSelectionAttachment) => {
+      setCodeAttachments((current) => [
+        ...current,
+        { ...excerpt, id: crypto.randomUUID() },
+      ])
+      focusComposer()
+    }
+  )
 
   function submit() {
     const attached = codeAttachments.length + fileAttachments.length > 0
@@ -242,7 +262,9 @@ function PlanModeDialog({
               onMessageChange={setDraft}
               onMessageSubmit={submit}
               personalizationMenu={
-                <ConversationPersonalizationMenu ambitionKey={plan.ambitionKey} />
+                <ConversationPersonalizationMenu
+                  ambitionKey={plan.ambitionKey}
+                />
               }
               placeholder={
                 empty
@@ -266,14 +288,23 @@ function PlanModeDialog({
             onSuggestion={plan.unavailableReason ? undefined : applySuggestion}
           />
         ) : (
-          <ProposalHostProvider onOpenStory={onOpenStory}>
-            <AgentConversationTimeline
-              comments={comments}
-              onFileLinkClick={openFile}
-              responseHeader={responseHeader}
-              runs={runs}
-            />
-          </ProposalHostProvider>
+          <ExcerptTargetProvider
+            attachAsContext={
+              plan.unavailableReason ? undefined : attachAsContext
+            }
+          >
+            <ProposalHostProvider
+              fileAttachments={conversationFiles}
+              onOpenStory={onOpenStory}
+            >
+              <AgentConversationTimeline
+                comments={comments}
+                onFileLinkClick={openFile}
+                responseHeader={responseHeader}
+                runs={runs}
+              />
+            </ProposalHostProvider>
+          </ExcerptTargetProvider>
         )}
       </PlanningConversation>
     </Dialog>

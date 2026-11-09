@@ -10,6 +10,7 @@ import {
   classifyClaudeCodeError,
   clientStreamEvent,
   collectMessage,
+  contentBesideToolResults,
   initialUserContent,
   laneSignature,
   mcpToolResult,
@@ -108,6 +109,76 @@ test("sends a new conversation natively and replays a longer one", () => {
   assert.match(transcript, /\[tool call t1: read_files\] \{"path":"a"\}/);
   assert.match(transcript, /file body/);
   assert.match(transcript, /Continue the task from the last tool results/);
+  assert.doesNotMatch(transcript, /images of the last message/);
+});
+
+test("a replayed history keeps the images of the last turn and shows older ones as [image]", () => {
+  const image = (data: string) => ({
+    type: "image",
+    source: { type: "base64", media_type: "image/png", data },
+  });
+  const toolUse = (id: string) => ({
+    role: "assistant" as const,
+    content: [{ type: "tool_use", id, name: "read_files", input: {} }],
+  });
+  const content = initialUserContent([
+    { role: "user", content: [{ type: "text", text: "Plan it" }, image("OLD")] },
+    toolUse("t1"),
+    { role: "user", content: [{ type: "tool_result", tool_use_id: "t1", content: "first body" }] },
+    toolUse("t2"),
+    {
+      role: "user",
+      content: [
+        {
+          type: "tool_result",
+          tool_use_id: "t2",
+          content: [{ type: "text", text: "shot" }, image("FROM_TOOL")],
+        },
+        { type: "text", text: "What's on this image?" },
+        image("NEW"),
+      ],
+    },
+  ]);
+  assert.equal(content.length, 3);
+  const transcript = String(content[0]!.text);
+  assert.match(transcript, /Plan it\n\[image\]/);
+  assert.match(transcript, /What's on this image\?\n\[image\]/);
+  assert.match(transcript, /The images of the last message follow\./);
+  assert.doesNotMatch(transcript, /OLD|NEW|FROM_TOOL/);
+  assert.deepEqual(content.slice(1), [image("FROM_TOOL"), image("NEW")]);
+});
+
+test("the text and images beside tool results travel with the results", () => {
+  const image = { type: "image", source: { type: "base64", media_type: "image/jpeg", data: "BBB" } };
+  const besideImage = { type: "image" as const, data: "BBB", mimeType: "image/jpeg" };
+  const message = {
+    role: "user" as const,
+    content: [
+      { type: "tool_result", tool_use_id: "t1", content: "done" },
+      { type: "text", text: "First" },
+      image,
+      { type: "text", text: "Second" },
+    ],
+  };
+  const beside = contentBesideToolResults(message);
+  assert.deepEqual(beside, [{ type: "text", text: "First\n\nSecond" }, besideImage]);
+  assert.deepEqual(mcpToolResult(message.content[0]!, beside).content, [
+    { type: "text", text: "done" },
+    ...beside,
+  ]);
+  assert.deepEqual(
+    contentBesideToolResults({ role: "user", content: [{ type: "tool_result", tool_use_id: "t1", content: "done" }] }),
+    [],
+    "Nothing beside the results adds nothing.",
+  );
+  assert.deepEqual(
+    contentBesideToolResults({
+      role: "user",
+      content: [{ type: "image", source: { type: "url", url: "https://example.com/a.png" } }],
+    }),
+    [],
+    "An image Blame cannot read inline is skipped.",
+  );
 });
 
 test("converts tool results and stream events between both sides", () => {
@@ -122,7 +193,7 @@ test("converts tool results and stream events between both sides", () => {
           { type: "image", source: { type: "base64", media_type: "image/png", data: "AAA" } },
         ],
       },
-      "User note",
+      [{ type: "text", text: "User note" }],
     ),
     {
       content: [

@@ -5,6 +5,7 @@ import {
   ChevronDownIcon,
   CornerDownRightIcon,
   LoaderCircleIcon,
+  PaperclipIcon,
   PencilIcon,
   PlusIcon,
   Undo2Icon,
@@ -43,6 +44,8 @@ const priorityTone: Record<PlanStory["priority"], string> = {
 
 export type PlannedStoryActions = {
   adding: boolean
+  // The files the story carries to its coding agent once added, by name.
+  attachmentNames: string[]
   // How to name a dependency: its backlog id once it was added.
   dependencyLabel: (key: string) => string
   // Proposals this one needs that are not in the backlog yet.
@@ -109,6 +112,17 @@ export function PlannedStoryCard({
             <CornerDownRightIcon className="size-3 shrink-0" />
             <span className="truncate">
               after <span className="font-mono">{dependencies.join(", ")}</span>
+            </span>
+          </p>
+        ) : null}
+        {actions.attachmentNames.length ? (
+          <p
+            className="flex min-w-0 items-center gap-1 text-[11px] text-muted-foreground"
+            title={`Carries ${actions.attachmentNames.join(", ")}`}
+          >
+            <PaperclipIcon className="size-3 shrink-0" />
+            <span className="truncate">
+              {actions.attachmentNames.join(", ")}
             </span>
           </p>
         ) : null}
@@ -231,6 +245,22 @@ export function PlannedStoryDetail({
             />
           </div>
         )}
+        {actions.attachmentNames.length ? (
+          <ul
+            aria-label="Attached files"
+            className="mt-3 flex flex-wrap gap-1.5"
+          >
+            {actions.attachmentNames.map((name) => (
+              <li
+                key={name}
+                className="inline-flex max-w-full items-center gap-1 rounded-md border bg-muted/50 px-2 py-0.5 text-xs text-muted-foreground"
+              >
+                <PaperclipIcon className="size-3 shrink-0" />
+                <span className="truncate">{name}</span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
       </CardContent>
       <CardFooter className="gap-1 py-2!">
         {editable ? (

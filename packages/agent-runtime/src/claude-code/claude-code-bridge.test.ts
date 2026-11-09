@@ -76,6 +76,57 @@ test("replays history in a new Claude Code process when turns do not line up", a
   });
 });
 
+const toolUse = {
+  role: "assistant",
+  content: [
+    { type: "tool_use", id: "toolu_1", name: "echo", input: { value: "ping" } },
+  ],
+};
+
+/** What Cline sends after finish_task: the tool result, the user's words and a screenshot. */
+const followUpWithScreenshot = {
+  role: "user",
+  content: [
+    { type: "tool_result", tool_use_id: "toolu_1", content: "pong" },
+    { type: "text", text: "What's on this image?" },
+    { type: "image", source: { type: "base64", media_type: "image/png", data: "AAA" } },
+  ],
+};
+
+test("sends the images of a follow-up to a Claude Code process that is still running", async () => {
+  await withBridge(async (bridge) => {
+    const first = { role: "user", content: "please use tool" };
+    await stream(bridge, bridge.token("session-images-active"), [first]);
+    const answer = await stream(bridge, bridge.token("session-images-active"), [
+      first,
+      toolUse,
+      followUpWithScreenshot,
+    ]);
+    assert.match(
+      text(answer),
+      /tool said: pong What's on this image\? \[image image\/png\]/,
+    );
+    assert.equal(openLanes(bridge), 1);
+  });
+});
+
+test("sends the images of a follow-up to a restarted Claude Code process", async () => {
+  await withBridge(async (bridge, stateDirectory) => {
+    const answer = await stream(bridge, bridge.token("session-images-replayed"), [
+      { role: "user", content: "look at the screen" },
+      toolUse,
+      followUpWithScreenshot,
+    ]);
+    assert.match(text(answer), /<blame_conversation_history>/);
+    assert.match(text(answer), /The images of the last message follow\./);
+    assert.match(text(answer), / \| images: 1$/);
+    assert.equal(
+      (await laneEvents(stateDirectory)).find((entry) => entry.event === "lane_started")?.replayed,
+      true,
+    );
+  });
+});
+
 test("answers non-streaming calls and rejects unknown keys", async () => {
   await withBridge(async (bridge) => {
     const response = await post(bridge, bridge.token("session-c"), {
@@ -344,7 +395,7 @@ async function laneEvents(stateDirectory: string) {
   return readFileSync(join(stateDirectory, "bridge-events.log"), "utf8")
     .trim()
     .split("\n")
-    .map((line) => JSON.parse(line) as { afterWake?: boolean; event: string; scope?: string });
+    .map((line) => JSON.parse(line) as { afterWake?: boolean; event: string; replayed?: boolean; scope?: string });
 }
 
 function openLanes(bridge: ClaudeCodeBridge) {
