@@ -15,6 +15,7 @@ import type {
   ReasoningSelection,
 } from "@blame/agent-runtime"
 import { createProviderListCache } from "./provider-list-cache.ts"
+import { planUsages } from "./plan-usage-cache.ts"
 
 const storageKey = "blame.app.drawer-model-selection.v1"
 
@@ -350,8 +351,13 @@ function useLocalProviderState(enabled = true) {
     [agent, auth.apiConnection, auth.status, cacheKey]
   )
   React.useEffect(() => rememberModelNames(providers), [providers])
-  // After connecting a provider or changing models: always fetch again.
-  const refresh = React.useCallback(() => load(true), [load])
+  // After connecting a provider or changing models: always fetch again. A
+  // provider may have been connected, reconnected or removed, so the plan
+  // usage shown is asked again too.
+  const refresh = React.useCallback(() => {
+    planUsages.reload()
+    return load(true)
+  }, [load])
 
   React.useEffect(() => {
     if (!enabled) return

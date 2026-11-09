@@ -21,6 +21,7 @@ import {
   writeCloudSession,
 } from "@/context/cloud-auth-storage"
 import { configureStoredAttachmentUrls } from "@/components/attachments/stored-attachment-url"
+import { planUsages } from "@/components/model/plan-usage-cache"
 import { createCloudApi } from "@/lib/cloud-api"
 import { defaultCloudApiUrl } from "@/context/cloud-api-origin"
 import { transferLocalWorkspace } from "@/context/local-workspace"
@@ -448,6 +449,7 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
       return
     } finally {
       removeCloudSession()
+      planUsages.clear()
       writeWorkspaceStart("signed-out")
       setState(showSignIn("signed-out"))
     }
