@@ -102,6 +102,15 @@ export async function defaultPushRemote(cwd: string) {
   return remotes.includes("origin") ? "origin" : (remotes[0] ?? null);
 }
 
+// The URL origin fetches from, or undefined without an origin remote.
+export async function originRemoteUrl(cwd: string) {
+  try {
+    return await git(cwd, ["remote", "get-url", "origin"]);
+  } catch {
+    return undefined;
+  }
+}
+
 export type TargetCheckout =
   | { kind: "project" }
   | { kind: "none" }

@@ -202,6 +202,7 @@ import {
   removeRuntimeEnvChanges,
   storyStatus,
 } from "./story-worktree-git.js";
+import { withLinkedIssueTrailers } from "./linked-issues.js";
 import {
   knownModelInfo,
   loadCatalogModel,
@@ -365,6 +366,7 @@ import {
   integrationWorktree,
   mergeConflictFiles,
   optionalGitUpstream,
+  originRemoteUrl,
   pullIntegrationWorktree,
   pushTargetBranch,
   removeIntegrationWorktree,
@@ -2642,11 +2644,13 @@ private async commitStoryWork(input: ApproveAndMergeInput) {
     }
     const status = await storyStatus(input.worktree, "--porcelain");
     if (!status.trim()) return;
-    const message = await this.generateCommitMessageWithAgent(
+    const generated = await this.generateCommitMessageWithAgent(
       input,
       approveMergeLogPath(input.worktree),
       "blame-approve-merge",
     );
+    const origin = await originRemoteUrl(input.repositoryRoot);
+    const message = withLinkedIssueTrailers(generated, input, origin);
     await addStoryChanges(input.worktree);
     await git(input.worktree, ["commit", "-m", message]);
     const nextStatus = await storyStatus(input.worktree, "--porcelain");

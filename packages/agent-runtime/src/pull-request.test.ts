@@ -429,6 +429,38 @@ test("pushes the merged target branch when asked", async () => {
   }
 });
 
+test("closes the origin issues the story handles from its merged commit", async () => {
+  const fixture = await pullRequestFixture();
+  const runtime = pullRequestTestRuntime(fakeGh().run);
+  try {
+    await writeFile(join(fixture.worktree, "card.ts"), "export {};\n");
+    await runtime.approveAndMerge({
+      ...fixture.input,
+      push: false,
+      title: "Pay by card",
+      summary: [
+        "Traite la GitHub issue [12](https://github.com/acme/shop/issues/12).",
+        "Fixes https://github.com/Acme/Shop/issues/4, not https://github.com/acme/api/issues/7.",
+        "Hors périmètre : [#45](https://github.com/acme/shop/issues/45).",
+      ].join("\n"),
+    });
+
+    // The test agent writes no message: Blame falls back to its own.
+    const messages = (
+      await git(fixture.repositoryRoot, ["log", "--format=%B%x00", "develop"])
+    )
+      .split("\0")
+      .map((message) => message.trim());
+    assert.ok(
+      messages.includes("fix(card): pay by card\n\nCloses #4\nCloses #12"),
+      messages.join("\n---\n"),
+    );
+  } finally {
+    await runtime.shutdown();
+    await rm(fixture.directory, { recursive: true, force: true });
+  }
+});
+
 // A story started from develop, in a project whose origin is on GitHub but
 // pushes to a local bare repository.
 async function pullRequestFixture() {

@@ -1,7 +1,7 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 
-import { git } from "./runtime-git.js";
+import { originRemoteUrl } from "./runtime-git.js";
 import type { PullRequestAvailability, PullRequestState } from "./types.js";
 
 // Open PR runs gh on this computer, with the person's own gh sign-in. No
@@ -232,14 +232,8 @@ function splitAcceptanceCriteria(summary: string) {
 }
 
 async function originGithubRepository(repositoryRoot: string) {
-  try {
-    return githubRepository(
-      await git(repositoryRoot, ["remote", "get-url", "origin"]),
-    );
-  } catch {
-    // No origin remote.
-    return undefined;
-  }
+  const url = await originRemoteUrl(repositoryRoot);
+  return url ? githubRepository(url) : undefined;
 }
 
 function errorCode(error: unknown) {
