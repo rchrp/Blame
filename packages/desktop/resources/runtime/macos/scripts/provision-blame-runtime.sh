@@ -633,7 +633,7 @@ json_worker_count = max(1, min(2, os.cpu_count() or 1))
 large_json_threshold = 64 * 1024
 ignored_env_directories = {".git", ".blame", "build", "coverage", "dist", "node_modules", "out"}
 env_template_suffixes = (".example", ".sample", ".template")
-runtime_agent_version = "14"
+runtime_agent_version = "15"
 
 def serialize_json_line(value):
     return json.dumps(value, separators=(",", ":")) + "\n"

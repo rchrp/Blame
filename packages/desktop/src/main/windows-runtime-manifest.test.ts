@@ -117,11 +117,22 @@ test("keeps the cloud runner Cline SDK version aligned with agent runtime", asyn
 });
 
 test("keeps managed runtime agent revisions aligned", async () => {
-  for (const path of managedManifestPaths) {
+  for (const manifestFile of managedManifestPaths) {
     const manifest = JSON.parse(
-      await readFile(path, "utf8"),
+      await readFile(manifestFile, "utf8"),
     ) as WindowsRuntimeManifest;
     assert.equal(manifest.runtimeAgentVersion, "15");
+    // The agent that provisioning installs must report the manifest's
+    // revision, or every runtime stays "repairable" after a repair.
+    const provisioning = await readFile(
+      path.join(path.dirname(manifestFile), "scripts/provision-blame-runtime.sh"),
+      "utf8",
+    );
+    assert.equal(
+      provisioning.match(/^runtime_agent_version = "([^"]+)"$/m)?.[1],
+      manifest.runtimeAgentVersion,
+      manifestFile,
+    );
   }
 });
 
