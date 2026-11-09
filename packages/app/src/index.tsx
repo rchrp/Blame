@@ -37,13 +37,12 @@ export type {
   GitLogCommitRef,
   GitStatusFile,
   GitStatusResult,
+  IssueReport,
   McpServerConfig,
   McpServersClient,
   Platform,
-  RuntimeDiagnosticInput,
   RuntimeProgress,
   SecurityAuditClient,
-  TelemetryExportSession,
 } from "./context/platform"
 export type { LocalApiClient } from "./context/platform-local-api"
 

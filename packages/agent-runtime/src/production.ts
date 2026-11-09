@@ -8,11 +8,7 @@ import type {
   CoreSessionConfig,
   SessionUsageSummary,
 } from "@cline/sdk";
-import {
-  getBlameTelemetry,
-  sanitizeText,
-  type TelemetrySeverity,
-} from "@blame/telemetry";
+import { redactSecuritySecrets } from "./security-secret-redaction.js";
 import type {
   AgentRuntimeConfigExtension,
   AgentUsageSummary,
@@ -204,16 +200,29 @@ export function createProductionLogger(): BasicLogger {
   };
 }
 
+type LogSeverity = "debug" | "info" | "error";
+
+// The app reads `event_name` and `attributes` back from run logs to recover
+// interrupted runs.
+export function logRecord(
+  severity: LogSeverity,
+  eventName: string,
+  attributes: Record<string, unknown>,
+) {
+  return {
+    timestamp: new Date().toISOString(),
+    severity_text: severity.toUpperCase(),
+    event_name: eventName,
+    attributes,
+  };
+}
+
 function writeProductionLog(
-  severity: TelemetrySeverity,
+  severity: LogSeverity,
   eventName: string,
   metadata?: unknown,
 ) {
-  const record = getBlameTelemetry().structuredLog(
-    severity,
-    eventName,
-    safeLogPayload(metadata),
-  );
+  const record = logRecord(severity, eventName, safeLogPayload(metadata));
   const serialized = JSON.stringify(record);
   if (severity === "error") console.error(serialized);
   else if (severity === "debug") console.debug(serialized);
@@ -417,7 +426,7 @@ function safeLogValue(
   if (typeof value === "number" || typeof value === "boolean") return value;
   if (typeof value !== "string" || !stableStringLogKeys.has(key))
     return undefined;
-  const sanitizedValue = sanitizeText(value);
+  const sanitizedValue = redactSecuritySecrets(value);
   if (stableStringPattern.test(sanitizedValue)) return sanitizedValue;
   return undefined;
 }

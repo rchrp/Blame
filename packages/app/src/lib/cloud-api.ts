@@ -23,7 +23,6 @@ import type {
 import type {
   CloudAuthRequestClient,
   CloudAuthRequestResponse,
-  TelemetryExportSession,
 } from "@/context/platform"
 import { createDeployCloudApi } from "./deploy-cloud-api.ts"
 import { createGithubCloudApi } from "./github-cloud-api.ts"
@@ -232,11 +231,6 @@ export function createCloudApi(connection: CloudApiConnection) {
     },
     profile() {
       return request<CloudUser>(connection, baseUrl, "/account/profile")
-    },
-    telemetrySession() {
-      return request<unknown>(connection, baseUrl, "/telemetry/session").then(
-        cloudTelemetrySession
-      )
     },
     exportAccount(password: string) {
       return request<CloudAccountExport>(
@@ -628,18 +622,6 @@ function cloudSpeechTranscription(value: unknown) {
     throw new Error("Unable to read speech transcription.")
   }
   return { text: transcription.text }
-}
-
-function cloudTelemetrySession(value: unknown): TelemetryExportSession {
-  const session = transformerValue(value)
-  if (!isRecord(session)) throw new Error("Unable to read telemetry session.")
-  if (typeof session.endpoint !== "string")
-    throw new Error("Unable to read telemetry session.")
-  if (typeof session.expiresAt !== "string")
-    throw new Error("Unable to read telemetry session.")
-  if (typeof session.token !== "string")
-    throw new Error("Unable to read telemetry session.")
-  return session as TelemetryExportSession
 }
 
 async function requestDesktopAuthorization(

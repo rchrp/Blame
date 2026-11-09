@@ -137,12 +137,6 @@ const api: BlameDesktopApi = {
     },
     pending: () => ipcRenderer.invoke("whats-new:get"),
   },
-  telemetry: {
-    configure: (session) => ipcRenderer.invoke("telemetry:configure", session),
-    disable: () => ipcRenderer.invoke("telemetry:disable"),
-    sendRuntimeDiagnostic: (input) =>
-      ipcRenderer.invoke("telemetry:send-runtime-diagnostic", input),
-  },
   mcp: {
     authorize: (name) => ipcRenderer.invoke("mcp:authorize", name),
     disconnectOAuth: (name) => ipcRenderer.invoke("mcp:disconnect-oauth", name),
@@ -162,6 +156,7 @@ const api: BlameDesktopApi = {
   openMicrophoneSettings: () =>
     ipcRenderer.invoke("media:open-microphone-settings"),
   openExternalLink: (url) => ipcRenderer.send("shell:open-external", url),
+  reportIssue: (report) => ipcRenderer.invoke("github-issue:open", report),
   openPath: (path) => ipcRenderer.invoke("shell:open-path", path),
   openAttachment: (input) => ipcRenderer.invoke("shell:open-attachment", input),
   backlogStatusPip: {

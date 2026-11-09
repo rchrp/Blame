@@ -49,6 +49,17 @@ const nextConfig: NextConfig = {
     return [
       { source: "/pricing", destination: "/cloud", permanent: true },
       { source: "/pricing.md", destination: "/cloud.md", permanent: true },
+      // The privacy docs page moved: old links keep working.
+      {
+        source: "/docs/account/privacy-and-telemetry",
+        destination: "/docs/account/privacy",
+        permanent: true,
+      },
+      {
+        source: "/docs/account/privacy-and-telemetry.md",
+        destination: "/docs/account/privacy.md",
+        permanent: true,
+      },
       // The demo videos moved to the media bucket (lib/demo-media.ts): links
       // to their old paths, like the README's, follow them there. A new
       // recording gets a new URL, so these redirects aren't permanent.

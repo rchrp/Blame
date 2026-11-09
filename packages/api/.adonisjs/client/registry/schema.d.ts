@@ -59,32 +59,6 @@ export interface Registry {
       rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/consumer_contracts_controller').default['withdraw']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
-  'telemetry_ingestion.store': {
-    methods: ["POST"]
-    pattern: '/api/v1/telemetry/otlp/v1/:signal'
-    types: {
-      body: {}
-      paramsTuple: [ParamValue]
-      params: { signal: ParamValue }
-      query: {}
-      response: ExtractResponse<Awaited<ReturnType<import('#controllers/telemetry_ingestion_controller').default['store']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/telemetry_ingestion_controller').default['store']>>>
-      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/telemetry_ingestion_controller').default['store']>>>
-    }
-  }
-  'telemetry_ingestion.health': {
-    methods: ["GET","HEAD"]
-    pattern: '/api/v1/telemetry/upstream-health'
-    types: {
-      body: {}
-      paramsTuple: []
-      params: {}
-      query: {}
-      response: ExtractResponse<Awaited<ReturnType<import('#controllers/telemetry_ingestion_controller').default['health']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/telemetry_ingestion_controller').default['health']>>>
-      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/telemetry_ingestion_controller').default['health']>>>
-    }
-  }
   'vercel_connections.callback': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/integrations/vercel/callback'
@@ -109,19 +83,6 @@ export interface Registry {
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/github_installations_controller').default['callback']>>>
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/github_installations_controller').default['callback']>>>
       rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/github_installations_controller').default['callback']>>>
-    }
-  }
-  'telemetry_sessions.show': {
-    methods: ["GET","HEAD"]
-    pattern: '/api/v1/telemetry/session'
-    types: {
-      body: {}
-      paramsTuple: []
-      params: {}
-      query: {}
-      response: ExtractResponse<Awaited<ReturnType<import('#controllers/telemetry_sessions_controller').default['show']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/telemetry_sessions_controller').default['show']>>>
-      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/telemetry_sessions_controller').default['show']>>>
     }
   }
   'integrations.vercel.vercel_connections.create_intent': {

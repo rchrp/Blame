@@ -14,8 +14,8 @@ const notice = (
 ): LegalBlock => ({ type: "notice", title, paragraphs, items });
 
 export const termsEffectiveDate = "13 July 2026";
-export const termsLastUpdated = "19 July 2026";
-export const termsVersion = "1.2";
+export const termsLastUpdated = "9 November 2026";
+export const termsVersion = "1.3";
 
 export const termsIntroduction = [
   `These Terms of Service form a legally binding agreement between you and Raphael Charpentier EI, a French individual entrepreneur applying the micro-enterprise regime and operating under the trade name MK Holding, whose business is domiciled at ${publisher.address}, registered with the French National Business Register and the Lyon Trade and Companies Register under SIREN number ${publisher.siren} (R.C.S. Lyon) ("Blame", "we", "us", or "our"). VAT is not applicable pursuant to Article 293 B of the French General Tax Code. They govern your download, installation, access to, and use of the Blame desktop application, websites, cloud services, APIs, updates, support, and related services.`,
@@ -329,10 +329,10 @@ export const termsSections = [
       paragraph(
         "A party may disclose confidential information where law or valid legal process requires it, after giving advance notice where legally permitted and reasonable assistance at the other party’s expense. Trade-secret duties continue for as long as the information remains a trade secret; other confidentiality duties continue for five years after the later of disclosure or termination. Duties concerning personal data continue for as long as applicable law requires.",
       ),
-      notice("Diagnostics and telemetry", [
+      notice("Diagnostics and logs", [
         "Blame creates diagnostic logs locally on your device and in project or worktree .blame directories. These logs may include technical configuration, operating-system and runtime information, provider and model identifiers, session identifiers, token and estimated-cost data, tool names, command or process output, file paths, prompt hashes and lengths, OAuth account metadata, and error details. Local logs are not automatically transmitted to Blame.",
-        "When you are signed in, Blame automatically sends minimised operational events, metrics and traces to Blame to measure reliability, operation outcomes and durations, broad feature performance, usage and cost trends, capacity and recurring technical failures. This telemetry is designed to exclude prompts, source code, file content and paths, repository URLs, commands and output, tool arguments and results, reusable credentials, free-form error messages and stack traces. The Privacy Policy describes the exact categories, purposes, retention and legal basis.",
-        "If a runtime setup, repair or reset operation fails, Blame sends the detailed failure information only if you select the Send diagnostic action. You should review the displayed information and not submit it if it contains secrets or unrelated personal or confidential information. Blame does not sell telemetry data or use it for targeted advertising, individual employee-performance monitoring or AI-model training.",
+        "The Desktop App does not send usage telemetry to Blame. Blame's cloud services record technical events, metrics and traces about their own operation to keep them secure and reliable. The Privacy Policy describes the exact categories, purposes, retention and legal basis.",
+        "If a runtime setup, repair or reset operation fails, or the app stops unexpectedly, Blame can open a pre-filled issue on its public GitHub repository in your browser. Nothing is sent unless you submit that issue on GitHub yourself. You should review it and remove secrets and unrelated personal or confidential information before submitting. Blame does not sell service monitoring data or use it for targeted advertising, individual employee-performance monitoring or AI-model training.",
       ]),
     ],
   },

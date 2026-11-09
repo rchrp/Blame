@@ -60,7 +60,7 @@ function createWorkerState() {
 function registerWorker(worker, completeWorker) {
   worker.child.on("message", (message) => {
     if (message?.kind === "ready") {
-      worker.child.postMessage(disableTelemetryRequest(worker.requestId));
+      worker.child.postMessage(pingRequest(worker.requestId));
       return;
     }
     if (!runtimeResponse(message, worker.requestId)) return;
@@ -81,18 +81,19 @@ function createAgentWorker() {
     env: {
       ...process.env,
       BLAME_AGENT_PACKAGED: "false",
-      BLAME_AGENT_SERVICE_VERSION: app.getVersion(),
     },
     serviceName: "Blame Agent Worker Smoke Test",
     stdio: "inherit",
   });
 }
 
-function disableTelemetryRequest(requestId) {
+// Resolving an approval nobody asked for is a no-op round trip.
+function pingRequest(requestId) {
   return {
     id: requestId,
+    input: { decision: "deny", requestId },
     kind: "request",
-    method: "telemetry.disable",
+    method: "approvals.resolve",
     target: "runtime",
   };
 }

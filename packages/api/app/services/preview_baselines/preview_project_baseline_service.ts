@@ -15,12 +15,7 @@ import db from '@adonisjs/lucid/services/db'
 import { DateTime } from 'luxon'
 import { createHash } from 'node:crypto'
 import type { PreviewExecutionPlan, SourceArtifact } from '@blame/preview-runtime'
-import {
-  ATTR_BLAME_OPERATION_STATUS,
-  ATTR_BLAME_RUNTIME_NAME,
-  ATTR_BLAME_RUNTIME_PHASE,
-  getBlameTelemetry,
-} from '@blame/telemetry'
+import { monitoring } from '#lib/monitoring/metrics'
 
 export type PreviewBaselineSourceMetadata = {
   baseRevision: string
@@ -49,7 +44,6 @@ type EnsureInput = {
 
 const inFlight = new Map<string, Promise<PreviewProjectBaseline | undefined>>()
 const validatedSnapshots = new Map<string, number>()
-const telemetry = getBlameTelemetry()
 const failedBaselineRetentionHours = 24
 const snapshotValidationTtlMs = 30_000
 
@@ -521,12 +515,12 @@ async function measureBaselinePhase<T>(phase: string, operation: () => Promise<T
     throw error
   } finally {
     const attributes = {
-      [ATTR_BLAME_RUNTIME_NAME]: 'vercel-compose',
-      [ATTR_BLAME_RUNTIME_PHASE]: phase,
-      [ATTR_BLAME_OPERATION_STATUS]: outcome,
+      'blame.runtime.name': 'vercel-compose',
+      'blame.runtime.phase': phase,
+      'blame.operation.status': outcome,
     }
-    telemetry.count('blame.runtime.phase.count', 1, attributes)
-    telemetry.record(
+    monitoring.count('blame.runtime.phase.count', 1, attributes)
+    monitoring.record(
       'blame.runtime.phase.duration',
       Math.max(0, performance.now() - startedAt) / 1_000,
       attributes

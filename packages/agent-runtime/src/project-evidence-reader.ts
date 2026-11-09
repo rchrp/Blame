@@ -1,7 +1,6 @@
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { lstat, open, realpath, stat } from "node:fs/promises";
 import { constants } from "node:fs";
-import { withoutTelemetryEnvironment } from "@blame/telemetry";
 import { promisify } from "node:util";
 import { execFile } from "node:child_process";
 import {
@@ -131,7 +130,6 @@ async function gitMessages(root: string, limit: number) {
       ["log", `-${limit}`, "--no-merges", "--pretty=%s"],
       {
         cwd: root,
-        env: withoutTelemetryEnvironment(process.env),
         timeout: 3_000,
       },
     );

@@ -71,7 +71,6 @@ import {
   maxConcurrentDevelopmentStories,
   runningStories,
   staleAgentRunAge,
-  storyTelemetryCohorts,
 } from "./backlog-rotation-helpers"
 import type { StoryAgentStreamControls } from "./use-story-agent-stream"
 import {
@@ -242,26 +241,19 @@ export function useBacklogRotation(
 
     const executionId = crypto.randomUUID()
     const storyId = detailedStory.id
-    const telemetryCohorts = storyTelemetryCohorts(
-      detailedStory,
-      selection.currentModel.id,
-      selection.currentModel.provider.id
-    )
     const worktree = await workspace.createWorktree({
       branch: detailedStory.branch,
       // Direct runs in the project folder: no new worktree or branch.
       direct,
-      executionId,
       repositoryRoot: projects.activeProject.path,
       runtimeProfile: previewProfile,
       storyId,
       storyReference: userStoryDisplayId(detailedStory),
       targetBranch: detailedStory.targetBranch,
-      telemetryCohorts,
       title: detailedStory.title,
     })
     if (!direct)
-      prepareStartingStoryPreview(storyId, { executionId, telemetryCohorts, environment: initialization })
+      prepareStartingStoryPreview(storyId, { environment: initialization })
     const workingStory = await backlog.update(detailedStory, {
       agentLastEvent: "Worktree ready.",
       baseCommit:
@@ -391,7 +383,6 @@ export function useBacklogRotation(
       .sendDevelopment({
         executionId,
         sessionId: session.sessionId,
-        storyId,
         title: detailedStory.title,
         summary: detailedStory.summary,
         codeSelectionAttachments: detailedStory.codeSelectionAttachments ?? [],
@@ -549,13 +540,6 @@ export function useBacklogRotation(
           return
         previewRecoveryStoryIds.current.add(story.id)
         void ensureProjectPreviewUrl({
-          executionId: crypto.randomUUID(),
-          storyId: story.id,
-          telemetryCohorts: storyTelemetryCohorts(
-            story,
-            story.agentModelId,
-            story.agentProviderId
-          ),
           workspaceMode:
             story.workspaceMode ??
             (storyRunMode(story) === "vercel-compose"

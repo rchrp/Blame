@@ -1,6 +1,5 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { withoutTelemetryEnvironment } from "@blame/telemetry";
 
 import type {
   AssessProjectInitializationImpactInput,
@@ -280,7 +279,6 @@ function truncate(value: string, length: number) {
 async function git(cwd: string, args: string[]) {
   const { stdout } = await execFileAsync("git", args, {
     cwd,
-    env: withoutTelemetryEnvironment(process.env),
     maxBuffer: 20 * 1024 * 1024,
   });
   return stdout.trim();

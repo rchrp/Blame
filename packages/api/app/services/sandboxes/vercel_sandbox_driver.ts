@@ -6,12 +6,7 @@ import { vercelNetworkPolicy } from '#services/sandboxes/vercel_network_policy'
 import WorkspaceArtifactService from '#services/workspace_artifacts/workspace_artifact_service'
 import { Sandbox, Snapshot, type NetworkPolicy } from '@vercel/sandbox'
 import { currentWorkspaceSnapshotPolicy } from '@blame/preview-runtime/workspace-ignore'
-import {
-  ATTR_BLAME_OPERATION_STATUS,
-  ATTR_BLAME_RUNTIME_NAME,
-  ATTR_BLAME_RUNTIME_PHASE,
-  getBlameTelemetry,
-} from '@blame/telemetry'
+import { monitoring } from '#lib/monitoring/metrics'
 import { randomUUID } from 'node:crypto'
 import {
   componentPreviewSandbox,
@@ -95,7 +90,6 @@ export type ComponentPreviewProviderRoute = {
 const runnerBinary = '/opt/blame/bin/blame-sandbox-runner'
 const runnerControlBinary = '/opt/blame/bin/blame-runnerctl'
 const runnerRequestDirectory = '/run/blame/control/requests'
-const telemetry = getBlameTelemetry()
 
 export default class VercelSandboxDriver implements PreviewRuntimeDriver {
   readonly profile = 'vercel-compose' as const
@@ -970,12 +964,12 @@ async function measureRuntimePhase<T>(phase: string, operation: () => Promise<T>
     throw error
   } finally {
     const attributes = {
-      [ATTR_BLAME_RUNTIME_NAME]: 'vercel-compose',
-      [ATTR_BLAME_RUNTIME_PHASE]: phase,
-      [ATTR_BLAME_OPERATION_STATUS]: outcome,
+      'blame.runtime.name': 'vercel-compose',
+      'blame.runtime.phase': phase,
+      'blame.operation.status': outcome,
     }
-    telemetry.count('blame.runtime.phase.count', 1, attributes)
-    telemetry.record(
+    monitoring.count('blame.runtime.phase.count', 1, attributes)
+    monitoring.record(
       'blame.runtime.phase.duration',
       Math.max(0, performance.now() - startedAt) / 1_000,
       attributes

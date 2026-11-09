@@ -19,8 +19,6 @@ export type StartNewProjectGenerationInput = {
   projectName: string;
   sessionId?: string;
   backend?: AgentBackendConfig;
-  executionId?: string;
-  storyId?: string;
 };
 
 export type NewProjectGenerationResult = {

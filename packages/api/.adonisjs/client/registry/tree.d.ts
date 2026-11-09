@@ -19,18 +19,11 @@ export interface ApiDefinition {
   consumerContracts: {
     withdraw: typeof routes['consumer_contracts.withdraw']
   }
-  telemetryIngestion: {
-    store: typeof routes['telemetry_ingestion.store']
-    health: typeof routes['telemetry_ingestion.health']
-  }
   vercelConnections: {
     callback: typeof routes['vercel_connections.callback']
   }
   githubInstallations: {
     callback: typeof routes['github_installations.callback']
-  }
-  telemetrySessions: {
-    show: typeof routes['telemetry_sessions.show']
   }
   integrations: {
     vercel: {

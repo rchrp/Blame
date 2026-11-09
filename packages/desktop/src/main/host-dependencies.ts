@@ -1,6 +1,5 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { withoutTelemetryEnvironment } from "@blame/telemetry";
 import type { RuntimeProfileId } from "@blame/preview-runtime";
 import type { WorkspaceMode } from "./workspace-mode.ts";
 import { hostGitCommand } from "./host-git.ts";
@@ -429,7 +428,7 @@ async function runCommand(
   args: string[],
   env?: NodeJS.ProcessEnv,
 ) {
-  const environment = withoutTelemetryEnvironment(env ?? process.env);
+  const environment = env ?? process.env;
   // Check Git exactly as Blame runs it, not through the shell.
   const git = command === "git";
   const { stdout } = await execFileAsync(

@@ -66,7 +66,6 @@ export function useStoryPullRequest({
           () =>
             platform.agent!.openPullRequest({
               apiConnection: auth.apiConnection,
-              executionId: crypto.randomUUID(),
               providerId: alternativeSelection.currentModel!.provider.id,
               modelId: alternativeSelection.currentModel!.id,
               credentialLabel:
@@ -79,7 +78,6 @@ export function useStoryPullRequest({
               title: currentStory.title,
               summary: currentStory.summary,
               agentSummary: currentStory.agentFinalResponse ?? undefined,
-              storyId: currentStory.id,
               codePractices,
             })
         )

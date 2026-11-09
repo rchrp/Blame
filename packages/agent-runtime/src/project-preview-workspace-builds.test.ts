@@ -11,21 +11,21 @@ import { workspacePackageEvidence } from "./project-workspace-packages.js";
 import type { PreviewManifest } from "./types.js";
 
 // Shaped on Blame's own setup of 2026-10-30: the migration ran ace.js with
-// `exec`, which skips the API's predev, and @blame/telemetry had no dist.
+// `exec`, which skips the API's predev, and @blame/shared had no dist.
 
 const scan = {
   files: {},
   workspacePackages: [
     pkg(".", "blame", false, [], { build: "turbo run build" }),
-    pkg("packages/telemetry", "@blame/telemetry", true, [], { build: "tsc" }),
+    pkg("packages/shared", "@blame/shared", true, [], { build: "tsc" }),
     pkg("packages/contract", "@blame/contract", true, [], { build: "tsc" }),
     pkg(
       "packages/api",
       "@blame/api",
       false,
-      ["@blame/telemetry", "@blame/contract"],
+      ["@blame/shared", "@blame/contract"],
       {
-        predev: "pnpm --filter @blame/telemetry build",
+        predev: "pnpm --filter @blame/shared build",
         dev: "node ace.js serve --hmr",
       },
     ),
@@ -36,7 +36,7 @@ const scan = {
       "packages/desktop",
       "@blame/desktop",
       false,
-      ["@blame/telemetry", "@blame/contract"],
+      ["@blame/shared", "@blame/contract"],
       {
         predev: "pnpm run build:workspace-dependencies",
         "build:workspace-dependencies":
@@ -113,8 +113,8 @@ function missing(setup: Parameters<typeof manifest>[0]) {
 
 test("asks to build the workspace packages a task loads from dist", () => {
   assert.deepEqual(missing([install, migrate]), [
-    "migrate: @blame/contract, @blame/telemetry",
-    // The API's predev builds telemetry; the desktop's builds everything.
+    "migrate: @blame/contract, @blame/shared",
+    // The API's predev builds @blame/shared; the desktop's builds everything.
     "api: @blame/contract",
     "app: @blame/contract",
   ]);
@@ -124,7 +124,7 @@ test("asks to build the workspace packages a task loads from dist", () => {
       ({ severity, rule }) =>
         severity === "blocking" &&
         rule.includes(
-          "corepack pnpm --filter @blame/contract --filter @blame/telemetry run build",
+          "corepack pnpm --filter @blame/contract --filter @blame/shared run build",
         ),
     ),
   );
@@ -136,8 +136,8 @@ test("accepts the usual ways of building them first", () => {
     "corepack pnpm exec turbo run build --filter=@blame/api^...",
     "corepack pnpm -r build",
     "corepack pnpm build",
-    "cd packages/contract && corepack pnpm build && cd ../telemetry && corepack pnpm run build",
-    "corepack pnpm --filter ./packages/contract build && corepack pnpm -F @blame/telemetry build",
+    "cd packages/contract && corepack pnpm build && cd ../shared && corepack pnpm run build",
+    "corepack pnpm --filter ./packages/contract build && corepack pnpm -F @blame/shared build",
   ])
     assert.deepEqual(
       missing([
@@ -160,7 +160,7 @@ test("a build ordered after the task does not count for it", () => {
         dependsOn: ["migrate"],
       },
     ]),
-    ["migrate: @blame/contract, @blame/telemetry"],
+    ["migrate: @blame/contract, @blame/shared"],
   );
 });
 
@@ -175,8 +175,8 @@ test("the scan reads each package.json in full", async () => {
       );
     };
     await write(".", { name: "root", private: true });
-    await write("packages/telemetry", {
-      name: "@x/telemetry",
+    await write("packages/shared", {
+      name: "@x/shared",
       exports: { ".": { types: "./src/index.ts", default: "./dist/index.js" } },
       scripts: { build: "tsc", test: "node --test" },
     });
@@ -189,12 +189,12 @@ test("the scan reads each package.json in full", async () => {
         ]),
       ),
       scripts: { dev: "node ace serve", lint: "eslint ." },
-      dependencies: { "@x/telemetry": "workspace:*", luxon: "^3" },
+      dependencies: { "@x/shared": "workspace:*", luxon: "^3" },
     });
     await write("docs/example", { name: "@x/example" });
     const packages = await workspacePackageEvidence(root, [
       "package.json",
-      "packages/telemetry/package.json",
+      "packages/shared/package.json",
       "packages/api/package.json",
       "docs/example/package.json",
     ]);
@@ -217,8 +217,8 @@ test("the scan reads each package.json in full", async () => {
           scripts: {},
         },
         {
-          path: "packages/telemetry",
-          name: "@x/telemetry",
+          path: "packages/shared",
+          name: "@x/shared",
           buildOutput: true,
           workspaceDependencies: [],
           scripts: { build: "tsc" },
@@ -227,7 +227,7 @@ test("the scan reads each package.json in full", async () => {
           path: "packages/api",
           name: "@x/api",
           buildOutput: false,
-          workspaceDependencies: ["@x/telemetry"],
+          workspaceDependencies: ["@x/shared"],
           scripts: { dev: "node ace serve" },
         },
       ],

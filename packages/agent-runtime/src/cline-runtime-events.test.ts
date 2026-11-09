@@ -155,7 +155,6 @@ test("injects selected project memory into the first deferred prompt", async () 
     await runtime.sessions.sendDevelopment({
       executionId: "memory-execution",
       sessionId: session.sessionId,
-      storyId: "story",
       summary: "Improve carousel keyboard navigation",
       title: "Carousel navigation",
     });

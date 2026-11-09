@@ -14,8 +14,8 @@ const notice = (
 ): LegalBlock => ({ type: "notice", title, paragraphs, items });
 
 export const privacyEffectiveDate = "13 July 2026";
-export const privacyLastUpdated = "2 November 2026";
-export const privacyVersion = "1.3";
+export const privacyLastUpdated = "9 November 2026";
+export const privacyVersion = "1.4";
 
 export const privacyIntroduction = [
   'This Privacy Policy explains how Raphael Charpentier EI, a French individual entrepreneur applying the micro-enterprise regime and operating under the trade name MK Holding ("Blame", "we", "us", or "our"), collects, uses, stores, discloses, and otherwise processes personal data in connection with Blame Desktop, the blame.so website, cloud services, accounts, billing, updates, and support (together, the "Services").',
@@ -95,9 +95,9 @@ export const privacySections = [
         "AI connection data: provider and model selection, credential label, authentication method, custom base URL, OAuth provider account identifier and email, access and refresh credentials, API key, credential expiry, reasoning settings, and connection status.",
         "MCP and integration data: server name, enabled status, transport, executable command or credential-free URL synchronised to Blame cloud, plus local arguments, working directories, environment variables, HTTP headers, OAuth tokens, tool inputs, tool results, and connection events.",
         "Local application data: Account token and profile, up to ten recent project records, unsent prompts, selected code and complete draft attachments, model choices, theme, notification and sidebar preferences, window state, Cline session data, local runtime state, and functional interface storage.",
-        "Operational telemetry data: application, operating-system, architecture and runtime versions; opaque execution, story and worktree identifiers; operation names, phases, outcomes and durations; runtime state and bounded dependency status; provider, model and authentication-method categories; token usage and estimated cost; tool names and categories; bounded error types; dominant repository-language and repository-size buckets; task-complexity buckets derived from prompt length and attachment count; and technical request metadata needed to authenticate, rate-limit and deliver telemetry.",
-        "Diagnostics and support data: local application, renderer, agent, setup, command, model-request, service, container, performance and error logs; crash or stack information; file paths; configuration; support messages; screenshots; attachments; and any diagnostic bundle you choose to send.",
-        "Derived data: repository fingerprints, initials, session summaries, status and usage totals, estimated cost, aggregated product-reliability and feature-performance statistics, and inferences needed to detect fraud, abuse, or security incidents.",
+        "Service monitoring data: technical events, metrics and traces that Blame's cloud services record about their own operation, such as request method, route, status and duration, masked database operations, server runtime measurements, and bounded error types.",
+        "Diagnostics and support data: local application, renderer, agent, setup, command, model-request, service, container, performance and error logs; crash or stack information; file paths; configuration; support messages; screenshots; attachments; and any issue or diagnostic you choose to submit.",
+        "Derived data: repository fingerprints, initials, session summaries, status and usage totals, estimated cost, aggregated service-reliability statistics, and inferences needed to detect fraud, abuse, or security incidents.",
       ),
       notice("Sensitive and third-party personal data", [
         "Blame does not ask you to submit special-category data, government identifiers, health data, biometric data, precise geolocation, private communications, or other highly sensitive personal data in source code, prompts, attachments, or logs. The Services cannot reliably detect every such item. Do not provide it unless it is necessary, lawful, and appropriately protected, and do not place secrets in prompts or files sent to a third party.",
@@ -131,7 +131,7 @@ export const privacySections = [
         "Bill and maintain transaction records: to create checkout and portal sessions, reconcile subscription status, issue or support invoices and refunds, retain contract evidence, and comply with accounting, tax, consumer, and payment obligations. Basis: contract and legal obligation.",
         "Secure and operate the Services: to authenticate requests, prevent credential misuse, fraud and abuse, troubleshoot failures, protect repositories and infrastructure, maintain availability, investigate incidents, and enforce our terms. Basis: our legitimate interests in providing a secure and reliable service, compliance with legal obligations where applicable, and contract where necessary to deliver the service.",
         "Provide support and communicate about the Services: to answer questions, investigate diagnostics you submit, deliver essential Account, security, billing, legal, and service messages, and manage complaints. Basis: contract, steps requested by you, legal obligation, and our legitimate interests in supporting users and resolving disputes.",
-        "Measure and improve the product without training AI models on Customer Content: to fix defects, assess reliability, understand broad feature and runtime performance, control operational cost, and improve workflows using minimised operational telemetry and feedback. Basis: our legitimate interests in operating and improving a reliable service where the processing is necessary and proportionate. We do not rely on this interest to collect raw Customer Content, local logs, or reusable credentials through operational telemetry.",
+        "Measure and improve the product without training AI models on Customer Content: to fix defects, assess reliability, understand broad feature and runtime performance, control operational cost, and improve workflows using service monitoring data, the issues you choose to report, and feedback. Basis: our legitimate interests in operating and improving a reliable service where the processing is necessary and proportionate. We do not rely on this interest to collect Customer Content, local logs, or reusable credentials, and the Desktop App sends no usage telemetry.",
         "Comply with law and protect legal rights: to respond to valid legal process, sanctions or regulatory obligations, retain required records, establish or defend claims, and assist competent authorities. Basis: legal obligation and our legitimate interests in protecting legal rights.",
         "Send optional marketing or use content for future model training: only if such a feature is introduced and you have given the separate consent required for that specific purpose. Basis: consent. These activities are not currently performed by Blame.",
       ),
@@ -229,37 +229,37 @@ export const privacySections = [
     ],
   },
   {
-    id: "diagnostics-logs-and-telemetry",
-    title: "13. Diagnostics, logs, and telemetry",
+    id: "diagnostics-and-logs",
+    title: "13. Diagnostics and logs",
     blocks: [
       paragraph(
         "Blame automatically creates operational logs on your device. These can include application and renderer console output, stack traces, file paths, raw command output, setup and container logs, model-request or prompt material, tool events, performance information, errors, OAuth account metadata, and information contained in your project. These local log files rotate on the device and are not automatically uploaded to Blame. Cloud activity records that form part of content you ask Blame to store remain governed by the other sections of this Policy.",
       ),
-      notice("Automatic operational telemetry", [
-        "When you are signed in to the packaged Desktop App, Blame automatically sends minimised operational telemetry to Blame's self-hosted observability systems in OVHcloud's Gravelines region. The telemetry consists of structured events, metrics and traces used to measure availability, runtime and agent reliability, operation outcomes and durations, broad feature performance, token and estimated-cost trends, capacity, and recurring technical failures.",
-        "Blame's cloud services generate comparable server-side events, metrics and traces for API, network, runtime and database operations. Database statements are masked, request fields are filtered, and these signals are used for the same operational purposes.",
-        "Depending on the operation, the telemetry may contain app, operating-system, architecture and runtime versions; opaque execution, story and worktree identifiers; operation, phase, outcome and duration; runtime and bounded dependency states; provider, model and authentication-method categories; token usage and estimated cost; tool names and categories; bounded error types; dominant repository-language and repository-size buckets; task-complexity buckets derived from prompt length and attachment count; and technical request metadata. The gateway authenticates the short-lived telemetry session and may process the Account identifier and IP address for access control, abuse prevention and rate limiting.",
-        "Automatic telemetry is designed not to include prompts, source code, file content or paths, repository URLs, commands or arguments, stdout or stderr, tool arguments or results, reusable credentials, cookies or tokens, free-form error messages, or stack traces. Warning and error records sent through OpenTelemetry contain stable event names and bounded metadata rather than the underlying local log message. Redaction and allowlists are applied in the Desktop App and again by the collector. Opaque and pseudonymous identifiers are not described as anonymous.",
-        "Blame processes this telemetry on the basis of its legitimate interests in securing, operating, diagnosing and improving a reliable service. It is not used for advertising, cross-service tracking, individual employee-performance monitoring, automated decisions producing legal or similarly significant effects, or AI-model training. You may object to legitimate-interest processing as described in Section 20.",
-        "You can turn automatic telemetry off at any time in Settings > Desktop > Privacy, and on Windows when you install Blame. When it is off, the Desktop App does not start its telemetry exporter and sends no automatic telemetry.",
+      notice("No telemetry from the Desktop App", [
+        "The Desktop App and its agent processes do not send usage telemetry, metrics, traces, logs or crash reports to Blame, whether or not you are signed in.",
       ]),
+      paragraph(
+        "Blame's cloud services monitor their own operation. When you use them, they record technical events, metrics and traces about their requests, network calls, runtime and database operations in Blame's self-hosted observability systems in OVHcloud's Gravelines region. Database statements are masked and request fields are filtered before these signals are stored.",
+      ),
+      paragraph(
+        "Blame processes this service monitoring data on the basis of its legitimate interests in securing, operating, diagnosing and improving a reliable service. It is not used for advertising, cross-service tracking, individual employee-performance monitoring, automated decisions producing legal or similarly significant effects, or AI-model training. You may object to legitimate-interest processing as described in Section 20.",
+      ),
       notice(
         "What the Desktop App sends without you choosing the destination",
         [
-          "Besides the AI providers, integrations and repositories you choose, the Desktop App contacts the systems below. The Windows installer shows this summary before installing and lets you turn off the first two items; Settings > Desktop > Privacy does the same on every platform.",
+          "Besides the AI providers, integrations and repositories you choose, the Desktop App contacts the systems below. The Windows installer shows this summary before installing and lets you turn off the first item; Settings > Desktop > Privacy does the same on every platform.",
         ],
         [
           "Update check: each time it starts, the Desktop App asks download.blame.so (hosted by OVHcloud) whether a newer version exists. The request carries your IP address and the app's user agent, and no Account identifier. You can turn it off and still check for updates by hand. On the beta channel, which you choose in Settings, the app reads the list of releases from GitHub (api.github.com and github.com) instead.",
-          "Operational telemetry, described above, while you are signed in.",
           "Account services: while you are signed in, the Desktop App exchanges the data described in Sections 3 and 4 with api.blame.so. Signing out stops it.",
           "Web search: when an agent searches the web for a task, its search query is sent to api.blame.so, which forwards it through a self-hosted SearXNG instance to public search engines (Brave, Google, Bing, Qwant, DuckDuckGo and Yahoo). The engines receive the query from Blame's servers, not your IP address or Account. A query can repeat words from your prompt or code.",
           "Runtime downloads: on macOS and Windows, installing, updating or repairing Blame's runtime downloads Ubuntu images (cloud-images.ubuntu.com or download.blame.so), Docker (download.docker.com), Node.js (nodejs.org) and container images (ghcr.io). Device previews download Android tools from dl.google.com and iOS tools from github.com when you start them. These requests carry your IP address and no Account identifier.",
           "Speech-to-text: when you use the microphone button, the recording is sent to api.blame.so, which transcribes it through OpenRouter (openrouter.ai) and does not keep the audio.",
         ],
       ),
-      notice("Runtime diagnostic sent only after your explicit action", [
-        "If a runtime setup, repair or reset operation fails, the Desktop App may display the failure detail and offer a Send diagnostic action. No detailed runtime diagnostic is sent merely because the failure occurred. Selecting that action explicitly sends the displayed operation type, runtime type, bounded error category and failure detail to Blame for investigation. The submitted detail is limited in length but can reproduce paths, configuration, command output, project information or other personal or confidential information contained in the error.",
-        "Review the displayed detail before sending it. Do not send the diagnostic if it contains secrets, credentials, unrelated source code or unnecessary personal data. You are not required to submit a diagnostic to continue using the Services or obtain general support. Blame will not ask for a password, complete API key or reusable OAuth token in a support request.",
+      notice("Reporting a problem on GitHub", [
+        "If a runtime setup, repair or reset operation fails, the Desktop App can offer a Report on GitHub action. If the app's window stops unexpectedly or the app meets an unexpected error, it can offer the same action in a dialog you can close. The action opens a new-issue page on Blame's public GitHub repository in your browser, pre-filled with a title, the app version, operating system and architecture, and the error text shown in the app. Paths in your home folder appear as ~ and the text is limited in length. The report is designed to leave out prompts, code, environment values and tokens.",
+        "The Desktop App sends nothing itself. You review and edit the issue on GitHub, and it is published only if you submit it. A submitted issue is public and is processed by GitHub under its own terms and privacy statement. The error text can still contain paths, configuration, command output, project information or other personal or confidential information: remove anything you do not want to publish before submitting. You are not required to report a problem to continue using the Services or obtain general support. Blame will not ask for a password, complete API key or reusable OAuth token in a support request.",
       ]),
     ],
   },
@@ -337,7 +337,7 @@ export const privacySections = [
         "Account, project, story, chat, attachment, agent, preference, and provider-connection data: while the Account is active or until the relevant item is deleted. Following verified Account closure, access is disabled and deletion from active Blame cloud systems is completed within 30 days, except data retained for the reasons below. A protected receipt lets you check the recorded status after sign-out.",
         "API keys, OAuth credentials, and access tokens held by Blame: until deleted, revoked, replaced, or the Account is closed, then removed from active systems within 30 days. A token may be retained temporarily where needed to investigate misuse or an incident.",
         "Local repositories, worktrees, drafts, sessions, credentials, MCP settings, logs, runtime data, and application storage: until you delete them. Blame cannot remotely erase local copies and uninstalling may not remove them.",
-        "Operational telemetry events, metrics and traces held in Blame's self-hosted observability systems: up to 14 days from collection. Aggregated statistics may be retained longer only where they no longer identify or can reasonably be linked to an Account, device, project, story, worktree or person.",
+        "Service monitoring events, metrics and traces held in Blame's self-hosted observability systems: up to 14 days from collection. Aggregated statistics may be retained longer only where they no longer identify or can reasonably be linked to an Account, device or person.",
         "Active service, API, authentication, download, and security logs held by Blame or its infrastructure providers: up to 12 months, unless a shorter operational setting applies or a longer period is needed for a documented security incident, legal claim, or legal obligation.",
         "Support correspondence and diagnostics you submit: up to three years after the request is closed. Material needed to establish, exercise, or defend a legal claim may be isolated and retained for the applicable limitation period.",
         "Contracts, order and acceptance evidence, invoices, payment and accounting records: ten years from the relevant transaction, delivery, or end of the contract where French accounting or electronic-contract retention law requires it.",

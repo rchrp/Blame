@@ -1,6 +1,5 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { withoutTelemetryEnvironment } from "@blame/telemetry";
 import { hostGitCommand } from "./host-git.ts";
 
 // The name and email Git signs commits with. Without them commits fail
@@ -82,10 +81,8 @@ async function configValue(git: GitRunner, key: string, root?: string) {
 }
 
 async function runGit(args: string[], cwd?: string) {
-  const env = withoutTelemetryEnvironment(process.env);
-  const { stdout } = await execFileAsync(hostGitCommand({ env }), args, {
+  const { stdout } = await execFileAsync(hostGitCommand(), args, {
     ...(cwd ? { cwd } : {}),
-    env,
     timeout: commandTimeoutMs,
   });
   return stdout;

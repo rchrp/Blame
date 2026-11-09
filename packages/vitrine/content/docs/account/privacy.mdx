@@ -1,0 +1,34 @@
+---
+title: Privacy
+description: What Blame sends, when, and how to turn it off.
+---
+
+## No telemetry
+
+Blame sends no telemetry: no usage metrics, traces, logs, or crash reports, with or without an account. Agents call only the AI provider you pick.
+
+## Update check
+
+At launch, the app asks `download.blame.so` whether a newer version exists. To turn it off, open **Settings → Desktop → Privacy** and switch off **Check for updates at launch**.
+
+On Windows, the installer offers the same switch before installing.
+
+## With an account
+
+Signing in syncs your workspace with `api.blame.so` and adds web research and the Blame Cloud services (see [Using Blame without an account](/docs/account/without-an-account)). Blame's servers keep technical records of their own requests, such as the route, status, and duration, to stay reliable.
+
+## Reporting a problem
+
+When a runtime setup or repair fails, or the app crashes, Blame offers **Report on GitHub**. It opens a new issue on [GitHub](https://github.com/rchrp/Blame/issues) in your browser, filled in with the app version, your system and architecture, and the error shown. Paths in your home folder appear as `~`.
+
+You review and edit the issue, and it is posted only if you submit it. The app sends nothing.
+
+## Where your code goes
+
+- Agents, worktrees, and previews run on your computer (see [Isolation](/docs/concepts/isolation)).
+- Code is sent to the AI provider you choose when an agent needs it.
+- Cloud Previews, part of Blame Cloud, sync a workspace snapshot to a managed sandbox.
+
+## More
+
+- The [privacy policy](/privacy) lists everything the app sends and where.

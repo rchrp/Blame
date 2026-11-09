@@ -19,7 +19,6 @@ import {
 import type {
   HostDependencyIssue,
   HostDependencyReport,
-  RuntimeDiagnosticInput,
   RuntimeProgress,
 } from "@/context/platform"
 import { usePlatform } from "@/context/platform"
@@ -28,6 +27,7 @@ import {
   runtimeFailureDetail,
   runtimeFailureTitle,
   runtimeReportFailure,
+  type RuntimeOperation,
 } from "@/pages/backlog/runtime-failure"
 
 const runtimeFailureToastId = "runtime-action-failure"
@@ -210,7 +210,7 @@ function repairRuntimeIssue(issue: HostDependencyIssue) {
 }
 
 function createRuntimeAction(
-  operation: RuntimeDiagnosticInput["operation"],
+  operation: RuntimeOperation,
   run:
     | ((onProgress?: (progress: RuntimeProgress) => void) => Promise<unknown>)
     | undefined
@@ -311,46 +311,21 @@ function dependencyUrl(issue: HostDependencyIssue) {
 
 function showRuntimeFailureToast(
   error: unknown,
-  operation: RuntimeDiagnosticInput["operation"],
+  operation: RuntimeOperation,
   platform: ReturnType<typeof usePlatform>
 ) {
   const detail = runtimeFailureDetail(error)
-  const send = platform.telemetry?.sendRuntimeDiagnostic
-  toast.error(runtimeFailureTitle(operation), {
-    action: send
+  const title = runtimeFailureTitle(operation)
+  const reportIssue = platform.reportIssue
+  toast.error(title, {
+    action: reportIssue
       ? {
-          label: "Send diagnostic",
-          onClick: () =>
-            void submitRuntimeDiagnostic({ detail, operation }, platform),
+          label: "Report on GitHub",
+          onClick: () => void reportIssue({ error: detail, title }),
         }
       : undefined,
     description: detail,
     duration: Infinity,
     id: runtimeFailureToastId,
-  })
-}
-
-async function submitRuntimeDiagnostic(
-  input: RuntimeDiagnosticInput,
-  platform: ReturnType<typeof usePlatform>
-) {
-  try {
-    const sent = await platform.telemetry?.sendRuntimeDiagnostic?.(input)
-    if (!sent) {
-      showDiagnosticSendFailure()
-      return
-    }
-    toast.dismiss(runtimeFailureToastId)
-    toast.success("Runtime diagnostic sent", {
-      description: "The error details were sent to Blame for investigation.",
-    })
-  } catch {
-    showDiagnosticSendFailure()
-  }
-}
-
-function showDiagnosticSendFailure() {
-  toast.error("Unable to send runtime diagnostic", {
-    description: "Check your connection and sign-in status, then try again.",
   })
 }

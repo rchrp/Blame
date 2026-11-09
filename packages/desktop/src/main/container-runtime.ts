@@ -3,7 +3,6 @@ import {
   spawn,
   type ChildProcessWithoutNullStreams,
 } from "node:child_process";
-import { withoutTelemetryEnvironment } from "@blame/telemetry";
 import { posix } from "node:path";
 import { promisify } from "node:util";
 import { runtimeToolScript, setupPath } from "./host-tool-path.ts";
@@ -349,11 +348,11 @@ function runtimeEnvironment(
   env: NodeJS.ProcessEnv | undefined,
   platform: NodeJS.Platform,
 ) {
-  return withoutTelemetryEnvironment(
+  return (
     env ?? {
       ...process.env,
       PATH: setupPath({ platform }),
-    },
+    }
   );
 }
 

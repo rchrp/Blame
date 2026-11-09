@@ -33,7 +33,6 @@ mountApp(root, {
     securityAudits: window.blame.securityAudits,
     systemNotifications: window.blame.systemNotifications,
     appStatus: window.blame.appStatus,
-    telemetry: window.blame.telemetry,
     terminal: window.blame.terminal,
     updates: window.blame.updates,
     workspace: window.blame.workspace,
@@ -46,6 +45,7 @@ mountApp(root, {
     openDirectoryPickerDialog: (options) =>
       window.blame.openDirectoryPicker(options),
     openExternalLink: (url) => window.blame.openExternalLink(url),
+    reportIssue: (report) => window.blame.reportIssue(report),
     requestMicrophoneAccess: () => window.blame.requestMicrophoneAccess(),
     openMicrophoneSettings: () => window.blame.openMicrophoneSettings(),
     openPath: (path) => window.blame.openPath(path),

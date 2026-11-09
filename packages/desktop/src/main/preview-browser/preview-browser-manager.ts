@@ -19,7 +19,6 @@ import type {
   DesktopBridgeGrant,
   PreviewBridgeSource,
 } from "./preview-bridge-grant";
-import { attachPreviewRequestTelemetry } from "./preview-request-telemetry";
 import { keepsManagedPreviewBridge } from "./preview-navigation-policy";
 import {
   electronCdpDebuggee,
@@ -289,7 +288,6 @@ export async function createPreviewBrowser(
     return { action: "deny" };
   });
   attachPreviewBrowserEvents(record);
-  attachPreviewRequestTelemetry(record.view.webContents);
   owner.once("closed", ownerClosed);
   return { id };
 }

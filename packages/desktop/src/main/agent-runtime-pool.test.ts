@@ -141,19 +141,6 @@ test("reports worker failure and restarts lazily", async () => {
   });
 });
 
-test("propagates telemetry configuration to new workers", async () => {
-  const harness = poolHarness(1);
-  const session = { endpoint: "https://telemetry.test", token: "token" };
-  await harness.pool.configureTelemetry(session);
-
-  await harness.pool.startSession("sessions.start", {});
-
-  assert.deepEqual(harness.processes[0].calls[0], {
-    input: session,
-    method: "telemetry.configure",
-  });
-});
-
 test("cancels a security audit on every active worker", async () => {
   const harness = poolHarness(2);
   await harness.pool.startSession("sessions.start", {});

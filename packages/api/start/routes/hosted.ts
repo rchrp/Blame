@@ -6,8 +6,6 @@ const PreviewSurfacesController = () => import('#controllers/preview_surfaces_co
 const BillingController = () => import('#controllers/billing_controller')
 const StripeWebhooksController = () => import('#controllers/stripe_webhooks_controller')
 const AccountPrivacyController = () => import('#controllers/account_privacy_controller')
-const TelemetryIngestionController = () => import('#controllers/telemetry_ingestion_controller')
-const TelemetrySessionsController = () => import('#controllers/telemetry_sessions_controller')
 const ConsumerContractsController = () => import('#controllers/consumer_contracts_controller')
 const BetterAuthController = () => import('#controllers/better_auth_controller')
 const DesktopAuthController = () => import('#controllers/desktop_auth_controller')
@@ -24,22 +22,16 @@ const WorkspaceTransferController = () => import('#controllers/workspace_transfe
 
 /**
  * Routes of the services Blame hosts for accounts: sign-in, billing, account
- * privacy, telemetry, web search, Cloud Previews, voice transcription and
- * deployments. Only the hosted API registers them, under /api/v1.
+ * privacy, web search, Cloud Previews, voice transcription and deployments.
+ * Only the hosted API registers them, under /api/v1.
  */
 export function hostedRoutes() {
   router.post('web/search', [WebSearchController, 'search']).use(middleware.auth())
   router.post('webhooks/stripe', [StripeWebhooksController, 'handle'])
   router.post('account/closure-status', [AccountPrivacyController, 'status'])
   router.post('consumer-contract/withdrawal', [ConsumerContractsController, 'withdraw'])
-  router.post('telemetry/otlp/v1/:signal', [TelemetryIngestionController, 'store'])
-  router
-    .get('telemetry/upstream-health', [TelemetryIngestionController, 'health'])
-    .use(middleware.auth())
   router.get('integrations/vercel/callback', [VercelConnectionsController, 'callback'])
   router.get('integrations/github/callback', [GithubInstallationsController, 'callback'])
-
-  router.get('telemetry/session', [TelemetrySessionsController, 'show']).use(middleware.auth())
 
   router
     .group(() => {
@@ -182,7 +174,6 @@ const hostedPaths = [
   'account/export',
   'account/closure',
   'consumer-contract/*',
-  'telemetry/*',
   'integrations/vercel/*',
   'integrations/github/*',
   'preview-sessions',

@@ -170,7 +170,6 @@ export function useStoryComments({
         .sendDevelopment({
           executionId: session.executionId,
           sessionId,
-          storyId: session.storyId,
           title: story.title,
           summary: story.summary,
           feedback: agentFeedback,

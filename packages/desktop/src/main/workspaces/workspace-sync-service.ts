@@ -3,12 +3,6 @@ import { watch, type FSWatcher } from "node:fs";
 import { mkdir, readFile, realpath, rename, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import {
-  ATTR_BLAME_OPERATION_STATUS,
-  ATTR_BLAME_RUNTIME_NAME,
-  ATTR_BLAME_RUNTIME_PHASE,
-  getBlameTelemetry,
-} from "@blame/telemetry";
-import {
   CloudPreviewRequestError,
   isBaselineSnapshotUnavailable,
   type CloudPreviewClient,
@@ -95,9 +89,7 @@ export class WorkspaceSyncService {
   async prepareInitial(localPath: string) {
     const root = await realpath(localPath);
     await syncProjectCloudIgnore(root);
-    const prepared = await measureWorkspacePhase("workspace.capture", () =>
-      prepareWorkspaceSource(root),
-    );
+    const prepared = await prepareWorkspaceSource(root);
     // Fail before the API creates a sandbox that could never get the files.
     assertWorkspaceFitsTransfer(prepared.snapshot.files, maximumArtifactBytes);
     this.preparedSources.set(root, prepared);
@@ -117,10 +109,7 @@ export class WorkspaceSyncService {
     await syncProjectCloudIgnore(root);
     await beforeTransfer?.(root);
     const prepared =
-      this.preparedSources.get(root) ??
-      (await measureWorkspacePhase("workspace.capture", () =>
-        prepareWorkspaceSource(root),
-      ));
+      this.preparedSources.get(root) ?? (await prepareWorkspaceSource(root));
     const preparedDelta = this.preparedDeltas.get(root);
     this.preparedSources.delete(root);
     this.preparedDeltas.delete(root);
@@ -135,10 +124,6 @@ export class WorkspaceSyncService {
     let recoveredExpiredBaseline = false;
     while (true) {
       if (negotiation.unchanged) {
-        await measureWorkspacePhase(
-          "workspace.sync.skip",
-          async () => undefined,
-        );
         await this.remember(sessionId, root, prepared.snapshot);
         return {
           session: negotiation.session,
@@ -147,29 +132,19 @@ export class WorkspaceSyncService {
         };
       }
       const sourceMode = workspaceSourceMode(negotiation.baseline);
-      const artifact = await measureWorkspacePhase(
-        sourceMode === "delta"
-          ? "workspace.delta.build"
-          : "workspace.full.build",
-        () =>
-          sourceMode === "delta"
-            ? (preparedDelta ?? buildWorkspaceDeltaArtifact(root, prepared))
-            : buildWorkspaceArtifact(root, prepared),
-      );
+      const artifact = await (sourceMode === "delta"
+        ? (preparedDelta ?? buildWorkspaceDeltaArtifact(root, prepared))
+        : buildWorkspaceArtifact(root, prepared));
       const target = await client.prepareSourceUpload(sessionId, {
         ...artifact,
         mode: sourceMode,
       });
-      await measureWorkspacePhase("workspace.upload", () =>
-        upload(target, artifact.content),
-      );
+      await upload(target, artifact.content);
       try {
-        const session = await measureWorkspacePhase("workspace.apply", () =>
-          client.applySourceUpload(
-            sessionId,
-            target.artifactId,
-            negotiation.baseline?.id,
-          ),
+        const session = await client.applySourceUpload(
+          sessionId,
+          target.artifactId,
+          negotiation.baseline?.id,
         );
         await this.remember(sessionId, root, artifact.snapshot);
         return {
@@ -380,10 +355,7 @@ export class WorkspaceSyncService {
       }
       return this.restartWithCurrentWorkspace(client, sessionId, root, session);
     }
-    const artifact = await measureWorkspacePhase(
-      "workspace.live_delta.build",
-      () => buildWorkspaceIncrementalDeltaArtifact(root, base!),
-    );
+    const artifact = await buildWorkspaceIncrementalDeltaArtifact(root, base!);
     if (!artifact.changed.length && !artifact.deleted.length) {
       await this.remember(sessionId, root, artifact.snapshot);
       return { session, pending: false, synchronized: false };
@@ -397,13 +369,11 @@ export class WorkspaceSyncService {
       ...artifact,
       mode: "delta",
     });
-    await measureWorkspacePhase("workspace.live_delta.upload", () =>
-      upload(target, artifact.content),
-    );
+    await upload(target, artifact.content);
     try {
-      const updated = await measureWorkspacePhase(
-        "workspace.live_delta.apply",
-        () => client.applySourceUpload(sessionId, target.artifactId),
+      const updated = await client.applySourceUpload(
+        sessionId,
+        target.artifactId,
       );
       if (updated.workspaceHash !== artifact.workspaceHash) {
         throw new Error(
@@ -872,31 +842,4 @@ function validatedArtifactUrl(value: string) {
     throw new Error("Workspace artifact URL is invalid");
   }
   return url;
-}
-
-async function measureWorkspacePhase<T>(
-  phase: string,
-  operation: () => Promise<T>,
-) {
-  const startedAt = performance.now();
-  let outcome = "succeeded";
-  try {
-    return await operation();
-  } catch (error) {
-    outcome = "failed";
-    throw error;
-  } finally {
-    const attributes = {
-      [ATTR_BLAME_RUNTIME_NAME]: "vercel-compose",
-      [ATTR_BLAME_RUNTIME_PHASE]: phase,
-      [ATTR_BLAME_OPERATION_STATUS]: outcome,
-    };
-    const telemetry = getBlameTelemetry();
-    telemetry.count("blame.runtime.phase.count", 1, attributes);
-    telemetry.record(
-      "blame.runtime.phase.duration",
-      Math.max(0, performance.now() - startedAt) / 1_000,
-      attributes,
-    );
-  }
 }

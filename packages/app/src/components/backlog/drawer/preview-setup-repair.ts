@@ -151,7 +151,6 @@ async function repairStoryPreviewSetup(
     runConfigurations: setup.runConfigurations,
     preferences: { database: { mode: setup.databaseMode } },
     diagnostics: await previewDiagnostics(context, launchError),
-    storyId: context.storyId,
   })
   if (
     result.classification !== "repairable_initialization" ||

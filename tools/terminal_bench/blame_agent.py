@@ -150,7 +150,6 @@ class BlameAgent(BaseInstalledAgent):
         values["BLAME_HEADLESS_DEV"] = "true"
         values["BLAME_AGENT_PACKAGED"] = "false"
         values["NODE_ENV"] = "development"
-        values["OTEL_SDK_DISABLED"] = "true"
         return {**values, **self._optional_runtime_environment()}
 
     def _optional_runtime_environment(self) -> dict[str, str]:
