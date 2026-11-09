@@ -1387,6 +1387,11 @@ EOF
 }
 
 prefetch_preview_display() {
+  # Docker does not run while an image is baked: the first screen preview
+  # pulls the image through Compose instead.
+  if [ "${BLAME_RUNTIME_BAKE:-0}" = "1" ]; then
+    return
+  fi
   image="${BLAME_PREVIEW_DISPLAY_IMAGE:-$preview_display_image}"
   [ -n "$image" ] || return 0
   case "$image" in
