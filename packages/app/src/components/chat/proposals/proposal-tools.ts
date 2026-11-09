@@ -77,6 +77,9 @@ export function proposedStories(detail: ToolDetail): PlannedUserStory[] {
               (key): key is string => typeof key === "string"
             )
           : [],
+        attachments: Array.isArray(story.attachments)
+          ? Array.from(new Set(story.attachments.map(text).filter(Boolean)))
+          : [],
       },
     ]
   })

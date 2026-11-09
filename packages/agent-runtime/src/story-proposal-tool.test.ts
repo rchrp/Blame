@@ -82,6 +82,41 @@ test("the proposal tool refuses an empty proposal", async () => {
   );
 });
 
+test("a story names the attached files it needs, each once", () => {
+  const stories = proposedStories({
+    stories: [
+      {
+        key: "P1",
+        title: "Build the screen",
+        summary: "A",
+        attachments: [" mockup.png ", "spec.pdf", "mockup.png", "", 3, null],
+      },
+      { key: "P2", title: "Document it", summary: "B" },
+      { key: "P3", title: "Wire it", summary: "C", attachments: "spec.pdf" },
+    ],
+  });
+  assert.deepEqual(
+    stories.map((story) => story.attachments),
+    [["mockup.png", "spec.pdf"], [], []],
+  );
+});
+
+test("the proposal schema lets a story list attachments without requiring them", () => {
+  const schema = storyProposalTool().inputSchema as {
+    properties: {
+      stories: {
+        items: {
+          properties: Record<string, { type: string }>;
+          required: string[];
+        };
+      };
+    };
+  };
+  const { properties, required } = schema.properties.stories.items;
+  assert.equal(properties.attachments?.type, "array");
+  assert.equal(required.includes("attachments"), false);
+});
+
 test("chats and stories of a project can propose stories and keep every tool", () => {
   const options = conversationSessionOptions(session);
   assert.deepEqual(
@@ -101,6 +136,7 @@ test("plan mode reads code, history, the web and the computer but never edits", 
   const keeps = options.toolFilter!;
   for (const name of [
     "read_code",
+    "read_attachment",
     "search_code",
     "run_task",
     "search_web",

@@ -47,6 +47,7 @@ test("a compacted tool call is not read as the proposal", () => {
             summary: "B",
             priority: "urgent",
             dependsOn: ["P1", 3],
+            attachments: [" mockup.png ", "mockup.png", 3],
           },
         ],
       },
@@ -59,6 +60,7 @@ test("a compacted tool call is not read as the proposal", () => {
       summary: "Body",
       priority: "High",
       dependsOn: [],
+      attachments: [],
     },
     {
       key: "P3",
@@ -66,6 +68,7 @@ test("a compacted tool call is not read as the proposal", () => {
       summary: "B",
       priority: "Medium",
       dependsOn: ["P1"],
+      attachments: ["mockup.png"],
     },
   ])
 })
