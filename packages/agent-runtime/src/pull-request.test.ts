@@ -14,6 +14,10 @@ import {
   pullRequestBody,
   readPullRequestState,
 } from "./pull-request.js";
+import {
+  parsePullRequestText,
+  pullRequestTextPrompt,
+} from "./pull-request-text.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -89,6 +93,71 @@ test("caps the pull request body at GitHub's limit", () => {
   });
   assert.equal(body.length, 65_536);
   assert.match(body, /_\[truncated\]_$/);
+});
+
+test("asks for the pull request text with the story and its agent summary only", () => {
+  assert.equal(
+    pullRequestTextPrompt({
+      title: "Livrer le paiement",
+      summary: "Permettre de payer.\n",
+      agentSummary: "  Paiement livré.  ",
+    }),
+    [
+      "<pr_title>\nLivrer le paiement\n</pr_title>",
+      "<pr_description>\nPermettre de payer.\n</pr_description>",
+      "<pr_agent_summary>\nPaiement livré.\n</pr_agent_summary>",
+    ].join("\n\n"),
+  );
+  assert.doesNotMatch(
+    pullRequestTextPrompt({ title: "Fix", summary: "Typo" }),
+    /pr_agent_summary/,
+  );
+});
+
+test("reads the English pull request text the agent returns", () => {
+  const answer = [
+    "Here you go:",
+    "<pr_title>\n Ship  the\ncheckout </pr_title>",
+    "<pr_description>",
+    "Let people pay.",
+    "<details><summary>Notes</summary>Keep the style.</details>",
+    "</pr_description>",
+    "<pr_agent_summary>Checkout shipped.</pr_agent_summary>",
+  ].join("\n");
+  const summary =
+    "Let people pay.\n<details><summary>Notes</summary>Keep the style.</details>";
+  assert.deepEqual(parsePullRequestText(answer, true), {
+    title: "Ship the checkout",
+    summary,
+    agentSummary: "Checkout shipped.",
+  });
+  assert.deepEqual(parsePullRequestText(answer, false), {
+    title: "Ship the checkout",
+    summary,
+  });
+});
+
+test("rejects an answer that lacks a section the pull request needs", () => {
+  assert.equal(parsePullRequestText(undefined, false), undefined);
+  assert.equal(parsePullRequestText("Ship the checkout", false), undefined);
+  assert.equal(
+    parsePullRequestText("<pr_description>Pay.</pr_description>", false),
+    undefined,
+  );
+  assert.equal(
+    parsePullRequestText(
+      "<pr_title> </pr_title><pr_description>Pay.</pr_description>",
+      false,
+    ),
+    undefined,
+  );
+  assert.equal(
+    parsePullRequestText(
+      "<pr_title>Ship</pr_title><pr_description>Pay.</pr_description>",
+      true,
+    ),
+    undefined,
+  );
 });
 
 test("offers pull requests only for a GitHub origin and a signed-in gh", async () => {
@@ -215,7 +284,8 @@ test("never hands gh a pull request URL it could read as an option", async () =>
 test("commits, pushes the story branch and opens its pull request once", async () => {
   const fixture = await pullRequestFixture();
   const gh = fakeGh();
-  const runtime = pullRequestTestRuntime(gh.run);
+  const prompts: string[] = [];
+  const runtime = pullRequestTestRuntime(gh.run, { prompts });
   try {
     await writeFile(join(fixture.worktree, "remaining.txt"), "left over\n");
     const first = await runtime.openPullRequest(fixture.input);
@@ -249,6 +319,10 @@ test("commits, pushes the story branch and opens its pull request once", async (
     const body = option(create, "--body") ?? "";
     assert.match(body, /## Acceptance criteria\n\n- \[ \] Pay by card/);
     assert.match(body, /## Agent summary\n\nCheckout shipped\./);
+    // The story is written in French; the pull request is not.
+    assert.doesNotMatch(body, /Critères|Paiement|Permettre/);
+    assert.equal(prompts.length, 1);
+    assert.match(prompts[0] ?? "", /Livrer le paiement/);
 
     const second = await runtime.openPullRequest(fixture.input);
     assert.deepEqual(second, { ...first, created: false });
@@ -256,6 +330,32 @@ test("commits, pushes the story branch and opens its pull request once", async (
       gh.calls.filter((args) => args[1] === "create").length,
       1,
     );
+    // Pushing to an existing pull request needs no new text.
+    assert.equal(prompts.length, 1);
+  } finally {
+    await runtime.shutdown();
+    await rm(fixture.directory, { recursive: true, force: true });
+  }
+});
+
+test("opens the pull request on a retry when the agent did not write it in English", async () => {
+  const fixture = await pullRequestFixture();
+  const gh = fakeGh();
+  const runtime = pullRequestTestRuntime(gh.run, {
+    answers: ["Ship the checkout", englishPullRequestAnswer],
+  });
+  try {
+    await assert.rejects(
+      runtime.openPullRequest(fixture.input),
+      /did not write the pull request in English/,
+    );
+    assert.equal(gh.calls.filter((args) => args[1] === "create").length, 0);
+    // The work is already on GitHub; the retry only creates the pull request.
+    await git(fixture.remote, ["rev-parse", "story/pr"]);
+
+    const retry = await runtime.openPullRequest(fixture.input);
+    assert.equal(retry.created, true);
+    assert.equal(gh.calls.filter((args) => args[1] === "create").length, 1);
   } finally {
     await runtime.shutdown();
     await rm(fixture.directory, { recursive: true, force: true });
@@ -354,9 +454,10 @@ async function pullRequestFixture() {
       worktree,
       storyBranch: "story/pr",
       targetBranch: "develop",
-      title: "Ship the checkout",
-      summary: "Let people pay.\n\n## Acceptance criteria\n- [ ] Pay by card",
-      agentSummary: "Checkout shipped.",
+      title: "Livrer le paiement",
+      summary:
+        "Permettre de payer.\n\n## Critères d'acceptation\n- [ ] Payer par carte",
+      agentSummary: "Paiement livré.",
     },
   };
 }
@@ -381,14 +482,36 @@ function fakeGh() {
   };
 }
 
+// What the agent answers when asked to write the pull request in English.
+const englishPullRequestAnswer = [
+  "<pr_title>Ship the checkout</pr_title>",
+  "<pr_description>",
+  "Let people pay.",
+  "",
+  "## Acceptance criteria",
+  "- [ ] Pay by card",
+  "</pr_description>",
+  "<pr_agent_summary>Checkout shipped.</pr_agent_summary>",
+].join("\n");
+
 function pullRequestTestRuntime(
   gh: (cwd: string, args: string[]) => Promise<string>,
+  agent: { answers?: string[]; prompts?: string[] } = {},
 ) {
+  const answers = [...(agent.answers ?? [englishPullRequestAnswer])];
   const runtime = new BlameAgentRuntime(undefined, {
     createCore: async () =>
       ({
-        async start() {
-          return { sessionId: "pr-test", result: { status: "done" } };
+        // The commit message is left to its fallback; only the pull request
+        // text is answered.
+        async start(input: { prompt?: string }) {
+          if (!input.prompt?.includes("<pr_title>"))
+            return { sessionId: "pr-test", result: { status: "done" } };
+          agent.prompts?.push(input.prompt);
+          return {
+            sessionId: "pr-test",
+            result: { status: "done", text: answers.shift() },
+          };
         },
         async dispose() {},
       }) as never,

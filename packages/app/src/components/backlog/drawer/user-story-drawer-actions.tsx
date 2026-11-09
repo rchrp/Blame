@@ -31,6 +31,7 @@ import type {
   UserStoryDrawerMode
 } from "@/components/backlog/shared/backlog-types"
 import { ApproveMergeMenu } from "@/components/backlog/drawer/approve-merge-menu"
+import { PullRequestButton } from "@/components/backlog/drawer/pull-request-link"
 import { drawerActions } from "@/components/backlog/drawer/user-story-drawer-helpers"
 import { useStoryTransitionKind } from "@/pages/backlog/story-transitions"
 import { Button } from "@/components/ui/button"
@@ -150,7 +151,13 @@ export function DrawerActions({
         : undefined)
   const requestChangesPrimary =
     mode !== "create" && status === "in-review" && hasCommentDraft
-  const actions = drawerActions(mode, status).map((action) => (
+  // With its pull request open, the story waits for GitHub: no Reject or
+  // Approve & Merge, only the way to the pull request.
+  const pullRequestUrl =
+    mode !== "create" && status === "in-review"
+      ? story?.pullRequestUrl
+      : undefined
+  const reviewActions = drawerActions(mode, status).map((action) => (
     <React.Fragment key={action}>
       {action === "Stop Agent" && story ? (
         <StopAgentDialog
@@ -191,7 +198,6 @@ export function DrawerActions({
         // Inside the hover menu of review actions, the plain button stays.
         <ApproveMergeMenu
           activeAction={activeAction}
-          hasPullRequest={Boolean(story.pullRequestUrl)}
           onAction={onAction}
           onCheckPullRequest={onCheckPullRequest}
           targetBranch={story.targetBranch}
@@ -210,6 +216,11 @@ export function DrawerActions({
       )}
     </React.Fragment>
   ))
+  const actions = pullRequestUrl ? (
+    <PullRequestButton url={pullRequestUrl} />
+  ) : (
+    reviewActions
+  )
 
   return (
     <div className="pointer-events-auto flex flex-wrap items-center justify-end gap-2">
