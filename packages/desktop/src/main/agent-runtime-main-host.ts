@@ -27,8 +27,6 @@ import { runtimeAgentClient, runtimeAgentSupported } from "./runtime-agent.ts";
 import { lightWorkspaceExecutionTarget } from "./light-workspace-routing.ts";
 import { sessionCommandCredentials, withSessionCommandCredentials } from "./github-access/agent-github-access.ts";
 import { githubMcpService } from "./github-access/github-mcp-service.ts";
-import { sessionCommandCredentials, withSessionCommandCredentials } from "./github-access/agent-github-access.ts";
-import { githubMcpService } from "./github-access/github-mcp-service.ts";
 import {
   ensureRuntimeGitUserIdentity,
   getRuntimeGitIdentity,

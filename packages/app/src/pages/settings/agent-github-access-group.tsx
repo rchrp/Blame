@@ -1,4 +1,5 @@
 import * as React from "react"
+import { toast } from "sonner"
 
 import {
   Select,
@@ -7,9 +8,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { useCloudAuth } from "@/context/cloud-auth"
 import { usePlatform } from "@/context/platform"
 import type { AgentGithubAccessLevel } from "@/context/platform-agent-github-access"
 import { useProjects } from "@/context/projects"
+import { createCloudApi } from "@/lib/cloud-api"
 
 import { SettingsGroup, SettingsRow } from "./settings-layout"
 
@@ -24,14 +27,25 @@ function isLevel(value: string): value is AgentGithubAccessLevel {
   return value === "off" || value === "read" || value === "write"
 }
 
-// Lets the open project's agents use GitHub in Local Container stories with
-// the person's own GitHub CLI sign-in. Off by default.
+// Lets the open project's agents use GitHub. In Local Container stories they
+// get the person's own GitHub CLI sign-in, at the chosen level; in an account
+// project's cloud sessions, a Blame GitHub App token limited to the linked
+// repository, which the API only issues while its own agent-access option is
+// on too. Off by default.
 export function AgentGithubAccessGroup() {
   const settings = usePlatform().agentGithubAccess
+  const auth = useCloudAuth()
   const project = useProjects().activeProject
   const projectId = project?.id
+  const accountProject =
+    auth.status === "authenticated" && auth.mode === "account"
+  const api = React.useMemo(
+    () => createCloudApi(auth.apiConnection),
+    [auth.apiConnection]
+  )
   const [level, setLevel] = React.useState<AgentGithubAccessLevel>("off")
   const [loadedFor, setLoadedFor] = React.useState<string>()
+  const [saving, setSaving] = React.useState(false)
   React.useEffect(() => {
     if (!settings || !projectId) return
     let active = true
@@ -50,29 +64,55 @@ export function AgentGithubAccessGroup() {
   const ready = Boolean(settings && projectId && loadedFor === projectId)
   const shown = ready ? level : "off"
 
+  const update = async (next: AgentGithubAccessLevel) => {
+    if (!settings || !projectId) return
+    const previous = level
+    setLevel(next)
+    setSaving(true)
+    try {
+      await settings.setLevel({ level: next, projectId })
+    } catch {
+      setLevel(previous)
+      setSaving(false)
+      return
+    }
+    try {
+      if (accountProject)
+        await api.setGithubAgentAccess(projectId, next !== "off")
+    } catch (cause) {
+      // Keeps both settings equal: cloud sessions need the two of them.
+      await settings
+        .setLevel({ level: previous, projectId })
+        .catch(() => undefined)
+      setLevel(previous)
+      toast.error(
+        cause instanceof Error && cause.message
+          ? cause.message
+          : "GitHub access could not be saved to your account."
+      )
+    } finally {
+      setSaving(false)
+    }
+  }
+
   return (
     <SettingsGroup
       title="Agent GitHub access"
-      description="Credentials the agent can use in this project's Local Container stories."
+      description="Credentials the agent can use in this project's Local Container stories and cloud sessions."
     >
       <SettingsRow
         title="GitHub access for the agent"
         description={
           project
-            ? `When a session starts in ${project.name}, Blame runs gh auth token on this computer and keeps the token in memory only, never in the worktree. ${levelDescriptions[shown]} Takes effect in new sessions.`
+            ? agentGithubAccessDescription(project.name, shown, accountProject)
             : "Open a project to change this setting."
         }
       >
         <Select
           value={shown}
-          disabled={!ready}
+          disabled={!ready || saving}
           onValueChange={(value) => {
-            if (!settings || !projectId || !isLevel(value)) return
-            const previous = level
-            setLevel(value)
-            void settings
-              .setLevel({ level: value, projectId })
-              .catch(() => setLevel(previous))
+            if (isLevel(value)) void update(value)
           }}
         >
           <SelectTrigger
@@ -90,4 +130,16 @@ export function AgentGithubAccessGroup() {
       </SettingsRow>
     </SettingsGroup>
   )
+}
+
+function agentGithubAccessDescription(
+  projectName: string,
+  level: AgentGithubAccessLevel,
+  accountProject: boolean
+) {
+  const local = `In Local Container sessions in ${projectName}, Blame runs gh auth token on this computer and keeps the token in memory only, never in the worktree. ${levelDescriptions[level]}`
+  const cloud = accountProject
+    ? " In cloud sessions, access gives the agent's commands a one-hour Blame GitHub App token limited to the repository linked above, never your personal gh token."
+    : ""
+  return `${local}${cloud} Takes effect in new sessions.`
 }

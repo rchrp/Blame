@@ -6,31 +6,54 @@ import type { LightWorkspaceExecutionRequest } from "@blame/agent-runtime";
 import { setupPath } from "../host-tool-path.ts";
 import { allowedCloudApiBaseUrl } from "../preview-runtime/cloud-preview-client.ts";
 
-// GitHub access is project-scoped. Local read mode sends the host token only to
-// the in-memory read-only GitHub MCP server; write mode preserves US-073 GH_TOKEN.
-// Cloud sessions continue to use repository-scoped GitHub App tokens.
+// GitHub access for the agent, per project and off by default. When a Local
+// Container session starts in a project that turned it on, the desktop reads
+// `gh auth token` on this computer and keeps the token in memory for that
+// session. It is never written to the worktree, Git configuration or an env
+// file, and where it goes depends on the project's level:
+// - read: only to GitHub's remote MCP server, in read-only mode, from this
+//   process (github-mcp-service). The agent's commands get no GitHub token,
+//   which is what makes it read-only: the MCP mode only filters tools.
+// - write: each of the session's managed runtime requests carries it, and the
+//   runtime gives it to the agent's commands as GH_TOKEN.
+//
+// A cloud session never gets that personal token. Its commands run on this
+// computer, in the agent process (only the preview runs in the sandbox), so
+// the token arrives here: a one-hour Blame GitHub App token limited to the
+// project's repository, asked of the Blame API and renewed before it expires,
+// kept in memory and given to each command as GH_TOKEN.
 
+export type AgentGithubAccessLevel = "off" | "read" | "write";
+type GrantedLevel = Exclude<AgentGithubAccessLevel, "off">;
+
+// US-073 stored the projects with access as a list: that access is "write".
 type SettingsFile = { projects?: string[] | Record<string, unknown> };
 
 export class AgentGithubAccessSettings {
   private readonly file: string;
-  private cache?: Promise<Map<string, "read" | "write">>;
+  private cache?: Promise<Map<string, GrantedLevel>>;
 
   constructor(file: string) {
     this.file = file;
   }
 
-  async level(projectId: string | undefined): Promise<"off" | "read" | "write"> {
+  async level(projectId: string | undefined): Promise<AgentGithubAccessLevel> {
     if (!validProjectId(projectId)) return "off";
     return (await this.projects()).get(projectId) ?? "off";
   }
 
+  // The level comes from the renderer: anything else is rejected.
   async setLevel(projectId: string, level: unknown) {
     if (!validProjectId(projectId)) throw new Error("Invalid project id.");
-    if (level !== "off" && level !== "read" && level !== "write") throw new Error("Invalid GitHub access level.");
+    if (!validLevel(level)) throw new Error("Invalid GitHub access level.");
     const projects = new Map(await this.projects());
-    if (level === "off") projects.delete(projectId); else projects.set(projectId, level);
-    const content: SettingsFile = { projects: Object.fromEntries(projects) };
+    if (level !== "off") projects.set(projectId, level);
+    else projects.delete(projectId);
+    const content: SettingsFile = {
+      projects: Object.fromEntries(
+        [...projects].sort(([left], [right]) => left.localeCompare(right)),
+      ),
+    };
     await mkdir(dirname(this.file), { recursive: true });
     const temporary = `${this.file}.${process.pid}.tmp`;
     await writeFile(temporary, JSON.stringify(content, null, 2));
@@ -41,15 +64,25 @@ export class AgentGithubAccessSettings {
 
   private projects() {
     this.cache ??= readFile(this.file, "utf8")
-      .then((value) => {
-        const parsed = JSON.parse(value) as SettingsFile;
-        const raw = parsed.projects;
-        const entries = Array.isArray(raw) ? raw.map((id) => [id, "write"]) : Object.entries(raw ?? {});
-        return new Map(entries.filter(([id, level]) => validProjectId(id) && (level === "read" || level === "write")) as [string, "read" | "write"][]);
-      })
-      .catch(() => new Map<string, "read" | "write">());
+      .then((value) => parseSettings(JSON.parse(value) as SettingsFile))
+      .catch(() => new Map<string, GrantedLevel>());
     return this.cache;
   }
+}
+
+function parseSettings(settings: SettingsFile) {
+  const projects = settings?.projects;
+  const entries: [unknown, unknown][] = Array.isArray(projects)
+    ? projects.map((projectId) => [projectId, "write"])
+    : projects && typeof projects === "object"
+      ? Object.entries(projects)
+      : [];
+  return new Map(
+    entries.filter(
+      (entry): entry is [string, GrantedLevel] =>
+        validProjectId(entry[0]) && (entry[1] === "read" || entry[1] === "write"),
+    ),
+  );
 }
 
 export type HostGithubToken = { token: string } | { unavailable: string };
@@ -91,8 +124,9 @@ function errorCode(error: unknown) {
     : undefined;
 }
 
-// Session id -> the token granted when the session started.
-const sessionTokens = new Map<string, string>();
+// Session id -> the host token granted when a Local Container session
+// started, and its level.
+const sessionGrants = new Map<string, { level: GrantedLevel; token: string }>();
 // Session id -> the cloud session's renewed GitHub App token.
 const cloudSessionTokens = new Map<string, CloudGithubTokenSource>();
 
@@ -105,7 +139,7 @@ export type CloudGithubTokenRequest = {
 };
 
 export type SessionGithubAccessDependencies = {
-  level(projectId: string): Promise<"off" | "read" | "write">;
+  level(projectId: string): Promise<AgentGithubAccessLevel>;
   readToken(): Promise<HostGithubToken>;
   /** A token limited to the project's repository, from the Blame API. */
   cloudToken(request: CloudGithubTokenRequest): Promise<CloudGithubTokenResult>;
@@ -113,9 +147,10 @@ export type SessionGithubAccessDependencies = {
 
 /**
  * Decides a session's GitHub access as it starts (or resumes), in a project
- * that turned it on: a Local Container session gets the host's token, a
- * cloud session a GitHub App token for the project's repository. The notice
- * explains why there is none; the session starts anyway.
+ * that turned it on: a Local Container session gets the host's token, at the
+ * project's level, a cloud session a GitHub App token for the project's
+ * repository. The notice explains why there is none; the session starts
+ * anyway.
  */
 export async function grantSessionGithubAccess(
   session: Record<string, unknown>,
@@ -123,20 +158,21 @@ export async function grantSessionGithubAccess(
 ): Promise<{ notice?: string }> {
   const sessionId = session.sessionId;
   if (typeof sessionId !== "string" || !sessionId) return {};
-  sessionTokens.delete(sessionId);
+  sessionGrants.delete(sessionId);
   cloudSessionTokens.delete(sessionId);
   const projectId = session.projectId;
   const managed = managedRuntimeSession(session);
   const cloud = session.workspaceMode === "cloud-mirror";
   if ((!managed && !cloud) || typeof projectId !== "string") return {};
-  const level = await dependencies.level(projectId).catch(() => "off" as const);
-  if (level === "off") return {};
+  const level = await dependencies
+    .level(projectId)
+    .catch((): AgentGithubAccessLevel => "off");
+  if (level !== "read" && level !== "write") return {};
   if (cloud)
     return grantCloudSessionToken(sessionId, projectId, session, dependencies);
-  if (level === "read") { const result = await dependencies.readToken(); if ("unavailable" in result) return { notice: result.unavailable }; sessionGrants.set(sessionId, { level, token: result.token }); return {}; }
   const result = await dependencies.readToken();
   if ("unavailable" in result) return { notice: result.unavailable };
-  sessionTokens.set(sessionId, result.token);
+  sessionGrants.set(sessionId, { level, token: result.token });
   return {};
 }
 
@@ -298,26 +334,59 @@ function managedRuntimeSession(session: Record<string, unknown>) {
 
 /**
  * The request with the credentials of its session, replacing any the agent
- * process sent. Without a granted token they are empty, which still keeps
- * every inherited GitHub token away from the agent's commands.
+ * process sent. Without a token granted for writing they are empty, which
+ * still keeps every inherited GitHub token away from the agent's commands.
  */
 export function withSessionCommandCredentials(
   request: LightWorkspaceExecutionRequest,
 ): LightWorkspaceExecutionRequest {
   const sessionId =
     request.taskContract?.session_id ?? request.toolContext?.sessionId;
-  const githubToken = sessionId ? sessionTokens.get(sessionId) : undefined;
-  return { ...request, commandCredentials: githubToken ? { githubToken } : {} };
+  const grant = sessionId ? sessionGrants.get(sessionId) : undefined;
+  return {
+    ...request,
+    commandCredentials:
+      grant?.level === "write" ? { githubToken: grant.token } : {},
+  };
+}
+
+export const githubMcpUrl = "https://api.githubcopilot.com/mcp/";
+export const githubMcpToolsets = "context,repos,issues,pull_requests,actions";
+
+export type GithubMcpServer = { headers: Record<string, string>; url: string };
+
+/**
+ * GitHub's remote MCP server for a session with read-only access, with the
+ * headers that carry its token; none for any other session.
+ */
+export function sessionGithubMcpServer(
+  sessionId: string | undefined,
+): GithubMcpServer | undefined {
+  const grant = sessionId ? sessionGrants.get(sessionId) : undefined;
+  if (grant?.level !== "read") return undefined;
+  return {
+    url: githubMcpUrl,
+    headers: {
+      Authorization: `Bearer ${grant.token}`,
+      "X-MCP-Readonly": "true",
+      "X-MCP-Toolsets": githubMcpToolsets,
+    },
+  };
 }
 
 /** Every token granted to a session, for log redaction. */
 export function grantedGithubTokens() {
+  const localTokens = [...sessionGrants.values()].map(({ token }) => token);
   const cloudTokens = [...cloudSessionTokens.values()]
     .map((source) => source.issuedToken())
     .filter((token): token is string => Boolean(token));
-  return [...new Set([...sessionTokens.values(), ...cloudTokens, ...[...sessionGrants.values()].map(({token}) => token)])];
+  return [...new Set([...localTokens, ...cloudTokens])];
 }
 
 function validProjectId(value: unknown): value is string {
   return typeof value === "string" && /^[A-Za-z0-9_.:-]{1,128}$/u.test(value);
+}
+
+function validLevel(value: unknown): value is AgentGithubAccessLevel {
+  return value === "off" || value === "read" || value === "write";
 }
