@@ -52,7 +52,6 @@ export function ApproveMergeMenu({
   activeAction,
   compact,
   disabled,
-  hasPullRequest,
   onAction,
   onCheckPullRequest,
   targetBranch,
@@ -62,7 +61,6 @@ export function ApproveMergeMenu({
   compact?: boolean
   // Another action on the story is running, without a spinner here.
   disabled?: boolean
-  hasPullRequest: boolean
   onAction: (action: ApproveMergeAction) => void
   // Absent where gh cannot run (the web app): Open PR is not offered.
   onCheckPullRequest?: () => Promise<PullRequestAvailability>
@@ -119,7 +117,6 @@ export function ApproveMergeMenu({
           {onCheckPullRequest ? (
             <PullRequestItem
               check={pullRequest}
-              hasPullRequest={hasPullRequest}
               onSelect={() => onAction("Open PR")}
             />
           ) : null}
@@ -137,11 +134,9 @@ export function ApproveMergeMenu({
 
 function PullRequestItem({
   check,
-  hasPullRequest,
   onSelect,
 }: {
   check?: PullRequestCheck
-  hasPullRequest: boolean
   onSelect: () => void
 }) {
   if (!check || check.status === "checking")
@@ -159,11 +154,7 @@ function PullRequestItem({
   if (check.status === "available")
     return (
       <MenuAction
-        description={
-          hasPullRequest
-            ? `Push the latest work to its pull request on ${check.repository}.`
-            : `Commit, push the branch and open a pull request on ${check.repository}.`
-        }
+        description={`Commit, push the branch and open a pull request on ${check.repository}.`}
         icon={GitPullRequestIcon}
         label="Open PR"
         onSelect={onSelect}

@@ -12,6 +12,8 @@ import {
 } from "@/context/cloud-auth"
 import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
+import { readStoryPreviewAutoStart } from "@/lib/story-preview-auto-start"
+import { storyPreviewStartsAutomatically } from "@/lib/story-preview-auto-start-decision"
 import { syncPreviewEnvironment } from "./preview-environment-sync"
 
 // A story's worktree gets its preview setup from the project's preview
@@ -160,7 +162,8 @@ function checkedEnvironment(preparation: Preparation, story: UserStory) {
   })
 }
 
-// A Local Container story started on a run configuration runs it at once.
+// A Local Container story started on a run configuration runs it at once,
+// unless the person turned automatic story previews off in Settings.
 async function startRequestedPreview(
   preparation: Preparation,
   story: PreviewStory
@@ -168,6 +171,8 @@ async function startRequestedPreview(
   const control = preparation.platform.workspace?.controlProjectPreview
   if (story.workspaceMode !== "local-container" || !control) return
   if (typeof story.runConfigurationId !== "string") return
+  if (!storyPreviewStartsAutomatically(story, readStoryPreviewAutoStart()))
+    return
   const runtime = await control({
     action: "start",
     configurationId: story.runConfigurationId,

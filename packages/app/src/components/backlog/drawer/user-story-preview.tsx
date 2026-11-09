@@ -95,8 +95,14 @@ import {
 } from "@/components/ui/tooltip"
 import { usePlatform } from "@/context/platform"
 import { pruneRuntimeSessionStates } from "@/lib/runtime-preference"
+import { useStoryPreviewAutoStart } from "@/lib/story-preview-auto-start"
+import {
+  autoStartTipVisible,
+  storyPreviewStartsAutomatically,
+} from "@/lib/story-preview-auto-start-decision"
 import { useLatestCallback } from "@/lib/use-latest-callback"
 import { cn } from "@/lib/utils"
+import { openSettings } from "@/pages/settings/settings-section"
 import {
   destroyReleasedNativePreviewSessions,
   nativePreviewRetainedSessionLimit,
@@ -247,17 +253,25 @@ export const UserStoryPreviewWarmup = React.memo(
   }) {
     const platform = usePlatform()
     const previewBrowser = platform.previewBrowser
+    // Off, no story preview starts by itself; a running one is left alone.
+    const autoStartEnabled = useStoryPreviewAutoStart()
     const stories = React.useMemo(
       () => nativePreviewWarmupStories(userStories),
       [userStories]
     )
     const cloudStories = React.useMemo(
-      () => cloudPreviewWarmupStories(userStories),
-      [userStories]
+      () =>
+        cloudPreviewWarmupStories(userStories).filter((story) =>
+          storyPreviewStartsAutomatically(story, autoStartEnabled)
+        ),
+      [autoStartEnabled, userStories]
     )
     const localStories = React.useMemo(
-      () => localPreviewAutoStartStories(userStories),
-      [userStories]
+      () =>
+        localPreviewAutoStartStories(userStories).filter((story) =>
+          storyPreviewStartsAutomatically(story, autoStartEnabled)
+        ),
+      [autoStartEnabled, userStories]
     )
     const previousStatusesRef = React.useRef(
       new Map<string, UserStory["status"]>()
@@ -330,6 +344,10 @@ function CloudPreviewAutoStart({ story }: { story: UserStory }) {
   return null
 }
 
+function openGeneralSettings() {
+  openSettings("general")
+}
+
 export const UserStoryPreview = React.memo(function UserStoryPreview({
   covered = false,
   onCapture,
@@ -389,6 +407,7 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
     : previewSessionKey
   const previewIdentity = previewScope ?? previewLabel
   const projectRunMode = Boolean(projectRun)
+  const autoStartEnabled = useStoryPreviewAutoStart()
   const setupLogWorktree = projectRunMode
     ? undefined
     : (userStory?.worktree ?? worktree)
@@ -1011,7 +1030,18 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
                       )}
                     >
                       {previewNotStarted ? (
-                        <PreviewNotStarted key="not-started" />
+                        <PreviewNotStarted
+                          key="not-started"
+                          onOpenAutoStartSettings={
+                            autoStartTipVisible({
+                              autoStartEnabled,
+                              projectRunMode,
+                              workspaceMode: userStory?.workspaceMode,
+                            })
+                              ? openGeneralSettings
+                              : undefined
+                          }
+                        />
                       ) : projectRunMode ? (
                         <StartedAppWaiting key="app" source={source ?? ""} />
                       ) : (

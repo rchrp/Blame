@@ -147,6 +147,12 @@ import {
   requirePullRequestRepository,
   runHostGh,
 } from "./pull-request.js";
+import {
+  parsePullRequestText,
+  pullRequestTextConfig,
+  pullRequestTextPrompt,
+  type PullRequestText,
+} from "./pull-request-text.js";
 import { runRepositoryMerge } from "./repository-merge-queue.js";
 import {
   buildDevelopmentSystemPrompt,
@@ -2557,16 +2563,10 @@ export class BlameAgentRuntime {
     );
     const url =
       existingUrl ??
-      (await createPullRequest(
-        input.repositoryRoot,
-        {
-          body: pullRequestBody(input),
-          repository,
-          storyBranch: input.storyBranch,
-          targetBranch,
-          title: input.title,
-        },
-        this.gh,
+      (await this.createEnglishPullRequest(
+        input,
+        { repository, targetBranch },
+        logFile,
       ));
     await appendLog(logFile, "pull request ready", {
       created: !existingUrl,
@@ -2575,6 +2575,63 @@ export class BlameAgentRuntime {
       url,
     });
     return { url, created: !existingUrl, targetBranch };
+  }
+
+  private async createEnglishPullRequest(
+    input: OpenPullRequestInput,
+    destination: { repository: string; targetBranch: string },
+    logFile: string,
+  ) {
+    const text = await this.englishPullRequestText(input, logFile);
+    return createPullRequest(
+      input.repositoryRoot,
+      {
+        body: pullRequestBody(text),
+        repository: destination.repository,
+        storyBranch: input.storyBranch,
+        targetBranch: destination.targetBranch,
+        title: text.title,
+      },
+      this.gh,
+    );
+  }
+
+  // Failing is retryable: the work is already pushed, so opening the pull
+  // request again only repeats this step.
+  private async englishPullRequestText(
+    input: OpenPullRequestInput,
+    logFile: string,
+  ): Promise<PullRequestText> {
+    const startedAt = Date.now();
+    const credential = await this.runtimeCredential(input);
+    const cline = await this.core(input.backend);
+    const session = await runOneShotAgent(
+      cline,
+      {
+        prompt: pullRequestTextPrompt(input),
+        config: pullRequestTextConfig(input, credential),
+        interactive: false,
+        source: "blame-pull-request-text",
+        toolPolicies: initializationToolPolicies(),
+      },
+      input.backend,
+    );
+    const result = asRecord(session.result);
+    const text = parsePullRequestText(
+      result.text,
+      Boolean(input.agentSummary?.trim()),
+    );
+    await appendLog(logFile, "pull request text agent finished", {
+      durationMs: Date.now() - startedAt,
+      sessionId: session.sessionId,
+      status: resultStatus(result),
+      success: Boolean(text),
+    });
+    if (!text)
+      throw new Error(
+        "The agent did not write the pull request in English. Open the pull request again to retry.",
+      );
+    return text;
   }
 
 private async commitStoryWork(input: ApproveAndMergeInput) {

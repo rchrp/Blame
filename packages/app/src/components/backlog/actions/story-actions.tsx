@@ -6,6 +6,7 @@ import {
   type UserStory,
   userStoryActions,
 } from "@/components/backlog/data/backlog-data"
+import { PullRequestButton } from "@/components/backlog/drawer/pull-request-link"
 import type { UserStoryDiffStats } from "@/components/backlog/development/user-story-diff-stats"
 import type { OpenDrawer } from "@/components/backlog/shared/backlog-types"
 import {
@@ -237,48 +238,57 @@ function ReviewActions({
         onOpenWorktree={onOpenWorktree}
         story={story}
       />
-      <div
-        className={cn(
-          "grid gap-2",
-          approveLabel ? "grid-cols-2" : "grid-cols-[auto_1fr]"
-        )}
-      >
-        {reviewDiffEmpty ? (
-          <StoryAction
-            action="Discard"
-            className="w-full"
-            icon={Trash2Icon}
-            iconOnly={false}
-            label="Discard"
-            onAction={onAction}
-            onOpenDrawer={onOpenDrawer}
-            onOpenWorktree={onOpenWorktree}
-            story={story}
-          />
-        ) : (
-          <RejectDialog
-            onOpenDrawer={onOpenDrawer}
-            onReject={onReject}
-            story={story}
-          />
-        )}
-        {approveLabel ? (
-          <StoryAction
-            action="Approve & Merge"
-            label={approveLabel}
-            onAction={onAction}
-            onOpenDrawer={onOpenDrawer}
-            onOpenWorktree={onOpenWorktree}
-            story={story}
-          />
-        ) : (
-          <StoryApproveMergeMenu
-            onAction={onAction}
-            onCheckPullRequest={onCheckPullRequest}
-            story={story}
-          />
-        )}
-      </div>
+      {story.pullRequestUrl ? (
+        // Its pull request is open: the story waits for GitHub.
+        <PullRequestButton
+          className="w-full"
+          size="sm"
+          url={story.pullRequestUrl}
+        />
+      ) : (
+        <div
+          className={cn(
+            "grid gap-2",
+            approveLabel ? "grid-cols-2" : "grid-cols-[auto_1fr]"
+          )}
+        >
+          {reviewDiffEmpty ? (
+            <StoryAction
+              action="Discard"
+              className="w-full"
+              icon={Trash2Icon}
+              iconOnly={false}
+              label="Discard"
+              onAction={onAction}
+              onOpenDrawer={onOpenDrawer}
+              onOpenWorktree={onOpenWorktree}
+              story={story}
+            />
+          ) : (
+            <RejectDialog
+              onOpenDrawer={onOpenDrawer}
+              onReject={onReject}
+              story={story}
+            />
+          )}
+          {approveLabel ? (
+            <StoryAction
+              action="Approve & Merge"
+              label={approveLabel}
+              onAction={onAction}
+              onOpenDrawer={onOpenDrawer}
+              onOpenWorktree={onOpenWorktree}
+              story={story}
+            />
+          ) : (
+            <StoryApproveMergeMenu
+              onAction={onAction}
+              onCheckPullRequest={onCheckPullRequest}
+              story={story}
+            />
+          )}
+        </div>
+      )}
     </div>
   )
 }

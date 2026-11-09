@@ -44,7 +44,6 @@ export function StoryApproveMergeMenu({
         activeAction={pendingAction ?? transitionAction}
         compact
         disabled={busy}
-        hasPullRequest={Boolean(story.pullRequestUrl)}
         onAction={(action) => void runAction(action)}
         onCheckPullRequest={onCheckPullRequest}
         targetBranch={story.targetBranch}
